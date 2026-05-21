@@ -75,7 +75,8 @@ class SurfaceVelocityIntegrator final : public systems::LeafSystem<double> {
                                automatically.
    @param surface_speeds_port  An output port producing BusValue<double> with
                                per-body surface speeds. Typically the same port
-                               connected to plant.get_surface_speeds_input_port().
+                               connected to
+   plant.get_surface_speeds_input_port().
    @param visualizer           The MeshcatVisualizer to receive displacements.
    @param period               Discrete update period (seconds). Should match
                                `visualizer`'s publish period.
@@ -84,8 +85,7 @@ class SurfaceVelocityIntegrator final : public systems::LeafSystem<double> {
       systems::DiagramBuilder<double>* builder,
       const multibody::MultibodyPlant<double>& plant,
       const systems::OutputPort<double>& surface_speeds_port,
-      geometry::MeshcatVisualizer<double>& visualizer,
-      double period);
+      geometry::MeshcatVisualizer<double>& visualizer, double period);
 
  private:
   void DiscreteUpdate(const systems::Context<double>& context,

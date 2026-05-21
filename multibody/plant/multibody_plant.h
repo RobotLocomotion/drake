@@ -1206,17 +1206,16 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @pre Finalize() was already called on `this` plant.
   const systems::InputPort<T>& get_surface_speeds_input_port() const;
 
-  /// Returns the `"surface_velocity_normals"` output port, which publishes a
+  /// Returns the `"surface_velocity_axes"` output port, which publishes a
   /// systems::BusValue with one signal per body registered via
   /// RegisterSurfaceVelocity(). Each signal's name is the body's scoped name
-  /// (e.g., `"model::belt"`) and its value is the current unit normal
+  /// (e.g., `"model::belt"`) and its value is the current unit axis
   /// (Eigen::Vector3d) in the body frame B, reflecting any changes made via
-  /// SetSurfaceVelocityNormal().
+  /// SetSurfaceVelocityAxis().
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if no bodies have been registered via
   ///         RegisterSurfaceVelocity().
-  const systems::OutputPort<T>& get_surface_velocity_normals_output_port()
-      const;
+  const systems::OutputPort<T>& get_surface_velocity_axes_output_port() const;
 
   /// Reports the multibody state x = [q, v] of the model as a @ref
   /// systems::BasicVector<T> "vector-valued" output port of size
@@ -2241,37 +2240,37 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Each registered body defines a velocity field over its contact surface.
   /// At a contact point C, given:
   ///
-  ///  - n̂_ss_B — the *rotation axis*, stored in body frame B
-  ///    (see RegisterSurfaceVelocity(), SetSurfaceVelocityNormal()),
+  ///  - â_ss_B — the *rotation axis*, stored in body frame B
+  ///    (see RegisterSurfaceVelocity(), SetSurfaceVelocityAxis()),
   ///  - `speed` — the scalar peripheral speed from the `"surface_speeds"` bus
   ///    input port (see get_surface_speeds_input_port()), and
   ///  - n̂_C_B — the contact normal at C expressed in body frame B,
   ///
   /// the surface velocity expressed in the body frame B is:
   ///
-  ///     v_ss_B = speed · (n̂_ss_B × n̂_C_B)
+  ///     v_ss_B = speed · (â_ss_B × n̂_C_B)
   ///
   /// The formula is the velocity produced at a contact point by a rigid drum
-  /// rotating about axis n̂_ss_B at peripheral speed `speed`. For example, a
+  /// rotating about axis â_ss_B at peripheral speed `speed`. For example, a
   /// horizontal conveyor belt whose top face (n̂_C_B ≈ ẑ_B) moves in the
-  /// x̄_B direction: set n̂_ss_B = ŷ_B, yielding
+  /// x̄_B direction: set â_ss_B = ŷ_B, yielding
   /// v_ss_B = speed · (ŷ × ẑ) = speed · x̂.
   ///
   /// #### Key properties and ramifications
   ///
-  ///  - **Normal follows the body.** n̂_ss_B is stored in the body frame B, so
+  ///  - **Axis follows the body.** â_ss_B is stored in the body frame B, so
   ///    the velocity field automatically rotates with the body in the world.
   ///  - **Velocity direction depends on the contact normal.** Two contact
   ///    points on the same body but at different surface orientations may
   ///    experience different surface velocity directions.
   ///  - **Zero velocity along the rotation axis.** When n̂_C_B is parallel to
-  ///    n̂_ss_B the cross product is zero and the surface velocity vanishes,
+  ///    â_ss_B the cross product is zero and the surface velocity vanishes,
   ///    which is physically correct (no tangential slip along the axis).
   ///  - **Speed is runtime-controlled.** `speed` is read from the
   ///    `"surface_speeds"` bus port on every time step. An unconnected port or
   ///    a missing signal for this body is treated as zero speed. Negative speed
   ///    reverses the velocity direction.
-  ///  - **Only the direction of n̂_ss_B matters.** The stored vector is always
+  ///  - **Only the direction of â_ss_B matters.** The stored vector is always
   ///    unit-length; magnitude is discarded upon registration or update.
   ///  - **No change to the underlying multibody dynamics.** Surface velocity is
   ///    a kinematic effect that modifies the contact velocity at the point of
@@ -2286,36 +2285,36 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @{
 
   /// Registers `body` as having surface velocity, with the surface-velocity
-  /// normal direction `normal_in_B` expressed in the body frame B. After
-  /// registration the normal can be updated at runtime via
-  /// SetSurfaceVelocityNormal(). Speed is always supplied through the
+  /// axis direction `axis_in_B` expressed in the body frame B. After
+  /// registration the axis can be updated at runtime via
+  /// SetSurfaceVelocityAxis(). Speed is always supplied through the
   /// `"surface_speeds"` bus input port.
   ///
-  /// @param[in] body        The rigid body to register. Must not be the world
-  ///                        body and must not already have been registered.
-  /// @param[in] normal_in_B A nonzero vector giving the rotation-axis direction
-  ///                        in the body frame B. Normalized upon storage.
+  /// @param[in] body      The rigid body to register. Must not be the world
+  ///                      body and must not already have been registered.
+  /// @param[in] axis_in_B A nonzero vector giving the rotation-axis direction
+  ///                      in the body frame B. Normalized upon storage.
   ///
   /// @throws std::exception if called after Finalize().
   /// @throws std::exception if `body` is the world body.
   /// @throws std::exception if `body` has already been registered.
   void RegisterSurfaceVelocity(const RigidBody<T>& body,
-                               const Eigen::Vector3d& normal_in_B);
+                               const Eigen::Vector3d& axis_in_B);
 
-  /// Returns the surface-velocity normal for `body`, expressed in the body
+  /// Returns the surface-velocity axis for `body`, expressed in the body
   /// frame B, from the abstract parameter in `context`.
   /// @throws std::exception if `body` was not registered via
   ///         RegisterSurfaceVelocity().
-  Eigen::Vector3d GetSurfaceVelocityNormal(const systems::Context<T>& context,
-                                           const RigidBody<T>& body) const;
+  Eigen::Vector3d GetSurfaceVelocityAxis(const systems::Context<T>& context,
+                                         const RigidBody<T>& body) const;
 
-  /// Sets the surface-velocity normal for `body` in `context`.
+  /// Sets the surface-velocity axis for `body` in `context`.
   /// The provided vector is normalized before being stored.
   /// @throws std::exception if `body` was not registered via
   ///         RegisterSurfaceVelocity().
-  void SetSurfaceVelocityNormal(systems::Context<T>* context,
-                                const RigidBody<T>& body,
-                                const Eigen::Vector3d& normal_in_B) const;
+  void SetSurfaceVelocityAxis(systems::Context<T>* context,
+                              const RigidBody<T>& body,
+                              const Eigen::Vector3d& axis_in_B) const;
 
   /// Returns true if `body` has been registered for surface velocity via
   /// RegisterSurfaceVelocity().
@@ -6067,7 +6066,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     // N.B. The deformable_body_configuration port is owned by DeformableModel,
     // so is not tracked here.
     // Only valid when surface_velocity_registrations_ is non-empty.
-    std::optional<systems::OutputPortIndex> surface_velocity_normals;
+    std::optional<systems::OutputPortIndex> surface_velocity_axes;
   };
 
   // This struct stores in one single place all indices related to specific
@@ -6516,9 +6515,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void CalcBodyPosesOutput(const systems::Context<T>& context,
                            std::vector<math::RigidTransform<T>>* output) const;
 
-  // Calc method for the "surface_velocity_normals" output port.
-  void CalcSurfaceVelocityNormalsOutput(const systems::Context<T>& context,
-                                        systems::BusValue* output) const;
+  // Calc method for the "surface_velocity_axes" output port.
+  void CalcSurfaceVelocityAxesOutput(const systems::Context<T>& context,
+                                     systems::BusValue* output) const;
 
   // Calc method for the "body_spatial_velocities" output port.
   void CalcBodySpatialVelocitiesOutput(
@@ -6835,8 +6834,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       tendon_constraints_specs_;
 
   // Registration map for bodies with surface velocity. Pre-Finalize the
-  // variant holds the initial normal (body frame). At Finalize() each entry is
-  // replaced in-place with the AbstractParameterIndex for that body's normal
+  // variant holds the initial axis (body frame). At Finalize() each entry is
+  // replaced in-place with the AbstractParameterIndex for that body's axis
   // parameter in the Context.
   using SurfaceVelocityEntry =
       std::variant<Eigen::Vector3d, systems::AbstractParameterIndex>;

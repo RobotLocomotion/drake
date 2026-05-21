@@ -837,16 +837,15 @@ void MultibodyPlant<T>::RemoveConstraint(MultibodyConstraintId id) {
 
 template <typename T>
 void MultibodyPlant<T>::RegisterSurfaceVelocity(
-    const RigidBody<T>& body, const Eigen::Vector3d& normal_in_B) {
+    const RigidBody<T>& body, const Eigen::Vector3d& axis_in_B) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(body.index() != world_index());
   DRAKE_THROW_UNLESS(!surface_velocity_registrations_.contains(body.index()));
-  surface_velocity_registrations_.emplace(body.index(),
-                                          normal_in_B.normalized());
+  surface_velocity_registrations_.emplace(body.index(), axis_in_B.normalized());
 }
 
 template <typename T>
-Eigen::Vector3d MultibodyPlant<T>::GetSurfaceVelocityNormal(
+Eigen::Vector3d MultibodyPlant<T>::GetSurfaceVelocityAxis(
     const systems::Context<T>& context, const RigidBody<T>& body) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
@@ -858,9 +857,9 @@ Eigen::Vector3d MultibodyPlant<T>::GetSurfaceVelocityNormal(
 }
 
 template <typename T>
-void MultibodyPlant<T>::SetSurfaceVelocityNormal(
+void MultibodyPlant<T>::SetSurfaceVelocityAxis(
     systems::Context<T>* context, const RigidBody<T>& body,
-    const Eigen::Vector3d& normal_in_B) const {
+    const Eigen::Vector3d& axis_in_B) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(context != nullptr);
   this->ValidateContext(*context);
@@ -869,7 +868,7 @@ void MultibodyPlant<T>::SetSurfaceVelocityNormal(
   const auto idx = std::get<systems::AbstractParameterIndex>(it->second);
   context->get_mutable_parameters()
       .template get_mutable_abstract_parameter<Eigen::Vector3d>(idx) =
-      normal_in_B.normalized();
+      axis_in_B.normalized();
 }
 
 template <typename T>
@@ -1004,18 +1003,18 @@ Vector3<T> MultibodyPlant<T>::ComputeSurfaceVelocity(
   }
   if (speed == 0.0) return Vector3<T>::Zero();
 
-  // Read normal from context parameter (body frame B).
+  // Read axis from context parameter (body frame B).
   const auto idx = std::get<systems::AbstractParameterIndex>(it->second);
-  const Eigen::Vector3d n_ss_B =
+  const Eigen::Vector3d a_ss_B =
       context.get_parameters().template get_abstract_parameter<Eigen::Vector3d>(
           idx);
 
   // Convert contact normal from world frame to body frame B.
-  // Not normalizing the cross product is intentional: parallel normals
+  // Not normalizing the cross product is intentional: parallel vectors
   // produce zero velocity organically.
   const RigidTransform<T>& X_WB = get_body(body_index).EvalPoseInWorld(context);
   const Vector3<T> n_B = X_WB.rotation().inverse() * n_W;
-  return T(speed) * n_ss_B.template cast<T>().cross(n_B);
+  return T(speed) * a_ss_B.template cast<T>().cross(n_B);
 }
 
 template <typename T>
@@ -2639,31 +2638,31 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
     typename internal::HydroelasticTractionCalculator<T>::Data data(
         X_WA, X_WB, V_WA, V_WB, &surface);
     // Populate surface velocity for the traction calculator. Speed comes from
-    // the "surface_speeds" bus port; normal comes from the body's parameter
+    // the "surface_speeds" bus port; axis comes from the body's parameter
     // (already in body frame — no geometry-frame pre-rotation needed).
-    auto read_surface_velocity =
-        [this, &context](BodyIndex body_idx, std::optional<double>* speed_out,
-                         std::optional<Eigen::Vector3d>* normal_out) {
-          auto it = surface_velocity_registrations_.find(body_idx);
-          if (it == surface_velocity_registrations_.end()) return;
-          const auto param_idx =
-              std::get<systems::AbstractParameterIndex>(it->second);
-          *normal_out =
-              context.get_parameters()
-                  .template get_abstract_parameter<Eigen::Vector3d>(param_idx);
-          const auto& port = get_surface_speeds_input_port();
-          if (port.HasValue(context)) {
-            const auto& bus = port.template Eval<systems::BusValue>(context);
-            const std::string name =
-                get_body(body_idx).scoped_name().to_string();
-            const AbstractValue* v = bus.Find(name);
-            if (v != nullptr) {
-              *speed_out = v->get_value<double>();
-            }
-          }
-        };
-    read_surface_velocity(bodyA_index, &data.surface_speed_A, &data.n_ss_A);
-    read_surface_velocity(bodyB_index, &data.surface_speed_B, &data.n_ss_B);
+    auto read_surface_velocity = [this, &context](
+                                     BodyIndex body_idx,
+                                     std::optional<double>* speed_out,
+                                     std::optional<Eigen::Vector3d>* axis_out) {
+      auto it = surface_velocity_registrations_.find(body_idx);
+      if (it == surface_velocity_registrations_.end()) return;
+      const auto param_idx =
+          std::get<systems::AbstractParameterIndex>(it->second);
+      *axis_out =
+          context.get_parameters()
+              .template get_abstract_parameter<Eigen::Vector3d>(param_idx);
+      const auto& port = get_surface_speeds_input_port();
+      if (port.HasValue(context)) {
+        const auto& bus = port.template Eval<systems::BusValue>(context);
+        const std::string name = get_body(body_idx).scoped_name().to_string();
+        const AbstractValue* v = bus.Find(name);
+        if (v != nullptr) {
+          *speed_out = v->get_value<double>();
+        }
+      }
+    };
+    read_surface_velocity(bodyA_index, &data.surface_speed_A, &data.a_ss_A);
+    read_surface_velocity(bodyB_index, &data.surface_speed_B, &data.a_ss_B);
 
     // Combined Hunt & Crossley dissipation.
     const hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine;
@@ -3928,29 +3927,29 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         net_actuation_continuous_cache_entry.cache_index();
   }
 
-  // Output "surface_velocity_normals": live per-body axis from abstract params.
+  // Output "surface_velocity_axes": live per-body axis from abstract params.
   if (!surface_velocity_registrations_.empty()) {
     systems::BusValue model_bus;
     for (const auto& [body_index, entry] : surface_velocity_registrations_) {
       model_bus.Set(get_body(body_index).scoped_name().to_string(),
                     Value<Eigen::Vector3d>(Eigen::Vector3d::Zero()));
     }
-    output_port_indices_.surface_velocity_normals =
+    output_port_indices_.surface_velocity_axes =
         this->DeclareAbstractOutputPort(
-                "surface_velocity_normals", model_bus,
-                &MultibodyPlant<T>::CalcSurfaceVelocityNormalsOutput,
+                "surface_velocity_axes", model_bus,
+                &MultibodyPlant<T>::CalcSurfaceVelocityAxesOutput,
                 {this->all_parameters_ticket()})
             .get_index();
   }
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcSurfaceVelocityNormalsOutput(
+void MultibodyPlant<T>::CalcSurfaceVelocityAxesOutput(
     const Context<T>& context, systems::BusValue* output) const {
   for (const auto& [body_index, entry] : surface_velocity_registrations_) {
     const auto& body = get_body(body_index);
     output->Set(body.scoped_name().to_string(),
-                Value<Eigen::Vector3d>(GetSurfaceVelocityNormal(context, body)));
+                Value<Eigen::Vector3d>(GetSurfaceVelocityAxis(context, body)));
   }
 }
 
@@ -3989,23 +3988,23 @@ void MultibodyPlant<T>::DeclareParameters() {
           drake::Value(internal::DistanceConstraintParamsMap{
               distance_constraints_params_}))};
 
-  // Surface velocity normal parameters: one per registered body. Replace each
+  // Surface velocity axis parameters: one per registered body. Replace each
   // variant's Vector3d with the AbstractParameterIndex after declaration.
   for (auto& [body_index, entry] : surface_velocity_registrations_) {
-    const Eigen::Vector3d& normal = std::get<Eigen::Vector3d>(entry);
+    const Eigen::Vector3d& axis = std::get<Eigen::Vector3d>(entry);
 
     // Mark illustration geometries with "meshcat"."has_surface_velocity" so
     // that MeshcatVisualizer can identify them for surface-crawl visualization.
     // We store only a boolean marker here — the live axis is served via the
-    // "surface_velocity_normals" output port so that changes made via
-    // SetSurfaceVelocityNormal() are reflected in every publish cycle.
+    // "surface_velocity_axes" output port so that changes made via
+    // SetSurfaceVelocityAxis() are reflected in every publish cycle.
     if (scene_graph_ != nullptr && source_id_.has_value()) {
       auto opt_frame_id = GetBodyFrameIdIfExists(body_index);
       if (opt_frame_id.has_value()) {
-        const SceneGraphInspector<T>& inspector = scene_graph_->model_inspector();
-        for (geometry::GeometryId geom_id :
-             inspector.GetGeometries(*opt_frame_id,
-                                     geometry::Role::kIllustration)) {
+        const SceneGraphInspector<T>& inspector =
+            scene_graph_->model_inspector();
+        for (geometry::GeometryId geom_id : inspector.GetGeometries(
+                 *opt_frame_id, geometry::Role::kIllustration)) {
           const geometry::IllustrationProperties* existing =
               inspector.GetIllustrationProperties(geom_id);
           geometry::IllustrationProperties props =
@@ -4021,7 +4020,7 @@ void MultibodyPlant<T>::DeclareParameters() {
     }
 
     const systems::AbstractParameterIndex idx{
-        this->DeclareAbstractParameter(drake::Value(normal))};
+        this->DeclareAbstractParameter(drake::Value(axis))};
     entry = idx;
   }
 }
@@ -4491,11 +4490,10 @@ const systems::InputPort<T>& MultibodyPlant<T>::get_surface_speeds_input_port()
 
 template <typename T>
 const systems::OutputPort<T>&
-MultibodyPlant<T>::get_surface_velocity_normals_output_port() const {
+MultibodyPlant<T>::get_surface_velocity_axes_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(output_port_indices_.surface_velocity_normals.has_value());
-  return this->get_output_port(
-      *output_port_indices_.surface_velocity_normals);
+  DRAKE_THROW_UNLESS(output_port_indices_.surface_velocity_axes.has_value());
+  return this->get_output_port(*output_port_indices_.surface_velocity_axes);
 }
 
 template <typename T>

@@ -99,23 +99,23 @@ class SurfaceVelocityTest : public ::testing::Test {
 
 // RegisterSurfaceVelocity normalizes the stored direction: (2,0,0) → (1,0,0).
 TEST_F(SurfaceVelocityTest, RegisterNormalizesInput) {
-  EXPECT_TRUE(CompareMatrices(
-      plant_.GetSurfaceVelocityNormal(*context_, *belt_), Vector3d(1, 0, 0)));
+  EXPECT_TRUE(CompareMatrices(plant_.GetSurfaceVelocityAxis(*context_, *belt_),
+                              Vector3d(1, 0, 0)));
 }
 
-// SetSurfaceVelocityNormal normalizes its input and the result is visible via
-// GetSurfaceVelocityNormal.
-TEST_F(SurfaceVelocityTest, SetNormalNormalizesAndPersists) {
-  plant_.SetSurfaceVelocityNormal(context_.get(), *belt_, Vector3d(0, 3, 0));
-  EXPECT_TRUE(CompareMatrices(
-      plant_.GetSurfaceVelocityNormal(*context_, *belt_), Vector3d(0, 1, 0)));
+// SetSurfaceVelocityAxis normalizes its input and the result is visible via
+// GetSurfaceVelocityAxis.
+TEST_F(SurfaceVelocityTest, SetAxisNormalizesAndPersists) {
+  plant_.SetSurfaceVelocityAxis(context_.get(), *belt_, Vector3d(0, 3, 0));
+  EXPECT_TRUE(CompareMatrices(plant_.GetSurfaceVelocityAxis(*context_, *belt_),
+                              Vector3d(0, 1, 0)));
 }
 
 TEST_F(SurfaceVelocityTest, AccessorsThrowForUnregisteredBody) {
-  EXPECT_THROW(plant_.GetSurfaceVelocityNormal(*context_, *other_),
+  EXPECT_THROW(plant_.GetSurfaceVelocityAxis(*context_, *other_),
                std::exception);
   EXPECT_THROW(
-      plant_.SetSurfaceVelocityNormal(context_.get(), *other_, {1, 0, 0}),
+      plant_.SetSurfaceVelocityAxis(context_.get(), *other_, {1, 0, 0}),
       std::exception);
 }
 
@@ -144,7 +144,7 @@ TEST_F(SurfaceVelocityTest, ZeroVelocityForUnregisteredBody) {
 }
 
 // The speed can be positive or negative, flipping the velocity direction.
-// n_ss_B = (1,0,0), n_W = (0,0,1) (R_WB = I, so n_B = n_W).
+// a_ss_B = (1,0,0), n_W = (0,0,1) (R_WB = I, so n_B = n_W).
 // speed = s: v = s*(1,0,0)×(0,0,1) = s*(0, -1, 0) = (0, -s, 0).
 TEST_F(SurfaceVelocityTest, WorksWithFiniteSpeeds) {
   for (double speed : {0.25, 0.0, -0.75}) {
@@ -156,18 +156,18 @@ TEST_F(SurfaceVelocityTest, WorksWithFiniteSpeeds) {
   }
 }
 
-// SetSurfaceVelocityNormal changes the velocity direction in subsequent calls.
-TEST_F(SurfaceVelocityTest, SetNormalAffectsComputation) {
+// SetSurfaceVelocityAxis changes the velocity direction in subsequent calls.
+TEST_F(SurfaceVelocityTest, SetAxisAffectsComputation) {
   constexpr double tol = 1e-12;
   FixBeltSpeed(1.0);
 
-  // Initial n_ss_B = (1,0,0): v = (1,0,0)×(0,0,1) = (0,-1,0).
+  // Initial a_ss_B = (1,0,0): v = (1,0,0)×(0,0,1) = (0,-1,0).
   Vector3d v = MultibodyPlantTester::ComputeSurfaceVelocity(
       plant_, belt_->index(), *context_, Vector3d(0, 0, 1));
   EXPECT_TRUE(CompareMatrices(v, Vector3d(0, -1, 0), tol));
 
   // After update to (0,1,0): v = (0,1,0)×(0,0,1) = (1,0,0).
-  plant_.SetSurfaceVelocityNormal(context_.get(), *belt_, Vector3d(0, 1, 0));
+  plant_.SetSurfaceVelocityAxis(context_.get(), *belt_, Vector3d(0, 1, 0));
   v = MultibodyPlantTester::ComputeSurfaceVelocity(
       plant_, belt_->index(), *context_, Vector3d(0, 0, 1));
   EXPECT_TRUE(CompareMatrices(v, Vector3d(1, 0, 0), tol));
@@ -240,8 +240,8 @@ TEST_F(SurfaceVelocityTest, SurfaceVelocityPosedInWorld) {
 // R_z(90°)). Contact pairs pass the outward normal to each body: +Ẑ to A
 // (ground), −Ẑ to B (box):
 //
-//   ground (A): n_ss_B=(1,0,0): R_WB*(1,0,0)=(0,1,0); (0,1,0)×(+Ẑ)=(1,0,0)
-//   box    (B): n_ss_B=(0,-1,0): R_WB*(0,-1,0)=(1,0,0); (1,0,0)×(-Ẑ)=(0,1,0)
+//   ground (A): a_ss_B=(1,0,0): R_WB*(1,0,0)=(0,1,0); (0,1,0)×(+Ẑ)=(1,0,0)
+//   box    (B): a_ss_B=(0,-1,0): R_WB*(0,-1,0)=(1,0,0); (1,0,0)×(-Ẑ)=(0,1,0)
 //
 // With both bodies kinematically at rest:
 //
@@ -294,23 +294,24 @@ class OrthogonalSurfaceVelocityTest
     AddCompliantHydroelasticProperties(kHalfSize, kHydroModulus, &compliant);
 
     const RollPitchYawd Rz_90(0.0, 0.0, kTheta);
-    ;
 
-    // Ground: large Box welded to world (top face at z=0), rotated kTheta around Z.
-    // n_ss_B = (1,0,0) → world surface velocity = kGroundSpeed * (+X).
+    // Ground: large Box welded to world (top face at z=0), rotated kTheta
+    // around Z. a_ss_B = (1,0,0) → world surface velocity = kGroundSpeed *
+    // (+X).
     ground_ =
         &plant_->AddRigidBody("ground", SpatialInertia<double>::MakeUnitary());
     plant_->WeldFrames(plant_->world_frame(), ground_->body_frame(),
                        RigidTransformd(Rz_90, Vector3d::Zero()));
-    plant_->RegisterCollisionGeometry(
-        *ground_, RigidTransformd(Vector3d(0, 0, -0.5)),
-        Box(10.0, 10.0, 1.0), "ground", rigid);
+    plant_->RegisterCollisionGeometry(*ground_,
+                                      RigidTransformd(Vector3d(0, 0, -0.5)),
+                                      Box(10.0, 10.0, 1.0), "ground", rigid);
     plant_->RegisterSurfaceVelocity(*ground_, Vector3d(1, 0, 0));
 
     if (!GetParam().use_deformable) {
       // Box: free floating, 0.2 m cube.
-      // n_ss_B = (0,-1,0) → world surface velocity = kBoxSpeed * (+Y).
-      // (Box is body B; contact pairs pass −Ẑ to B, so the cross product flips.)
+      // a_ss_B = (0,-1,0) → world surface velocity = kBoxSpeed * (+Y).
+      // (Box is body B; contact pairs pass −Ẑ to B, so the cross product
+      // flips.)
       box_ = &plant_->AddRigidBody(
           "box", SpatialInertia<double>::SolidBoxWithMass(
                      1.0, 2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize));
@@ -398,7 +399,8 @@ class OrthogonalSurfaceVelocityTest
     return f;
   }
 
-  // Returns the centroid of the contacting body (rigid box or deformable sphere).
+  // Returns the centroid of the contacting body (rigid box or deformable
+  // sphere).
   Vector3d ContactingBodyCentroid(
       const systems::Context<double>& plant_context) const {
     if (box_ != nullptr) {
@@ -425,9 +427,8 @@ TEST_P(OrthogonalSurfaceVelocityTest, ContactForceTangentialDirection) {
   // Discrete: advance one step to populate DiscreteStepMemory.
   // Continuous: contact results are available on demand at t = 0.
   if (time_step > 0.0) sim_->AdvanceTo(time_step);
-  const Vector3d f =
-      ContactForceOnContactingBody(
-          plant_->GetMyContextFromRoot(sim_->get_context()));
+  const Vector3d f = ContactForceOnContactingBody(
+      plant_->GetMyContextFromRoot(sim_->get_context()));
 
   EXPECT_GT(f.z(), 0.0);  // normal force pushes body up
   EXPECT_GT(f.x(), 0.0)

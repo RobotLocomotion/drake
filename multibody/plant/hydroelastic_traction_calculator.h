@@ -79,15 +79,15 @@ class HydroelasticTractionCalculator {
     // Optional surface velocity parameters for geometry M (body A) and
     // geometry N (body B). When set, material transport on the geometry
     // surface contributes to the slip velocity at each contact quad point.
-    // The speed is in m/s; the velocity-direction normal n_ss is a unit vector
-    // expressed in the *body* frame (pre-rotated from the geometry frame via
-    // R_AM / R_BN by the caller) that defines the transport direction (the
-    // surface velocity at a quad point is perpendicular to both n_ss and the
-    // contact face normal at that point).
+    // The speed is in m/s; the rotation axis a_ss is a unit vector expressed
+    // in the *body* frame (pre-rotated from the geometry frame via R_AM / R_BN
+    // by the caller) that defines the transport direction (the surface velocity
+    // at a quad point is perpendicular to both a_ss and the contact face
+    // normal at that point).
     std::optional<double> surface_speed_A;
-    std::optional<Eigen::Vector3<double>> n_ss_A;
+    std::optional<Eigen::Vector3<double>> a_ss_A;
     std::optional<double> surface_speed_B;
-    std::optional<Eigen::Vector3<double>> n_ss_B;
+    std::optional<Eigen::Vector3<double>> a_ss_B;
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator);

@@ -767,7 +767,6 @@ std::optional<geometry::GeometryInstance> ParseCollision(
     props = ParseProximityProperties(
         diagnostic.MakePolicyForNode(drake_element), read_double,
         rigid_element != nullptr, compliant_element != nullptr);
-
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on

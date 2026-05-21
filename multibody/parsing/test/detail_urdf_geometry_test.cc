@@ -1059,7 +1059,6 @@ TEST_F(UrdfGeometryTest, CompliantHydroelastic) {
       geometry::internal::HydroelasticType::kCompliant);
 }
 
-
 TEST_F(UrdfGeometryTest, LegacySoftHydroelastic) {
   // TODO(16229): Remove this ad-hoc input sanitization when we resolve
   //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."

@@ -27,9 +27,8 @@ SurfaceVelocityIntegrator::SurfaceVelocityIntegrator(
     model_bus.Set(name, Value<double>(0.0));
   }
   surface_displacements_output_port_index_ =
-      this->DeclareAbstractOutputPort(
-              "surface_displacements", model_bus,
-              &SurfaceVelocityIntegrator::CalcOutputBus)
+      this->DeclareAbstractOutputPort("surface_displacements", model_bus,
+                                      &SurfaceVelocityIntegrator::CalcOutputBus)
           .get_index();
 
   // One discrete state variable per body (accumulated displacement).
@@ -61,12 +60,11 @@ SurfaceVelocityIntegrator& SurfaceVelocityIntegrator::AddToBuilder(
   auto& integrator = *builder->template AddSystem<SurfaceVelocityIntegrator>(
       std::move(body_names), period);
   integrator.set_name("surface_velocity_integrator");
-  builder->Connect(surface_speeds_port,
-                   integrator.surface_speeds_input_port());
+  builder->Connect(surface_speeds_port, integrator.surface_speeds_input_port());
   builder->Connect(integrator.surface_displacements_output_port(),
                    visualizer.surface_displacement_input_port());
-  builder->Connect(plant.get_surface_velocity_normals_output_port(),
-                   visualizer.surface_velocity_normals_input_port());
+  builder->Connect(plant.get_surface_velocity_axes_output_port(),
+                   visualizer.surface_velocity_axes_input_port());
   return integrator;
 }
 

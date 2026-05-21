@@ -642,7 +642,6 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
     properties =
         ParseProximityProperties(diagnostic.MakePolicyForNode(*drake_element),
                                  read_double, is_rigid, is_compliant);
-
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on

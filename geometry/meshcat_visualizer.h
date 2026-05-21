@@ -122,17 +122,17 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
     return this->get_input_port(surface_displacement_input_port_);
   }
 
-  /** Returns the surface-velocity-normals input port. When connected, this port
+  /** Returns the surface-velocity-axes input port. When connected, this port
    accepts a `BusValue` whose signals are keyed by body scoped name and whose
-   values are `Eigen::Vector3d` unit normals in the body frame. The visualizer
+   values are `Eigen::Vector3d` unit axes in the body frame. The visualizer
    will update the `"crawl_axis"` meshcat property each publish cycle, so that
-   runtime changes via `MultibodyPlant::SetSurfaceVelocityNormal()` are
+   runtime changes via `MultibodyPlant::SetSurfaceVelocityAxis()` are
    immediately reflected in meshcat.
 
    This port is always declared. It does not need to be connected; if
    unconnected, no axis updates are sent to meshcat. */
-  const systems::InputPort<T>& surface_velocity_normals_input_port() const {
-    return this->get_input_port(surface_velocity_normals_input_port_);
+  const systems::InputPort<T>& surface_velocity_axes_input_port() const {
+    return this->get_input_port(surface_velocity_axes_input_port_);
   }
 
   /** Adds a MeshcatVisualizer and connects it to the given SceneGraph's
@@ -200,7 +200,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   int surface_displacement_input_port_{};
 
   /* The index of the surface-velocity-normals input port. */
-  int surface_velocity_normals_input_port_{};
+  int surface_velocity_axes_input_port_{};
 
   /* Meshcat is mutable because we must send messages (a non-const operation)
    from a const System (e.g. during simulation).  We use shared_ptr instead of

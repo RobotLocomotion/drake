@@ -69,9 +69,10 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
         internal::ConvertVisualizationConfigToMeshcatParams(config);
     MeshcatVisualizer<double>* illustration_vis = nullptr;
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      auto& vis = MeshcatVisualizer<double>::AddToBuilder(
-          builder, *scene_graph, meshcat, params);
-      if (params.role == Role::kIllustration && params.prefix == "illustration") {
+      auto& vis = MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph,
+                                                          meshcat, params);
+      if (params.role == Role::kIllustration &&
+          params.prefix == "illustration") {
         illustration_vis = &vis;
       }
     }
@@ -97,9 +98,9 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
       }
       if (has_surface_velocity) {
         const auto& conn_map = builder->connection_map();
-        const auto key = std::make_pair(
-            static_cast<const System<double>*>(&plant),
-            plant.get_surface_speeds_input_port().get_index());
+        const auto key =
+            std::make_pair(static_cast<const System<double>*>(&plant),
+                           plant.get_surface_speeds_input_port().get_index());
         auto it = conn_map.find(key);
         if (it != conn_map.end()) {
           SurfaceVelocityIntegrator::AddToBuilder(

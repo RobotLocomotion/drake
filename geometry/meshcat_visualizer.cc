@@ -5,17 +5,18 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
-#include "drake/systems/framework/bus_value.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/meshcat_graphviz.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/utilities.h"
+#include "drake/systems/framework/bus_value.h"
 
 namespace drake {
 namespace geometry {
@@ -54,8 +55,8 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
                                      Value<systems::BusValue>())
           .get_index();
 
-  surface_velocity_normals_input_port_ =
-      this->DeclareAbstractInputPort("surface_velocity_normals",
+  surface_velocity_axes_input_port_ =
+      this->DeclareAbstractInputPort("surface_velocity_axes",
                                      Value<systems::BusValue>())
           .get_index();
 
@@ -320,19 +321,19 @@ void MeshcatVisualizer<T>::SetSurfaceDisplacements(
   if (surface_velocity_geometries_.empty()) return;
   const double time = ExtractDoubleOrThrow(context.get_time());
 
-  // Push the live crawl_axis from the normals port each tick so that runtime
-  // changes via SetSurfaceVelocityNormal() are reflected in meshcat.
-  const auto& normals_port =
-      this->get_input_port(surface_velocity_normals_input_port_);
-  if (normals_port.HasValue(context)) {
+  // Push the live crawl_axis from the axes port each tick so that runtime
+  // changes via SetSurfaceVelocityAxis() are reflected in meshcat.
+  const auto& axes_port =
+      this->get_input_port(surface_velocity_axes_input_port_);
+  if (axes_port.HasValue(context)) {
     const auto& normals_bus =
-        normals_port.template Eval<systems::BusValue>(context);
+        axes_port.template Eval<systems::BusValue>(context);
     for (const auto& [geom_id, frame_name] : surface_velocity_geometries_) {
       const AbstractValue* v = normals_bus.Find(frame_name);
       if (v == nullptr) continue;
-      const Eigen::Vector3d& n = v->get_value<Eigen::Vector3d>();
+      const Eigen::Vector3d& a = v->get_value<Eigen::Vector3d>();
       meshcat_->SetProperty(geometries_.at(geom_id), "crawl_axis",
-                            std::vector<double>{n.x(), n.y(), n.z()}, time);
+                            std::vector<double>{a.x(), a.y(), a.z()}, time);
     }
   }
 
