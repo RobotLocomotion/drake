@@ -14,6 +14,7 @@ SetFuseWeldedLinks() is enabled. */
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -27,6 +28,8 @@ namespace drake {
 namespace multibody {
 namespace {
 
+using geometry::FramePoseVector;
+using geometry::SceneGraph;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using systems::Context;
@@ -36,8 +39,11 @@ constexpr double kTolerance = 32 * std::numeric_limits<double>::epsilon();
 
 // Holds one version of the test model, either a model with unfused welds
 // or a model with welded links fused onto a mobilized body (fused mobod)
-// along with its context, ready for kinematics queries.
+// along with its context, ready for kinematics queries. The plant is
+// registered as a geometry source for scene_graph so that its geometry pose
+// output port is available.
 struct TestModel {
+  std::unique_ptr<SceneGraph<double>> scene_graph;  // Must outlive the plant.
   std::unique_ptr<MultibodyPlant<double>> plant;
   std::unique_ptr<Context<double>> context;
   const RevoluteJoint<double>* revolute{};
@@ -76,7 +82,9 @@ With fuse_welded_links = true two mobilized bodies are created,
 (World with link4 and one fused mobilized body with Link1, Link2, Link3). */
 TestModel MakeModel(bool fuse_welded_links) {
   TestModel m;
+  m.scene_graph = std::make_unique<SceneGraph<double>>();
   m.plant = std::make_unique<MultibodyPlant<double>>(0.0 /* continuous */);
+  m.plant->RegisterAsSourceForSceneGraph(m.scene_graph.get());
   m.plant->SetFuseWeldedLinks(fuse_welded_links);
 
   // To facilitate an analytical solution, each link has a trivial inertia,
@@ -304,6 +312,32 @@ GTEST_TEST(CompositeTest, NinetyDegreePoses) {
     const RigidTransformd& X_WL4 = m.link4->EvalPoseInWorld(*m.context);
     EXPECT_TRUE(X_WL4.IsNearlyEqualTo(
         RigidTransformd(Vector3<double>(4.0, 0.0, 0.0)), kTolerance));
+  }
+}
+
+/* Verify that the geometry pose output port reports each link's own pose
+X_WL, regardless of whether welded links are fused. With fusion, Link2 and
+Link3 are followers on Link1's Mobod and Link4 is a follower on the World
+Mobod, so their poses differ from their Mobods' poses. (The link poses
+themselves are verified in the NinetyDegreePoses test above.) */
+GTEST_TEST(CompositeTest, GeometryPoseOutput) {
+  for (bool fuse : {false, true}) {
+    SCOPED_TRACE(fuse ? "fused" : "unfused");
+    const TestModel m = MakeModel(fuse);
+    SetState(m, M_PI / 2, 0.0);
+
+    const auto& X_WG_all =
+        m.plant->get_geometry_pose_output_port().Eval<FramePoseVector<double>>(
+            *m.context);
+    EXPECT_EQ(X_WG_all.size(), 4);  // World isn't reported.
+
+    for (const Link<double>* link : {m.link1, m.link2, m.link3, m.link4}) {
+      SCOPED_TRACE(link->name());
+      const RigidTransformd& X_WG =
+          X_WG_all.value(m.plant->GetBodyFrameIdOrThrow(link->index()));
+      EXPECT_TRUE(
+          X_WG.IsNearlyEqualTo(link->EvalPoseInWorld(*m.context), kTolerance));
+    }
   }
 }
 
