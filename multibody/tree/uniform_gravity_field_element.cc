@@ -53,47 +53,52 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
     const systems::Context<T>& context) const {
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::PositionKinematicsCache<T>& pc =
+      model.EvalPositionKinematics(context);
+  const internal::FrameBodyPoseCache<T>& fbpc =
+      model.EvalFrameBodyPoses(context);
 
-  // TODO(amcastro-tri): Get these from the cache.
-  internal::PositionKinematicsCache<T> pc(model.forest());
-  model.CalcPositionKinematicsCache(context, &pc);
-  internal::VelocityKinematicsCache<T> vc(model.forest());
-  vc.InitializeToZero();
+  const Vector3<double>& g_W = gravity_vector();
+  const int num_mobods = model.num_mobods();
 
-  // Create a multibody forces initialized by default to zero forces.
-  MultibodyForces<T> forces(model);
-  // Add this element's force contributions, gravity, into the forces object.
-  this->CalcAndAddForceContribution(context, pc, vc, &forces);
+  // Accumulate the gravity spatial force on each mobod, applied at the
+  // mobod origin Bo, expressed in the World frame W. We don't need to
+  // initialize this memory because we'll start by writing the active link's
+  // contribution.
+  std::vector<SpatialForce<T>> F_Bo_W_array(num_mobods,
+                                            SpatialForce<T>::Zero());
 
-  // Temporary output vector of spatial forces for each body B at their inboard
-  // frame Mo, expressed in the world W.
-  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_links());
+  // Loop over all mobilized bodies, skipping World and anchored mobods.
+  for (const auto& mobod : model.forest().mobods()) {
+    if (mobod.is_anchored()) continue;  // e.g., World
+    const internal::MobodIndex mobod_index = mobod.index();
+    const math::RotationMatrix<T>& R_WB = pc.get_R_WB(mobod_index);
 
-  // Zero vector of generalized accelerations.
-  const VectorX<T> vdot = VectorX<T>::Zero(model.num_velocities());
+    for (const auto& link_ordinal : mobod.follower_link_ordinals()) {
+      const auto& topo_link = model.graph().links(link_ordinal);
 
-  // Temporary array for body accelerations.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_links());
+      // Skip this link if gravity is disabled for its model instance.
+      if (!is_enabled(topo_link.model_instance())) continue;
 
-  // Output vector of generalized forces:
+      const T& mass_of_L = fbpc.get_M_LLo_L(link_ordinal).get_mass();
+      const Vector3<T>& p_BoLcm_B = fbpc.get_p_BoLcm_B(link_ordinal);
+
+      // NOTE: p_BoLcm_W could be cached in the PositionKinematicsCache.
+      const Vector3<T> p_BoLcm_W = R_WB * p_BoLcm_B;  // 15 flops
+
+      // Gravity force at the link's center of mass, shifted to Bo.
+      const Vector3<T> f_Lcm_W = mass_of_L * g_W;
+      F_Bo_W_array[mobod_index] +=
+          SpatialForce<T>(p_BoLcm_W.cross(f_Lcm_W), f_Lcm_W);
+    }
+  }
+
+  // tau_g = ∑ J_WBᵀ(q) ⋅ F_grav_Bo_W, computed in O(n) without forming J.
+  // The operator destructively accumulates into F_Bo_W_array during
+  // its tip-to-base sweep.
   VectorX<T> tau_g(model.num_velocities());
-
-  // Compute inverse dynamics with zero generalized velocities and zero
-  // generalized accelerations. Since inverse dynamics computes:
-  // ID(q, v, v̇)  = M(q)v̇ + C(q, v)v - ∑ J_WBᵀ(q) Fgrav_Bo_W
-  // with v = 0 and v̇ = 0 we get:
-  // ID(q, v, v̇) = - ∑ J_WBᵀ(q) Fgrav_Bo_W = -tau_g(q), which is the negative of
-  // the generalized forces due to gravity.
-  // TODO(amcastro-tri): Replace this inverse dynamics implementation by a JᵀF
-  // operator implementation, which would be more efficient.
-  const double ignore_velocities = true;
-  model.CalcInverseDynamics(
-      context, VectorX<T>::Zero(model.num_velocities()), /* vdot = 0 */
-      /* Applied forces. In this case only gravity. */
-      forces.body_forces(), forces.generalized_forces(), ignore_velocities,
-      &A_WB_array, &F_BMo_W_array, /* temporary arrays. */
-      &tau_g /* Output, the generalized forces. */);
-  return -tau_g;
+  model.CalcSystemJacobianTransposeTimesF(context, &F_Bo_W_array, &tau_g);
+  return tau_g;
 }
 
 template <typename T>

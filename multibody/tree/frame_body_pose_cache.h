@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -19,31 +20,35 @@ change). It holds the following items.
 
 Frame & Link poses
 ------------------
- - the link-relative pose X_LF of every Frame F on the Link to which it is
-   fixed. FixedOffsetFrame link poses are parameterized, and given with
-   respect to a parent frame P which may itself be a parameterized
-   FixedOffsetFrame. We need to precalculate X_LF so that we don't have to do
-   that calculation repeatedly at runtime.
- - the pose X_BL of each link's frame L on its Mobod frame B. Note that frame B
-   is always the link frame of the mobod's active (most inboard) link. X_BL is
-   necessarily identity unless B is a composite mobod and L is not the active
-   link.
- - since a frame is fixed to its link L, and L is fixed to its mobod B, we
-   can calculate each frame's mobod-relative pose X_BF (= X_BL*X_LF). This
-   can only differ from X_LF when mobod B is composite and L is not the active
-   link of B.
- - the inverse X_FB since that is often needed as well.
- - whether X_BF (and of course X_FB) is the identity transform, for use in
-   runtime optimizations.
+ - X_LF: The link-relative pose of every Frame F on the Link to which it is
+         fixed. FixedOffsetFrame link poses are parameterized, and given with
+         respect to a parent frame P which may itself be a parameterized
+         FixedOffsetFrame. We need to precalculate X_LF so that we don't have to
+         do that calculation repeatedly at runtime. Indexed by FrameIndex.
+ - X_BL: The pose of each link's frame L on its Mobod frame B. Note that frame B
+         is always the link frame of the mobod's active (most inboard) link.
+         X_BL is necessarily identity unless B is a composite mobod and L is not
+         the active link. Indexed by LinkOrdinal.
+ - X_BF: Since a frame is fixed to its link L, and L is fixed to its mobod B, we
+         can calculate each frame's mobod-relative pose X_BF (= X_BL*X_LF). This
+         can only differ from X_LF when mobod B is composite and L is not the
+         active link of B. Indexed by FrameIndex.
+ - X_FB: The inverse is often needed as well. Indexed by FrameIndex.
+
+   We also precalculate whether X_BF and X_BL are identity transforms, for use
+   in runtime optimizations.
 
 Mass properties
 ---------------
- - the SpatialInertia M_LLo_L of every link L about its link origin Lo,
-   expressed in L. Since mass properties can be parameterized, we need to
-   precalculate these inertias so that we don't have to do that repeatedly at
-   runtime.
- - the SpatialInertia M_BBo_B of every mobod B about its body origin Bo,
-   expressed in B. This differs from M_LLo_L when B is a composite mobod.
+ - M_LLo_L: The SpatialInertia of every link L about its link origin Lo,
+         expressed in L. Since mass properties can be parameterized, we need
+         to precalculate these inertias so that we don't have to do that
+         repeatedly at runtime. Indexed by LinkOrdinal.
+ - M_BBo_B: The SpatialInertia of every mobod B about its body origin Bo,
+         expressed in B. This differs from M_LLo_L when B is a composite
+         mobod. Indexed by MobodIndex.
+ - p_BoLcm_B: The position vector from mobilized body origin Bo to the
+         center of mass of L, expressed in B. Indexed by LinkOrdinal.
 
 @tparam_default_scalar */
 template <typename T>
@@ -59,6 +64,9 @@ class FrameBodyPoseCache {
         X_BL_pool_(num_links, math::RigidTransform<T>::Identity()),
         is_X_BL_identity_(num_links, true),
         M_LLo_L_pool_(num_links, SpatialInertia<T>::NaN()),
+        p_BoLcm_B_pool_(
+            num_links,
+            Vector3<T>::Constant(std::numeric_limits<double>::quiet_NaN())),
         M_BBo_B_pool_(num_mobods, SpatialInertia<T>::NaN()) {
     // Initially all transforms are identity, mass props are NaN.
   }
@@ -119,6 +127,11 @@ class FrameBodyPoseCache {
     return M_BBo_B_pool_[ordinal];
   }
 
+  const Vector3<T>& get_p_BoLcm_B(LinkOrdinal ordinal) const {
+    DRAKE_ASSERT(0 <= ordinal && ordinal < ssize(p_BoLcm_B_pool_));
+    return p_BoLcm_B_pool_[ordinal];
+  }
+
   void SetX_LF(FrameIndex index, const math::RigidTransform<T>& X_LF) {
     // This method is only called when parameters change.
     DRAKE_DEMAND(0 <= index && index < ssize(X_LF_pool_));
@@ -160,6 +173,12 @@ class FrameBodyPoseCache {
     M_BBo_B_pool_[index] = M_BBo_B;
   }
 
+  void Set_p_BoLcm_B(LinkOrdinal ordinal, const Vector3<T>& p_BoLcm_B) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= ordinal && ordinal < ssize(p_BoLcm_B_pool_));
+    p_BoLcm_B_pool_[ordinal] = p_BoLcm_B;
+  }
+
  private:
   // Sizes are set on construction.
 
@@ -173,6 +192,7 @@ class FrameBodyPoseCache {
   std::vector<math::RigidTransform<T>> X_BL_pool_;
   std::vector<uint8_t> is_X_BL_identity_;
   std::vector<SpatialInertia<T>> M_LLo_L_pool_;
+  std::vector<Vector3<T>> p_BoLcm_B_pool_;
 
   // This is indexed by MobodIndex.
   std::vector<SpatialInertia<T>> M_BBo_B_pool_;
