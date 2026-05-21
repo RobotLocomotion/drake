@@ -7,7 +7,7 @@ namespace multibody {
 
 template <typename T>
 MultibodyForces<T>::MultibodyForces(const internal::MultibodyTree<T>& model)
-    : MultibodyForces(model.num_links(), model.num_velocities()) {
+    : MultibodyForces(model.num_mobods(), model.num_velocities()) {
   DRAKE_DEMAND(model.is_finalized());
 }
 
@@ -42,7 +42,7 @@ template <typename T>
 bool MultibodyForces<T>::CheckHasRightSizeForModel(
     const internal::MultibodyTree<T>& model) const {
   return model.num_velocities() == num_velocities() &&
-         model.num_links() == num_bodies();
+         model.num_mobods() == num_bodies();
 }
 
 template <typename T>
