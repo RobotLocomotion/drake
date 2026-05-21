@@ -24,8 +24,7 @@ void DefinePlanningIrisNp2(py::module_ m) {
       .def_rw("only_walk_toward_collisions",
           &RaySamplerOptions::only_walk_toward_collisions,
           ray_sampler_options_doc.only_walk_toward_collisions.doc)
-      .def_rw("ray_search_num_steps",
-          &RaySamplerOptions::ray_search_num_steps,
+      .def_rw("ray_search_num_steps", &RaySamplerOptions::ray_search_num_steps,
           ray_sampler_options_doc.ray_search_num_steps.doc)
       .def_rw("num_particles_to_walk_towards",
           &RaySamplerOptions::num_particles_to_walk_towards,
@@ -56,15 +55,14 @@ void DefinePlanningIrisNp2(py::module_ m) {
               }),
           cls_doc.solver_options.doc)
 #endif  // XXX porting
-      .def_rw("sampled_iris_options",
-          &IrisNp2Options::sampled_iris_options,
+      .def_rw("sampled_iris_options", &IrisNp2Options::sampled_iris_options,
           cls_doc.sampled_iris_options.doc)
       .def_rw("parameterization", &IrisNp2Options::parameterization,
           cls_doc.parameterization.doc)
       .def_rw("sampling_strategy", &IrisNp2Options::sampling_strategy,
           cls_doc.sampling_strategy.doc)
-      .def_rw("ray_sampler_options",
-          &IrisNp2Options::ray_sampler_options, cls_doc.ray_sampler_options.doc)
+      .def_rw("ray_sampler_options", &IrisNp2Options::ray_sampler_options,
+          cls_doc.ray_sampler_options.doc)
       .def_rw("add_hyperplane_if_solve_fails",
           &IrisNp2Options::add_hyperplane_if_solve_fails,
           cls_doc.add_hyperplane_if_solve_fails.doc)

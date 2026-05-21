@@ -23,8 +23,7 @@ void DefinePlanningIrisFromCliqueCover(py::module_ m) {
       .def_rw("coverage_termination_threshold",
           &IrisFromCliqueCoverOptions::coverage_termination_threshold,
           cls_doc.coverage_termination_threshold.doc)
-      .def_rw("iteration_limit",
-          &IrisFromCliqueCoverOptions::iteration_limit,
+      .def_rw("iteration_limit", &IrisFromCliqueCoverOptions::iteration_limit,
           cls_doc.iteration_limit.doc)
       .def_rw("num_points_per_coverage_check",
           &IrisFromCliqueCoverOptions::num_points_per_coverage_check,
@@ -41,8 +40,7 @@ void DefinePlanningIrisFromCliqueCover(py::module_ m) {
           &IrisFromCliqueCoverOptions::
               rank_tol_for_minimum_volume_circumscribed_ellipsoid,
           cls_doc.rank_tol_for_minimum_volume_circumscribed_ellipsoid.doc)
-      .def_rw("point_in_set_tol",
-          &IrisFromCliqueCoverOptions::point_in_set_tol,
+      .def_rw("point_in_set_tol", &IrisFromCliqueCoverOptions::point_in_set_tol,
           cls_doc.point_in_set_tol.doc);
 
   m.def(

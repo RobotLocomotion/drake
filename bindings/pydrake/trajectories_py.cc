@@ -110,7 +110,7 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // the polynomials; this is fine because deserialization matches __fields__
   // order, which has "breaks" come first followed by setting the "polynomials"
   // afterward.
-  cls->def_property(
+  cls->def_prop_rw(
       "_breaks",
       [](const Class& self) -> Eigen::VectorXd {
         const int num_poly = self.get_number_of_segments();
@@ -135,7 +135,7 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
       });
   // Define a private property for "_polynomials". The property is a 4D ndarray
   // that we biject to C++'s convention of vector-of-matrix-of-coeffs storage.
-  cls->def_property(
+  cls->def_prop_rw(
       "_polynomials",
       [](const Class& self) -> py::array_t<double> {
         Archive archive;

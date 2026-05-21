@@ -137,7 +137,7 @@ namespace py = pybind11;
 namespace py = nanobind;
 #endif
 
-/// Shortened alias for py::return_value_policy. For more information, see
+/// Shortened alias for py::rv_policy. For more information, see
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
 using py_rvp = py::rv_policy;
 

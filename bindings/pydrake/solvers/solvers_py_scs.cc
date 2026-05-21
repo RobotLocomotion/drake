@@ -20,22 +20,18 @@ void DefineSolversScs(py::module_ m) {
   py::class_<ScsSolverDetails>(m, "ScsSolverDetails", doc.ScsSolverDetails.doc)
       .def_ro("scs_status", &ScsSolverDetails::scs_status,
           doc.ScsSolverDetails.scs_status.doc)
-      .def_ro(
-          "iter", &ScsSolverDetails::iter, doc.ScsSolverDetails.iter.doc)
+      .def_ro("iter", &ScsSolverDetails::iter, doc.ScsSolverDetails.iter.doc)
       .def_ro("primal_objective", &ScsSolverDetails::primal_objective,
           doc.ScsSolverDetails.primal_objective.doc)
       .def_ro("dual_objective", &ScsSolverDetails::dual_objective,
           doc.ScsSolverDetails.dual_objective.doc)
       .def_ro("primal_residue", &ScsSolverDetails::primal_residue,
           doc.ScsSolverDetails.primal_residue.doc)
-      .def_ro("residue_infeasibility",
-          &ScsSolverDetails::residue_infeasibility,
+      .def_ro("residue_infeasibility", &ScsSolverDetails::residue_infeasibility,
           doc.ScsSolverDetails.residue_infeasibility.doc)
-      .def_ro("residue_unbounded_a",
-          &ScsSolverDetails::residue_unbounded_a,
+      .def_ro("residue_unbounded_a", &ScsSolverDetails::residue_unbounded_a,
           doc.ScsSolverDetails.residue_unbounded_a.doc)
-      .def_ro("residue_unbounded_p",
-          &ScsSolverDetails::residue_unbounded_p,
+      .def_ro("residue_unbounded_p", &ScsSolverDetails::residue_unbounded_p,
           doc.ScsSolverDetails.residue_unbounded_p.doc)
       .def_ro("duality_gap", &ScsSolverDetails::duality_gap,
           doc.ScsSolverDetails.duality_gap.doc)

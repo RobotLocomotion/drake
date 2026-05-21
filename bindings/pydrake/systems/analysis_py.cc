@@ -577,8 +577,7 @@ Parameter ``interruptible``:
         .def_rw("lyapunov_candidate",
             &RegionOfAttractionOptions::lyapunov_candidate,
             cls_doc.lyapunov_candidate.doc)
-        .def_rw("state_variables",
-            &RegionOfAttractionOptions::state_variables,
+        .def_rw("state_variables", &RegionOfAttractionOptions::state_variables,
             // dtype = object arrays must be copied, and cannot be referenced.
             py_rvp::copy, cls_doc.state_variables.doc)
         .def_rw("use_implicit_dynamics",
@@ -586,8 +585,7 @@ Parameter ``interruptible``:
             cls_doc.use_implicit_dynamics.doc)
         .def_rw("solver_id", &RegionOfAttractionOptions::solver_id,
             cls_doc.solver_id.doc)
-        .def_rw("solver_options",
-            &RegionOfAttractionOptions::solver_options,
+        .def_rw("solver_options", &RegionOfAttractionOptions::solver_options,
             cls_doc.solver_options.doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);

@@ -62,7 +62,7 @@ class ExampleDefClone {
 };
 
 // Struct which defines attributes which are to be exposed with
-// `.def_readwrite`, for testing `ParamInit`.
+// `.def_rw`, for testing `ParamInit`.
 struct ExampleParamInit {
   int a{0};
   int b{1};

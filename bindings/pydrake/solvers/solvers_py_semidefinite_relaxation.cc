@@ -18,7 +18,7 @@ void DefineSolversSemidefiniteRelaxation(py::module_ m) {
     const auto& cls_doc = doc.SemidefiniteRelaxationOptions;
     py::class_<SemidefiniteRelaxationOptions> options(
         m, "SemidefiniteRelaxationOptions", cls_doc.doc);
-    options
+    options  // BR
         .def(ParamInit<SemidefiniteRelaxationOptions>())
         .def_rw("add_implied_linear_equality_constraints",
             &SemidefiniteRelaxationOptions::
@@ -26,8 +26,7 @@ void DefineSolversSemidefiniteRelaxation(py::module_ m) {
             cls_doc.add_implied_linear_equality_constraints.doc)
         .def_rw("add_implied_linear_constraints",
             &SemidefiniteRelaxationOptions::add_implied_linear_constraints,
-            cls_doc.add_implied_linear_constraints.doc);
-    options
+            cls_doc.add_implied_linear_constraints.doc)
         .def("set_to_strongest",
             &SemidefiniteRelaxationOptions::set_to_strongest,
             cls_doc.set_to_strongest.doc)

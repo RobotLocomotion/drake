@@ -27,8 +27,7 @@ void DefineSolversGurobi(py::module_ m) {
           doc.GurobiSolverDetails.optimizer_time.doc)
       .def_ro("error_code", &GurobiSolverDetails::error_code,
           doc.GurobiSolverDetails.error_code.doc)
-      .def_ro("optimization_status",
-          &GurobiSolverDetails::optimization_status,
+      .def_ro("optimization_status", &GurobiSolverDetails::optimization_status,
           doc.GurobiSolverDetails.optimization_status.doc)
       .def_ro("objective_bound", &GurobiSolverDetails::objective_bound,
           doc.GurobiSolverDetails.objective_bound.doc);
@@ -42,8 +41,7 @@ void DefineSolversGurobi(py::module_ m) {
       .def_ro("current_objective",
           &GurobiSolver::SolveStatusInfo::current_objective,
           doc.GurobiSolver.SolveStatusInfo.current_objective.doc)
-      .def_ro("best_objective",
-          &GurobiSolver::SolveStatusInfo::best_objective,
+      .def_ro("best_objective", &GurobiSolver::SolveStatusInfo::best_objective,
           doc.GurobiSolver.SolveStatusInfo.best_objective.doc)
       .def_ro("best_bound", &GurobiSolver::SolveStatusInfo::best_bound,
           doc.GurobiSolver.SolveStatusInfo.best_bound.doc)

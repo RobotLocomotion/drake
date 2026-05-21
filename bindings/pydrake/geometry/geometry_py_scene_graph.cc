@@ -697,8 +697,7 @@ void DefineSignedDistancePair(py::module_ m, T) {
         .def_rw(
             "distance", &SignedDistancePair<T>::distance, cls_doc.distance.doc)
         .def_rw("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
-            return_value_policy_for_scalar_type<T>(), cls_doc.nhat_BA_W.doc)
-        ;
+            return_value_policy_for_scalar_type<T>(), cls_doc.nhat_BA_W.doc);
   }
 }
 
@@ -712,8 +711,7 @@ void DefineSignedDistanceToPoint(py::module_ m, T) {
         m, "SignedDistanceToPoint", param, cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>(), cls_doc.ctor.doc)
-        .def_rw(
-            "id_G", &SignedDistanceToPoint<T>::id_G, cls_doc.id_G.doc)
+        .def_rw("id_G", &SignedDistanceToPoint<T>::id_G, cls_doc.id_G.doc)
         .def_rw("p_GN", &SignedDistanceToPoint<T>::p_GN,
             return_value_policy_for_scalar_type<T>(), cls_doc.p_GN.doc)
         .def_rw("distance", &SignedDistanceToPoint<T>::distance,
@@ -733,18 +731,15 @@ void DefinePenetrationAsPointPair(py::module_ m, T) {
         m, "PenetrationAsPointPair", param, cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>())
-        .def_rw(
-            "id_A", &PenetrationAsPointPair<T>::id_A, cls_doc.id_A.doc)
-        .def_rw(
-            "id_B", &PenetrationAsPointPair<T>::id_B, cls_doc.id_B.doc)
-        .def_rw("p_WCa", &PenetrationAsPointPair<T>::p_WCa,
-            py_rvp::copy, cls_doc.p_WCa.doc)
-        .def_rw("p_WCb", &PenetrationAsPointPair<T>::p_WCb,
-            py_rvp::copy, cls_doc.p_WCb.doc)
+        .def_rw("id_A", &PenetrationAsPointPair<T>::id_A, cls_doc.id_A.doc)
+        .def_rw("id_B", &PenetrationAsPointPair<T>::id_B, cls_doc.id_B.doc)
+        .def_rw("p_WCa", &PenetrationAsPointPair<T>::p_WCa, py_rvp::copy,
+            cls_doc.p_WCa.doc)
+        .def_rw("p_WCb", &PenetrationAsPointPair<T>::p_WCb, py_rvp::copy,
+            cls_doc.p_WCb.doc)
         .def_rw("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
             cls_doc.nhat_BA_W.doc)
-        .def_rw(
-            "depth", &PenetrationAsPointPair<T>::depth, cls_doc.depth.doc);
+        .def_rw("depth", &PenetrationAsPointPair<T>::depth, cls_doc.depth.doc);
   }
 }
 

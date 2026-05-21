@@ -19,8 +19,7 @@ void DefineSolversOsqp(py::module_ m) {
 
   py::class_<OsqpSolverDetails>(
       m, "OsqpSolverDetails", doc.OsqpSolverDetails.doc)
-      .def_ro(
-          "iter", &OsqpSolverDetails::iter, doc.OsqpSolverDetails.iter.doc)
+      .def_ro("iter", &OsqpSolverDetails::iter, doc.OsqpSolverDetails.iter.doc)
       .def_ro("status_val", &OsqpSolverDetails::status_val,
           doc.OsqpSolverDetails.status_val.doc)
       .def_ro("primal_res", &OsqpSolverDetails::primal_res,
