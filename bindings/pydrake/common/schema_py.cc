@@ -315,7 +315,7 @@ void DefineModuleSchema(py::module_ m) {
           return self_py.attr("value").attr(name);
         }
       }
-      return py::eval("object.__getattr__")(self, name);
+      return py::eval("object.__getattr__", py::globals())(self, name);
     });
     cls.def("__setattr__", [](Class& self, py::str name, py::object value) {
       if (std::holds_alternative<Rotation::Rpy>(self.value)) {
@@ -334,7 +334,7 @@ void DefineModuleSchema(py::module_ m) {
           return;
         }
       }
-      py::eval("object.__setattr__")(self, name, value);
+      py::eval("object.__setattr__", py::globals())(self, name, value);
     });
   }
 

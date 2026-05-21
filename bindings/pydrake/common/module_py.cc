@@ -198,8 +198,8 @@ void InitLowLevelModules(py::module_ m) {
     DefCopyAndDeepCopy(&cls);
     // Add the same __fields__ that DefAttributesUsingSerialize would have.
     cls.def_prop_ro_static("__fields__", [](py::object /* cls */) {
-      auto str_ctor = py::eval("str");
-      auto bytes_ctor = py::eval("bytes");
+      auto str_ctor = py::eval("str", py::globals());
+      auto bytes_ctor = py::eval("bytes", py::globals());
       auto make_namespace =
           py::module_::import_("types").attr("SimpleNamespace");
       auto contents = make_namespace();
@@ -228,7 +228,7 @@ void InitLowLevelModules(py::module_ m) {
           name_str == "filename_hint") {
         name = py::str(fmt::format("_{}", name_str));
       }
-      py::eval("object.__setattr__")(self, name, value);
+      py::eval("object.__setattr__", py::globals())(self, name, value);
     });
     // Provide properties for use by yaml_{dump,load}_typed.
     cls.def_prop_rw(
@@ -356,8 +356,9 @@ discussion), use e.g.
   // =========================================================================
 
   // Define `_testing` submodule.
-  py::module_ pydrake_top = py::eval("sys.modules['pydrake']");
-  py::module_ pydrake_common = py::eval("sys.modules['pydrake.common']");
+  py::module_ pydrake_top = py::eval("sys.modules['pydrake']", py::globals());
+  py::module_ pydrake_common =
+      py::eval("sys.modules['pydrake.common']", py::globals());
 
   py::module_ testing = pydrake_common.def_submodule("_testing");
   testing::def_testing(testing);
