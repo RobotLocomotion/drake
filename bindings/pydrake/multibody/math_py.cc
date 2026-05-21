@@ -72,9 +72,10 @@ void BindSpatialVectorMixin(PyClass* pcls) {
               This is done because defining ``__rmatmul__`` on this class does
               not disambiguate against the definitions of
               ``RotationMatrix.__matmul__``.
-          )""")
-      .def(py::pickle([](const Class& self) { return self.get_coeffs(); },
-          [](const Vector6<T>& coeffs) { return Class(coeffs); }));
+          )""");
+  DefPickle(
+      &cls, [](const Class& self) { return self.get_coeffs(); },
+      [](Class* self, const Vector6<T>& coeffs) { new (self) Class(coeffs); });
   DefCopyAndDeepCopy(&cls);
 }
 

@@ -109,6 +109,38 @@ void DefClone(PyClass* ppy_class) {
           py_rvp::take_ownership);
 }
 
+/// Binds `__getstate__` and `__setstate__` for pickling.
+///
+/// The get_state functor should take `(const Class& self)` and return a
+/// newly-pickled class `-> Pickled` by value.
+///
+/// The set_state functor should take `(Class* self, Pickled pickled)` and
+/// placement-new construct the object into `self` based on `pickled`, with no
+/// return value. (The use of placement new is in anticipation of a nanobind
+/// port of this helper function.)
+template <typename PyClass, typename GetState, typename SetState>
+void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
+  PyClass& py_class = *ppy_class;
+
+  using Class = typename PyClass::type;
+  using Pickled = std::invoke_result_t<GetState, const Class&>;
+
+  // For pybind11 we must wrap set_state to return the constructed Class by
+  // value, instead of using placement new. (Nanobind will use placement new.)
+  auto set_state_with_return = [set_state = std::forward<SetState>(set_state)](
+                                   Pickled pickled) {
+    alignas(Class) std::byte buffer[sizeof(Class)];
+    Class* typed_buffer = reinterpret_cast<Class*>(buffer);
+    set_state(typed_buffer, std::move(pickled));
+    Class result = std::move(*typed_buffer);
+    typed_buffer->~Class();
+    return result;
+  };
+
+  py_class.def(py::pickle(
+      std::forward<GetState>(get_state), std::move(set_state_with_return)));
+}
+
 /// Returns a constructor for creating an instance of Class and initializing
 /// parameters (bound using `def_rw`).
 /// This provides an alternative to manually enumerating each

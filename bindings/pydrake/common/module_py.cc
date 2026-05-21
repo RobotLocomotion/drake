@@ -154,13 +154,14 @@ void InitLowLevelModules(py::module_ m) {
         .def("to_string", &Class::to_string, cls_doc.to_string.doc)
         .def(py::self == py::self)
         .def(py::self != py::self)
-        .def(py::self < py::self)
-        .def(py::pickle([](const Sha256& self) { return self.to_string(); },
-            [](const std::string& ascii_hash) {
-              std::optional<Sha256> sha_maybe = Sha256::Parse(ascii_hash);
-              DRAKE_THROW_UNLESS(sha_maybe.has_value());
-              return *sha_maybe;
-            }));
+        .def(py::self < py::self);
+    DefPickle(
+        &cls, [](const Class& self) { return self.to_string(); },
+        [](Class* self, const std::string& ascii_hash) {
+          std::optional<Sha256> sha_maybe = Sha256::Parse(ascii_hash);
+          DRAKE_THROW_UNLESS(sha_maybe.has_value());
+          new (self) Class(*sha_maybe);
+        });
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -184,16 +185,17 @@ void InitLowLevelModules(py::module_ m) {
             cls_doc.sha256.doc)
         .def("filename_hint", &Class::filename_hint, py_rvp::reference_internal,
             cls_doc.filename_hint.doc)
-        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc)
-        .def(py::pickle(
-            [](const MemoryFile& self) {
-              return py::dict(py::arg("contents") = self.contents(),
-                  py::arg("extension") = self.extension(),
-                  py::arg("filename_hint") = self.filename_hint());
-            },
-            [ctor](const py::dict& kwargs) {
-              return ctor(**kwargs).cast<MemoryFile>();
-            }));
+        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return py::dict(py::arg("contents") = self.contents(),
+              py::arg("extension") = self.extension(),
+              py::arg("filename_hint") = self.filename_hint());
+        },
+        [ctor](Class* self, const py::dict& kwargs) {
+          new (self) Class(ctor(**kwargs).cast<Class>());
+        });
     // Note: __repr__ is defined in _common_extra.py.
     DefCopyAndDeepCopy(&cls);
     // Add the same __fields__ that DefAttributesUsingSerialize would have.
