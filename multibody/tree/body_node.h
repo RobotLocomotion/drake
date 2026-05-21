@@ -578,7 +578,7 @@ class BodyNode : public MultibodyElement<T> {
       const ArticulatedBodyInertiaCache<T>& abic,
       const ArticulatedBodyForceCache<T>& aba_force_cache,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
-      const SpatialAcceleration<T>& Ab_WB,
+      const VelocityKinematicsCache<T>& vc, const SpatialAcceleration<T>& Ab_WB,
       AccelerationKinematicsCache<T>* ac) const = 0;
 
   // Computes the spatial acceleration bias `Ab_WB(q, v)` for `this` node, a

@@ -1718,7 +1718,7 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     // connecting a parent link P and child link C. Usually Lᵢ=P and Lₒ=C but
     // the joint may be reversed such that Lᵢ=C and Lₒ=P.
     for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
-      if (got_X_BL[link_ordinal]) continue;  // Already calculated.
+      if (got_X_BL[link_ordinal]) continue;  // Already done.
       const LinkJointGraph::Link& link_Lo = graph().links(link_ordinal);
 
       // Search for the weld joint connecting Lₒ to an inboard link Lᵢ.
@@ -1735,7 +1735,7 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
             graph_joint.other_link_index(link_Lo.index());
         const LinkJointGraph::Link& link_Li =
             graph().link_by_index(link_Li_index);
-        if (!got_X_BL[link_Li.ordinal()]) continue;  // Lᵢ not yet processed.
+        if (!got_X_BL[link_Li.ordinal()]) continue;  // Wrong joint.
 
         // Found the weld joint connecting inboard Lᵢ (X_BLᵢ known) to
         // outboard Lₒ. Retrieve X_BLᵢ for use below in calculating X_BLₒ.
@@ -4261,6 +4261,7 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
       EvalSpatialAccelerationBiasCache(context);
 
@@ -4276,7 +4277,7 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
           node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcArticulatedBodyAccelerations_BaseToTip(
-          context, pc, abic, aba_force_cache, H_PB_W, Ab_WB, ac);
+          context, pc, abic, aba_force_cache, H_PB_W, vc, Ab_WB, ac);
     }
   }
 }
