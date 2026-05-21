@@ -295,7 +295,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                   return py::str("SpatialInertia.Zero()");
                 }
               }
-              return py::eval("object.__repr__")(self);
+              return py::eval("object.__repr__", py::globals())(self);
             })
         .def(py::pickle(
             [](const Class& self) {
