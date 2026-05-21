@@ -69,13 +69,14 @@ void DefineSensorsRgbd(py::module_ m) {
         .def("center_x", &Class::center_x, cls_doc.center_x.doc)
         .def("center_y", &Class::center_y, cls_doc.center_y.doc)
         .def("intrinsic_matrix", &Class::intrinsic_matrix,
-            cls_doc.intrinsic_matrix.doc)
-        .def("__getstate__",
-            [](const Class& self) {
-              return py::make_tuple(self.width(), self.height(), self.focal_x(),
-                  self.focal_y(), self.center_x(), self.center_y());
-            })
-        .def("__setstate__", [](Class* self, py::tuple t) {
+            cls_doc.intrinsic_matrix.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return py::make_tuple(self.width(), self.height(), self.focal_x(),
+              self.focal_y(), self.center_x(), self.center_y());
+        },
+        [](Class* self, py::tuple t) {
           DRAKE_DEMAND(t.size() == 6);
           new (self) Class(py::cast<int>(t[0]), py::cast<int>(t[1]),
               py::cast<double>(t[2]), py::cast<double>(t[3]),

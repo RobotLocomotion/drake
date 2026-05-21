@@ -32,15 +32,15 @@ void DefineGeometryBoundingBox(py::module_ m) {
       .def("upper", &Aabb::upper, doc.Aabb.upper.doc)
       .def("pose", &Aabb::pose, doc.Aabb.pose.doc)
       .def("CalcVolume", &Aabb::CalcVolume, doc.Aabb.CalcVolume.doc)
-      .def("Equal", &Aabb::Equal, py::arg("other"), doc.Aabb.Equal.doc)
-      .def("__getstate__",
-          [](const Aabb& self) {
-            return std::make_pair(self.center(), self.half_width());
-          })
-      .def("__setstate__",
-          [](Aabb* self, std::pair<Vector3<double>, Vector3<double>> data) {
-            new (self) Aabb(data.first, data.second);
-          });
+      .def("Equal", &Aabb::Equal, py::arg("other"), doc.Aabb.Equal.doc);
+  DefPickle(
+      &aabb_cls,
+      [](const Aabb& self) {
+        return std::make_pair(self.center(), self.half_width());
+      },
+      [](Aabb* self, std::pair<Vector3<double>, Vector3<double>> data) {
+        new (self) Aabb(data.first, data.second);
+      });
   DefCopyAndDeepCopy(&aabb_cls);
 
   // Define Obb class.
@@ -54,16 +54,15 @@ void DefineGeometryBoundingBox(py::module_ m) {
           doc.Obb.half_width.doc)
       .def("pose", &Obb::pose, py_rvp::reference_internal, doc.Obb.pose.doc)
       .def("CalcVolume", &Obb::CalcVolume, doc.Obb.CalcVolume.doc)
-      .def("Equal", &Obb::Equal, py::arg("other"), doc.Obb.Equal.doc)
-      .def("__getstate__",
-          [](const Obb& self) {
-            return std::make_pair(self.pose(), self.half_width());
-          })
-      .def("__setstate__",
-          [](Obb* self,
-              std::pair<math::RigidTransformd, Vector3<double>> data) {
-            new (self) Obb(data.first, data.second);
-          });
+      .def("Equal", &Obb::Equal, py::arg("other"), doc.Obb.Equal.doc);
+  DefPickle(
+      &obb_cls,
+      [](const Obb& self) {
+        return std::make_pair(self.pose(), self.half_width());
+      },
+      [](Obb* self, std::pair<math::RigidTransformd, Vector3<double>> data) {
+        new (self) Obb(data.first, data.second);
+      });
   DefCopyAndDeepCopy(&obb_cls);
 
   // Now add cross-referencing HasOverlap static methods.

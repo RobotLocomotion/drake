@@ -150,13 +150,12 @@ void DefineRigidTransform(py::module_ m, py::class_<PyClass<T>>& cls) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"),
-            cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
-        .def("__getstate__",
-            [](const Class& self) { return self.GetAsMatrix34(); })
-        .def("__setstate__",
-            [](Class& self, const Eigen::Matrix<T, 3, 4>& matrix) {
-              new (&self) Class(Class::MakeUnchecked(matrix));
-            });
+            cls_doc.operator_mul.doc_1args_constEigenMatrixBase);
+    DefPickle(
+        &cls, [](const Class& self) { return self.GetAsMatrix34(); },
+        [](Class* self, const Eigen::Matrix<T, 3, 4>& matrix) {
+          new (self) Class(Class::MakeUnchecked(matrix));
+        });
     cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
@@ -250,10 +249,11 @@ void DefineRotationMatrix(py::module_ m, py::class_<PyClass<T>>& cls) {
         .def("ToQuaternion",
             overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
             cls_doc.ToQuaternion.doc_0args)
-        .def("ToAngleAxis", &Class::ToAngleAxis, cls_doc.ToAngleAxis.doc)
-        .def("__getstate__", [](const Class& self) { return self.matrix(); })
-        .def("__setstate__", [](Class& self, const Matrix3<T>& matrix) {
-          new (&self) Class(Class::MakeUnchecked(matrix));
+        .def("ToAngleAxis", &Class::ToAngleAxis, cls_doc.ToAngleAxis.doc);
+    DefPickle(
+        &cls, [](const Class& self) { return self.matrix(); },
+        [](Class* self, const Matrix3<T>& matrix) {
+          new (self) Class(Class::MakeUnchecked(matrix));
         });
     cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
@@ -326,10 +326,10 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
         .def("CalcRpyDDtFromAngularAccelInChild",
             &Class::CalcRpyDDtFromAngularAccelInChild, py::arg("rpyDt"),
             py::arg("alpha_AD_D"),
-            cls_doc.CalcRpyDDtFromAngularAccelInChild.doc)
-        .def("__getstate__", [](const Class& self) { return self.vector(); })
-        .def("__setstate__",
-            [](Class& self, const Vector3<T>& rpy) { new (&self) Class(rpy); });
+            cls_doc.CalcRpyDDtFromAngularAccelInChild.doc);
+    DefPickle(
+        &cls, [](const Class& self) { return self.vector(); },
+        [](Class* self, const Vector3<T>& rpy) { new (self) Class(rpy); });
     DefCopyAndDeepCopy(&cls);
     // N.B. `RollPitchYaw::cast` is not defined in C++.
   }
@@ -443,16 +443,16 @@ void DoMiscScalarDependentDefinitions(py::module_ m, T) {
         .def("EvaluateBasisFunctionI", &Class::EvaluateBasisFunctionI,
             py::arg("i"), py::arg("parameter_value"),
             cls_doc.EvaluateBasisFunctionI.doc)
-        .def("__getstate__",
-            [](const Class& self) {
-              return std::make_pair(self.order(), self.knots());
-            })
-        .def("__setstate__",
-            [](Class& self, std::pair<int, std::vector<T>> args) {
-              new (&self) Class(std::get<0>(args), std::get<1>(args));
-            })
         .def(py::self == py::self)
         .def(py::self != py::self);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return std::make_pair(self.order(), self.knots());
+        },
+        [](Class* self, std::pair<int, std::vector<T>> args) {
+          new (self) Class(std::get<0>(args), std::get<1>(args));
+        });
   }
 
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),

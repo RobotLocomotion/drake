@@ -81,14 +81,15 @@ void DefineAutodiffutils(py::module_ m) {
             return pow(base, exponent);
           },
           py::is_operator())
-      .def("__abs__", [](const AutoDiffXd& x) { return abs(x); })
-      .def("__getstate__",
-          [](const AutoDiffXd& self) {
-            return py::make_tuple(self.value(), self.derivatives());
-          })
-      .def("__setstate__", [](AutoDiffXd& self, py::tuple t) {
+      .def("__abs__", [](const AutoDiffXd& x) { return abs(x); });
+  DefPickle(
+      &autodiff,
+      [](const AutoDiffXd& self) {
+        return py::make_tuple(self.value(), self.derivatives());
+      },
+      [](AutoDiffXd* self, py::tuple t) {
         DRAKE_THROW_UNLESS(t.size() == 2);
-        new (&self) AutoDiffXd(
+        new (self) AutoDiffXd(
             py::cast<double>(t[0]), py::cast<VectorXd>(t[1]));
       });
   DefCopyAndDeepCopy(&autodiff);

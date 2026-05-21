@@ -312,7 +312,8 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   // HPolyhedron
   {
     const auto& cls_doc = doc.HPolyhedron;
-    py::class_<HPolyhedron, ConvexSet>(m, "HPolyhedron", cls_doc.doc)
+    py::class_<HPolyhedron, ConvexSet> cls(m, "HPolyhedron", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
@@ -384,16 +385,16 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
         .def_static("MakeL1Ball", &HPolyhedron::MakeL1Ball, py::arg("dim"),
-            cls_doc.MakeL1Ball.doc)
-        .def("__getstate__",
-            [](const HPolyhedron& self) {
-              return std::make_pair(self.A(), self.b());
-            })
-        .def("__setstate__",
-            [](HPolyhedron* self,
-                std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
-              new (self) HPolyhedron(std::get<0>(args), std::get<1>(args));
-            });
+            cls_doc.MakeL1Ball.doc);
+    DefPickle(
+        &cls,
+        [](const HPolyhedron& self) {
+          return std::make_pair(self.A(), self.b());
+        },
+        [](HPolyhedron* self,
+            std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
+          new (self) HPolyhedron(std::get<0>(args), std::get<1>(args));
+        });
   }
 
   // Hyperellipsoid
@@ -424,22 +425,23 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
         .def_static("MinimumVolumeCircumscribedEllipsoid",
             &Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid,
             py::arg("points"), py::arg("rank_tol") = 1e-6,
-            cls_doc.MinimumVolumeCircumscribedEllipsoid.doc)
-        .def("__getstate__",
-            [](const Hyperellipsoid& self) {
-              return std::make_pair(self.A(), self.center());
-            })
-        .def("__setstate__",
-            [](Hyperellipsoid* self,
-                std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
-              new (self) Hyperellipsoid(std::get<0>(args), std::get<1>(args));
-            });
+            cls_doc.MinimumVolumeCircumscribedEllipsoid.doc);
+    DefPickle(
+        &hyperellipsoid_cls,
+        [](const Hyperellipsoid& self) {
+          return std::make_pair(self.A(), self.center());
+        },
+        [](Hyperellipsoid* self,
+            std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
+          new (self) Hyperellipsoid(std::get<0>(args), std::get<1>(args));
+        });
   }
 
   // Hyperrectangle
   {
     const auto& cls_doc = doc.Hyperrectangle;
-    py::class_<Hyperrectangle, ConvexSet>(m, "Hyperrectangle", cls_doc.doc)
+    py::class_<Hyperrectangle, ConvexSet> cls(m, "Hyperrectangle", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
@@ -453,18 +455,18 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             cls_doc.MaybeGetIntersection.doc)
         .def("MakeHPolyhedron", &Hyperrectangle::MakeHPolyhedron,
             cls_doc.MakeHPolyhedron.doc)
-        .def("__getstate__",
-            [](const Hyperrectangle& self) {
-              return std::make_pair(self.lb(), self.ub());
-            })
-        .def("__setstate__",
-            [](Hyperrectangle* self,
-                std::pair<Eigen::VectorXd, Eigen::VectorXd> args) {
-              new (self) Hyperrectangle(std::get<0>(args), std::get<1>(args));
-            })
         .def_static("MaybeCalcAxisAlignedBoundingBox",
             &Hyperrectangle::MaybeCalcAxisAlignedBoundingBox, py::arg("set"),
             cls_doc.MaybeCalcAxisAlignedBoundingBox.doc);
+    DefPickle(
+        &cls,
+        [](const Hyperrectangle& self) {
+          return std::make_pair(self.lb(), self.ub());
+        },
+        [](Hyperrectangle* self,
+            std::pair<Eigen::VectorXd, Eigen::VectorXd> args) {
+          new (self) Hyperrectangle(std::get<0>(args), std::get<1>(args));
+        });
   }
 
   // Intersection
@@ -511,7 +513,8 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   // Point
   {
     const auto& cls_doc = doc.Point;
-    py::class_<Point, ConvexSet>(m, "Point", cls_doc.doc)
+    py::class_<Point, ConvexSet> cls(m, "Point", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(), py::arg("x"),
             cls_doc.ctor.doc_1args)
@@ -521,10 +524,10 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             py::arg("reference_frame") = std::nullopt,
             py::arg("maximum_allowable_radius") = 0.0, cls_doc.ctor.doc_4args)
         .def("x", &Point::x, cls_doc.x.doc)
-        .def("set_x", &Point::set_x, py::arg("x"), cls_doc.set_x.doc)
-        .def("__getstate__", [](const Point& self) { return self.x(); })
-        .def("__setstate__",
-            [](Point* self, Eigen::VectorXd arg) { new (self) Point(arg); });
+        .def("set_x", &Point::set_x, py::arg("x"), cls_doc.set_x.doc);
+    DefPickle(
+        &cls, [](const Point& self) { return self.x(); },
+        [](Point* self, Eigen::VectorXd arg) { new (self) Point(arg); });
   }
 
   // Spectrahedron
@@ -561,10 +564,10 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             cls_doc.WriteObj.doc)
         .def("ToShapeConvex", &VPolytope::ToShapeConvex,
             py::arg("convex_label") = "convex_from_vpolytope",
-            cls_doc.ToShapeConvex.doc)
-        .def("__getstate__",
-            [](const VPolytope& self) { return self.vertices(); })
-        .def("__setstate__", [](VPolytope* self, Eigen::MatrixXd arg) {
+            cls_doc.ToShapeConvex.doc);
+    DefPickle(
+        &vpolytope_cls, [](const VPolytope& self) { return self.vertices(); },
+        [](VPolytope* self, Eigen::MatrixXd arg) {
           new (self) VPolytope(arg);
         });
   }

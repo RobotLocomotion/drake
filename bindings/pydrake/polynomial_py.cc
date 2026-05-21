@@ -65,23 +65,23 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
   using PickledMonomial =
       std::pair<T /* coefficient */, std::vector<PickledTerm>>;
   using PickledPolynomial = std::vector<PickledMonomial>;
-  cls.def("__getstate__",
-         [](const Class& self) {
-           PickledPolynomial pickled_polynomial;
-           pickled_polynomial.reserve(self.GetMonomials().size());
-           for (const auto& monomial : self.GetMonomials()) {
-             std::vector<PickledTerm> pickled_terms;
-             pickled_terms.reserve(monomial.terms.size());
-             for (const auto& term : monomial.terms) {
-               pickled_terms.emplace_back(term.var, term.power);
-             }
-             pickled_polynomial.emplace_back(
-                 monomial.coefficient, std::move(pickled_terms));
-           }
-           return pickled_polynomial;
-         })
-      .def("__setstate__", [](Class& self,
-                               PickledPolynomial pickled_polynomial) {
+  DefPickle(
+      &cls,
+      [](const Class& self) {
+        PickledPolynomial pickled_polynomial;
+        pickled_polynomial.reserve(self.GetMonomials().size());
+        for (const auto& monomial : self.GetMonomials()) {
+          std::vector<PickledTerm> pickled_terms;
+          pickled_terms.reserve(monomial.terms.size());
+          for (const auto& term : monomial.terms) {
+            pickled_terms.emplace_back(term.var, term.power);
+          }
+          pickled_polynomial.emplace_back(
+              monomial.coefficient, std::move(pickled_terms));
+        }
+        return pickled_polynomial;
+      },
+      [](Class* self, PickledPolynomial pickled_polynomial) {
         std::vector<typename Class::Monomial> monomials;
         monomials.reserve(pickled_polynomial.size());
         for (const auto& [coefficient, pickled_terms] : pickled_polynomial) {
@@ -92,7 +92,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
           }
           monomials.emplace_back(coefficient, monomial_terms);
         }
-        new (&self) Class(
+        new (self) Class(
             monomials.begin(), monomials.end(), /* canonicalize= */ false);
       });
 }

@@ -5,6 +5,7 @@
  the pydrake.geometry module. */
 
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -323,15 +324,16 @@ void DefineInMemoryMesh(py::module_ m) {
         .def(ParamInit<Class>())
         .def_rw("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
         .def_rw("supporting_files", &Class::supporting_files,
-            cls_doc.supporting_files.doc)
-        .def("__getstate__",
-            [](const InMemoryMesh& self) {
+            cls_doc.supporting_files.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
               py::dict result;
               result["mesh_file"] = self.mesh_file;
               result["supporting_files"] = self.supporting_files;
               return result;
-            })
-        .def("__setstate__", [ctor](Class* self, const py::dict& kwargs) {
+        },
+        [ctor](Class* self, const py::dict& kwargs) {
           new (self) Class;
           self->mesh_file = py::cast<MemoryFile>(kwargs["mesh_file"]);
           self->supporting_files =
@@ -391,9 +393,10 @@ void DefineMeshSource(py::module_ m) {
         .def("extension", &Class::extension, cls_doc.extension.doc)
         .def("path", &Class::path, cls_doc.path.doc)
         .def("in_memory", &Class::in_memory, py_rvp::reference_internal,
-            cls_doc.in_memory.doc)
-        .def("__getstate__",
-            [](const MeshSource& self) {
+            cls_doc.in_memory.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
               py::dict result;
               if (self.is_path()) {
                 result["path"] = self.path();
@@ -402,8 +405,8 @@ void DefineMeshSource(py::module_ m) {
               DRAKE_DEMAND(self.is_in_memory());
               result["mesh"] = self.in_memory();
               return result;
-            })
-        .def("__setstate__", [ctor](Class* self, const py::dict& kwargs) {
+        },
+        [ctor](Class* self, const py::dict& kwargs) {
           auto other = py::cast<MeshSource>(ctor(**kwargs));
           new (self) Class(other);
         });
@@ -486,12 +489,14 @@ void DefineRoleAssign(py::module_ m) {
 void DefineShapes(py::module_ m) {
   // Shape constructors.
   {
-    py::class_<Shape> shape_cls(m, "Shape", doc.Shape.doc);
-    shape_cls  // BR
+    py::class_<Shape> cls(m, "Shape", doc.Shape.doc);
+    cls  // BR
         .def("__repr__", [](const Shape& self) { return self.to_string(); });
-    DefClone(&shape_cls);
-
-    py::class_<Box, Shape>(m, "Box", doc.Box.doc)
+    DefClone(&cls);
+  }
+  {
+    py::class_<Box, Shape> cls(m, "Box", doc.Box.doc);
+    cls  // BR
         .def(py::init<double, double, double>(), py::arg("width"),
             py::arg("depth"), py::arg("height"), doc.Box.ctor.doc_3args)
         .def(py::init<const Vector3<double>&>(), py::arg("measures"),
@@ -499,40 +504,38 @@ void DefineShapes(py::module_ m) {
         .def("width", &Box::width, doc.Box.width.doc)
         .def("depth", &Box::depth, doc.Box.depth.doc)
         .def("height", &Box::height, doc.Box.height.doc)
-        .def("size", &Box::size, py_rvp::reference_internal, doc.Box.size.doc)
-        .def("__getstate__",
-            [](const Box& self) {
-              return std::make_tuple(self.width(), self.depth(), self.height());
-            })
-        .def("__setstate__",
-            [](Box* self, std::tuple<double, double, double> dims) {
-              new (self)
-                  Box(std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
-            });
-
-    py::class_<Capsule, Shape>(m, "Capsule", doc.Capsule.doc)
+        .def("size", &Box::size, py_rvp::reference_internal, doc.Box.size.doc);
+    DefPickle(
+        &cls,
+        [](const Box& self) {
+          return std::make_tuple(self.width(), self.depth(), self.height());
+        },
+        [](Box* self, std::tuple<double, double, double> dims) {
+          new (self)
+              Box(std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
+        });
+  }
+  {
+    py::class_<Capsule, Shape> cls(m, "Capsule", doc.Capsule.doc);
+    cls  // BR
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Capsule.ctor.doc_2args)
         .def(py::init<const Vector2<double>&>(), py::arg("measures"),
             doc.Capsule.ctor.doc_1args)
         .def("radius", &Capsule::radius, doc.Capsule.radius.doc)
-        .def("length", &Capsule::length, doc.Capsule.length.doc)
-        .def("__getstate__",
-            [](const Capsule& self) {
-              return std::make_pair(self.radius(), self.length());
-            })
-        .def("__setstate__", [](Capsule* self, std::pair<double, double> dims) {
+        .def("length", &Capsule::length, doc.Capsule.length.doc);
+    DefPickle(
+        &cls,
+        [](const Capsule& self) {
+          return std::make_pair(self.radius(), self.length());
+        },
+        [](Capsule* self, std::pair<double, double> dims) {
           new (self) Capsule(dims.first, dims.second);
         });
-
-    // Note: meshes used to get pickled with a single scale value (representing
-    // uniform scale). While we now allow for non-uniform scaling, we still
-    // need to depickle the old representation. So, we need to handle both
-    // scale representations.
-    using ScaleVariant = std::variant<double, Vector3<double>>;
-
-    py::class_<Convex, Shape> convex_cls(m, "Convex", doc.Convex.doc);
-    convex_cls
+  }
+  {
+    py::class_<Convex, Shape> cls(m, "Convex", doc.Convex.doc);
+    cls  // BR
         .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_filename_scale)
         .def(py::init<std::filesystem::path, const Vector3<double>&>(),
@@ -560,64 +563,74 @@ void DefineShapes(py::module_ m) {
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
         .def("scale3", &Convex::scale3, doc.Convex.scale3.doc)
         .def("GetConvexHull", &Convex::GetConvexHull,
-            doc.Convex.GetConvexHull.doc)
-        .def("__getstate__",
-            [](const Convex& self) {
-              return std::make_pair(self.source(), ScaleVariant(self.scale3()));
-            })
-        .def("__setstate__", [](Convex* self,
-                                 std::pair<MeshSource, ScaleVariant> info) {
-          auto expanded_scale = std::visit<Vector3<double>>(
-              overloaded{
-                  [](double scale) { return Vector3<double>::Constant(scale); },
-                  [](const Vector3<double>& scale) { return scale; }},
-              info.second);
-          new (self) Convex(std::move(info.first), expanded_scale);
+            doc.Convex.GetConvexHull.doc);
+    // Note: Convex used to get pickled with a single scale value (representing
+    // uniform scale). While we now allow for non-uniform scaling, we still need
+    // to depickle the old representation. So, we need to handle both scale
+    // representations.
+    using ScaleVariant = std::variant<double, Vector3<double>>;
+    DefPickle(
+        &cls,
+        [](const Convex& self) {
+          return std::make_pair(self.source(), ScaleVariant(self.scale3()));
+        },
+        [](Convex* self, std::pair<MeshSource, ScaleVariant> info) {
+          new (self)
+              Convex(std::visit<Convex>(overloaded{[&info](auto&& scale) {
+                return Convex(std::move(info.first), scale);
+              }},
+                  info.second));
         });
     // Note: Convex.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
-
-    py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
+  }
+  {
+    py::class_<Cylinder, Shape> cls(m, "Cylinder", doc.Cylinder.doc);
+    cls  // BR
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc_2args)
         .def(py::init<const Vector2<double>&>(), py::arg("measures"),
             doc.Cylinder.ctor.doc_1args)
         .def("radius", &Cylinder::radius, doc.Cylinder.radius.doc)
-        .def("length", &Cylinder::length, doc.Cylinder.length.doc)
-        .def("__getstate__",
-            [](const Cylinder& self) {
-              return std::make_pair(self.radius(), self.length());
-            })
-        .def(
-            "__setstate__", [](Cylinder* self, std::pair<double, double> dims) {
-              new (self) Cylinder(dims.first, dims.second);
-            });
-
-    py::class_<Ellipsoid, Shape>(m, "Ellipsoid", doc.Ellipsoid.doc)
+        .def("length", &Cylinder::length, doc.Cylinder.length.doc);
+    DefPickle(
+        &cls,
+        [](const Cylinder& self) {
+          return std::make_pair(self.radius(), self.length());
+        },
+        [](Cylinder* self, std::pair<double, double> dims) {
+          new (self) Cylinder(dims.first, dims.second);
+        });
+  }
+  {
+    py::class_<Ellipsoid, Shape> cls(m, "Ellipsoid", doc.Ellipsoid.doc);
+    cls  // BR
         .def(py::init<double, double, double>(), py::arg("a"), py::arg("b"),
             py::arg("c"), doc.Ellipsoid.ctor.doc_3args)
         .def(py::init<const Vector3<double>&>(), py::arg("measures"),
             doc.Ellipsoid.ctor.doc_1args)
         .def("a", &Ellipsoid::a, doc.Ellipsoid.a.doc)
         .def("b", &Ellipsoid::b, doc.Ellipsoid.b.doc)
-        .def("c", &Ellipsoid::c, doc.Ellipsoid.c.doc)
-        .def("__getstate__",
-            [](const Ellipsoid& self) {
-              return std::make_tuple(self.a(), self.b(), self.c());
-            })
-        .def("__setstate__",
-            [](Ellipsoid* self, std::tuple<double, double, double> dims) {
-              new (self) Ellipsoid(
-                  std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
-            });
-
+        .def("c", &Ellipsoid::c, doc.Ellipsoid.c.doc);
+    DefPickle(
+        &cls,
+        [](const Ellipsoid& self) {
+          return std::make_tuple(self.a(), self.b(), self.c());
+        },
+        [](Ellipsoid* self, std::tuple<double, double, double> dims) {
+          new (self) Ellipsoid(
+              std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
+        });
+  }
+  {
     py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
         .def(py::init<>(), doc.HalfSpace.ctor.doc)
         .def_static("MakePose", &HalfSpace::MakePose, py::arg("Hz_dir_F"),
             py::arg("p_FB"), doc.HalfSpace.MakePose.doc);
-
-    py::class_<Mesh, Shape> mesh_cls(m, "Mesh", doc.Mesh.doc);
-    mesh_cls
+  }
+  {
+    py::class_<Mesh, Shape> cls(m, "Mesh", doc.Mesh.doc);
+    cls  // BR
         .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_filename_scale)
         .def(py::init<std::filesystem::path, const Vector3<double>&>(),
@@ -636,32 +649,38 @@ void DefineShapes(py::module_ m) {
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("scale3", &Mesh::scale3, doc.Mesh.scale3.doc)
-        .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
-        .def("__getstate__",
-            [](const Mesh& self) {
-              return std::make_pair(self.source(), ScaleVariant(self.scale3()));
-            })
-        .def("__setstate__", [](Mesh* self,
-                                 std::pair<MeshSource, ScaleVariant> info) {
-          auto expanded_scale = std::visit<Vector3<double>>(
-              overloaded{
-                  [](double scale) { return Vector3<double>::Constant(scale); },
-                  [](const Vector3<double>& scale) { return scale; }},
-              info.second);
-          new (self) Mesh(std::move(info.first), expanded_scale);
+        .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc);
+    // Note: Mesh used to get pickled with a single scale value (representing
+    // uniform scale). While we now allow for non-uniform scaling, we still need
+    // to depickle the old representation. So, we need to handle both scale
+    // representations.
+    using ScaleVariant = std::variant<double, Vector3<double>>;
+    DefPickle(
+        &cls,
+        [](const Mesh& self) {
+          return std::make_pair(self.source(), ScaleVariant(self.scale3()));
+        },
+        [](Mesh* self, std::pair<MeshSource, ScaleVariant> info) {
+          new (self) Mesh(std::visit<Mesh>(overloaded{[&info](auto&& scale) {
+            return Mesh(std::move(info.first), scale);
+          }},
+              info.second));
         });
     // Note: Mesh.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
-
-    py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
+  }
+  {
+    py::class_<Sphere, Shape> cls(m, "Sphere", doc.Sphere.doc);
+    cls  // BR
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
-        .def("radius", &Sphere::radius, doc.Sphere.radius.doc)
-        .def("__getstate__", [](const Sphere& self) { return self.radius(); })
-        .def("__setstate__", [](Sphere* self, const double radius) {
-          new (self) Sphere(radius);
-        });
-
-    py::class_<MeshcatCone, Shape>(m, "MeshcatCone", doc.MeshcatCone.doc)
+        .def("radius", &Sphere::radius, doc.Sphere.radius.doc);
+    DefPickle(
+        &cls, [](const Sphere& self) { return self.radius(); },
+        [](Sphere* self, const double radius) { new (self) Sphere(radius); });
+  }
+  {
+    py::class_<MeshcatCone, Shape> cls(m, "MeshcatCone", doc.MeshcatCone.doc);
+    cls  // BR
         .def(py::init<double, double, double>(), py::arg("height"),
             py::arg("a") = 1.0, py::arg("b") = 1.0,
             doc.MeshcatCone.ctor.doc_3args)
@@ -669,16 +688,16 @@ void DefineShapes(py::module_ m) {
             doc.MeshcatCone.ctor.doc_1args)
         .def("height", &MeshcatCone::height, doc.MeshcatCone.height.doc)
         .def("a", &MeshcatCone::a, doc.MeshcatCone.a.doc)
-        .def("b", &MeshcatCone::b, doc.MeshcatCone.b.doc)
-        .def("__getstate__",
-            [](const MeshcatCone& self) {
-              return std::make_tuple(self.height(), self.a(), self.b());
-            })
-        .def("__setstate__",
-             [](MeshcatCone* self, std::tuple<double, double, double> params) {
-               new (self) MeshcatCone(std::get<0>(params), std::get<1>(params),
-                  std::get<2>(params));
-            });
+        .def("b", &MeshcatCone::b, doc.MeshcatCone.b.doc);
+    DefPickle(
+        &cls,
+        [](const MeshcatCone& self) {
+          return std::make_tuple(self.height(), self.a(), self.b());
+        },
+        [](MeshcatCone* self, std::tuple<double, double, double> params) {
+          new (self) MeshcatCone(
+              std::get<0>(params), std::get<1>(params), std::get<2>(params));
+        });
   }
 }
 
@@ -784,17 +803,15 @@ void DefinePlane(py::module_ m, T) {
             cls_doc.reference_point.doc)
         .def("BoxOverlaps", &Class::BoxOverlaps, py::arg("half_width"),
             py::arg("box_center_in_plane"), py::arg("box_orientation_in_plane"),
-            cls_doc.BoxOverlaps.doc)
-#if 0  // XXX porting
-        .def(py::pickle(
-            [](const Plane<T>& self) {
-              return std::make_pair(self.unit_normal(), self.reference_point());
-            },
-            [](std::pair<Vector3<T>, Vector3<T>> data) {
-              return Plane<T>(data.first, data.second);
-            }))
-#endif  // XXX porting
-        ;
+            cls_doc.BoxOverlaps.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return std::make_pair(self.unit_normal(), self.reference_point());
+        },
+        [](Class* self, std::pair<Vector3<T>, Vector3<T>> data) {
+          new (self) Class(data.first, data.second);
+        });
     DefCopyAndDeepCopy(&cls);
   }
 }

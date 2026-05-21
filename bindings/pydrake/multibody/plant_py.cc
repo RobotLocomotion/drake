@@ -2,6 +2,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/bindings/generated_docstrings/multibody_plant.h"
@@ -172,12 +173,13 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
-            cls_doc.dynamic_friction.doc)
-        .def("__getstate__",
-            [](const Class& self) {
-              return std::pair(self.static_friction(), self.dynamic_friction());
-            })
-        .def("__setstate__", [](Class* self, std::pair<T, T> frictions) {
+            cls_doc.dynamic_friction.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return std::pair(self.static_friction(), self.dynamic_friction());
+        },
+        [](Class* self, std::pair<T, T> frictions) {
           new (self) Class(frictions.first, frictions.second);
         });
     DefCopyAndDeepCopy(&cls);

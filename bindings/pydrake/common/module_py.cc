@@ -162,12 +162,13 @@ void InitLowLevelModules(py::module_ m) {
         .def("to_string", &Class::to_string, cls_doc.to_string.doc)
         .def(py::self == py::self)
         .def(py::self != py::self)
-        .def(py::self < py::self)
-        .def("__getstate__", [](const Class& self) { return self.to_string(); })
-        .def("__setstate__", [](Class& self, const std::string& ascii_hash) {
+        .def(py::self < py::self);
+    DefPickle(
+        &cls, [](const Class& self) { return self.to_string(); },
+        [](Class* self, const std::string& ascii_hash) {
           std::optional<Sha256> sha_maybe = Sha256::Parse(ascii_hash);
           DRAKE_THROW_UNLESS(sha_maybe.has_value());
-          new (&self) Class(*sha_maybe);
+          new (self) Class(*sha_maybe);
         });
     DefCopyAndDeepCopy(&cls);
   }
@@ -204,17 +205,18 @@ void InitLowLevelModules(py::module_ m) {
             cls_doc.sha256.doc)
         .def("filename_hint", &Class::filename_hint, py_rvp::reference_internal,
             cls_doc.filename_hint.doc)
-        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc)
-        .def("__getstate__",
-            [](const MemoryFile& self) {
-              py::dict result;
-              result["contents"] = self.contents();
-              result["extension"] = self.extension();
-              result["filename_hint"] = self.filename_hint();
-              return result;
-            })
-        .def("__setstate__", [](MemoryFile& self, const py::dict& kwargs) {
-          new (&self) MemoryFile(py::cast<std::string>(kwargs["contents"]),
+        .def_static("Make", &Class::Make, py::arg("path"), cls_doc.Make.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          py::dict result;
+          result["contents"] = self.contents();
+          result["extension"] = self.extension();
+          result["filename_hint"] = self.filename_hint();
+          return result;
+        },
+        [ctor](Class* self, const py::dict& kwargs) {
+          new (self) MemoryFile(py::cast<std::string>(kwargs["contents"]),
               py::cast<std::string>(kwargs["extension"]),
               py::cast<std::string>(kwargs["filename_hint"]));
         });
