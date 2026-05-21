@@ -1876,6 +1876,34 @@ void MultibodyTree<T>::CalcInverseDynamics(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcSystemJacobianTransposeTimesF(
+    const systems::Context<T>& context,
+    std::vector<SpatialForce<T>>* F_Bo_W_array,
+    EigenPtr<VectorX<T>> tau) const {
+  DRAKE_THROW_UNLESS(F_Bo_W_array != nullptr);
+  DRAKE_THROW_UNLESS(ssize(*F_Bo_W_array) == num_mobods());
+  DRAKE_THROW_UNLESS(tau != nullptr);
+  DRAKE_THROW_UNLESS(tau->size() == num_velocities());
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+
+  // Iterative tip-to-base sweep over all non-World mobilized bodies. Children
+  // always have larger MobodIndex than their parent (a property of the
+  // SpanningForest), so descending order guarantees that by the time we visit
+  // a node, every descendant has already shifted its accumulated force into
+  // this node's entry of (*F_Bo_W_array). Each per-node call uses one local
+  // SpatialForce (no per-mobod scratch is allocated).
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    node.CalcSystemJacobianTransposeTimesF_TipToBase(pc, H_PB_W_cache,
+                                                     F_Bo_W_array, tau);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcForceElementsContribution(
     const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc, MultibodyForces<T>* forces) const {
