@@ -4620,6 +4620,66 @@ Raises:
     RuntimeError if model_instances contains an invalid
     ModelInstanceIndex.)""";
         } CalcSpatialMomentumInWorldAboutPoint;
+        // Symbol: drake::multibody::MultibodyPlant::CalcSystemJacobianTransposeTimesF
+        struct /* CalcSystemJacobianTransposeTimesF */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Advanced) Computes τ = Jᵀ⋅F, the transpose-times-vector product of
+the System Jacobian against a per-body spatial force, in O(n) without
+forming J.
+
+Here J is the System Jacobian — the block-row-stacked Jacobian
+Jv_V_WB_W whose B-th block is ``∂V_WB_W/∂v``, the Jacobian of
+mobilized body B's spatial velocity in World (at Bo, expressed in W)
+with respect to the generalized velocities v. See
+EvalBlockSystemJacobian() for the matrix-form companion.
+
+Given applied spatial forces ``F_Bo_W_array[k]`` for each mobilized
+body k (about its body origin Bo, expressed in World), this method
+returns
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    τ = ∑ₖ J_WBₖᵀ ⋅ F_Boₖ_W                                          (1)
+
+.. raw:: html
+
+    </details>
+
+the generalized forces equivalent to the applied spatial forces.
+
+Warning:
+    The input array ``F_Bo_W_array`` is destroyed during the
+    computation. Callers that need to preserve their input should pass
+    a copy.
+
+Parameter ``context``:
+    The state of the multibody system.
+
+Parameter ``F_Bo_W_array``:
+    Per-mobilized-body applied spatial forces, sized num_mobods(),
+    ordered by MobodIndex (entry 0 corresponds to World; it is read
+    but has no effect on τ). **This array is destroyed during the
+    computation**: the operator sweeps tip-to-base, shifting each
+    body's accumulated force into its parent's entry of
+    ``F_Bo_W_array`` in place to avoid allocating a scratch copy.
+
+Parameter ``tau``:
+    On exit, sized num_velocities(), the generalized force equivalent
+    to the applied spatial forces.
+
+Raises:
+    RuntimeError if ``F_Bo_W_array`` or ``tau`` is nullptr or the
+    wrong size.
+
+See also:
+    EvalBlockSystemJacobian(), CalcJacobianSpatialVelocity())""";
+        } CalcSystemJacobianTransposeTimesF;
         // Symbol: drake::multibody::MultibodyPlant::CalcTotalMass
         struct /* CalcTotalMass */ {
           // Source: drake/multibody/plant/multibody_plant.h
