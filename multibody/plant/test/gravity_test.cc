@@ -1,12 +1,17 @@
+#include <cmath>
 #include <memory>
 #include <string>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -115,6 +120,83 @@ TEST_F(MultibodyPlantGravityForceTest, DisableGravity) {
   EXPECT_EQ(tau_g1.norm(), 0.0);
   const VectorXd tau_g2 = plant_->GetVelocitiesFromArray(iiwa2_, tau_g);
   EXPECT_GT(tau_g2.norm(), 0.01 /* arbitrary, clearly non-zero, value */);
+}
+
+// Verify CalcGravityGeneralizedForces() against an analytical result for a
+// non-planar (3D) double pendulum.
+//   Link 1: mass m₁, COM at (0,0,−L₁) in body 1 frame, revolute about Y.
+//   Link 2: mass m₂, COM at (0,0,−L₂) in body 2 frame, revolute about X,
+//           joint located at (0,0,−d₁) in body 1 frame.
+//
+// Analysis by Claude (confirmed with MotionGenesis) shows the gravitational
+// potential energy V is:
+//   V = −m₁ g L₁ cos(q₁) − m₂ g (d₁ + L₂ cos(q₂)) cos(q₁)
+//
+// The generated generalized forces (tau_gᵢ = −∂V/∂qᵢ) are thus:
+//   tau_g₁ = −g sin(q₁) (m₁ L₁ + m₂ (d₁ + L₂ cos(q₂)))
+//   tau_g₂ = −m₂ g L₂ sin(q₂) cos(q₁)
+GTEST_TEST(GravityTest, PotentialEnergyAndGravityGeneralizedForces) {
+  // Build a double pendulum from scratch.
+  const double m1 = 2.0;  // kg
+  const double m2 = 1.5;  // kg
+  const double L1 = 0.5;  // m, joint 1 to COM of body 1
+  const double d1 = 1.0;  // m, joint 1 to joint 2 along body 1
+  const double L2 = 0.4;  // m, joint 2 to COM of body 2
+  const double g = 9.81;  // m/s^2
+
+  MultibodyPlant<double> pendulum(0.0);
+  pendulum.mutable_gravity_field().set_gravity_vector(Vector3d(0, 0, -g));
+
+  // Body 1 with COM at (0, 0, -L1) in body 1 frame.
+  const SpatialInertia<double> M_B1 =
+      SpatialInertia<double>::MakeFromCentralInertia(
+          m1, Vector3d(0, 0, -L1), m1 * UnitInertia<double>::SolidSphere(0.1));
+  const auto& body1 = pendulum.AddRigidBody("body1", M_B1);
+
+  // Joint 1: revolute about Y connecting world to body 1.
+  const auto& joint1 = pendulum.AddJoint<RevoluteJoint>(
+      "joint1", pendulum.world_body(), {}, body1, {}, Vector3d::UnitY());
+
+  // Body 2 with COM at (0, 0, -L2) in body 2 frame.
+  const SpatialInertia<double> M_B2 =
+      SpatialInertia<double>::MakeFromCentralInertia(
+          m2, Vector3d(0, 0, -L2), m2 * UnitInertia<double>::SolidSphere(0.1));
+  const auto& body2 = pendulum.AddRigidBody("body2", M_B2);
+
+  // Joint 2: revolute about X, located at (0, 0, -d1) in body 1's frame.
+  const auto& joint2 = pendulum.AddJoint<RevoluteJoint>(
+      "joint2", body1, math::RigidTransformd(Vector3d(0, 0, -d1)), body2, {},
+      Vector3d::UnitX());
+
+  pendulum.Finalize();
+  auto context = pendulum.CreateDefaultContext();
+
+  // Test at several combinations of joint angles.
+  for (const double q1 : {0.0, M_PI / 6, M_PI / 4, -M_PI / 3}) {
+    for (const double q2 : {0.0, M_PI / 4, M_PI / 2, -M_PI / 6}) {
+      joint1.set_angle(context.get(), q1);
+      joint2.set_angle(context.get(), q2);
+
+      // Potential energy (see above).
+      const double expected_V =
+          -m1 * g * L1 * std::cos(q1) -
+          m2 * g * (d1 + L2 * std::cos(q2)) * std::cos(q1);
+      EXPECT_NEAR(pendulum.CalcPotentialEnergy(*context), expected_V, 1e-14)
+          << "PE failed at q1=" << q1 << ", q2=" << q2;
+
+      // Expected gravitational generalized forces (see above).
+      const double expected_tau1 =
+          -g * std::sin(q1) * (m1 * L1 + m2 * (d1 + L2 * std::cos(q2)));
+      const double expected_tau2 = -m2 * g * L2 * std::sin(q2) * std::cos(q1);
+
+      const VectorXd tau_g = pendulum.CalcGravityGeneralizedForces(*context);
+      ASSERT_EQ(tau_g.size(), 2);
+      EXPECT_NEAR(tau_g(0), expected_tau1, 1e-14)
+          << "tau_g1 failed at q1=" << q1 << ", q2=" << q2;
+      EXPECT_NEAR(tau_g(1), expected_tau2, 1e-14)
+          << "tau_g2 failed at q1=" << q1 << ", q2=" << q2;
+    }
+  }
 }
 
 }  // namespace
