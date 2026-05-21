@@ -605,6 +605,51 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   }
 }
 
+// One step of the iterative tip-to-base sweep that implements τ = Jᵀ⋅F for
+// the system Jacobian. By the time this is invoked on body B, every child of B
+// has already shifted its accumulated force into (*F_Bo_W_array)[B], so that
+// slot already holds the spatial force F_Bo_W. We then project via H_PB_Wᵀ
+// to form the generalized force τ's segment for this mobilizer and then
+// shift F_Bo_W to the parent's body origin Po.
+// Example: F_Bᵢo_W (the iᵗʰ "slot" in F_Bo_W_array) is the spatial force
+// for Earth's gravity forces on B together with gravity forces (shifted
+// to Bo) from all B's descendants (child bodies). Thereafter, spatial
+// force F_Bᵢo_W is shifted and added to parent's slot in in F_Bo_W_array.
+template <typename T, class ConcreteMobilizer>
+void BodyNodeImpl<T, ConcreteMobilizer>::
+    CalcSystemJacobianTransposeTimesF_TipToBase(
+        const PositionKinematicsCache<T>& pc,
+        const std::vector<Vector6<T>>& H_PB_W_cache,
+        std::vector<SpatialForce<T>>* F_Bo_W_array,
+        EigenPtr<VectorX<T>> tau) const {
+  DRAKE_ASSERT(mobod_index() != world_mobod_index());
+  DRAKE_ASSERT(F_Bo_W_array != nullptr &&
+               ssize(*F_Bo_W_array) == this->get_parent_tree().num_mobods());
+  DRAKE_ASSERT(tau != nullptr &&
+               ssize(*tau) == this->get_parent_tree().num_velocities());
+
+  // The fully-accumulated spatial force on body B at Bo, expressed in W: the
+  // externally applied force on B plus the shifted contributions from every
+  // descendant of B (added by the earlier tip-side iterations of this sweep).
+  const SpatialForce<T>& F_Bo_W = (*F_Bo_W_array)[mobod_index()];
+
+  // Project onto this mobilizer's velocity subspace. H_PB_W is already
+  // expressed in W, so τ_seg = H_PB_Wᵀ ⋅ F_Bo_W with no frame conversion.
+  if constexpr (kNv > 0) {
+    const auto H_PB_W = get_H(H_PB_W_cache);  // 6 x kNv fixed-size Map.
+    // tau_seg is just the kNv-sized segment for this mobilizer, e.g. a scalar
+    // for a revolute or prismatic mobilizer.
+    Eigen::Map<VVector<T>> tau_seg(get_mutable_v(tau->data()));
+    tau_seg.noalias() = H_PB_W.transpose() * F_Bo_W.get_coeffs();
+  }
+
+  // Shift Bo ⇒ Po and accumulate into the parent's slot. Since p_PoBo_W is the
+  // position from Po (parent origin) to Bo (body B's origin), use -p_PoBo_W to
+  // shift the spatial force from Bo to Po.
+  const Vector3<T>& p_PoBo_W = get_p_PoBo_W(pc);
+  (*F_Bo_W_array)[inboard_mobod_index()] += F_Bo_W.Shift(-p_PoBo_W);
+}
+
 template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcArticulatedBodyInertiaCache_TipToBase(

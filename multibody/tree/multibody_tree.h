@@ -1592,6 +1592,12 @@ class MultibodyTree {
       EigenPtr<VectorX<T>> tau_array) const;
 
   // See MultibodyPlant method.
+  void CalcSystemJacobianTransposeTimesF(
+      const systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_Bo_W_array,
+      EigenPtr<VectorX<T>> tau) const;
+
+  // See MultibodyPlant method.
   void CalcForceElementsContribution(const systems::Context<T>& context,
                                      const PositionKinematicsCache<T>& pc,
                                      const VelocityKinematicsCache<T>& vc,
