@@ -4742,6 +4742,49 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                 frame_E, Js_V_ABp_E);
   }
 
+  /// (Advanced) Computes τ = Jᵀ⋅F, the transpose-times-vector product of the
+  /// System Jacobian against a per-mobilizd body spatial force, in O(n)
+  /// time without forming J.
+  ///
+  /// Here J is the System Jacobian — the block-row-stacked Jacobian Jv_V_WB_W
+  /// whose B-th block is `∂V_WB_W/∂v`, the Jacobian of mobilized body B's
+  /// spatial velocity in World (at Bo, expressed in W) with respect to
+  /// the generalized velocities v. See EvalBlockSystemJacobian() for the
+  /// matrix-form companion.
+  ///
+  /// Given applied spatial forces `F_Bo_W_array[k]` for each mobilized body
+  /// k (about its body origin Bo, expressed in World), this method returns
+  /// <pre>
+  ///   τ = ∑ₖ J_WBₖᵀ ⋅ F_Boₖ_W                                          (1)
+  /// </pre>
+  /// the generalized forces equivalent to the applied spatial forces.
+  ///
+  /// @warning The input array `F_Bo_W_array` is destroyed during the
+  /// computation. Callers that need to preserve their input should pass a copy.
+  ///
+  /// @param[in] context The state of the multibody system.
+  /// @param[in,out] F_Bo_W_array Per-mobilized-body applied spatial forces,
+  ///   sized graph().forest().num_mobods(), ordered by MobodIndex (entry 0
+  ///   corresponds to World; it is read but has no effect on τ). **This
+  ///   array is destroyed during the computation**: the operator sweeps
+  ///   tip-to-base, shifting each body's accumulated force into its parent's
+  ///   entry of `F_Bo_W_array` in place to avoid allocating a scratch copy.
+  /// @param[out] tau On exit, sized num_velocities(), the generalized force
+  ///   equivalent to the applied spatial forces.
+  ///
+  /// @throws std::exception if `F_Bo_W_array` or `tau` is nullptr or the wrong
+  /// size.
+  ///
+  /// @see EvalBlockSystemJacobian(), CalcJacobianSpatialVelocity()
+  void CalcSystemJacobianTransposeTimesF(
+      const systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_Bo_W_array,
+      EigenPtr<VectorX<T>> tau) const {
+    this->ValidateContext(context);
+    internal_tree().CalcSystemJacobianTransposeTimesF(context, F_Bo_W_array,
+                                                      tau);
+  }
+
   /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
   /// with respect to "speeds" 𝑠.
   /// <pre>

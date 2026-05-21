@@ -408,6 +408,41 @@ class BodyNode : public MultibodyElement<T> {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const = 0;
 
+  // Performs one iteration of the System-Jacobian transpose-times-vector
+  // operator τ = Jᵀ⋅F, where J is the system Jacobian ∂V_WB_W/∂v stacked over
+  // all mobilized bodies. The caller drives a tip-to-base sweep that visits
+  // each non-World mobilized body exactly once in descending MobodIndex order;
+  // by the time this method is invoked on a given body B, every child of B has
+  // already shifted its contribution into B's entry of `F_Bo_W_array`.
+  //
+  // This method then:
+  //  (1) reads the now-fully-accumulated spatial force at this body's origin
+  //      Bo (expressed in W) from `(*F_Bo_W_array)[mobod_index()]`,
+  //  (2) projects it onto this mobilizer's velocity subspace using the cached
+  //      H_PB_W to write this node's segment of `tau`, and
+  //  (3) shifts the accumulated force from Bo to the parent's origin Po and
+  //      adds it into `(*F_Bo_W_array)[inboard_mobod_index()]`, so that when
+  //      the parent is visited its entry already contains all contributions
+  //      from descendants.
+  //
+  // Don't call this on the World body.
+  //
+  // @param[in] pc up-to-date position kinematics cache.
+  // @param[in] H_PB_W_cache up-to-date across-node hinge matrices, in W.
+  // @param[in,out] F_Bo_W_array on entry, entry [k] is the spatial force
+  //   applied to mobilized body k at its origin Bo, expressed in W, plus any
+  //   contributions previously shifted in from k's already-processed children.
+  //   On exit, this node's entry is unchanged; the parent's entry has had
+  //   this node's accumulated, shifted force added to it.
+  // @param[out] tau on exit, this node's velocity segment has been written.
+  //
+  // @pre This method has already been called for every child of this node.
+  virtual void CalcSystemJacobianTransposeTimesF_TipToBase(
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<Vector6<T>>& H_PB_W_cache,
+      std::vector<SpatialForce<T>>* F_Bo_W_array,
+      EigenPtr<VectorX<T>> tau) const = 0;
+
   // This method is used by MultibodyTree within a tip-to-base loop to compute
   // this node's articulated body inertia quantities that depend only on the
   // generalized positions.
