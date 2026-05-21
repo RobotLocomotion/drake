@@ -24,12 +24,20 @@
 namespace drake {
 namespace multibody {
 
-// Forward declaration for RigidBodyFrame<T>.
+// Forward declaration for RigidBodyFrame to use.
 template <typename T>
 class RigidBody;
 
-/// A %RigidBodyFrame is a material Frame that serves as the unique reference
-/// frame for a RigidBody.
+/// Link is a synonym for the mis-named RigidBody class; prefer Link in
+/// internal code. When we combine welded-together links there are multiple
+/// links fixed to a single rigid body (in the physics sense; what we call
+/// a "mobilized body" or mobod). Saying that there is more than one
+/// RigidBody on a rigid body is too confusing!
+template <typename T>
+using Link = RigidBody<T>;
+
+/// A %RigidBodyFrame (aka LinkFrame) is a material Frame that serves as the
+/// unique reference frame for a RigidBody (aka Link).
 ///
 /// Each %RigidBody B has a unique body frame for which we use the same symbol
 /// B (with meaning clear from context). We represent a body frame by a
@@ -138,7 +146,8 @@ class RigidBodyFrame final : public Frame<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 };
 
-/// LinkFrame is a synonym for RigidBodyFrame and should be preferred.
+/// LinkFrame is a synonym for RigidBodyFrame. Prefer Link and LinkFrame in
+/// internal code.
 template <typename T>
 using LinkFrame = RigidBodyFrame<T>;
 
@@ -148,17 +157,14 @@ using LinkFrame = RigidBodyFrame<T>;
 namespace internal {
 template <typename T>
 // Attorney-Client idiom to grant MultibodyTree access to a selected set of
-// private methods in RigidBody. RigidBodyAttorney serves as a "proxy" to the
-// RigidBody class but only providing an interface to a selected subset of
+// private methods in RigidBody (Link). LinkAttorney serves as a "proxy" to the
+// RigidBody class but only provides an interface to a selected subset of
 // methods that should be accessible to MultibodyTree. These methods are related
 // to the construction and finalize stage of the multibody system.
-class RigidBodyAttorney {
+class LinkAttorney {
  private:
   // MultibodyTree keeps a list of mutable pointers to each of the link frames
   // in the system and therefore it needs mutable access.
-  // Notice this method is private and therefore users do not have access to it
-  // even in the rare event they'd attempt to peek into the "internal::"
-  // namespace.
   static LinkFrame<T>& get_mutable_link_frame(Link<T>* link) {
     return link->get_mutable_link_frame();
   }
@@ -188,10 +194,12 @@ class RigidBodyAttorney {
 /// freedom obey the Newton-Euler equations of motion. However, within a
 /// MultibodyTree, a %RigidBody is *not* free in space; instead, it is assigned
 /// a limited number of degrees of freedom (0-6) with respect to its parent
-/// body in the multibody tree by its Mobilizer (also called a
-/// "tree joint" or "inboard joint"). Additional constraints on permissible
-/// motion can be added using Constraint objects to remove more degrees of
-/// freedom.
+/// body in the multibody tree by its Mobilizer (also called a "tree joint"
+/// or "inboard joint"). Additional constraints on permissible motion can be
+/// added using Constraint objects to remove more degrees of freedom.
+///
+/// @note This object corresponds to a "link" in urdf/sdf terminology. We
+/// may combine welded-together links into a composite rigid body internally.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.
@@ -255,41 +263,24 @@ class RigidBody : public MultibodyElement<T> {
   ScopedName scoped_name() const;
 
   /// Returns a const reference to the associated LinkFrame (RigidBodyFrame).
+  /// This is a synonym for body_frame().
   const LinkFrame<T>& link_frame() const { return link_frame_; }
 
-  /// (Compatibility) A synonym for link_frame().
-  const LinkFrame<T>& body_frame() const { return link_frame(); }
+  /// Returns a const reference to the associated RigidBodyFrame (LinkFrame).
+  /// This is a synonym for link_frame().
+  const RigidBodyFrame<T>& body_frame() const { return link_frame(); }
+
+  // TODO(rpoyner-tri): consider extending the design to allow locking on
+  //  non-floating bodies.
 
   /// For a floating base %RigidBody, lock its inboard joint. Its generalized
   /// velocities will be 0 until it is unlocked.
   /// @throws std::exception if this body is not a floating base body.
-  void Lock(systems::Context<T>* context) const {
-    ThrowIfNotFinalized(__func__);
-    // TODO(rpoyner-tri): consider extending the design to allow locking on
-    //  non-floating bodies.
-    if (!is_floating_base_body()) {
-      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
-      throw std::logic_error(fmt::format(
-          "Attempted to call Lock() on non-floating-base rigid body {}",
-          name()));
-    }
-    mobilizer().Lock(context);
-  }
+  void Lock(systems::Context<T>* context) const;
 
   /// For a floating base %RigidBody, unlock its inboard joint.
   /// @throws std::exception if this body is not a floating base body.
-  void Unlock(systems::Context<T>* context) const {
-    ThrowIfNotFinalized(__func__);
-    // TODO(rpoyner-tri): consider extending the design to allow locking on
-    //  non-floating bodies.
-    if (!is_floating_base_body()) {
-      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
-      throw std::logic_error(fmt::format(
-          "Attempted to call Unlock() on non-floating-base rigid body {}",
-          name()));
-    }
-    mobilizer().Unlock(context);
-  }
+  void Unlock(systems::Context<T>* context) const;
 
   /// Determines whether this %RigidBody is currently locked to its inboard
   /// (parent) %RigidBody. This is not limited to floating base bodies but
@@ -301,14 +292,14 @@ class RigidBody : public MultibodyElement<T> {
     return mobilizer().is_locked(context);
   }
 
-  /// (Advanced) Returns the index of the mobilized body ("mobod") in the
-  /// computational directed forest structure of the owning MultibodyTree to
-  /// which this %RigidBody belongs. This serves as the BodyNode index and the
-  /// index into all associated quantities.
+  /// (Advanced) Returns the index of the mobilized body ("mobod") that is
+  /// followed by this %RigidBody (Link). This serves as the BodyNode index
+  /// and the index into all associated quantities. More than one link
+  /// may follow the same mobod.
   internal::MobodIndex mobod_index() const { return mobilizer().index(); }
 
   /// (Advanced) Returns `true` if this body is a _floating base body_, meaning
-  /// it had no explicit joint to a parent body so is mobilized by an
+  /// it had no explicit joint to a parent body and is mobilized by an
   /// automatically-added (ephemeral) floating (6 dof) joint to World.
   ///
   /// @note A floating base body is not necessarily modeled with a quaternion
@@ -650,19 +641,20 @@ class RigidBody : public MultibodyElement<T> {
   /// context.  These method's APIs will be deprecated when caching arrives.
   ///@{
 
-  /// (Advanced) Extract this body's pose in world (from the position
+  /// (Advanced) Extract this link's pose in world (from the position
   /// kinematics).
   /// @param[in] pc position kinematics cache.
-  /// @retval X_WB pose of rigid body B in world frame W.
+  /// @retval X_WL pose of this Link (%RigidBody) L in world frame W.
   const math::RigidTransform<T>& get_pose_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
-    return pc.get_X_WB(this->mobod_index());
+    return pc.get_X_WL(this->ordinal());
   }
 
   /// (Advanced) Extract the RotationMatrix relating the world frame to this
   /// body's frame.
   /// @param[in] pc position kinematics cache.
-  /// @retval R_WB rotation matrix relating rigid body B in world frame W.
+  /// @retval R_WL rotation matrix giving the orientation of this Link L in
+  /// the world frame W.
   const math::RotationMatrix<T> get_rotation_matrix_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
     return get_pose_in_world(pc).rotation();
@@ -671,8 +663,8 @@ class RigidBody : public MultibodyElement<T> {
   /// (Advanced) Extract the position vector from world origin to this body's
   /// origin, expressed in world.
   /// @param[in] pc position kinematics cache.
-  /// @retval p_WoBo_W position vector from Wo (world origin) to
-  ///         Bo (this body's origin) expressed in W (world).
+  /// @retval p_WoLo_W position vector from Wo (world origin) to
+  ///         Lo (this link's origin) expressed in W (world).
   const Vector3<T> get_origin_position_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
     return get_pose_in_world(pc).translation();
@@ -684,29 +676,30 @@ class RigidBody : public MultibodyElement<T> {
   /// context.  These method's APIs will be deprecated when caching arrives.
   ///@{
 
-  /// (Advanced) Returns V_WB, this %RigidBody B's SpatialVelocity in
+  /// (Advanced) Returns V_WL, this Link (%RigidBody) L's SpatialVelocity in
   /// the world frame W.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval V_WB_W this rigid body B's spatial velocity in the world
-  /// frame W, expressed in W (for point Bo, the body frame's origin).
+  /// @retval V_WL_W this link L's spatial velocity in the world
+  /// frame W, expressed in W (for point Lo, the link frame's origin).
   const SpatialVelocity<T>& get_spatial_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
-    return vc.get_V_WB(this->mobod_index());
+    return vc.get_V_WL(this->ordinal());
   }
 
-  /// (Advanced) Extract this body's angular velocity in world, expressed in
+  /// (Advanced) Extract this link's angular velocity in world, expressed in
   /// world.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval w_WB_W rigid body B's angular velocity in world W, expressed in W.
+  /// @retval w_WL_W link L's angular velocity in world W, expressed in W.
   const Vector3<T>& get_angular_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
     return get_spatial_velocity_in_world(vc).rotational();
   }
 
-  /// (Advanced) Extract the velocity of this body's origin in world, expressed
+  /// (Advanced) Extract the velocity of this link's origin in world, expressed
   /// in world.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval v_WBo_W velocity of Bo (body origin) in world W, expressed in W.
+  /// @retval v_WLo_W velocity of Lo (link frame origin) in world W, expressed
+  /// in W.
   const Vector3<T>& get_origin_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
     return get_spatial_velocity_in_world(vc).translational();
@@ -717,6 +710,8 @@ class RigidBody : public MultibodyElement<T> {
   /// The input AccelerationKinematicsCache to these methods must be in sync
   /// with context.  These method APIs will be deprecated when caching arrives.
   ///@{
+
+  // TODO(sherm1) Convert these to Link acceleration from Mobod.
 
   /// (Advanced) Returns A_WB, this %RigidBody B's SpatialAcceleration in
   /// the world frame W.
@@ -759,61 +754,23 @@ class RigidBody : public MultibodyElement<T> {
   }
 
  private:
-  // Only friends of RigidBodyAttorney (i.e. MultibodyTree) have access to a
+  // Only friends of LinkAttorney (i.e. MultibodyTree) have access to a
   // selected set of private RigidBody methods.
-  friend class internal::RigidBodyAttorney<T>;
+  friend class internal::LinkAttorney<T>;
 
   // Called near the end of Finalize().
-  void DoSetTopology() final {
-    DRAKE_DEMAND(mobilizer_ == nullptr);
-    const internal::MultibodyTree<T>& tree = this->get_parent_tree();
-    const internal::SpanningForest& forest = tree.forest();
-    const internal::LinkJointGraph::Link& link = forest.link_by_index(index());
-    mobilizer_ = &tree.get_mobilizer(link.mobod_index());
-
-    // Is this RigidBody the active link on its Mobod?
-    const bool is_active_link =
-        link.ordinal() ==
-        forest.mobods(link.mobod_index()).active_link_ordinal();
-    is_floating_base_body_ =
-        is_active_link && mobilizer_->is_floating_base_mobilizer();
-  }
+  void DoSetTopology() final;
 
   // Implementation for MultibodyElement::DoDeclareParameters().
-  void DoDeclareParameters(
-      internal::MultibodyTreeSystem<T>* tree_system) final {
-    // Sets model values to dummy values to indicate that the model values are
-    // not used. This class stores the the default values of the parameters.
-    // 10 numeric values are used to store mass, center of mass, moments and
-    // products of inertia packed into one basic vector.
-    spatial_inertia_parameter_index_ =
-        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(10));
-  }
+  void DoDeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) final;
 
   // Implementation for MultibodyElement::DoSetDefaultParameters().
-  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
-    // Set the default spatial inertia.
-    systems::BasicVector<T>& spatial_inertia_parameter =
-        parameters->get_mutable_numeric_parameter(
-            spatial_inertia_parameter_index_);
-    spatial_inertia_parameter.SetFrom(
-        internal::parameter_conversion::ToBasicVector<T>(
-            default_spatial_inertia_.template cast<T>()));
-  }
+  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final;
 
   // Helper method for throwing an exception within public methods that should
   // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
-  void ThrowIfNotFinalized(const char* source_method) const {
-    DRAKE_THROW_UNLESS(this->has_parent_tree());
-    if (!this->get_parent_tree().is_finalized()) {
-      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
-      throw std::runtime_error(
-          "From '" + std::string(source_method) +
-          "'. The model to which this rigid body belongs must be finalized. "
-          "See MultibodyPlant::Finalize().");
-    }
-  }
+  void ThrowIfNotFinalized(const char* source_method) const;
 
   // For this RigidBody B, set its center of mass position stored in context
   // to center_of_mass_position, but does not modify other inertia properties.
@@ -854,8 +811,7 @@ class RigidBody : public MultibodyElement<T> {
                                                  default_spatial_inertia_);
   }
 
-  // MultibodyTree has access to the mutable LinkFrame through
-  // RigidBodyAttorney.
+  // MultibodyTree has access to the mutable LinkFrame through LinkAttorney.
   LinkFrame<T>& get_mutable_link_frame() { return link_frame_; }
 
   const internal::Mobilizer<T>& mobilizer() const {
@@ -863,23 +819,22 @@ class RigidBody : public MultibodyElement<T> {
     return *mobilizer_;
   }
 
-  // A string identifying this link in its model.
-  // Within a MultibodyPlant model instance this string is guaranteed to be
-  // unique by MultibodyPlant's API.
+  // A string identifying this link in its model. Within a MultibodyPlant model
+  // instance this string is guaranteed to be unique by MultibodyPlant's API.
   const std::string name_;
 
   // This link's LinkFrame (a.k.a. RigidBodyFrame).
   LinkFrame<T> link_frame_;
 
-  // Spatial inertia about the body frame origin Bo, expressed in B.
+  // Spatial inertia about the link frame origin Lo, expressed in L.
   SpatialInertia<double> default_spatial_inertia_;
 
-  // System parameter index for this body's SpatialInertia stored in a context.
+  // System parameter index for this link's SpatialInertia stored in a context.
   systems::NumericParameterIndex spatial_inertia_parameter_index_;
 
   // Below here, members are set at Finalize() via SetTopology().
 
-  // The mobilizer of the Mobod that this body follows.
+  // The mobilizer of the Mobod that this link follows.
   const internal::Mobilizer<T>* mobilizer_{};
 
   // True if the mobilizer is a floating base mobilizer and this link is the
@@ -887,15 +842,8 @@ class RigidBody : public MultibodyElement<T> {
   bool is_floating_base_body_{false};
 };
 
-/// Link is a synonym for the mis-named RigidBody class and should be
-/// preferred. When we combine welded-together links there will be multiple
-/// links fixed to a single rigid body (in the physics sense). Saying that
-/// there is more than one RigidBody on a rigid body is too confusing!
-template <typename T>
-using Link = RigidBody<T>;
-
-/// (Compatibility) Prefer Link to Body, however this dispreferred alias
-/// is available to permit older code to continue working.
+/// (Compatibility) Prefer Link or RigidBody to Body, however this dispreferred
+/// alias is available to permit older code to continue working.
 template <typename T>
 using Body = RigidBody<T>;
 

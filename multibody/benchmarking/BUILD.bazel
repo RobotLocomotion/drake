@@ -40,6 +40,7 @@ drake_cc_googlebench_binary(
         "//multibody/parsing:parser",
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
+        "@gflags",
     ],
     add_test_rule = True,
 )
