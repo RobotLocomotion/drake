@@ -135,7 +135,7 @@ TEST_F(MultibodyPlantGravityForceTest, DisableGravity) {
 // The generated generalized forces (tau_gᵢ = −∂V/∂qᵢ) are thus:
 //   tau_g₁ = −g sin(q₁) (m₁ L₁ + m₂ (d₁ + L₂ cos(q₂)))
 //   tau_g₂ = −m₂ g L₂ sin(q₂) cos(q₁)
-GTEST_TEST(GravityTest, PotentialEnergyAndGravityGeneralizedForces) {
+GTEST_TEST(GravityTest, PotentialEnergyPowerAndGravityGeneralizedForces) {
   // Build a double pendulum from scratch.
   const double m1 = 2.0;  // kg
   const double m2 = 1.5;  // kg
@@ -193,6 +193,29 @@ GTEST_TEST(GravityTest, PotentialEnergyAndGravityGeneralizedForces) {
       ASSERT_EQ(tau_g.size(), 2);
       EXPECT_NEAR(tau_g(0), expected_tau1, 1e-14);
       EXPECT_NEAR(tau_g(1), expected_tau2, 1e-14);
+    }
+  }
+
+  // Conservative power P is related to potential energy V as P = -𝑑V/𝑑𝑡.
+  // In this test, potential energy is only due to gravity and V = V(q₁,q₂), so
+  // P = -𝑑V/𝑑𝑡 = -(∂V/q₁) q̇₁ - (∂V/q₂) q̇₂ = tau_g · v since the generalized
+  // forces tau_g = -[∂V/q₁ ∂V/q₂] and generalized velocities are v = [q̇₁ q̇₂]ᵀ.
+  // P is positive (increases kinetic energy) when potential energy V decreases.
+  for (const double q1 : {M_PI / 6, -M_PI / 3}) {
+    for (const double q2 : {M_PI / 4, -M_PI / 6}) {
+      SCOPED_TRACE(fmt::format("q1={}, q2={}", q1, q2));
+      joint1.set_angle(context.get(), q1);
+      joint2.set_angle(context.get(), q2);
+
+      const double v1 = 1.2;
+      const double v2 = -0.7;
+      joint1.set_angular_rate(context.get(), v1);
+      joint2.set_angular_rate(context.get(), v2);
+
+      const VectorXd tau_g = pendulum.CalcGravityGeneralizedForces(*context);
+      const double expected_power = tau_g(0) * v1 + tau_g(1) * v2;
+      EXPECT_NEAR(pendulum.EvalConservativePower(*context), expected_power,
+                  1e-14);
     }
   }
 }
