@@ -1574,6 +1574,9 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     frame_body_poses->SetX_BF(frame->index(), X_LF);
   }
 
+  // TODO(sherm1) Currently X_BL is always identity so we don't need to set
+  // it here. When we support composites, we'll need to set it here as well.
+
   // For every mobilized body, precalculate its body-frame spatial inertia
   // M_BBo_B from the parameterization of that inertia.
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
@@ -1587,6 +1590,11 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     const SpatialInertia<T> M_LLo_L =
         link.CalcSpatialInertiaInBodyFrame(context);
     frame_body_poses->SetM_LLo_L(link.ordinal(), M_LLo_L);
+
+    const Vector3<T>& p_LoLcm_L = M_LLo_L.get_com();
+    const RigidTransform<T>& X_BL = frame_body_poses->get_X_BL(link.ordinal());
+    const Vector3<T> p_BoLcm_B = X_BL * p_LoLcm_L;
+    frame_body_poses->Set_p_BoLcm_B(link.ordinal(), p_BoLcm_B);
 
     // TODO(sherm1) When we support composites, M_BBo_B ≠ M_LLo_L.
     frame_body_poses->SetM_BBo_B(mobod.index(), M_LLo_L);
@@ -1872,6 +1880,34 @@ void MultibodyTree<T>::CalcInverseDynamics(
   const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
   for (int i = 0; i < num_velocities(); ++i) {
     (*tau_array)(i) += reflected_inertia(i) * known_vdot(i);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcSystemJacobianTransposeTimesF(
+    const systems::Context<T>& context,
+    std::vector<SpatialForce<T>>* F_Bo_W_array,
+    EigenPtr<VectorX<T>> tau) const {
+  DRAKE_THROW_UNLESS(F_Bo_W_array != nullptr);
+  DRAKE_THROW_UNLESS(ssize(*F_Bo_W_array) == num_mobods());
+  DRAKE_THROW_UNLESS(tau != nullptr);
+  DRAKE_THROW_UNLESS(tau->size() == num_velocities());
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+
+  // Iterative tip-to-base sweep over all non-World mobilized bodies. Children
+  // always have larger MobodIndex than their parent (a property of the
+  // SpanningForest), so descending order guarantees that by the time we visit
+  // a node, every descendant has already shifted its accumulated force into
+  // this node's entry of (*F_Bo_W_array). Each per-node call uses one local
+  // SpatialForce (no per-mobod scratch is allocated).
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    node.CalcSystemJacobianTransposeTimesF_TipToBase(pc, H_PB_W_cache,
+                                                     F_Bo_W_array, tau);
   }
 }
 
