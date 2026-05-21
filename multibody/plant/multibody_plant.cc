@@ -1649,9 +1649,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (use_sampled_output_ports_) {
     auto cache = std::make_unique<AccelerationKinematicsCache<T>>(
         internal_tree().forest());
-    for (SpatialAcceleration<T>& A_WB : cache->get_mutable_A_WB_pool()) {
-      A_WB.SetZero();
-    }
+    cache->SetToZero();
     zero_acceleration_kinematics_placeholder_ = std::move(cache);
   }
   FinalizeConstraints();
