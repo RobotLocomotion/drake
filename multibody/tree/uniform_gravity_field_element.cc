@@ -54,46 +54,29 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
 
-  // TODO(amcastro-tri): Get these from the cache.
-  internal::PositionKinematicsCache<T> pc(model.forest());
-  model.CalcPositionKinematicsCache(context, &pc);
-  internal::VelocityKinematicsCache<T> vc(model.forest());
-  vc.InitializeToZero();
+  // Populate per-body gravity spatial forces F_grav_Bo_W via this element's
+  // existing helper, which only reads the position kinematics.
+  const internal::PositionKinematicsCache<T>& pc =
+      model.EvalPositionKinematics(context);
 
-  // Create a multibody forces initialized by default to zero forces.
+  // Get an unevaluated reference to the VelocityKinematicsCache so we don't
+  // have to allocate a new one (it isn't going to be used anyway).
+  const systems::CacheEntry& vc_entry =
+      model.tree_system().velocity_kinematics_cache_entry();
+  const systems::CacheEntryValue& vc_value =
+      vc_entry.get_cache_entry_value(context);
+  const internal::VelocityKinematicsCache<T>& vc =
+      vc_value.PeekValueOrThrow<internal::VelocityKinematicsCache<T>>();
   MultibodyForces<T> forces(model);
-  // Add this element's force contributions, gravity, into the forces object.
   this->CalcAndAddForceContribution(context, pc, vc, &forces);
 
-  // Temporary output vector of spatial forces for each body B at their inboard
-  // frame Mo, expressed in the world W.
-  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_links());
-
-  // Zero vector of generalized accelerations.
-  const VectorX<T> vdot = VectorX<T>::Zero(model.num_velocities());
-
-  // Temporary array for body accelerations.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_links());
-
-  // Output vector of generalized forces:
+  // tau_g = ∑ J_WBᵀ(q) ⋅ F_grav_Bo_W, computed in O(n) without forming J.
+  // The operator destructively accumulates into forces.body_forces() during
+  // its tip-to-base sweep; we no longer need that data after this call.
   VectorX<T> tau_g(model.num_velocities());
-
-  // Compute inverse dynamics with zero generalized velocities and zero
-  // generalized accelerations. Since inverse dynamics computes:
-  // ID(q, v, v̇)  = M(q)v̇ + C(q, v)v - ∑ J_WBᵀ(q) Fgrav_Bo_W
-  // with v = 0 and v̇ = 0 we get:
-  // ID(q, v, v̇) = - ∑ J_WBᵀ(q) Fgrav_Bo_W = -tau_g(q), which is the negative of
-  // the generalized forces due to gravity.
-  // TODO(amcastro-tri): Replace this inverse dynamics implementation by a JᵀF
-  // operator implementation, which would be more efficient.
-  const double ignore_velocities = true;
-  model.CalcInverseDynamics(
-      context, VectorX<T>::Zero(model.num_velocities()), /* vdot = 0 */
-      /* Applied forces. In this case only gravity. */
-      forces.body_forces(), forces.generalized_forces(), ignore_velocities,
-      &A_WB_array, &F_BMo_W_array, /* temporary arrays. */
-      &tau_g /* Output, the generalized forces. */);
-  return -tau_g;
+  model.CalcSystemJacobianTransposeTimesF(
+      context, &forces.mutable_body_forces(), &tau_g);
+  return tau_g;
 }
 
 template <typename T>

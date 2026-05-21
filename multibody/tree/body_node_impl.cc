@@ -605,6 +605,43 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   }
 }
 
+// One step of the iterative tip-to-base sweep that implements τ = Jᵀ⋅F for
+// the system Jacobian. By the time this is invoked on body B every child of B
+// has already shifted its accumulated force into (*F_Bo_W_array)[B], so that
+// slot already holds B's externally applied force plus all descendants'
+// contributions. We then project via H_PB_Wᵀ to write τ's segment for this
+// mobilizer, and shift the result up to the parent.
+template <typename T, class ConcreteMobilizer>
+void BodyNodeImpl<T, ConcreteMobilizer>::
+    CalcSystemJacobianTransposeTimesF_TipToBase(
+        const PositionKinematicsCache<T>& pc,
+        const std::vector<Vector6<T>>& H_PB_W_cache,
+        std::vector<SpatialForce<T>>* F_Bo_W_array,
+        EigenPtr<VectorX<T>> tau) const {
+  DRAKE_ASSERT(mobod_index() != world_mobod_index());
+  DRAKE_ASSERT(F_Bo_W_array != nullptr);
+  DRAKE_ASSERT(tau != nullptr);
+
+  // The fully-accumulated spatial force on body B at Bo, expressed in W: the
+  // externally applied force on B plus the shifted contributions from every
+  // descendant of B (added by the earlier tip-side iterations of this sweep).
+  const SpatialForce<T>& F_Bo_W = (*F_Bo_W_array)[mobod_index()];
+
+  // Project onto this mobilizer's velocity subspace. H_PB_W is already in W,
+  // so τ_seg = H_PB_Wᵀ⋅F_Bo_W with no frame conversion.
+  if constexpr (kNv > 0) {
+    const auto H_PB_W = get_H(H_PB_W_cache);  // 6 x kNv fixed-size Map.
+    Eigen::Map<VVector<T>> tau_seg(get_mutable_v(tau->data()));
+    tau_seg.noalias() = H_PB_W.transpose() * F_Bo_W.get_coeffs();
+  }
+
+  // Shift Bo → Po and accumulate into the parent's slot. p_PoBo_W goes from
+  // parent's origin to this body's origin; the shift to express this body's
+  // force at the parent's origin uses the reversed vector.
+  const Vector3<T>& p_PoBo_W = get_p_PoBo_W(pc);
+  (*F_Bo_W_array)[inboard_mobod_index()] += F_Bo_W.Shift(-p_PoBo_W);
+}
+
 template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcArticulatedBodyInertiaCache_TipToBase(
