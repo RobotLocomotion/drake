@@ -10983,12 +10983,20 @@ Warning:
         // Source: drake/multibody/tree/uniform_gravity_field_element.h
         const char* doc =
 R"""(This ForceElement allows modeling the effect of a uniform gravity
-field as felt by bodies on the surface of the Earth. This gravity
-field acts on all bodies in the MultibodyTree model.)""";
+field as felt by bodies on the surface of the Earth or elsewhere. This
+gravity field acts on all bodies in the MultibodyPlant except those
+whose ModelInstance has been explicitly excluded.)""";
         // Symbol: drake::multibody::UniformGravityFieldElement::CalcConservativePower
         struct /* CalcConservativePower */ {
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(Returns gravitational power acting on the system. This is positive
+when gravitational potential energy is decreasing. In terms of the
+generalized gravity forces ``tau_g`` and the generalized velocities
+``v``, the gravitational power is ``v⋅tau_g``.
+
+See also:
+    CalcGravityGeneralizedForces())""";
         } CalcConservativePower;
         // Symbol: drake::multibody::UniformGravityFieldElement::CalcGravityGeneralizedForces
         struct /* CalcGravityGeneralizedForces */ {
@@ -11008,14 +11016,18 @@ generalized forces, like so:
 
 .. code-block:: c++
 
-    Mv̇ + C(q, v)v = tau_g(q) + tau_app
+    M(q)v̇ + C(q, v)v = tau_g(q) + tau_app
 
 .. raw:: html
 
     </details>
 
-where ``tau_app`` includes any other generalized forces applied on the
-system.
+where ``tau_app`` includes any other forces acting on the system
+(converted to generalized forces).
+
+Note:
+    Given the gravitational potential energy PE(q), the generalized
+    force at the iᵗʰ joint degree of freedom is tau_gᵢ = −∂PE(q)/∂qᵢ.
 
 Parameter ``context``:
     The context storing the state of the multibody model to which this
@@ -11023,30 +11035,31 @@ Parameter ``context``:
 
 Returns:
     tau_g A vector containing the generalized forces due to this
-    gravity field force element. The generalized forces are consistent
-    with the vector of generalized velocities ``v`` for the parent
-    MultibodyTree model so that the inner product ``v⋅tau_g``
-    corresponds to the power applied by the gravity forces on the
-    mechanical system. That is, ``v⋅tau_g > 0`` corresponds to
-    potential energy going into the system, as either mechanical
-    kinetic energy, some other potential energy, or heat, and
-    therefore to a decrease of potential energy.)""";
+    gravity field force element. The ordering of the generalized
+    forces is consistent with the vector of generalized velocities
+    ``v`` for the parent MultibodyPlant so that the inner product
+    ``v⋅tau_g`` is the gravitational power acting on the mechanical
+    system. That is, ``v⋅tau_g > 0`` corresponds to potential energy
+    going *into* the system, as either mechanical kinetic energy, some
+    other potential energy, or heat, and therefore to a decreasing of
+    gravitational potential energy.)""";
         } CalcGravityGeneralizedForces;
         // Symbol: drake::multibody::UniformGravityFieldElement::CalcNonConservativePower
         struct /* CalcNonConservativePower */ {
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(Returns zero always since gravity is conservative.)""";
         } CalcNonConservativePower;
         // Symbol: drake::multibody::UniformGravityFieldElement::CalcPotentialEnergy
         struct /* CalcPotentialEnergy */ {
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
-R"""(Computes the total potential energy of all bodies in the model in this
-uniform gravity field. The definition of potential energy allows to
-arbitrarily choose the zero energy height. This element takes the zero
-energy height to be the same as the world's height. That is, a body
-will have zero potential energy when its the height of its center of
-mass is at the world's origin.)""";
+R"""(Computes the total gravitational potential energy of all bodies in the
+model in this uniform gravity field. The definition of potential
+energy allows to arbitrarily choose the zero energy height. This
+element takes the zero energy height to be the same as the World
+origin height. That is, a body will have zero potential energy when
+the height of its center of mass is at the height of the World origin.)""";
         } CalcPotentialEnergy;
         // Symbol: drake::multibody::UniformGravityFieldElement::DoCalcAndAddForceContribution
         struct /* DoCalcAndAddForceContribution */ {
@@ -11068,35 +11081,37 @@ mass is at the world's origin.)""";
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc_0args =
 R"""(Constructs a uniform gravity field element with a default strength (on
-the earth's surface) and direction (-z).)""";
+the Earth's surface) and direction (-z).)""";
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc_1args =
-R"""(Constructs a uniform gravity field element with a strength given by
-the acceleration of gravity vector ``g_W``, expressed in the world
-frame W.)""";
+R"""(Constructs a uniform gravity field element with a strength and
+direction given by the acceleration of gravity vector ``g_W``,
+expressed in the world frame W.)""";
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc_2args =
-R"""(Constructs a uniform gravity field element with a strength given by
-the acceleration of gravity vector ``g_W``, expressed in the world
-frame W. Gravity is disabled for the set of model instances
-``disabled_model_instances``.)""";
+R"""(Constructs a uniform gravity field element with a strength and
+direction given by the acceleration of gravity vector ``g_W``,
+expressed in the world frame W. Gravity is disabled for the set of
+model instances ``disabled_model_instances``.
+
+See also:
+    set_enabled(), is_enabled())""";
         } ctor;
         // Symbol: drake::multibody::UniformGravityFieldElement::gravity_vector
         struct /* gravity_vector */ {
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
-R"""(Returns the acceleration of the gravity vector in m/s², expressed in
-the world frame W.)""";
+R"""(Returns the acceleration of gravity vector in m/s², expressed in the
+world frame W.)""";
         } gravity_vector;
         // Symbol: drake::multibody::UniformGravityFieldElement::is_enabled
         struct /* is_enabled */ {
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
-R"""(Returns:
-    ``True`` iff gravity is enabled for ``model_instance``.
+R"""(Checks whether gravity is enabled for a given model instance.
 
-See also:
-    enable(), disable().
+Returns:
+    ``True`` iff gravity is enabled for ``model_instance``.
 
 Raises:
     RuntimeError if the model instance is invalid.
@@ -11109,7 +11124,8 @@ Raises:
         struct /* set_enabled */ {
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
-R"""(Sets is_enabled() for ``model_instance`` to ``is_enabled``.
+R"""(Enables or disables gravity for a given ``model_instance``. Only
+permitted pre-Finalize().
 
 Raises:
     if the parent model is finalized.
@@ -11125,8 +11141,8 @@ Raises:
         struct /* set_gravity_vector */ {
           // Source: drake/multibody/tree/uniform_gravity_field_element.h
           const char* doc =
-R"""(Sets the acceleration of gravity vector, expressed in the world frame
-W in m/s².)""";
+R"""(Sets the acceleration of gravity vector in m/s², expressed in the
+world frame W.)""";
         } set_gravity_vector;
       } UniformGravityFieldElement;
       // Symbol: drake::multibody::UnitInertia
