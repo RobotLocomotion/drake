@@ -315,7 +315,6 @@ use_repo(
     "qhull_internal",
     "scs_internal",
     "sdformat_internal",
-    "spgrid_internal",
     "spral_internal",
     "stduuid_internal",
     "suitesparse_internal",
@@ -361,6 +360,12 @@ use_repo(
     "doxygen_internal",
     "styleguide_internal",
 )
+
+spgrid_internal = use_extension(
+    "//tools/workspace/spgrid_internal:repository.bzl",
+    "spgrid_internal",
+)
+use_repo(spgrid_internal, "spgrid_internal")
 
 crate_universe = use_extension(
     "//tools/workspace/crate_universe:extensions.bzl",
