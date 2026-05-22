@@ -65,7 +65,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
   using PickledMonomial =
       std::pair<T /* coefficient */, std::vector<PickledTerm>>;
   using PickledPolynomial = std::vector<PickledMonomial>;
-  cls.def(py::pickle(
+  DefPickle(
+      &cls,
       [](const Class& self) {
         PickledPolynomial pickled_polynomial;
         pickled_polynomial.reserve(self.GetMonomials().size());
@@ -80,7 +81,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         }
         return pickled_polynomial;
       },
-      [](PickledPolynomial pickled_polynomial) {
+      [](Class* self, PickledPolynomial pickled_polynomial) {
         std::vector<typename Class::Monomial> monomials;
         monomials.reserve(pickled_polynomial.size());
         for (const auto& [coefficient, pickled_terms] : pickled_polynomial) {
@@ -91,9 +92,9 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
           }
           monomials.emplace_back(coefficient, monomial_terms);
         }
-        return Class(
+        new (self) Class(
             monomials.begin(), monomials.end(), /* canonicalize= */ false);
-      }));
+      });
 }
 }  // namespace
 

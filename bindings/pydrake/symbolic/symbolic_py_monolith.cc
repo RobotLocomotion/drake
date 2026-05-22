@@ -156,16 +156,17 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def(py::self != double());
   internal::BindMathOperators<Variable>(&var_cls);
   DefCopyAndDeepCopy(&var_cls);
-  var_cls.def(py::pickle(
+  DefPickle(
+      &var_cls,
       [m](const Variable& self) -> std::pair<Variable::Id, std::string> {
         return std::pair<Variable::Id, std::string>(
             self.get_id(), self.get_name());
       },
-      [m](std::pair<Variable::Id, std::string> args) -> Variable {
-        return symbolic::VariablePythonAttorney::Construct(
+      [m](Variable* self, std::pair<Variable::Id, std::string> args) {
+        new (self) Variable(symbolic::VariablePythonAttorney::Construct(
             /* id = */ std::get<0>(args),
-            /* name = */ std::move(std::get<1>(args)));
-      }));
+            /* name = */ std::move(std::get<1>(args))));
+      });
 
   // Bind the free function TaylorExpand.
   m.def(
@@ -240,7 +241,8 @@ void DefineSymbolicMonolith(py::module_ m) {
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads,
   // etc.
   constexpr auto& doc_variables = doc_expr.Variables;
-  py::class_<Variables>(m, "Variables", doc_variables.doc)
+  py::class_<Variables> cls_variables(m, "Variables", doc_variables.doc);
+  cls_variables  // BR
       .def(py::init<>(), doc_variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
           doc_variables.ctor.doc_1args_vec)
@@ -299,16 +301,16 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def(py::self + Variable())
       .def(Variable() + py::self)
       .def(py::self - py::self)
-      .def(py::self - Variable())
-      .def(py::pickle(
-          [m](const Variables& self) -> std::vector<Variable> {
-            return std::vector<Variable>(self.begin(), self.end());
-          },
-          [m](const std::vector<Variable>& args) -> Variables {
-            Variables result;
-            result.insert(args.begin(), args.end());
-            return result;
-          }));
+      .def(py::self - Variable());
+  DefPickle(
+      &cls_variables,
+      [m](const Variables& self) -> std::vector<Variable> {
+        return std::vector<Variable>(self.begin(), self.end());
+      },
+      [m](Variables* self, const std::vector<Variable>& args) {
+        new (self) Variables();
+        self->insert(args.begin(), args.end());
+      });
 
   m.def(
       "intersect",

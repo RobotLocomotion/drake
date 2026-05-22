@@ -180,9 +180,12 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
               return self * position;
             },
             py::arg("position"), "Position vector list multiplication")
-        .def("inverse", [](const Class* self) { return self->inverse(); })
-        .def(py::pickle([](const Class& self) { return self.matrix(); },
-            [](const Matrix4<T>& matrix) { return Class(matrix); }));
+        .def("inverse", [](const Class* self) { return self->inverse(); });
+    DefPickle(
+        &cls, [](const Class& self) { return self.matrix(); },
+        [](Class* self, const Matrix4<T>& matrix) {
+          new (self) Class(matrix);
+        });
     cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
@@ -298,13 +301,19 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("multiply", multiply_vector_list, py::arg("vector"),
             "Multiplication by a list of vectors expressed in the same frame")
         .def("inverse", [](const Class* self) { return self->inverse(); })
-        .def("conjugate", [](const Class* self) { return self->conjugate(); })
-        .def(py::pickle(
-            // Leverage Python API so we can easily use `wxyz` form.
-            [](py::object self) { return self.attr("wxyz")(); },
-            [py_class_obj](py::object wxyz) -> Class {
-              return py_class_obj(wxyz).cast<Class>();
-            }));
+        .def("conjugate", [](const Class* self) { return self->conjugate(); });
+    DefPickle(
+        &cls,
+        // Leverage Python API so we can easily use `wxyz` form.
+        [](const Class& self) {
+          Vector4<T> wxyz;
+          wxyz << self.w(), self.x(), self.y(), self.z();
+          return wxyz;
+        },
+        [](Class* self, Vector4<T> wxyz) {
+          new (self) Class(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+          CheckQuaternion(*self);
+        });
     cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
@@ -392,17 +401,18 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             "multiply",
             [](const Class& self, const Class& other) { return self * other; },
             py::arg("other"))
-        .def("inverse", [](const Class* self) { return self->inverse(); })
-        .def(py::pickle(
-            [](const Class& self) {
-              return py::make_tuple(self.angle(), self.axis());
-            },
-            [](py::tuple t) {
-              DRAKE_THROW_UNLESS(t.size() == 2);
-              return Class(t[0].cast<T>(), t[1].cast<Vector3<T>>());
-            }));
-    // N.B. This class does not support multiplication with vectors, so we do
-    // not use `WrapToMatchInputShape` here.
+        .def("inverse", [](const Class* self) { return self->inverse(); });
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return py::make_tuple(self.angle(), self.axis());
+        },
+        [](Class* self, py::tuple t) {
+          DRAKE_THROW_UNLESS(t.size() == 2);
+          new (self) Class(t[0].cast<T>(), t[1].cast<Vector3<T>>());
+        });
+    // N.B. This class does not support multiplication with vectors, so we
+    // do not use `WrapToMatchInputShape` here.
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
