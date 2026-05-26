@@ -59,7 +59,6 @@ load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_
 load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
-load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_module_extension_impl")  # noqa
 load("//tools/workspace/spral_internal:repository.bzl", "spral_internal_repository")  # noqa
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
@@ -189,11 +188,12 @@ drake_dep_repositories = module_extension(
 
 def _internal_repositories_impl(module_ctx):
     _add_internal_repositories()
-    spgrid_module_extension_impl(module_ctx)
+    return module_ctx.extension_metadata(
+        root_module_direct_deps = "all",
+        root_module_direct_dev_deps = [],
+    )
 
 internal_repositories = module_extension(
     implementation = _internal_repositories_impl,
-    doc = """(Internal use only) Wraps the add_default_repositories repository
-    rule into a bzlmod module extension, excluding repositories that are
-    already covered by modules, drake_dep_repositories, and crate_universe.""",
+    doc = """(Internal use only) Provides private Drake dependencies.""",
 )
