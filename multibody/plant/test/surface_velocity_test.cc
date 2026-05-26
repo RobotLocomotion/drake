@@ -49,29 +49,31 @@ using geometry::Sphere;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 
-GTEST_TEST(MultibodyPlantTest, RegisterSurfaceVelocityErrors) {
+GTEST_TEST(MultibodyPlantTest, SetSurfaceVelocityAxisErrors) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& belt =
       plant.AddRigidBody("belt", SpatialInertia<double>::MakeUnitary());
 
   // World body is not allowed.
-  EXPECT_THROW(plant.RegisterSurfaceVelocity(plant.world_body(), {1, 0, 0}),
-               std::exception);
+  EXPECT_THROW(
+      plant.SetSurfaceVelocityAxis(plant.world_body(), Vector3d{1, 0, 0}),
+      std::exception);
 
-  // Registering the same body twice is an error.
-  plant.RegisterSurfaceVelocity(belt, {1, 0, 0});
-  EXPECT_THROW(plant.RegisterSurfaceVelocity(belt, {1, 0, 0}), std::exception);
+  // Zero vector is not allowed.
+  EXPECT_THROW(plant.SetSurfaceVelocityAxis(belt, Vector3d::Zero()),
+               std::exception);
 
   // Registration after Finalize() is not allowed.
   plant.Finalize();
-  EXPECT_THROW(plant.RegisterSurfaceVelocity(belt, {1, 0, 0}), std::exception);
+  EXPECT_THROW(plant.SetSurfaceVelocityAxis(belt, Vector3d{1, 0, 0}),
+               std::exception);
 }
 
 // Fixture: finalized standalone plant, standalone context
 //
-// "belt" is registered with non-unit normal (2,0,0) to exercise normalization.
-// "other" is intentionally left unregistered.  Tests that need a speed wired
-// to the surface_speeds port call FixValue().
+// "belt" is registered with non-unit axis (2,0,0) to exercise normalization.
+// "other" is intentionally left without surface velocity. Tests that need a
+// speed wired to the surface_speeds port call FixValue().
 class SurfaceVelocityTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -79,7 +81,7 @@ class SurfaceVelocityTest : public ::testing::Test {
     other_ =
         &plant_.AddRigidBody("other", SpatialInertia<double>::MakeUnitary());
     // Intentionally non-unit to exercise normalization.
-    plant_.RegisterSurfaceVelocity(*belt_, Vector3d(2, 0, 0));
+    plant_.SetSurfaceVelocityAxis(*belt_, Vector3d(2, 0, 0));
     plant_.Finalize();
     context_ = plant_.CreateDefaultContext();
   }
@@ -97,26 +99,49 @@ class SurfaceVelocityTest : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> context_;
 };
 
-// RegisterSurfaceVelocity normalizes the stored direction: (2,0,0) → (1,0,0).
-TEST_F(SurfaceVelocityTest, RegisterNormalizesInput) {
-  EXPECT_TRUE(CompareMatrices(plant_.GetSurfaceVelocityAxis(*context_, *belt_),
+// SetSurfaceVelocityAxis normalizes the stored direction: (2,0,0) → (1,0,0).
+TEST_F(SurfaceVelocityTest, SetAxisNormalizesInput) {
+  EXPECT_TRUE(CompareMatrices(*plant_.GetSurfaceVelocityAxis(*belt_),
                               Vector3d(1, 0, 0)));
 }
 
-// SetSurfaceVelocityAxis normalizes its input and the result is visible via
-// GetSurfaceVelocityAxis.
-TEST_F(SurfaceVelocityTest, SetAxisNormalizesAndPersists) {
-  plant_.SetSurfaceVelocityAxis(context_.get(), *belt_, Vector3d(0, 3, 0));
-  EXPECT_TRUE(CompareMatrices(plant_.GetSurfaceVelocityAxis(*context_, *belt_),
-                              Vector3d(0, 1, 0)));
+// GetSurfaceVelocityAxis returns nullopt for an unregistered body.
+TEST_F(SurfaceVelocityTest, GetAxisNulloptForUnregisteredBody) {
+  EXPECT_EQ(plant_.GetSurfaceVelocityAxis(*other_), std::nullopt);
 }
 
-TEST_F(SurfaceVelocityTest, AccessorsThrowForUnregisteredBody) {
-  EXPECT_THROW(plant_.GetSurfaceVelocityAxis(*context_, *other_),
+// SetSurfaceVelocityAxis is pre-Finalize only.
+TEST_F(SurfaceVelocityTest, SetAxisThrowsAfterFinalize) {
+  EXPECT_THROW(plant_.SetSurfaceVelocityAxis(*belt_, Vector3d(0, 1, 0)),
                std::exception);
-  EXPECT_THROW(
-      plant_.SetSurfaceVelocityAxis(context_.get(), *other_, {1, 0, 0}),
-      std::exception);
+}
+
+// SetSurfaceVelocityAxis normalizes its input, can overwrite an existing
+// registration, and the value survives Finalize().
+GTEST_TEST(MultibodyPlantTest, SetSurfaceVelocityAxisNormalizesAndPersists) {
+  MultibodyPlant<double> plant{0.0};
+  const auto& belt =
+      plant.AddRigidBody("belt", SpatialInertia<double>::MakeUnitary());
+  plant.SetSurfaceVelocityAxis(belt, Vector3d(1, 0, 0));
+  // Overwrite with a non-unit vector; should be normalized to (0,1,0).
+  plant.SetSurfaceVelocityAxis(belt, Vector3d(0, 3, 0));
+  EXPECT_TRUE(
+      CompareMatrices(*plant.GetSurfaceVelocityAxis(belt), Vector3d(0, 1, 0)));
+  plant.Finalize();
+  // Value is unchanged after finalization.
+  EXPECT_TRUE(
+      CompareMatrices(*plant.GetSurfaceVelocityAxis(belt), Vector3d(0, 1, 0)));
+}
+
+// SetSurfaceVelocityAxis(body, nullopt) clears a registration.
+GTEST_TEST(MultibodyPlantTest, SetSurfaceVelocityAxisNulloptClears) {
+  MultibodyPlant<double> plant{0.0};
+  const auto& belt =
+      plant.AddRigidBody("belt", SpatialInertia<double>::MakeUnitary());
+  plant.SetSurfaceVelocityAxis(belt, Vector3d(1, 0, 0));
+  EXPECT_TRUE(plant.GetSurfaceVelocityAxis(belt).has_value());
+  plant.SetSurfaceVelocityAxis(belt, std::nullopt);
+  EXPECT_FALSE(plant.GetSurfaceVelocityAxis(belt).has_value());
 }
 
 // Unconnected port (no FixValue called) → speed treated as zero.
@@ -154,23 +179,6 @@ TEST_F(SurfaceVelocityTest, WorksWithFiniteSpeeds) {
         plant_, belt_->index(), *context_, Vector3d(0, 0, 1));
     EXPECT_TRUE(CompareMatrices(v, Vector3d(0, -speed, 0)));
   }
-}
-
-// SetSurfaceVelocityAxis changes the velocity direction in subsequent calls.
-TEST_F(SurfaceVelocityTest, SetAxisAffectsComputation) {
-  constexpr double tol = 1e-12;
-  FixBeltSpeed(1.0);
-
-  // Initial a_ss_B = (1,0,0): v = (1,0,0)×(0,0,1) = (0,-1,0).
-  Vector3d v = MultibodyPlantTester::ComputeSurfaceVelocity(
-      plant_, belt_->index(), *context_, Vector3d(0, 0, 1));
-  EXPECT_TRUE(CompareMatrices(v, Vector3d(0, -1, 0), tol));
-
-  // After update to (0,1,0): v = (0,1,0)×(0,0,1) = (1,0,0).
-  plant_.SetSurfaceVelocityAxis(context_.get(), *belt_, Vector3d(0, 1, 0));
-  v = MultibodyPlantTester::ComputeSurfaceVelocity(
-      plant_, belt_->index(), *context_, Vector3d(0, 0, 1));
-  EXPECT_TRUE(CompareMatrices(v, Vector3d(1, 0, 0), tol));
 }
 
 TEST_F(SurfaceVelocityTest, SurfaceSpeedsPortName) {
@@ -305,7 +313,7 @@ class OrthogonalSurfaceVelocityTest
     plant_->RegisterCollisionGeometry(*ground_,
                                       RigidTransformd(Vector3d(0, 0, -0.5)),
                                       Box(10.0, 10.0, 1.0), "ground", rigid);
-    plant_->RegisterSurfaceVelocity(*ground_, Vector3d(1, 0, 0));
+    plant_->SetSurfaceVelocityAxis(*ground_, Vector3d(1, 0, 0));
 
     if (!GetParam().use_deformable) {
       // Box: free floating, 0.2 m cube.
@@ -318,7 +326,7 @@ class OrthogonalSurfaceVelocityTest
       plant_->RegisterCollisionGeometry(
           *box_, RigidTransformd::Identity(),
           Box(2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize), "box", compliant);
-      plant_->RegisterSurfaceVelocity(*box_, Vector3d(0, -1, 0));
+      plant_->SetSurfaceVelocityAxis(*box_, Vector3d(0, -1, 0));
     } else {
       // Deformable sphere: no surface velocity; contacts the ground belt only.
       auto sphere_instance = std::make_unique<GeometryInstance>(

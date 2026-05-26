@@ -1504,7 +1504,7 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
   if (link_element->HasElement("drake:surface_velocity_axis")) {
     const Vector3d a = ToVector3(
         link_element->Get<gz::math::Vector3d>("drake:surface_velocity_axis"));
-    plant->RegisterSurfaceVelocity(body, a);
+    plant->SetSurfaceVelocityAxis(body, a);
   }
 
   return link_info;

@@ -71,7 +71,7 @@ class SurfaceVelocityIntegrator final : public systems::LeafSystem<double> {
 
    @param builder              The diagram builder.
    @param plant                A finalized MultibodyPlant. Bodies registered
-                               via RegisterSurfaceVelocity() are discovered
+                               via SetSurfaceVelocityAxis() are discovered
                                automatically.
    @param surface_speeds_port  An output port producing BusValue<double> with
                                per-body surface speeds. Typically the same port

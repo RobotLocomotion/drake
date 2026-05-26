@@ -17,6 +17,7 @@
 // #include "drake/visualization/concatenate_images.h"
 // #include "drake/visualization/inertia_visualizer.h"
 // #include "drake/visualization/meshcat_pose_sliders.h"
+// #include "drake/visualization/surface_velocity_integrator.h"
 // #include "drake/visualization/visualization_config.h"
 // #include "drake/visualization/visualization_config_functions.h"
 
@@ -534,6 +535,94 @@ will be updated to ``X``. This "initial pose" update will persist even
 if sliders are removed (e.g., via Delete).)""";
         } SetPose;
       } MeshcatPoseSliders;
+      // Symbol: drake::visualization::SurfaceVelocityIntegrator
+      struct /* SurfaceVelocityIntegrator */ {
+        // Source: drake/visualization/surface_velocity_integrator.h
+        const char* doc =
+R"""(Integrates instantaneous surface speeds into cumulative displacements
+for meshcat surface-velocity visualization.
+
+This system reads per-body surface speeds from a BusValue input port
+and accumulates them into scalar displacements over time (displacement
++= speed * dt at each discrete update). The resulting displacements
+are output as a BusValue keyed by body scoped name, suitable for
+connection to MeshcatVisualizer's ``surface_displacement_input_port``.
+
+.. pydrake_system::
+
+    name: SurfaceVelocityIntegrator
+    input_ports:
+    - surface_speeds
+    output_ports:
+    - surface_displacements
+
+Use AddToBuilder() to wire this system into a diagram alongside an
+existing MeshcatVisualizer.
+
+This system is only available for ``double`` scalar type (not AutoDiff
+or symbolic) because meshcat visualization is double-only.)""";
+        // Symbol: drake::visualization::SurfaceVelocityIntegrator::AddToBuilder
+        struct /* AddToBuilder */ {
+          // Source: drake/visualization/surface_velocity_integrator.h
+          const char* doc =
+R"""(Adds a SurfaceVelocityIntegrator to ``builder``, connects
+``surface_speeds_port`` to its speed input, and connects its
+displacement output to ``visualizer`'s
+`surface_displacement_input_port``.
+
+Parameter ``builder``:
+    The diagram builder.
+
+Parameter ``plant``:
+    A finalized MultibodyPlant. Bodies registered via
+    SetSurfaceVelocityAxis() are discovered automatically.
+
+Parameter ``surface_speeds_port``:
+    An output port producing BusValue<double> with per-body surface
+    speeds. Typically the same port connected to
+    plant.get_surface_speeds_input_port().
+
+Parameter ``visualizer``:
+    The MeshcatVisualizer to receive displacements.
+
+Parameter ``period``:
+    Discrete update period (seconds). Should match `visualizer`'s
+    publish period.
+
+Returns:
+    a reference to the newly added system.)""";
+        } AddToBuilder;
+        // Symbol: drake::visualization::SurfaceVelocityIntegrator::SurfaceVelocityIntegrator
+        struct /* ctor */ {
+          // Source: drake/visualization/surface_velocity_integrator.h
+          const char* doc =
+R"""(Constructs an integrator for the given ``body_names``.
+
+Parameter ``body_names``:
+    Scoped names of the bodies with surface velocity (e.g.
+    ``"model∷belt"``). Each must be a distinct string.
+
+Parameter ``period``:
+    Discrete update period in seconds. Should match the
+    MeshcatVisualizer publish period.)""";
+        } ctor;
+        // Symbol: drake::visualization::SurfaceVelocityIntegrator::surface_displacements_output_port
+        struct /* surface_displacements_output_port */ {
+          // Source: drake/visualization/surface_velocity_integrator.h
+          const char* doc =
+R"""(Returns the ``surface_displacements`` output port (BusValue<double>).
+Signal keys are body scoped names; values are the cumulative surface
+displacement in meters.)""";
+        } surface_displacements_output_port;
+        // Symbol: drake::visualization::SurfaceVelocityIntegrator::surface_speeds_input_port
+        struct /* surface_speeds_input_port */ {
+          // Source: drake/visualization/surface_velocity_integrator.h
+          const char* doc =
+R"""(Returns the ``surface_speeds`` input port (BusValue<double>). Signal
+keys are body scoped names; values are the scalar surface speed in
+m/s. Missing signals are treated as zero speed.)""";
+        } surface_speeds_input_port;
+      } SurfaceVelocityIntegrator;
       // Symbol: drake::visualization::VisualizationConfig
       struct /* VisualizationConfig */ {
         // Source: drake/visualization/visualization_config.h

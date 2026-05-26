@@ -270,7 +270,7 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
               "Failed to parse 'axis' attribute of "
               "<drake:surface_velocity_axis>; ignoring.");
       } else {
-        w_.plant->RegisterSurfaceVelocity(*body_pointer, a);
+        w_.plant->SetSurfaceVelocityAxis(*body_pointer, a);
       }
     }
   }

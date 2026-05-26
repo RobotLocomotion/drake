@@ -69,11 +69,13 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
         internal::ConvertVisualizationConfigToMeshcatParams(config);
     MeshcatVisualizer<double>* illustration_vis = nullptr;
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      auto& vis = MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph,
-                                                          meshcat, params);
       if (params.role == Role::kIllustration &&
           params.prefix == "illustration") {
-        illustration_vis = &vis;
+        illustration_vis = &MeshcatVisualizer<double>::AddToBuilder(
+            builder, *scene_graph, meshcat, params, &plant);
+      } else {
+        MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
+                                                params);
       }
     }
     if (config.publish_contacts) {
@@ -91,7 +93,7 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     if (illustration_vis != nullptr) {
       bool has_surface_velocity = false;
       for (multibody::BodyIndex i(0); i < plant.num_bodies(); ++i) {
-        if (plant.HasSurfaceVelocity(plant.get_body(i))) {
+        if (plant.GetSurfaceVelocityAxis(plant.get_body(i)).has_value()) {
           has_surface_velocity = true;
           break;
         }

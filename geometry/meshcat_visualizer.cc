@@ -22,8 +22,9 @@ namespace drake {
 namespace geometry {
 
 template <typename T>
-MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
-                                        MeshcatVisualizerParams params)
+MeshcatVisualizer<T>::MeshcatVisualizer(
+    std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params,
+    const multibody::MultibodyPlant<double>* plant)
     : systems::LeafSystem<T>(systems::SystemTypeTag<MeshcatVisualizer>{}),
       meshcat_(std::move(meshcat)),
       params_(std::move(params)),
@@ -55,21 +56,28 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
                                      Value<systems::BusValue>())
           .get_index();
 
-  surface_velocity_axes_input_port_ =
-      this->DeclareAbstractInputPort("surface_velocity_axes",
-                                     Value<systems::BusValue>())
-          .get_index();
-
   if (params_.enable_alpha_slider) {
     alpha_value_ = params_.initial_alpha_slider_value;
     meshcat_->AddSlider(alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
+  }
+
+  if (plant != nullptr) {
+    DRAKE_THROW_UNLESS(plant->is_finalized());
+    for (multibody::BodyIndex i(0); i < plant->num_bodies(); ++i) {
+      const auto& body = plant->get_body(i);
+      if (auto axis = plant->GetSurfaceVelocityAxis(body)) {
+        surface_velocity_axes_[body.scoped_name().to_string()] = *axis;
+      }
+    }
   }
 }
 
 template <typename T>
 template <typename U>
 MeshcatVisualizer<T>::MeshcatVisualizer(const MeshcatVisualizer<U>& other)
-    : MeshcatVisualizer(other.meshcat_, other.params_) {}
+    : MeshcatVisualizer(other.meshcat_, other.params_, nullptr) {
+  surface_velocity_axes_ = other.surface_velocity_axes_;
+}
 
 template <typename T>
 MeshcatVisualizer<T>::~MeshcatVisualizer() = default;
@@ -111,20 +119,22 @@ MeshcatAnimation* MeshcatVisualizer<T>::get_mutable_recording() {
 template <typename T>
 MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
-    std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params) {
+    std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params,
+    const multibody::MultibodyPlant<double>* plant) {
   return AddToBuilder(builder, scene_graph.get_query_output_port(),
-                      std::move(meshcat), std::move(params));
+                      std::move(meshcat), std::move(params), plant);
 }
 
 template <typename T>
 MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder,
     const systems::OutputPort<T>& query_object_port,
-    std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params) {
+    std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params,
+    const multibody::MultibodyPlant<double>* plant) {
   const std::string aspirational_name =
       fmt::format("meshcat_visualizer({})", params.prefix);
   auto& visualizer = *builder->template AddSystem<MeshcatVisualizer<T>>(
-      std::move(meshcat), std::move(params));
+      std::move(meshcat), std::move(params), plant);
   if (!builder->HasSubsystemNamed(aspirational_name)) {
     visualizer.set_name(aspirational_name);
   }
@@ -185,16 +195,30 @@ void MeshcatVisualizer<T>::SetObjects(
   // This code is arbitrarily flattening it because the current SceneGraph API
   // is insufficient to support walking the tree.
   for (FrameId frame_id : inspector.GetAllFrameIds()) {
+    const std::string frame_name = frame_id == inspector.world_frame_id()
+                                       ? std::string{}
+                                       : inspector.GetName(frame_id);
     std::string frame_path =
         frame_id == inspector.world_frame_id()
             ? params_.prefix
-            : fmt::format("{}/{}", params_.prefix, inspector.GetName(frame_id));
+            : fmt::format("{}/{}", params_.prefix, frame_name);
     // MultibodyPlant declares frames with SceneGraph using "::". We replace
     // those with `/` here to expose the full tree to Meshcat.
     size_t pos = 0;
     while ((pos = frame_path.find("::", pos)) != std::string::npos) {
       frame_path.replace(pos++, 2, "/");
     }
+    // The per body (aka Frame) surface velocity axes. Note: this assumes that
+    // the frame name *is* the scoped body name in MultibodyPlant.
+    const std::optional<std::vector<double>> surface_velocity_axis =
+        [this, &frame_name]() -> std::optional<std::vector<double>> {
+      const auto it = surface_velocity_axes_.find(frame_name);
+      if (it != surface_velocity_axes_.end()) {
+        const Eigen::Vector3d& a = it->second;
+        return std::vector<double>{a.x(), a.y(), a.z()};
+      }
+      return std::nullopt;
+    }();
 
     bool frame_has_any_geometry = false;
     for (GeometryId geom_id : inspector.GetGeometries(frame_id, params_.role)) {
@@ -265,8 +289,8 @@ void MeshcatVisualizer<T>::SetObjects(
       geometries_to_delete.erase(geom_id);  // Don't delete this one.
       frame_has_any_geometry = true;
 
-      if (properties.HasProperty("meshcat", "has_surface_velocity")) {
-        surface_velocity_geometries_[geom_id] = inspector.GetName(frame_id);
+      if (surface_velocity_axis.has_value()) {
+        meshcat_->SetProperty(path, "crawl_axis", *surface_velocity_axis);
       }
     }
 
@@ -320,22 +344,6 @@ void MeshcatVisualizer<T>::SetSurfaceDisplacements(
     const systems::Context<T>& context) const {
   if (surface_velocity_geometries_.empty()) return;
   const double time = ExtractDoubleOrThrow(context.get_time());
-
-  // Push the live crawl_axis from the axes port each tick so that runtime
-  // changes via SetSurfaceVelocityAxis() are reflected in meshcat.
-  const auto& axes_port =
-      this->get_input_port(surface_velocity_axes_input_port_);
-  if (axes_port.HasValue(context)) {
-    const auto& normals_bus =
-        axes_port.template Eval<systems::BusValue>(context);
-    for (const auto& [geom_id, frame_name] : surface_velocity_geometries_) {
-      const AbstractValue* v = normals_bus.Find(frame_name);
-      if (v == nullptr) continue;
-      const Eigen::Vector3d& a = v->get_value<Eigen::Vector3d>();
-      meshcat_->SetProperty(geometries_.at(geom_id), "crawl_axis",
-                            std::vector<double>{a.x(), a.y(), a.z()}, time);
-    }
-  }
 
   // Push the cumulative crawl_displacement.
   const auto& disp_port =

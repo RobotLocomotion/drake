@@ -52,7 +52,7 @@ SurfaceVelocityIntegrator& SurfaceVelocityIntegrator::AddToBuilder(
   std::vector<std::string> body_names;
   for (multibody::BodyIndex i(0); i < plant.num_bodies(); ++i) {
     const auto& body = plant.get_body(i);
-    if (plant.HasSurfaceVelocity(body)) {
+    if (plant.GetSurfaceVelocityAxis(body).has_value()) {
       body_names.push_back(body.scoped_name().to_string());
     }
   }
@@ -63,8 +63,6 @@ SurfaceVelocityIntegrator& SurfaceVelocityIntegrator::AddToBuilder(
   builder->Connect(surface_speeds_port, integrator.surface_speeds_input_port());
   builder->Connect(integrator.surface_displacements_output_port(),
                    visualizer.surface_displacement_input_port());
-  builder->Connect(plant.get_surface_velocity_axes_output_port(),
-                   visualizer.surface_velocity_axes_input_port());
   return integrator;
 }
 
