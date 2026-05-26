@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":icf_solver_parameters",
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
+        ":reduced_mapping",
         ":weld_constraints_data_pool",
     ],
 )
@@ -200,12 +201,23 @@ drake_cc_library(
         ":icf_data",
         ":icf_search_direction_data",
         ":limit_constraints_data_pool",
+        ":reduced_mapping",
         ":weld_constraints_data_pool",
         "//common:default_scalars",
         "//common:essential",
         "//math:geometric_transform",
         "//math:vector3_util",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
+    ],
+)
+
+drake_cc_library(
+    name = "reduced_mapping",
+    hdrs = [
+        "reduced_mapping.h",
+    ],
+    deps = [
+        "//math:partial_permutation",
     ],
 )
 

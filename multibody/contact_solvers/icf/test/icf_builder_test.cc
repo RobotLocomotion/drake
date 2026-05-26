@@ -323,7 +323,7 @@ GTEST_TEST(IcfBuilder, RetryStep) {
 
 GTEST_TEST(IcfBuilder, BallConstraintUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
@@ -388,6 +388,61 @@ GTEST_TEST(IcfBuilder, DeformableUnsupported) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(&plant),
                               ".*deformable.*bodies.* == 0.*fail.*");
+}
+
+GTEST_TEST(IcfBuilder, JointLockingSupport) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+
+  plant.Finalize();
+  IcfBuilder<double> dut(&plant);
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+
+  IcfModel<double> model;
+
+  {
+    // Update a model and check for *no* joint locking effects. The only
+    // results of interest are the ReductionParameters at params().reduction.
+    dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
+    EXPECT_FALSE(model.is_reducible());
+    const auto& r = model.params().reduction;
+    EXPECT_TRUE(r.is_valid);
+    EXPECT_FALSE(r.is_smaller);
+    const std::vector<int> expected_unlocked_dofs = {0, 1};
+    EXPECT_EQ(r.unlocked_dofs, expected_unlocked_dofs);
+
+    EXPECT_EQ(ssize(r.per_clique_unlocked_dofs), model.num_cliques());
+
+    ASSERT_EQ(model.num_cliques(), 1);
+    EXPECT_EQ(r.per_clique_unlocked_dofs[0], expected_unlocked_dofs);
+  }
+
+  plant.get_joint(JointIndex(1)).Lock(&plant_context);
+
+  {
+    // Update a model and check for joint locking effects. The only results of
+    // interest are the ReductionParameters at params().reduction.
+    dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
+    EXPECT_TRUE(model.is_reducible());
+    const auto& r = model.params().reduction;
+    EXPECT_TRUE(r.is_valid);
+    EXPECT_TRUE(r.is_smaller);
+    const std::vector<int> expected_unlocked_dofs = {0};
+    EXPECT_EQ(r.unlocked_dofs, expected_unlocked_dofs);
+
+    EXPECT_EQ(ssize(r.per_clique_unlocked_dofs), model.num_cliques());
+
+    ASSERT_EQ(model.num_cliques(), 1);
+    EXPECT_EQ(r.per_clique_unlocked_dofs[0], expected_unlocked_dofs);
+  }
 }
 
 }  // namespace
