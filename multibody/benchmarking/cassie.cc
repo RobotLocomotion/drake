@@ -146,6 +146,17 @@ class Cassie : public benchmark::Fixture {
     }
   }
 
+  // Runs the GravityGeneralizedForces benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoGravityGeneralizedForces(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcGravityGeneralizedForces(*context_);
+    }
+  }
+
   // Runs the PosAndVelKinematics benchmark.
   // NOLINTNEXTLINE(runtime/references)
   void DoPosAndVelKinematics(benchmark::State& state) {
@@ -372,6 +383,15 @@ BENCHMARK_REGISTER_F(CassieDouble, BlockSystemJacobian)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad);
 
+BENCHMARK_DEFINE_F(CassieDouble, GravityGeneralizedForces)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoGravityGeneralizedForces(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, GravityGeneralizedForces)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
 // NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieDouble, PosAndVelKinematics)(benchmark::State& state) {
   DoPosAndVelKinematics(state);
@@ -418,6 +438,16 @@ BENCHMARK_DEFINE_F(CassieAutoDiff, PositionKinematics)
   DoPositionKinematics(state);
 }
 BENCHMARK_REGISTER_F(CassieAutoDiff, PositionKinematics)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, GravityGeneralizedForces)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoGravityGeneralizedForces(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, GravityGeneralizedForces)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad)
     ->Arg(kWantGradQ);
@@ -484,6 +514,17 @@ BENCHMARK_REGISTER_F(CassieExpression, PositionKinematics)
     ->Unit(benchmark::kMicrosecond)
     ->Arg(kWantNoGrad)
     ->Arg(kWantGradQ);
+
+BENCHMARK_DEFINE_F(CassieExpression, GravityGeneralizedForces)
+// NOLINTNEXTLINE(runtime/references)
+(benchmark::State& state) {
+  DoGravityGeneralizedForces(state);
+}
+
+// TODO(sherm1) Arg(kWantGradQ/X) hangs and V doesn't apply here.
+BENCHMARK_REGISTER_F(CassieExpression, GravityGeneralizedForces)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
 
 BENCHMARK_DEFINE_F(CassieExpression, PosAndVelKinematics)
 // NOLINTNEXTLINE(runtime/references)
