@@ -58,6 +58,11 @@ class MultibodyPlantIcfAttorney {
   GetContactByPenaltyMethodParameters(const MultibodyPlant<T>& plant) {
     return plant.penalty_method_contact_parameters_;
   }
+
+  static const internal::JointLockingCacheData<T>& EvalJointLocking(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalJointLocking(context);
+  }
 };
 
 }  // namespace internal

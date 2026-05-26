@@ -194,6 +194,17 @@ void MakeModelForWeld(IcfModel<T>* model, double time_step = 0.01) {
   params->J_WB[2] = Matrix6<T>::Identity();  // Floating body.
   params->J_WB[3] = J_WB3;
 
+  // No joint locking.
+  auto& reduction = params->reduction;
+  reduction.unlocked_dofs = {0,  1,  2,  3,  4,  5,   // BR
+                             6,  7,  8,  9,  10, 11,  //
+                             12, 13, 14, 15, 16, 17};
+  reduction.per_clique_unlocked_dofs = {
+      {0, 1, 2, 3, 4, 5},
+      {0, 1, 2, 3, 4, 5},
+      {0, 1, 2, 3, 4, 5},
+  };
+
   model->ResetParameters(std::move(params));
 }
 
