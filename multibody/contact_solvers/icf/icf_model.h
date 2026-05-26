@@ -64,6 +64,18 @@ struct IcfParameters {
 
   // Starting index in the velocity vector for each clique, size nc + 1.
   std::vector<int> clique_start;
+
+  // Parameters that are only for model reduction. These do not affect *this*
+  // model, but rather describe how to construct a separate, reduced, model.
+  struct ReductionParameters {
+    // Specifies DOFs that cannot be eliminated, as an ordered sequence of
+    // velocity indices.
+    std::vector<int> unlocked_dofs;
+    // Specifies DOFs that cannot be eliminated, per clique. Each is an ordered
+    // sequence of clique-local velocity indices.
+    std::vector<std::vector<int>> per_clique_unlocked_dofs;
+  };
+  ReductionParameters reduction;
 };
 
 /* This class defines a convex ICF problem,
