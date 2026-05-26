@@ -223,6 +223,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
+  /* Throws if the plant context is not compatible with CENIC. */
+  void ValidatePlantContext();
+
   /* Locations of plant and non-plant continuous state. Note that the contained
   `plant` pointer is guaranteed to be non-null by the CenicIntegrator
   constructor .*/

@@ -71,6 +71,34 @@ constexpr char kBallOnTableMjcf[] = R"""(
   </mujoco>
   )""";
 
+GTEST_TEST(CenicIntegratorTest, JointLockingUnsupported) {
+  DiagramBuilder<double> diagram_builder;
+  auto* plant = diagram_builder.AddSystem<MultibodyPlant<double>>(0.0);
+
+  Parser(plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
+  // Remove a joint to exercise non-contiguous joint indexing.
+  plant->RemoveJoint(plant->get_joint(JointIndex(0)));
+
+  plant->Finalize();
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context =
+      plant->GetMyMutableContextFromRoot(diagram_context.get());
+  CenicIntegrator<double> dut(*diagram);
+  dut.set_maximum_step_size(0.1);
+  dut.reset_context(diagram_context.get());
+
+  // Bug regression check: don't accidentally throw by mistakenly iterating
+  // over stale joint indices.
+  EXPECT_NO_THROW(dut.Initialize());
+
+  plant->get_joint(JointIndex(1)).Lock(&plant_context);
+
+  // Actual joint locking check: now something is locked, refuse to give wrong
+  // answers, and explain that joint locking is the problem.
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.Initialize(), ".*joint 1.*locked.*");
+}
+
 // TestParam uses tuple for compatibility with ::testing::Combine.
 // get<0>() is nesting depth for the plant and scene graph.
 // get<1>() is nesting depth for external systems.
