@@ -240,8 +240,6 @@ template <typename T>
 void CenicIntegrator<T>::DoInitialize() {
   using std::isnan;
 
-  ValidatePlantContext();
-
   // Set the initial time step and accuracy.
   if (isnan(this->get_initial_step_size_target())) {
     if (isnan(this->get_maximum_step_size())) {
@@ -534,21 +532,6 @@ void CenicIntegrator<T>::AdvancePlantConfiguration(const T& h,
   const internal::SpanningForest& forest = GetInternalTree(plant()).forest();
   for (int quaternion_start : forest.quaternion_starts()) {
     q->template segment<4>(quaternion_start).normalize();
-  }
-}
-
-template <typename T>
-void CenicIntegrator<T>::ValidatePlantContext() {
-  // Revisit this condition when joint locking support is implemented. See
-  // #23764.
-  const auto& plant_context = plant().GetMyContextFromRoot(this->get_context());
-  for (const JointIndex& j : plant().GetJointIndices()) {
-    if (plant().get_joint(j).is_locked(plant_context)) {
-      throw std::runtime_error(
-          fmt::format("The CENIC integrator does not yet support joint "
-                      "locking, but at least joint {} is locked",
-                      j));
-    }
   }
 }
 
