@@ -672,8 +672,8 @@ void DoScalarIndependentDefinitions(py::module_ m) {
               // displaying memory addresses in pydrake docs and help strings.
               // In the future, we should enhance this to display all of the
               // information.
-              return fmt::format("<NumericalGradientOption({})>",
-                  std::string(py::repr(method).c_str()));
+              return fmt::format(
+                  "<NumericalGradientOption({})>", py::repr(method).c_str());
             });
   }
 

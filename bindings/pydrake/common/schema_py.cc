@@ -302,14 +302,14 @@ void DefineModuleSchema(py::module_ m) {
     // adding special-cases to getattr and setattr.
     cls.def("__getattr__", [](const Class& self, py::str name) -> py::object {
       if (std::holds_alternative<Rotation::Rpy>(self.value)) {
-        const std::string name_cxx(name.c_str());
+        const std::string_view name_cxx(name.c_str());
         if (name_cxx == "deg") {
           py::object self_py = py::cast(self, py_rvp::reference);
           return self_py.attr("value").attr(name);
         }
       }
       if (std::holds_alternative<Rotation::AngleAxis>(self.value)) {
-        const std::string name_cxx(name.c_str());
+        const std::string_view name_cxx(name.c_str());
         if ((name_cxx == "angle_deg") || (name_cxx == "axis")) {
           py::object self_py = py::cast(self, py_rvp::reference);
           return self_py.attr("value").attr(name);
@@ -319,7 +319,7 @@ void DefineModuleSchema(py::module_ m) {
     });
     cls.def("__setattr__", [](Class& self, py::str name, py::object value) {
       if (std::holds_alternative<Rotation::Rpy>(self.value)) {
-        const std::string name_cxx(name.c_str());
+        const std::string_view name_cxx(name.c_str());
         if (name_cxx == "deg") {
           py::object self_py = py::cast(self, py_rvp::reference);
           self_py.attr("value").attr(name) = value;
@@ -327,7 +327,7 @@ void DefineModuleSchema(py::module_ m) {
         }
       }
       if (std::holds_alternative<Rotation::AngleAxis>(self.value)) {
-        const std::string name_cxx(name.c_str());
+        const std::string_view name_cxx(name.c_str());
         if ((name_cxx == "angle_deg") || (name_cxx == "axis")) {
           py::object self_py = py::cast(self, py_rvp::reference);
           self_py.attr("value").attr(name) = value;

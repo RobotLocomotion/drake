@@ -90,18 +90,20 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   cls->def("__getattr__", [](Class& self, py::str name) -> py::object {
     py::object self_py = py::cast(self, py_rvp::reference);
-    if (std::string(name) == "breaks") {
+    const std::string_view name_cxx(name.c_str());
+    if (name_cxx == "breaks") {
       return self_py.attr("_breaks");
-    } else if (std::string(name) == "polynomials") {
+    } else if (name_cxx == "polynomials") {
       return self_py.attr("_polynomials");
     }
-    throw py::attribute_error(fmt::format(
-        "PiecewisePolynomial has no attribute '{}'", std::string{name}));
+    throw py::attribute_error(
+        fmt::format("PiecewisePolynomial has no attribute '{}'", name_cxx));
   });
   cls->def("__setattr__", [](Class& self, py::str name, py::object value) {
-    if (name.equal(py::str("breaks"))) {
+    const std::string_view name_cxx(name.c_str());
+    if (name_cxx == "breaks") {
       name = py::str("_breaks");
-    } else if (name.equal(py::str("polynomials"))) {
+    } else if (name_cxx == "polynomials") {
       name = py::str("_polynomials");
     }
     py::eval("object.__setattr__", py::globals())(self, name, value);

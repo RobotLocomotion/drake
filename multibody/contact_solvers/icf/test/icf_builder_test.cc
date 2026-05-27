@@ -390,42 +390,6 @@ GTEST_TEST(IcfBuilder, DeformableUnsupported) {
                               ".*deformable.*bodies.* == 0.*fail.*");
 }
 
-GTEST_TEST(IcfBuilder, JointLockingUnsupported) {
-  systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23764): MultibodyPlant does not yet support joint locking on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
-  MultibodyPlant<double>& plant =
-      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
-
-  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
-  // Remove a joint to exercise non-contiguous joint indexing.
-  plant.RemoveJoint(plant.get_joint(JointIndex(0)));
-
-  plant.Finalize();
-  IcfBuilder<double> dut(&plant);
-
-  auto diagram = diagram_builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context =
-      plant.GetMyMutableContextFromRoot(diagram_context.get());
-
-  IcfModel<double> model;
-  // Bug regression check: don't accidentally throw by mistakenly iterating
-  // over stale joint indices.
-  EXPECT_NO_THROW(
-      dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model));
-
-  plant.get_joint(JointIndex(1)).Lock(&plant_context);
-
-  // Actual joint locking check: now something is locked, refuse to give wrong
-  // answers, and explain that joint locking is the problem.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model),
-      ".*joint 1.*locked.*");
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace icf

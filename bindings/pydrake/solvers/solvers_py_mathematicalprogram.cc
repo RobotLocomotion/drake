@@ -88,10 +88,10 @@ void CheckArrayShape(
     ndim_hint = py::str("1 or 2 (vector)");
   }
   if (!ndim_is_good || x.size() != size) {
-    throw std::runtime_error(
+    throw std::runtime_error(py::cast<std::string>(
         py::str("{} must be of .ndim = {} and .size = {}. "
                 "Got .ndim = {} and .size = {} instead.")
-            .format(var_name, ndim_hint, size, x.ndim(), x.size()));
+            .format(var_name, ndim_hint, size, x.ndim(), x.size())));
   }
 }
 
@@ -169,7 +169,7 @@ class PyFunctionCost : public Cost {
 #if 0   // XXX porting
   template <typename T, typename Func>
   Func Wrap(py::function func) {
-    return WrapUserFunc<T, Func>("PyFunctionCost", func, num_vars(),
+    return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
         num_outputs(), ArrayShapeType::Scalar);
   }
 #endif  // XXX porting
@@ -222,8 +222,8 @@ class PyFunctionConstraint : public Constraint {
 #if 0   // XXX porting
   template <typename T, typename Func>
   Func Wrap(py::function func) {
-    return WrapUserFunc<T, Func>("PyFunctionConstraint", func, num_vars(),
-        num_outputs(), ArrayShapeType::Vector);
+    return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
+        num_vars(), num_outputs(), ArrayShapeType::Vector);
   }
 #endif  // XXX porting
 

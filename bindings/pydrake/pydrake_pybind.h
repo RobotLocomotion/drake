@@ -279,7 +279,7 @@ auto ParamInit() {
     return obj;
   });
 }
-#else  // PYDRAKE_USE_NANOBIND
+#else   // PYDRAKE_USE_NANOBIND
 template <typename CppClass>
 struct DRAKE_NO_EXPORT ParamInit : py::def_visitor<ParamInit<CppClass>> {
   template <typename PyClass, typename... Extra>

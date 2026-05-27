@@ -54,10 +54,9 @@ std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
     if (py_type_info) {
       py::handle cls = py::handle(py_type_info);
       const bool use_qualname = true;
-      return std::string(py::str("{}.{}")
-              .format(cls.attr("__module__"),
-                  internal::PrettyClassName(cls, use_qualname))
-              .c_str());
+      return py::cast<std::string>(
+          py::str("{}.{}").format(cls.attr("__module__"),
+              internal::PrettyClassName(cls, use_qualname)));
     }
   }
   return cc_name;
@@ -248,7 +247,7 @@ void InitLowLevelModules(py::module_ m) {
     cls.def_static("_rewrite_yaml_dump_attr_name",
         [](std::string_view name) { return fmt::format("_{}", name); });
     cls.def("__setattr__", [](Class& self, py::str name, py::object value) {
-      const std::string name_str{name.c_str()};
+      const std::string_view name_str(name.c_str());
       if (name_str == "contents" || name_str == "extension" ||
           name_str == "filename_hint") {
         name = py::str(fmt::format("_{}", name_str).c_str());
