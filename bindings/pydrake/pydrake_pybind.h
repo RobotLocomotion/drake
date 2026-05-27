@@ -184,16 +184,16 @@ inline void ExecuteExtraPythonCode(py::module_ m, bool use_subdir = false) {
 // the module, within the module itself).
 // TODO(eric.cousineau): Unfold cyclic references, and remove the need for this
 // macro (see #11868 for rationale).
-#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)                  \
-  {                                                                        \
-    static py::handle variable##_original;                                 \
-    if (variable##_original) {                                             \
-      variable##_original.inc_ref();                                       \
-      variable = py::reinterpret_borrow<py::module_>(variable##_original); \
-      return;                                                              \
-    } else {                                                               \
-      variable##_original = variable;                                      \
-    }                                                                      \
+#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)      \
+  {                                                            \
+    static py::handle variable##_original;                     \
+    if (variable##_original) {                                 \
+      variable##_original.inc_ref();                           \
+      variable = py::borrow<py::module_>(variable##_original); \
+      return;                                                  \
+    } else {                                                   \
+      variable##_original = variable;                          \
+    }                                                          \
   }
 
 /// Given a raw pointer, returns a shared_ptr wrapper around it that doesn't own
