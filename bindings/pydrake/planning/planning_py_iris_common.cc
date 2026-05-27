@@ -117,16 +117,16 @@ void CheckArrayShape(
   py::str ndim_hint;
   if (shape == ArrayShapeType::Scalar) {
     ndim_is_good = (x.ndim() == 0);
-    ndim_hint = "0 (scalar)";
+    ndim_hint = py::str("0 (scalar)");
   } else {
     ndim_is_good = (x.ndim() == 1 || x.ndim() == 2);
-    ndim_hint = "1 or 2 (vector)";
+    ndim_hint = py::str("1 or 2 (vector)");
   }
   if (!ndim_is_good || x.size() != size) {
-    throw std::runtime_error(
+    throw std::runtime_error(py::cast<std::string>(
         py::str("{} must be of .ndim = {} and .size = {}. "
                 "Got .ndim = {} and .size = {} instead.")
-            .format(var_name, ndim_hint, size, x.ndim(), x.size()));
+            .format(var_name, ndim_hint, size, x.ndim(), x.size())));
   }
 }
 
@@ -187,11 +187,11 @@ is the input dimension.
         return IrisParameterizationFunction(
             WrapParameterizationFunc<double,
                 IrisParameterizationFunction::ParameterizationFunctionDouble>(
-                "IrisParameterizationFunction", parameterization,
+                py::str("IrisParameterizationFunction"), parameterization,
                 parameterization_dimension),
             WrapParameterizationFunc<AutoDiffXd,
                 IrisParameterizationFunction::ParameterizationFunctionAutodiff>(
-                "IrisParameterizationFunction", parameterization,
+                py::str("IrisParameterizationFunction"), parameterization,
                 parameterization_dimension),
             /* parameterization_is_threadsafe = */ false,
             parameterization_dimension);

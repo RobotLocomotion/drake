@@ -81,16 +81,16 @@ void CheckArrayShape(
   py::str ndim_hint;
   if (shape == ArrayShapeType::Scalar) {
     ndim_is_good = (x.ndim() == 0);
-    ndim_hint = "0 (scalar)";
+    ndim_hint = py::str("0 (scalar)");
   } else {
     ndim_is_good = (x.ndim() == 1 || x.ndim() == 2);
-    ndim_hint = "1 or 2 (vector)";
+    ndim_hint = py::str("1 or 2 (vector)");
   }
   if (!ndim_is_good || x.size() != size) {
-    throw std::runtime_error(
+    throw std::runtime_error(py::cast<std::string>(
         py::str("{} must be of .ndim = {} and .size = {}. "
                 "Got .ndim = {} and .size = {} instead.")
-            .format(var_name, ndim_hint, size, x.ndim(), x.size()));
+            .format(var_name, ndim_hint, size, x.ndim(), x.size())));
   }
 }
 
@@ -164,7 +164,7 @@ class PyFunctionCost : public Cost {
  private:
   template <typename T, typename Func>
   Func Wrap(py::function func) {
-    return WrapUserFunc<T, Func>("PyFunctionCost", func, num_vars(),
+    return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
         num_outputs(), ArrayShapeType::Scalar);
   }
 
@@ -213,8 +213,8 @@ class PyFunctionConstraint : public Constraint {
  private:
   template <typename T, typename Func>
   Func Wrap(py::function func) {
-    return WrapUserFunc<T, Func>("PyFunctionConstraint", func, num_vars(),
-        num_outputs(), ArrayShapeType::Vector);
+    return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
+        num_vars(), num_outputs(), ArrayShapeType::Vector);
   }
 
   const DoubleFunc double_func_;

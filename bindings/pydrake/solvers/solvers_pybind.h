@@ -34,9 +34,9 @@ void BindAcquireLicense(PyClass* pcls, Doc&& cls_doc) {
     std::shared_ptr<License> ptr;
   };
 
-  std::string license_doc =
-      py::str("Context-manageable license from ``{}.AcquireLicense()``.")
-          .format(cls.attr("__name__"));
+  const std::string license_doc =
+      fmt::format("Context-manageable license from ``{}.AcquireLicense()``.",
+          py::str(cls.attr("__name__")).c_str());
   py::class_<PyLicense>(cls, "License", license_doc.c_str())
       .def("__enter__", &PyLicense::enter)
       .def("__exit__", &PyLicense::exit)

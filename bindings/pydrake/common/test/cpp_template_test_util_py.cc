@@ -37,7 +37,7 @@ auto BindSimpleTemplate(py::module_ m) {
 
 template <typename T>
 void CheckValue(const string& expr, const T& expected) {
-  EXPECT_EQ(py::eval(expr).cast<T>(), expected);
+  EXPECT_EQ(py::eval(py::str(expr.c_str())).cast<T>(), expected);
 }
 
 template <typename T>

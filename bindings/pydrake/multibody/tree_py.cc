@@ -173,11 +173,12 @@ void DoScalarIndependentDefinitions(py::module_ m) {
             cls_doc.set_element.doc)
         .def("__str__", &Class::to_string, cls_doc.to_string.doc)
         .def("__repr__", [](const Class& self) {
-          py::str py_namespace = std::string{self.get_namespace()};
-          py::str py_element = std::string{self.get_element()};
+          const std::string_view cxx_namespace = self.get_namespace();
+          const std::string_view cxx_element = self.get_element();
+          py::str py_namespace{cxx_namespace.data(), cxx_namespace.size()};
+          py::str py_element{cxx_element.data(), cxx_element.size()};
           return fmt::format("ScopedName({}, {})",
-              std::string(py::repr(py_namespace)),
-              std::string(py::repr(py_element)));
+              py::repr(py_namespace).c_str(), py::repr(py_element).c_str());
         });
     DefCopyAndDeepCopy(&cls);
   }

@@ -82,3 +82,15 @@ See https://github.com/RobotLocomotion/drake/issues/21572.
  private:
      /// Initialize holder object, variant 1: object derives from enable_shared_from_this
      template <typename T>
+
+--- include/pybind11/pytypes.h
++++ include/pybind11/pytypes.h
+@@ -1630,6 +1630,8 @@
+         return std::string(buffer, (size_t) length);
+     }
+ 
++    const char *c_str() const { return PyUnicode_AsUTF8AndSize(m_ptr, nullptr); }
++
+     template <typename... Args>
+     str format(Args &&...args) const {
+         return attr("format")(std::forward<Args>(args)...);
