@@ -74,6 +74,25 @@ Compile time issues
 
 * nanobind's str type is less friendly; much rework will result.
   - !! (duh, dopeslap) needed to add nanobind's stl headers explicitly.
+  - pybind11 `class str` API::
+
+      str(const char *c = "");
+      str(const char *c, const SzType &n);
+      explicit str(handle h);
+      template <typename... Args> str format(Args &&...args) const;
+      str(const std::string &s);     // not in nanobind
+      str(std::string_view s);       // not in nanobind
+      explicit str(const bytes &b);  // not in nanobind
+      operator std::string() const;  // not in nanobind
+
+  - nanobind `class str` API::
+
+      str();
+      explicit str(const char *s);
+      explicit str(const char *s, size_t n);
+      explicit str(handle h)
+      template <typename... Args> str format(Args&&... args) const;
+      const char *c_str() const;     // not in pybind11
 
 * some new restrictions on binding annotations need work.
   * can't use py::args() and leave some args unnamed?
