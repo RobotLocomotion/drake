@@ -155,7 +155,12 @@ py::object AddTemplateMethod(  // BR
   const std::string instantiation_name =
       internal::GetInstantiationName(py_template, param, mangle);
   py::object py_func = py::cpp_function(std::forward<Method>(method),
-      py::name(instantiation_name.c_str()), py::is_method(),
+      py::name(instantiation_name.c_str()),
+#ifdef PYDRAKE_USE_PYBIND11
+      py::is_method(scope),
+#else  // PYDRAKE_USE_NANOBIND
+      py::is_method(),
+#endif
       std::forward<Extra>(extra)...);
   internal::AddInstantiation(py_template, py_func, param);
   return py_template;

@@ -42,6 +42,22 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   py_class.def(py::init<const T&>());
   // Define emplace constructor.
   py::object py_T = param[0];
+#ifdef PYDRAKE_USE_PYBIND11
+  py_class.def(py::init([py_T](py::args args, py::kwargs kwargs) {
+    // Use Python constructor for the bound type.
+    py::object py_v = py_T(*args, **kwargs);
+    // TODO(eric.cousineau): Use `unique_ptr` for custom types if it's ever a
+    // performance concern.
+    // Use `type_caster` so that we are not forced to copy T, which is not
+    // possible for non-movable types. This can be avoided if we bind a
+    // `cpp_function` accepting a reference. However, that may cause the Python
+    // instance to be double-initialized.
+    py::detail::type_caster<T> caster;
+    DRAKE_THROW_UNLESS(caster.load(py_v, false));
+    const T& v = caster;  // Use implicit conversion from `type_caster<>`.
+    return new Class(v);
+  }));
+#else  // PYDRAKE_USE_NANOBIND
   py_class.def(
       "__init__", [py_T](Class* self, py::args args, py::kwargs kwargs) {
         // Use Python constructor for the bound type.
@@ -56,6 +72,7 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
         const T& v = caster.operator nanobind::detail::cast_t<const T&>();
         new (self) Class(v);
       });
+#endif
   // If the type is registered via `py::class_`, or is of type `Object`
   // (`py::object`), then we can obtain a mutable view into the value.
   constexpr bool has_get_mutable_value =

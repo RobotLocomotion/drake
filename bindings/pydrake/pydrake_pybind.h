@@ -358,7 +358,7 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 }  // namespace drake
 
 #ifdef PYDRAKE_USE_PYBIND11
-#define DRAKE_NB_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#define DRAKE_NB_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 #else  // PYDRAKE_USE_NANOBIND
 // XXX porting needed
 /*
@@ -380,6 +380,8 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 // This alias helps ease Drake's transition to nanobind.
 #ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_MODULE PYBIND11_MODULE
+#define PYDRAKE_BINDER_NAMESPACE pybind11
 #else  // PYDRAKE_USE_NANOBIND
 #define PYDRAKE_MODULE NB_MODULE
+#define PYDRAKE_BINDER_NAMESPACE nanobind
 #endif

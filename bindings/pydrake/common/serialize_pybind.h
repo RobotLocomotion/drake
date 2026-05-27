@@ -252,7 +252,11 @@ class DefAttributesArchive {
 /// `dataclass`.
 template <typename PyClass, typename Docs>
 void DefAttributesUsingSerialize(PyClass* ppy_class, const Docs& cls_docs) {
+#ifdef PYDRAKE_USE_PYBIND11
+  using CxxClass = typename PyClass::type;
+#else
   using CxxClass = typename PyClass::Type;
+#endif
   CxxClass prototype{};
   internal::DefAttributesArchive archive(ppy_class, &prototype, &cls_docs);
   prototype.Serialize(&archive);
@@ -264,7 +268,11 @@ void DefAttributesUsingSerialize(PyClass* ppy_class, const Docs& cls_docs) {
 /// in some cases (especially downstream projects) that might not be possible.
 template <typename PyClass>
 void DefAttributesUsingSerialize(PyClass* ppy_class) {
+#ifdef PYDRAKE_USE_PYBIND11
+  using CxxClass = typename PyClass::type;
+#else
   using CxxClass = typename PyClass::Type;
+#endif
   CxxClass prototype{};
   internal::DefAttributesArchive<PyClass, void> archive(
       ppy_class, &prototype, nullptr);
@@ -299,7 +307,11 @@ class DefReprArchive {
 /// The class must be default-constructible.
 template <typename PyClass>
 void DefReprUsingSerialize(PyClass* ppy_class) {
+#ifdef PYDRAKE_USE_PYBIND11
+  using CxxClass = typename PyClass::type;
+#else
   using CxxClass = typename PyClass::Type;
+#endif
   internal::DefReprArchive archive;
   CxxClass prototype{};
   prototype.Serialize(&archive);

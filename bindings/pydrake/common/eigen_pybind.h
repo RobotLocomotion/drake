@@ -74,12 +74,53 @@ inline py::object WrapToMatchInputShape(py::handle func) {
 }  // namespace pydrake
 }  // namespace drake
 
-namespace nanobind {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 
 /**
-Provides nanobind `type_caster`s for drake::EigenPtr.
+Provides `type_caster`s for drake::EigenPtr.
 */
+#ifdef PYDRAKE_USE_PYBIND11
+template <typename T>
+struct type_caster<drake::EigenPtr<T>> {
+  using PtrType = drake::EigenPtr<T>;
+  using RefType = Eigen::Ref<T>;
+  using InnerCaster = type_caster<RefType>;
+
+ public:
+  PYBIND11_TYPE_CASTER(
+      PtrType, const_name("Optional[") + InnerCaster::name + const_name("]"));
+
+  bool load(handle src, bool convert) {
+    value = PtrType(nullptr);
+
+    if (src.ptr() == Py_None) {
+      return true;
+    }
+
+    bool success = inner_caster.load(src, convert);
+
+    if (success) {
+      RefType& ref = inner_caster;
+      value = PtrType(&ref);
+    }
+
+    return success;
+  }
+
+  static handle cast(PtrType src, rv_policy policy, handle parent) {
+    if (src == nullptr) {
+      return Py_None;
+    } else {
+      RefType ref = *src;
+      return InnerCaster::cast(ref, policy, parent);
+    }
+  }
+
+ private:
+  InnerCaster inner_caster;
+};
+#else   // PYDRAKE_USE_NANODING
 template <typename T>
 struct type_caster<drake::EigenPtr<T>> {
   using PtrType = drake::EigenPtr<T>;
@@ -128,6 +169,7 @@ struct type_caster<drake::EigenPtr<T>> {
   Value value;
   InnerCaster inner_caster;
 };
+#endif  // PYDRAKE_USE_PYBIND11
 
 }  // namespace detail
-}  // namespace nanobind
+}  // namespace PYDRAKE_BINDER_NAMESPACE

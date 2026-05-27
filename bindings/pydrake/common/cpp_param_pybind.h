@@ -146,7 +146,7 @@ inline py::tuple GetPyParam(type_pack<Ts...> = {}) {
 }  // namespace pydrake
 }  // namespace drake
 
-namespace nanobind {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 
 template <>
@@ -155,4 +155,4 @@ struct type_caster<drake::pydrake::Object>
           drake::pydrake::internal::wrapper_pydrake_object> {};
 
 }  // namespace detail
-}  // namespace nanobind
+}  // namespace PYDRAKE_BINDER_NAMESPACE
