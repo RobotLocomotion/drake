@@ -59,7 +59,7 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   // If the type is registered via `py::class_`, or is of type `Object`
   // (`py::object`), then we can obtain a mutable view into the value.
   constexpr bool has_get_mutable_value =
-      internal::is_generic_nanobind_v<T> || std::is_same_v<T, Object>;
+      internal::is_generic_caster_v<T> || std::is_same_v<T, Object>;
   if constexpr (has_get_mutable_value) {
     py::rv_policy return_policy = py_rvp::reference_internal;
     if (std::is_same_v<T, Object>) {

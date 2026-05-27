@@ -166,7 +166,7 @@ class DefAttributesArchive {
       return py::module_::import_("numpy").attr("ndarray");
     } else {
       // Anything that remains should be a registered C++ type.
-      constexpr bool is_registered_type = is_generic_nanobind_v<T>;
+      constexpr bool is_registered_type = is_generic_caster_v<T>;
       if constexpr (is_registered_type) {
         return py::borrow(py::type<T>());
       } else {

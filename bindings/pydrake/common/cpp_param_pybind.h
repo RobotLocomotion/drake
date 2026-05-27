@@ -120,7 +120,7 @@ template <typename T>
 inline py::object GetPyParamScalarImpl(type_pack<std::vector<T>> = {}) {
   // Get inner type for validation.
   py::object py_T = GetPyParamScalarImpl(type_pack<T>{});
-  if constexpr (!internal::is_generic_nanobind_v<std::vector<T>>) {
+  if constexpr (!internal::is_generic_caster_v<std::vector<T>>) {
     return py::module_::import_("pydrake.common.cpp_param").attr("List")[py_T];
   } else {
     return GetPyParamScalarImpl(typeid(std::vector<T>));
