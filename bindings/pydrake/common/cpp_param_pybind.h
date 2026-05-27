@@ -28,8 +28,7 @@ class Object {
   ~Object();
 
   /// Constructs from raw pointer, incrementing the reference count.
-  /// @note This does not implement any of the `py::borrow<>`
-  /// semantics.
+  /// @note This does not implement any of the `py::borrow<>` semantics.
   explicit Object(::PyObject* ptr);
 
   /// Constructs from another Object, incrementing the reference count.

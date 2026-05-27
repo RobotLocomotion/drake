@@ -85,6 +85,14 @@ See https://github.com/RobotLocomotion/drake/issues/21572.
 
 --- include/pybind11/pytypes.h
 +++ include/pybind11/pytypes.h
+@@ -485,6 +485,7 @@
+ T reinterpret_borrow(handle h) {
+     return {h, object::borrowed_t{}};
+ }
++template <typename T> T borrow(handle h) { return reinterpret_borrow<T>(h); }
+ 
+ /** \rst
+     Like `reinterpret_borrow`, but steals the reference.
 @@ -1630,6 +1630,8 @@
          return std::string(buffer, (size_t) length);
      }

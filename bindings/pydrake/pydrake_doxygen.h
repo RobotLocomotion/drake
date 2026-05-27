@@ -102,7 +102,8 @@ You may also implicitly convert from `py::object` (and its derived classes) to
 
 If you wish to convert a `py::handle` (or `PyObject*`) to `py::object` or a
 derived class, you should use
-[`py::borrow<>`](http://pybind11.readthedocs.io/en/stable/reference.html#_CPPv218borrow6handle).
+[`py::borrow<>`](https://pybind11.readthedocs.io/en/stable/reference.html#_CPPv4I0E18reinterpret_borrow1T6handle)
+(which is a Drake-specific synonym for `py::reinterpret_borrow<>`).
 
 # Conventions
 
