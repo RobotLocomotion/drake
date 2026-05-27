@@ -36,10 +36,10 @@ struct TypeConversionExample {
 // Wrapper for TypeConversionExample.
 struct wrapper_type_conversion_example {
   using Type = TypeConversionExample;
-#if 0   // XXX porting -- unused
+#ifdef PYDRAKE_USE_PYBIND11
   static constexpr auto original_name =
       py::detail::const_name("TypeConversionExample");
-#endif  // XXX porting
+#endif
   using WrappedType = std::string;
   static constexpr auto wrapped_name = py::detail::const_name("str");
 

@@ -10,7 +10,7 @@
 namespace drake {
 namespace pydrake {
 
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 // The C++ framework uses ValueProducer::AllocateCallback to allocate storage
 // for values in the Context, and that function returns a unique_ptr. Python
 // cannot return unique_ptr, so we need to wrap the call to match signatures.

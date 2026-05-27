@@ -87,7 +87,7 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // to getattr (and setattr) on "breaks" and "polynomials". However, we don't
   // want to expose those properties to users so we'll respell the name to add a
   // leading underscore, and bind the properties using the private name.
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   cls->def("__getattr__", [](Class& self, py::str name) -> py::object {
     py::object self_py = py::cast(self, py_rvp::reference);
     if (std::string(name) == "breaks") {
@@ -277,9 +277,10 @@ struct Impl {
     }
 
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
-        int /* derivative_order XXX porting */) const final {
+        int derivative_order) const final {
       py::gil_scoped_acquire guard;
-#if 0  // XXX porting -- change of signature issues with macro
+#ifdef PYDRAKE_USE_PYBIND11
+      // XXX porting -- change of signature issues with macro
       // Because the NB_OVERRIDE_PURE macro embeds a `return ...;`
       // statement, we must wrap it in lambda so that we can post-process the
       // return value.
@@ -287,8 +288,11 @@ struct Impl {
         NB_OVERRIDE_PURE(DoMakeDerivative, derivative_order);
       };
       return WrapPyTrajectory(make_python_derivative());
-#endif
+#else
+      // XXX porting
+      unused(derivative_order);
       return {};
+#endif
     }
 
     T do_start_time() const final { NB_OVERRIDE_PURE(do_start_time); }

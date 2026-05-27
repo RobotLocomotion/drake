@@ -85,7 +85,7 @@ struct BuilderLifeSupport {
 template <typename T, size_t Builder>
 struct builder_life_support_stash {};
 
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 template <typename T>
 void builder_life_support_stash_impl(size_t builder_index,
     const py::detail::function_call& call, py::handle ret) {
@@ -131,7 +131,7 @@ void builder_life_support_stash_impl(size_t builder_index,
 namespace nanobind {
 namespace detail {
 
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 // Provide a specialization of the pybind11 internal process_attribute
 // template; this allows writing an annotation that works seamlessly in
 // bindings definitions.

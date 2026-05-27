@@ -264,6 +264,22 @@ void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
 /// @endcode
 ///
 /// @tparam Class The C++ class. Must have a default constructor.
+#ifdef PYDRAKE_USE_PYBIND11
+template <typename Class>
+auto ParamInit() {
+  return py::init([](py::kwargs kwargs) {
+    // N.B. We use `Class` here because `pybind11` strongly requires that we
+    // return the instance itself, not just `py::object`.
+    // TODO(eric.cousineau): This may hurt `keep_alive` behavior, as this
+    // reference may evaporate by the time the true holding pybind11 record is
+    // constructed. Would be alleviated using old-style pybind11 init :(
+    Class obj{};
+    py::object py_obj = py::cast(&obj, py_rvp::reference);
+    py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    return obj;
+  });
+}
+#else  // PYDRAKE_USE_NANOBIND
 template <typename CppClass>
 struct DRAKE_NO_EXPORT ParamInit : py::def_visitor<ParamInit<CppClass>> {
   template <typename PyClass, typename... Extra>
@@ -281,6 +297,7 @@ struct DRAKE_NO_EXPORT ParamInit : py::def_visitor<ParamInit<CppClass>> {
     });
   }
 };
+#endif  // PYDRAKE_USE_PYBIND11
 
 /// Executes Python code to introduce additional symbols for a given module.
 /// For a module with local name `{name}` and use_subdir=False, the code
@@ -358,7 +375,7 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
     static constexpr auto name = const_name(#Type);             \
   };                                                            \
   }  // namespace nanobind::detail
-#endif
+#endif  // PYDRAKE_USE_PYBIND11
 
 // This alias helps ease Drake's transition to nanobind.
 #ifdef PYDRAKE_USE_PYBIND11

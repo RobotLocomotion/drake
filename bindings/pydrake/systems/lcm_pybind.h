@@ -35,7 +35,10 @@ py::object BindCppSerializer(const std::string& lcm_package) {
   py::module_ lcm_py = py::module_::import_("pydrake.systems.lcm");
   auto py_cls =
       DefineTemplateClassWithDefault<Serializer<CppType>, SerializerInterface
-          /*, std::shared_ptr<Serializer<CppType>> XXX porting */>(
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+          , std::shared_ptr<Serializer<CppType>>
+#endif
+>(
           lcm_py, "_Serializer", py::make_tuple(py_type));
   py_cls.def(py::init());
   // We use move here because the type of py_class differs from our declared
