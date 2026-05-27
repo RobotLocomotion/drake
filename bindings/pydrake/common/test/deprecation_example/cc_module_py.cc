@@ -131,8 +131,8 @@ PYDRAKE_MODULE(cc_module, m) {
         py::overload_cast<int>(&Class::DeprecatedMethod),
         cls_doc.DeprecatedMethod.doc_deprecated);
 #pragma GCC diagnostic pop
-    DeprecateAttribute(
-        cls, "DeprecatedMethod", cls_doc.DeprecatedMethod.doc_deprecated);
+    DeprecateAttribute(cls, py::str("DeprecatedMethod"),
+        py::str(cls_doc.DeprecatedMethod.doc_deprecated));
   }
 }
 
