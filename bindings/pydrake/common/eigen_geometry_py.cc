@@ -488,8 +488,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
           DRAKE_THROW_UNLESS(t.size() == 2);
           new (self) Class(py::cast<T>(t[0]), py::cast<Vector3<T>>(t[1]));
         });
-    // N.B. This class does not support multiplication with vectors, so we do
-    // not use `WrapToMatchInputShape` here.
+    // N.B. This class does not support multiplication with vectors, so we
+    // do not use `WrapToMatchInputShape` here.
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);

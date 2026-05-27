@@ -319,7 +319,6 @@ void DefineInMemoryMesh(py::module_ m) {
     using Class = InMemoryMesh;
     constexpr auto& cls_doc = doc.InMemoryMesh;
     py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
-    py::object ctor = m.attr("InMemoryMesh");
     cls  // BR
         .def(ParamInit<Class>())
         .def_rw("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
@@ -333,7 +332,7 @@ void DefineInMemoryMesh(py::module_ m) {
               result["supporting_files"] = self.supporting_files;
               return result;
         },
-        [ctor](Class* self, const py::dict& kwargs) {
+        [](Class* self, const py::dict& kwargs) {
           new (self) Class;
           self->mesh_file = py::cast<MemoryFile>(kwargs["mesh_file"]);
           self->supporting_files =

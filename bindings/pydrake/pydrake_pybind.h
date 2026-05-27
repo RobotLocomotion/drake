@@ -215,7 +215,8 @@ void DefClone(PyClass* ppy_class) {
           py_rvp::take_ownership);
 }
 
-/// Binds `__getstate__` and `__setstate__` for pickling.
+/// Binds `__getstate__` and `__setstate__` for pickling on the given
+/// `ppy_class` (which must point to a `py::class_`).
 ///
 /// The get_state functor should take `(const Class& self)` and return a
 /// newly-pickled class `-> Pickled` by value.

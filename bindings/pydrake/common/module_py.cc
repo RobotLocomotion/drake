@@ -177,7 +177,6 @@ void InitLowLevelModules(py::module_ m) {
     using Class = MemoryFile;
     constexpr auto& cls_doc = doc.MemoryFile;
     py::class_<Class> cls(m, "MemoryFile", cls_doc.doc);
-    py::object ctor = m.attr("MemoryFile");
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
@@ -215,7 +214,7 @@ void InitLowLevelModules(py::module_ m) {
           result["filename_hint"] = self.filename_hint();
           return result;
         },
-        [ctor](Class* self, const py::dict& kwargs) {
+        [](Class* self, const py::dict& kwargs) {
           new (self) MemoryFile(py::cast<std::string>(kwargs["contents"]),
               py::cast<std::string>(kwargs["extension"]),
               py::cast<std::string>(kwargs["filename_hint"]));
