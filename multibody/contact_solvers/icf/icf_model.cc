@@ -346,7 +346,6 @@ void IcfModel<T>::ReduceInto(IcfModel<T>* reduced_model,
                              ReducedMapping* mapping) const {
   DRAKE_DEMAND(reduced_model != nullptr);
   DRAKE_DEMAND(mapping != nullptr);
-  DRAKE_DEMAND(params().reduction.is_valid == true);
   // TODO(#23764): implement.
   DRAKE_DEMAND(false);
 }
@@ -399,19 +398,18 @@ void IcfModel<T>::VerifyInvariants() const {
   }
   DRAKE_DEMAND(nv == num_velocities_);
 
-  if (params().reduction.is_valid) {
-    const auto& r = params().reduction;
-    DRAKE_DEMAND(r.is_smaller == (ssize(r.unlocked_dofs) < num_velocities_));
-    DRAKE_DEMAND(ssize(r.unlocked_dofs) <= num_velocities_);
-    DRAKE_DEMAND(ssize(r.per_clique_unlocked_dofs) == num_cliques_);
-    nv = 0;
-    for (int c = 0; c < num_cliques_; ++c) {
-      const auto& unlocked = r.per_clique_unlocked_dofs[c];
-      DRAKE_DEMAND(ssize(unlocked) <= clique_size(c));
-      nv += ssize(unlocked);
-    }
-    DRAKE_DEMAND(nv == ssize(r.unlocked_dofs));
+  const auto& reduction = params().reduction;
+  DRAKE_DEMAND(reduction.is_smaller ==
+               (ssize(reduction.unlocked_dofs) < num_velocities_));
+  DRAKE_DEMAND(ssize(reduction.unlocked_dofs) <= num_velocities_);
+  DRAKE_DEMAND(ssize(reduction.per_clique_unlocked_dofs) == num_cliques_);
+  nv = 0;
+  for (int c = 0; c < num_cliques_; ++c) {
+    const auto& unlocked = reduction.per_clique_unlocked_dofs[c];
+    DRAKE_DEMAND(ssize(unlocked) <= clique_size(c));
+    nv += ssize(unlocked);
   }
+  DRAKE_DEMAND(nv == ssize(reduction.unlocked_dofs));
 }
 
 template <typename T>
