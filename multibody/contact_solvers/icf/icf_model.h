@@ -68,9 +68,6 @@ struct IcfParameters {
 
   // Parameters that are only used by ReduceInto().
   struct ReductionParameters {
-    // Specifies if the reduction parameters are fully populated for
-    // reduction.
-    bool is_valid{false};
     // Specifies if the reduction is actually smaller than the full problem.
     bool is_smaller{false};
     // Specifies DOFs that cannot be eliminated.
@@ -225,9 +222,7 @@ class IcfModel {
   const VectorX<T>& k0() const { return params().k0; }
 
   /* Returns true if the model can be reduced. */
-  bool is_reducible() const {
-    return params().reduction.is_valid && params().reduction.is_smaller;
-  }
+  bool is_reducible() const { return params().reduction.is_smaller; }
 
   /* Returns a reference to the spatial velocity Jacobian for the given body. */
   ConstJacobianView J_WB(int body) const {
@@ -399,7 +394,6 @@ class IcfModel {
 
   @pre reduced_model != nullptr
   @pre mapping != nullptr
-  @pre params().reduction.is_valid == true
   */
   void ReduceInto(IcfModel<T>* reduced_model, ReducedMapping* mapping) const;
 

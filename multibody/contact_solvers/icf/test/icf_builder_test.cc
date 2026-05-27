@@ -414,7 +414,6 @@ GTEST_TEST(IcfBuilder, JointLockingSupport) {
     dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
     EXPECT_FALSE(model.is_reducible());
     const auto& r = model.params().reduction;
-    EXPECT_TRUE(r.is_valid);
     EXPECT_FALSE(r.is_smaller);
     const std::vector<int> expected_unlocked_dofs = {0, 1};
     EXPECT_EQ(r.unlocked_dofs, expected_unlocked_dofs);
@@ -433,7 +432,6 @@ GTEST_TEST(IcfBuilder, JointLockingSupport) {
     dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
     EXPECT_TRUE(model.is_reducible());
     const auto& r = model.params().reduction;
-    EXPECT_TRUE(r.is_valid);
     EXPECT_TRUE(r.is_smaller);
     const std::vector<int> expected_unlocked_dofs = {0};
     EXPECT_EQ(r.unlocked_dofs, expected_unlocked_dofs);

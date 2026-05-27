@@ -153,7 +153,6 @@ void IcfBuilder<T>::UpdateModel(
   // Set joint locking params.
   const JointLockingCacheData<T>& locking =
       MultibodyPlantIcfAttorney<T>::EvalJointLocking(plant_, context);
-  params->reduction.is_valid = true;
   params->reduction.is_smaller = !locking.locked_velocity_indices.empty();
   params->reduction.unlocked_dofs = locking.unlocked_velocity_indices;
   for (int t = 0; t < forest.num_trees(); ++t) {
