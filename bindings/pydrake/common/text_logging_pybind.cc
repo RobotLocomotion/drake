@@ -51,7 +51,7 @@ class pylogging_sink final
 
     // Bail out quickly in case this log level is disabled.
     const int level = to_py_level(msg.level);
-    if (!is_enabled_for_(level).cast<bool>()) {
+    if (!py::cast<bool>(is_enabled_for_(level))) {
       return;
     }
 

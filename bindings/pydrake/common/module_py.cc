@@ -195,7 +195,7 @@ void InitLowLevelModules(py::module_ m) {
               py::arg("filename_hint") = self.filename_hint());
         },
         [ctor](Class* self, const py::dict& kwargs) {
-          new (self) Class(ctor(**kwargs).cast<Class>());
+          new (self) Class(py::cast<Class>(ctor(**kwargs)));
         });
     // Note: __repr__ is defined in _common_extra.py.
     DefCopyAndDeepCopy(&cls);

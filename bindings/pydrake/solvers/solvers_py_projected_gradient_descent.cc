@@ -60,7 +60,7 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
             py::gil_scoped_acquire gil;
             auto result = python_projection_function(in);
             DRAKE_THROW_UNLESS(py::isinstance<py::tuple>(result));
-            py::tuple result_tuple = result.cast<py::tuple>();
+            py::tuple result_tuple = py::cast<py::tuple>(result);
             DRAKE_THROW_UNLESS(result_tuple.size() == 2);
             DRAKE_THROW_UNLESS(py::isinstance<py::bool_>(result_tuple[0]));
             DRAKE_THROW_UNLESS(py::isinstance<py::array>(result_tuple[1]));

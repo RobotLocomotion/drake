@@ -107,7 +107,7 @@ void DefBindingCastConstructor(PyClass* cls) {
         return std::make_unique<Binding<C>>(
             // Maintain python wrapper to avoid hazards like #20131.
             make_shared_ptr_from_py_object<C>(binding.attr("evaluator")()),
-            binding.attr("variables")().cast<VectorXDecisionVariable>());
+            py::cast<VectorXDecisionVariable>(binding.attr("variables")()));
       }));
 }
 

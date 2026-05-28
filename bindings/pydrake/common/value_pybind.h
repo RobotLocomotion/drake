@@ -89,7 +89,7 @@ be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
               throw std::logic_error(
                   fmt::format("Cannot get mutable value (or reference) for a "
                               "type-conversion type: {}",
-                      py::str(py_T).cast<std::string>()));
+                      py::cast<std::string>(py::str(py_T))));
             })
         .def("set_value", &Class::set_value);
   }

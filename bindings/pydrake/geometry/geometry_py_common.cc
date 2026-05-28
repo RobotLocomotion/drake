@@ -180,7 +180,7 @@ void DefineGeometryProperties(py::module_ m) {
                 const std::string& name, py::object value) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
               self.AddPropertyAbstract(
-                  group_name, name, abstract.cast<const AbstractValue&>());
+                  group_name, name, py::cast<const AbstractValue&>(abstract));
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.AddProperty.doc)
@@ -190,7 +190,7 @@ void DefineGeometryProperties(py::module_ m) {
                 const std::string& name, py::object value) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
               self.UpdatePropertyAbstract(
-                  group_name, name, abstract.cast<const AbstractValue&>());
+                  group_name, name, py::cast<const AbstractValue&>(abstract));
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.UpdateProperty.doc)
@@ -326,7 +326,7 @@ void DefineInMemoryMesh(py::module_ m) {
               py::arg("supporting_files") = self.supporting_files);
         },
         [ctor](Class* self, const py::dict& kwargs) {
-          new (self) Class(ctor(**kwargs).cast<Class>());
+          new (self) Class(py::cast<Class>(ctor(**kwargs)));
         });
     // Note: __repr__ is defined in _geometry_extra.py.
     DefCopyAndDeepCopy(&cls);
@@ -393,7 +393,7 @@ void DefineMeshSource(py::module_ m) {
           return py::dict(py::arg("mesh") = self.in_memory());
         },
         [ctor](Class* self, const py::dict& kwargs) {
-          new (self) Class(ctor(**kwargs).cast<Class>());
+          new (self) Class(py::cast<Class>(ctor(**kwargs)));
         });
     // Note: __repr__ is defined in _geometry_extra.py.
     DefCopyAndDeepCopy(&cls);
