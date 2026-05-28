@@ -104,6 +104,8 @@ class CouplerConstraintsPool {
   }
   const std::vector<std::pair<int, int>>& dofs() const { return dofs_; }
   const std::vector<T>& gear_ratio() const { return gear_ratio_; }
+  const std::vector<T>& g_hat() const { return g_hat_; }
+  const std::vector<T>& R() const { return R_; }
 
  private:
   const IcfModel<T>* const model_;  // The parent model.
@@ -111,7 +113,9 @@ class CouplerConstraintsPool {
   // Clique for the k-th constraint, of size num_constraints().
   std::vector<int> constraint_to_clique_;
 
-  // DOFs (i, j) for the k-th constraint, of size num_constraints().
+  // DOFs (i, j) for the k-th constraint, of size num_constraints(). In a
+  // reduced pool (made by ReduceInto()), either DOF can be absent, represented
+  // by a -1 value. Both DOFs cannot be absent.
   std::vector<std::pair<int, int>> dofs_;
 
   // Gear ratio ρ per constraint, of size num_constraints().
