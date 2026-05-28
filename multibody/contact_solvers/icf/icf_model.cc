@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "drake/multibody/plant/slicing_and_indexing.h"
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -11,6 +13,7 @@ namespace internal {
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 using contact_solvers::internal::BlockSparsityPattern;
 using Eigen::VectorBlock;
+using multibody::internal::DemandIndicesValid;
 
 template <typename T>
 IcfModel<T>::IcfModel()
@@ -388,6 +391,17 @@ void IcfModel<T>::VerifyInvariants() const {
     nv += clique_nv;
   }
   DRAKE_DEMAND(nv == num_velocities_);
+
+  const auto& reduction = params().reduction;
+  DemandIndicesValid(reduction.unlocked_dofs, num_velocities_);
+  DRAKE_DEMAND(ssize(reduction.per_clique_unlocked_dofs) == num_cliques_);
+  nv = 0;
+  for (int c = 0; c < num_cliques_; ++c) {
+    const auto& unlocked = reduction.per_clique_unlocked_dofs[c];
+    DemandIndicesValid(unlocked, clique_size(c));
+    nv += ssize(unlocked);
+  }
+  DRAKE_DEMAND(nv == ssize(reduction.unlocked_dofs));
 }
 
 template <typename T>
