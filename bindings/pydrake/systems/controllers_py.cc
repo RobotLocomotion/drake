@@ -156,12 +156,13 @@ PYDRAKE_MODULE(controllers, m) {
     constexpr auto& cls_doc = doc.JointStiffnessController;
     py::class_<Class, LeafSystem<double>> cls(
         m, "JointStiffnessController", cls_doc.doc);
-    cls.def(py::init<const MultibodyPlant<double>&,
-                const Eigen::Ref<const Eigen::VectorXd>&,
-                const Eigen::Ref<const Eigen::VectorXd>&>(),
-           py::arg("plant"), py::arg("kp"), py::arg("kd"),
-           // Keep alive, reference: `self` keeps `robot` alive.
-           py::keep_alive<1, 2>(), cls_doc.ctor.doc)
+    cls  // BR
+        .def(py::init<const MultibodyPlant<double>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("plant"), py::arg("kp"), py::arg("kd"),
+            // Keep alive, reference: `self` keeps `robot` alive.
+            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
         .def("get_input_port_estimated_state",
             &Class::get_input_port_estimated_state, py_rvp::reference_internal,
             cls_doc.get_input_port_estimated_state.doc)

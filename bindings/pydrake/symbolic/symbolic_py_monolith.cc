@@ -354,7 +354,8 @@ void DefineSymbolicMonolith(py::module_ m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   constexpr auto doc_expression = doc_expr.Expression;
-  expr_cls.def(py::init<>(), doc_expression.ctor.doc_0args)
+  expr_cls  // BR
+      .def(py::init<>(), doc_expression.ctor.doc_0args)
       .def(py::init<double>(), py::arg("constant"),
           doc_expression.ctor.doc_1args_constant)
       .def(py::init<const Variable&>(), py::arg("var"),
@@ -624,7 +625,8 @@ void DefineSymbolicMonolith(py::module_ m) {
   }
 
   constexpr auto& doc_formula = doc_expr.Formula;
-  formula_cls.def(py::init<>(), doc_formula.ctor.doc_0args)
+  formula_cls  // BR
+      .def(py::init<>(), doc_formula.ctor.doc_0args)
       .def(py::init<bool>(), py::arg("value").noconvert(),
           doc_formula.ctor.doc_1args_value)
       .def(py::init<const Variable&>(), py::arg("var"),
@@ -840,7 +842,8 @@ void DefineSymbolicMonolith(py::module_ m) {
   using symbolic::Polynomial;
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  polynomial_cls.def(py::init<>(), doc.Polynomial.ctor.doc_0args)
+  polynomial_cls  // BR
+      .def(py::init<>(), doc.Polynomial.ctor.doc_0args)
       .def(py::init<Polynomial::MapType>(), py::arg("map"),
           doc.Polynomial.ctor.doc_1args_map)
       .def(py::init<const Monomial&>(), py::arg("m"),
@@ -1033,7 +1036,8 @@ void DefineSymbolicMonolith(py::module_ m) {
           py::arg("monomial_basis"), py::arg("gram_lower"),
           doc.CalcPolynomialWLowerTriangularPart.doc);
 
-  rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+  rat_fun_cls  // BR
+      .def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
       .def(py::init<Polynomial, Polynomial>(), py::arg("numerator"),
           py::arg("denominator"),
           doc.RationalFunction.ctor.doc_2args_numerator_denominator)

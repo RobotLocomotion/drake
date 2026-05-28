@@ -715,10 +715,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   {
     py::class_<L2NormCost, Cost, std::shared_ptr<L2NormCost>> cls(
         m, "L2NormCost", doc.L2NormCost.doc);
-    cls.def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
-         return std::make_unique<L2NormCost>(A, b);
-       }),
-           py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
+    cls  // BR
+        .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+          return std::make_unique<L2NormCost>(A, b);
+        }),
+            py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
         .def(py::init([](const Eigen::SparseMatrix<double>& A,
                           const Eigen::VectorXd& b) {
           return std::make_unique<L2NormCost>(A, b);
