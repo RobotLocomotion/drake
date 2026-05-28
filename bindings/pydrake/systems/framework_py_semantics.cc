@@ -195,7 +195,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
               // TODO(jwnimmer-tri) With major surgery to the bindings we could
               // change the order of operations to work around this, but at the
               // moment that's too much churn to for the payoff.
-              const SystemBase* system_base = system.cast<SystemBase*>();
+              const SystemBase* system_base = py::cast<SystemBase*>(system);
               return EventStatus::ReachedTermination(
                   system_base, std::move(message));
             },
@@ -209,7 +209,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
               // TODO(jwnimmer-tri) With major surgery to the bindings we could
               // change the order of operations to work around this, but at the
               // moment that's too much churn to for the payoff.
-              const SystemBase* system_base = system.cast<SystemBase*>();
+              const SystemBase* system_base = py::cast<SystemBase*>(system);
               return EventStatus::Failed(system_base, std::move(message));
             },
             py::arg("system"), py::arg("message"), cls_doc.Failed.doc)

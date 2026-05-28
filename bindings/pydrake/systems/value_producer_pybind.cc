@@ -18,20 +18,20 @@ MakeCppCompatibleAllocateCallback(py::function allocate) {
           fmt::format("The allocate callback function {} must return a "
                       "pydrake.common.value.Value[...] or"
                       "pydrake.common.value.AbstractValue object, not None",
-              py::repr(allocate).cast<std::string>()));
+              py::cast<std::string>(py::repr(allocate))));
     }
 
     // Verify its return type.
     const AbstractValue* result_cpp;
     try {
-      result_cpp = result_py.cast<const AbstractValue*>();
+      result_cpp = py::cast<const AbstractValue*>(result_py);
     } catch (const py::cast_error& e) {
       throw std::runtime_error(
           fmt::format("The allocate callback function {} must return a "
                       "pydrake.common.value.Value[...] or"
                       "pydrake.common.value.AbstractValue object, not {}",
-              py::repr(allocate).cast<std::string>(),
-              py::str(py::type::handle_of(result_py)).cast<std::string>()));
+              py::cast<std::string>(py::repr(allocate)),
+              py::cast<std::string>(py::str(py::type::handle_of(result_py)))));
     }
 
     // Our signature requires returning a unique_ptr; the only way we can do

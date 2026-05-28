@@ -68,8 +68,8 @@ struct type_caster<drake::symbolic::Variable::Id> {
 
     const pybind11::object hi_py = concat >> pybind11::int_(64);
     const pybind11::object lo_py = concat & pybind11::int_(~uint64_t{});
-    const uint64_t hi = hi_py.cast<uint64_t>();
-    const uint64_t lo = lo_py.cast<uint64_t>();
+    const uint64_t hi = pybind11::cast<uint64_t>(hi_py);
+    const uint64_t lo = pybind11::cast<uint64_t>(lo_py);
     // N.B. "value" is a magic variable declared by pybind11 where we're
     // supposed to put the loaded result.
     value = Attorney::Construct(hi, lo);

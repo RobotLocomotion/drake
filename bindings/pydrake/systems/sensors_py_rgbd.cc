@@ -78,9 +78,9 @@ void DefineSensorsRgbd(py::module_ m) {
         },
         [](Class* self, py::tuple t) {
           DRAKE_DEMAND(t.size() == 6);
-          new (self) Class(t[0].cast<int>(), t[1].cast<int>(),
-              t[2].cast<double>(), t[3].cast<double>(), t[4].cast<double>(),
-              t[5].cast<double>());
+          new (self) Class(py::cast<int>(t[0]), py::cast<int>(t[1]),
+              py::cast<double>(t[2]), py::cast<double>(t[3]),
+              py::cast<double>(t[4]), py::cast<double>(t[5]));
         });
   }
 

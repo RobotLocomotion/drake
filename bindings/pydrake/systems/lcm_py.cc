@@ -57,7 +57,7 @@ class PySerializerInterface : public SerializerInterface {
           py::object, SerializerInterface, CreateDefaultValue);
     }();
     DRAKE_THROW_UNLESS(!default_value.is_none());
-    return default_value.template cast<const AbstractValue*>()->Clone();
+    return py::cast<const AbstractValue*>(default_value)->Clone();
   }
 
   void Deserialize(const void* message_bytes, int message_length,

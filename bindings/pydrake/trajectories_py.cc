@@ -492,9 +492,9 @@ struct Impl {
             // C++ references, and the constructor will then clone them
             // internally.
             DRAKE_THROW_UNLESS(t.size() == 2);
-            const Trajectory<T>& path = t[0].cast<const Trajectory<T>&>();
+            const Trajectory<T>& path = py::cast<const Trajectory<T>&>(t[0]);
             const Trajectory<T>& time_scaling =
-                t[1].cast<const Trajectory<T>&>();
+                py::cast<const Trajectory<T>&>(t[1]);
             new (self) Class(path, time_scaling);
           });
       DefCopyAndDeepCopy(&cls);
@@ -780,7 +780,7 @@ struct Impl {
             segments.reserve(segments_pickle.size());
             for (py::handle segment_pickle : segments_pickle) {
               const Trajectory<T>& segment =
-                  segment_pickle.cast<const Trajectory<T>&>();
+                  py::cast<const Trajectory<T>&>(segment_pickle);
               segments.emplace_back(segment.Clone());
             }
             new (self) Class(std::move(segments));
