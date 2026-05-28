@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -12,6 +14,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/test_utilities/icf_model_test_helpers.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -22,6 +25,11 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 namespace {
+
+using contact_solvers::internal::BlockSparseSymmetricMatrix;
+using multibody::internal::ExpandRows;
+using multibody::internal::SelectRows;
+using multibody::internal::SelectRowsCols;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
@@ -68,6 +76,218 @@ GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
     drake::test::LimitMalloc guard;
     MakeUnconstrainedModel(&model);
   }
+
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+  // Do a non-reducing reduce to allocate storage in the reduced model.
+  MakeModelReducible(&model, {});
+  model.ReduceInto(&reduced_model, &mapping);
+
+  // Reducing into a same size model should cause no new allocations.
+  {
+    // TODO(#23912): measured 10 allocations:
+    // 4 in ReduceInto itself (selects on Eigen params).
+    // 6 in SetSparsityPattern.
+    drake::test::LimitMalloc guard({10});
+    model.ReduceInto(&reduced_model, &mapping);
+  }
+
+  // Reducing into a smaller model should have minimal allocations.
+  MakeModelReducible(&model, {2, 16});
+  {
+    // TODO(#23912): measured 13 allocations:
+    // 4 in ReduceInto itself (selects on Eigen params).
+    // 3 in ResetParameters.
+    // 6 in SetSparsityPattern.
+    drake::test::LimitMalloc guard({13});
+    model.ReduceInto(&reduced_model, &mapping);
+  }
+}
+
+GTEST_TEST(IcfModel, ReducedMapping) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+
+  auto check_permutations_are_sorted = [](const ReducedMapping& m,
+                                          std::string_view message) {
+    SCOPED_TRACE(message);
+    EXPECT_TRUE(
+        std::ranges::is_sorted(m.velocity_permutation.inverse_permutation()));
+    EXPECT_TRUE(
+        std::ranges::is_sorted(m.clique_permutation.inverse_permutation()));
+    for (const auto& clique_dofs : m.clique_dof_permutations) {
+      EXPECT_TRUE(std::ranges::is_sorted(clique_dofs.inverse_permutation()));
+    }
+  };
+
+  // Lock some arbitrary dofs.
+  const std::vector<int> arbitrary_locked = {0, 17};
+  MakeModelReducible(&model, arbitrary_locked);
+  model.ReduceInto(&reduced_model, &mapping);
+  check_permutations_are_sorted(mapping, "arbitrary dofs");
+  EXPECT_EQ(mapping.velocity_permutation.permuted_domain_size(), 16);
+  for (auto dof : arbitrary_locked) {
+    EXPECT_FALSE(mapping.velocity_permutation.participates(dof));
+  }
+  EXPECT_EQ(mapping.clique_permutation.permuted_domain_size(), 3);
+  EXPECT_EQ(mapping.clique_dof_permutations.at(0).permuted_domain_size(), 5);
+  EXPECT_FALSE(mapping.clique_dof_permutations.at(0).participates(0));
+  EXPECT_EQ(mapping.clique_dof_permutations.at(1).permuted_domain_size(), 6);
+  EXPECT_EQ(mapping.clique_dof_permutations.at(2).permuted_domain_size(), 5);
+  EXPECT_FALSE(mapping.clique_dof_permutations.at(2).participates(5));
+
+  // Lock an entire clique.
+  const std::vector<int> clique0_locked = {0, 1, 2, 3, 4, 5};
+  MakeModelReducible(&model, clique0_locked);
+  model.ReduceInto(&reduced_model, &mapping);
+  check_permutations_are_sorted(mapping, "clique0 locked");
+  EXPECT_EQ(mapping.velocity_permutation.permuted_domain_size(), 12);
+  for (auto dof : clique0_locked) {
+    EXPECT_FALSE(mapping.velocity_permutation.participates(dof));
+  }
+  EXPECT_EQ(mapping.clique_permutation.permuted_domain_size(), 2);
+  EXPECT_FALSE(mapping.clique_permutation.participates(0));
+  EXPECT_EQ(mapping.clique_dof_permutations.at(0).permuted_domain_size(), 0);
+  EXPECT_EQ(mapping.clique_dof_permutations.at(1).permuted_domain_size(), 6);
+  EXPECT_EQ(mapping.clique_dof_permutations.at(2).permuted_domain_size(), 6);
+
+  // Lock everything.
+  std::vector<int> all_locked(model.num_velocities());
+  std::iota(all_locked.begin(), all_locked.end(), 0);
+  MakeModelReducible(&model, all_locked);
+  model.ReduceInto(&reduced_model, &mapping);
+  check_permutations_are_sorted(mapping, "all locked");
+  EXPECT_EQ(mapping.velocity_permutation.permuted_domain_size(), 0);
+  for (auto dof : all_locked) {
+    EXPECT_FALSE(mapping.velocity_permutation.participates(dof));
+  }
+  EXPECT_EQ(mapping.clique_permutation.permuted_domain_size(), 0);
+  EXPECT_FALSE(mapping.clique_permutation.participates(0));
+  EXPECT_EQ(mapping.clique_dof_permutations.at(0).permuted_domain_size(), 0);
+  EXPECT_EQ(mapping.clique_dof_permutations.at(1).permuted_domain_size(), 0);
+  EXPECT_EQ(mapping.clique_dof_permutations.at(2).permuted_domain_size(), 0);
+}
+
+GTEST_TEST(IcfModel, ReducedDataAndHessian) {
+  IcfModel<double> model;
+  IcfData<double> data;
+  std::unique_ptr<BlockSparseSymmetricMatrix<MatrixXd>> hessian;
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
+  model.ResizeData(&data);
+  model.CalcData(VectorX<double>::Zero(model.num_velocities()), &data);
+  hessian = model.MakeHessian(data);
+
+  // The Hessian made by the reduced model should be the same as the
+  // unlocked-dofs slice of the Hessian made by the full model.
+  auto check_reduced_hessian = [&](const std::vector<int>& locked_dofs) {
+    IcfModel<double> reduced_model;
+    ReducedMapping mapping;
+    VectorX<double> reduced_v;
+    IcfData<double> reduced_data;
+    std::unique_ptr<BlockSparseSymmetricMatrix<MatrixXd>> reduced_hessian;
+
+    MakeModelReducible(&model, locked_dofs);
+    model.ReduceInto(&reduced_model, &mapping);
+    reduced_v = VectorX<double>::Zero(reduced_model.num_velocities());
+    reduced_model.ResizeData(&reduced_data);
+    reduced_model.CalcData(reduced_v, &reduced_data);
+    reduced_model.SetSparsityPattern();
+    reduced_hessian = reduced_model.MakeHessian(reduced_data);
+    auto sliced_hessian =
+        SelectRowsCols(hessian->MakeDenseMatrix(),
+                       mapping.velocity_permutation.inverse_permutation());
+    EXPECT_TRUE(
+        CompareMatrices(sliced_hessian, reduced_hessian->MakeDenseMatrix()));
+  };
+
+  // Reduce by none; essentially, just copy.
+  const std::vector<int> none_locked;
+  check_reduced_hessian(none_locked);
+
+  // Lock some arbitrary dofs.
+  const std::vector<int> arbitrary_locked = {0, 17};
+  check_reduced_hessian(arbitrary_locked);
+
+  // Lock an entire clique.
+  const std::vector<int> clique0_locked = {0, 1, 2, 3, 4, 5};
+  check_reduced_hessian(clique0_locked);
+
+  // Lock an entire clique.
+  const std::vector<int> clique1_locked = {6, 7, 8, 9, 10, 11};
+  check_reduced_hessian(clique1_locked);
+
+  // Lock everything.
+  std::vector<int> all_locked(model.num_velocities());
+  std::iota(all_locked.begin(), all_locked.end(), 0);
+  check_reduced_hessian(all_locked);
+}
+
+GTEST_TEST(IcfModel, ReducedV_WB0) {
+  IcfModel<double> model;
+  IcfData<double> data;
+  MakeUnconstrainedModel(&model);
+
+  // The V_WB0s made by the reduced model are one of:
+  // * 0, if body is anchored or all its dofs are locked,
+  // * equal to the full model, if the body is floating and not locked,
+  // * equal to the full model's Jacobian, multiplied by a velocity with locked
+  // * dofs set to 0.
+  auto check_reduced_V_WB0 = [&](const std::vector<int>& locked_dofs) {
+    SCOPED_TRACE(fmt::format("locked_dofs {}", fmt::join(locked_dofs, ", ")));
+    IcfModel<double> reduced_model;
+    ReducedMapping mapping;
+
+    MakeModelReducible(&model, locked_dofs);
+    model.ReduceInto(&reduced_model, &mapping);
+    for (int b = 0; b < model.num_bodies(); ++b) {
+      SCOPED_TRACE(fmt::format("body {}", b));
+      const Vector6<double> V_WB0 = model.V_WB0(b);
+      const Vector6<double> reduced_V_WB0 = reduced_model.V_WB0(b);
+      const int reduced_clique = reduced_model.params().body_to_clique.at(b);
+      if (model.is_anchored(b) || reduced_clique < 0) {
+        EXPECT_TRUE(CompareMatrices(Vector6<double>::Zero(), reduced_V_WB0));
+        // Also check that the corresponding Jacobian is 0 size.
+        EXPECT_EQ(reduced_model.params().J_WB[b].cols(), 0);
+      } else if (model.is_floating(b)) {
+        EXPECT_TRUE(CompareMatrices(V_WB0, reduced_V_WB0));
+      } else {
+        const std::vector<int>& unlocked_dofs =
+            mapping.velocity_permutation.inverse_permutation();
+        // Make a full velocity with 0 for locked dofs.
+        const VectorXd re_expanded_velocity =
+            ExpandRows(SelectRows(model.v0(), unlocked_dofs),
+                       model.num_velocities(), unlocked_dofs);
+        // Make a clique-local velocity with 0 for locked dofs.
+        const int clique = model.params().body_to_clique.at(b);
+        const VectorXd clique_velocity =
+            model.clique_segment(clique, re_expanded_velocity);
+        const Vector6d expected_V_WB0 =
+            model.params().J_WB[b] * clique_velocity;
+        EXPECT_TRUE(CompareMatrices(expected_V_WB0, reduced_V_WB0));
+      }
+    }
+  };
+
+  // Reduce by none; essentially, just copy.
+  const std::vector<int> none_locked;
+  check_reduced_V_WB0(none_locked);
+
+  // Lock some arbitrary dofs.
+  const std::vector<int> arbitrary_locked = {0, 17};
+  check_reduced_V_WB0(arbitrary_locked);
+
+  // Lock an entire clique.
+  const std::vector<int> clique0_locked = {0, 1, 2, 3, 4, 5};
+  check_reduced_V_WB0(clique0_locked);
+
+  // Lock everything.
+  std::vector<int> all_locked(model.num_velocities());
+  std::iota(all_locked.begin(), all_locked.end(), 0);
+  check_reduced_V_WB0(all_locked);
 }
 
 /* Iterates over each body to check sizes and such. */
