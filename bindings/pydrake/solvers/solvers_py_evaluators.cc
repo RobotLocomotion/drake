@@ -98,7 +98,7 @@ auto RegisterBinding(py::handle* scope) {
 
 template <typename C, typename PyClass>
 void DefBindingCastConstructor(PyClass* cls) {
-  static_assert(std::is_same_v<Binding<C>, typename PyClass::type>,
+  static_assert(std::is_same_v<Binding<C>, typename PyClass::Type>,
       "Bound type must be Binding<C>");
   (*cls)  // BR
       .def(py::init([](py::object binding) {

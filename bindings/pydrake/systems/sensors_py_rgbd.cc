@@ -26,7 +26,7 @@ void DefineSensorsRgbd(py::module_ m) {
   auto def_camera_ports = [](auto* ppy_class, auto cls_doc) {
     auto& py_class = *ppy_class;
     using PyClass = std::decay_t<decltype(py_class)>;
-    using Class = typename PyClass::type;
+    using Class = typename PyClass::Type;
     py_class
         .def("query_object_input_port", &Class::query_object_input_port,
             py_rvp::reference_internal, cls_doc.query_object_input_port.doc)

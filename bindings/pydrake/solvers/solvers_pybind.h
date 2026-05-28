@@ -17,7 +17,7 @@ namespace pysolvers {
 // context management.
 template <typename PyClass, typename Doc>
 void BindAcquireLicense(PyClass* pcls, Doc&& cls_doc) {
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   using License = typename Class::License;
   auto& cls = *pcls;
 

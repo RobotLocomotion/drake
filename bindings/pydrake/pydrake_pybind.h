@@ -72,7 +72,7 @@ constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 /// copy.
 template <typename PyClass>
 void DefCopyAndDeepCopy(PyClass* ppy_class) {
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   PyClass& py_class = *ppy_class;
   py_class.def("__copy__", [](const Class* self) { return Class{*self}; })
       .def("__deepcopy__",
@@ -92,7 +92,7 @@ void DefClone(PyClass* ppy_class) {
   // take_ownership return value policy. The take_ownership
   // policy would be the default policy in this case, but it
   // seems safer and more clear to apply it explicitly.
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   PyClass& py_class = *ppy_class;
   py_class  // BR
       .def(
@@ -123,7 +123,7 @@ template <typename PyClass, typename GetState, typename SetState>
 void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
   PyClass& py_class = *ppy_class;
 
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   using Pickled = std::invoke_result_t<GetState, const Class&>;
 
   // For pybind11 we must wrap set_state to return the constructed Class by

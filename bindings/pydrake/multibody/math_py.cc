@@ -15,7 +15,7 @@ using math::RotationMatrix;
 template <typename T, typename PyClass>
 void BindSpatialVectorMixin(PyClass* pcls) {
   constexpr auto& doc = pydrake_doc_multibody_math.drake.multibody;
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   auto& cls = *pcls;
   cls  // BR
       .def(py::init([]() {

@@ -93,7 +93,7 @@ struct CastUPack<double> {
 template <typename T, typename PyClass,
     typename UPack = typename internal::CastUPack<T>::Pack>
 void DefCast(PyClass* cls, const char* doc, UPack U_pack = {}) {
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   auto bind_scalar = [cls, doc](auto U_dummy) {
     using U = decltype(U_dummy);
     AddTemplateMethod(
