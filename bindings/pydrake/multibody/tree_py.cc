@@ -1275,12 +1275,12 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
     py::object result_obj =
         override(py::cast(context, py_rvp::reference), py::cast(p_WQ));
     try {
-      return result_obj.cast<Vector3<T>>();
+      return py::cast<Vector3<T>>(result_obj);
     } catch (const py::cast_error& e) {
       throw std::logic_error(
           "DoEvaluateAt() must return a 3-element list or NumPy array that can "
           "be converted to Vector3<T>. Got " +
-          py::str(result_obj).cast<std::string>() + ".");
+          py::cast<std::string>(py::str(result_obj)) + ".");
     }
   }
 
@@ -1297,11 +1297,11 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
     py::object result_obj = override();
     std::shared_ptr<ForceDensityField<T>> cloned;
     try {
-      cloned = result_obj.cast<std::shared_ptr<ForceDensityField<T>>>();
+      cloned = py::cast<std::shared_ptr<ForceDensityField<T>>>(result_obj);
     } catch (const py::cast_error& e) {
       throw std::logic_error(
           "DoClone() must return a `ForceDensityField<T>`. Got " +
-          py::str(result_obj.get_type()).cast<std::string>() +
+          py::cast<std::string>(py::str(result_obj.get_type())) +
           " Make sure your DoClone() returns a new instance of the same "
           "Python class, e.g., `return MyForceDensityField(...)`.");
     }

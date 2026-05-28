@@ -406,8 +406,7 @@ void DefineMeshSource(py::module_ m) {
               return result;
         },
         [ctor](Class* self, const py::dict& kwargs) {
-          auto other = py::cast<MeshSource>(ctor(**kwargs));
-          new (self) Class(other);
+          new (self) Class(py::cast<Class>(ctor(**kwargs)));
         });
     // Note: __repr__ is defined in _geometry_extra.py.
     DefCopyAndDeepCopy(&cls);

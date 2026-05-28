@@ -785,7 +785,7 @@ struct Impl {
             segments.reserve(segments_pickle.size());
             for (py::handle segment_pickle : segments_pickle) {
               const Trajectory<T>& segment =
-                  cast<const Trajectory<T>&>(segment_pickle);
+                  py::cast<const Trajectory<T>&>(segment_pickle);
               segments.emplace_back(segment.Clone());
             }
             new (self) Class(std::move(segments));
