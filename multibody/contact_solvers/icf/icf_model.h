@@ -429,7 +429,7 @@ class IcfModel {
 
   @pre reduced_model != nullptr.
   @pre mapping != nullptr.
-  @throws std::exception if there are any constraints.
+  @throws std::exception if there are any non-coupler constraints.
   @post sparsity is uninitialized; call SetSparsity() when needed.
   */
   void ReduceInto(IcfModel<T>* reduced_model, ReducedMapping* mapping) const;
