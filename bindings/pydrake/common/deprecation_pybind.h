@@ -164,7 +164,7 @@ auto DeprecatedParamInit(std::string message) {
     return obj;
   }));
 }
-#else  // PYDRAKE_USE_NANOBIND
+#else   // PYDRAKE_USE_NANOBIND
 template <typename CppClass>
 struct DRAKE_NO_EXPORT DeprecatedParamInit
     : py::def_visitor<DeprecatedParamInit<CppClass>> {
