@@ -70,8 +70,9 @@ void init_perception(py::module_ m) {
     cls.attr("D") = GetPyParam<Class::D>()[0];
     // N.B. Workaround linking error for `constexpr` bits.
     cls.attr("kDefaultValue") = Class::T{Class::kDefaultValue};
-    cls.def_static("IsDefaultValue", &Class::IsDefaultValue, py::arg("value"),
-           cls_doc.IsDefaultValue.doc)
+    cls  // BR
+        .def_static("IsDefaultValue", &Class::IsDefaultValue, py::arg("value"),
+            cls_doc.IsDefaultValue.doc)
         .def_static("IsInvalidValue", &Class::IsInvalidValue, py::arg("value"),
             cls_doc.IsInvalidValue.doc)
         .def(py::init<int, pc_flags::Fields>(), py::arg("new_size") = 0,

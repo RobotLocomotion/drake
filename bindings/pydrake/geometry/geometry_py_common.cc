@@ -290,7 +290,8 @@ void DefineGeometryVersion(py::module_ m) {
     using Class = GeometryVersion;
     constexpr auto& cls_doc = doc.GeometryVersion;
     py::class_<Class> cls(m, "GeometryVersion", cls_doc.doc);
-    cls.def(py::init(), cls_doc.ctor.doc)
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<const GeometryVersion&>(), py::arg("other"),
             "Creates a copy of the GeometryVersion.")
         .def("IsSameAs", &Class::IsSameAs, py::arg("other"), py::arg("role"),

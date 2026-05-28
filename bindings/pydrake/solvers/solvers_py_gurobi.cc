@@ -17,7 +17,8 @@ void DefineSolversGurobi(py::module_ m) {
 
   py::class_<GurobiSolver, SolverInterface> cls(
       m, "GurobiSolver", doc.GurobiSolver.doc);
-  cls.def(py::init<>(), doc.GurobiSolver.ctor.doc)
+  cls  // BR
+      .def(py::init<>(), doc.GurobiSolver.ctor.doc)
       .def_static("id", &GurobiSolver::id, doc.GurobiSolver.id.doc);
   pysolvers::BindAcquireLicense(&cls, doc.GurobiSolver);
 
@@ -52,8 +53,9 @@ void DefineSolversGurobi(py::module_ m) {
           &GurobiSolver::SolveStatusInfo::feasible_solutions_count,
           doc.GurobiSolver.SolveStatusInfo.feasible_solutions_count.doc);
 
-  cls.def("AddMipNodeCallback", &GurobiSolver::AddMipNodeCallback,
-         py::arg("callback"), doc.GurobiSolver.AddMipNodeCallback.doc)
+  cls  // BR
+      .def("AddMipNodeCallback", &GurobiSolver::AddMipNodeCallback,
+          py::arg("callback"), doc.GurobiSolver.AddMipNodeCallback.doc)
       .def("AddMipSolCallback", &GurobiSolver::AddMipSolCallback,
           py::arg("callback"), doc.GurobiSolver.AddMipSolCallback.doc);
 }

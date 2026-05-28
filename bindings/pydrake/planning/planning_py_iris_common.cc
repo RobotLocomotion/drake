@@ -22,7 +22,8 @@ void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
   const auto& cls_doc = doc.CommonSampledIrisOptions;
   py::class_<CommonSampledIrisOptions> common_sampled_iris_options(
       m, "CommonSampledIrisOptions", cls_doc.doc);
-  common_sampled_iris_options.def(py::init<>())
+  common_sampled_iris_options  // BR
+      .def(py::init<>())
       .def_rw("num_particles", &CommonSampledIrisOptions::num_particles,
           cls_doc.num_particles.doc)
       .def_rw("tau", &CommonSampledIrisOptions::tau, cls_doc.tau.doc)
@@ -181,7 +182,8 @@ is the input dimension.
 
   py::class_<IrisParameterizationFunction> iris_parameterization_function(
       m, "IrisParameterizationFunction", cls_doc.doc);
-  iris_parameterization_function.def(py::init<>(), cls_doc.ctor.doc_0args)
+  iris_parameterization_function  // BR
+      .def(py::init<>(), cls_doc.ctor.doc_0args)
       .def(py::init([](const py::function& parameterization,
                         int parameterization_dimension) {
         return IrisParameterizationFunction(

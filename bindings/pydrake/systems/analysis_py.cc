@@ -563,7 +563,8 @@ Parameter ``interruptible``:
     constexpr auto& cls_doc = doc.analysis.RegionOfAttractionOptions;
     py::class_<Class, std::shared_ptr<Class>> cls(
         m, "RegionOfAttractionOptions", cls_doc.doc);
-    cls.def(py::init<>(), cls_doc.ctor.doc)
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
         // TODO(jeremy.nimmer): replace the def_rw with
         // DefAttributesUsingSerialize when we fix binding a
         // VectorX<symbolic::Variable> state_variables to a numpy array of

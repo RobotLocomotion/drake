@@ -570,7 +570,8 @@ void DefineIris(py::module_ m) {
   {
     const auto& cls_doc = doc.IrisOptions;
     py::class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
-    iris_options.def(ParamInit<IrisOptions>())
+    iris_options  // BR
+        .def(ParamInit<IrisOptions>())
         .def_rw("require_sample_point_is_contained",
             &IrisOptions::require_sample_point_is_contained,
             cls_doc.require_sample_point_is_contained.doc)
@@ -710,7 +711,8 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
     const auto& cls_doc = doc.GraphOfConvexSetsOptions;
     py::class_<GraphOfConvexSetsOptions> gcs_options(
         m, "GraphOfConvexSetsOptions", cls_doc.doc);
-    gcs_options.def(py::init<>())
+    gcs_options  // BR
+        .def(py::init<>())
         .def_rw("convex_relaxation",
             &GraphOfConvexSetsOptions::convex_relaxation,
             cls_doc.convex_relaxation.doc)
@@ -1147,7 +1149,8 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
   py::class_<ImplicitGraphOfConvexSets, PyImplicitGraphOfConvexSets>
       implicit_gcs_cls(
           m, "ImplicitGraphOfConvexSets", doc.ImplicitGraphOfConvexSets.doc);
-  implicit_gcs_cls.def(py::init<>(), doc.ImplicitGraphOfConvexSets.ctor.doc)
+  implicit_gcs_cls  // BR
+      .def(py::init<>(), doc.ImplicitGraphOfConvexSets.ctor.doc)
       .def("Successors", &ImplicitGraphOfConvexSets::Successors,
           py_rvp::reference_internal, py::arg("v"),
           doc.ImplicitGraphOfConvexSets.Successors.doc)
