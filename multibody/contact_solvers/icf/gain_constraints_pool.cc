@@ -12,6 +12,7 @@ namespace internal {
 
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 using Eigen::VectorBlock;
+using math::internal::PartialPermutation;
 
 template <typename T>
 GainConstraintsPool<T>::GainConstraintsPool(const IcfModel<T>* parent_model)
@@ -180,6 +181,40 @@ T GainConstraintsPool<T>::Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
   }
 
   return cost;
+}
+
+template <typename T>
+void GainConstraintsPool<T>::ReduceInto(
+    const ReducedMapping& mapping, GainConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(constraint_sizes());
+
+  reduced_pool->clique_.clear();
+  reduced_pool->constraint_size_.clear();
+  reduced_pool->K_.Clear();
+  reduced_pool->b_.Clear();
+  reduced_pool->le_.Clear();
+  reduced_pool->ue_.Clear();
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = clique_[k];
+    if (!mapping.clique_subsequence.participates(c)) {
+      continue;
+    }
+    const PartialPermutation& dof_subsequence =
+        mapping.clique_dof_subsequences[c];
+    const std::vector<int>& indices = dof_subsequence.inverse_permutation();
+    const int r_c = mapping.clique_subsequence.permuted_index(c);
+    const int r_c_size = dof_subsequence.permuted_domain_size();
+
+    // Fill in the reduced constraint.
+    reduced_pool->clique_.push_back(r_c);
+    reduced_pool->constraint_size_.push_back(r_c_size);
+    // TODO(#23912): the Eigen slicing operator allocates.
+    reduced_pool->K_.Add(r_c_size, 1) = K_[k](indices);
+    reduced_pool->b_.Add(r_c_size, 1) = b_[k](indices);
+    reduced_pool->le_.Add(r_c_size, 1) = le_[k](indices);
+    reduced_pool->ue_.Add(r_c_size, 1) = ue_[k](indices);
+  }
 }
 
 }  // namespace internal
