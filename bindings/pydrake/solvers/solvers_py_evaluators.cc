@@ -760,15 +760,16 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     py::class_<L2NormCost, Cost /*, std::shared_ptr<L2NormCost> XXX porting */>
         cls(m, "L2NormCost", doc.L2NormCost.doc);
     cls  // BR
-        .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
-          return std::make_unique<L2NormCost>(A, b);
-        }),
-            py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
-        .def(py::init([](const Eigen::SparseMatrix<double>& A,
-                          const Eigen::VectorXd& b) {
-          return std::make_unique<L2NormCost>(A, b);
-        }),
-            py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_sparse_A)
+        .def(
+           "__init__",
+           [](L2NormCost* self, const Eigen::MatrixXd& A,
+               const Eigen::VectorXd& b) { new (self) L2NormCost(A, b); },
+           py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
+        .def(
+            "__init__",
+            [](L2NormCost* self, const Eigen::SparseMatrix<double>& A,
+                const Eigen::VectorXd& b) { new (self) L2NormCost(A, b); },
+             py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_sparse_A)
         .def("get_sparse_A", &L2NormCost::get_sparse_A,
             doc.L2NormCost.get_sparse_A.doc)
         .def("GetDenseA", &L2NormCost::GetDenseA, doc.L2NormCost.GetDenseA.doc)
