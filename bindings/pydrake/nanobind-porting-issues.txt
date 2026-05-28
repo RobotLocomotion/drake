@@ -94,6 +94,28 @@ Compile time issues
       template <typename... Args> str format(Args&&... args) const;
       const char *c_str() const;     // not in pybind11
 
+* nanobind's bytes type has API changes.
+  - pybind11 `class bytes` API::
+
+      bytes();
+      bytes(const char *c);            // explicit in nanobind
+      bytes(const char *c, size_t n);  // explicit in nanobind
+      bytes(const std::string &s);     // not in nanobind
+      bytes(string_view s);            // not in nanobind
+      explicit bytes(const str &s);
+      operator std::string() const;    // not in nanobind
+      operator std::string_view();     // not in nanobind
+
+  - nanobind `class bytes` API::
+
+      bytes();
+      explicit bytes(handle h);
+      explicit bytes(const char *s);
+      explicit bytes(const void *s, size_t n);
+      const char *c_str() const;
+      const void *data() const;
+      size_t size() const;
+
 * some new restrictions on binding annotations need work.
   * can't use py::args() and leave some args unnamed?
 
