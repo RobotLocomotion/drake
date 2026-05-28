@@ -67,7 +67,11 @@ PYDRAKE_MODULE(cc_module, m) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.def(py_init_deprecated(cls_doc.ctor.doc_deprecated_deprecated_1args_y,
+#ifdef PYDRAKE_USE_PYBIND11
+                [](double arg) { return Class(arg); }),
+#else  // PYDRAKE_USE_NANOBIND
                 [](Class* self, double arg) { new (self) Class(arg); }),
+#endif
         py::arg("y"), cls_doc.ctor.doc_deprecated_deprecated_1args_y);
 #pragma GCC diagnostic pop
 
