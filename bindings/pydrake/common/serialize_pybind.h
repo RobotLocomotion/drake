@@ -92,9 +92,13 @@ class DefAttributesArchive {
 
     // Add the binding.
     if constexpr (is_optional<T>::value) {
-      ppy_class_->def_prop_rw(name, getter, setter, doc,
-          py::rv_policy::reference_internal,
-          py::for_setter(py::arg("arg").none()));
+      ppy_class_->def_prop_rw(
+          name, getter, setter, doc, py::rv_policy::reference_internal
+#ifdef PYDRAKE_USE_NANOBIND
+          ,
+          py::for_setter(py::arg("arg").none())
+#endif
+      );
     } else {
       ppy_class_->def_prop_rw(
           name, getter, setter, doc, py_rvp::reference_internal);
@@ -152,13 +156,19 @@ class DefAttributesArchive {
   static py::object CalcSchemaType(const T*) {
     // Pybind11 doesn't support type::of<> for primitive types, so we must
     // match them manually. See https://github.com/pybind/pybind11/issues/2486.
-    auto type_of = [](const py::object& o) { return py::borrow(o.type()); };
+    auto type_of = [](const py::object& o) {
+#ifdef PYDRAKE_USE_PYBIND11
+      return py::type::of(o);
+#else  // PYDRAKE_USE_NANOBIND
+      return py::borrow(o.type());
+#endif
+    };
     if constexpr (std::is_same_v<T, bool>) {
-      return type_of(py::bool_({}));
+      return type_of(py::bool_(false));
     } else if constexpr (std::is_integral_v<T>) {
       return type_of(py::int_(0));
     } else if constexpr (std::is_floating_point_v<T>) {
-      return type_of(py::float_({}));
+      return type_of(py::float_(0.0));
     } else if constexpr (std::is_same_v<T, std::string>) {
       return type_of(py::str(""));
     } else if constexpr (is_eigen_type<T>::value) {
@@ -168,7 +178,11 @@ class DefAttributesArchive {
       // Anything that remains should be a registered C++ type.
       constexpr bool is_registered_type = is_generic_caster_v<T>;
       if constexpr (is_registered_type) {
+#ifdef PYDRAKE_USE_PYBIND11
+        return py::type::of<T>();
+#else  // PYDRAKE_USE_NANOBIND
         return py::borrow(py::type<T>());
+#endif
       } else {
         return CannotIdentifySchemaType<T>();
       }

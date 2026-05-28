@@ -351,15 +351,21 @@ discussion), use e.g.
   // Admittedly, it's unusual for a python library like pydrake to raise
   // SystemExit, but for now its better than C++ ::abort() taking down the
   // whole interpreter with a worse diagnostic message.
-  py::register_exception_translator([](const std::exception_ptr& p, void*) {
-    try {
-      if (p) {
-        std::rethrow_exception(p);
-      }
-    } catch (const drake::internal::assertion_error& e) {
-      PyErr_SetString(PyExc_SystemExit, e.what());
-    }
-  });
+  py::register_exception_translator(
+#ifdef PYDRAKE_USE_PYBIND11
+      [](std::exception_ptr p)
+#else  // PYDRAKE_USE_NANOBIND
+      [](const std::exception_ptr& p, void*)
+#endif
+      {
+        try {
+          if (p) {
+            std::rethrow_exception(p);
+          }
+        } catch (const drake::internal::assertion_error& e) {
+          PyErr_SetString(PyExc_SystemExit, e.what());
+        }
+      });
   // Convenient wrapper for querying FindResource(resource_path).
   m.def("FindResourceOrThrow", &FindResourceOrThrow,
       "Attempts to locate a Drake resource named by the given path string. "

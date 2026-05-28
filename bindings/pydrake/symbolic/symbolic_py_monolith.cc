@@ -292,7 +292,10 @@ void DefineSymbolicMonolith(py::module_ m) {
           "__iter__",
           [](const Variables& vars) {
             return py::make_iterator(
-                py::type<Variables>(), "iterator", vars.begin(), vars.end());
+#ifdef PYDRAKE_USE_NANOBIND
+                py::type<Variables>(), "iterator",
+#endif
+                vars.begin(), vars.end());
           },
           // Keep alive, reference: `return` keeps `self` alive
           py::keep_alive<0, 1>())
@@ -535,15 +538,16 @@ void DefineSymbolicMonolith(py::module_ m) {
       },
       py::arg("m"), doc.IsAffine.doc_1args);
 
-  // XXX porting -- raises exception and error info lost
-  // m.def(
-  //     "Evaluate",
-  //     [](const MatrixX<Expression>& M, const Environment::map& env,
-  //         RandomGenerator* random_generator) {
-  //       return Evaluate(M, Environment{env}, random_generator);
-  //     },
-  //     py::arg("m"), py::arg("env") = Environment::map{},
-  //     py::arg("generator") = nullptr, doc_expr.Evaluate.doc_expression);
+#if PYDRAKE_USE_PYBIND11  // XXX porting -- raises exception and error info lost
+  m.def(
+      "Evaluate",
+      [](const MatrixX<Expression>& M, const Environment::map& env,
+          RandomGenerator* random_generator) {
+        return Evaluate(M, Environment{env}, random_generator);
+      },
+      py::arg("m"), py::arg("env") = Environment::map{},
+      py::arg("generator") = nullptr, doc_expr.Evaluate.doc_expression);
+#endif
 
   m.def("GetVariableVector", &symbolic::GetVariableVector,
       py::arg("expressions"), doc_expr.GetVariableVector.doc);
@@ -642,14 +646,15 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def("GetFreeVariables", &Formula::GetFreeVariables,
           doc_formula.GetFreeVariables.doc)
       .def("EqualTo", &Formula::EqualTo, doc_formula.EqualTo.doc)
-      // XXX porting -- raises exception and error info lost
-      // .def(
-      //     "Evaluate",
-      //     [](const Formula& self, const Environment::map& env) {
-      //       return self.Evaluate(Environment{env});
-      //     },
-      //     py::arg("env") = Environment::map{},
-      //     doc_formula.Evaluate.doc_2args)
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting -- raises exception and error info lost
+      .def(
+          "Evaluate",
+          [](const Formula& self, const Environment::map& env) {
+            return self.Evaluate(Environment{env});
+          },
+          py::arg("env") = Environment::map{},
+          doc_formula.Evaluate.doc_2args)
+#endif
       .def(
           "Substitute",
           [](const Formula& self, const Variable& var, const Expression& e) {
@@ -899,11 +904,12 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def("AddProduct", &Polynomial::AddProduct, py::arg("coeff"),
           py::arg("m"), doc.Polynomial.AddProduct.doc)
       .def("Expand", &Polynomial::Expand, doc.Polynomial.Expand.doc)
-      // XXX porting -- raises exception and error info lost
-      // .def("SubstituteAndExpand", &Polynomial::SubstituteAndExpand,
-      //     py::arg("indeterminate_substitution"),
-      //     py::arg("substitutions_cached_data") = std::nullopt,
-      //     doc.Polynomial.SubstituteAndExpand.doc)
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting -- raises exception and error info lost
+      .def("SubstituteAndExpand", &Polynomial::SubstituteAndExpand,
+          py::arg("indeterminate_substitution"),
+          py::arg("substitutions_cached_data") = std::nullopt,
+          doc.Polynomial.SubstituteAndExpand.doc)
+#endif
       .def("RemoveTermsWithSmallCoefficients",
           &Polynomial::RemoveTermsWithSmallCoefficients,
           py::arg("coefficient_tol"),

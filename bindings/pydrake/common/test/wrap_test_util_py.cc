@@ -82,14 +82,14 @@ CallbackNeedsWrapping FunctionNeedsWrapCallbacks(
 }  // namespace pydrake
 }  // namespace drake
 
-namespace nanobind {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 template <>
 struct type_caster<drake::pydrake::TypeConversionExample>
     : public drake::pydrake::internal::type_caster_wrapped<
           drake::pydrake::wrapper_type_conversion_example> {};
 }  // namespace detail
-}  // namespace nanobind
+}  // namespace PYDRAKE_BINDER_NAMESPACE
 
 namespace drake {
 namespace pydrake {
