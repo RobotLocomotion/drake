@@ -41,6 +41,14 @@ See https://github.com/RobotLocomotion/drake/issues/21572.
  
      /// Reload the module or throws `error_already_set`.
      void reload() {
+@@ -2106,6 +2106,7 @@
+ 
+ public:
+     using type = type_;
++    using Type = type_;
+     using type_alias = detail::exactly_one_t<is_subtype, void, options...>;
+     constexpr static bool has_alias = !std::is_void<type_alias>::value;
+     using holder_type = detail::exactly_one_t<is_holder, default_holder_type<type>, options...>;
 @@ -1901,6 +1901,40 @@
          return *this;
      }
