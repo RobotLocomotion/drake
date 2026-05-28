@@ -371,7 +371,7 @@ The output of parsing is one or more model instances added to the
 MultibodyPlant provided to the parser at construction.
 
 For an introductory tutorial about parsing, see the <a
-href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/authoringmultibodysimulation-8159e3be6dc048a6a8ab6876017def4b">Authoring
+href="https://drake.mit.edu/tutorials/authoring_multibody_simulation.html">Authoring
 a Multibody Simulation</a> page.
 
 SDFormat files may contain multiple ``<model>`` elements. New model
