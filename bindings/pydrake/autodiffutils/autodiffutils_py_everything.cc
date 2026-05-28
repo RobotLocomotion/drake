@@ -89,8 +89,7 @@ void DefineAutodiffutils(py::module_ m) {
       },
       [](AutoDiffXd* self, py::tuple t) {
         DRAKE_THROW_UNLESS(t.size() == 2);
-        new (self) AutoDiffXd(
-            py::cast<double>(t[0]), py::cast<VectorXd>(t[1]));
+        new (self) AutoDiffXd(py::cast<double>(t[0]), py::cast<VectorXd>(t[1]));
       });
   DefCopyAndDeepCopy(&autodiff);
 

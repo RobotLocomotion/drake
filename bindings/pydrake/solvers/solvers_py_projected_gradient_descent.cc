@@ -65,8 +65,8 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
             DRAKE_THROW_UNLESS(result_tuple.size() == 2);
             DRAKE_THROW_UNLESS(py::isinstance<py::bool_>(result_tuple[0]));
             DRAKE_THROW_UNLESS(py::isinstance<py::array>(result_tuple[1]));
-            *out = result_tuple[1].cast<Eigen::VectorXd>();
-            return result_tuple[0].cast<bool>();
+            *out = py::cast<Eigen::VectorXd>(result_tuple[1]);
+            return py::cast<bool>(result_tuple[0]);
           };
           self.SetCustomProjectionFunction(cpp_projection_function);
         },
