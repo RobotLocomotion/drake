@@ -543,6 +543,79 @@ void PatchConstraintsPool<T>::CalcCostAlongLine(
 }
 
 template <typename T>
+void PatchConstraintsPool<T>::ReduceInto(
+    const ReducedMapping& mapping,
+    PatchConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(patch_sizes());
+
+  reduced_pool->stiction_tolerance_ = stiction_tolerance_;
+  reduced_pool->sigma_ = sigma_;
+
+  reduced_pool->num_pairs_.clear();
+  reduced_pool->num_cliques_.clear();
+  reduced_pool->Rt_.clear();
+  reduced_pool->bodies_.clear();
+  reduced_pool->p_AB_W_.Clear();
+  reduced_pool->dissipation_.clear();
+  reduced_pool->static_friction_.clear();
+  reduced_pool->dynamic_friction_.clear();
+  reduced_pool->pair_data_start_.clear();
+  reduced_pool->p_BC_W_.Clear();
+  reduced_pool->normal_W_.Clear();
+  reduced_pool->stiffness_.clear();
+  reduced_pool->fe0_.clear();
+  reduced_pool->fn0_.clear();
+  reduced_pool->net_friction_.clear();
+  int pair_data_cursor{0};
+  for (int k = 0; k < num_constraints(); ++k) {
+    DRAKE_DEMAND(false);
+    const int body_a = bodies_[k].second;
+    const int body_b = bodies_[k].first;
+    const int c_b = model().body_to_clique(body_b);
+    const int c_a = model().body_to_clique(body_a);  // negative if anchored.
+    const int r_num_cliques =
+        mapping.clique_permutation.participates(c_b) +
+        (c_a >= 0 && !mapping.clique_permutation.participates(c_a));
+    if (r_num_cliques == 0) {
+      continue;
+    }
+    // XXX At this point, assumptions about num_cliques==1 above may be
+    // violated.
+    const int r_n = reduced_pool->num_constraints();
+
+    // Fill in the reduced constraint.
+    reduced_pool->num_pairs_.push_back(num_pairs_[k]);
+    reduced_pool->num_cliques_.push_back(r_num_cliques);
+    reduced_pool->Rt_.push_back(Rt_[k]);
+    reduced_pool->bodies_.push_back(bodies_[k]);
+    reduced_pool->p_AB_W_.Add(3, 1);
+    reduced_pool->p_AB_W_[r_n] = p_AB_W_[k];
+    reduced_pool->dissipation_.push_back(dissipation_[k]);
+    reduced_pool->static_friction_.push_back(static_friction_[k]);
+    reduced_pool->dynamic_friction_.push_back(dynamic_friction_[k]);
+
+    // Adapt the reduced per pair indexing.
+    reduced_pool->pair_data_start_.push_back(pair_data_cursor);
+    pair_data_cursor += num_pairs(k);
+
+    // Fill in the per pair constraint data.
+    for (int q = 0; q < num_pairs(k); ++q) {
+      const int to = reduced_pool->patch_pair_index(r_n, q);
+      const int from = patch_pair_index(k, q);
+      reduced_pool->p_BC_W_.Add(3, 1);
+      reduced_pool->p_BC_W_[to] = p_BC_W_[from];
+      reduced_pool->normal_W_.Add(3, 1);
+      reduced_pool->normal_W_[to] = normal_W_[from];
+      reduced_pool->stiffness_.push_back(stiffness_[from]);
+      reduced_pool->fe0_.push_back(fe0_[from]);
+      reduced_pool->fn0_.push_back(fn0_[from]);
+      reduced_pool->net_friction_.push_back(net_friction_[from]);
+    }
+  }
+}
+
+template <typename T>
 T PatchConstraintsPool<T>::CalcLaggedHuntCrossleyModel(
     int p, int k, const Vector3<T>& v_AcBc_W, Vector3<T>* gamma_Bc_W,
     Matrix3<T>* G) const {

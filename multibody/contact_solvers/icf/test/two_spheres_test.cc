@@ -136,7 +136,7 @@ TEST_P(TwoSpheres, MakeData) {
     // TODO(amcastro-tri): Fix this function to not allocate. You'll need a
     // pre-allocated workspace for this function.
     drake::test::LimitMalloc guard({
-        .max_num_allocations = 352,
+        .max_num_allocations = kDrakeAssertIsArmed ? 352 : 339,
         .min_num_allocations = 0,
         .ignore_realloc_noops = true,
     });

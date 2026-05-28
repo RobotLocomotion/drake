@@ -461,7 +461,17 @@ void IcfModel<T>::ReduceInto(IcfModel<T>* reduced_model,
   // TODO(#23912): This line allocates.
   reduced_model->SetSparsityPattern();
 
-  // TODO(#23764): Reduce the constraints.
+  // Reduce the constraints.
+  coupler_constraints_pool().ReduceInto(
+      *mapping, &reduced_model->coupler_constraints_pool());
+  gain_constraints_pool().ReduceInto(*mapping,
+                                     &reduced_model->gain_constraints_pool());
+  limit_constraints_pool().ReduceInto(*mapping,
+                                      &reduced_model->limit_constraints_pool());
+  patch_constraints_pool().ReduceInto(*mapping,
+                                      &reduced_model->patch_constraints_pool());
+  weld_constraints_pool().ReduceInto(*mapping,
+                                     &reduced_model->weld_constraints_pool());
 
   // Refuse multiple levels of reduction.
   DRAKE_DEMAND(!reduced_model->is_reducible());
