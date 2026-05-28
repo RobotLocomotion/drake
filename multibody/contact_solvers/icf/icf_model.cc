@@ -452,7 +452,12 @@ void IcfModel<T>::ReduceInto(IcfModel<T>* reduced_model,
   reduced_model->ResetParameters(std::move(reduced_params));
 
   // TODO(#23764): Reduce the constraints.
-  DRAKE_THROW_UNLESS(num_constraints() == 0);
+  DRAKE_THROW_UNLESS(num_gain_constraints() == 0);
+  DRAKE_THROW_UNLESS(num_limit_constraints() == 0);
+  DRAKE_THROW_UNLESS(num_patch_constraints() == 0);
+  DRAKE_THROW_UNLESS(num_weld_constraints() == 0);
+  coupler_constraints_pool().ReduceInto(
+      *mapping, &reduced_model->coupler_constraints_pool());
 
   // Refuse multiple levels of reduction.
   DRAKE_DEMAND(!reduced_model->is_reducible());
