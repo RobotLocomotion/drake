@@ -23,7 +23,7 @@ struct type_caster<drake::SortedPair<T>> {
     if (!convert && !tuple::check_(src)) {
       return false;
     }
-    tuple t = reinterpret_borrow<tuple>(src);
+    tuple t = borrow<tuple>(src);
     if (t.size() != 2) return false;
     InnerCaster first, second;
     if (!first.load(t[0], convert) || !second.load(t[1], convert)) {

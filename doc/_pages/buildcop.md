@@ -198,6 +198,20 @@ If jobs seems to be stuck, report the issue by tagging `@betsymcphail` on the
 [#ci](https://drakedevelopers.slack.com/archives/C270MN28G/)
 channel on Slack.
 
+## Monitor the Website
+
+Check once per week that the website looks healthy when viewed from your web
+browser (i.e., beyond what automated CI can test for):
+
+- Does the [Python API](/pydrake/index.html) appear normal? The site has a full
+  list of modules?
+- Does the [C++ API](/doxygen_cxx/index.html) appear normal? The site has a full
+  list of topics and classes?
+- Do all of the [tutorials](/tutorials/index.html) display correctly?
+
+On a weekly basis, just do a quick skim. Once a month, the release manager will
+do a more thorough investigation.
+
 ## Respond to Breakage
 
 There are various reasons the build might break. Diagnose the failure, and
