@@ -36,11 +36,6 @@ auto BindSimpleTemplate(py::module_ m) {
 }
 
 template <typename T>
-void CheckValue(const string& expr, const T& expected) {
-  EXPECT_EQ(py::cast<T>(py::eval(py::str(expr.c_str()))), expected);
-}
-
-template <typename T>
 struct TemplateWithDefault {
   string GetName() { return NiceTypeName::Get<T>(); }
 };

@@ -1050,7 +1050,8 @@ void DefineSymbolicMonolith(py::module_ m) {
           py::arg("monomial_basis"), py::arg("gram_lower"),
           doc.CalcPolynomialWLowerTriangularPart.doc);
 
-  rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+  rat_fun_cls  // BR
+      .def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
       .def(py::init<Polynomial, Polynomial>(), py::arg("numerator"),
           py::arg("denominator"),
           doc.RationalFunction.ctor.doc_2args_numerator_denominator)

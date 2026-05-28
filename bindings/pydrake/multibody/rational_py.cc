@@ -14,7 +14,8 @@ void DoPoseDeclaration(py::module_ m, T) {
   using Class = multibody::RationalForwardKinematics::Pose<T>;
   auto cls = DefineTemplateClassWithDefault<Class>(
       m, "RationalForwardKinematicsPose", param);
-  cls.def("position", [](const Class& self) { return self.position; })
+  cls  // BR
+      .def("position", [](const Class& self) { return self.position; })
       .def("rotation", [](const Class& self) { return self.rotation; });
 
   DefCopyAndDeepCopy(&cls);

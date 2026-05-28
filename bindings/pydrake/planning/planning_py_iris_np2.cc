@@ -20,7 +20,8 @@ void DefinePlanningIrisNp2(py::module_ m) {
   const auto& ray_sampler_options_doc = doc.RaySamplerOptions;
   py::class_<RaySamplerOptions> ray_sampler_options(
       m, "RaySamplerOptions", ray_sampler_options_doc.doc);
-  ray_sampler_options.def(py::init<>())
+  ray_sampler_options  // BR
+      .def(py::init<>())
       .def_rw("only_walk_toward_collisions",
           &RaySamplerOptions::only_walk_toward_collisions,
           ray_sampler_options_doc.only_walk_toward_collisions.doc)
@@ -43,7 +44,8 @@ void DefinePlanningIrisNp2(py::module_ m) {
   // IrisNp2Options
   const auto& cls_doc = doc.IrisNp2Options;
   py::class_<IrisNp2Options> iris_np2_options(m, "IrisNp2Options", cls_doc.doc);
-  iris_np2_options.def(py::init<>())
+  iris_np2_options  // BR
+      .def(py::init<>())
 #if 0  // XXX porting
       .def_prop_rw("solver_options",
           py::cpp_function(

@@ -195,10 +195,10 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             py::init<const Vector6<T>&>(), py::arg("F"), cls_doc.ctor.doc_1args)
         .def("Shift",
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
-            py::arg("offset"), cls_doc.Shift.doc_1args);
-    cls.def("dot",
-        overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
-        py::arg("velocity"), cls_doc.dot.doc);
+            py::arg("offset"), cls_doc.Shift.doc_1args)
+        .def("dot",
+            overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
+            py::arg("velocity"), cls_doc.dot.doc);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.

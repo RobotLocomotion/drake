@@ -16,7 +16,8 @@ void DefineSolversCsdp(py::module_ m) {
 
   py::class_<CsdpSolver, SolverInterface> csdp_cls(
       m, "CsdpSolver", doc.CsdpSolver.doc);
-  csdp_cls.def(py::init<>(), doc.CsdpSolver.ctor.doc)
+  csdp_cls  // BR
+      .def(py::init<>(), doc.CsdpSolver.ctor.doc)
       .def_static("id", &CsdpSolver::id, doc.CsdpSolver.id.doc);
 
   py::class_<CsdpSolverDetails>(

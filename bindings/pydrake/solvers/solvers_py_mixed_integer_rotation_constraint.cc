@@ -45,9 +45,10 @@ void DefineSolversMixedIntegerRotationConstraint(py::module_ m) {
         .def_ro(
             "lambda_", &Struct::lambda_, py_rvp::copy, struct_doc.lambda_.doc);
 
-    cls.def(py::init<Class::Approach, int, IntervalBinning>(),
-           py::arg("approach"), py::arg("num_intervals_per_half_axis"),
-           py::arg("interval_binning"), cls_doc.ctor.doc)
+    cls  // BR
+        .def(py::init<Class::Approach, int, IntervalBinning>(),
+            py::arg("approach"), py::arg("num_intervals_per_half_axis"),
+            py::arg("interval_binning"), cls_doc.ctor.doc)
 #if 0  // XXX porting
         .def("AddToProgram", &Class::AddToProgram, py::arg("R"),
             py::arg("prog"), cls_doc.AddToProgram.doc)

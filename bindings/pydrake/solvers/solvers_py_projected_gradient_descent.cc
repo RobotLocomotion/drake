@@ -19,7 +19,8 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
     py::class_<Class, SolverInterface> pgd_cls(
         m, "ProjectedGradientDescentSolver", cls_doc.doc);
 
-    pgd_cls.def(py::init<>(), cls_doc.ctor.doc)
+    pgd_cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
         .def("SetCustomGradientFunction", &Class::SetCustomGradientFunction,
             py::arg("custom_gradient_function"),
             cls_doc.SetCustomGradientFunction.doc)

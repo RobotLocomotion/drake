@@ -17,7 +17,8 @@ void DefinePlanningIrisZo(py::module_ m) {
   // IrisZoOptions
   const auto& cls_doc = doc.IrisZoOptions;
   py::class_<IrisZoOptions> iris_zo_options(m, "IrisZoOptions", cls_doc.doc);
-  iris_zo_options.def(py::init<>())
+  iris_zo_options  // BR
+      .def(py::init<>())
       .def_rw("sampled_iris_options", &IrisZoOptions::sampled_iris_options,
           cls_doc.sampled_iris_options.doc)
       .def_rw("bisection_steps", &IrisZoOptions::bisection_steps,

@@ -16,7 +16,8 @@ void DefineSolversMosek(py::module_ m) {
 
   py::class_<MosekSolver, SolverInterface> cls(
       m, "MosekSolver", doc.MosekSolver.doc);
-  cls.def(py::init<>(), doc.MosekSolver.ctor.doc)
+  cls  // BR
+      .def(py::init<>(), doc.MosekSolver.ctor.doc)
       .def_static("id", &MosekSolver::id, doc.MosekSolver.id.doc);
   pysolvers::BindAcquireLicense(&cls, doc.MosekSolver);
 
