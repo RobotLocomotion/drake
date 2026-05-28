@@ -17,7 +17,6 @@ drake_cc_package_library(
         ":concatenate_images",
         ":inertia_visualizer",
         ":meshcat_pose_sliders",
-        ":surface_velocity_integrator",
         ":visualization_config",
         ":visualization_config_functions",
     ],
@@ -68,20 +67,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "surface_velocity_integrator",
-    srcs = ["surface_velocity_integrator.cc"],
-    hdrs = ["surface_velocity_integrator.h"],
-    deps = [
-        "//common:essential",
-        "//geometry:meshcat_visualizer",
-        "//multibody/plant",
-        "//systems/framework:bus_value",
-        "//systems/framework:diagram_builder",
-        "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
     name = "meshcat_pose_sliders",
     srcs = ["meshcat_pose_sliders.cc"],
     hdrs = ["meshcat_pose_sliders.h"],
@@ -123,7 +108,6 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":inertia_visualizer",
-        ":surface_velocity_integrator",
         "//geometry:drake_visualizer",
         "//multibody/meshcat:contact_visualizer",
         "//multibody/plant:contact_results_to_lcm",

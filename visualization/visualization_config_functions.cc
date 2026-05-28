@@ -10,7 +10,6 @@
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
 #include "drake/visualization/inertia_visualizer.h"
-#include "drake/visualization/surface_velocity_integrator.h"
 
 namespace drake {
 namespace visualization {
@@ -87,9 +86,9 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
       meshcat->SetSliderValue("inertia α", 0.5);
     }
 
-    // Add a SurfaceVelocityIntegrator if: (a) we have an illustration
-    // visualizer, (b) at least one body has surface velocity, and (c) the
-    // plant's surface_speeds input port is already wired in the diagram.
+    // Connect the plant's surface_displacement output port to the illustration
+    // visualizer when any body has surface velocity. The plant integrates
+    // surface speeds internally so no separate integrator system is needed.
     if (illustration_vis != nullptr) {
       bool has_surface_velocity = false;
       for (multibody::BodyIndex i(0); i < plant.num_bodies(); ++i) {
@@ -99,17 +98,8 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
         }
       }
       if (has_surface_velocity) {
-        const auto& conn_map = builder->connection_map();
-        const auto key =
-            std::make_pair(static_cast<const System<double>*>(&plant),
-                           plant.get_surface_speeds_input_port().get_index());
-        auto it = conn_map.find(key);
-        if (it != conn_map.end()) {
-          SurfaceVelocityIntegrator::AddToBuilder(
-              builder, plant,
-              it->second.first->get_output_port(it->second.second),
-              *illustration_vis, config.publish_period);
-        }
+        builder->Connect(plant.get_surface_displacement_output_port(),
+                         illustration_vis->surface_displacement_input_port());
       }
     }
   }

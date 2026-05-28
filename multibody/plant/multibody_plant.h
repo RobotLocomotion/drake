@@ -288,6 +288,7 @@ output_ports:
 - <em style="color:gray">model_instance_name[i]</em>_net_actuation
 - <span style="color:green">geometry_pose</span>
 - <span style="color:green">deformable_body_configuration</span>
+- surface_displacements
 @endsystem
 
 The ports whose names begin with <em style="color:gray">
@@ -1205,6 +1206,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// speed is treated as zero.
   /// @pre Finalize() was already called on `this` plant.
   const systems::InputPort<T>& get_surface_speeds_input_port() const;
+
+  /// Returns the `"surface_displacements"` output port, which carries a
+  /// systems::BusValue whose signals report the cumulative surface displacement
+  /// (in metres) for each body registered via SetSurfaceVelocityAxis(). Each
+  /// signal's name is the fully-qualified body name. The displacement is
+  /// initialized to zero and integrated from the `"surface_speeds"` input port.
+  /// @pre Finalize() was already called on `this` plant.
+  const systems::OutputPort<T>& get_surface_displacement_output_port() const;
 
   /// Reports the multibody state x = [q, v] of the model as a @ref
   /// systems::BasicVector<T> "vector-valued" output port of size
@@ -2229,8 +2238,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Each registered body defines a velocity field over its contact surface.
   /// At a contact point C, given:
   ///
-  ///  - â_ss_B — the *rotation axis*, stored in body frame B
-  ///    (see SetSurfaceVelocityAxis()),
+  ///  - â_ss_B — the *rotation axis*, stored in body frame B (see
+  ///    SetSurfaceVelocityAxis()),
   ///  - `speed` — the *signed* scalar measure of the surface velocity from the
   ///    `"surface_speeds"` input port (see get_surface_speeds_input_port()),
   ///  - n̂_C_B — the contact normal at C oriented to point *out* of the the
@@ -2244,7 +2253,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// rotating about axis â_ss_B at peripheral speed `speed`. For example, a
   /// horizontal conveyor belt whose top face (n̂_C_B ≈ ẑ_B) moves in the
   /// x̄_B direction: set â_ss_B = ŷ_B, yielding
-  /// v_ss_B = speed · (ŷ × ẑ) = speed · x̂.
+  /// v_ss_B = speed · (ŷ × ẑ) = speed · x̂. Cross products of unit vectors are
+  /// not necessarily unit vectors themselves. The equation above does not
+  /// include (nor require) normalization. The more the contact normal aligns
+  /// with the axis, the smaller the resultant surface velocity magnitude
+  /// should be; the lack of normalization serves this purpose and is
+  /// intentional.
   ///
   /// #### Key properties and ramifications
   ///
@@ -3189,6 +3203,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
     internal_tree().SetDefaultState(context, state);
+    if (!is_discrete()) {
+      state->get_mutable_continuous_state()
+          .get_mutable_misc_continuous_state()
+          .SetZero();
+    }
     deformable_model().SetDefaultState(context, state);
   }
 
@@ -3206,6 +3225,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
     internal_tree().SetRandomState(context, state, generator);
+    if (!is_discrete()) {
+      state->get_mutable_continuous_state()
+          .get_mutable_misc_continuous_state()
+          .SetZero();
+    }
   }
 
   /// Returns a list of string names corresponding to each element of the
@@ -6043,6 +6067,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     };
     std::vector<Instance> instance;
     systems::OutputPortIndex geometry_pose;  // Declared in ctor, not Finalize.
+    systems::OutputPortIndex surface_displacements;
     // N.B. The deformable_body_configuration port is owned by DeformableModel,
     // so is not tracked here.
   };
@@ -6312,6 +6337,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void AddInForcesContinuous(const systems::Context<T>& context,
                              MultibodyForces<T>* forces) const override;
 
+  /// Reports the number of miscellaneous continuous state variables. Should
+  /// always return zero for a discrete plant.
+  int NumMiscContinuousStates() const override;
+
+  /// Computes the derivatives for the miscelleanous continuous state variables.
+  void DoCalcMiscDerivatives(const systems::Context<T>& context,
+                             systems::VectorBase<T>* zdot) const override;
+
   // Discrete system version of CalcForwardDynamics(). This method does not use
   // O(n) forward dynamics but a discrete solver according to the discrete
   // contact solver specified.
@@ -6472,6 +6505,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // Registers the given body with this plant's SceneGraph instance (if it has
   // one).
   void RegisterRigidBodyWithSceneGraph(const RigidBody<T>& body);
+
+  // Calc method for the "surface_displacements" output port.
+  void CalcSurfaceDisplacementOutput(const systems::Context<T>& context,
+                                     systems::BusValue* output) const;
+
+  // Periodic unrestricted update handler for surface displacement (discrete).
+  systems::EventStatus CalcSurfaceDisplacementUpdate(
+      const systems::Context<T>& context, systems::State<T>* state) const;
 
   // Calc method for the "state" output port.
   void CalcStateOutput(const systems::Context<T>& context,
@@ -6807,9 +6848,18 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   std::map<MultibodyConstraintId, internal::TendonConstraintSpec>
       tendon_constraints_specs_;
 
-  // Registration map for bodies with surface velocity. Each entry is the
-  // unit-length axis (body frame), fixed at Finalize() and constant thereafter.
-  std::map<BodyIndex, Eigen::Vector3d> surface_velocity_registrations_;
+  struct SurfaceVelocityEntry {
+    std::string scoped_name;
+    Eigen::Vector3d axis;  // unit-length, expressed in body frame B
+  };
+  // Per-body surface-velocity data. Keyed by BodyIndex for O(1) lookup;
+  // iteration order (ascending BodyIndex) defines z-state indices. Frozen at
+  // Finalize().
+  std::map<BodyIndex, SurfaceVelocityEntry> surface_velocity_bodies_;
+
+  // Abstract state index for surface displacement accumulation (discrete mode
+  // only). Only valid when surface_velocity_bodies_ is non-empty.
+  systems::AbstractStateIndex surface_displacement_abstract_state_index_{};
 
   // Whether to apply collsion filters to adjacent bodies at Finalize().
   bool adjacent_bodies_collision_filters_{

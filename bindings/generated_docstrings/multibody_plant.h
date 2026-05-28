@@ -1711,6 +1711,7 @@ concepts/notation.
     - <em style="color:gray">model_instance_name[i]</em>_net_actuation
     - <span style="color:green">geometry_pose</span>
     - <span style="color:green">deformable_body_configuration</span>
+    - surface_displacements
 
 The ports whose names begin with <em style="color:gray">
 model_instance_name[i]</em> represent groups of ports, one for each of
@@ -7914,6 +7915,20 @@ Raises:
 Raises:
     RuntimeError if the model instance does not exist.)""";
         } get_state_output_port;
+        // Symbol: drake::multibody::MultibodyPlant::get_surface_displacement_output_port
+        struct /* get_surface_displacement_output_port */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the ``"surface_displacements"`` output port, which carries a
+systems∷BusValue whose signals report the cumulative surface
+displacement (in metres) for each body registered via
+SetSurfaceVelocityAxis(). Each signal's name is the fully-qualified
+body name. The displacement is initialized to zero and integrated from
+the ``"surface_speeds"`` input port.
+
+Precondition:
+    Finalize() was already called on ``this`` plant.)""";
+        } get_surface_displacement_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_surface_speeds_input_port
         struct /* get_surface_speeds_input_port */ {
           // Source: drake/multibody/plant/multibody_plant.h

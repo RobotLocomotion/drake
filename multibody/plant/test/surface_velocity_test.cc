@@ -186,6 +186,28 @@ TEST_F(SurfaceVelocityTest, SurfaceSpeedsPortName) {
             "surface_speeds");
 }
 
+TEST_F(SurfaceVelocityTest, SurfaceDisplacementStateDefaultsToZero) {
+  const auto& default_z =
+      context_->get_continuous_state().get_misc_continuous_state();
+  ASSERT_EQ(default_z.size(), 1);
+  EXPECT_EQ(default_z.GetAtIndex(0), 0.0);
+
+  auto& mutable_z = context_->get_mutable_continuous_state()
+                        .get_mutable_misc_continuous_state();
+  mutable_z.SetAtIndex(0, 1.25);
+  plant_.SetDefaultContext(context_.get());
+  const auto& reset_z =
+      context_->get_continuous_state().get_misc_continuous_state();
+  EXPECT_EQ(reset_z.GetAtIndex(0), 0.0);
+
+  const auto& output =
+      plant_.get_surface_displacement_output_port().Eval<systems::BusValue>(
+          *context_);
+  const AbstractValue* value = output.Find(belt_->scoped_name().to_string());
+  ASSERT_NE(value, nullptr);
+  EXPECT_EQ(value->get_value<double>(), 0.0);
+}
+
 // Confirm that the surface velocity follows the body pose in the world; put the
 // body in an arbitrary, non-trival pose.
 TEST_F(SurfaceVelocityTest, SurfaceVelocityPosedInWorld) {
