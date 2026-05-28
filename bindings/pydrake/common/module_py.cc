@@ -171,7 +171,12 @@ void InitLowLevelModules(py::module_ m) {
             "Checksum",
             [](py::bytes data) {
               return Class::Checksum(
-                  std::string_view(data.c_str(), data.size()));
+#ifdef PYDRAKE_USE_PYBIND11
+                  py::cast<std::string_view>(data)
+#else  // PYDRAKE_USE_NANOBIND
+                  std::string_view(data.c_str(), data.size())
+#endif
+              );
             },
             py::arg("data"), cls_doc.Checksum.doc_1args_data)
         .def_static("Checksum",
@@ -202,7 +207,12 @@ void InitLowLevelModules(py::module_ m) {
             "__init__",
             [](Class* self, py::bytes contents, std::string extension,
                 std::string filename_hint) {
-              new (self) Class(std::string(contents.c_str(), contents.size()),
+              new (self) Class(
+#ifdef PYDRAKE_USE_PYBIND11
+                  py::cast<std::string>(contents),
+#else  // PYDRAKE_USE_NANOBIND
+                  std::string(contents.c_str(), contents.size()),
+#endif
                   extension, filename_hint);
             },
             py::arg("contents"), py::arg("extension"), py::arg("filename_hint"),
@@ -279,11 +289,16 @@ void InitLowLevelModules(py::module_ m) {
     cls.def_prop_rw(
         "_contents",
         [](const Class& self) -> py::bytes {
-          return py::bytes(self.contents().c_str());
+          return py::bytes(self.contents().data(), self.contents().size());
         },
         [](Class& self, const py::bytes& contents) {
-          self = MemoryFile{std::string{contents.c_str()}, self.extension(),
-              self.filename_hint()};
+          self = MemoryFile{
+#ifdef PYDRAKE_USE_PYBIND11
+              py::cast<std::string>(contents),
+#else  // PYDRAKE_USE_NANOBIND
+              std::string{contents.c_str(), contents.size()},
+#endif
+              self.extension(), self.filename_hint()};
         });
     cls.def_prop_rw(
         "_extension", [](const Class& self) { return self.extension(); },
