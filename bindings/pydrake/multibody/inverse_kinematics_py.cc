@@ -45,9 +45,9 @@ CppPenaltyFunction UnwrapPyPenaltyFunction(PyPenaltyFunction penalty_function) {
       py::tuple penalty_tuple(2);
       const bool compute_grad = dpenalty != nullptr;
       penalty_tuple = penalty_function(x, compute_grad);
-      *penalty = penalty_tuple[0].cast<double>();
+      *penalty = py::cast<double>(penalty_tuple[0]);
       if (compute_grad) {
-        *dpenalty = penalty_tuple[1].cast<double>();
+        *dpenalty = py::cast<double>(penalty_tuple[1]);
       }
     };
   } else {

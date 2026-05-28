@@ -611,7 +611,7 @@ py::handle abstract_value_cls =
             const std::string& name, py::object value) {
           py::object abstract = abstract_value_cls.attr("Make")(value);
           self->AddPropertyAbstract(
-              group_name, name, abstract.cast<const AbstractValue&>());
+              group_name, name, py::cast<const AbstractValue&>(abstract));
         },
         py::arg("group_name"), py::arg("name"), py::arg("value"),
         cls_doc.AddProperty.doc)

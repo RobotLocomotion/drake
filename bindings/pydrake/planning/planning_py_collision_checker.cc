@@ -298,7 +298,7 @@ void DefinePlanningCollisionChecker(py::module_ m) {
               // arguments separately. Start by creating a Params object in
               // Python with all of the other non-pointer kwargs.
               py::object params_py = params_ctor(**kwargs);
-              auto* params = params_py.cast<CollisionCheckerParams*>();
+              auto* params = py::cast<CollisionCheckerParams*>(params_py);
               DRAKE_DEMAND(params != nullptr);
               // Now, add a python reference to model (owned by the shared
               // pointer), and transfer that to the c++ checker.
@@ -331,7 +331,7 @@ void DefinePlanningCollisionChecker(py::module_ m) {
           // arguments separately. Start by creating a Params object in
           // Python with all of the other non-pointer kwargs.
           py::object params_py = params_ctor(**kwargs);
-          auto* params = params_py.cast<CollisionCheckerParams*>();
+          auto* params = py::cast<CollisionCheckerParams*>(params_py);
           DRAKE_DEMAND(params != nullptr);
           // Now, add a python reference to model (owned by the shared
           // pointer), and transfer that to the c++ checker.

@@ -304,8 +304,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         },
         [](Class* self, py::tuple t) {
           DRAKE_THROW_UNLESS(t.size() == 3);
-          new (self) Class(t[0].cast<T>(), t[1].cast<Vector3<T>>(),
-              t[2].cast<UnitInertia<T>>());
+          new (self) Class(py::cast<T>(t[0]), py::cast<Vector3<T>>(t[1]),
+              py::cast<UnitInertia<T>>(t[2]));
         });
     DefCopyAndDeepCopy(&cls);
   }

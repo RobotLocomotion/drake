@@ -107,7 +107,7 @@ void DefBindingCastConstructor(PyClass* cls) {
         return std::make_unique<Binding<C>>(
             // Maintain python wrapper to avoid hazards like #20131.
             make_shared_ptr_from_py_object<C>(binding.attr("evaluator")()),
-            binding.attr("variables")().cast<VectorXDecisionVariable>());
+            py::cast<VectorXDecisionVariable>(binding.attr("variables")()));
       }));
 }
 
@@ -543,9 +543,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
                                    double* dpenalty) {
               py::tuple penalty_tuple(2);
               penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
-              *penalty = penalty_tuple[0].cast<double>();
+              *penalty = py::cast<double>(penalty_tuple[0]);
               if (dpenalty) {
-                *dpenalty = penalty_tuple[1].cast<double>();
+                *dpenalty = py::cast<double>(penalty_tuple[1]);
               }
             };
             self->set_penalty_function(penalty_fun);
@@ -598,9 +598,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
                                    double* dpenalty) {
               py::tuple penalty_tuple(2);
               penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
-              *penalty = penalty_tuple[0].cast<double>();
+              *penalty = py::cast<double>(penalty_tuple[0]);
               if (dpenalty) {
-                *dpenalty = penalty_tuple[1].cast<double>();
+                *dpenalty = py::cast<double>(penalty_tuple[1]);
               }
             };
             self->set_penalty_function(penalty_fun);

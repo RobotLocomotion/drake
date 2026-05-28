@@ -101,7 +101,7 @@ py::object GetParamAliases() {
 py::object GetPyParamScalarImpl(const std::type_info& tinfo) {
   py::object param_aliases = GetParamAliases();
   py::object py_hash = GetPyHash(tinfo);
-  if (param_aliases.attr("is_aliased")(py_hash).cast<bool>()) {
+  if (py::cast<bool>(param_aliases.attr("is_aliased")(py_hash))) {
     // If it's an alias, return the canonical type.
     return param_aliases.attr("get_canonical")(py_hash);
   } else {

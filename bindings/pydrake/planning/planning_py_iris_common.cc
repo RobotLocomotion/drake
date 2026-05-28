@@ -154,7 +154,7 @@ Func WrapParameterizationFunc(
     CheckReturnedArrayType<T>(cls_name, y);
     return y;
   };
-  return wrapped.cast<Func>();
+  return py::cast<Func>(wrapped);
 }
 
 void DefinePlanningIrisParameterizationFunction(py::module_ m) {
