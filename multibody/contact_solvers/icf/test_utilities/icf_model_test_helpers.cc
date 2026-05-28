@@ -113,6 +113,62 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique,
 }
 
 template <typename T>
+void MakeModelReducible(IcfModel<T>* model,
+                        const std::vector<int>& dofs_to_remove) {
+  DRAKE_DEMAND(model != nullptr);
+  const int nv = model->num_velocities();
+  const int nc = model->num_cliques();
+  DRAKE_DEMAND(ssize(dofs_to_remove) <= nv);
+  DRAKE_DEMAND(std::ranges::is_sorted(dofs_to_remove));
+  DRAKE_DEMAND(std::ranges::adjacent_find(dofs_to_remove) ==
+               dofs_to_remove.end());
+  DRAKE_DEMAND(dofs_to_remove.empty() || std::ranges::max(dofs_to_remove) < nv);
+  DRAKE_DEMAND(dofs_to_remove.empty() || std::ranges::min(dofs_to_remove) >= 0);
+
+  // Check for partially-locked free/floating bodies; that is not supported.
+  for (int b = 0; b < model->num_bodies(); ++b) {
+    if (model->params().body_is_floating[b]) {
+      const int clique = model->params().body_to_clique[b];
+      const int clique_size = model->params().clique_sizes[clique];
+      DRAKE_DEMAND(clique_size == 6 || clique_size == 0);
+    }
+  }
+
+  std::vector<int> all_dofs(nv);
+  std::iota(all_dofs.begin(), all_dofs.end(), 0);
+
+  std::unique_ptr<IcfParameters<T>> params = model->ReleaseParameters();
+  auto* r = &params->reduction;
+
+  r->unlocked_dofs.clear();
+  std::ranges::set_difference(all_dofs, dofs_to_remove,
+                              std::back_inserter(r->unlocked_dofs));
+
+  r->per_clique_unlocked_dofs.resize(nc);
+  for (int c = 0; c < nc; ++c) {
+    r->per_clique_unlocked_dofs[c].clear();
+  }
+  int remove_cursor{0};
+  int clique_cursor{0};
+  for (int v = 0; v < nv; ++v) {
+    if (v >= params->clique_start[clique_cursor + 1]) {
+      ++clique_cursor;
+    }
+    const int clique_v = v - params->clique_start[clique_cursor];
+    if ((remove_cursor >= ssize(dofs_to_remove)) ||
+        (v < dofs_to_remove[remove_cursor])) {
+      r->per_clique_unlocked_dofs[clique_cursor].push_back(clique_v);
+    } else if (v == dofs_to_remove[remove_cursor]) {
+      ++remove_cursor;
+    } else {
+      DRAKE_UNREACHABLE();
+    }
+  }
+
+  model->ResetParameters(std::move(params));
+}
+
+template <typename T>
 void AddCouplerConstraint(IcfModel<T>* model) {
   DRAKE_DEMAND(model != nullptr);
   const bool single_clique = model->num_cliques() == 1;
@@ -323,9 +379,9 @@ void AddWeldConstraints(IcfModel<T>* model) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeUnconstrainedModel<T>, &AddCouplerConstraint<T>,
-     &AddGainConstraints<T>, &AddLimitConstraints<T>, &AddPatchConstraints<T>,
-     &AddWeldConstraints<T>));
+    (&MakeUnconstrainedModel<T>, &MakeModelReducible<T>,
+     &AddCouplerConstraint<T>, &AddGainConstraints<T>, &AddLimitConstraints<T>,
+     &AddPatchConstraints<T>, &AddWeldConstraints<T>));
 
 }  // namespace internal
 }  // namespace icf

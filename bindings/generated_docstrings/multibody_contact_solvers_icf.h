@@ -29,6 +29,7 @@
 // #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 // #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
+// #include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 // #include "drake/multibody/contact_solvers/icf/weld_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
