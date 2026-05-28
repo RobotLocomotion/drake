@@ -29,7 +29,7 @@ class DefAttributesArchive {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DefAttributesArchive);
 
-  using CxxClass = typename PyClass::type;
+  using CxxClass = typename PyClass::Type;
 
   // @param ppy_class A pointer to the `py::class_` to add the properties to.
   // @param prototype A pointer to the instance that will be visited.
@@ -245,7 +245,7 @@ class DefAttributesArchive {
 /// `dataclass`.
 template <typename PyClass, typename Docs>
 void DefAttributesUsingSerialize(PyClass* ppy_class, const Docs& cls_docs) {
-  using CxxClass = typename PyClass::type;
+  using CxxClass = typename PyClass::Type;
   CxxClass prototype{};
   internal::DefAttributesArchive archive(ppy_class, &prototype, &cls_docs);
   prototype.Serialize(&archive);
@@ -257,7 +257,7 @@ void DefAttributesUsingSerialize(PyClass* ppy_class, const Docs& cls_docs) {
 /// in some cases (especially downstream projects) that might not be possible.
 template <typename PyClass>
 void DefAttributesUsingSerialize(PyClass* ppy_class) {
-  using CxxClass = typename PyClass::type;
+  using CxxClass = typename PyClass::Type;
   CxxClass prototype{};
   internal::DefAttributesArchive<PyClass, void> archive(
       ppy_class, &prototype, nullptr);
@@ -292,7 +292,7 @@ class DefReprArchive {
 /// The class must be default-constructible.
 template <typename PyClass>
 void DefReprUsingSerialize(PyClass* ppy_class) {
-  using CxxClass = typename PyClass::type;
+  using CxxClass = typename PyClass::Type;
   internal::DefReprArchive archive;
   CxxClass prototype{};
   prototype.Serialize(&archive);

@@ -77,7 +77,7 @@ struct has_name_func<T, decltype(std::declval<T>().name(), void())>
 // function.
 template <typename T, typename PyClass>
 void BindMultibodyElementMixin(PyClass* pcls) {
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   // TODO(eric.cousineau): Fix docstring generation for `MultibodyElement`.
   auto& cls = *pcls;
   cls  // BR
