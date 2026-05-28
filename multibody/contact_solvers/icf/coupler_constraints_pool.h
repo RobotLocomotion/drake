@@ -10,6 +10,7 @@
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -101,12 +102,27 @@ class CouplerConstraintsPool {
   void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                          const VectorX<T>& w, T* dcost, T* d2cost) const;
 
+  /* Makes a "reduced" coupler constraints pool in `reduced_pool`, guided by
+  the `mapping`.
+
+  @param mapping the mapping computed by model().ReduceInto(), or equivalent.
+
+  @param[in,out] reduced_pool the pool to write the reduced constraints
+                 into. The model back-pointer is input; all the rest of the
+                 object is output.
+
+  @pre reduced_pool != nullptr.  */
+  void ReduceInto(const ReducedMapping& mapping,
+                  CouplerConstraintsPool<T>* reduced_pool) const;
+
   /* Testing only access. */
   const std::vector<int>& constraint_to_clique() const {
     return constraint_to_clique_;
   }
   const std::vector<std::pair<int, int>>& dofs() const { return dofs_; }
   const std::vector<T>& gear_ratio() const { return gear_ratio_; }
+  const std::vector<T>& g_hat() const { return g_hat_; }
+  const std::vector<T>& R() const { return R_; }
 
  private:
   const IcfModel<T>* const model_;  // The parent model.
@@ -114,7 +130,9 @@ class CouplerConstraintsPool {
   // Clique for the k-th constraint, of size num_constraints().
   std::vector<int> constraint_to_clique_;
 
-  // DOFs (i, j) for the k-th constraint, of size num_constraints().
+  // DOFs (i, j) for the k-th constraint, of size num_constraints(). In a
+  // reduced pool (made by ReduceInto()), either DOF can be absent, represented
+  // by a -1 value. Both DOFs cannot be absent.
   std::vector<std::pair<int, int>> dofs_;
 
   // Gear ratio ρ per constraint, of size num_constraints().
