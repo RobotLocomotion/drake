@@ -13,7 +13,7 @@ Compile time issues
 * No out-of-box support for autodiff and expression as matrix/vector/array
   scalar types. Note the pybind11 was patched by Drake for this as well.
   - !! was missing a `name` field in the specialization hack at
-    DRAKE_NB_NUMPY_OBJECT_DTYPE.
+    PYDRAKE_NUMPY_OBJECT_DTYPE.
 
 * dependencies on pybind11 internals that are missing/changed in nanobind:
   * detail::is_pyobject<T>

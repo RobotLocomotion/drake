@@ -350,12 +350,12 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 }  // namespace drake
 
 #ifdef PYDRAKE_USE_PYBIND11
-#define DRAKE_NB_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 #else  // PYDRAKE_USE_NANOBIND
 // XXX porting needed
 /*
  */
-#define DRAKE_NB_NUMPY_OBJECT_DTYPE(Type)                       \
+#define PYDRAKE_NUMPY_OBJECT_DTYPE(Type)                        \
   namespace nanobind::detail {                                  \
   template <>                                                   \
   struct dtype_traits<Type> {                                   \
