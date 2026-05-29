@@ -169,3 +169,6 @@ Compile time issues
 * nanobind doesn't assume pointer arguments are nullable by default. Jeremy
   thinks this means an audit of every single binding to find ones that should
   be nullable to mark them as such.
+
+* nanobind includes a pyi stub generator that is probably superior to what MyPy
+  does; we should probably switch to using it.
