@@ -413,8 +413,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("angle", [](const Class* self) { return self->angle(); })
 #ifdef PYDRAKE_USE_PYBIND11
         .def("axis", [](const Class* self) { return self->axis(); })
-#else   // PYDRAKE_USE_NANOBIND
-        // XXX porting -- need ndarray fixes for autodiff.
+#else  // PYDRAKE_USE_NANOBIND
+#if 0  // XXX porting -- need ndarray fixes for autodiff.
         .def("axis",
             [](const Class* self) {
               auto& got = self->axis();
@@ -423,6 +423,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
               auto casted = v.cast(py_rvp::reference_internal);
               return casted;
             })
+#endif
 #endif  // PYDRAKE_USE_PYBIND11
         .def(
             "set_angle",
