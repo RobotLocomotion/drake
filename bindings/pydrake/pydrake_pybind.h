@@ -55,6 +55,7 @@
 #include "nanobind/trampoline.h"
 #pragma GCC diagnostic pop
 
+#include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_export.h"
 
@@ -352,21 +353,16 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 #ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 #else  // PYDRAKE_USE_NANOBIND
-// XXX porting needed
-/*
- */
-#define PYDRAKE_NUMPY_OBJECT_DTYPE(Type)                        \
-  namespace nanobind::detail {                                  \
-  template <>                                                   \
-  struct dtype_traits<Type> {                                   \
-    static constexpr dlpack::dtype value{                       \
-        static_cast<uint8_t>(dlpack::dtype_code::OpaqueHandle), \
-        sizeof(object) * 8,                                     \
-        1,                                                      \
-    };                                                          \
-    static constexpr auto name = const_name(#Type);             \
-  };                                                            \
-  }  // namespace nanobind::detail
+#define PYDRAKE_NUMPY_OBJECT_DTYPE(Type)                                       \
+  namespace nanobind {                                                         \
+  namespace detail {                                                           \
+  template <typename T>                                                        \
+  struct type_caster<T,                                                        \
+      enable_if_t<is_pydrake_numpy_dtype_object_castable<T> &&                 \
+                  std::is_same_v<std::remove_cv_t<typename T::Scalar>, Type>>> \
+      : public pydrake_numpy_dtype_object_type_caster<T> {};                   \
+  } /* namespace detail */                                                     \
+  } /* namespace nanobind */
 #endif  // PYDRAKE_USE_PYBIND11
 
 // This alias helps ease Drake's transition to nanobind.

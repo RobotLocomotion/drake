@@ -57,7 +57,10 @@ drake_py_library(
 
 drake_cc_library(
     name = "pydrake_pybind",
-    hdrs = ["pydrake_pybind.h"],
+    hdrs = [
+        "pydrake_numpy_dtype_object_type_caster.h",
+        "pydrake_pybind.h",
+    ],
     declare_installed_headers = 0,
     defines = select({
         "//tools/workspace/nanobind:enabled": [
