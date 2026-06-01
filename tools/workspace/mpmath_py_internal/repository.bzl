@@ -9,6 +9,7 @@ def mpmath_py_internal_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "mpmath/mpmath",
+        upgrade_type = "release",
         commit = "1.3.0",
         commit_pin = 1,
         sha256 = "8f702663fa422fbbf02d15792da4b2566160df35b8a4af55fe64cba2fec2aa00",  # noqa
