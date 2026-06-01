@@ -5172,16 +5172,6 @@ Returns ``X_WB``:
     The default pose of the floating base body B in World. Not
     meaningful if ``body`` is not a floating base body.)""";
         } GetDefaultFloatingBaseBodyPose;
-        // Symbol: drake::multibody::MultibodyPlant::GetDefaultFreeBodyPose
-        struct /* GetDefaultFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use GetDefaultFloatingBaseBodyPose() instead. This will be removed
-    from Drake on or after 2026-06-01.)""";
-        } GetDefaultFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::GetDefaultPositions
         struct /* GetDefaultPositions */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -5733,16 +5723,6 @@ Raises:
 See also:
     HasUniqueFloatingBaseBody(), GetFloatingBaseBodies())""";
         } GetUniqueFloatingBaseBodyOrThrow;
-        // Symbol: drake::multibody::MultibodyPlant::GetUniqueFreeBaseBodyOrThrow
-        struct /* GetUniqueFreeBaseBodyOrThrow */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use GetUniqueFloatingBaseBodyOrThrow() instead. This will be
-    removed from Drake on or after 2026-06-01.)""";
-        } GetUniqueFreeBaseBodyOrThrow;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocities
         struct /* GetVelocities */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6004,16 +5984,6 @@ Raises:
 See also:
     GetUniqueFloatingBaseBodyOrThrow())""";
         } HasUniqueFloatingBaseBody;
-        // Symbol: drake::multibody::MultibodyPlant::HasUniqueFreeBaseBody
-        struct /* HasUniqueFreeBaseBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use HasUniqueFloatingBaseBody() instead. This will be removed from
-    Drake on or after 2026-06-01.)""";
-        } HasUniqueFreeBaseBody;
         // Symbol: drake::multibody::MultibodyPlant::IsAnchored
         struct /* IsAnchored */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6654,16 +6624,6 @@ Parameter ``body``:
 Parameter ``X_WB``:
     Default pose of the floating base body in the World frame.)""";
         } SetDefaultFloatingBaseBodyPose;
-        // Symbol: drake::multibody::MultibodyPlant::SetDefaultFreeBodyPose
-        struct /* SetDefaultFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use SetDefaultFloatingBaseBodyPose() instead. This will be removed
-    from Drake on or after 2026-06-01.)""";
-        } SetDefaultFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultPositions
         struct /* SetDefaultPositions */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6695,8 +6655,9 @@ Raises:
           const char* doc =
 R"""(Sets ``state`` according to defaults set by the user for joints (e.g.
 RevoluteJoint∷set_default_angle()) and free bodies
-(SetDefaultFreeBodyPose()). If the user does not specify defaults, the
-state corresponds to zero generalized positions and velocities.
+(SetDefaultFloatingBaseBodyPose()). If the user does not specify
+defaults, the state corresponds to zero generalized positions and
+velocities.
 
 Raises:
     RuntimeError if called pre-finalize. See Finalize().)""";
@@ -6828,26 +6789,6 @@ R"""((Advanced) Variant of SetFreeBodyPose() that writes to a given
 Precondition:
     ``state`` comes from this MultibodyPlant.)""";
         } SetFreeBodyPose;
-        // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPoseInAnchoredFrame
-        struct /* SetFreeBodyPoseInAnchoredFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use SetFloatingBaseBodyPoseInAnchoredFrame() instead. This will be
-    removed from Drake on or after 2026-06-01.)""";
-        } SetFreeBodyPoseInAnchoredFrame;
-        // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPoseInWorldFrame
-        struct /* SetFreeBodyPoseInWorldFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use SetFloatingBaseBodyPoseInWorldFrame() instead. This will be
-    removed from Drake on or after 2026-06-01.)""";
-        } SetFreeBodyPoseInWorldFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomAnglesDistribution
         struct /* SetFreeBodyRandomAnglesDistribution */ {
           // Source: drake/multibody/plant/multibody_plant.h
