@@ -9,6 +9,7 @@ load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
 def github_archive(
         name,
         repository = None,
+        upgrade_type = None,
         commit = None,
         commit_pin = None,
         sha256 = "0" * 64,
@@ -30,6 +31,9 @@ def github_archive(
             labels when referring to this archive from BUILD files.
         repository: required GitHub repository name in the form
             organization/project.
+        upgrade_type: required whether this dependency should be upgraded by
+            searching for releases ("release"), tags ("tag"), or arbitrary
+            commits to the main branch ("commit").
         commit: required commit is the tag name or git commit sha to download.
         commit_pin: optional boolean, set to True iff the archive should remain
             at the same version indefinitely, eschewing automated upgrades to
@@ -100,6 +104,7 @@ def github_archive(
     _github_archive_real(
         name = name,
         repository = repository,
+        upgrade_type = upgrade_type,
         commit = commit,
         commit_pin = commit_pin,
         sha256 = sha256,
@@ -140,6 +145,9 @@ _github_archive_real = repository_rule(
             mandatory = True,
         ),
         "commit": attr.string(
+            mandatory = True,
+        ),
+        "upgrade_type": attr.string(
             mandatory = True,
         ),
         "commit_pin": attr.bool(),
@@ -191,6 +199,7 @@ def setup_github_repository(repository_ctx):
     github_download_and_extract(
         repository_ctx,
         repository = repository_ctx.attr.repository,
+        upgrade_type = repository_ctx.attr.upgrade_type,
         commit = repository_ctx.attr.commit,
         commit_pin = getattr(repository_ctx.attr, "commit_pin", None),
         mirrors = repository_ctx.attr.mirrors,
@@ -232,6 +241,7 @@ def setup_github_repository(repository_ctx):
 def github_download_and_extract(
         repository_ctx,
         repository,
+        upgrade_type,
         commit,
         mirrors,
         output = "",
@@ -245,6 +255,9 @@ def github_download_and_extract(
     Args:
         repository_ctx: context of a Bazel repository rule.
         repository: GitHub repository name in the form organization/project.
+        upgrade_type: whether this dependency should be upgraded by searching
+            for releases ("release"), tags ("tag"), or arbitrary commits to the
+            main branch ("commit").
         commit: git revision for which the archive should be downloaded.
         mirrors: dictionary of mirrors, see mirrors.bzl in this directory for
             an example.
@@ -287,6 +300,7 @@ def github_download_and_extract(
         repository_ctx,
         repository_rule_type = "github",
         repository = repository,
+        upgrade_type = upgrade_type,
         commit = commit,
         version_pin = commit_pin,
         sha256 = sha256,
@@ -576,6 +590,7 @@ def setup_github_release_attachments(repository_ctx):
         repository_ctx,
         repository_rule_type = "github_release_attachments",
         repository = repository,
+        upgrade_type = "release",
         commit = commit,
         version_pin = commit_pin,
         attachments = attachments,

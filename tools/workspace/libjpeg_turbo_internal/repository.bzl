@@ -20,6 +20,7 @@ libjpeg_turbo_internal_repository = repository_rule(
     attrs = {
         # These are the attributes for setup_github_repository.
         "repository": attr.string(default = "libjpeg-turbo/libjpeg-turbo"),
+        "upgrade_type": attr.string(default = "release"),
         "commit": attr.string(default = "2.1.4"),
         "commit_pin": attr.int(
             # We need to match our version of libjpeg-turbo to the BUILD file

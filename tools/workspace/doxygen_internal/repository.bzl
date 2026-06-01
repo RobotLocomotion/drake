@@ -2,6 +2,7 @@ load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
 
 def _impl(repo_ctx):
     repository = repo_ctx.attr.repository
+    upgrade_type = repo_ctx.attr.upgrade_type
     commit = repo_ctx.attr.commit
     platform = repo_ctx.attr.platform
     sha256 = repo_ctx.attr.sha256
@@ -21,6 +22,7 @@ def _impl(repo_ctx):
         See tools/workspace/doxygen_internal/README.md to upgrade.
         """,
         repository = repository,
+        upgrade_type = upgrade_type,
         commit = commit,
         # Opt out of mirroring the Doxygen source to S3. mirror_to_s3 globs all
         # repository metadata when looking for sources to mirror, but that
@@ -55,6 +57,9 @@ _doxygen_internal_repository_impl = repository_rule(
         "repository": attr.string(
             mandatory = True,
         ),
+        "upgrade_type": attr.string(
+            mandatory = True,
+        ),
         "commit": attr.string(
             mandatory = True,
         ),
@@ -78,6 +83,7 @@ def doxygen_internal_repository(
     _doxygen_internal_repository_impl(
         name = name,
         repository = "doxygen/doxygen",
+        upgrade_type = "release",
         commit = "Release_1_17_0",
         platform = "noble",
         sha256 = "59d61aa931ac87689e66279e3567ca9114ccabf500d92d449f5ecc834320843e",  # noqa
