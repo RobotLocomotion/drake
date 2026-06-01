@@ -10,6 +10,7 @@ def lcm_internal_repository(
         When updating, lcm needs its own pull request separate from the rest of
         the monthly upgrades.
         """,
+        upgrade_type = "release",
         commit = "v1.5.2",
         sha256 = "d443261619080f1c0693237b2019436988e1b2b2ba5fc09a49bf23769e1796de",  # noqa
         patches = [
