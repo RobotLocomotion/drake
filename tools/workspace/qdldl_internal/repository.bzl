@@ -10,6 +10,7 @@ def qdldl_internal_repository(
         When updating this commit, see
         drake/tools/workspace/qdldl_internal/README.md.
         """,
+        upgrade_type = "release",
         commit = "v0.1.8",
         sha256 = "ecf113fd6ad8714f16289eb4d5f4d8b27842b6775b978c39def5913f983f6daa",  # noqa
         build_file = ":package.BUILD.bazel",

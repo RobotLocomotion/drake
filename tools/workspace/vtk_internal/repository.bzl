@@ -153,6 +153,7 @@ _vtk_internal_repository_impl = repository_rule(
     attrs = {
         # These are the attributes for setup_github_repository.
         "repository": attr.string(),
+        "upgrade_type": attr.string(),
         "commit": attr.string(),
         "sha256": attr.string(),
         "build_file": attr.label(),
@@ -181,6 +182,7 @@ def vtk_internal_repository(
         name,
         local_repository_override = None,
         repository = "Kitware/VTK",
+        upgrade_type = "commit",
         commit = "eb5aa5ae41634a9777af6f9f3de4e32bfdca1644",
         sha256 = "a6288de30ede73f993f345cd5bb0eb31d42480b230ab21e5cf1b5c6eb1dfbee1",  # noqa
         build_file = ":package.BUILD.bazel",
@@ -239,6 +241,7 @@ def vtk_internal_repository(
         _vtk_internal_repository_impl(
             name = name,
             repository = repository,
+            upgrade_type = upgrade_type,
             commit = commit,
             sha256 = sha256,
             build_file = build_file,
