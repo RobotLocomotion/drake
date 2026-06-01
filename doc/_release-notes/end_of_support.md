@@ -98,6 +98,16 @@ supported and are available as release attachments.
     [v1.1.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.1.0).
   * On macOS, Drake never supported Python 3.6 wheels.
 
+# Docker Hub
+
+The drake Docker Hub page `https://hub.docker.com/r/robotlocomotion/drake`
+supports up to
+[noble-1.53.0](https://hub.docker.com/layers/robotlocomotion/drake/noble-1.53.0/images/sha256-d7774d48af11de61619dcb0d725a4c68245cf33fbc969785532c79567722916d),
+but not any newer versions.
+
+See [Installation via Docker](/docker.html) for historical instructions on
+installing using older images.
+
 # MATLAB 2015
 
 Download the appropriate binary release (v0.9.x) for your platform from
