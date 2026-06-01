@@ -6,7 +6,9 @@ def qhull_internal_repository(
     github_archive(
         name = name,
         repository = "qhull/qhull",
+        upgrade_type = "tag",
         commit = "2020.2",
+        include_tags_pattern = "^(2)",
         sha256 = "59356b229b768e6e2b09a701448bfa222c37b797a84f87f864f97462d8dbc7c5",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [

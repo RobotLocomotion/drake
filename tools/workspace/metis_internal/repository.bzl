@@ -6,6 +6,7 @@ def metis_internal_repository(
     github_archive(
         name = name,
         repository = "KarypisLab/METIS",
+        upgrade_type = "tag",
         commit = "v5.2.1",
         sha256 = "1a4665b2cd07edc2f734e30d7460afb19c1217c2547c2ac7bf6e1848d50aff7a",  # noqa
         build_file = ":package.BUILD.bazel",

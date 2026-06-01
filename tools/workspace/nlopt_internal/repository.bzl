@@ -6,6 +6,7 @@ def nlopt_internal_repository(
     github_archive(
         name = name,
         repository = "stevengj/nlopt",
+        upgrade_type = "release",
         commit = "v2.10.1",
         sha256 = "30d13ce16da119db3e987784f7864e35a562ec62c186352fae55cd003e6c58ff",  # noqa
         build_file = ":package.BUILD.bazel",

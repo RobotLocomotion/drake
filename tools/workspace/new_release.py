@@ -22,7 +22,7 @@ and save the plaintext hexadecimal token to that file.
 This program can also automatically prepare upgrades for our GitHub externals
 by passing the name(s) of package(s) to upgrade as additional arguments:
 
-  bazel run //tools/workspace:new_release -- --lint --commit rules_python
+  bazel run //tools/workspace:new_release -- --lint --commit curl_internal
 
 Note that this program runs `bazel` as a subprocess, without any special
 command line flags.  If you do need to use any flags when you run bazel,
@@ -82,30 +82,6 @@ _OTHER_REPOSITORIES = [
     "python",
 ]
 
-# For these repositories, ignore any tags that match the specified regex.
-_IGNORED_TAGS = {
-    "gymnasium_py_internal": r"v[0-9.]+a[0-9]+",
-    "libpng_internal": r"v[0-9.]+(alpha|beta)[0-9]+",
-    "msgpack_internal": r"c-[0-9.]+",
-    "ros_xacro_internal": r"xacro-[0-9.]+",
-    "sdformat_internal": r"sdformat-prerelease_[0-9.]+",
-}
-
-# For these repositories, we only look at tags, not releases.  For the dict
-# value, use a blank value to match the latest tag or a regex to only select
-# tags that share the match with the tag currently in use; the parentheses
-# group in the regex denotes the portion of the tag to lock as invariant.
-# (This can be used to pin to a given major or major.minor release series.)
-_OVERLOOK_RELEASE_REPOSITORIES = {
-    "doxygen_internal": "",
-    "github3_py_internal": r"^(\d+.)",
-    "gz_math_internal": r"^(gz)",
-    "gz_utils_internal": r"^(gz)",
-    "qhull_internal": r"^(2)",
-    "sdformat_internal": "",
-    "xmlrunner_py_internal": "",
-}
-
 # Packages in these cohorts should be upgraded together (in a single commit).
 _COHORTS = (
     # clarabel_cpp uses crate_universe; be sure to keep them aligned.
@@ -143,14 +119,12 @@ def _rewrite_file_contents(path, new_content):
     os.rename(f"{path}.new", path)
 
 
-def _check_output(args):
-    return subprocess.check_output(args).decode("utf8")
-
-
 def _get_default_username():
-    origin_url = _check_output(
-        ["git", "config", "--get", "remote.origin.url"]
-    ).strip()
+    origin_url = (
+        subprocess.check_output(["git", "config", "--get", "remote.origin.url"])
+        .decode("utf8")
+        .strip()
+    )
     # Match one of these two cases:
     #  git@github.com:user/drake.git
     #  https://user@github.com/user/drake.git
@@ -161,36 +135,27 @@ def _get_default_username():
     return git_user or http_user
 
 
-def _smells_like_a_git_commit(revision):
-    """Returns true iff revision seems to be a git commit (as opposed to
-    a version number tag name).  This might produce false positives for
-    very long version numbers, but we've never seen that in practice.
-    """
-    return len(revision) == 40
-
-
-def _is_ignored_tag(commit, workspace):
+def _is_ignored_tag(commit, workspace, exclude_pattern=None):
     """Returns true iff commit matches an ignore rule or seems to be a
     pre-release.
     """
-    ignore_re = _IGNORED_TAGS.get(workspace)
-    if ignore_re and re.match(ignore_re, commit):
+    if exclude_pattern and re.match(exclude_pattern, commit):
         # Matches the regex of tag names to definitely ignore; do so quietly so
         # we don't spam the user.
         return True
 
     development_stages = ["alpha", "beta", "pre", "rc", "unstable"]
-    prerelease = any(stage in commit for stage in development_stages)
-    if prerelease:
-        # Heuristically looks like a pre-release; ignore it, but log it for the
-        # user to check.
-        warn(f"Skipping prerelease {commit} for {workspace}")
-    return prerelease
+    if any(stage in commit for stage in development_stages):
+        # Heuristically looks like a pre-release; do so quietly so we don't
+        # spam the user.
+        return True
+
+    return False
 
 
-def _latest_tag(gh_repo, workspace):
+def _latest_tag(gh_repo, workspace, exclude_pattern=None):
     for tag in gh_repo.tags():
-        if _is_ignored_tag(tag.name, workspace):
+        if _is_ignored_tag(tag.name, workspace, exclude_pattern):
             continue
         return tag.name
     warn(f"Could not find any matching tags for {workspace}")
@@ -202,44 +167,57 @@ def _handle_github(workspace_name, gh, data):
     old_commit = data["commit"]
     new_commit = None
     owner, repo_name = data["repository"].split("/")
+    upgrade_type = data["upgrade_type"]
     gh_repo = gh.repository(owner, repo_name)
 
-    # If we're tracking via git commit, then upgrade to the newest commit.
-    if _smells_like_a_git_commit(old_commit):
+    if upgrade_type == "commit":
         new_commit = gh_repo.commit("HEAD").sha
         return old_commit, new_commit
+    elif upgrade_type == "tag":
+        # Search for the latest tag by default. If an "include_tags_pattern"
+        # regex was provided, we'll limit to tags matching those. If an
+        # "exclude_tags_pattern" regex was provided, we'll (further) ignore
+        # matching those.
+        include_tags_pattern = data["include_tags_pattern"]
+        exclude_tags_pattern = data["exclude_tags_pattern"]
 
-    # Sometimes prefer checking only tags, not releases.
-    tags_pattern = _OVERLOOK_RELEASE_REPOSITORIES.get(workspace_name)
-    if tags_pattern == "":
-        new_commit = _latest_tag(gh_repo, workspace_name)
-        return old_commit, new_commit
+        if not include_tags_pattern:
+            new_commit = _latest_tag(
+                gh_repo, workspace_name, exclude_pattern=exclude_tags_pattern
+            )
+            return old_commit, new_commit
 
-    # Sometimes limit candidate tags to those matching a regex.
-    if tags_pattern is not None:
-        match = re.search(tags_pattern, old_commit)
-        assert match, f"No {tags_pattern} in {old_commit}"
+        match = re.search(include_tags_pattern, old_commit)
+        assert match, f"No {include_tags_pattern} in {old_commit}"
         (old_hit,) = match.groups()
         for tag in gh_repo.tags():
-            match = re.search(tags_pattern, tag.name)
+            match = re.search(include_tags_pattern, tag.name)
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
-                    if _is_ignored_tag(tag.name, workspace_name):
+                    if _is_ignored_tag(
+                        tag.name,
+                        workspace_name,
+                        exclude_pattern=exclude_tags_pattern,
+                    ):
                         continue
                     new_commit = tag.name
                     break
         return old_commit, new_commit
-
-    # By default, use the latest release if there is one.  Otherwise, use the
-    # latest tag.
-    try:
-        new_commit = gh_repo.latest_release().tag_name
-        if _is_ignored_tag(new_commit, workspace_name):
-            new_commit = _latest_tag(gh_repo, workspace_name)
-    except github3.exceptions.NotFoundError:
-        new_commit = _latest_tag(gh_repo, workspace_name)
-    return old_commit, new_commit
+    elif upgrade_type == "release":
+        exclude_tags_pattern = data["exclude_tags_pattern"]
+        for release in gh_repo.releases():
+            if not _is_ignored_tag(
+                release.tag_name, workspace_name, exclude_tags_pattern
+            ):
+                new_commit = release.tag_name
+                break
+        return old_commit, new_commit
+    else:
+        raise ValueError(
+            f"Got upgrade type {upgrade_type} for {workspace_name}; "
+            "must be one of: commit, release, tag."
+        )
 
 
 def _check_for_upgrades(gh, args, metadata):
@@ -255,7 +233,7 @@ def _check_for_upgrades(gh, args, metadata):
             info(f"{workspace_name} may need upgrade")
             continue
         else:
-            raise RuntimeError(f"Bad rule type {rule_type} in {workspace_name}")
+            raise ValueError(f"Bad rule type {rule_type} in {workspace_name}")
         if old_commit == new_commit:
             continue
         elif new_commit is not None:
@@ -355,7 +333,7 @@ def _download(url, local_filename):
 
 
 def _do_upgrade_github_archive(
-    *, temp_dir, old_commit, new_commit, bzl_filename, repository
+    *, temp_dir, upgrade_type, old_commit, new_commit, bzl_filename, repository
 ):
     # Slurp the file we're supposed to modify.
     with open(bzl_filename, "r", encoding="utf-8") as f:
@@ -382,7 +360,7 @@ def _do_upgrade_github_archive(
 
     # Download the new source archive.
     info("Downloading new archive...")
-    if _smells_like_a_git_commit(new_commit):
+    if upgrade_type == "commit":
         new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
     else:
         new_url = f"https://github.com/{repository}/archive/refs/tags/{new_commit}.tar.gz"  # noqa
@@ -510,6 +488,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         if rule_type == "github":
             _do_upgrade_github_archive(
                 temp_dir=temp_dir,
+                upgrade_type=data["upgrade_type"],
                 old_commit=old_commit,
                 new_commit=new_commit,
                 bzl_filename=bzl_filename,
@@ -543,7 +522,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
 
     # Finalize the result.
     if new_commit:
-        if _smells_like_a_git_commit(new_commit):
+        if data["upgrade_type"] == "commit":
             message = f"Update dependency {workspace_name} to latest commit"
         else:
             release = new_commit.lstrip("releases/").lstrip("v")
@@ -578,7 +557,7 @@ def _do_upgrades(temp_dir, gh, local_drake_checkout, workspace_names, metadata):
             info(f"No updates for {workspace_name}")
 
     if not modified_workspace_names:
-        # Nothing was updated
+        # Nothing was updated.
         names = ", ".join(workspace_names)
         info("")
         info("*" * 72)

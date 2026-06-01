@@ -17,6 +17,7 @@ def pybind11_repository(
     github_archive(
         name = name,
         repository = _REPOSITORY,
+        upgrade_type = "release",
         commit = _COMMIT,
         sha256 = _SHA256,
         build_file = ":package.BUILD.bazel",

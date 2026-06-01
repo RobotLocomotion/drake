@@ -26,6 +26,7 @@ def bazelisk_internal_repository(
         To fully test, a Linux uprovisioned job must be launched from the
         pull request.
         """,  # noqa
+        upgrade_type = "release",
         commit = "v1.28.1",
         sha256 = "e80f76b9d86f529e9d267ce0d333365ea14ec92b3269f81ab85cbd69edab2793",  # noqa
         build_file = ":package.BUILD.bazel",

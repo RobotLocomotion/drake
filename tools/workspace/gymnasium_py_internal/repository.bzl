@@ -6,6 +6,8 @@ def gymnasium_py_internal_repository(
     github_archive(
         name = name,
         repository = "Farama-Foundation/Gymnasium",
+        upgrade_type = "release",
+        exclude_tags_pattern = "v[0-9.]+a[0-9]+",
         commit = "v1.2.3",
         sha256 = "b2a7f6d9c25eb0f36734429f856bc195e30e57d3226f0b1927d267054bd7a4bb",  # noqa
         build_file = ":package.BUILD.bazel",
