@@ -6,6 +6,7 @@ def abseil_cpp_internal_repository(
     github_archive(
         name = name,
         repository = "abseil/abseil-cpp",
+        upgrade_type = "release",
         commit = "20260526.0",
         sha256 = "6e1aee535473414164bf83e4ebc40240dec71a4701f8a642d906e95bea1aea0c",  # noqa
         patches = [
