@@ -17,18 +17,6 @@ DEFINE_double(simulator_target_realtime_rate,
               "documentation for Simulator::set_target_realtime_rate() for "
               "details.");
 
-// delete with publish_every_time_step 2026-06-01
-DEFINE_bool(simulator_publish_every_time_step,
-            drake::systems::SimulatorConfig{}.publish_every_time_step,
-            "DEPRECATED: removal date: 2026-06-01. "
-            "See https://drake.mit.edu/troubleshooting.html#force-publishing "
-            "for details on how to migrate to system events."
-            "[Simulator flag] Sets whether the simulation should trigger a "
-            "forced-Publish event at the end of every trajectory-advancing "
-            "step. This also includes the very first publish at t = 0 (see "
-            "Simulator::set_publish_at_initialization())."
-            "See Simulator::set_publish_every_time_step() for details.");
-
 DEFINE_double(simulator_start_time,
               drake::systems::SimulatorConfig{}.start_time,
               "[Simulator flag] Sets the simulation start time.");
@@ -105,11 +93,8 @@ std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
   auto simulator = std::make_unique<Simulator<T>>(system, std::move(context));
   const SimulatorConfig config{
       FLAGS_simulator_integration_scheme, FLAGS_simulator_max_time_step,
-      FLAGS_simulator_accuracy, FLAGS_simulator_use_error_control,
-      FLAGS_simulator_start_time, FLAGS_simulator_target_realtime_rate,
-      // delete FLAGS_simulator_publish_every_time_step with
-      // publish_every_time_step feature on 2026-06-01
-      FLAGS_simulator_publish_every_time_step};
+      FLAGS_simulator_accuracy,           FLAGS_simulator_use_error_control,
+      FLAGS_simulator_start_time,         FLAGS_simulator_target_realtime_rate};
 
   ApplySimulatorConfig(config, simulator.get());
 

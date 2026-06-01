@@ -540,13 +540,6 @@ class LeafSystem : public System<T> {
   where `MySystem` is a class derived from `LeafSystem<T>` and the method
   name is arbitrary.
 
-  <!-- Delete this warning when publish_every_time_step is deleted on
-  2026-06-01. -->
-  @warning These per-step publish events are independent of the Simulator's
-  optional "publish every time step" and "publish at initialization"
-  features. Generally if you are declaring per-step publish events yourself
-  you should turn off those Simulation options.
-
   See @ref declare_per-step_events "Declare per-step events" for more
   information.
 
@@ -555,9 +548,7 @@ class LeafSystem : public System<T> {
 
   @see DeclarePerStepDiscreteUpdateEvent()
   @see DeclarePerStepUnrestrictedUpdateEvent()
-  @see DeclarePerStepEvent()
-  @see Simulator::set_publish_at_initialization()
-  @see Simulator::set_publish_every_time_step() */
+  @see DeclarePerStepEvent() */
   template <class MySystem>
   void DeclarePerStepPublishEvent(
       EventStatus (MySystem::*publish)(const Context<T>&) const) {
@@ -860,15 +851,7 @@ class LeafSystem : public System<T> {
   and need not be specified explicitly.
 
   @note It's rare that an event needs to be triggered by force. Please
-  consider per-step and periodic triggered events first.
-
-  <!-- Delete this warning when publish_every_time_step is deleted on
-  2026-06-01. -->
-  @warning Simulator handles forced publish events at initialization
-  and on a per-step basis when its "publish at initialization" and
-  "publish every time step" options are set (not recommended).
-  @see Simulator::set_publish_at_initialization()
-  @see Simulator::set_publish_every_time_step() */
+  consider per-step and periodic triggered events first. */
   //@{
 
   /** Declares a function that is called whenever a user directly calls

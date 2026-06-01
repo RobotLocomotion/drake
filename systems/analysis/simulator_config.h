@@ -21,7 +21,6 @@ struct SimulatorConfig {
     a->Visit(DRAKE_NVP(use_error_control));
     a->Visit(DRAKE_NVP(start_time));
     a->Visit(DRAKE_NVP(target_realtime_rate));
-    a->Visit(DRAKE_NVP(publish_every_time_step));
   }
 
   std::string integration_scheme{"runge_kutta3"};
@@ -32,13 +31,6 @@ struct SimulatorConfig {
   /// `start_time` at the beginning of the simulation.
   double start_time{0.0};
   double target_realtime_rate{0.0};
-  /// DEPRECATED: removal date: 2026-06-01.
-  /// See https://drake.mit.edu/troubleshooting.html#force-publishing for
-  /// guidance.
-  /// Sets Simulator::set_publish_at_initialization() in addition to
-  /// Simulator::set_publish_every_time_step() when applied by
-  /// ApplySimulatorConfig().
-  bool publish_every_time_step{false};
 };
 }  // namespace systems
 }  // namespace drake
