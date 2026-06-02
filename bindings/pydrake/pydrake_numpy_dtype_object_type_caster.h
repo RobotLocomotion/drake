@@ -61,12 +61,18 @@ struct pydrake_numpy_dtype_object_type_caster {
       rows = cast<int>(shape[0]);
       cols = 1;
     } else {
-      if (shape.size() != 2) {
+      if (shape.size() == 1) {
+	// Promote from 1d array to 2d array (as column vector).
+	array = array.attr("reshape")(-1, 1);
+	rows = cast<int>(shape[0]);
+	cols = 1;
+      } else if (shape.size() == 2) {
+	rows = cast<int>(shape[0]);
+	cols = cast<int>(shape[1]);
+      } else {
         std::cerr << "from_python wrong shape 2d\n";
         return false;
       }
-      rows = cast<int>(shape[0]);
-      cols = cast<int>(shape[1]);
     }
 
     value.resize(rows, cols);
