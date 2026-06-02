@@ -2,8 +2,6 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
-static const inline int ten = 10;
-
 namespace drake {
 namespace pydrake {
 namespace internal {
