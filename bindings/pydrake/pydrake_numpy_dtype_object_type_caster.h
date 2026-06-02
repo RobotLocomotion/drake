@@ -31,11 +31,17 @@ struct pydrake_numpy_dtype_object_type_caster {
                  dtype_const_name<Scalar>::name) +
              const_name("]"))
 
-  bool from_python(
-      handle src, uint8_t /* flags */, cleanup_list* /* cleanup */) {
+  bool from_python(handle src, uint8_t flags, cleanup_list* /* cleanup */) {
     auto numpy = module_::import_("numpy");
 
     if (src.is_none()) {
+      return false;
+    }
+
+    // Avoid converting np.array(dtype=np.float64) to AutoDiff prematurely.
+    // Only accept autodiff conversions as a last resort.
+    const bool convert = flags & (uint8_t)cast_flags::convert;
+    if (!convert) {
       return false;
     }
 
