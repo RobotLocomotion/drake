@@ -411,7 +411,7 @@ void DefineMeshcat(py::module_ m) {
                 py::gil_scoped_release unlock;
                 result = self.StaticZip();
               }
-              return py::bytes(result);
+              return py::bytes(result.c_str(), result.size());
             },
             cls_doc.StaticZip.doc)
         .def("StartRecording", &Class::StartRecording,
@@ -441,7 +441,7 @@ void DefineMeshcat(py::module_ m) {
               py::gil_scoped_release unlock;
               result = (self.*member_func)(args...);
             }
-            return py::bytes(result);
+            return py::bytes(result.c_str(), result.size());
           };
         };  // NOLINT(readability/braces)
 
@@ -458,7 +458,7 @@ void DefineMeshcat(py::module_ m) {
         .def(
             "_InjectWebsocketMessage",
             [](Class& self, py::bytes message) {
-              std::string_view message_view = message;
+              std::string_view message_view(message.c_str(), message.size());
               // This call blocks on a worker thread so must release the GIL.
               py::gil_scoped_release unlock;
               self.InjectWebsocketMessage(message_view);

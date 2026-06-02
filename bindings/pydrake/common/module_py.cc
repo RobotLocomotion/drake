@@ -178,7 +178,10 @@ void InitLowLevelModules(py::module_ m) {
             cls_doc.ctor.doc_3args)
         .def(
             "contents",
-            [](const Class& self) { return py::bytes(self.contents()); },
+            [](const Class& self) {
+              const std::string& contents = self.contents();
+              return py::bytes(contents.c_str(), contents.size());
+            },
             cls_doc.contents.doc)
         .def("extension", &Class::extension, py_rvp::reference_internal,
             cls_doc.extension.doc)
@@ -236,7 +239,10 @@ void InitLowLevelModules(py::module_ m) {
     // Provide properties for use by yaml_{dump,load}_typed.
     cls.def_prop_rw(
         "_contents",
-        [](const Class& self) -> py::bytes { return self.contents(); },
+        [](const Class& self) {
+          const std::string& contents = self.contents();
+          return py::bytes(contents.c_str(), contents.size());
+        },
         [](Class& self, const py::bytes& contents) {
           self = MemoryFile{
               std::string{contents}, self.extension(), self.filename_hint()};
