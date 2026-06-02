@@ -11,7 +11,6 @@ def nanobind_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/ndarray_extra_import.patch",
-            ":patches/ndarray_opaque_handle.patch",
         ],
         mirrors = mirrors,
     )
