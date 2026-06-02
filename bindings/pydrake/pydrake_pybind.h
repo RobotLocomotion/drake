@@ -227,6 +227,11 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 }  // namespace pydrake
 }  // namespace drake
 
+/// Allow numpy arrays of with dtype=object containing `Type` objects to convert
+/// to and from Eigen matrices of `Type`.
+#define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+
+// Legacy synonym for PYDRAKE_NUMPY_OBJECT_DTYPE. Don't use this in new code.
 #define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
   PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 
