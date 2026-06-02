@@ -337,6 +337,30 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
       enable_if_t<is_pydrake_numpy_dtype_object_castable<T> &&                 \
                   std::is_same_v<std::remove_cv_t<typename T::Scalar>, Type>>> \
       : public pydrake_numpy_dtype_object_type_caster<T> {};                   \
+  template <typename PlainObjectType, int Options, typename StrideType>        \
+  struct type_caster<Eigen::Ref<PlainObjectType, Options, StrideType>,         \
+      enable_if_t<std::is_same_v<                                              \
+          std::remove_cv_t<typename PlainObjectType::Scalar>, Type>>>          \
+      : public pydrake_numpy_dtype_object_type_caster<                         \
+            Eigen::Matrix<typename PlainObjectType::Scalar,                    \
+                PlainObjectType::RowsAtCompileTime,                            \
+                PlainObjectType::ColsAtCompileTime, 0,                         \
+                PlainObjectType::MaxRowsAtCompileTime,                         \
+                PlainObjectType::MaxColsAtCompileTime>> {                      \
+    template <typename T>                                                      \
+    using Cast = Eigen::Matrix<typename PlainObjectType::Scalar,               \
+        PlainObjectType::RowsAtCompileTime,                                    \
+        PlainObjectType::ColsAtCompileTime, 0,                                 \
+        PlainObjectType::MaxRowsAtCompileTime,                                 \
+        PlainObjectType::MaxColsAtCompileTime>;                                \
+    explicit operator Eigen::Matrix<typename PlainObjectType::Scalar,          \
+        PlainObjectType::RowsAtCompileTime,                                    \
+        PlainObjectType::ColsAtCompileTime, 0,                                 \
+        PlainObjectType::MaxRowsAtCompileTime,                                 \
+        PlainObjectType::MaxColsAtCompileTime>() const {                       \
+      return this->value;                                                      \
+    }                                                                          \
+  };                                                                           \
   } /* namespace detail */                                                     \
   } /* namespace nanobind */
 #endif  // PYDRAKE_USE_PYBIND11
