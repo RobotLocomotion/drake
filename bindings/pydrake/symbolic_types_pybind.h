@@ -82,6 +82,13 @@ struct type_caster<drake::symbolic::Variable::Id> {
     const uint64_t lo = py::cast<uint64_t>(lo_py);
     // N.B. "value" is a magic variable declared by pybind11 where we're
     // supposed to put the loaded result.
+#if 1  // XXX This should never really fail, but it does!
+    const uint8_t var_type = static_cast<uint8_t>(hi);
+    if (var_type > static_cast<uint8_t>(
+                       drake::symbolic::Variable::Type::RANDOM_EXPONENTIAL)) {
+      return false;
+    }
+#endif
     value = Attorney::Construct(hi, lo);
 
     return true;
