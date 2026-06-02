@@ -1,5 +1,3 @@
-.. -*- rst-mode -*-
-
 =============================
    Nanobind porting issues
 =============================
@@ -99,7 +97,7 @@ Compile time issues
 
       bytes();
       bytes(const char *c);            // explicit in nanobind
-      bytes(const char *c, size_t n);  // explicit in nanobind
+      bytes(const char *c, size_t n);
       bytes(const std::string &s);     // not in nanobind
       bytes(string_view s);            // not in nanobind
       explicit bytes(const str &s);
