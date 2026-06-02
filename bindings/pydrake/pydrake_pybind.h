@@ -75,6 +75,9 @@ NB_INLINE ndarray_handle* ndarray_extra_import(PyObject* o,
   using Config = ndarray_config_t<int, Args...>;
   // static constexpr bool ReadOnly = std::is_const_v<typename Config::Scalar>;
   using Scalar = std::remove_const<typename Config::Scalar>::type;
+  if constexpr (!std::is_floating_point_v<Scalar>) {
+    return nullptr;
+  }
   // static constexpr char Order = Config::Order::value;
   // static constexpr int DeviceType = Config::DeviceType::value;
   // using VoidPtr = std::conditional_t<ReadOnly, const void *, void *>;
@@ -84,30 +87,15 @@ NB_INLINE ndarray_handle* ndarray_extra_import(PyObject* o,
   // Build a data array for use with ndarray.
   size_t size = PySequence_Size(o);
   std::array<size_t, 2> shape{size, 1};
-  if constexpr (std::is_floating_point_v<Scalar>) {
-    auto data = std::make_unique<Scalar[]>(size);
-    for (size_t k = 0; k < size; ++k) {
-      data.get()[k] = static_cast<double>(float_(PySequence_GetItem(o, k)));
-    }
-    // XXX porting: double check memory management!
-    Ndarray helper(data.release(), 2, shape.data());
-    ndarray_handle* result = helper.handle();
-    ndarray_inc_ref(result);
-    return result;
-  } else if constexpr (std::is_same_v<Scalar, drake::AutoDiffXd>) {
-    auto data = std::make_unique<Scalar[]>(size);
-    for (size_t k = 0; k < size; ++k) {
-      data.get()[k] = cast<Scalar>(handle(PySequence_GetItem(o, k)));
-    }
-    // XXX porting: double check memory management!
-    Ndarray helper(data.release(), 2, shape.data());
-    ndarray_handle* result = helper.handle();
-    ndarray_inc_ref(result);
-    return result;
-  } else {
-    return nullptr;  // punt.
-    // static_assert(false, "scalar trouble");
+  auto data = std::make_unique<Scalar[]>(size);
+  for (size_t k = 0; k < size; ++k) {
+    data.get()[k] = static_cast<double>(float_(PySequence_GetItem(o, k)));
   }
+  // XXX porting: double check memory management!
+  Ndarray helper(data.release(), 2, shape.data());
+  ndarray_handle* result = helper.handle();
+  ndarray_inc_ref(result);
+  return result;
 }
 
 }  // namespace detail
