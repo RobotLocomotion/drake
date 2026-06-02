@@ -114,6 +114,8 @@ _COHORTS = (
     {"sdformat_internal", "gz_math_internal", "gz_utils_internal"},
     # uwebsockets depends on usockets; be sure to keep them aligned.
     {"uwebsockets_internal", "usockets_internal"},
+    # sympy depends on mpmath; be sure to keep them aligned.
+    {"sympy_py_internal", "mpmath_py_internal"},
 )
 
 

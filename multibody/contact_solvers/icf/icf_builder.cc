@@ -175,9 +175,8 @@ void IcfBuilder<T>::UpdateModel(
   for (int b = 0; b < plant_.num_bodies(); ++b) {
     const auto& body = plant_.get_body(BodyIndex(b));
 
+    // We ignore anchored bodies.
     if (!plant_.IsAnchored(body)) {
-      // We ignore anchored bodies. Their jacobian is included in J_WB as a
-      // dummy column.
       const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
       const int clique = tree_to_clique(t);
       DRAKE_ASSERT(clique >= 0);
@@ -925,7 +924,7 @@ IcfBuilder<T>::PlantFacts::PlantFacts(const MultibodyPlant<T>& plant) {
     const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
 
     if (plant.IsAnchored(body)) {
-      body_jacobian_cols[b] = 1;  // dummy column.
+      body_jacobian_cols[b] = 0;
       body_to_clique[b] = -1;
     } else {
       body_jacobian_cols[b] = forest.trees(t).nv();
