@@ -324,6 +324,8 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 }  // namespace pydrake
 }  // namespace drake
 
+/// Allow numpy arrays of with dtype=object containing `Type` objects to convert
+/// to and from Eigen matrices of `Type`.
 #ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 #else  // PYDRAKE_USE_NANOBIND
@@ -337,6 +339,12 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
       : public pydrake_numpy_dtype_object_type_caster<T> {};                   \
   } /* namespace detail */                                                     \
   } /* namespace nanobind */
+#endif  // PYDRAKE_USE_PYBIND11
+
+#ifdef PYDRAKE_USE_PYBIND11
+// Legacy synonym for PYDRAKE_NUMPY_OBJECT_DTYPE. Don't use this in new code.
+#define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
+  PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 #endif  // PYDRAKE_USE_PYBIND11
 
 // This alias helps ease Drake's transition to nanobind.
