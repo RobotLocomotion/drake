@@ -110,3 +110,13 @@ See https://github.com/RobotLocomotion/drake/issues/21572.
      template <typename... Args>
      str format(Args &&...args) const {
          return attr("format")(std::forward<Args>(args)...);
+@@ -1743,6 +1743,9 @@ public:
+     // NOLINTNEXTLINE(google-explicit-constructor)
+     operator std::string_view() const { return string_op<std::string_view>(); }
+ #endif
++
++    const char *c_str() const { return PyBytes_AsString(m_ptr); }
++    size_t size() const { return (size_t) PyBytes_Size(m_ptr); }
+ private:
+     template <typename T>
+     T string_op() const {
