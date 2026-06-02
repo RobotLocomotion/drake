@@ -1171,10 +1171,10 @@ GTEST_TEST(SystemJacobianTransposeTimesF, MultipleTrees) {
   ASSERT_EQ(J.rows(), 6 * num_mobods);
   ASSERT_EQ(J.cols(), nv);
 
- // Build a matching applied-force stack F_stack of size 6*num_mobods.
- // F_stack[6k:6k+6] = [τ_k; f_k] in the same convention as
- // SpatialForce::get_coeffs(). Values are deterministic, arbitrary per-body
- // spatial forces (no <random> dependency).
+  // Build a matching applied-force stack F_stack of size 6*num_mobods.
+  // F_stack[6k:6k+6] = [τ_k; f_k] in the same convention as
+  // SpatialForce::get_coeffs(). Values are deterministic, arbitrary per-body
+  // spatial forces (no <random> dependency).
   std::vector<SpatialForce<double>> F_Bo_W_array(num_mobods);
   VectorX<double> F_stack(6 * num_mobods);
   for (int k = 0; k < num_mobods; ++k) {
