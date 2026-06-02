@@ -418,7 +418,7 @@ void DefineMeshcat(py::module_ m) {
                 py::gil_scoped_release unlock;
                 result = self.StaticZip();
               }
-              return py::bytes(result);
+              return py::bytes(result.c_str(), result.size());
             },
             cls_doc.StaticZip.doc)
 #endif  // XXX porting
@@ -449,7 +449,7 @@ void DefineMeshcat(py::module_ m) {
               py::gil_scoped_release unlock;
               result = (self.*member_func)(args...);
             }
-            return py::bytes(result.c_str());
+            return py::bytes(result.c_str(), result.size());
           };
         };  // NOLINT(readability/braces)
 

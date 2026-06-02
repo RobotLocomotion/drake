@@ -288,8 +288,9 @@ void InitLowLevelModules(py::module_ m) {
     // Provide properties for use by yaml_{dump,load}_typed.
     cls.def_prop_rw(
         "_contents",
-        [](const Class& self) -> py::bytes {
-          return py::bytes(self.contents().data(), self.contents().size());
+        [](const Class& self) {
+          const std::string& contents = self.contents();
+          return py::bytes(contents.c_str(), contents.size());
         },
         [](Class& self, const py::bytes& contents) {
           self = MemoryFile{

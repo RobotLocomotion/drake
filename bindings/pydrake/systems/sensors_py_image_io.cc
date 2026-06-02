@@ -54,7 +54,7 @@ void DefineSensorsImageIo(py::module_ m) {
             "LoadMetadata",
             [](const Class& self, py::bytes buffer) {
               return self.LoadMetadata(
-                  Class::ByteSpan{buffer.data(), buffer.size()});
+                  Class::ByteSpan{buffer.c_str(), buffer.size()});
             },
             py::arg("buffer"), cls_doc.LoadMetadata.doc_1args_buffer)
         .def(
@@ -70,7 +70,7 @@ void DefineSensorsImageIo(py::module_ m) {
             [](const Class& self, py::bytes buffer,
                 std::optional<ImageFileFormat> format) {
               return self.Load(
-                  Class::ByteSpan{buffer.data(), buffer.size()}, format);
+                  Class::ByteSpan{buffer.c_str(), buffer.size()}, format);
             },
             py::arg("buffer"), py::arg("format") = std::nullopt,
             cls_doc.Load.doc_2args_buffer_format)
