@@ -64,12 +64,18 @@ struct pydrake_numpy_dtype_object_type_caster {
     }
 
     value.resize(rows, cols);
-    for (Eigen::Index i = 0; i < rows; ++i) {
-      for (Eigen::Index j = 0; j < cols; ++j) {
-        list ij;
-        ij.append(i);
-        ij.append(j);
-        value(i, j) = cast<PlainScalar>(array[nanobind::tuple(ij)]);
+    if constexpr (kCompileTime1D) {
+      for (Eigen::Index i = 0; i < rows; ++i) {
+        value(i) = cast<PlainScalar>(array[i]);
+      }
+    } else {
+      for (Eigen::Index i = 0; i < rows; ++i) {
+        for (Eigen::Index j = 0; j < cols; ++j) {
+          list ij;
+          ij.append(i);
+          ij.append(j);
+          value(i, j) = cast<PlainScalar>(array[nanobind::tuple(ij)]);
+        }
       }
     }
 

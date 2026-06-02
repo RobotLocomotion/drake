@@ -69,33 +69,19 @@ using is_pyobject = std::is_base_of<api_tag, std::remove_reference_t<T>>;
 /** Add list-to-array implicit casting. */
 template <typename... Args>
 NB_INLINE ndarray_handle* ndarray_extra_import(PyObject* o,
-    const ndarray_config*, bool, cleanup_list*,
+    const ndarray_config* config, bool convert, cleanup_list* cleanup,
     ndarray_config_t<int, Args...>*) noexcept {
-  using Ndarray = ndarray<Args...>;
-  using Config = ndarray_config_t<int, Args...>;
-  // static constexpr bool ReadOnly = std::is_const_v<typename Config::Scalar>;
-  using Scalar = std::remove_const<typename Config::Scalar>::type;
-  if constexpr (!std::is_floating_point_v<Scalar>) {
-    return nullptr;
+  if (!convert) {
+    return {};
   }
-  // static constexpr char Order = Config::Order::value;
-  // static constexpr int DeviceType = Config::DeviceType::value;
-  // using VoidPtr = std::conditional_t<ReadOnly, const void *, void *>;
-  if (!(PyList_Check(o) || PyTuple_Check(o))) {
-    return nullptr;
+  auto numpy = module_::import_("numpy");
+  auto array = numpy.attr("asarray")(handle(o));  // XXX check for exception
+  const int ndim = cast<int>(array.attr("ndim"));
+  if ((ndim == 1) && (config->ndim == 2)) {
+    // Promote from 1d array to 2d array (as column vector).
+    array = array.attr("reshape")(-1, 1);
   }
-  // Build a data array for use with ndarray.
-  size_t size = PySequence_Size(o);
-  std::array<size_t, 2> shape{size, 1};
-  auto data = std::make_unique<Scalar[]>(size);
-  for (size_t k = 0; k < size; ++k) {
-    data.get()[k] = static_cast<double>(float_(PySequence_GetItem(o, k)));
-  }
-  // XXX porting: double check memory management!
-  Ndarray helper(data.release(), 2, shape.data());
-  ndarray_handle* result = helper.handle();
-  ndarray_inc_ref(result);
-  return result;
+  return ndarray_import(array.ptr(), config, /* convert = */ true, cleanup);
 }
 
 }  // namespace detail
