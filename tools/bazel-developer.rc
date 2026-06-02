@@ -79,17 +79,9 @@ build:asan --output_filter="^(?!.*ld\.gold: warning: Cannot export local symbol 
 
 ### LSan build. Clang only. ###
 build:lsan --config=_sanitizer_common
+build:lsan --features=lsan
 build:lsan --run_under=//tools/lsan
 build:lsan --@drake//tools/lsan:active=True
-# We provide `-fsanitize=leak`, `-fno-common`, and `-fno-omit-frame-pointer`
-# because rules_cc doesn't support `--features=lsan`.
-# TODO(tyler-yankee): If rules_cc ever adds this feature in the future, we
-# should replace these flags (as well as the `--linkopt=-fsanitize=leak` below)
-# with upstream, similarly to the other sanitizers in this file.
-build:lsan --copt=-fsanitize=leak
-build:lsan --copt=-fno-common
-build:lsan --copt=-fno-omit-frame-pointer
-build:lsan --linkopt=-fsanitize=leak
 # LSan doesn't introduce significant performance overhead other than a constant
 # amount at the end. Increase to 1.2 to be safe.
 # See https://clang.llvm.org/docs/LeakSanitizer.html

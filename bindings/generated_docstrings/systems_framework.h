@@ -6703,12 +6703,6 @@ function (method) with this signature:
 where ``MySystem`` is a class derived from ``LeafSystem<T>`` and the
 method name is arbitrary.
 
-Warning:
-    These per-step publish events are independent of the Simulator's
-    optional "publish every time step" and "publish at initialization"
-    features. Generally if you are declaring per-step publish events
-    yourself you should turn off those Simulation options.
-
 See declare_per-step_events "Declare per-step events" for more
 information.
 
@@ -6725,13 +6719,7 @@ See also:
     DeclarePerStepUnrestrictedUpdateEvent()
 
 See also:
-    DeclarePerStepEvent()
-
-See also:
-    Simulator∷set_publish_at_initialization()
-
-See also:
-    Simulator∷set_publish_every_time_step())""";
+    DeclarePerStepEvent())""";
         } DeclarePerStepPublishEvent;
         // Symbol: drake::systems::LeafSystem::DeclarePerStepUnrestrictedUpdateEvent
         struct /* DeclarePerStepUnrestrictedUpdateEvent */ {
