@@ -413,6 +413,83 @@ GTEST_TEST(IcfModel, ParamsAccessors) {
   EXPECT_EQ(params1, params2.get());
 }
 
+/* Collects an IslandItemMap into a vector-of-vectors for easy comparison. */
+std::vector<std::vector<int>> ToVectors(const IslandItemMap& map) {
+  std::vector<std::vector<int>> result(map.num_islands());
+  for (int i = 0; i < map.num_islands(); ++i) {
+    const auto items = map.items(i);
+    result[i].assign(items.begin(), items.end());
+  }
+  return result;
+}
+
+/* With no constraints, every clique is its own island. The three dynamic bodies
+(1, 2, 3) land in cliques 0, 1, 2 respectively; the world (body 0) is anchored
+and belongs to no island. */
+GTEST_TEST(IcfModel, IslandsUnconstrained) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
+
+  const IcfPartition& partition = model.partition();
+  EXPECT_EQ(partition.num_islands(), 3);
+  EXPECT_EQ(ToVectors(model.island_bodies()),
+            (std::vector<std::vector<int>>{{1}, {2}, {3}}));
+}
+
+/* Patches couple cliques 0 and 1 (patches 0 and 2), while patch 1 touches only
+clique 2 (it is anchored to the world). This yields two islands: {0, 1} and {2}.
+The bodies and patch constraints partition accordingly. */
+GTEST_TEST(IcfModel, IslandsWithPatchesOnly) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+
+  const IcfPartition& partition = model.partition();
+  ASSERT_EQ(partition.num_islands(), 2);
+  EXPECT_EQ(partition.clique_to_island(0), 0);
+  EXPECT_EQ(partition.clique_to_island(1), 0);
+  EXPECT_EQ(partition.clique_to_island(2), 1);
+
+  // Bodies 1 (clique 0) and 2 (clique 1) are in island 0; body 3 (clique 2) is
+  // in island 1.
+  EXPECT_EQ(ToVectors(model.island_bodies()),
+            (std::vector<std::vector<int>>{{1, 2}, {3}}));
+  // Patches 0 and 2 couple cliques {0, 1} (island 0); patch 1 is on clique 2
+  // (island 1).
+  EXPECT_EQ(ToVectors(model.island_patches()),
+            (std::vector<std::vector<int>>{{0, 2}, {1}}));
+}
+
+/* Adding the welds connects clique 1 to clique 2 (weld 1), merging everything
+into a single island. All constraint kinds then map to island 0. */
+GTEST_TEST(IcfModel, IslandsFullyCoupled) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  AddWeldConstraints(&model);
+  model.SetSparsityPattern();
+
+  ASSERT_EQ(model.partition().num_islands(), 1);
+  // Every constraint and dynamic body belongs to the single island 0.
+  EXPECT_EQ(ToVectors(model.island_bodies()),
+            (std::vector<std::vector<int>>{{1, 2, 3}}));
+  EXPECT_EQ(ToVectors(model.island_couplers()),
+            (std::vector<std::vector<int>>{{0}}));
+  EXPECT_EQ(ToVectors(model.island_gains()),
+            (std::vector<std::vector<int>>{{0, 1}}));
+  EXPECT_EQ(ToVectors(model.island_limits()),
+            (std::vector<std::vector<int>>{{0, 1}}));
+  EXPECT_EQ(ToVectors(model.island_patches()),
+            (std::vector<std::vector<int>>{{0, 1, 2}}));
+  EXPECT_EQ(ToVectors(model.island_welds()),
+            (std::vector<std::vector<int>>{{0, 1}}));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace icf

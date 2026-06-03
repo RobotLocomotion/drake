@@ -13,6 +13,7 @@
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_partition.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
@@ -300,6 +301,24 @@ class IcfModel {
     return *sparsity_pattern_;
   }
 
+  /* Returns the partition of cliques into islands (connected components of the
+  clique graph). Islands are independent convex subproblems that may be solved
+  separately. Computed alongside the sparsity pattern by SetSparsityPattern(),
+  so it changes only when the sparsity pattern changes. */
+  const IcfPartition& partition() const { return partition_; }
+
+  /* Per-island groupings of each constraint kind and of the (dynamic) bodies.
+  For example, island_patches().items(i) lists the patch indices whose
+  constraint belongs to island i, and island_bodies().items(i) lists the
+  dynamic bodies in island i. These are recomputed by SetSparsityPattern() and
+  let per-island evaluation iterate over only the items it owns. */
+  const IslandItemMap& island_couplers() const { return island_couplers_; }
+  const IslandItemMap& island_gains() const { return island_gains_; }
+  const IslandItemMap& island_limits() const { return island_limits_; }
+  const IslandItemMap& island_patches() const { return island_patches_; }
+  const IslandItemMap& island_welds() const { return island_welds_; }
+  const IslandItemMap& island_bodies() const { return island_bodies_; }
+
   /* Resizes `data` to fit this model.
   No allocations are required if `data`'s capacity is already enough. */
   void ResizeData(IcfData<T>* data) const;
@@ -372,8 +391,9 @@ class IcfModel {
                       const IcfSearchDirectionData<T>& search_direction,
                       T* dcost_dalpha, T* d2cost_dalpha2) const;
 
-  /* Computes and stores the Hessian sparsity pattern.
-  Note that this incurs heap allocations. */
+  /* Computes and stores the Hessian sparsity pattern, the island partition,
+  and the per-island constraint/body groupings. Note that this incurs heap
+  allocations. */
   void SetSparsityPattern();
 
   /* Changes only the time step δt, updating all dependent quantities. This
@@ -384,6 +404,10 @@ class IcfModel {
  private:
   /* Checks that this model's parameters define a valid ICF problem. */
   void VerifyInvariants() const;
+
+  /* Builds the per-island constraint and body groupings (island_*_) from the
+  current partition_. Called by SetSparsityPattern(). */
+  void BuildIslandMaps();
 
   /* Computes result = A⋅v, where A is the (sparse) linearized dynamics matrix.
    */
@@ -419,6 +443,20 @@ class IcfModel {
   // Sparsity pattern of the Hessian matrix. Defined on a per-clique basis.
   std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
       sparsity_pattern_;
+
+  // Partition of cliques into islands (connected components of the sparsity
+  // pattern). Recomputed by SetSparsityPattern().
+  IcfPartition partition_;
+
+  // Per-island groupings of constraints (by kind) and dynamic bodies, derived
+  // from partition_. Recomputed by SetSparsityPattern() via BuildIslandMaps().
+  IslandItemMap island_couplers_;
+  IslandItemMap island_gains_;
+  IslandItemMap island_limits_;
+  IslandItemMap island_patches_;
+  IslandItemMap island_welds_;
+  IslandItemMap island_bodies_;
+  std::vector<int> island_keys_;  // Scratch for BuildIslandMaps(), grow-only.
 
   // Fixed set of constraints.
   CouplerConstraintsPool<T> coupler_constraints_pool_;

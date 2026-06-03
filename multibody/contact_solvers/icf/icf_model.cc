@@ -1,6 +1,8 @@
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
+#include <span>
 #include <utility>
+#include <vector>
 
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
@@ -315,6 +317,70 @@ void IcfModel<T>::SetSparsityPattern() {
 
   sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
+
+  // Partition cliques into islands (connected components) for parallel solves,
+  // then group constraints and bodies by island.
+  partition_.Compute(*sparsity_pattern_);
+  BuildIslandMaps();
+}
+
+template <typename T>
+void IcfModel<T>::BuildIslandMaps() {
+  const int num_islands = partition_.num_islands();
+
+  // Builds `map` so that map.items(i) lists the indices k in [0, n) whose
+  // key_fn(k) is island i. A negative key omits item k (e.g., anchored bodies).
+  std::vector<int>& keys = island_keys_;
+  auto build = [&](IslandItemMap* map, int n, auto&& key_fn) {
+    if (ssize(keys) < n) keys.resize(n);
+    for (int k = 0; k < n; ++k) keys[k] = key_fn(k);
+    map->Build(num_islands, std::span<const int>(keys.data(), n));
+  };
+
+  // The island of a (single-clique) constraint, or of a constraint between two
+  // bodies (at least one of which is dynamic; both share an island).
+  auto island_of_clique = [&](int clique) {
+    return partition_.clique_to_island(clique);
+  };
+  auto island_of_bodies = [&](int b0, int b1) {
+    const int c0 = body_to_clique(b0);
+    const int clique = (c0 >= 0) ? c0 : body_to_clique(b1);
+    DRAKE_ASSERT(clique >= 0);
+    return island_of_clique(clique);
+  };
+
+  const std::vector<int>& coupler_clique =
+      coupler_constraints_pool_.constraint_to_clique();
+  build(&island_couplers_, ssize(coupler_clique), [&](int k) {
+    return island_of_clique(coupler_clique[k]);
+  });
+
+  const std::vector<int>& gain_clique = gain_constraints_pool_.clique();
+  build(&island_gains_, ssize(gain_clique), [&](int k) {
+    return island_of_clique(gain_clique[k]);
+  });
+
+  const std::vector<int>& limit_clique = limit_constraints_pool_.clique();
+  build(&island_limits_, ssize(limit_clique), [&](int k) {
+    return island_of_clique(limit_clique[k]);
+  });
+
+  const std::vector<std::pair<int, int>>& patch_bodies =
+      patch_constraints_pool_.bodies();
+  build(&island_patches_, ssize(patch_bodies), [&](int k) {
+    return island_of_bodies(patch_bodies[k].first, patch_bodies[k].second);
+  });
+
+  const std::vector<std::pair<int, int>>& weld_bodies =
+      weld_constraints_pool_.body_pairs();
+  build(&island_welds_, ssize(weld_bodies), [&](int k) {
+    return island_of_bodies(weld_bodies[k].first, weld_bodies[k].second);
+  });
+
+  // Dynamic bodies only; anchored bodies (negative clique) belong to no island.
+  build(&island_bodies_, num_bodies_, [&](int b) {
+    return is_anchored(b) ? -1 : island_of_clique(body_to_clique(b));
+  });
 }
 
 template <typename T>
