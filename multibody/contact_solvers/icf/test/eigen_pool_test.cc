@@ -72,6 +72,21 @@ GTEST_TEST(EigenPoolTest, EigenFixedSize) {
     EXPECT_EQ(pool[k].rows(), 3);
     EXPECT_EQ(pool[k].cols(), 3);
   }
+
+  // Check repopulating with PushBack().
+  pool.Clear();
+  for (int k = 0; k < 4; ++k) {
+    Matrix3d value = Matrix3d::Constant(k);
+    // No new allocations. Everything stayed the same size.
+    {
+      drake::test::LimitMalloc guard;
+      pool.PushBack(value);
+    }
+    EXPECT_EQ(pool.size(), 1 + k);
+    EXPECT_EQ(pool[k].rows(), 3);
+    EXPECT_EQ(pool[k].cols(), 3);
+    EXPECT_EQ(pool[k].coeff(1, 1), k);
+  }
 }
 
 GTEST_TEST(EigenPoolTest, EigenVectorX) {
@@ -150,6 +165,21 @@ GTEST_TEST(EigenPoolTest, EigenVectorX) {
     EXPECT_EQ(pool[k].rows(), sizes[k]);
     EXPECT_EQ(pool[k].cols(), 1);
   }
+
+  // Check repopulating with PushBack().
+  pool.Clear();
+  for (int k = 0; k < 3; ++k) {
+    VectorXd value = VectorXd::Constant(sizes[k], k);
+    // No new allocations. Everything stayed the same size.
+    {
+      drake::test::LimitMalloc guard;
+      pool.PushBack(value);
+    }
+    EXPECT_EQ(pool.size(), 1 + k);
+    EXPECT_EQ(pool[k].rows(), sizes[k]);
+    EXPECT_EQ(pool[k].cols(), 1);
+    EXPECT_EQ(pool[k].coeff(1, 0), k);
+  }
 }
 
 GTEST_TEST(EigenPoolTest, EigenMatrixX) {
@@ -210,6 +240,21 @@ GTEST_TEST(EigenPoolTest, EigenMatrixX) {
     EXPECT_EQ(pool[k].rows(), rows[k]);
     EXPECT_EQ(pool[k].cols(), cols[k]);
   }
+
+  // Check repopulating with PushBack().
+  pool.Clear();
+  for (int k = 0; k < 3; ++k) {
+    MatrixXd value = MatrixXd::Constant(rows[k], cols[k], k);
+    // No new allocations. Everything stayed the same size.
+    {
+      drake::test::LimitMalloc guard;
+      pool.PushBack(value);
+    }
+    EXPECT_EQ(pool.size(), 1 + k);
+    EXPECT_EQ(pool[k].rows(), rows[k]);
+    EXPECT_EQ(pool[k].cols(), cols[k]);
+    EXPECT_EQ(pool[k].coeff(1, 0), k);
+  }
 }
 
 GTEST_TEST(EigenPoolTest, EigenMatrix3X) {
@@ -260,6 +305,21 @@ GTEST_TEST(EigenPoolTest, EigenMatrix3X) {
     EXPECT_EQ(pool.size(), 1 + k);
     EXPECT_EQ(pool[k].rows(), 3);
     EXPECT_EQ(pool[k].cols(), cols[k]);
+  }
+
+  // Check repopulating with PushBack().
+  pool.Clear();
+  for (int k = 0; k < 3; ++k) {
+    Matrix3X<double> value = Matrix3X<double>::Constant(3, cols[k], k);
+    // No new allocations. Everything stayed the same size.
+    {
+      drake::test::LimitMalloc guard;
+      pool.PushBack(value);
+    }
+    EXPECT_EQ(pool.size(), 1 + k);
+    EXPECT_EQ(pool[k].rows(), 3);
+    EXPECT_EQ(pool[k].cols(), cols[k]);
+    EXPECT_EQ(pool[k].coeff(1, 0), k);
   }
 }
 

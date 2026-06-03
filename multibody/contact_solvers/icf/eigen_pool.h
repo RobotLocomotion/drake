@@ -2,6 +2,7 @@
 
 #include <span>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -42,6 +43,7 @@ class EigenPoolFixedSizeStorage {
   void Clear();
   void SetZero();
   void Add(int rows, int cols);
+  void PushBack(const EigenType& value) { data_.push_back(value); }
 
  private:
   // Contiguous storage for all Eigen matrices.
@@ -87,6 +89,10 @@ class EigenPoolDynamicSizeStorage {
   void SetZero();
   void Clear();
   void Add(int rows, int cols);
+  void PushBack(const EigenType& value) {
+    Add(value.rows(), value.cols());
+    operator[](size() - 1) = value;
+  }
 
  private:
   struct MatrixData {
@@ -241,6 +247,9 @@ class EigenPool {
                  cols == EigenType::ColsAtCompileTime);
     storage_.Add(rows, cols);
   }
+
+  /* Appends a new matrix to the end of the pool, and sets it to `value`. */
+  void PushBack(const EigenType& value) { storage_.PushBack(value); }
 
  private:
   /* The underlying data, one of EigenPool{Fixed,Dynamic}SizeStorage. */
