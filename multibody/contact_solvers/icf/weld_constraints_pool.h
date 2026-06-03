@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -104,13 +105,33 @@ class WeldConstraintsPool {
   void CalcData(const EigenPool<Vector6<T>>& V_WB,
                 WeldConstraintsDataPool<T>* weld_data) const;
 
+  /* Island-filtered overload: computes data only for the listed constraints and
+  returns the sum of their costs (does not write the pool-wide cost scalar). */
+  T CalcData(const EigenPool<Vector6<T>>& V_WB,
+             std::span<const int> constraints,
+             WeldConstraintsDataPool<T>* weld_data) const;
+
   /* Adds the gradient contribution of this constraint, ∇ℓ(v) = −Jᵀγ, to the
   model-wide gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
+  /* Island-filtered overload: gradient for only the listed constraints. */
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
+
   /* Adds the contribution of this constraint to the model-wide Hessian. */
   void AccumulateHessian(
       const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+
+  /* Island-filtered overload: accumulates the Hessian for only the listed
+  constraints into the island's local sub-Hessian. `clique_to_block` maps a
+  global clique index to its block index in the island's sub-Hessian. */
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> constraints,
+      std::span<const int> clique_to_block, int island,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
@@ -126,6 +147,12 @@ class WeldConstraintsPool {
                          const EigenPool<Vector6<T>>& U_WB, T* dcost,
                          T* d2cost) const;
 
+  /* Island-filtered overload: derivatives for only the listed constraints. */
+  void CalcCostAlongLine(const WeldConstraintsDataPool<T>& weld_data,
+                         const EigenPool<Vector6<T>>& U_WB,
+                         std::span<const int> constraints, T* dcost,
+                         T* d2cost) const;
+
   /* Testing only access. */
   const std::vector<std::pair<int, int>>& body_pairs() const {
     return body_pairs_;
@@ -133,6 +160,11 @@ class WeldConstraintsPool {
 
  private:
   const IcfModel<T>* const model_;  // The parent model.
+
+  // Identity list {0, ..., num_constraints()-1}, used to drive the full-problem
+  // (non-islanded) code paths through the island-filtered helpers. Rebuilt in
+  // Resize().
+  std::vector<int> all_constraints_;
 
   // Body pairs involved in each weld constraint, (bodyA, bodyB).
   // bodyB is always dynamic (not anchored).

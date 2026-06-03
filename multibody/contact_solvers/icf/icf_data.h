@@ -125,8 +125,8 @@ class IcfData {
   //  let us use named fields at the call sites.
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
               int num_couplers, int num_welds, std::span<const int> gain_sizes,
-              std::span<const int> limit_sizes, std::span<const int> patch_sizes,
-              int num_islands);
+              std::span<const int> limit_sizes,
+              std::span<const int> patch_sizes, int num_islands);
 
   /* Returns the number of generalized velocities in the system. */
   int num_velocities() const { return v_.size(); }
@@ -238,8 +238,8 @@ class IcfData {
   T cost_{0};                   // Total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v)
   VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
 
-  // Per-island cost slots, ℓᵢ(v). Grow-only; only the first num_islands_ entries
-  // are valid.
+  // Per-island cost slots, ℓᵢ(v). Grow-only; only the first num_islands_
+  // entries are valid.
   int num_islands_{0};
   std::vector<T> island_cost_;
 

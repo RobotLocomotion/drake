@@ -121,7 +121,7 @@ class IcfPartition {
   int num_islands_{0};
   std::vector<int> parent_;          // union-find forest, size ≥ num_cliques_.
   std::vector<int> root_to_island_;  // scratch root→island, size ≥ nc.
-  std::vector<int> clique_to_island_;   // size ≥ num_cliques_.
+  std::vector<int> clique_to_island_;    // size ≥ num_cliques_.
   std::vector<int> clique_local_index_;  // size ≥ num_cliques_.
   IslandItemMap island_cliques_;
 };

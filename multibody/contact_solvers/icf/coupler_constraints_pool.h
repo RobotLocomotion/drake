@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -79,13 +80,35 @@ class CouplerConstraintsPool {
   void CalcData(const VectorX<T>& v,
                 CouplerConstraintsDataPool<T>* coupler_data) const;
 
+  /* Island-filtered overload: computes data only for the constraints whose
+  indices are listed in `constraints` and returns the sum of their costs (it
+  does not write the pool-wide cost scalar, which is shared across islands). */
+  T CalcData(const VectorX<T>& v, std::span<const int> constraints,
+             CouplerConstraintsDataPool<T>* coupler_data) const;
+
   /* Adds the gradient contribution of this constraint, ∇ℓ(v) = −γ, to the
   model-wide gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
+  /* Island-filtered overload: accumulates the gradient for only the listed
+  constraints. */
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
+
   /* Adds the contribution of this constraint to the model-wide Hessian. */
   void AccumulateHessian(
       const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+
+  /* Island-filtered overload: accumulates the Hessian for only the listed
+  constraints into the island's local sub-Hessian. `clique_to_block` maps a
+  global clique index to its block index in the island's sub-Hessian, and
+  `island` selects the per-island scratch space. */
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> constraints,
+      std::span<const int> clique_to_block, int island,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
@@ -100,6 +123,11 @@ class CouplerConstraintsPool {
   TODO(vincekurtz): factor out common documentation among constraints. */
   void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                          const VectorX<T>& w, T* dcost, T* d2cost) const;
+
+  /* Island-filtered overload: derivatives for only the listed constraints. */
+  void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
+                         const VectorX<T>& w, std::span<const int> constraints,
+                         T* dcost, T* d2cost) const;
 
   /* Testing only access. */
   const std::vector<int>& constraint_to_clique() const {
