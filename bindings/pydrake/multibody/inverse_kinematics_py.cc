@@ -439,8 +439,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
                      double bound, systems::Context<double>* plant_context,
                      PyPenaltyFunction penalty_function,
                      double influence_distance_offset) {
-          return std::make_unique<MinimumDistanceLowerBoundConstraint>(plant,
-              bound, plant_context, UnwrapPyPenaltyFunction(penalty_function),
+          return std::make_unique<Class>(plant, bound, plant_context,
+              UnwrapPyPenaltyFunction(penalty_function),
               influence_distance_offset);
         }),
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
@@ -459,8 +459,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
                      double bound, systems::Context<AutoDiffXd>* plant_context,
                      PyPenaltyFunction penalty_function,
                      double influence_distance_offset) {
-          return std::make_unique<MinimumDistanceLowerBoundConstraint>(plant,
-              bound, plant_context, UnwrapPyPenaltyFunction(penalty_function),
+          return std::make_unique<Class>(plant, bound, plant_context,
+              UnwrapPyPenaltyFunction(penalty_function),
               influence_distance_offset);
         }),
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
@@ -526,8 +526,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
                      double bound, systems::Context<double>* plant_context,
                      double influence_distance_offset,
                      PyPenaltyFunction penalty_function) {
-          return std::make_unique<MinimumDistanceUpperBoundConstraint>(plant,
-              bound, plant_context, influence_distance_offset,
+          return std::make_unique<Class>(plant, bound, plant_context,
+              influence_distance_offset,
               UnwrapPyPenaltyFunction(penalty_function));
         }),
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
@@ -546,8 +546,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
                      double bound, systems::Context<AutoDiffXd>* plant_context,
                      double influence_distance_offset,
                      PyPenaltyFunction penalty_function) {
-          return std::make_unique<MinimumDistanceUpperBoundConstraint>(plant,
-              bound, plant_context, influence_distance_offset,
+          return std::make_unique<Class>(plant, bound, plant_context,
+              influence_distance_offset,
               UnwrapPyPenaltyFunction(penalty_function));
         }),
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
