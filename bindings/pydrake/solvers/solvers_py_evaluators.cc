@@ -489,8 +489,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   {
     using Class = MinimumValueLowerBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumValueLowerBoundConstraint;
-    py::class_<Class, Constraint, std::shared_ptr<Class>>(
-        m, "MinimumValueLowerBoundConstraint", cls_doc.doc)
+    py::class_<Class, Constraint
+        /*, std::shared_ptr<Class> XXX porting*/>(m,
+        "MinimumValueLowerBoundConstraint", cls_doc.doc)
         .def(
             "__init__",
             [](Class* self, int num_vars, double minimum_value_lower,
@@ -523,8 +524,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
                 std::function<py::tuple(double, bool)> new_penalty_function) {
               auto penalty_fun = [new_penalty_function](double x,
                                      double* penalty, double* dpenalty) {
-                py::tuple penalty_tuple(2);
-                penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+                py::tuple penalty_tuple =
+                    new_penalty_function(x, dpenalty != nullptr);
                 *penalty = py::cast<double>(penalty_tuple[0]);
                 if (dpenalty) {
                   *dpenalty = py::cast<double>(penalty_tuple[1]);
@@ -545,8 +546,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   {
     using Class = MinimumValueUpperBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumValueUpperBoundConstraint;
-    py::class_<Class, Constraint, std::shared_ptr<Class>>(
-        m, "MinimumValueUpperBoundConstraint", cls_doc.doc)
+    py::class_<Class, Constraint
+        /*, std::shared_ptr<Class> XXX porting*/>(m,
+        "MinimumValueUpperBoundConstraint", cls_doc.doc)
         .def(
             "__init__",
             [](MinimumValueUpperBoundConstraint* self, int num_vars,
@@ -580,8 +582,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
                 std::function<py::tuple(double, bool)> new_penalty_function) {
               auto penalty_fun = [new_penalty_function](double x,
                                      double* penalty, double* dpenalty) {
-                py::tuple penalty_tuple(2);
-                penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+                py::tuple penalty_tuple =
+                    new_penalty_function(x, dpenalty != nullptr);
                 *penalty = py::cast<double>(penalty_tuple[0]);
                 if (dpenalty) {
                   *dpenalty = py::cast<double>(penalty_tuple[1]);

@@ -244,6 +244,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
               new (self) Class(std::move(out));
             },
             py::arg("wxyz"))
+        .def(
+            "__init__",
             [](Class* self, T w, T x, T y, T z) {
               Class out(w, x, y, z);
               CheckQuaternion(out);
