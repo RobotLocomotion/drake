@@ -87,7 +87,7 @@ PYDRAKE_MODULE(pydrake_pybind_test_util, m) {
     using Class = ExampleDefCopyAndDeepCopy;
     py::class_<Class> cls(m, "ExampleDefCopyAndDeepCopy");
     cls  // BR
-        .def(py::init([](int value) { return Class(value); }))
+        .def(py::init<int>())
         .def(py::self == py::self);
     DefCopyAndDeepCopy(&cls);
   }
