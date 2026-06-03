@@ -36,5 +36,12 @@ def read_repository_metadata():
         # Downloads are associated with individual "crate__..." repositories.
         "downloads": {},
     }
+    result["libjpeg_turbo_internal"] = {
+        "repository_rule_type": "scripted",
+        "upgrade_script": "upgrade.py",
+        # Downloads (from upstream tensorflow) are performed by the upgrade
+        # script.
+        "downloads": {},
+    }
 
     return result

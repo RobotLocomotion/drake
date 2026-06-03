@@ -21,11 +21,6 @@ libjpeg_turbo_internal_repository = repository_rule(
         # These are the attributes for setup_github_repository.
         "repository": attr.string(default = "libjpeg-turbo/libjpeg-turbo"),
         "commit": attr.string(default = "2.1.4"),
-        "commit_pin": attr.int(
-            # We need to match our version of libjpeg-turbo to the BUILD file
-            # we've adopted from tensorflow. Run `upgrade.py` to upgrade.
-            default = 1,
-        ),
         "sha256": attr.string(
             default = "a78b05c0d8427a90eb5b4eb08af25309770c8379592bb0b8a863373128e6143f",  # noqa
         ),
