@@ -484,21 +484,23 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       std::shared_ptr<MinimumValueLowerBoundConstraint>>(m,
       "MinimumValueLowerBoundConstraint",
       doc.MinimumValueLowerBoundConstraint.doc)
-      .def(py::init(
-               [](int num_vars, double minimum_value_lower,
-                   double influence_value_offset, int max_num_values,
-                   // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
-                   // then I got the RuntimeError: dtype=object arrays must be
-                   // copied, and cannot be referenced.
-                   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                       value_function,
-                   std::function<Eigen::VectorXd(
-                       const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                       value_function_double) {
-                 return std::make_unique<MinimumValueLowerBoundConstraint>(
-                     num_vars, minimum_value_lower, influence_value_offset,
-                     max_num_values, value_function, value_function_double);
-               }),
+      .def(
+          "__init__",
+          [](MinimumValueLowerBoundConstraint* self, int num_vars,
+              double minimum_value_lower, double influence_value_offset,
+              int max_num_values,
+              // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
+              // I got the RuntimeError: dtype=object arrays must be copied,
+              // and cannot be referenced.
+              std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                  value_function,
+              std::function<Eigen::VectorXd(
+                  const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                  value_function_double) {
+            new (self) MinimumValueLowerBoundConstraint(num_vars,
+                minimum_value_lower, influence_value_offset, max_num_values,
+                value_function, value_function_double);
+          },
           py::arg("num_vars"), py::arg("minimum_value_lower"),
           py::arg("influence_value_offset"), py::arg("max_num_values"),
           py::arg("value_function"),
@@ -539,21 +541,23 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       std::shared_ptr<MinimumValueUpperBoundConstraint>>(m,
       "MinimumValueUpperBoundConstraint",
       doc.MinimumValueUpperBoundConstraint.doc)
-      .def(py::init(
-               [](int num_vars, double minimum_value_upper,
-                   double influence_value_offset, int max_num_values,
-                   // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
-                   // then I got the RuntimeError: dtype=object arrays must be
-                   // copied, and cannot be referenced.
-                   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                       value_function,
-                   std::function<Eigen::VectorXd(
-                       const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                       value_function_double) {
-                 return std::make_unique<MinimumValueUpperBoundConstraint>(
-                     num_vars, minimum_value_upper, influence_value_offset,
-                     max_num_values, value_function, value_function_double);
-               }),
+      .def(
+          "__init__",
+          [](MinimumValueUpperBoundConstraint* self, int num_vars,
+              double minimum_value_upper, double influence_value_offset,
+              int max_num_values,
+              // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
+              // I got the RuntimeError: dtype=object arrays must be copied,
+              // and cannot be referenced.
+              std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                  value_function,
+              std::function<Eigen::VectorXd(
+                  const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                  value_function_double) {
+            new (self) MinimumValueUpperBoundConstraint(num_vars,
+                minimum_value_upper, influence_value_offset, max_num_values,
+                value_function, value_function_double);
+          },
           py::arg("num_vars"), py::arg("minimum_value_upper"),
           py::arg("influence_value_offset"), py::arg("max_num_values"),
           py::arg("value_function"),
