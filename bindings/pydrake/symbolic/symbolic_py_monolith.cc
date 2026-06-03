@@ -904,12 +904,10 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def("AddProduct", &Polynomial::AddProduct, py::arg("coeff"),
           py::arg("m"), doc.Polynomial.AddProduct.doc)
       .def("Expand", &Polynomial::Expand, doc.Polynomial.Expand.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting -- raises exception and error info lost
       .def("SubstituteAndExpand", &Polynomial::SubstituteAndExpand,
           py::arg("indeterminate_substitution"),
           py::arg("substitutions_cached_data") = std::nullopt,
           doc.Polynomial.SubstituteAndExpand.doc)
-#endif
       .def("RemoveTermsWithSmallCoefficients",
           &Polynomial::RemoveTermsWithSmallCoefficients,
           py::arg("coefficient_tol"),
