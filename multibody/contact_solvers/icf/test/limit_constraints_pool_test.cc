@@ -1,7 +1,10 @@
 #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 
 #include <limits>
+#include <vector>
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -46,6 +49,30 @@ GTEST_TEST(LimitConstraintsPool, LimitMallocOnCalcData) {
   {
     drake::test::LimitMalloc guard;
     model.CalcData(v, &data);
+  }
+}
+
+/* Checks that pool.ReduceInto does not incur any heap allocations on a
+problem with limit constraints. */
+GTEST_TEST(LimitConstraintsPool, LimitMallocOnReduceInto) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddLimitConstraints(&model);
+
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+
+  // Do a not-smaller reduction to allocate memory in the reduced model.
+  MakeModelReducible(&model, {});
+  model.ReduceInto(&reduced_model, &mapping);
+
+  // Given prior allocation of a big enough model, the constraint pool
+  // reduction does not allocate.
+  {
+    // TODO(#23912): consider reducing these allocations.
+    drake::test::LimitMalloc guard({24});
+    model.limit_constraints_pool().ReduceInto(
+        mapping, &reduced_model.limit_constraints_pool());
   }
 }
 
@@ -124,6 +151,97 @@ GTEST_TEST(LimitConstraintsPool, Data) {
   MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
                               10 * kEpsilon, MatrixCompareType::relative));
+}
+
+/* Verifies that reducing the limit constraint pool produces correct data. */
+GTEST_TEST(LimitConstraintsPool, Reduce) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddLimitConstraints(&model);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
+  model.CalcData(v, &data);
+  const auto& full_pool = model.limit_constraints_pool();
+
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+
+  auto check_reduced = [&](const std::vector<int>& locked_dofs) {
+    SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
+    MakeModelReducible(&model, locked_dofs);
+    model.ReduceInto(&reduced_model, &mapping);
+    const auto& reduced_pool = reduced_model.limit_constraints_pool();
+    int reduced_constraint_cursor{0};
+    for (int k = 0; k < full_pool.num_constraints(); ++k) {
+      SCOPED_TRACE(fmt::format("full constraint {} vs. reduced constraint {}",
+                               k, reduced_constraint_cursor));
+      int full_clique = full_pool.clique()[k];
+      if (!mapping.clique_subsequence.participates(full_clique)) {
+        continue;
+      }
+      const auto& dof_subsequence =
+          mapping.clique_dof_subsequences[full_clique];
+      int full_dof = full_pool.dof()[k];
+      if (!dof_subsequence.participates(full_dof)) {
+        continue;
+      }
+
+      // Check the data transmitted by pool.ReduceInto().
+      const auto& indices = dof_subsequence.inverse_permutation();
+      int reduced_clique = reduced_pool.clique()[reduced_constraint_cursor];
+      EXPECT_EQ(reduced_clique,
+                mapping.clique_subsequence.permuted_index(full_clique));
+      int reduced_dof = reduced_pool.dof()[reduced_constraint_cursor];
+      EXPECT_EQ(reduced_dof, dof_subsequence.permuted_index(full_dof));
+      EXPECT_EQ(reduced_pool.constraint_size()[reduced_constraint_cursor],
+                dof_subsequence.permuted_domain_size());
+      EXPECT_TRUE(CompareMatrices(reduced_pool.ql()[reduced_constraint_cursor],
+                                  full_pool.ql()[k](indices)));
+      EXPECT_TRUE(CompareMatrices(reduced_pool.qu()[reduced_constraint_cursor],
+                                  full_pool.qu()[k](indices)));
+      EXPECT_TRUE(CompareMatrices(reduced_pool.q0()[reduced_constraint_cursor],
+                                  full_pool.q0()[k](indices)));
+      EXPECT_TRUE(
+          CompareMatrices(reduced_pool.gl_hat()[reduced_constraint_cursor],
+                          full_pool.gl_hat()[k](indices)));
+      EXPECT_TRUE(
+          CompareMatrices(reduced_pool.gu_hat()[reduced_constraint_cursor],
+                          full_pool.gu_hat()[k](indices)));
+      EXPECT_TRUE(CompareMatrices(reduced_pool.R()[reduced_constraint_cursor],
+                                  full_pool.R()[k](indices)));
+
+      ++reduced_constraint_cursor;
+    }
+    EXPECT_EQ(reduced_model.num_limit_constraints(), reduced_constraint_cursor);
+  };
+
+  // Reduce by none; essentially, just copy.
+  const std::vector<int> none_locked;
+  check_reduced(none_locked);
+
+  // Lock some arbitrary dofs.
+  const std::vector<int> arbitrary_locked = {0, 17};
+  check_reduced(arbitrary_locked);
+
+  // Lock a constrained clique.
+  const std::vector<int> clique0_locked = {0, 1, 2, 3, 4, 5};
+  check_reduced(clique0_locked);
+
+  // Lock an unconstrained clique.
+  const std::vector<int> clique1_locked = {6, 7, 8, 9, 10, 11};
+  check_reduced(clique1_locked);
+
+  // Lock other constrained clique.
+  const std::vector<int> clique2_locked = {12, 13, 14, 15, 16, 17};
+  check_reduced(clique2_locked);
+
+  // Lock everything.
+  std::vector<int> all_locked(model.num_velocities());
+  std::iota(all_locked.begin(), all_locked.end(), 0);
+  check_reduced(all_locked);
 }
 
 }  // namespace
