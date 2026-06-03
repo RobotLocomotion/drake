@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <vector>
@@ -488,6 +490,121 @@ GTEST_TEST(IcfModel, IslandsFullyCoupled) {
             (std::vector<std::vector<int>>{{0, 1, 2}}));
   EXPECT_EQ(ToVectors(model.island_welds()),
             (std::vector<std::vector<int>>{{0, 1}}));
+}
+
+/* Verifies that evaluating a model island-by-island reproduces the full-problem
+cost, gradient, Hessian, and cost-along-line. This is the core Phase 2b
+invariant: ℓ = Σᵢ ℓᵢ, the gradient is block-disjoint across islands, and the
+Hessian is block-diagonal across islands. */
+void CheckIslandEquivalence(const IcfModel<double>& model, const VectorXd& v) {
+  const int nv = model.num_velocities();
+  const IcfPartition& partition = model.partition();
+  const int num_islands = partition.num_islands();
+  ASSERT_GT(num_islands, 0);
+
+  // Full-problem evaluation.
+  IcfData<double> data_full;
+  model.ResizeData(&data_full);
+  model.CalcData(v, &data_full);
+  const MatrixXd H_full = model.MakeHessian(data_full)->MakeDenseMatrix();
+
+  // Island-by-island evaluation. The caller (here) sets v once; each island
+  // then writes only its own segments of the shared data.
+  IcfData<double> data_isl;
+  model.ResizeData(&data_isl);
+  data_isl.set_v(v);
+  double island_cost_sum = 0.0;
+  MatrixXd H_islands = MatrixXd::Zero(nv, nv);
+  for (int i = 0; i < num_islands; ++i) {
+    const double cost_i = model.CalcData(v, i, &data_isl);
+    EXPECT_EQ(cost_i, data_isl.island_cost(i));
+    island_cost_sum += cost_i;
+
+    // Scatter the island's local sub-Hessian into the global velocity indices
+    // of its cliques.
+    const MatrixXd Hi = model.MakeHessian(i, data_isl)->MakeDenseMatrix();
+    std::vector<int> idx;
+    for (int c : partition.island_cliques(i)) {
+      const int start = model.params().clique_start[c];
+      const int size = model.clique_size(c);
+      for (int k = 0; k < size; ++k) idx.push_back(start + k);
+    }
+    ASSERT_EQ(Hi.rows(), ssize(idx));
+    H_islands(idx, idx) = Hi;
+  }
+
+  EXPECT_NEAR(island_cost_sum, data_full.cost(),
+              100 * kEpsilon * std::max(1.0, std::abs(data_full.cost())));
+  EXPECT_TRUE(CompareMatrices(data_isl.gradient(), data_full.gradient(),
+                              100 * kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(H_islands, H_full, 100 * kEpsilon,
+                              MatrixCompareType::relative));
+
+  // Cost-along-line: per-island contributions sum to the full cost-along-line
+  // and its derivatives, for an arbitrary search direction.
+  const VectorXd w = VectorXd::LinSpaced(nv, 0.1, -0.2);
+  IcfSearchDirectionData<double> sdd_full;
+  model.CalcSearchDirectionData(data_full, w, &sdd_full);
+  IcfSearchDirectionData<double> sdd_i;
+  for (double alpha : {-0.3, 0.0, 0.25, 0.8}) {
+    double d_full, d2_full;
+    const double cost_full =
+        model.CalcCostAlongLine(alpha, data_full, sdd_full, &d_full, &d2_full);
+    double cost_sum = 0.0, d_sum = 0.0, d2_sum = 0.0;
+    for (int i = 0; i < num_islands; ++i) {
+      model.CalcSearchDirectionData(data_isl, w, i, &sdd_i);
+      double di, d2i;
+      cost_sum += model.CalcCostAlongLine(alpha, data_isl, sdd_i, i, &di, &d2i);
+      d_sum += di;
+      d2_sum += d2i;
+    }
+    const double tol = 1e-9;
+    EXPECT_NEAR(cost_sum, cost_full, tol * std::max(1.0, std::abs(cost_full)));
+    EXPECT_NEAR(d_sum, d_full, tol * std::max(1.0, std::abs(d_full)));
+    EXPECT_NEAR(d2_sum, d2_full, tol * std::max(1.0, std::abs(d2_full)));
+  }
+}
+
+/* Many islands (3 separate cliques, no constraints): momentum-only equivalence.
+ */
+GTEST_TEST(IcfModel, IslandEvalUnconstrained) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
+  ASSERT_EQ(model.partition().num_islands(), 3);
+  const VectorXd v = VectorXd::LinSpaced(model.num_velocities(), -10.0, 10.0);
+  CheckIslandEquivalence(model, v);
+}
+
+/* Two islands with coupler, gain, limit, and patch constraints distributed
+across them (no merging weld). */
+GTEST_TEST(IcfModel, IslandEvalMultiIsland) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+  ASSERT_EQ(model.partition().num_islands(), 2);
+  const VectorXd v = VectorXd::LinSpaced(model.num_velocities(), -5.0, 5.0);
+  CheckIslandEquivalence(model, v);
+}
+
+/* Single island (welds merge everything) with all constraint kinds. The lone
+island must reproduce the full problem exactly. */
+GTEST_TEST(IcfModel, IslandEvalFullyCoupled) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  AddWeldConstraints(&model);
+  model.SetSparsityPattern();
+  ASSERT_EQ(model.partition().num_islands(), 1);
+  const VectorXd v = VectorXd::LinSpaced(model.num_velocities(), 0.05, 0.01);
+  CheckIslandEquivalence(model, v);
 }
 
 }  // namespace
