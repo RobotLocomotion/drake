@@ -184,11 +184,10 @@ PYDRAKE_MODULE(controllers, m) {
             "__init__",
             [](Class* self, System<T>& plant, double Kp, double Ki, double Kd,
                 int state_output_port_index, int plant_input_port_index) {
-              // The C++ constructor doesn't offer a bare-pointer overload,
-              // only shared_ptr. Because object lifetime is already
-              // handled by the ref_cycle annotation below (as required for
-              // all subclasses of Diagram), we can pass the `plant` as an
-              // unowned shared_ptr.
+              // The C++ constructor doesn't offer a bare-pointer overload, only
+              // shared_ptr. Because object lifetime is already handled by the
+              // ref_cycle annotation below (as required for all subclasses of
+              // Diagram), we can pass the `plant` as an unowned shared_ptr.
               new (self) Class(make_unowned_shared_ptr_from_raw(&plant), Kp, Ki,
                   Kd, state_output_port_index, plant_input_port_index);
             },
@@ -202,10 +201,9 @@ PYDRAKE_MODULE(controllers, m) {
             [](Class* self, System<T>& plant, const Eigen::VectorXd& Kp,
                 const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
                 int state_output_port_index, int plant_input_port_index) {
-              // See comment in "__init__", ) above for how &plant is handled.
-              new (self) Class(
-                  make_unowned_shared_ptr_from_raw(&plant), Kp, Ki, Kd,
-                  state_output_port_index, plant_input_port_index);
+              // See comment in "__init__" above for how &plant is handled.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&plant), Kp, Ki,
+                  Kd, state_output_port_index, plant_input_port_index);
             },
             py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
@@ -218,10 +216,10 @@ PYDRAKE_MODULE(controllers, m) {
                 const MatrixX<double>& feedback_selector, double Kp, double Ki,
                 double Kd, int state_output_port_index,
                 int plant_input_port_index) {
-              // See comment in "__init__", ) above for how &plant is handled.
-              new (self) Class(
-                  make_unowned_shared_ptr_from_raw(&plant), feedback_selector,
-                  Kp, Ki, Kd, state_output_port_index, plant_input_port_index);
+              // See comment in "__init__" above for how &plant is handled.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&plant),
+                  feedback_selector, Kp, Ki, Kd, state_output_port_index,
+                  plant_input_port_index);
             },
             py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
             py::arg("ki"), py::arg("kd"),
@@ -236,10 +234,10 @@ PYDRAKE_MODULE(controllers, m) {
                 const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                 const Eigen::VectorXd& Kd, int state_output_port_index,
                 int plant_input_port_index) {
-              // See comment in "__init__", ) above for how &plant is handled.
-              new (self) Class(
-                  make_unowned_shared_ptr_from_raw(&plant), feedback_selector,
-                  Kp, Ki, Kd, state_output_port_index, plant_input_port_index);
+              // See comment in "__init__" above for how &plant is handled.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&plant),
+                  feedback_selector, Kp, Ki, Kd, state_output_port_index,
+                  plant_input_port_index);
             },
             py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
             py::arg("ki"), py::arg("kd"),

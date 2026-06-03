@@ -234,23 +234,24 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
 
   // CartesianProduct
   {
+    using Class = CartesianProduct;
     const auto& cls_doc = doc.CartesianProduct;
-    py::class_<CartesianProduct, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
+    py::class_<Class, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             "__init__",
-            [](CartesianProduct* self, const std::vector<ConvexSet*>& sets) {
-              new (self) CartesianProduct(CloneConvexSets(sets));
+            [](Class* self, const std::vector<ConvexSet*>& sets) {
+              new (self) Class(CloneConvexSets(sets));
             },
             py::arg("sets"), cls_doc.ctor.doc_1args_sets)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
             py::arg("setB"), cls_doc.ctor.doc_2args_setA_setB)
         .def(
             "__init__",
-            [](CartesianProduct* self, const std::vector<ConvexSet*>& sets,
+            [](Class* self, const std::vector<ConvexSet*>& sets,
                 const Eigen::Ref<const Eigen::MatrixXd>& A,
                 const Eigen::Ref<const Eigen::VectorXd>& b) {
-              new (self) CartesianProduct(CloneConvexSets(sets), A, b);
+              new (self) Class(CloneConvexSets(sets), A, b);
             },
             py::arg("sets"), py::arg("A"), py::arg("b"),
             cls_doc.ctor.doc_3args_sets_A_b)
@@ -259,29 +260,29 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt,
             cls_doc.ctor.doc_3args_query_object_geometry_id_reference_frame)
-        .def("num_factors", &CartesianProduct::num_factors,
-            cls_doc.num_factors.doc)
-        .def("factor", &CartesianProduct::factor, py_rvp::reference_internal,
+        .def("num_factors", &Class::num_factors, cls_doc.num_factors.doc)
+        .def("factor", &Class::factor, py_rvp::reference_internal,
             py::arg("index"), cls_doc.factor.doc)
-        .def("A", &CartesianProduct::A, cls_doc.A.doc)
-        .def("b", &CartesianProduct::b, cls_doc.b.doc);
+        .def("A", &Class::A, cls_doc.A.doc)
+        .def("b", &Class::b, cls_doc.b.doc);
   }
 
   // ConvexHull
   {
+    using Class = ConvexHull;
     const auto& cls_doc = doc.ConvexHull;
-    py::class_<ConvexHull, ConvexSet>(m, "ConvexHull", cls_doc.doc)
+    py::class_<Class, ConvexSet>(m, "ConvexHull", cls_doc.doc)
         .def(
             "__init__",
-            [](ConvexHull* self, const std::vector<ConvexSet*>& sets,
+            [](Class* self, const std::vector<ConvexSet*>& sets,
                 const bool remove_empty_sets) {
-              new (self) ConvexHull(CloneConvexSets(sets), remove_empty_sets);
+              new (self) Class(CloneConvexSets(sets), remove_empty_sets);
             },
             py::arg("sets"), cls_doc.ctor.doc,
             py::arg("remove_empty_sets") = true)
         .def(
             "sets",
-            [](ConvexHull* self) {
+            [](Class* self) {
               std::vector<const geometry::optimization::ConvexSet*> sets;
               for (auto& set : self->sets()) {
                 sets.push_back(set.get());
@@ -292,7 +293,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             cls_doc.sets.doc)
         .def(
             "participating_sets",
-            [](ConvexHull* self) {
+            [](Class* self) {
               std::vector<const geometry::optimization::ConvexSet*> sets;
               for (auto& set : self->participating_sets()) {
                 sets.push_back(set.get());
@@ -301,18 +302,18 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
               return py::cast(sets, py_rvp::reference_internal, self_py);
             },
             cls_doc.sets.doc)
-        .def("empty_sets_removed", &ConvexHull::empty_sets_removed,
+        .def("empty_sets_removed", &Class::empty_sets_removed,
             cls_doc.empty_sets_removed.doc)
-        .def("element", &ConvexHull::element, py_rvp::reference_internal,
+        .def("element", &Class::element, py_rvp::reference_internal,
             py::arg("index"), cls_doc.element.doc)
-        .def("num_elements", &ConvexHull::num_elements,
-            cls_doc.num_elements.doc);
+        .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc);
   }
 
   // HPolyhedron
   {
+    using Class = HPolyhedron;
     const auto& cls_doc = doc.HPolyhedron;
-    py::class_<HPolyhedron, ConvexSet> cls(m, "HPolyhedron", cls_doc.doc);
+    py::class_<Class, ConvexSet> cls(m, "HPolyhedron", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -327,19 +328,19 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             py::arg("tol") = 1E-9, cls_doc.ctor.doc_2args_vpoly_tol)
         .def(py::init<const solvers::MathematicalProgram&>(), py::arg("prog"),
             cls_doc.ctor.doc_1args_prog)
-        .def("A", &HPolyhedron::A, cls_doc.A.doc)
-        .def("b", &HPolyhedron::b, cls_doc.b.doc)
-        .def("ContainedIn", &HPolyhedron::ContainedIn, py::arg("other"),
+        .def("A", &Class::A, cls_doc.A.doc)
+        .def("b", &Class::b, cls_doc.b.doc)
+        .def("ContainedIn", &Class::ContainedIn, py::arg("other"),
             py::arg("tol") = 1E-9, cls_doc.ContainedIn.doc)
-        .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
+        .def("Intersection", &Class::Intersection, py::arg("other"),
             py::arg("check_for_redundancy") = false, py::arg("tol") = 1E-9,
             cls_doc.Intersection.doc)
-        .def("ReduceInequalities", &HPolyhedron::ReduceInequalities,
+        .def("ReduceInequalities", &Class::ReduceInequalities,
             py::arg("tol") = 1E-9, cls_doc.ReduceInequalities.doc)
-        .def("FindRedundant", &HPolyhedron::FindRedundant,
-            py::arg("tol") = 1E-9, cls_doc.FindRedundant.doc)
+        .def("FindRedundant", &Class::FindRedundant, py::arg("tol") = 1E-9,
+            cls_doc.FindRedundant.doc)
         .def("SimplifyByIncrementalFaceTranslation",
-            &HPolyhedron::SimplifyByIncrementalFaceTranslation,
+            &Class::SimplifyByIncrementalFaceTranslation,
             py::arg("min_volume_ratio") = 0.1,
             py::arg("do_affine_transformation") = true,
             py::arg("max_iterations") = 10,
@@ -349,56 +350,54 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             py::arg("intersection_padding") = 1e-4, py::arg("random_seed") = 0,
             cls_doc.SimplifyByIncrementalFaceTranslation.doc)
         .def("MaximumVolumeInscribedAffineTransformation",
-            &HPolyhedron::MaximumVolumeInscribedAffineTransformation,
+            &Class::MaximumVolumeInscribedAffineTransformation,
             py::arg("circumbody"), py::arg("check_bounded") = true,
             cls_doc.MaximumVolumeInscribedAffineTransformation.doc)
         .def("MaximumVolumeInscribedEllipsoid",
-            &HPolyhedron::MaximumVolumeInscribedEllipsoid,
+            &Class::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
-        .def("ChebyshevCenter", &HPolyhedron::ChebyshevCenter,
+        .def("ChebyshevCenter", &Class::ChebyshevCenter,
             cls_doc.ChebyshevCenter.doc)
-        .def("Scale", &HPolyhedron::Scale, py::arg("scale"),
+        .def("Scale", &Class::Scale, py::arg("scale"),
             py::arg("center") = std::nullopt, cls_doc.Scale.doc)
-        .def("CartesianProduct", &HPolyhedron::CartesianProduct,
-            py::arg("other"), cls_doc.CartesianProduct.doc)
-        .def("CartesianPower", &HPolyhedron::CartesianPower, py::arg("n"),
+        .def("CartesianProduct", &Class::CartesianProduct, py::arg("other"),
+            cls_doc.CartesianProduct.doc)
+        .def("CartesianPower", &Class::CartesianPower, py::arg("n"),
             cls_doc.CartesianPower.doc)
-        .def("PontryaginDifference", &HPolyhedron::PontryaginDifference,
+        .def("PontryaginDifference", &Class::PontryaginDifference,
             py::arg("other"), cls_doc.PontryaginDifference.doc)
         .def("UniformSample",
             overload_cast_explicit<Eigen::VectorXd, RandomGenerator*,
                 const Eigen::Ref<const Eigen::VectorXd>&, int,
                 const std::optional<Eigen::Ref<const Eigen::MatrixXd>>&,
-                double>(&HPolyhedron::UniformSample),
+                double>(&Class::UniformSample),
             py::arg("generator"), py::arg("previous_sample"),
             py::arg("mixing_steps") = 10, py::arg("subspace") = std::nullopt,
             py::arg("tol") = 1e-8, cls_doc.UniformSample.doc_5args)
         .def("UniformSample",
             overload_cast_explicit<Eigen::VectorXd, RandomGenerator*, int,
                 const std::optional<Eigen::Ref<const Eigen::MatrixXd>>&,
-                double>(&HPolyhedron::UniformSample),
+                double>(&Class::UniformSample),
             py::arg("generator"), py::arg("mixing_steps") = 10,
             py::arg("subspace") = std::nullopt, py::arg("tol") = 1e-8,
             cls_doc.UniformSample.doc_4args)
-        .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
-            py::arg("ub"), cls_doc.MakeBox.doc)
-        .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
+        .def_static("MakeBox", &Class::MakeBox, py::arg("lb"), py::arg("ub"),
+            cls_doc.MakeBox.doc)
+        .def_static("MakeUnitBox", &Class::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
-        .def_static("MakeL1Ball", &HPolyhedron::MakeL1Ball, py::arg("dim"),
+        .def_static("MakeL1Ball", &Class::MakeL1Ball, py::arg("dim"),
             cls_doc.MakeL1Ball.doc);
     DefPickle(
         &cls,
-        [](const HPolyhedron& self) {
-          return std::make_pair(self.A(), self.b());
-        },
-        [](HPolyhedron* self,
-            std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
-          new (self) HPolyhedron(std::get<0>(args), std::get<1>(args));
+        [](const Class& self) { return std::make_pair(self.A(), self.b()); },
+        [](Class* self, std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
+          new (self) Class(std::get<0>(args), std::get<1>(args));
         });
   }
 
   // Hyperellipsoid
   {
+    using Class = Hyperellipsoid;
     const auto& cls_doc = doc.Hyperellipsoid;
     hyperellipsoid_cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
@@ -411,92 +410,90 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def(py::init<const AffineBall&>(), py::arg("ellipsoid"),
             cls_doc.ctor.doc_1args)
-        .def("A", &Hyperellipsoid::A, cls_doc.A.doc)
-        .def("center", &Hyperellipsoid::center, cls_doc.center.doc)
+        .def("A", &Class::A, cls_doc.A.doc)
+        .def("center", &Class::center, cls_doc.center.doc)
         .def("MinimumUniformScalingToTouch",
-            &Hyperellipsoid::MinimumUniformScalingToTouch, py::arg("other"),
+            &Class::MinimumUniformScalingToTouch, py::arg("other"),
             cls_doc.MinimumUniformScalingToTouch.doc)
-        .def_static("MakeAxisAligned", &Hyperellipsoid::MakeAxisAligned,
+        .def_static("MakeAxisAligned", &Class::MakeAxisAligned,
             py::arg("radius"), py::arg("center"), cls_doc.MakeAxisAligned.doc)
-        .def_static("MakeHypersphere", &Hyperellipsoid::MakeHypersphere,
+        .def_static("MakeHypersphere", &Class::MakeHypersphere,
             py::arg("radius"), py::arg("center"), cls_doc.MakeHypersphere.doc)
-        .def_static("MakeUnitBall", &Hyperellipsoid::MakeUnitBall,
-            py::arg("dim"), cls_doc.MakeUnitBall.doc)
+        .def_static("MakeUnitBall", &Class::MakeUnitBall, py::arg("dim"),
+            cls_doc.MakeUnitBall.doc)
         .def_static("MinimumVolumeCircumscribedEllipsoid",
-            &Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid,
-            py::arg("points"), py::arg("rank_tol") = 1e-6,
+            &Class::MinimumVolumeCircumscribedEllipsoid, py::arg("points"),
+            py::arg("rank_tol") = 1e-6,
             cls_doc.MinimumVolumeCircumscribedEllipsoid.doc);
     DefPickle(
         &hyperellipsoid_cls,
-        [](const Hyperellipsoid& self) {
+        [](const Class& self) {
           return std::make_pair(self.A(), self.center());
         },
-        [](Hyperellipsoid* self,
-            std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
-          new (self) Hyperellipsoid(std::get<0>(args), std::get<1>(args));
+        [](Class* self, std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
+          new (self) Class(std::get<0>(args), std::get<1>(args));
         });
   }
 
   // Hyperrectangle
   {
+    using Class = Hyperrectangle;
     const auto& cls_doc = doc.Hyperrectangle;
-    py::class_<Hyperrectangle, ConvexSet> cls(m, "Hyperrectangle", cls_doc.doc);
+    py::class_<Class, ConvexSet> cls(m, "Hyperrectangle", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("lb"), py::arg("ub"), cls_doc.ctor.doc_2args)
-        .def("lb", &Hyperrectangle::lb, cls_doc.lb.doc)
-        .def("ub", &Hyperrectangle::ub, cls_doc.ub.doc)
-        .def("UniformSample", &Hyperrectangle::UniformSample,
-            py::arg("generator"), cls_doc.UniformSample.doc)
-        .def("Center", &Hyperrectangle::Center, cls_doc.Center.doc)
-        .def("MaybeGetIntersection", &Hyperrectangle::MaybeGetIntersection,
+        .def("lb", &Class::lb, cls_doc.lb.doc)
+        .def("ub", &Class::ub, cls_doc.ub.doc)
+        .def("UniformSample", &Class::UniformSample, py::arg("generator"),
+            cls_doc.UniformSample.doc)
+        .def("Center", &Class::Center, cls_doc.Center.doc)
+        .def("MaybeGetIntersection", &Class::MaybeGetIntersection,
             cls_doc.MaybeGetIntersection.doc)
-        .def("MakeHPolyhedron", &Hyperrectangle::MakeHPolyhedron,
+        .def("MakeHPolyhedron", &Class::MakeHPolyhedron,
             cls_doc.MakeHPolyhedron.doc)
         .def_static("MaybeCalcAxisAlignedBoundingBox",
-            &Hyperrectangle::MaybeCalcAxisAlignedBoundingBox, py::arg("set"),
+            &Class::MaybeCalcAxisAlignedBoundingBox, py::arg("set"),
             cls_doc.MaybeCalcAxisAlignedBoundingBox.doc);
     DefPickle(
         &cls,
-        [](const Hyperrectangle& self) {
-          return std::make_pair(self.lb(), self.ub());
-        },
-        [](Hyperrectangle* self,
-            std::pair<Eigen::VectorXd, Eigen::VectorXd> args) {
-          new (self) Hyperrectangle(std::get<0>(args), std::get<1>(args));
+        [](const Class& self) { return std::make_pair(self.lb(), self.ub()); },
+        [](Class* self, std::pair<Eigen::VectorXd, Eigen::VectorXd> args) {
+          new (self) Class(std::get<0>(args), std::get<1>(args));
         });
   }
 
   // Intersection
   {
+    using Class = Intersection;
     const auto& cls_doc = doc.Intersection;
-    py::class_<Intersection, ConvexSet>(m, "Intersection", cls_doc.doc)
+    py::class_<Class, ConvexSet>(m, "Intersection", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             "__init__",
-            [](Intersection* self, const std::vector<ConvexSet*>& sets) {
-              new (self) Intersection(CloneConvexSets(sets));
+            [](Class* self, const std::vector<ConvexSet*>& sets) {
+              new (self) Class(CloneConvexSets(sets));
             },
             py::arg("sets"), cls_doc.ctor.doc_1args)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
             py::arg("setB"), cls_doc.ctor.doc_2args)
-        .def("num_elements", &Intersection::num_elements,
-            cls_doc.num_elements.doc)
-        .def("element", &Intersection::element, py_rvp::reference_internal,
+        .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc)
+        .def("element", &Class::element, py_rvp::reference_internal,
             py::arg("index"), cls_doc.element.doc);
   }
 
   // MinkowskiSum
   {
+    using Class = MinkowskiSum;
     const auto& cls_doc = doc.MinkowskiSum;
-    py::class_<MinkowskiSum, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
+    py::class_<Class, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             "__init__",
-            [](MinkowskiSum* self, const std::vector<ConvexSet*>& sets) {
-              new (self) MinkowskiSum(CloneConvexSets(sets));
+            [](Class* self, const std::vector<ConvexSet*>& sets) {
+              new (self) Class(CloneConvexSets(sets));
             },
             py::arg("sets"), cls_doc.ctor.doc_1args)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
@@ -505,15 +502,16 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
                  std::optional<FrameId>>(),
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
-        .def("num_terms", &MinkowskiSum::num_terms, cls_doc.num_terms.doc)
-        .def("term", &MinkowskiSum::term, py_rvp::reference_internal,
-            py::arg("index"), cls_doc.term.doc);
+        .def("num_terms", &Class::num_terms, cls_doc.num_terms.doc)
+        .def("term", &Class::term, py_rvp::reference_internal, py::arg("index"),
+            cls_doc.term.doc);
   }
 
   // Point
   {
+    using Class = Point;
     const auto& cls_doc = doc.Point;
-    py::class_<Point, ConvexSet> cls(m, "Point", cls_doc.doc);
+    py::class_<Class, ConvexSet> cls(m, "Point", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(), py::arg("x"),
@@ -523,11 +521,11 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt,
             py::arg("maximum_allowable_radius") = 0.0, cls_doc.ctor.doc_4args)
-        .def("x", &Point::x, cls_doc.x.doc)
-        .def("set_x", &Point::set_x, py::arg("x"), cls_doc.set_x.doc);
+        .def("x", &Class::x, cls_doc.x.doc)
+        .def("set_x", &Class::set_x, py::arg("x"), cls_doc.set_x.doc);
     DefPickle(
-        &cls, [](const Point& self) { return self.x(); },
-        [](Point* self, Eigen::VectorXd arg) { new (self) Point(arg); });
+        &cls, [](const Class& self) { return self.x(); },
+        [](Class* self, Eigen::VectorXd arg) { new (self) Class(arg); });
   }
 
   // Spectrahedron
@@ -541,6 +539,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
 
   // VPolytope
   {
+    using Class = VPolytope;
     const auto& cls_doc = doc.VPolytope;
     vpolytope_cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
@@ -553,23 +552,21 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt,
             cls_doc.ctor.doc_scenegraph)
-        .def("GetMinimalRepresentation", &VPolytope::GetMinimalRepresentation,
+        .def("GetMinimalRepresentation", &Class::GetMinimalRepresentation,
             py::arg("tol") = 1e-9, cls_doc.GetMinimalRepresentation.doc)
-        .def("vertices", &VPolytope::vertices, cls_doc.vertices.doc)
-        .def_static("MakeBox", &VPolytope::MakeBox, py::arg("lb"),
-            py::arg("ub"), cls_doc.MakeBox.doc)
-        .def_static("MakeUnitBox", &VPolytope::MakeUnitBox, py::arg("dim"),
+        .def("vertices", &Class::vertices, cls_doc.vertices.doc)
+        .def_static("MakeBox", &Class::MakeBox, py::arg("lb"), py::arg("ub"),
+            cls_doc.MakeBox.doc)
+        .def_static("MakeUnitBox", &Class::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
-        .def("WriteObj", &VPolytope::WriteObj, py::arg("filename"),
+        .def("WriteObj", &Class::WriteObj, py::arg("filename"),
             cls_doc.WriteObj.doc)
-        .def("ToShapeConvex", &VPolytope::ToShapeConvex,
+        .def("ToShapeConvex", &Class::ToShapeConvex,
             py::arg("convex_label") = "convex_from_vpolytope",
             cls_doc.ToShapeConvex.doc);
     DefPickle(
-        &vpolytope_cls, [](const VPolytope& self) { return self.vertices(); },
-        [](VPolytope* self, Eigen::MatrixXd arg) {
-          new (self) VPolytope(arg);
-        });
+        &vpolytope_cls, [](const Class& self) { return self.vertices(); },
+        [](Class* self, Eigen::MatrixXd arg) { new (self) Class(arg); });
   }
 }
 

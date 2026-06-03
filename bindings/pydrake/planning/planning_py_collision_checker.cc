@@ -306,7 +306,7 @@ void DefinePlanningCollisionChecker(py::module_ m) {
               // pointer), and transfer that to the c++ checker.
               params->model =
                   make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
-              new (self) SceneGraphCollisionChecker(std::move(*params));
+              new (self) Class(std::move(*params));
             },
             py::kw_only(), py::arg("model"), py::arg("kwargs"),
             (std::string(cls_doc.ctor.doc) +

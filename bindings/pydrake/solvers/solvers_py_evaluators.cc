@@ -486,119 +486,118 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           // dtype = object arrays must be copied, and cannot be referenced.
           py_rvp::copy, doc.ExpressionConstraint.vars.doc);
 
-  py::class_<MinimumValueLowerBoundConstraint, Constraint
-      /*, std::shared_ptr<MinimumValueLowerBoundConstraint> XXX porting */>(m,
-      "MinimumValueLowerBoundConstraint",
-      doc.MinimumValueLowerBoundConstraint.doc)
-      .def(
-          "__init__",
-          [](MinimumValueLowerBoundConstraint* self, int num_vars,
-              double minimum_value_lower, double influence_value_offset,
-              int max_num_values,
-              // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
-              // then I got the RuntimeError: dtype=object arrays must be
-              // copied, and cannot be referenced.
-              std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                  value_function,
-              std::function<Eigen::VectorXd(
-                  const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                  value_function_double) {
-            new (self) MinimumValueLowerBoundConstraint(num_vars,
-                minimum_value_lower, influence_value_offset, max_num_values,
-                value_function, value_function_double);
-          },
-          py::arg("num_vars"), py::arg("minimum_value_lower"),
-          py::arg("influence_value_offset"), py::arg("max_num_values"),
-          py::arg("value_function"),
-          py::arg("value_function_double") = std::function<Eigen::VectorXd(
-              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
-          doc.MinimumValueLowerBoundConstraint.ctor.doc)
-      .def("minimum_value_lower",
-          &MinimumValueLowerBoundConstraint::minimum_value_lower,
-          doc.MinimumValueLowerBoundConstraint.minimum_value_lower.doc)
-      .def("influence_value",
-          &MinimumValueLowerBoundConstraint::influence_value,
-          doc.MinimumValueLowerBoundConstraint.influence_value.doc)
-      .def(
-          "set_penalty_function",
-          [](MinimumValueLowerBoundConstraint* self,
-              std::function<py::tuple(double, bool)> new_penalty_function) {
-            auto penalty_fun = [new_penalty_function](double x, double* penalty,
-                                   double* dpenalty) {
-              py::tuple penalty_tuple =
-                  new_penalty_function(x, dpenalty != nullptr);
-              *penalty = py::cast<double>(penalty_tuple[0]);
-              if (dpenalty) {
-                *dpenalty = py::cast<double>(penalty_tuple[1]);
-              }
-            };
-            self->set_penalty_function(penalty_fun);
-          },
-          py::arg("new_penalty_function"),
-          "Setter for the penalty function. The penalty function "
-          "new_penalty_function(x: float, compute_grad: bool) -> tuple[float, "
-          "Optional[float]] "
-          "returns [penalty_value, penalty_gradient] when "
-          "compute_grad=True, or [penalty_value, None] when "
-          "compute_grad=False. See minimum_value_constraint.h on the "
-          "requirement on MinimumValuePenaltyFunction.");
+  {
+    using Class = MinimumValueLowerBoundConstraint;
+    constexpr auto& cls_doc = doc.MinimumValueLowerBoundConstraint;
+    py::class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "MinimumValueLowerBoundConstraint", cls_doc.doc)
+        .def(
+            "__init__",
+            [](Class* self, int num_vars, double minimum_value_lower,
+                double influence_value_offset, int max_num_values,
+                // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
+                // I got the RuntimeError: dtype=object arrays must be copied,
+                // and cannot be referenced.
+                std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                    value_function,
+                std::function<Eigen::VectorXd(
+                    const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                    value_function_double) {
+              new (self)
+                  Class(num_vars, minimum_value_lower, influence_value_offset,
+                      max_num_values, value_function, value_function_double);
+            },
+            py::arg("num_vars"), py::arg("minimum_value_lower"),
+            py::arg("influence_value_offset"), py::arg("max_num_values"),
+            py::arg("value_function"),
+            py::arg("value_function_double") = std::function<Eigen::VectorXd(
+                const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+            cls_doc.ctor.doc)
+        .def("minimum_value_lower", &Class::minimum_value_lower,
+            cls_doc.minimum_value_lower.doc)
+        .def("influence_value", &Class::influence_value,
+            cls_doc.influence_value.doc)
+        .def(
+            "set_penalty_function",
+            [](Class* self,
+                std::function<py::tuple(double, bool)> new_penalty_function) {
+              auto penalty_fun = [new_penalty_function](double x,
+                                     double* penalty, double* dpenalty) {
+                py::tuple penalty_tuple(2);
+                penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+                *penalty = py::cast<double>(penalty_tuple[0]);
+                if (dpenalty) {
+                  *dpenalty = py::cast<double>(penalty_tuple[1]);
+                }
+              };
+              self->set_penalty_function(penalty_fun);
+            },
+            py::arg("new_penalty_function"),
+            "Setter for the penalty function. The penalty function "
+            "new_penalty_function(x: float, compute_grad: bool) -> "
+            "tuple[float, Optional[float]] "
+            "returns [penalty_value, penalty_gradient] when "
+            "compute_grad=True, or [penalty_value, None] when "
+            "compute_grad=False. See minimum_value_constraint.h on the "
+            "requirement on MinimumValuePenaltyFunction.");
+  }
 
-  py::class_<MinimumValueUpperBoundConstraint, Constraint
-      /*, std::shared_ptr<MinimumValueUpperBoundConstraint> XXX porting */>(m,
-      "MinimumValueUpperBoundConstraint",
-      doc.MinimumValueUpperBoundConstraint.doc)
-      .def(
-          "__init__",
-          [](MinimumValueUpperBoundConstraint* self, int num_vars,
-              double minimum_value_upper, double influence_value_offset,
-              int max_num_values,
-              // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
-              // then I got the RuntimeError: dtype=object arrays must be
-              // copied, and cannot be referenced.
-              std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                  value_function,
-              std::function<Eigen::VectorXd(
-                  const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                  value_function_double) {
-            new (self) MinimumValueUpperBoundConstraint(num_vars,
-                minimum_value_upper, influence_value_offset, max_num_values,
-                value_function, value_function_double);
-          },
-          py::arg("num_vars"), py::arg("minimum_value_upper"),
-          py::arg("influence_value_offset"), py::arg("max_num_values"),
-          py::arg("value_function"),
-          py::arg("value_function_double") = std::function<Eigen::VectorXd(
-              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
-          doc.MinimumValueUpperBoundConstraint.ctor.doc)
-      .def("minimum_value_upper",
-          &MinimumValueUpperBoundConstraint::minimum_value_upper,
-          doc.MinimumValueUpperBoundConstraint.minimum_value_upper.doc)
-      .def("influence_value",
-          &MinimumValueUpperBoundConstraint::influence_value,
-          doc.MinimumValueUpperBoundConstraint.influence_value.doc)
-      .def(
-          "set_penalty_function",
-          [](MinimumValueUpperBoundConstraint* self,
-              std::function<py::tuple(double, bool)> new_penalty_function) {
-            auto penalty_fun = [new_penalty_function](double x, double* penalty,
-                                   double* dpenalty) {
-              py::tuple penalty_tuple =
-                  new_penalty_function(x, dpenalty != nullptr);
-              *penalty = py::cast<double>(penalty_tuple[0]);
-              if (dpenalty) {
-                *dpenalty = py::cast<double>(penalty_tuple[1]);
-              }
-            };
-            self->set_penalty_function(penalty_fun);
-          },
-          py::arg("new_penalty_function"),
-          "Setter for the penalty function. The penalty function "
-          "new_penalty_function(x: float, compute_grad: bool) -> tuple[float, "
-          "Optional[float]] "
-          "returns [penalty_value, penalty_gradient] when "
-          "compute_grad=True, or [penalty_value, None] when "
-          "compute_grad=False. See minimum_value_constraint.h on the "
-          "requirement on MinimumValuePenaltyFunction.");
+  {
+    using Class = MinimumValueUpperBoundConstraint;
+    constexpr auto& cls_doc = doc.MinimumValueUpperBoundConstraint;
+    py::class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "MinimumValueUpperBoundConstraint", cls_doc.doc)
+        .def(
+            "__init__",
+            [](MinimumValueUpperBoundConstraint* self, int num_vars,
+                double minimum_value_upper, double influence_value_offset,
+                int max_num_values,
+                // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
+                // I got the RuntimeError: dtype=object arrays must be copied,
+                // and cannot be referenced.
+                std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                    value_function,
+                std::function<Eigen::VectorXd(
+                    const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                    value_function_double) {
+              new (self) MinimumValueUpperBoundConstraint(num_vars,
+                  minimum_value_upper, influence_value_offset, max_num_values,
+                  value_function, value_function_double);
+            },
+            py::arg("num_vars"), py::arg("minimum_value_upper"),
+            py::arg("influence_value_offset"), py::arg("max_num_values"),
+            py::arg("value_function"),
+            py::arg("value_function_double") = std::function<Eigen::VectorXd(
+                const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+            doc.MinimumValueUpperBoundConstraint.ctor.doc)
+        .def("minimum_value_upper", &Class::minimum_value_upper,
+            cls_doc.minimum_value_upper.doc)
+        .def("influence_value", &Class::influence_value,
+            cls_doc.influence_value.doc)
+        .def(
+            "set_penalty_function",
+            [](Class* self,
+                std::function<py::tuple(double, bool)> new_penalty_function) {
+              auto penalty_fun = [new_penalty_function](double x,
+                                     double* penalty, double* dpenalty) {
+                py::tuple penalty_tuple(2);
+                penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+                *penalty = py::cast<double>(penalty_tuple[0]);
+                if (dpenalty) {
+                  *dpenalty = py::cast<double>(penalty_tuple[1]);
+                }
+              };
+              self->set_penalty_function(penalty_fun);
+            },
+            py::arg("new_penalty_function"),
+            "Setter for the penalty function. The penalty function "
+            "new_penalty_function(x: float, compute_grad: bool) -> "
+            "tuple[float, Optional[float]] "
+            "returns [penalty_value, penalty_gradient] when "
+            "compute_grad=True, or [penalty_value, None] when "
+            "compute_grad=False. See minimum_value_constraint.h on the "
+            "requirement on MinimumValuePenaltyFunction.");
+  }
 
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);

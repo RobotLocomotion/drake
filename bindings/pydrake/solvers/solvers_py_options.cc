@@ -33,26 +33,28 @@ void DefineSolversOptions(py::module_ m) {
   }
 
   {
-    using NestedOptionsDict = decltype(SolverOptions{}.options);
-    py::class_<SolverOptions> cls(m, "SolverOptions", doc.SolverOptions.doc);
+    using Class = SolverOptions;
+    using NestedOptionsDict = decltype(Class{}.options);
+    using OptionValue = SolverOptions::OptionValue;
+    py::class_<Class> cls(m, "SolverOptions", doc.SolverOptions.doc);
     cls  // BR
-        .def("__init__",
-             [](SolverOptions* self, NestedOptionsDict& options) {
-               new (self) SolverOptions;
-               self->options = std::move(options);
-             },
+        .def(
+            "__init__",
+            [](Class* self, NestedOptionsDict& options) {
+              new (self) Class{.options = std::move(options)};
+            },
             py::kw_only(), py::arg("options") = NestedOptionsDict{})
         .def("SetOption",
-            py::overload_cast<const SolverId&, std::string,
-                SolverOptions::OptionValue>(&SolverOptions::SetOption),
+            py::overload_cast<const SolverId&, std::string, OptionValue>(
+                &Class::SetOption),
             py::arg("solver_id"), py::arg("key"), py::arg("value"),
             doc.SolverOptions.SetOption.doc_3args)
         .def("SetOption",
-            py::overload_cast<CommonSolverOption, SolverOptions::OptionValue>(
-                &SolverOptions::SetOption),
+            py::overload_cast<CommonSolverOption, OptionValue>(
+                &Class::SetOption),
             py::arg("key"), py::arg("value"),
             doc.SolverOptions.SetOption.doc_2args)
-        .def_rw("options", &SolverOptions::options)
+        .def_rw("options", &Class::options)
         .def(py::self == py::self)
         .def(py::self != py::self);
     DefAttributesUsingSerialize(&cls);

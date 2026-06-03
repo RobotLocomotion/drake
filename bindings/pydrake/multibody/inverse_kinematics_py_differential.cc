@@ -439,10 +439,9 @@ void DefineDifferentialIkController(py::module_ m) {
           "__init__",
           [](Class* self, py::object differential_inverse_kinematics,
               const std::vector<int>& planar_rotation_dof_indices) {
-            new (self) Class(
-                make_shared_ptr_from_py_object<
-                    DifferentialInverseKinematicsSystem>(
-                    differential_inverse_kinematics),
+            new (self) Class(make_shared_ptr_from_py_object<
+                                 DifferentialInverseKinematicsSystem>(
+                                 differential_inverse_kinematics),
                 planar_rotation_dof_indices);
           },
           py::arg("differential_inverse_kinematics"),

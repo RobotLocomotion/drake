@@ -754,7 +754,7 @@ struct Impl {
                   segments.emplace_back(
                       py_segment ? py_segment->Clone() : nullptr);
                 }
-                new (self) CompositeTrajectory<T>(std::move(segments));
+                new (self) Class(std::move(segments));
               },
               py::arg("segments"), cls_doc.ctor.doc)
           .def("segment", &Class::segment, py::arg("segment_index"),

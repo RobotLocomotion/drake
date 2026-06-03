@@ -288,11 +288,9 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
             cls_doc.ctor.doc_1args_R)
         .def(py::init<const Eigen::Quaternion<T>&>(), py::arg("quaternion"),
             cls_doc.ctor.doc_1args_quaternion)
-        .def(
-            "__init__",
-            [](Class* self, const Matrix3<T>& matrix) {
-              new (self) Class(RotationMatrix<T>(matrix));
-            },
+        .def("__init__", ([](Class* self, const Matrix3<T>& matrix) {
+          new (self) Class(RotationMatrix<T>(matrix));
+        }),
             py::arg("matrix"),
             "Construct from raw rotation matrix. See RotationMatrix overload "
             "for more information.")
