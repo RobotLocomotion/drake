@@ -16,6 +16,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
 namespace drake {
@@ -61,9 +62,6 @@ struct IcfParameters {
 
   // Number of velocities in each clique, indexed by clique, size nc.
   std::vector<int> clique_sizes;
-
-  // Starting index in the velocity vector for each clique, size nc + 1.
-  std::vector<int> clique_start;
 
   // Parameters that are only for model reduction. These do not affect *this*
   // model, but rather describe how to construct a separate, reduced, model.
@@ -153,6 +151,10 @@ class IcfModel {
   /* Returns the maximum number of velocities in any clique. */
   int max_clique_size() const { return max_clique_size_; }
 
+  /* Returns a vector of starting indices into the velocity vector for each
+  clique, size num_cliques() + 1. The final entry contains num_velocities(). */
+  const std::vector<int>& clique_starts() const { return clique_starts_; }
+
   /* Returns the total number of constraints of any type in the problem. */
   int num_constraints() const {
     return num_coupler_constraints() + num_gain_constraints() +
@@ -160,9 +162,20 @@ class IcfModel {
            num_weld_constraints();
   }
 
+  /* Provides const access to the pool of all coupler constraints. */
+  const CouplerConstraintsPool<T>& coupler_constraints_pool() const {
+    return coupler_constraints_pool_;
+  }
+
   /* Provides mutable access to the pool of all coupler constraints. */
   CouplerConstraintsPool<T>& coupler_constraints_pool() {
     return coupler_constraints_pool_;
+  }
+
+  /* Provides const access to the pool of all gain (e.g., actuation)
+  constraints. */
+  const GainConstraintsPool<T>& gain_constraints_pool() const {
+    return gain_constraints_pool_;
   }
 
   /* Provides mutable access to the pool of all gain (e.g., actuation)
@@ -171,14 +184,29 @@ class IcfModel {
     return gain_constraints_pool_;
   }
 
+  /* Provides const access to the pool of all joint limit constraints. */
+  const LimitConstraintsPool<T>& limit_constraints_pool() const {
+    return limit_constraints_pool_;
+  }
+
   /* Provides mutable access to the pool of all joint limit constraints. */
   LimitConstraintsPool<T>& limit_constraints_pool() {
     return limit_constraints_pool_;
   }
 
+  /* Provides const access to the pool of all patch (contact) constraints. */
+  const PatchConstraintsPool<T>& patch_constraints_pool() const {
+    return patch_constraints_pool_;
+  }
+
   /* Provides mutable access to the pool of all patch (contact) constraints. */
   PatchConstraintsPool<T>& patch_constraints_pool() {
     return patch_constraints_pool_;
+  }
+
+  /* Provides const access to the pool of all weld constraints. */
+  const WeldConstraintsPool<T>& weld_constraints_pool() const {
+    return weld_constraints_pool_;
   }
 
   /* Provides mutable access to the pool of all weld constraints. */
@@ -220,6 +248,11 @@ class IcfModel {
 
   /* Returns the initial coriolis, centrifugal, and gravitational terms, k₀. */
   const VectorX<T>& k0() const { return params().k0; }
+
+  /* Returns true if the model can be made smaller by ReduceInto(). */
+  bool is_reducible() const {
+    return ssize(params().reduction.unlocked_dofs) < ssize(params().v0);
+  }
 
   /* Returns a reference to the spatial velocity Jacobian for the given body. */
   ConstJacobianView J_WB(int body) const {
@@ -381,6 +414,26 @@ class IcfModel {
   ICF solves that share a common initial state (q₀,v₀). */
   void UpdateTimeStep(const T& time_step);
 
+  /* Makes a "reduced" ICF model in `reduced_model`, guided by the reduction
+  parameters at `params().reduction`. The mapping from full problem to reduced
+  problem is summarized in `mapping`.
+
+  It is not required that the problem described by the reduction parameters be
+  smaller than the full problem. Use `is_reducible()` to check that the
+  parameters describe a smaller problem.
+
+  TODO(#23764): constraints are not yet supported here.
+
+  @param[out] reduced_model the reduced model.
+  @param[out] mapping the reduction, as partial permutations.
+
+  @pre reduced_model != nullptr.
+  @pre mapping != nullptr.
+  @throws std::exception if there are any constraints.
+  @post sparsity is uninitialized; call SetSparsity() when needed.
+  */
+  void ReduceInto(IcfModel<T>* reduced_model, ReducedMapping* mapping) const;
+
  private:
   /* Checks that this model's parameters define a valid ICF problem. */
   void VerifyInvariants() const;
@@ -402,6 +455,7 @@ class IcfModel {
   std::unique_ptr<IcfParameters<T>> params_;
 
   // Secondary parameters that are derived from the core parameters.
+  std::vector<int> clique_starts_;
   EigenPool<Vector6<T>> V_WB0_;  // Body spatial velocities at v₀, V = J_WB v₀.
   VectorX<T> scale_factor_;      // Scale diag(M)^{-1/2} for convergence check.
   EigenPool<MatrixX<T>> A_;  // Sparse linearized dynamics matrix A = M₀ + δtD₀.
