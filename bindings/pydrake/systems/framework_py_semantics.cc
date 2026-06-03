@@ -970,51 +970,50 @@ void DefineRemainingScalarDependentDefinitions(py::module_ m) {
 
 template <typename T>
 void DefineParameters(py::module_ m) {
-  auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(
+  using Class = Parameters<T>;
+  auto parameters = DefineTemplateClassWithDefault<Class>(
       m, "Parameters", GetPyParam<T>(), doc.Parameters.doc);
   DefClone(&parameters);
   parameters  // BR
       .def(py::init<>(), doc.Parameters.ctor.doc_0args)
       .def(py::init([](const std::vector<const BasicVector<T>*>& numeric,
                         const std::vector<const AbstractValue*>& abstract) {
-        return std::make_unique<Parameters<T>>(
+        return std::make_unique<Class>(
             CloneVectorOfPointers(numeric), CloneVectorOfPointers(abstract));
       }),
           py::arg("numeric"), py::arg("abstract"),
           doc.Parameters.ctor.doc_2args_numeric_abstract)
       .def(py::init([](const std::vector<const BasicVector<T>*>& numeric) {
-        return std::make_unique<Parameters<T>>(CloneVectorOfPointers(numeric));
+        return std::make_unique<Class>(CloneVectorOfPointers(numeric));
       }),
           py::arg("numeric"), doc.Parameters.ctor.doc_1args_numeric)
       .def(py::init([](const std::vector<const AbstractValue*>& abstract) {
-        return std::make_unique<Parameters<T>>(CloneVectorOfPointers(abstract));
+        return std::make_unique<Class>(CloneVectorOfPointers(abstract));
       }),
           py::arg("abstract"), doc.Parameters.ctor.doc_1args_abstract)
       .def(py::init([](const BasicVector<T>& vec) {
-        return std::make_unique<Parameters<T>>(vec.Clone());
+        return std::make_unique<Class>(vec.Clone());
       }),
           py::arg("vec"), doc.Parameters.ctor.doc_1args_vec)
       .def(py::init([](const AbstractValue& value) {
-        return std::make_unique<Parameters<T>>(value.Clone());
+        return std::make_unique<Class>(value.Clone());
       }),
           py::arg("value"), doc.Parameters.ctor.doc_1args_value)
-      .def("num_numeric_parameter_groups",
-          &Parameters<T>::num_numeric_parameter_groups,
+      .def("num_numeric_parameter_groups", &Class::num_numeric_parameter_groups,
           doc.Parameters.num_numeric_parameter_groups.doc)
-      .def("num_abstract_parameters", &Parameters<T>::num_abstract_parameters,
+      .def("num_abstract_parameters", &Class::num_abstract_parameters,
           doc.Parameters.num_abstract_parameters.doc)
-      .def("get_numeric_parameter", &Parameters<T>::get_numeric_parameter,
+      .def("get_numeric_parameter", &Class::get_numeric_parameter,
           py_rvp::reference_internal, py::arg("index"),
           doc.Parameters.get_numeric_parameter.doc)
       .def("get_mutable_numeric_parameter",
-          &Parameters<T>::get_mutable_numeric_parameter,
-          py_rvp::reference_internal, py::arg("index"),
-          doc.Parameters.get_mutable_numeric_parameter.doc)
-      .def("get_numeric_parameters", &Parameters<T>::get_numeric_parameters,
+          &Class::get_mutable_numeric_parameter, py_rvp::reference_internal,
+          py::arg("index"), doc.Parameters.get_mutable_numeric_parameter.doc)
+      .def("get_numeric_parameters", &Class::get_numeric_parameters,
           py_rvp::reference_internal, doc.Parameters.get_numeric_parameters.doc)
       .def(
           "set_numeric_parameters",
-          [](Parameters<T>& self, const DiscreteValues<T>& numeric_params) {
+          [](Class& self, const DiscreteValues<T>& numeric_params) {
             // TODO(eric.cousineau): Should this C++ code constrain the number
             // of parameters???
             //
@@ -1025,24 +1024,24 @@ void DefineParameters(py::module_ m) {
           py::arg("numeric_params"), doc.Parameters.set_numeric_parameters.doc)
       .def(
           "get_abstract_parameter",
-          [](const Parameters<T>* self, int index) -> auto& {
+          [](const Class* self, int index) -> auto& {
             return self->get_abstract_parameter(index);
           },
           py_rvp::reference_internal, py::arg("index"),
           doc.Parameters.get_abstract_parameter.doc_1args_index)
       .def(
           "get_mutable_abstract_parameter",
-          [](Parameters<T>* self, int index) -> AbstractValue& {
+          [](Class* self, int index) -> AbstractValue& {
             return self->get_mutable_abstract_parameter(index);
           },
           py_rvp::reference_internal, py::arg("index"),
           doc.Parameters.get_mutable_abstract_parameter.doc_1args_index)
-      .def("get_abstract_parameters", &Parameters<T>::get_abstract_parameters,
+      .def("get_abstract_parameters", &Class::get_abstract_parameters,
           py_rvp::reference_internal,
           doc.Parameters.get_abstract_parameters.doc)
       .def(
           "set_abstract_parameters",
-          [](Parameters<T>& self, const AbstractValues& abstract_params) {
+          [](Class& self, const AbstractValues& abstract_params) {
             // WARNING: This will DELETE the existing parameters. See C++
             // `AddValueInstantiation` for more information.
             self.set_abstract_parameters(abstract_params.Clone());
@@ -1051,7 +1050,7 @@ void DefineParameters(py::module_ m) {
           doc.Parameters.set_abstract_parameters.doc)
       .def(
           "SetFrom",
-          [](Parameters<T>* self, const Parameters<double>& other) {
+          [](Class* self, const Parameters<double>& other) {
             self->SetFrom(other);
           },
           doc.Parameters.SetFrom.doc);
@@ -1109,7 +1108,8 @@ void DefineState(py::module_ m) {
 
 template <typename T>
 void DefineContinuousState(py::module_ m) {
-  auto continuous_state = DefineTemplateClassWithDefault<ContinuousState<T>>(
+  using Class = ContinuousState<T>;
+  auto continuous_state = DefineTemplateClassWithDefault<Class>(
       m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc);
   DefClone(&continuous_state);
   continuous_state  // BR
@@ -1118,142 +1118,129 @@ void DefineContinuousState(py::module_ m) {
       // order to preserve its subtype across cloning. In the subsequent pair
       // of overloads, we'll also allow VectorBase.
       .def(py::init([](const BasicVector<T>& state) {
-        return std::make_unique<ContinuousState<T>>(state.Clone());
+        return std::make_unique<Class>(state.Clone());
       }),
           py::arg("state"), doc.ContinuousState.ctor.doc_1args_state)
       .def(py::init([](const BasicVector<T>& state, int num_q, int num_v,
                         int num_z) {
-        return std::make_unique<ContinuousState<T>>(
-            state.Clone(), num_q, num_v, num_z);
+        return std::make_unique<Class>(state.Clone(), num_q, num_v, num_z);
       }),
           py::arg("state"), py::arg("num_q"), py::arg("num_v"),
           py::arg("num_z"),
           doc.ContinuousState.ctor.doc_4args_state_num_q_num_v_num_z)
       .def(py::init([](const VectorBase<T>& state) {
-        return std::make_unique<ContinuousState<T>>(
+        return std::make_unique<Class>(
             std::make_unique<BasicVector<T>>(state.CopyToVector()));
       }),
           py::arg("state"), doc.ContinuousState.ctor.doc_1args_state)
       .def(py::init(
                [](const VectorBase<T>& state, int num_q, int num_v, int num_z) {
-                 return std::make_unique<ContinuousState<T>>(
+                 return std::make_unique<Class>(
                      std::make_unique<BasicVector<T>>(state.CopyToVector()),
                      num_q, num_v, num_z);
                }),
           py::arg("state"), py::arg("num_q"), py::arg("num_v"),
           py::arg("num_z"),
           doc.ContinuousState.ctor.doc_4args_state_num_q_num_v_num_z)
-      .def("size", &ContinuousState<T>::size, doc.ContinuousState.size.doc)
-      .def("num_q", &ContinuousState<T>::num_q, doc.ContinuousState.num_q.doc)
-      .def("num_v", &ContinuousState<T>::num_v, doc.ContinuousState.num_v.doc)
-      .def("num_z", &ContinuousState<T>::num_z, doc.ContinuousState.num_z.doc)
+      .def("size", &Class::size, doc.ContinuousState.size.doc)
+      .def("num_q", &Class::num_q, doc.ContinuousState.num_q.doc)
+      .def("num_v", &Class::num_v, doc.ContinuousState.num_v.doc)
+      .def("num_z", &Class::num_z, doc.ContinuousState.num_z.doc)
       .def("__getitem__",
-          overload_cast_explicit<const T&, std::size_t>(
-              &ContinuousState<T>::operator[]),
+          overload_cast_explicit<const T&, std::size_t>(&Class::operator[]),
           doc.ContinuousState.operator_array.doc)
       .def(
           "__setitem__",
-          [](ContinuousState<T>& self, int index, T& value) {
-            self[index] = value;
-          },
+          [](Class& self, int index, T& value) { self[index] = value; },
           doc.ContinuousState.operator_array.doc)
-      .def("get_vector", &ContinuousState<T>::get_vector,
-          py_rvp::reference_internal, doc.ContinuousState.get_vector.doc)
-      .def("get_mutable_vector", &ContinuousState<T>::get_mutable_vector,
+      .def("get_vector", &Class::get_vector, py_rvp::reference_internal,
+          doc.ContinuousState.get_vector.doc)
+      .def("get_mutable_vector", &Class::get_mutable_vector,
           py_rvp::reference_internal,
           doc.ContinuousState.get_mutable_vector.doc)
-      .def("get_generalized_position",
-          &ContinuousState<T>::get_generalized_position,
+      .def("get_generalized_position", &Class::get_generalized_position,
           py_rvp::reference_internal,
           doc.ContinuousState.get_generalized_position.doc)
       .def("get_mutable_generalized_position",
-          &ContinuousState<T>::get_mutable_generalized_position,
-          py_rvp::reference_internal,
+          &Class::get_mutable_generalized_position, py_rvp::reference_internal,
           doc.ContinuousState.get_mutable_generalized_position.doc)
-      .def("get_generalized_velocity",
-          &ContinuousState<T>::get_generalized_velocity,
+      .def("get_generalized_velocity", &Class::get_generalized_velocity,
           py_rvp::reference_internal,
           doc.ContinuousState.get_generalized_velocity.doc)
       .def("get_mutable_generalized_velocity",
-          &ContinuousState<T>::get_mutable_generalized_velocity,
-          py_rvp::reference_internal,
+          &Class::get_mutable_generalized_velocity, py_rvp::reference_internal,
           doc.ContinuousState.get_mutable_generalized_velocity.doc)
-      .def("get_misc_continuous_state",
-          &ContinuousState<T>::get_misc_continuous_state,
+      .def("get_misc_continuous_state", &Class::get_misc_continuous_state,
           py_rvp::reference_internal,
           doc.ContinuousState.get_misc_continuous_state.doc)
       .def("get_mutable_misc_continuous_state",
-          &ContinuousState<T>::get_mutable_misc_continuous_state,
-          py_rvp::reference_internal,
+          &Class::get_mutable_misc_continuous_state, py_rvp::reference_internal,
           doc.ContinuousState.get_mutable_misc_continuous_state.doc)
       .def(
           "SetFrom",
-          [](ContinuousState<T>* self, const ContinuousState<double>& other) {
+          [](Class* self, const ContinuousState<double>& other) {
             self->SetFrom(other);
           },
           doc.ContinuousState.SetFrom.doc)
-      .def("SetFromVector", &ContinuousState<T>::SetFromVector,
-          py::arg("value"), doc.ContinuousState.SetFromVector.doc)
-      .def("CopyToVector", &ContinuousState<T>::CopyToVector,
+      .def("SetFromVector", &Class::SetFromVector, py::arg("value"),
+          doc.ContinuousState.SetFromVector.doc)
+      .def("CopyToVector", &Class::CopyToVector,
           doc.ContinuousState.CopyToVector.doc);
 }
 
 template <typename T>
 void DefineDiscreteValues(py::module_ m) {
-  auto discrete_values = DefineTemplateClassWithDefault<DiscreteValues<T>>(
+  using Class = DiscreteValues<T>;
+  auto discrete_values = DefineTemplateClassWithDefault<Class>(
       m, "DiscreteValues", GetPyParam<T>(), doc.DiscreteValues.doc);
   DefClone(&discrete_values);
   discrete_values
       .def(py::init([](const BasicVector<T>& datum) {
-        return std::make_unique<DiscreteValues<T>>(datum.Clone());
+        return std::make_unique<Class>(datum.Clone());
       }),
           py::arg("datum"), doc.DiscreteValues.ctor.doc_1args_datum)
       .def(py::init([](const std::vector<const BasicVector<T>*>& data) {
-        return std::make_unique<DiscreteValues<T>>(CloneVectorOfPointers(data));
+        return std::make_unique<Class>(CloneVectorOfPointers(data));
       }),
           py::arg("data"), doc.DiscreteValues.ctor.doc_1args_data)
       .def(py::init<>(), doc.DiscreteValues.ctor.doc_0args)
-      .def("num_groups", &DiscreteValues<T>::num_groups,
-          doc.DiscreteValues.num_groups.doc)
-      .def("size", &DiscreteValues<T>::size, doc.DiscreteValues.size.doc)
-      .def("get_data", &DiscreteValues<T>::get_data, py_rvp::reference_internal,
+      .def("num_groups", &Class::num_groups, doc.DiscreteValues.num_groups.doc)
+      .def("size", &Class::size, doc.DiscreteValues.size.doc)
+      .def("get_data", &Class::get_data, py_rvp::reference_internal,
           doc.DiscreteValues.get_data.doc)
       .def("set_value",
           overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
-              &DiscreteValues<T>::set_value),
+              &Class::set_value),
           py::arg("value"), doc.DiscreteValues.set_value.doc_1args)
       .def("value",
-          overload_cast_explicit<const VectorX<T>&, int>(
-              &DiscreteValues<T>::value),
+          overload_cast_explicit<const VectorX<T>&, int>(&Class::value),
           return_value_policy_for_scalar_type<T>(), py::arg("index") = 0,
           doc.DiscreteValues.value.doc_1args)
       .def("get_vector",
           overload_cast_explicit<const BasicVector<T>&, int>(
-              &DiscreteValues<T>::get_vector),
+              &Class::get_vector),
           py_rvp::reference_internal, py::arg("index") = 0,
           doc.DiscreteValues.get_vector.doc_1args)
       .def("get_mutable_vector",
           overload_cast_explicit<BasicVector<T>&, int>(
-              &DiscreteValues<T>::get_mutable_vector),
+              &Class::get_mutable_vector),
           py_rvp::reference_internal, py::arg("index") = 0,
           doc.DiscreteValues.get_mutable_vector.doc_1args)
       .def("set_value",
           overload_cast_explicit<void, int,
-              const Eigen::Ref<const VectorX<T>>&>(
-              &DiscreteValues<T>::set_value),
+              const Eigen::Ref<const VectorX<T>>&>(&Class::set_value),
           py::arg("index"), py::arg("value"),
           doc.DiscreteValues.set_value.doc_2args)
       .def(
           "get_value",
-          [](const DiscreteValues<T>* self,
-              int index) -> Eigen::Ref<const VectorX<T>> {
+          [](const Class* self, int index) -> Eigen::Ref<const VectorX<T>> {
             return self->get_value(index);
           },
           return_value_policy_for_scalar_type<T>(), py::arg("index") = 0,
           doc.DiscreteValues.get_value.doc_1args)
       .def(
           "get_mutable_value",
-          [](DiscreteValues<T>* self, int index) -> Eigen::Ref<VectorX<T>> {
+          [](Class* self, int index) -> Eigen::Ref<VectorX<T>> {
             return self->get_mutable_value(index);
           },
           // N.B. We explicitly want a failure when T != double due to #8116.
@@ -1261,19 +1248,16 @@ void DefineDiscreteValues(py::module_ m) {
           doc.DiscreteValues.get_mutable_value.doc_1args)
       .def(
           "SetFrom",
-          [](DiscreteValues<T>* self, const DiscreteValues<double>& other) {
+          [](Class* self, const DiscreteValues<double>& other) {
             self->SetFrom(other);
           },
           doc.DiscreteValues.SetFrom.doc)
       .def("__getitem__",
-          overload_cast_explicit<const T&, std::size_t>(
-              &DiscreteValues<T>::operator[]),
+          overload_cast_explicit<const T&, std::size_t>(&Class::operator[]),
           doc.DiscreteValues.operator_array.doc_1args_idx_const)
       .def(
           "__setitem__",
-          [](DiscreteValues<T>& self, int index, T& value) {
-            self[index] = value;
-          },
+          [](Class& self, int index, T& value) { self[index] = value; },
           doc.DiscreteValues.operator_array.doc_1args_idx_nonconst);
 }
 }  // namespace
