@@ -96,6 +96,17 @@ void IcfPartition::Compute(
 
   island_cliques_.Build(num_islands_,
                         std::span<const int>(clique_to_island_.data(), nc));
+
+  // Assign each clique its local index: its position within its island's
+  // (ascending) clique list. This is the block index the clique maps to in the
+  // island's local sub-Hessian.
+  if (std::ssize(clique_local_index_) < nc) clique_local_index_.resize(nc);
+  for (int i = 0; i < num_islands_; ++i) {
+    const std::span<const int> cliques = island_cliques_.items(i);
+    for (int pos = 0; pos < std::ssize(cliques); ++pos) {
+      clique_local_index_[cliques[pos]] = pos;
+    }
+  }
 }
 
 }  // namespace internal

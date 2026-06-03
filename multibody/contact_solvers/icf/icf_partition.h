@@ -98,6 +98,21 @@ class IcfPartition {
     return island_cliques_.items(island);
   }
 
+  /* Returns the local index of the given clique within its island, i.e., its
+  position (0-based) in island_cliques(clique_to_island(clique)). This is the
+  block index the clique maps to in the island's local sub-Hessian. Because
+  island_cliques() is sorted ascending, local indices preserve the global clique
+  ordering within an island. */
+  int clique_local_index(int clique) const {
+    DRAKE_ASSERT(0 <= clique && clique < num_cliques_);
+    return clique_local_index_[clique];
+  }
+
+  /* Returns the per-clique local-index map, indexed by clique. */
+  std::span<const int> clique_local_index() const {
+    return std::span<const int>(clique_local_index_.data(), num_cliques_);
+  }
+
  private:
   /* Union-find "find" with path compression, operating on parent_. */
   int Find(int x);
@@ -106,7 +121,8 @@ class IcfPartition {
   int num_islands_{0};
   std::vector<int> parent_;          // union-find forest, size ≥ num_cliques_.
   std::vector<int> root_to_island_;  // scratch root→island, size ≥ nc.
-  std::vector<int> clique_to_island_;  // size ≥ num_cliques_.
+  std::vector<int> clique_to_island_;   // size ≥ num_cliques_.
+  std::vector<int> clique_local_index_;  // size ≥ num_cliques_.
   IslandItemMap island_cliques_;
 };
 

@@ -94,6 +94,22 @@ GTEST_TEST(IcfPartitionTest, MixedAndDeterministicLabeling) {
   EXPECT_EQ(p.clique_to_island(5), 2);
 }
 
+GTEST_TEST(IcfPartitionTest, CliqueLocalIndex) {
+  // island 0 = {0, 3}, island 1 = {1}, island 2 = {2, 4, 5}.
+  IcfPartition p;
+  p.Compute(MakePattern(6, {{3, 0}, {4, 2}, {2, 5}}));
+  // Local index is the clique's position within its island's ascending list.
+  EXPECT_EQ(p.clique_local_index(0), 0);
+  EXPECT_EQ(p.clique_local_index(3), 1);
+  EXPECT_EQ(p.clique_local_index(1), 0);
+  EXPECT_EQ(p.clique_local_index(2), 0);
+  EXPECT_EQ(p.clique_local_index(4), 1);
+  EXPECT_EQ(p.clique_local_index(5), 2);
+  const auto local = p.clique_local_index();
+  EXPECT_EQ(std::vector<int>(local.begin(), local.end()),
+            (std::vector<int>{0, 0, 0, 1, 1, 2}));
+}
+
 GTEST_TEST(IcfPartitionTest, MultiDofCliques) {
   // Island structure is independent of clique sizes.
   std::vector<int> block_sizes = {3, 1, 6, 2};
