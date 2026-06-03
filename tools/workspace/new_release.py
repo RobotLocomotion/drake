@@ -91,17 +91,6 @@ _IGNORED_TAGS = {
     "sdformat_internal": r"sdformat-prerelease_[0-9.]+",
 }
 
-# For these repositories, select any tags that match the tag currently in use;
-# the parentheses group in the regex denotes the portion of the tag to lock as
-# invariant. This can be used to pin to a given major or major.minor release
-# series.
-_PINNED_TAGS = {
-    "github3_py_internal": r"^(\d+.)",
-    "gz_math_internal": r"^(gz)",
-    "gz_utils_internal": r"^(gz)",
-    "qhull_internal": r"^(2)",
-}
-
 # Packages in these cohorts should be upgraded together (in a single commit).
 _COHORTS = (
     # clarabel_cpp uses crate_universe; be sure to keep them aligned.
@@ -195,7 +184,7 @@ def _handle_github(workspace_name, gh, data):
         new_commit = gh_repo.commit("HEAD").sha
         return old_commit, new_commit
     elif upgrade_type == "tag":
-        tags_pattern = _PINNED_TAGS.get(workspace_name)
+        tags_pattern = data["tags_pattern"] or None
         if tags_pattern is None:
             new_commit = _latest_tag(gh_repo, workspace_name)
             return old_commit, new_commit
