@@ -96,7 +96,7 @@ void IcfModel<T>::ResizeData(IcfData<T>* data) const {
                weld_constraints_pool_.num_constraints(),
                gain_constraints_pool_.constraint_sizes(),
                limit_constraints_pool_.constraint_sizes(),
-               patch_constraints_pool_.patch_sizes());
+               patch_constraints_pool_.patch_sizes(), partition_.num_islands());
 }
 
 template <typename T>
