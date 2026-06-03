@@ -41,7 +41,7 @@ class EigenPoolFixedSizeStorage {
   void Resize(int num_matrices, int rows, int cols);
   void Clear();
   void SetZero();
-  void Add(int rows, int cols);
+  MatrixView Add(int rows, int cols);
 
  private:
   // Contiguous storage for all Eigen matrices.
@@ -86,7 +86,7 @@ class EigenPoolDynamicSizeStorage {
               std::span<const int> cols);
   void SetZero();
   void Clear();
-  void Add(int rows, int cols);
+  MatrixView Add(int rows, int cols);
 
  private:
   struct MatrixData {
@@ -230,16 +230,23 @@ class EigenPool {
   /* Zeroes out all matrices in this pool. */
   void SetZero() { storage_.SetZero(); }
 
-  /* Appends a new matrix of the specified size to the end of the pool. If
-  either or both of RowsAtCompileTime or ColsAtCompileTime are not
+  /* Appends a new matrix of the specified size to the end of the pool, and
+  returns a mutable reference to the new location.
+
+  If either or both of RowsAtCompileTime or ColsAtCompileTime are not
   Eigen::Dynamic, then the respective `rows` or `cols` argument must match the
-  compile-time size. Coefficients are not initialized. */
-  void Add(int rows, int cols) {
+  compile-time size. Coefficients are not initialized.
+
+  The returned reference allows allocation and initialization like this:
+  @code
+    pool.Add(rows, cols) = my_matrix;
+  @endcode */
+  MatrixView Add(int rows, int cols) {
     DRAKE_DEMAND(EigenType::RowsAtCompileTime == Eigen::Dynamic ||
                  rows == EigenType::RowsAtCompileTime);
     DRAKE_DEMAND(EigenType::ColsAtCompileTime == Eigen::Dynamic ||
                  cols == EigenType::ColsAtCompileTime);
-    storage_.Add(rows, cols);
+    return storage_.Add(rows, cols);
   }
 
  private:

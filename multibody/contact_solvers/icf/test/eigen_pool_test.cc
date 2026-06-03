@@ -63,14 +63,16 @@ GTEST_TEST(EigenPoolTest, EigenFixedSize) {
 
   // Check repopulating with Add().
   for (int k = 0; k < 4; ++k) {
+    const auto value = Matrix3d::Constant(k + 10);
     // No new allocations. Everything stayed the same size.
     {
       drake::test::LimitMalloc guard;
-      pool.Add(3, 3);
+      pool.Add(3, 3) = value;
     }
     EXPECT_EQ(pool.size(), 1 + k);
     EXPECT_EQ(pool[k].rows(), 3);
     EXPECT_EQ(pool[k].cols(), 3);
+    EXPECT_EQ(pool[k].coeff(0, 0), k + 10);
   }
 }
 
@@ -141,14 +143,16 @@ GTEST_TEST(EigenPoolTest, EigenVectorX) {
 
   // Check repopulating with Add().
   for (int k = 0; k < 3; ++k) {
+    const auto value = VectorXd::Constant(sizes[k], k + 10);
     // No new allocations. Everything stayed the same size.
     {
       drake::test::LimitMalloc guard;
-      pool.Add(sizes[k], 1);
+      pool.Add(sizes[k], 1) = value;
     }
     EXPECT_EQ(pool.size(), 1 + k);
     EXPECT_EQ(pool[k].rows(), sizes[k]);
     EXPECT_EQ(pool[k].cols(), 1);
+    EXPECT_EQ(pool[k].coeff(0, 0), k + 10);
   }
 }
 
@@ -201,14 +205,16 @@ GTEST_TEST(EigenPoolTest, EigenMatrixX) {
 
   // Check repopulating with Add().
   for (int k = 0; k < 3; ++k) {
+    const auto value = MatrixXd::Constant(rows[k], cols[k], k + 10);
     // No new allocations. Everything stayed the same size.
     {
       drake::test::LimitMalloc guard;
-      pool.Add(rows[k], cols[k]);
+      pool.Add(rows[k], cols[k]) = value;
     }
     EXPECT_EQ(pool.size(), 1 + k);
     EXPECT_EQ(pool[k].rows(), rows[k]);
     EXPECT_EQ(pool[k].cols(), cols[k]);
+    EXPECT_EQ(pool[k].coeff(0, 0), k + 10);
   }
 }
 
@@ -252,14 +258,16 @@ GTEST_TEST(EigenPoolTest, EigenMatrix3X) {
 
   // Check repopulating with Add().
   for (int k = 0; k < 4; ++k) {
+    const auto value = Matrix3X<double>::Constant(3, cols[k], k + 10);
     // No new allocations. Everything stayed the same size.
     {
       drake::test::LimitMalloc guard;
-      pool.Add(3, cols[k]);
+      pool.Add(3, cols[k]) = value;
     }
     EXPECT_EQ(pool.size(), 1 + k);
     EXPECT_EQ(pool[k].rows(), 3);
     EXPECT_EQ(pool[k].cols(), cols[k]);
+    EXPECT_EQ(pool[k].coeff(0, 0), k + 10);
   }
 }
 
