@@ -18,12 +18,13 @@ void BindSpatialVectorMixin(PyClass* pcls) {
   using Class = typename PyClass::Type;
   auto& cls = *pcls;
   cls  // BR
-      .def(py::init([]() {
-        // See #14086 for more details.
-        Class out;
-        out.SetNaN();
-        return out;
-      }),
+      .def(
+          "__init__",
+          [](Class* self) {
+            // See #14086 for more details.
+            new (self) Class;
+            self->SetNaN();
+          },
           R"""(
       Constructs to all NaNs.
 

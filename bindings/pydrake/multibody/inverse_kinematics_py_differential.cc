@@ -65,11 +65,8 @@ void DefineDifferentialIkLegacy(py::module_ m) {
         doc.DifferentialInverseKinematicsParameters.doc);
 
     cls  // BR
-        .def(py::init([](int num_positions, int num_velocities) {
-          return Class{num_positions, num_velocities};
-        }),
-            py::arg("num_positions"), py::arg("num_velocities") = std::nullopt,
-            cls_doc.ctor.doc)
+        .def(py::init<int, int>(), py::arg("num_positions"),
+            py::arg("num_velocities") = std::nullopt, cls_doc.ctor.doc)
         .def("get_time_step", &Class::get_time_step, cls_doc.get_time_step.doc)
         .def("set_time_step", &Class::set_time_step, py::arg("dt"),
             cls_doc.set_time_step.doc)
@@ -435,13 +432,15 @@ void DefineDifferentialIkController(py::module_ m) {
   constexpr auto& cls_doc = doc.DifferentialInverseKinematicsController;
   py::class_<Class, systems::Diagram<double>>(
       m, "DifferentialInverseKinematicsController")
-      .def(py::init([](py::object differential_inverse_kinematics,
-                        const std::vector<int>& planar_rotation_dof_indices) {
-        return std::make_unique<Class>(
-            make_shared_ptr_from_py_object<DifferentialInverseKinematicsSystem>(
-                differential_inverse_kinematics),
-            planar_rotation_dof_indices);
-      }),
+      .def(
+          "__init__",
+          [](Class* self, py::object differential_inverse_kinematics,
+              const std::vector<int>& planar_rotation_dof_indices) {
+            new (self) Class(make_shared_ptr_from_py_object<
+                                 DifferentialInverseKinematicsSystem>(
+                                 differential_inverse_kinematics),
+                planar_rotation_dof_indices);
+          },
           py::arg("differential_inverse_kinematics"),
           py::arg("planar_rotation_dof_indices"), cls_doc.ctor.doc)
       .def("set_initial_position", &Class::set_initial_position,

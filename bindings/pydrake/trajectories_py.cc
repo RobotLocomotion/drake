@@ -393,10 +393,13 @@ struct Impl {
           // std::vector<MatrixX<T>>. We want each column of the numpy array as
           // a MatrixX of control points, but the std::vectors here are
           // associated with the rows in numpy.
-          .def(py::init([](math::BsplineBasis<T> basis,
-                            std::vector<std::vector<T>> control_points) {
-            return Class(basis, MakeEigenFromRowMajorVectors(control_points));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, math::BsplineBasis<T> basis,
+                  std::vector<std::vector<T>> control_points) {
+                new (self)
+                    Class(basis, MakeEigenFromRowMajorVectors(control_points));
+              },
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
@@ -742,15 +745,17 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, PiecewiseTrajectory<T>>(
           m, "CompositeTrajectory", param, cls_doc.doc);
       cls  // BR
-          .def(py::init([](std::vector<const Trajectory<T>*> py_segments) {
-            std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
-            segments.reserve(py_segments.size());
-            for (const Trajectory<T>* py_segment : py_segments) {
-              segments.emplace_back(py_segment ? py_segment->Clone() : nullptr);
-            }
-            return std::make_unique<CompositeTrajectory<T>>(
-                std::move(segments));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, std::vector<const Trajectory<T>*> py_segments) {
+                std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+                segments.reserve(py_segments.size());
+                for (const Trajectory<T>* py_segment : py_segments) {
+                  segments.emplace_back(
+                      py_segment ? py_segment->Clone() : nullptr);
+                }
+                new (self) CompositeTrajectory<T>(std::move(segments));
+              },
               py::arg("segments"), cls_doc.ctor.doc)
           .def("segment", &Class::segment, py::arg("segment_index"),
               py_rvp::reference_internal, cls_doc.segment.doc)
@@ -832,13 +837,8 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, PiecewiseTrajectory<T>>(
           m, "ExponentialPlusPiecewisePolynomial", param, cls_doc.doc);
       cls  // BR
-          .def(
-              py::init(
-                  [](const Eigen::MatrixX<T>& K, const Eigen::MatrixX<T>& A,
-                      const Eigen::MatrixX<T>& alpha,
-                      const PiecewisePolynomial<T>& piecewise_polynomial_part) {
-                    return Class(K, A, alpha, piecewise_polynomial_part);
-                  }),
+          .def(py::init<const Eigen::MatrixX<T>&, const Eigen::MatrixX<T>&,
+                   const Eigen::MatrixX<T>&, const PiecewisePolynomial<T>&>(),
               py::arg("K"), py::arg("A"), py::arg("alpha"),
               py::arg("piecewise_polynomial_part"), cls_doc.ctor.doc)
           .def("shiftRight", &Class::shiftRight, py::arg("offset"),
@@ -993,12 +993,13 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
           m, "_WrappedTrajectory", param, "(Internal use only)");
       cls  // BR
-          .def(py::init([](const Trajectory<T>& trajectory) {
-            // The keep_alive is responsible for object lifetime, so we'll give
-            // the constructor an unowned pointer.
-            return std::make_unique<Class>(
-                make_unowned_shared_ptr_from_raw(&trajectory));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, const Trajectory<T>& trajectory) {
+                // The keep_alive is responsible for object lifetime, so we'll
+                // give the constructor an unowned pointer.
+                new (self) Class(make_unowned_shared_ptr_from_raw(&trajectory));
+              },
               py::arg("trajectory"),
               // Keep alive, ownership: `return` keeps `trajectory` alive.
               py::keep_alive<0, 1>())
