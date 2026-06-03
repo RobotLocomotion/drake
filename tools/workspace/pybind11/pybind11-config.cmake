@@ -65,6 +65,7 @@ add_library(pybind11::pybind11 INTERFACE IMPORTED)
 set_target_properties(pybind11::pybind11 PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include/pybind11;${PYTHON_INCLUDE_DIRS}"
   INTERFACE_COMPILE_FEATURES "cxx_decltype;cxx_decltype_auto"
+  INTERFACE_COMPILE_DEFINITIONS "PYBIND11_DISABLE_NEW_STYLE_INIT_WARNING"
 )
 
 # Below are naively ported targets that are meant to ensure pybind11Tools does

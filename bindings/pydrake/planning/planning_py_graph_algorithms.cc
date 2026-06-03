@@ -90,14 +90,16 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
     const auto& cls_doc = doc.MinCliqueCoverSolverViaGreedy;
     py::class_<Class, MinCliqueCoverSolverBase>(
         m, "MinCliqueCoverSolverViaGreedy", cls_doc.doc)
-        .def(py::init([](MaxCliqueSolverBase& max_clique_solver,
-                          int min_clique_size) {
-          // The keep_alive is responsible for object lifetime, so we'll give
-          // the constructor an unowned pointer.
-          return std::make_unique<Class>(
-              make_unowned_shared_ptr_from_raw(&max_clique_solver),
-              min_clique_size);
-        }),
+        .def(
+            "__init__",
+            [](Class* self, MaxCliqueSolverBase& max_clique_solver,
+                int min_clique_size) {
+              // The keep_alive is responsible for object lifetime, so we'll
+              // give the constructor an unowned pointer.
+              new (self)
+                  Class(make_unowned_shared_ptr_from_raw(&max_clique_solver),
+                      min_clique_size);
+            },
             py::arg("max_clique_solver"), py::arg("min_clique_size") = 1,
             // Keep alive, reference: `self` keeps `max_clique_solver` alive.
             py::keep_alive<1, 2>(), cls_doc.ctor.doc)

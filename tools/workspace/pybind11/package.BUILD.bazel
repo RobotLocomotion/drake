@@ -61,6 +61,7 @@ check_lists_consistency(
 cc_library(
     name = "pybind11",
     hdrs = _HDRS,
+    defines = ["PYBIND11_DISABLE_NEW_STYLE_INIT_WARNING"],
     includes = ["include"],
     isystem = True,
     deps = [
