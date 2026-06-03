@@ -23,6 +23,7 @@ inline py::object GetOrInitTemplate(  // BR
     py::tuple args = py::tuple(), py::dict kwargs = py::dict()) {
   const char module_name[] = "pydrake.common.cpp_template";
   py::handle m = py::module_::import_(module_name);
+  py::gil_scoped_acquire guard;
   return m.attr("get_or_init")(
       scope, name, m.attr(template_cls_name.c_str()), *args, **kwargs);
 }
@@ -154,7 +155,12 @@ py::object AddTemplateMethod(  // BR
   const std::string instantiation_name =
       internal::GetInstantiationName(py_template, param, mangle);
   py::object py_func = py::cpp_function(std::forward<Method>(method),
-      py::name(instantiation_name.c_str()), py::is_method(scope),
+      py::name(instantiation_name.c_str()),
+#ifdef PYDRAKE_USE_PYBIND11
+      py::is_method(scope),
+#else  // PYDRAKE_USE_NANOBIND
+      py::is_method(),
+#endif
       std::forward<Extra>(extra)...);
   internal::AddInstantiation(py_template, py_func, param);
   return py_template;

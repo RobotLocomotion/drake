@@ -61,10 +61,12 @@ void DefineDrakeVisualizer(py::module_ m, T) {
             py::arg("params") = DrakeVisualizerParams{},
             // `return` and `builder` join ref cycle.
             internal::ref_cycle<0, 1>(),
+#if 0  // XXX porting
             // Using builder_life_support_stash makes the builder temporarily
             // immortal (uncollectible self cycle). This will be resolved by
             // the Build() step. See BuilderLifeSupport for rationale.
             internal::builder_life_support_stash<T, 1>(),
+#endif  // XXX porting
             // Keep alive, reference: `return` keeps `lcm` alive.
             py::keep_alive<0, 3>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc_4args_builder_scene_graph_lcm_params)
@@ -77,10 +79,12 @@ void DefineDrakeVisualizer(py::module_ m, T) {
             py::arg("params") = DrakeVisualizerParams{},
             // `return` and `builder` join ref cycle.
             internal::ref_cycle<0, 1>(),
+#if 0  // XXX porting
             // Using builder_life_support_stash makes the builder temporarily
             // immortal (uncollectible self cycle). This will be resolved by
             // the Build() step. See BuilderLifeSupport for rationale.
             internal::builder_life_support_stash<T, 1>(),
+#endif  // XXX porting
             // Keep alive, reference: `return` keeps `lcm` alive.
             py::keep_alive<0, 3>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
@@ -177,7 +181,9 @@ void DefineDrakeVisualizerParams(py::module_ m) {
         m, "DrakeVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
+#if 0  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
+#endif  // XXX porting
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
@@ -187,7 +193,7 @@ void DefineMeshcatParams(py::module_ m) {
   {
     using Class = MeshcatParams;
     constexpr auto& cls_doc = doc.MeshcatParams;
-    py::class_<Class, std::shared_ptr<Class>> cls(
+    py::class_<Class/*, std::shared_ptr<Class> XXX porting */> cls(
         m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
     // MeshcatParams::PropertyTuple
     {
@@ -210,7 +216,7 @@ void DefineMeshcat(py::module_ m) {
   {
     using Class = Meshcat;
     constexpr auto& cls_doc = doc.Meshcat;
-    py::class_<Class, std::shared_ptr<Class>> meshcat(
+    py::class_<Class/*, std::shared_ptr<Class> XXX porting */> meshcat(
         m, "Meshcat", cls_doc.doc);
 
     // Meshcat::SideOfFaceToRender enumeration
@@ -400,6 +406,7 @@ void DefineMeshcat(py::module_ m) {
             // This function costs a non-trivial amount of CPU time and blocks
             // on a worker thread; for both reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(), cls_doc.StaticHtml.doc)
+#if 0  // XXX porting
         .def(
             "StaticZip",
             [](const Class& self) {
@@ -414,6 +421,7 @@ void DefineMeshcat(py::module_ m) {
               return py::bytes(result.c_str(), result.size());
             },
             cls_doc.StaticZip.doc)
+#endif  // XXX porting
         .def("StartRecording", &Class::StartRecording,
             py::arg("frames_per_second") = 64.0,
             py::arg("set_visualizations_while_recording") = true,
@@ -537,7 +545,9 @@ void DefineMeshcatVisualizerParams(py::module_ m) {
         m, "MeshcatVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
+#if 0  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
+#endif  // XXX porting
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }

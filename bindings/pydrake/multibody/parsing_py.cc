@@ -40,8 +40,10 @@ PYDRAKE_MODULE(parsing, m) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("AddGroup", &Class::AddGroup, py::arg("name"), py::arg("members"),
             cls_doc.AddGroup.doc)
+#if 0  // XXX porting
         .def("AddExclusionPair", &Class::AddExclusionPair, py::arg("pair"),
             cls_doc.AddExclusionPair.doc)
+#endif  // XXX porting
         .def("empty", &Class::empty, cls_doc.empty.doc)
         .def("groups", &Class::groups, cls_doc.groups.doc)
         .def("exclusion_pairs", &Class::exclusion_pairs,

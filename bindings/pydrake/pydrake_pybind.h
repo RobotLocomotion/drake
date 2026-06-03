@@ -1,8 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 
+#ifdef PYDRAKE_USE_PYBIND11
 // Here we include a lot of the pybind11 API, to ensure that all code in pydrake
 // sees the same definitions ("One Definition Rule") for template types intended
 // for specialization. Any pybind11 headers with `type_caster<>` specializations
@@ -18,6 +20,73 @@
 #include "pybind11/stl.h"
 #include "pybind11/stl/filesystem.h"
 #include "pybind11/typing.h"
+#endif  // PYDRAKE_USE_PYBIND11
+
+#ifdef PYDRAKE_USE_NANOBIND
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wattributes"
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wc++11-narrowing"
+#else
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#pragma GCC diagnostic ignored "-Wnarrowing"
+#endif  // __clang__
+#include "nanobind/eigen/dense.h"
+#include "nanobind/eval.h"
+#include "nanobind/make_iterator.h"
+#include "nanobind/nanobind.h"
+#include "nanobind/ndarray.h"
+#include "nanobind/operators.h"
+#include "nanobind/stl/array.h"
+#include "nanobind/stl/filesystem.h"
+#include "nanobind/stl/function.h"
+#include "nanobind/stl/map.h"
+#include "nanobind/stl/optional.h"
+#include "nanobind/stl/pair.h"
+#include "nanobind/stl/set.h"
+#include "nanobind/stl/shared_ptr.h"
+#include "nanobind/stl/string.h"
+#include "nanobind/stl/string_view.h"
+#include "nanobind/stl/unique_ptr.h"
+#include "nanobind/stl/unordered_map.h"
+#include "nanobind/stl/variant.h"
+#include "nanobind/stl/vector.h"
+#include "nanobind/trampoline.h"
+#pragma GCC diagnostic pop
+
+#include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
+#include "drake/common/autodiff.h"
+#include "drake/common/drake_export.h"
+
+// XXX porting shim-fest
+namespace nanobind {
+namespace detail {
+
+template <typename T>
+using is_pyobject = std::is_base_of<api_tag, std::remove_reference_t<T>>;
+
+/** Add list-to-array implicit casting. */
+template <typename... Args>
+NB_INLINE ndarray_handle* ndarray_extra_import(PyObject* o,
+    const ndarray_config* config, bool convert, cleanup_list* cleanup,
+    ndarray_config_t<int, Args...>*) noexcept {
+  if (!convert) {
+    return {};
+  }
+  auto numpy = module_::import_("numpy");
+  auto array = numpy.attr("asarray")(handle(o));  // XXX check for exception
+  const int ndim = cast<int>(array.attr("ndim"));
+  if ((ndim == 1) && (config->ndim == 2)) {
+    // Promote from 1d array to 2d array (as column vector).
+    array = array.attr("reshape")(-1, 1);
+  }
+  return ndarray_import(array.ptr(), config, /* convert = */ true, cleanup);
+}
+
+}  // namespace detail
+}  // namespace nanobind
+#endif  // PYDRAKE_USE_NANOBIND
 
 namespace drake {
 
@@ -37,7 +106,11 @@ namespace pydrake {
 
 // Note: Doxygen apparently doesn't process comments for namespace aliases. If
 // you put Doxygen comments here they will apply instead to py_rvp.
+#ifdef PYDRAKE_USE_PYBIND11
 namespace py = pybind11;
+#else  // PYDRAKE_USE_NANOBIND
+namespace py = nanobind;
+#endif
 
 /// Shortened alias for py::rv_policy. For more information, see
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
@@ -122,7 +195,10 @@ void DefClone(PyClass* ppy_class) {
 template <typename PyClass, typename GetState, typename SetState>
 void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
   PyClass& py_class = *ppy_class;
-
+#ifdef PYDRAKE_USE_NANOBIND
+  py_class.def("__getstate__", std::forward<GetState>(get_state));
+  py_class.def("__setstate__", std::forward<SetState>(set_state));
+#else   // PYDRAKE_USE_PYBIND11
   using Class = typename PyClass::Type;
   using Pickled = std::invoke_result_t<GetState, const Class&>;
 
@@ -140,6 +216,7 @@ void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
 
   py_class.def(py::pickle(
       std::forward<GetState>(get_state), std::move(set_state_with_return)));
+#endif  // PYDRAKE_USE_NANOBIND
 }
 
 /// Returns a constructor for creating an instance of Class and initializing
@@ -154,6 +231,7 @@ void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
 /// @endcode
 ///
 /// @tparam Class The C++ class. Must have a default constructor.
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename Class>
 auto ParamInit() {
   return py::init([](py::kwargs kwargs) {
@@ -168,6 +246,25 @@ auto ParamInit() {
     return obj;
   });
 }
+#else   // PYDRAKE_USE_NANOBIND
+template <typename CppClass>
+struct DRAKE_NO_EXPORT ParamInit : py::def_visitor<ParamInit<CppClass>> {
+  template <typename PyClass, typename... Extra>
+  void execute(PyClass& cl, const Extra&...) {
+    cl.def("__init__", [](CppClass* self, py::kwargs kwargs) {
+      new (self) CppClass();
+      py::object py_obj = py::cast(self, py_rvp::reference);
+
+      // Nanobind wouldn't have known the c++ instance is ready yet, but we
+      // have to mark it ready to allow all of the setattr machinery to work
+      // before init returns.
+      py::inst_mark_ready(py_obj);
+
+      py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    });
+  }
+};
+#endif  // PYDRAKE_USE_PYBIND11
 
 /// Executes Python code to introduce additional symbols for a given module.
 /// For a module with local name `{name}` and use_subdir=False, the code
@@ -229,11 +326,56 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 
 /// Allow numpy arrays of with dtype=object containing `Type` objects to convert
 /// to and from Eigen matrices of `Type`.
+#ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#else  // PYDRAKE_USE_NANOBIND
+#define PYDRAKE_NUMPY_OBJECT_DTYPE(Type)                                       \
+  namespace nanobind {                                                         \
+  namespace detail {                                                           \
+  template <typename T>                                                        \
+  struct type_caster<T,                                                        \
+      enable_if_t<is_pydrake_numpy_dtype_object_castable<T> &&                 \
+                  std::is_same_v<std::remove_cv_t<typename T::Scalar>, Type>>> \
+      : public pydrake_numpy_dtype_object_type_caster<T> {};                   \
+  template <typename PlainObjectType, int Options, typename StrideType>        \
+  struct type_caster<Eigen::Ref<PlainObjectType, Options, StrideType>,         \
+      enable_if_t<std::is_same_v<                                              \
+          std::remove_cv_t<typename PlainObjectType::Scalar>, Type>>>          \
+      : public pydrake_numpy_dtype_object_type_caster<                         \
+            Eigen::Matrix<typename PlainObjectType::Scalar,                    \
+                PlainObjectType::RowsAtCompileTime,                            \
+                PlainObjectType::ColsAtCompileTime, 0,                         \
+                PlainObjectType::MaxRowsAtCompileTime,                         \
+                PlainObjectType::MaxColsAtCompileTime>> {                      \
+    template <typename T>                                                      \
+    using Cast = Eigen::Matrix<typename PlainObjectType::Scalar,               \
+        PlainObjectType::RowsAtCompileTime,                                    \
+        PlainObjectType::ColsAtCompileTime, 0,                                 \
+        PlainObjectType::MaxRowsAtCompileTime,                                 \
+        PlainObjectType::MaxColsAtCompileTime>;                                \
+    explicit operator Eigen::Matrix<typename PlainObjectType::Scalar,          \
+        PlainObjectType::RowsAtCompileTime,                                    \
+        PlainObjectType::ColsAtCompileTime, 0,                                 \
+        PlainObjectType::MaxRowsAtCompileTime,                                 \
+        PlainObjectType::MaxColsAtCompileTime>() const {                       \
+      return this->value;                                                      \
+    }                                                                          \
+  };                                                                           \
+  } /* namespace detail */                                                     \
+  } /* namespace nanobind */
+#endif  // PYDRAKE_USE_PYBIND11
 
+#ifdef PYDRAKE_USE_PYBIND11
 // Legacy synonym for PYDRAKE_NUMPY_OBJECT_DTYPE. Don't use this in new code.
 #define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
   PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#endif  // PYDRAKE_USE_PYBIND11
 
 // This alias helps ease Drake's transition to nanobind.
+#ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_MODULE PYBIND11_MODULE
+#define PYDRAKE_BINDER_NAMESPACE pybind11
+#else  // PYDRAKE_USE_NANOBIND
+#define PYDRAKE_MODULE NB_MODULE
+#define PYDRAKE_BINDER_NAMESPACE nanobind
+#endif

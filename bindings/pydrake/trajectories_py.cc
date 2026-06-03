@@ -42,7 +42,8 @@ using trajectories::Trajectory;
 // fields as would be typical), so we must bind the attributes manually.
 template <typename PyClass>
 void BindPiecewisePolynomialSerialize(PyClass* cls) {
-  using Class = trajectories::PiecewisePolynomial<double>;
+  // XXX porting -- unused
+  // using Class = trajectories::PiecewisePolynomial<double>;
   // The C++ types of the serialized fields.
   using Breaks = std::vector<double>;
   using Polynomials = std::vector<MatrixX<Eigen::VectorXd>>;
@@ -86,6 +87,7 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // to getattr (and setattr) on "breaks" and "polynomials". However, we don't
   // want to expose those properties to users so we'll respell the name to add a
   // leading underscore, and bind the properties using the private name.
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   cls->def("__getattr__", [](Class& self, py::str name) -> py::object {
     py::object self_py = py::cast(self, py_rvp::reference);
     const std::string_view name_cxx(name.c_str());
@@ -185,6 +187,7 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
             .set_polynomials = true, .polynomials = std::move(cxx_poly)};
         self.Serialize(&archive);
       });
+#endif  // XXX porting
 }
 
 // Provides a templated 'namespace'.
@@ -228,8 +231,8 @@ struct Impl {
 
   class PyTrajectory : public TrajectoryPublic {
    public:
+    NB_TRAMPOLINE(TrajectoryPublic, 100);
     using Base = TrajectoryPublic;
-    using Base::Base;
 
     // Utility function that takes a Python object which is-a Trajectory and
     // wraps it in a unique_ptr that manages object lifetime when returned back
@@ -264,46 +267,43 @@ struct Impl {
     }
 
     MatrixX<T> do_value(const T& t) const final {
-      PYBIND11_OVERRIDE_PURE(MatrixX<T>, Trajectory<T>, do_value, t);
+      NB_OVERRIDE_PURE(do_value, t);
     }
 
     bool do_has_derivative() const final {
-      PYBIND11_OVERRIDE_PURE(bool, Trajectory<T>, do_has_derivative);
+      NB_OVERRIDE_PURE(do_has_derivative);
     }
 
     MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final {
-      PYBIND11_OVERRIDE_PURE(
-          MatrixX<T>, Trajectory<T>, DoEvalDerivative, t, derivative_order);
+      NB_OVERRIDE_PURE(DoEvalDerivative, t, derivative_order);
     }
 
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
         int derivative_order) const final {
       py::gil_scoped_acquire guard;
-      // Because the PYBIND11_OVERRIDE_PURE macro embeds a `return ...;`
+#ifdef PYDRAKE_USE_PYBIND11
+      // XXX porting -- change of signature issues with macro
+      // Because the NB_OVERRIDE_PURE macro embeds a `return ...;`
       // statement, we must wrap it in lambda so that we can post-process the
       // return value.
       auto make_python_derivative = [&]() -> py::object {
-        PYBIND11_OVERRIDE_PURE(
-            py::object, Trajectory<T>, DoMakeDerivative, derivative_order);
+        NB_OVERRIDE_PURE(DoMakeDerivative, derivative_order);
       };
       return WrapPyTrajectory(make_python_derivative());
+#else
+      // XXX porting
+      unused(derivative_order);
+      return {};
+#endif
     }
 
-    T do_start_time() const final {
-      PYBIND11_OVERRIDE_PURE(T, Trajectory<T>, do_start_time);
-    }
+    T do_start_time() const final { NB_OVERRIDE_PURE(do_start_time); }
 
-    T do_end_time() const final {
-      PYBIND11_OVERRIDE_PURE(T, Trajectory<T>, do_end_time);
-    }
+    T do_end_time() const final { NB_OVERRIDE_PURE(do_end_time); }
 
-    Eigen::Index do_rows() const final {
-      PYBIND11_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_rows);
-    }
+    Eigen::Index do_rows() const final { NB_OVERRIDE_PURE(do_rows); }
 
-    Eigen::Index do_cols() const final {
-      PYBIND11_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_cols);
-    }
+    Eigen::Index do_cols() const final { NB_OVERRIDE_PURE(do_cols); }
   };
 
   static void DoScalarDependentDefinitions(py::module_ m) {
@@ -393,10 +393,13 @@ struct Impl {
           // std::vector<MatrixX<T>>. We want each column of the numpy array as
           // a MatrixX of control points, but the std::vectors here are
           // associated with the rows in numpy.
-          .def(py::init([](math::BsplineBasis<T> basis,
-                            std::vector<std::vector<T>> control_points) {
-            return Class(basis, MakeEigenFromRowMajorVectors(control_points));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, math::BsplineBasis<T> basis,
+                  std::vector<std::vector<T>> control_points) {
+                new (self)
+                    Class(basis, MakeEigenFromRowMajorVectors(control_points));
+              },
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
@@ -742,15 +745,17 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, PiecewiseTrajectory<T>>(
           m, "CompositeTrajectory", param, cls_doc.doc);
       cls  // BR
-          .def(py::init([](std::vector<const Trajectory<T>*> py_segments) {
-            std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
-            segments.reserve(py_segments.size());
-            for (const Trajectory<T>* py_segment : py_segments) {
-              segments.emplace_back(py_segment ? py_segment->Clone() : nullptr);
-            }
-            return std::make_unique<CompositeTrajectory<T>>(
-                std::move(segments));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, std::vector<const Trajectory<T>*> py_segments) {
+                std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+                segments.reserve(py_segments.size());
+                for (const Trajectory<T>* py_segment : py_segments) {
+                  segments.emplace_back(
+                      py_segment ? py_segment->Clone() : nullptr);
+                }
+                new (self) Class(std::move(segments));
+              },
               py::arg("segments"), cls_doc.ctor.doc)
           .def("segment", &Class::segment, py::arg("segment_index"),
               py_rvp::reference_internal, cls_doc.segment.doc)
@@ -988,12 +993,13 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
           m, "_WrappedTrajectory", param, "(Internal use only)");
       cls  // BR
-          .def(py::init([](const Trajectory<T>& trajectory) {
-            // The keep_alive is responsible for object lifetime, so we'll give
-            // the constructor an unowned pointer.
-            return std::make_unique<Class>(
-                make_unowned_shared_ptr_from_raw(&trajectory));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, const Trajectory<T>& trajectory) {
+                // The keep_alive is responsible for object lifetime, so we'll
+                // give the constructor an unowned pointer.
+                new (self) Class(make_unowned_shared_ptr_from_raw(&trajectory));
+              },
               py::arg("trajectory"),
               // Keep alive, ownership: `return` keeps `trajectory` alive.
               py::keep_alive<0, 1>())

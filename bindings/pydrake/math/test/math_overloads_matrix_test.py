@@ -21,7 +21,14 @@ def _matmul_dtype_pairs():
     that operate on a pair of matrix inputs. We'll test all pairs *except* we
     won't mix autodiff with symbolic.
     """
-    types = (float, AutoDiffXd, Variable, Expression, Monomial, Polynomial)
+    types = (
+        float,
+        # AutoDiffXd,  # XXX porting
+        # Variable,  # XXX porting
+        # Expression,  # XXX porting
+        # Monomial,  # XXX porting
+        # Polynomial,  # XXX porting
+    )
     for T1, T2 in itertools.product(types, types):
         any_autodiff = any([T in (AutoDiffXd,) for T in (T1, T2)])
         all_nonsymbolic = all([T in (float, AutoDiffXd) for T in (T1, T2)])

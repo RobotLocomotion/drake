@@ -85,6 +85,7 @@ struct BuilderLifeSupport {
 template <typename T, size_t Builder>
 struct builder_life_support_stash {};
 
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 template <typename T>
 void builder_life_support_stash_impl(size_t builder_index,
     const py::detail::function_call& call, py::handle ret) {
@@ -121,14 +122,16 @@ void builder_life_support_stash_impl(size_t builder_index,
   BuilderLifeSupport<T>::attrs(cc_builder)
       .emplace(BuilderLifeSupport<T>::kKey, py_builder);
 }
+#endif  // XXX porting
 
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
 
-namespace pybind11 {
+namespace nanobind {
 namespace detail {
 
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 // Provide a specialization of the pybind11 internal process_attribute
 // template; this allows writing an annotation that works seamlessly in
 // bindings definitions.
@@ -144,6 +147,7 @@ class process_attribute<
         Builder, call, ret);
   }
 };
+#endif  // XXX porting
 
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace nanobind

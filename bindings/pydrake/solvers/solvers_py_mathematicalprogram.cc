@@ -74,6 +74,7 @@ using symbolic::Variables;
 namespace {
 enum class ArrayShapeType { Scalar, Vector };
 
+#if 0   // XXX porting
 // Checks array shape, provides user-friendly message if it fails.
 void CheckArrayShape(
     py::str var_name, py::array x, ArrayShapeType shape, int size) {
@@ -126,6 +127,7 @@ Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
   };
   return py::cast<Func>(wrapped);
 }
+#endif  // XXX porting
 
 // TODO(eric.cousineau): Make a Python virtual base, and implement this in
 // Python instead.
@@ -134,6 +136,7 @@ class PyFunctionCost : public Cost {
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
   using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
 
+#if 0   // XXX porting
   // Note that we do not allow Python implementations of Cost to be declared as
   // thread safe.
   PyFunctionCost(
@@ -141,6 +144,7 @@ class PyFunctionCost : public Cost {
       : Cost(num_vars, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
+#endif  // XXX porting
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -162,11 +166,13 @@ class PyFunctionCost : public Cost {
   }
 
  private:
+#if 0   // XXX porting
   template <typename T, typename Func>
   Func Wrap(py::function func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
         num_outputs(), ArrayShapeType::Scalar);
   }
+#endif  // XXX porting
 
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
@@ -180,6 +186,7 @@ class PyFunctionConstraint : public Constraint {
   using AutoDiffFunc =
       std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
 
+#if 0   // XXX porting
   // Note that we do not allow Python implementations of Constraint to be
   // declared as thread safe.
   PyFunctionConstraint(int num_vars, const py::function& func,
@@ -188,6 +195,7 @@ class PyFunctionConstraint : public Constraint {
       : Constraint(lb.size(), num_vars, lb, ub, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
+#endif  // XXX porting
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
@@ -211,11 +219,13 @@ class PyFunctionConstraint : public Constraint {
   }
 
  private:
+#if 0   // XXX porting
   template <typename T, typename Func>
   Func Wrap(py::function func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
         num_vars(), num_outputs(), ArrayShapeType::Vector);
   }
+#endif  // XXX porting
 
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
@@ -231,6 +241,7 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
 // pybind11 trampoline class to permit overriding virtual functions in Python.
 class PySolverInterface : public solvers::SolverInterface {
  public:
+  NB_TRAMPOLINE(solvers::SolverInterface, 6);
   using Base = solvers::SolverInterface;
 
   PySolverInterface() : Base() {}
@@ -241,37 +252,27 @@ class PySolverInterface : public solvers::SolverInterface {
   // `PySolverInterface`). C++ implementations will use the bindings on the
   // interface below.
 
-  bool available() const override {
-    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, available);
-  }
+  bool available() const override { NB_OVERRIDE_PURE(available); }
 
-  bool enabled() const override {
-    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, enabled);
-  }
+  bool enabled() const override { NB_OVERRIDE_PURE(enabled); }
 
   void Solve(const solvers::MathematicalProgram& prog,
       const std::optional<Eigen::VectorXd>& initial_guess,
       const std::optional<solvers::SolverOptions>& solver_options,
       solvers::MathematicalProgramResult* result) const override {
-    PYBIND11_OVERLOAD_PURE(void, solvers::SolverInterface, Solve, prog,
-        initial_guess, solver_options, result);
+    NB_OVERRIDE_PURE(Solve, prog, initial_guess, solver_options, result);
   }
 
-  solvers::SolverId solver_id() const override {
-    PYBIND11_OVERLOAD_PURE(
-        solvers::SolverId, solvers::SolverInterface, solver_id);
-  }
+  solvers::SolverId solver_id() const override { NB_OVERRIDE_PURE(solver_id); }
 
   bool AreProgramAttributesSatisfied(
       const solvers::MathematicalProgram& prog) const override {
-    PYBIND11_OVERLOAD_PURE(
-        bool, solvers::SolverInterface, AreProgramAttributesSatisfied, prog);
+    NB_OVERRIDE_PURE(AreProgramAttributesSatisfied, prog);
   }
 
   std::string ExplainUnsatisfiedProgramAttributes(
       const MathematicalProgram& prog) const override {
-    PYBIND11_OVERLOAD_PURE(std::string, solvers::SolverInterface,
-        ExplainUnsatisfiedProgramAttributes, prog);
+    NB_OVERRIDE_PURE(ExplainUnsatisfiedProgramAttributes, prog);
   }
 };
 
@@ -279,7 +280,9 @@ void BindSolverInterface(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   py::class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
-      .def(py::init([]() { return std::make_unique<PySolverInterface>(); }),
+      .def(
+          "__init__",
+          [](SolverInterface* self) { new (self) PySolverInterface(); },
           doc.SolverInterface.ctor.doc)
       // The following bindings are present to allow Python to call C++
       // implementations of this interface.
@@ -623,6 +626,7 @@ void BindMathematicalProgram(py::module_ m) {
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddVisualizationCallback),
           doc.MathematicalProgram.AddVisualizationCallback.doc)
+#if 0  // XXX porting
       .def(
           "AddCost",
           [](MathematicalProgram* self, py::function func,
@@ -636,6 +640,7 @@ void BindMathematicalProgram(py::module_ m) {
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to generated_docstrings.
           "Adds a cost function.")
+#endif  // XXX porting
       .def(
           "AddCost",
           [](MathematicalProgram* self, const Binding<Cost>& binding) {
@@ -774,6 +779,7 @@ void BindMathematicalProgram(py::module_ m) {
               &MathematicalProgram::AddMaximizeGeometricMeanCost),
           py::arg("x"), py::arg("c"),
           doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args)
+#if 0  // XXX porting
       .def(
           "AddConstraint",
           [](MathematicalProgram* self, py::function func,
@@ -788,6 +794,7 @@ void BindMathematicalProgram(py::module_ m) {
           py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           py::arg("description") = "",
           "Adds a constraint using a Python function.")
+#endif  // XXX porting
       .def("AddConstraint",
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
@@ -1305,6 +1312,7 @@ void BindMathematicalProgram(py::module_ m) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
+#if 0  // XXX porting
       .def("SetDecisionVariableValueInVector",
           py::overload_cast<const symbolic::Variable&, double,
               EigenPtr<Eigen::VectorXd>>(
@@ -1324,6 +1332,7 @@ void BindMathematicalProgram(py::module_ m) {
           py::arg("decision_variables_new_values"), py::arg("values"),
           doc.MathematicalProgram.SetDecisionVariableValueInVector
               .doc_3args_decision_variables_decision_variables_new_values_values)
+#endif  // XXX porting
       .def("SetSolverOption",
           py::overload_cast<const SolverId&, const std::string&, double>(
               &MathematicalProgram::SetSolverOption),
@@ -1576,24 +1585,31 @@ void BindSolutionResult(py::module_ m) {
 }
 
 void BindPyFunctionCost(py::module_ m) {
-  py::class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
+  py::class_<PyFunctionCost, Cost
+      /*, std::shared_ptr<PyFunctionCost> XXX porting */>(
       m, "PyFunctionCost", "Cost with its evaluator as a Python function")
+#if 0   // XXX porting
       .def(py::init<int, const py::function&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
-          "`num_vars` variables.");
+          "`num_vars` variables.")
+#endif  // XXX porting
+      ;
 }
 
 void BindPyFunctionConstraint(py::module_ m) {
-  py::class_<PyFunctionConstraint, Constraint,
-      std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
+  py::class_<PyFunctionConstraint, Constraint
+      /*, std::shared_ptr<PyFunctionConstraint> XXX porting */>(m,
+      "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
+#if 0  // XXX porting
       .def(py::init<int, const py::function&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("lb"), py::arg("ub"),
           py::arg("description") = "",
           "Constructs a constraint for a python function `func`, encoding `lb` "
           "<= `func` (x) <= `ub`, where x is of size `num_vars`.")
+#endif  // XXX porting
       .def("UpdateLowerBound", &PyFunctionConstraint::UpdateLowerBound,
           py::arg("new_lb"), "Update the lower bound of the constraint.")
       .def("UpdateUpperBound", &PyFunctionConstraint::UpdateUpperBound,

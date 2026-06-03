@@ -334,7 +334,8 @@ void DefineModuleSchema(py::module_ m) {
           return;
         }
       }
-      py::eval("object.__setattr__", py::globals())(self, name, value);
+      py::eval("object.__setattr__", py::globals())(
+          py::cast(self, py_rvp::reference), name, value);
     });
   }
 

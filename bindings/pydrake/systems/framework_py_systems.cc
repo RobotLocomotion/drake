@@ -73,10 +73,10 @@ constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 // common/ref_cycle_pybind bookkeeping scheme.
 py::object UniquelyWrapCallback(py::object callback) {
   static std::atomic<uint64_t> uniquifier{0};
-  py::tuple wrapped(2);
-  wrapped[0] = callback;
-  wrapped[1] = uniquifier.fetch_add(1);
-  return wrapped;
+  py::list wrapped;
+  wrapped.append(callback);
+  wrapped.append(uniquifier.fetch_add(1));
+  return py::tuple(wrapped);
 }
 
 // This helper function causes the lifetime of `callback` to be at least as
@@ -103,7 +103,7 @@ using EventCallback = std::function<EventSignature<Args...>>;
 // Declare the handler signature as a python function object with compile-time
 // readable type signature.
 template <typename... Args>
-using PyEventCallback = py::typing::Callable<EventSignature<Args...>>;
+using PyEventCallback = py::typed<py::callable, EventSignature<Args...>>;
 
 // Declare the various callback types that will appear as parameters of
 // bindings, such that automatic documentation has correct type signatures.
@@ -244,8 +244,8 @@ struct Impl {
   template <typename LeafSystemBase = LeafSystemPublic>
   class PyLeafSystemBase : public LeafSystemBase {
    public:
+    NB_TRAMPOLINE(LeafSystemBase, 100);
     using Base = LeafSystemBase;
-    using Base::Base;
 
     // Trampoline virtual methods.
 
@@ -257,12 +257,12 @@ struct Impl {
       // @see https://github.com/pybind/pybind11/issues/1241
       // TODO(eric.cousineau): Figure out how to supply different behavior,
       // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(
-          void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
+      NB_OVERRIDE(DoCalcTimeDerivatives, context, derivatives);
       // If the macro did not return, use default functionality.
       Base::DoCalcTimeDerivatives(context, derivatives);
     }
 
+#if 0   // XXX porting
     // This actually changes the signature of DoGetWitnessFunction,
     // expecting the python overload to return a list of witnesses (instead
     // of taking in an empty pointer to std::vector<>.
@@ -273,10 +273,8 @@ struct Impl {
       py::gil_scoped_acquire guard;
       auto wrapped =
           [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
-        PYBIND11_OVERLOAD_INT(
-            std::optional<std::vector<const WitnessFunction<T>*>>,
-            LeafSystem<T>, "DoGetWitnessFunctions", &context);
         std::vector<const WitnessFunction<T>*> result;
+        NB_OVERRIDE(DoGetWitnessFunctions, context, &result);
         // If the macro did not return, use default functionality.
         Base::DoGetWitnessFunctions(context, &result);
         return {result};
@@ -290,11 +288,11 @@ struct Impl {
       }
       *witnesses = std::move(*result);
     }
+#endif  // XXX porting
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
-          DoGetGraphvizFragment, params);
+      NB_OVERRIDE(DoGetGraphvizFragment, params);
     }
   };
 
@@ -313,13 +311,12 @@ struct Impl {
   template <typename DiagramBase = DiagramPublic>
   class PyDiagramBase : public DiagramBase {
    public:
+    NB_TRAMPOLINE(DiagramBase, 100);
     using Base = DiagramBase;
-    using Base::Base;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
-          DoGetGraphvizFragment, params);
+      NB_OVERRIDE(DoGetGraphvizFragment, params);
     }
   };
 
@@ -344,9 +341,11 @@ struct Impl {
 
   class PyVectorSystem : public VectorSystemPublic {
    public:
+    NB_TRAMPOLINE(VectorSystemPublic, 100);
     using Base = VectorSystemPublic;
-    using Base::Base;
 
+#if 0  // XXX porting
+    // something something ToEigenRef().
     void DoCalcVectorOutput(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
@@ -356,11 +355,11 @@ struct Impl {
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
       // TODO(eric.cousineau): This will be resolved once dtype=custom is
       // resolved.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>, "DoCalcVectorOutput",
+      NB_OVERRIDE(DoCalcVectorOutput,
           // N.B. Passing `Eigen::Map<>` derived classes by reference rather
           // than pointer to ensure conceptual clarity. pybind11 `type_caster`
           // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
-          &context, input, state, ToEigenRef(output));
+          context, input, state, ToEigenRef(output));
       // If the macro did not return, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, output);
     }
@@ -371,8 +370,7 @@ struct Impl {
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "DoCalcVectorTimeDerivatives", &context, input, state,
+      NB_OVERRIDE(DoCalcVectorTimeDerivatives, context, input, state,
           ToEigenRef(derivatives));
       // If the macro did not return, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, derivatives);
@@ -384,24 +382,25 @@ struct Impl {
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
+      NB_OVERRIDE(DoCalcVectorDiscreteVariableUpdates, &context, input, state,
           ToEigenRef(next_state));
       // If the macro did not return, use default functionality.
       Base::DoCalcVectorDiscreteVariableUpdates(
           context, input, state, next_state);
     }
+#endif  // XXX porting
   };
 
   class PySystemVisitor : public SystemVisitor<T> {
    public:
+    NB_TRAMPOLINE(SystemVisitor<T>, 100);
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
-      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitSystem, system);
+      NB_OVERRIDE_PURE(VisitSystem, system);
     };
 
     void VisitDiagram(const Diagram<T>& diagram) override {
-      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
+      NB_OVERRIDE_PURE(VisitDiagram, diagram);
     }
   };
 
@@ -485,10 +484,12 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
+#if 0  // XXX porting
         .def("CalcImplicitTimeDerivativesResidual",
             &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
             py::arg("proposed_derivatives"), py::arg("residual"),
             doc.System.CalcImplicitTimeDerivativesResidual.doc)
+#endif  // XXX porting
         .def(
             "CalcImplicitTimeDerivativesResidual",
             [](const System<T>* self, const Context<T>& context,
@@ -731,6 +732,7 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareAbstractParameter.doc)
         .def("DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
+#if 0   // XXX porting
         .def(
             "DeclareAbstractOutputPort",
             [](PyLeafSystem* self, const std::string& name, py::function alloc,
@@ -750,6 +752,8 @@ Note: The above is for the C++ documentation. For Python, use
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_calc_prerequisites_of_calc)
+#endif  // XXX porting
+
         .def(
             "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
@@ -1081,9 +1085,8 @@ Note: The above is for the C++ documentation. For Python, use
                     input_locator.first, py_rvp::reference_internal, self_py);
                 py::object input_port_index_py = py::cast(input_locator.second);
 
-                py::tuple input_locator_py(2);
-                input_locator_py[0] = input_system_py;
-                input_locator_py[1] = input_port_index_py;
+                py::tuple input_locator_py =
+                    py::make_tuple(input_system_py, input_port_index_py);
 
                 // Keep alive, ownership: `output_system_py` keeps `self` alive.
                 py::object output_system_py = py::cast(
@@ -1091,9 +1094,8 @@ Note: The above is for the C++ documentation. For Python, use
                 py::object output_port_index_py =
                     py::cast(output_locator.second);
 
-                py::tuple output_locator_py(2);
-                output_locator_py[0] = output_system_py;
-                output_locator_py[1] = output_port_index_py;
+                py::tuple output_locator_py =
+                    py::make_tuple(output_system_py, output_port_index_py);
 
                 out[input_locator_py] = output_locator_py;
               }
@@ -1111,9 +1113,7 @@ Note: The above is for the C++ documentation. For Python, use
                     locator.first, py_rvp::reference_internal, self_py);
                 py::object port_index_py = py::cast(locator.second);
 
-                py::tuple locator_py(2);
-                locator_py[0] = system_py;
-                locator_py[1] = port_index_py;
+                py::tuple locator_py = py::make_tuple(system_py, port_index_py);
                 out.append(locator_py);
               }
               return out;
@@ -1129,9 +1129,7 @@ Note: The above is for the C++ documentation. For Python, use
                   py::cast(locator.first, py_rvp::reference_internal, self_py);
               py::object port_index_py = py::cast(locator.second);
 
-              py::tuple locator_py(2);
-              locator_py[0] = system_py;
-              locator_py[1] = port_index_py;
+              py::tuple locator_py = py::make_tuple(system_py, port_index_py);
               return locator_py;
             },
             py::arg("port_index"), doc.Diagram.get_output_port_locator.doc)
@@ -1165,11 +1163,13 @@ Note: The above is for the C++ documentation. For Python, use
           LeafSystem<T>>(
           m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc);
       cls  // BR
-          .def(py::init([](int input_size, int output_size,
-                            std::optional<bool> direct_feedthrough) {
-            return new PyVectorSystem(
-                input_size, output_size, direct_feedthrough);
-          }),
+          .def(
+              "__init__",
+              [](PyVectorSystem* self, int input_size, int output_size,
+                  std::optional<bool> direct_feedthrough) {
+                new (self)
+                    PyVectorSystem(input_size, output_size, direct_feedthrough);
+              },
               py::arg("input_size"), py::arg("output_size"),
               py::arg("direct_feedthrough"), doc.VectorSystem.ctor.doc_3args);
     }
@@ -1373,7 +1373,9 @@ void DefineSystemScalarConverter(PyClass* cls) {
       using system_scalar_converter_internal::AddPydrakeConverterFunction;
       // N.B. The "_AddConstructor" method is called by scalar_conversion.py
       // to register a constructor, similar to MaybeAddConstructor in C++.
-      using ConverterFunction = std::function<System<T>*(const System<U>&)>;
+      // XXX porting unused
+      //using ConverterFunction = std::function<System<T>*(const System<U>&)>;
+#if 0   // XXX porting
       AddTemplateMethod(
           converter, "_AddConstructor",
           [](SystemScalarConverter* self,
@@ -1403,6 +1405,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
                     }});
           },
           GetPyParam<T, U>());
+#endif  // XXX porting
     };
     // N.B. When changing the pairs of supported types below, ensure that these
     // reflect the stanzas for the advanced constructor of

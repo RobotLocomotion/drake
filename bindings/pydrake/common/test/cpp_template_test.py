@@ -339,8 +339,8 @@ class TestCppTemplate(unittest.TestCase):
         # arguments.
         with self.assertRaisesRegex(
             TypeError,
-            r".*incompatible function arguments(?s:.)*\(arg0: "
-            r".*\.SimpleTemplate𝓣int𝓤\).*",
+            r".*incompatible function arguments(?s:.)*\(arg: "
+            r".*\.SimpleTemplate𝓣int𝓤\.*",
         ):
             simple_func("incorrect_value")
 

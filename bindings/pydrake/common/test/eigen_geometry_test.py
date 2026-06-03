@@ -254,6 +254,8 @@ class TestEigenGeometry(unittest.TestCase):
         self.assertEqual(numpy_compare.resolve_type(value_identity.angle()), T)
         numpy_compare.assert_float_equal(value_identity.angle(), 0.0)
         numpy_compare.assert_float_equal(value_identity.axis(), [1.0, 0, 0])
+        got = value_identity.axis()
+        numpy_compare.assert_float_equal(got, [1.0, 0, 0])
 
         # Construct with rotation matrix.
         R = np.array(

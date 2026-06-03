@@ -6,6 +6,7 @@
 namespace drake {
 namespace pydrake {
 
+#if 0  // XXX porting
 std::function<std::unique_ptr<AbstractValue>()>
 MakeCppCompatibleAllocateCallback(py::function allocate) {
   return [allocate = std::move(allocate)]() -> std::unique_ptr<AbstractValue> {
@@ -39,6 +40,7 @@ MakeCppCompatibleAllocateCallback(py::function allocate) {
     return result_cpp->Clone();
   };
 }
+#endif  // XXX porting
 
 std::function<void(const systems::ContextBase&, AbstractValue*)>
 MakeCppCompatibleCalcCallback(

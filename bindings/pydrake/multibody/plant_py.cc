@@ -361,7 +361,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("GetBaseBodyJointType", &Class::GetBaseBodyJointType,
             py::arg("model_instance") = std::nullopt);
     // Mathy bits
-    cls  // BR
+    cls      // BR
         .def(
             "CalcPointsPositions",
             [](const Class* self, const Context<T>& context,
@@ -399,39 +399,41 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 const std::vector<ModelInstanceIndex>&>(&Class::CalcTotalMass),
             py::arg("context"), py::arg("model_instances"),
             cls_doc.CalcTotalMass.doc_2args)
-        .def("CalcCenterOfMassPositionInWorld",
-            overload_cast_explicit<Vector3<T>, const Context<T>&>(
-                &Class::CalcCenterOfMassPositionInWorld),
-            py::arg("context"),
-            cls_doc.CalcCenterOfMassPositionInWorld.doc_1args)
-        .def("CalcCenterOfMassPositionInWorld",
-            overload_cast_explicit<Vector3<T>, const Context<T>&,
-                const std::vector<ModelInstanceIndex>&>(
-                &Class::CalcCenterOfMassPositionInWorld),
-            py::arg("context"), py::arg("model_instances"),
-            cls_doc.CalcCenterOfMassPositionInWorld.doc_2args)
-        .def("CalcCenterOfMassTranslationalVelocityInWorld",
-            overload_cast_explicit<Vector3<T>, const Context<T>&>(
-                &Class::CalcCenterOfMassTranslationalVelocityInWorld),
-            py::arg("context"),
-            cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc_1args)
-        .def("CalcCenterOfMassTranslationalVelocityInWorld",
-            overload_cast_explicit<Vector3<T>, const Context<T>&,
-                const std::vector<ModelInstanceIndex>&>(
-                &Class::CalcCenterOfMassTranslationalVelocityInWorld),
-            py::arg("context"), py::arg("model_instances"),
-            cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc_2args)
-        .def("CalcCenterOfMassTranslationalAccelerationInWorld",
-            overload_cast_explicit<Vector3<T>, const Context<T>&>(
-                &Class::CalcCenterOfMassTranslationalAccelerationInWorld),
-            py::arg("context"),
-            cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld.doc_1args)
-        .def("CalcCenterOfMassTranslationalAccelerationInWorld",
-            overload_cast_explicit<Vector3<T>, const Context<T>&,
-                const std::vector<ModelInstanceIndex>&>(
-                &Class::CalcCenterOfMassTranslationalAccelerationInWorld),
-            py::arg("context"), py::arg("model_instances"),
-            cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld.doc_2args)
+            .def("CalcCenterOfMassPositionInWorld",
+                overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                    &Class::CalcCenterOfMassPositionInWorld),
+                py::arg("context"),
+                cls_doc.CalcCenterOfMassPositionInWorld.doc_1args)
+            .def("CalcCenterOfMassPositionInWorld",
+                overload_cast_explicit<Vector3<T>, const Context<T>&,
+                    const std::vector<ModelInstanceIndex>&>(
+                    &Class::CalcCenterOfMassPositionInWorld),
+                py::arg("context"), py::arg("model_instances"),
+                cls_doc.CalcCenterOfMassPositionInWorld.doc_2args)
+            .def("CalcCenterOfMassTranslationalVelocityInWorld",
+                overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                    &Class::CalcCenterOfMassTranslationalVelocityInWorld),
+                py::arg("context"),
+                cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc_1args)
+            .def("CalcCenterOfMassTranslationalVelocityInWorld",
+                overload_cast_explicit<Vector3<T>, const Context<T>&,
+                    const std::vector<ModelInstanceIndex>&>(
+                    &Class::CalcCenterOfMassTranslationalVelocityInWorld),
+                py::arg("context"), py::arg("model_instances"),
+                cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc_2args)
+            .def("CalcCenterOfMassTranslationalAccelerationInWorld",
+                overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                    &Class::CalcCenterOfMassTranslationalAccelerationInWorld),
+                py::arg("context"),
+                cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld
+                    .doc_1args)
+            .def("CalcCenterOfMassTranslationalAccelerationInWorld",
+                overload_cast_explicit<Vector3<T>, const Context<T>&,
+                    const std::vector<ModelInstanceIndex>&>(
+                    &Class::CalcCenterOfMassTranslationalAccelerationInWorld),
+                py::arg("context"), py::arg("model_instances"),
+                cls_doc.CalcCenterOfMassTranslationalAccelerationInWorld
+                    .doc_2args)
         .def(
             "CalcSpatialInertia",
             [](const Class* self, const Context<T>& context,
@@ -441,70 +443,73 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             },
             py::arg("context"), py::arg("frame_F"), py::arg("body_indexes"),
             cls_doc.CalcSpatialInertia.doc)
-        .def(
-            "CalcSpatialMomentumInWorldAboutPoint",
-            [](const Class* self, const Context<T>& context,
-                const Vector3<T>& p_WoP_W) {
-              return self->CalcSpatialMomentumInWorldAboutPoint(
-                  context, p_WoP_W);
-            },
-            py::arg("context"), py::arg("p_WoP_W"),
-            cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_2args)
-        .def(
-            "CalcSpatialMomentumInWorldAboutPoint",
-            [](const Class* self, const Context<T>& context,
-                const std::vector<ModelInstanceIndex>& model_instances,
-                const Vector3<T>& p_WoP_W) {
-              return self->CalcSpatialMomentumInWorldAboutPoint(
-                  context, model_instances, p_WoP_W);
-            },
-            py::arg("context"), py::arg("model_instances"), py::arg("p_WoP_W"),
-            cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_3args)
-        .def("CalcBiasCenterOfMassTranslationalAcceleration",
-            overload_cast_explicit<Vector3<T>, const Context<T>&,
-                JacobianWrtVariable, const Frame<T>&, const Frame<T>&>(
-                &Class::CalcBiasCenterOfMassTranslationalAcceleration),
-            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
-            py::arg("frame_E"),
-            cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc_4args)
-        .def("CalcBiasCenterOfMassTranslationalAcceleration",
-            overload_cast_explicit<Vector3<T>, const Context<T>&,
-                const std::vector<ModelInstanceIndex>&, JacobianWrtVariable,
-                const Frame<T>&, const Frame<T>&>(
-                &Class::CalcBiasCenterOfMassTranslationalAcceleration),
-            py::arg("context"), py::arg("model_instances"),
-            py::arg("with_respect_to"), py::arg("frame_A"), py::arg("frame_E"),
-            cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc_5args)
-        .def(
-            "CalcJacobianCenterOfMassTranslationalVelocity",
-            [](const Class* self, const Context<T>& context,
-                JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
-                const Frame<T>& frame_E) {
-              Matrix3X<T> Js_v_AScm_E(
-                  3, GetVariableSize<T>(*self, with_respect_to));
-              self->CalcJacobianCenterOfMassTranslationalVelocity(
-                  context, with_respect_to, frame_A, frame_E, &Js_v_AScm_E);
-              return Js_v_AScm_E;
-            },
-            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
-            py::arg("frame_E"),
-            cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_5args)
-        .def(
-            "CalcJacobianCenterOfMassTranslationalVelocity",
-            [](const Class* self, const Context<T>& context,
-                const std::vector<ModelInstanceIndex>& model_instances,
-                JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
-                const Frame<T>& frame_E) {
-              Matrix3X<T> Js_v_AScm_E(
-                  3, GetVariableSize<T>(*self, with_respect_to));
-              self->CalcJacobianCenterOfMassTranslationalVelocity(context,
-                  model_instances, with_respect_to, frame_A, frame_E,
-                  &Js_v_AScm_E);
-              return Js_v_AScm_E;
-            },
-            py::arg("context"), py::arg("model_instances"),
-            py::arg("with_respect_to"), py::arg("frame_A"), py::arg("frame_E"),
-            cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_6args)
+            .def(
+                "CalcSpatialMomentumInWorldAboutPoint",
+                [](const Class* self, const Context<T>& context,
+                    const Vector3<T>& p_WoP_W) {
+                  return self->CalcSpatialMomentumInWorldAboutPoint(
+                      context, p_WoP_W);
+                },
+                py::arg("context"), py::arg("p_WoP_W"),
+                cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_2args)
+            .def(
+                "CalcSpatialMomentumInWorldAboutPoint",
+                [](const Class* self, const Context<T>& context,
+                    const std::vector<ModelInstanceIndex>& model_instances,
+                    const Vector3<T>& p_WoP_W) {
+                  return self->CalcSpatialMomentumInWorldAboutPoint(
+                      context, model_instances, p_WoP_W);
+                },
+                py::arg("context"), py::arg("model_instances"),
+                py::arg("p_WoP_W"),
+                cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_3args)
+            .def("CalcBiasCenterOfMassTranslationalAcceleration",
+                overload_cast_explicit<Vector3<T>, const Context<T>&,
+                    JacobianWrtVariable, const Frame<T>&, const Frame<T>&>(
+                    &Class::CalcBiasCenterOfMassTranslationalAcceleration),
+                py::arg("context"), py::arg("with_respect_to"),
+                py::arg("frame_A"), py::arg("frame_E"),
+                cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc_4args)
+            .def("CalcBiasCenterOfMassTranslationalAcceleration",
+                overload_cast_explicit<Vector3<T>, const Context<T>&,
+                    const std::vector<ModelInstanceIndex>&, JacobianWrtVariable,
+                    const Frame<T>&, const Frame<T>&>(
+                    &Class::CalcBiasCenterOfMassTranslationalAcceleration),
+                py::arg("context"), py::arg("model_instances"),
+                py::arg("with_respect_to"), py::arg("frame_A"),
+                py::arg("frame_E"),
+                cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc_5args)
+            .def(
+                "CalcJacobianCenterOfMassTranslationalVelocity",
+                [](const Class* self, const Context<T>& context,
+                    JacobianWrtVariable with_respect_to,
+                    const Frame<T>& frame_A, const Frame<T>& frame_E) {
+                  Matrix3X<T> Js_v_AScm_E(
+                      3, GetVariableSize<T>(*self, with_respect_to));
+                  self->CalcJacobianCenterOfMassTranslationalVelocity(
+                      context, with_respect_to, frame_A, frame_E, &Js_v_AScm_E);
+                  return Js_v_AScm_E;
+                },
+                py::arg("context"), py::arg("with_respect_to"),
+                py::arg("frame_A"), py::arg("frame_E"),
+                cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_5args)
+            .def(
+                "CalcJacobianCenterOfMassTranslationalVelocity",
+                [](const Class* self, const Context<T>& context,
+                    const std::vector<ModelInstanceIndex>& model_instances,
+                    JacobianWrtVariable with_respect_to,
+                    const Frame<T>& frame_A, const Frame<T>& frame_E) {
+                  Matrix3X<T> Js_v_AScm_E(
+                      3, GetVariableSize<T>(*self, with_respect_to));
+                  self->CalcJacobianCenterOfMassTranslationalVelocity(context,
+                      model_instances, with_respect_to, frame_A, frame_E,
+                      &Js_v_AScm_E);
+                  return Js_v_AScm_E;
+                },
+                py::arg("context"), py::arg("model_instances"),
+                py::arg("with_respect_to"), py::arg("frame_A"),
+                py::arg("frame_E"),
+                cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_6args)
         .def("GetFloatingBaseBodies", &Class::GetFloatingBaseBodies,
             cls_doc.GetFloatingBaseBodies.doc)
         .def("SetDefaultFloatingBaseBodyPose",
@@ -539,30 +544,36 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 const SpatialVelocity<T>&>(&Class::SetFreeBodySpatialVelocity),
             py::arg("context"), py::arg("body"), py::arg("V_JpJc"),
             cls_doc.SetFreeBodySpatialVelocity.doc_3args)
-        .def("GetActuationFromArray", &Class::GetActuationFromArray,
-            py::arg("model_instance"), py::arg("u"),
-            cls_doc.GetActuationFromArray.doc)
+            .def("GetActuationFromArray", &Class::GetActuationFromArray,
+                py::arg("model_instance"), py::arg("u"),
+                cls_doc.GetActuationFromArray.doc)
+#if 0  // XXX porting
         .def("SetActuationInArray", &Class::SetActuationInArray,
             py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
             cls_doc.SetActuationInArray.doc)
+#endif  // XXX porting
         .def("GetPositionsFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetPositionsFromArray),
             py::arg("model_instance"), py::arg("q"),
             cls_doc.GetPositionsFromArray.doc_2args)
+#if 0  // XXX porting
         .def("SetPositionsInArray", &Class::SetPositionsInArray,
             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
             cls_doc.SetPositionsInArray.doc)
+#endif  // XXX porting
         .def("GetVelocitiesFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetVelocitiesFromArray),
             py::arg("model_instance"), py::arg("v"),
             cls_doc.GetVelocitiesFromArray.doc_2args)
+#if 0  // XXX porting
         .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
             py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
             cls_doc.SetVelocitiesInArray.doc)
+#endif  // XXX porting
         // TODO(eric.cousineau): Ensure all of these return either references,
         // or copies, consistently. At present, `GetX(context)` returns a
         // reference, while `GetX(context, model_instance)` returns a copy.

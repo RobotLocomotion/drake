@@ -41,7 +41,8 @@ class TestSerializePybind(unittest.TestCase):
 
         # No docs.
         self.assertEqual(dut.quux, -1.0)
-        self.assertEqual(inspect.getdoc(MyData1.quux), "")
+        # XXX porting: nanobind adds doc itself.
+        self.assertEqual(inspect.getdoc(MyData1.quux), "(self) -> float")
 
         # Test fields.
         fields = getattr(MyData1, "__fields__")

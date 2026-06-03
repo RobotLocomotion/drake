@@ -7,6 +7,9 @@ import pickle
 import numpy as np
 
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.symbolic import Expression
+
+_NB_METACLASS = type(Expression)
 
 
 def _assert_equal(test, a, b):

@@ -96,7 +96,8 @@ void DefineForceDensityFieldBase(py::module_ m, T) {
   {
     using Class = drake::multibody::ForceDensityFieldBase<T>;
     constexpr auto& cls_doc = doc_multibody.ForceDensityFieldBase;
-    auto cls = DefineTemplateClassWithDefault<Class, std::shared_ptr<Class>>(
+    auto cls = DefineTemplateClassWithDefault<Class
+        /*, std::shared_ptr<Class> XXX porting */>(
         m, "ForceDensityFieldBase", param, cls_doc.doc);
     cls  // BR
         .def("EvaluateAt", &Class::EvaluateAt, py::arg("context"),

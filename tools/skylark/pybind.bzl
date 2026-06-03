@@ -68,10 +68,17 @@ def pybind_py_library(
         linkshared = 1,
         linkstatic = 1,
         copts = cc_copts + EXTRA_PYBIND_COPTS,
-        # Always link to pybind11.
-        deps = [
-            "@drake//tools/workspace/pybind11",
-        ] + cc_deps,
+        # Always link to the binding library.
+        deps = select({
+            "//tools/workspace/nanobind:enabled": [
+                "@drake//tools/workspace/nanobind",
+                "@drake//tools/workspace/python:cc_headers",
+                "@drake//tools/workspace/python:cc_libs",
+            ],
+            "//conditions:default": [
+                "@drake//tools/workspace/pybind11",
+            ],
+        }) + cc_deps,
         **kwargs
     )
 
@@ -108,6 +115,7 @@ def _check_cc_deps(*, cc_deps, testonly):
         # dependencies are also header-only).
         "//common:nice_type_name_override_header",
         "//systems/analysis:simulator_python_internal_header",
+        "//tools/workspace/nanobind",
     ]
     if testonly:
         allowed_prefix.extend([

@@ -310,7 +310,7 @@ PYDRAKE_MODULE(primitives, m) {
             &Integrator<T>::set_default_integral_value,
             py::arg("initial_value"),
             doc.Integrator.set_default_integral_value.doc)
-        .def("set_integral_value", &Integrator<T>::set_integral_value,
+       .def("set_integral_value", &Integrator<T>::set_integral_value,
             py::arg("context"), py::arg("value"),
             doc.Integrator.set_integral_value.doc);
 
@@ -414,6 +414,7 @@ PYDRAKE_MODULE(primitives, m) {
             py::arg("params"), py::arg("layer"),
             py::keep_alive<0, 2>() /* return keeps params alive */,
             py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_vector)
+#if 0  // XXX porting
         .def("SetWeights",
             py::overload_cast<EigenPtr<VectorX<T>>, int,
                 const Eigen::Ref<const MatrixX<T>>&>(
@@ -439,6 +440,7 @@ PYDRAKE_MODULE(primitives, m) {
         .def("BatchOutput", &MultilayerPerceptron<T>::BatchOutput,
             py::arg("context"), py::arg("X"), py::arg("Y"),
             py::arg("dYdX") = nullptr, doc.MultilayerPerceptron.BatchOutput.doc)
+#endif  // XXX porting
         .def(
             "BatchOutput",
             [](const MultilayerPerceptron<T>* self, const Context<T>& context,
@@ -483,11 +485,14 @@ PYDRAKE_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<SparseMatrixGain<T>, LeafSystem<T>>(
         m, "SparseMatrixGain", GetPyParam<T>(), doc.SparseMatrixGain.doc)
-        .def(py::init([](const Eigen::SparseMatrix<double>& D) {
-          // Our interactions with scipy don't work yet with (0,N) matrices.
-          DRAKE_THROW_UNLESS(D.rows() > 0 || D.cols() == 0);
-          return std::make_unique<SparseMatrixGain<T>>(D);
-        }),
+        .def(
+            "__init__",
+            [](SparseMatrixGain<T>* self,
+                const Eigen::SparseMatrix<double>& D) {
+              // Our interactions with scipy don't work yet with (0,N) matrices.
+              DRAKE_THROW_UNLESS(D.rows() > 0 || D.cols() == 0);
+              new (self) SparseMatrixGain<T>(D);
+            },
             py::arg("D"), doc.SparseMatrixGain.ctor.doc)
         .def("D", &SparseMatrixGain<T>::D, doc.SparseMatrixGain.D.doc)
         .def("set_D", &SparseMatrixGain<T>::set_D, py::arg("D"),
@@ -526,10 +531,13 @@ PYDRAKE_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<SharedPointerSystem<T>, LeafSystem<T>>(
         m, "SharedPointerSystem", GetPyParam<T>(), doc.SharedPointerSystem.doc)
-        .def(py::init([](py::object value_to_hold) {
-          auto wrapped = std::make_unique<py::object>(std::move(value_to_hold));
-          return std::make_unique<SharedPointerSystem<T>>(std::move(wrapped));
-        }),
+        .def(
+            "__init__",
+            [](SharedPointerSystem<T>* self, py::object value_to_hold) {
+              auto wrapped =
+                  std::make_unique<py::object>(std::move(value_to_hold));
+              new (self) SharedPointerSystem<T>(std::move(wrapped));
+            },
             py::arg("value_to_hold"), doc.SharedPointerSystem.ctor.doc)
         .def_static(
             "AddToBuilder",

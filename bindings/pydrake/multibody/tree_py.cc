@@ -89,8 +89,8 @@ void BindMultibodyElementMixin(PyClass* pcls) {
             return self.GetParentPlant();
           })
       .def("__repr__", [](const Class& self) {
-        py::str cls_name =
-            internal::PrettyClassName(py::cast(&self).get_type());
+        py::str cls_name = py::cast<py::str>(
+            internal::PrettyClassName(py::cast(&self).type()));
         const int index = self.index();
         const int model_instance = self.model_instance();
         if constexpr (has_name_func<Class>::value) {
@@ -942,9 +942,11 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
               return self.get_actuation_vector(u);
             },
             py::arg("u"), cls_doc.get_actuation_vector.doc)
+#if 0   // XXX porting
         .def("set_actuation_vector", &Class::set_actuation_vector,
             py::arg("u_actuator"), py::arg("u"),
             cls_doc.set_actuation_vector.doc)
+#endif  // XXX porting
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
         .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc)
@@ -1242,9 +1244,11 @@ class DelegatedForceDensityField final : public ForceDensityField<T> {
 template <typename T>
 class PyForceDensityField : public ForceDensityFieldPublic<T> {
  public:
+  NB_TRAMPOLINE(ForceDensityFieldPublic<T>, 100);
   explicit PyForceDensityField(ForceDensityType density_type)
       : ForceDensityFieldPublic<T>(density_type) {}
 
+#if 0   // XXX porting
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
     py::gil_scoped_acquire gil;
@@ -1300,13 +1304,14 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
     }
     return std::make_unique<DelegatedForceDensityField<T>>(std::move(cloned));
   }
+#endif  // XXX porting
 
   void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
-    PYBIND11_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
+    NB_OVERRIDE(DoDeclareCacheEntries, plant);
   }
 
   void DoDeclareInputPorts(MultibodyPlant<T>* plant) override {
-    PYBIND11_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
+    NB_OVERRIDE(DoDeclareInputPorts, plant);
   }
 };
 
@@ -1316,13 +1321,15 @@ void DefineForceDensityField(py::module_ m, T) {
   {
     constexpr auto& cls_doc = doc.ForceDensityField;
     auto cls = DefineTemplateClassWithDefault<ForceDensityField<T>,
-        PyForceDensityField<T>, ForceDensityFieldBase<T>,
-        std::shared_ptr<ForceDensityField<T>>>(
+        PyForceDensityField<T>, ForceDensityFieldBase<T>
+        /*, std::shared_ptr<ForceDensityField<T>> XXX porting */>(
         m, "ForceDensityField", param, cls_doc.doc);
     cls  // BR
+#if 0    // XXX porting
         .def(py::init<ForceDensityType>(),
             py::arg("density_type") = ForceDensityType::kPerCurrentVolume,
             cls_doc.ctor.doc)
+#endif   // XXX porting
         .def("has_parent_system", &ForceDensityField<T>::has_parent_system,
             cls_doc.has_parent_system.doc)
         .def("parent_system_or_throw",
@@ -1346,7 +1353,8 @@ void DefineForceDensityField(py::module_ m, T) {
   {
     constexpr auto& cls_doc = doc.GravityForceField;
     auto cls = DefineTemplateClassWithDefault<GravityForceField<T>,
-        ForceDensityField<T>, std::shared_ptr<GravityForceField<T>>>(
+        ForceDensityField<T>
+        /*, std::shared_ptr<GravityForceField<T>> XXX porting */>(
         m, "GravityForceField", param, cls_doc.doc);
     cls  // BR
         .def(py::init<const Vector3<T>&, const T&>(), py::arg("gravity_vector"),

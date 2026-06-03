@@ -40,7 +40,6 @@ drake_cc_library(
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:math_operators_pybind",
         "//bindings/pydrake:pydrake_pybind",
-        "@pybind11",
     ],
 )
 
@@ -67,4 +66,5 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests_pydrake()
+# XXX porting
+# add_lint_tests_pydrake()

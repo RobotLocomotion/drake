@@ -23,16 +23,22 @@ namespace internal {
 // implies that the type has been declared using `py::class_`, and can have
 // a reference passed through. Otherwise, the type uses type-conversion:
 // https://pybind11.readthedocs.io/en/stable/advanced/cast/index.html
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename T>
-constexpr inline bool is_generic_pybind_v =
+constexpr inline bool is_generic_caster_v =
     std::is_base_of_v<py::detail::type_caster_generic,
         py::detail::make_caster<T>>;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T>
+constexpr inline bool is_generic_caster_v =
+    py::detail::is_base_caster_v<py::detail::make_caster<T>>;
+#endif  // PYDRAKE_USE_PYBIND11
 
 template <typename T, typename = void>
 struct wrap_ref_ptr : public wrap_arg_default<T> {};
 
 template <typename T>
-struct wrap_ref_ptr<T&, std::enable_if_t<is_generic_pybind_v<T>>> {
+struct wrap_ref_ptr<T&, std::enable_if_t<is_generic_caster_v<T>>> {
   // NOLINTNEXTLINE[runtime/references]: Intentional.
   static T* wrap(T& arg) { return &arg; }
   static T& unwrap(T* arg_wrapped) { return *arg_wrapped; }
@@ -55,6 +61,7 @@ struct wrap_callback<std::function<Signature>>
 //  Struct which must provide `Type`, `WrappedType`, `unwrap`, `wrap`,
 // `wrapped_name`, and `original_name`.
 // Fails-fast at runtime if there is an attempt to pass by reference.
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename Wrapper>
 struct type_caster_wrapped {
   using Type = typename Wrapper::Type;
@@ -108,6 +115,48 @@ struct type_caster_wrapped {
   bool loaded_{false};
   Type value_;
 };
+#else  // PYDRAKE_USE_NANOBIND
+#pragma GCC visibility push(hidden)
+template <typename Wrapper>
+struct type_caster_wrapped {
+  using Type = typename Wrapper::Type;
+  using WrappedType = typename Wrapper::WrappedType;
+  using WrappedTypeCaster = py::detail::type_caster<WrappedType>;
+
+  using Value = Type;
+  template <typename U>
+  using Cast = Value;
+
+  static constexpr auto Name = Wrapper::wrapped_name;
+
+  bool from_python(py::handle src, uint8_t flags,
+      py::detail::cleanup_list* cleanup) noexcept {
+    return caster_.from_python(src, flags, cleanup);
+  }
+
+  template <typename U>
+  static py::handle from_cpp(
+      U&& value, py_rvp policy, py::detail::cleanup_list* cleanup) noexcept {
+    py::object out = steal(WrappedTypeCaster::from_cpp(
+        Wrapper::wrap(std::forward<U>(value)), policy, cleanup));
+    return out.release();
+  }
+
+  template <typename U>
+  bool can_cast() const noexcept {
+    return caster_.template can_cast<U>();
+  }
+
+  explicit operator Value() {
+    return Value(
+        Wrapper::unwrap(caster_.operator py::detail::cast_t<WrappedType>()));
+  }
+
+ private:
+  WrappedTypeCaster caster_;
+};
+#pragma GCC visibility pop
+#endif  // PYDRAKE_USE_PYBIND11
 
 }  // namespace internal
 #endif  // DRAKE_DOXYGEN_CXX
@@ -136,14 +185,21 @@ auto WrapCallbacks(Func&& func) {
 template <typename PyClass, typename Class, typename T>
 void DefReadWriteKeepAlive(
     PyClass* cls, const char* name, T Class::* member, const char* doc = "") {
-  auto getter = [member](const Class* obj) { return obj->*member; };
-  auto setter = [member](Class* obj, const T& value) { obj->*member = value; };
+#ifdef PYDRAKE_USE_PYBIND11
   cls->def_prop_rw(name,  // BR
-      py::cpp_function(getter),
-      py::cpp_function(setter,
+      py::cpp_function([member](const Class* obj) { return obj->*member; }),
+      py::cpp_function(
+          [member](Class* obj, const T& value) { obj->*member = value; },
           // Keep alive, reference: `self` keeps `value` alive.
           py::keep_alive<1, 2>()),
       doc);
+#else  // PYDRAKE_USE_NANOBIND
+  cls->def_prop_rw(
+      name,  // BR
+      [member](const Class* obj) { return obj->*member; },
+      [member](Class* obj, const T& value) { obj->*member = value; },
+      py::for_setter(py::keep_alive<1, 2>()), doc);
+#endif
 }
 
 /// Idempotent to pybind11's `def_ro()`, which works for unique_ptr
@@ -156,20 +212,18 @@ void DefReadWriteKeepAlive(
 template <typename PyClass, typename Class, typename T>
 void DefReadUniquePtr(PyClass* cls, const char* name,
     const std::unique_ptr<T> Class::* member, const char* doc = "") {
-  auto getter = py::cpp_function(
-      [member](const Class* obj) { return (obj->*member).get(); },
-      py_rvp::reference_internal);
-  cls->def_prop_ro(name, getter, doc);
+  cls->def_prop_ro(
+      name, [member](const Class* obj) { return (obj->*member).get(); },
+      py_rvp::reference_internal, doc);
 }
 
 // Variant of DefReadUniquePtr() for copyable_unique_ptr.
 template <typename PyClass, typename Class, typename T>
 void DefReadUniquePtr(PyClass* cls, const char* name,
     const copyable_unique_ptr<T> Class::* member, const char* doc = "") {
-  auto getter = py::cpp_function(
-      [member](const Class* obj) { return (obj->*member).get(); },
-      py_rvp::reference_internal);
-  cls->def_prop_ro(name, getter, doc);
+  cls->def_prop_ro(
+      name, [member](const Class* obj) { return (obj->*member).get(); },
+      py_rvp::reference_internal, doc);
 }
 
 }  // namespace pydrake

@@ -14,6 +14,7 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
@@ -46,33 +47,32 @@ namespace {
 
 class PyRenderEngine : public RenderEngine {
  public:
+  NB_TRAMPOLINE(RenderEngine, 100);
   using Base = RenderEngine;
   PyRenderEngine() : Base() {}
 
   void UpdateViewpoint(RigidTransformd const& X_WR) override {
-    PYBIND11_OVERLOAD_PURE(void, Base, UpdateViewpoint, X_WR);
+    NB_OVERRIDE_PURE(UpdateViewpoint, X_WR);
   }
 
   bool DoRegisterVisual(GeometryId id, Shape const& shape,
       PerceptionProperties const& properties,
       RigidTransformd const& X_WG) override {
-    PYBIND11_OVERLOAD_PURE(
-        bool, Base, DoRegisterVisual, id, shape, properties, X_WG);
+    NB_OVERRIDE_PURE(DoRegisterVisual, id, shape, properties, X_WG);
   }
 
   bool DoRegisterNamedVisual(GeometryId id, Shape const& shape,
       PerceptionProperties const& properties, RigidTransformd const& X_WG,
       std::string_view name) override {
-    PYBIND11_OVERLOAD(
-        bool, Base, DoRegisterNamedVisual, id, shape, properties, X_WG, name);
+    NB_OVERRIDE(DoRegisterNamedVisual, id, shape, properties, X_WG, name);
   }
 
   void DoUpdateVisualPose(GeometryId id, RigidTransformd const& X_WG) override {
-    PYBIND11_OVERLOAD_PURE(void, Base, DoUpdateVisualPose, id, X_WG);
+    NB_OVERRIDE_PURE(DoUpdateVisualPose, id, X_WG);
   }
 
   bool DoRemoveGeometry(GeometryId id) override {
-    PYBIND11_OVERLOAD_PURE(bool, Base, DoRemoveGeometry, id);
+    NB_OVERRIDE_PURE(DoRemoveGeometry, id);
   }
 
   std::unique_ptr<RenderEngine> DoClone() const override {
@@ -82,17 +82,19 @@ class PyRenderEngine : public RenderEngine {
         "it needs to be updated to call using shared_ptr instead.");
   }
 
+#if 0   // XXX porting
+  // Need to unwind a bunch of smart pointer issues.
   std::shared_ptr<RenderEngine> DoCloneShared() const override {
     py::gil_scoped_acquire guard;
     // RenderEngine subclasses in Python must implement cloning by defining
     // either a __deepcopy__ (preferred) or DoClone (legacy) method. We'll try
     // DoClone first so it has priority, but if it doesn't exist we'll fall back
     // to __deepcopy__ and just let the "no such method deepcopy" error message
-    // propagate if both were missing. Because the PYBIND11_OVERLOAD_INT macro
+    // propagate if both were missing. Because the NB_OVERRIDE_INT macro
     // embeds a conditional `return ...;` statement, we must wrap it in lambda
     // so that we can post-process the return value in case it does return.
     auto make_python_deepcopy = [&]() -> py::object {
-      PYBIND11_OVERLOAD_INT(py::object, Base, "DoClone");
+      NB_OVERRIDE(DoClone);
       auto deepcopy = py::module_::import_("copy").attr("deepcopy");
       py::object copied = deepcopy(this);
       if (copied.is_none()) {
@@ -104,31 +106,29 @@ class PyRenderEngine : public RenderEngine {
     py::object result = make_python_deepcopy();
     return make_shared_ptr_from_py_object<RenderEngine>(result);
   }
+#endif  // XXX porting
 
   void DoRenderColorImage(ColorRenderCamera const& camera,
       ImageRgba8U* color_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, DoRenderColorImage, camera, color_image_out);
+    NB_OVERRIDE_PURE(DoRenderColorImage, camera, color_image_out);
   }
 
   void DoRenderDepthImage(DepthRenderCamera const& camera,
       ImageDepth32F* depth_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, DoRenderDepthImage, camera, depth_image_out);
+    NB_OVERRIDE_PURE(DoRenderDepthImage, camera, depth_image_out);
   }
 
   void DoRenderLabelImage(ColorRenderCamera const& camera,
       ImageLabel16I* label_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, DoRenderLabelImage, camera, label_image_out);
+    NB_OVERRIDE_PURE(DoRenderLabelImage, camera, label_image_out);
   }
 
   std::string DoGetParameterYaml() const override {
-    PYBIND11_OVERLOAD(std::string, Base, DoGetParameterYaml);
+    NB_OVERRIDE(DoGetParameterYaml);
   }
 
   void SetDefaultLightPosition(Vector3d const& X_DL) override {
-    PYBIND11_OVERLOAD(void, Base, SetDefaultLightPosition, X_DL);
+    NB_OVERRIDE(SetDefaultLightPosition, X_DL);
   }
 
   // Expose these protected methods (which are either virtual methods with
@@ -292,8 +292,9 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = RenderEngine;
     const auto& cls_doc = doc.RenderEngine;
-    py::class_<Class, PyRenderEngine, std::shared_ptr<Class>> cls(
-        m, "RenderEngine");
+    py::class_<Class, PyRenderEngine
+        /*, std::shared_ptr<Class> XXX porting */>
+        cls(m, "RenderEngine");
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("Clone",

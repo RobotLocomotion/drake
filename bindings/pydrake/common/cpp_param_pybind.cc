@@ -1,6 +1,10 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 
+#ifdef PYDRAKE_USE_PYBIND11
 #include "pybind11/eval.h"
+#else  // PYDRAKE_USE_NANOBIND
+#include "nanobind/eval.h"
+#endif
 
 namespace drake {
 namespace pydrake {
@@ -59,10 +63,10 @@ template <typename T>
 void RegisterType(
     py::module_ m, py::object param_aliases, const std::string& canonical_str) {
   // Create an object that is a unique hash.
-  py::object canonical =
-      py::eval(py::str(canonical_str.c_str()), m.attr("__dict__"));
-  py::list aliases(1);
-  aliases[0] = GetPyHash(typeid(T));
+  py::object canonical = py::eval(
+      py::str(canonical_str.c_str()), m.attr("__dict__"), py::globals());
+  py::list aliases;
+  aliases.append(GetPyHash(typeid(T)));
   param_aliases.attr("register")(canonical, aliases);
 }
 
@@ -108,7 +112,11 @@ py::object GetPyParamScalarImpl(const std::type_info& tinfo) {
     // This type is not aliased. Get the pybind-registered type,
     // erroring out if it's not registered.
     // WARNING: Internal API :(
+#if PYDRAKE_USE_PYBIND11
     auto* info = py::detail::get_type_info(tinfo);
+#else  // PYDRAKE_USE_NANOBIND
+    auto* info = py::detail::nb_type_lookup(&tinfo);
+#endif
     if (!info) {
       // TODO(eric.cousineau): Use NiceTypeName::Canonicalize(...Demangle(...))
       // once simpler dependencies are used (or something else is used to
@@ -116,7 +124,11 @@ py::object GetPyParamScalarImpl(const std::type_info& tinfo) {
       const std::string name = tinfo.name();
       throw std::runtime_error("C++ type is not registered in pybind: " + name);
     }
+#if PYDRAKE_USE_PYBIND11
     py::handle h(reinterpret_cast<PyObject*>(info->type));
+#else  // PYDRAKE_USE_NANOBIND
+    py::handle h(reinterpret_cast<PyObject*>(info));
+#endif
     return py::borrow<py::object>(h);
   }
 }

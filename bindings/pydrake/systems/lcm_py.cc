@@ -36,6 +36,7 @@ namespace {
 // Python.
 class PySerializerInterface : public SerializerInterface {
  public:
+  NB_TRAMPOLINE(SerializerInterface, 100);
   using Base = SerializerInterface;
 
   PySerializerInterface() : Base() {}
@@ -50,37 +51,44 @@ class PySerializerInterface : public SerializerInterface {
     // Our required unique_ptr return type cannot be directly fulfilled by a
     // Python override, so we only ask the Python override for a py::object and
     // then just Clone it to obtain the necessary C++ signature. Because the
-    // PYBIND11_OVERLOAD_PURE macro embeds a `return ...;` statement, we must
+    // NB_OVERRIDE_PURE macro embeds a `return ...;` statement, we must
     // wrap it in lambda so that we can post-process the return value.
+#if 0   // XXX porting
+    // c++<=>py type conversion issues.
     py::object default_value = [this]() -> py::object {
-      PYBIND11_OVERLOAD_PURE(
-          py::object, SerializerInterface, CreateDefaultValue);
+      NB_OVERRIDE_PURE(CreateDefaultValue);
     }();
     DRAKE_THROW_UNLESS(!default_value.is_none());
     return py::cast<const AbstractValue*>(default_value)->Clone();
+#endif  // XXX porting
+    return {};
   }
 
   void Deserialize(const void* message_bytes, int message_length,
-      AbstractValue* abstract_value) const override {
+      AbstractValue* /* abstract_value XXX porting */) const override {
     py::gil_scoped_acquire guard;
     py::bytes buffer(
         reinterpret_cast<const char*>(message_bytes), message_length);
-    PYBIND11_OVERLOAD_PURE(
-        void, SerializerInterface, Deserialize, buffer, abstract_value);
+#if 0   // XXX porting
+    // change of signature issues.
+    NB_OVERRIDE_PURE(Deserialize, buffer, abstract_value);
+#endif  // XXX porting
   }
 
-  void Serialize(const AbstractValue& abstract_value,
-      std::vector<uint8_t>* message_bytes) const override {
+  void Serialize(const AbstractValue& /* abstract_value XXX porting */,
+      std::vector<uint8_t>* /* message_bytes XXX porting */) const override {
     py::gil_scoped_acquire guard;
+#if 0   // XXX porting
+    // change of signature issues with override macro.
     auto wrapped = [&]() -> py::bytes {
       // N.B. We must pass `abstract_value` as a pointer to prevent `pybind11`
       // from copying it.
-      PYBIND11_OVERLOAD_PURE(
-          py::bytes, SerializerInterface, Serialize, &abstract_value);
+      NB_OVERRIDE_PURE(Serialize, &abstract_value);
     };
-    std::string str = wrapped();
+    py::bytes str = wrapped();
     message_bytes->resize(str.size());
-    std::copy(str.data(), str.data() + str.size(), message_bytes->data());
+    std::copy(str.c_str(), str.c_str() + str.size(), message_bytes->data());
+#endif  // XXX porting
   }
 };
 
@@ -134,12 +142,13 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = SerializerInterface;
     constexpr auto& cls_doc = doc.SerializerInterface;
-    py::class_<Class, PySerializerInterface, std::shared_ptr<Class>> cls(
-        m, "SerializerInterface");
+    py::class_<Class, PySerializerInterface
+        /*, std::shared_ptr<Class> XXX porting */>
+        cls(m, "SerializerInterface");
     cls  // BR
          // Adding a constructor permits implementing this interface in Python.
-        .def(py::init(
-                 []() { return std::make_unique<PySerializerInterface>(); }),
+        .def(
+            "__init__", [](Class* self) { new (self) PySerializerInterface(); },
             cls_doc.ctor.doc);
     // The following bindings are present to allow Python to call C++
     // implementations of this interface. Python implementations of the
@@ -151,8 +160,8 @@ PYDRAKE_MODULE(lcm, m) {
             "Deserialize",
             [](const Class& self, py::bytes message_bytes,
                 AbstractValue* abstract_value) {
-              std::string str = message_bytes;
-              self.Deserialize(str.data(), str.size(), abstract_value);
+              self.Deserialize(
+                  message_bytes.data(), message_bytes.size(), abstract_value);
             },
             py::arg("message_bytes"), py::arg("abstract_value"),
             cls_doc.Deserialize.doc)

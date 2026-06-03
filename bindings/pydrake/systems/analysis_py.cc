@@ -35,7 +35,7 @@ namespace {
 void ThrowIfPythonHasPendingSignals() {
   py::gil_scoped_acquire guard;
   if (PyErr_CheckSignals() != 0) {
-    throw py::error_already_set();
+    throw py::python_error();
   }
 }
 }  // namespace
@@ -60,7 +60,9 @@ PYDRAKE_MODULE(analysis, m) {
     py::class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
+#if 0  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
+#endif  // XXX porting
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
@@ -108,6 +110,7 @@ PYDRAKE_MODULE(analysis, m) {
   auto bind_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
+#if 0  // XXX porting
     m.def("BatchEvalUniquePeriodicDiscreteUpdate",
         &BatchEvalUniquePeriodicDiscreteUpdate<T>, py::arg("system"),
         py::arg("context"), py::arg("times"), py::arg("states"),
@@ -126,6 +129,7 @@ PYDRAKE_MODULE(analysis, m) {
         py::arg("parallelize") = Parallelism::Max(),
         py::call_guard<py::gil_scoped_release>(),
         doc.BatchEvalTimeDerivatives.doc);
+#endif  // XXX porting
 
     {
       using Class = IntegratorBase<T>;
@@ -291,6 +295,7 @@ PYDRAKE_MODULE(analysis, m) {
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
+#if 0  // XXX porting
         .def(py::init([](const System<T>& system, py::object py_context) {
           // Handle the two cases for context ownership explicitly:
           // 1. If py_context is None, create a new context and take ownership.
@@ -325,6 +330,7 @@ a Context object among Simulators will likely lead to incorrect results.
               return new_doc;
             }()
                 .c_str())
+#endif  // XXX porting
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc,
             py::arg("params") = InitializeParams{})
@@ -544,7 +550,7 @@ Parameter ``interruptible``:
   {
     using Class = RegionOfAttractionOptions;
     constexpr auto& cls_doc = doc.analysis.RegionOfAttractionOptions;
-    py::class_<Class, std::shared_ptr<Class>> cls(
+    py::class_ < Class /*, std::shared_ptr<Class> XXX porting */> cls(
         m, "RegionOfAttractionOptions", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)

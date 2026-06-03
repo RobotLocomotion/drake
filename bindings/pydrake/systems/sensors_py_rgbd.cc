@@ -142,34 +142,36 @@ void DefineSensorsRgbd(py::module_ m) {
           doc.RgbdSensor.SetParentFrameId.doc);
   def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
 
-  py::class_<RgbdSensorDiscrete, Diagram<double>> rgbd_camera_discrete(
-      m, "RgbdSensorDiscrete", doc.RgbdSensorDiscrete.doc);
-  rgbd_camera_discrete
-      .def(py::init(
-               [](RgbdSensor& sensor, double period, bool render_label_image) {
-                 // The C++ constructor doesn't offer a bare-pointer overload,
-                 // only shared_ptr. Because object lifetime is already handled
-                 // by the ref_cycle annotation below (as required for all
-                 // subclasses of Diagram), we can pass the `sensor` as an
-                 // unowned shared_ptr.
-                 return std::make_unique<RgbdSensorDiscrete>(
-                     make_unowned_shared_ptr_from_raw(&sensor), period,
-                     render_label_image);
-               }),
-          py::arg("sensor"),
-          py::arg("period") = double{RgbdSensorDiscrete::kDefaultPeriod},
-          py::arg("render_label_image") = true,
-          // `self` and `sensor` form a cycle as part of the Diagram.
-          internal::ref_cycle<1, 2>(), doc.RgbdSensorDiscrete.ctor.doc)
-      // N.B. Since `camera` is already connected, we do not need additional
-      // `keep_alive`s.
-      .def("sensor", &RgbdSensorDiscrete::sensor, py_rvp::reference_internal,
-          doc.RgbdSensorDiscrete.sensor.doc)
-      .def("period", &RgbdSensorDiscrete::period,
-          doc.RgbdSensorDiscrete.period.doc);
-  def_camera_ports(&rgbd_camera_discrete, doc.RgbdSensorDiscrete);
-  rgbd_camera_discrete.attr("kDefaultPeriod") =
-      double{RgbdSensorDiscrete::kDefaultPeriod};
+  {
+    using Class = RgbdSensorDiscrete;
+    constexpr auto& cls_doc = doc.RgbdSensorDiscrete;
+    py::class_<Class, Diagram<double>> cls(
+        m, "RgbdSensorDiscrete", cls_doc.doc);
+    cls  // BR
+        .def(
+            "__init__",
+            [](Class* self, RgbdSensor& sensor, double period,
+                bool render_label_image) {
+              // The C++ constructor doesn't offer a bare-pointer overload, only
+              // shared_ptr. Because object lifetime is already handled by the
+              // ref_cycle annotation below (as required for all subclasses of
+              // Diagram), we can pass the `sensor` as an unowned shared_ptr.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&sensor),
+                  period, render_label_image);
+            },
+            py::arg("sensor"),
+            py::arg("period") = double{Class::kDefaultPeriod},
+            py::arg("render_label_image") = true,
+            // `self` and `sensor` form a cycle as part of the Diagram.
+            internal::ref_cycle<1, 2>(), cls_doc.ctor.doc)
+        // N.B. Since `camera` is already connected, we do not need additional
+        // `keep_alive`s.
+        .def("sensor", &Class::sensor, py_rvp::reference_internal,
+            cls_doc.sensor.doc)
+        .def("period", &Class::period, cls_doc.period.doc);
+    def_camera_ports(&cls, cls_doc);
+    cls.attr("kDefaultPeriod") = double{Class::kDefaultPeriod};
+  }
 
   {
     using Class = RgbdSensorAsync;

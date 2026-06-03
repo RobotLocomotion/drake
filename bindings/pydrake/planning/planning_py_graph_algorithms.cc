@@ -22,21 +22,25 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   {
     class PyMaxCliqueSolverBase : public MaxCliqueSolverBase {
      public:
+      NB_TRAMPOLINE(MaxCliqueSolverBase, 1);
+#if 0   // XXX porting: method needs to be made actually public.
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMaxClique is made public to enable
       // Python implementations to override it.
       VectorX<bool> DoSolveMaxClique(
           const Eigen::SparseMatrix<bool>& adjacency_matrix) const override {
-        PYBIND11_OVERRIDE_PURE(VectorX<bool>, MaxCliqueSolverBase,
-            DoSolveMaxClique, adjacency_matrix);
+        NB_OVERRIDE_PURE(DoSolveMaxClique, adjacency_matrix);
       }
+#endif  // XXX porting
     };
+#if 0   // XXX porting: method needs to be made actually public.
     const auto& cls_doc = doc.MaxCliqueSolverBase;
     py::class_<MaxCliqueSolverBase, PyMaxCliqueSolverBase>(
         m, "MaxCliqueSolverBase", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("SolveMaxClique", &MaxCliqueSolverBase::SolveMaxClique,
             py::arg("adjacency_matrix"), cls_doc.SolveMaxClique.doc);
+#endif  // XXX porting
   }
   {
     const auto& cls_doc = doc.MaxCliqueSolverViaMip;
@@ -65,17 +69,20 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   {
     class PyMinCliqueCoverSolverBase : public MinCliqueCoverSolverBase {
      public:
+      NB_TRAMPOLINE(MinCliqueCoverSolverBase, 1);
+#if 0   // XXX porting: method needs to be made actually public.
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMinCliqueCover is made public to
       // enable Python implementations to override it.
       std::vector<std::set<int>> DoSolveMinCliqueCover(
           const Eigen::SparseMatrix<bool>& adjacency_matrix,
           bool partition) override {
-        PYBIND11_OVERRIDE_PURE(std::vector<std::set<int>>,
-            MinCliqueCoverSolverBase, DoSolveMinCliqueCover, adjacency_matrix,
+        NB_OVERRIDE_PURE(DoSolveMinCliqueCover, adjacency_matrix,
             partition);
       }
+#endif  // XXX porting
     };
+#if 0   // XXX porting: method needs to be made actually public.
     const auto& cls_doc = doc.MinCliqueCoverSolverBase;
     py::class_<MinCliqueCoverSolverBase, PyMinCliqueCoverSolverBase>(
         m, "MinCliqueCoverSolverBase", cls_doc.doc)
@@ -84,27 +91,29 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
             &MinCliqueCoverSolverBase::SolveMinCliqueCover,
             py::arg("adjacency_matrix"), py::arg("partition") = false,
             cls_doc.SolveMinCliqueCover.doc);
+#endif  // XXX porting
   }
   {
+    using Class = MinCliqueCoverSolverViaGreedy;
     const auto& cls_doc = doc.MinCliqueCoverSolverViaGreedy;
-    py::class_<MinCliqueCoverSolverViaGreedy, MinCliqueCoverSolverBase>(
+    py::class_<Class, MinCliqueCoverSolverBase>(
         m, "MinCliqueCoverSolverViaGreedy", cls_doc.doc)
-        .def(py::init([](MaxCliqueSolverBase& max_clique_solver,
-                          int min_clique_size) {
-          // The keep_alive is responsible for object lifetime, so we'll give
-          // the constructor an unowned pointer.
-          return std::make_unique<MinCliqueCoverSolverViaGreedy>(
-              make_unowned_shared_ptr_from_raw(&max_clique_solver),
-              min_clique_size);
-        }),
+        .def(
+            "__init__",
+            [](Class* self, MaxCliqueSolverBase& max_clique_solver,
+                int min_clique_size) {
+              // The keep_alive is responsible for object lifetime, so we'll
+              // give the constructor an unowned pointer.
+              new (self) MinCliqueCoverSolverViaGreedy(
+                  make_unowned_shared_ptr_from_raw(&max_clique_solver),
+                  min_clique_size);
+            },
             py::arg("max_clique_solver"), py::arg("min_clique_size") = 1,
             // Keep alive, reference: `self` keeps `max_clique_solver` alive.
             py::keep_alive<1, 2>(), cls_doc.ctor.doc)
-        .def("set_min_clique_size",
-            &MinCliqueCoverSolverViaGreedy::set_min_clique_size,
+        .def("set_min_clique_size", &Class::set_min_clique_size,
             py::arg("min_clique_size"), cls_doc.set_min_clique_size.doc)
-        .def("get_min_clique_size",
-            &MinCliqueCoverSolverViaGreedy::get_min_clique_size,
+        .def("get_min_clique_size", &Class::get_min_clique_size,
             cls_doc.get_min_clique_size.doc);
   }
 }

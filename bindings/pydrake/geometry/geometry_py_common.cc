@@ -240,12 +240,25 @@ void DefineGeometrySet(py::module_ m) {
         .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<GeometryId>(), py::arg("geometry_id"), extra_ctor_doc)
         .def(py::init<FrameId>(), py::arg("frame_id"), extra_ctor_doc)
-        .def(py::init<const std::vector<GeometryId>&>(),
+        // XXX porting try to use py::init here like we do on master
+        .def(
+            "__init__",
+            [](Class* self, std::vector<GeometryId> geometry_ids) {
+              new (self) Class(geometry_ids);
+            },
             py::arg("geometry_ids"), extra_ctor_doc)
-        .def(py::init<const std::vector<FrameId>&>(), py::arg("frame_ids"),
-            extra_ctor_doc)
-        .def(py::init<const std::vector<GeometryId>&,
-                 const std::vector<FrameId>&>(),
+        .def(
+            "__init__",
+            [](Class* self, std::vector<FrameId> frame_ids) {
+              new (self) Class(frame_ids);
+            },
+            py::arg("frame_ids"), extra_ctor_doc)
+        .def(
+            "__init__",
+            [](Class* self, std::vector<GeometryId> geometry_ids,
+                std::vector<FrameId> frame_ids) {
+              new (self) Class(geometry_ids, frame_ids);
+            },
             py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc)
         .def(
             "Add",
@@ -308,7 +321,6 @@ void DefineInMemoryMesh(py::module_ m) {
     using Class = InMemoryMesh;
     constexpr auto& cls_doc = doc.InMemoryMesh;
     py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
-    py::object ctor = m.attr("InMemoryMesh");
     cls  // BR
         .def(ParamInit<Class>())
         .def_rw("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
@@ -317,11 +329,16 @@ void DefineInMemoryMesh(py::module_ m) {
     DefPickle(
         &cls,
         [](const Class& self) {
-          return py::dict(py::arg("mesh_file") = self.mesh_file,
-              py::arg("supporting_files") = self.supporting_files);
+              py::dict result;
+              result["mesh_file"] = self.mesh_file;
+              result["supporting_files"] = self.supporting_files;
+              return result;
         },
-        [ctor](Class* self, const py::dict& kwargs) {
-          new (self) Class(py::cast<Class>(ctor(**kwargs)));
+        [](Class* self, const py::dict& kwargs) {
+          new (self) Class;
+          self->mesh_file = py::cast<MemoryFile>(kwargs["mesh_file"]);
+          self->supporting_files =
+              py::cast<string_map<FileSource>>(kwargs["supporting_files"]);
         });
     // Note: __repr__ is defined in _geometry_extra.py.
     DefCopyAndDeepCopy(&cls);
@@ -381,11 +398,14 @@ void DefineMeshSource(py::module_ m) {
     DefPickle(
         &cls,
         [](const Class& self) {
-          if (self.is_path()) {
-            return py::dict(py::arg("path") = self.path());
-          }
-          DRAKE_DEMAND(self.is_in_memory());
-          return py::dict(py::arg("mesh") = self.in_memory());
+              py::dict result;
+              if (self.is_path()) {
+                result["path"] = self.path();
+                return result;
+              }
+              DRAKE_DEMAND(self.is_in_memory());
+              result["mesh"] = self.in_memory();
+              return result;
         },
         [ctor](Class* self, const py::dict& kwargs) {
           new (self) Class(py::cast<Class>(ctor(**kwargs)));

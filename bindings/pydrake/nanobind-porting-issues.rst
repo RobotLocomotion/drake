@@ -1,0 +1,172 @@
+=============================
+   Nanobind porting issues
+=============================
+
+Compile time issues
+===================
+
+* Downstream breakage: unsolved issues in bindings cause downstream dependency
+  breakage. Examples: pyi generation, tests, unused variables, etc.
+
+* No out-of-box support for autodiff and expression as matrix/vector/array
+  scalar types. Note the pybind11 was patched by Drake for this as well.
+  - !! was missing a `name` field in the specialization hack at
+    PYDRAKE_NUMPY_OBJECT_DTYPE.
+
+* dependencies on pybind11 internals that are missing/changed in nanobind:
+  * detail::is_pyobject<T>
+    - !! a ported version is done.
+  * detail::get_type_info  --> nb_type_lookup?
+    - !! the using code is ported.
+  * detail::get_object_handle
+    - !! the using code is ported.
+  * detail::type_caster_generic
+    - !! the using code is ported.
+
+* support for custom initializers (init(lambda)) abandoned. Need polyfill or
+  rewrite to placement new instead.
+  - !! much of this is rewritten -- no polyfill yet.
+
+* need to port various (deprecation, type-fiddling) wrappers to the new
+  def_visitor mechanism
+  * ParamInit
+    - !! a new implementation on def_visitor is compilable.
+  * deprecation helpers
+    - !! DeprecatedParamInit is compilable.
+
+* custom annotations need rewrite on new internals
+  * pydrake::internal::ref_cycle
+    - !! mostly implemented now
+    - !! function names for error messages would be nice but may not work
+  * pydrake::internal::builder_life_support_stash
+
+* c++ unit tests that use python embedding need rewrite
+  * create_extension_module is the clue.
+  - !! rewrote all of the embed tests on master.
+
+* issues with unique pointers as members/properties, etc.
+  - !! needed to add nanobind/stl/blah_ptr.h header files.
+
+* method for putting python objects in drake::Value<T> likely needs a rewrite
+  * much dependence on internals
+  - !! provisional rewrite is in place.
+
+* cpp_function() can't be passed to def() and friends any more.
+  - !! a chunk of this was to group annotations with functions in setter/getter
+    situations. Can port with nanobind's for_getter() and for_setter() wrappers.
+
+* trampolines:
+  * `using Base::Base` in trampoline classes collides with stuff from
+    newly-required macros.
+    - !! just delete the duplicate statement.
+  * trampolines: some trampoline stacks got by without making methods public;
+    that doesn't work any more.
+  * the new override macros don't allow change of signature. maybe there is a
+    way to exploit new internals?
+
+* GeometryId has porting issues?
+
+* Various clone implementation hacks have smart pointer issues.
+
+* Holder types are no longer a thing; need to work through the implications.
+
+* nanobind's str type is less friendly; much rework will result.
+  - !! (duh, dopeslap) needed to add nanobind's stl headers explicitly.
+  - pybind11 `class str` API::
+
+      str(const char *c = "");
+      str(const char *c, const SzType &n);
+      explicit str(handle h);
+      template <typename... Args> str format(Args &&...args) const;
+      str(const std::string &s);     // not in nanobind
+      str(std::string_view s);       // not in nanobind
+      explicit str(const bytes &b);  // not in nanobind
+      operator std::string() const;  // not in nanobind
+
+  - nanobind `class str` API::
+
+      str();
+      explicit str(const char *s);
+      explicit str(const char *s, size_t n);
+      explicit str(handle h)
+      template <typename... Args> str format(Args&&... args) const;
+      const char *c_str() const;     // not in pybind11
+
+* nanobind's bytes type has API changes.
+  - pybind11 `class bytes` API::
+
+      bytes();
+      bytes(const char *c);            // explicit in nanobind
+      bytes(const char *c, size_t n);
+      bytes(const std::string &s);     // not in nanobind
+      bytes(string_view s);            // not in nanobind
+      explicit bytes(const str &s);
+      operator std::string() const;    // not in nanobind
+      operator std::string_view();     // not in nanobind
+
+  - nanobind `class bytes` API::
+
+      bytes();
+      explicit bytes(handle h);
+      explicit bytes(const char *s);
+      explicit bytes(const void *s, size_t n);
+      const char *c_str() const;
+      const void *data() const;
+      size_t size() const;
+
+* some new restrictions on binding annotations need work.
+  * can't use py::args() and leave some args unnamed?
+
+* py::function is no longer a type.
+
+* py::array is no longer a type. No doubt this is part of the required
+  transition to nb::ndarray.
+
+* the c++ simulator class will need adjustments to get the shared-context
+  constructor stack working.
+
+* blah Serialize() helpers now trip on enum typed fields, even though they
+  are/were "registered types">
+  * geometry::Role
+  * systems::sensors::{ImageFileFormat,PixelScalar}
+
+* SortedPair<GeometryId> is causing problems.
+
+* EigenPtr is causing problems.
+  - !! needed to rewrite the EigenPtr type_caster -- may still need more work.
+
+* Eigen::Block returns will likely need a new type caster?
+
+* nanobind is far more conservative about onverting arrays/matrices with
+  non-matching dimensions. See for example the pose=MatrixX<T> init binding for
+  RigidTransform. In Pybind11, this could match a point (vector3), or 4x3 or
+  4x4 matrix. In nanobind, it fails to match points that are dim=1, shape=3,
+
+* kw_only() is more restrictive, or causing problems.
+  - !! need to add an explicit py::arg("kwargs")
+
+* some problem with blah::Subgraph in geom/optimization.
+
+* dtypes apparently must be <256 bits wide. This may need a nanobind patch.
+  - !! All the magic stuff we put into dtypes should be sizeof(py::object),
+       and have nanobind patches to do fancier casting/conversion.
+
+* nanobind no longer implicitly converts Python bytes to std::string.
+  - !! need to add explicit overload bindings where this is desired.
+
+* nanobind can't easily tell if a type_erased_ptr (void*, type_info) is a
+  registered instance. This causes python nice type name behavior to change.
+
+* nanobind does not implicitly convert python lists to numpy array types. See
+  https://github.com/wjakob/nanobind/discussions/327.
+- !! added a nanobind patch with a new extension hook, and implemented the
+     extension in drake code.
+     * Still need to support list(list(Scalar))
+     * Still need to support AutoDiff, Expression
+
+* nanobind doesn't assume pointer arguments are nullable by default. Jeremy
+  thinks this means an audit of every single binding to find ones that should
+  be nullable to mark them as such.
+
+* nanobind includes a pyi stub generator that is probably superior to what MyPy
+  does; we should probably switch to using it.

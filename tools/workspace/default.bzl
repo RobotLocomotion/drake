@@ -37,6 +37,7 @@ load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menagerie_internal_repository")  # noqa
+load("//tools/workspace/nanobind:repository.bzl", "nanobind_repository")
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
 load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
@@ -55,6 +56,7 @@ load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
+load("//tools/workspace/robin_map:repository.bzl", "robin_map_repository")  # noqa
 load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
 load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
@@ -155,8 +157,10 @@ def _drake_dep_repositories_impl(module_ctx):
     gurobi_repository(name = "gurobi")
     meshcat_repository(name = "meshcat", mirrors = mirrors)
     mosek_repository(name = "mosek", mirrors = mirrors)
+    nanobind_repository(name = "nanobind", mirrors = mirrors)
     pybind11_repository(name = "pybind11", mirrors = mirrors)
     python_repository(name = "python")
+    robin_map_repository(name = "robin_map", mirrors = mirrors)
     snopt_repository(name = "snopt")
 
     ALIAS_REPOSITORIES = [

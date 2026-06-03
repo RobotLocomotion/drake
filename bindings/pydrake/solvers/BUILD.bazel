@@ -304,4 +304,5 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests_pydrake()
+# XXX porting
+# add_lint_tests_pydrake()

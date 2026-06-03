@@ -180,11 +180,13 @@ void DefineManipulationKukaIiwa(py::module_ m) {
         .def_static("AddToBuilder", &Class::AddToBuilder, py::arg("builder"),
             py::arg("plant"), py::arg("iiwa_instance"),
             py::arg("driver_config"), py::arg("controller_plant"),
+#if 0  // XXX porting
             // Using builder_life_support_stash makes the
             // builder temporarily immortal (uncollectible self cycle). This
             // will be resolved by the Build() step. See BuilderLifeSupport
             // for rationale.
             internal::builder_life_support_stash<double, 1>(),
+#endif  // XXX porting
             // `return` and `builder` join ref cycle.
             internal::ref_cycle<0, 1>(),
             // Keep alive, reference: `return` keeps `controller_plant` alive.
@@ -206,11 +208,13 @@ void DefineManipulationKukaIiwa(py::module_ m) {
         py::arg("builder"), py::arg("lcm"), py::arg("plant"),
         py::arg("iiwa_instance"), py::arg("driver_config"),
         py::arg("controller_plant"),
+#if 0  // XXX porting
         // Using builder_life_support_stash makes the
         // builder temporarily immortal (uncollectible self cycle). This
         // will be resolved by the Build() step. See BuilderLifeSupport
         // for rationale.
         internal::builder_life_support_stash<double, 1>(),
+#endif  // XXX porting
         // Keep alive, reference: `builder` keeps `controller_plant` alive.  It
         // would be preferable to attach the keep-alive to the SimIiwaDriver
         // diagram/system, but it does not appear in the function signature.

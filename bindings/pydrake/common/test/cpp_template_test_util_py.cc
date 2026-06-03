@@ -83,8 +83,14 @@ PYDRAKE_MODULE(cpp_template_test_util, m) {
   m.def("simple_func", [](const SimpleTemplate<int>&) {});
 
   // Add dummy constructors to check __call__ pseudo-deduction.
-  cls_1.def(py::init([](int) { return SimpleTemplate<int>(); }));
-  cls_2.def(py::init([](double) { return SimpleTemplate<int, double>(); }));
+  {
+    using Class = SimpleTemplate<int>;
+    cls_1.def("__init__", [](Class* self, int) { new (self) Class(); });
+  }
+  {
+    using Class = SimpleTemplate<int, double>;
+    cls_2.def("__init__", [](Class* self, double) { new (self) Class(); });
+  }
 
   AddTemplateFunction(m, "SimpleFunction",  // BR
       &SimpleFunction<int>, GetPyParam<int>());

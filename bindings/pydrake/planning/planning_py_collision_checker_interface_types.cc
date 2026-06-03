@@ -49,7 +49,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = CollisionCheckerContext;
     constexpr auto& cls_doc = doc.CollisionCheckerContext;
-    py::class_<Class, std::shared_ptr<Class>> cls(
+    py::class_<Class /*, std::shared_ptr<Class> XXX porting */> cls(
         m, "CollisionCheckerContext", cls_doc.doc);
     cls  // BR
         .def(py::init<const RobotDiagram<double>*>(), py::arg("model"),
@@ -69,7 +69,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = DistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.DistanceAndInterpolationProvider;
-    py::class_<Class, std::shared_ptr<Class>> cls(
+    py::class_<Class /*, std::shared_ptr<Class> XXX porting */> cls(
         m, "DistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def("ComputeConfigurationDistance",
@@ -83,8 +83,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = LinearDistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.LinearDistanceAndInterpolationProvider;
-    py::class_<Class, DistanceAndInterpolationProvider,
-        std::shared_ptr<LinearDistanceAndInterpolationProvider>>
+    py::class_<Class, DistanceAndInterpolationProvider
+        /*, std::shared_ptr<Class> XXX porting */>
         cls(m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def(py::init<const drake::multibody::MultibodyPlant<double>&>(),

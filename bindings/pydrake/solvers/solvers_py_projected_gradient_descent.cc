@@ -51,6 +51,7 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
     pgd_cls.attr("kDefaultMaxLineSearchSteps") =
         &Class::kDefaultMaxLineSearchSteps;
 
+#if 0  // XXX porting
     pgd_cls.def(
         "SetCustomProjectionFunction",
         [](Class& self, py::function python_projection_function) {
@@ -90,6 +91,7 @@ You can define a custom projection function in Python, such as projecting onto t
         # Project onto the set {x | x >= 0}
         return True, np.maximum(x, 0)
 )""");
+#endif  // XXX porting
   }
 }
 

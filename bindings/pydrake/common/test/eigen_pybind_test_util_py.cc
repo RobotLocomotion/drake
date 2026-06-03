@@ -8,8 +8,10 @@ PYDRAKE_MODULE(eigen_pybind_test_util, m) {
 
   using T = double;
 
-  m.def("takes_returns_matrix_pointer",
-      [](drake::EigenPtr<MatrixX<T>> mat) { return mat; });
+  m.def(
+      "takes_returns_matrix_pointer",
+      [](drake::EigenPtr<MatrixX<T>> mat) { return mat; },
+      py::arg("mat").none());
 
   m.def("scale_matrix_ptr", [](drake::EigenPtr<MatrixX<T>> mat, T factor) {
     if (mat != nullptr) {

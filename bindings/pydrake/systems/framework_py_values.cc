@@ -36,7 +36,7 @@ void DoScalarDependentDefinitions(py::module_ m) {
           })
       .def("__repr__",
           [](const VectorBase<T>& self) {
-            py::handle cls = py::cast(&self, py_rvp::reference).get_type();
+            py::handle cls = py::cast(&self, py_rvp::reference).type();
             return py::str("{}({})").format(internal::PrettyClassName(cls),
                 py::cast(self.CopyToVector()).attr("tolist")());
           })
@@ -165,7 +165,9 @@ void DefineBusValue(py::module_ m) {
       .def(
           "__iter__",
           [](const Class& self) {
-            return py::make_key_iterator(self.begin(), self.end());
+            return py::make_key_iterator(
+                py::type<Class>(), "BusValue",
+                self.begin(), self.end());
           },
           // Keep alive, reference: `return` keeps `self` alive.
           py::keep_alive<0, 1>())
@@ -174,7 +176,7 @@ void DefineBusValue(py::module_ m) {
           [](py::object self, py::str key) -> py::object {
             py::object result = self.attr("Find")(key);
             if (result.is_none()) {
-              throw py::key_error(py::cast<std::string>(key));
+              throw py::key_error(key.c_str());
             }
             return result;
           },

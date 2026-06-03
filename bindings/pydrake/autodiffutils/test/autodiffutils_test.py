@@ -101,6 +101,7 @@ class TestAutoDiffXd(unittest.TestCase):
         assert_pickle(self, a, lambda x: x)
 
     def test_array_api(self):
+        # import pdb; pdb.set_trace()
         a = AD(1, [1.0, 0])
         b = AD(2, [0, 1.0])
         x = np.array([a, b])

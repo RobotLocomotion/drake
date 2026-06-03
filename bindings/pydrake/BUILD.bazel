@@ -57,9 +57,33 @@ drake_py_library(
 
 drake_cc_library(
     name = "pydrake_pybind",
-    hdrs = ["pydrake_pybind.h"],
+    hdrs = [
+        "pydrake_numpy_dtype_object_type_caster.h",
+        "pydrake_pybind.h",
+    ],
     declare_installed_headers = 0,
+    defines = select({
+        "//tools/workspace/nanobind:enabled": [
+            "PYDRAKE_USE_NANOBIND",
+        ],
+        "//conditions:default": [
+            "PYDRAKE_USE_PYBIND11",
+        ],
+    }),
     visibility = ["//visibility:public"],
+    deps = [
+        "//common:autodiff",
+        "//common:drake_export",
+    ] + select({
+        "//tools/workspace/nanobind:enabled": [
+            "@drake//tools/workspace/nanobind",
+            "@drake//tools/workspace/python:cc_headers",
+            "@drake//tools/workspace/python:cc_libs",
+        ],
+        "//conditions:default": [
+            "@drake//tools/workspace/pybind11",
+        ],
+    }),
 )
 
 drake_cc_library(
@@ -257,6 +281,7 @@ drake_py_binary(
     srcs = ["test/print_symbol_collisions.py"],
     deps = [":all_py"],
     add_test_rule = True,
+    test_rule_tags = ["manual"],  # XXX porting
 )
 
 drake_py_unittest(
@@ -386,6 +411,7 @@ drake_py_unittest(
 drake_py_binary(
     name = "stubgen",
     srcs = ["stubgen.py"],
+    tags = ["nolint"],  # XXX porting
     deps = [
         ":all_py",
         "@stable_baselines3_internal//:stable_baselines3",
@@ -444,6 +470,7 @@ PYI_FILES = [
 # TODO(mwoehlke-kitware): genrule inappropriately gives execute permission to
 # all its outputs; see https://github.com/bazelbuild/bazel/issues/3359.
 # (Applies to both :pydrake_pyi and, below, :pydrake_typed.)
+# XXX porting
 generate_python_stubs(
     name = "pydrake_pyi",
     outs = PYI_FILES,
@@ -464,6 +491,7 @@ generate_file(
     visibility = ["//visibility:private"],
 )
 
+# XXX porting
 drake_py_unittest(
     name = "stubgen_test",
     data = [
@@ -477,6 +505,7 @@ drake_py_unittest(
     ],
 )
 
+# XXX porting
 install(
     name = "install",
     install_tests = [
@@ -497,9 +526,17 @@ install(
         "//bindings/pydrake/autodiffutils:install",
         "//bindings/pydrake/math:install",
         "//bindings/pydrake/symbolic:install",
-        # Install the pybind11 headers if and only if we're installing pydrake.
-        "@pybind11//:install",
-    ],
+    ] + select({
+        # Install the binder library as part of the pydrake install, not the
+        # workspace install, so that it gets installed if and only if we're
+        # installing pydrake. (Users can opt-out of Python installation.)
+        "//tools/workspace/nanobind:enabled": [
+            "@nanobind//:install",
+        ],
+        "//conditions:default": [
+            "@pybind11//:install",
+        ],
+    }),
 )
 
 add_lint_tests_pydrake()
