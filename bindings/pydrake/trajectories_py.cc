@@ -837,13 +837,8 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, PiecewiseTrajectory<T>>(
           m, "ExponentialPlusPiecewisePolynomial", param, cls_doc.doc);
       cls  // BR
-          .def(
-              "__init__",
-              [](Class* self, const Eigen::MatrixX<T>& K,
-                  const Eigen::MatrixX<T>& A, const Eigen::MatrixX<T>& alpha,
-                  const PiecewisePolynomial<T>& piecewise_polynomial_part) {
-                new (self) Class(K, A, alpha, piecewise_polynomial_part);
-              },
+          .def(py::init<const Eigen::MatrixX<T>&, const Eigen::MatrixX<T>&,
+                   const Eigen::MatrixX<T>&, const PiecewisePolynomial<T>&>(),
               py::arg("K"), py::arg("A"), py::arg("alpha"),
               py::arg("piecewise_polynomial_part"), cls_doc.ctor.doc)
           .def("shiftRight", &Class::shiftRight, py::arg("offset"),

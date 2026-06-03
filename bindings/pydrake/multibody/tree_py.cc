@@ -1169,12 +1169,8 @@ void DefineMultibodyForces(py::module_ m, T) {
     // activated if this module is present, and thus should not create a runtime
     // error.
     cls  // BR
-        .def(
-            "__init__",
-            [](Class* self, const MultibodyPlant<T>& plant) {
-              new (self) Class(plant);
-            },
-            py::arg("plant"), cls_doc.ctor.doc_1args_plant)
+        .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
+            cls_doc.ctor.doc_1args_plant)
         .def(py::init<int, int>(), py::arg("nb"), py::arg("nv"),
             cls_doc.ctor.doc_2args_nb_nv)
         .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)

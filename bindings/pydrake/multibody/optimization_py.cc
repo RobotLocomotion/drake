@@ -48,15 +48,9 @@ PYDRAKE_MODULE(optimization, m) {
     // using Ptr = std::shared_ptr<Class>;
     py::class_<Class, solvers::Constraint /*, Ptr XXX porting */>(
         m, "CentroidalMomentumConstraint", cls_doc.doc)
-        .def(
-            "__init__",
-            [](Class* self, const MultibodyPlant<AutoDiffXd>* plant,
-                std::optional<std::vector<ModelInstanceIndex>> model_instances,
-                systems::Context<AutoDiffXd>* plant_context,
-                bool angular_only) {
-              new (self)
-                  Class(plant, model_instances, plant_context, angular_only);
-            },
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 std::optional<std::vector<ModelInstanceIndex>>,
+                 systems::Context<AutoDiffXd>*, bool>(),
             py::arg("plant"), py::arg("model_instances"),
             py::arg("plant_context"), py::arg("angular_only"),
             // Keep alive, reference: `self` keeps `plant` alive.
@@ -123,19 +117,13 @@ PYDRAKE_MODULE(optimization, m) {
     // using Ptr = std::shared_ptr<Class>;
     py::class_<Class, solvers::Constraint/*, Ptr XXX porting */> cls(
         m, "SpatialVelocityConstraint", cls_doc.doc);
-    cls.def("__init__", [](Class* self, const MultibodyPlant<AutoDiffXd>* plant,
-                         const Frame<AutoDiffXd>& frameA,
-                         const Eigen::Ref<const Eigen::Vector3d>& v_AC_lower,
-                         const Eigen::Ref<const Eigen::Vector3d>& v_AC_upper,
-                         const Frame<AutoDiffXd>& frameB,
-                         const Eigen::Ref<const Eigen::Vector3d>& p_BCo,
-                         systems::Context<AutoDiffXd>* plant_context,
-                         const std::optional<
-                             SpatialVelocityConstraint::AngularVelocityBounds>&
-                             w_AC_bounds) {
-      new (self) Class(plant, frameA, v_AC_lower, v_AC_upper,
-          frameB, p_BCo, plant_context, w_AC_bounds);
-    },
+    cls.def(
+        py::init<const MultibodyPlant<AutoDiffXd>*, const Frame<AutoDiffXd>&,
+            const Eigen::Ref<const Eigen::Vector3d>&,
+            const Eigen::Ref<const Eigen::Vector3d>&, const Frame<AutoDiffXd>&,
+            const Eigen::Ref<const Eigen::Vector3d>&,
+            systems::Context<AutoDiffXd>*,
+            const std::optional<Class::AngularVelocityBounds>&>(),
         py::arg("plant"), py::arg("frameA"), py::arg("v_AC_lower"),
         py::arg("v_AC_upper"), py::arg("frameB"), py::arg("p_BCo"),
         py::arg("plant_context"), py::arg("w_AC_bounds") = std::nullopt,

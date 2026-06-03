@@ -245,21 +245,14 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       Constraint /*, std::shared_ptr<LinearConstraint> XXX porting */>
       linear_constraint_cls(m, "LinearConstraint", doc.LinearConstraint.doc);
   linear_constraint_cls
-      .def(
-          "__init__",
-          [](LinearConstraint* self, const Eigen::MatrixXd& A,
-              const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
-            new (self) LinearConstraint(A, lb, ub);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("lb"), py::arg("ub"),
           doc.LinearConstraint.ctor.doc_dense_A)
-      .def(
-          "__init__",
-          [](LinearConstraint* self, const Eigen::SparseMatrix<double>& A,
-              const Eigen::Ref<const Eigen::VectorXd>& lb,
-              const Eigen::Ref<const Eigen::VectorXd>& ub) {
-            new (self) LinearConstraint(A, lb, ub);
-          },
+      .def(py::init<const Eigen::SparseMatrix<double>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("lb"), py::arg("ub"),
           doc.LinearConstraint.ctor.doc_sparse_A)
       .def("GetDenseA", &LinearConstraint::GetDenseA,
@@ -321,13 +314,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.LorentzConeConstraint.EvalType.kNonconvex.doc);
 
   lorentz_cone_cls
-      .def(
-          "__init__",
-          [](LorentzConeConstraint* self, const Eigen::MatrixXd& A,
-              const Eigen::VectorXd& b,
-              LorentzConeConstraint::EvalType eval_type) {
-            new (self) LorentzConeConstraint(A, b, eval_type);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               LorentzConeConstraint::EvalType>(),
           py::arg("A"), py::arg("b"),
           py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
           doc.LorentzConeConstraint.ctor.doc)
@@ -342,12 +331,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   py::class_<RotatedLorentzConeConstraint, Constraint
       /*, std::shared_ptr<RotatedLorentzConeConstraint> XXX porting */>(
       m, "RotatedLorentzConeConstraint", doc.RotatedLorentzConeConstraint.doc)
-      .def(
-          "__init__",
-          [](RotatedLorentzConeConstraint* self, const Eigen::MatrixXd& A,
-              const Eigen::VectorXd& b) {
-            new (self) RotatedLorentzConeConstraint(A, b);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.RotatedLorentzConeConstraint.ctor.doc)
       .def("A", &RotatedLorentzConeConstraint::A,
           doc.RotatedLorentzConeConstraint.A.doc)
@@ -361,27 +346,15 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   py::class_<LinearEqualityConstraint, LinearConstraint
       /*, std::shared_ptr<LinearEqualityConstraint> XXX porting */>(
       m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
-      .def(
-          "__init__",
-          [](LinearEqualityConstraint* self, const Eigen::MatrixXd& Aeq,
-              const Eigen::VectorXd& beq) {
-            new (self) LinearEqualityConstraint(Aeq, beq);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("Aeq"), py::arg("beq"),
           doc.LinearEqualityConstraint.ctor.doc_dense_Aeq)
-      .def(
-          "__init__",
-          [](LinearEqualityConstraint* self,
-              const Eigen::SparseMatrix<double>& Aeq,
-              const Eigen::VectorXd& beq) {
-            new (self) LinearEqualityConstraint(Aeq, beq);
-          },
+      .def(py::init<const Eigen::SparseMatrix<double>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("Aeq"), py::arg("beq"),
           doc.LinearEqualityConstraint.ctor.doc_sparse_Aeq)
-      .def(
-          "__init__",
-          [](LinearEqualityConstraint* self, const Eigen::RowVectorXd& a,
-              double beq) { new (self) LinearEqualityConstraint(a, beq); },
+      .def(py::init<const Eigen::Ref<const Eigen::RowVectorXd>&, double>(),
           py::arg("a"), py::arg("beq"),
           doc.LinearEqualityConstraint.ctor.doc_row_a)
       .def(
@@ -405,12 +378,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   py::class_<BoundingBoxConstraint, LinearConstraint
       /*, std::shared_ptr<BoundingBoxConstraint> XXX porting */>(
       m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.doc)
-      .def(
-          "__init__",
-          [](BoundingBoxConstraint* self, const Eigen::VectorXd& lb,
-              const Eigen::VectorXd& ub) {
-            new (self) BoundingBoxConstraint(lb, ub);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc);
 
   py::class_<QuadraticConstraint, Constraint
@@ -432,14 +401,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.QuadraticConstraint.HessianType.kZero.doc);
 
   quadratic_constraint_cls
-      .def(
-          "__init__",
-          [](QuadraticConstraint* self,
-              const Eigen::Ref<const Eigen::MatrixXd>& Q0,
-              const Eigen::Ref<const Eigen::VectorXd>& b, double lb, double ub,
-              std::optional<QuadraticConstraint::HessianType> hessian_type) {
-            new (self) QuadraticConstraint(Q0, b, lb, ub, hessian_type);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&, double, double,
+               std::optional<QuadraticConstraint::HessianType>>(),
           py::arg("Q0"), py::arg("b"), py::arg("lb"), py::arg("ub"),
           py::arg("hessian_type") = std::nullopt,
           doc.QuadraticConstraint.ctor.doc)
@@ -466,12 +430,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   py::class_<PositiveSemidefiniteConstraint, Constraint
       /*, std::shared_ptr<PositiveSemidefiniteConstraint> XXX porting */>(m,
       "PositiveSemidefiniteConstraint", doc.PositiveSemidefiniteConstraint.doc)
-      .def(
-          "__init__",
-          [](PositiveSemidefiniteConstraint* self, int rows) {
-            new (self) PositiveSemidefiniteConstraint(rows);
-          },
-          py::arg("rows"), doc.PositiveSemidefiniteConstraint.ctor.doc)
+      .def(py::init<int>(), py::arg("rows"),
+          doc.PositiveSemidefiniteConstraint.ctor.doc)
       .def("matrix_rows", &PositiveSemidefiniteConstraint::matrix_rows,
           doc.PositiveSemidefiniteConstraint.matrix_rows.doc);
 
@@ -479,14 +439,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       /*, std::shared_ptr<LinearMatrixInequalityConstraint> XXX porting */>(m,
       "LinearMatrixInequalityConstraint",
       doc.LinearMatrixInequalityConstraint.doc)
-      .def(
-          "__init__",
-          [](LinearMatrixInequalityConstraint* self,
-              std::vector<Eigen::MatrixXd> F, double symmetry_tolerance) {
-            new (self) LinearMatrixInequalityConstraint(
-                std::move(F), symmetry_tolerance);
-          },
-          py::arg("F"), py::arg("symmetry_tolerance") = 1E-10,
+      .def(py::init<std::vector<Eigen::MatrixXd>, double>(), py::arg("F"),
+          py::arg("symmetry_tolerance") = 1E-10,
           doc.LinearMatrixInequalityConstraint.ctor.doc)
       .def("F", &LinearMatrixInequalityConstraint::F,
           doc.LinearMatrixInequalityConstraint.F.doc)
@@ -505,13 +459,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   py::class_<ExponentialConeConstraint, Constraint
       /*, std::shared_ptr<ExponentialConeConstraint> XXX porting */>(
       m, "ExponentialConeConstraint", doc.ExponentialConeConstraint.doc)
-      .def(
-          "__init__",
-          [](ExponentialConeConstraint* self, const Eigen::MatrixXd& A,
-              const Eigen::Vector3d& b) {
-            Eigen::SparseMatrix<double> A_sparse = A.sparseView();
-            new (self) ExponentialConeConstraint(A_sparse, b);
-          },
+      .def(py::init<const Eigen::SparseMatrix<double>&,
+               const Eigen::Ref<const Eigen::Vector3d>&>(),
           py::arg("A"), py::arg("b"), doc.ExponentialConeConstraint.ctor.doc)
       .def(
           "A",
@@ -676,11 +625,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
 
   py::class_<LinearCost, Cost /*, std::shared_ptr<LinearCost> XXX porting */>(
       m, "LinearCost", doc.LinearCost.doc)
-      .def(
-          "__init__",
-          [](LinearCost* self, const Eigen::VectorXd& a, double b) {
-            new (self) LinearCost(a, b);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&, double>(),
           py::arg("a"), py::arg("b"), doc.LinearCost.ctor.doc)
       .def("a", &LinearCost::a, doc.LinearCost.a.doc)
       .def("b", &LinearCost::b, doc.LinearCost.b.doc)
@@ -700,13 +645,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   py::class_<QuadraticCost,
       Cost /*, std::shared_ptr<QuadraticCost> XXX porting */>(
       m, "QuadraticCost", doc.QuadraticCost.doc)
-      .def(
-          "__init__",
-          [](QuadraticCost* self, const Eigen::MatrixXd& Q,
-              const Eigen::VectorXd& b, double c,
-              std::optional<bool> is_convex) {
-            new (self) QuadraticCost(Q, b, c, is_convex);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&, double,
+               std::optional<bool>>(),
           py::arg("Q"), py::arg("b"), py::arg("c"),
           py::arg("is_convex") = py::none(), doc.QuadraticCost.ctor.doc)
       .def("Q", &QuadraticCost::Q, doc.QuadraticCost.Q.doc)
@@ -736,10 +677,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
 
   py::class_<L1NormCost, Cost /*, std::shared_ptr<L1NormCost> XXX porting */>(
       m, "L1NormCost", doc.L1NormCost.doc)
-      .def(
-          "__init__",
-          [](L1NormCost* self, const Eigen::MatrixXd& A,
-              const Eigen::VectorXd& b) { new (self) L1NormCost(A, b); },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.L1NormCost.ctor.doc)
       .def("A", &L1NormCost::A, doc.L1NormCost.A.doc)
       .def("b", &L1NormCost::b, doc.L1NormCost.b.doc)
@@ -760,16 +699,12 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     py::class_<L2NormCost, Cost /*, std::shared_ptr<L2NormCost> XXX porting */>
         cls(m, "L2NormCost", doc.L2NormCost.doc);
     cls  // BR
-        .def(
-           "__init__",
-           [](L2NormCost* self, const Eigen::MatrixXd& A,
-               const Eigen::VectorXd& b) { new (self) L2NormCost(A, b); },
-           py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
-        .def(
-            "__init__",
-            [](L2NormCost* self, const Eigen::SparseMatrix<double>& A,
-                const Eigen::VectorXd& b) { new (self) L2NormCost(A, b); },
-             py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_sparse_A)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
+        .def(py::init<const Eigen::SparseMatrix<double>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_sparse_A)
         .def("get_sparse_A", &L2NormCost::get_sparse_A,
             doc.L2NormCost.get_sparse_A.doc)
         .def("GetDenseA", &L2NormCost::GetDenseA, doc.L2NormCost.GetDenseA.doc)
@@ -795,10 +730,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   py::class_<LInfNormCost,
       Cost /*, std::shared_ptr<LInfNormCost> XXX porting */>(
       m, "LInfNormCost", doc.LInfNormCost.doc)
-      .def(
-          "__init__",
-          [](LInfNormCost* self, const Eigen::MatrixXd& A,
-              const Eigen::VectorXd& b) { new (self) LInfNormCost(A, b); },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.LInfNormCost.ctor.doc)
       .def("A", &LInfNormCost::A, doc.LInfNormCost.A.doc)
       .def("b", &LInfNormCost::b, doc.LInfNormCost.b.doc)
@@ -818,12 +751,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   py::class_<PerspectiveQuadraticCost, Cost
       /*, std::shared_ptr<PerspectiveQuadraticCost> XXX porting */>(
       m, "PerspectiveQuadraticCost", doc.PerspectiveQuadraticCost.doc)
-      .def(
-          "__init__",
-          [](PerspectiveQuadraticCost* self, const Eigen::MatrixXd& A,
-              const Eigen::VectorXd& b) {
-            new (self) PerspectiveQuadraticCost(A, b);
-          },
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.PerspectiveQuadraticCost.ctor.doc)
       .def(
           "A", &PerspectiveQuadraticCost::A, doc.PerspectiveQuadraticCost.A.doc)

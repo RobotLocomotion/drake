@@ -65,13 +65,8 @@ void DefineDifferentialIkLegacy(py::module_ m) {
         doc.DifferentialInverseKinematicsParameters.doc);
 
     cls  // BR
-        .def(
-            "__init__",
-            [](Class* self, int num_positions, int num_velocities) {
-              new (self) Class{num_positions, num_velocities};
-            },
-            py::arg("num_positions"), py::arg("num_velocities") = std::nullopt,
-            cls_doc.ctor.doc)
+        .def(py::init<int, int>(), py::arg("num_positions"),
+            py::arg("num_velocities") = std::nullopt, cls_doc.ctor.doc)
         .def("get_time_step", &Class::get_time_step, cls_doc.get_time_step.doc)
         .def("set_time_step", &Class::set_time_step, py::arg("dt"),
             cls_doc.set_time_step.doc)

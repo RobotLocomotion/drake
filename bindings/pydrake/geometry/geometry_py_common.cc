@@ -240,6 +240,7 @@ void DefineGeometrySet(py::module_ m) {
         .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<GeometryId>(), py::arg("geometry_id"), extra_ctor_doc)
         .def(py::init<FrameId>(), py::arg("frame_id"), extra_ctor_doc)
+        // XXX porting try to use py::init here like we do on master
         .def(
             "__init__",
             [](Class* self, std::vector<GeometryId> geometry_ids) {
