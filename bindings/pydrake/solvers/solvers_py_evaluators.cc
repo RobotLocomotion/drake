@@ -485,27 +485,28 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     constexpr auto& cls_doc = doc.MinimumValueLowerBoundConstraint;
     py::class_<Class, Constraint, std::shared_ptr<Class>>(
         m, "MinimumValueLowerBoundConstraint", cls_doc.doc)
-        .def(py::init(
-                 [](int num_vars, double minimum_value_lower,
-                     double influence_value_offset, int max_num_values,
-                     // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
-                     // then I got the RuntimeError: dtype=object arrays must be
-                     // copied, and cannot be referenced.
-                     std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                         value_function,
-                     std::function<Eigen::VectorXd(
-                         const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                         value_function_double) {
-                   return std::make_unique<Class>(num_vars, minimum_value_lower,
-                       influence_value_offset, max_num_values, value_function,
-                       value_function_double);
-                 }),
+        .def(
+            "__init__",
+            [](Class* self, int num_vars, double minimum_value_lower,
+                double influence_value_offset, int max_num_values,
+                // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
+                // I got the RuntimeError: dtype=object arrays must be copied,
+                // and cannot be referenced.
+                std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                    value_function,
+                std::function<Eigen::VectorXd(
+                    const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                    value_function_double) {
+              new (self)
+                  Class(num_vars, minimum_value_lower, influence_value_offset,
+                      max_num_values, value_function, value_function_double);
+            },
             py::arg("num_vars"), py::arg("minimum_value_lower"),
             py::arg("influence_value_offset"), py::arg("max_num_values"),
             py::arg("value_function"),
             py::arg("value_function_double") = std::function<Eigen::VectorXd(
                 const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
-            doc.MinimumValueLowerBoundConstraint.ctor.doc)
+            cls_doc.ctor.doc)
         .def("minimum_value_lower", &Class::minimum_value_lower,
             cls_doc.minimum_value_lower.doc)
         .def("influence_value", &Class::influence_value,
@@ -540,21 +541,23 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     constexpr auto& cls_doc = doc.MinimumValueUpperBoundConstraint;
     py::class_<Class, Constraint, std::shared_ptr<Class>>(
         m, "MinimumValueUpperBoundConstraint", cls_doc.doc)
-        .def(py::init(
-                 [](int num_vars, double minimum_value_upper,
-                     double influence_value_offset, int max_num_values,
-                     // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
-                     // then I got the RuntimeError: dtype=object arrays must be
-                     // copied, and cannot be referenced.
-                     std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                         value_function,
-                     std::function<Eigen::VectorXd(
-                         const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                         value_function_double) {
-                   return std::make_unique<Class>(num_vars, minimum_value_upper,
-                       influence_value_offset, max_num_values, value_function,
-                       value_function_double);
-                 }),
+        .def(
+            "__init__",
+            [](MinimumValueUpperBoundConstraint* self, int num_vars,
+                double minimum_value_upper, double influence_value_offset,
+                int max_num_values,
+                // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
+                // I got the RuntimeError: dtype=object arrays must be copied,
+                // and cannot be referenced.
+                std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                    value_function,
+                std::function<Eigen::VectorXd(
+                    const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                    value_function_double) {
+              new (self) MinimumValueUpperBoundConstraint(num_vars,
+                  minimum_value_upper, influence_value_offset, max_num_values,
+                  value_function, value_function_double);
+            },
             py::arg("num_vars"), py::arg("minimum_value_upper"),
             py::arg("influence_value_offset"), py::arg("max_num_values"),
             py::arg("value_function"),

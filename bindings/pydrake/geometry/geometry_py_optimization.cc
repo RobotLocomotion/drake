@@ -238,17 +238,21 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
     const auto& cls_doc = doc.CartesianProduct;
     py::class_<Class, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init([](const std::vector<ConvexSet*>& sets) {
-          return std::make_unique<Class>(CloneConvexSets(sets));
-        }),
+        .def(
+            "__init__",
+            [](Class* self, const std::vector<ConvexSet*>& sets) {
+              new (self) Class(CloneConvexSets(sets));
+            },
             py::arg("sets"), cls_doc.ctor.doc_1args_sets)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
             py::arg("setB"), cls_doc.ctor.doc_2args_setA_setB)
-        .def(py::init([](const std::vector<ConvexSet*>& sets,
-                          const Eigen::Ref<const Eigen::MatrixXd>& A,
-                          const Eigen::Ref<const Eigen::VectorXd>& b) {
-          return std::make_unique<Class>(CloneConvexSets(sets), A, b);
-        }),
+        .def(
+            "__init__",
+            [](Class* self, const std::vector<ConvexSet*>& sets,
+                const Eigen::Ref<const Eigen::MatrixXd>& A,
+                const Eigen::Ref<const Eigen::VectorXd>& b) {
+              new (self) Class(CloneConvexSets(sets), A, b);
+            },
             py::arg("sets"), py::arg("A"), py::arg("b"),
             cls_doc.ctor.doc_3args_sets_A_b)
         .def(py::init<const QueryObject<double>&, GeometryId,
@@ -268,11 +272,12 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
     using Class = ConvexHull;
     const auto& cls_doc = doc.ConvexHull;
     py::class_<Class, ConvexSet>(m, "ConvexHull", cls_doc.doc)
-        .def(py::init([](const std::vector<ConvexSet*>& sets,
-                          const bool remove_empty_sets) {
-          return std::make_unique<Class>(
-              CloneConvexSets(sets), remove_empty_sets);
-        }),
+        .def(
+            "__init__",
+            [](Class* self, const std::vector<ConvexSet*>& sets,
+                const bool remove_empty_sets) {
+              new (self) Class(CloneConvexSets(sets), remove_empty_sets);
+            },
             py::arg("sets"), cls_doc.ctor.doc,
             py::arg("remove_empty_sets") = true)
         .def(
@@ -467,9 +472,11 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
     const auto& cls_doc = doc.Intersection;
     py::class_<Class, ConvexSet>(m, "Intersection", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init([](const std::vector<ConvexSet*>& sets) {
-          return std::make_unique<Class>(CloneConvexSets(sets));
-        }),
+        .def(
+            "__init__",
+            [](Class* self, const std::vector<ConvexSet*>& sets) {
+              new (self) Class(CloneConvexSets(sets));
+            },
             py::arg("sets"), cls_doc.ctor.doc_1args)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
             py::arg("setB"), cls_doc.ctor.doc_2args)
@@ -484,9 +491,11 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
     const auto& cls_doc = doc.MinkowskiSum;
     py::class_<Class, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init([](const std::vector<ConvexSet*>& sets) {
-          return std::make_unique<Class>(CloneConvexSets(sets));
-        }),
+        .def(
+            "__init__",
+            [](Class* self, const std::vector<ConvexSet*>& sets) {
+              new (self) Class(CloneConvexSets(sets));
+            },
             py::arg("sets"), cls_doc.ctor.doc_1args)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
             py::arg("setB"), cls_doc.ctor.doc_2args)

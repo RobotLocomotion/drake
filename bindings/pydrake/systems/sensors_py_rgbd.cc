@@ -148,16 +148,17 @@ void DefineSensorsRgbd(py::module_ m) {
     py::class_<Class, Diagram<double>> cls(
         m, "RgbdSensorDiscrete", cls_doc.doc);
     cls  // BR
-        .def(py::init([](RgbdSensor& sensor, double period,
-                          bool render_label_image) {
-          // The C++ constructor doesn't offer a bare-pointer overload, only
-          // shared_ptr. Because object lifetime is already handled by the
-          // ref_cycle annotation below (as required for all subclasses of
-          // Diagram), we can pass the `sensor` as an unowned shared_ptr.
-          return std::make_unique<RgbdSensorDiscrete>(
-              make_unowned_shared_ptr_from_raw(&sensor), period,
-              render_label_image);
-        }),
+        .def(
+            "__init__",
+            [](Class* self, RgbdSensor& sensor, double period,
+                bool render_label_image) {
+              // The C++ constructor doesn't offer a bare-pointer overload, only
+              // shared_ptr. Because object lifetime is already handled by the
+              // ref_cycle annotation below (as required for all subclasses of
+              // Diagram), we can pass the `sensor` as an unowned shared_ptr.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&sensor),
+                  period, render_label_image);
+            },
             py::arg("sensor"),
             py::arg("period") = double{Class::kDefaultPeriod},
             py::arg("render_label_image") = true,
