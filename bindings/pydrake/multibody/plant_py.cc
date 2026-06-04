@@ -1422,10 +1422,9 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         "AddMultibodyPlantSceneGraph",
         [result_to_tuple](systems::DiagramBuilder<T>* builder,
             MultibodyPlant<T>& plant, SceneGraph<T>* scene_graph) {
-          // The C++ method doesn't offer a bare-pointer overload, only
-          // shared_ptr. Because object lifetimes are already handled by the
-          // ref_cycle annotations above, we can pass the systems via unowned
-          // shared_ptr.
+          // The plant is already owned by Python. The scene_graph is either
+          // nullptr or already owned by Python. Therefore, both can be passed
+          // into C++ via an unowned shared_ptr.
           auto pair =
               multibody::internal::AddMultibodyPlantSceneGraphFromShared<T>(
                   builder, make_unowned_shared_ptr_from_raw(&plant),
@@ -1440,15 +1439,12 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         "AddMultibodyPlantSceneGraph",
         [result_to_tuple](systems::DiagramBuilder<T>* builder, double time_step,
             SceneGraph<T>* scene_graph) {
-          // The C++ method doesn't offer a bare-pointer overload, only
-          // shared_ptr. Because object lifetimes are already handled by the
-          // ref_cycle annotations above, we can pass the systems via unowned
-          // shared_ptr.
+          // The newly-minted plant will be owned by C++. The scene_graph is
+          // either nullptr or already owned by Python, so it can be passed
+          // into C++ via an unowned shared_ptr.
           auto pair =
               multibody::internal::AddMultibodyPlantSceneGraphFromShared<T>(
-                  builder,
-                  make_unowned_shared_ptr_from_raw(
-                      new MultibodyPlant<T>(time_step)),
+                  builder, std::make_unique<MultibodyPlant<T>>(time_step),
                   make_unowned_shared_ptr_from_raw(scene_graph));
           return result_to_tuple(builder, pair);
         },
