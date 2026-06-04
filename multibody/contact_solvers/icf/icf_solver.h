@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -114,6 +115,14 @@ class IcfSolver {
 
   /* Solves the convex problem to compute next-step velocities, argmin ℓ(v).
 
+  Because the cost is additive over islands (connected components of the clique
+  graph) and the gradient is block-disjoint across them, the problem decomposes
+  into one independent convex subproblem per island. This method runs a separate
+  Newton solve for each island (serially), each writing only its own clique
+  segments of `data`, and aggregates their statistics: the reported
+  num_iterations is the max over islands, num_factorizations is the sum, and the
+  solve converges iff every island converges.
+
   @param model The ICF model defining the optimization problem.
   @param tolerance The convergence tolerance ε to be used for this solve. See
                    the class documentation for convergence criteria details.
@@ -135,18 +144,60 @@ class IcfSolver {
   const IcfSolverParameters& get_parameters() const { return parameters_; }
 
  private:
-  /* Solves min_α ℓ̃(α) = ℓ(v + α⋅w) using a 1D Newton method with bisection
-  fallback. The initial guess is generated using cubic spline interpolation.
+  /* All per-island solver state. One instance is held per island in a grow-only
+  pool (island_states_), so islands can be solved independently and Hessian
+  factorizations can be reused across iterations and time steps on a per-island
+  basis. Held by pointer in the pool since these members are not cheaply
+  movable. */
+  struct IslandSolverState {
+    // Stored sub-Hessian and factorizations for this island. Allows Hessian
+    // reuse between iterations and between subsequent solves.
+    std::unique_ptr<
+        contact_solvers::internal::BlockSparseSymmetricMatrix<Eigen::MatrixXd>>
+        hessian;
+    contact_solvers::internal::BlockSparseCholeskySolver<Eigen::MatrixXd>
+        hessian_factorization;
+    Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization;
 
-  @param model The ICF model, used to evaluate ℓ̃(α) and its derivatives.
-  @param data The ICF data at the current iterate v.
-  @param w The search direction.
+    // Data used during this island's linesearch.
+    IcfSearchDirectionData<double> search_direction_data;
+
+    // The island's sub-Hessian sparsity pattern from the last time the Hessian
+    // was computed, for triggering Hessian reuse.
+    std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
+        previous_sparsity_pattern;
+
+    // Flag for Hessian factorization re-use (changes between iterations).
+    // Stored as uint8_t (not bool) so it can be a per-island element without
+    // the std::vector<bool> bit-packing surprises.
+    std::uint8_t hessian_factorization_is_fresh_enough{0};
+
+    // Island-local (gathered) scratch for the search-direction solve: the
+    // right-hand side −g and, after solving, the search direction w, laid out
+    // in the island's local block order. Avoids per-iteration allocations.
+    Eigen::VectorXd local_rhs;
+
+    // Per-island solver statistics, merged into the aggregate stats_ after all
+    // islands are solved.
+    IcfSolverStats stats;
+  };
+
+  /* Runs the Newton + exact-linesearch loop for a single `island`, updating
+  only that island's clique segments of `data` (and `decision_variables_` /
+  `search_direction_`), and recording per-island statistics in state->stats.
+  @returns true iff the island converged to `tolerance`. */
+  bool SolveIsland(const IcfModel<double>& model, int island, double tolerance,
+                   IcfData<double>* data, IslandSolverState* state);
+
+  /* Solves min_α ℓ̃ᵢ(α) = ℓᵢ(v + α⋅w) for `island` using a 1D Newton method with
+  bisection fallback. The initial guess is generated using cubic spline
+  interpolation. Only the island's clique segments of `w` are read.
 
   @returns A pair containing the optimal linesearch parameter α and the number
   of linesearch iterations taken. */
-  std::pair<double, int> PerformExactLineSearch(const IcfModel<double>& model,
-                                                const IcfData<double>& data,
-                                                const Eigen::VectorXd& w);
+  std::pair<double, int> PerformExactLineSearchIsland(
+      const IcfModel<double>& model, int island, const IcfData<double>& data,
+      const Eigen::VectorXd& w, IslandSolverState* state);
 
   /* Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ (0, 1).
   @pre The equation in question must have one exactly real root in (0, 1),
@@ -154,59 +205,45 @@ class IcfSolver {
   static double SolveQuadraticInUnitInterval(const double a, const double b,
                                              const double c);
 
-  /* Solves for the Newton search direction w = −H⁻¹⋅g, with flags for several
-  levels of Hessian reuse.
+  /* Solves for `island`'s Newton search direction w = −Hᵢ⁻¹⋅gᵢ, writing the
+  result into the island's clique segments of `w`, with flags for several levels
+  of Hessian reuse.
 
-  @param model The ICF model, used to compute the Hessian H.
-  @param data The ICF data at the current iterate v.
-  @param[out] w The computed search direction.
-  @param reuse_factorization If true, reuse the exact same factorization of H as
-                             in the previous iteration. Do not compute the new
-                             Hessian at all. This is the fastest option, but
-                             gives a lower-quality search direction.
-
-  @param reuse_sparsity_pattern If true, recompute H and its factorization, but
+  @param reuse_factorization If true, reuse the exact same factorization of Hᵢ
+  as in the previous iteration. Do not compute the new sub-Hessian at all. This
+  is the fastest option, but gives a lower-quality search direction.
+  @param reuse_sparsity_pattern If true, recompute Hᵢ and its factorization, but
                                 reuse the stored sparsity pattern. This gives an
                                 exact Newton step, but avoids some allocations.
 
-  @note If both `reuse_sparsity_pattern` and `reuse_factorization1 are `false`,
-  computes H from scratch and factors it anew. The `reuse_factorization` flag
-  takes precedence over `reuse_sparsity_pattern`. */
-  void ComputeSearchDirection(const IcfModel<double>& model,
-                              const IcfData<double>& data, Eigen::VectorXd* w,
-                              bool reuse_factorization = false,
-                              bool reuse_sparsity_pattern = false);
+  @note If both flags are false, computes Hᵢ from scratch and factors it anew.
+  The `reuse_factorization` flag takes precedence over
+  `reuse_sparsity_pattern`. */
+  void ComputeIslandSearchDirection(const IcfModel<double>& model, int island,
+                                    const IcfData<double>& data,
+                                    Eigen::VectorXd* w,
+                                    IslandSolverState* state,
+                                    bool reuse_factorization = false,
+                                    bool reuse_sparsity_pattern = false);
 
-  /* Indicates whether the model's sparsity pattern has changed since the last
-  time the Hessian was computed. */
-  bool SparsityPatternChanged(const IcfModel<double>& model) const;
+  /* Indicates whether `island`'s sub-Hessian sparsity pattern has changed since
+  the last time the island's Hessian was computed. */
+  bool IslandSparsityChanged(const IcfModel<double>& model, int island,
+                             const IslandSolverState& state) const;
 
-  // Stored Hessian and factorization objects. Allows for Hessian reuse between
-  // iterations and between subsequent solves.
-  std::unique_ptr<
-      contact_solvers::internal::BlockSparseSymmetricMatrix<Eigen::MatrixXd>>
-      hessian_;
-  contact_solvers::internal::BlockSparseCholeskySolver<Eigen::MatrixXd>
-      hessian_factorization_;
-  Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
-
-  // Data used during linesearch.
-  IcfSearchDirectionData<double> search_direction_data_;
-
-  // Track the sparsity pattern for triggering Hessian reuse.
-  std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
-      previous_sparsity_pattern_;
-
-  // Flag for Hessian factorization re-use (changes between iterations).
-  bool hessian_factorization_is_fresh_enough_{false};
+  // Grow-only pool of per-island solver state, indexed by island. Only the
+  // first model.partition().num_islands() entries are valid for a given solve.
+  std::vector<std::unique_ptr<IslandSolverState>> island_states_;
 
   // Iteration limits, tolerances, and other parameters.
   IcfSolverParameters parameters_;
 
-  // Statistics for logging and tracking convergence.
+  // Aggregate statistics for logging and tracking convergence, combined from
+  // the per-island statistics after each solve.
   IcfSolverStats stats_;
 
-  // Pre-allocated decision variables v and search direction w.
+  // Pre-allocated decision variables v and search direction w. Full size; each
+  // island writes only its own clique segments.
   Eigen::VectorXd decision_variables_;
   Eigen::VectorXd search_direction_;
 };

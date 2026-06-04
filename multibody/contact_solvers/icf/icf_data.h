@@ -139,6 +139,13 @@ class IcfData {
   after v changes. */
   void set_v(const VectorX<T>& v);
 
+  /* Returns a mutable reference to v, for in-place segment updates by the
+  solver (e.g., when each island updates only its own clique segments during a
+  per-island solve). Unlike set_v(), this does not reset dependent quantities,
+  so the caller is responsible for keeping derived data consistent with v.
+  Intended for value writes only, not resizing. */
+  VectorX<T>& mutable_v() { return v_; }
+
   /* Returns the pool of rigid body spatial velocities, V_WB. Size is
   num_bodies().
 
