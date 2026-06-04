@@ -1,10 +1,10 @@
 /* @file
 A demonstration of the CenicIntegrator on a scene that decomposes into several
-independent constraint "islands". The scene is a grid of well-separated vertical
-stacks of objects (boxes or spheres): the objects within a stack are in contact
-(forming one island), while the stacks are far enough apart that they never
-interact. CENIC can solve the islands independently and, optionally, in parallel
-(see --num_threads).
+independent constraint "islands". The scene is a grid of well-separated piles of
+randomly-oriented objects (boxes or spheres): the objects within a pile are in
+contact (forming one island), while the piles are far enough apart that they
+never interact. CENIC can solve the islands independently and, optionally, in
+parallel (see --num_threads).
 
 The example exposes the main CENIC knobs along with a discrete-MultibodyPlant
 baseline:
@@ -12,7 +12,7 @@ baseline:
  - --time_step selects a continuous plant integrated by CENIC (0, the default)
    or a discrete plant using its built-in contact solver (> 0) as a baseline;
  - --fixed_step / --accuracy choose CENIC's integration mode;
- - --hydroelastic switches from point to hydroelastic contact;
+ - --hydroelastic (on by default) toggles hydroelastic vs. point contact;
  - --spheres simulates spheres instead of boxes.
 It prints simulator and CENIC solver statistics, along with the wall-clock
 simulation time, at the end. */
@@ -26,15 +26,19 @@ simulation time, at the end. */
 #include <gflags/gflags.h>
 
 #include "drake/common/parallelism.h"
+#include "drake/common/random.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/cenic/cenic_integrator.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/event_status.h"
+#include "drake/visualization/visualization_config.h"
 #include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
@@ -49,6 +53,7 @@ using drake::geometry::ProximityProperties;
 using drake::geometry::Shape;
 using drake::geometry::Sphere;
 using drake::math::RigidTransformd;
+using drake::math::RotationMatrixd;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::CenicIntegrator;
 using drake::multibody::ContactModel;
@@ -71,8 +76,9 @@ DEFINE_double(
 
 DEFINE_bool(spheres, false, "If true, simulate spheres instead of boxes.");
 
-DEFINE_bool(hydroelastic, false,
-            "If true, use hydroelastic contact instead of point contact.");
+DEFINE_bool(hydroelastic, true,
+            "If true (the default), use hydroelastic contact; if false, use "
+            "point contact.");
 
 DEFINE_bool(
     fixed_step, false,
@@ -89,11 +95,11 @@ DEFINE_double(max_step_size, 0.1,
               "CENIC only: maximum integration step [s]. In --fixed_step mode "
               "this is the exact (constant) step size.");
 
-DEFINE_int32(num_stacks, 8,
-             "Number of object stacks, arranged in a roughly square grid "
-             "centered on the origin. Each stack is an independent island.");
+DEFINE_int32(num_stacks, 9,
+             "Number of object piles, arranged in a roughly square grid "
+             "centered on the origin. Each pile is an independent island.");
 
-DEFINE_int32(boxes_per_stack, 10, "Number of objects in each stack.");
+DEFINE_int32(boxes_per_stack, 10, "Number of objects in each pile.");
 
 DEFINE_double(stack_spacing, 2.0,
               "Distance between neighboring stacks in the grid [m]. Must be "
@@ -116,10 +122,10 @@ DEFINE_double(target_realtime_rate, 0.0,
               "With --meshcat the animation is recorded and replayed at a "
               "natural speed afterward, so 0 is fine for visualization too.");
 
-/* Populates `plant` with a grid of --num_stacks vertical stacks of
---boxes_per_stack free bodies (boxes or spheres) resting on a half-space floor.
-Stacks are centered on the origin and spaced --stack_spacing apart so that, when
-sufficiently separated, each stack is an independent constraint island. */
+/* Populates `plant` with a grid of --num_stacks piles of --boxes_per_stack free
+bodies (boxes or spheres, randomly oriented) resting on a half-space floor.
+Piles are centered on the origin and spaced --stack_spacing apart so that, when
+sufficiently separated, each pile is an independent constraint island. */
 void BuildScene(MultibodyPlant<double>* plant) {
   const double half = 0.05;             // Box half-size or sphere radius [m].
   const double density = 1000.0;        // [kg/m^3].
@@ -163,7 +169,16 @@ void BuildScene(MultibodyPlant<double>* plant) {
           : SpatialInertia<double>::SolidBoxWithDensity(density, 2 * half,
                                                         2 * half, 2 * half);
 
-  // Lay the stacks out on a roughly square grid centered on the origin.
+  // Each object's circumscribed sphere has this radius. Spacing the levels of a
+  // pile by its diameter (plus a gap) guarantees the randomly-oriented objects
+  // never overlap initially, no matter their orientation.
+  const double bounding_radius = FLAGS_spheres ? half : half * std::sqrt(3.0);
+  const double level_spacing = 2 * bounding_radius + gap;
+
+  // A fixed seed keeps the random initial orientations deterministic.
+  RandomGenerator generator(0);
+
+  // Lay the piles out on a roughly square grid centered on the origin.
   const int grid = static_cast<int>(std::ceil(std::sqrt(FLAGS_num_stacks)));
   const double center = (grid - 1) / 2.0;
   for (int k = 0; k < FLAGS_num_stacks; ++k) {
@@ -171,19 +186,20 @@ void BuildScene(MultibodyPlant<double>* plant) {
     const int j = k / grid;
     const double x = (i - center) * FLAGS_stack_spacing;
     const double y = (j - center) * FLAGS_stack_spacing;
-    // A 4-color checkerboard makes neighboring (independent) stacks distinct.
+    // A 4-color checkerboard makes neighboring (independent) piles distinct.
     const Vector4d color((i % 2 == 0) ? 0.9 : 0.2, (j % 2 == 0) ? 0.7 : 0.3,
                          0.3, 1.0);
     for (int b = 0; b < FLAGS_boxes_per_stack; ++b) {
-      const std::string name = fmt::format("stack{}_body{}", k, b);
+      const std::string name = fmt::format("pile{}_body{}", k, b);
       const auto& body = plant->AddRigidBody(name, inertia);
       plant->RegisterCollisionGeometry(body, RigidTransformd(), shape,
                                        name + "_collision", body_props);
       plant->RegisterVisualGeometry(body, RigidTransformd(), shape,
                                     name + "_visual", color);
-      const double z = half + b * (2 * half + gap);
-      plant->SetDefaultFloatingBaseBodyPose(body,
-                                            RigidTransformd(Vector3d(x, y, z)));
+      const double z = bounding_radius + b * level_spacing;
+      const RotationMatrixd R = math::UniformlyRandomRotationMatrix(&generator);
+      plant->SetDefaultFloatingBaseBodyPose(
+          body, RigidTransformd(R, Vector3d(x, y, z)));
     }
   }
 }
@@ -200,7 +216,14 @@ int do_main() {
   std::shared_ptr<geometry::Meshcat> meshcat;
   if (FLAGS_meshcat) {
     meshcat = std::make_shared<geometry::Meshcat>();
-    visualization::AddDefaultVisualization(&builder, meshcat);
+    visualization::VisualizationConfig vis_config;
+    // Use a very large publish period so the visualizer's periodic publish does
+    // not pin the integrator to small, evenly-spaced steps (which would distort
+    // CENIC's step selection and timing). We instead publish once per actual
+    // integration step via a monitor (set up below).
+    vis_config.publish_period = 1.0e30;
+    visualization::ApplyVisualizationConfig(vis_config, &builder, nullptr,
+                                            nullptr, nullptr, meshcat);
   }
 
   auto diagram = builder.Build();
@@ -235,15 +258,25 @@ int do_main() {
         FLAGS_time_step);
   }
 
+  if (meshcat != nullptr) {
+    // Publish (and thus record) the visualization once per integration step,
+    // independent of the step size, by forcing a publish from a monitor.
+    const systems::System<double>* system = diagram.get();
+    simulator.set_monitor(
+        [system](const systems::Context<double>& root_context) {
+          system->ForcedPublish(root_context);
+          return systems::EventStatus::Succeeded();
+        });
+  }
+
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
 
-  fmt::print(
-      "Simulating {} stacks of {} {} ({} bodies) for {} s; {} contact.\n",
-      FLAGS_num_stacks, FLAGS_boxes_per_stack,
-      FLAGS_spheres ? "spheres" : "boxes",
-      FLAGS_num_stacks * FLAGS_boxes_per_stack, FLAGS_simulation_time,
-      FLAGS_hydroelastic ? "hydroelastic" : "point");
+  fmt::print("Simulating {} piles of {} {} ({} bodies) for {} s; {} contact.\n",
+             FLAGS_num_stacks, FLAGS_boxes_per_stack,
+             FLAGS_spheres ? "spheres" : "boxes",
+             FLAGS_num_stacks * FLAGS_boxes_per_stack, FLAGS_simulation_time,
+             FLAGS_hydroelastic ? "hydroelastic" : "point");
 
   // Record the trajectory into a Meshcat animation so it can be replayed at a
   // natural speed after the (possibly much faster than real-time) simulation.
