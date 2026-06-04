@@ -136,11 +136,12 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
   }
   if (!version_.has_value() ||
       !version_->IsSameAs(current_version, params_.role)) {
-    SetObjects(query_object.inspector());
+    SetObjects(query_object);
     SetAlphas(/* initializing = */ true);
     version_ = current_version;
   }
   SetTransforms(context, query_object);
+  BroadcastDeformables(query_object);
   if (params_.enable_alpha_slider) {
     double new_alpha_value = meshcat_->GetSliderValue(alpha_slider_name_);
     if (new_alpha_value != alpha_value_) {
@@ -154,11 +155,79 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
 }
 
 template <typename T>
+void MeshcatVisualizer<T>::RegisterDeformable(
+    const QueryObject<T>& query_object, GeometryId deformable_id) const {
+  if constexpr (std::is_same_v<T, double>) {
+    // We should only register after clearing all previously registered
+    // deformables; so we should never redundantly register a deformable.
+    DRAKE_DEMAND(!dynamic_deformable_geometries_.contains(deformable_id));
+
+    const auto& inspector = query_object.inspector();
+    const std::vector<internal::RenderMesh>& render_meshes =
+        inspector.GetDrivenRenderMeshes(deformable_id, params_.role);
+    const int num_render_meshes = ssize(render_meshes);
+    dynamic_deformable_geometries_[deformable_id].reserve(num_render_meshes);
+
+    // GeometryState only supports driven meshes (embedded OBJ with multiple
+    // material groups) for the perception role, not illustration. For
+    // illustration, RegisterDrivenMesh always produces exactly one mesh from
+    // the control-mesh surface. See geometry_state.cc RegisterDrivenMesh and
+    // the TODO therein. Remove this demand when illustration driven-mesh
+    // support is added and update BroadcastDeformables and its tests.
+    DRAKE_DEMAND(num_render_meshes == 1);
+
+    for (int i = 0; i < num_render_meshes; ++i) {
+      const Rgba& diffuse_color = render_meshes[i].material.has_value()
+                                      ? render_meshes[i].material->diffuse
+                                      : params_.default_color;
+
+      dynamic_deformable_geometries_[deformable_id].push_back(
+          {internal::MakeTriangleSurfaceMesh(render_meshes[i]), diffuse_color});
+    }
+  } else {
+    throw std::runtime_error(
+        "Only MeshcatVisualizer<double> supports deformable geometry.");
+  }
+}
+
+template <typename T>
+void MeshcatVisualizer<T>::BroadcastDeformables(
+    const QueryObject<T>& query_object) const {
+  if constexpr (std::is_same_v<T, double>) {
+    for (auto& [deformable_id, colored_meshes] :
+         dynamic_deformable_geometries_) {
+      const int num_render_meshes = std::size(colored_meshes);
+      const std::string& path = geometries_.at(deformable_id);
+
+      // We already checked the T is double
+      const std::vector<VectorX<double>> vertex_positions =
+          query_object.GetDrivenMeshConfigurationsInWorld(deformable_id,
+                                                          params_.role);
+      DRAKE_DEMAND(std::ssize(vertex_positions) == num_render_meshes);
+
+      for (int i = 0; i < num_render_meshes; ++i) {
+        colored_meshes[i].mesh.SetAllPositions(vertex_positions[i]);
+
+        const std::string final_sub_path =
+            num_render_meshes == 1 ? path : fmt::format("{}/{}", path, i);
+        meshcat_->SetObject(final_sub_path, colored_meshes[i].mesh,
+                            colored_meshes[i].diffuse);
+      }
+      meshcat_->SetTransform(path, math::RigidTransformd::Identity());
+    }
+  }
+  // Else do nothing -- we should've already thrown in RegisterDeformable()
+  // for T != double.
+}
+
+template <typename T>
 void MeshcatVisualizer<T>::SetObjects(
-    const SceneGraphInspector<T>& inspector) const {
+    const QueryObject<T>& query_object) const {
+  const auto& inspector = query_object.inspector();
   // Frames registered previously that are not set again here should be deleted.
   std::map<FrameId, std::string> frames_to_delete{};
   dynamic_frames_.swap(frames_to_delete);
+  dynamic_deformable_geometries_.clear();  // no need to swap
 
   // Geometries registered previously that are not set again here should be
   // deleted.
@@ -197,7 +266,7 @@ void MeshcatVisualizer<T>::SetObjects(
       // We'll turn scoped names into meshcat paths.
       const std::string geometry_name =
           internal::TransformGeometryName(geom_id, inspector);
-      const std::string path = fmt::format("{}/{}", frame_path, geometry_name);
+      std::string path = fmt::format("{}/{}", frame_path, geometry_name);
       const Rgba rgba = properties.GetPropertyOrDefault("phong", "diffuse",
                                                         params_.default_color);
       const std::string diffuse_map = properties.GetPropertyOrDefault(
@@ -208,6 +277,7 @@ void MeshcatVisualizer<T>::SetObjects(
       // available, or, second, the convex hull. Record if we've used one of
       // those proxies.
       bool geometry_already_set = false;
+      bool is_a_deformable_geometry = inspector.IsDeformableGeometry(geom_id);
 
       if constexpr (std::is_same_v<T, double>) {
         if (params_.show_hydroelastic) {
@@ -220,6 +290,7 @@ void MeshcatVisualizer<T>::SetObjects(
                            geometry_already_set = true;
                          },
                          [&](const VolumeMesh<double>* mesh) {
+                           DRAKE_DEMAND(!is_a_deformable_geometry);
                            DRAKE_DEMAND(mesh != nullptr);
                            meshcat_->SetObject(
                                path, ConvertVolumeToSurfaceMesh(*mesh), rgba);
@@ -229,9 +300,10 @@ void MeshcatVisualizer<T>::SetObjects(
         }
       }
 
-      // Proximity role favors convex hulls if available.
+      // For non-deformables, proximity role favors convex hulls if available.
       if (const PolygonSurfaceMesh<double>* hull = nullptr;
           (!geometry_already_set) && (params_.role == Role::kProximity) &&
+          (!is_a_deformable_geometry) &&  // Use convex hull for non-deformables
           (hull = inspector.GetConvexHull(geom_id))) {
         // Convert polygonal surface mesh to triangle surface mesh.
         const TriangleSurfaceMesh<double> tri_hull =
@@ -241,11 +313,25 @@ void MeshcatVisualizer<T>::SetObjects(
       }
 
       if (!geometry_already_set) {
-        meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba,
-                            diffuse_map);
+        // Test if this geometry is a deformable geometry that we want to
+        // visualize. For now, we only accept deformable geometry imported from
+        // a .vtk extension.
+        if (is_a_deformable_geometry) {
+          path = fmt::format("{}/{}/{}", frame_path, "deformable_geometries",
+                             geometry_name);
+
+          RegisterDeformable(query_object, geom_id);
+        } else {
+          // Fall back to the geometry's shape.
+          meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba,
+                              diffuse_map);
+        }
       }
 
-      meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));
+      if (!is_a_deformable_geometry) {
+        meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));
+      }
+
       geometries_[geom_id] = path;
       geometries_to_delete.erase(geom_id);  // Don't delete this one.
       frame_has_any_geometry = true;

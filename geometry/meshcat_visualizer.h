@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/meshcat.h"
@@ -140,8 +141,18 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    is valid (if not, sends the objects) and then sends the transforms.  */
   systems::EventStatus UpdateMeshcat(const systems::Context<T>& context) const;
 
+  /* Registers a deformable geometry with the visualizer. This doesn't broadcast
+   any messages to Meshcat; that happens in BroadcastDeformables().
+   @pre deformable_id names a deformable geometry.
+   @throws if deformable_id is already registered. */
+  void RegisterDeformable(const QueryObject<T>& query_object,
+                          GeometryId deformable_id) const;
+
+  /* Broadcasts all deformable meshes with current vertex positions. */
+  void BroadcastDeformables(const QueryObject<T>& query_object) const;
+
   /* Makes calls to Meshcat::SetObject to register geometry in SceneGraph. */
-  void SetObjects(const SceneGraphInspector<T>& inspector) const;
+  void SetObjects(const QueryObject<T>& query_object) const;
 
   /* Makes calls to Meshcat::SetTransform to update the poses from SceneGraph.
    */
@@ -184,6 +195,21 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    version_.  This is only for efficiency; it does not represent undeclared
    state. */
   mutable std::map<FrameId, std::string> dynamic_frames_{};
+
+  /* Store a colored surface mesh for each discrete component of a deformable
+   geometry's visible geometry. */
+  struct ColoredMesh {
+    TriangleSurfaceMesh<T> mesh;
+    Rgba diffuse;
+  };
+
+  /* The visual representation of the known deformable geometries. For a single
+   geometry id, we have one or more colored meshes. The contents gets rebuilt
+   when scene graph version changes. We use these cached surface meshes to
+   broadcast the deformed mesh without recomputing/duplicating the surface mesh
+   over and over (instead, we simply update vertex positions). */
+  mutable std::map<GeometryId, std::vector<ColoredMesh>>
+      dynamic_deformable_geometries_{};
 
   /* A store of the geometries sent to Meshcat, so that they can be removed if a
    new geometry version appears that does not contain them. */
