@@ -82,15 +82,6 @@ _OTHER_REPOSITORIES = [
     "python",
 ]
 
-# For these repositories, ignore any tags that match the specified regex.
-_IGNORED_TAGS = {
-    "gymnasium_py_internal": r"v[0-9.]+a[0-9]+",
-    "libpng_internal": r"v[0-9.]+(alpha|beta)[0-9]+",
-    "msgpack_internal": r"c-[0-9.]+",
-    "ros_xacro_internal": r"xacro-[0-9.]+",
-    "sdformat_internal": r"sdformat-prerelease_[0-9.]+",
-}
-
 # Packages in these cohorts should be upgraded together (in a single commit).
 _COHORTS = (
     # clarabel_cpp uses crate_universe; be sure to keep them aligned.
@@ -144,28 +135,27 @@ def _get_default_username():
     return git_user or http_user
 
 
-def _is_ignored_tag(commit, workspace):
+def _is_ignored_tag(commit, workspace, exclude_pattern=None):
     """Returns true iff commit matches an ignore rule or seems to be a
     pre-release.
     """
-    ignore_re = _IGNORED_TAGS.get(workspace)
-    if ignore_re and re.match(ignore_re, commit):
+    if exclude_pattern and re.match(exclude_pattern, commit):
         # Matches the regex of tag names to definitely ignore; do so quietly so
         # we don't spam the user.
         return True
 
     development_stages = ["alpha", "beta", "pre", "rc", "unstable"]
-    prerelease = any(stage in commit for stage in development_stages)
-    if prerelease:
-        # Heuristically looks like a pre-release; ignore it, but log it for the
-        # user to check.
-        warn(f"Skipping prerelease {commit} for {workspace}")
-    return prerelease
+    if any(stage in commit for stage in development_stages):
+        # Heuristically looks like a pre-release; dp so quietly so we don't
+        # spam the user.
+        return True
+
+    return False
 
 
-def _latest_tag(gh_repo, workspace):
+def _latest_tag(gh_repo, workspace, exclude_pattern=None):
     for tag in gh_repo.tags():
-        if _is_ignored_tag(tag.name, workspace):
+        if _is_ignored_tag(tag.name, workspace, exclude_pattern):
             continue
         return tag.name
     warn(f"Could not find any matching tags for {workspace}")
@@ -184,12 +174,19 @@ def _handle_github(workspace_name, gh, data):
         new_commit = gh_repo.commit("HEAD").sha
         return old_commit, new_commit
     elif upgrade_type == "tag":
-        tags_pattern = data["tags_pattern"] or None
-        if tags_pattern is None:
-            new_commit = _latest_tag(gh_repo, workspace_name)
+        # Search for the latest tag by default. If an "include_tags_pattern"
+        # regex was provided, we'll limit to tags matching those. If an
+        # "exclude_tags_pattern" regex was provided, we'll (further) ignore
+        # matching those.
+        include_tags_pattern = data["include_tags_pattern"] or None
+        exclude_tags_pattern = data["exclude_tags_pattern"] or None
+
+        if include_tags_pattern is None:
+            new_commit = _latest_tag(
+                gh_repo, workspace_name, exclude_pattern=exclude_tags_pattern
+            )
             return old_commit, new_commit
 
-        # Sometimes limit candidate tags to those matching a regex.
         match = re.search(include_tags_pattern, old_commit)
         assert match, f"No {include_tags_pattern} in {old_commit}"
         (old_hit,) = match.groups()
@@ -198,7 +195,11 @@ def _handle_github(workspace_name, gh, data):
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
-                    if _is_ignored_tag(tag.name, workspace_name):
+                    if _is_ignored_tag(
+                        tag.name,
+                        workspace_name,
+                        exclude_pattern=exclude_tags_pattern,
+                    ):
                         continue
                     new_commit = tag.name
                     break
