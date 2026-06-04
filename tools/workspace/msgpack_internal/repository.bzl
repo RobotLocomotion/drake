@@ -7,7 +7,6 @@ def msgpack_internal_repository(
         name = name,
         repository = "msgpack/msgpack-c",
         upgrade_type = "release",
-        exclude_tags_pattern = "c-[0-9.]+",
         commit = "cpp-7.0.0",
         sha256 = "070881ebea9208cf7e731fd5a46a11404025b2f260ab9527e32dfcb7c689fbfc",  # noqa
         build_file = ":package.BUILD.bazel",
