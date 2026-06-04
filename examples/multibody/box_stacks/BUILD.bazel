@@ -12,8 +12,10 @@ drake_cc_binary(
     deps = [
         "//common:parallelism",
         "//geometry:meshcat",
+        "//geometry:proximity_properties",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
         "//multibody/cenic:cenic_integrator",
-        "//multibody/parsing:parser",
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_print_stats",
