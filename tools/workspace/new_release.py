@@ -146,7 +146,7 @@ def _is_ignored_tag(commit, workspace, exclude_pattern=None):
 
     development_stages = ["alpha", "beta", "pre", "rc", "unstable"]
     if any(stage in commit for stage in development_stages):
-        # Heuristically looks like a pre-release; dp so quietly so we don't
+        # Heuristically looks like a pre-release; do so quietly so we don't
         # spam the user.
         return True
 
@@ -178,10 +178,10 @@ def _handle_github(workspace_name, gh, data):
         # regex was provided, we'll limit to tags matching those. If an
         # "exclude_tags_pattern" regex was provided, we'll (further) ignore
         # matching those.
-        include_tags_pattern = data["include_tags_pattern"] or None
-        exclude_tags_pattern = data["exclude_tags_pattern"] or None
+        include_tags_pattern = data["include_tags_pattern"]
+        exclude_tags_pattern = data["exclude_tags_pattern"]
 
-        if include_tags_pattern is None:
+        if not include_tags_pattern:
             new_commit = _latest_tag(
                 gh_repo, workspace_name, exclude_pattern=exclude_tags_pattern
             )
