@@ -5,10 +5,10 @@ stacks of boxes: the boxes within a stack are in contact (and form one island),
 while the stacks are far enough apart that they never interact. CENIC can solve
 the islands independently and, optionally, in parallel (see --num_threads).
 
-The example exposes the main CENIC knobs: Meshcat visualization,
-error-controlled vs. fixed-step integration, and the target accuracy. It prints
-simulator and CENIC solver statistics, along with the wall-clock simulation
-time, at the end. */
+The example exposes the main CENIC knobs: Meshcat visualization (the simulation
+is recorded and replayed as an animation when it finishes), error-controlled vs.
+fixed-step integration, and the target accuracy. It prints simulator and CENIC
+solver statistics, along with the wall-clock simulation time, at the end. */
 
 #include <chrono>
 #include <iostream>
@@ -66,14 +66,16 @@ DEFINE_int32(
     "parallel. 1 (the default) is serial; 0 uses the maximum available "
     "(Parallelism::Max()). Results are independent of this value.");
 
-DEFINE_bool(meshcat, false,
-            "If true, start a Meshcat server and visualize the simulation. You "
-            "will probably also want --target_realtime_rate=1 to watch it at a "
-            "natural speed.");
+DEFINE_bool(
+    meshcat, false,
+    "If true, start a Meshcat server, record the simulation, and replay "
+    "the recorded animation at a natural speed when the run finishes "
+    "(regardless of --target_realtime_rate).");
 
 DEFINE_double(target_realtime_rate, 0.0,
-              "Desired rate relative to real time. 0 runs as fast as possible "
-              "(best for timing); use 1.0 to watch the simulation in Meshcat.");
+              "Desired rate relative to real time. 0 runs as fast as possible. "
+              "With --meshcat the animation is recorded and replayed at a "
+              "natural speed afterward, so 0 is fine for visualization too.");
 
 /* Builds an MJCF description of `num_stacks` vertical stacks of
 `boxes_per_stack` free boxes resting on a large floor. Stacks are spaced far
@@ -149,6 +151,12 @@ int do_main() {
                  : fmt::format("error control (accuracy {})", FLAGS_accuracy),
              parallelism.num_threads());
 
+  // Record the trajectory into a Meshcat animation so it can be replayed at a
+  // natural speed after the (possibly much faster than real-time) simulation.
+  if (meshcat != nullptr) {
+    meshcat->StartRecording();
+  }
+
   const auto start = std::chrono::steady_clock::now();
   simulator.AdvanceTo(FLAGS_simulation_time);
   const auto stop = std::chrono::steady_clock::now();
@@ -161,8 +169,15 @@ int do_main() {
   fmt::print("\nWall-clock simulation time: {:.4f} s.\n", wall_clock);
 
   if (meshcat != nullptr) {
-    fmt::print("\nVisualization is live at {}.\nPress Enter to exit.\n",
-               meshcat->web_url());
+    // Publish the recorded animation; it plays back automatically in the
+    // browser. Keep the process (and thus the Meshcat server) alive so the
+    // user can watch and replay it.
+    meshcat->StopRecording();
+    meshcat->PublishRecording();
+    fmt::print(
+        "\nAnimation published to Meshcat at {} and now playing back.\n"
+        "Use the controls panel to replay it. Press Enter to exit.\n",
+        meshcat->web_url());
     std::cin.get();
   }
 
