@@ -473,7 +473,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         # Determine if we should and can commit the changes made.
         workspace_root = f"tools/workspace/{workspace_name}/"
         can_commit = _is_unmodified(local_drake_checkout, workspace_root)
-        if local_drake_checkout and not can_commit:
+        if not can_commit:
             warn(f"{workspace_root} has local changes.")
             warn(f"Changes made for {workspace_name} will NOT be committed.")
 
@@ -502,7 +502,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
 
         # Determine if we should and can commit the changes made.
         can_commit = _is_unmodified(local_drake_checkout, bzl_filename)
-        if local_drake_checkout and not can_commit:
+        if not can_commit:
             warn(f"{bzl_filename} has local changes.")
             warn(f"Changes made for {workspace_name} will NOT be committed.")
 
@@ -705,10 +705,7 @@ def main():
         # (None denotes "all".)
         workspaces = None
 
-    if args.commit:
-        local_drake_checkout = git.Repo(os.path.realpath("."))
-    else:
-        local_drake_checkout = None
+    local_drake_checkout = git.Repo(os.path.realpath("."))
 
     # Grab the workspace metadata.
     info("Collecting bazel repository details...")
