@@ -295,11 +295,27 @@ def _modified_paths(repo: git.Repo, root: str) -> set[str]:
         if item.startswith(root):
             result.add(item)
 
-    for other in [None, "HEAD"]:
-        for item in repo.index.diff(other):
-            if item.a_path.startswith(root):
+    for item in repo.head.commit.diff(None, find_renames=True):
+        a_under_root = item.a_path and item.a_path.startswith(root)
+        b_under_root = item.b_path and item.b_path.startswith(root)
+
+        if item.change_type == "R":
+            if a_under_root or b_under_root:
+                # Unstage renames to track both old and new filepaths.
+                repo.git.restore("--staged", item.a_path, item.b_path)
+
+                if a_under_root:
+                    result.add(item.a_path)
+                if b_under_root:
+                    result.add(item.b_path)
+        elif item.change_type == "D":
+            # For deletions, we only need to track the original path.
+            if a_under_root:
                 result.add(item.a_path)
-            if item.b_path.startswith(root):
+        else:
+            # For all other modifications, we only need to track the
+            # destination path.
+            if b_under_root:
                 result.add(item.b_path)
 
     return result
@@ -504,7 +520,7 @@ def _do_upgrade(
         # Determine if we should and can commit the changes made.
         workspace_root = f"tools/workspace/{workspace_name}/"
         can_commit = _is_unmodified(local_drake_checkout, workspace_root)
-        if local_drake_checkout and not can_commit:
+        if not can_commit:
             warn(f"{workspace_root} has local changes.")
             warn(f"Changes made for {workspace_name} will NOT be committed.")
 
@@ -531,7 +547,7 @@ def _do_upgrade(
 
         # Determine if we should and can commit the changes made.
         can_commit = _is_unmodified(local_drake_checkout, bzl_filename)
-        if local_drake_checkout and not can_commit:
+        if not can_commit:
             warn(f"{bzl_filename} has local changes.")
             warn(f"Changes made for {workspace_name} will NOT be committed.")
 
@@ -743,10 +759,7 @@ def main():
         # (None denotes "all".)
         workspaces = None
 
-    if args.commit:
-        local_drake_checkout = git.Repo(os.path.realpath("."))
-    else:
-        local_drake_checkout = None
+    local_drake_checkout = git.Repo(os.path.realpath("."))
 
     # Grab the workspace metadata.
     info("Collecting bazel repository details...")

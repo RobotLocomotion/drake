@@ -33,6 +33,10 @@ def read_repository_metadata():
     result["crate_universe"] = {
         "repository_rule_type": "scripted",
         "upgrade_script": "upgrade.sh",
+        # TODO(tyler-yankee): We should handle some upgrade_type "none" here
+        # to signify that it's irrelevant to new_release and the script handles
+        # it.
+        "upgrade_type": "release",
         # Downloads are associated with individual "crate__..." repositories.
         "downloads": {},
     }
