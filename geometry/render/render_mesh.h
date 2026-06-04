@@ -137,9 +137,12 @@ RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
     const drake::internal::DiagnosticPolicy& policy = {});
 
 /* Converts from RenderMesh to TriangleSurfaceMesh. Only connectivity and
- vertex positions information are retained. */
+ vertex positions information are retained.
+ If "new_vertex_positions" is provided, the triangle surface will have the new
+ updated vertex positions instead. */
 TriangleSurfaceMesh<double> MakeTriangleSurfaceMesh(
-    const RenderMesh& render_mesh);
+    const RenderMesh& render_mesh,
+    const Eigen::VectorX<double>& new_vertex_positions = {});
 
 }  // namespace internal
 }  // namespace geometry
