@@ -111,6 +111,11 @@ DEFINE_int32(
     "parallel. 1 (the default) is serial; 0 uses the maximum available "
     "(Parallelism::Max()). Results are independent of this value.");
 
+DEFINE_bool(print_solver_stats, false,
+            "CENIC only: print the convex solver's per-iteration statistics "
+            "(cost, gradient, step size, etc.) via drake::log()->info during "
+            "each solve.");
+
 DEFINE_bool(
     meshcat, false,
     "If true, start a Meshcat server, record the simulation, and replay the "
@@ -245,6 +250,11 @@ int do_main() {
                                         ? Parallelism::Max()
                                         : Parallelism(FLAGS_num_threads);
     integrator.set_parallelism(parallelism);
+    if (FLAGS_print_solver_stats) {
+      auto solver_params = integrator.get_solver_parameters();
+      solver_params.print_solver_stats = true;
+      integrator.SetSolverParameters(solver_params);
+    }
     fmt::print("Integrator: CENIC, {}; island solver threads: {}.\n",
                FLAGS_fixed_step
                    ? fmt::format("fixed step ({} s)", FLAGS_max_step_size)
