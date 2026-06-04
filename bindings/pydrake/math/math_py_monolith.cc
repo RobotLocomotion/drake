@@ -77,9 +77,6 @@ void DefineRigidTransform(py::module_ m, py::class_<PyClass<T>>& cls) {
             cls_doc.ctor.doc_1args_pose)
         .def(py::init<const MatrixX<T>&>(), py::arg("pose"),
             cls_doc.ctor.doc_1args_constEigenMatrixBase)
-        // XXX porting. Extra custom init for fuzzy dim/shape matching
-        .def(py::init<const VectorX<T>&>(), py::arg("pose"),
-            cls_doc.ctor.doc_1args_constEigenMatrixBase)
         .def_static("MakeUnchecked", &Class::MakeUnchecked, py::arg("pose"),
             cls_doc.MakeUnchecked.doc)
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
