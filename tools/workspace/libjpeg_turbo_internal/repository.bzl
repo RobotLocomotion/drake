@@ -22,6 +22,8 @@ exports_files(["drake_repository_metadata.json"])
         "repository_rule_type": "scripted",
         "upgrade_script": "upgrade.py",
     }
+    # As a scripted upgrade, we shouldn't need upgrade_type.
+    repository_metadata.pop("upgrade_type")
     repo_ctx.file(
         "drake_repository_metadata.json",
         json.encode(repository_metadata),
@@ -31,6 +33,8 @@ libjpeg_turbo_internal_repository = repository_rule(
     attrs = {
         # These are the attributes for setup_github_repository.
         "repository": attr.string(default = "libjpeg-turbo/libjpeg-turbo"),
+        # This is reset in the implementation macro above, but needs to be here
+        # as a placeholder for setup_github_repository.
         "upgrade_type": attr.string(default = "release"),
         "commit": attr.string(default = "2.1.4"),
         "sha256": attr.string(
