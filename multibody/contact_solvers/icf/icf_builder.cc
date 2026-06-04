@@ -23,9 +23,9 @@ using drake::multibody::internal::GetHuntCrossleyDissipation;
 using drake::multibody::internal::GetPointContactStiffness;
 using drake::multibody::internal::JointLockingCacheData;
 using drake::multibody::internal::LinkJointGraph;
+using drake::multibody::internal::MobodIndex;
 using drake::multibody::internal::MultibodyPlantIcfAttorney;
 using drake::multibody::internal::SpanningForest;
-using drake::multibody::internal::TreeIndex;
 using drake::multibody::internal::WeldConstraintSpec;
 
 namespace drake {
@@ -152,14 +152,16 @@ void IcfBuilder<T>::UpdateModel(
   const JointLockingCacheData<T>& locking =
       MultibodyPlantIcfAttorney<T>::EvalJointLocking(plant_, context);
   params->reduction.unlocked_dofs = locking.unlocked_velocity_indices;
-  for (int t = 0; t < forest.num_trees(); ++t) {
-    const int clique = tree_to_clique(t);
-    if (clique < 0) {
-      // Skip the data for trees with no velocities; see tree_to_clique().
-      continue;
-    }
-    params->reduction.per_clique_unlocked_dofs[clique] =
-        locking.unlocked_velocity_indices_per_tree[t];
+  // Scatter the (sorted, global) unlocked DOFs into per-clique lists of
+  // clique-local indices. A clique may be a sub-mechanism of a SpanningForest
+  // tree, so we can't reuse the cache's per-tree lists directly.
+  for (auto& clique_unlocked : params->reduction.per_clique_unlocked_dofs) {
+    clique_unlocked.clear();
+  }
+  for (int dof : locking.unlocked_velocity_indices) {
+    const int clique = plant_facts_.velocity_to_clique[dof];
+    params->reduction.per_clique_unlocked_dofs[clique].push_back(
+        dof - plant_facts_.clique_start[clique]);
   }
 
   // Compute nonlinear bias terms k₀.
@@ -177,14 +179,13 @@ void IcfBuilder<T>::UpdateModel(
 
     // We ignore anchored bodies.
     if (!plant_.IsAnchored(body)) {
-      const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
-      const int clique = tree_to_clique(t);
+      const int clique = plant_facts_.body_to_clique[b];
       DRAKE_ASSERT(clique >= 0);
-      const bool tree_has_dofs = t.is_valid() && forest.trees(t).has_dofs();
-      DRAKE_ASSERT(tree_has_dofs);
 
-      const int vt_start = forest.trees(t).v_start();
-      const int nt = forest.trees(t).nv();
+      // A body's spatial velocity depends only on its clique's DOFs, which form
+      // a contiguous range [clique_v_start, clique_v_start + clique_nv).
+      const int clique_v_start = plant_facts_.clique_start[clique];
+      const int clique_nv = plant_facts_.clique_sizes[clique];
 
       typename EigenPool<Matrix6X<T>>::MatrixView Jv_WBc_W = J_WB[b];
       if (body.is_floating_base_body()) {
@@ -194,7 +195,7 @@ void IcfBuilder<T>::UpdateModel(
         plant_.CalcJacobianSpatialVelocity(
             context, JacobianWrtVariable::kV, body.body_frame(),
             Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
-        Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
+        Jv_WBc_W = J_V_WB.middleCols(clique_v_start, clique_nv);
       }
     }
   }
@@ -391,7 +392,6 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
                                           IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
-  const SpanningForest& forest = GetInternalTree(plant_).forest();
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant_.get_coupler_constraint_specs();
 
@@ -404,32 +404,29 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
 
     const int dof0 = joint0.velocity_start();
     const int dof1 = joint1.velocity_start();
-    const TreeIndex tree0 = forest.v_to_tree_index(dof0);
-    const TreeIndex tree1 = forest.v_to_tree_index(dof1);
+    const int clique0 = plant_facts_.velocity_to_clique[dof0];
+    const int clique1 = plant_facts_.velocity_to_clique[dof1];
 
     // Sanity check.
-    DRAKE_DEMAND(tree0.is_valid() && tree1.is_valid());
-
-    const int clique0 = tree_to_clique(tree0);
-    const int clique1 = tree_to_clique(tree1);
+    DRAKE_DEMAND(clique0 >= 0 && clique1 >= 0);
 
     if (clique0 != clique1) {
       // TODO(#23992): this limitation is a regression from SAP coupler
       // constraints. It should be removed.
       throw std::logic_error(
           "IcfBuilder: Couplers are only allowed within DoFs in the same "
-          "tree.");
+          "clique.");
     }
 
     const T q0 = joint0.GetOnePosition(context);
     const T q1 = joint1.GetOnePosition(context);
 
-    // DOFs local to their tree.
-    const int tree_dof0 = dof0 - forest.trees(tree0).v_start();
-    const int tree_dof1 = dof1 - forest.trees(tree0).v_start();
+    // DOFs local to their clique.
+    const int clique_dof0 = dof0 - plant_facts_.clique_start[clique0];
+    const int clique_dof1 = dof1 - plant_facts_.clique_start[clique0];
 
-    couplers.Set(index, clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
-                 spec.offset);
+    couplers.Set(index, clique0, clique_dof0, clique_dof1, q0, q1,
+                 spec.gear_ratio, spec.offset);
     ++index;
   }
 }
@@ -530,8 +527,6 @@ void IcfBuilder<T>::SetLimitConstraints(const systems::Context<T>& context,
   DRAKE_ASSERT(model != nullptr);
   using std::isinf;
 
-  const SpanningForest& forest = GetInternalTree(plant_).forest();
-
   LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
 
   for (JointIndex joint_index : plant_.GetJointIndices()) {
@@ -539,13 +534,9 @@ void IcfBuilder<T>::SetLimitConstraints(const systems::Context<T>& context,
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
     if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
       const int velocity_start = joint.velocity_start();
-      const TreeIndex tree_index = forest.v_to_tree_index(velocity_start);
-      const int tree_nv = forest.trees(tree_index).nv();
-      DRAKE_ASSERT(tree_nv >= 0);
-      const int tree_velocity_start = forest.trees(tree_index).v_start();
-
-      const int tree_dof = velocity_start - tree_velocity_start;
-      const int clique = tree_to_clique(tree_index);
+      const int clique = plant_facts_.velocity_to_clique[velocity_start];
+      DRAKE_ASSERT(clique >= 0);
+      const int clique_dof = velocity_start - plant_facts_.clique_start[clique];
 
       const double ql = joint.position_lower_limits()[0];
       const double qu = joint.position_upper_limits()[0];
@@ -554,7 +545,7 @@ void IcfBuilder<T>::SetLimitConstraints(const systems::Context<T>& context,
       if (!isinf(ql) || !isinf(qu)) {
         // Add constraint for this dof in clique.
         const int index = plant_facts_.clique_to_limit_constraint[clique];
-        limits.Set(index, clique, tree_dof, q0, ql, qu);
+        limits.Set(index, clique, clique_dof, q0, ql, qu);
       }
     }
   }
@@ -898,43 +889,91 @@ template <typename T>
 IcfBuilder<T>::PlantFacts::PlantFacts(const MultibodyPlant<T>& plant) {
   using std::isinf;
 
-  // Define problem cliques based on the spanning forest of the plant. Each
-  // tree gets its own clique, and only trees with a non-zero number of
-  // velocities are included.
+  // Define problem cliques based on the spanning forest of the plant. A clique
+  // is a maximal set of inertially-coupled velocity DOFs, i.e., a connected
+  // component of the movable mobods. A SpanningForest tree is *not* used
+  // directly as a clique because a single tree can contain several dynamically
+  // independent sub-mechanisms that branch off the anchored "world composite"
+  // of bodies welded (directly or transitively) to World -- e.g., several
+  // robots and free bodies all mounted on a table that is welded to World end
+  // up in one tree. Such branches share only anchored (zero-velocity)
+  // ancestors, so the dynamics matrix A = M + δt D is block diagonal across
+  // them and they can be solved as independent islands.
+  //
+  // We assign cliques by walking the mobods in index order: a movable mobod
+  // whose inboard mobod is anchored starts a new clique, while any other
+  // movable mobod inherits its inboard mobod's clique (an intervening weld to a
+  // movable body keeps both in the same clique, since a weld is a rigid
+  // coupling). Anchored mobods carry no velocities and belong to no clique.
+  // Because mobods are numbered depth-first, the velocity DOFs of a clique form
+  // a contiguous range, matching ICF's per-clique contiguous-segment storage.
   const LinkJointGraph& graph = GetInternalTree(plant).graph();
   DRAKE_DEMAND(graph.forest_is_valid());
   const SpanningForest& forest = graph.forest();
-  tree_to_clique.resize(forest.num_trees());
-  std::fill(tree_to_clique.begin(), tree_to_clique.end(), -1);
-  for (TreeIndex t(0); t < forest.num_trees(); ++t) {
-    const int tree_nv = forest.trees(t).nv();
-    if (tree_nv > 0) {
-      tree_to_clique[t] = clique_sizes.size();
-      clique_sizes.push_back(tree_nv);
+  const int nv = forest.num_velocities();
+  const int num_mobods = forest.num_mobods();
+  std::vector<int> mobod_to_clique(num_mobods, -1);
+  velocity_to_clique.assign(nv, -1);
+  // Mobod 0 is World; skip it. Inboard mobod indices are always smaller than
+  // their outboard mobods, so an inboard clique is assigned before it is read.
+  for (int m = 1; m < num_mobods; ++m) {
+    const SpanningForest::Mobod& mobod = forest.mobods(MobodIndex(m));
+    if (mobod.is_anchored()) continue;  // No velocities; anchored trunk.
+    const SpanningForest::Mobod& inboard = forest.mobods(mobod.inboard_mobod());
+    int clique;
+    if (inboard.is_anchored()) {
+      clique = ssize(clique_sizes);
+      clique_sizes.push_back(0);
+    } else {
+      clique = mobod_to_clique[inboard.index()];
+      DRAKE_DEMAND(clique >= 0);
+    }
+    mobod_to_clique[m] = clique;
+    clique_sizes[clique] += mobod.nv();
+    for (int k = 0; k < mobod.nv(); ++k) {
+      velocity_to_clique[mobod.v_start() + k] = clique;
     }
   }
 
+  // Prefix-summed clique velocity starts. This matches the global velocity
+  // ordering iff each clique's DOFs are contiguous and cliques appear in
+  // ascending v order; velocity_to_clique is non-decreasing exactly when that
+  // holds, which we assert here.
+  clique_start.assign(clique_sizes.size() + 1, 0);
+  std::partial_sum(clique_sizes.begin(), clique_sizes.end(),
+                   clique_start.begin() + 1);
+  for (int v = 0; v < nv; ++v) {
+    DRAKE_DEMAND(velocity_to_clique[v] >= 0);
+    if (v > 0) DRAKE_DEMAND(velocity_to_clique[v] >= velocity_to_clique[v - 1]);
+    DRAKE_DEMAND(clique_start[velocity_to_clique[v]] <= v &&
+                 v < clique_start[velocity_to_clique[v] + 1]);
+  }
+
   // Iterate over bodies to find the size of each Jacobian, clique membership,
-  // floating status (floating bodies have an identity Jacobian), body mass.
+  // floating status (floating bodies have an identity Jacobian), body mass. A
+  // body's spatial velocity depends only on the movable DOFs along its chain to
+  // World, which are exactly its clique's DOFs, so its Jacobian has
+  // clique_size(clique) columns.
   body_jacobian_cols.resize(plant.num_bodies());
   body_to_clique.resize(plant.num_bodies());
   body_is_floating.resize(plant.num_bodies());
   for (int b = 0; b < plant.num_bodies(); ++b) {
     const auto& body = plant.get_body(BodyIndex(b));
-    const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
+    const SpanningForest::Mobod& mobod =
+        forest.mobods(forest.link_by_index(BodyIndex(b)).mobod_index());
 
     if (plant.IsAnchored(body)) {
       body_jacobian_cols[b] = 0;
       body_to_clique[b] = -1;
     } else {
-      body_jacobian_cols[b] = forest.trees(t).nv();
-      body_to_clique[b] = tree_to_clique[t];
+      const int clique = mobod_to_clique[mobod.index()];
+      DRAKE_DEMAND(clique >= 0);
+      body_jacobian_cols[b] = clique_sizes[clique];
+      body_to_clique[b] = clique;
     }
 
     // Distinguish between "free floating body" and "free floating base". The
     // former has an identity Jacobian, the latter does not.
-    const auto& link = forest.link_by_index(BodyIndex(b));
-    const auto& mobod = forest.mobods(link.mobod_index());
     const bool is_free_floating =
         body.is_floating_base_body() && mobod.is_leaf_mobod();
     body_is_floating[b] = is_free_floating ? 1 : 0;
@@ -945,9 +984,7 @@ IcfBuilder<T>::PlantFacts::PlantFacts(const MultibodyPlant<T>& plant) {
   for (JointActuatorIndex actuator_index : plant.GetJointActuatorIndices()) {
     const JointActuator<T>& actuator = plant.get_joint_actuator(actuator_index);
     const Joint<T>& joint = actuator.joint();
-    const int dof = joint.velocity_start();
-    const TreeIndex t = forest.v_to_tree_index(dof);
-    const int c = tree_to_clique[t];
+    const int c = velocity_to_clique[joint.velocity_start()];
     DRAKE_ASSERT(c >= 0);
     ++clique_nu[c];
   }
@@ -976,8 +1013,7 @@ IcfBuilder<T>::PlantFacts::PlantFacts(const MultibodyPlant<T>& plant) {
 
     // Record the size of the clique this joint belongs to, and the mappings
     // from limit constraint index <---> clique index.
-    const TreeIndex tree_index = forest.v_to_tree_index(joint.velocity_start());
-    const int clique = tree_to_clique[tree_index];
+    const int clique = velocity_to_clique[joint.velocity_start()];
     const int clique_nv = clique_sizes[clique];
     limited_clique_sizes.push_back(clique_nv);
     clique_to_limit_constraint[clique] = ssize(limited_clique_sizes) - 1;
