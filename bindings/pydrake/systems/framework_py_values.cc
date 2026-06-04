@@ -166,7 +166,9 @@ void DefineBusValue(py::module_ m) {
           "__iter__",
           [](const Class& self) {
             return py::make_key_iterator(
+#ifdef PYDRAKE_USE_NANOBIND
                 py::type<Class>(), "BusValue",
+#endif
                 self.begin(), self.end());
           },
           // Keep alive, reference: `return` keeps `self` alive.

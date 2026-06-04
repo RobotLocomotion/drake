@@ -71,27 +71,26 @@ void DeclareBuilderLifeSupportTestHelpers(py::module_ m) {
             .def(py::init<>())
             // The int-accepting constructor exists to test init-time use of
             // argument index 1.
-            .def(py::init<int>()
-                 /*, builder_life_support_stash<T, 1>() XXX porting */)
+            .def(py::init<int>(), builder_life_support_stash<T, 1>())
             .def(
-                "StashSelf", [](DiagramBuilderTestAdversary<T>*) { return; }
-                /*, builder_life_support_stash<T, 1>() XXX porting */)
+                "StashSelf", [](DiagramBuilderTestAdversary<T>*) { return; },
+                builder_life_support_stash<T, 1>())
             .def(
                 "StashReturnedSelf",
-                [](DiagramBuilderTestAdversary<T>* self) { return self; }
-                /*, builder_life_support_stash<T, 0>() XXX porting */)
+                [](DiagramBuilderTestAdversary<T>* self) { return self; },
+                builder_life_support_stash<T, 0>())
             .def(
                 "StashReturnedNull",
-                [](DiagramBuilderTestAdversary<T>*) { return nullptr; }
-                /*, builder_life_support_stash<T, 0>() XXX porting */)
+                [](DiagramBuilderTestAdversary<T>*) { return nullptr; },
+                builder_life_support_stash<T, 0>())
             .def(
                 "StashBadIndex",
-                [](DiagramBuilderTestAdversary<T>*) { return; }
-                /*, builder_life_support_stash<T, 2>() XXX porting */)
+                [](DiagramBuilderTestAdversary<T>*) { return; },
+                builder_life_support_stash<T, 2>())
             .def(
                 "StashWrongType",
-                [](DiagramBuilderTestAdversary<T>*, Arbitrary*) { return; }
-                /*, builder_life_support_stash<T, 2>() XXX porting */)
+                [](DiagramBuilderTestAdversary<T>*, Arbitrary*) { return; },
+                builder_life_support_stash<T, 2>())
             // Use this in case it is needed to undo any test-only immortality
             // problems.
             .def("Abandon", [](DiagramBuilderTestAdversary<T>* self) {

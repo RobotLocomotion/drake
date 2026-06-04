@@ -293,8 +293,11 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = RenderEngine;
     const auto& cls_doc = doc.RenderEngine;
     py::class_<Class, PyRenderEngine
-        /*, std::shared_ptr<Class> XXX porting */>
-        cls(m, "RenderEngine");
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+        ,
+        std::shared_ptr<Class>
+#endif
+        > cls(m, "RenderEngine");
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("Clone",

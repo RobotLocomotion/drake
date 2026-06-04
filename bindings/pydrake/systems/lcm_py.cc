@@ -143,7 +143,11 @@ PYDRAKE_MODULE(lcm, m) {
     using Class = SerializerInterface;
     constexpr auto& cls_doc = doc.SerializerInterface;
     py::class_<Class, PySerializerInterface
-        /*, std::shared_ptr<Class> XXX porting */>
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+        ,
+        std::shared_ptr<Class>
+#endif
+        >
         cls(m, "SerializerInterface");
     cls  // BR
          // Adding a constructor permits implementing this interface in Python.

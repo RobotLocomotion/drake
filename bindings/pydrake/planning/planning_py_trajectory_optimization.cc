@@ -228,8 +228,11 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
     using Class = DirectCollocationConstraint;
     constexpr auto& cls_doc = doc.DirectCollocationConstraint;
     py::class_<Class, solvers::Constraint
-        /*, std::shared_ptr<Class> XXX porting */>(
-        m, "DirectCollocationConstraint", cls_doc.doc)
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+        ,
+        std::shared_ptr<Class>
+#endif
+        >(m, "DirectCollocationConstraint", cls_doc.doc)
         .def(py::init<const systems::System<double>&,
                  const systems::Context<double>&,
                  std::variant<systems::InputPortSelection,
