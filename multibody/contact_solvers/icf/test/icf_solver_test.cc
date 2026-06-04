@@ -6,9 +6,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
+#include "drake/multibody/contact_solvers/icf/test_utilities/icf_model_test_helpers.h"
 
 namespace drake {
 namespace multibody {
@@ -274,6 +276,57 @@ TEST_F(IcfSolverTest, AnalyticalSolution) {
   EXPECT_TRUE(CompareMatrices(solution, analytical_solution,
                               kConvergenceTolerance,
                               MatrixCompareType::relative));
+}
+
+/* Builds a model with several constraint-coupled islands and verifies that
+solving the islands in parallel produces exactly the same solution and
+aggregate statistics as solving them serially. Determinism is independent of the
+number of threads because each island is solved independently and the per-island
+results are aggregated in island order. */
+GTEST_TEST(IcfSolverParallel, MultiIslandMatchesSerial) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+  // The helper setup yields more than one island, so the parallel path is
+  // genuinely exercised.
+  ASSERT_GT(model.partition().num_islands(), 1);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  const int nv = model.num_velocities();
+  const VectorXd v_guess = VectorXd::LinSpaced(nv, -0.5, 0.7);
+
+  // Solve serially (one thread).
+  IcfSolver serial_solver;
+  data.set_v(v_guess);
+  EXPECT_TRUE(serial_solver.SolveWithGuess(model, kConvergenceTolerance, &data,
+                                           Parallelism::None()));
+  const VectorXd serial_solution = data.v();
+  const IcfSolverStats serial_stats = serial_solver.stats();
+  // Real Newton work was done (not a trivial early exit at the initial guess).
+  EXPECT_GE(serial_stats.num_iterations, 1);
+
+  // Solve in parallel over islands, from the same initial guess.
+  IcfSolver parallel_solver;
+  data.set_v(v_guess);
+  EXPECT_TRUE(parallel_solver.SolveWithGuess(model, kConvergenceTolerance,
+                                             &data, Parallelism(4)));
+  const VectorXd parallel_solution = data.v();
+  const IcfSolverStats& parallel_stats = parallel_solver.stats();
+
+  // The solution and every aggregate statistic should be bit-identical.
+  EXPECT_TRUE(CompareMatrices(parallel_solution, serial_solution, 0.0));
+  EXPECT_EQ(parallel_stats.num_iterations, serial_stats.num_iterations);
+  EXPECT_EQ(parallel_stats.num_factorizations, serial_stats.num_factorizations);
+  EXPECT_EQ(parallel_stats.cost, serial_stats.cost);
+  EXPECT_EQ(parallel_stats.gradient_norm, serial_stats.gradient_norm);
+  EXPECT_EQ(parallel_stats.ls_iterations, serial_stats.ls_iterations);
+  EXPECT_EQ(parallel_stats.alpha, serial_stats.alpha);
+  EXPECT_EQ(parallel_stats.step_norm, serial_stats.step_norm);
 }
 
 }  // namespace

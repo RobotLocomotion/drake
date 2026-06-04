@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/parallelism.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
@@ -118,8 +119,9 @@ class IcfSolver {
   Because the cost is additive over islands (connected components of the clique
   graph) and the gradient is block-disjoint across them, the problem decomposes
   into one independent convex subproblem per island. This method runs a separate
-  Newton solve for each island (serially), each writing only its own clique
-  segments of `data`, and aggregates their statistics: the reported
+  Newton solve for each island, optionally in parallel over islands, each
+  writing only its own clique segments of `data`. Their statistics are
+  aggregated deterministically (independent of thread scheduling): the reported
   num_iterations is the max over islands, num_factorizations is the sum, and the
   solve converges iff every island converges.
 
@@ -128,11 +130,15 @@ class IcfSolver {
                    the class documentation for convergence criteria details.
   @param[in, out] data The ICF data structure to be updated with the solution.
                        To begin, stores the initial guess for velocities v.
+  @param parallelism The number of threads to use when solving islands. The
+                     default (None) solves islands serially. Results are
+                     independent of the number of threads.
 
   @return true if and only if the optimizer converged to tolerance ε.
   @pre The model and data must compatible, e.g., via model.ResizeData(&data). */
   bool SolveWithGuess(const IcfModel<double>& model, const double tolerance,
-                      IcfData<double>* data);
+                      IcfData<double>* data,
+                      Parallelism parallelism = Parallelism::None());
 
   /* Returns solver statistics from the most recent solve. */
   const IcfSolverStats& stats() const { return stats_; }
@@ -180,6 +186,11 @@ class IcfSolver {
     // Per-island solver statistics, merged into the aggregate stats_ after all
     // islands are solved.
     IcfSolverStats stats;
+
+    // Whether this island's most recent solve converged. Written by the
+    // (possibly parallel) per-island solve and read during the serial,
+    // deterministic aggregation step.
+    bool converged{false};
   };
 
   /* Runs the Newton + exact-linesearch loop for a single `island`, updating

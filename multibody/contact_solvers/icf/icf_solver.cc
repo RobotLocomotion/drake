@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 
 #include <algorithm>
+#include <exception>
 #include <limits>
 
 #include "drake/common/text_logging.h"
@@ -108,7 +109,8 @@ void IcfSolverStats::Reserve(int max_iterations) {
 IcfSolver::~IcfSolver() = default;
 
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
-                               const double tolerance, IcfData<double>* data) {
+                               const double tolerance, IcfData<double>* data,
+                               Parallelism parallelism) {
   DRAKE_ASSERT(data != nullptr);
   DRAKE_ASSERT(tolerance > 0);
   DRAKE_ASSERT(model.num_velocities() >= 0);
@@ -140,18 +142,46 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
                        num_islands);
   }
 
-  // Solve each island independently and aggregate their statistics. (Phase 3:
-  // serial; OpenMP parallelism over islands comes in a later phase.)
+  // Solve each island as an independent convex subproblem, optionally in
+  // parallel. Each island owns its IslandSolverState and writes only disjoint
+  // regions of `data`, decision_variables_, and search_direction_, so the
+  // per-island solves do not interfere. The default Parallelism::None() runs
+  // one thread, recovering the serial path exactly.
+  //
+  // Exceptions cannot propagate out of an OpenMP region, so we capture the
+  // first one per island and rethrow it after the loop. Stats are aggregated
+  // serially afterward, so results are deterministic regardless of scheduling.
+  [[maybe_unused]] const int num_threads = parallelism.num_threads();
+  std::exception_ptr eptr;
+
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(num_threads) schedule(dynamic)
+#endif
+  for (int island = 0; island < num_islands; ++island) {
+    try {
+      IslandSolverState& state = *island_states_[island];
+      state.converged = SolveIsland(model, island, tolerance, data, &state);
+    } catch (...) {
+#if defined(_OPENMP)
+#pragma omp critical
+#endif
+      {
+        if (eptr == nullptr) eptr = std::current_exception();
+      }
+    }
+  }
+
+  if (eptr != nullptr) std::rethrow_exception(eptr);
+
+  // Aggregate stats in island order (independent of thread scheduling): total
+  // iterations are the max over islands, factorizations sum, the per-iteration
+  // vectors are concatenated, and convergence is the AND over all islands. For
+  // a single island this is exactly the per-island record.
   bool all_converged = true;
   for (int island = 0; island < num_islands; ++island) {
-    IslandSolverState& state = *island_states_[island];
-    const bool converged = SolveIsland(model, island, tolerance, data, &state);
-    all_converged = all_converged && converged;
+    const IslandSolverState& state = *island_states_[island];
+    all_converged = all_converged && state.converged;
 
-    // Aggregate stats: total iterations are the max over islands (the islands
-    // are solved concurrently in spirit), factorizations sum, and the
-    // per-iteration vectors are concatenated. For a single island this is
-    // exactly the per-island record.
     const IcfSolverStats& island_stats = state.stats;
     stats_.num_iterations =
         std::max(stats_.num_iterations, island_stats.num_iterations);
