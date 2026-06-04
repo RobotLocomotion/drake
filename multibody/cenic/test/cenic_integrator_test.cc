@@ -1,6 +1,5 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
-#include <chrono>
 #include <limits>
 #include <memory>
 #include <set>
@@ -800,86 +799,6 @@ GTEST_TEST(CenicIntegratorParallelism, MultiIslandDeterminism) {
   // serial results must be bit-identical (independent of the thread count).
   EXPECT_GT(serial.size(), 0);
   EXPECT_TRUE(CompareMatrices(parallel, serial, 0.0));
-}
-
-/* Opt-in benchmark (DISABLED so it never runs under plain `bazel test`). It
-times a scene of a few separated, tall box stacks: boxes within a stack are in
-contact (one large island spanning many cliques), while the stacks are far
-enough apart that they never interact. This produces few but large islands --
-the regime where per-island parallelism pays off. Run it with:
-
-  bazel run //multibody/cenic:cenic_integrator_test -- \
-      --gtest_also_run_disabled_tests \
-      --gtest_filter='*DISABLED_BenchmarkManyIslands*'
-
-Set OMP_NUM_THREADS (and/or the per-config Parallelism below) to control the
-thread count. Note that Parallelism::Max() may resolve to 1 in restricted
-environments, so the benchmark requests threads explicitly. */
-GTEST_TEST(CenicIntegratorParallelism, DISABLED_BenchmarkManyIslands) {
-  const int kStacks = 8;
-  const int kBoxesPerStack = 10;
-  const double kStackSpacing = 5.0;  // meters between stacks (no interaction)
-  const double kBox = 0.05;          // box half-size
-  std::string body_xml;
-  for (int s = 0; s < kStacks; ++s) {
-    for (int b = 0; b < kBoxesPerStack; ++b) {
-      const double x = s * kStackSpacing;
-      const double z = kBox + b * (2 * kBox + 0.001);
-      body_xml += fmt::format(
-          "<body name=\"s{}_b{}\" pos=\"{} 0 {}\"><joint type=\"free\"/>"
-          "<geom type=\"box\" size=\"{} {} {}\"/></body>\n",
-          s, b, x, z, kBox, kBox, kBox);
-    }
-  }
-  const std::string mjcf = fmt::format(
-      "<?xml version=\"1.0\"?>\n<mujoco model=\"stacks\">\n<worldbody>\n"
-      "<geom name=\"floor\" type=\"box\" pos=\"0 0 -0.1\" size=\"500 500 "
-      "0.1\"/>"
-      "\n{}\n</worldbody>\n</mujoco>\n",
-      body_xml);
-
-  auto simulate = [&](Parallelism parallelism) {
-    DiagramBuilder<double> builder;
-    MultibodyPlant<double>& plant =
-        AddMultibodyPlantSceneGraph(&builder, 0.0).plant;
-    Parser(&plant).AddModelsFromString(mjcf, "xml");
-    plant.Finalize();
-    auto diagram = builder.Build();
-    Simulator<double> simulator(*diagram);
-    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
-    integrator.set_maximum_step_size(0.1);
-    integrator.set_target_accuracy(1e-4);
-    integrator.set_parallelism(parallelism);
-    simulator.Initialize();
-    const auto t0 = std::chrono::steady_clock::now();
-    simulator.AdvanceTo(0.3);
-    const auto t1 = std::chrono::steady_clock::now();
-    const Context<double>& pc =
-        plant.GetMyContextFromRoot(simulator.get_context());
-    return std::make_pair(std::chrono::duration<double>(t1 - t0).count(),
-                          VectorXd(plant.GetPositionsAndVelocities(pc)));
-  };
-
-  auto best_of = [&](Parallelism p) {
-    simulate(p);  // Warm up caches and allocations.
-    double best = std::numeric_limits<double>::infinity();
-    VectorXd x;
-    for (int r = 0; r < 3; ++r) {
-      auto [t, xr] = simulate(p);
-      best = std::min(best, t);
-      x = xr;
-    }
-    return std::make_pair(best, x);
-  };
-
-  const auto [t_serial, x_serial] = best_of(Parallelism(1));
-  const auto [t_parallel, x_parallel] = best_of(Parallelism(8));
-  fmt::print("\n=== CENIC island benchmark ({} stacks x {} boxes) ===\n",
-             kStacks, kBoxesPerStack);
-  fmt::print("serial   (1 thread) : {:.4f} s\n", t_serial);
-  fmt::print("parallel (8 threads): {:.4f} s  (speedup {:.2f}x)\n", t_parallel,
-             t_serial / t_parallel);
-  EXPECT_TRUE(CompareMatrices(x_parallel, x_serial, 0.0));
 }
 
 }  // namespace

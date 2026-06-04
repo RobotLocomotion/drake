@@ -1,0 +1,34 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_binary(
+    name = "box_stacks",
+    srcs = ["box_stacks.cc"],
+    deps = [
+        "//common:parallelism",
+        "//geometry:meshcat",
+        "//multibody/cenic:cenic_integrator",
+        "//multibody/parsing:parser",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram_builder",
+        "//visualization:visualization_config_functions",
+        "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        # A small, short, serial run keeps the smoke test fast.
+        "--num_stacks=2",
+        "--boxes_per_stack=3",
+        "--simulation_time=0.05",
+        "--target_realtime_rate=0.0",
+    ],
+)
+
+add_lint_tests()
