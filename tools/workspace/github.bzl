@@ -321,6 +321,13 @@ def github_download_and_extract(
         [line.strip() for line in upgrade_advice.strip().split("\n")],
     ).replace("\\\n", "\\\n    ")
 
+    upgrade_types = ["commit", "release", "tag"]
+    if upgrade_type not in upgrade_types:
+        fail("got invalid upgrade_type '{}'; must be one of: {}".format(
+            upgrade_type,
+            ", ".join(upgrade_types),
+        ))
+
     # Create a summary file for Drake maintainers.
     generate_repository_metadata(
         repository_ctx,
