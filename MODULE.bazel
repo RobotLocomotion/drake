@@ -23,6 +23,7 @@ bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "2.0.2")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.70.0")
 bazel_dep(name = "rules_shell", version = "0.8.0")
+bazel_dep(name = "with_cfg.bzl", version = "0.14.6")
 
 # Configure the C++ toolchain.
 
@@ -77,7 +78,14 @@ single_version_override(
 # is used by default.
 
 bazel_dep(name = "glib", version = "2.82.2.bcr.8", repo_name = "module_glib")
+bazel_dep(name = "libjpeg_turbo", version = "2.1.4")
 bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
+
+# TODO(jwnimmer-tri) Upstream this to BCR.
+single_version_override(
+    module_name = "libjpeg_turbo",
+    patches = ["@drake//tools/workspace/libjpeg_turbo_internal:patches/bcr.patch"],
+)
 
 # Add additional modules we use at build-time (not runtime dependencies).
 
