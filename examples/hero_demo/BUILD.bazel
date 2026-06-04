@@ -1,0 +1,34 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
+
+package(default_visibility = ["//visibility:private"])
+
+filegroup(
+    name = "dishrack_demonstration",
+    srcs = glob([
+        "*.txt",
+        "*.yaml",
+    ]),
+)
+
+#filegroup(
+#    name = "models",
+#    srcs = [
+#        "ball.sdf",
+#        "paddle.sdf",
+#    ],
+#    visibility = ["//:__pkg__"],
+#)
+
+drake_py_binary(
+    name = "convex_integrator_playback",
+    srcs = ["convex_integrator_playback.py"],
+    data = [
+        ":dishrack_demonstration",
+        "@drake_models"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+add_lint_tests()
