@@ -93,8 +93,9 @@ def main():
         passthrough = [
             "--num_stacks=16",
             "--boxes_per_stack=8",
-            "--simulation_time=0.5",
-            "--accuracy=1e-4",
+            "--simulation_time=2.0",
+            "--fixed_step=1",
+            "--max_step_size=0.01"
         ]
 
     print(f"Binary: {binary}")
