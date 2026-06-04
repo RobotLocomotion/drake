@@ -31,6 +31,9 @@ libjpeg_turbo_internal_repository = repository_rule(
     attrs = {
         # These are the attributes for setup_github_repository.
         "repository": attr.string(default = "libjpeg-turbo/libjpeg-turbo"),
+        # TODO(tyler.yankee): We should handle some upgrade_type "none" here
+        # to signify that it's irrelevant to new_release and the script handles
+        # it.
         "upgrade_type": attr.string(default = "release"),
         "commit": attr.string(default = "2.1.4"),
         "sha256": attr.string(
