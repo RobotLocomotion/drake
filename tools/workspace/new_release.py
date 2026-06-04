@@ -190,11 +190,11 @@ def _handle_github(workspace_name, gh, data):
             return old_commit, new_commit
 
         # Sometimes limit candidate tags to those matching a regex.
-        match = re.search(tags_pattern, old_commit)
-        assert match, f"No {tags_pattern} in {old_commit}"
+        match = re.search(include_tags_pattern, old_commit)
+        assert match, f"No {include_tags_pattern} in {old_commit}"
         (old_hit,) = match.groups()
         for tag in gh_repo.tags():
-            match = re.search(tags_pattern, tag.name)
+            match = re.search(include_tags_pattern, tag.name)
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:

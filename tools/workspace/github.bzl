@@ -12,7 +12,7 @@ def github_archive(
         upgrade_type = None,
         commit = None,
         commit_pin = None,
-        tags_pattern = None,
+        include_tags_pattern = None,
         sha256 = "0" * 64,
         build_file = None,
         patches = None,
@@ -39,11 +39,11 @@ def github_archive(
         commit_pin: optional boolean, set to True iff the archive should remain
             at the same version indefinitely, eschewing automated upgrades to
             newer versions.
-        tags_pattern: optional string specifies a regex describing the
+        include_tags_pattern: optional string specifies a regex describing the
             portion of the current tag in use to lock as invariant (achieved by
             a parenthetical group). This can be used to pin to a given major or
             major.minor release series. For example, if version 1.2 of a
-            package is currently in use and `tags_pattern = r"^(\\d+.)"`
+            package is currently in use and `include_tags_pattern = r"^(\\d+.)"`
             is specified, all newer major versions will be ignored during
             upgrades, but version 1.3 or 1.2.1 would be considered.
         sha256: required sha256 is the expected SHA-256 checksum of the
@@ -115,7 +115,7 @@ def github_archive(
         upgrade_type = upgrade_type,
         commit = commit,
         commit_pin = commit_pin,
-        tags_pattern = tags_pattern,
+        include_tags_pattern = include_tags_pattern,
         sha256 = sha256,
         build_file = build_file,
         patches = patches,
@@ -160,7 +160,7 @@ _github_archive_real = repository_rule(
             mandatory = True,
         ),
         "commit_pin": attr.bool(),
-        "tags_pattern": attr.string(),
+        "include_tags_pattern": attr.string(),
         "sha256": attr.string(
             mandatory = False,
             default = "0" * 64,
@@ -212,7 +212,7 @@ def setup_github_repository(repository_ctx):
         upgrade_type = repository_ctx.attr.upgrade_type,
         commit = repository_ctx.attr.commit,
         commit_pin = getattr(repository_ctx.attr, "commit_pin", None),
-        tags_pattern = getattr(repository_ctx.attr, "tags_pattern", None),
+        include_tags_pattern = getattr(repository_ctx.attr, "include_tags_pattern", None),
         mirrors = repository_ctx.attr.mirrors,
         sha256 = repository_ctx.attr.sha256,
         extra_strip_prefix = repository_ctx.attr.extra_strip_prefix,
@@ -254,7 +254,7 @@ def github_download_and_extract(
         repository,
         upgrade_type,
         commit,
-        tags_pattern,
+        include_tags_pattern,
         mirrors,
         output = "",
         sha256 = "0" * 64,
@@ -271,7 +271,7 @@ def github_download_and_extract(
             for releases ("release"), tags ("tag"), or arbitrary commits to the
             main branch ("commit").
         commit: git revision for which the archive should be downloaded.
-        tags_pattern: regex describing the portion of the current tag in use to
+        include_tags_pattern: regex describing the portion of the current tag in use to
             lock when upgrading (achieved by a parenthetical group).
             Used by //tools/workspace:new_release.
         mirrors: dictionary of mirrors, see mirrors.bzl in this directory for
@@ -317,7 +317,7 @@ def github_download_and_extract(
         repository = repository,
         upgrade_type = upgrade_type,
         commit = commit,
-        tags_pattern = tags_pattern,
+        include_tags_pattern = include_tags_pattern,
         version_pin = commit_pin,
         sha256 = sha256,
         urls = urls,
