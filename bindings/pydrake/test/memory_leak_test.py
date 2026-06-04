@@ -3,8 +3,17 @@
 The test contains examples of pydrake code that may leak (DUTs),
 instrumentation to detect leaks, and optional additional debug printing under
 an internal verbose option.
+
+Two test classes provide instrumentation for the likely categories of leaks:
+
+* TestPythonMemoryLeaks detects leaks of python objects after garbage
+  collection.
+
+* TestNativeHeapLeaks detects leaks of memory in the native code heap, using
+  instrumentation only supported on Linux.
 """
 
+import ctypes
 import dataclasses
 import functools
 import gc
@@ -22,7 +31,11 @@ from pydrake.multibody.parsing import (
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
 )
-from pydrake.multibody.plant import AddMultibodyPlant, MultibodyPlantConfig
+from pydrake.multibody.plant import (
+    AddMultibodyPlant,
+    AddMultibodyPlantSceneGraph,
+    MultibodyPlantConfig,
+)
 from pydrake.planning import RobotDiagramBuilder
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
@@ -315,13 +328,16 @@ def _repeat(*, dut: callable, count: int):
     return leaks
 
 
-class TestMemoryLeaks(unittest.TestCase):
+class TestPythonMemoryLeaks(unittest.TestCase):
+    """Detects leaks of Python objects."""
+
     def do_test(self, *, dut, count, leaks_allowed=0, leaks_required=0):
         """Runs the requested `dut` (see _repeat() above) for `count`
-        iterations. Check that leaks detected <= leaks allowed. In addition,
-        check if the leaks required <= the actual leaks measured. Using a non-0
-        leaks_required will cause the test to fail if fixes get implemented. In
-        that case, the test can likely be updated to be more strict.
+        iterations. Checks that leaks detected <= leaks allowed. In addition,
+        checks if the leaks required <= the actual leaks measured. Using a
+        non-0 leaks_required will cause the test to fail if fixes get
+        implemented. In that case, the test can likely be updated to be more
+        strict.
         """
         leaks = _repeat(dut=dut, count=count)
         self.assertLessEqual(leaks, leaks_allowed)
@@ -342,3 +358,66 @@ class TestMemoryLeaks(unittest.TestCase):
 
     def test_mypyleafsystem(self):
         self.do_test(dut=_dut_mypyleafsystem, count=1)
+
+
+class Mallinfo2(ctypes.Structure):
+    """Structure returned by libc `mallinfo2()`. See `man 3 mallinfo`."""
+
+    _fields_ = [
+        ("arena", ctypes.c_size_t),
+        ("ordlbks", ctypes.c_size_t),
+        ("smblks", ctypes.c_size_t),
+        ("hblks", ctypes.c_size_t),
+        ("hblkhd", ctypes.c_size_t),
+        ("usmblks", ctypes.c_size_t),
+        ("fsmblks", ctypes.c_size_t),
+        ("uordblks", ctypes.c_size_t),
+        ("fordblks", ctypes.c_size_t),
+        ("keepcost", ctypes.c_size_t),
+    ]
+
+
+def _dut_bug24529():
+    """A device under test that uses The `time_step` signature of
+    AddMultibodyPlantSceneGraph; see issue #24529.
+    """
+    builder = DiagramBuilder()
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step=0.001)
+    plant.Finalize()
+    diagram = builder.Build()
+
+
+@unittest.skipUnless(sys.platform == "linux", "native heap tests require Linux")
+class TestNativeHeapLeaks(unittest.TestCase):
+    """Detects leaks in the native code heap. The detection method depends on
+    Linux libc features."""
+
+    def setUp(self):
+        libc = ctypes.CDLL(None)
+        self._mallinfo2 = libc.mallinfo2
+        self._mallinfo2.restype = Mallinfo2
+
+    def do_test(self, *, dut):
+        """Runs the requested `dut` for a fixed number of iterations doing a
+        Python garbage collection before and after each. Checks that native
+        heap growth per iteration reaches 0.
+        """
+        iterations = 20
+        for _ in range(iterations):
+            gc.collect()
+            before = self._mallinfo2()
+            dut()
+            gc.collect()
+            after = self._mallinfo2()
+            growth = after.uordblks - before.uordblks
+            if growth == 0:
+                break
+        self.assertEqual(
+            growth,
+            0,
+            f"heap still growing by {growth} bytes"
+            f" after {iterations} iterations",
+        )
+
+    def test_bug24529(self):
+        self.do_test(dut=_dut_bug24529)
