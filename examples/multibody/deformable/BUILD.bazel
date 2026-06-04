@@ -120,6 +120,7 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/sensors:camera_config_functions",
+        "//visualization:visualization_config_functions",
         "@gflags",
     ],
     add_test_rule = True,
