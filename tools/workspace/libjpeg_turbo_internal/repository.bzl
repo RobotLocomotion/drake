@@ -15,8 +15,10 @@ exports_files(["drake_repository_metadata.json"])
 """ + repo_ctx.read(Label(
         "@drake//third_party:com_github_tensorflow_tensorflow/third_party/jpeg/jpeg.BUILD",  # noqa
     )))
-    repository_metadata = {
-        "name": "libjpeg_turbo_internal",
+    repository_metadata = json.decode(
+        repo_ctx.read("drake_repository_metadata.json"),
+    )
+    repository_metadata |= {
         "repository_rule_type": "scripted",
         "upgrade_script": "upgrade.py",
     }
