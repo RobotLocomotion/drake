@@ -26,6 +26,7 @@ namespace fs = std::filesystem;
 using drake::internal::DiagnosticPolicy;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorX;
 using std::make_tuple;
 using std::map;
 using std::tuple;
@@ -525,15 +526,29 @@ RenderMesh MakeFacetedRenderMeshFromTriangleSurfaceMesh(
 }
 
 TriangleSurfaceMesh<double> MakeTriangleSurfaceMesh(
-    const RenderMesh& render_mesh) {
+    const RenderMesh& render_mesh,
+    const VectorX<double>& new_vertex_positions) {
   const int num_vertices = render_mesh.positions.rows();
   const int num_triangles = render_mesh.indices.rows();
+  bool usingNewVertices = false;
+  if (new_vertex_positions.size() != 0) {
+    DRAKE_DEMAND(3 * num_vertices ==
+                 static_cast<int>(new_vertex_positions.size()));
+    usingNewVertices = true;
+  }
   std::vector<Vector3<double>> vertices;
   vertices.reserve(num_vertices);
   std::vector<SurfaceTriangle> triangles;
   triangles.reserve(num_triangles);
   for (int v = 0; v < num_vertices; ++v) {
-    vertices.emplace_back(render_mesh.positions.row(v));
+    if (usingNewVertices) {
+      const int i = 3 * v;
+      vertices.emplace_back(new_vertex_positions[i],
+                            new_vertex_positions[i + 1],
+                            new_vertex_positions[i + 2]);
+    } else {
+      vertices.emplace_back(render_mesh.positions.row(v));
+    }
   }
   for (int t = 0; t < num_triangles; ++t) {
     triangles.emplace_back(render_mesh.indices(t, 0), render_mesh.indices(t, 1),
