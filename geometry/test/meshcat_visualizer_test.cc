@@ -9,9 +9,11 @@
 #include <gtest/gtest.h>
 #include <msgpack.hpp>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -22,8 +24,13 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using drake::geometry::Mesh;
+using drake::multibody::DeformableModel;
+using drake::multibody::fem::DeformableBodyConfig;
 using internal::TransformGeometryName;
+using math::RigidTransformd;
 using multibody::AddMultibodyPlantSceneGraph;
+using std::make_unique;
 
 // The tests in this file require a dependency on MultibodyPlant.  One could
 // implement the tests without that dependency, but not without duplicating (or
@@ -464,6 +471,105 @@ GTEST_TEST(MeshcatVisualizerTest, ConvexHull) {
       fmt::format("/drake/{}/box/box/{}", params.prefix,
                   TransformGeometryName(box_id, inspector)));
   EXPECT_THAT(data, testing::HasSubstr("BufferGeometry"));
+}
+
+// This tests MeshcatVisualizer's ability to handle non-vtk deformable
+// geometries, such as primitive shaped deformable.
+GTEST_TEST(MeshcatVisualizerTest, VisualizeDeformableGeometry) {
+  auto meshcat = std::make_shared<Meshcat>();
+
+  // Load a scene with mesh collision geometry.
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+
+  const Rgba proximity_rgba = Rgba(0.75, 0.25, 0.5, 0.75);
+  constexpr double kRezHint = 0.5;
+  constexpr double kRadius = 1.0;
+  auto geometry_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(kRadius), "sphere");
+  geometry_instance->set_illustration_properties(IllustrationProperties{});
+  ProximityProperties proximity_properties;
+  proximity_properties.AddProperty("phong", "diffuse", proximity_rgba);
+  geometry_instance->set_proximity_properties(proximity_properties);
+  GeometryId g_id = scene_graph.RegisterDeformableGeometry(
+      plant.get_source_id().value(), scene_graph.world_frame_id(),
+      std::move(geometry_instance), kRezHint);
+  const auto& inspector = scene_graph.model_inspector();
+  const VolumeMesh<double>* mesh = inspector.GetReferenceMesh(g_id);
+  ASSERT_NE(mesh, nullptr);
+
+  plant.Finalize();
+
+  // We set show_hydroelastic to true to make sure the deformable still comes
+  // through for meshes that don't have hydro representations (see above).
+  MeshcatVisualizerParams params{.role = Role::kIllustration,
+                                 .show_hydroelastic = true};
+  MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                          params);
+
+  // Send the geometry to Meshcat.
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  EXPECT_FALSE(meshcat->HasPath("/drake/visualizer/sphere"));
+  diagram->ForcedPublish(*context);
+  EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/sphere"));
+}
+
+// This tests MeshcatVisualizer's ability to draw deformable geometries that
+// uses .vtk for illustration, although Meshcat does not yet support it.
+GTEST_TEST(MeshcatVisualizerTest, VisualizeDeformableVTKGeometry) {
+  auto meshcat = std::make_shared<Meshcat>();
+
+  // Load a scene with mesh collision geometry.
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+
+  /* Set up a deformable bodies. Values are just an example here */
+  DeformableBodyConfig<double> deformable_config;
+  deformable_config.set_youngs_modulus(1e4);
+  deformable_config.set_poissons_ratio(0.4);
+  deformable_config.set_mass_density(1e3);
+  deformable_config.set_stiffness_damping_coefficient(0.01);
+
+  const RigidTransformd X_WB(Vector3<double>(0.0, 0.0, 0.0));
+  auto torus_mesh = std::make_unique<Mesh>(FindResourceOrThrow(
+      "drake/examples/multibody/deformable/models/torus.vtk"));
+  auto torus_instance = std::make_unique<drake::geometry::GeometryInstance>(
+      X_WB, std::move(torus_mesh), "deformable_torus");
+
+  drake::geometry::ProximityProperties deformable_proximity_props;
+  const drake::multibody::CoulombFriction<double> surface_friction(1.15, 1.15);
+  drake::geometry::AddContactMaterial(10.0, {}, surface_friction,
+                                      &deformable_proximity_props);
+  torus_instance->set_proximity_properties(deformable_proximity_props);
+
+  const double unused_resolution_hint = 1.0;
+
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
+  deformable_model.RegisterDeformableBody(
+      std::move(torus_instance), deformable_config, unused_resolution_hint);
+
+  plant.Finalize();
+
+  // We set show_hydroelastic to true to make sure the deformable still comes
+  // through for meshes that don't have hydro representations (see above).
+  MeshcatVisualizerParams params{.role = Role::kIllustration,
+                                 .show_hydroelastic = true};
+  MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                          params);
+
+  // Send the geometry to Meshcat.
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  EXPECT_FALSE(
+      meshcat->HasPath("/drake/visualizer/deformable_geometries/"
+                       "DefaultModelInstance/deformable_torus"));
+  diagram->ForcedPublish(*context);
+  EXPECT_TRUE(
+      meshcat->HasPath("/drake/visualizer/deformable_geometries/"
+                       "DefaultModelInstance/deformable_torus"));
 }
 
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {

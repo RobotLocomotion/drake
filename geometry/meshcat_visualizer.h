@@ -140,8 +140,14 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    is valid (if not, sends the objects) and then sends the transforms.  */
   systems::EventStatus UpdateMeshcat(const systems::Context<T>& context) const;
 
+  /** Update deformable geometries, which replaces the geometry with the new
+   * vertices' positions */
+  void UpdateDeformableGeometry(const QueryObject<T>& query_object,
+                                GeometryId geom_id, Role role,
+                                const std::string& path) const;
+
   /* Makes calls to Meshcat::SetObject to register geometry in SceneGraph. */
-  void SetObjects(const SceneGraphInspector<T>& inspector) const;
+  void SetObjects(const QueryObject<T>& query_object) const;
 
   /* Makes calls to Meshcat::SetTransform to update the poses from SceneGraph.
    */
@@ -184,6 +190,11 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    version_.  This is only for efficiency; it does not represent undeclared
    state. */
   mutable std::map<FrameId, std::string> dynamic_frames_{};
+
+  /* A store of the dynamic deformable frames and their path. It is coupled with
+   the version_.  This is only for efficiency; it does not represent undeclared
+   state. */
+  mutable std::map<GeometryId, Role> dynamic_deformable_frames_{};
 
   /* A store of the geometries sent to Meshcat, so that they can be removed if a
    new geometry version appears that does not contain them. */
