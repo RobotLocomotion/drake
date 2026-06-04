@@ -151,7 +151,11 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   // Exceptions cannot propagate out of an OpenMP region, so we capture the
   // first one per island and rethrow it after the loop. Stats are aggregated
   // serially afterward, so results are deterministic regardless of scheduling.
-  [[maybe_unused]] const int num_threads = parallelism.num_threads();
+  // Clamp the thread count to the number of islands: there is no parallel work
+  // to spread beyond one thread per island, and clamping to 1 for a single
+  // island avoids OpenMP overhead on the common serial path.
+  [[maybe_unused]] const int num_threads =
+      std::min(parallelism.num_threads(), std::max(num_islands, 1));
   std::exception_ptr eptr;
 
 #if defined(_OPENMP)

@@ -443,7 +443,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   if constexpr (!std::is_same_v<T, double>) {
     throw std::runtime_error(
         "CenicIntegrator: ICF solver only supports T = double.");
-  } else if (!solver_.SolveWithGuess(model, tolerance, &data_)) {
+  } else if (!solver_.SolveWithGuess(model, tolerance, &data_, parallelism_)) {
     // Somehow, the "guaranteed convergence" promise has been violated. Either
     // the problem is not correctly formulated, or there is a bug.
     throw std::runtime_error("CenicIntegrator: optimization failed.");
