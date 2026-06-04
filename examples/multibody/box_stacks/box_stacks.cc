@@ -117,6 +117,14 @@ DEFINE_bool(print_solver_stats, false,
             "each solve.");
 
 DEFINE_bool(
+    use_islands, true,
+    "CENIC only: if true (the default), decompose the contact problem into "
+    "independent constraint islands solved separately (and, with "
+    "--num_threads, in parallel). If false, solve the full problem across all "
+    "cliques at once -- the pre-island baseline; --num_threads is then "
+    "ignored.");
+
+DEFINE_bool(
     meshcat, false,
     "If true, start a Meshcat server, record the simulation, and replay the "
     "recorded animation at a natural speed when the run finishes (regardless "
@@ -250,16 +258,17 @@ int do_main() {
                                         ? Parallelism::Max()
                                         : Parallelism(FLAGS_num_threads);
     integrator.set_parallelism(parallelism);
-    if (FLAGS_print_solver_stats) {
-      auto solver_params = integrator.get_solver_parameters();
-      solver_params.print_solver_stats = true;
-      integrator.SetSolverParameters(solver_params);
-    }
-    fmt::print("Integrator: CENIC, {}; island solver threads: {}.\n",
+    auto solver_params = integrator.get_solver_parameters();
+    solver_params.print_solver_stats = FLAGS_print_solver_stats;
+    solver_params.use_islands = FLAGS_use_islands;
+    integrator.SetSolverParameters(solver_params);
+    fmt::print("Integrator: CENIC, {}; islands {}.\n",
                FLAGS_fixed_step
                    ? fmt::format("fixed step ({} s)", FLAGS_max_step_size)
                    : fmt::format("error control (accuracy {})", FLAGS_accuracy),
-               parallelism.num_threads());
+               FLAGS_use_islands ? fmt::format("on ({} solver threads)",
+                                               parallelism.num_threads())
+                                 : "off (full solve across all cliques)");
   } else {
     // Discrete plant: the Simulator advances it with the plant's built-in
     // contact solver. This is the discrete-time baseline.

@@ -130,12 +130,23 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   decision_variables_ = data->v();
 
   // Grow the per-island state pool as needed. Storage is grow-only: it never
-  // shrinks, so per-island factorizations can be reused across time steps.
-  while (static_cast<int>(island_states_.size()) < num_islands) {
+  // shrinks, so per-island factorizations can be reused across time steps. The
+  // full-problem path (below) reuses slot 0, so always keep at least one.
+  while (static_cast<int>(island_states_.size()) < std::max(num_islands, 1)) {
     island_states_.push_back(std::make_unique<IslandSolverState>());
   }
 
   stats_.Clear();
+
+  // If islands are disabled, solve the full problem across all cliques as a
+  // single optimization, ignoring the partition and `parallelism`. This
+  // reproduces the solver's behavior prior to constraint islands.
+  if (!parameters_.use_islands) {
+    const bool converged =
+        SolveFull(model, tolerance, data, island_states_[0].get());
+    stats_ = island_states_[0]->stats;
+    return converged;
+  }
 
   if (parameters_.print_solver_stats) {
     drake::log()->info("IcfSolver starting convex solve over {} island(s):",
@@ -560,6 +571,207 @@ bool IcfSolver::IslandSparsityChanged(const IcfModel<double>& model,
   return (current.neighbors() !=
           state.previous_sparsity_pattern->neighbors()) ||
          (current.block_sizes() !=
+          state.previous_sparsity_pattern->block_sizes());
+}
+
+bool IcfSolver::SolveFull(const IcfModel<double>& model, const double tolerance,
+                          IcfData<double>* data, IslandSolverState* state) {
+  using std::clamp;
+  IcfSolverStats& stats = state->stats;
+  stats.Clear();
+
+  // Retrieve scratch space for decision variables vₖ and search direction wₖ.
+  // The caller has sized these and set v = data->v() already.
+  VectorXd& v = decision_variables_;
+  VectorXd& dv = search_direction_;  // Also stores Δvₖ = αₖ⋅wₖ.
+
+  // Convergence tolerances are scaled by D = diag(M)⁻⁰ᐧ⁵, so that all entries
+  // of g̃ = D⋅g and ṽ = D⁻¹⋅v have the same units [Castro et al., 2023].
+  const VectorXd& D = model.scale_factor();
+  const double scale = std::max(1.0, (D.asDiagonal() * model.r()).norm());
+  const double epsilon = std::max(tolerance, parameters_.min_tolerance);
+  const double scaled_tolerance = epsilon * scale;
+
+  double alpha{NAN};     // Linesearch parameter α.
+  int ls_iterations{0};  // Count of linesearch iterations taken.
+  double eta = 1.0;      // Convergence scaling factor η.
+
+  if (parameters_.print_solver_stats) {
+    drake::log()->info("IcfSolver starting convex solve (islands disabled):");
+  }
+  for (int k = 0; k < parameters_.max_iterations; ++k) {
+    // Compute the cost and gradient over the whole problem.
+    model.CalcData(v, data);
+    const double grad_norm = (D.asDiagonal() * data->gradient()).norm();
+
+    // Gradient-based convergence check.
+    if (grad_norm < scaled_tolerance) {
+      if (parameters_.print_solver_stats && k == 0) {
+        drake::log()->info("  k: {}, cost: {:.6f}, gradient: {:e}", k,
+                           data->cost(), grad_norm);
+      }
+      return true;
+    }
+
+    // Step-size-based convergence check (valid after the first iteration).
+    if (k > 0) {
+      if (eta * stats.step_norm.back() < scaled_tolerance) {
+        return true;
+      }
+    }
+
+    // Choose whether to re-compute the Hessian factorization using Equation
+    // IV.8.11 of [Hairer and Wanner, 1996].
+    if (k > 1) {
+      const double dvk = stats.step_norm[k - 1];    // ‖D⁻¹⋅Δvₖ‖
+      const double dvkm1 = stats.step_norm[k - 2];  // ‖D⁻¹⋅Δvₖ₋₁‖
+      const double theta = clamp(dvk / dvkm1, 0.0, 0.9999);
+      eta = theta / (1.0 - theta);
+      const int k_max = parameters_.hessian_reuse_target_iterations;
+      const double anticipated_residual =
+          std::pow(theta, k_max - k) / (1 - theta) * dvk;
+      if (anticipated_residual > scaled_tolerance) {
+        state->hessian_factorization_is_fresh_enough = 0;
+      }
+    }
+
+    // For iterations other than the first, the sparsity pattern is unchanged.
+    const bool reuse_sparsity_pattern =
+        (k > 0) || !SparsityPatternChanged(model, *state);
+    const bool reuse_hessian = parameters_.enable_hessian_reuse &&
+                               reuse_sparsity_pattern &&
+                               state->hessian_factorization_is_fresh_enough;
+
+    // Compute the search direction wₖ = -Hₖ⁻¹⋅gₖ.
+    ComputeSearchDirectionFull(model, *data, &dv, state, reuse_hessian,
+                               reuse_sparsity_pattern);
+
+    // If the sparsity pattern changed, store it for future checks.
+    if (!reuse_sparsity_pattern) {
+      state->previous_sparsity_pattern =
+          std::make_unique<BlockSparsityPattern>(model.sparsity_pattern());
+    }
+
+    // Compute the optimal step size αₖ = min_α ℓ(vₖ + α⋅wₖ).
+    std::tie(alpha, ls_iterations) =
+        PerformExactLineSearchFull(model, *data, dv, state);
+
+    // Update the decision variables, vₖ₊₁ = vₖ + αₖ⋅wₖ.
+    dv *= alpha;  // Store Δvₖ = αₖ⋅wₖ for recording the step size later.
+    v += dv;
+
+    // Finalize solver stats now that we've finished the iteration.
+    stats.num_iterations++;
+    stats.cost.push_back(data->cost());
+    stats.gradient_norm.push_back(grad_norm);
+    stats.ls_iterations.push_back(ls_iterations);
+    stats.alpha.push_back(alpha);
+    const double step_norm = (D.cwiseInverse().asDiagonal() * dv).norm();
+    stats.step_norm.push_back(step_norm);
+
+    if (parameters_.print_solver_stats) {
+      drake::log()->info(
+          "  k: {}, cost: {:.6f}, gradient: {:e}, step: {:e}, ls_iterations: "
+          "{}, alpha: {:.6f}",
+          k, data->cost(), grad_norm, step_norm, ls_iterations, alpha);
+    }
+  }
+
+  return false;  // Failed to converge.
+}
+
+std::pair<double, int> IcfSolver::PerformExactLineSearchFull(
+    const IcfModel<double>& model, const IcfData<double>& data,
+    const VectorXd& w, IslandSolverState* state) {
+  const double alpha_max = parameters_.alpha_max;
+
+  // Set up prerequisites for efficiently computing ℓ̃(α) and its derivatives.
+  IcfSearchDirectionData<double>& search_data = state->search_direction_data;
+  model.CalcSearchDirectionData(data, w, &search_data);
+
+  // Evaluate ∂ℓ̃/∂α at α = 0 (strictly negative since the Hessian is PD).
+  const double ell0 = data.cost();              // Cost ℓ̃(0).
+  const double dell0 = data.gradient().dot(w);  // Derivative ∂ℓ̃/∂α at α = 0.
+  DRAKE_THROW_UNLESS(dell0 < 0, dell0);
+
+  double dell{NAN};   // First derivative ∂ℓ̃/∂α.
+  double d2ell{NAN};  // Second derivative ∂²ℓ̃/∂α².
+
+  // Evaluate at α = α_max; if the cost is still decreasing, accept α_max.
+  const double ell =
+      model.CalcCostAlongLine(alpha_max, data, search_data, &dell, &d2ell);
+  if (dell <= std::numeric_limits<double>::epsilon()) {
+    return std::make_pair(alpha_max, 0);
+  }
+
+  // Cubic-hermite-spline initial guess between α = 0 and α = α_max.
+  const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
+  const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
+  const double c = dell0 * alpha_max;
+  const double alpha_guess =
+      alpha_max * SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
+
+  // Newton with bisection fallback on f(α) = −ℓ̃'(α)/ℓ̃'₀, so f(0) = -1.
+  const double dell_scale = -dell0;
+  auto cost_and_gradient = [&model, &data, &search_data,
+                            &dell_scale](double x) {
+    double dell_dalpha;
+    double d2ell_dalpha2;
+    model.CalcCostAlongLine(x, data, search_data, &dell_dalpha, &d2ell_dalpha2);
+    return std::make_pair(dell_dalpha / dell_scale, d2ell_dalpha2 / dell_scale);
+  };
+
+  const Bracket bracket(0.0, -1.0, alpha_max, dell / dell_scale);
+  return DoNewtonWithBisectionFallback(
+      cost_and_gradient, bracket, alpha_guess, parameters_.linesearch_tolerance,
+      parameters_.linesearch_tolerance, parameters_.max_linesearch_iterations);
+}
+
+void IcfSolver::ComputeSearchDirectionFull(const IcfModel<double>& model,
+                                           const IcfData<double>& data,
+                                           VectorXd* w,
+                                           IslandSolverState* state,
+                                           bool reuse_factorization,
+                                           bool reuse_sparsity_pattern) {
+  DRAKE_ASSERT(w != nullptr);
+
+  if (parameters_.use_dense_algebra) {
+    if (!reuse_factorization) {
+      // Compute and factorize the dense Hessian. N.B. Dense algebra is just for
+      // testing and debugging, so we don't mind this expensive heap allocation.
+      const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
+      state->dense_hessian_factorization = H.ldlt();
+      state->stats.num_factorizations++;
+      state->hessian_factorization_is_fresh_enough = 1;
+    }
+    *w = state->dense_hessian_factorization.solve(-data.gradient());
+
+  } else {  // Use sparse algebra.
+    if (!reuse_factorization) {
+      if (reuse_sparsity_pattern) {
+        model.UpdateHessian(data, state->hessian.get());
+        state->hessian_factorization.UpdateMatrix(*state->hessian);
+      } else {
+        state->hessian = model.MakeHessian(data);
+        state->hessian_factorization.SetMatrix(*state->hessian);
+      }
+      DRAKE_THROW_UNLESS(state->hessian_factorization.Factor());
+      state->stats.num_factorizations++;
+      state->hessian_factorization_is_fresh_enough = 1;
+    }
+    *w = -data.gradient();
+    state->hessian_factorization.SolveInPlace(w);
+  }
+}
+
+bool IcfSolver::SparsityPatternChanged(const IcfModel<double>& model,
+                                       const IslandSolverState& state) const {
+  if (state.previous_sparsity_pattern == nullptr) {
+    return true;  // No previous sparsity pattern to compare against.
+  }
+  return (model.sparsity_pattern().neighbors() !=
+          state.previous_sparsity_pattern->neighbors()) ||
+         (model.sparsity_pattern().block_sizes() !=
           state.previous_sparsity_pattern->block_sizes());
 }
 

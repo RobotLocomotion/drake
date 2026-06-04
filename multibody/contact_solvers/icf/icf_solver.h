@@ -200,6 +200,15 @@ class IcfSolver {
   bool SolveIsland(const IcfModel<double>& model, int island, double tolerance,
                    IcfData<double>* data, IslandSolverState* state);
 
+  /* Runs the Newton + exact-linesearch loop over the full problem (all cliques)
+  as a single optimization, ignoring the island partition. This reproduces the
+  solver's behavior prior to constraint islands; it is selected when
+  parameters_.use_islands is false. Uses `decision_variables_` /
+  `search_direction_` and records statistics in state->stats.
+  @returns true iff the solve converged to `tolerance`. */
+  bool SolveFull(const IcfModel<double>& model, double tolerance,
+                 IcfData<double>* data, IslandSolverState* state);
+
   /* Solves min_α ℓ̃ᵢ(α) = ℓᵢ(v + α⋅w) for `island` using a 1D Newton method with
   bisection fallback. The initial guess is generated using cubic spline
   interpolation. Only the island's clique segments of `w` are read.
@@ -241,6 +250,25 @@ class IcfSolver {
   the last time the island's Hessian was computed. */
   bool IslandSparsityChanged(const IcfModel<double>& model, int island,
                              const IslandSolverState& state) const;
+
+  /* Full-problem counterpart of PerformExactLineSearchIsland(): solves
+  min_α ℓ̃(α) = ℓ(v + α⋅w) over all velocities. Used by SolveFull(). */
+  std::pair<double, int> PerformExactLineSearchFull(
+      const IcfModel<double>& model, const IcfData<double>& data,
+      const Eigen::VectorXd& w, IslandSolverState* state);
+
+  /* Full-problem counterpart of ComputeIslandSearchDirection(): solves
+  w = −H⁻¹⋅g over all cliques. Used by SolveFull(). */
+  void ComputeSearchDirectionFull(const IcfModel<double>& model,
+                                  const IcfData<double>& data,
+                                  Eigen::VectorXd* w, IslandSolverState* state,
+                                  bool reuse_factorization = false,
+                                  bool reuse_sparsity_pattern = false);
+
+  /* Indicates whether the model's (full) sparsity pattern has changed since the
+  last time the full Hessian was computed. Used by SolveFull(). */
+  bool SparsityPatternChanged(const IcfModel<double>& model,
+                              const IslandSolverState& state) const;
 
   // Grow-only pool of per-island solver state, indexed by island. Only the
   // first model.partition().num_islands() entries are valid for a given solve.

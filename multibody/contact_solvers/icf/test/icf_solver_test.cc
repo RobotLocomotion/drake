@@ -329,6 +329,46 @@ GTEST_TEST(IcfSolverParallel, MultiIslandMatchesSerial) {
   EXPECT_EQ(parallel_stats.step_norm, serial_stats.step_norm);
 }
 
+/* With islands disabled (use_islands = false), the solver optimizes the full
+problem across all cliques as a single Newton solve. On a multi-island problem
+it must still reach the same minimizer as the island-decomposed solve. */
+GTEST_TEST(IcfSolver, NoIslandsMatchesIslands) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+  ASSERT_GT(model.partition().num_islands(), 1);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  const int nv = model.num_velocities();
+  const VectorXd v_guess = VectorXd::LinSpaced(nv, -0.5, 0.7);
+
+  // Island-decomposed solve (the default).
+  IcfSolver island_solver;
+  data.set_v(v_guess);
+  EXPECT_TRUE(
+      island_solver.SolveWithGuess(model, kConvergenceTolerance, &data));
+  const VectorXd island_solution = data.v();
+
+  // Full solve with islands disabled.
+  IcfSolver full_solver;
+  IcfSolverParameters params = full_solver.get_parameters();
+  params.use_islands = false;
+  full_solver.SetParameters(params);
+  data.set_v(v_guess);
+  EXPECT_TRUE(full_solver.SolveWithGuess(model, kConvergenceTolerance, &data));
+  const VectorXd full_solution = data.v();
+  EXPECT_GE(full_solver.stats().num_iterations, 1);
+
+  // Both reach the same minimizer, up to the convergence tolerance.
+  EXPECT_TRUE(CompareMatrices(full_solution, island_solution, 1e-7,
+                              MatrixCompareType::relative));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace icf

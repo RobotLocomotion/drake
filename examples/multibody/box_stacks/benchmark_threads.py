@@ -95,7 +95,7 @@ def main():
             "--boxes_per_stack=8",
             "--simulation_time=2.0",
             "--fixed_step=1",
-            "--max_step_size=0.01"
+            "--max_step_size=0.01",
         ]
 
     print(f"Binary: {binary}")
