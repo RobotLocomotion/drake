@@ -34,8 +34,8 @@ def github_archive(
         repository: required GitHub repository name in the form
             organization/project.
         upgrade_type: required whether this dependency should be upgraded by
-            searching for releases ("release"), tags ("tag"), or arbitrary
-            commits to the main branch ("commit").
+            searching for releases ("release"), tags ("tag"), arbitrary
+            commits to the main branch ("commit"), or N/A ("none").
         commit: required commit is the tag name or git commit sha to download.
         commit_pin: optional boolean, set to True iff the archive should remain
             at the same version indefinitely, eschewing automated upgrades to
@@ -321,7 +321,7 @@ def github_download_and_extract(
         [line.strip() for line in upgrade_advice.strip().split("\n")],
     ).replace("\\\n", "\\\n    ")
 
-    upgrade_types = ["commit", "release", "tag"]
+    upgrade_types = ["commit", "release", "tag", "none"]
     if upgrade_type not in upgrade_types:
         fail("got invalid upgrade_type '{}'; must be one of: {}".format(
             upgrade_type,
