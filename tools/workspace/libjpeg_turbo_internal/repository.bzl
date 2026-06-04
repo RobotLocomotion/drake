@@ -15,17 +15,21 @@ exports_files(["drake_repository_metadata.json"])
 """ + repo_ctx.read(Label(
         "@drake//third_party:com_github_tensorflow_tensorflow/third_party/jpeg/jpeg.BUILD",  # noqa
     )))
+    repository_metadata = {
+        "name": "libjpeg_turbo_internal",
+        "repository_rule_type": "scripted",
+        "upgrade_script": "upgrade.py",
+    }
+    repo_ctx.file(
+        "drake_repository_metadata.json",
+        json.encode(repository_metadata),
+    )
 
 libjpeg_turbo_internal_repository = repository_rule(
     attrs = {
         # These are the attributes for setup_github_repository.
         "repository": attr.string(default = "libjpeg-turbo/libjpeg-turbo"),
         "commit": attr.string(default = "2.1.4"),
-        "commit_pin": attr.int(
-            # We need to match our version of libjpeg-turbo to the BUILD file
-            # we've adopted from tensorflow. Run `upgrade.py` to upgrade.
-            default = 1,
-        ),
         "sha256": attr.string(
             default = "a78b05c0d8427a90eb5b4eb08af25309770c8379592bb0b8a863373128e6143f",  # noqa
         ),
