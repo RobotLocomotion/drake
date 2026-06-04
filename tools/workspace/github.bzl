@@ -215,7 +215,7 @@ def setup_github_repository(repository_ctx):
     github_download_and_extract(
         repository_ctx,
         repository = repository_ctx.attr.repository,
-        upgrade_type = repository_ctx.attr.upgrade_type,
+        upgrade_type = getattr(repository_ctx.attr, "upgrade_type", None),
         commit = repository_ctx.attr.commit,
         commit_pin = getattr(repository_ctx.attr, "commit_pin", None),
         tags_pattern = getattr(repository_ctx.attr, "tags_pattern", None),
@@ -322,7 +322,7 @@ def github_download_and_extract(
     ).replace("\\\n", "\\\n    ")
 
     upgrade_types = ["commit", "release", "tag"]
-    if upgrade_type not in upgrade_types:
+    if upgrade_type and upgrade_type not in upgrade_types:
         fail("got invalid upgrade_type '{}'; must be one of: {}".format(
             upgrade_type,
             ", ".join(upgrade_types),
