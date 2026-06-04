@@ -63,9 +63,6 @@ std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
     const std::string& group_name, const RigidBody<double>& bodyA,
     const Shape& shape, const RigidTransform<double>& X_AG) {
   const FrameId body_frame_id = plant().GetBodyFrameIdOrThrow(bodyA.index());
-
-  const GeometrySet bodyA_geometries =
-      plant().CollectRegisteredGeometries(plant().GetBodiesWeldedTo(bodyA));
   log()->debug("Adding shape (group: [{}]) to {} (FrameID {}) at X_AG =\n{}",
                group_name, bodyA.scoped_name(), body_frame_id,
                fmt_eigen(X_AG.GetAsMatrix4()));
