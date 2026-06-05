@@ -328,10 +328,13 @@ def github_download_and_extract(
             ", ".join(upgrade_types),
         ))
 
-    if upgrade_type != "tag" and (include_tags_pattern or exclude_tags_pattern):
+    if (
+        upgrade_type not in ["release", "tag"] and
+        (include_tags_pattern or exclude_tags_pattern)
+    ):
         fail(
-            "include_tags_pattern and exclude_tags_pattern may only " +
-            "be used with upgrade_type=tag",
+            "include_tags_pattern and exclude_tags_pattern cannot " +
+            "be used with upgrade_type={}".format(upgrade_type),
         )
 
     # Create a summary file for Drake maintainers.
