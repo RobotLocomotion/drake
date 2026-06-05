@@ -22,7 +22,7 @@ and save the plaintext hexadecimal token to that file.
 This program can also automatically prepare upgrades for our GitHub externals
 by passing the name(s) of package(s) to upgrade as additional arguments:
 
-  bazel run //tools/workspace:new_release -- --lint --commit rules_python
+  bazel run //tools/workspace:new_release -- --lint --commit curl_internal
 
 Note that this program runs `bazel` as a subprocess, without any special
 command line flags.  If you do need to use any flags when you run bazel,
