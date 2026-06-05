@@ -71,7 +71,13 @@ void DefineCollisionFilterDeclaration(py::module_ m) {
         .def("ExcludeBetween", &Class::ExcludeBetween, py::arg("set_A"),
             py::arg("set_B"), py_rvp::reference, cls_doc.ExcludeBetween.doc)
         .def("ExcludeWithin", &Class::ExcludeWithin, py::arg("geometry_set"),
-            py_rvp::reference, cls_doc.ExcludeWithin.doc);
+            py_rvp::reference, cls_doc.ExcludeWithin.doc)
+        .def("ExcludeAgainstAll", &Class::ExcludeAgainstAll,
+            py::arg("geometry_set"), py_rvp::reference,
+            cls_doc.ExcludeAgainstAll.doc)
+        .def("AllowAgainstAll", &Class::AllowAgainstAll,
+            py::arg("geometry_set"), py_rvp::reference,
+            cls_doc.AllowAgainstAll.doc);
   }
 }
 

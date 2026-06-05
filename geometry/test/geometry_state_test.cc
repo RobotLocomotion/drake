@@ -2747,6 +2747,55 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 }
 
+// Tests that "excluded against all" marks applied through
+// collision_filter_manager() are wired end to end: queries honor the marks,
+// and the mark deltas reach the ProximityEngine, which culls marked
+// ("sleeping") geometries from its broadphase -- a pure optimization whose
+// bookkeeping we confirm through the tester (see
+// ProximityEngine::ApplyMarkDelta()).
+TEST_F(GeometryStateTest, ExcludeAgainstAllReachesProximityEngine) {
+  SetUpSingleSourceTree(Assign::kProximity);
+
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses;
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PFs_[f]);
+  }
+  gs_tester_.SetFramePoses(source_id_, poses,
+                           &gs_tester_.mutable_kinematics_data());
+  gs_tester_.FinalizePoseUpdate();
+
+  const int expected_collisions = default_collision_pair_count();
+  EXPECT_EQ(
+      static_cast<int>(geometry_state_.ComputePointPairPenetration().size()),
+      expected_collisions);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+  EXPECT_EQ(engine.num_sleeping(), 0);
+
+  // Mark all dynamic geometries. Every contact involves at least one dynamic
+  // geometry, so they all vanish, and the engine puts every marked dynamic
+  // geometry to sleep -- eagerly, with no intervening query or pose update.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration().ExcludeAgainstAll(GeometrySet(geometries_)));
+  EXPECT_EQ(engine.num_sleeping(), static_cast<int>(geometries_.size()));
+  EXPECT_TRUE(engine.IsSleeping(geometries_[0]));
+  EXPECT_TRUE(geometry_state_.ComputePointPairPenetration().empty());
+  // Introspection reflects the marks too. (We compare geometries on
+  // *different* frames; same-frame pairs are invariant-filtered regardless.)
+  EXPECT_TRUE(
+      geometry_state_.CollisionFiltered(geometries_[0], geometries_[2]));
+
+  // Unmark: everything wakes and the contacts return.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration().AllowAgainstAll(GeometrySet(geometries_)));
+  EXPECT_EQ(engine.num_sleeping(), 0);
+  EXPECT_FALSE(
+      geometry_state_.CollisionFiltered(geometries_[0], geometries_[2]));
+  EXPECT_EQ(
+      static_cast<int>(geometry_state_.ComputePointPairPenetration().size()),
+      expected_collisions);
+}
+
 // Tests two aspects of GeometryState collision filter behavior:
 //
 //   1. No collision filters are applied to a deformable geometry (it and the

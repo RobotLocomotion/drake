@@ -482,6 +482,264 @@ TEST_F(CollisionFilterTest, Equivalency) {
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
 }
 
+/* Gtest matcher support: compares a MarkDelta against expected (unordered)
+ contents. */
+::testing::AssertionResult DeltaMatches(
+    const CollisionFilter::MarkDelta& delta,
+    std::initializer_list<GeometryId> marked,
+    std::initializer_list<GeometryId> unmarked) {
+  auto as_set = [](const auto& range) {
+    return std::unordered_set<GeometryId>(range.begin(), range.end());
+  };
+  if (as_set(delta.marked) != as_set(marked)) {
+    return ::testing::AssertionFailure()
+           << fmt::format("Expected {} newly marked ids, got {}", marked.size(),
+                          delta.marked.size());
+  }
+  if (as_set(delta.unmarked) != as_set(unmarked)) {
+    return ::testing::AssertionFailure()
+           << fmt::format("Expected {} newly unmarked ids, got {}",
+                          unmarked.size(), delta.unmarked.size());
+  }
+  return ::testing::AssertionSuccess();
+}
+
+/* Tests the basic semantics of the "excluded against all" mark: a marked
+ geometry can collide with nothing -- including geometries registered after
+ the mark was applied -- and unmarking restores exactly the pairwise filter
+ state. */
+TEST_F(CollisionFilterTest, ExcludeAgainstAll) {
+  CollisionFilter filters;
+  auto [id_A, id_B, id_C] = this->InitIds(&filters);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+
+  /* Initial condition: everything can collide. */
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, kCanCollide));
+
+  /* Mark A: it collides with nothing; B-C is untouched. */
+  filters.Apply(Decl().ExcludeAgainstAll(GeometrySet(id_A)), extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, kCanCollide));
+
+  /* The key, open-world property: a geometry registered *after* the mark is
+   also excluded against A (an ExcludeBetween-based emulation would leak
+   here). */
+  const GeometryId id_D = GeometryId::get_new_id();
+  filters.AddGeometry(id_D);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_D, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_D, kCanCollide));
+
+  /* Pairwise Allow* statements do not pierce the mark. */
+  filters.Apply(
+      Decl().AllowBetween(GeometrySet(id_A), GeometrySet({id_B, id_C, id_D})),
+      extract);
+  filters.Apply(Decl().AllowWithin(GeometrySet({id_A, id_B, id_C, id_D})),
+                extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_D, !kCanCollide));
+
+  /* Marks and pairwise filters are independent: add a pairwise filter (A, B)
+   while A is marked; unmarking A leaves that pairwise filter in force while
+   (A, C) and (A, D) become collidable again. */
+  filters.Apply(Decl().ExcludeWithin(GeometrySet({id_A, id_B})), extract);
+  filters.Apply(Decl().AllowAgainstAll(GeometrySet(id_A)), extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_D, kCanCollide));
+
+  /* Unmarking an unmarked geometry is a no-op. */
+  filters.Apply(Decl().AllowAgainstAll(GeometrySet({id_A, id_C})), extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
+
+  /* Statements evaluate in invocation order within one declaration. */
+  filters.Apply(Decl()
+                    .ExcludeAgainstAll(GeometrySet({id_B, id_C}))
+                    .AllowAgainstAll(GeometrySet(id_C)),
+                extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, !kCanCollide));  // B mark.
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));   // C clear.
+
+  /* MakeClearCopy drops marks along with all pairwise filters. */
+  const CollisionFilter clear = this->ClearCopy(filters);
+  EXPECT_TRUE(ExpectCanCollide(clear, id_A, id_B, kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(clear, id_B, id_C, kCanCollide));
+}
+
+/* Tests that the MarkDelta out-param on Apply/ApplyTransient/RemoveDeclaration
+ reports the *net* change to the mark set. */
+TEST_F(CollisionFilterTest, MarkDelta) {
+  CollisionFilter filters;
+  auto [id_A, id_B, id_C] = this->InitIds(&filters);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+  CollisionFilter::MarkDelta delta;
+
+  /* A purely pairwise declaration produces an empty delta. */
+  filters.Apply(Decl().ExcludeWithin(GeometrySet({id_A, id_B})), extract, false,
+                &delta);
+  EXPECT_TRUE(delta.empty());
+
+  /* Marking produces `marked`; re-marking is idempotent (empty delta). */
+  filters.Apply(Decl().ExcludeAgainstAll(GeometrySet({id_A, id_B})), extract,
+                false, &delta);
+  EXPECT_TRUE(DeltaMatches(delta, {id_A, id_B}, {}));
+  filters.Apply(Decl().ExcludeAgainstAll(GeometrySet(id_A)), extract, false,
+                &delta);
+  EXPECT_TRUE(delta.empty());
+
+  /* Mixed declaration against marks {A, B}: ExcludeAgainstAll({A, C}) is a
+   no-op for A and marks C; AllowAgainstAll({A, B}) unmarks both. The delta is
+   the *net* change: marked = {C}, unmarked = {A, B}. */
+  filters.Apply(Decl()
+                    .ExcludeAgainstAll(GeometrySet({id_A, id_C}))
+                    .AllowAgainstAll(GeometrySet({id_A, id_B})),
+                extract, false, &delta);
+  EXPECT_TRUE(DeltaMatches(delta, {id_C}, {id_A, id_B}));
+
+  /* End state: (A, B) still blocked by the pairwise filter from above; (A, C)
+   blocked by C's mark. */
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
+
+  /* Transient marks report deltas the same way. */
+  const FilterId fid = filters.ApplyTransient(
+      Decl().ExcludeAgainstAll(GeometrySet(id_B)), extract, &delta);
+  EXPECT_TRUE(DeltaMatches(delta, {id_B}, {}));
+
+  /* A redundant transient mark on C: empty delta. */
+  const FilterId fid2 = filters.ApplyTransient(
+      Decl().ExcludeAgainstAll(GeometrySet(id_C)), extract, &delta);
+  EXPECT_TRUE(delta.empty());
+
+  /* Removing fid unmarks B (no other transient marks B). */
+  EXPECT_TRUE(filters.RemoveDeclaration(fid, &delta));
+  EXPECT_TRUE(DeltaMatches(delta, {}, {id_B}));
+
+  /* Removing fid2 does NOT unmark C -- the persistent base still marks it. */
+  EXPECT_TRUE(filters.RemoveDeclaration(fid2, &delta));
+  EXPECT_TRUE(delta.empty());
+
+  /* Removing an invalid id reports an empty delta. */
+  delta.marked.push_back(id_A);  // Poison the value; it must be cleared.
+  EXPECT_FALSE(filters.RemoveDeclaration(FilterId::get_new_id(), &delta));
+  EXPECT_TRUE(delta.empty());
+}
+
+/* Tests transient layering of marks: replay order, marks shadowed by later
+ transients, and interaction with RemoveGeometry (incl. the replay-hygiene
+ round trip). */
+TEST_F(CollisionFilterTest, TransientMarks) {
+  CollisionFilter filters;
+  auto [id_A, id_B, id_C] = this->InitIds(&filters);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+  CollisionFilter::MarkDelta delta;
+
+  /* Transient mark A, then transient unmark A; removing the *first*
+   declaration leaves A unmarked (the second transient's unmark replays). */
+  const FilterId mark_id = filters.ApplyTransient(
+      Decl().ExcludeAgainstAll(GeometrySet(id_A)), extract);
+  const FilterId unmark_id = filters.ApplyTransient(
+      Decl().AllowAgainstAll(GeometrySet(id_A)), extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
+  EXPECT_TRUE(filters.RemoveDeclaration(mark_id, &delta));
+  EXPECT_TRUE(delta.empty());
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
+  EXPECT_TRUE(filters.RemoveDeclaration(unmark_id, &delta));
+  EXPECT_TRUE(delta.empty());
+
+  /* Persistent mark + transient unmark: composite is unmarked; removing the
+   transient re-marks (delta reports it). */
+  filters.Apply(Decl().ExcludeAgainstAll(GeometrySet(id_A)), extract);
+  const FilterId transient_unmark = filters.ApplyTransient(
+      Decl().AllowAgainstAll(GeometrySet(id_A)), extract, &delta);
+  EXPECT_TRUE(DeltaMatches(delta, {}, {id_A}));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
+  EXPECT_TRUE(filters.RemoveDeclaration(transient_unmark, &delta));
+  EXPECT_TRUE(DeltaMatches(delta, {id_A}, {}));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  /* Clean up: unmark A persistently. */
+  filters.Apply(Decl().AllowAgainstAll(GeometrySet(id_A)), extract);
+
+  /* Replay-hygiene round trip: transiently mark {B, C}, remove geometry B,
+   then exercise a rebuild (remove an unrelated transient). B must not
+   resurrect as a phantom mark, and a freshly registered geometry must be
+   unmarked. This guards against silently culling a live geometry -- the
+   failure mode replay hygiene exists to prevent. */
+  const FilterId marks_bc = filters.ApplyTransient(
+      Decl().ExcludeAgainstAll(GeometrySet({id_B, id_C})), extract);
+  const FilterId unrelated = filters.ApplyTransient(
+      Decl().ExcludeWithin(GeometrySet({id_A, id_C})), extract);
+  filters.RemoveGeometry(id_B);
+  EXPECT_TRUE(filters.RemoveDeclaration(unrelated, &delta));  // Rebuilds.
+  EXPECT_TRUE(delta.empty());
+  const GeometryId id_E = GeometryId::get_new_id();
+  filters.AddGeometry(id_E);
+  /* E is a brand-new geometry: collidable with A (B's mark must not have
+   leaked onto anything), while C's mark still holds. */
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_E, kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_C, id_E, !kCanCollide));
+
+  /* Removing a *marked* geometry never changes another geometry's mark. */
+  EXPECT_TRUE(filters.RemoveDeclaration(marks_bc, &delta));
+  EXPECT_TRUE(DeltaMatches(delta, {}, {id_C}));
+}
+
+/* Tests Flatten() with marks: the composite mark state becomes persistent. */
+TEST_F(CollisionFilterTest, FlattenWithMarks) {
+  CollisionFilter filters;
+  auto [id_A, id_B, id_C] = this->InitIds(&filters);
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+
+  const FilterId fid = filters.ApplyTransient(
+      Decl().ExcludeAgainstAll(GeometrySet(id_A)), extract);
+  filters.Flatten();
+  EXPECT_FALSE(filters.IsActive(fid));
+  /* The mark survives flattening (now part of the persistent base). */
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  /* And it can be removed persistently. */
+  filters.Apply(Decl().AllowAgainstAll(GeometrySet(id_A)), extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
+}
+
+/* Marks participate in equivalence: a mark is not the same as its pairwise
+ closure (it also affects future geometries). */
+TEST_F(CollisionFilterTest, EquivalencyWithMarks) {
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_C = GeometryId::get_new_id();
+  const auto& extract = this->get_extract_ids_functor();
+  using Decl = CollisionFilterDeclaration;
+
+  CollisionFilter filters1;
+  CollisionFilter filters2;
+  for (auto* f : {&filters1, &filters2}) {
+    f->AddGeometry(id_A);
+    f->AddGeometry(id_B);
+    f->AddGeometry(id_C);
+  }
+
+  /* Mark A in filter 1; emulate it pairwise in filter 2. Every *current* pair
+   agrees, but the filters are NOT equivalent: their future behavior (w.r.t.
+   geometries added later) differs. */
+  filters1.Apply(Decl().ExcludeAgainstAll(GeometrySet(id_A)), extract);
+  filters2.Apply(
+      Decl().ExcludeBetween(GeometrySet(id_A), GeometrySet({id_B, id_C})),
+      extract);
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
+
+  /* Matching marks (and matching pairwise states) are equivalent. */
+  CollisionFilter filters3;
+  for (GeometryId id : {id_A, id_B, id_C}) filters3.AddGeometry(id);
+  filters3.Apply(Decl().ExcludeAgainstAll(GeometrySet(id_A)), extract);
+  EXPECT_TRUE(filters1.IsEquivalent(filters3));
+}
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

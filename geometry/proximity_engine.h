@@ -83,8 +83,47 @@ class ProximityEngine {
   template <typename U>
   std::unique_ptr<ProximityEngine<U>> ToScalarType() const;
 
-  /* Provides access to the mutable collision filter this engine uses. */
+  /* Provides access to the mutable collision filter this engine uses.
+
+   @warning If a mutation applied directly to the filter changes its "excluded
+   against all" marks, the caller must forward the resulting
+   CollisionFilter::MarkDelta to ApplyMarkDelta() so that the engine's
+   broadphase reflects the marks. (In the SceneGraph pipeline,
+   CollisionFilterManager does this automatically; GeometryState's internally
+   generated invariant declarations never carry marks.) */
   CollisionFilter& collision_filter();
+
+  /* Updates the engine's broadphase culling of "sleeping" geometries to
+   reflect the given net change to the collision filter's "excluded against
+   all" marks (see CollisionFilterDeclaration::ExcludeAgainstAll()).
+
+   A marked geometry cannot contribute to any filter-respecting pairwise
+   query, so the engine moves marked *dynamic* geometries out of the active
+   broadphase tree (whose per-step refit and traversal cost then scales with
+   the active geometry count) and into a separate sleeping tree that serves
+   only the queries that ignore collision filters (signed distance to point).
+   Unmarked geometries move back. This is a pure optimization: query results
+   are identical with or without it -- marked pairs are equally discarded by
+   the collision filter -- just cheaper when many geometries sleep (e.g.,
+   locked bodies; see issue #24607). Marked ids without a dynamic fcl object
+   (anchored geometries, whose pairs are discarded by the filter at no
+   per-step cost, and deformable geometries, which have no rigid broadphase
+   presence) are ignored.
+
+   The per-call cost is O(|delta| log n) tree updates; no full-tree refit
+   occurs. */
+  void ApplyMarkDelta(const CollisionFilter::MarkDelta& delta);
+
+  /* (Introspection) Reports whether the dynamic geometry with the given `id`
+   is currently "sleeping": culled from the filter-respecting broadphase
+   because it carries an "excluded against all" mark. See ApplyMarkDelta().
+   This accessor exists so tests can confirm the bookkeeping. */
+  bool IsSleeping(GeometryId id) const;
+
+  /* (Introspection) Reports the number of currently sleeping dynamic
+   geometries. Marked anchored or deformable geometries are not counted; see
+   ApplyMarkDelta(). */
+  int num_sleeping() const;
 
   /* @name Topology management */
   //@{

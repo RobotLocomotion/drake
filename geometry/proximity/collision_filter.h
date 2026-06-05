@@ -18,6 +18,14 @@ namespace internal {
  rely on the collision filter policy to determine if they should compute results
  for a given geometry pair. Filtered pairs do not contribute to the results.
 
+ In addition to pairwise filters, a geometry can carry an "excluded against
+ all" *mark* (see CollisionFilterDeclaration::ExcludeAgainstAll()): a marked
+ geometry cannot collide with *any* other geometry, including geometries added
+ to this filter system after the mark was applied. The mark is evaluated at
+ query time in CanCollideWith() rather than being resolved to explicit pairs,
+ which is what makes it robust to later geometry registration (and cheap: one
+ set entry instead of O(N) pairs).
+
  Geometries are identified by their geometry ids. The filter status of the
  geometry pair (g, h) can only be modified if both g and h have already been
  added to this filter system (via AddGeometry()). */
@@ -26,6 +34,21 @@ class CollisionFilter {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilter);
 
   CollisionFilter();
+
+  /* The net change to the set of "excluded against all" marks produced by
+   applying or removing a declaration. Clients that derive data structures
+   from the mark set (e.g., ProximityEngine culls marked geometries from its
+   broadphase trees) use this to update incrementally, in O(delta), without
+   inspecting the full filter state. The two vectors are disjoint; ids appear
+   at most once. A declaration whose statements have no net effect on the mark
+   set (including all purely pairwise declarations) produces an empty delta. */
+  struct MarkDelta {
+    /* Geometries that became marked (were unmarked before the operation). */
+    std::vector<GeometryId> marked;
+    /* Geometries that became unmarked. */
+    std::vector<GeometryId> unmarked;
+    bool empty() const { return marked.empty() && unmarked.empty(); }
+  };
 
   /* The callback function type for resolving a GeometrySet in a declaration
    into an explicitly enumerated set of GeometryIds. All ids in the resultant
@@ -56,13 +79,17 @@ class CollisionFilter {
    @param is_invariant      If `true` a filter added (via an Exclude* API) will
                             be treated as a system invariant -- a filter that
                             cannot be removed.
+   @param mark_delta        If non-null, receives the net change to the
+                            "excluded against all" mark set (replacing any
+                            previous value).
    @throws std::exception if any GeometryId referenced by the declaration has
                           not previously been added to `this` filter system.
    @throws std::exception if there are any transient declarations active.
-   @pre If `is_invariant` is `true`, declaration contains no `Allow*()`
-        statements. */
+   @pre If `is_invariant` is `true`, declaration contains no `Allow*()` and no
+        `*AgainstAll()` statements. */
   void Apply(const CollisionFilterDeclaration& declaration,
-             const ExtractIds& extract_ids, bool is_invariant = false);
+             const ExtractIds& extract_ids, bool is_invariant = false,
+             MarkDelta* mark_delta = nullptr);
 
   /* Applies the collision filter declaration as a transient declaration. The
    callback `extract_ids` provides a means to convert the GeometrySet into an
@@ -73,11 +100,15 @@ class CollisionFilter {
    @param declaration       The declaration to apply.
    @param extract_ids       A callback to convert a GeometrySet into the
                             explicit set of geometry ids.
+   @param mark_delta        If non-null, receives the net change to the
+                            "excluded against all" mark set (replacing any
+                            previous value).
    @returns A unique FilterId for this transient declaration.
    @throws std::exception if any GeometryId referenced by the declaration has
                           not previously been added to the system. */
   FilterId ApplyTransient(const CollisionFilterDeclaration& declaration,
-                          const ExtractIds& extract_ids);
+                          const ExtractIds& extract_ids,
+                          MarkDelta* mark_delta = nullptr);
 
   /* Reports true if there are any active transient declarations.  */
   bool has_transient_history() const { return !transient_history_.empty(); }
@@ -88,8 +119,10 @@ class CollisionFilter {
   /* Attempts to remove the transient declaration associated with the given id.
    If the id isn't valid, no action is taken.
 
+   @param mark_delta  If non-null, receives the net change to the "excluded
+                      against all" mark set (replacing any previous value).
    @returns true if a declaration is actually removed. */
-  bool RemoveDeclaration(FilterId id);
+  bool RemoveDeclaration(FilterId id, MarkDelta* mark_delta = nullptr);
 
   /* Flattens the history. The current configuration becomes the persistent
    base configuration and all transient history is removed. */
@@ -101,20 +134,26 @@ class CollisionFilter {
   void AddGeometry(GeometryId new_id);
 
   /* Removes a geometry from the filter system. All filtered collision pairs
-   including `remove_id` will be removed.
+   including `remove_id` will be removed, as will its "excluded against all"
+   mark (if any). Removing a geometry never changes any *other* geometry's
+   mark.
    @pre `remove_id` is part of this filter system. */
   void RemoveGeometry(GeometryId remove_id);
 
   /* Reports true if the geometry pair (`id_A`, `id_B`) is considered to be
-   unfiltered.
+   unfiltered. A pair is filtered if either geometry carries an "excluded
+   against all" mark (see CollisionFilterDeclaration::ExcludeAgainstAll()) or
+   if the pair itself is filtered.
    @pre `id_A` and `id_B` are both part of this filter system. */
   bool CanCollideWith(GeometryId id_A, GeometryId id_B) const;
 
   /* Reports if two collision filters are "equivalent" -- in that they are
-   defined over the same set of geometry ids and report the same pairs as being
-   filtered (or not). This says nothing about how the two filters are
-   articulated (e.g., different declarations of invariance, transient versus
-   permanent declarations, etc.). */
+   defined over the same set of geometry ids, carry the same "excluded against
+   all" marks, and report the same pairs as being filtered (or not). (Marks
+   are compared directly rather than via their current pair closure because
+   they also affect geometries added in the future.) This says nothing about
+   how the two filters are articulated (e.g., different declarations of
+   invariance, transient versus permanent declarations, etc.). */
   bool IsEquivalent(const CollisionFilter& other) const;
 
   /* Reports if the given `id` has been added to this filter system. */
@@ -145,6 +184,15 @@ class CollisionFilter {
     FilteredPairs filtered;
     /* SceneGraph-invariant filtered pairs (cannot be removed by Allow*). */
     FilteredPairs invariant;
+    /* The "excluded against all" marks (set Mₚ): a geometry in this set
+     cannot collide with any other geometry, *including geometries registered
+     after the mark was applied*. This is deliberately a set of ids (insert on
+     ExcludeAgainstAll, erase on AllowAgainstAll) and never a tally -- the
+     open-world semantics live entirely in CanCollideWith()'s membership test
+     against the live geometry set. Marks are independent of the pairwise sets
+     above: Allow*() pairwise statements never remove a mark, and unmarking
+     leaves all pairwise filters in force. */
+    std::unordered_set<GeometryId> against_all;
   };
 
   /* A resolved statement: the GeometrySets of the original declaration have
@@ -197,8 +245,19 @@ class CollisionFilter {
                                  FilterState* state);
 
   /* Removes all entries in `state->filtered` and `state->invariant` that
-   involve `id`. Called when a geometry is unregistered. */
+   involve `id`, and `id`'s entry in `state->against_all` (if any). Called
+   when a geometry is unregistered. */
   static void RemovePairsFor(GeometryId id, FilterState* state);
+
+  /* Computes the net mark change from `before` to `state->against_all` and
+   writes it to `mark_delta` (which must be non-null; any previous value is
+   replaced). Computing the *net* change by diffing (rather than recording
+   individual statement effects) makes a declaration like
+   ExcludeAgainstAll({g}).AllowAgainstAll({g}) correctly produce an empty
+   delta. Cost is O(|marks|), which is O(#marked geometries), not O(#filtered
+   pairs). */
+  static void DiffMarks(const std::unordered_set<GeometryId>& before,
+                        const FilterState& state, MarkDelta* mark_delta);
 
   /* Applies the given declaration (using the extract_ids callback) to `state`.
    Used by the public Apply(). */

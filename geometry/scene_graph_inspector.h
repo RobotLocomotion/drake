@@ -446,7 +446,11 @@ class SceneGraphInspector {
   const std::optional<Obb>& GetObbInGeometryFrame(GeometryId geometry_id) const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and
-   `geometry_id2`, define a collision pair that has been filtered out.
+   `geometry_id2`, define a collision pair that has been filtered out. A pair
+   is filtered if it was excluded pairwise or if either geometry carries an
+   "excluded against all" mark (see
+   CollisionFilterDeclaration::ExcludeAgainstAll()) -- the latter holds even
+   for geometries registered after the mark was applied.
    @throws std::exception if either id does not map to a registered geometry
                           or if any of the geometries do not have a proximity
                           role.  */

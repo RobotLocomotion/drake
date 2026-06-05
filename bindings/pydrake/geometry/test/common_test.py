@@ -60,6 +60,16 @@ class TestGeometryCore(unittest.TestCase):
                 geometry_set=geometries
             )
         )
+        dut.Apply(
+            declaration=mut.CollisionFilterDeclaration().ExcludeAgainstAll(
+                geometry_set=geometries
+            )
+        )
+        dut.Apply(
+            declaration=mut.CollisionFilterDeclaration().AllowAgainstAll(
+                geometry_set=geometries
+            )
+        )
 
         id = dut.ApplyTransient(
             declaration=mut.CollisionFilterDeclaration().ExcludeWithin(

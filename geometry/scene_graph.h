@@ -1050,6 +1050,15 @@ class SceneGraph final : public systems::LeafSystem<T> {
    deformable geometries automatically. Users can add filters to deformable
    geometries as they require after registration.
 
+   To (temporarily) exclude a geometry from *all* proximity queries -- e.g., a
+   "sleeping" or locked body -- prefer
+   CollisionFilterDeclaration::ExcludeAgainstAll() over enumerating pairs with
+   ExcludeBetween(). The against-all form also covers geometries registered
+   *after* the declaration is applied, costs O(1) instead of O(N) pairs, and
+   lets %SceneGraph exclude the geometry from broadphase culling structures
+   entirely. Hand-rolled pairwise equivalents remain correct but receive no
+   such optimization.
+
    Generally, it should be considered a bad practice to hang onto the instance
    of CollisionFilterManager returned by collision_filter_manager(). It is not
    immediately clear whether a particular CollisionFilterManager instance

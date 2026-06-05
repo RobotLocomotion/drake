@@ -12,12 +12,17 @@ CollisionFilter::CollisionFilter() = default;
 
 void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
                             const CollisionFilter::ExtractIds& extract_ids,
-                            bool is_invariant) {
+                            bool is_invariant, MarkDelta* mark_delta) {
   if (has_transient_history()) {
     throw std::runtime_error(
         "You cannot attempt to modify the persistent collision filter "
         "configuration when there are active, transient filter declarations");
   }
+  /* The marks-before snapshot is only needed when the caller wants the delta.
+   We diff against the composite filter_state_ (never persistent_base_):
+   queries read only the composite, so it defines the observable change. */
+  std::unordered_set<GeometryId> marks_before;
+  if (mark_delta != nullptr) marks_before = filter_state_.against_all;
   ApplyDeclarationToState(declaration, extract_ids, is_invariant,
                           &persistent_base_);
   /* Keep the cached composite and the persistent base in sync. We *could*
@@ -26,11 +31,12 @@ void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
    wholesale copy. */
   ApplyDeclarationToState(declaration, extract_ids, is_invariant,
                           &filter_state_);
+  if (mark_delta != nullptr) DiffMarks(marks_before, filter_state_, mark_delta);
 }
 
 FilterId CollisionFilter::ApplyTransient(
     const CollisionFilterDeclaration& declaration,
-    const CollisionFilter::ExtractIds& extract_ids) {
+    const CollisionFilter::ExtractIds& extract_ids, MarkDelta* mark_delta) {
   /* Transient declarations are never invariant. */
   using Statement = CollisionFilterDeclaration::Statement;
   using Op = CollisionFilterDeclaration::StatementOp;
@@ -61,7 +67,10 @@ FilterId CollisionFilter::ApplyTransient(
   StateDelta delta{std::move(resolved), new_id};
 
   /* Apply to the cached composite first, then store the delta. */
+  std::unordered_set<GeometryId> marks_before;
+  if (mark_delta != nullptr) marks_before = filter_state_.against_all;
   ApplyStatements(delta, &filter_state_);
+  if (mark_delta != nullptr) DiffMarks(marks_before, filter_state_, mark_delta);
   transient_history_.push_back(std::move(delta));
   return new_id;
 }
@@ -73,17 +82,24 @@ bool CollisionFilter::IsActive(FilterId id) const {
   return false;
 }
 
-bool CollisionFilter::RemoveDeclaration(FilterId id) {
+bool CollisionFilter::RemoveDeclaration(FilterId id, MarkDelta* mark_delta) {
+  if (mark_delta != nullptr) *mark_delta = {};
   for (auto it = transient_history_.begin(); it != transient_history_.end();
        ++it) {
     if (it->id != id) continue;
 
     /* Remove the target delta, then rebuild the composite from the persistent
      base plus the remaining transient deltas. Because multiple deltas can
-     touch the same pair, we cannot simply invert the removed delta in place --
-     we must replay from scratch to get the correct result. */
+     touch the same pair (or the same mark), we cannot simply invert the
+     removed delta in place -- we must replay from scratch to get the correct
+     result. */
+    std::unordered_set<GeometryId> marks_before;
+    if (mark_delta != nullptr) marks_before = filter_state_.against_all;
     transient_history_.erase(it);
     RebuildComposite();
+    if (mark_delta != nullptr) {
+      DiffMarks(marks_before, filter_state_, mark_delta);
+    }
     return true;
   }
   return false;
@@ -103,7 +119,10 @@ void CollisionFilter::AddGeometry(GeometryId new_id) {
   geometries_.insert(new_id);
   /* No pair entries are needed: the sparse representation stores only filtered
    pairs, and new geometry is unfiltered by default. Transient deltas store
-   only resolved GeometryId sets, so they also require no update. */
+   only resolved GeometryId sets, so they also require no update. Existing
+   "excluded against all" marks need no update either -- that is the point of
+   their open-world semantics: CanCollideWith(marked, new_id) is false by
+   construction, with no per-pair bookkeeping. */
 }
 
 void CollisionFilter::RemoveGeometry(GeometryId remove_id) {
@@ -130,6 +149,14 @@ void CollisionFilter::RemoveGeometry(GeometryId remove_id) {
 
 bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
   if (id_A == id_B) return false;
+  /* Marks first: an "excluded against all" geometry collides with nothing,
+   including geometries registered after the mark was applied. This function
+   runs once per broadphase candidate pair, so the empty() guard keeps the
+   common (mark-free) case at a single branch. */
+  const std::unordered_set<GeometryId>& marks = filter_state_.against_all;
+  if (!marks.empty() && (marks.contains(id_A) || marks.contains(id_B))) {
+    return false;
+  }
   const PairKey key(id_A, id_B);
   return !filter_state_.filtered.contains(key) &&
          !filter_state_.invariant.contains(key);
@@ -138,6 +165,12 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
 bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
   if (this == &other) return true;
   if (geometries_ != other.geometries_) return false;
+  /* Marks have open-world semantics (they also block pairs with geometries
+   added in the future), so two filters that agree on every *current* pair but
+   differ on marks are not equivalent. */
+  if (filter_state_.against_all != other.filter_state_.against_all) {
+    return false;
+  }
   /* Two filters are equal iff CanCollideWith() agrees on every pair. A pair is
    blocked iff it is in filtered OR invariant, so we check that every blocked
    pair in either filter is also blocked in the other. */
@@ -162,7 +195,7 @@ bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
 CollisionFilter CollisionFilter::MakeClearCopy() const {
   CollisionFilter copy;
   copy.geometries_ = geometries_;
-  /* filtered and invariant sets are intentionally left empty. */
+  /* filtered, invariant, and against_all sets are intentionally left empty. */
   return copy;
 }
 
@@ -203,6 +236,21 @@ void CollisionFilter::RemovePairsFor(GeometryId id, FilterState* state) {
   };
   std::erase_if(state->filtered, pair_has_id);
   std::erase_if(state->invariant, pair_has_id);
+  state->against_all.erase(id);
+}
+
+void CollisionFilter::DiffMarks(const std::unordered_set<GeometryId>& before,
+                                const FilterState& state,
+                                MarkDelta* mark_delta) {
+  DRAKE_DEMAND(mark_delta != nullptr);
+  *mark_delta = {};
+  const std::unordered_set<GeometryId>& after = state.against_all;
+  for (GeometryId id : after) {
+    if (!before.contains(id)) mark_delta->marked.push_back(id);
+  }
+  for (GeometryId id : before) {
+    if (!after.contains(id)) mark_delta->unmarked.push_back(id);
+  }
 }
 
 void CollisionFilter::ApplyStatement(const ResolvedStatement& statement,
@@ -222,6 +270,14 @@ void CollisionFilter::ApplyStatement(const ResolvedStatement& statement,
       break;
     case Op::kAllowWithin:
       RemovePairsBetween(statement.set_A, statement.set_A, state);
+      break;
+    case Op::kExcludeAgainstAll:
+      state->against_all.insert(statement.set_A.begin(), statement.set_A.end());
+      break;
+    case Op::kAllowAgainstAll:
+      for (GeometryId id : statement.set_A) {
+        state->against_all.erase(id);
+      }
       break;
   }
 }
@@ -267,6 +323,18 @@ void CollisionFilter::ApplyDeclarationToState(
       case Op::kAllowWithin:
         DRAKE_DEMAND(!is_invariant);
         RemovePairsBetween(ids_A, ids_A, state);
+        break;
+      case Op::kExcludeAgainstAll:
+        /* Marks are never invariant; SceneGraph's internally-generated
+         invariant declarations are purely pairwise. */
+        DRAKE_DEMAND(!is_invariant);
+        state->against_all.insert(ids_A.begin(), ids_A.end());
+        break;
+      case Op::kAllowAgainstAll:
+        DRAKE_DEMAND(!is_invariant);
+        for (GeometryId id : ids_A) {
+          state->against_all.erase(id);
+        }
         break;
     }
   }

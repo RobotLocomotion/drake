@@ -146,6 +146,50 @@ class CollisionFilterDeclaration {
     return *this;
   }
 
+  /** Excludes every pair that includes a geometry in `geometry_set` from
+   proximity evaluation, robustly with respect to future geometry
+   registration. Each geometry `g` in `geometry_set` is added to the
+   "excluded against all" set `Mₚ` (see CollisionFilterManager), updating the
+   candidate pair set `C ← C - {(g, x) : g ∈ Mₚ, x ∈ Gₚ, x ≠ g}`.
+
+   Unlike ExcludeBetween() and ExcludeWithin() (whose effects are fixed to
+   the pairs implied by the geometries registered when the declaration is
+   applied), the subtraction is evaluated against the *live* set of registered
+   geometries `Gₚ`: a geometry registered *after* this declaration is applied
+   is still excluded against `g`, for as long as `g` remains in `Mₚ`. This is
+   the recommended way to (temporarily) remove a geometry from all proximity
+   queries -- e.g., for a "sleeping" or locked body -- and is cheaper than
+   `ExcludeBetween(geometry_set, everything)`, which materializes O(N) pairs
+   and silently fails to cover geometries registered later.
+
+   The mark and pairwise filters are independent: AllowBetween() and
+   AllowWithin() do not remove a mark. Remove the mark with AllowAgainstAll()
+   (or, for a transient declaration, by removing the declaration). */
+  CollisionFilterDeclaration& ExcludeAgainstAll(GeometrySet geometry_set) {
+    statements_.emplace_back(kExcludeAgainstAll, std::move(geometry_set),
+                             GeometrySet{});
+    return *this;
+  }
+
+  //@}
+
+  /** @name  Clearing "excluded against all" marks
+
+   See ExcludeAgainstAll() for the meaning of the mark set `Mₚ`. */
+  //@{
+
+  /** Removes the "excluded against all" mark (see ExcludeAgainstAll()) from
+   each geometry in `geometry_set`; this statement only clears marks -- it
+   does *not* add any pair to the candidate pair set C. Pairs involving an
+   unmarked geometry are still subject to all pairwise filters (`Fₚ`, `Iₚ`,
+   and the `Aₚ × Aₚ` invariant), exactly as if the geometry had never been
+   marked. Unmarking a geometry that is not marked is a no-op. */
+  CollisionFilterDeclaration& AllowAgainstAll(GeometrySet geometry_set) {
+    statements_.emplace_back(kAllowAgainstAll, std::move(geometry_set),
+                             GeometrySet{});
+    return *this;
+  }
+
   //@}
 
  private:
@@ -157,7 +201,9 @@ class CollisionFilterDeclaration {
     kAllowBetween,
     kAllowWithin,
     kExcludeBetween,
-    kExcludeWithin
+    kExcludeWithin,
+    kExcludeAgainstAll,
+    kAllowAgainstAll
   };
 
   // The record of a single statement.
