@@ -114,7 +114,7 @@ inline py::object GetPyParamScalarImpl(
 }
 
 // Gets Python type for a C++ vector that is not registered using
-// NB_MAKE_OPAQUE.
+// {PYBIND11,NB}_MAKE_OPAQUE.
 template <typename T>
 inline py::object GetPyParamScalarImpl(type_pack<std::vector<T>> = {}) {
   // Get inner type for validation.

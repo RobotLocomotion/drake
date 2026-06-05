@@ -387,6 +387,7 @@ bool_flag(
 
 # When set to 'pybind11', uses pybind11 to provide pydrake bindings.
 # When set to 'nanobind', uses nanobind to provide pydrake bindings.
+# (Support for 'nanobind' is currently experimental / unstable.)
 string_flag(
     name = "python_binder",
     build_setting_default = "nanobind",

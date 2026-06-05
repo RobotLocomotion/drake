@@ -8,7 +8,7 @@ import unittest
 
 import numpy as np
 
-# from pydrake.autodiffutils import AutoDiffXd  # XXX porting
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 
@@ -204,11 +204,10 @@ class TestCommon(unittest.TestCase):
             distribution=mut.RandomDistribution.kGaussian,
             x=np.array([0.5, 1.0]),
         )
-        # XXX porting needs autodiff as dtype support.
-        # mut.CalcProbabilityDensity(
-        #     distribution=mut.RandomDistribution.kGaussian,
-        #     x=np.array([AutoDiffXd(1), AutoDiffXd(2)]),
-        # )
+        mut.CalcProbabilityDensity(
+            distribution=mut.RandomDistribution.kGaussian,
+            x=np.array([AutoDiffXd(1), AutoDiffXd(2)]),
+        )
 
     def test_assert_is_armed(self):
         self.assertIsInstance(mut.kDrakeAssertIsArmed, bool)
