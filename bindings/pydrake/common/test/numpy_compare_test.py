@@ -4,11 +4,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.symbolic import (
-    # Expression,  # XXX porting
-    Formula,
-    Variable,
-)
+from pydrake.symbolic import Expression, Formula, Variable
 
 
 class Custom:
@@ -168,14 +164,7 @@ class TestNumpyCompareSimple(unittest.TestCase):
             T_list_nonsymbolic.append(T)
 
         decorated_all(1)
-        self.assertEqual(
-            T_list_all,
-            [
-                float,
-                # AutoDiffXd,  # XXX porting
-                # Expression,  # XXX porting
-            ],
-        )
+        self.assertEqual(T_list_all, [float, AutoDiffXd, Expression])
 
         decorated_nonsymbolic(2)
         self.assertEqual(T_list_nonsymbolic, [float, AutoDiffXd])

@@ -177,20 +177,11 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def(
             "multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            py::arg("other"), "RigidTransform multiplication")
+            py::arg("other").noconvert(), "RigidTransform multiplication")
         .def(
             "multiply",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
-            },
-            py::arg("position"), "Position vector multiplication")
-        .def(
-            "multiply",
-            [](const Class& self, const py::list position) {
-              DRAKE_THROW_UNLESS(position.size() == 3);
-              return self * Vector3<T>{py::cast<T>(position[0]),
-                                py::cast<T>(position[1]),
-                                py::cast<T>(position[2])};
             },
             py::arg("position"), "Position vector multiplication")
         .def(
