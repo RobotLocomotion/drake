@@ -439,17 +439,6 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
               *self = update;
             },
             py::arg("axis"))
-        .def(
-            "set_axis",
-            [](Class* self, py::list axis) {
-              DRAKE_THROW_UNLESS(axis.size() == 3);
-              Class update(self->angle(),
-                  Vector3<T>{py::cast<T>(axis[0]), py::cast<T>(axis[1]),
-                      py::cast<T>(axis[2])});
-              CheckAngleAxis(update);
-              *self = update;
-            },
-            py::arg("axis"))
         .def("rotation",
             [](const Class* self) { return self->toRotationMatrix(); })
         .def(
