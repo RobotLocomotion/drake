@@ -155,6 +155,36 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   contact that are not coupled to one another). */
   void set_parallelism(Parallelism parallelism) { parallelism_ = parallelism; }
 
+  /** DIAGNOSTIC (uncommitted): one recorded Hessian condition number. With
+  islands enabled there is one record per island per step; with islands disabled
+  there is one record (the full Hessian) per step. */
+  struct HessianConditioningRecord {
+    double time{};      // Simulation time at the start of the step [s].
+    int island{};       // Island index (0 for the full, no-island solve).
+    int num_islands{};  // Number of islands this step (1 if no islands).
+    int num_dofs{};     // Size of this Hessian block.
+    double condition_number{};  // λ_max / λ_min of the (SPD) Hessian.
+  };
+
+  /** DIAGNOSTIC (uncommitted): enables/disables recording per-island Hessian
+  condition numbers at each fixed-step solve. Off by default. Only active in
+  fixed-step mode. See hessian_conditioning_records(). */
+  void set_record_hessian_conditioning(bool on) {
+    record_hessian_conditioning_ = on;
+  }
+
+  /** DIAGNOSTIC (uncommitted): the recorded Hessian condition numbers, in solve
+  order. See set_record_hessian_conditioning(). */
+  const std::vector<HessianConditioningRecord>& hessian_conditioning_records()
+      const {
+    return hessian_conditioning_records_;
+  }
+
+  /** DIAGNOSTIC (uncommitted): clears the recorded condition numbers. */
+  void ClearHessianConditioningRecords() {
+    hessian_conditioning_records_.clear();
+  }
+
   bool supports_error_estimation() const final;
 
   int get_error_estimate_order() const final;
@@ -235,6 +265,13 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
+  /* DIAGNOSTIC (uncommitted): if recording is enabled and we are in fixed-step
+  mode, computes and stores the condition number of the (dense) Hessian for each
+  island (or the full Hessian when islands are disabled), evaluated at the
+  just-solved velocities in data_. A no-op unless T == double. */
+  void MaybeRecordHessianConditioning(
+      const contact_solvers::icf::internal::IcfModel<T>& model);
+
   /* Throws if the plant context is not compatible with CENIC. */
   void ValidatePlantContext();
 
@@ -259,6 +296,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /* Parallelism for the convex solver's per-island solves. Defaults to serial
   so behavior is unchanged unless the user opts in via set_parallelism(). */
   Parallelism parallelism_{Parallelism::None()};
+
+  /* DIAGNOSTIC (uncommitted): Hessian condition-number recording. */
+  bool record_hessian_conditioning_{false};
+  std::vector<HessianConditioningRecord> hessian_conditioning_records_;
 
   /* Track whether solves are initialized at the same time as a previous
   rejected step, to enable model (e.g., constraints, geometry) reuse. */

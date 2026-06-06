@@ -19,6 +19,7 @@ simulation time, at the end. */
 
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -123,6 +124,14 @@ DEFINE_bool(
     "--num_threads, in parallel). If false, solve the full problem across all "
     "cliques at once -- the pre-island baseline; --num_threads is then "
     "ignored.");
+
+DEFINE_string(
+    hessian_csv, "",
+    "DIAGNOSTIC (CENIC fixed-step only): if non-empty, record the condition "
+    "number of each island's Hessian at every step and write the results to "
+    "this CSV path. With --use_islands=false a single full Hessian is recorded "
+    "per step (the 'all one island' baseline). Use the companion "
+    "plot_hessian_conditioning.py to compare runs.");
 
 DEFINE_bool(
     meshcat, false,
@@ -244,10 +253,12 @@ int do_main() {
   const bool use_cenic = (FLAGS_time_step == 0.0);
 
   Simulator<double> simulator(*diagram);
+  CenicIntegrator<double>* cenic_integrator = nullptr;
   if (use_cenic) {
     // Continuous plant: integrate with CENIC and its (optional) per-island
     // parallel solver.
     auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    cenic_integrator = &integrator;
     integrator.set_maximum_step_size(FLAGS_max_step_size);
     if (FLAGS_fixed_step) {
       integrator.set_fixed_step_mode(true);
@@ -262,6 +273,10 @@ int do_main() {
     solver_params.print_solver_stats = FLAGS_print_solver_stats;
     solver_params.use_islands = FLAGS_use_islands;
     integrator.SetSolverParameters(solver_params);
+    if (!FLAGS_hessian_csv.empty()) {
+      DRAKE_THROW_UNLESS(FLAGS_fixed_step);  // Recording is fixed-step only.
+      integrator.set_record_hessian_conditioning(true);
+    }
     fmt::print("Integrator: CENIC, {}; islands {}.\n",
                FLAGS_fixed_step
                    ? fmt::format("fixed step ({} s)", FLAGS_max_step_size)
@@ -313,6 +328,20 @@ int do_main() {
   // JSON block. Follow with the measured wall-clock time.
   systems::PrintSimulatorStatistics(simulator);
   fmt::print("\nWall-clock simulation time: {:.4f} s.\n", wall_clock);
+
+  // DIAGNOSTIC: dump recorded Hessian condition numbers, if any.
+  if (cenic_integrator != nullptr && !FLAGS_hessian_csv.empty()) {
+    const auto& records = cenic_integrator->hessian_conditioning_records();
+    std::ofstream out(FLAGS_hessian_csv);
+    out << "time,use_islands,island,num_islands,num_dofs,condition_number\n";
+    for (const auto& r : records) {
+      out << fmt::format("{},{},{},{},{},{}\n", r.time,
+                         FLAGS_use_islands ? 1 : 0, r.island, r.num_islands,
+                         r.num_dofs, r.condition_number);
+    }
+    fmt::print("Wrote {} Hessian conditioning records to {}.\n", records.size(),
+               FLAGS_hessian_csv);
+  }
 
   if (meshcat != nullptr) {
     // Publish the recorded animation; it plays back automatically in the

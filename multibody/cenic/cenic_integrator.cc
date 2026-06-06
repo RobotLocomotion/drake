@@ -1,6 +1,12 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
+#include <limits>
+#include <type_traits>
+
+#include <Eigen/Eigenvalues>
+
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/system_visitor.h"
 
 namespace drake {
@@ -491,6 +497,51 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
 
     // #created_for_root_system: See explicit check above.
     GetMutableSubstateByPath(*x_next, path).SetFromVector(sub_xc_next);
+  }
+
+  // DIAGNOSTIC (uncommitted): record per-island Hessian condition numbers. Done
+  // last, since it overwrites the scratch data_ derived quantities.
+  MaybeRecordHessianConditioning(model);
+}
+
+template <typename T>
+void CenicIntegrator<T>::MaybeRecordHessianConditioning(
+    const contact_solvers::icf::internal::IcfModel<T>& model) {
+  if constexpr (std::is_same_v<T, double>) {
+    if (!record_hessian_conditioning_ || !this->get_fixed_step_mode()) return;
+
+    // Returns λ_max / λ_min of a symmetric positive-definite matrix.
+    auto condition_number = [](const Eigen::MatrixXd& H) -> double {
+      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(H,
+                                                        Eigen::EigenvaluesOnly);
+      const auto& evals = es.eigenvalues();  // ascending
+      const double lo = evals(0);
+      const double hi = evals(evals.size() - 1);
+      return lo > 0.0 ? hi / lo : std::numeric_limits<double>::infinity();
+    };
+
+    const double t = this->get_context().get_time();
+    // Copy: model.CalcData() writes into data_, and v aliases data_.v().
+    const VectorX<double> v = data_.v();
+
+    if (get_solver_parameters().use_islands) {
+      const int num_islands = model.partition().num_islands();
+      for (int i = 0; i < num_islands; ++i) {
+        model.CalcData(v, i, &data_);
+        const Eigen::MatrixXd H =
+            model.MakeHessian(i, data_)->MakeDenseMatrix();
+        hessian_conditioning_records_.push_back({t, i, num_islands,
+                                                 static_cast<int>(H.rows()),
+                                                 condition_number(H)});
+      }
+    } else {
+      model.CalcData(v, &data_);
+      const Eigen::MatrixXd H = model.MakeHessian(data_)->MakeDenseMatrix();
+      hessian_conditioning_records_.push_back(
+          {t, 0, 1, static_cast<int>(H.rows()), condition_number(H)});
+    }
+  } else {
+    unused(model);
   }
 }
 
