@@ -85,6 +85,12 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
+  void CalcSystemJacobianTransposeTimesF_TipToBase(
+      const PositionKinematicsCache<T>&, const std::vector<Vector6<T>>&,
+      std::vector<SpatialForce<T>>*, EigenPtr<VectorX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
   void CalcArticulatedBodyInertiaCache_TipToBase(
       const systems::Context<T>&, const PositionKinematicsCache<T>&,
       const Eigen::Ref<const MatrixUpTo6<T>>&, const SpatialInertia<T>&,

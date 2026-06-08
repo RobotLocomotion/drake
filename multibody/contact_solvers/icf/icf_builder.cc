@@ -91,7 +91,6 @@ void IcfBuilder<T>::UpdateModel(
     DRAKE_DEMAND(params->body_to_clique.empty());
     DRAKE_DEMAND(params->body_is_floating.empty());
     DRAKE_DEMAND(params->clique_sizes.empty());
-    DRAKE_DEMAND(params->clique_start.empty());
     DRAKE_DEMAND(params->reduction.unlocked_dofs.empty());
     DRAKE_DEMAND(params->reduction.per_clique_unlocked_dofs.empty());
 
@@ -116,10 +115,6 @@ void IcfBuilder<T>::UpdateModel(
 
     // Set the sparsity pattern for the dynamics matrix A = M + δt D.
     params->clique_sizes = plant_facts_.clique_sizes;
-    params->clique_start.resize(plant_facts_.clique_sizes.size() + 1);
-    params->clique_start[0] = 0;
-    std::partial_sum(params->clique_sizes.begin(), params->clique_sizes.end(),
-                     params->clique_start.begin() + 1);
 
     DRAKE_DEMAND(params->v0.size() == nv);
     DRAKE_DEMAND(params->M0.size() == nv * nv);
@@ -131,8 +126,6 @@ void IcfBuilder<T>::UpdateModel(
     DRAKE_DEMAND(ssize(params->body_is_floating) == plant_.num_bodies());
     DRAKE_DEMAND(params->clique_sizes.size() ==
                  plant_facts_.clique_sizes.size());
-    DRAKE_DEMAND(params->clique_start.size() ==
-                 plant_facts_.clique_sizes.size() + 1);
     DRAKE_DEMAND(params->reduction.per_clique_unlocked_dofs.size() ==
                  plant_facts_.clique_sizes.size());
   }

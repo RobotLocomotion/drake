@@ -143,8 +143,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                  const T&>(),
             py::arg("Ixx"), py::arg("Iyy"), py::arg("Izz"), py::arg("Ixy"),
             py::arg("Ixz"), py::arg("Iyz"), cls_doc.ctor.doc_6args)
-        .def(py::init([](const RotationalInertia<T>& I) { return Class(I); }),
-            py::arg("I"), cls_doc.ctor.doc_1args)
+        .def(py::init<const RotationalInertia<T>>(), py::arg("I"),
+            cls_doc.ctor.doc_1args)
         .def("SetFromRotationalInertia", &Class::SetFromRotationalInertia,
             py::arg("I"), py::arg("mass"), py_rvp::reference,
             cls_doc.SetFromRotationalInertia.doc)

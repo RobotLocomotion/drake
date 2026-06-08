@@ -240,18 +240,12 @@ void DefineGeometrySet(py::module_ m) {
         .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<GeometryId>(), py::arg("geometry_id"), extra_ctor_doc)
         .def(py::init<FrameId>(), py::arg("frame_id"), extra_ctor_doc)
-        .def(py::init([](std::vector<GeometryId> geometry_ids) {
-          return Class(geometry_ids);
-        }),
+        .def(py::init<const std::vector<GeometryId>&>(),
             py::arg("geometry_ids"), extra_ctor_doc)
-        .def(py::init([](std::vector<FrameId> frame_ids) {
-          return Class(frame_ids);
-        }),
-            py::arg("frame_ids"), extra_ctor_doc)
-        .def(py::init([](std::vector<GeometryId> geometry_ids,
-                          std::vector<FrameId> frame_ids) {
-          return Class(geometry_ids, frame_ids);
-        }),
+        .def(py::init<const std::vector<FrameId>&>(), py::arg("frame_ids"),
+            extra_ctor_doc)
+        .def(py::init<const std::vector<GeometryId>&,
+                 const std::vector<FrameId>&>(),
             py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc)
         .def(
             "Add",

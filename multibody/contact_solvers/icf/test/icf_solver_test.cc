@@ -39,7 +39,6 @@ class IcfSolverTest : public ::testing::Test {
     params->D0 = VectorXd::Constant(nv, 0.1);
     params->k0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
     params->clique_sizes = {6, 6};
-    params->clique_start = {0, 6, nv};
     params->body_is_floating = {0, 0};
     params->body_mass = {0.2, 1.8};
     params->J_WB.Resize(2, 6, 6);
