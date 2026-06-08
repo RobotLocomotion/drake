@@ -25,6 +25,7 @@ from pydrake.systems.analysis import (
 from pydrake.systems.controllers import PidController
 from pydrake.systems.framework import (
     DiagramBuilder,
+    EventStatus,
     LeafSystem,
 )
 from pydrake.trajectories import PiecewisePolynomial
@@ -213,7 +214,7 @@ plant.Finalize()
 if args.visualize:
     meshcat = StartMeshcat()
     vis_config = VisualizationConfig()
-    vis_config.publish_period = 0.1
+    vis_config.publish_period = 1e30
     vis_config.publish_contacts = False
     vis_config.publish_inertia = False
     vis_config.publish_proximity = False
@@ -328,17 +329,30 @@ config = SimulatorConfig()
 if plant.time_step() == 0.0:
     config.integration_scheme = "cenic"
 config.accuracy = 1e-3
-config.max_step_size = 0.01
+config.max_step_size = 0.1
 config.target_realtime_rate = 0.0
-config.use_error_control = False
+config.use_error_control = True
 
 simulator = Simulator(diagram, context)
 ApplySimulatorConfig(config, simulator)
 integrator = simulator.get_mutable_integrator()
 params = integrator.get_solver_parameters()
 params.print_solver_stats = False
-params.use_islands = True
+params.use_islands = False
 integrator.SetSolverParameters(params)
+
+if args.visualize:
+    # Force a publish (and thus a recording frame) once per integration step,
+    # independent of the step size, by forcing a publish from a monitor. The
+    # visualizer's periodic publish is effectively disabled (publish_period set
+    # to 1e30 above) so it does not pin the integrator to small, evenly-spaced
+    # steps that would distort CENIC's step selection and timing.
+    def monitor(root_context):
+        diagram.ForcedPublish(root_context)
+        return EventStatus.Succeeded()
+
+    simulator.set_monitor(monitor)
+
 simulator.Initialize()
 
 if args.visualize:
