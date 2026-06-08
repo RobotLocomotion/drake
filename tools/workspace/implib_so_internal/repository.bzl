@@ -5,9 +5,9 @@ def implib_so_internal_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "yugr/Implib.so",
-        commit = "ae294daac027700835e1fc17e675b4a21bf7d76d",
-        sha256 = "5daeeb662bf5b56b8a35ab581236567480d8e284cf3193c1f9a5a9f037cfe5f9",  # noqa
+        repository = "TaylorSasser/Implib.so",
+        commit = "3a94ebf1b26e021cfa8c2202e4f4c7b31eab8eec",
+        sha256 = "32aba7aed862d34b8b1e5353c2a69479a61b4e88b7e9388c634161827cb16a40",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
