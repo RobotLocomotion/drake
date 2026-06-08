@@ -853,10 +853,12 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def(py::init<const Expression&, const Variables&>(), py::arg("e"),
           py::arg("indeterminates"),
           doc.Polynomial.ctor.doc_2args_e_indeterminates)
-      .def(py::init([](const Expression& e,
-                        const Eigen::Ref<const VectorX<Variable>>& vars) {
-        return Polynomial{e, Variables{vars}};
-      }),
+      .def(
+          "__init__",
+          [](Polynomial* self, const Expression& e,
+              const Eigen::Ref<const VectorX<Variable>>& vars) {
+            new (self) Polynomial{e, Variables{vars}};
+          },
           py::arg("e"), py::arg("indeterminates"),
           doc.Polynomial.ctor.doc_2args_e_indeterminates)
       .def("indeterminates", &Polynomial::indeterminates,

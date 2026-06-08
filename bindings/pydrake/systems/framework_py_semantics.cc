@@ -120,9 +120,12 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   DefClone(&abstract_values);
   abstract_values  // BR
       .def(py::init<>(), doc.AbstractValues.ctor.doc_0args)
-      .def(py::init([](const std::vector<const AbstractValue*>& data) {
-        return std::make_unique<AbstractValues>(CloneVectorOfPointers(data));
-      }),
+      .def(
+          "__init__",
+          [](AbstractValues* self,
+              const std::vector<const AbstractValue*>& data) {
+            new (self) AbstractValues(CloneVectorOfPointers(data));
+          },
           py::arg("data"), doc.AbstractValues.ctor.doc_1args)
       .def("size", &AbstractValues::size, doc.AbstractValues.size.doc)
       .def("get_value", &AbstractValues::get_value, py::arg("index"),
@@ -976,28 +979,38 @@ void DefineParameters(py::module_ m) {
   DefClone(&parameters);
   parameters  // BR
       .def(py::init<>(), doc.Parameters.ctor.doc_0args)
-      .def(py::init([](const std::vector<const BasicVector<T>*>& numeric,
-                        const std::vector<const AbstractValue*>& abstract) {
-        return std::make_unique<Class>(
-            CloneVectorOfPointers(numeric), CloneVectorOfPointers(abstract));
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const std::vector<const BasicVector<T>*>& numeric,
+              const std::vector<const AbstractValue*>& abstract) {
+            new (self) Class(CloneVectorOfPointers(numeric),
+                CloneVectorOfPointers(abstract));
+          },
           py::arg("numeric"), py::arg("abstract"),
           doc.Parameters.ctor.doc_2args_numeric_abstract)
-      .def(py::init([](const std::vector<const BasicVector<T>*>& numeric) {
-        return std::make_unique<Class>(CloneVectorOfPointers(numeric));
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const std::vector<const BasicVector<T>*>& numeric) {
+            new (self) Class(CloneVectorOfPointers(numeric));
+          },
           py::arg("numeric"), doc.Parameters.ctor.doc_1args_numeric)
-      .def(py::init([](const std::vector<const AbstractValue*>& abstract) {
-        return std::make_unique<Class>(CloneVectorOfPointers(abstract));
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const std::vector<const AbstractValue*>& abstract) {
+            new (self) Class(CloneVectorOfPointers(abstract));
+          },
           py::arg("abstract"), doc.Parameters.ctor.doc_1args_abstract)
-      .def(py::init([](const BasicVector<T>& vec) {
-        return std::make_unique<Class>(vec.Clone());
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const BasicVector<T>& vec) {
+            new (self) Class(vec.Clone());
+          },
           py::arg("vec"), doc.Parameters.ctor.doc_1args_vec)
-      .def(py::init([](const AbstractValue& value) {
-        return std::make_unique<Class>(value.Clone());
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const AbstractValue& value) {
+            new (self) Class(value.Clone());
+          },
           py::arg("value"), doc.Parameters.ctor.doc_1args_value)
       .def("num_numeric_parameter_groups", &Class::num_numeric_parameter_groups,
           doc.Parameters.num_numeric_parameter_groups.doc)
@@ -1117,28 +1130,36 @@ void DefineContinuousState(py::module_ m) {
       // In the next pair of overloads, we'll try matching on BasicVector in
       // order to preserve its subtype across cloning. In the subsequent pair
       // of overloads, we'll also allow VectorBase.
-      .def(py::init([](const BasicVector<T>& state) {
-        return std::make_unique<Class>(state.Clone());
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const BasicVector<T>& state) {
+            new (self) Class(state.Clone());
+          },
           py::arg("state"), doc.ContinuousState.ctor.doc_1args_state)
-      .def(py::init([](const BasicVector<T>& state, int num_q, int num_v,
-                        int num_z) {
-        return std::make_unique<Class>(state.Clone(), num_q, num_v, num_z);
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const BasicVector<T>& state, int num_q, int num_v,
+              int num_z) {
+            new (self) Class(state.Clone(), num_q, num_v, num_z);
+          },
           py::arg("state"), py::arg("num_q"), py::arg("num_v"),
           py::arg("num_z"),
           doc.ContinuousState.ctor.doc_4args_state_num_q_num_v_num_z)
-      .def(py::init([](const VectorBase<T>& state) {
-        return std::make_unique<Class>(
-            std::make_unique<BasicVector<T>>(state.CopyToVector()));
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const VectorBase<T>& state) {
+            new (self)
+                Class(std::make_unique<BasicVector<T>>(state.CopyToVector()));
+          },
           py::arg("state"), doc.ContinuousState.ctor.doc_1args_state)
-      .def(py::init(
-               [](const VectorBase<T>& state, int num_q, int num_v, int num_z) {
-                 return std::make_unique<Class>(
-                     std::make_unique<BasicVector<T>>(state.CopyToVector()),
-                     num_q, num_v, num_z);
-               }),
+      .def(
+          "__init__",
+          [](Class* self, const VectorBase<T>& state, int num_q, int num_v,
+              int num_z) {
+            new (self)
+                Class(std::make_unique<BasicVector<T>>(state.CopyToVector()),
+                    num_q, num_v, num_z);
+          },
           py::arg("state"), py::arg("num_q"), py::arg("num_v"),
           py::arg("num_z"),
           doc.ContinuousState.ctor.doc_4args_state_num_q_num_v_num_z)
@@ -1195,13 +1216,17 @@ void DefineDiscreteValues(py::module_ m) {
       m, "DiscreteValues", GetPyParam<T>(), doc.DiscreteValues.doc);
   DefClone(&discrete_values);
   discrete_values
-      .def(py::init([](const BasicVector<T>& datum) {
-        return std::make_unique<Class>(datum.Clone());
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const BasicVector<T>& datum) {
+            new (self) Class(datum.Clone());
+          },
           py::arg("datum"), doc.DiscreteValues.ctor.doc_1args_datum)
-      .def(py::init([](const std::vector<const BasicVector<T>*>& data) {
-        return std::make_unique<Class>(CloneVectorOfPointers(data));
-      }),
+      .def(
+          "__init__",
+          [](Class* self, const std::vector<const BasicVector<T>*>& data) {
+            new (self) Class(CloneVectorOfPointers(data));
+          },
           py::arg("data"), doc.DiscreteValues.ctor.doc_1args_data)
       .def(py::init<>(), doc.DiscreteValues.ctor.doc_0args)
       .def("num_groups", &Class::num_groups, doc.DiscreteValues.num_groups.doc)

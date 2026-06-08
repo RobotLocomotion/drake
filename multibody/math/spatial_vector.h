@@ -199,7 +199,7 @@ class SpatialVector {
   /// Sets all the elements in `this` %SpatialVector to NaN. This is typically
   /// used to quickly detect uninitialized values since NaN will trigger a chain
   /// of invalid computations that can be tracked back to their source.
-  void SetNaN() {
+  void SetNaN() noexcept {
     V_.setConstant(std::numeric_limits<
                    typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
