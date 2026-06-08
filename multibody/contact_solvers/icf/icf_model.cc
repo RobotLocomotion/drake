@@ -440,7 +440,7 @@ T IcfModel<T>::CalcCostAlongLine(
   const VectorX<T>& v = data.v();
   const VectorX<T>& w = search_direction.w;
   for (int cl : partition_.island_cliques(island)) {
-    const int start = params().clique_start[cl];
+    const int start = clique_starts()[cl];
     const int nv = params().clique_sizes[cl];
     v_alpha.segment(start, nv).noalias() =
         v.segment(start, nv) + alpha * w.segment(start, nv);

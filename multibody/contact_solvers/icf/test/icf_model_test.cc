@@ -746,7 +746,7 @@ void CheckIslandEquivalence(const IcfModel<double>& model, const VectorXd& v) {
     const MatrixXd Hi = model.MakeHessian(i, data_isl)->MakeDenseMatrix();
     std::vector<int> idx;
     for (int c : partition.island_cliques(i)) {
-      const int start = model.params().clique_start[c];
+      const int start = model.clique_starts()[c];
       const int size = model.clique_size(c);
       for (int k = 0; k < size; ++k) idx.push_back(start + k);
     }
