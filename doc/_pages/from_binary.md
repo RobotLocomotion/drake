@@ -37,6 +37,7 @@ The most recent release is
 
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-noble.tar.gz)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-noble-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-noble-arm64.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-resolute-amd64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-resolute-amd64.tar.gz)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-resolute-amd64v3.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-resolute-amd64v3.tar.gz)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-resolute-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-resolute-arm64.tar.gz)
 * https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-1.54.0-mac-arm64.tar.gz
@@ -132,6 +133,7 @@ Binary packages are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-arm64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64v3.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-arm64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz
@@ -141,6 +143,7 @@ with date YYYYMMDD preceded by ``0.0.``. For example,
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble-arm64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64v3.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-arm64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-mac-arm64.tar.gz

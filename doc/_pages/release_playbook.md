@@ -121,13 +121,14 @@ the main body of the document:
    1. Open the following Jenkins jobs (e.g., each in its own
       new window, so you can copy-and-paste sha1 and version easily):
       - [Linux x86_64 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-wheel-staging-release/)
-      - [Linux arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm-noble-unprovisioned-gcc-wheel-staging-release/)
-      - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-wheel-staging-release/)
+      - [Linux arm64 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm64-noble-unprovisioned-gcc-wheel-staging-release/)
+      - [macOS arm64 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-wheel-staging-release/)
       - [Noble x86_64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
-      - [Noble arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm-noble-unprovisioned-gcc-cmake-staging-packaging/)
-      - [Resolute x86_64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-resolute-unprovisioned-gcc-cmake-staging-packaging/)
-      - [Resolute arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm-resolute-unprovisioned-gcc-cmake-staging-packaging/)
-      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-cmake-staging-packaging/)
+      - [Noble arm64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm64-noble-unprovisioned-gcc-cmake-staging-packaging/)
+      - [Resolute x86_64-v3 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-resolute-unprovisioned-gcc-cmake-staging-packaging/)
+      - [Resolute x86_64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-amd64v1-resolute-unprovisioned-gcc-cmake-staging-packaging/)
+      - [Resolute arm64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm64-resolute-unprovisioned-gcc-cmake-staging-packaging/)
+      - [macOS arm64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-cmake-staging-packaging/)
    2. In the upper right, click "sign in" (unless you're already signed in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
@@ -168,12 +169,14 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **54** release files from
+      them." and then choose for upload the **60** release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 3: 1 source `.tar.gz` + 2 checksums
-      - 12: 4 linux binary `.tar.gz` + 8 checksums ({noble, resolute} x {amd64, arm64})
+      - 15: 5 linux binary `.tar.gz` + 10 checksums
+        ({noble} x {amd64, arm64} + {resolute} x {amd64, amd64v3, arm64})
       - 3: 1 macOS arm binary `.tar.gz` + 2 checksums
-      - 12: 4 `.deb` + 8 checksums ({noble, resolute} x {amd64, arm64})
+      - 15: 5 `.deb` + 10 checksums
+        ({noble} x {amd64, arm64} + {resolute} x {amd64, amd64v3, arm64})
       - 18: 6 linux `.whl` + 12 checksums ({3.12, 3.13, 3.14} x {x86_64, aarch64})
       - 6: 2 macOS arm `.whl` + 4 checksums ({3.13, 3.14})
       * Note that with `snap` provided Firefox, drag-and-drop from
