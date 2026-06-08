@@ -364,7 +364,8 @@ GTEST_TEST(IcfSolver, NoIslandsMatchesIslands) {
   EXPECT_GE(full_solver.stats().num_iterations, 1);
 
   // Both reach the same minimizer, up to the convergence tolerance.
-  EXPECT_TRUE(CompareMatrices(full_solution, island_solution, 1e-7,
+  EXPECT_TRUE(CompareMatrices(full_solution, island_solution,
+                              kConvergenceTolerance,
                               MatrixCompareType::relative));
 }
 
