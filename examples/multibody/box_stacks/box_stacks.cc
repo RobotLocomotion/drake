@@ -77,6 +77,10 @@ DEFINE_double(
 
 DEFINE_bool(spheres, false, "If true, simulate spheres instead of boxes.");
 
+DEFINE_bool(random_orientations, true,
+            "If true (the default), give each object a random initial "
+            "orientation; if false, leave them axis-aligned (identity).");
+
 DEFINE_bool(hydroelastic, true,
             "If true (the default), use hydroelastic contact; if false, use "
             "point contact.");
@@ -101,6 +105,17 @@ DEFINE_int32(num_stacks, 9,
              "centered on the origin. Each pile is an independent island.");
 
 DEFINE_int32(boxes_per_stack, 10, "Number of objects in each pile.");
+
+DEFINE_int32(
+    big_stack_index, -1,
+    "Index of a single pile (0-based) that should have a different number of "
+    "objects than the others, given by --big_stack_boxes. -1 (the default) "
+    "disables this, so every pile has --boxes_per_stack objects.");
+
+DEFINE_int32(big_stack_boxes, 20,
+             "Number of objects in the pile selected by --big_stack_index. May "
+             "be larger or smaller than --boxes_per_stack. Ignored unless "
+             "--big_stack_index is set to a valid pile index.");
 
 DEFINE_double(stack_spacing, 2.0,
               "Distance between neighboring stacks in the grid [m]. Must be "
@@ -211,7 +226,11 @@ void BuildScene(MultibodyPlant<double>* plant) {
     // A 4-color checkerboard makes neighboring (independent) piles distinct.
     const Vector4d color((i % 2 == 0) ? 0.9 : 0.2, (j % 2 == 0) ? 0.7 : 0.3,
                          0.3, 1.0);
-    for (int b = 0; b < FLAGS_boxes_per_stack; ++b) {
+    // Most piles have --boxes_per_stack objects; one selected pile may instead
+    // have --big_stack_boxes (which can be larger or smaller).
+    const int num_boxes = (k == FLAGS_big_stack_index) ? FLAGS_big_stack_boxes
+                                                       : FLAGS_boxes_per_stack;
+    for (int b = 0; b < num_boxes; ++b) {
       const std::string name = fmt::format("pile{}_body{}", k, b);
       const auto& body = plant->AddRigidBody(name, inertia);
       plant->RegisterCollisionGeometry(body, RigidTransformd(), shape,
@@ -219,7 +238,10 @@ void BuildScene(MultibodyPlant<double>* plant) {
       plant->RegisterVisualGeometry(body, RigidTransformd(), shape,
                                     name + "_visual", color);
       const double z = bounding_radius + b * level_spacing;
-      const RotationMatrixd R = math::UniformlyRandomRotationMatrix(&generator);
+      const RotationMatrixd R =
+          FLAGS_random_orientations
+              ? math::UniformlyRandomRotationMatrix(&generator)
+              : RotationMatrixd::Identity();
       plant->SetDefaultFloatingBaseBodyPose(
           body, RigidTransformd(R, Vector3d(x, y, z)));
     }
@@ -306,11 +328,22 @@ int do_main() {
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
 
+  // Total body count, accounting for a possible odd-sized pile.
+  const bool has_big_stack =
+      FLAGS_big_stack_index >= 0 && FLAGS_big_stack_index < FLAGS_num_stacks;
+  const int num_bodies =
+      FLAGS_num_stacks * FLAGS_boxes_per_stack +
+      (has_big_stack ? FLAGS_big_stack_boxes - FLAGS_boxes_per_stack : 0);
   fmt::print("Simulating {} piles of {} {} ({} bodies) for {} s; {} contact.\n",
              FLAGS_num_stacks, FLAGS_boxes_per_stack,
-             FLAGS_spheres ? "spheres" : "boxes",
-             FLAGS_num_stacks * FLAGS_boxes_per_stack, FLAGS_simulation_time,
+             FLAGS_spheres ? "spheres" : "boxes", num_bodies,
+             FLAGS_simulation_time,
              FLAGS_hydroelastic ? "hydroelastic" : "point");
+  if (has_big_stack) {
+    fmt::print("  (pile {} has {} objects instead of {}.)\n",
+               FLAGS_big_stack_index, FLAGS_big_stack_boxes,
+               FLAGS_boxes_per_stack);
+  }
 
   // Record the trajectory into a Meshcat animation so it can be replayed at a
   // natural speed after the (possibly much faster than real-time) simulation.
