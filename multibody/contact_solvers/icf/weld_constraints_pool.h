@@ -127,6 +127,12 @@ class WeldConstraintsPool {
   const std::vector<std::pair<int, int>>& body_pairs() const {
     return body_pairs_;
   }
+  const EigenPool<Vector3<T>>& p_AP_W() const { return p_AP_W_; }
+  const EigenPool<Vector3<T>>& p_BQ_W() const { return p_BQ_W_; }
+  const EigenPool<Vector3<T>>& p_PoQo_W() const { return p_PoQo_W_; }
+  const EigenPool<Vector6<T>>& g0() const { return g0_; }
+  const EigenPool<Vector6<T>>& R() const { return R_; }
+  int hessian_blocks_size() const { return ssize(hessian_blocks_); }
 
  private:
   const IcfModel<T>* const model_;  // The parent model.
@@ -140,13 +146,13 @@ class WeldConstraintsPool {
   EigenPool<Vector3<T>> p_BQ_W_;    // Position of Q in B, expressed in W.
   EigenPool<Vector3<T>> p_PoQo_W_;  // Relative translation, expressed in W.
 
-  std::vector<Vector6<T>> g0_;  // Constraint function at start of step.
+  EigenPool<Vector6<T>> g0_;  // Constraint function at start of step.
 
   // Near-rigid regularization per constraint.
   // R depends on the current time step δt and is computed in
   // PrecomputeHessianBlocks(), which must be called whenever δt changes.
   // R is a diagonal 6×6 regularization matrix: R = diag(Rᵣ, Rₜ).
-  std::vector<Vector6<T>> R_;  // The diagonal regularization matrix.
+  EigenPool<Vector6<T>> R_;  // The diagonal regularization matrix.
 
   // TODO(sherm1) Consider whether this should be using EigenPools to
   //  reduce memory use.
