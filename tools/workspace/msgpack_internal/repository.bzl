@@ -6,11 +6,10 @@ def msgpack_internal_repository(
     github_archive(
         name = name,
         repository = "msgpack/msgpack-c",
-        commit = "cpp-7.0.0",
-        sha256 = "070881ebea9208cf7e731fd5a46a11404025b2f260ab9527e32dfcb7c689fbfc",  # noqa
+        commit = "cpp-8.0.0",
+        sha256 = "f634fb7052da4478096f2a02dfb6d91174e5836b317afb006375249ccb086aa8",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/upstream/type_traits_remove_volatile.patch",
             ":patches/vendor.patch",
         ],
         mirrors = mirrors,
