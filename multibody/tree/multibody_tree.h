@@ -966,7 +966,15 @@ class MultibodyTree {
       std::optional<ModelInstanceIndex> model_instance = {});
 
   // See MultibodyPlant API.
+  void SetCombineWeldedBodies(
+      bool combine, std::optional<ModelInstanceIndex> model_instance = {});
+
+  // See MultibodyPlant API.
   BaseBodyJointType GetBaseBodyJointType(
+      std::optional<ModelInstanceIndex> model_instance = {}) const;
+
+  // See MultibodyPlant API.
+  bool GetCombineWeldedBodies(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
   // Finalize() must be called after all user-defined elements in the plant
@@ -1403,6 +1411,8 @@ class MultibodyTree {
   void CalcJointDamping(const systems::Context<T>& context,
                         VectorX<T>* joint_damping) const;
 
+  // After all frame pose and mass property parameters have values, calculates
+  // and caches the state-independent results in the FrameBodyPoseCache.
   void CalcFrameBodyPoses(const systems::Context<T>& context,
                           FrameBodyPoseCache<T>* frame_body_poses) const;
 
