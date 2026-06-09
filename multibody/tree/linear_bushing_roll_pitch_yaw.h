@@ -189,7 +189,7 @@ class RigidBody;
 /// X-Y-Z rotation with roll-pitch-yaw angles [q₀ q₁ q₂] is equivalent to a
 /// Body-fixed (intrinsic) Z-Y-X rotation by yaw-pitch-roll angles [q₂ q₁ q₀].
 /// In the context of "gimbal torques", the Body-fixed Z-Y-X rotation sequence
-/// with angles [q₂ q₁ q₀] is physical meaningful as it produces torques
+/// with angles [q₂ q₁ q₀] is physically meaningful as it produces torques
 /// associated with successive frames in a gimbal as τ₂ 𝐀𝐳, τ₁ 𝐏𝐲, τ₀ 𝐂𝐱,
 /// where each of 𝐀𝐳, 𝐏𝐲, 𝐂𝐱 are unit vectors associated with a frame in the
 /// yaw-pitch-roll rotation sequence and 𝐏𝐲 is a unit vector of the "pitch"

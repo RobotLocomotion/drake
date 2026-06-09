@@ -1759,10 +1759,32 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] model_instance (optional) the index of the model instance to
   ///   which `joint_type` is to be applied.
   /// @throws std::exception if called after Finalize().
-  /// @see GetBaseBodyJointType(), Finalize()
+  /// @see GetBaseBodyJointType(), SetCombineWeldedBodies(), Finalize()
   void SetBaseBodyJointType(
       BaseBodyJointType joint_type,
       std::optional<ModelInstanceIndex> model_instance = {});
+
+  /// (Internal use only for now) Controls whether welded-together RigidBody
+  /// (Link) elements are to be combined into a single composite mobilized
+  /// body in the generated model. If so, those Weld joints will not be modeled
+  /// (i.e. will have no corresponding mobilizer) in the post-Finalize()
+  /// model and there will be fewer mobilized bodies and modeled joints in the
+  /// generated model than in the user's specification of links and joints.
+  /// Results for the original RigidBody (Link) elements can still be obtained
+  /// by name or BodyIndex, but no results (in particular, no reaction forces)
+  /// are available for the unmodeled Weld joints.
+  ///
+  /// You can set this flag globally or on a per-model instance basis. If
+  /// there is a setting for a joint's model instance then that setting is
+  /// used; otherwise, the global setting is used.
+  ///
+  /// The default global setting for Drake is _not_ to combine welded RigidBody
+  /// elements.
+  ///
+  /// @throws std::exception if called after Finalize().
+  /// @see GetCombineWeldedBodies(), SetBaseBodyJointType(), Finalize()
+  void SetCombineWeldedBodies(
+      bool combine, std::optional<ModelInstanceIndex> model_instance = {});
 
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
@@ -1772,8 +1794,21 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// This can be called any time -- pre-finalize it returns the joint type
   /// that will be used by Finalize(); post-finalize it returns the joint type
   /// that _was_ used if there were any base bodies in need of a joint.
-  /// @see SetBaseBodyJointType(), Finalize()
+  /// @see SetBaseBodyJointType(), GetCombineWeldedBodies(), Finalize()
   BaseBodyJointType GetBaseBodyJointType(
+      std::optional<ModelInstanceIndex> model_instance = {}) const;
+
+  /// (Internal use only for now) Returns the currently-set choice for whether
+  /// welded-together bodies should be combined or modeled separately, either
+  /// for the global setting or for a specific model instance. If a model
+  /// instance is provided for which no explicit choice was made, the global
+  /// setting is returned. Any model instance index is acceptable here; if
+  /// not recognized then the global setting is returned. This can be called
+  /// any time -- pre-finalize it returns the setting that will be used by
+  /// Finalize(); post-finalize it returns the setting that _was_ used if
+  /// there were any welded-together bodies.
+  /// @see SetCombineWeldedBodies(), GetBaseBodyJointType(), Finalize()
+  bool GetCombineWeldedBodies(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
   /// This method must be called after all elements in the model (joints,
@@ -4142,12 +4177,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// where `M(q)` is the model's mass matrix (including rigid body mass
   /// properties and @ref reflected_inertia "reflected inertias"), `C(q, v)v` is
   /// the bias term for Coriolis and gyroscopic effects and `tau_app` consists
-  /// of a vector applied generalized forces. The last term is a summation over
-  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
-  /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
-  /// velocity Jacobian in W with respect to generalized velocities v).
-  /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
+  /// of a vector of applied generalized forces. The last term is a summation
+  /// over all bodies in the model where `Fapp_Bo_W` is an applied spatial
+  /// force on body B at `Bo` which gets projected into the space of
+  /// generalized forces with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB`
+  /// is B's spatial velocity Jacobian in W with respect to generalized
+  /// velocities v). Note: B's spatial velocity in W can be written as `V_WB
+  /// = Jv_V_WB * v`.
   ///
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
