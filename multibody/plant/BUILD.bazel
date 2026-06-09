@@ -459,6 +459,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "composite_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "compliant_contact_manager_scalar_conversion_test",
     deps = [
         ":plant",
