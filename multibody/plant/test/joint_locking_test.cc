@@ -411,10 +411,6 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
 // accelerations, velocities and positions match to a given accuracy at each
 // time step.
 TEST_P(TrajectoryTest, CompareWeldAndLocked) {
-  if (!GetParam().solver.has_value()) {
-    GTEST_SKIP() << "CENIC joint locking not supported; see #23764.";
-  }
-
   // Allow 2 digits of precision loss to account for roundoff differences among
   // the various code paths. This value was determined empirically by observing
   // the maximum error among the trajectories.
