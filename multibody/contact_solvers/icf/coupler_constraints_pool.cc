@@ -173,6 +173,13 @@ void CouplerConstraintsPool<T>::CalcCostAlongLine(
   }
 }
 
+template <typename T>
+void CouplerConstraintsPool<T>::ReduceInto(const ReducedMapping&,
+                                           CouplerConstraintsPool<T>*) const {
+  // TODO(#23764): implement.
+  DRAKE_THROW_UNLESS(num_constraints() == 0);
+}
+
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers

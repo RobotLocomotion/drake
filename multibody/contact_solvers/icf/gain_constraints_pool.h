@@ -121,7 +121,7 @@ class GainConstraintsPool {
                  into. The result of `model()` is assumed to be valid and
                  remains unchanged; all the rest of the object is rewritten.
 
-  @pre reduced_pool != nullptr  */
+  @pre reduced_pool != nullptr.  */
   void ReduceInto(const ReducedMapping& mapping,
                   GainConstraintsPool<T>* reduced_pool) const;
 

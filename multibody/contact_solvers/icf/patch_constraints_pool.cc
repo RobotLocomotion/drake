@@ -543,6 +543,13 @@ void PatchConstraintsPool<T>::CalcCostAlongLine(
 }
 
 template <typename T>
+void PatchConstraintsPool<T>::ReduceInto(const ReducedMapping&,
+                                         PatchConstraintsPool<T>*) const {
+  // TODO(#23764): implement.
+  DRAKE_THROW_UNLESS(num_constraints() == 0);
+}
+
+template <typename T>
 T PatchConstraintsPool<T>::CalcLaggedHuntCrossleyModel(
     int p, int k, const Vector3<T>& v_AcBc_W, Vector3<T>* gamma_Bc_W,
     Matrix3<T>* G) const {
