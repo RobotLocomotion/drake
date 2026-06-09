@@ -8,6 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
@@ -65,8 +66,16 @@ class PatchConstraintsPool {
 
   ~PatchConstraintsPool();
 
-  /* Returns a reference to the parent model. */
+  /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
+  int num_constraints() const { return num_patches(); }
+  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateHessian(
+      const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+  void ReduceInto(const ReducedMapping& mapping,
+                  PatchConstraintsPool<T>* reduced_pool) const;
 
   /* Returns the number of patches (pairs of contacting bodies) in the pool. */
   int num_patches() const { return ssize(num_pairs_); }
@@ -84,10 +93,6 @@ class PatchConstraintsPool {
 
   /* Returns the total number of pairs across all patches. */
   int total_num_pairs() const { return ssize(fe0_); }
-
-  /* Returns the number of constraints in the pool. We introduce one constraint
-  for each patch. */
-  int num_constraints() const { return num_patches(); }
 
   /* Sets the stiction tolerance used for friction regularization.
 
@@ -149,17 +154,6 @@ class PatchConstraintsPool {
   void CalcData(const EigenPool<Vector6<T>>& V_WB,
                 PatchConstraintsDataPool<T>* patch_data) const;
 
-  /* Adds the gradient contribution of the patch constraints, ∇ℓ = −Jᵀ⋅γ, to the
-  overall gradient. */
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-
-  /* Adds the Hessian contribution of the patch constraints to the overall
-  Hessian. */
-  void AccumulateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
-          hessian) const;
-
   /* Computes the first and second derivatives of the constraint cost
   ℓ̃(α) = ℓ(v + α⋅w).
 
@@ -173,19 +167,6 @@ class PatchConstraintsPool {
                          const EigenPool<Vector6<T>>& U_WB_pool,
                          EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
                          T* d2cost) const;
-
-  /* Makes a "reduced" patch constraints pool in `reduced_pool`, guided by the
-  `mapping`.
-
-  @param mapping the mapping computed by model().ReduceInto(), or equivalent.
-
-  @param[in,out] reduced_pool the pool to write the reduced constraints
-                 into. The result of `model()` is assumed to be valid and
-                 remains unchanged; all the rest of the object is rewritten.
-
-  @pre reduced_pool != nullptr.  */
-  void ReduceInto(const ReducedMapping& mapping,
-                  PatchConstraintsPool<T>* reduced_pool) const;
 
   /* Testing only access. */
   const std::vector<std::pair<int, int>>& bodies() { return bodies_; }
@@ -270,6 +251,7 @@ class PatchConstraintsPool {
   // velocity of this pair at the previous time step.
   std::vector<T> net_friction_;
 };
+static_assert(IsAbstractConstraintsPool<PatchConstraintsPool>);
 
 }  // namespace internal
 }  // namespace icf

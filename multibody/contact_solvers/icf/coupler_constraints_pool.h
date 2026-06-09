@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
@@ -44,11 +45,16 @@ class CouplerConstraintsPool {
 
   ~CouplerConstraintsPool();
 
-  /* Returns a reference to the parent model. */
+  /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
-
-  /* Returns the total number of constraints stored in this pool. */
   int num_constraints() const { return constraint_to_clique_.size(); }
+  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateHessian(
+      const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+  void ReduceInto(const ReducedMapping& mapping,
+                  CouplerConstraintsPool<T>* reduced_pool) const;
 
   /* Resizes the constraints pool to store the given number of constraints.
 
@@ -80,16 +86,6 @@ class CouplerConstraintsPool {
   void CalcData(const VectorX<T>& v,
                 CouplerConstraintsDataPool<T>* coupler_data) const;
 
-  /* Adds the gradient contribution of this constraint, ∇ℓ(v) = −γ, to the
-  model-wide gradient. */
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-
-  /* Adds the contribution of this constraint to the model-wide Hessian. */
-  void AccumulateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
-          hessian) const;
-
   /* Computes the first and second derivatives of the constraint cost
   ℓ̃ (α) = ℓ(v + α⋅w).
 
@@ -101,19 +97,6 @@ class CouplerConstraintsPool {
   TODO(vincekurtz): factor out common documentation among constraints. */
   void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                          const VectorX<T>& w, T* dcost, T* d2cost) const;
-
-  /* Makes a "reduced" coupler constraints pool in `reduced_pool`, guided by
-  the `mapping`.
-
-  @param mapping the mapping computed by model().ReduceInto(), or equivalent.
-
-  @param[in,out] reduced_pool the pool to write the reduced constraints
-                 into. The result of `model()` is assumed to be valid and
-                 remains unchanged; all the rest of the object is rewritten.
-
-  @pre reduced_pool != nullptr.  */
-  void ReduceInto(const ReducedMapping& mapping,
-                  CouplerConstraintsPool<T>* reduced_pool) const;
 
   /* Testing only access. */
   const std::vector<int>& constraint_to_clique() const {
@@ -138,6 +121,7 @@ class CouplerConstraintsPool {
   std::vector<T> g_hat_;  // The true bias is v̂ = ĝ / δt.
   std::vector<T> R_;
 };
+static_assert(IsAbstractConstraintsPool<CouplerConstraintsPool>);
 
 }  // namespace internal
 }  // namespace icf
