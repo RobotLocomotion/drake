@@ -44,9 +44,8 @@ using Link = RigidBody<T>;
 /// Subclasses derived from %Frame differ in how kinematic calculations are
 /// performed. For example, the angular velocity of a FixedOffsetFrame or
 /// LinkFrame (RigidBodyFrame) is identical to the angular velocity of its
-/// underlying body,
-/// whereas the translational velocity of a FixedOffsetFrame differs from that
-/// of a LinkFrame.
+/// underlying body, whereas the translational velocity of a FixedOffsetFrame
+/// differs from that of a LinkFrame.
 ///
 /// %Frame provides methods for obtaining its current orientation, position,
 /// motion, etc. from a Context passed to those methods.

@@ -17,10 +17,11 @@ template <typename T>
 class MultibodyTreeSystem;
 }  // namespace internal
 
-/// A class to hold a set of forces applied to a MultibodyTree system. Forces
-/// can include generalized forces as well as body spatial forces.
-/// MultibodyPlant::CalcGeneralizedForces() can be used to compute the _total_
-/// generalized force, combining generalized_forces() and body_forces().
+/// Holds a set of forces applied to a MultibodyTree system. Forces
+/// can include generalized forces as well as mobilized body (mobod) spatial
+/// forces. MultibodyPlant::CalcGeneralizedForces() can be used to compute
+/// the _total_ generalized force, combining generalized_forces() with the
+/// generalized force equivalent of the body_forces().
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -30,17 +31,19 @@ class MultibodyForces {
 
   /// Constructs a force object to store a set of forces to be applied to
   /// the multibody model for `plant`. Forces are initialized to zero, meaning
-  /// no forces are applied.
-  /// `plant` must have been already finalized with
+  /// no forces are applied. `plant` must have been already finalized with
   /// MultibodyPlant::Finalize() or this constructor will abort.
   explicit MultibodyForces(const internal::MultibodyTreeSystem<T>& plant);
 
   /// (Advanced) Tree overload.
   explicit MultibodyForces(const internal::MultibodyTree<T>& model);
 
-  /// Number of bodies and number of generalized velocities overload. This
-  /// constructor is useful for constructing the MultibodyForces structure
-  /// before a MultibodyPlant has been constructed.
+  /// (Advanced) Constructs a force object with a given number of mobilized
+  /// bodies and corresponding mobilities (number of generalized velocities).
+  /// This constructor may be useful for constructing the MultibodyForces
+  /// structure before a MultibodyPlant has been constructed. However, this
+  /// must be used cautiously since the number of mobilized bodies and their
+  /// mobilities are not known until after Finalize().
   MultibodyForces(int nb, int nv);
 
   ~MultibodyForces();
@@ -88,13 +91,14 @@ class MultibodyForces {
   bool CheckHasRightSizeForModel(const internal::MultibodyTree<T>& model) const;
 
  private:
-  // Vector holding, for each body in the MultibodyTree, the externally applied
-  // force F_Bi_W on the i-th body Bi, expressed in the world frame W.
-  // Store by MobodIndex order.
+  // Vector holding, for each mobilized body (mobod) in the MultibodyTree, the
+  // externally applied force F_Bi_W on the i-th mobod Bi, expressed in the
+  // world frame W, and assumed to act at Bi's origin Bio. Indexed by
+  // MobodIndex.
   std::vector<SpatialForce<T>> F_B_W_;
 
   // Vector of generalized forces applied on each mobilizer in the
-  // MultibodyTree.
+  // MultibodyTree. Ordered identically to generalized velocities v.
   VectorX<T> tau_;
 };
 
