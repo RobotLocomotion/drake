@@ -16,6 +16,9 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+template <typename T>
+class FrameBodyPoseCache;
+
 /* This class is one of the cache entries in the Context. It holds the
 kinematics results of computations that only depend on the generalized
 positions q of the system.
@@ -39,9 +42,6 @@ Results are indexed by MobodIndex unless otherwise specified:
          P, expressed in world frame W.
  - X_FM: Pose of mobilizer's outboard frame M measured and expressed in
          its inboard frame F.
- - H_FM: Mobilizer's hinge matrix, the Jacobian ∂V_FM/∂v that maps the
-         mobilizer's generalized velocities v to cross-mobilizer spatial
-         velocities V_FM = H_FM * v.
 
 @tparam_default_scalar */
 
@@ -63,10 +63,7 @@ class PositionKinematicsCache {
   template <typename U>
   using RigidTransform = drake::math::RigidTransform<U>;
 
-  explicit PositionKinematicsCache(const SpanningForest& forest)
-      : num_mobods_(forest.num_mobods()), num_links_(forest.num_links()) {
-    Allocate();
-  }
+  explicit PositionKinematicsCache(const SpanningForest& forest);
 
   // Returns a const reference to pose `X_WB` of the body B (associated with
   // mobilized body mobod_index) as measured and expressed in the world frame W.
@@ -155,39 +152,40 @@ class PositionKinematicsCache {
     return p_PoBo_W_pool_[mobod_index];
   }
 
+  // Once we know where the links are placed on the World composite, we can fill
+  // in X_WL for those links once and for all. X_WL₀ (≜ X_WL[link₀]) and
+  // X_WB₀ (≜ X_WB[mobod₀]) are identity transforms (set during allocation).
+  // Consequently, X_WLᵢ = X_WB₀ * X_B₀Lᵢ = X_B₀Lᵢ for each of the links Lᵢ that
+  // are fixed to World. Do nothing if the serial number hasn't changed.
+  void PrecomputeWorldCompositeIfNeeded(
+      const SpanningForest& forest,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      int64_t frame_body_pose_cache_serial_number) {
+    if (world_composite_serial_number_ == frame_body_pose_cache_serial_number)
+      return;
+    ComputeWorldComposite(forest, frame_body_pose_cache);
+    world_composite_serial_number_ = frame_body_pose_cache_serial_number;
+  }
+
  private:
   // Allocates resources for this position kinematics cache.
-  void Allocate() {
-    X_WB_pool_.resize(num_mobods_);
-    // Even though RigidTransform defaults to identity, we make it explicit.
-    // This pose will never change after this initialization.
-    X_WB_pool_[world_mobod_index()] = RigidTransform<T>::Identity();
+  void Allocate();
 
-    X_WL_pool_.resize(num_links_);
-    X_WL_pool_[world_link_ordinal()] = RigidTransform<T>::Identity();
-
-    X_PB_pool_.resize(num_mobods_);
-    X_PB_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
-
-    X_FM_pool_.resize(num_mobods_);
-    X_FM_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
-
-    p_PoBo_W_pool_.resize(num_mobods_);
-    // p_PoBo_W for the world body should never be used.
-    p_PoBo_W_pool_[world_mobod_index()].setConstant(
-        std::numeric_limits<
-            typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
-  }
+  // Called when we know we have to recompute the parameter-dependent
+  // world composite kinematics.
+  void ComputeWorldComposite(
+      const SpanningForest& forest,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache);
 
   // Helper method to initialize poses to garbage values including NaNs.
   // This allow us to quickly verify some of the values stored in the pools are
   // never used (however we store them anyway to simplify the indexing).
   static RigidTransform<T> NaNPose() {
     // Note: RotationMatrix will throw in Debug builds if values are NaN. For
-    // our purposes, it is enough the translation has NaN values.
+    // our purposes, it is enough that the translation has NaN values.
     return RigidTransform<T>(
         math::RotationMatrix<T>::Identity(),
-        Vector3<T>::Constant(Eigen::NumTraits<double>::quiet_NaN()));
+        Vector3<T>::Constant(std::numeric_limits<double>::quiet_NaN()));
   }
 
   // Number of Mobods in the multibody forest, including the World mobod.
@@ -196,6 +194,12 @@ class PositionKinematicsCache {
   // Number of links in the multibody graph includes all user-defined links
   // (including the World link) and possibly some ephemeral links.
   int num_links_{0};
+
+  // The serial number of the last FrameBodyPoseCache that was used to update
+  // the state-independent quantities in this cache (such as the X_WL for links
+  // fixed to World). This is used to determine whether we need to recompute
+  // those quantities when PrecomputeWorldComposite() is called.
+  int64_t world_composite_serial_number_{-1};
 
   // These are indexed by MobodIndex so are in depth-first order.
   std::vector<RigidTransform<T>> X_WB_pool_;

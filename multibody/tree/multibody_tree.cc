@@ -940,6 +940,34 @@ void MultibodyTree<T>::SetBaseBodyJointType(
 }
 
 template <typename T>
+void MultibodyTree<T>::SetCombineWeldedBodies(
+    bool combine, std::optional<ModelInstanceIndex> model_instance) {
+  DRAKE_THROW_UNLESS(!is_finalized());
+  LinkJointGraph& graph = mutable_graph();
+
+  // Obtain the current option flag to preserve the ones that don't have
+  // to do with combining rigid bodies.
+  ForestBuildingOptions options =
+      model_instance.has_value()
+          ? graph.get_forest_building_options_in_use(*model_instance)
+          : graph.get_global_forest_building_options();
+
+  // Clear the existing setting. This leaves us with the default which is _not_
+  // to combine welded bodies.
+  options = options & ~ForestBuildingOptions::kOptimizeWeldedLinksAssemblies;
+
+  if (combine) {
+    options = options | ForestBuildingOptions::kOptimizeWeldedLinksAssemblies;
+  }
+
+  if (model_instance.has_value()) {
+    graph.SetForestBuildingOptions(*model_instance, options);
+  } else {
+    graph.SetGlobalForestBuildingOptions(options);
+  }
+}
+
+template <typename T>
 BaseBodyJointType MultibodyTree<T>::GetBaseBodyJointType(
     std::optional<ModelInstanceIndex> model_instance) const {
   const ForestBuildingOptions options =
@@ -951,6 +979,18 @@ BaseBodyJointType MultibodyTree<T>::GetBaseBodyJointType(
   if (static_cast<bool>(options & ForestBuildingOptions::kUseFixedBase))
     return BaseBodyJointType::kWeldJoint;
   return BaseBodyJointType::kQuaternionFloatingJoint;
+}
+
+template <typename T>
+bool MultibodyTree<T>::GetCombineWeldedBodies(
+    std::optional<ModelInstanceIndex> model_instance) const {
+  const ForestBuildingOptions options =
+      model_instance.has_value()
+          ? graph().get_forest_building_options_in_use(*model_instance)
+          : graph().get_global_forest_building_options();
+
+  return static_cast<bool>(
+      options & ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
 }
 
 template <typename T>
@@ -1365,11 +1405,27 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
     const systems::Context<T>& context, PositionKinematicsCache<T>* pc) const {
   DRAKE_DEMAND(pc != nullptr);
 
+  // Ensure parameter-dependent quantities are up to date.
   const FrameBodyPoseCache<T>& frame_body_pose_cache =
       EvalFrameBodyPoses(context);
 
+  // Update parameter-dependent quantities in the position cache if they are
+  // not up to date with respect to the FrameBodyPoseCache in the context
+  // (which we just updated). PositionKinematicsCache needs the
+  // FrameBodyPoseCache serial number to make that determination.
+  const systems::CacheEntryValue& fbpc_value =
+      tree_system_->frame_body_poses_cache_entry().get_cache_entry_value(
+          context);
+  const int64_t fbpc_serial_number = fbpc_value.serial_number();
+  pc->PrecomputeWorldCompositeIfNeeded(forest(), frame_body_pose_cache,
+                                       fbpc_serial_number);
+
   const Eigen::VectorBlock<const VectorX<T>> q_block = get_positions(context);
   const T* q = q_block.data();
+
+  // The world composite link poses X_WL are independent of q and are set once
+  // the link pose parameters are known (i.e. when the FrameBodyPoseCache is
+  // filled in.) So we can skip the World mobod here.
 
   // With the kinematics information across mobilizers and the kinematics
   // information for each body, we are now in position to perform a base-to-tip
@@ -1504,18 +1560,17 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
   // Skip the world.
   // TODO(joemasterjohn): Consider an optimization to avoid calculating spatial
   //  inertias for locked floating bodies.
-  for (LinkIndex link_index(1); link_index < num_links(); ++link_index) {
-    const Link<T>& link = get_link(link_index);
-    const RigidTransform<T>& X_WB = pc.get_X_WB(link.mobod_index());
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
+    const RigidTransform<T>& X_WB = pc.get_X_WB(mobod_index);
 
     // Orientation of Mobod B in W.
     const RotationMatrix<T>& R_WB = X_WB.rotation();
 
     // Spatial inertia of Mobod B about Bo and expressed in the body frame B.
     const SpatialInertia<T>& M_BBo_B =
-        frame_body_pose_cache.get_M_BBo_B(link.mobod_index());
+        frame_body_pose_cache.get_M_BBo_B(mobod_index);
     // Re-express body B's spatial inertia in the world frame W.
-    SpatialInertia<T>& M_BBo_W = (*M_B_W_all)[link.mobod_index()];
+    SpatialInertia<T>& M_BBo_W = (*M_B_W_all)[mobod_index];
     M_BBo_W = M_BBo_B;               // Wrong frame.
     M_BBo_W.ReExpressInPlace(R_WB);  // Fixed.
   }
@@ -1559,8 +1614,12 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
   DRAKE_ASSERT(frame_body_poses->get_X_BF(FrameIndex(0)).IsExactlyIdentity());
   DRAKE_ASSERT(frame_body_poses->get_X_FB(FrameIndex(0)).IsExactlyIdentity());
 
-  // The first pass locates each frame with respect to the body frame B
-  // of the body to which it is fixed.
+  // Pass 1 (over all frames): locate each frame F by its pose X_LF with respect
+  // to the link frame L of the link (RigidBody) to which F is rigidly attached.
+  // Note: Frame F is fixed to L, but its pose X_LF may be parameter-dependent
+  // and may be updated at runtime.
+  // Note: Link frame L is directly or indirectly rigidly connected to a
+  // mobilized body (Mobod) B with known pose X_BL. Hence X_BF = X_BL * X_LF.
   for (const Frame<T>* frame : frames_.elements()) {
     // TODO(sherm1) Note that we're unnecessarily recalculating the parent
     //  and ancestor poses. Likely OK since we expect short sequences and
@@ -1569,35 +1628,151 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     //  order (or memoizing) so we don't have to recalculate.
     const RigidTransform<T> X_LF = frame->CalcPoseInBodyFrame(context);
     frame_body_poses->SetX_LF(frame->index(), X_LF);
-
-    // TODO(sherm1) When we support composites, X_BF ≠ X_LF.
-    frame_body_poses->SetX_BF(frame->index(), X_LF);
   }
 
-  // TODO(sherm1) Currently X_BL is always identity so we don't need to set
-  // it here. When we support composites, we'll need to set it here as well.
-
-  // For every mobilized body, precalculate its body-frame spatial inertia
-  // M_BBo_B from the parameterization of that inertia.
+  // Pass 2 (over all mobods): find the pose X_BL of each Link frame L on its
+  // Mobod B. This is normally identity except if B is a composite mobod and
+  // Link L is not its "active" (most inboard) link.
+  std::vector<uint8_t> got_X_BL(num_links(), false);
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
-    if (mobod.is_world()) continue;
-    // TODO(sherm1) Can't handle optimized WeldedLinksAssemblies yet.
-    DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
-    const Mobilizer<T>& mobilizer = get_mobilizer(mobod.index());
+    // Always set the pose X_BL of the active link L on its mobod B to identity.
+    const LinkOrdinal active_link_ordinal = mobod.active_link_ordinal();
+    frame_body_poses->SetX_BL(active_link_ordinal,
+                              RigidTransform<T>::Identity());
+    got_X_BL[active_link_ordinal] = true;
+    if (!mobod.is_composite()) continue;
 
-    // Get the parameterized spatial inertia.
-    const Link<T>& link = mobilizer.outboard_body();
-    const SpatialInertia<T> M_LLo_L =
-        link.CalcSpatialInertiaInBodyFrame(context);
-    frame_body_poses->SetM_LLo_L(link.ordinal(), M_LLo_L);
+    // Continue with the "follower" links in mobod B, which should be in
+    // inboard ⇒ outboard order (starting after the "active" link that we just
+    // did above). For each follower link Lₒ we should be able to find an
+    // attached weld joint where the other (inboard) link Lᵢ already has
+    // calculated its X_BLᵢ. We use the weld's transform X_JᵢJₒ and connected
+    // frame poses X_LᵢJᵢ and X_LₒJₒ (just calculated above) to compute
+    //     X_BLₒ = X_BLᵢ * X_LᵢJᵢ * X_JᵢJₒ * (X_LₒJₒ)⁻¹
+    // This is complicated by the fact that the weld joint is expressed as
+    // connecting a parent link P and child link C. Usually Lᵢ=P and Lₒ=C but
+    // the joint may be reversed such that Lᵢ=C and Lₒ=P.
+    for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
+      if (got_X_BL[link_ordinal]) continue;  // Already calculated.
+      const LinkJointGraph::Link& link_Lo = graph().links(link_ordinal);
 
-    const Vector3<T>& p_LoLcm_L = M_LLo_L.get_com();
+      // Search for the weld joint connecting Lₒ to an inboard link Lᵢ.
+      for (JointIndex joint_index : link_Lo.joints()) {
+        const LinkJointGraph::Joint& graph_joint =
+            graph().joint_by_index(joint_index);
+        if (!graph_joint.is_weld()) continue;  // Wrong joint type (not a weld).
+
+        // We have a weld joint, but it may connect Lₒ to an outboard link which
+        // has not yet been processed (its X_BL has not yet been computed). If
+        // so skip this weld joint and look for an inboard link Lᵢ whose X_BLᵢ
+        // is already computed (X_BLᵢ is needed to compute X_BLₒ).
+        const LinkIndex link_Li_index =
+            graph_joint.other_link_index(link_Lo.index());
+        const LinkJointGraph::Link& link_Li =
+            graph().link_by_index(link_Li_index);
+        if (!got_X_BL[link_Li.ordinal()]) continue;  // Lᵢ not yet processed.
+
+        // Found the weld joint connecting inboard Lᵢ (X_BLᵢ known) to
+        // outboard Lₒ. Retrieve X_BLᵢ for use below in calculating X_BLₒ.
+        const RigidTransform<T>& X_BLi =
+            frame_body_poses->get_X_BL(link_Li.ordinal());
+
+        // The weld joint stores pose X_JpJc (joint parent frame Jp to joint
+        // child frame Jc). If the joint is reversed (Lₒ is the parent link
+        // rather than child link) Jᵢ=Jc and Jₒ=Jp; otherwise Jᵢ=Jp and Jₒ=Jc.
+        const WeldJoint<T>& weld_joint =
+            dynamic_cast<const WeldJoint<T>&>(get_joint(joint_index));
+        const bool is_reversed =
+            graph_joint.child_link_index() != link_Lo.index();
+        const Frame<T>& frame_Ji = is_reversed ? weld_joint.frame_on_child()
+                                               : weld_joint.frame_on_parent();
+        const Frame<T>& frame_Jo = is_reversed ? weld_joint.frame_on_parent()
+                                               : weld_joint.frame_on_child();
+
+        // Get the relevant X_LF frame poses that were calculated in Pass 1.
+        const RigidTransform<T>& X_LiJi =
+            frame_body_poses->get_X_LF(frame_Ji.index());
+        const RigidTransform<T>& X_LoJo =
+            frame_body_poses->get_X_LF(frame_Jo.index());
+
+        // Get X_JᵢJₒ to form X_BLₒ = X_BLᵢ * X_LᵢJᵢ * X_JᵢJₒ * (X_LₒJₒ)⁻¹
+        const math::RigidTransform<double>& X_JpJc = weld_joint.X_FM();
+        // Since a weld joint's X_FM() is constant, it returns a rigid transform
+        // of type double (not type T). Hence it needs to be typecast to <T>.
+        const RigidTransform<T> X_JiJo =
+            (is_reversed ? X_JpJc.inverse() : X_JpJc).cast<T>();
+        const RigidTransform<T> X_BLo =
+            X_BLi * X_LiJi * X_JiJo * X_LoJo.inverse();
+        frame_body_poses->SetX_BL(link_ordinal, X_BLo);
+        got_X_BL[link_ordinal] = true;
+        break;  // Done with this follower link.
+      }
+    }
+  }
+
+  // TODO(sherm1) Pass 2b could be removed or Debug-only.
+  // Pass 2b (over all links): sanity check that Pass 2 got X_BL for every link.
+  for (const Link<T>* link : links_.elements()) {
+    DRAKE_DEMAND(got_X_BL[link->ordinal()]);
+  }
+
+  // Pass 3 (over all frames again): Calculate the pose X_BF for each frame F
+  // in the Mobod (mobilized body) frame B as X_BF = X_BL * X_LF.
+  // Note: Frame F is fixed to link L and link L is fixed to B, but pose X_LF
+  // may be parameter-dependent. Hence X_BF may need to be updated at runtime.
+  for (const Frame<T>* frame : frames_.elements()) {
+    const RigidTransform<T>& X_LF = frame_body_poses->get_X_LF(frame->index());
+    const Link<T>& link = frame->body();
     const RigidTransform<T>& X_BL = frame_body_poses->get_X_BL(link.ordinal());
-    const Vector3<T> p_BoLcm_B = X_BL * p_LoLcm_L;
-    frame_body_poses->Set_p_BoLcm_B(link.ordinal(), p_BoLcm_B);
+    frame_body_poses->SetX_BF(frame->index(), X_BL * X_LF);
+  }
 
-    // TODO(sherm1) When we support composites, M_BBo_B ≠ M_LLo_L.
-    frame_body_poses->SetM_BBo_B(mobod.index(), M_LLo_L);
+  // Pass 4 (over all mobods): For every mobod, precalculate its body-frame
+  // spatial inertia M_BBo_B by shifting and accumulating the spatial inertia
+  // M_LLo_L of each of its "follower" links. For a non-composite mobod there is
+  // only one follower link. For a composite, multiple follower links are welded
+  // together as a rigid unit.
+  // We also calculate and save p_BoLcm_B, the offset from mobod origin Bo to
+  // each of its follower links' centers of mass, expressed in B.
+  for (const SpanningForest::Mobod& mobod : forest().mobods()) {
+    // Initialize each non-world Mobod's mass properties to zero and then
+    // accumulate mass contributions from all of its follower links.
+    // Note: The world mobod's spatial inertia is intentionally left as NaN.
+    const bool is_world_mobod = mobod.is_world();
+    if (!is_world_mobod) {
+      frame_body_poses->SetM_BBo_B(mobod.index(), SpatialInertia<T>::Zero());
+    }
+
+    // Accumulate the spatial inertia from each link following this mobod.
+    for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
+      const LinkIndex link_index = forest().links(link_ordinal).index();
+      const Link<T>& link = links_.get_element(link_index);
+      const SpatialInertia<T> M_LLo_L =
+          link.CalcSpatialInertiaInBodyFrame(context);
+      frame_body_poses->SetM_LLo_L(link_ordinal, M_LLo_L);
+
+      // Set p_BoLcm_B and accumulate M_LLo_L into M_BBo_B (unless B is world).
+      const Vector3<T>& p_LoLcm_L = M_LLo_L.get_com();
+      if (!frame_body_poses->is_X_BL_identity(link_ordinal)) {
+        const RigidTransform<T>& X_BL =
+            frame_body_poses->get_X_BL(link_ordinal);
+        const math::RotationMatrix<T>& R_BL = X_BL.rotation();
+        const Vector3<T>& p_BoLo_B = X_BL.translation();
+        const Vector3<T> p_BoLcm_B = X_BL * p_LoLcm_L;
+        frame_body_poses->Set_p_BoLcm_B(link_ordinal, p_BoLcm_B);
+        if (!is_world_mobod) {
+          const SpatialInertia<T> M_LLo_B = M_LLo_L.ReExpress(R_BL);
+          const SpatialInertia<T> M_LBo_B = M_LLo_B.Shift(-p_BoLo_B);
+          frame_body_poses->AddToM_BBo_B(mobod.index(), M_LBo_B);
+        }
+      } else {
+        // X_BL is identity, so p_BoLcm_B = p_LoLcm_L and M_LBo_B = M_LLo_L.
+        frame_body_poses->Set_p_BoLcm_B(link_ordinal, p_LoLcm_L);
+        if (!is_world_mobod) {
+          frame_body_poses->AddToM_BBo_B(mobod.index(), M_LLo_L);
+        }
+      }
+    }
   }
 }
 
@@ -1786,8 +1961,8 @@ VectorX<T> MultibodyTree<T>::CalcInverseDynamics(
     const systems::Context<T>& context, const VectorX<T>& known_vdot,
     const MultibodyForces<T>& external_forces) const {
   // Temporary storage used in the computation of inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB(num_links());
-  std::vector<SpatialForce<T>> F_BMo_W(num_links());
+  std::vector<SpatialAcceleration<T>> A_WB(num_mobods());
+  std::vector<SpatialForce<T>> F_BMo_W(num_mobods());
   VectorX<T> tau(num_velocities());
   CalcInverseDynamics(context, known_vdot, external_forces.body_forces(),
                       external_forces.generalized_forces(), &A_WB, &F_BMo_W,
@@ -2389,16 +2564,15 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
   // For efficiency, evaluate all bodies' spatial inertia and pose.
   const std::vector<SpatialInertia<T>>& M_Bi_W =
       EvalSpatialInertiaInWorldCache(context);
+  const FrameBodyPoseCache<T>& frame_body_poses = EvalFrameBodyPoses(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   // Add each body's spatial inertia in the world frame W to this system
   // S's spatial inertia in W about Wo (the origin of W), expressed in W.
-  // TODO(Mitiguy) Create SpatialInertia<T>::Zero() and use it below.
-  SpatialInertia<T> M_SWo_W(0., Vector3<T>::Zero(),
-                            UnitInertia<T>::TriaxiallySymmetric(0));
+  SpatialInertia<T> M_SWo_W = SpatialInertia<T>::Zero();
 
   for (BodyIndex body_index : body_indexes) {
-    if (body_index == 0) continue;  // No contribution from the world body.
+    if (body_index == world_index()) continue;  // World inertia does not add.
 
     // Ensure MultibodyPlant method contains a valid body_index.
     if (body_index >= num_links()) {
@@ -2407,14 +2581,35 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     }
 
     // Get the current body B's spatial inertia about Bo (body B's origin),
-    // expressed in the world frame W.
+    // expressed in the world frame W. Start the calculation with a cached value
+    // for M_BBo_W if B is not a composite body (i.e., it is a one-link Mobod).
     const MobodIndex mobod_index = get_link(body_index).mobod_index();
-    const SpatialInertia<T>& M_BBo_W = M_Bi_W[mobod_index];
+    if (!get_mobod(mobod_index).is_composite()) {
+      const SpatialInertia<T>& M_BBo_W = M_Bi_W[mobod_index];
 
-    // Shift M_BBo_W from about-point Bo to about-point Wo and add to the sum.
-    const RigidTransform<T>& X_WB = pc.get_X_WB(mobod_index);
-    const Vector3<T>& p_WoBo_W = X_WB.translation();
-    M_SWo_W += M_BBo_W.Shift(-p_WoBo_W);  // Shift from Bo to Wo by p_BoWo_W.
+      // Shift M_BBo_W from about-point Bo to about-point Wo and add to the sum.
+      const RigidTransform<T>& X_WB = pc.get_X_WB(mobod_index);
+      const Vector3<T>& p_WoBo_W = X_WB.translation();
+      M_SWo_W += M_BBo_W.Shift(-p_WoBo_W);  // Shift from Bo to Wo by p_BoWo_W.
+    } else {
+      // For a composite body (having more than one link), need to calculate
+      // the individual link's spatial inertia about Wo expressed in W since
+      // there is no cached value (and perhaps no need for one).
+      const LinkOrdinal link_ordinal =
+          graph().link_by_index(body_index).ordinal();
+
+      // M_LLo_L: inertia of link L about its origin Lo, expressed in L.
+      const SpatialInertia<T>& M_LLo_L =
+          frame_body_poses.get_M_LLo_L(link_ordinal);
+
+      // X_WL: pose of L's frame relative to world frame W.
+      const RigidTransform<T>& X_WL = pc.get_X_WL(link_ordinal);
+
+      // Re-express M_LLo to world W, shift that to world origin, add to sum.
+      const SpatialInertia<T> M_LLo_W = M_LLo_L.ReExpress(X_WL.rotation());
+      const Vector3<T>& p_WoLo_W = X_WL.translation();
+      M_SWo_W += M_LLo_W.Shift(-p_WoLo_W);  // Shift from Lo to Wo by p_LoWo_W.
+    }
   }
 
   // If frame_F is the world frame W, return now.
@@ -2465,7 +2660,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   }
 
   // For a system S with center of mass Scm, Scm's translational velocity in the
-  // world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
+  // world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where mₛ = ∑ mᵢ,
   // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bᵢcm's velocity in world frame W
   // (Bᵢcm is the center of mass of the iᵗʰ body).
   return sum_mi_vi / total_mass;
@@ -2488,14 +2683,14 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   T total_mass = 0;
   Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
-  // Sum over all the bodies that are in model_instances except for the 0th body
+  // Sum over all bodies that are in model_instances except for the 0ᵗʰ body
   // (which is the world body), and count each body's contribution only once.
-  // Reminder: Although it is not possible for a body to belong to multiple
-  // model instances [as RigidBody::model_instance() returns a body's unique
-  // model instance], it is possible for the same model instance to be added
-  // multiple times to std::vector<ModelInstanceIndex>& model_instances). The
-  // code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are ignored.
+  // Reminder: Although it is not possible for a body to belong to
+  // multiple model instances [as RigidBody::model_instance() returns a body's
+  // unique model instance], it is possible for the same model instance to be
+  // added multiple times to std::vector<ModelInstanceIndex>&
+  // model_instances). The code below ensures a body's contribution to the sum
+  // occurs only once. Duplicate model_instances in std::vector are ignored.
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
@@ -2569,10 +2764,10 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     sum_mi_ai += body_mass * ai_WBcm_W;  // sum_mi_ai = ∑ mᵢ * ai_WBcm_W.
   }
 
-  // For a system S with center of mass Scm, Scm's translational acceleration in
-  // the world W is calculated as a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where mₛ = ∑ mᵢ,
-  // mᵢ is the mass of the  iᵗʰ body, and aᵢ is Bᵢcm's acceleration in world W
-  // (Bᵢcm is the center of mass of the iᵗʰ body).
+  // For a system S with center of mass Scm, Scm's translational acceleration
+  // in the world W is calculated as a_WScm_W = ∑ (mᵢ aᵢ) / mₛ, where mₛ = ∑
+  // mᵢ, mᵢ is the mass of the  iᵗʰ body, and aᵢ is Bᵢcm's acceleration in
+  // world W (Bᵢcm is the center of mass of the iᵗʰ body).
   return sum_mi_ai / total_mass;
 }
 
@@ -2593,8 +2788,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
   // Why? Acceleration calculations may require a dynamic analysis that will
   // issue a significantly less helpful exception message.
   // Sum over all the bodies in model_instances except the 0th body (which is
-  // the world body). Each body is counted only once even if its model instance
-  // is listed multiple times.
+  // the world body). Each body is counted only once even if its model
+  // instance is listed multiple times.
   T total_mass = 0;
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
@@ -2622,14 +2817,14 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
     throw std::logic_error(message);
   }
 
-  // Sum over all the bodies that are in model_instances except for the 0th body
-  // (which is the world body), and count each body's contribution only once.
-  // Reminder: Although it is not possible for a body to belong to multiple
-  // model instances [as RigidBody::model_instance() returns a body's unique
-  // model instance], it is possible for the same model instance to be added
-  // multiple times to std::vector<ModelInstanceIndex>& model_instances).
-  // The code below ensures a body's contribution to the sum occurs only once.
-  // Duplicate model_instances in std::vector are ignored.
+  // Sum over all the bodies that are in model_instances except for the 0th
+  // body (which is the world body), and count each body's contribution only
+  // once. Reminder: Although it is not possible for a body to belong to
+  // multiple model instances [as RigidBody::model_instance() returns a body's
+  // unique model instance], it is possible for the same model instance to be
+  // added multiple times to std::vector<ModelInstanceIndex>&
+  // model_instances). The code below ensures a body's contribution to the sum
+  // occurs only once. Duplicate model_instances in std::vector are ignored.
   Vector3<T> sum_mi_ai = Vector3<T>::Zero();
   for (BodyIndex body_index(1); body_index < num_links(); ++body_index) {
     const RigidBody<T>& body = get_link(body_index);
@@ -2649,7 +2844,7 @@ template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
     const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const {
   // Assemble a list of ModelInstanceIndex.
-  // Skip model_instance_index(0) which always contains the "world" body -- the
+  // Skip model_instance_index(0) which always contains the "world" body. The
   // spatial momentum of the world body measured in the world is always zero.
   std::vector<ModelInstanceIndex> model_instances;
   for (ModelInstanceIndex model_instance_index(1);
@@ -2693,14 +2888,16 @@ template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     const systems::Context<T>& context,
     const std::vector<LinkIndex>& link_indexes) const {
-  // For efficiency, evaluate all bodies' spatial inertia, velocities, and pose.
+  // For efficiency, evaluate all bodies' spatial inertia, velocities, and
+  // pose.
   const std::vector<SpatialInertia<T>>& M_Bi_W =
       EvalSpatialInertiaInWorldCache(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
-  // Accumulate each body's spatial momentum in the world frame W to this system
-  // S's spatial momentum in W about Wo (the origin of W), expressed in W.
+  // Accumulate each body's spatial momentum in the world frame W to this
+  // system S's spatial momentum in W about Wo (the origin of W), expressed in
+  // W.
   SpatialMomentum<T> L_WS_W = SpatialMomentum<T>::Zero();
 
   // Add contributions from each link Bi.
@@ -2793,12 +2990,15 @@ void MultibodyTree<T>::CalcAllBodyBiasSpatialAccelerationsInWorld(
   // To calculate a generic body A's spatial acceleration bias in world W,
   // note that body A's spatial velocity in world W is
   //     V_WA = J𝑠_V_WA ⋅ 𝑠
-  // which upon vector differentiation in W gives A's spatial acceleration in W
+  // which upon vector differentiation in W gives A's spatial acceleration in
+  // W
   //     A_WA = J𝑠_V_WA ⋅ 𝑠̇  +  J̇𝑠_V_WA ⋅ 𝑠
-  // Since A𝑠Bias_WA can be defined as the term in A_WA that does not include 𝑠̇,
+  // Since A𝑠Bias_WA can be defined as the term in A_WA that does not include
+  // 𝑠̇,
   //     A𝑠Bias_WA = J̇𝑠_V_WA ⋅ 𝑠  =  A_WA − J𝑠_V_WA ⋅ 𝑠̇
-  // One way to calculate A𝑠Bias_WA is to evaluate A_WA with 𝑠̇ = 0.  Hence, set
-  // 𝑠̇ = 0 to calculate all bodies' spatial acceleration biases in world W.
+  // One way to calculate A𝑠Bias_WA is to evaluate A_WA with 𝑠̇ = 0.  Hence,
+  // set 𝑠̇ = 0 to calculate all bodies' spatial acceleration biases in world
+  // W.
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   const VectorX<T> vdot = VectorX<T>::Zero(num_velocities());
@@ -2813,8 +3013,10 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // Reserve room to store all the bodies' spatial acceleration bias in world W.
-  // TODO(Mitiguy) Inefficient use of heap. Per issue #13560, implement caching.
+  // Reserve room to store all the bodies' spatial acceleration bias in world
+  // W.
+  // TODO(Mitiguy) Inefficient use of heap. Per issue #13560, implement
+  // caching.
   std::vector<SpatialAcceleration<T>> AsBias_WB_all(num_links());
   CalcAllBodyBiasSpatialAccelerationsInWorld(context, with_respect_to,
                                              &AsBias_WB_all);
@@ -2852,8 +3054,9 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
   // Fp's angular acceleration in body_A is equal to body_B's angular
   // acceleration in body_A, and hence can be denoted α_AB and can be
   // calculated by rearranging the "angular acceleration addition theorem"
-  // (from eqn (12) in SpatialAcceleration::ComposeWithMovingFrameAcceleration()
-  // or Chap 8, Angular velocity/acceleration [Mitiguy 2019], reference below).
+  // (from eqn (12) in
+  // SpatialAcceleration::ComposeWithMovingFrameAcceleration() or Chap 8,
+  // Angular velocity/acceleration [Mitiguy 2019], reference below).
   //   (1)  α_WB = α_WA + α_AB + w_WA x w_AB   is rearranged to
   //   (2)  α_AB = α_WB - α_WA - w_WA x w_AB,  where
   // α_AB is body B's angular acceleration in body A,
@@ -2864,9 +3067,10 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
   //
   // The translational acceleration part of A_AFp is denoted a_AFp and can be
   // calculated by rearranging the "one point moving on a rigid frame formula"
-  // (from eqn (13) in SpatialAcceleration::ComposeWithMovingFrameAcceleration()
-  // or from Chapter 10, Points: Velocity and acceleration [Mitiguy 2019]
-  // or from section 2.8, page 39 [Kane & Levinson 1985], references below)
+  // (from eqn (13) in
+  // SpatialAcceleration::ComposeWithMovingFrameAcceleration() or from Chapter
+  // 10, Points: Velocity and acceleration [Mitiguy 2019] or from section 2.8,
+  // page 39 [Kane & Levinson 1985], references below)
   //   (3)  a_WFp = a_WAp + a_AFp + 2 w_WA x v_AFp    is rearranged to
   //   (4)  a_AFp = a_WFp - a_WAp - 2 w_WA x v_AFp,  where
   // point Ap is the point fixed to body_A that is coincident with Fp,
@@ -2876,15 +3080,17 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
   // w_WA is body A's angular velocity in frame W,
   // v_AFp is Fp's translational velocity in body_A.
   //
-  // The previous equations also apply to bias acceleration, so eqns (2) and (4)
-  // apply to bias angular acceleration and bias translational acceleration as
+  // The previous equations also apply to bias acceleration, so eqns (2) and
+  // (4) apply to bias angular acceleration and bias translational
+  // acceleration as
   //   (5)  αBias_AB = αBias_WB - αBias_WA - w_WA x w_AB
   //   (6)  aBias_AFp = aBias_WFp - aBias_WAp - 2 w_WA x v_AFp
   //
   // - [Mitiguy, 2019]: "Advanced Dynamics and Motion Simulation,
-  //   For professional engineers and scientists," Prodigy Press, Sunnyvale CA,
-  //   Available at www.MotionGenesis.com
-  // - [Kane & Levinson 1985] "Dynamics, Theory and Applications," McGraw-Hill.
+  //   For professional engineers and scientists," Prodigy Press, Sunnyvale
+  //   CA, Available at www.MotionGenesis.com
+  // - [Kane & Levinson 1985] "Dynamics, Theory and Applications,"
+  // McGraw-Hill.
   //    Available for free .pdf download: https://hdl.handle.net/1813/638
   // Shift spatial acceleration from body_B's origin to point Fp of frame_F.
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -2901,7 +3107,8 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
     A_AFp_W = A_WFp_W;
   } else {
     // Point Ap is the point of (fixed to) body_A that is coincident with
-    // point Fp. Calculate the position vector from Ao (body_A's origin) to Ap.
+    // point Fp. Calculate the position vector from Ao (body_A's origin) to
+    // Ap.
     const RigidTransform<T> X_AF = frame_F.CalcPose(context, frame_A);
     const Vector3<T> p_AoAp_A = X_AF * p_FoFp_F;  // Note: p_AoAp = p_AoFp
 
@@ -2909,8 +3116,9 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
     // Note: Since Ap is regarded as fixed to body_A, Ap's translational
     // acceleration in the world frame W is calculated as
     //   a_WAp = a_WAo + α_WA x p_AoAp + w_WA x (w_WA x p_AoAp)
-    // Reminder: p_AoAp is an "instantaneous" position vector, so differentation
-    // of p_AoAp or a_WAp may produce a result different than you might expect.
+    // Reminder: p_AoAp is an "instantaneous" position vector, so
+    // differentation of p_AoAp or a_WAp may produce a result different than
+    // you might expect.
     const SpatialAcceleration<T> A_WAp_W =
         ShiftSpatialAccelerationInWorld(frame_A, p_AoAp_A, A_WA_W, pc, vc);
 
@@ -2922,12 +3130,13 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
     // * There may be simulations in which using a least common ancestor is
     //   important for speed or avoiding loss of precision from cancellations.
     // * Code for operating in the ancestor frame requires conversions for
-    //   quantities that were already available in World; there is some cost to
-    //   that both in execution time and programming effort.
+    //   quantities that were already available in World; there is some cost
+    //   to that both in execution time and programming effort.
     // * In Simbody, Sherm used the least common ancestor for all constraint
     //   equations and grew to regret it. It was surprisingly complicated and
-    //   the extra transformations made the code (including caching of results)
-    //   complicated, ultimately with questionable saving of computation time.
+    //   the extra transformations made the code (including caching of
+    //   results) complicated, ultimately with questionable saving of
+    //   computation time.
     // * For Jacobians (one of Drake's fastest recursive calculations), it is
     //   unclear whether typical non-World frame relative accelerations would
     //   involve near-ancestors rather than far-ancestors. If the latter,
@@ -2935,7 +3144,8 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
     A_AFp_W = A_WFp_W - A_WAp_W;  // Calculation of A_AFp_W is unfinished here.
 
     // Equation (5) is  α_AB = α_WB - α_WA - w_WA x w_AB,
-    // hence calculate A's angular velocity in W and B's angular velocity in A.
+    // hence calculate A's angular velocity in W and B's angular velocity in
+    // A.
     const Vector3<T> w_WA_W =
         body_A.EvalSpatialVelocityInWorld(context).rotational();
     SpatialVelocity<T> V_AF_W =
@@ -2943,8 +3153,9 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
     const Vector3<T> w_AF_W = V_AF_W.rotational();  // Frame F is welded to B.
     A_AFp_W.rotational() -= w_WA_W.cross(w_AF_W);
 
-    // Equation (6) is  a_AFp = a_WFp - a_WAp - 2 w_WA x v_AFp,  hence calculate
-    // Fp's velocity in A to form the "Coriolis acceleration" 2 w_WA x v_AFp.
+    // Equation (6) is  a_AFp = a_WFp - a_WAp - 2 w_WA x v_AFp,  hence
+    // calculate Fp's velocity in A to form the "Coriolis acceleration" 2 w_WA
+    // x v_AFp.
     const RotationMatrix<T> R_WF = frame_F.CalcRotationMatrixInWorld(context);
     const Vector3<T> p_FoFp_W = R_WF * p_FoFp_F;
     const Vector3<T> v_AFp_W = V_AF_W.Shift(p_FoFp_W).translational();
@@ -2997,7 +3208,8 @@ Matrix3X<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // Form frame_B's bias spatial acceleration in frame_A, expressed in frame_E.
+  // Form frame_B's bias spatial acceleration in frame_A, expressed in
+  // frame_E.
   const SpatialAcceleration<T> AsBias_ABo_E = CalcBiasSpatialAcceleration(
       context, with_respect_to, frame_B, Vector3<T>::Zero(), frame_A, frame_E);
 
@@ -3023,7 +3235,8 @@ Matrix3X<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
     const SpatialAcceleration<T> AsBias_ABp_E =
         AsBias_ABo_E.Shift(p_BoBp_E, w_AB_E);
 
-    // Store only the translational bias acceleration component in the results.
+    // Store only the translational bias acceleration component in the
+    // results.
     asBias_ABi_E_array.col(ipoint) = AsBias_ABp_E.translational();
   }
   return asBias_ABi_E_array;
@@ -3044,9 +3257,9 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   DRAKE_THROW_UNLESS(Js_V_ABp_E->cols() == num_columns);
 
   // The spatial velocity V_WBp can be obtained by composing the spatial
-  // velocities V_WAp and V_ABp. Expressed in the world frame W this composition
-  // is V_WBp_W = V_WAp_W + V_ABp_W
-  // Therefore, V_ABp_W = (Js_V_WBp - Js_V_WAp) ⋅ s.
+  // velocities V_WAp and V_ABp. Expressed in the world frame W this
+  // composition is V_WBp_W = V_WAp_W + V_ABp_W Therefore, V_ABp_W = (Js_V_WBp
+  // - Js_V_WAp) ⋅ s.
   //
   // If with_respect_to = JacobianWrtVariable::kQDot, s = q̇ and
   // Js_V_W{Ap,Bp} = Jq_V_W{Ap,Bp},
@@ -3232,7 +3445,8 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
   if (&frame_E != &frame_W) {
     const RotationMatrix<T> R_EW =
         CalcRelativeRotationMatrix(context, frame_E, frame_W);
-    // Extract the 3 x num_columns block that starts at row = 3 * i, column = 0.
+    // Extract the 3 x num_columns block that starts at row = 3 * i, column =
+    // 0.
     for (int i = 0; i < num_points; ++i) {
       Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3, num_columns) =
           R_EW * Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3,
@@ -3269,8 +3483,8 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   // RigidBody to which frame_F is welded/attached.
   const RigidBody<T>& body_F = frame_F.body();
 
-  // Return zero Jacobians for bodies anchored to the world, since for anchored
-  // bodies, w_wF = Js_w_WF * v = 0  and  v_WFpi = Js_v_WFpi * v = 0.
+  // Return zero Jacobians for bodies anchored to the world, since for
+  // anchored bodies, w_wF = Js_w_WF * v = 0  and  v_WFpi = Js_v_WFpi * v = 0.
   if (body_F.index() == world_index()) return;
 
   // Form kinematic path from World to body_F.
@@ -3339,12 +3553,12 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     }
 
     if (Js_v_WFpi_W) {
-      // Get memory address in the output block Jacobian translational velocity
-      // Js_v_PFpi_W corresponding to the contribution of the mobilities in
-      // level ilevel.  This address corresponds to point Fpi's Jacobian
-      // translational velocity in the inboard (parent) body frame P, expressed
-      // in world frame W.  That is, v_PFpi_W = Js_v_PFpi_W * v(B), where v(B)
-      // are the mobilities that correspond to the current node.
+      // Get memory address in the output block Jacobian translational
+      // velocity Js_v_PFpi_W corresponding to the contribution of the
+      // mobilities in level ilevel.  This address corresponds to point Fpi's
+      // Jacobian translational velocity in the inboard (parent) body frame P,
+      // expressed in world frame W.  That is, v_PFpi_W = Js_v_PFpi_W * v(B),
+      // where v(B) are the mobilities that correspond to the current node.
       auto Js_v_PFpi_W = Js_v_WFpi_W->block(0, start_index, 3 * num_points,
                                             mobilizer_jacobian_ncols);
 
@@ -3360,9 +3574,10 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
         const Vector3<T> p_BoFp_W = p_WoFp - p_WoBo;
 
         // Point Fp's Jacobian translational velocity is placed in the output
-        // memory block in the same order input points Fpi are listed on input.
-        // Get a mutable alias into Js_v_PFpi_W for the Jacobian translational
-        // velocity term for the currently indexed (ipoint) point.
+        // memory block in the same order input points Fpi are listed on
+        // input. Get a mutable alias into Js_v_PFpi_W for the Jacobian
+        // translational velocity term for the currently indexed (ipoint)
+        // point.
         const int ipoint_row = 3 * ipoint;
         auto Hv_PFpi_W =
             Js_v_PFpi_W.block(ipoint_row, 0, 3, mobilizer_jacobian_ncols);
@@ -3564,9 +3779,9 @@ Vector3<T> MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
       total_mass += body_mass;  // total_mass = ∑ mᵢ.
       ++number_of_non_world_bodies_processed;
 
-      // sum_mi_aBiasi = ∑ (mᵢ aBiasᵢ), where mᵢ is the mass of the iᵗʰ body and
-      // aBiasᵢ is Bᵢcm's bias translational acceleration in frame A, expressed
-      // in frame E (Bᵢcm is the center of mass of the iᵗʰ body).
+      // sum_mi_aBiasi = ∑ (mᵢ aBiasᵢ), where mᵢ is the mass of the iᵗʰ body
+      // and aBiasᵢ is Bᵢcm's bias translational acceleration in frame A,
+      // expressed in frame E (Bᵢcm is the center of mass of the iᵗʰ body).
       const Frame<T>& frame_B = body.body_frame();
       const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
       const Vector3<T> aBiasi_ABcm_E = CalcBiasTranslationalAcceleration(
@@ -3700,8 +3915,9 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     DRAKE_DEMAND(!active_mobod.is_weld());  // That wouldn't be active!
     if (active_mobod.nq_outboard() > 0) continue;  // Not a terminal group.
 
-    // At this point we're looking at a non-World, terminal WeldedMobods group.
-    // Find the matching WeldedLinksAssembly that carries the mass properties.
+    // At this point we're looking at a non-World, terminal WeldedMobods
+    // group. Find the matching WeldedLinksAssembly that carries the mass
+    // properties.
     const std::optional<WeldedLinksAssemblyIndex> link_assembly_index =
         graph()
             .links(active_mobod.active_link_ordinal())
@@ -3751,10 +3967,11 @@ void MultibodyTree<T>::ThrowIfTerminalBodyHasBadDefaultMassProperties(
   }
 
   if (can_rotate && IsAnyDefaultRotationalInertiaNaN(link_assembly)) {
-    throw std::logic_error(fmt::format(
-        "Body {} is {} that has a NaN rotational inertia, but its joint has a "
-        "rotational degree of freedom.",
-        active_link_name, description));
+    throw std::logic_error(
+        fmt::format("Body {} is {} that has a NaN rotational inertia, but "
+                    "its joint has a "
+                    "rotational degree of freedom.",
+                    active_link_name, description));
   }
 
   if (can_rotate && AreAllDefaultRotationalInertiaZero(link_assembly)) {
@@ -3862,8 +4079,8 @@ void MultibodyTree<T>::CalcArticulatedBodyForceCache(
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
 
-  // Eval spatial inertia M_B_W(q) and force bias Fb_B_W(q, v) as they appear on
-  // the Newton-Euler equation: M_B_W * A_WB + Fb_B_W = Fapp_B_W.
+  // Eval spatial inertia M_B_W(q) and force bias Fb_B_W(q, v) as they appear
+  // on the Newton-Euler equation: M_B_W * A_WB + Fb_B_W = Fapp_B_W.
   const std::vector<SpatialForce<T>>& dynamic_bias_cache =
       EvalDynamicBiasCache(context);
 
@@ -3898,8 +4115,8 @@ void MultibodyTree<T>::CalcArticulatedBodyForceCache(
   // Get configuration dependent articulated body inertia cache.
   const ArticulatedBodyInertiaCache<T>& abic =
       EvalArticulatedBodyInertiaCache(context);
-  // We evaluate the kinematics dependent articulated body force bias Zb_Bo_W =
-  // Pplus_PB_W * Ab_WB. When cached, this corresponds to a significant
+  // We evaluate the kinematics dependent articulated body force bias Zb_Bo_W
+  // = Pplus_PB_W * Ab_WB. When cached, this corresponds to a significant
   // computational gain when performing ABA with the same context (storing the
   // same q and v) but different applied `forces`.
   const std::vector<SpatialForce<T>>& Zb_Bo_W_cache =
@@ -4295,8 +4512,8 @@ RigidBody<T>* MultibodyTree<T>::CloneBodyAndAdd(
   auto body_clone = body.CloneToScalar(*this);
   body_clone->set_parent_tree(this, body_index);
   body_clone->set_model_instance(body.model_instance());
-  // MultibodyTree can access selected private methods in RigidBody through its
-  // RigidBodyAttorney.
+  // MultibodyTree can access selected private methods in RigidBody through
+  // its RigidBodyAttorney.
   Frame<T>* body_frame_clone =
       &internal::RigidBodyAttorney<T>::get_mutable_link_frame(body_clone.get());
   body_frame_clone->set_parent_tree(this, body_frame_index);
@@ -4306,8 +4523,8 @@ RigidBody<T>* MultibodyTree<T>::CloneBodyAndAdd(
   // topology invariant. Therefore we index new clones according to the
   // original body_frame_index.
   frames_.AddBorrowed(body_frame_clone);
-  // The order in which bodies are added into owned_bodies_ is important to keep
-  // the topology invariant. Therefore this method is called from
+  // The order in which bodies are added into owned_bodies_ is important to
+  // keep the topology invariant. Therefore this method is called from
   // MultibodyTree::CloneToScalar() within a loop by original body_index.
   return &links_.Add(std::move(body_clone));
 }
@@ -4390,7 +4607,6 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &MultibodyTree<T>::template CloneToScalar<U>
 ));
 // clang-format on
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
