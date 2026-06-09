@@ -1422,9 +1422,21 @@ void MultibodyPlant<T>::SetBaseBodyJointType(
 }
 
 template <typename T>
+void MultibodyPlant<T>::SetCombineWeldedBodies(
+    bool combine, std::optional<ModelInstanceIndex> model_instance) {
+  mutable_tree().SetCombineWeldedBodies(combine, model_instance);
+}
+
+template <typename T>
 BaseBodyJointType MultibodyPlant<T>::GetBaseBodyJointType(
     std::optional<ModelInstanceIndex> model_instance) const {
   return internal_tree().GetBaseBodyJointType(model_instance);
+}
+
+template <typename T>
+bool MultibodyPlant<T>::GetCombineWeldedBodies(
+    std::optional<ModelInstanceIndex> model_instance) const {
+  return internal_tree().GetCombineWeldedBodies(model_instance);
 }
 
 template <typename T>
