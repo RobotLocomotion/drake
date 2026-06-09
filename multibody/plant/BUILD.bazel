@@ -1144,6 +1144,7 @@ drake_cc_googletest(
         ":multibody_plant_config_functions",
         ":plant",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
     ],
 )
 
