@@ -348,11 +348,6 @@ Jacobian wrt qᵈ              | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E
 Jacobian wrt q̇               | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|%Point Q's translational velocity Jacobian in frame B wrt q̇
 Jacobian wrt v               | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |%Point Q's translational velocity Jacobian in frame B wrt v
 Jacobian wrt v               | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |%Frame C's angular velocity Jacobian in frame B wrt v
-Hessian wrt qᵈ               | Hq   |@f$[H_{q}^{{}^Pp^Q}]_E@f$ |`Hq_p_PQ_E` |%Point Q's position Hessian from point P <b>in</b> frame E wrt q <SMALL>(<b>in</b> means both measured-in and expressed-in)</SMALL>
-Hessian wrt q̇                | Hqdot|@f$H_{q̇}^{{}^Bv^Q}@f$     |`Hqdot_v_BQ`|%Point Q's translational velocity Hessian in frame B wrt q̇
-Hessian wrt v                | Hv   |@f$H_{v}^{{}^Bv^Q}@f$     |`Hv_v_BQ`   |%Point Q's translational velocity Hessian in frame B wrt v
-Hessian wrt v                | Hv   |@f$H_{v}^{{}^B\omega^C}@f$|`Hv_w_BC`   |%Frame C's angular velocity Hessian in frame B wrt v
-
 Ez measure of vector v       |  v   |@f$[v]_{Ez}@f$            |`v_Ez`      |Ez scalar component of vector v, i.e., v • Ez, where Ez is frame E's z-direction unit vector.
 
 ᵃ In code, a vector has an expressed-in-frame which appears after the quantity.
@@ -391,6 +386,8 @@ monogram: first is the Jacobian symbol (Jv), next is the kinematic quantity
 (v_BQ), last is an expressed-in frame (E).
 <br>Example: `Jv_v_BQ_E` is `Jv` (Jacobian wrt v),
 for `v_BQ` (velocity in frame B of point Q), expressed in frame E.
+<br>Related: `Hv_v_BQ_E` is `Hv` (Hessian wrt v),
+for `v_BQ` (velocity in frame B of point Q), expressed in frame E.
 <br> <b>Advanced:</b> Due to rules of vector differentiation, explicit Jacobian
 monogram notation for `Jq` (Jacobian wrt generalized positions q) requires an
 extra frame (e.g., `JBq` is partial differentiation in frame B wrt q).
@@ -416,6 +413,10 @@ w_BCset_E  | w_BClist_E   |  Set of angular velocities in frame B for the frames
 vset_E     | vlist_E      |  Set of generic vectors v = {v₀,  v₁,  v₂} expressed in frame E
 mesh_B                    || A mesh whose underlying vertices' positions are from Bo (frame B's origin), expressed in frame B
 point_cloud_B             || A point cloud whose underlying points' positions are from Bo (frame B's origin), expressed in frame B
+
+<b>Historical note</b>: In the 1980s, monogram notation extended Thomas Kane's 
+1960s kinematic and dynamics typeset notation to software by Kane's associates,
+e.g., Michael Sherman, David Schaechter, David Levinson, and Paul Mitiguy.
 
  Next topic: @ref multibody_quantities_units
 */
