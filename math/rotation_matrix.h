@@ -712,7 +712,13 @@ class RotationMatrix {
   /// @param[in] v_B 3x1 vector that post-multiplies `this`.
   /// @returns 3x1 vector `v_A = R_AB * v_B`.
   Vector3<T> operator*(const Vector3<T>& v_B) const {
-    return Vector3<T>(matrix() * v_B);
+    Vector3<T> v_A;
+    if constexpr (std::is_same_v<T, double>) {
+      internal::ComposeRv3(*this, v_B.data(), v_A.data());
+    } else {
+      v_A = matrix() * v_B;
+    }
+    return v_A;
   }
 
   /// Multiplies `this` %RotationMatrix `R_AB` by the n vectors `v1`, ... `vn`,
