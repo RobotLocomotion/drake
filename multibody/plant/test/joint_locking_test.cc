@@ -402,9 +402,9 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
 // accelerations, velocities and positions match to a given accuracy at each
 // time step.
 TEST_P(TrajectoryTest, CompareWeldAndLocked) {
-  // Allow 2 digits of precision loss to account for roundoff differences
-  // between the two code paths. This value was determined empircally by
-  // observing the maximum error between the two trajectories.
+  // Allow 2 digits of precision loss to account for roundoff differences among
+  // the various code paths. This value was determined empirically by observing
+  // the maximum error among the trajectories.
   const double kEps = 1e2 * std::numeric_limits<double>::epsilon();
   const int kNumTimesteps = 10;
 
