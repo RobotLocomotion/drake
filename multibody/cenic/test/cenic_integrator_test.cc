@@ -26,6 +26,7 @@ namespace cenic {
 namespace {
 
 using contact_solvers::icf::IcfSolverParameters;
+using math::RigidTransformd;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector4d;
@@ -47,10 +48,10 @@ constexpr char kDoublePendulumMjcf[] = R"""(
   <?xml version="1.0"?>
   <mujoco model="double_pendulum">
     <worldbody>
-      <body>
+      <body name="link1">
         <joint type="hinge" name="joint1" axis="0 1 0" pos="0 0 0.1" damping="0.001"/>
         <geom type="capsule" size="0.01 0.1"/>
-        <body>
+        <body name="link2">
           <joint type="hinge" name="joint2" axis="0 1 0" pos="0 0 -0.1" damping="0.001"/>
           <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
         </body>
@@ -70,34 +71,6 @@ constexpr char kBallOnTableMjcf[] = R"""(
     </worldbody>
   </mujoco>
   )""";
-
-GTEST_TEST(CenicIntegratorTest, JointLockingUnsupported) {
-  DiagramBuilder<double> diagram_builder;
-  auto* plant = diagram_builder.AddSystem<MultibodyPlant<double>>(0.0);
-
-  Parser(plant).AddModelsFromString(kDoublePendulumMjcf, "xml");
-  // Remove a joint to exercise non-contiguous joint indexing.
-  plant->RemoveJoint(plant->get_joint(JointIndex(0)));
-
-  plant->Finalize();
-  auto diagram = diagram_builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context =
-      plant->GetMyMutableContextFromRoot(diagram_context.get());
-  CenicIntegrator<double> dut(*diagram);
-  dut.set_maximum_step_size(0.1);
-  dut.reset_context(diagram_context.get());
-
-  // Bug regression check: don't accidentally throw by mistakenly iterating
-  // over stale joint indices.
-  EXPECT_NO_THROW(dut.Initialize());
-
-  plant->get_joint(JointIndex(1)).Lock(&plant_context);
-
-  // Actual joint locking check: now something is locked, refuse to give wrong
-  // answers, and explain that joint locking is the problem.
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.Initialize(), ".*joint 1.*locked.*");
-}
 
 // TestParam uses tuple for compatibility with ::testing::Combine.
 // get<0>() is nesting depth for the plant and scene graph.
@@ -561,6 +534,11 @@ TEST_P(DoublePendulum, JointLimits) {
   EXPECT_EQ(q_after(1), q(1));
   VectorXd error_estimate(integrator_->get_error_estimate()->CopyToVector());
   EXPECT_EQ(error_estimate.norm(), 0);
+
+  // Check joint locking support with limit constraint.
+  const auto& joint1 = plant_->GetJointByName("joint1");
+  joint1.Lock(plant_context_);
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.1));
 }
 
 /* Checks that effort limits are enforced by the integrator. */
@@ -615,8 +593,9 @@ TEST_P(DoublePendulum, EffortLimits) {
 /* Checks that coupler constraints are handled correctly by the integrator. */
 TEST_P(DoublePendulum, CoupledJoints) {
   const double gear_ratio = 0.5;
-  plant_->AddCouplerConstraint(plant_->GetJointByName("joint1"),
-                               plant_->GetJointByName("joint2"), gear_ratio);
+  const auto& joint1 = plant_->GetJointByName("joint1");
+  const auto& joint2 = plant_->GetJointByName("joint2");
+  plant_->AddCouplerConstraint(joint1, joint2, gear_ratio);
   Build();
   const VectorXd q0 = plant_->GetPositions(*plant_context_);
 
@@ -630,6 +609,34 @@ TEST_P(DoublePendulum, CoupledJoints) {
   // expect exact satisfaction.
   const VectorXd q = plant_->GetPositions(*plant_context_);
   EXPECT_NEAR(q(0), gear_ratio * q(1), 1e-5);
+
+  // Check joint locking support with coupler constraint.
+  joint1.Lock(plant_context_);
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.1));
+}
+
+/* Checks that weld constraints are handled correctly by the integrator. */
+TEST_P(DoublePendulum, WeldedBodies) {
+  const auto& link1 = plant_->GetBodyByName("link1");
+  const auto& link2 = plant_->GetBodyByName("link2");
+  plant_->AddWeldConstraint(link1, RigidTransformd(), link2, RigidTransformd());
+  Build();
+  const VectorXd q0 = plant_->GetPositions(*plant_context_);
+
+  // Initial conditions should satisfy the weld constraint.
+  // TODO(rpoyner-tri): Adjust and test weld constraint.
+
+  simulator_->AdvanceTo(1.0);
+
+  // Verify that the constraint is satisfied at the end of the simulation.  The
+  // constraint is essentially enforced by a very stiff spring, so we shouldn't
+  // expect exact satisfaction.
+  // TODO(rpoyner-tri): Adjust and test weld constraint.
+
+  // Check joint locking support with weld constraint.
+  const auto& joint1 = plant_->GetJointByName("joint1");
+  joint1.Lock(plant_context_);
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.1));
 }
 
 /* Checks that a ball rolling along the ground produces the expected result. */
@@ -672,6 +679,11 @@ TEST_P(BallOnTable, RollingContact) {
 
   EXPECT_NEAR(x_actual, x_expected, 1e-3);
   EXPECT_NEAR(z_actual, z_expected, 1e-3);
+
+  // Check joint locking support with patch constraint.
+  const auto& ball = plant_->GetBodyByName("link1");
+  ball.Lock(plant_context_);
+  EXPECT_NO_THROW(simulator_->AdvanceTo(simulation_time + 0.1));
 }
 
 /* Checks that quaternions always remain normalized. */
@@ -719,6 +731,11 @@ TEST_P(BallOnTable, ExternalForces) {
                                                       simulation_time;
   const double final_height = plant_->GetPositions(*plant_context_)[6];
   EXPECT_NEAR(final_height, expected_height, 1e-3);
+
+  // Check joint locking support with gain constraint.
+  const auto& ball = plant_->GetBodyByName("link1");
+  ball.Lock(plant_context_);
+  EXPECT_NO_THROW(simulator_->AdvanceTo(simulation_time + 0.1));
 }
 
 INSTANTIATE_TEST_SUITE_P(
