@@ -3752,7 +3752,7 @@ method computes:
 where ``M(q)`` is the model's mass matrix (including rigid body mass
 properties and reflected_inertia "reflected inertias"), ``C(q, v)v``
 is the bias term for Coriolis and gyroscopic effects and ``tau_app``
-consists of a vector applied generalized forces. The last term is a
+consists of a vector of applied generalized forces. The last term is a
 summation over all bodies in the model where ``Fapp_Bo_W`` is an
 applied spatial force on body B at ``Bo`` which gets projected into
 the space of generalized forces with the transpose of ``Jv_V_WB(q)``
@@ -5011,7 +5011,7 @@ be used by Finalize(); post-finalize it returns the joint type that
 *was* used if there were any base bodies in need of a joint.
 
 See also:
-    SetBaseBodyJointType(), Finalize())""";
+    SetBaseBodyJointType(), GetCombineWeldedBodies(), Finalize())""";
         } GetBaseBodyJointType;
         // Symbol: drake::multibody::MultibodyPlant::GetBodiesKinematicallyAffectedBy
         struct /* GetBodiesKinematicallyAffectedBy */ {
@@ -5168,6 +5168,23 @@ Note:
 See also:
     RegisterCollisionGeometry(), Finalize())""";
         } GetCollisionGeometriesForBody;
+        // Symbol: drake::multibody::MultibodyPlant::GetCombineWeldedBodies
+        struct /* GetCombineWeldedBodies */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Returns the currently-set choice for
+whether welded-together bodies should be combined or modeled
+separately, either for the global setting or for a specific model
+instance. If a model instance is provided for which no explicit choice
+was made, the global setting is returned. Any model instance index is
+acceptable here; if not recognized then the global setting is
+returned. This can be called any time -- pre-finalize it returns the
+setting that will be used by Finalize(); post-finalize it returns the
+setting that *was* used if there were any welded-together bodies.
+
+See also:
+    SetCombineWeldedBodies(), GetBaseBodyJointType(), Finalize())""";
+        } GetCombineWeldedBodies;
         // Symbol: drake::multibody::MultibodyPlant::GetConstraintActiveStatus
         struct /* GetConstraintActiveStatus */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6641,8 +6658,36 @@ Raises:
     RuntimeError if called after Finalize().
 
 See also:
-    GetBaseBodyJointType(), Finalize())""";
+    GetBaseBodyJointType(), SetCombineWeldedBodies(), Finalize())""";
         } SetBaseBodyJointType;
+        // Symbol: drake::multibody::MultibodyPlant::SetCombineWeldedBodies
+        struct /* SetCombineWeldedBodies */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Controls whether welded-together RigidBody
+(Link) elements are to be combined into a single composite mobilized
+body in the generated model. If so, those Weld joints will not be
+modeled (i.e. will have no corresponding mobilizer) in the
+post-Finalize() model and there will be fewer mobilized bodies and
+modeled joints in the generated model than in the user's specification
+of links and joints. Results for the original RigidBody (Link)
+elements can still be obtained by name or BodyIndex, but no results
+(in particular, no reaction forces) are available for the unmodeled
+Weld joints.
+
+You can set this flag globally or on a per-model instance basis. If
+there is a setting for a joint's model instance then that setting is
+used; otherwise, the global setting is used.
+
+The default global setting for Drake is *not* to combine welded
+RigidBody elements.
+
+Raises:
+    RuntimeError if called after Finalize().
+
+See also:
+    GetCombineWeldedBodies(), SetBaseBodyJointType(), Finalize())""";
+        } SetCombineWeldedBodies;
         // Symbol: drake::multibody::MultibodyPlant::SetConstraintActiveStatus
         struct /* SetConstraintActiveStatus */ {
           // Source: drake/multibody/plant/multibody_plant.h

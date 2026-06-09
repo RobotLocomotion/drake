@@ -940,6 +940,34 @@ void MultibodyTree<T>::SetBaseBodyJointType(
 }
 
 template <typename T>
+void MultibodyTree<T>::SetCombineWeldedBodies(
+    bool combine, std::optional<ModelInstanceIndex> model_instance) {
+  DRAKE_THROW_UNLESS(!is_finalized());
+  LinkJointGraph& graph = mutable_graph();
+
+  // Obtain the current option flag to preserve the ones that don't have
+  // to do with combining rigid bodies.
+  ForestBuildingOptions options =
+      model_instance.has_value()
+          ? graph.get_forest_building_options_in_use(*model_instance)
+          : graph.get_global_forest_building_options();
+
+  // Clear the existing setting. This leaves us with the default which is _not_
+  // to combine welded bodies.
+  options = options & ~ForestBuildingOptions::kOptimizeWeldedLinksAssemblies;
+
+  if (combine) {
+    options = options | ForestBuildingOptions::kOptimizeWeldedLinksAssemblies;
+  }
+
+  if (model_instance.has_value()) {
+    graph.SetForestBuildingOptions(*model_instance, options);
+  } else {
+    graph.SetGlobalForestBuildingOptions(options);
+  }
+}
+
+template <typename T>
 BaseBodyJointType MultibodyTree<T>::GetBaseBodyJointType(
     std::optional<ModelInstanceIndex> model_instance) const {
   const ForestBuildingOptions options =
@@ -951,6 +979,18 @@ BaseBodyJointType MultibodyTree<T>::GetBaseBodyJointType(
   if (static_cast<bool>(options & ForestBuildingOptions::kUseFixedBase))
     return BaseBodyJointType::kWeldJoint;
   return BaseBodyJointType::kQuaternionFloatingJoint;
+}
+
+template <typename T>
+bool MultibodyTree<T>::GetCombineWeldedBodies(
+    std::optional<ModelInstanceIndex> model_instance) const {
+  const ForestBuildingOptions options =
+      model_instance.has_value()
+          ? graph().get_forest_building_options_in_use(*model_instance)
+          : graph().get_global_forest_building_options();
+
+  return static_cast<bool>(
+      options & ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
 }
 
 template <typename T>
@@ -1561,6 +1601,8 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
 
   // The first pass locates each frame with respect to the body frame B
   // of the body to which it is fixed.
+  // Pass 1 (over all frames): locate each frame by its pose X_LF with respect
+  // to the link frame L of the Link (RigidBody) to which it is fixed.
   for (const Frame<T>* frame : frames_.elements()) {
     // TODO(sherm1) Note that we're unnecessarily recalculating the parent
     //  and ancestor poses. Likely OK since we expect short sequences and
@@ -1569,35 +1611,135 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     //  order (or memoizing) so we don't have to recalculate.
     const RigidTransform<T> X_LF = frame->CalcPoseInBodyFrame(context);
     frame_body_poses->SetX_LF(frame->index(), X_LF);
-
-    // TODO(sherm1) When we support composites, X_BF ≠ X_LF.
-    frame_body_poses->SetX_BF(frame->index(), X_LF);
   }
 
-  // TODO(sherm1) Currently X_BL is always identity so we don't need to set
-  // it here. When we support composites, we'll need to set it here as well.
+  // Pass 2 (over all mobods): find the pose X_BL of each Link frame L on its
+  // Mobod B. This is normally identity except if B is a composite mobod and L
+  // is not its active (most inboard) link.
+  std::vector<uint8_t> got_X_BL(num_links(), false);
+  for (const SpanningForest::Mobod& mobod : forest().mobods()) {
+    const LinkOrdinal active_link_ordinal = mobod.active_link_ordinal();
+    frame_body_poses->SetX_BL(active_link_ordinal,
+                              RigidTransform<T>::Identity());
+    got_X_BL[active_link_ordinal] = true;
+    if (!mobod.is_composite()) continue;
+
+    // Now run through the rest of the links following `mobod`, which are
+    // supposed to be in inboard->outboard order (starting with the active link
+    // that we just did above). For each follower link Lₒ we
+    // should be able to find an attached weld joint where the other (inboard)
+    // link Lᵢ already has a calculated X_BLᵢ. In that case we can use the
+    // weld's transform X_JᵢJₒ and connected frame poses X_LᵢJᵢ and X_LₒJₒ
+    // (just calculated above) to compute
+    //     X_BLₒ = X_BLᵢ * X_LᵢJᵢ * X_JᵢJₒ * (X_LₒJₒ)⁻¹
+    // This is complicated by the fact that the weld joint is expressed as
+    // connecting a parent link P and child link C. Usually Lᵢ=P and Lₒ=C but
+    // the joint may be reversed such that Lᵢ=C and Lₒ=P.
+    for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
+      if (got_X_BL[link_ordinal]) continue;  // Already done.
+      const LinkJointGraph::Link& link_Lo = graph().links(link_ordinal);
+
+      // Search for the weld joint connecting Lₒ to an inboard link Lᵢ.
+      for (JointIndex joint_index : link_Lo.joints()) {
+        const LinkJointGraph::Joint& graph_joint =
+            graph().joint_by_index(joint_index);
+        if (!graph_joint.is_weld()) continue;  // Wrong joint type.
+
+        // We have a weld joint. If it connects to a link we haven't yet
+        // processed it is an outboard joint; skip it for now.
+        const LinkIndex link_Li_index =
+            graph_joint.other_link_index(link_Lo.index());
+        const LinkJointGraph::Link& link_Li =
+            graph().link_by_index(link_Li_index);
+        if (!got_X_BL[link_Li.ordinal()]) continue;  // Wrong joint.
+
+        const RigidTransform<T>& X_BLi =
+            frame_body_poses->get_X_BL(link_Li.ordinal());
+
+        // We have found the weld joint connecting known-location Lᵢ to
+        // our unknown-location Lₒ.
+        const bool is_reversed =
+            graph_joint.child_link_index() != link_Lo.index();
+
+        const WeldJoint<T>& weld_joint =
+            dynamic_cast<const WeldJoint<T>&>(get_joint(joint_index));
+        const math::RigidTransformd& X_JpJc = weld_joint.X_FM();
+        const RigidTransform<T> X_JiJo =
+            (is_reversed ? X_JpJc.inverse() : X_JpJc).cast<T>();
+        const Frame<T>& frame_Ji = is_reversed ? weld_joint.frame_on_child()
+                                               : weld_joint.frame_on_parent();
+        const Frame<T>& frame_Jo = is_reversed ? weld_joint.frame_on_parent()
+                                               : weld_joint.frame_on_child();
+
+        // Get the frame poses we calculated above.
+        const RigidTransform<T>& X_LiJi =
+            frame_body_poses->get_X_LF(frame_Ji.index());
+        const RigidTransform<T>& X_LoJo =
+            frame_body_poses->get_X_LF(frame_Jo.index());
+
+        const RigidTransform<T> X_BLo =
+            X_BLi * X_LiJi * X_JiJo * X_LoJo.inverse();
+        frame_body_poses->SetX_BL(link_ordinal, X_BLo);
+        got_X_BL[link_ordinal] = true;
+        break;  // Done with this follower link.
+      }
+    }
+  }
+
+  // TODO(sherm1) Pass 2b could be removed or Debug-only.
+  // Pass 2b (over all links): sanity check that Pass 2 got X_BL for every link.
+  for (const Link<T>* link : links_.elements()) {
+    DRAKE_DEMAND(got_X_BL[link->ordinal()]);
+  }
+
+  // Pass 3 (over all frames again): locates each frame with respect to the
+  // mobod frame B of the mobod that its link follows, i.e. X_BF = X_BL * X_LF.
+  for (const Frame<T>* frame : frames_.elements()) {
+    const RigidTransform<T>& X_LF = frame_body_poses->get_X_LF(frame->index());
+    const Link<T>& link = frame->body();
+    const RigidTransform<T>& X_BL = frame_body_poses->get_X_BL(link.ordinal());
+    frame_body_poses->SetX_BF(frame->index(), X_BL * X_LF);
+  }
 
   // For every mobilized body, precalculate its body-frame spatial inertia
-  // M_BBo_B from the parameterization of that inertia.
+  // M_BBo_B by shifting and accumulating the spatial inertia M_LLo_L of each
+  // of the links it mobilizes (we call those the mobod's "follower links").
+  // For a non-composite mobod there is only one follower link; for a composite
+  // there are multiple links welded together.
+  // We also calculate and save p_BoLcm_B, the offset from mobod origin Bo to
+  // each of its follower links' centers of mass, expressed in B.
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
     if (mobod.is_world()) continue;
-    // TODO(sherm1) Can't handle optimized WeldedLinksAssemblies yet.
-    DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
-    const Mobilizer<T>& mobilizer = get_mobilizer(mobod.index());
 
-    // Get the parameterized spatial inertia.
-    const Link<T>& link = mobilizer.outboard_body();
-    const SpatialInertia<T> M_LLo_L =
-        link.CalcSpatialInertiaInBodyFrame(context);
-    frame_body_poses->SetM_LLo_L(link.ordinal(), M_LLo_L);
+    // Zero out the Mobod's mass properties. We'll build these up by
+    // accumulating contributions from all follower links.
+    frame_body_poses->SetM_BBo_B(mobod.index(), SpatialInertia<T>::Zero());
 
-    const Vector3<T>& p_LoLcm_L = M_LLo_L.get_com();
-    const RigidTransform<T>& X_BL = frame_body_poses->get_X_BL(link.ordinal());
-    const Vector3<T> p_BoLcm_B = X_BL * p_LoLcm_L;
-    frame_body_poses->Set_p_BoLcm_B(link.ordinal(), p_BoLcm_B);
+    // Accumulate the spatial inertia from each link following this mobod.
+    for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
+      const LinkIndex link_index = forest().links(link_ordinal).index();
+      const Link<T>& link = links_.get_element(link_index);
+      const SpatialInertia<T> M_LLo_L =
+          link.CalcSpatialInertiaInBodyFrame(context);
+      frame_body_poses->SetM_LLo_L(link_ordinal, M_LLo_L);
 
-    // TODO(sherm1) When we support composites, M_BBo_B ≠ M_LLo_L.
-    frame_body_poses->SetM_BBo_B(mobod.index(), M_LLo_L);
+      const Vector3<T>& p_LoLcm_L = M_LLo_L.get_com();
+      if (!frame_body_poses->is_X_BL_identity(link_ordinal)) {
+        const RigidTransform<T>& X_BL =
+            frame_body_poses->get_X_BL(link_ordinal);
+        const math::RotationMatrix<T>& R_BL = X_BL.rotation();
+        const Vector3<T>& p_BoLo_B = X_BL.translation();
+        const SpatialInertia<T> M_LLo_B = M_LLo_L.ReExpress(R_BL);
+        const SpatialInertia<T> M_LBo_B = M_LLo_B.Shift(-p_BoLo_B);
+        frame_body_poses->AddToM_BBo_B(mobod.index(), M_LBo_B);
+        const Vector3<T> p_BoLcm_B = X_BL * p_LoLcm_L;
+        frame_body_poses->Set_p_BoLcm_B(link_ordinal, p_BoLcm_B);
+      } else {
+        // X_BL is identity.
+        frame_body_poses->AddToM_BBo_B(mobod.index(), M_LLo_L);
+        frame_body_poses->Set_p_BoLcm_B(link_ordinal, p_LoLcm_L);
+      }
+    }
   }
 }
 
@@ -1786,8 +1928,8 @@ VectorX<T> MultibodyTree<T>::CalcInverseDynamics(
     const systems::Context<T>& context, const VectorX<T>& known_vdot,
     const MultibodyForces<T>& external_forces) const {
   // Temporary storage used in the computation of inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB(num_links());
-  std::vector<SpatialForce<T>> F_BMo_W(num_links());
+  std::vector<SpatialAcceleration<T>> A_WB(num_mobods());
+  std::vector<SpatialForce<T>> F_BMo_W(num_mobods());
   VectorX<T> tau(num_velocities());
   CalcInverseDynamics(context, known_vdot, external_forces.body_forces(),
                       external_forces.generalized_forces(), &A_WB, &F_BMo_W,
