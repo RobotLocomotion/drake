@@ -188,6 +188,7 @@ drake_cc_library(
         "weld_constraints_pool.cc",
     ],
     hdrs = [
+        "abstract_constraints_pool.h",
         "coupler_constraints_pool.h",
         "gain_constraints_pool.h",
         "icf_model.h",

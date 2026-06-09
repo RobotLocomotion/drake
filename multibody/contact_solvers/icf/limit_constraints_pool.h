@@ -7,9 +7,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -55,12 +57,16 @@ class LimitConstraintsPool {
 
   ~LimitConstraintsPool();
 
-  /* Returns a reference to the parent model. */
+  /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
-
-  /* Returns the total number of limit constraints. Each limit constraint
-  enforces both lower and upper bounds on all DoFs in a clique. */
   int num_constraints() const { return clique_.size(); }
+  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateHessian(
+      const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+  void ReduceInto(const ReducedMapping& mapping,
+                  LimitConstraintsPool<T>* reduced_pool) const;
 
   /* Returns the number of generalized velocities associated with the clique of
   each limit constraint. */
@@ -100,16 +106,6 @@ class LimitConstraintsPool {
   the full plant. */
   void CalcData(const VectorX<T>& v,
                 LimitConstraintsDataPool<T>* limit_data) const;
-
-  /* Adds the gradient contribution of this constraint, ∇ℓ = −γ, to the
-  model-wide gradient. */
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-
-  /* Adds the contribution of this constraint to the model-wide Hessian. */
-  void AccumulateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
-          hessian) const;
 
   /* Computes the constraint cost ℓ̃(α) = ℓ(v + α⋅w) and its first and second
   derivatives along the line defined by the search direction `w`.
@@ -156,6 +152,7 @@ class LimitConstraintsPool {
   EigenPool<VectorX<T>> gu_hat_;  // Upper bound velocity target scaled by dt.
   EigenPool<VectorX<T>> R_;       // Near-rigid regularization parameter.
 };
+static_assert(IsAbstractConstraintsPool<LimitConstraintsPool>);
 
 }  // namespace internal
 }  // namespace icf

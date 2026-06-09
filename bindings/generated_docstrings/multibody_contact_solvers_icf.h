@@ -12,6 +12,7 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
+// #include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 // #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
 // #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
