@@ -379,14 +379,12 @@ this replacement. Note: the spatial force Fᴮ is shorthand for Fᴮᵒ (i.e., t
 about-point is B's origin Bo). The monogram notation F_Bcm is useful when the
 about-point is Bcm (body B's center of mass).
 
-ᵈ The Jacobian (and similarly the Hessian) contains partial derivatives wrt 
-(with respect to) scalars e.g., wrt q (generalized positions), or q̇, or v 
-(generalized velocities). The example below shows the simplicity of Jacobian 
-monogram: first is the Jacobian symbol (Jv), next is the kinematic quantity 
+ᵈ The Jacobian contains partial derivatives wrt (with respect to) scalars
+ e.g., wrt q (generalized positions), or q̇, or v (generalized velocities). 
+ The example below shows the simplicity of Jacobian monogram: 
+ first is the Jacobian symbol (Jv), next is the kinematic quantity 
 (v_BQ), last is an expressed-in frame (E).
 <br>Example: `Jv_v_BQ_E` is `Jv` (Jacobian wrt v),
-for `v_BQ` (velocity in frame B of point Q), expressed in frame E.
-<br>Related: `Hv_v_BQ_E` is `Hv` (Hessian wrt v),
 for `v_BQ` (velocity in frame B of point Q), expressed in frame E.
 <br> <b>Advanced:</b> Due to rules of vector differentiation, explicit Jacobian
 monogram notation for `Jq` (Jacobian wrt generalized positions q) requires an
