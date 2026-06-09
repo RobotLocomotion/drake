@@ -38,11 +38,6 @@ struct IntegratorTestFactory<CenicIntegrator<double>> {
       return std::unexpected(
           "TODO(#23921, #24304): CENIC cannot yet pass this test.");
     }
-    if (test_info->name() == std::string("TrivialFixedStepJointsLocked") ||
-        test_info->name() ==
-            std::string("TrivialErrorControlledStepJointsLocked")) {
-      return std::unexpected("TODO(#23764): CENIC cannot yet pass this test.");
-    }
 
     IntegratorTestArticles<SpecificSystem> result;
     DiagramBuilder<double> builder;
