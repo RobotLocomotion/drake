@@ -56,8 +56,8 @@ void WeldConstraintsPool<T>::Resize(const int num_constraints) {
   p_AP_W_.Resize(num_constraints, 3, 1);
   p_BQ_W_.Resize(num_constraints, 3, 1);
   p_PoQo_W_.Resize(num_constraints, 3, 1);
-  g0_.resize(num_constraints);
-  R_.resize(num_constraints);
+  g0_.Resize(num_constraints, 6, 1);
+  R_.Resize(num_constraints, 6, 1);
 }
 
 template <typename T>
@@ -426,10 +426,56 @@ void WeldConstraintsPool<T>::CalcCostAlongLine(
 }
 
 template <typename T>
-void WeldConstraintsPool<T>::ReduceInto(const ReducedMapping&,
-                                        WeldConstraintsPool<T>*) const {
-  // TODO(#23764): implement.
-  DRAKE_THROW_UNLESS(num_constraints() == 0);
+void WeldConstraintsPool<T>::ReduceInto(
+    const ReducedMapping& mapping, WeldConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(num_constraints());
+
+  reduced_pool->body_pairs_.clear();
+  reduced_pool->p_AP_W_.Clear();
+  reduced_pool->p_BQ_W_.Clear();
+  reduced_pool->p_PoQo_W_.Clear();
+  reduced_pool->g0_.Clear();
+  int reduced_size{0};
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int body_a = body_pairs_[k].first;
+    const int body_b = body_pairs_[k].second;
+    const int c_b = model().body_to_clique(body_b);
+    const int c_a = model().body_to_clique(body_a);  // negative if anchored.
+    const bool have_r_c_b = mapping.clique_subsequence.participates(c_b);
+    const bool have_r_c_a =
+        (c_a >= 0 && mapping.clique_subsequence.participates(c_a));
+    const int r_num_cliques = have_r_c_b + have_r_c_a;
+    if (r_num_cliques == 0) {
+      continue;
+    }
+    // At this point, we could have a num_cliques==1 case where body_b is
+    // locked (no clique), and body_a is not. This will require flipping the
+    // direction of the weld constraint.
+    bool need_flip = (r_num_cliques == 1 && have_r_c_a);
+
+    // Fill in the reduced constraint.
+    if (need_flip) {
+      reduced_pool->body_pairs_.emplace_back(body_b, body_a);
+      reduced_pool->p_AP_W_.Add(3, 1) = p_BQ_W_[k];
+      reduced_pool->p_BQ_W_.Add(3, 1) = p_AP_W_[k];
+      reduced_pool->p_PoQo_W_.Add(3, 1) = -p_PoQo_W_[k];
+      reduced_pool->g0_.Add(6, 1) = -g0_[k];
+    } else {
+      reduced_pool->body_pairs_.push_back(body_pairs_[k]);
+      reduced_pool->p_AP_W_.Add(3, 1) = p_AP_W_[k];
+      reduced_pool->p_BQ_W_.Add(3, 1) = p_BQ_W_[k];
+      reduced_pool->p_PoQo_W_.Add(3, 1) = p_PoQo_W_[k];
+      reduced_pool->g0_.Add(6, 1) = g0_[k];
+    }
+
+    // Track the reduced pool size.
+    ++reduced_size;
+  }
+  // R_ and HessianBlock will be set by PrecomputeHessianBlocks(). Set the
+  // arrays to the correct size.
+  reduced_pool->R_.Resize(reduced_size, 6, 1);
+  reduced_pool->hessian_blocks_.resize(reduced_size);
 }
 
 }  // namespace internal
