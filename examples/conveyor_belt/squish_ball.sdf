@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
+  <model name='blob'>
+    <link name='blob'>
+      <pose>-0.185 -0.09 0.06 1.5707 3.1416 0</pose>
+      <!-- The sphere is tetrahedralized into the FEM mesh that is simulated;
+           drake:mesh_resolution_hint controls how finely. The surface of that
+           mesh doubles as the visual geometry. -->
+      <collision name='collision'>
+        <geometry>
+          <sphere>
+            <radius>0.15</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:hunt_crossley_dissipation>5</drake:hunt_crossley_dissipation>
+          <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+      <!-- An <empty/> visual geometry keeps the surface of the simulation mesh
+           as the visual, while still letting <material> color it. A deformable
+           <visual> may only specify <empty/> or a rendering <mesh>. -->
+      <visual name='visual'>
+        <geometry>
+          <empty/>
+        </geometry>
+        <material>
+          <diffuse>0.0 0.5 0.5 1.0</diffuse>
+        </material>
+      </visual>
+      <drake:deformable_properties>
+        <drake:youngs_modulus>3e4</drake:youngs_modulus>
+        <drake:poissons_ratio>0.4</drake:poissons_ratio>
+        <drake:stiffness_damping>0.01</drake:stiffness_damping>
+        <drake:mass_density>1e3</drake:mass_density>
+      </drake:deformable_properties>
+    </link>
+  </model>
+</sdf>
