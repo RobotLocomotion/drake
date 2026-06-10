@@ -202,12 +202,9 @@ drake_cc_library(
         "weld_constraints_pool.h",
     ],
     deps = [
-        ":coupler_constraints_data_pool",
         ":eigen_pool",
-        ":holonomic_constraints_data_pool",
         ":icf_data",
         ":icf_search_direction_data",
-        ":limit_constraints_data_pool",
         ":reduced_mapping",
         "//common:default_scalars",
         "//common:essential",
