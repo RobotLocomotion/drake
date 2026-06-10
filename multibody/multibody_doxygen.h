@@ -380,9 +380,9 @@ about-point is B's origin Bo). The monogram notation F_Bcm is useful when the
 about-point is Bcm (body B's center of mass).
 
 ᵈ The Jacobian contains partial derivatives wrt (with respect to) scalars
-e.g., wrt q (generalized positions), or q̇, or v (generalized velocities). 
-The example below shows the simplicity of Jacobian monogram: 
-first is the Jacobian symbol (Jv), next is the kinematic quantity (v_BQ), 
+e.g., wrt q (generalized positions), or q̇, or v (generalized velocities).
+The example below shows the simplicity of Jacobian monogram:
+first is the Jacobian symbol (Jv), next is the kinematic quantity (v_BQ),
 last is an expressed-in frame (E).
 <br>Example: `Jv_v_BQ_E` is `Jv` (Jacobian wrt v),
 for `v_BQ` (velocity in frame B of point Q), expressed in frame E.
