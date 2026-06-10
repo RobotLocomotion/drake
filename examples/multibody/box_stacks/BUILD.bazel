@@ -1,0 +1,52 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_binary(
+    name = "box_stacks",
+    srcs = ["box_stacks.cc"],
+    deps = [
+        "//common:parallelism",
+        "//common:random",
+        "//geometry:meshcat",
+        "//geometry:proximity_properties",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/cenic:cenic_integrator",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:event_collection",
+        "//visualization:visualization_config",
+        "//visualization:visualization_config_functions",
+        "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        # A small, short, serial run keeps the smoke test fast.
+        "--num_stacks=2",
+        "--boxes_per_stack=3",
+        "--simulation_time=0.05",
+        "--target_realtime_rate=0.0",
+    ],
+)
+
+drake_py_binary(
+    name = "benchmark_threads",
+    srcs = ["benchmark_threads.py"],
+    data = [":box_stacks"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
+)
+
+add_lint_tests()
