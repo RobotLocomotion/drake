@@ -111,8 +111,7 @@ the main body of the document:
 
 1. Find the git sha of the most recent nightly build:
    1. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
-      has nothing still running (modulo the ``*-coverage`` builds, which we can
-      ignore); if something is running, wait until it finishes.
+      has nothing still running; if something is running, wait until it finishes.
    2. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean.
       If not, then wait until tomorrow to try again.
    3. Open <https://github.com/RobotLocomotion/drake/commits/nightly-release/>;
