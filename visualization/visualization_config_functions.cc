@@ -1,5 +1,6 @@
 #include "drake/visualization/visualization_config_functions.h"
 
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -17,8 +18,10 @@ namespace {
 
 using geometry::DrakeVisualizer;
 using geometry::DrakeVisualizerParams;
+using geometry::FrameId;
 using geometry::MeshcatVisualizer;
 using geometry::MeshcatVisualizerParams;
+using geometry::MeshcatVisualizerSurfaceVelocityData;
 using geometry::Rgba;
 using geometry::Role;
 using geometry::SceneGraph;
@@ -30,6 +33,31 @@ using multibody::meshcat::ContactVisualizerParams;
 using systems::DiagramBuilder;
 using systems::System;
 using systems::lcm::LcmBuses;
+
+/* Populates the data MeshcatVisualizer needs to visualize surface velocities.
+ For a body with registered surface velocity, we map the corresponding
+ SceneGraph frame to the surface displacement signal name and the surface
+ velocity axis. */
+std::map<FrameId, MeshcatVisualizerSurfaceVelocityData> MakeSurfaceData(
+    const MultibodyPlant<double>& plant) {
+  std::map<FrameId, MeshcatVisualizerSurfaceVelocityData> result;
+  for (multibody::BodyIndex i(0); i < plant.num_bodies(); ++i) {
+    const auto& body = plant.get_body(i);
+    const auto axis_B = plant.GetSurfaceVelocityAxis(body);
+    // Technically, a body *can* have a registered surface velocity without a
+    // corresponding geometry frame -- if the plant wasn't registered with a
+    // SceneGraph instance. Of course, *visualizing* that would be nonsensical,
+    // but even in that case, we don't want this code to throw.
+    const auto frame_id = plant.GetBodyFrameIdIfExists(i);
+    if (axis_B.has_value() && frame_id.has_value()) {
+      result.emplace(*frame_id, MeshcatVisualizerSurfaceVelocityData{
+                                    .displacement_signal_name =
+                                        body.scoped_name().to_string(),
+                                    .axis_B = *axis_B});
+    }
+  }
+  return result;
+}
 
 void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
                                   DrakeLcmInterface* lcm,
@@ -67,8 +95,20 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     const std::vector<MeshcatVisualizerParams> all_meshcat_params =
         internal::ConvertVisualizationConfigToMeshcatParams(config);
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
-                                              params);
+      std::map<FrameId, MeshcatVisualizerSurfaceVelocityData> surface_data;
+      if (params.role == Role::kIllustration) {
+        // For illustration, account for bodies with declared surface velocity
+        // by translating the plant-specific data into geometry-native
+        // visualizer configuration.
+        surface_data = MakeSurfaceData(plant);
+      }
+      const bool has_surface_data = !surface_data.empty();
+      const auto& vis = MeshcatVisualizer<double>::AddToBuilder(
+          builder, *scene_graph, meshcat, params, std::move(surface_data));
+      if (has_surface_data) {
+        builder->Connect(plant.get_surface_displacements_output_port(),
+                         vis.surface_displacements_input_port());
+      }
     }
     if (config.publish_contacts) {
       ContactVisualizer<double>::AddToBuilder(

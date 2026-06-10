@@ -1,5 +1,7 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
+#include <cmath>
+#include <map>
 #include <memory>
 #include <string>
 #include <thread>
@@ -11,13 +13,16 @@
 #include <msgpack.hpp>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/value.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/bus_value.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
@@ -770,6 +775,164 @@ GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
   }
 }
 
+// Tests to see if the given meshcat instance has had the named double-valued
+// property set for the given path. Returns the value if so, nullopt otherwise.
+std::optional<double> GetDoubleProperty(const Meshcat& meshcat,
+                                        const std::string& path,
+                                        const std::string& property) {
+  const std::string bytes = meshcat.GetPackedProperty(path, property);
+  if (bytes.empty()) {
+    return {};
+  }
+  msgpack::object_handle oh = msgpack::unpack(bytes.data(), bytes.size());
+  auto decoded = oh.get().as<internal::SetPropertyData<double>>();
+  return decoded.value;
+}
+
+// Tests to see if the given meshcat instance has had the named vector-valued
+// property set for the given path. Returns the value if so, nullopt otherwise.
+std::optional<std::vector<double>> GetVectorProperty(
+    const Meshcat& meshcat, const std::string& path,
+    const std::string& property) {
+  const std::string bytes = meshcat.GetPackedProperty(path, property);
+  if (bytes.empty()) {
+    return {};
+  }
+  msgpack::object_handle oh = msgpack::unpack(bytes.data(), bytes.size());
+  auto decoded = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
+  return decoded.value;
+}
+
+// Exercises MeshcatVisualizer's surface-velocity contract. Constructor data
+// associates a SceneGraph frame id with (1) an axis expressed in that frame and
+// (2) a BusValue signal name. MeshcatVisualizer has the following
+// responsibilities:
+//
+//   1. For geometry on a configured frame, the visualizer must always set
+//     `crawl_axis`, expressed in the *geometry* frame.
+//   2. When the port contains the configured signal, the visualizer must also
+//      copy its value to `crawl_displacement`.
+//   3. The negative path for which geometries do not have those properties
+//      set. See the test for details.
+//
+// We create a small diagram with a SceneGraph and a MeshcatVisualizer. One
+// frame is provided surface velocity data and one not. We then perturb the
+// state of the inputs and confirm that the properties are set only when we
+// expect them to be.
+GTEST_TEST(MeshcatVisualizerTest, SurfaceDisplacement) {
+  // First build a diagram with SceneGraph and MeshcatVisualizer. We'll export
+  // some ports to facilitate the test.
+
+  auto meshcat = std::make_shared<Meshcat>();
+  systems::DiagramBuilder<double> builder;
+
+  // Add and populate SceneGraph (a prerequisite to specifying surface velocity
+  // data for MeshcatVisualizer).
+  auto* scene_graph = builder.AddSystem<SceneGraph<double>>();
+  const SourceId source_id = scene_graph->RegisterSource("source");
+
+  // Registers a frame and geometry, returning their ids. They share the same
+  // name.
+  auto add_geometry = [scene_graph, source_id](const std::string& name) {
+    const FrameId f_id =
+        scene_graph->RegisterFrame(source_id, GeometryFrame(name));
+    // Make X_BG != I, so we can tell that axis_B is re-expressed as axis_G.
+    const math::RigidTransformd X_BG(
+        math::RotationMatrixd::MakeZRotation(M_PI / 2.0),
+        Eigen::Vector3d::Zero());
+    auto instance = std::make_unique<GeometryInstance>(
+        X_BG, std::make_unique<Box>(1.0, 0.5, 0.1), name);
+    instance->set_illustration_properties(IllustrationProperties());
+    const GeometryId g_id =
+        scene_graph->RegisterGeometry(source_id, f_id, std::move(instance));
+    return std::pair<FrameId, GeometryId>{f_id, g_id};
+  };
+
+  const auto [moving_frame_id, moving_geo_id] = add_geometry("moving");
+  const auto [static_frame_id, static_geo_id] = add_geometry("static");
+
+  // Now add MeshcatVisualizer; only the moving frame is configured for surface
+  // velocity.
+  // We'll claim a single signal for surface displacements.
+  const std::string signal_name = "signal_name_doesn't_have_to_match_anything";
+  const std::map<FrameId, MeshcatVisualizerSurfaceVelocityData> surface_data{
+      {moving_frame_id,
+       {.displacement_signal_name = signal_name,
+        .axis_B = Eigen::Vector3d::UnitX()}}};
+  auto& visualizer = MeshcatVisualizer<double>::AddToBuilder(
+      &builder, *scene_graph, meshcat, {}, surface_data);
+
+  // Export the input ports.
+  const systems::InputPortIndex poses_input = builder.ExportInput(
+      scene_graph->get_source_pose_port(source_id), "source_poses");
+  const systems::InputPortIndex displacements_input = builder.ExportInput(
+      visualizer.surface_displacements_input_port(), "surface_displacements");
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  // Specific frame poses are irrelevant to this test, we simply need *some*
+  // poses that can be evaluated.
+  FramePoseVector<double> poses;
+  poses.set_value(moving_frame_id, math::RigidTransformd{});
+  poses.set_value(static_frame_id, math::RigidTransformd{});
+  diagram->get_input_port(poses_input).FixValue(context.get(), poses);
+
+  // Determine the paths of our added geometries.
+  const auto& inspector = scene_graph->model_inspector();
+  const std::string moving_geo_path = fmt::format(
+      "visualizer/moving/{}", TransformGeometryName(moving_geo_id, inspector));
+  const std::string static_geo_path = fmt::format(
+      "visualizer/static/{}", TransformGeometryName(static_geo_id, inspector));
+
+  // Surface axes are sent when geometry is first published. The axis is
+  // expressed in frame B and must be transformed into geometry frame G.
+  diagram->ForcedPublish(*context);
+  // Geometry affixed to frame with declared surface velocity reports crawl
+  // axis in the geometry frame.
+  const std::optional<std::vector<double>> axis =
+      GetVectorProperty(*meshcat, moving_geo_path, "crawl_axis");
+  ASSERT_TRUE(axis.has_value());
+  EXPECT_TRUE(CompareMatrices(Eigen::Map<const Eigen::Vector3d>(axis->data()),
+                              -Eigen::Vector3d::UnitY(), 1e-15));
+  // Geometry with no surface velocity, as no axis.
+  EXPECT_FALSE(
+      GetVectorProperty(*meshcat, static_geo_path, "crawl_axis").has_value());
+  // No bus connected --> the crawl_displacement doesn't get set for anyone.
+  EXPECT_FALSE(
+      GetDoubleProperty(*meshcat, moving_geo_path, "crawl_displacement")
+          .has_value());
+  EXPECT_FALSE(
+      GetDoubleProperty(*meshcat, static_geo_path, "crawl_displacement")
+          .has_value());
+
+  // A connected bus without the configured signal also leaves the geometry
+  // unchanged.
+  systems::BusValue bus;
+  bus.Set("wrong_signal", Value<double>(1.0));
+  diagram->get_input_port(displacements_input).FixValue(context.get(), bus);
+  diagram->ForcedPublish(*context);
+  EXPECT_FALSE(
+      GetDoubleProperty(*meshcat, moving_geo_path, "crawl_displacement")
+          .has_value());
+  EXPECT_FALSE(
+      GetDoubleProperty(*meshcat, static_geo_path, "crawl_displacement")
+          .has_value());
+
+  // Now we add a *valid* signal to the bus. The bad signal is still ignored,
+  // but the valid signal is used.
+  bus.Set(signal_name, Value<double>(2.25));
+  diagram->get_input_port(displacements_input).FixValue(context.get(), bus);
+  diagram->ForcedPublish(*context);
+  const std::optional<double> displacement =
+      GetDoubleProperty(*meshcat, moving_geo_path, "crawl_displacement");
+  ASSERT_TRUE(displacement.has_value());
+  EXPECT_EQ(*displacement, 2.25);
+  EXPECT_FALSE(
+      GetDoubleProperty(*meshcat, static_geo_path, "crawl_displacement")
+          .has_value());
+}
+
 // Full system acceptance test of setting alpha slider values (including the
 // initial value).
 TEST_F(MeshcatVisualizerWithIiwaTest, AlphaSlidersSystemCheck) {
@@ -792,20 +955,6 @@ TEST_F(MeshcatVisualizerWithIiwaTest, AlphaSlidersSystemCheck) {
   // Simulate and publish again to cause an update.
   simulator.AdvanceTo(0.1);
   diagram_->ForcedPublish(*context_);
-}
-
-// Tests to see if the given meshcat instance has had the "modulated_opacity"
-// set for the given path. Returns the value if so, nullopt otherwise.
-std::optional<double> GetOpacityProperty(const Meshcat& meshcat,
-                                         const std::string& path) {
-  const std::string bytes =
-      meshcat.GetPackedProperty(path, "modulated_opacity");
-  if (bytes.empty()) {
-    return {};
-  }
-  msgpack::object_handle oh = msgpack::unpack(bytes.data(), bytes.size());
-  auto decoded = oh.get().as<internal::SetPropertyData<double>>();
-  return decoded.value;
 }
 
 // Check the effect that changing alpha sliders has on geometry opacity.
@@ -847,7 +996,7 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
   // opacity for each geometry individually with the initial value of 1.
   diagram->ForcedPublish(*context);
   const std::optional<double> init_alpha =
-      GetOpacityProperty(*meshcat, geom_path);
+      GetDoubleProperty(*meshcat, geom_path, "modulated_opacity");
   ASSERT_TRUE(init_alpha.has_value());
   EXPECT_EQ(*init_alpha, 1.0);
 
@@ -855,7 +1004,8 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
   // the same value will do nothing.
   meshcat->SetSliderValue("visualizer α", 1.0);
   diagram->ForcedPublish(*context);
-  ASSERT_FALSE(GetOpacityProperty(*meshcat, params.prefix).has_value());
+  ASSERT_FALSE(GetDoubleProperty(*meshcat, params.prefix, "modulated_opacity")
+                   .has_value());
 
   // For a somewhat arbitrary sequence of opacity values, we're confirming that
   // the slider value is always set to the "modulating_opacity" property.
@@ -869,7 +1019,7 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
     // We should have dispatched a set property on the *visualizer root* with
     // the given slider value.
     const std::optional<double> mod_opacity_value =
-        GetOpacityProperty(*meshcat, params.prefix);
+        GetDoubleProperty(*meshcat, params.prefix, "modulated_opacity");
     ASSERT_TRUE(mod_opacity_value.has_value());
     EXPECT_EQ(*mod_opacity_value, slider_value);
   }
