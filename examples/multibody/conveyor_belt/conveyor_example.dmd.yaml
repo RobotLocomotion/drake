@@ -1,0 +1,70 @@
+# This assembles the conveyor belt which .... fill this in
+#
+# The four segments form a closed square loop. Each belt is L = 5 long and
+# W = 1 wide, so the loop's outer half-extent is c = (L + W)/2 = 3 and the
+# centerline of each run sits at c - W/2 = 2.5 from the origin. Each segment is
+# shifted W/2 = 0.5 along its own +x axis so that it also covers the corner
+# square at its leading end; the trailing end then butts exactly against the
+# neighboring segment. Segment i's +x axis points along -(surface velocity),
+# so the loop circulates as: north run -> west, west run -> south, south run
+# -> east, east run -> north.
+
+directives:
+
+- add_model:
+    name: ground
+    file: package://drake/examples/multibody/conveyor_belt/ground.sdf
+- add_weld:
+    parent: world
+    child: ground::slab
+
+- add_model:
+    name: segment1
+    file: package://drake/examples/multibody/conveyor_belt/conveyor_belt.sdf
+- add_weld:
+    parent: world
+    child: segment1::belt
+    X_PC:
+      translation: [0.5, 1.25, 1]
+      rotation: !Rpy { deg: [0, 0, 0] }
+
+- add_model:
+    name: segment2
+    file: package://drake/examples/multibody/conveyor_belt/conveyor_belt.sdf
+- add_weld:
+    parent: world
+    child: segment2::belt
+    X_PC:
+      translation: [1.25, -0.5, 1]
+      rotation: !Rpy { deg: [0, 0, -90] }
+
+- add_model:
+    name: segment3
+    file: package://drake/examples/multibody/conveyor_belt/conveyor_belt.sdf
+- add_weld:
+    parent: world
+    child: segment3::belt
+    X_PC:
+      translation: [-0.5, -1.25, 1]
+      rotation: !Rpy { deg: [0, 0, 180] }
+
+- add_model:
+    name: segment4
+    file: package://drake/examples/multibody/conveyor_belt/conveyor_belt.sdf
+- add_weld:
+    parent: world
+    child: segment4::belt
+    X_PC:
+      translation: [-1.25, 0.5, 1]
+      rotation: !Rpy { deg: [0, 0, 90] }
+
+# A deformable ball hovering over the center of each belt segment. The belt top
+# surface is at z = 1.05, so a ball center at z = 1.4 (radius 0.15) starts 0.2 m
+# above the belt and drops onto it.
+
+- add_model:
+    name: ball1
+    file: package://drake/examples/multibody/conveyor_belt/squish_ball.sdf
+    default_free_body_pose:
+      blob:
+        translation: [0.5, 1.25, 2.0]
