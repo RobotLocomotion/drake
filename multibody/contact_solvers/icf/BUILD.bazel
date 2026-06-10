@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":icf_external_systems_linearizer",
         ":icf_linear_feedback_gains",
         ":icf_model",
+        ":icf_partition",
         ":icf_search_direction_data",
         ":icf_solver",
         ":icf_solver_parameters",
@@ -91,6 +92,16 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_partition",
+    srcs = ["icf_partition.cc"],
+    hdrs = ["icf_partition.h"],
+    deps = [
+        "//common:essential",
+        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )
 
@@ -296,6 +307,14 @@ drake_cc_googletest(
         "//common/test_utilities:limit_malloc",
         "//math:gradient",
         "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_partition_test",
+    deps = [
+        ":icf_partition",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
