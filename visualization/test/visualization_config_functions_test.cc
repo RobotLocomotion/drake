@@ -10,10 +10,13 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_internal.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 
 using drake::geometry::DrakeVisualizerParams;
+using drake::geometry::FrameId;
+using drake::geometry::GeometryId;
 using drake::geometry::Meshcat;
 using drake::geometry::MeshcatVisualizerParams;
 using drake::geometry::Rgba;
@@ -236,6 +239,52 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
       ".*does not have any slider named illustration.*");
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat->GetSliderValue("proximity α"),
                               ".*does not have any slider named proximity.*");
+}
+
+// Confirms that ApplyVisualizationConfig translates between MultibodyPlant's
+// scoped body names and its SceneGraph frame ids when wiring surface velocity
+// visualization. In particular, the default model instance deliberately uses
+// different names for those two concepts.
+GTEST_TEST(VisualizationConfigFunctionsTest, ApplySurfaceVelocity) {
+  DrakeLcm drake_lcm(LcmBuses::kLcmUrlMemqNull);
+  LcmBuses lcm_buses;
+  lcm_buses.Add("default", &drake_lcm);
+
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const multibody::SpatialInertia<double> M_BBo =
+      multibody::SpatialInertia<double>::SolidBoxWithMass(1.0, 1.0, 1.0, 1.0);
+  const auto& belt =
+      plant.AddRigidBody("belt", multibody::default_model_instance(), M_BBo);
+  const GeometryId geometry_id = plant.RegisterVisualGeometry(
+      belt, math::RigidTransformd{}, geometry::Box(1.0, 0.5, 0.1), "visual");
+  plant.SetSurfaceVelocityAxis(belt, Eigen::Vector3d::UnitX());
+  plant.Finalize();
+
+  const FrameId frame_id = plant.GetBodyFrameIdOrThrow(belt.index());
+  const auto& inspector = scene_graph.model_inspector();
+  EXPECT_EQ(inspector.GetName(frame_id), "belt");
+  EXPECT_EQ(belt.scoped_name().to_string(), "DefaultModelInstance::belt");
+
+  auto meshcat = std::make_shared<Meshcat>();
+  VisualizationConfig config;
+  config.publish_contacts = false;
+  config.publish_inertia = false;
+  config.publish_proximity = false;
+  ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
+                           meshcat);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  // The evidence that ApplyVisualizationConfig() has done the right thing is
+  // that we get the crawl_* properties set on the target geometry.
+  diagram->ForcedPublish(*context);
+  const std::string path = fmt::format(
+      "illustration/belt/{}",
+      geometry::internal::TransformGeometryName(geometry_id, inspector));
+  EXPECT_FALSE(meshcat->GetPackedProperty(path, "crawl_axis").empty());
+  EXPECT_FALSE(meshcat->GetPackedProperty(path, "crawl_displacement").empty());
 }
 
 // Overall acceptance test with nothing enabled.

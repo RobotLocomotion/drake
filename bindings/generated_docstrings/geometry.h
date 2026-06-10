@@ -5337,6 +5337,7 @@ can be enormously valuable for impromptu visualizations.
     name: MeshcatVisualizer
     input_ports:
     - query_object
+    - surface_displacements
 
 The system uses the versioning mechanism provided by SceneGraph to
 detect changes to the geometry so that a change in SceneGraph's data
@@ -5359,21 +5360,21 @@ publish to the same Meshcat instance.)""";
         // Symbol: drake::geometry::MeshcatVisualizer::AddToBuilder
         struct /* AddToBuilder */ {
           // Source: drake/geometry/meshcat_visualizer.h
-          const char* doc_4args_builder_scene_graph_meshcat_params =
+          const char* doc_5args_builder_scene_graph_meshcat_params_surface_data =
 R"""(Adds a MeshcatVisualizer and connects it to the given SceneGraph's
 QueryObject-valued output port. See
-MeshcatVisualizer∷MeshcatVisualizer(MeshcatVisualizer*,
-MeshcatVisualizerParams) for details. The MeshcatVisualizer's name
-(see systems∷SystemBase∷set_name) will be set to a sensible default
-value, unless the default name was already in use by another system.)""";
+MeshcatVisualizer∷MeshcatVisualizer() for details. The
+MeshcatVisualizer's name (see systems∷SystemBase∷set_name) will be set
+to a sensible default value, unless the default name was already in
+use by another system.)""";
           // Source: drake/geometry/meshcat_visualizer.h
-          const char* doc_4args_builder_query_object_port_meshcat_params =
+          const char* doc_5args_builder_query_object_port_meshcat_params_surface_data =
 R"""(Adds a MeshcatVisualizer and connects it to the given
 QueryObject-valued output port. See
-MeshcatVisualizer∷MeshcatVisualizer(MeshcatVisualizer*,
-MeshcatVisualizerParams) for details. The MeshcatVisualizer's name
-(see systems∷SystemBase∷set_name) will be set to a sensible default
-value, unless the default name was already in use by another system.)""";
+MeshcatVisualizer∷MeshcatVisualizer for details. The
+MeshcatVisualizer's name (see systems∷SystemBase∷set_name) will be set
+to a sensible default value, unless the default name was already in
+use by another system.)""";
         } AddToBuilder;
         // Symbol: drake::geometry::MeshcatVisualizer::Delete
         struct /* Delete */ {
@@ -5407,6 +5408,12 @@ Parameter ``meshcat``:
 
 Parameter ``params``:
     The set of parameters to control this system's behavior.
+
+Parameter ``surface_data``:
+    Configuration for visualizing surface displacement. If a body in
+    MultibodyPlant has registered surface velocity but its
+    corresponding SceneGraph FrameId is not in this map, the surface
+    velocity will not be visualized.
 
 Raises:
     RuntimeError if ``params.publish_period <= 0``.
@@ -5459,6 +5466,19 @@ R"""(Returns the QueryObject-valued input port. It should be connected to
 SceneGraph's QueryObject-valued output port. Failure to do so will
 cause a runtime error when attempting to broadcast messages.)""";
         } query_object_input_port;
+        // Symbol: drake::geometry::MeshcatVisualizer::surface_displacements_input_port
+        struct /* surface_displacements_input_port */ {
+          // Source: drake/geometry/meshcat_visualizer.h
+          const char* doc =
+R"""(Returns the surface-displacements input port. When connected, this
+port accepts a ``BusValue`` whose signals match the
+``displacement_signal_name`` values in constructor's ``surface_data``
+parameter. Geometries affixed to frames not present in the bus will
+remain unaffected.
+
+This port is always declared. It does not need to be connected; if
+unconnected, no surface-displacement updates are sent to meshcat.)""";
+        } surface_displacements_input_port;
       } MeshcatVisualizer;
       // Symbol: drake::geometry::MeshcatVisualizerParams
       struct /* MeshcatVisualizerParams */ {
@@ -5582,6 +5602,25 @@ visible.)""";
           };
         }
       } MeshcatVisualizerParams;
+      // Symbol: drake::geometry::MeshcatVisualizerSurfaceVelocityData
+      struct /* MeshcatVisualizerSurfaceVelocityData */ {
+        // Source: drake/geometry/meshcat_visualizer.h
+        const char* doc =
+R"""(Provides MeshcatVisualizer the information it needs to interpret the
+surface displacements input port.)""";
+        // Symbol: drake::geometry::MeshcatVisualizerSurfaceVelocityData::axis_B
+        struct /* axis_B */ {
+          // Source: drake/geometry/meshcat_visualizer.h
+          const char* doc =
+R"""(The surface velocity axis, expressed in the body frame B.)""";
+        } axis_B;
+        // Symbol: drake::geometry::MeshcatVisualizerSurfaceVelocityData::displacement_signal_name
+        struct /* displacement_signal_name */ {
+          // Source: drake/geometry/meshcat_visualizer.h
+          const char* doc =
+R"""(The name of the signal in the surface displacements input bus.)""";
+        } displacement_signal_name;
+      } MeshcatVisualizerSurfaceVelocityData;
       // Symbol: drake::geometry::MeshcatVisualizerd
       struct /* MeshcatVisualizerd */ {
         // Source: drake/geometry/meshcat_visualizer.h

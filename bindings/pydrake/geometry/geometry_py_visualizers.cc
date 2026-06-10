@@ -1,8 +1,10 @@
 /* @file This contains the bindings for the various visualizer System types
  found in drake::geometry. They can be found in the pydrake.geometry module. */
 
+#include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/bindings/generated_docstrings/geometry.h"
@@ -126,8 +128,11 @@ void DefineMeshcatVisualizer(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
         m, "MeshcatVisualizer", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<std::shared_ptr<Meshcat>, MeshcatVisualizerParams>(),
+        .def(py::init<std::shared_ptr<Meshcat>, MeshcatVisualizerParams,
+                 std::map<FrameId, MeshcatVisualizerSurfaceVelocityData>>(),
             py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
+            py::arg("surface_data") =
+                std::map<FrameId, MeshcatVisualizerSurfaceVelocityData>{},
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
@@ -143,29 +148,41 @@ void DefineMeshcatVisualizer(py::module_ m, T) {
             py_rvp::reference_internal, cls_doc.get_mutable_recording.doc)
         .def("query_object_input_port", &Class::query_object_input_port,
             py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
+        .def("surface_displacements_input_port",
+            &Class::surface_displacements_input_port,
+            py_rvp::reference_internal,
+            cls_doc.surface_displacements_input_port.doc)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*, const SceneGraph<T>&,
-                std::shared_ptr<Meshcat>, MeshcatVisualizerParams>(
+                std::shared_ptr<Meshcat>, MeshcatVisualizerParams,
+                std::map<FrameId, MeshcatVisualizerSurfaceVelocityData>>(
                 &MeshcatVisualizer<T>::AddToBuilder),
             py::arg("builder"), py::arg("scene_graph"), py::arg("meshcat"),
             py::arg("params") = MeshcatVisualizerParams{},
-            // Keep alive, ownership: `return` keeps `builder` alive.
-            py::keep_alive<0, 1>(),
-            // `meshcat` is a shared_ptr, so does not need a keep_alive.
-            py_rvp::reference,
-            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_meshcat_params)
-        .def_static("AddToBuilder",
-            py::overload_cast<systems::DiagramBuilder<T>*,
-                const systems::OutputPort<T>&, std::shared_ptr<Meshcat>,
-                MeshcatVisualizerParams>(&MeshcatVisualizer<T>::AddToBuilder),
-            py::arg("builder"), py::arg("query_object_port"),
-            py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
+            py::arg("surface_data") =
+                std::map<FrameId, MeshcatVisualizerSurfaceVelocityData>{},
             // Keep alive, ownership: `return` keeps `builder` alive.
             py::keep_alive<0, 1>(),
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             py_rvp::reference,
             cls_doc.AddToBuilder
-                .doc_4args_builder_query_object_port_meshcat_params);
+                .doc_5args_builder_scene_graph_meshcat_params_surface_data)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, std::shared_ptr<Meshcat>,
+                MeshcatVisualizerParams,
+                std::map<FrameId, MeshcatVisualizerSurfaceVelocityData>>(
+                &MeshcatVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("query_object_port"),
+            py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
+            py::arg("surface_data") =
+                std::map<FrameId, MeshcatVisualizerSurfaceVelocityData>{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder
+                .doc_5args_builder_query_object_port_meshcat_params_surface_data);
   }
 }
 
@@ -543,6 +560,24 @@ void DefineMeshcatVisualizerParams(py::module_ m) {
   }
 }
 
+void DefineMeshcatVisualizerSurfaceData(py::module_ m) {
+  using Class = MeshcatVisualizerSurfaceVelocityData;
+  constexpr auto& cls_doc = doc.MeshcatVisualizerSurfaceVelocityData;
+  class_<Class> cls(m, "MeshcatVisualizerSurfaceVelocityData", cls_doc.doc);
+  cls.def(
+         "__init__",
+         [](Class* self, std::string displacement_signal_name,
+             Eigen::Vector3d axis_B) {
+           new (self) Class{
+               .displacement_signal_name = std::move(displacement_signal_name),
+               .axis_B = std::move(axis_B)};
+         },
+         py::arg("displacement_signal_name"), py::arg("axis_B"), cls_doc.doc)
+      .def_rw("displacement_signal_name", &Class::displacement_signal_name,
+          cls_doc.displacement_signal_name.doc)
+      .def_rw("axis_B", &Class::axis_B, cls_doc.axis_B.doc);
+}
+
 }  // namespace
 
 void DefineGeometryVisualizers(py::module_ m) {
@@ -553,6 +588,7 @@ void DefineGeometryVisualizers(py::module_ m) {
   DefineMeshcatParams(m);
   DefineDrakeVisualizerParams(m);
   DefineMeshcatVisualizerParams(m);
+  DefineMeshcatVisualizerSurfaceData(m);
   DefineMeshcatAnimation(m);
   DefineMeshcat(m);
   type_visit(
