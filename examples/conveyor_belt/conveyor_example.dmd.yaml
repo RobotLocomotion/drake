@@ -1,0 +1,69 @@
+# Creates a cycling conveyor belt loop (out of four, straight-line segments) and
+# then places a yellow bell pepper on the loop; the pepper moves based on the
+# conveyor belt's surface velocity.
+#
+# The four segments form a closed square loop. Each belt is L = 1m long and
+# W = 0.2m wide, so the loop's outer half-extent is c = (L + W)/2 = 0.6m and the
+# centerline of each run sits at c - W/2 = 0.5 from the origin. Each segment is
+# shifted W/2 = 0.1 along its own +x axis so that it also covers the corner
+# square at its leading end; the trailing end then butts exactly against the
+# neighboring segment. Segment i's +x axis points along -(surface velocity),
+# so the loop circulates as: north run -> west, west run -> south, south run
+# -> east, east run -> north.
+
+directives:
+
+- add_model:
+    name: ground
+    file: package://drake/examples/conveyor_belt/ground.sdf
+- add_weld:
+    parent: world
+    child: ground::slab
+
+- add_model:
+    name: segment1
+    file: package://drake/examples/conveyor_belt/conveyor_belt.sdf
+- add_weld:
+    parent: world
+    child: segment1::belt
+    X_PC:
+      translation: [0.1, 0.5, 1]
+      rotation: !Rpy { deg: [0, 0, 0] }
+
+- add_model:
+    name: segment2
+    file: package://drake/examples/conveyor_belt/conveyor_belt.sdf
+- add_weld:
+    parent: world
+    child: segment2::belt
+    X_PC:
+      translation: [0.5, -0.1, 1]
+      rotation: !Rpy { deg: [0, 0, -90] }
+
+- add_model:
+    name: segment3
+    file: package://drake/examples/conveyor_belt/conveyor_belt.sdf
+- add_weld:
+    parent: world
+    child: segment3::belt
+    X_PC:
+      translation: [-0.1, -0.5, 1]
+      rotation: !Rpy { deg: [0, 0, 180] }
+
+- add_model:
+    name: segment4
+    file: package://drake/examples/conveyor_belt/conveyor_belt.sdf
+- add_weld:
+    parent: world
+    child: segment4::belt
+    X_PC:
+      translation: [-0.5, 0.1, 1]
+      rotation: !Rpy { deg: [0, 0, 90] }
+
+# Drop a yellow bell pepper on one of the belt segments.
+- add_model:
+    name: pepper
+    file: package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
+    default_free_body_pose:
+      yellow_bell_pepper_no_stem:
+        translation: [0.1, 0.5, 1.2]

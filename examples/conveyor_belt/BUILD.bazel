@@ -1,0 +1,37 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
+
+filegroup(
+    name = "models",
+    srcs = [
+        "conveyor_belt.bin",
+        "conveyor_belt.gltf",
+        "conveyor_belt.sdf",
+        "conveyor_belt_diffuse.png",
+        "conveyor_belt_normal.png",
+        "conveyor_example.dmd.yaml",
+        "ground.sdf",
+    ],
+    visibility = ["//:__pkg__"],
+)
+
+drake_py_binary(
+    name = "conveyor_belt",
+    srcs = ["conveyor_belt.py"],
+    data = [
+        ":models",
+        "@drake_models//:veggies",
+    ],
+    deps = ["//bindings/pydrake"],
+    add_test_rule = True,
+    test_rule_args = [
+        "--target_realtime_rate=0",
+        "--simulation_time=0.1",
+    ],
+)
+
+add_lint_tests()
