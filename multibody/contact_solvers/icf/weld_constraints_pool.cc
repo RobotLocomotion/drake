@@ -425,6 +425,13 @@ void WeldConstraintsPool<T>::CalcCostAlongLine(
   }
 }
 
+template <typename T>
+void WeldConstraintsPool<T>::ReduceInto(const ReducedMapping&,
+                                        WeldConstraintsPool<T>*) const {
+  // TODO(#23764): implement.
+  DRAKE_THROW_UNLESS(num_constraints() == 0);
+}
+
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
