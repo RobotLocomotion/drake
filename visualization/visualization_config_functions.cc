@@ -67,8 +67,26 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     const std::vector<MeshcatVisualizerParams> all_meshcat_params =
         internal::ConvertVisualizationConfigToMeshcatParams(config);
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
-                                              params);
+      if (params.role == Role::kIllustration) {
+        // For illustration, we have to accommodate any bodies with surface
+        // velocity declared on the plant. So, we'll pass the plant to the
+        // visualizer and connect the appropriate ports as needed.
+        MeshcatVisualizer<double>* vis =
+            &MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph,
+                                                     meshcat, params, &plant);
+        for (multibody::BodyIndex i(0); i < plant.num_bodies(); ++i) {
+          if (plant.GetSurfaceVelocityAxis(plant.get_body(i)).has_value()) {
+            // At least one body with surface velocity was found; connect the
+            // ports.
+            builder->Connect(plant.get_surface_displacement_output_port(),
+                             vis->surface_displacement_input_port());
+            break;
+          }
+        }
+      } else {
+        MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
+                                                params);
+      }
     }
     if (config.publish_contacts) {
       ContactVisualizer<double>::AddToBuilder(
