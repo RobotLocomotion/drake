@@ -521,6 +521,10 @@ class TestGeometryVisualizers(unittest.TestCase):
         vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
+        # This port should exist, no matter how the system is constructed.
+        self.assertIsInstance(
+            vis.surface_displacements_input_port(), InputPort_[T]
+        )
         animation = vis.StartRecording(set_transforms_while_recording=True)
         self.assertIsInstance(animation, mut.MeshcatAnimation)
         self.assertEqual(animation, vis.get_mutable_recording())
@@ -541,6 +545,42 @@ class TestGeometryVisualizers(unittest.TestCase):
             query_object_port=scene_graph.get_query_output_port(),
             meshcat=meshcat,
             params=params,
+        )
+
+    def test_meshcat_visualizer_with_surface_data(self):
+        # Verify surface data can be passed to the constructor and both
+        # AddToBuilder overloads without error.
+        meshcat = mut.Meshcat()
+        frame_id = mut.FrameId.get_new_id()
+        data = mut.MeshcatVisualizerSurfaceVelocityData(
+            displacement_signal_name="model::body", axis_B=[1.0, 0.0, 0.0]
+        )
+        self.assertIn("displacement_signal_name='model::body'", repr(data))
+        copy.copy(data)
+        self.assertEqual(data.displacement_signal_name, "model::body")
+        numpy_compare.assert_float_equal(data.axis_B, [1.0, 0.0, 0.0])
+
+        data.displacement_signal_name = "other_model::other_body"
+        data.axis_B = [0.0, 1.0, 0.0]
+        self.assertEqual(
+            data.displacement_signal_name, "other_model::other_body"
+        )
+        numpy_compare.assert_float_equal(data.axis_B, [0.0, 1.0, 0.0])
+        surface_data = {frame_id: data}
+
+        builder = DiagramBuilder_[float]()
+        scene_graph = builder.AddSystem(mut.SceneGraph())
+        mut.MeshcatVisualizer.AddToBuilder(
+            builder=builder,
+            scene_graph=scene_graph,
+            meshcat=meshcat,
+            surface_data=surface_data,
+        )
+        mut.MeshcatVisualizer.AddToBuilder(
+            builder=builder,
+            query_object_port=scene_graph.get_query_output_port(),
+            meshcat=meshcat,
+            surface_data=surface_data,
         )
 
     def test_meshcat_visualizer_scalar_conversion(self):
