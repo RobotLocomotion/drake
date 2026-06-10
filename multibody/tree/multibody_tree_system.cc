@@ -123,6 +123,11 @@ void MultibodyTreeSystem<T>::SetDefaultState(const Context<T>& context,
                                              State<T>* state) const {
   LeafSystem<T>::SetDefaultState(context, state);
   tree_->SetDefaultState(context, state);
+  if (!is_discrete_) {
+    state->get_mutable_continuous_state()
+        .get_mutable_misc_continuous_state()
+        .SetZero();
+  }
 }
 
 template <typename T>
@@ -191,9 +196,13 @@ void MultibodyTreeSystem<T>::Finalize() {
     tree_->set_discrete_state_index(
         this->DeclareDiscreteState(tree_->num_states()));
   } else {
-    this->DeclareContinuousState(BasicVector<T>(tree_->num_states()),
-                                 tree_->num_positions(),
-                                 tree_->num_velocities(), 0 /* num_z */);
+    const int num_z = NumMiscContinuousStates();
+    BasicVector<T> model_continuous_state(tree_->num_states() + num_z);
+    if (num_z > 0) {
+      model_continuous_state.get_mutable_value().tail(num_z).setZero();
+    }
+    this->DeclareContinuousState(model_continuous_state, tree_->num_positions(),
+                                 tree_->num_velocities(), num_z);
   }
 
   // Declare cache entries dependent only on parameters.
@@ -386,16 +395,19 @@ void MultibodyTreeSystem<T>::DoCalcTimeDerivatives(
   const VectorX<T>& x = dynamic_cast<const systems::BasicVector<T>&>(
                             context.get_continuous_state_vector())
                             .value();
-  const auto v = x.bottomRows(internal_tree().num_velocities());
+  const int nq = internal_tree().num_positions();
+  const int nv = internal_tree().num_velocities();
+  const auto v = x.segment(nq, nv);
 
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
 
   // TODO(sherm1) Heap allocation here. Get rid of it.
-  VectorX<T> xdot(internal_tree().num_states());
-  VectorX<T> qdot(internal_tree().num_positions());
+  VectorX<T> qdot(nq);
   internal_tree().MapVelocityToQDot(context, v, &qdot);
-  xdot << qdot, vdot;
-  derivatives->SetFromVector(xdot);
+  derivatives->get_mutable_generalized_position().SetFromVector(qdot);
+  derivatives->get_mutable_generalized_velocity().SetFromVector(vdot);
+  DoCalcMiscDerivatives(context,
+                        &derivatives->get_mutable_misc_continuous_state());
 }
 
 template <typename T>
@@ -463,21 +475,24 @@ void MultibodyTreeSystem<T>::DoCalcImplicitTimeDerivativesResidual(
 
   // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
   //              static_cast in Release builds.
-  const VectorX<T>& qvdot_proposed =
+  const VectorX<T>& xdot_proposed =
       dynamic_cast<const systems::BasicVector<T>&>(
           proposed_derivatives.get_vector())
           .value();
-  DRAKE_ASSERT(qvdot_proposed.size() == nq + nv);
+  const int nz = NumMiscContinuousStates();
+  DRAKE_ASSERT(xdot_proposed.size() == nq + nv + nz);
 
   auto qdot_residual = residual->head(nq);
   // N(q)⋅v
   internal_tree().MapVelocityToQDot(
       context, internal_tree().get_velocities(context), &qdot_residual);
   // q̇_proposed - N(q)⋅v
-  qdot_residual = qvdot_proposed.head(nq) - qdot_residual;
+  qdot_residual = xdot_proposed.head(nq) - qdot_residual;
   // InverseDynamics(context, v_proposed)
-  residual->tail(nv) = internal_tree().CalcInverseDynamics(
-      context, qvdot_proposed.tail(nv), forces);
+  residual->segment(nq, nv) = internal_tree().CalcInverseDynamics(
+      context, xdot_proposed.segment(nq, nv), forces);
+  // z-states are trivially integrable; their residual is always zero.
+  if (nz > 0) residual->tail(nz).setZero();
 }
 
 template <typename T>

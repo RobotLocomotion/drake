@@ -218,9 +218,26 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
 
   // Finally compute the relative velocity of Frame Aq relative to Frame Bq,
   // expressed in the world frame, and then the translational component of this
-  // velocity.
+  // velocity, including any surface velocity contributions.
   const SpatialVelocity<T> V_BqAq_W = V_WAq - V_WBq;
-  const Vector3<T>& v_BqAq_W = V_BqAq_W.translational();
+  Vector3<T> v_BqAq_W = V_BqAq_W.translational();
+  // Add/subtract per-face surface velocities. The face normal nhat_W points
+  // *out of* N and *into* M, so it is the outward contact normal for body B
+  // (N) but the inward normal for body A (M). We negate for body A to recover
+  // its outward contact normal, matching the convention used by
+  // ComputeSurfaceVelocity and the point-contact paths.
+  if (data.surface_speed_A.has_value() && data.a_ss_A.has_value()) {
+    const Vector3<T> n_A = data.X_WA.rotation().inverse() * (-nhat_W);
+    v_BqAq_W +=
+        data.X_WA.rotation() * (data.surface_speed_A.value() *
+                                data.a_ss_A->template cast<T>().cross(n_A));
+  }
+  if (data.surface_speed_B.has_value() && data.a_ss_B.has_value()) {
+    const Vector3<T> n_B = data.X_WB.rotation().inverse() * nhat_W;
+    v_BqAq_W -=
+        data.X_WB.rotation() * (data.surface_speed_B.value() *
+                                data.a_ss_B->template cast<T>().cross(n_B));
+  }
 
   // Get the velocity along the normal to the contact surface. Note that a
   // positive value indicates that bodies are separating at Q while a negative

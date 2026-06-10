@@ -1179,7 +1179,22 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 ModelInstanceIndex>(
                 &Class::get_generalized_contact_forces_output_port),
             py_rvp::reference_internal, py::arg("model_instance"),
-            cls_doc.get_generalized_contact_forces_output_port.doc);
+            cls_doc.get_generalized_contact_forces_output_port.doc)
+        .def("get_surface_speeds_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&>(
+                &Class::get_surface_speeds_input_port),
+            py_rvp::reference_internal,
+            cls_doc.get_surface_speeds_input_port.doc)
+        .def("get_surface_displacement_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_surface_displacement_output_port),
+            py_rvp::reference_internal,
+            cls_doc.get_surface_displacement_output_port.doc)
+        .def("SetSurfaceVelocityAxis", &Class::SetSurfaceVelocityAxis,
+            py::arg("body"), py::arg("axis_B"),
+            cls_doc.SetSurfaceVelocityAxis.doc)
+        .def("GetSurfaceVelocityAxis", &Class::GetSurfaceVelocityAxis,
+            py::arg("body"), cls_doc.GetSurfaceVelocityAxis.doc);
     // Property accessors.
     cls  // BR
         .def("world_body", &Class::world_body, py_rvp::reference_internal,
