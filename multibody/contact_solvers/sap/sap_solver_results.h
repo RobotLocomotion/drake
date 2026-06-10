@@ -27,8 +27,9 @@ struct SapSolverResults {
   // Constraints' impulses, of size `num_constraint_equations`.
   VectorX<T> gamma;
 
-  // Constraints' velocities vc = J⋅v, where J is the contact Jacobian. Of size
-  // `num_constraint_equations`.
+  // Constraints' velocities vc = J⋅v + v_b, where J is the contact Jacobian
+  // and v_b is the per-constraint kinematic velocity bias (e.g. a conveyor
+  // belt surface velocity). Of size `num_constraint_equations`.
   VectorX<T> vc;
 
   // Vector of generalized impulses j = Jᵀ⋅γ due to constraints, where J is the
