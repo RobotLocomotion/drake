@@ -11,13 +11,16 @@
 #include <msgpack.hpp>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/value.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/bus_value.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
@@ -770,6 +773,133 @@ GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
   }
 }
 
+// Tests to see if the given meshcat instance has had the named double-valued
+// property set for the given path. Returns the value if so, nullopt otherwise.
+std::optional<double> GetDoubleProperty(const Meshcat& meshcat,
+                                        const std::string& path,
+                                        const std::string& property) {
+  const std::string bytes = meshcat.GetPackedProperty(path, property);
+  if (bytes.empty()) {
+    return {};
+  }
+  msgpack::object_handle oh = msgpack::unpack(bytes.data(), bytes.size());
+  auto decoded = oh.get().as<internal::SetPropertyData<double>>();
+  return decoded.value;
+}
+
+// Tests to see if the given meshcat instance has had the named vector-valued
+// property set for the given path. Returns the value if so, nullopt otherwise.
+std::optional<std::vector<double>> GetVectorProperty(
+    const Meshcat& meshcat, const std::string& path,
+    const std::string& property) {
+  const std::string bytes = meshcat.GetPackedProperty(path, property);
+  if (bytes.empty()) {
+    return {};
+  }
+  msgpack::object_handle oh = msgpack::unpack(bytes.data(), bytes.size());
+  auto decoded = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
+  return decoded.value;
+}
+
+GTEST_TEST(MeshcatVisualizerTest, SurfaceDisplacement) {
+  auto meshcat = std::make_shared<Meshcat>();
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+  const std::string sdf_content = R"""(
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="belt">
+    <link name="belt">
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>1.0 0.5 0.1</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+)""";
+  multibody::Parser(&plant).AddModelsFromString(sdf_content, "sdf");
+  const auto& belt = plant.GetBodyByName("belt");
+  plant.SetSurfaceVelocityAxis(belt, Eigen::Vector3d{1, 0, 0});
+  plant.Finalize();
+
+  const auto& inspector = scene_graph.model_inspector();
+  const FrameId body_frame = plant.GetBodyFrameIdOrThrow(belt.index());
+  const auto geom_ids =
+      inspector.GetGeometries(body_frame, Role::kIllustration);
+  ASSERT_EQ(geom_ids.size(), 1);
+  const GeometryId geom_id = *geom_ids.begin();
+  const std::string geom_path = fmt::format(
+      "visualizer/belt/belt/{}", TransformGeometryName(geom_id, inspector));
+
+  auto& visualizer = MeshcatVisualizer<double>::AddToBuilder(
+      &builder, scene_graph, meshcat, {}, &plant);
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  systems::BusValue bus;
+  bus.Set(belt.scoped_name().to_string(), Value<double>(2.25));
+  auto& visualizer_context =
+      visualizer.GetMyMutableContextFromRoot(context.get());
+  visualizer.surface_displacement_input_port().FixValue(&visualizer_context,
+                                                        bus);
+
+  diagram->ForcedPublish(*context);
+
+  const std::optional<std::vector<double>> axis =
+      GetVectorProperty(*meshcat, geom_path, "crawl_axis");
+  ASSERT_TRUE(axis.has_value());
+  EXPECT_TRUE(CompareMatrices(Eigen::Map<const Eigen::Vector3d>(axis->data()),
+                              Eigen::Vector3d::UnitX()));
+
+  const std::optional<double> displacement =
+      GetDoubleProperty(*meshcat, geom_path, "crawl_displacement");
+  ASSERT_TRUE(displacement.has_value());
+  EXPECT_EQ(*displacement, 2.25);
+}
+
+GTEST_TEST(MeshcatVisualizerTest, SurfaceVelocityAxisOnGltfObject) {
+  auto meshcat = std::make_shared<Meshcat>();
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+
+  const auto model_instance = plant.AddModelInstance("belt");
+  const multibody::SpatialInertia<double> M_BBo =
+      multibody::SpatialInertia<double>::SolidBoxWithMass(1.0, 1.0, 1.0, 1.0);
+  const auto& belt = plant.AddRigidBody("belt", model_instance, M_BBo);
+  plant.RegisterVisualGeometry(
+      belt, math::RigidTransformd::Identity(),
+      Mesh(FindResourceOrThrow("drake/geometry/test/cube_with_hole.gltf")),
+      "visual");
+  plant.SetSurfaceVelocityAxis(belt, Eigen::Vector3d::UnitY());
+  plant.Finalize();
+
+  const auto& inspector = scene_graph.model_inspector();
+  const FrameId body_frame = plant.GetBodyFrameIdOrThrow(belt.index());
+  const auto geom_ids =
+      inspector.GetGeometries(body_frame, Role::kIllustration);
+  ASSERT_EQ(geom_ids.size(), 1);
+  const GeometryId geom_id = *geom_ids.begin();
+  const std::string geom_path = fmt::format(
+      "visualizer/belt/belt/{}", TransformGeometryName(geom_id, inspector));
+
+  MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat, {},
+                                          &plant);
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  diagram->ForcedPublish(*context);
+
+  const std::optional<std::vector<double>> axis =
+      GetVectorProperty(*meshcat, geom_path, "crawl_axis");
+  ASSERT_TRUE(axis.has_value());
+  EXPECT_TRUE(CompareMatrices(Eigen::Map<const Eigen::Vector3d>(axis->data()),
+                              Eigen::Vector3d::UnitY()));
+}
+
 // Full system acceptance test of setting alpha slider values (including the
 // initial value).
 TEST_F(MeshcatVisualizerWithIiwaTest, AlphaSlidersSystemCheck) {
@@ -792,20 +922,6 @@ TEST_F(MeshcatVisualizerWithIiwaTest, AlphaSlidersSystemCheck) {
   // Simulate and publish again to cause an update.
   simulator.AdvanceTo(0.1);
   diagram_->ForcedPublish(*context_);
-}
-
-// Tests to see if the given meshcat instance has had the "modulated_opacity"
-// set for the given path. Returns the value if so, nullopt otherwise.
-std::optional<double> GetOpacityProperty(const Meshcat& meshcat,
-                                         const std::string& path) {
-  const std::string bytes =
-      meshcat.GetPackedProperty(path, "modulated_opacity");
-  if (bytes.empty()) {
-    return {};
-  }
-  msgpack::object_handle oh = msgpack::unpack(bytes.data(), bytes.size());
-  auto decoded = oh.get().as<internal::SetPropertyData<double>>();
-  return decoded.value;
 }
 
 // Check the effect that changing alpha sliders has on geometry opacity.
@@ -847,7 +963,7 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
   // opacity for each geometry individually with the initial value of 1.
   diagram->ForcedPublish(*context);
   const std::optional<double> init_alpha =
-      GetOpacityProperty(*meshcat, geom_path);
+      GetDoubleProperty(*meshcat, geom_path, "modulated_opacity");
   ASSERT_TRUE(init_alpha.has_value());
   EXPECT_EQ(*init_alpha, 1.0);
 
@@ -855,7 +971,8 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
   // the same value will do nothing.
   meshcat->SetSliderValue("visualizer α", 1.0);
   diagram->ForcedPublish(*context);
-  ASSERT_FALSE(GetOpacityProperty(*meshcat, params.prefix).has_value());
+  ASSERT_FALSE(GetDoubleProperty(*meshcat, params.prefix, "modulated_opacity")
+                   .has_value());
 
   // For a somewhat arbitrary sequence of opacity values, we're confirming that
   // the slider value is always set to the "modulating_opacity" property.
@@ -869,7 +986,7 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
     // We should have dispatched a set property on the *visualizer root* with
     // the given slider value.
     const std::optional<double> mod_opacity_value =
-        GetOpacityProperty(*meshcat, params.prefix);
+        GetDoubleProperty(*meshcat, params.prefix, "modulated_opacity");
     ASSERT_TRUE(mod_opacity_value.has_value());
     EXPECT_EQ(*mod_opacity_value, slider_value);
   }
