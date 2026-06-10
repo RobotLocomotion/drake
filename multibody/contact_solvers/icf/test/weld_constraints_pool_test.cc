@@ -176,7 +176,6 @@ void MakeModelForWeld(IcfModel<T>* model, double time_step = 0.01) {
   params->k0 = VectorX<T>::LinSpaced(nv, -1.0, 1.0);
 
   params->clique_sizes = {6, 6, 6};
-  params->clique_start = {0, 6, 12, nv};
 
   // Body 0 = world (anchored), body 1 = floating, body 2 = floating,
   // body 3 = non-floating (uses non-identity Jacobian).

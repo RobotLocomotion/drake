@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
 #include <algorithm>
+#include <numeric>
 #include <utility>
 
 #include "drake/math/cross_product.h"
@@ -52,6 +53,8 @@ WeldConstraintsPool<T>::~WeldConstraintsPool() = default;
 
 template <typename T>
 void WeldConstraintsPool<T>::Resize(const int num_constraints) {
+  all_constraints_.resize(num_constraints);
+  std::iota(all_constraints_.begin(), all_constraints_.end(), 0);
   body_pairs_.resize(num_constraints);
   p_AP_W_.Resize(num_constraints, 3, 1);
   p_BQ_W_.Resize(num_constraints, 3, 1);
@@ -103,6 +106,14 @@ void WeldConstraintsPool<T>::CalcData(
     const EigenPool<Vector6<T>>& V_WB,
     WeldConstraintsDataPool<T>* weld_data) const {
   DRAKE_ASSERT(weld_data != nullptr);
+  weld_data->mutable_cost() = CalcData(V_WB, all_constraints_, weld_data);
+}
+
+template <typename T>
+T WeldConstraintsPool<T>::CalcData(
+    const EigenPool<Vector6<T>>& V_WB, std::span<const int> constraints,
+    WeldConstraintsDataPool<T>* weld_data) const {
+  DRAKE_ASSERT(weld_data != nullptr);
 
   using std::max;
   const T dt = model().time_step();
@@ -111,9 +122,8 @@ void WeldConstraintsPool<T>::CalcData(
   const T taud = kBeta * dt_eff / M_PI;
   const T dt_plus_taud = dt + taud;
 
-  T& cost = weld_data->mutable_cost();
-  cost = 0;
-  for (int k = 0; k < num_constraints(); ++k) {
+  T cost = 0;
+  for (int k : constraints) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
 
@@ -158,16 +168,24 @@ void WeldConstraintsPool<T>::CalcData(
     // cost = ½(v̂ - vc)ᵀ⋅γ
     cost += 0.5 * (v_hat - vc).dot(gamma);
   }
+  return cost;
 }
 
 template <typename T>
 void WeldConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                 VectorX<T>* gradient) const {
+  AccumulateGradient(data, all_constraints_, gradient);
+}
+
+template <typename T>
+void WeldConstraintsPool<T>::AccumulateGradient(
+    const IcfData<T>& data, std::span<const int> constraints,
+    VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
 
   const WeldConstraintsDataPool<T>& weld_data = data.weld_constraints_data();
 
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
     const int c_b = model().body_to_clique(bodyB);
@@ -378,15 +396,45 @@ void WeldConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
+void WeldConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>&, std::span<const int> constraints,
+    std::span<const int> clique_to_block, int /* island */,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
+  for (int k : constraints) {
+    const typename WeldConstraintsPool<T>::HessianBlock& hb =
+        hessian_blocks_[k];
+    const int b_b = clique_to_block[hb.c_b];
+    hessian->AddToBlock(b_b, b_b, hb.H_BB);
+
+    if (hb.a_is_dynamic) {
+      const int b_a = clique_to_block[hb.c_a];
+      hessian->AddToBlock(b_a, b_a, hb.H_AA);
+      hessian->AddToBlock(clique_to_block[hb.cross_row],
+                          clique_to_block[hb.cross_col], hb.H_cross);
+    }
+  }
+}
+
+template <typename T>
 void WeldConstraintsPool<T>::CalcCostAlongLine(
     const WeldConstraintsDataPool<T>& weld_data,
     const EigenPool<Vector6<T>>& U_WB, T* dcost, T* d2cost) const {
+  CalcCostAlongLine(weld_data, U_WB, all_constraints_, dcost, d2cost);
+}
+
+template <typename T>
+void WeldConstraintsPool<T>::CalcCostAlongLine(
+    const WeldConstraintsDataPool<T>& weld_data,
+    const EigenPool<Vector6<T>>& U_WB, std::span<const int> constraints,
+    T* dcost, T* d2cost) const {
   DRAKE_ASSERT(dcost != nullptr);
   DRAKE_ASSERT(d2cost != nullptr);
   *dcost = 0.0;
   *d2cost = 0.0;
 
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
 

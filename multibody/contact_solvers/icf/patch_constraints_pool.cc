@@ -212,6 +212,10 @@ void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   num_pairs_.assign(num_pairs_per_patch.begin(), num_pairs_per_patch.end());
 
   const int num_patches = num_pairs_.size();
+
+  // Identity list of patch indices, used to drive the full-problem code paths.
+  all_patches_.resize(num_patches);
+  std::iota(all_patches_.begin(), all_patches_.end(), 0);
   const int num_pairs =
       std::accumulate(num_pairs_.begin(), num_pairs_.end(), 0);
 
@@ -364,22 +368,36 @@ void PatchConstraintsPool<T>::CalcData(
     const EigenPool<Vector6<T>>& V_WB,
     PatchConstraintsDataPool<T>* patch_data) const {
   DRAKE_ASSERT(patch_data != nullptr);
-  CalcContactVelocities(V_WB, &patch_data->mutable_v_AcBc_W_pool());
-  CalcPatchQuantities(
-      patch_data->mutable_v_AcBc_W_pool(), &patch_data->mutable_cost_pool(),
-      &patch_data->mutable_Gamma_Bo_W_pool(), &patch_data->mutable_G_Bp_pool());
-  patch_data->mutable_cost() = std::accumulate(
-      patch_data->cost_pool().begin(), patch_data->cost_pool().end(), T(0.0));
+  patch_data->mutable_cost() = CalcData(V_WB, all_patches_, patch_data);
+}
+
+template <typename T>
+T PatchConstraintsPool<T>::CalcData(
+    const EigenPool<Vector6<T>>& V_WB, std::span<const int> patches,
+    PatchConstraintsDataPool<T>* patch_data) const {
+  DRAKE_ASSERT(patch_data != nullptr);
+  CalcContactVelocities(V_WB, patches, &patch_data->mutable_v_AcBc_W_pool());
+  return CalcPatchQuantities(patch_data->mutable_v_AcBc_W_pool(), patches,
+                             &patch_data->mutable_cost_pool(),
+                             &patch_data->mutable_Gamma_Bo_W_pool(),
+                             &patch_data->mutable_G_Bp_pool());
 }
 
 template <typename T>
 void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                  VectorX<T>* gradient) const {
+  AccumulateGradient(data, all_patches_, gradient);
+}
+
+template <typename T>
+void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
+                                                 std::span<const int> patches,
+                                                 VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
   const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool = patch_data.Gamma_Bo_W_pool();
 
-  for (int p = 0; p < num_patches(); ++p) {
+  for (int p : patches) {
     const int body_a = bodies_[p].second;
     const int body_b = bodies_[p].first;
     const int c_b = model().body_to_clique(body_b);
@@ -514,23 +532,129 @@ void PatchConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
+void PatchConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>& data, std::span<const int> patches,
+    std::span<const int> clique_to_block, int island,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
+  const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
+
+  auto& H_BB_pool = data.scratch(island).H_BB_pool;
+  auto& H_AA_pool = data.scratch(island).H_AA_pool;
+  auto& H_AB_pool = data.scratch(island).H_AB_pool;
+  auto& H_BA_pool = data.scratch(island).H_BA_pool;
+  auto& GJa_pool = data.scratch(island).GJa_pool;
+  auto& GJb_pool = data.scratch(island).GJb_pool;
+
+  const EigenPool<Matrix6<T>>& G_Bp_pool = patch_data.G_Bp_pool();
+
+  for (int p : patches) {
+    const int body_a = bodies_[p].second;
+    const int body_b = bodies_[p].first;
+    const int c_b = model().body_to_clique(body_b);
+    const int c_a = model().body_to_clique(body_a);  // negative if anchored.
+    const int nv_b = model().clique_size(c_b);
+    const int nv_a = model().clique_size(c_a);  // zero if anchored.
+
+    // Block indices in the island's local sub-Hessian. Because island cliques
+    // are sorted ascending, local indices preserve the global clique ordering,
+    // so the c_b/c_a comparisons below remain valid for lower-triangular
+    // writes.
+    const int b_b = clique_to_block[c_b];
+
+    // First clique, body B.
+    DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
+
+    H_BB_pool.Resize(1, nv_b, nv_b);
+    auto H_BB = H_BB_pool[0];
+
+    const Matrix6<T>& G_Bp = G_Bp_pool[p];
+    ConstJacobianView J_WB = model().J_WB(body_b);
+    if (model().is_floating(body_b)) {
+      H_BB.noalias() = G_Bp;
+    } else {
+      GJb_pool.Resize(1, 6, nv_b);
+      auto GJb = GJb_pool[0];
+      GJb.noalias() = G_Bp * J_WB;
+      H_BB.noalias() = J_WB.transpose() * GJb;
+    }
+    hessian->AddToBlock(b_b, b_b, H_BB);
+
+    // Second clique, for body A, only contributes if not anchored.
+    if (!model().is_anchored(body_a)) {
+      const int b_a = clique_to_block[c_a];
+      GJa_pool.Resize(1, 6, nv_a);
+      auto GJa = GJa_pool[0];
+
+      const Vector3<T>& p_AB_W = p_AB_W_[p];
+      ConstJacobianView J_WA = model().J_WB(body_a);
+
+      H_AA_pool.Resize(1, nv_a, nv_a);
+      auto H_AA = H_AA_pool[0];
+      const Matrix6<T> G_Phi = ShiftFromTheRight(G_Bp, p_AB_W);  // = Gₚ⋅Φ
+      const Matrix6<T> G_Ap = ShiftFromTheLeft(G_Phi, p_AB_W);   // = Φᵀ⋅Gₚ⋅Φ
+
+      GJa.noalias() = G_Phi * J_WA;
+      H_BA_pool.Resize(1, nv_b, nv_a);
+      auto H_BA = H_BA_pool[0];
+      if (model().is_floating(body_b)) {
+        H_BA.noalias() = -GJa;
+      } else {
+        H_BA.noalias() = -J_WB.transpose() * GJa;
+      }
+      if (c_b > c_a) {
+        hessian->AddToBlock(b_b, b_a, H_BA);
+      }
+      if (c_a > c_b) {
+        H_AB_pool.Resize(1, nv_a, nv_b);
+        auto H_AB = H_AB_pool[0];
+        H_AB = H_BA.transpose();
+        hessian->AddToBlock(b_a, b_b, H_AB);
+      }
+      if (c_b == c_a) {
+        H_BB.noalias() = H_BA + H_BA.transpose();  // Re-use H_BB.
+        hessian->AddToBlock(b_a, b_b, H_BB);
+      }
+
+      if (model().is_floating(body_a)) {
+        H_AA.noalias() = G_Ap;
+      } else {
+        GJa.noalias() = G_Ap * J_WA;
+        H_AA.noalias() = J_WA.transpose() * GJa;
+      }
+      hessian->AddToBlock(b_a, b_a, H_AA);
+    }
+  }
+}
+
+template <typename T>
 void PatchConstraintsPool<T>::CalcCostAlongLine(
     const PatchConstraintsDataPool<T>& patch_data,
     const EigenPool<Vector6<T>>& U_WB_pool,
+    EigenPool<Vector6<T>>* U_AbB_W_pool_ptr, T* dcost, T* d2cost) const {
+  CalcCostAlongLine(patch_data, U_WB_pool, all_patches_, U_AbB_W_pool_ptr,
+                    dcost, d2cost);
+}
+
+template <typename T>
+void PatchConstraintsPool<T>::CalcCostAlongLine(
+    const PatchConstraintsDataPool<T>& patch_data,
+    const EigenPool<Vector6<T>>& U_WB_pool, std::span<const int> patches,
     EigenPool<Vector6<T>>* U_AbB_W_pool_ptr, T* dcost, T* d2cost) const {
   DRAKE_ASSERT(U_AbB_W_pool_ptr != nullptr);
   DRAKE_ASSERT(dcost != nullptr);
   DRAKE_ASSERT(d2cost != nullptr);
   auto& U_AbB_W_pool = *U_AbB_W_pool_ptr;
   DRAKE_ASSERT(U_AbB_W_pool.size() == num_patches());
-  CalcConstraintVelocities(U_WB_pool, &U_AbB_W_pool);
+  CalcConstraintVelocities(U_WB_pool, patches, &U_AbB_W_pool);
 
   const auto& Gamma_pool = patch_data.Gamma_Bo_W_pool();
   const EigenPool<Matrix6<T>>& G_Bp_pool = patch_data.G_Bp_pool();
   *dcost = 0;
   *d2cost = 0;
   Vector6<T> dGamma;
-  for (int p = 0; p < num_patches(); ++p) {
+  for (int p : patches) {
     // N.B. All this is contiguous, so we could use a single dot product.
     const Vector6<T>& U = U_AbB_W_pool[p];
     const Vector6<T>& Gamma = Gamma_pool[p];
@@ -596,12 +720,12 @@ T PatchConstraintsPool<T>::CalcLaggedHuntCrossleyModel(
 
 template <typename T>
 void PatchConstraintsPool<T>::CalcConstraintVelocities(
-    const EigenPool<Vector6<T>>& V_WB_pool,
+    const EigenPool<Vector6<T>>& V_WB_pool, std::span<const int> patches,
     EigenPool<Vector6<T>>* V_AbB_W_pool) const {
   DRAKE_ASSERT(V_WB_pool.size() == model().num_bodies());
   DRAKE_ASSERT(V_AbB_W_pool->size() == num_patches());
 
-  for (int p = 0; p < num_patches(); ++p) {
+  for (int p : patches) {
     const int num_cliques = num_cliques_[p];
 
     const int bodyB = bodies_[p].first;
@@ -630,9 +754,9 @@ void PatchConstraintsPool<T>::CalcConstraintVelocities(
 
 template <typename T>
 void PatchConstraintsPool<T>::CalcContactVelocities(
-    const EigenPool<Vector6<T>>& V_WB_pool,
+    const EigenPool<Vector6<T>>& V_WB_pool, std::span<const int> patches,
     EigenPool<Vector3<T>>* v_AcBc_W_pool) const {
-  for (int p = 0; p < num_patches(); ++p) {
+  for (int p : patches) {
     const int num_cliques = num_cliques_[p];
     const int num_pairs = num_pairs_[p];
 
@@ -665,23 +789,24 @@ void PatchConstraintsPool<T>::CalcContactVelocities(
 }
 
 template <typename T>
-void PatchConstraintsPool<T>::CalcPatchQuantities(
-    const EigenPool<Vector3<T>>& v_AcBc_W_pool, std::vector<T>* cost_pool,
-    EigenPool<Vector6<T>>* spatial_impulses_pool,
+T PatchConstraintsPool<T>::CalcPatchQuantities(
+    const EigenPool<Vector3<T>>& v_AcBc_W_pool, std::span<const int> patches,
+    std::vector<T>* cost_pool, EigenPool<Vector6<T>>* spatial_impulses_pool,
     EigenPool<Matrix6<T>>* patch_hessians_pool) const {
   EigenPool<Vector6<T>>& Gamma_Bo_W_pool = *spatial_impulses_pool;
   EigenPool<Matrix6<T>>& G_Bp_pool = *patch_hessians_pool;
 
-  Gamma_Bo_W_pool.SetZero();
-  G_Bp_pool.SetZero();
-
-  for (int p = 0; p < num_patches(); ++p) {
+  T total_cost = 0.0;
+  for (int p : patches) {
     const int num_pairs = num_pairs_[p];
 
     // Accumulate impulses on the patch for the first clique only. This is
-    // always body B.
+    // always body B. Zero per patch (rather than the whole pool) so that
+    // islands writing disjoint patches do not interfere.
     Vector6<T>& Gamma_Bo_W = Gamma_Bo_W_pool[p];
     Matrix6<T>& G_Bp = G_Bp_pool[p];
+    Gamma_Bo_W.setZero();
+    G_Bp.setZero();
 
     cost_pool->at(p) = 0.0;
     for (int k = 0; k < num_pairs; ++k) {
@@ -701,7 +826,9 @@ void PatchConstraintsPool<T>::CalcPatchQuantities(
       // Accumulate onto the path Hessian Gp.
       G_Bp += ShiftSecondOrderTensor(Gk, p_BC_W);
     }
+    total_cost += cost_pool->at(p);
   }
+  return total_cost;
 }
 
 }  // namespace internal

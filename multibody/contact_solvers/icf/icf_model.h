@@ -13,6 +13,7 @@
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_partition.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
@@ -61,9 +62,6 @@ struct IcfParameters {
 
   // Number of velocities in each clique, indexed by clique, size nc.
   std::vector<int> clique_sizes;
-
-  // Starting index in the velocity vector for each clique, size nc + 1.
-  std::vector<int> clique_start;
 
   // Parameters that are only for model reduction. These do not affect *this*
   // model, but rather describe how to construct a separate, reduced, model.
@@ -152,6 +150,10 @@ class IcfModel {
 
   /* Returns the maximum number of velocities in any clique. */
   int max_clique_size() const { return max_clique_size_; }
+
+  /* Returns a vector of starting indices into the velocity vector for each
+  clique, size num_cliques() + 1. The final entry contains num_velocities(). */
+  const std::vector<int>& clique_starts() const { return clique_starts_; }
 
   /* Returns the total number of constraints of any type in the problem. */
   int num_constraints() const {
@@ -300,6 +302,24 @@ class IcfModel {
     return *sparsity_pattern_;
   }
 
+  /* Returns the partition of cliques into islands (connected components of the
+  clique graph). Islands are independent convex subproblems that may be solved
+  separately. Computed alongside the sparsity pattern by SetSparsityPattern(),
+  so it changes only when the sparsity pattern changes. */
+  const IcfPartition& partition() const { return partition_; }
+
+  /* Per-island groupings of each constraint kind and of the (dynamic) bodies.
+  For example, island_patches().items(i) lists the patch indices whose
+  constraint belongs to island i, and island_bodies().items(i) lists the
+  dynamic bodies in island i. These are recomputed by SetSparsityPattern() and
+  let per-island evaluation iterate over only the items it owns. */
+  const IslandItemMap& island_couplers() const { return island_couplers_; }
+  const IslandItemMap& island_gains() const { return island_gains_; }
+  const IslandItemMap& island_limits() const { return island_limits_; }
+  const IslandItemMap& island_patches() const { return island_patches_; }
+  const IslandItemMap& island_welds() const { return island_welds_; }
+  const IslandItemMap& island_bodies() const { return island_bodies_; }
+
   /* Resizes `data` to fit this model.
   No allocations are required if `data`'s capacity is already enough. */
   void ResizeData(IcfData<T>* data) const;
@@ -307,6 +327,15 @@ class IcfModel {
   /* Updates `data` as a function of v. Performs no heap allocations.
   @pre `data` has been resized to fit this model via ResizeData(). */
   void CalcData(const VectorX<T>& v, IcfData<T>* data) const;
+
+  /* Island-aware overload: computes the cost, gradient, and per-constraint data
+  contributed by `island` only, writing into the island's clique/body segments
+  of `data` (other segments are left untouched). The island cost is stored via
+  data->set_island_cost(island, ...) and also returned. The caller must have set
+  data's velocities (data->set_v(v)) beforehand; this method does not, so that
+  multiple islands may write disjoint regions of `data` concurrently.
+  @pre `data` has been resized to fit this model via ResizeData(). */
+  T CalcData(const VectorX<T>& v, int island, IcfData<T>* data) const;
 
   /* Makes a new Hessian matrix. If only `data` changes for the same ICF model,
   calling UpdateHessian() to reuse the sparsity pattern of the Hessian is
@@ -346,6 +375,13 @@ class IcfModel {
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>>
   MakeHessian(const IcfData<T>& data) const;
 
+  /* Island-aware overload: makes a new sub-Hessian over only the cliques of
+  `island`, using the island's local block indexing (block i corresponds to the
+  i-th clique of partition().island_cliques(island)). */
+  std::unique_ptr<
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>>
+  MakeHessian(int island, const IcfData<T>& data) const;
+
   /* Updates the values of the Hessian for the input `data`.
   @pre The sparsity of the `hessian` matches the structure of `this` model. */
   void UpdateHessian(
@@ -353,9 +389,30 @@ class IcfModel {
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
+  /* Island-aware overload: updates the values of the island's sub-Hessian.
+  @pre `hessian` was produced by MakeHessian(island, ...) for the same model. */
+  void UpdateHessian(
+      int island, const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+
+  /* Returns the block sparsity pattern of island `island`'s sub-Hessian (local
+  block indexing). Recomputed by SetSparsityPattern(). */
+  const contact_solvers::internal::BlockSparsityPattern&
+  island_sparsity_pattern(int island) const {
+    DRAKE_ASSERT(0 <= island && island < partition_.num_islands());
+    return island_sparsity_patterns_[island];
+  }
+
   /* Pre-computes some quantities used to speed up CalcCostAlongLine() below. */
   void CalcSearchDirectionData(
       const IcfData<T>& data, const VectorX<T>& w,
+      IcfSearchDirectionData<T>* search_direction_data) const;
+
+  /* Island-aware overload: pre-computes line-search quantities for `island`,
+  using only the island's clique segments of `w` and the island's bodies. */
+  void CalcSearchDirectionData(
+      const IcfData<T>& data, const VectorX<T>& w, int island,
       IcfSearchDirectionData<T>* search_direction_data) const;
 
   /* Computes ℓ̃ (α) = ℓ(v + α⋅w) along w at α, along with first and second
@@ -372,8 +429,15 @@ class IcfModel {
                       const IcfSearchDirectionData<T>& search_direction,
                       T* dcost_dalpha, T* d2cost_dalpha2) const;
 
-  /* Computes and stores the Hessian sparsity pattern.
-  Note that this incurs heap allocations. */
+  /* Island-aware overload: computes ℓ̃ᵢ(α) and its derivatives for `island`
+  only, using the island's per-island scratch (data.scratch(island)). */
+  T CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
+                      const IcfSearchDirectionData<T>& search_direction,
+                      int island, T* dcost_dalpha, T* d2cost_dalpha2) const;
+
+  /* Computes and stores the Hessian sparsity pattern, the island partition,
+  and the per-island constraint/body groupings. Note that this incurs heap
+  allocations. */
   void SetSparsityPattern();
 
   /* Changes only the time step δt, updating all dependent quantities. This
@@ -385,23 +449,46 @@ class IcfModel {
   /* Checks that this model's parameters define a valid ICF problem. */
   void VerifyInvariants() const;
 
+  /* Builds the per-island constraint and body groupings (island_*_) from the
+  current partition_. Called by SetSparsityPattern(). */
+  void BuildIslandMaps();
+
+  /* Builds the per-island sub-Hessian sparsity patterns (island_sparsity_
+  patterns_) from the current partition_ and sparsity_pattern_. Called by
+  SetSparsityPattern(). */
+  void BuildIslandSparsityPatterns();
+
   /* Computes result = A⋅v, where A is the (sparse) linearized dynamics matrix.
    */
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
 
+  /* Island-aware overload: writes only the clique segments of `island`; other
+  segments of `result` are left untouched. */
+  void MultiplyByDynamicsMatrix(const VectorX<T>& v, int island,
+                                VectorX<T>* result) const;
+
   /* Computes the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms that
   relate to momentum only (no constraints). */
   void CalcMomentumTerms(const VectorX<T>& v, IcfData<T>* data) const;
+
+  /* Island-aware overload: writes Av and gradient (Av - r) for the island's
+  clique segments and returns the island's momentum cost. */
+  T CalcMomentumTerms(const VectorX<T>& v, int island, IcfData<T>* data) const;
 
   /* Computes spatial velocities V_WB for all bodies, given generalized
   velocities v. */
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_WB) const;
 
+  /* Island-aware overload: writes V_WB only for the island's bodies. */
+  void CalcBodySpatialVelocities(const VectorX<T>& v, int island,
+                                 EigenPool<Vector6<T>>* V_WB) const;
+
   // Core parameters that define the optimization problem.
   std::unique_ptr<IcfParameters<T>> params_;
 
   // Secondary parameters that are derived from the core parameters.
+  std::vector<int> clique_starts_;
   EigenPool<Vector6<T>> V_WB0_;  // Body spatial velocities at v₀, V = J_WB v₀.
   VectorX<T> scale_factor_;      // Scale diag(M)^{-1/2} for convergence check.
   EigenPool<MatrixX<T>> A_;  // Sparse linearized dynamics matrix A = M₀ + δtD₀.
@@ -419,6 +506,27 @@ class IcfModel {
   // Sparsity pattern of the Hessian matrix. Defined on a per-clique basis.
   std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
       sparsity_pattern_;
+
+  // Partition of cliques into islands (connected components of the sparsity
+  // pattern). Recomputed by SetSparsityPattern().
+  IcfPartition partition_;
+
+  // Per-island sub-Hessian sparsity patterns (local block indexing), one per
+  // island. Recomputed by SetSparsityPattern() via BuildIslandSparsityPatterns.
+  std::vector<contact_solvers::internal::BlockSparsityPattern>
+      island_sparsity_patterns_;
+  std::vector<int> island_block_sizes_;             // Scratch, grow-only.
+  std::vector<std::vector<int>> island_neighbors_;  // Scratch, grow-only.
+
+  // Per-island groupings of constraints (by kind) and dynamic bodies, derived
+  // from partition_. Recomputed by SetSparsityPattern() via BuildIslandMaps().
+  IslandItemMap island_couplers_;
+  IslandItemMap island_gains_;
+  IslandItemMap island_limits_;
+  IslandItemMap island_patches_;
+  IslandItemMap island_welds_;
+  IslandItemMap island_bodies_;
+  std::vector<int> island_keys_;  // Scratch for BuildIslandMaps(), grow-only.
 
   // Fixed set of constraints.
   CouplerConstraintsPool<T> coupler_constraints_pool_;

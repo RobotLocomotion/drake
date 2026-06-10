@@ -148,14 +148,34 @@ class PatchConstraintsPool {
   void CalcData(const EigenPool<Vector6<T>>& V_WB,
                 PatchConstraintsDataPool<T>* patch_data) const;
 
+  /* Island-filtered overload: computes data only for the patches listed in
+  `patches` and returns the sum of their costs (does not write the pool-wide
+  cost scalar, which is shared across islands). */
+  T CalcData(const EigenPool<Vector6<T>>& V_WB, std::span<const int> patches,
+             PatchConstraintsDataPool<T>* patch_data) const;
+
   /* Adds the gradient contribution of the patch constraints, ∇ℓ = −Jᵀ⋅γ, to the
   overall gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+
+  /* Island-filtered overload: gradient for only the listed patches. */
+  void AccumulateGradient(const IcfData<T>& data, std::span<const int> patches,
+                          VectorX<T>* gradient) const;
 
   /* Adds the Hessian contribution of the patch constraints to the overall
   Hessian. */
   void AccumulateHessian(
       const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+
+  /* Island-filtered overload: accumulates the Hessian for only the listed
+  patches into the island's local sub-Hessian. `clique_to_block` maps a global
+  clique index to its block index in the island's sub-Hessian, and `island`
+  selects the per-island scratch space. */
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> patches,
+      std::span<const int> clique_to_block, int island,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
@@ -170,6 +190,13 @@ class PatchConstraintsPool {
   @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
   void CalcCostAlongLine(const PatchConstraintsDataPool<T>& patch_data,
                          const EigenPool<Vector6<T>>& U_WB_pool,
+                         EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
+                         T* d2cost) const;
+
+  /* Island-filtered overload: derivatives for only the listed patches. */
+  void CalcCostAlongLine(const PatchConstraintsDataPool<T>& patch_data,
+                         const EigenPool<Vector6<T>>& U_WB_pool,
+                         std::span<const int> patches,
                          EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
                          T* d2cost) const;
 
@@ -193,20 +220,24 @@ class PatchConstraintsPool {
                                 Vector3<T>* gamma_Bc_W, Matrix3<T>* G) const;
 
   /* Computes relative spatial velocities V_AbB_W for each patch, given body
-  spatial velocities V_WB. When A is anchored, V_WA = 0 and V_AbB_W = V_WB. */
+  spatial velocities V_WB. When A is anchored, V_WA = 0 and V_AbB_W = V_WB.
+  `patches` lists the patch indices to process. */
   void CalcConstraintVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
+                                std::span<const int> patches,
                                 EigenPool<Vector6<T>>* V_AbB_W_pool) const;
 
-  /* Computes contact velocities for each contact pair from body spatial
+  /* Computes contact velocities for the listed patches from body spatial
   velocities V_WB. */
   void CalcContactVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
+                             std::span<const int> patches,
                              EigenPool<Vector3<T>>* v_AcBc_W_pool) const;
 
-  /* Computes cost, gradient, and Hessian contributions for each patch. */
-  void CalcPatchQuantities(const EigenPool<Vector3<T>>& v_AcBc_W_pool,
-                           std::vector<T>* cost_pool,
-                           EigenPool<Vector6<T>>* spatial_impulses_pool,
-                           EigenPool<Matrix6<T>>* patch_hessians_pool) const;
+  /* Computes cost, gradient, and Hessian contributions for the listed patches.
+  Returns the sum of the processed patches' costs. */
+  T CalcPatchQuantities(const EigenPool<Vector3<T>>& v_AcBc_W_pool,
+                        std::span<const int> patches, std::vector<T>* cost_pool,
+                        EigenPool<Vector6<T>>* spatial_impulses_pool,
+                        EigenPool<Matrix6<T>>* patch_hessians_pool) const;
 
   // The parent model.
   const IcfModel<T>* const model_;
@@ -220,6 +251,11 @@ class PatchConstraintsPool {
   // the normal impulse from the previous time step. See the ICF paper [Castro
   // et al., 2023] for further details.
   double sigma_{1.0e-3};
+
+  // Identity list {0, 1, ..., num_patches()-1}, used to drive the full-problem
+  // (non-islanded) code paths through the island-filtered helpers. Rebuilt in
+  // Resize().
+  std::vector<int> all_patches_;
 
   // Data per patch. Indexed by patch index p < num_patches().
   std::vector<int> num_pairs_;    // Number of pairs per patch.

@@ -1,6 +1,8 @@
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 
+#include <iterator>
 #include <limits>
+#include <memory>
 
 namespace drake {
 namespace multibody {
@@ -47,7 +49,7 @@ void IcfData<T>::Resize(int num_bodies, int num_velocities, int max_clique_size,
                         int num_couplers, int num_welds,
                         std::span<const int> gain_sizes,
                         std::span<const int> limit_sizes,
-                        std::span<const int> patch_sizes) {
+                        std::span<const int> patch_sizes, int num_islands) {
   v_.resize(num_velocities);
   V_WB_.Resize(num_bodies, 6, 1);
   Av_.resize(num_velocities);
@@ -59,6 +61,19 @@ void IcfData<T>::Resize(int num_bodies, int num_velocities, int max_clique_size,
   weld_constraints_data_.Resize(num_welds);
   scratch_.Resize(num_bodies, num_velocities, max_clique_size, num_couplers,
                   num_welds, gain_sizes, limit_sizes, patch_sizes);
+
+  // Per-island storage. Grow-only: keep prior capacity (and any prior scratch
+  // allocations) and only extend when the island count grows.
+  num_islands_ = num_islands;
+  if (std::ssize(island_cost_) < num_islands) island_cost_.resize(num_islands);
+  while (std::ssize(island_scratch_) < num_islands) {
+    island_scratch_.push_back(std::make_unique<Scratch>());
+  }
+  for (int i = 0; i < num_islands; ++i) {
+    island_scratch_[i]->Resize(num_bodies, num_velocities, max_clique_size,
+                               num_couplers, num_welds, gain_sizes, limit_sizes,
+                               patch_sizes);
+  }
 }
 
 template <typename T>
