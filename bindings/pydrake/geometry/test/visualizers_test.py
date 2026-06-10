@@ -17,6 +17,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.perception import PointCloud
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import DiagramBuilder_, InputPort_
@@ -491,6 +492,9 @@ class TestGeometryVisualizers(unittest.TestCase):
         vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
+        self.assertIsInstance(
+            vis.surface_displacement_input_port(), InputPort_[T]
+        )
         animation = vis.StartRecording(set_transforms_while_recording=True)
         self.assertIsInstance(animation, mut.MeshcatAnimation)
         self.assertEqual(animation, vis.get_mutable_recording())
@@ -511,6 +515,33 @@ class TestGeometryVisualizers(unittest.TestCase):
             query_object_port=scene_graph.get_query_output_port(),
             meshcat=meshcat,
             params=params,
+        )
+
+    def test_meshcat_visualizer_with_plant(self):
+        # Verify that a finalized plant can be passed to the constructor and
+        # both AddToBuilder overloads without error.
+        meshcat = mut.Meshcat()
+        plant = MultibodyPlant(time_step=0.0)
+        plant.Finalize()
+
+        vis = mut.MeshcatVisualizer(meshcat=meshcat, plant=plant)
+        self.assertIsInstance(
+            vis.surface_displacement_input_port(), InputPort_[float]
+        )
+
+        builder = DiagramBuilder_[float]()
+        scene_graph = builder.AddSystem(mut.SceneGraph())
+        mut.MeshcatVisualizer.AddToBuilder(
+            builder=builder,
+            scene_graph=scene_graph,
+            meshcat=meshcat,
+            plant=plant,
+        )
+        mut.MeshcatVisualizer.AddToBuilder(
+            builder=builder,
+            query_object_port=scene_graph.get_query_output_port(),
+            meshcat=meshcat,
+            plant=plant,
         )
 
     def test_meshcat_visualizer_scalar_conversion(self):
