@@ -57,8 +57,16 @@ class GainConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return clique_.size(); }
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
   void AccumulateHessian(
       const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> constraints,
+      std::span<const int> clique_to_block, int island,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
@@ -97,6 +105,11 @@ class GainConstraintsPool {
   void CalcData(const VectorX<T>& v,
                 GainConstraintsDataPool<T>* gain_data) const;
 
+  /* Island-filtered overload: computes data only for the listed constraints and
+  returns the sum of their costs (does not write the pool-wide cost scalar). */
+  T CalcData(const VectorX<T>& v, std::span<const int> constraints,
+             GainConstraintsDataPool<T>* gain_data) const;
+
   /* Computes the first and second derivatives of the constraint cost
   ℓ̃(α) = ℓ(v + α⋅w).
 
@@ -108,6 +121,12 @@ class GainConstraintsPool {
   void CalcCostAlongLine(const GainConstraintsDataPool<T>& gain_data,
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
+
+  /* Island-filtered overload: derivatives for only the listed constraints. */
+  void CalcCostAlongLine(const GainConstraintsDataPool<T>& gain_data,
+                         const VectorX<T>& w, std::span<const int> constraints,
+                         EigenPool<VectorX<T>>* Gw_scratch, T* dcost,
+                         T* d2cost) const;
 
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }

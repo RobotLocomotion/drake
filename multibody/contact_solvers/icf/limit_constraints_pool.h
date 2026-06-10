@@ -61,8 +61,16 @@ class LimitConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return clique_.size(); }
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
   void AccumulateHessian(
       const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> constraints,
+      std::span<const int> clique_to_block, int island,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
@@ -107,6 +115,11 @@ class LimitConstraintsPool {
   void CalcData(const VectorX<T>& v,
                 LimitConstraintsDataPool<T>* limit_data) const;
 
+  /* Island-filtered overload: computes data only for the listed constraints and
+  returns the sum of their costs (does not write the pool-wide cost scalar). */
+  T CalcData(const VectorX<T>& v, std::span<const int> constraints,
+             LimitConstraintsDataPool<T>* limit_data) const;
+
   /* Computes the constraint cost ℓ̃(α) = ℓ(v + α⋅w) and its first and second
   derivatives along the line defined by the search direction `w`.
 
@@ -118,6 +131,12 @@ class LimitConstraintsPool {
   void CalcCostAlongLine(const LimitConstraintsDataPool<T>& limit_data,
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
+
+  /* Island-filtered overload: derivatives for only the listed constraints. */
+  void CalcCostAlongLine(const LimitConstraintsDataPool<T>& limit_data,
+                         const VectorX<T>& w, std::span<const int> constraints,
+                         EigenPool<VectorX<T>>* Gw_scratch, T* dcost,
+                         T* d2cost) const;
 
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }

@@ -102,6 +102,33 @@ void CouplerConstraintsPool<T>::CalcData(
 }
 
 template <typename T>
+T CouplerConstraintsPool<T>::CalcData(
+    const VectorX<T>& v, std::span<const int> constraints,
+    CouplerConstraintsDataPool<T>* coupler_data) const {
+  DRAKE_ASSERT(coupler_data != nullptr);
+
+  T cost = 0;
+  for (int k : constraints) {
+    const int c = constraint_to_clique_[k];
+    auto vk = model().clique_segment(c, v);
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+    const T v_hat = g_hat_[k] / model().time_step();
+    const T& R = R_[k];
+
+    const T vi = vk(i);
+    const T vj = vk(j);
+    const T vc = vi - rho * vj;  // Constraint velocity.
+
+    const T gamma = -(vc - v_hat) / R;
+    coupler_data->mutable_gamma(k) = gamma;
+    cost += 0.5 * (v_hat - vc) * gamma;
+  }
+  return cost;
+}
+
+template <typename T>
 void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                    VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
@@ -129,6 +156,27 @@ void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
     if (have(j)) {
       gradient_c(j) += rho * gamma;
     }
+  }
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::AccumulateGradient(
+    const IcfData<T>& data, std::span<const int> constraints,
+    VectorX<T>* gradient) const {
+  DRAKE_ASSERT(gradient != nullptr);
+
+  const CouplerConstraintsDataPool<T>& coupler_data =
+      data.coupler_constraints_data();
+
+  for (int k : constraints) {
+    const int c = constraint_to_clique_[k];
+    auto gradient_c = model().mutable_clique_segment(c, gradient);
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+    const T& gamma = coupler_data.gamma(k);
+    gradient_c(i) -= gamma;
+    gradient_c(j) += rho * gamma;
   }
 }
 
@@ -168,6 +216,35 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
+void CouplerConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>& data, std::span<const int> constraints,
+    std::span<const int> clique_to_block, int island,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
+  for (int k : constraints) {
+    const int c = constraint_to_clique_[k];
+    const int block = clique_to_block[c];
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+    const T& R = R_[k];
+
+    EigenPool<MatrixX<T>>& H_cc_pool = data.scratch(island).H_cc_pool;
+    H_cc_pool.Resize(1, model().clique_size(c), model().clique_size(c));
+    typename EigenPool<MatrixX<T>>::MatrixView Hc = H_cc_pool[0];
+    Hc.setZero();
+
+    // clang-format off
+    Hc(i, i) += 1.0 / R;  Hc(i, j) -= rho / R;
+    Hc(j, i) -= rho / R;  Hc(j, j) += rho * rho / R;
+    // clang-format on
+
+    hessian->AddToBlock(block, block, Hc);
+  }
+}
+
+template <typename T>
 void CouplerConstraintsPool<T>::CalcCostAlongLine(
     const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
     T* dcost, T* d2cost) const {
@@ -186,6 +263,32 @@ void CouplerConstraintsPool<T>::CalcCostAlongLine(
 
     const T wi = have(i) ? w_c(i) : T(0.0);
     const T wj = have(j) ? w_c(j) : T(0.0);
+    const T vw = wi - rho * wj;  // "Constraint velocity" evaluated on w.
+
+    (*dcost) -= gamma * vw;
+    (*d2cost) += vw * vw / R;
+  }
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::CalcCostAlongLine(
+    const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
+    std::span<const int> constraints, T* dcost, T* d2cost) const {
+  DRAKE_ASSERT(dcost != nullptr);
+  DRAKE_ASSERT(d2cost != nullptr);
+  *dcost = 0.0;
+  *d2cost = 0.0;
+  for (int k : constraints) {
+    const int c = constraint_to_clique_[k];
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+    const T& R = R_[k];
+    const T& gamma = coupler_data.gamma(k);
+    auto w_c = model().clique_segment(c, w);
+
+    const T wi = w_c(i);
+    const T wj = w_c(j);
     const T vw = wi - rho * wj;  // "Constraint velocity" evaluated on w.
 
     (*dcost) -= gamma * vw;

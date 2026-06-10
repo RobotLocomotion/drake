@@ -37,6 +37,8 @@ concept IsAbstractConstraintsPool = requires(
     Pool<double> pool, const IcfData<double>& data, VectorX<double>* gradient,
     contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<double>>*
         hessian,
+    std::span<const int> constraints,
+    std::span<const int> clique_to_block, int island,
     const ReducedMapping& mapping, Pool<double>* reduced_pool) {
   /* Returns a reference to the parent model. */
   { pool.model() } -> std::same_as<const IcfModel<double>&>;
@@ -48,8 +50,18 @@ concept IsAbstractConstraintsPool = requires(
   model-wide gradient. */
   pool.AccumulateGradient(data, gradient);
 
+  /* Island-filtered overload: accumulates the gradient for only the listed
+  constraints. */
+  pool.AccumulateGradient(data, constraints, gradient);
+
   /* Adds the contribution of this constraint to the model-wide Hessian. */
   pool.AccumulateHessian(data, hessian);
+
+  /* Island-filtered overload: accumulates the Hessian for only the listed
+  constraints into the island's local sub-Hessian. `clique_to_block` maps a
+  global clique index to its block index in the island's sub-Hessian, and
+  `island` selects the per-island scratch space. */
+  pool.AccumulateHessian(data, constraints, clique_to_block, island, hessian);
 
   /* Makes a "reduced" constraints pool in `reduced_pool`, guided by the
   `mapping`.
