@@ -19,6 +19,7 @@
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_point_cloud_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace pydrake {
@@ -126,8 +127,10 @@ void DefineMeshcatVisualizer(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
         m, "MeshcatVisualizer", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<std::shared_ptr<Meshcat>, MeshcatVisualizerParams>(),
+        .def(py::init<std::shared_ptr<Meshcat>, MeshcatVisualizerParams,
+                 const multibody::MultibodyPlant<double>*>(),
             py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
+            py::arg("plant") = nullptr,
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
@@ -143,29 +146,38 @@ void DefineMeshcatVisualizer(py::module_ m, T) {
             py_rvp::reference_internal, cls_doc.get_mutable_recording.doc)
         .def("query_object_input_port", &Class::query_object_input_port,
             py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
+        .def("surface_displacement_input_port",
+            &Class::surface_displacement_input_port, py_rvp::reference_internal,
+            cls_doc.surface_displacement_input_port.doc)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*, const SceneGraph<T>&,
-                std::shared_ptr<Meshcat>, MeshcatVisualizerParams>(
+                std::shared_ptr<Meshcat>, MeshcatVisualizerParams,
+                const multibody::MultibodyPlant<double>*>(
                 &MeshcatVisualizer<T>::AddToBuilder),
             py::arg("builder"), py::arg("scene_graph"), py::arg("meshcat"),
             py::arg("params") = MeshcatVisualizerParams{},
-            // Keep alive, ownership: `return` keeps `builder` alive.
-            py::keep_alive<0, 1>(),
-            // `meshcat` is a shared_ptr, so does not need a keep_alive.
-            py_rvp::reference,
-            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_meshcat_params)
-        .def_static("AddToBuilder",
-            py::overload_cast<systems::DiagramBuilder<T>*,
-                const systems::OutputPort<T>&, std::shared_ptr<Meshcat>,
-                MeshcatVisualizerParams>(&MeshcatVisualizer<T>::AddToBuilder),
-            py::arg("builder"), py::arg("query_object_port"),
-            py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
+            py::arg("plant") = nullptr,
             // Keep alive, ownership: `return` keeps `builder` alive.
             py::keep_alive<0, 1>(),
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             py_rvp::reference,
             cls_doc.AddToBuilder
-                .doc_4args_builder_query_object_port_meshcat_params);
+                .doc_5args_builder_scene_graph_meshcat_params_plant)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, std::shared_ptr<Meshcat>,
+                MeshcatVisualizerParams,
+                const multibody::MultibodyPlant<double>*>(
+                &MeshcatVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("query_object_port"),
+            py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
+            py::arg("plant") = nullptr,
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder
+                .doc_5args_builder_query_object_port_meshcat_params_plant);
   }
 }
 

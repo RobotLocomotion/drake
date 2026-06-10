@@ -5302,21 +5302,21 @@ publish to the same Meshcat instance.)""";
         // Symbol: drake::geometry::MeshcatVisualizer::AddToBuilder
         struct /* AddToBuilder */ {
           // Source: drake/geometry/meshcat_visualizer.h
-          const char* doc_4args_builder_scene_graph_meshcat_params =
+          const char* doc_5args_builder_scene_graph_meshcat_params_plant =
 R"""(Adds a MeshcatVisualizer and connects it to the given SceneGraph's
 QueryObject-valued output port. See
-MeshcatVisualizer∷MeshcatVisualizer(MeshcatVisualizer*,
-MeshcatVisualizerParams) for details. The MeshcatVisualizer's name
-(see systems∷SystemBase∷set_name) will be set to a sensible default
-value, unless the default name was already in use by another system.)""";
+MeshcatVisualizer∷MeshcatVisualizer() for details. The
+MeshcatVisualizer's name (see systems∷SystemBase∷set_name) will be set
+to a sensible default value, unless the default name was already in
+use by another system.)""";
           // Source: drake/geometry/meshcat_visualizer.h
-          const char* doc_4args_builder_query_object_port_meshcat_params =
+          const char* doc_5args_builder_query_object_port_meshcat_params_plant =
 R"""(Adds a MeshcatVisualizer and connects it to the given
 QueryObject-valued output port. See
-MeshcatVisualizer∷MeshcatVisualizer(MeshcatVisualizer*,
-MeshcatVisualizerParams) for details. The MeshcatVisualizer's name
-(see systems∷SystemBase∷set_name) will be set to a sensible default
-value, unless the default name was already in use by another system.)""";
+MeshcatVisualizer∷MeshcatVisualizer for details. The
+MeshcatVisualizer's name (see systems∷SystemBase∷set_name) will be set
+to a sensible default value, unless the default name was already in
+use by another system.)""";
         } AddToBuilder;
         // Symbol: drake::geometry::MeshcatVisualizer::Delete
         struct /* Delete */ {
@@ -5351,11 +5351,20 @@ Parameter ``meshcat``:
 Parameter ``params``:
     The set of parameters to control this system's behavior.
 
+Parameter ``plant``:
+    Optional finalized MultibodyPlant from which surface velocity axes
+    are read. This plant must be provided if there are body-related
+    properties for visualization (e.g., surface velocity). The plant
+    is *not* aliased by this class.
+
 Raises:
     RuntimeError if ``params.publish_period <= 0``.
 
 Raises:
-    RuntimeError if ``params.role == Role∷kUnassigned``.)""";
+    RuntimeError if ``params.role == Role∷kUnassigned``.
+
+Raises:
+    RuntimeError if ``plant`` is non-null and not finalized.)""";
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion. It
@@ -5402,6 +5411,22 @@ R"""(Returns the QueryObject-valued input port. It should be connected to
 SceneGraph's QueryObject-valued output port. Failure to do so will
 cause a runtime error when attempting to broadcast messages.)""";
         } query_object_input_port;
+        // Symbol: drake::geometry::MeshcatVisualizer::surface_displacement_input_port
+        struct /* surface_displacement_input_port */ {
+          // Source: drake/geometry/meshcat_visualizer.h
+          const char* doc =
+R"""(Returns the surface-displacement input port. When connected, this port
+accepts a ``BusValue`` whose signals are keyed by body scoped name
+(e.g. ``"model∷belt"``) and whose values are ``double`` scalars
+representing the cumulative surface displacement for that body. The
+visualizer will update the ``"crawl_displacement"`` meshcat property
+each publish cycle for every geometry belonging to a body registered
+via SetSurfaceVelocityAxis(). Geometries without a matching bus signal
+are left unchanged.
+
+This port is always declared. It does not need to be connected; if
+unconnected, no surface-displacement updates are sent to meshcat.)""";
+        } surface_displacement_input_port;
       } MeshcatVisualizer;
       // Symbol: drake::geometry::MeshcatVisualizerParams
       struct /* MeshcatVisualizerParams */ {
