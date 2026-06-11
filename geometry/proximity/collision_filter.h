@@ -210,6 +210,7 @@ class CollisionFilter {
     Operation operation{};
     std::vector<GeometryId> set_A;
     std::vector<GeometryId> set_B;
+    bool is_invariant{false};
   };
 
   /* A transient declaration stored as its resolved statements. */
@@ -248,11 +249,34 @@ class CollisionFilter {
    when a geometry is unregistered. */
   static void RemovePairsFor(GeometryId id, FilterState* state);
 
-  /* Applies the given declaration (using the extract_ids callback) to `state`.
-   Used by the public Apply(). */
-  static void ApplyDeclarationToState(
+  /* Computes the net active-status change from `before` to `state->inactive`
+   and writes it to `active_status_change` (which must be non-null; any
+   previous value is replaced).
+
+   Diffing the before/after snapshots (rather than recording individual
+   statement effects) is what makes a self-cancelling declaration like
+   Deactivate({g}).Activate({g}) produce an empty change, and -- more
+   importantly -- it is the only way to recover the net change after
+   RemoveDeclaration(), which replays the surviving transient history from
+   scratch (see RebuildComposite()) instead of inverting the removed
+   declaration. Cost is O(#inactive geometries), not O(#filtered pairs). */
+  static void ComputeActiveStatusChange(
+      const std::unordered_set<GeometryId>& before, const FilterState& state,
+      ActiveStatusChange* active_status_change);
+
+  /* Resolves all statements in `declaration` by calling `extract_ids` on each
+   GeometrySet, validates that every resulting GeometryId is registered with
+   this filter system, and returns the resolved statements. `is_invariant` is
+   forwarded into each ResolvedStatement so that ApplyStatement() can enforce
+   the invariant flag without re-consulting the original declaration.
+   @throws std::exception if any GeometryId produced by `extract_ids` has not
+                          been added to `this` filter system. */
+  std::vector<ResolvedStatement> ResolveStatementsOrThrow(
       const CollisionFilterDeclaration& declaration,
-      const ExtractIds& extract_ids, bool is_invariant, FilterState* state);
+      const ExtractIds& extract_ids, bool is_invariant) const;
+
+  /* Throws std::runtime_error if any id in `ids` is not in geometries_. */
+  void ThrowIfAnyUnregistered(const std::unordered_set<GeometryId>& ids) const;
 
   /* Rebuilds filter_state_ from persistent_base_ plus all entries in
    transient_history_ replayed in order. Called after RemoveDeclaration() or

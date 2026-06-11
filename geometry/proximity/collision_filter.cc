@@ -1,6 +1,9 @@
 #include "drake/geometry/proximity/collision_filter.h"
 
 #include <algorithm>
+#include <stdexcept>
+
+#include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
 
@@ -18,44 +21,26 @@ void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
         "You cannot attempt to modify the persistent collision filter "
         "configuration when there are active, transient filter declarations");
   }
-  ApplyDeclarationToState(declaration, extract_ids, is_invariant,
-                          &persistent_base_);
+  /* Resolve and validate all IDs once, before touching any state. */
+  const std::vector<ResolvedStatement> resolved =
+      ResolveStatementsOrThrow(declaration, extract_ids, is_invariant);
+  const StateDelta delta{resolved, FilterId{}};
+
+  ApplyStatements(delta, &persistent_base_);
   /* Keep the cached composite and the persistent base in sync. We *could*
    simply copy the persistent base to the filter state, but we assume that the
    application of a declaration is a generally cheaper operation than a
    wholesale copy. */
-  ApplyDeclarationToState(declaration, extract_ids, is_invariant,
-                          &filter_state_);
+  ApplyStatements(delta, &filter_state_);
 }
 
 FilterId CollisionFilter::ApplyTransient(
     const CollisionFilterDeclaration& declaration,
     const CollisionFilter::ExtractIds& extract_ids) {
-  /* Transient declarations are never invariant. */
-  using Statement = CollisionFilterDeclaration::Statement;
-  using Op = CollisionFilterDeclaration::StatementOp;
-  const CollisionFilterScope scope = declaration.scope();
-
-  /* Resolve every statement's GeometrySet to explicit GeometryId vectors now,
-   while we have the extract_ids callback. The resolved statements are stored
-   compactly in the StateDelta and replayed cheaply in RebuildComposite()
-   without needing the callback again. */
-  std::vector<ResolvedStatement> resolved;
-  resolved.reserve(declaration.statements().size());
-  for (const Statement& statement : declaration.statements()) {
-    ResolvedStatement rs;
-    rs.operation = statement.operation;
-    const std::unordered_set<GeometryId> ids_A =
-        extract_ids(statement.set_A, scope);
-    rs.set_A.assign(ids_A.begin(), ids_A.end());
-    if (statement.operation == Op::kExcludeBetween ||
-        statement.operation == Op::kAllowBetween) {
-      const std::unordered_set<GeometryId> ids_B =
-          extract_ids(statement.set_B, scope);
-      rs.set_B.assign(ids_B.begin(), ids_B.end());
-    }
-    resolved.push_back(std::move(rs));
-  }
+  /* Transient declarations are never invariant. Resolve and validate all IDs
+   before touching state, so the callback is not re-invoked at replay time. */
+  std::vector<ResolvedStatement> resolved = ResolveStatementsOrThrow(
+      declaration, extract_ids, /*is_invariant=*/false);
 
   const FilterId new_id = FilterId::get_new_id();
   StateDelta delta{std::move(resolved), new_id};
@@ -250,17 +235,19 @@ void CollisionFilter::ApplyStatement(const ResolvedStatement& statement,
   using Op = CollisionFilterDeclaration::StatementOp;
   switch (statement.operation) {
     case Op::kExcludeBetween:
-      AddPairsBetween(statement.set_A, statement.set_B, /*is_invariant=*/false,
+      AddPairsBetween(statement.set_A, statement.set_B, statement.is_invariant,
                       state);
       break;
     case Op::kExcludeWithin:
-      AddPairsBetween(statement.set_A, statement.set_A, /*is_invariant=*/false,
+      AddPairsBetween(statement.set_A, statement.set_A, statement.is_invariant,
                       state);
       break;
     case Op::kAllowBetween:
+      DRAKE_DEMAND(!statement.is_invariant);
       RemovePairsBetween(statement.set_A, statement.set_B, state);
       break;
     case Op::kAllowWithin:
+      DRAKE_DEMAND(!statement.is_invariant);
       RemovePairsBetween(statement.set_A, statement.set_A, state);
       break;
   }
@@ -273,41 +260,50 @@ void CollisionFilter::ApplyStatements(const StateDelta& delta,
   }
 }
 
-void CollisionFilter::ApplyDeclarationToState(
+std::vector<CollisionFilter::ResolvedStatement>
+CollisionFilter::ResolveStatementsOrThrow(
     const CollisionFilterDeclaration& declaration,
-    const CollisionFilter::ExtractIds& extract_ids, bool is_invariant,
-    FilterState* state) {
+    const CollisionFilter::ExtractIds& extract_ids, bool is_invariant) const {
   using Statement = CollisionFilterDeclaration::Statement;
   using Op = CollisionFilterDeclaration::StatementOp;
   const CollisionFilterScope scope = declaration.scope();
-  for (const Statement& statement : declaration.statements()) {
-    const std::unordered_set<GeometryId> ids_A_set =
-        extract_ids(statement.set_A, scope);
-    const std::vector<GeometryId> ids_A(ids_A_set.begin(), ids_A_set.end());
 
-    switch (statement.operation) {
-      case Op::kExcludeBetween: {
-        const std::unordered_set<GeometryId> ids_B_set =
-            extract_ids(statement.set_B, scope);
-        const std::vector<GeometryId> ids_B(ids_B_set.begin(), ids_B_set.end());
-        AddPairsBetween(ids_A, ids_B, is_invariant, state);
-        break;
-      }
-      case Op::kExcludeWithin:
-        AddPairsBetween(ids_A, ids_A, is_invariant, state);
-        break;
-      case Op::kAllowBetween: {
-        DRAKE_DEMAND(!is_invariant);
-        const std::unordered_set<GeometryId> ids_B_set =
-            extract_ids(statement.set_B, scope);
-        const std::vector<GeometryId> ids_B(ids_B_set.begin(), ids_B_set.end());
-        RemovePairsBetween(ids_A, ids_B, state);
-        break;
-      }
-      case Op::kAllowWithin:
-        DRAKE_DEMAND(!is_invariant);
-        RemovePairsBetween(ids_A, ids_A, state);
-        break;
+  std::vector<ResolvedStatement> resolved;
+  resolved.reserve(declaration.statements().size());
+  for (const Statement& statement : declaration.statements()) {
+    ResolvedStatement rs;
+    rs.operation = statement.operation;
+    rs.is_invariant = is_invariant;
+
+    const std::unordered_set<GeometryId> ids_A =
+        extract_ids(statement.set_A, scope);
+    ThrowIfAnyUnregistered(ids_A);
+    // Note: here and on rs.set_B below, we convert unordered_set to vector.
+    // This is simply because we may iterate through the set multiple times
+    // (particularly if it's part of a transient declaration) and prefer
+    // memory-contiguous representation to keep that running smoothly.
+    rs.set_A.assign(ids_A.begin(), ids_A.end());
+
+    if (statement.operation == Op::kExcludeBetween ||
+        statement.operation == Op::kAllowBetween) {
+      const std::unordered_set<GeometryId> ids_B =
+          extract_ids(statement.set_B, scope);
+      ThrowIfAnyUnregistered(ids_B);
+      rs.set_B.assign(ids_B.begin(), ids_B.end());
+    }
+    resolved.push_back(std::move(rs));
+  }
+  return resolved;
+}
+
+void CollisionFilter::ThrowIfAnyUnregistered(
+    const std::unordered_set<GeometryId>& ids) const {
+  for (GeometryId id : ids) {
+    if (!geometries_.contains(id)) {
+      throw std::runtime_error(fmt::format(
+          "Collision filter declaration references geometry id {} which has "
+          "not been registered with this filter system.",
+          id));
     }
   }
 }
