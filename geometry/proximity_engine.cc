@@ -102,9 +102,7 @@ void CopyFclObjectsOrThrow(
   }
 }
 
-// Builds into the target AABB tree manager based on the reference "other"
-// manager and the lookup table from other's collision objects to the target's
-// collision objects (the map populated by CopyFclObjectsOrThrow()).
+// Build new AABB trees from the input AABB trees.
 void BuildTreeFromReference(
     const fcl::DynamicAABBTreeCollisionManager<double>& other,
     const std::unordered_map<const CollisionObjectd*, CollisionObjectd*>&
@@ -228,7 +226,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     dynamic_objects_.clear();
     anchored_tree_.clear();
     anchored_objects_.clear();
-    sleeping_tree_.clear();
+    inactive_dynamic_tree_.clear();
 
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
@@ -237,16 +235,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     CopyFclObjectsOrThrow(other.dynamic_objects_, &dynamic_objects_,
                           &object_map);
 
-    // Build new AABB trees from the input AABB trees. Sleeping dynamic
-    // geometries live in other.sleeping_tree_ (not other.dynamic_tree_), so
-    // each rebuilt tree gets exactly the objects of its source tree.
+    // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
     BuildTreeFromReference(other.anchored_tree_, object_map, &anchored_tree_);
-    BuildTreeFromReference(other.sleeping_tree_, object_map, &sleeping_tree_);
+    BuildTreeFromReference(other.inactive_dynamic_tree_, object_map,
+                           &inactive_dynamic_tree_);
 
     collision_filter_ = other.collision_filter_;
-    sleeping_dynamic_ = other.sleeping_dynamic_;
-    sleeping_tree_dirty_ = other.sleeping_tree_dirty_;
+    inactive_dynamic_geometries_ = other.inactive_dynamic_geometries_;
   }
 
   // Only the copy constructor is used to facilitate copying of the parent
@@ -270,15 +266,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &object_map);
 
     engine->collision_filter_ = this->collision_filter_;
-    engine->sleeping_dynamic_ = this->sleeping_dynamic_;
-    engine->sleeping_tree_dirty_ = this->sleeping_tree_dirty_;
+    engine->inactive_dynamic_geometries_ = this->inactive_dynamic_geometries_;
 
-    // Build new AABB trees from the input AABB trees. Sleeping dynamic
-    // geometries live in sleeping_tree_ (not dynamic_tree_), so each rebuilt
-    // tree gets exactly the objects of its source tree.
+    // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(dynamic_tree_, object_map, &engine->dynamic_tree_);
     BuildTreeFromReference(anchored_tree_, object_map, &engine->anchored_tree_);
-    BuildTreeFromReference(sleeping_tree_, object_map, &engine->sleeping_tree_);
+    BuildTreeFromReference(inactive_dynamic_tree_, object_map,
+                           &engine->inactive_dynamic_tree_);
 
     engine->hydroelastic_geometries_ = this->hydroelastic_geometries_;
     engine->geometries_for_deformable_contact_ =
@@ -293,49 +287,45 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   CollisionFilter& collision_filter() { return collision_filter_; }
 
-  // Reflects a net change of the collision filter's "excluded against all"
-  // marks into the broadphase: marked dynamic geometries move out of
-  // dynamic_tree_ into sleeping_tree_ ("fall asleep"); unmarked ones move
-  // back ("wake"). See the ProximityEngine::ApplyMarkDelta() docs for the
-  // rationale and cost.
+  // Reflects a net change of the collision filter's inactive set into the
+  // broadphase: newly inactive dynamic geometries move out of dynamic_tree_
+  // into inactive_dynamic_tree_; reactivated ones move back. 
   //
   // Note the absence of any tree update() call: fcl's registerObject() and
   // unregisterObject() leave the tree valid and queryable (they insert/remove
   // the leaf with the object's current AABB and refit the ancestor bounding
-  // volumes), whereas update() is a full O(tree size) refit. The moved
-  // objects' fcl poses are current: UpdateWorldPoses() refreshes sleeping
-  // objects' transforms whenever they actually move (see the pose-skip there).
-  void ApplyMarkDelta(const CollisionFilter::MarkDelta& delta) {
-    for (const GeometryId id : delta.marked) {
+  // volumes), whereas update() is a full O(tree size) refit.
+  void ApplyActiveStatusChange(
+      const CollisionFilter::ActiveStatusChange& delta) {
+    for (const GeometryId id : delta.deactivated) {
       const auto iter = dynamic_objects_.find(id);
-      // Marked anchored geometries stay in anchored_tree_: they incur no
-      // per-step pose cost, and their broadphase candidate pairs are still
-      // discarded by the filter. Marked deformable geometries have no rigid
-      // broadphase presence at all. Neither has an entry in dynamic_objects_.
       if (iter == dynamic_objects_.end()) continue;
-      if (!sleeping_dynamic_.insert(id).second) continue;
+      if (!inactive_dynamic_geometries_.insert(id).second) continue;
       CollisionObjectd* object = iter->second.get();
       dynamic_tree_.unregisterObject(object);
-      sleeping_tree_.registerObject(object);
+      inactive_dynamic_tree_.registerObject(object);
     }
-    for (const GeometryId id : delta.unmarked) {
+    for (const GeometryId id : delta.activated) {
       const auto iter = dynamic_objects_.find(id);
       if (iter == dynamic_objects_.end()) continue;
-      if (sleeping_dynamic_.erase(id) == 0) continue;
+      if (inactive_dynamic_geometries_.erase(id) == 0) continue;
       CollisionObjectd* object = iter->second.get();
-      sleeping_tree_.unregisterObject(object);
+      inactive_dynamic_tree_.unregisterObject(object);
       dynamic_tree_.registerObject(object);
     }
   }
 
   // Reports whether the dynamic geometry with the given id is currently
-  // culled from the filter-respecting broadphase. See ApplyMarkDelta().
-  bool IsSleeping(GeometryId id) const {
-    return sleeping_dynamic_.contains(id);
+  // inactive and culled from the filter-respecting broadphase. See
+  // ApplyActiveStatusChange().
+  bool IsInactiveDynamic(GeometryId id) const {
+    return inactive_dynamic_geometries_.contains(id);
   }
 
-  // Reports the number of currently sleeping dynamic geometries.
-  int num_sleeping() const { return ssize(sleeping_dynamic_); }
+  // Reports the number of currently culled (inactive) dynamic geometries.
+  int num_inactive_dynamic() const {
+    return ssize(inactive_dynamic_geometries_);
+  }
 
   void AddDynamicGeometry(const Shape& shape, const RigidTransformd& X_WG,
                           GeometryId id, const ProximityProperties& props) {
@@ -402,12 +392,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // If this led to a change in the collision object's AABB, we need to
     // propagate those changes up through the tree's BVH. The surest way to do
-    // that is to explicitly update. (A sleeping dynamic geometry lives in
-    // sleeping_tree_ rather than dynamic_tree_.)
+    // that is to explicitly update. (An inactive dynamic geometry lives in
+    // inactive_dynamic_tree_ rather than dynamic_tree_.)
     FclDynamicAABBTreeCollisionManager& tree =
         geometry.is_dynamic()
-            ? (sleeping_dynamic_.contains(geometry.id()) ? sleeping_tree_
-                                                         : dynamic_tree_)
+            ? (inactive_dynamic_geometries_.contains(geometry.id())
+                   ? inactive_dynamic_tree_
+                   : dynamic_tree_)
             : anchored_tree_;
     tree.update();
   }
@@ -472,12 +463,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // Removes a non-deformable geometry from this engine.
   void RemoveGeometry(GeometryId id, bool is_dynamic) {
     if (is_dynamic) {
-      // A sleeping geometry lives in sleeping_tree_, not dynamic_tree_.
-      // (Removing a geometry never changes any *other* geometry's mark, so
-      // no further partition bookkeeping is needed; the filter erases the
-      // removed geometry's own mark in collision_filter_.RemoveGeometry().)
-      if (sleeping_dynamic_.erase(id) > 0) {
-        RemoveGeometry(id, &sleeping_tree_, &dynamic_objects_);
+      // An inactive dynamic geometry lives in inactive_dynamic_tree_, not
+      // dynamic_tree_. (Removing a geometry never changes any *other*
+      // geometry's active status, so no further partition bookkeeping is
+      // needed; the filter drops the removed geometry from its inactive set in
+      // collision_filter_.RemoveGeometry().)
+      if (inactive_dynamic_geometries_.erase(id) > 0) {
+        RemoveGeometry(id, &inactive_dynamic_tree_, &dynamic_objects_);
       } else {
         RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
       }
@@ -539,9 +531,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) {
-    // Hoisted so that scenes with no sleeping geometries (the common case)
+    // Hoisted so that scenes with no inactive geometries (the common case)
     // skip the per-geometry membership test below entirely.
-    const bool has_sleeping = !sleeping_dynamic_.empty();
+    const bool has_inactive = !inactive_dynamic_geometries_.empty();
     for (const auto& id_object_pair : dynamic_objects_) {
       const GeometryId id = id_object_pair.first;
       CollisionObjectd& object = *id_object_pair.second;
@@ -549,25 +541,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // The FCL broadphase requires double-valued poses; so we use ADL to
       // efficiently get double-valued poses out of arbitrary T-valued poses.
       const RigidTransform<double>& X_WG_d = convert_to_double(X_WG);
-      if (has_sleeping && sleeping_dynamic_.contains(id)) {
-        // Sleeping geometries are typically locked bodies whose poses don't
-        // change from step to step. When the pose is exactly unchanged we
-        // skip the (relatively expensive) transform, AABB, and
-        // deformable-contact updates, so a stationary sleeping geometry
-        // costs just this comparison per step. (It is also absent from
-        // dynamic_tree_, so the tree refit below scales with the active
-        // set.)
-        //
-        // Keeping a *moving* sleeper's fcl pose fresh here is what makes two
-        // other pieces correct: ApplyMarkDelta() re-registers a woken object
-        // using its current AABB, and the sleeping_tree_ refit below is
-        // deferred to the next filter-ignoring query via the dirty flag.
+      if (has_inactive && inactive_dynamic_geometries_.contains(id)) {
+        // Skipp refitting the object AABB if it hasn't moved (e.g. if it's
+        // locked).
         if (RigidTransformd(object.getTransform()).IsExactlyEqualTo(X_WG_d)) {
           continue;
         }
-        // The pose changed; sleeping_tree_'s leaf bounding volumes are now
-        // stale and need a refit before the next filter-ignoring query.
-        sleeping_tree_dirty_ = true;
       }
       object.setTransform(X_WG_d.GetAsIsometry3());
       object.computeAABB();
@@ -758,10 +737,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       const double threshold) const {
-    // This query ignores collision filters, so sleeping geometries must
-    // participate. They live in sleeping_tree_, which is refit lazily here
-    // (the per-step UpdateWorldPoses() skips it).
-    RefitSleepingTree();
+    // This query ignores collision filters, so inactive geometries must
+    // participate. They live in inactive_dynamic_tree_; refit it here from the
+    // objects' current AABBs (UpdateWorldPoses() refreshes the objects but
+    // leaves this tree alone).
+    RefitInactiveDynamicTree();
     mesh_distance_boundary_cahe_.ComputeAll();
     // We create a sphere of zero radius centered at the query point and put
     // it into a CollisionObject.
@@ -778,10 +758,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         &query_point, threshold, p_WQ, &X_WGs, &mesh_distance_boundary_cahe_,
         &distances};
 
-    // Perform query of point vs dynamic objects (including the sleeping
+    // Perform query of point vs dynamic objects (including the inactive
     // ones).
     dynamic_tree_.distance(&query_point, &data, point_distance::Callback<T>);
-    sleeping_tree_.distance(&query_point, &data, point_distance::Callback<T>);
+    inactive_dynamic_tree_.distance(&query_point, &data,
+                                    point_distance::Callback<T>);
 
     // Perform query of point vs anchored objects.
     anchored_tree_.distance(&query_point, &data, point_distance::Callback<T>);
@@ -791,22 +772,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return distances;
   }
 
-  // Refits sleeping_tree_ if sleeping geometry poses changed since the last
-  // refit. Only the filter-ignoring queries (signed distance to point) read
-  // this tree, so UpdateWorldPoses() defers the refit until one of them
-  // actually needs it; a scene whose sleeping geometries never move never
-  // pays it.
+  // Rebuilds inactive_dynamic_tree_'s bounding volumes from its objects'
+  // current AABBs. Only the filter-ignoring queries (signed distance to point)
+  // read this tree, and deactivating geometry for the sake of such queries is
+  // unusual, so rather than tracking dirtiness across UpdateWorldPoses() we
+  // simply refit on each such query. (UpdateWorldPoses() keeps the inactive
+  // objects' AABBs current, so this refit always yields correct bounds.)
   //
-  // Conceptually this is mutable cache bookkeeping, hence the const_cast.
-  // Like MeshDistanceBoundaryCache, it is not threadsafe; it relies on the
-  // fact that one engine instance is contained in a single Context and Drake
-  // advises against doing work on a single Context in multiple threads.
-  void RefitSleepingTree() const {
-    if (!sleeping_tree_dirty_) return;
-    Impl* self = const_cast<Impl*>(this);
-    self->sleeping_tree_.update();
-    self->sleeping_tree_dirty_ = false;
-  }
+  void RefitInactiveDynamicTree() const { inactive_dynamic_tree_.update(); }
 
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
       const Vector3<T>& p_WQ,
@@ -1400,21 +1373,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // All of the *dynamic* collision elements (spanning all sources).
   MapGeometryIdToFclCollisionObject dynamic_objects_;
 
-  // The subset of dynamic_objects_ currently "sleeping" -- marked "excluded
-  // against all" by the collision filter and hence culled from dynamic_tree_.
-  // See ApplyMarkDelta(). The objects remain in dynamic_objects_ (with
-  // current poses) and live in sleeping_tree_ below.
-  std::unordered_set<GeometryId> sleeping_dynamic_;
+  // The subset of dynamic_objects_ that is currently inactive (marked inactive
+  // by the collision filter) and hence culled from dynamic_tree_. See
+  // ApplyActiveStatusChange(). The objects remain in dynamic_objects_ (with
+  // current poses) and live in inactive_dynamic_tree_ below.
+  std::unordered_set<GeometryId> inactive_dynamic_geometries_;
 
-  // The BVH holding exactly the sleeping_dynamic_ objects. It serves only the
-  // queries that ignore collision filters (signed distance to point); all
-  // filter-respecting queries use dynamic_tree_, which excludes these
+  // The BVH holding exactly the inactive_dynamic_geometries_ objects. It serves
+  // only the queries that ignore collision filters (signed distance to point);
+  // all filter-respecting queries use dynamic_tree_, which excludes these
   // objects.
-  FclDynamicAABBTreeCollisionManager sleeping_tree_;
-
-  // Whether sleeping geometries' poses changed since sleeping_tree_ was last
-  // refit; see RefitSleepingTree().
-  bool sleeping_tree_dirty_{false};
+  mutable FclDynamicAABBTreeCollisionManager inactive_dynamic_tree_;
 
   // The tree containing all of the anchored geometry.
   FclDynamicAABBTreeCollisionManager anchored_tree_;
@@ -1588,19 +1557,19 @@ CollisionFilter& ProximityEngine<T>::collision_filter() {
 }
 
 template <typename T>
-void ProximityEngine<T>::ApplyMarkDelta(
-    const CollisionFilter::MarkDelta& delta) {
-  impl_->ApplyMarkDelta(delta);
+void ProximityEngine<T>::ApplyActiveStatusChange(
+    const CollisionFilter::ActiveStatusChange& delta) {
+  impl_->ApplyActiveStatusChange(delta);
 }
 
 template <typename T>
-bool ProximityEngine<T>::IsSleeping(GeometryId id) const {
-  return impl_->IsSleeping(id);
+bool ProximityEngine<T>::IsInactiveDynamic(GeometryId id) const {
+  return impl_->IsInactiveDynamic(id);
 }
 
 template <typename T>
-int ProximityEngine<T>::num_sleeping() const {
-  return impl_->num_sleeping();
+int ProximityEngine<T>::num_inactive_dynamic() const {
+  return impl_->num_inactive_dynamic();
 }
 
 template <typename T>

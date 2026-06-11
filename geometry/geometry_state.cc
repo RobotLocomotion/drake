@@ -1352,14 +1352,16 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       // Apply collision filter between geometry id and any geometries that have
       // been identified. If none have been identified, this makes no changes.
       // Per public documentation of SceneGraph, we exclude deformable
-      // geometries and only filter among rigid geometries.
+      // geometries and only filter among rigid geometries. This invariant
+      // declaration is purely pairwise and never changes active status, so we
+      // don't need the resulting change (pass nullptr).
       geometry_engine_->collision_filter().Apply(
           CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
               .ExcludeBetween(GeometrySet(geometry_id), ids_for_filtering),
           [this](const GeometrySet& set, CollisionFilterScope scope) {
             return this->CollectIds(set, Role::kProximity, scope);
           },
-          true /* is_invariant */);
+          true /* is_invariant */, nullptr);
     } break;
     case RoleAssign::kReplace:
       // Give the engine a chance to compare properties before and after.

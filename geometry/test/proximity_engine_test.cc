@@ -229,57 +229,59 @@ class ProximityEngineTests : public ::testing::Test {
           CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
           [&ids](const GeometrySet&, CollisionFilterScope) {
             return std::unordered_set<GeometryId>{ids};
-          });
+          },
+          nullptr);
     }
     engine_.collision_filter().Apply(
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
         [&ids](const GeometrySet&, CollisionFilterScope) {
           return std::unordered_set<GeometryId>{ids};
-        });
+        },
+        /* is_invariant= */ false, nullptr);
     return std::nullopt;
   }
 
-  // Wrappers for editing "excluded against all" marks on the listed ids.
-  // Mutating the engine's filter directly requires forwarding the resulting
-  // mark delta to the engine (see the collision_filter() docs); in the
-  // SceneGraph pipeline CollisionFilterManager does this. These helpers
-  // replicate that contract.
-  std::optional<FilterId> MarkAgainstAll(std::initializer_list<GeometryId> ids,
-                                         bool is_temporary = false) {
-    internal::CollisionFilter::MarkDelta mark_delta;
+  // Wrappers for deactivating/reactivating the listed ids. Mutating the
+  // engine's filter directly requires forwarding the resulting active-status
+  // change to the engine (see the collision_filter() docs); in the SceneGraph
+  // pipeline CollisionFilterManager does this. These helpers replicate that
+  // contract.
+  std::optional<FilterId> Deactivate(std::initializer_list<GeometryId> ids,
+                                     bool is_temporary = false) {
+    internal::CollisionFilter::ActiveStatusChange active_status_change;
     auto extract = [&ids](const GeometrySet&, CollisionFilterScope) {
       return std::unordered_set<GeometryId>{ids};
     };
     std::optional<FilterId> result;
     if (is_temporary) {
       result = engine_.collision_filter().ApplyTransient(
-          CollisionFilterDeclaration().ExcludeAgainstAll(GeometrySet()),
-          extract, &mark_delta);
+          CollisionFilterDeclaration().Deactivate(GeometrySet()), extract,
+          &active_status_change);
     } else {
       engine_.collision_filter().Apply(
-          CollisionFilterDeclaration().ExcludeAgainstAll(GeometrySet()),
-          extract, false /* is_invariant */, &mark_delta);
+          CollisionFilterDeclaration().Deactivate(GeometrySet()), extract,
+          false /* is_invariant */, &active_status_change);
     }
-    engine_.ApplyMarkDelta(mark_delta);
+    engine_.ApplyActiveStatusChange(active_status_change);
     return result;
   }
 
-  void UnmarkAgainstAll(std::initializer_list<GeometryId> ids) {
-    internal::CollisionFilter::MarkDelta mark_delta;
+  void Activate(std::initializer_list<GeometryId> ids) {
+    internal::CollisionFilter::ActiveStatusChange active_status_change;
     engine_.collision_filter().Apply(
-        CollisionFilterDeclaration().AllowAgainstAll(GeometrySet()),
+        CollisionFilterDeclaration().Activate(GeometrySet()),
         [&ids](const GeometrySet&, CollisionFilterScope) {
           return std::unordered_set<GeometryId>{ids};
         },
-        false /* is_invariant */, &mark_delta);
-    engine_.ApplyMarkDelta(mark_delta);
+        false /* is_invariant */, &active_status_change);
+    engine_.ApplyActiveStatusChange(active_status_change);
   }
 
   bool RemoveDeclaration(FilterId filter_id) {
-    internal::CollisionFilter::MarkDelta mark_delta;
-    const bool result =
-        engine_.collision_filter().RemoveDeclaration(filter_id, &mark_delta);
-    engine_.ApplyMarkDelta(mark_delta);
+    internal::CollisionFilter::ActiveStatusChange active_status_change;
+    const bool result = engine_.collision_filter().RemoveDeclaration(
+        filter_id, &active_status_change);
+    engine_.ApplyActiveStatusChange(active_status_change);
     return result;
   }
 
@@ -1654,26 +1656,28 @@ TEST_F(ProximityEngineTests, ComputePointPairPenetration) {
   EXPECT_FALSE(derivs.isZero());
 }
 
-/* When the collision filter marks a geometry "excluded against all" (see
- CollisionFilterDeclaration::ExcludeAgainstAll()), the engine culls it from
- the broadphase used by filter-respecting queries -- it "sleeps" (see issue
- #24607). The culling is a pure optimization and must be *unobservable*:
+/* When the collision filter deactivates a geometry (see
+ CollisionFilterDeclaration::Deactivate()), the engine culls it from the
+ broadphase used by filter-respecting queries (see issue #24607). The culling
+ is a pure optimization and must be *unobservable*:
   1. Filter-respecting queries (penetration, candidates, HasCollisions)
      simply honor the filters, as always.
   2. Filter-ignoring queries (signed distance to point, explicit
-     geometry-pair queries) still see the sleeping geometry -- at its
-     *current* pose, even if it moves while asleep.
-  3. The partition updates eagerly with each mark delta. In particular, a
-     query issued *immediately* after a wake -- with no UpdateWorldPoses in
-     between -- is correct. (This is the regression test for ApplyMarkDelta's
-     no-refit design: fcl's registerObject/unregisterObject must leave the
-     trees queryable on their own.)
-  4. A geometry registered while another sleeps is auto-blocked by the
-     open-world mark, so the sleeper stays culled (and correctly so).
-  5. Marked anchored geometries don't sleep; their pairs are simply filtered.
-  6. Removing a sleeping geometry is safe and clears the bookkeeping.
+     geometry-pair queries) still see the inactive geometry -- at its
+     *current* pose, even if it moves while inactive.
+  3. The partition updates eagerly with each active-status change. In
+     particular, a query issued *immediately* after a reactivation -- with no
+     UpdateWorldPoses in between -- is correct. (This is the regression test for
+     ApplyActiveStatusChange's no-refit design: fcl's
+     registerObject/unregisterObject must leave the trees queryable on their
+     own.)
+  4. A geometry registered while another is inactive is auto-blocked, so the
+     inactive geometry stays culled (and correctly so).
+  5. Inactive anchored geometries aren't culled; their pairs are simply
+     filtered.
+  6. Removing an inactive geometry is safe and clears the bookkeeping.
   7. Copies and scalar-converted engines preserve the bookkeeping. */
-TEST_F(ProximityEngineTests, SleepingGeometry) {
+TEST_F(ProximityEngineTests, InactiveGeometryCulling) {
   const Sphere sphere{0.5};
   // Sphere centers within 2 * 0.5 = 1.0 of each other penetrate.
   const double d = 0.9;
@@ -1698,16 +1702,16 @@ TEST_F(ProximityEngineTests, SleepingGeometry) {
     return std::numeric_limits<double>::quiet_NaN();
   };
 
-  // Baseline: A hits both B and C; nothing sleeps.
+  // Baseline: A hits both B and C; nothing is inactive.
   ASSERT_EQ(eval().size(), 2);
-  EXPECT_EQ(engine_.num_sleeping(), 0);
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 0);
 
-  // Mark A with a transient declaration. It falls asleep immediately; no
+  // Deactivate A with a transient declaration. It is culled immediately; no
   // query or pose update is needed in between.
-  const FilterId mark_id = *MarkAgainstAll({id_A}, true);
-  EXPECT_TRUE(engine_.IsSleeping(id_A));
-  EXPECT_FALSE(engine_.IsSleeping(id_B));
-  EXPECT_EQ(engine_.num_sleeping(), 1);
+  const FilterId deactivate_id = *Deactivate({id_A}, true);
+  EXPECT_TRUE(engine_.IsInactiveDynamic(id_A));
+  EXPECT_FALSE(engine_.IsInactiveDynamic(id_B));
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 1);
   EXPECT_EQ(engine_.num_dynamic(), 2);
 
   // (1) Filter-respecting queries: all contacts involved A, so none remain.
@@ -1720,8 +1724,8 @@ TEST_F(ProximityEngineTests, SleepingGeometry) {
 
   // (2) Filter-ignoring queries still see A...
   EXPECT_NEAR(point_distance_to(id_A), 0.1, 1e-13);
-  // ... at its *current* pose, even when it moves while asleep (this
-  // exercises the deferred sleeping-tree refit)...
+  // ... at its *current* pose, even when it moves while inactive (this
+  // exercises the deferred inactive-tree refit)...
   X_WGs_.at(id_A) = RigidTransformd(V3{10, 0, 0});
   engine_.UpdateWorldPoses(X_WGs_);
   EXPECT_NEAR(point_distance_to(id_A), 0.1, 1e-13);
@@ -1733,55 +1737,55 @@ TEST_F(ProximityEngineTests, SleepingGeometry) {
   X_WGs_.at(id_A) = RigidTransformd(V3{0, 0, 0});
   EXPECT_TRUE(eval().empty());
 
-  // (4) Register a new geometry overlapping A while A sleeps. The open-world
-  // mark blocks the newcomer too: A stays asleep and no contact appears (D
-  // overlaps only A; the A-D pair is filtered by A's mark).
+  // (4) Register a new geometry overlapping A while A is inactive. The newcomer
+  // is auto-blocked too: A stays inactive and no contact appears (D overlaps
+  // only A; the A-D pair is filtered because A is inactive).
   const GeometryId id_D = AddDynamic(sphere, V3{0, -d, 0});
-  EXPECT_TRUE(engine_.IsSleeping(id_A));
-  EXPECT_FALSE(engine_.IsSleeping(id_D));
-  EXPECT_EQ(engine_.num_sleeping(), 1);
+  EXPECT_TRUE(engine_.IsInactiveDynamic(id_A));
+  EXPECT_FALSE(engine_.IsInactiveDynamic(id_D));
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 1);
   EXPECT_TRUE(eval().empty());
 
   // (7) Copies and scalar-converted engines preserve the bookkeeping.
   ProximityEngine<double> engine_copy(engine_);
-  EXPECT_EQ(engine_copy.num_sleeping(), 1);
+  EXPECT_EQ(engine_copy.num_inactive_dynamic(), 1);
   engine_copy.UpdateWorldPoses(X_WGs_);
   EXPECT_TRUE(engine_copy.ComputePointPairPenetration(X_WGs_).empty());
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToScalarType<AutoDiffXd>();
-  EXPECT_EQ(ad_engine->num_sleeping(), 1);
+  EXPECT_EQ(ad_engine->num_inactive_dynamic(), 1);
 
-  // (3) Wake A by removing the transient declaration, then query
+  // (3) Reactivate A by removing the transient declaration, then query
   // *immediately* -- no UpdateWorldPoses in between. All three of A's
   // contacts (A-B, A-C, A-D) are found.
-  EXPECT_TRUE(RemoveDeclaration(mark_id));
-  EXPECT_EQ(engine_.num_sleeping(), 0);
+  EXPECT_TRUE(RemoveDeclaration(deactivate_id));
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 0);
   EXPECT_EQ(engine_.ComputePointPairPenetration(X_WGs_).size(), 3);
 
-  // Sleep and wake via the persistent statements as well.
-  MarkAgainstAll({id_A});
-  EXPECT_EQ(engine_.num_sleeping(), 1);
+  // Deactivate and reactivate via the persistent statements as well.
+  Deactivate({id_A});
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 1);
   EXPECT_TRUE(eval().empty());
-  UnmarkAgainstAll({id_A});
-  EXPECT_EQ(engine_.num_sleeping(), 0);
+  Activate({id_A});
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 0);
   ASSERT_EQ(eval().size(), 3);
 
-  // (5) A marked *anchored* geometry doesn't sleep -- it stays in the
+  // (5) An inactive *anchored* geometry isn't culled -- it stays in the
   // anchored tree and its pairs are discarded by the filter as usual.
-  MarkAgainstAll({id_C});
-  EXPECT_FALSE(engine_.IsSleeping(id_C));
-  EXPECT_EQ(engine_.num_sleeping(), 0);
+  Deactivate({id_C});
+  EXPECT_FALSE(engine_.IsInactiveDynamic(id_C));
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 0);
   ASSERT_EQ(eval().size(), 2);  // A-C is gone; A-B and A-D remain.
   EXPECT_NEAR(point_distance_to(id_C), 0.1, 1e-13);  // Still seen by point.
-  UnmarkAgainstAll({id_C});
+  Activate({id_C});
   ASSERT_EQ(eval().size(), 3);
 
-  // (6) Removing a sleeping geometry is safe and clears the bookkeeping.
-  MarkAgainstAll({id_A});
-  EXPECT_EQ(engine_.num_sleeping(), 1);
+  // (6) Removing an inactive geometry is safe and clears the bookkeeping.
+  Deactivate({id_A});
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 1);
   engine_.RemoveGeometry(id_A, true /* is_dynamic */);
   X_WGs_.erase(id_A);
-  EXPECT_EQ(engine_.num_sleeping(), 0);
+  EXPECT_EQ(engine_.num_inactive_dynamic(), 0);
   EXPECT_TRUE(eval().empty());  // B, C, and D don't touch each other.
 }
 
@@ -1874,7 +1878,8 @@ TEST_F(ProximityEngineTests, ComputeContactSurfaces) {
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
       [id_D3, id_bad](const GeometrySet&, CollisionFilterScope) {
         return std::unordered_set<GeometryId>{{id_D3, id_bad}};
-      });
+      },
+      /* is_invariant= */ false, nullptr);
   ASSERT_EQ(eval_dut(kTriangle).size(), 2);
 
   // (9) - AutoDiff derivatives pass through successfully.
@@ -2009,12 +2014,13 @@ TEST_F(ProximityEngineTests, ComputeContactSurfacesWithFallback) {
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
       [id_D2, id_D3, id_D5](const GeometrySet&, CollisionFilterScope) {
         return std::unordered_set<GeometryId>{{id_D2, id_D3, id_D5}};
-      });
+      },
+      nullptr);
   eval_dut(kTriangle);
   // The filter removed one contact surface and one point pair.
   ASSERT_EQ(surfaces.size(), 1);
   ASSERT_EQ(points.size(), 0);
-  engine_.collision_filter().RemoveDeclaration(filter_id);
+  engine_.collision_filter().RemoveDeclaration(filter_id, nullptr);
 
   // (9) - AutoDiff derivatives pass through successfully.
   const auto ad_engine = engine_.ToScalarType<AutoDiffXd>();
@@ -2106,7 +2112,7 @@ TEST_F(ProximityEngineTests, FindCollisionCandidates) {
       ExcludeCollisionsWithin({dynamic3, dynamic4}, /* is_temporary= */ true);
   DRAKE_DEMAND(filter_id.has_value());
   ASSERT_TRUE(eval_dut().empty());
-  engine_.collision_filter().RemoveDeclaration(*filter_id);
+  engine_.collision_filter().RemoveDeclaration(*filter_id, nullptr);
 
   // (5) - dynamic-anchored pairs whose AABBs overlap ARE candidates.
   const GeometryId dynamic5 = AddDynamic(Sphere(5));
@@ -2221,7 +2227,7 @@ TEST_F(ProximityEngineTests, HasCollisions) {
               ::testing::Contains(SortedPair<GeometryId>(dynamic5, anchored1)));
 
   // Remove the filter and confirm we get collisions.
-  engine_.collision_filter().RemoveDeclaration(*filter_id);
+  engine_.collision_filter().RemoveDeclaration(*filter_id, nullptr);
   ASSERT_TRUE(eval_dut());
 }
 

@@ -9,11 +9,12 @@ using internal::CollisionFilter;
 
 CollisionFilterManager::CollisionFilterManager(
     CollisionFilter* filter, CollisionFilter::ExtractIds extract_ids,
-    MarkDeltaSink mark_delta_sink)
+    ActiveStatusChangeCallback active_status_change_callback)
     : filter_(filter),
       extract_ids_(std::move(extract_ids)),
-      mark_delta_sink_(std::move(mark_delta_sink)) {
+      active_status_change_callback_(std::move(active_status_change_callback)) {
   DRAKE_DEMAND(filter != nullptr);
+  DRAKE_DEMAND(active_status_change_callback_ != nullptr);
 }
 
 }  // namespace geometry

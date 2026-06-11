@@ -117,27 +117,27 @@ GTEST_TEST(CollisionFilterManagerTest, Apply) {
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id2, g_id3));
 }
 
-/* End-to-end exercise of the "excluded against all" mark through SceneGraph:
- a marked geometry is filtered against everything -- including a geometry
- whose proximity role is assigned *after* the mark -- and unmarking restores
- the unfiltered state. The mark semantics themselves are tested exhaustively
+/* End-to-end exercise of geometry deactivation through SceneGraph: an inactive
+ geometry is filtered against everything -- including a geometry whose proximity
+ role is assigned *after* it was deactivated -- and reactivating restores the
+ unfiltered state. The inactive-set semantics themselves are tested exhaustively
  in collision_filter_test.cc; this confirms the SceneGraph plumbing. */
-GTEST_TEST(CollisionFilterManagerTest, ExcludeAgainstAll) {
+GTEST_TEST(CollisionFilterManagerTest, Deactivate) {
   SceneGraph<double> scene_graph;
   const auto [g_id1, g_id2, g_id3] = PopulateSceneGraph(&scene_graph);
 
   // Work on the model so that we can register new geometry afterwards.
   auto filter_manager = scene_graph.collision_filter_manager();
   filter_manager.Apply(
-      CollisionFilterDeclaration().ExcludeAgainstAll(GeometrySet(g_id1)));
+      CollisionFilterDeclaration().Deactivate(GeometrySet(g_id1)));
 
   const auto& model_inspector = scene_graph.model_inspector();
   EXPECT_TRUE(model_inspector.CollisionFiltered(g_id1, g_id2));
   EXPECT_TRUE(model_inspector.CollisionFiltered(g_id1, g_id3));
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id2, g_id3));
 
-  // The open-world property: geometry registered (and given the proximity
-  // role) *after* the mark is still filtered against the marked geometry.
+  // A geometry registered (and given the proximity role) *after* a geometry is
+  // deactivated is still filtered against the inactive geometry.
   const SourceId source_id = scene_graph.RegisterSource("late_source");
   const FrameId f_id =
       scene_graph.RegisterFrame(source_id, GeometryFrame("late_frame"));
@@ -147,9 +147,9 @@ GTEST_TEST(CollisionFilterManagerTest, ExcludeAgainstAll) {
   EXPECT_TRUE(model_inspector.CollisionFiltered(g_id1, late_id));
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id2, late_id));
 
-  // Unmarking restores collision candidacy with everything.
+  // Reactivating restores collision candidacy with everything.
   filter_manager.Apply(
-      CollisionFilterDeclaration().AllowAgainstAll(GeometrySet(g_id1)));
+      CollisionFilterDeclaration().Activate(GeometrySet(g_id1)));
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id1, g_id2));
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id1, late_id));
 }

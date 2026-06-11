@@ -61,12 +61,12 @@ class TestGeometryCore(unittest.TestCase):
             )
         )
         dut.Apply(
-            declaration=mut.CollisionFilterDeclaration().ExcludeAgainstAll(
+            declaration=mut.CollisionFilterDeclaration().Deactivate(
                 geometry_set=geometries
             )
         )
         dut.Apply(
-            declaration=mut.CollisionFilterDeclaration().AllowAgainstAll(
+            declaration=mut.CollisionFilterDeclaration().Activate(
                 geometry_set=geometries
             )
         )

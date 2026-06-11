@@ -322,18 +322,15 @@ It's worth noting, that the statements are evaluated in *invocation*
 order such that a later statement can partially or completely undo the
 effect of an earlier statement. The full declaration is evaluated by
 CollisionFilterManager∷Apply().)""";
-        // Symbol: drake::geometry::CollisionFilterDeclaration::AllowAgainstAll
-        struct /* AllowAgainstAll */ {
+        // Symbol: drake::geometry::CollisionFilterDeclaration::Activate
+        struct /* Activate */ {
           // Source: drake/geometry/collision_filter_declaration.h
           const char* doc =
-R"""(Removes the "excluded against all" mark (see ExcludeAgainstAll()) from
-each geometry in ``geometry_set``; this statement only clears marks --
-it does *not* add any pair to the candidate pair set C. Pairs
-involving an unmarked geometry are still subject to all pairwise
-filters (``Fₚ``, `Iₚ`, and the ``Aₚ × Aₚ`` invariant), exactly as if
-the geometry had never been marked. Unmarking a geometry that is not
-marked is a no-op.)""";
-        } AllowAgainstAll;
+R"""(Marks every geometry in ``geometry_set`` *active* again (see
+Deactivate()), returning it to proximity queries with its pairwise
+filter state unchanged. Reactivating an already-active geometry is a
+no-op.)""";
+        } Activate;
         // Symbol: drake::geometry::CollisionFilterDeclaration::AllowBetween
         struct /* AllowBetween */ {
           // Source: drake/geometry/collision_filter_declaration.h
@@ -366,33 +363,15 @@ CollisionFilterManager for details on those invariants).)""";
           // Source: drake/geometry/collision_filter_declaration.h
           const char* doc = R"""()""";
         } ctor;
-        // Symbol: drake::geometry::CollisionFilterDeclaration::ExcludeAgainstAll
-        struct /* ExcludeAgainstAll */ {
+        // Symbol: drake::geometry::CollisionFilterDeclaration::Deactivate
+        struct /* Deactivate */ {
           // Source: drake/geometry/collision_filter_declaration.h
           const char* doc =
-R"""(Excludes every pair that includes a geometry in ``geometry_set`` from
-proximity evaluation, robustly with respect to future geometry
-registration. Each geometry ``g`` in ``geometry_set`` is added to the
-"excluded against all" set ``Mₚ`` (see CollisionFilterManager),
-updating the candidate pair set ``C ← C - {(g, x) : g ∈ Mₚ, x ∈ Gₚ, x
-≠ g}``.
-
-Unlike ExcludeBetween() and ExcludeWithin() (whose effects are fixed
-to the pairs implied by the geometries registered when the declaration
-is applied), the subtraction is evaluated against the *live* set of
-registered geometries ``Gₚ``: a geometry registered *after* this
-declaration is applied is still excluded against ``g``, for as long as
-``g`` remains in ``Mₚ``. This is the recommended way to (temporarily)
-remove a geometry from all proximity queries -- e.g., for a "sleeping"
-or locked body -- and is cheaper than ``ExcludeBetween(geometry_set,
-everything)``, which materializes O(N) pairs and silently fails to
-cover geometries registered later.
-
-The mark and pairwise filters are independent: AllowBetween() and
-AllowWithin() do not remove a mark. Remove the mark with
-AllowAgainstAll() (or, for a transient declaration, by removing the
-declaration).)""";
-        } ExcludeAgainstAll;
+R"""(Marks every geometry in ``geometry_set`` *inactive* (see the group
+documentation above): it forms no candidate pair with any other
+geometry -- including geometries registered later -- until it is
+reactivated. Deactivating an already-inactive geometry is a no-op.)""";
+        } Deactivate;
         // Symbol: drake::geometry::CollisionFilterDeclaration::ExcludeBetween
         struct /* ExcludeBetween */ {
           // Source: drake/geometry/collision_filter_declaration.h
@@ -430,7 +409,7 @@ the subset of geometries that have a proximity role (with an analogous
 interpretation of ``Dₚ`` and ``Aₚ``). Many proximity queries operate
 on pairs of geometries (e.g., (gᵢ, gⱼ)). The set of proximity
 candidate pairs for such queries is initially defined as ``C = (Gₚ ×
-Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ - Mₚ*``, where:
+Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ - Nₚ*``, where:
 
 - ``Gₚ × Gₚ = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ Gₚ`` is the Cartesian product of the set
 of SceneGraph proximity geometries.
@@ -442,13 +421,13 @@ affixed to the same frame.
 - ``Iₚ = {(g, g)}, ∀ g ∈ Gₚ`` is the set of all pairs consisting of a
 geometry with itself; there is no meaningful proximity query on a
 geometry with itself.
-- ``Mₚ* = {(g, x)}, ∀ g ∈ Mₚ, x ∈ Gₚ, g ≠ x``, where ``Mₚ ⊂ Gₚ`` is the set of
-geometries marked "excluded against all" (see
-CollisionFilterDeclaration∷ExcludeAgainstAll()). Unlike the other terms,
-``Mₚ*`` is evaluated against the *live* set ``Gₚ``: a geometry registered
-after ``g`` was marked is still excluded against ``g``. Membership in ``Mₚ`` is
-edited by ExcludeAgainstAll() and AllowAgainstAll() declarations; all
-other statements edit pairs, not marks.
+- ``Nₚ* = {(g, x)}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x``, where ``Nₚ ⊂ Gₚ`` is the set of
+inactive* geometries (see CollisionFilterDeclaration∷Deactivate()). An
+inactive geometry forms no candidate pair with any other geometry. Unlike
+the other terms, ``Nₚ*`` is evaluated against the *live* set ``Gₚ``: a geometry
+registered after ``g`` was deactivated still forms no pair with ``g``.
+Membership in ``Nₚ`` is edited by Deactivate() and Activate() declarations;
+all other statements edit pairs, not active status.
 
 Only pairs contained in C will be included in pairwise proximity
 operations.
@@ -490,13 +469,13 @@ Warning:
     role is subsequently assigned, those geometries will *still* not
     be part of any user-declared collision filters. - In general,
     adding collisions and assigning proximity roles should happen
-    prior to collision filter configuration. - The "excluded against
-    all" mark set ``Mₚ`` is the deliberate exception to the
-    apply-time-resolution rule -- in one direction only. *Which*
-    geometries get marked (or unmarked) is resolved at apply time,
-    exactly as above; but the pairs a mark excludes are evaluated
-    against the live geometry set, so a marked geometry is also
-    excluded against geometries registered later.
+    prior to collision filter configuration. - The inactive set ``Nₚ``
+    is the deliberate exception to the apply-time-resolution rule --
+    in one direction only. *Which* geometries get deactivated (or
+    reactivated) is resolved at apply time, exactly as above; but the
+    pairs an inactive geometry suppresses are evaluated against the
+    live geometry set, so an inactive geometry also forms no pair with
+    geometries registered later.
 
 **Transient vs Persistent changes**
 
@@ -7796,10 +7775,9 @@ Raises:
           const char* doc =
 R"""(Reports true if the two geometries with given ids ``geometry_id1`` and
 ``geometry_id2``, define a collision pair that has been filtered out.
-A pair is filtered if it was excluded pairwise or if either geometry
-carries an "excluded against all" mark (see
-CollisionFilterDeclaration∷ExcludeAgainstAll()) -- the latter holds
-even for geometries registered after the mark was applied.
+See CollisionFilterManager for the definition of which pairs are
+filtered (pairwise filters together with the set of inactive
+geometries).
 
 Raises:
     RuntimeError if either id does not map to a registered geometry or

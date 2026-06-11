@@ -85,45 +85,46 @@ class ProximityEngine {
 
   /* Provides access to the mutable collision filter this engine uses.
 
-   @warning If a mutation applied directly to the filter changes its "excluded
-   against all" marks, the caller must forward the resulting
-   CollisionFilter::MarkDelta to ApplyMarkDelta() so that the engine's
-   broadphase reflects the marks. (In the SceneGraph pipeline,
+   @warning If a mutation applied directly to the filter changes which
+   geometries are inactive, the caller must forward the resulting
+   CollisionFilter::ActiveStatusChange to ApplyActiveStatusChange() so that the
+   engine's broadphase reflects it. (In the SceneGraph pipeline,
    CollisionFilterManager does this automatically; GeometryState's internally
-   generated invariant declarations never carry marks.) */
+   generated invariant declarations never change active status.) */
   CollisionFilter& collision_filter();
 
-  /* Updates the engine's broadphase culling of "sleeping" geometries to
-   reflect the given net change to the collision filter's "excluded against
-   all" marks (see CollisionFilterDeclaration::ExcludeAgainstAll()).
+  /* Updates the engine's broadphase culling of inactive dynamic geometries to
+   reflect the given net change to the collision filter's inactive set (see
+   CollisionFilterDeclaration::Deactivate()).
 
-   A marked geometry cannot contribute to any filter-respecting pairwise
-   query, so the engine moves marked *dynamic* geometries out of the active
+   An inactive geometry cannot contribute to any filter-respecting pairwise
+   query, so the engine moves inactive *dynamic* geometries out of the active
    broadphase tree (whose per-step refit and traversal cost then scales with
-   the active geometry count) and into a separate sleeping tree that serves
-   only the queries that ignore collision filters (signed distance to point).
-   Unmarked geometries move back. This is a pure optimization: query results
-   are identical with or without it -- marked pairs are equally discarded by
-   the collision filter -- just cheaper when many geometries sleep (e.g.,
-   locked bodies; see issue #24607). Marked ids without a dynamic fcl object
-   (anchored geometries, whose pairs are discarded by the filter at no
-   per-step cost, and deformable geometries, which have no rigid broadphase
-   presence) are ignored.
+   the active geometry count) and into a separate tree that serves only the
+   queries that ignore collision filters (signed distance to point).
+   Reactivated geometries move back. This is a pure optimization: query results
+   are identical with or without it -- inactive pairs are equally discarded by
+   the collision filter -- just cheaper when many geometries are inactive
+   (e.g., locked bodies; see issue #24607).
 
    The per-call cost is O(|delta| log n) tree updates; no full-tree refit
    occurs. */
-  void ApplyMarkDelta(const CollisionFilter::MarkDelta& delta);
+  // TODO(xuchen-han): Only dynamic geometries are culled. We are not optimizing
+  // for anchored geometries yet. Do that when there's a use where it brings
+  // noticeable performance improvement.
+  void ApplyActiveStatusChange(
+      const CollisionFilter::ActiveStatusChange& delta);
 
   /* (Introspection) Reports whether the dynamic geometry with the given `id`
-   is currently "sleeping": culled from the filter-respecting broadphase
-   because it carries an "excluded against all" mark. See ApplyMarkDelta().
-   This accessor exists so tests can confirm the bookkeeping. */
-  bool IsSleeping(GeometryId id) const;
+   is currently inactive and thus culled from the filter-respecting broadphase.
+   See ApplyActiveStatusChange(). This accessor exists so tests can confirm the
+   bookkeeping. */
+  bool IsInactiveDynamic(GeometryId id) const;
 
-  /* (Introspection) Reports the number of currently sleeping dynamic
-   geometries. Marked anchored or deformable geometries are not counted; see
-   ApplyMarkDelta(). */
-  int num_sleeping() const;
+  /* (Introspection) Reports the number of currently culled (inactive) dynamic
+   geometries. Inactive anchored or deformable geometries are not counted; see
+   ApplyActiveStatusChange(). */
+  int num_inactive_dynamic() const;
 
   /* @name Topology management */
   //@{

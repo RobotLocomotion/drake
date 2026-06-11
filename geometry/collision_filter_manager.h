@@ -30,7 +30,7 @@ class GeometryState;
  interpretation of `Dₚ` and `Aₚ`). Many proximity queries operate on pairs of
  geometries (e.g., (gᵢ, gⱼ)). The set of proximity candidate pairs for such
  queries is initially defined as
- `C = (Gₚ × Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ - Mₚ*`, where:
+ `C = (Gₚ × Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ - Nₚ*`, where:
 
   - `Gₚ × Gₚ = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ Gₚ` is the Cartesian product of the set
     of SceneGraph proximity geometries.
@@ -42,13 +42,13 @@ class GeometryState;
   - `Iₚ = {(g, g)}, ∀ g ∈ Gₚ` is the set of all pairs consisting of a
     geometry with itself; there is no meaningful proximity query on a
     geometry with itself.
-  - `Mₚ* = {(g, x)}, ∀ g ∈ Mₚ, x ∈ Gₚ, g ≠ x`, where `Mₚ ⊂ Gₚ` is the set of
-    geometries marked "excluded against all" (see
-    CollisionFilterDeclaration::ExcludeAgainstAll()). Unlike the other terms,
-    `Mₚ*` is evaluated against the *live* set `Gₚ`: a geometry registered
-    after `g` was marked is still excluded against `g`. Membership in `Mₚ` is
-    edited by ExcludeAgainstAll() and AllowAgainstAll() declarations; all
-    other statements edit pairs, not marks.
+  - `Nₚ* = {(g, x)}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x`, where `Nₚ ⊂ Gₚ` is the set of
+    *inactive* geometries (see CollisionFilterDeclaration::Deactivate()). An
+    inactive geometry forms no candidate pair with any other geometry. Unlike
+    the other terms, `Nₚ*` is evaluated against the *live* set `Gₚ`: a geometry
+    registered after `g` was deactivated still forms no pair with `g`.
+    Membership in `Nₚ` is edited by Deactivate() and Activate() declarations;
+    all other statements edit pairs, not active status.
 
  Only pairs contained in C will be included in pairwise proximity operations.
 
@@ -86,11 +86,12 @@ class GeometryState;
    not be part of any user-declared collision filters.
  - In general, adding collisions and assigning proximity roles should
    happen prior to collision filter configuration.
- - The "excluded against all" mark set `Mₚ` is the deliberate exception to
-   the apply-time-resolution rule -- in one direction only. *Which* geometries
-   get marked (or unmarked) is resolved at apply time, exactly as above; but
-   the pairs a mark excludes are evaluated against the live geometry set, so
-   a marked geometry is also excluded against geometries registered later.
+ - The inactive set `Nₚ` is the deliberate exception to the
+   apply-time-resolution rule -- in one direction only. *Which* geometries get
+   deactivated (or reactivated) is resolved at apply time, exactly as above;
+   but the pairs an inactive geometry suppresses are evaluated against the live
+   geometry set, so an inactive geometry also forms no pair with geometries
+   registered later.
 
  <h3>Transient vs Persistent changes</h3>
 
@@ -203,10 +204,10 @@ class CollisionFilterManager {
   void Apply(const CollisionFilterDeclaration& declaration) {
     /* Modifications made via this API are by the user. Only the internals can
      declare filters to be "invariant". */
-    internal::CollisionFilter::MarkDelta mark_delta;
+    internal::CollisionFilter::ActiveStatusChange active_status_change;
     filter_->Apply(declaration, extract_ids_, false /* is_invariant */,
-                   &mark_delta);
-    NotifyMarkDelta(mark_delta);
+                   &active_status_change);
+    NotifyActiveStatusChange(active_status_change);
   }
 
   // TODO(SeanCurtis-TRI) SceneGraphInspector includes the method
@@ -227,10 +228,10 @@ class CollisionFilterManager {
    collision filter configuration. The declaration must be considered "valid",
    as defined for Apply(). */
   FilterId ApplyTransient(const CollisionFilterDeclaration& declaration) {
-    internal::CollisionFilter::MarkDelta mark_delta;
-    const FilterId result =
-        filter_->ApplyTransient(declaration, extract_ids_, &mark_delta);
-    NotifyMarkDelta(mark_delta);
+    internal::CollisionFilter::ActiveStatusChange active_status_change;
+    const FilterId result = filter_->ApplyTransient(declaration, extract_ids_,
+                                                    &active_status_change);
+    NotifyActiveStatusChange(active_status_change);
     return result;
   }
 
@@ -241,9 +242,10 @@ class CollisionFilterManager {
             method (i.e., `filter_id` refers to an existent filter that has
             successfully been removed). */
   bool RemoveDeclaration(FilterId filter_id) {
-    internal::CollisionFilter::MarkDelta mark_delta;
-    const bool result = filter_->RemoveDeclaration(filter_id, &mark_delta);
-    NotifyMarkDelta(mark_delta);
+    internal::CollisionFilter::ActiveStatusChange active_status_change;
+    const bool result =
+        filter_->RemoveDeclaration(filter_id, &active_status_change);
+    NotifyActiveStatusChange(active_status_change);
     return result;
   }
 
@@ -263,34 +265,38 @@ class CollisionFilterManager {
   template <typename>
   friend class GeometryState;
 
-  /* The callback type used to push net changes of the filter's "excluded
-   against all" marks to the owning geometry data. GeometryState binds this to
-   its ProximityEngine (see ProximityEngine::ApplyMarkDelta()), which exploits
-   marks to cull "sleeping" geometries from its broadphase structures. This is
-   internal plumbing for that pure optimization; it has no observable effect
-   on query results. Like `filter`, the bound target is a view into the
-   geometry data this manager fronts and shares its lifetime contract. */
-  using MarkDeltaSink =
-      std::function<void(const internal::CollisionFilter::MarkDelta&)>;
+  /* The callback type used to push net changes of the filter's active-status
+   (inactive) set to the owning geometry data. GeometryState binds this to its
+   ProximityEngine (see ProximityEngine::ApplyActiveStatusChange()), which
+   exploits the inactive set to cull inactive dynamic geometries from its
+   broadphase structures. This is internal plumbing for that pure optimization;
+   it has no observable effect on query results. Like `filter`, the bound
+   target is a view into the geometry data this manager fronts and shares its
+   lifetime contract. */
+  using ActiveStatusChangeCallback =
+      std::function<void(const internal::CollisionFilter::ActiveStatusChange&)>;
 
-  /* Constructs the manager for a `filter` with the appropriate callback for
-   resolving GeometrySet into set of GeometryIds and (optionally) a sink for
-   mark deltas. */
+  /* Constructs the manager for a `filter` with a callback for resolving a
+   GeometrySet into a set of GeometryIds and a callback for active-status
+   changes.
+   @pre filter is non-null.
+   @pre active_status_change_callback is non-empty. */
   explicit CollisionFilterManager(
       internal::CollisionFilter* filter,
       internal::CollisionFilter::ExtractIds extract_ids,
-      MarkDeltaSink mark_delta_sink = nullptr);
+      ActiveStatusChangeCallback active_status_change_callback);
 
-  /* Pushes a non-empty mark delta to the sink (if one was provided). */
-  void NotifyMarkDelta(const internal::CollisionFilter::MarkDelta& delta) {
-    if (mark_delta_sink_ != nullptr && !delta.empty()) {
-      mark_delta_sink_(delta);
+  /* Pushes a non-empty active-status change to the callback. */
+  void NotifyActiveStatusChange(
+      const internal::CollisionFilter::ActiveStatusChange& change) {
+    if (!change.empty()) {
+      active_status_change_callback_(change);
     }
   }
 
   internal::CollisionFilter* filter_{};
   internal::CollisionFilter::ExtractIds extract_ids_;
-  MarkDeltaSink mark_delta_sink_;
+  ActiveStatusChangeCallback active_status_change_callback_;
 };
 }  // namespace geometry
 }  // namespace drake
