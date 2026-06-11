@@ -188,13 +188,9 @@ void GainConstraintsPool<T>::ReduceInto(
     const ReducedMapping& mapping, GainConstraintsPool<T>* reduced_pool) const {
   // Make sure the pool is (over) allocated.
   reduced_pool->Resize(constraint_sizes());
+  // Remove old data.
+  reduced_pool->Resize({});
 
-  reduced_pool->clique_.clear();
-  reduced_pool->constraint_size_.clear();
-  reduced_pool->K_.Clear();
-  reduced_pool->b_.Clear();
-  reduced_pool->le_.Clear();
-  reduced_pool->ue_.Clear();
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
     if (!mapping.clique_subsequence.participates(c)) {

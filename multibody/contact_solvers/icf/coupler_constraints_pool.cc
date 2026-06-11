@@ -199,12 +199,9 @@ void CouplerConstraintsPool<T>::ReduceInto(
     CouplerConstraintsPool<T>* reduced_pool) const {
   // Make sure the pool is (over) allocated.
   reduced_pool->Resize(num_constraints());
+  // Remove old data.
+  reduced_pool->Resize(0);
 
-  reduced_pool->constraint_to_clique_.clear();
-  reduced_pool->dofs_.clear();
-  reduced_pool->gear_ratio_.clear();
-  reduced_pool->g_hat_.clear();
-  reduced_pool->R_.clear();
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     if (!mapping.clique_subsequence.participates(c)) {
