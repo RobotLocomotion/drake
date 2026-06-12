@@ -22,6 +22,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/sensors/camera_config.h"
 #include "drake/systems/sensors/camera_config_functions.h"
+#include "drake/visualization/visualization_config.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 DEFINE_double(simulation_time, 15.0, "Desired duration of the simulation [s].");
 DEFINE_double(realtime_rate, 0.0, "Desired real time rate.");
@@ -29,6 +31,12 @@ DEFINE_double(discrete_time_step, 2.5e-2,
               "Discrete time step for the system [s].");
 DEFINE_bool(render_bubble, true,
             "Renders the dot pattern inside the bubble gripper if true.");
+static bool ValidateManipuland(const char*, const std::string& value) {
+  return value == "bear" || value == "ball";
+}
+DEFINE_string(manipuland, "bear",
+              "Deformable manipuland to add. Options are: 'bear' and 'ball'.");
+DEFINE_validator(manipuland, &ValidateManipuland);
 
 using drake::examples::deformable::ParallelGripperController;
 using drake::geometry::AddContactMaterial;
@@ -40,6 +48,7 @@ using drake::geometry::PerceptionProperties;
 using drake::geometry::ProximityProperties;
 using drake::geometry::RenderEngineVtkParams;
 using drake::geometry::Rgba;
+using drake::geometry::Sphere;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
 using drake::math::RotationMatrixd;
@@ -58,6 +67,8 @@ using drake::schema::Transform;
 using drake::systems::Context;
 using drake::systems::sensors::ApplyCameraConfig;
 using drake::systems::sensors::CameraConfig;
+using drake::visualization::ApplyVisualizationConfig;
+using drake::visualization::VisualizationConfig;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
@@ -158,11 +169,41 @@ int do_main() {
       /* The pose of the box in the right finger's frame. */
       RigidTransformd(Vector3d(0.0, 0.03, -0.1)));
 
-  /* Add in a deformable manipuland. */
-  parser.AddModelsFromUrl(
-      "package://drake/examples/multibody/deformable/models/"
-      "deformable_teddy.sdf");
+  if (FLAGS_manipuland == "bear") {
+    /* Add in a deformable teddy bear. */
+    parser.AddModelsFromUrl(
+        "package://drake/examples/multibody/deformable/models/"
+        "deformable_teddy.sdf");
+  } else {
+    DRAKE_DEMAND(FLAGS_manipuland == "ball");
+    /* Add a deformable sphere in the original teddy bear pickup location. */
+    const double sphere_radius = 0.06;
+    const double sphere_resolution_hint = 0.03;
+    const double work_surface_top_z = -0.005;
+    const Vector3d p_WS(-0.18, 0, work_surface_top_z + sphere_radius + 0.02);
+    auto sphere_instance = std::make_unique<GeometryInstance>(
+        RigidTransformd(p_WS), std::make_unique<Sphere>(sphere_radius),
+        "deformable_sphere");
 
+    ProximityProperties sphere_proximity_props;
+    AddContactMaterial({}, {}, surface_friction, &sphere_proximity_props);
+    sphere_instance->set_proximity_properties(sphere_proximity_props);
+
+    const Rgba sphere_color(0.20, 0.45, 0.95, 1.0);
+    IllustrationProperties sphere_illustration_props;
+    sphere_illustration_props.AddProperty("phong", "diffuse", sphere_color);
+    sphere_instance->set_illustration_properties(sphere_illustration_props);
+    sphere_instance->set_perception_properties(
+        PerceptionProperties(sphere_illustration_props));
+
+    DeformableBodyConfig<double> sphere_config;
+    sphere_config.set_youngs_modulus(5e3);
+    sphere_config.set_poissons_ratio(0.45);
+    sphere_config.set_stiffness_damping_coefficient(0.05);
+    sphere_config.set_mass_density(700.0);
+    deformable_model.RegisterDeformableBody(
+        std::move(sphere_instance), sphere_config, sphere_resolution_hint);
+  }
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
 
@@ -177,10 +218,9 @@ int do_main() {
                   plant.get_desired_state_input_port(gripper_instance));
 
   /* Add a visualizer that emits LCM messages for visualization. */
-  geometry::DrakeVisualizerParams params;
-  params.role = geometry::Role::kIllustration;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
-                                           params);
+  VisualizationConfig vis_config;
+  ApplyVisualizationConfig(vis_config, &builder);
+
   /* We want to look in the -Py direction so we line up Bz with -Py.*/
   const Vector3d Bz_P = -Vector3d::UnitY();
   const Vector3d Bx_P = -Vector3d::UnitZ();
