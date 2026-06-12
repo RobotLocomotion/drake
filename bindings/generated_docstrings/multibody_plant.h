@@ -1007,6 +1007,11 @@ Raises:
     RuntimeError if no deformable body with the given ``id`` has been
     registered in this model.)""";
         } GetReferencePositions;
+        // Symbol: drake::multibody::DeformableModel::GetScalarConversionFailureReason
+        struct /* GetScalarConversionFailureReason */ {
+          // Source: drake/multibody/plant/deformable_model.h
+          const char* doc = R"""()""";
+        } GetScalarConversionFailureReason;
         // Symbol: drake::multibody::DeformableModel::GetVelocities
         struct /* GetVelocities */ {
           // Source: drake/multibody/plant/deformable_model.h
