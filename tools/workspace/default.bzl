@@ -105,7 +105,7 @@ def _add_internal_repositories():
     ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)
     lapack_internal_repository(name = "lapack_internal", mirrors = mirrors)
     lcm_internal_repository(name = "lcm_internal", mirrors = mirrors)
-    libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
+    libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal")
     libpng_internal_repository(name = "libpng_internal", mirrors = mirrors)
     libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)
     libzip_internal_repository(name = "libzip_internal", mirrors = mirrors)

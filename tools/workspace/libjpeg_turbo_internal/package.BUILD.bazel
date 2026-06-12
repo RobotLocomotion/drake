@@ -1,0 +1,31 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install_files")
+load(
+    "@drake//tools/workspace/libjpeg_turbo_internal:defs.bzl",
+    "cc_static_hidden_library",
+)
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:private"])
+
+# TODO adjust the include paths to avoid accidentally using the host OS copy of
+# libjpeg from /usr/include/?
+
+cc_static_hidden_library(
+    name = "libjpeg_turbo",
+    visibility = ["//visibility:public"],
+    deps = ["@libjpeg_turbo//:jpeg"],
+)
+
+install_files(
+    name = "install",
+    dest = "share/doc/libjpeg_turbo_internal",
+    files = [
+        "@libjpeg_turbo//:LICENSE.md",
+    ],
+    allowed_externals = [
+        "@libjpeg_turbo//:LICENSE.md",
+    ],
+    visibility = ["@drake//tools/workspace:__pkg__"],
+)

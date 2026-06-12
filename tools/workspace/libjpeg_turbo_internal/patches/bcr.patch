@@ -1,0 +1,21 @@
+Add support for Bazel 9 by explicitly importing rules_cc
+
+--- MODULE.bazel
++++ MODULE.bazel
+@@ -7,3 +7,4 @@
+ bazel_dep(name = "bazel_skylib", version = "1.4.2")
+ bazel_dep(name = "nasm", version = "2.14.02")
+ bazel_dep(name = "platforms", version = "0.0.8")
++bazel_dep(name = "rules_cc", version = "0.0.14")
+
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -6,6 +6,8 @@
+ #   libjpeg-turbo is a drop in replacement for jpeglib optimized with SIMD.
+ 
+ load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
++load("@rules_cc//cc:cc_library.bzl", "cc_library")
++exports_files(["LICENSE.md"])
+ 
+ WIN_COPTS = [
+     "/Ox",
