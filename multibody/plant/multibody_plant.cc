@@ -6,6 +6,8 @@
 #include <memory>
 #include <set>
 #include <stdexcept>
+#include <string>
+#include <typeinfo>
 #include <vector>
 
 #include <fmt/ranges.h>
@@ -388,7 +390,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // called because `FinalizePlantOnly()` has to allocate system resources
     // requested by physical models.
     physical_models_ = other.physical_models_->template CloneToScalar<T>(this);
-    this->RemoveUnsupportedScalars(*physical_models_);
 
     coupler_constraints_specs_ = other.coupler_constraints_specs_;
     distance_constraints_params_ = other.distance_constraints_params_;
@@ -1557,6 +1558,13 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareCacheEntries();
   DeclareStateUpdate();
   DeclareOutputPorts();
+  // Physical models (e.g. DeformableModel) may not support every scalar type.
+  // We must disable the unsupported conversions here, at finalization of the
+  // owning plant, so that an attempt to scalar-convert (e.g. ToAutoDiffXd()) a
+  // plant that contains such a model fails immediately with a clear "does not
+  // support" message, rather than silently producing a degenerate plant that
+  // fails downstream with an inscrutable error.
+  RemoveUnsupportedScalars(*physical_models_);
   physical_models_->DeclareSystemResources();
   if (num_collision_geometries() > 0 &&
       penalty_method_contact_parameters_.time_scale < 0)
@@ -4335,6 +4343,29 @@ void MultibodyPlant<T>::RemoveUnsupportedScalars(
   if (!component.is_cloneable_to_symbolic()) {
     scalar_converter.Remove<symbolic::Expression, T>();
   }
+}
+
+template <typename T>
+std::string MultibodyPlant<T>::GetUnsupportedScalarConversionMessage(
+    const std::type_info& source_type,
+    const std::type_info& destination_type) const {
+  std::string result =
+      systems::SystemBase::GetUnsupportedScalarConversionMessage(
+          source_type, destination_type);
+  std::vector<std::string> causes;
+  auto collect = [&](const internal::ScalarConvertibleComponent<T>& component) {
+    std::string reason =
+        component.GetScalarConversionFailureReason(destination_type);
+    if (!reason.empty()) {
+      causes.push_back(std::move(reason));
+    }
+  };
+  if (physical_models_ != nullptr) collect(*physical_models_);
+  if (discrete_update_manager_ != nullptr) collect(*discrete_update_manager_);
+  if (!causes.empty()) {
+    result += fmt::format(" (because {})", fmt::join(causes, " and "));
+  }
+  return result;
 }
 
 template <typename T>
