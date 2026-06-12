@@ -397,6 +397,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
 template <typename T>
 std::unique_ptr<PhysicalModel<AutoDiffXd>>
 DeformableModel<T>::CloneToAutoDiffXd(MultibodyPlant<AutoDiffXd>* plant) const {
+  ThrowForUnsupportedScalarType<AutoDiffXd>();
   return std::make_unique<DeformableModel<AutoDiffXd>>(plant);
 }
 
@@ -404,6 +405,7 @@ template <typename T>
 std::unique_ptr<PhysicalModel<symbolic::Expression>>
 DeformableModel<T>::CloneToSymbolic(
     MultibodyPlant<symbolic::Expression>* plant) const {
+  ThrowForUnsupportedScalarType<symbolic::Expression>();
   return std::make_unique<DeformableModel<symbolic::Expression>>(plant);
 }
 

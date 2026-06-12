@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <typeinfo>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 
@@ -29,6 +32,19 @@ class ScalarConvertibleComponent {
   /* Returns true if `this` component can be scalar converted to
    symbolic::Expression. */
   virtual bool is_cloneable_to_symbolic() const = 0;
+
+  /* (Optional, display-only) If this component blocks scalar conversion to the
+   destination scalar identified by `scalar`, returns a short human-readable
+   phrase explaining why (e.g. "its DeformableModel has 1 registered deformable
+   body"), for MultibodyPlant to embed in its "(because ...)" diagnostic.
+   Returns "" when this component does not block conversion to `scalar`. A
+   non-empty phrase MUST be consistent with the matching is_cloneable_to_*()
+   bool (non-empty implies that bool returns false); the reason is never used to
+   decide convertibility. */
+  virtual std::string GetScalarConversionFailureReason(
+      const std::type_info&) const {
+    return {};
+  }
 };
 
 }  // namespace internal
