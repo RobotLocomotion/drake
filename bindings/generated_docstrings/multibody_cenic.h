@@ -130,6 +130,13 @@ R"""(Sets the convex solver tolerances and iteration limits.)""";
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc = R"""()""";
         } get_error_estimate_order;
+        // Symbol: drake::multibody::CenicIntegrator::get_parallelism
+        struct /* get_parallelism */ {
+          // Source: drake/multibody/cenic/cenic_integrator.h
+          const char* doc =
+R"""(Returns the parallelism the convex solver uses to solve independent
+constraint islands.)""";
+        } get_parallelism;
         // Symbol: drake::multibody::CenicIntegrator::get_solver_parameters
         struct /* get_solver_parameters */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
@@ -143,6 +150,17 @@ R"""(Gets the current convex solver tolerances and iteration limits.)""";
 R"""(Gets a reference to the MultibodyPlant used to formulate the convex
 optimization problem.)""";
         } plant;
+        // Symbol: drake::multibody::CenicIntegrator::set_parallelism
+        struct /* set_parallelism */ {
+          // Source: drake/multibody/cenic/cenic_integrator.h
+          const char* doc =
+R"""(Sets the parallelism the convex solver uses to solve independent
+constraint islands. The default is Parallelism∷None() (serial).
+Results are independent of the number of threads used. Parallelism
+only helps when a scene decomposes into multiple independent islands
+(e.g., several objects in contact that are not coupled to one
+another).)""";
+        } set_parallelism;
         // Symbol: drake::multibody::CenicIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
           // Source: drake/multibody/cenic/cenic_integrator.h

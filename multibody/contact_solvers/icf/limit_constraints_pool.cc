@@ -117,6 +117,35 @@ void LimitConstraintsPool<T>::CalcData(
 }
 
 template <typename T>
+T LimitConstraintsPool<T>::CalcData(
+    const VectorX<T>& v, std::span<const int> constraints,
+    LimitConstraintsDataPool<T>* limit_data) const {
+  DRAKE_ASSERT(limit_data != nullptr);
+
+  const T& dt = model().time_step();
+  T cost = 0;
+  for (int k : constraints) {
+    const int c = clique_[k];
+    const int nv = model().clique_size(c);
+    VectorBlock<const VectorX<T>> vk = model().clique_segment(c, v);
+    VectorXView gamma_lower = limit_data->mutable_gamma_lower(k);
+    VectorXView gamma_upper = limit_data->mutable_gamma_upper(k);
+    VectorXView G_lower = limit_data->mutable_G_lower(k);
+    VectorXView G_upper = limit_data->mutable_G_upper(k);
+    for (int i = 0; i < nv; ++i) {
+      const T vl = vk(i);
+      cost += CalcLimitData(gl_hat_[k](i) / dt, R_[k](i), vl, &gamma_lower(i),
+                            &G_lower(i));
+
+      const T vu = -vk(i);
+      cost += CalcLimitData(gu_hat_[k](i) / dt, R_[k](i), vu, &gamma_upper(i),
+                            &G_upper(i));
+    }
+  }
+  return cost;
+}
+
+template <typename T>
 void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                  VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
@@ -132,6 +161,25 @@ void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 
     // For this constraint vₖ = [vc; -vc], i.e. J = [I; -I]^ᵀ.
     // Therefore ∇ℓ = γᵤ − γₗ:
+    gradient_c += gamma_upper;
+    gradient_c -= gamma_lower;
+  }
+}
+
+template <typename T>
+void LimitConstraintsPool<T>::AccumulateGradient(
+    const IcfData<T>& data, std::span<const int> constraints,
+    VectorX<T>* gradient) const {
+  DRAKE_ASSERT(gradient != nullptr);
+
+  const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
+
+  for (int k : constraints) {
+    const int c = clique_[k];
+    VectorBlock<VectorX<T>> gradient_c =
+        model().mutable_clique_segment(c, gradient);
+    ConstVectorXView gamma_lower = limit_data.gamma_lower(k);
+    ConstVectorXView gamma_upper = limit_data.gamma_upper(k);
     gradient_c += gamma_upper;
     gradient_c -= gamma_lower;
   }
@@ -156,6 +204,26 @@ void LimitConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
+void LimitConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>& data, std::span<const int> constraints,
+    std::span<const int> clique_to_block, int /* island */,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
+  const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
+
+  for (int k : constraints) {
+    const int c = clique_[k];
+    const int block = clique_to_block[c];
+
+    const MatrixX<T> G_lower = limit_data.G_lower(k).asDiagonal();
+    const MatrixX<T> G_upper = limit_data.G_upper(k).asDiagonal();
+    hessian->AddToBlock(block, block, G_lower);
+    hessian->AddToBlock(block, block, G_upper);
+  }
+}
+
+template <typename T>
 void LimitConstraintsPool<T>::CalcCostAlongLine(
     const LimitConstraintsDataPool<T>& limit_data, const VectorX<T>& w,
     EigenPool<VectorX<T>>* Gw_scratch, T* dcost, T* d2cost) const {
@@ -167,6 +235,40 @@ void LimitConstraintsPool<T>::CalcCostAlongLine(
   (*dcost) = 0.0;
   (*d2cost) = 0.0;
   for (int k = 0; k < num_constraints(); ++k) {
+    const int c = clique_[k];
+    VectorBlock<const VectorX<T>> w_c = model().clique_segment(c, w);
+    Gw_pool.Resize(1, model().clique_size(c), 1);
+    VectorXView G_times_w = Gw_pool[0];
+
+    // Lower limit contribution.
+    ConstVectorXView gamma_lower = limit_data.gamma_lower(k);
+    ConstVectorXView G_lower = limit_data.G_lower(k);
+    G_times_w = G_lower.asDiagonal() * w_c;
+    (*dcost) -= w_c.dot(gamma_lower);
+    (*d2cost) += w_c.dot(G_times_w);
+
+    // Upper limit contribution.
+    ConstVectorXView gamma_upper = limit_data.gamma_upper(k);
+    ConstVectorXView G_upper = limit_data.G_upper(k);
+    G_times_w = G_upper.asDiagonal() * w_c;
+    (*dcost) += w_c.dot(gamma_upper);
+    (*d2cost) += w_c.dot(G_times_w);
+  }
+}
+
+template <typename T>
+void LimitConstraintsPool<T>::CalcCostAlongLine(
+    const LimitConstraintsDataPool<T>& limit_data, const VectorX<T>& w,
+    std::span<const int> constraints, EigenPool<VectorX<T>>* Gw_scratch,
+    T* dcost, T* d2cost) const {
+  DRAKE_ASSERT(Gw_scratch != nullptr);
+  DRAKE_ASSERT(dcost != nullptr);
+  DRAKE_ASSERT(d2cost != nullptr);
+  EigenPool<VectorX<T>>& Gw_pool = *Gw_scratch;
+
+  (*dcost) = 0.0;
+  (*d2cost) = 0.0;
+  for (int k : constraints) {
     const int c = clique_[k];
     VectorBlock<const VectorX<T>> w_c = model().clique_segment(c, w);
     Gw_pool.Resize(1, model().clique_size(c), 1);

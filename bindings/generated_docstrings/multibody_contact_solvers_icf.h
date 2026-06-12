@@ -23,6 +23,7 @@
 // #include "drake/multibody/contact_solvers/icf/icf_external_systems_linearizer.h"
 // #include "drake/multibody/contact_solvers/icf/icf_linear_feedback_gains.h"
 // #include "drake/multibody/contact_solvers/icf/icf_model.h"
+// #include "drake/multibody/contact_solvers/icf/icf_partition.h"
 // #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 // #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 // #include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
@@ -136,6 +137,17 @@ R"""(Dense algebra (LDLT) for solving for the search direction H⁻¹⋅g. This
 is primarily useful for debugging and testing: sparse algebra is
 generally much faster.)""";
             } use_dense_algebra;
+            // Symbol: drake::multibody::contact_solvers::icf::IcfSolverParameters::use_islands
+            struct /* use_islands */ {
+              // Source: drake/multibody/contact_solvers/icf/icf_solver_parameters.h
+              const char* doc =
+R"""(Whether to decompose the problem into independent constraint islands
+(connected components of the clique graph) and solve them separately,
+which also enables optional parallelism over islands. When false, the
+full problem across all cliques is solved as a single Newton
+optimization, matching the solver's behavior prior to the introduction
+of constraint islands.)""";
+            } use_islands;
             auto Serialize__fields() const {
               return std::array{
                 std::make_pair("alpha_max", alpha_max.doc),
@@ -147,6 +159,7 @@ generally much faster.)""";
                 std::make_pair("min_tolerance", min_tolerance.doc),
                 std::make_pair("print_solver_stats", print_solver_stats.doc),
                 std::make_pair("use_dense_algebra", use_dense_algebra.doc),
+                std::make_pair("use_islands", use_islands.doc),
               };
             }
           } IcfSolverParameters;
