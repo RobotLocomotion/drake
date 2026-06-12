@@ -121,10 +121,14 @@ class LimitConstraintsPool {
 
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }
+  const std::vector<int>& dof() const { return dof_; }
   const std::vector<int>& constraint_size() const { return constraint_size_; }
   const EigenPool<VectorX<T>>& ql() const { return ql_; }
   const EigenPool<VectorX<T>>& qu() const { return qu_; }
   const EigenPool<VectorX<T>>& q0() const { return q0_; }
+  const EigenPool<VectorX<T>>& gl_hat() const { return gl_hat_; }
+  const EigenPool<VectorX<T>>& gu_hat() const { return gu_hat_; }
+  const EigenPool<VectorX<T>>& R() const { return R_; }
 
  private:
   /* Computes cost, gradient, and Hessian contribution for a single limit
@@ -144,6 +148,7 @@ class LimitConstraintsPool {
   // We always add limit constraints per-clique. Each of the following has size
   // num_constraints().
   std::vector<int> clique_;           // Clique the k-th limit belongs to.
+  std::vector<int> dof_;              // Clique-local dof for the k-th limit.
   std::vector<int> constraint_size_;  // Clique size for the k-th constraint.
   EigenPool<VectorX<T>> ql_;          // Lower limit.
   EigenPool<VectorX<T>> qu_;          // Upper limit.
