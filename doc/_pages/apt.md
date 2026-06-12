@@ -41,17 +41,18 @@ APT packages (``*.deb``) are available to download as attachments from Drake's
 GitHub [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.53.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.53.0):
+[v1.54.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.54.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-noble.deb)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-noble.deb)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64v3-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64v3-resolute.deb)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-resolute.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_amd64-noble.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_arm64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_arm64-noble.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_amd64-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_amd64-resolute.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_amd64v3-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_amd64v3-resolute.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_arm64-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_arm64-resolute.deb)
 
 To download and install the `drake-dev` package:
 
 ```bash
-wget -O drake-dev.deb https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+wget -O drake-dev.deb https://github.com/RobotLocomotion/drake/releases/download/v1.54.0/drake-dev_1.54.0-1_$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
 sudo apt-get install --no-install-recommends ./drake-dev.deb
 ```
 
@@ -71,6 +72,7 @@ Nightly apt packages are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-resolute.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64v3-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64v3-resolute.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-resolute.deb)
 
@@ -79,6 +81,7 @@ with date YYYYMMDD preceded with ``0.0.``. For example,
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_arm64-noble.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64-resolute.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64v3-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64v3-resolute.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_arm64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_arm64-resolute.deb)
 
