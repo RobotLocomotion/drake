@@ -157,67 +157,59 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
 template <typename T>
 void MeshcatVisualizer<T>::RegisterDeformable(
     const QueryObject<T>& query_object, GeometryId deformable_id) const {
-  if constexpr (std::is_same_v<T, double>) {
-    // We should only register after clearing all previously registered
-    // deformables; so we should never redundantly register a deformable.
-    DRAKE_DEMAND(!dynamic_deformable_geometries_.contains(deformable_id));
+  // We should only register after clearing all previously registered
+  // deformables; so we should never redundantly register a deformable.
+  DRAKE_DEMAND(!dynamic_deformable_geometries_.contains(deformable_id));
 
-    const auto& inspector = query_object.inspector();
-    const std::vector<internal::RenderMesh>& render_meshes =
-        inspector.GetDrivenRenderMeshes(deformable_id, params_.role);
-    const int num_render_meshes = ssize(render_meshes);
-    dynamic_deformable_geometries_[deformable_id].reserve(num_render_meshes);
+  const auto& inspector = query_object.inspector();
+  const std::vector<internal::RenderMesh>& render_meshes =
+      inspector.GetDrivenRenderMeshes(deformable_id, params_.role);
+  const int num_render_meshes = ssize(render_meshes);
+  dynamic_deformable_geometries_[deformable_id].reserve(num_render_meshes);
 
-    // GeometryState only supports driven meshes (embedded OBJ with multiple
-    // material groups) for the perception role, not illustration. For
-    // illustration, RegisterDrivenMesh always produces exactly one mesh from
-    // the control-mesh surface. See geometry_state.cc RegisterDrivenMesh and
-    // the TODO therein. Remove this demand when illustration driven-mesh
-    // support is added and update BroadcastDeformables and its tests.
-    DRAKE_DEMAND(num_render_meshes == 1);
+  // GeometryState only supports driven meshes (embedded OBJ with multiple
+  // material groups) for the perception role, not illustration. For
+  // illustration, RegisterDrivenMesh always produces exactly one mesh from
+  // the control-mesh surface. See geometry_state.cc RegisterDrivenMesh and
+  // the TODO therein. Remove this demand when illustration driven-mesh
+  // support is added and update BroadcastDeformables and its tests.
+  DRAKE_DEMAND(num_render_meshes == 1);
+  for (int i = 0; i < num_render_meshes; ++i) {
+    const Rgba& diffuse_color = render_meshes[i].material.has_value()
+                                    ? render_meshes[i].material->diffuse
+                                    : params_.default_color;
 
-    for (int i = 0; i < num_render_meshes; ++i) {
-      const Rgba& diffuse_color = render_meshes[i].material.has_value()
-                                      ? render_meshes[i].material->diffuse
-                                      : params_.default_color;
-
-      dynamic_deformable_geometries_[deformable_id].push_back(
-          {internal::MakeTriangleSurfaceMesh(render_meshes[i]), diffuse_color});
-    }
-  } else {
-    throw std::runtime_error(
-        "Only MeshcatVisualizer<double> supports deformable geometry.");
+    dynamic_deformable_geometries_[deformable_id].push_back(
+        {internal::MakeTriangleSurfaceMesh(render_meshes[i]), diffuse_color});
   }
 }
 
 template <typename T>
 void MeshcatVisualizer<T>::BroadcastDeformables(
     const QueryObject<T>& query_object) const {
-  if constexpr (std::is_same_v<T, double>) {
-    for (auto& [deformable_id, colored_meshes] :
-         dynamic_deformable_geometries_) {
-      const int num_render_meshes = std::size(colored_meshes);
-      const std::string& path = geometries_.at(deformable_id);
+  for (auto& [deformable_id, colored_meshes] : dynamic_deformable_geometries_) {
+    const int num_render_meshes = std::size(colored_meshes);
+    const std::string& path = geometries_.at(deformable_id);
 
-      // We already checked the T is double
-      const std::vector<VectorX<double>> vertex_positions =
-          query_object.GetDrivenMeshConfigurationsInWorld(deformable_id,
-                                                          params_.role);
-      DRAKE_DEMAND(std::ssize(vertex_positions) == num_render_meshes);
+    // The driven mesh configurations are inherently double-valued (any
+    // derivatives carried by T would be empty), so we discard the scalar type
+    // when reporting positions to Meshcat.
+    const std::vector<VectorX<T>> vertex_positions =
+        query_object.GetDrivenMeshConfigurationsInWorld(deformable_id,
+                                                        params_.role);
+    DRAKE_DEMAND(std::ssize(vertex_positions) == num_render_meshes);
 
-      for (int i = 0; i < num_render_meshes; ++i) {
-        colored_meshes[i].mesh.SetAllPositions(vertex_positions[i]);
+    for (int i = 0; i < num_render_meshes; ++i) {
+      colored_meshes[i].mesh.SetAllPositions(
+          internal::convert_to_double(vertex_positions[i]));
 
-        const std::string final_sub_path =
-            num_render_meshes == 1 ? path : fmt::format("{}/{}", path, i);
-        meshcat_->SetObject(final_sub_path, colored_meshes[i].mesh,
-                            colored_meshes[i].diffuse);
-      }
-      meshcat_->SetTransform(path, math::RigidTransformd::Identity());
+      const std::string final_sub_path =
+          num_render_meshes == 1 ? path : fmt::format("{}/{}", path, i);
+      meshcat_->SetObject(final_sub_path, colored_meshes[i].mesh,
+                          colored_meshes[i].diffuse);
     }
+    meshcat_->SetTransform(path, math::RigidTransformd::Identity());
   }
-  // Else do nothing -- we should've already thrown in RegisterDeformable()
-  // for T != double.
 }
 
 template <typename T>
