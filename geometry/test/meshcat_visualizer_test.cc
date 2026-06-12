@@ -40,10 +40,13 @@ using multibody::AddMultibodyPlantSceneGraph;
 // Those are covered by the tests for Meshcat.  Here we only aim to demonstrate
 // that we call Meshcat correctly from MeshcatVisualizer.
 //
-// We're intentionally not building MeshcatVisualizer<AutoDiffXd> directly.
-// Parsing with AutoDiffXd is not supported and populating the MBP is more work
-// than it's worth. The scalar-converted instance is tested and that provides
-// sufficient evidence for the validity of the type.
+// The MultibodyPlant-based tests don't build MeshcatVisualizer<AutoDiffXd>
+// directly. Parsing with AutoDiffXd is not supported and populating the MBP is
+// more work than it's worth. The scalar-converted instance is tested and that
+// provides sufficient evidence for the validity of the scalar type.
+//
+// Visualizing deformable geometry is a special case (see
+// DeformableGeometryScalarTypes below).
 
 class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
  protected:
@@ -532,6 +535,13 @@ GTEST_TEST(MeshcatVisualizerTest, DeformableGeometry) {
     // Send the geometry to Meshcat.
     diagram->ForcedPublish(*context);
     EXPECT_TRUE(meshcat->HasPath(expected_path));
+
+    // Note: When this no longer throws, this test should be converted to run
+    // against both scalar types and the test DeformableGeometryScalarTypes can
+    // be removed.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        diagram->ToAutoDiffXd(),
+        ".*because its DeformableModel has 1 registered deformable body.*");
   }
 }
 
@@ -599,6 +609,61 @@ GTEST_TEST(MeshcatVisualizerTest, DeformableGeometrySceneGraphVersionChange) {
   // proves too aggressive in the future, we can be more explicit about the
   // nature of the change.
   EXPECT_NE(meshcat->GetPackedObject(path), packed_initial);
+}
+
+// MeshcatVisualizer supports deformable geometry for both T = double and
+// T = AutoDiffXd. The MultibodyPlant-based test above exercises the double
+// path; the AutoDiffXd deformable pipeline is not yet supported by
+// MultibodyPlant (DeformableModel::CloneToAutoDiffXd produces an empty model),
+// so here we drive a SceneGraph<AutoDiffXd> directly to confirm the visualizer
+// registers and broadcasts deformable geometry.
+template <typename T>
+void TestDeformableScalar() {
+  auto meshcat = std::make_shared<Meshcat>();
+
+  SceneGraph<T> scene_graph;
+  const SourceId s_id = scene_graph.RegisterSource("test");
+
+  const math::RigidTransformd X_WG(Vector3<double>(0.0, 0.0, 0.0));
+  const Mesh shape(FindResourceOrThrow(
+      "drake/examples/multibody/deformable/models/torus.vtk"));
+  auto instance = std::make_unique<GeometryInstance>(X_WG, shape, "object");
+  instance->set_illustration_properties(IllustrationProperties());
+  constexpr double kRezHint = 0.5;
+  const GeometryId deformable_id = scene_graph.RegisterDeformableGeometry(
+      s_id, scene_graph.world_frame_id(), std::move(instance), kRezHint);
+
+  // The reference mesh determines the number of vertex configuration values.
+  const VolumeMesh<double>* reference_mesh =
+      scene_graph.model_inspector().GetReferenceMesh(deformable_id);
+  ASSERT_NE(reference_mesh, nullptr);
+
+  auto sg_context = scene_graph.CreateDefaultContext();
+  GeometryConfigurationVector<T> configurations;
+  configurations.set_value(
+      deformable_id, VectorX<T>::Zero(reference_mesh->num_vertices() * 3));
+  scene_graph.get_source_configuration_port(s_id).FixValue(sg_context.get(),
+                                                           configurations);
+  const auto& query_object =
+      scene_graph.get_query_output_port().template Eval<QueryObject<T>>(
+          *sg_context);
+
+  const MeshcatVisualizerParams params{.role = Role::kIllustration};
+  MeshcatVisualizer<T> visualizer(meshcat, params);
+  auto vis_context = visualizer.CreateDefaultContext();
+  visualizer.query_object_input_port().FixValue(vis_context.get(),
+                                                query_object);
+
+  const std::string expected_path =
+      "/drake/visualizer/deformable_geometries/object";
+  EXPECT_FALSE(meshcat->HasPath(expected_path));
+  visualizer.ForcedPublish(*vis_context);
+  EXPECT_TRUE(meshcat->HasPath(expected_path));
+}
+
+GTEST_TEST(MeshcatVisualizerTest, DeformableGeometryScalarTypes) {
+  TestDeformableScalar<double>();
+  TestDeformableScalar<AutoDiffXd>();
 }
 
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
