@@ -6,6 +6,8 @@
 #include <memory>
 #include <set>
 #include <stdexcept>
+#include <string>
+#include <typeinfo>
 #include <vector>
 
 #include <fmt/ranges.h>
@@ -388,7 +390,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // called because `FinalizePlantOnly()` has to allocate system resources
     // requested by physical models.
     physical_models_ = other.physical_models_->template CloneToScalar<T>(this);
-    this->RemoveUnsupportedScalars(*physical_models_);
 
     coupler_constraints_specs_ = other.coupler_constraints_specs_;
     distance_constraints_params_ = other.distance_constraints_params_;
@@ -1552,6 +1553,14 @@ void MultibodyPlant<T>::FinalizeConstraints() {
 
 template <typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
+  // Physical models (e.g. DeformableModel) may not support every scalar type.
+  // We must disable the unsupported conversions here, at finalization of the
+  // owning plant, so that an attempt to scalar-convert (e.g. ToAutoDiffXd()) a
+  // plant that contains such a model fails immediately with a clear "does not
+  // support" message, rather than silently producing a degenerate plant that
+  // fails downstream with an inscrutable error.
+  RemoveUnsupportedScalars(*physical_models_);
+
   DeclareInputPorts();
   DeclareParameters();
   DeclareCacheEntries();
@@ -4338,6 +4347,29 @@ void MultibodyPlant<T>::RemoveUnsupportedScalars(
 }
 
 template <typename T>
+std::string MultibodyPlant<T>::GetUnsupportedScalarConversionMessage(
+    const std::type_info& source_type,
+    const std::type_info& destination_type) const {
+  std::string result =
+      systems::SystemBase::GetUnsupportedScalarConversionMessage(
+          source_type, destination_type);
+  std::vector<std::string> causes;
+  auto collect = [&](const internal::ScalarConvertibleComponent<T>& component) {
+    std::string reason =
+        component.GetScalarConversionFailureReason(destination_type);
+    if (!reason.empty()) {
+      causes.push_back(std::move(reason));
+    }
+  };
+  if (physical_models_ != nullptr) collect(*physical_models_);
+  if (discrete_update_manager_ != nullptr) collect(*discrete_update_manager_);
+  if (!causes.empty()) {
+    result += fmt::format(" (because {})", fmt::join(causes, " and "));
+  }
+  return result;
+}
+
+template <typename T>
 std::vector<std::set<BodyIndex>>
 MultibodyPlant<T>::FindSubgraphsOfWeldedBodies() const {
   return internal_tree().graph().GetSubgraphsOfWeldedLinks();
@@ -4466,3 +4498,21 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::MultibodyPlant);
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct drake::multibody::AddMultibodyPlantSceneGraphResult);
+
+// The scalar-converting copy constructor is a member function template
+// (template <typename U>), so it is NOT covered by the class-level explicit
+// instantiations above.  Without these explicit definitions, optimized builds
+// inline the constructor into the SystemScalarConverter lambda and leave no
+// standalone symbol — breaking direct call sites.
+template drake::multibody::MultibodyPlant<double>::MultibodyPlant(
+    const drake::multibody::MultibodyPlant<drake::AutoDiffXd>&);
+template drake::multibody::MultibodyPlant<double>::MultibodyPlant(
+    const drake::multibody::MultibodyPlant<drake::symbolic::Expression>&);
+template drake::multibody::MultibodyPlant<drake::AutoDiffXd>::MultibodyPlant(
+    const drake::multibody::MultibodyPlant<double>&);
+template drake::multibody::MultibodyPlant<drake::AutoDiffXd>::MultibodyPlant(
+    const drake::multibody::MultibodyPlant<drake::symbolic::Expression>&);
+template drake::multibody::MultibodyPlant<drake::symbolic::Expression>::MultibodyPlant(
+    const drake::multibody::MultibodyPlant<double>&);
+template drake::multibody::MultibodyPlant<drake::symbolic::Expression>::MultibodyPlant(
+    const drake::multibody::MultibodyPlant<drake::AutoDiffXd>&);

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <string>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -76,6 +78,9 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
   bool is_cloneable_to_autodiff() const override;
 
   bool is_cloneable_to_symbolic() const override;
+
+  std::string GetScalarConversionFailureReason(
+      const std::type_info& scalar) const override;
 
   /* Declare system resources on all owned models and nulls the back pointer to
    the owning plant. For each PhysicalModelCollection object, this function
