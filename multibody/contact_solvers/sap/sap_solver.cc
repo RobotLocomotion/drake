@@ -65,6 +65,15 @@ void SapSolver<T>::PackSapSolverResults(const SapModel<T>& model,
   // original order described by the model right after.
   const VectorX<T>& vc_clustered = model.EvalConstraintVelocities(context);
   model.impulses_permutation().ApplyInverse(vc_clustered, &results->vc);
+  // Add per-constraint kinematic velocity bias v_b so that vc = J⋅v + v_b,
+  // matching the physical contact velocity seen by each constraint.
+  const SapContactProblem<T>& problem = model.problem();
+  for (int i = 0; i < problem.num_constraints(); ++i) {
+    const SapConstraint<T>& c = problem.get_constraint(i);
+    const int start = problem.constraint_equations_start(i);
+    results->vc.segment(start, c.num_constraint_equations()) +=
+        c.bias_velocity();
+  }
   const VectorX<T>& gamma_clustered = model.EvalImpulses(context);
   model.impulses_permutation().ApplyInverse(gamma_clustered, &results->gamma);
 

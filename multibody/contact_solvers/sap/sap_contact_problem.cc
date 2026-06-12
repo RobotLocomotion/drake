@@ -199,6 +199,11 @@ void SapContactProblem<T>::ExpandContactSolverResults(
                              num_velocities(c.second_clique())),
           &vc_segment);
     }
+    // Add kinematic bias so that vc = J⋅v + v_b for non-participating
+    // constraints. Participating constraints will be overwritten below by
+    // ApplyInverse (which carries the bias from PackSapSolverResults), so
+    // adding it here as well is harmless.
+    vc_segment += c.bias_velocity();
   }
 
   // Copy v and j for participating velocities.

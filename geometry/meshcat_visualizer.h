@@ -5,12 +5,15 @@
 #include <optional>
 #include <string>
 
+#include <Eigen/Dense>
+
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -57,10 +60,16 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    @param meshcat A Meshcat instance.  This class will assume shared ownership
                   for the lifetime of the object.
    @param params  The set of parameters to control this system's behavior.
+   @param plant   Optional finalized MultibodyPlant from which surface velocity
+                  axes are read. This plant must be provided if there are
+                  body-related properties for visualization (e.g., surface
+                  velocity). The plant is *not* aliased by this class.
    @throws std::exception if `params.publish_period <= 0`.
-   @throws std::exception if `params.role == Role::kUnassigned`. */
-  explicit MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
-                             MeshcatVisualizerParams params = {});
+   @throws std::exception if `params.role == Role::kUnassigned`.
+   @throws std::exception if `plant` is non-null and not finalized. */
+  explicit MeshcatVisualizer(
+      std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {},
+      const multibody::MultibodyPlant<double>* plant = nullptr);
 
   /** Scalar-converting copy constructor. See @ref system_scalar_conversion.
    It should only be used to convert _from_ double _to_ other scalar types.
@@ -108,27 +117,41 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
     return this->get_input_port(query_object_input_port_);
   }
 
+  /** Returns the surface-displacement input port. When connected, this port
+   accepts a `BusValue` whose signals are keyed by body scoped name (e.g.
+   `"model::belt"`) and whose values are `double` scalars representing the
+   cumulative surface displacement for that body. The visualizer will update the
+   `"crawl_displacement"` meshcat property each publish cycle for every geometry
+   belonging to a body registered via SetSurfaceVelocityAxis().
+   Geometries without a matching bus signal are left unchanged.
+
+   This port is always declared. It does not need to be connected; if
+   unconnected, no surface-displacement updates are sent to meshcat. */
+  const systems::InputPort<T>& surface_displacement_input_port() const {
+    return this->get_input_port(surface_displacement_input_port_);
+  }
+
   /** Adds a MeshcatVisualizer and connects it to the given SceneGraph's
-   QueryObject-valued output port. See
-   MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
-   MeshcatVisualizerParams) for details.
-   The %MeshcatVisualizer's name (see systems::SystemBase::set_name) will be set
-   to a sensible default value, unless the default name was already in use by
-   another system. */
+     QueryObject-valued output port. See
+     MeshcatVisualizer::MeshcatVisualizer() for details.
+     The %MeshcatVisualizer's name (see systems::SystemBase::set_name) will be
+     set to a sensible default value, unless the default name was already in use
+     by another system. */
   static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
-      std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
+      std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {},
+      const multibody::MultibodyPlant<double>* plant = nullptr);
 
   /** Adds a MeshcatVisualizer and connects it to the given QueryObject-valued
-   output port. See MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
-   MeshcatVisualizerParams) for details.
+   output port. See MeshcatVisualizer::MeshcatVisualizer for details.
    The %MeshcatVisualizer's name (see systems::SystemBase::set_name) will be set
    to a sensible default value, unless the default name was already in use by
    another system. */
   static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
-      std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
+      std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {},
+      const multibody::MultibodyPlant<double>* plant = nullptr);
 
  private:
   /* MeshcatVisualizer of different scalar types can all access each other's
@@ -154,6 +177,11 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    configuring it. Once the geometry is loaded, they can be updated en masse. */
   void SetAlphas(bool initializing) const;
 
+  /* Makes calls to Meshcat::SetProperty to update crawl_displacement for each
+   geometry registered with surface velocity. Does nothing if the
+   surface_displacement port is unconnected. */
+  void SetSurfaceDisplacements(const systems::Context<T>& context) const;
+
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
 
@@ -163,6 +191,9 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
 
   /* The index of this System's QueryObject-valued input port. */
   int query_object_input_port_{};
+
+  /* The index of the surface-displacement input port. */
+  int surface_displacement_input_port_{};
 
   /* Meshcat is mutable because we must send messages (a non-const operation)
    from a const System (e.g. during simulation).  We use shared_ptr instead of
@@ -188,6 +219,17 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /* A store of the geometries sent to Meshcat, so that they can be removed if a
    new geometry version appears that does not contain them. */
   mutable std::map<GeometryId, std::string> geometries_{};
+
+  /* Subset of geometries_ that carry the "meshcat"."surface_velocity_axis"
+   illustration property. Maps GeometryId to the frame's scoped name (e.g.
+   "model::belt"), which is the key used to look up displacements in the
+   surface-displacement bus. Rebuilt whenever SetObjects() runs. */
+  mutable std::map<GeometryId, std::string> surface_velocity_geometries_{};
+
+  /* Maps body scoped name (e.g. "model::belt") to the surface velocity axis
+   in the body frame. Populated at construction time from a MultibodyPlant (if
+   provided) and is constant thereafter. */
+  std::map<std::string, Eigen::Vector3d> surface_velocity_axes_{};
 
   /* The last alpha value applied to the objects in geometries_; used to avoid
    unnecessary updates to geometry opacities. */
