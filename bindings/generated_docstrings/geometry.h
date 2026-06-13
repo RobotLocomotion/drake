@@ -391,7 +391,7 @@ the subset of geometries that have a proximity role (with an analogous
 interpretation of ``Dₚ`` and ``Aₚ``). Many proximity queries operate
 on pairs of geometries (e.g., (gᵢ, gⱼ)). The set of proximity
 candidate pairs for such queries is initially defined as ``C = (Gₚ ×
-Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ``, where:
+Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ - Nₚ*``, where:
 
 - ``Gₚ × Gₚ = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ Gₚ`` is the Cartesian product of the set
 of SceneGraph proximity geometries.
@@ -403,14 +403,22 @@ affixed to the same frame.
 - ``Iₚ = {(g, g)}, ∀ g ∈ Gₚ`` is the set of all pairs consisting of a
 geometry with itself; there is no meaningful proximity query on a
 geometry with itself.
+- ``Nₚ* = {(g, x)}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x``, where ``Nₚ ⊂ Gₚ`` is the set of
+inactive* geometries (see Deactivate()). An inactive geometry forms no
+candidate pair with any other geometry. Unlike the other terms, ``Nₚ*`` is
+evaluated against the *live* set ``Gₚ``: a geometry registered after ``g`` was
+deactivated still forms no pair with ``g``. Membership in ``Nₚ`` is edited
+directly by Deactivate() and Activate(); the declaration-based Apply() APIs
+edit pairs, not active status.
 
 Only pairs contained in C will be included in pairwise proximity
 operations.
 
-The manager provides an interface to modify the set C. Changes to C
-are articulated with CollisionFilterDeclaration. Once a change has
-been *declared* it is applied via the manager's API to change the
-configuration of C.
+The manager provides an interface to modify the set C. Pairwise
+changes are articulated with CollisionFilterDeclaration; once a change
+has been *declared* it is applied via Apply() (or ApplyTransient()) to
+change the configuration of C. Active status (the set ``Nₚ``) is
+changed directly via Deactivate() and Activate().
 
 There are limits to how C can be modified.
 
@@ -444,7 +452,13 @@ Warning:
     role is subsequently assigned, those geometries will *still* not
     be part of any user-declared collision filters. - In general,
     adding collisions and assigning proximity roles should happen
-    prior to collision filter configuration.
+    prior to collision filter configuration. - The inactive set ``Nₚ``
+    is the deliberate exception to the apply-time-resolution rule --
+    in one direction only. *Which* geometries get deactivated (or
+    reactivated) is resolved at apply time, exactly as above; but the
+    pairs an inactive geometry suppresses are evaluated against the
+    live geometry set, so an inactive geometry also forms no pair with
+    geometries registered later.
 
 **Transient vs Persistent changes**
 
@@ -536,6 +550,18 @@ to remove the declaration from the history sequence).
 
 Attempting to change the persistent configuration when there are
 active transient declarations in the history will throw an exception.)""";
+        // Symbol: drake::geometry::CollisionFilterManager::Activate
+        struct /* Activate */ {
+          // Source: drake/geometry/collision_filter_manager.h
+          const char* doc =
+R"""(Marks every geometry in ``geometry_set`` *active* again (see
+Deactivate()), returning it to proximity queries with its pairwise
+filter state unchanged. Reactivating an already-active geometry is a
+no-op.
+
+Raises:
+    RuntimeError if ``geometry_set`` references invalid ids.)""";
+        } Activate;
         // Symbol: drake::geometry::CollisionFilterManager::Apply
         struct /* Apply */ {
           // Source: drake/geometry/collision_filter_manager.h
@@ -569,6 +595,16 @@ collision filter configuration. The declaration must be considered
           // Source: drake/geometry/collision_filter_manager.h
           const char* doc = R"""()""";
         } ctor;
+        // Symbol: drake::geometry::CollisionFilterManager::Deactivate
+        struct /* Deactivate */ {
+          // Source: drake/geometry/collision_filter_manager.h
+          const char* doc =
+R"""(Marks every geometry in ``geometry_set`` *inactive* (see the group
+documentation). Deactivating an already-inactive geometry is a no-op.
+
+Raises:
+    RuntimeError if ``geometry_set`` references invalid ids.)""";
+        } Deactivate;
         // Symbol: drake::geometry::CollisionFilterManager::IsActive
         struct /* IsActive */ {
           // Source: drake/geometry/collision_filter_manager.h
@@ -7760,6 +7796,9 @@ Raises:
           const char* doc =
 R"""(Reports true if the two geometries with given ids ``geometry_id1`` and
 ``geometry_id2``, define a collision pair that has been filtered out.
+See CollisionFilterManager for the definition of which pairs are
+filtered (pairwise filters together with the set of inactive
+geometries).
 
 Raises:
     RuntimeError if either id does not map to a registered geometry or

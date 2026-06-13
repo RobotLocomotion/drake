@@ -66,7 +66,8 @@ GTEST_TEST(CollisionFilterMemoryTest, MemoryGrowth) {
       for (; b < num_geometries; ++b) {
         filter.Apply(CollisionFilterDeclaration().ExcludeWithin(
                          GeometrySet({ids[a], ids[b]})),
-                     &GeometrySetTester::geometries);
+                     &GeometrySetTester::geometries,
+                     /* is_invariant= */ false);
         if (++i >= n) {
           return;
         }
