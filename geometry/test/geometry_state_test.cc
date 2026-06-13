@@ -2775,8 +2775,8 @@ TEST_F(GeometryStateTest, DeactivateReachesProximityEngine) {
   // dynamic geometry, so they all vanish, and the engine puts every inactive
   // dynamic geometry to sleep -- eagerly, with no intervening query or pose
   // update.
-  geometry_state_.collision_filter_manager().Apply(
-      CollisionFilterDeclaration().Deactivate(GeometrySet(geometries_)));
+  geometry_state_.collision_filter_manager().Deactivate(
+      GeometrySet(geometries_));
   EXPECT_EQ(engine.num_inactive_dynamic(),
             static_cast<int>(geometries_.size()));
   EXPECT_TRUE(engine.IsInactiveDynamic(geometries_[0]));
@@ -2787,8 +2787,7 @@ TEST_F(GeometryStateTest, DeactivateReachesProximityEngine) {
       geometry_state_.CollisionFiltered(geometries_[0], geometries_[2]));
 
   // Reactivate: everything returns and the contacts come back.
-  geometry_state_.collision_filter_manager().Apply(
-      CollisionFilterDeclaration().Activate(GeometrySet(geometries_)));
+  geometry_state_.collision_filter_manager().Activate(GeometrySet(geometries_));
   EXPECT_EQ(engine.num_inactive_dynamic(), 0);
   EXPECT_FALSE(
       geometry_state_.CollisionFiltered(geometries_[0], geometries_[2]));

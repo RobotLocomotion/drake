@@ -83,19 +83,12 @@ class ProximityEngine {
   template <typename U>
   std::unique_ptr<ProximityEngine<U>> ToScalarType() const;
 
-  /* Provides access to the mutable collision filter this engine uses.
-
-   @warning If a mutation applied directly to the filter changes which
-   geometries are inactive, the caller must forward the resulting
-   CollisionFilter::ActiveStatusChange to ApplyActiveStatusChange() so that the
-   engine's broadphase reflects it. (In the SceneGraph pipeline,
-   CollisionFilterManager does this automatically; GeometryState's internally
-   generated invariant declarations never change active status.) */
+  /* Provides access to the mutable collision filter this engine uses. */
   CollisionFilter& collision_filter();
 
   /* Updates the engine's broadphase culling of inactive dynamic geometries to
    reflect the given net change to the collision filter's inactive set (see
-   CollisionFilterDeclaration::Deactivate()).
+   CollisionFilterManager::Deactivate()).
 
    An inactive geometry cannot contribute to any filter-respecting pairwise
    query, so the engine moves inactive *dynamic* geometries out of the active

@@ -322,15 +322,6 @@ It's worth noting, that the statements are evaluated in *invocation*
 order such that a later statement can partially or completely undo the
 effect of an earlier statement. The full declaration is evaluated by
 CollisionFilterManager∷Apply().)""";
-        // Symbol: drake::geometry::CollisionFilterDeclaration::Activate
-        struct /* Activate */ {
-          // Source: drake/geometry/collision_filter_declaration.h
-          const char* doc =
-R"""(Marks every geometry in ``geometry_set`` *active* again (see
-Deactivate()), returning it to proximity queries with its pairwise
-filter state unchanged. Reactivating an already-active geometry is a
-no-op.)""";
-        } Activate;
         // Symbol: drake::geometry::CollisionFilterDeclaration::AllowBetween
         struct /* AllowBetween */ {
           // Source: drake/geometry/collision_filter_declaration.h
@@ -363,15 +354,6 @@ CollisionFilterManager for details on those invariants).)""";
           // Source: drake/geometry/collision_filter_declaration.h
           const char* doc = R"""()""";
         } ctor;
-        // Symbol: drake::geometry::CollisionFilterDeclaration::Deactivate
-        struct /* Deactivate */ {
-          // Source: drake/geometry/collision_filter_declaration.h
-          const char* doc =
-R"""(Marks every geometry in ``geometry_set`` *inactive* (see the group
-documentation above): it forms no candidate pair with any other
-geometry -- including geometries registered later -- until it is
-reactivated. Deactivating an already-inactive geometry is a no-op.)""";
-        } Deactivate;
         // Symbol: drake::geometry::CollisionFilterDeclaration::ExcludeBetween
         struct /* ExcludeBetween */ {
           // Source: drake/geometry/collision_filter_declaration.h
@@ -422,20 +404,21 @@ affixed to the same frame.
 geometry with itself; there is no meaningful proximity query on a
 geometry with itself.
 - ``Nₚ* = {(g, x)}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x``, where ``Nₚ ⊂ Gₚ`` is the set of
-inactive* geometries (see CollisionFilterDeclaration∷Deactivate()). An
-inactive geometry forms no candidate pair with any other geometry. Unlike
-the other terms, ``Nₚ*`` is evaluated against the *live* set ``Gₚ``: a geometry
-registered after ``g`` was deactivated still forms no pair with ``g``.
-Membership in ``Nₚ`` is edited by Deactivate() and Activate() declarations;
-all other statements edit pairs, not active status.
+inactive* geometries (see Deactivate()). An inactive geometry forms no
+candidate pair with any other geometry. Unlike the other terms, ``Nₚ*`` is
+evaluated against the *live* set ``Gₚ``: a geometry registered after ``g`` was
+deactivated still forms no pair with ``g``. Membership in ``Nₚ`` is edited
+directly by Deactivate() and Activate(); the declaration-based Apply() APIs
+edit pairs, not active status.
 
 Only pairs contained in C will be included in pairwise proximity
 operations.
 
-The manager provides an interface to modify the set C. Changes to C
-are articulated with CollisionFilterDeclaration. Once a change has
-been *declared* it is applied via the manager's API to change the
-configuration of C.
+The manager provides an interface to modify the set C. Pairwise
+changes are articulated with CollisionFilterDeclaration; once a change
+has been *declared* it is applied via Apply() (or ApplyTransient()) to
+change the configuration of C. Active status (the set ``Nₚ``) is
+changed directly via Deactivate() and Activate().
 
 There are limits to how C can be modified.
 
@@ -567,6 +550,18 @@ to remove the declaration from the history sequence).
 
 Attempting to change the persistent configuration when there are
 active transient declarations in the history will throw an exception.)""";
+        // Symbol: drake::geometry::CollisionFilterManager::Activate
+        struct /* Activate */ {
+          // Source: drake/geometry/collision_filter_manager.h
+          const char* doc =
+R"""(Marks every geometry in ``geometry_set`` *active* again (see
+Deactivate()), returning it to proximity queries with its pairwise
+filter state unchanged. Reactivating an already-active geometry is a
+no-op.
+
+Raises:
+    RuntimeError if ``geometry_set`` references invalid ids.)""";
+        } Activate;
         // Symbol: drake::geometry::CollisionFilterManager::Apply
         struct /* Apply */ {
           // Source: drake/geometry/collision_filter_manager.h
@@ -600,6 +595,16 @@ collision filter configuration. The declaration must be considered
           // Source: drake/geometry/collision_filter_manager.h
           const char* doc = R"""()""";
         } ctor;
+        // Symbol: drake::geometry::CollisionFilterManager::Deactivate
+        struct /* Deactivate */ {
+          // Source: drake/geometry/collision_filter_manager.h
+          const char* doc =
+R"""(Marks every geometry in ``geometry_set`` *inactive* (see the group
+documentation). Deactivating an already-inactive geometry is a no-op.
+
+Raises:
+    RuntimeError if ``geometry_set`` references invalid ids.)""";
+        } Deactivate;
         // Symbol: drake::geometry::CollisionFilterManager::IsActive
         struct /* IsActive */ {
           // Source: drake/geometry/collision_filter_manager.h

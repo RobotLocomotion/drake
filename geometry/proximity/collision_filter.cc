@@ -12,19 +12,11 @@ CollisionFilter::CollisionFilter() = default;
 
 void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
                             const CollisionFilter::ExtractIds& extract_ids,
-                            bool is_invariant,
-                            ActiveStatusChange* active_status_change) {
+                            bool is_invariant) {
   if (has_transient_history()) {
     throw std::runtime_error(
         "You cannot attempt to modify the persistent collision filter "
         "configuration when there are active, transient filter declarations");
-  }
-  /* The before snapshot is only needed when the caller wants the change. We
-   diff against the composite filter_state_ (never persistent_base_): queries
-   read only the composite, so it defines the observable change. */
-  std::unordered_set<GeometryId> inactive_before;
-  if (active_status_change != nullptr) {
-    inactive_before = filter_state_.inactive;
   }
   ApplyDeclarationToState(declaration, extract_ids, is_invariant,
                           &persistent_base_);
@@ -34,16 +26,11 @@ void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
    wholesale copy. */
   ApplyDeclarationToState(declaration, extract_ids, is_invariant,
                           &filter_state_);
-  if (active_status_change != nullptr) {
-    ComputeActiveStatusChange(inactive_before, filter_state_,
-                              active_status_change);
-  }
 }
 
 FilterId CollisionFilter::ApplyTransient(
     const CollisionFilterDeclaration& declaration,
-    const CollisionFilter::ExtractIds& extract_ids,
-    ActiveStatusChange* active_status_change) {
+    const CollisionFilter::ExtractIds& extract_ids) {
   /* Transient declarations are never invariant. */
   using Statement = CollisionFilterDeclaration::Statement;
   using Op = CollisionFilterDeclaration::StatementOp;
@@ -74,15 +61,7 @@ FilterId CollisionFilter::ApplyTransient(
   StateDelta delta{std::move(resolved), new_id};
 
   /* Apply to the cached composite first, then store the delta. */
-  std::unordered_set<GeometryId> inactive_before;
-  if (active_status_change != nullptr) {
-    inactive_before = filter_state_.inactive;
-  }
   ApplyStatements(delta, &filter_state_);
-  if (active_status_change != nullptr) {
-    ComputeActiveStatusChange(inactive_before, filter_state_,
-                              active_status_change);
-  }
   transient_history_.push_back(std::move(delta));
   return new_id;
 }
@@ -94,31 +73,48 @@ bool CollisionFilter::IsActive(FilterId id) const {
   return false;
 }
 
-bool CollisionFilter::RemoveDeclaration(
-    FilterId id, ActiveStatusChange* active_status_change) {
-  if (active_status_change != nullptr) *active_status_change = {};
+bool CollisionFilter::RemoveDeclaration(FilterId id) {
   for (auto it = transient_history_.begin(); it != transient_history_.end();
        ++it) {
     if (it->id != id) continue;
 
     /* Remove the target delta, then rebuild the composite from the persistent
      base plus the remaining transient deltas. Because multiple deltas can
-     touch the same pair (or the same geometry's active status), we cannot
-     simply invert the removed delta in place -- we must replay from scratch to
-     get the correct result. */
-    std::unordered_set<GeometryId> inactive_before;
-    if (active_status_change != nullptr) {
-      inactive_before = filter_state_.inactive;
-    }
+     touch the same pair, we cannot simply invert the removed delta in place --
+     we must replay from scratch to get the correct result. */
     transient_history_.erase(it);
     RebuildComposite();
-    if (active_status_change != nullptr) {
-      ComputeActiveStatusChange(inactive_before, filter_state_,
-                                active_status_change);
-    }
     return true;
   }
   return false;
+}
+
+void CollisionFilter::SetActiveStatus(
+    const GeometrySet& geometry_set,
+    const CollisionFilter::ExtractIds& extract_ids, bool active,
+    const CollisionFilter::ActiveStatusChangeCallback& on_change) {
+  const std::unordered_set<GeometryId> ids =
+      extract_ids(geometry_set, CollisionFilterScope::kAll);
+  /* Build the net change directly from the ids whose membership actually flips;
+   the inactive set is independent of the pairwise sets and the transient
+   history, so it is edited in place. */
+  ActiveStatusChange change;
+  if (active) {
+    for (GeometryId id : ids) {
+      if (inactive_.erase(id) > 0) {
+        change.add_activated(id);
+      }
+    }
+  } else {
+    for (GeometryId id : ids) {
+      if (inactive_.insert(id).second) {
+        change.add_deactivated(id);
+      }
+    }
+  }
+  if (!change.empty()) {
+    on_change(change);
+  }
 }
 
 void CollisionFilter::Flatten() {
@@ -141,6 +137,7 @@ void CollisionFilter::AddGeometry(GeometryId new_id) {
 void CollisionFilter::RemoveGeometry(GeometryId remove_id) {
   DRAKE_DEMAND(geometries_.contains(remove_id));
   geometries_.erase(remove_id);
+  inactive_.erase(remove_id);
 
   RemovePairsFor(remove_id, &filter_state_);
   RemovePairsFor(remove_id, &persistent_base_);
@@ -166,9 +163,8 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
    including geometries registered after it was deactivated. This function runs
    once per broadphase candidate pair, so the empty() guard keeps the common
    (all-active) case at a single branch. */
-  const std::unordered_set<GeometryId>& inactive = filter_state_.inactive;
-  if (!inactive.empty() &&
-      (inactive.contains(id_A) || inactive.contains(id_B))) {
+  if (!inactive_.empty() &&
+      (inactive_.contains(id_A) || inactive_.contains(id_B))) {
     return false;
   }
   const PairKey key(id_A, id_B);
@@ -179,7 +175,7 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
 bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
   if (this == &other) return true;
   if (geometries_ != other.geometries_) return false;
-  if (filter_state_.inactive != other.filter_state_.inactive) {
+  if (inactive_ != other.inactive_) {
     return false;
   }
   /* Two filters are equal iff CanCollideWith() agrees on every pair. A pair is
@@ -206,7 +202,7 @@ bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
 CollisionFilter CollisionFilter::MakeClearCopy() const {
   CollisionFilter copy;
   copy.geometries_ = geometries_;
-  /* filtered, invariant, and inactive sets are intentionally left empty. */
+  /* filtered, invariant, and inactive_ are intentionally left empty. */
   return copy;
 }
 
@@ -247,21 +243,6 @@ void CollisionFilter::RemovePairsFor(GeometryId id, FilterState* state) {
   };
   std::erase_if(state->filtered, pair_has_id);
   std::erase_if(state->invariant, pair_has_id);
-  state->inactive.erase(id);
-}
-
-void CollisionFilter::ComputeActiveStatusChange(
-    const std::unordered_set<GeometryId>& before, const FilterState& state,
-    ActiveStatusChange* active_status_change) {
-  DRAKE_DEMAND(active_status_change != nullptr);
-  *active_status_change = {};
-  const std::unordered_set<GeometryId>& after = state.inactive;
-  for (GeometryId id : after) {
-    if (!before.contains(id)) active_status_change->deactivated.push_back(id);
-  }
-  for (GeometryId id : before) {
-    if (!after.contains(id)) active_status_change->activated.push_back(id);
-  }
 }
 
 void CollisionFilter::ApplyStatement(const ResolvedStatement& statement,
@@ -281,14 +262,6 @@ void CollisionFilter::ApplyStatement(const ResolvedStatement& statement,
       break;
     case Op::kAllowWithin:
       RemovePairsBetween(statement.set_A, statement.set_A, state);
-      break;
-    case Op::kDeactivate:
-      state->inactive.insert(statement.set_A.begin(), statement.set_A.end());
-      break;
-    case Op::kActivate:
-      for (GeometryId id : statement.set_A) {
-        state->inactive.erase(id);
-      }
       break;
   }
 }
@@ -334,18 +307,6 @@ void CollisionFilter::ApplyDeclarationToState(
       case Op::kAllowWithin:
         DRAKE_DEMAND(!is_invariant);
         RemovePairsBetween(ids_A, ids_A, state);
-        break;
-      case Op::kDeactivate:
-        /* Active status is never invariant; SceneGraph's internally-generated
-         invariant declarations are purely pairwise. */
-        DRAKE_DEMAND(!is_invariant);
-        state->inactive.insert(ids_A.begin(), ids_A.end());
-        break;
-      case Op::kActivate:
-        DRAKE_DEMAND(!is_invariant);
-        for (GeometryId id : ids_A) {
-          state->inactive.erase(id);
-        }
         break;
     }
   }

@@ -109,44 +109,6 @@ GTEST_TEST(CollisionFilterDeclTest, ExcludeWithin) {
   }
 }
 
-// Confirms that the parameters of the Deactivate method are properly
-// encoded in the last statement.
-GTEST_TEST(CollisionFilterDeclTest, Deactivate) {
-  const GeometrySet set_1({GeometryId::get_new_id(), GeometryId::get_new_id()});
-  const GeometrySet set_2({FrameId::get_new_id(), FrameId::get_new_id()});
-
-  for (const auto& geo_set : {set_1, set_2}) {
-    CollisionFilterDeclaration decl;
-    decl.Deactivate(geo_set);
-
-    const auto& statements = Tester::statements(decl);
-    EXPECT_EQ(statements.size(), 1);
-    EXPECT_EQ(statements[0].operation, Tester::StatementOp::kDeactivate);
-    EXPECT_TRUE(GeometrySetTester::AreEqual(statements[0].set_A, geo_set));
-    EXPECT_TRUE(
-        GeometrySetTester::AreEqual(statements[0].set_B, GeometrySet()));
-  }
-}
-
-// Confirms that the parameters of the Activate method are properly
-// encoded in the last statement.
-GTEST_TEST(CollisionFilterDeclTest, Activate) {
-  const GeometrySet set_1({GeometryId::get_new_id(), GeometryId::get_new_id()});
-  const GeometrySet set_2({FrameId::get_new_id(), FrameId::get_new_id()});
-
-  for (const auto& geo_set : {set_1, set_2}) {
-    CollisionFilterDeclaration decl;
-    decl.Activate(geo_set);
-
-    const auto& statements = Tester::statements(decl);
-    EXPECT_EQ(statements.size(), 1);
-    EXPECT_EQ(statements[0].operation, Tester::StatementOp::kActivate);
-    EXPECT_TRUE(GeometrySetTester::AreEqual(statements[0].set_A, geo_set));
-    EXPECT_TRUE(
-        GeometrySetTester::AreEqual(statements[0].set_B, GeometrySet()));
-  }
-}
-
 // A simple test that confirms the *mechanism* for chaining; each statement
 // method returns a pointer to itself. This method should exercise *every*
 // statement method; as they get added to the class, they should be added here.
@@ -157,8 +119,6 @@ GTEST_TEST(CollisionFilterDeclTest, ChainingStatements) {
   EXPECT_EQ(&decl.AllowWithin(set_A), &decl);
   EXPECT_EQ(&decl.ExcludeBetween(set_A, set_A), &decl);
   EXPECT_EQ(&decl.ExcludeWithin(set_A), &decl);
-  EXPECT_EQ(&decl.Deactivate(set_A), &decl);
-  EXPECT_EQ(&decl.Activate(set_A), &decl);
 }
 
 // Confirms that the order of the statements given is preserved. We'll confirm
@@ -226,20 +186,6 @@ GTEST_TEST(CollisionFilterDeclTest, StatementOrder) {
     decl.ExcludeWithin(set_2);
     SCOPED_TRACE("ExcludeWithin");
     validate({Tester::StatementOp::kExcludeWithin, set_2, GeometrySet()}, decl);
-  }
-
-  {
-    CollisionFilterDeclaration decl(decl_original);
-    decl.Deactivate(set_2);
-    SCOPED_TRACE("Deactivate");
-    validate({Tester::StatementOp::kDeactivate, set_2, GeometrySet()}, decl);
-  }
-
-  {
-    CollisionFilterDeclaration decl(decl_original);
-    decl.Activate(set_2);
-    SCOPED_TRACE("Activate");
-    validate({Tester::StatementOp::kActivate, set_2, GeometrySet()}, decl);
   }
 }
 

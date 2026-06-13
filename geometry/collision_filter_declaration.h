@@ -148,50 +148,6 @@ class CollisionFilterDeclaration {
 
   //@}
 
-  /** @name  Deactivating and reactivating geometries
-
-   By default every geometry is *active* and participates in proximity queries
-   subject to the pairwise filters above. A geometry can instead be marked
-   *inactive*: an inactive geometry forms no candidate pair with any other
-   geometry, so it drops out of every proximity query until it is reactivated.
-
-   Deactivation is distinct from the pairwise Exclude statements in two ways
-   that make it the right tool for (temporarily) removing a geometry -- e.g., a
-   locked or "sleeping" body -- from all proximity queries:
-   - It is evaluated against the *live* set of registered geometries, so a
-     geometry registered *after* a deactivation still forms no pair with the
-     inactive geometry; nothing has to be re-declared. This is cheaper than
-     `ExcludeBetween(geometry_set, everything)`, which materializes O(N) pairs
-     and silently fails to cover geometries registered later.
-   - It is orthogonal to the pairwise filters: the Allow*()/Exclude*()
-     statements never change a geometry's active status, and reactivating a
-     geometry restores exactly the pairwise-filter state it had before.
-
-   See CollisionFilterManager for how active status participates in the formal
-   definition of the candidate pair set C (the set `Nₚ` of inactive
-   geometries). */
-  //@{
-
-  /** Marks every geometry in `geometry_set` *inactive* (see the group
-   documentation above): it forms no candidate pair with any other geometry --
-   including geometries registered later -- until it is reactivated.
-   Deactivating an already-inactive geometry is a no-op. */
-  CollisionFilterDeclaration& Deactivate(GeometrySet geometry_set) {
-    statements_.emplace_back(kDeactivate, std::move(geometry_set),
-                             GeometrySet{});
-    return *this;
-  }
-
-  /** Marks every geometry in `geometry_set` *active* again (see Deactivate()),
-   returning it to proximity queries with its pairwise filter state unchanged.
-   Reactivating an already-active geometry is a no-op. */
-  CollisionFilterDeclaration& Activate(GeometrySet geometry_set) {
-    statements_.emplace_back(kActivate, std::move(geometry_set), GeometrySet{});
-    return *this;
-  }
-
-  //@}
-
  private:
   friend class CollisionFilterDeclTester;
   friend class internal::CollisionFilter;
@@ -201,9 +157,7 @@ class CollisionFilterDeclaration {
     kAllowBetween,
     kAllowWithin,
     kExcludeBetween,
-    kExcludeWithin,
-    kDeactivate,
-    kActivate
+    kExcludeWithin
   };
 
   // The record of a single statement.

@@ -128,8 +128,7 @@ GTEST_TEST(CollisionFilterManagerTest, Deactivate) {
 
   // Work on the model so that we can register new geometry afterwards.
   auto filter_manager = scene_graph.collision_filter_manager();
-  filter_manager.Apply(
-      CollisionFilterDeclaration().Deactivate(GeometrySet(g_id1)));
+  filter_manager.Deactivate(GeometrySet(g_id1));
 
   const auto& model_inspector = scene_graph.model_inspector();
   EXPECT_TRUE(model_inspector.CollisionFiltered(g_id1, g_id2));
@@ -148,10 +147,17 @@ GTEST_TEST(CollisionFilterManagerTest, Deactivate) {
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id2, late_id));
 
   // Reactivating restores collision candidacy with everything.
-  filter_manager.Apply(
-      CollisionFilterDeclaration().Activate(GeometrySet(g_id1)));
+  filter_manager.Activate(GeometrySet(g_id1));
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id1, g_id2));
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id1, late_id));
+
+  // Active status is decoupled from the transient pairwise history:
+  // deactivation works even while a transient declaration is active (Apply()
+  // would throw).
+  filter_manager.ApplyTransient(
+      CollisionFilterDeclaration().ExcludeWithin(GeometrySet({g_id2, g_id3})));
+  EXPECT_NO_THROW(filter_manager.Deactivate(GeometrySet(g_id2)));
+  EXPECT_TRUE(model_inspector.CollisionFiltered(g_id2, late_id));
 }
 
 /* Confirm that the CollisionFilterManager can be copy constructed and assigned

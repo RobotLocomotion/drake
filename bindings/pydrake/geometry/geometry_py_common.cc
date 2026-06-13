@@ -71,11 +71,7 @@ void DefineCollisionFilterDeclaration(py::module_ m) {
         .def("ExcludeBetween", &Class::ExcludeBetween, py::arg("set_A"),
             py::arg("set_B"), py_rvp::reference, cls_doc.ExcludeBetween.doc)
         .def("ExcludeWithin", &Class::ExcludeWithin, py::arg("geometry_set"),
-            py_rvp::reference, cls_doc.ExcludeWithin.doc)
-        .def("Deactivate", &Class::Deactivate, py::arg("geometry_set"),
-            py_rvp::reference, cls_doc.Deactivate.doc)
-        .def("Activate", &Class::Activate, py::arg("geometry_set"),
-            py_rvp::reference, cls_doc.Activate.doc);
+            py_rvp::reference, cls_doc.ExcludeWithin.doc);
   }
 }
 
@@ -85,6 +81,10 @@ void DefineCollisionFilterManager(py::module_ m) {
     constexpr auto& cls_doc = doc.CollisionFilterManager;
     py::class_<Class>(m, "CollisionFilterManager", cls_doc.doc)
         .def("Apply", &Class::Apply, py::arg("declaration"), cls_doc.Apply.doc)
+        .def("Deactivate", &Class::Deactivate, py::arg("geometry_set"),
+            cls_doc.Deactivate.doc)
+        .def("Activate", &Class::Activate, py::arg("geometry_set"),
+            cls_doc.Activate.doc)
         .def("ApplyTransient", &Class::ApplyTransient, py::arg("declaration"),
             cls_doc.ApplyTransient.doc)
         .def("RemoveDeclaration", &Class::RemoveDeclaration,

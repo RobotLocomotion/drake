@@ -43,18 +43,20 @@ class GeometryState;
     geometry with itself; there is no meaningful proximity query on a
     geometry with itself.
   - `Nₚ* = {(g, x)}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x`, where `Nₚ ⊂ Gₚ` is the set of
-    *inactive* geometries (see CollisionFilterDeclaration::Deactivate()). An
-    inactive geometry forms no candidate pair with any other geometry. Unlike
-    the other terms, `Nₚ*` is evaluated against the *live* set `Gₚ`: a geometry
-    registered after `g` was deactivated still forms no pair with `g`.
-    Membership in `Nₚ` is edited by Deactivate() and Activate() declarations;
-    all other statements edit pairs, not active status.
+    *inactive* geometries (see Deactivate()). An inactive geometry forms no
+    candidate pair with any other geometry. Unlike the other terms, `Nₚ*` is
+    evaluated against the *live* set `Gₚ`: a geometry registered after `g` was
+    deactivated still forms no pair with `g`. Membership in `Nₚ` is edited
+    directly by Deactivate() and Activate(); the declaration-based Apply() APIs
+    edit pairs, not active status.
 
  Only pairs contained in C will be included in pairwise proximity operations.
 
- The manager provides an interface to modify the set C. Changes to C are
- articulated with CollisionFilterDeclaration. Once a change has been *declared*
- it is applied via the manager's API to change the configuration of C.
+ The manager provides an interface to modify the set C. Pairwise changes are
+ articulated with CollisionFilterDeclaration; once a change has been *declared*
+ it is applied via Apply() (or ApplyTransient()) to change the configuration of
+ C. Active status (the set `Nₚ`) is changed directly via Deactivate() and
+ Activate().
 
  There are limits to how C can be modified.
 
@@ -204,11 +206,43 @@ class CollisionFilterManager {
   void Apply(const CollisionFilterDeclaration& declaration) {
     /* Modifications made via this API are by the user. Only the internals can
      declare filters to be "invariant". */
-    internal::CollisionFilter::ActiveStatusChange active_status_change;
-    filter_->Apply(declaration, extract_ids_, false /* is_invariant */,
-                   &active_status_change);
-    NotifyActiveStatusChange(active_status_change);
+    filter_->Apply(declaration, extract_ids_, false /* is_invariant */);
   }
+
+  /** @name  Deactivating and reactivating geometries
+
+   By default every geometry is *active* and participates in proximity queries
+   subject to the pairwise filters configured via Apply(). A geometry can
+   instead be marked *inactive*: an inactive geometry forms no candidate pair
+   with any other geometry -- including geometries registered later -- so it
+   drops out of every collision-filter-respecting proximity query until it is
+   reactivated. See the class documentation for how active status participates
+   in the definition of the candidate pair set C (the set `Nₚ`).
+
+   Active status is independent of the pairwise filters: Apply() never changes
+   it, and reactivating a geometry restores exactly the pairwise-filter state it
+   had before. Unlike Apply(), these may be called even when there is an active
+   transient history. */
+  //@{
+
+  /** Marks every geometry in `geometry_set` *inactive* (see the group
+   documentation). Deactivating an already-inactive geometry is a no-op.
+   @throws std::exception if `geometry_set` references invalid ids. */
+  void Deactivate(const GeometrySet& geometry_set) {
+    filter_->SetActiveStatus(geometry_set, extract_ids_, false /* active */,
+                             active_status_change_callback_);
+  }
+
+  /** Marks every geometry in `geometry_set` *active* again (see Deactivate()),
+   returning it to proximity queries with its pairwise filter state unchanged.
+   Reactivating an already-active geometry is a no-op.
+   @throws std::exception if `geometry_set` references invalid ids. */
+  void Activate(const GeometrySet& geometry_set) {
+    filter_->SetActiveStatus(geometry_set, extract_ids_, true /* active */,
+                             active_status_change_callback_);
+  }
+
+  //@}
 
   // TODO(SeanCurtis-TRI) SceneGraphInspector includes the method
   //  CollisionFiltered. It reports whether two geometries are filtered. It
@@ -228,11 +262,7 @@ class CollisionFilterManager {
    collision filter configuration. The declaration must be considered "valid",
    as defined for Apply(). */
   FilterId ApplyTransient(const CollisionFilterDeclaration& declaration) {
-    internal::CollisionFilter::ActiveStatusChange active_status_change;
-    const FilterId result = filter_->ApplyTransient(declaration, extract_ids_,
-                                                    &active_status_change);
-    NotifyActiveStatusChange(active_status_change);
-    return result;
+    return filter_->ApplyTransient(declaration, extract_ids_);
   }
 
   /** Attempts to remove the transient declaration from the history for the
@@ -242,11 +272,7 @@ class CollisionFilterManager {
             method (i.e., `filter_id` refers to an existent filter that has
             successfully been removed). */
   bool RemoveDeclaration(FilterId filter_id) {
-    internal::CollisionFilter::ActiveStatusChange active_status_change;
-    const bool result =
-        filter_->RemoveDeclaration(filter_id, &active_status_change);
-    NotifyActiveStatusChange(active_status_change);
-    return result;
+    return filter_->RemoveDeclaration(filter_id);
   }
 
   /** Reports if there are any active transient filter declarations. */
@@ -274,7 +300,7 @@ class CollisionFilterManager {
    target is a view into the geometry data this manager fronts and shares its
    lifetime contract. */
   using ActiveStatusChangeCallback =
-      std::function<void(const internal::CollisionFilter::ActiveStatusChange&)>;
+      internal::CollisionFilter::ActiveStatusChangeCallback;
 
   /* Constructs the manager for a `filter` with a callback for resolving a
    GeometrySet into a set of GeometryIds and a callback for active-status
@@ -285,14 +311,6 @@ class CollisionFilterManager {
       internal::CollisionFilter* filter,
       internal::CollisionFilter::ExtractIds extract_ids,
       ActiveStatusChangeCallback active_status_change_callback);
-
-  /* Pushes a non-empty active-status change to the callback. */
-  void NotifyActiveStatusChange(
-      const internal::CollisionFilter::ActiveStatusChange& change) {
-    if (!change.empty()) {
-      active_status_change_callback_(change);
-    }
-  }
 
   internal::CollisionFilter* filter_{};
   internal::CollisionFilter::ExtractIds extract_ids_;
