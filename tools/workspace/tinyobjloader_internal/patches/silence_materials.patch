@@ -10,7 +10,7 @@ promote this to upstream again and resubmit.
 
 --- tiny_obj_loader.h
 +++ tiny_obj_loader.h
-@@ -8535,6 +8535,10 @@ static bool LoadObjInternal(attrib_t *attrib, std::vector<shape_t> *shapes,
+@@ -9153,6 +9153,10 @@ static bool LoadObjInternal(attrib_t *attrib, std::vector<shape_t> *shapes,
 
      // use mtl
      if (sr.match("usemtl", 6) && (sr.peek_at(6) == ' ' || sr.peek_at(6) == '\t')) {
@@ -21,7 +21,7 @@ promote this to upstream again and resubmit.
        sr.advance(6);
        std::string namebuf = sr_parseString(sr);
 
-@@ -9039,6 +9043,10 @@ static bool LoadObjWithCallbackInternal(StreamReader &sr,
+@@ -9657,6 +9661,10 @@ static bool LoadObjWithCallbackInternal(StreamReader &sr,
 
      // use mtl
      if (sr.match("usemtl", 6) && (sr.peek_at(6) == ' ' || sr.peek_at(6) == '\t')) {
