@@ -13,7 +13,7 @@ I broached this topic in VTK MR#12033 (see the link):
 
 https://gitlab.kitware.com/vtk/vtk/-/merge_requests/12033#note_1827292
 
-Summary:
+Characterization of the problem:
 
   - The forwarder doesn't do what it promises.
   - Once an event is forwarded to *any* observer, it must be resolved by an
@@ -22,13 +22,26 @@ Summary:
     simply evaporated.
   - This is why forwarding was considered "defective".
 
-Short solution:
+Proposed solution:
 
   - When an observer is present, InvokeEvent() returns a bool indicating whether
     the event was handled.
   - Previously, the result was ignored. This change checks the result and
     falls back to printing to the output window if it wasn't handled.
   - This should robustly serve both use cases.
+
+Conclusion:
+
+  - The proposed solution was rejected because it can affect behavior globally.
+    This is why this patch is not marked for upstreaming.
+  - For Drake's need, the bare minimum is to restore the forwarder in the glTF
+    importer (done below).
+  - The implementation of the proposed solution (to vtkOutputWindow.cxx) isn't
+    strictly necessary for Drake's expected glTF parsing behavior. However,
+    we'll leave the changes here because they generally improve VTK's behavior
+    for Drake -- adding observers to arbitrary VTK objects will work as Drake
+    expects; no warning/errors will silently disappear based on whether an
+    observer is present or not.
 
 
 --- Common/Core/vtkOutputWindow.cxx

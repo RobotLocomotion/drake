@@ -195,7 +195,6 @@ def vtk_internal_repository(
             #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/gltf_export_with_object_names.patch",
-            ":patches/upstream/gltf_importer_observer.patch",
             ":patches/upstream/ignore_unsupported_image_types.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
@@ -203,6 +202,7 @@ def vtk_internal_repository(
             ":patches/common_core_version.patch",
             ":patches/common_datamodel_no_pegtl.patch",
             ":patches/common_executionmodel_disable_static_destructors.patch",
+            ":patches/gltf_importer_observer.patch",
             ":patches/io_image_formats.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
