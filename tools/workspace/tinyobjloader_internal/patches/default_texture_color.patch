@@ -7,7 +7,7 @@ Reasoning for not upstreaming this patch: Drake-specific default option.
 
 --- tiny_obj_loader.h
 +++ tiny_obj_loader.h
-@@ -7969,9 +7969,12 @@ static bool LoadMtlInternal(std::map<std::string, int> *material_map,
+@@ -8579,9 +8579,12 @@ static bool LoadMtlInternal(std::map<std::string, int> *material_map,
        ParseTextureNameAndOption(&(material.diffuse_texname),
                                  &(material.diffuse_texopt), line_rest.c_str());
        if (!has_kd) {
