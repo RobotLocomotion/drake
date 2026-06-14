@@ -7,10 +7,10 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- tiny_obj_loader.h
 +++ tiny_obj_loader.h
-@@ -63,6 +63,14 @@
- #include <map>
- #include <string>
- #include <vector>
+@@ -74,6 +74,14 @@ THE SOFTWARE.
+ #include <memory>
+ #include <new>
+ #include <type_traits>
 +#include <math.h>
 +#include <stdlib.h>
 +
@@ -21,8 +21,8 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
 +#endif
  
  namespace tinyobj {
- 
-@@ -840,6 +848,24 @@
+
+@@ -6631,6 +6639,24 @@ static bool tryParseDouble(const char *s, const char *s_end, double *result) {
      return false;
    }
  
@@ -47,7 +47,7 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
    double mantissa = 0.0;
    // This exponent is base 2 rather than 10.
    // However the exponent we parse is supposed to be one of ten,
-@@ -959,6 +985,7 @@
+@@ -6757,6 +6783,7 @@ assemble:
    return true;
  fail:
    return false;
