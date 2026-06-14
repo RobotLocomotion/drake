@@ -18,7 +18,7 @@ This should probably be upstreamed to tinyobj.
 
 --- tiny_obj_loader.h
 +++ tiny_obj_loader.h
-@@ -567,6 +567,20 @@ class ObjReader {
+@@ -653,6 +653,20 @@ class ObjReader {
    bool ParseFromString(const std::string &obj_text, const std::string &mtl_text,
                         const ObjReaderConfig &config = ObjReaderConfig());
  
@@ -39,7 +39,7 @@ This should probably be upstreamed to tinyobj.
    ///
    /// .obj was loaded or parsed correctly.
    ///
-@@ -3502,11 +3516,27 @@ bool ObjReader::ParseFromFile(const std::string &filename,
+@@ -9819,11 +9833,27 @@ bool ObjReader::ParseFromFile(const std::string &filename,
    return valid_;
  }
  
@@ -69,7 +69,7 @@ This should probably be upstreamed to tinyobj.
  
    std::istream obj_ifs(&obj_buf);
    std::istream mtl_ifs(&mtl_buf);
-@@ -3519,6 +3549,20 @@ bool ObjReader::ParseFromString(const std::string &obj_text,
+@@ -9836,6 +9866,20 @@ bool ObjReader::ParseFromString(const std::string &obj_text,
    return valid_;
  }
  
@@ -87,6 +87,6 @@ This should probably be upstreamed to tinyobj.
 +  return valid_;
 +}
 +
- #ifdef __clang__
- #pragma clang diagnostic pop
- #endif
+ // ===========================================================================
+ // Optimized API implementation (C++11+)
+ // ===========================================================================
