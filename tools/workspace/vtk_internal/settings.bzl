@@ -289,7 +289,9 @@ MODULE_SETTINGS = {
         # default srcs glob, and instead just specify what Drake needs.
         "srcs_glob_exclude": ["**"],
         "srcs_extra": [
+            "Filters/Core/vtkAppendFilter.cxx",
             "Filters/Core/vtkAppendPolyData.cxx",
+            "Filters/Core/vtkStaticCleanUnstructuredGrid.cxx",
             "Filters/Core/vtkDecimatePro.cxx",
             "Filters/Core/vtkFeatureEdges.cxx",
             "Filters/Core/vtkGlyph3D.cxx",
