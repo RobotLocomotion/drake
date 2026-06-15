@@ -291,7 +291,6 @@ MODULE_SETTINGS = {
         "srcs_extra": [
             "Filters/Core/vtkAppendFilter.cxx",
             "Filters/Core/vtkAppendPolyData.cxx",
-            "Filters/Core/vtkStaticCleanUnstructuredGrid.cxx",
             "Filters/Core/vtkDecimatePro.cxx",
             "Filters/Core/vtkFeatureEdges.cxx",
             "Filters/Core/vtkGlyph3D.cxx",
@@ -299,6 +298,7 @@ MODULE_SETTINGS = {
             "Filters/Core/vtkPolyDataNormals.cxx",
             "Filters/Core/vtkPolyDataTangents.cxx",
             "Filters/Core/vtkSplitSharpEdgesPolyData.cxx",
+            "Filters/Core/vtkStaticCleanUnstructuredGrid.cxx",
             "Filters/Core/vtkTriangleFilter.cxx",
         ],
     },
