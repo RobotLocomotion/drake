@@ -29,6 +29,8 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(enable_meshcat_creation));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
     a->Visit(DRAKE_NVP(enable_alpha_sliders));
+    a->Visit(DRAKE_NVP(enable_mouse_interaction));
+    a->Visit(DRAKE_NVP(mouse_interaction_stiffness));
   }
 
   /** Which LCM URL to use.
@@ -78,6 +80,19 @@ struct VisualizationConfig {
 
   /** Determines whether to enable alpha sliders for geometry display. */
   bool enable_alpha_sliders{false};
+
+  /** Whether to enable interactively dragging bodies with the mouse in Meshcat.
+   In a connected Meshcat browser, holding Ctrl and dragging a body with the
+   left mouse button applies a virtual spring force that pulls the body toward
+   the cursor (see multibody::meshcat::MeshcatMouseSpring). Has no effect for
+   Meldis/LCM, and is skipped if the plant's applied-spatial-force input port is
+   already connected. */
+  bool enable_mouse_interaction{true};
+
+  /** The mass-normalized stiffness (in 1/s²) of the interactive mouse spring;
+   see multibody::meshcat::MeshcatMouseSpring. Only used when
+   enable_mouse_interaction is true. */
+  double mouse_interaction_stiffness{100.0};
 };
 
 }  // namespace visualization

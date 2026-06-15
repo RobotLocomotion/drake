@@ -201,6 +201,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
            // For Meshcat.
            "meshcat_visualizer",
            "meshcat_contact_visualizer",
+           "meshcat_mouse_spring",
            "inertia_visualizer",
        }) {
     SCOPED_TRACE(fmt::format("Checking for a system named like {}", name));
@@ -246,6 +247,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   config.publish_inertia = false;
   config.publish_proximity = false;
   config.publish_contacts = false;
+  config.enable_mouse_interaction = false;
 
   // We'll fail in case any message is transmitted.
   DrakeLcm drake_lcm;
@@ -276,6 +278,61 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   // Simulate for a moment and make sure nothing showed up.
   simulator.AdvanceTo(0.25);
   drake_lcm.HandleSubscriptions(1);
+}
+
+// The interactive mouse-spring is added by default, can be disabled via the
+// config flag, and is skipped if the plant's applied-force port is already
+// used.
+GTEST_TEST(VisualizationConfigFunctionsTest, MouseInteraction) {
+  // Opt out of LCM so that only the Meshcat-side systems are added.
+  DrakeLcm drake_lcm(LcmBuses::kLcmUrlMemqNull);
+  LcmBuses lcm_buses;
+  lcm_buses.Add("default", &drake_lcm);
+  auto meshcat = std::make_shared<Meshcat>();
+
+  auto count_springs = [](const DiagramBuilder<double>& builder) {
+    int count = 0;
+    for (const auto* system : builder.GetSystems()) {
+      if (system->get_name().find("meshcat_mouse_spring") !=
+          std::string::npos) {
+        ++count;
+      }
+    }
+    return count;
+  };
+
+  // Enabled by default.
+  {
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    plant.Finalize();
+    ApplyVisualizationConfig(VisualizationConfig{}, &builder, &lcm_buses,
+                             &plant, &scene_graph, meshcat);
+    EXPECT_EQ(count_springs(builder), 1);
+  }
+
+  // Disabled via the config flag.
+  {
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    plant.Finalize();
+    VisualizationConfig config;
+    config.enable_mouse_interaction = false;
+    ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
+                             meshcat);
+    EXPECT_EQ(count_springs(builder), 0);
+  }
+
+  // Skipped if the plant's applied-spatial-force input port is already in use.
+  {
+    DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    plant.Finalize();
+    builder.ExportInput(plant.get_applied_spatial_force_input_port());
+    ApplyVisualizationConfig(VisualizationConfig{}, &builder, &lcm_buses,
+                             &plant, &scene_graph, meshcat);
+    EXPECT_EQ(count_springs(builder), 0);
+  }
 }
 
 // When LCM is opted-out, the LCM-related systems are not added.
