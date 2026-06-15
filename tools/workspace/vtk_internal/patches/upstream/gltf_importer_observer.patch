@@ -1,18 +1,89 @@
-There has been quite the tug of war in VTK w.r.t. this forwarder. It had existed
-but then was removed in de1602836934 (MR#12033) (2025-03-30). In 55ef1381
-(2025-09-10) it was restored, having been flagged as an accidental removal. It
-was removed again in 571196de4efff (2026-05-29) as undoing a bug fix from
-MR12033. It is not clear that these two lines had anything to do with the bug
-fix.
+There has been quite the tug of war in VTK w.r.t. this forwarder.
 
-Drake, however, depends on the importer's observer being forwarded to the loader
-in order to catch the specific error messages that only the loader knows how to
-produce.
+ - Originally, the loader had forwarded its events to the importer.
+ - in de1602836934 (MR#12033) (2025-03-30) it was removed as part of a bug fix.
+ - In 55ef1381 (2025-09-10) it was restored, having been flagged as an
+   accidental removal.
+ - In 571196de4efff (2026-05-29) it was reverted referencing MR#12033.
 
-I've added a comment to the original merge request (12033) asking for
-clarification on why this forwarding is considered defective.
+Drake, however, depends on loader events being forwarded to the importer (where
+Drake has a registered observer).
+
+I broached this topic in VTK MR#12033 (see the link):
 
 https://gitlab.kitware.com/vtk/vtk/-/merge_requests/12033#note_1827292
+
+Summary:
+
+  - The forwarder doesn't do what it promises.
+  - Once an event is forwarded to *any* observer, it must be resolved by an
+    observer, or not at all.
+  - For any VTK user that doesn't provide an observer, all GLTF loader messages
+    simply evaporated.
+  - This is why forwarding was considered "defective".
+
+Short solution:
+
+  - When an observer is present, InvokeEvent() returns a bool indicating whether
+    the event was handled.
+  - Previously, the result was ignored. This change checks the result and
+    falls back to printing to the output window if it wasn't handled.
+  - This should robustly serve both use cases.
+
+
+--- Common/Core/vtkOutputWindow.cxx
++++ Common/Core/vtkOutputWindow.cxx
+@@ -107,15 +107,20 @@ void vtkOutputWindowDisplayErrorText(
+ {
+   std::ostringstream vtkmsg;
+   vtkmsg << "ERROR: In " << fname << ", line " << lineno << "\n" << message << "\n\n";
++  vtkTypeBool dispatched = false;
+   if (sourceObj && sourceObj->HasObserver(vtkCommand::ErrorEvent))
+   {
+-    sourceObj->InvokeEvent(vtkCommand::ErrorEvent, const_cast<char*>(vtkmsg.str().c_str()));
++    dispatched = sourceObj->InvokeEvent(vtkCommand::ErrorEvent,
++                                        const_cast<char*>(vtkmsg.str().c_str()));
+   }
+-  else if (auto win = vtkOutputWindow::GetInstance())
++  if (!dispatched)
+   {
+-    vtkLogger::Log(vtkLogger::VERBOSITY_ERROR, fname, lineno, message);
+-    vtkOutputWindowPrivateAccessor helper_raii(win);
+-    win->DisplayErrorText(vtkmsg.str().c_str());
++    if (auto win = vtkOutputWindow::GetInstance())
++    {
++      vtkLogger::Log(vtkLogger::VERBOSITY_ERROR, fname, lineno, message);
++      vtkOutputWindowPrivateAccessor helper_raii(win);
++      win->DisplayErrorText(vtkmsg.str().c_str());
++    }
+   }
+ }
+
+@@ -124,15 +129,20 @@ void vtkOutputWindowDisplayWarningText(
+ {
+   std::ostringstream vtkmsg;
+   vtkmsg << "Warning: In " << fname << ", line " << lineno << "\n" << message << "\n\n";
++  vtkTypeBool dispatched = false;
+   if (sourceObj && sourceObj->HasObserver(vtkCommand::WarningEvent))
+   {
+-    sourceObj->InvokeEvent(vtkCommand::WarningEvent, const_cast<char*>(vtkmsg.str().c_str()));
++    dispatched = sourceObj->InvokeEvent(vtkCommand::WarningEvent,
++                                        const_cast<char*>(vtkmsg.str().c_str()));
+   }
+-  else if (auto win = vtkOutputWindow::GetInstance())
++  if (!dispatched)
+   {
+-    vtkLogger::Log(vtkLogger::VERBOSITY_WARNING, fname, lineno, message);
+-    vtkOutputWindowPrivateAccessor helper_raii(win);
++    if (auto win = vtkOutputWindow::GetInstance())
++    {
++      vtkLogger::Log(vtkLogger::VERBOSITY_WARNING, fname, lineno, message);
++      vtkOutputWindowPrivateAccessor helper_raii(win);
+     win->DisplayWarningText(vtkmsg.str().c_str());
++    }
+   }
+ }
+
 
 --- IO/Import/vtkGLTFImporter.cxx
 +++ IO/Import/vtkGLTFImporter.cxx

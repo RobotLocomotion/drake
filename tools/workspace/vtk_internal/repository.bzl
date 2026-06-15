@@ -157,6 +157,8 @@ _vtk_internal_repository_impl = repository_rule(
         "sha256": attr.string(),
         "build_file": attr.label(),
         "patches": attr.label_list(),
+        "patch_tool": attr.string(default = "patch"),
+        "patch_args": attr.string_list(default = ["-p0"]),
         "extra_strip_prefix": attr.string(),
         "mirrors": attr.string_list_dict(),
         # This attribute is specific to our rule, not setup_github_repository.
