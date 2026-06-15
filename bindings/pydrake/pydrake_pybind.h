@@ -39,9 +39,9 @@ namespace pydrake {
 // you put Doxygen comments here they will apply instead to py_rvp.
 namespace py = pybind11;
 
-/// Shortened alias for py::return_value_policy. For more information, see
+/// Shortened alias for py::rv_policy. For more information, see
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
-using py_rvp = py::return_value_policy;
+using py_rvp = py::rv_policy;
 
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
@@ -72,7 +72,7 @@ constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 /// copy.
 template <typename PyClass>
 void DefCopyAndDeepCopy(PyClass* ppy_class) {
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   PyClass& py_class = *ppy_class;
   py_class.def("__copy__", [](const Class* self) { return Class{*self}; })
       .def("__deepcopy__",
@@ -92,7 +92,7 @@ void DefClone(PyClass* ppy_class) {
   // take_ownership return value policy. The take_ownership
   // policy would be the default policy in this case, but it
   // seems safer and more clear to apply it explicitly.
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   PyClass& py_class = *ppy_class;
   py_class  // BR
       .def(
@@ -109,8 +109,41 @@ void DefClone(PyClass* ppy_class) {
           py_rvp::take_ownership);
 }
 
+/// Binds `__getstate__` and `__setstate__` for pickling on the given
+/// `ppy_class` (which must point to a `py::class_`).
+///
+/// The get_state functor should take `(const Class& self)` and return a
+/// newly-pickled class `-> Pickled` by value.
+///
+/// The set_state functor should take `(Class* self, Pickled pickled)` and
+/// placement-new construct the object into `self` based on `pickled`, with no
+/// return value. (The use of placement new is in anticipation of a nanobind
+/// port of this helper function.)
+template <typename PyClass, typename GetState, typename SetState>
+void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
+  PyClass& py_class = *ppy_class;
+
+  using Class = typename PyClass::Type;
+  using Pickled = std::invoke_result_t<GetState, const Class&>;
+
+  // For pybind11 we must wrap set_state to return the constructed Class by
+  // value, instead of using placement new. (Nanobind will use placement new.)
+  auto set_state_with_return = [set_state = std::forward<SetState>(set_state)](
+                                   Pickled pickled) {
+    alignas(Class) std::byte buffer[sizeof(Class)];
+    Class* typed_buffer = reinterpret_cast<Class*>(buffer);
+    set_state(typed_buffer, std::move(pickled));
+    Class result = std::move(*typed_buffer);
+    typed_buffer->~Class();
+    return result;
+  };
+
+  py_class.def(py::pickle(
+      std::forward<GetState>(get_state), std::move(set_state_with_return)));
+}
+
 /// Returns a constructor for creating an instance of Class and initializing
-/// parameters (bound using `def_readwrite`).
+/// parameters (bound using `def_rw`).
 /// This provides an alternative to manually enumerating each
 /// parameter as an argument using `py::init<...>` and `py::arg(...)`, and is
 /// useful when the C++ class only has a default constructor. Example:
@@ -131,7 +164,7 @@ auto ParamInit() {
     // constructed. Would be alleviated using old-style pybind11 init :(
     Class obj{};
     py::object py_obj = py::cast(&obj, py_rvp::reference);
-    py::module::import("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
     return obj;
   });
 }
@@ -140,8 +173,8 @@ auto ParamInit() {
 /// For a module with local name `{name}` and use_subdir=False, the code
 /// executed will be `_{name}_extra.py`; with use_subdir=True, it will be
 /// `{name}/_{name}_extra.py`. See #9599 for relevant background.
-inline void ExecuteExtraPythonCode(py::module m, bool use_subdir = false) {
-  py::module::import("pydrake").attr("_execute_extra_python_code")(
+inline void ExecuteExtraPythonCode(py::module_ m, bool use_subdir = false) {
+  py::module_::import_("pydrake").attr("_execute_extra_python_code")(
       m, use_subdir);
 }
 
@@ -151,16 +184,16 @@ inline void ExecuteExtraPythonCode(py::module m, bool use_subdir = false) {
 // the module, within the module itself).
 // TODO(eric.cousineau): Unfold cyclic references, and remove the need for this
 // macro (see #11868 for rationale).
-#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)                 \
-  {                                                                       \
-    static py::handle variable##_original;                                \
-    if (variable##_original) {                                            \
-      variable##_original.inc_ref();                                      \
-      variable = py::reinterpret_borrow<py::module>(variable##_original); \
-      return;                                                             \
-    } else {                                                              \
-      variable##_original = variable;                                     \
-    }                                                                     \
+#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)      \
+  {                                                            \
+    static py::handle variable##_original;                     \
+    if (variable##_original) {                                 \
+      variable##_original.inc_ref();                           \
+      variable = py::borrow<py::module_>(variable##_original); \
+      return;                                                  \
+    } else {                                                   \
+      variable##_original = variable;                          \
+    }                                                          \
   }
 
 /// Given a raw pointer, returns a shared_ptr wrapper around it that doesn't own
@@ -194,5 +227,13 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 }  // namespace pydrake
 }  // namespace drake
 
+/// Allow numpy arrays of with dtype=object containing `Type` objects to convert
+/// to and from Eigen matrices of `Type`.
+#define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+
+// Legacy synonym for PYDRAKE_NUMPY_OBJECT_DTYPE. Don't use this in new code.
 #define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
   PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+
+// This alias helps ease Drake's transition to nanobind.
+#define PYDRAKE_MODULE PYBIND11_MODULE

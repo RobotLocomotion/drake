@@ -8,7 +8,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversProjectedGradientDescent(py::module m) {
+void DefineSolversProjectedGradientDescent(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
@@ -19,7 +19,8 @@ void DefineSolversProjectedGradientDescent(py::module m) {
     py::class_<Class, SolverInterface> pgd_cls(
         m, "ProjectedGradientDescentSolver", cls_doc.doc);
 
-    pgd_cls.def(py::init<>(), cls_doc.ctor.doc)
+    pgd_cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
         .def("SetCustomGradientFunction", &Class::SetCustomGradientFunction,
             py::arg("custom_gradient_function"),
             cls_doc.SetCustomGradientFunction.doc)
@@ -60,12 +61,12 @@ void DefineSolversProjectedGradientDescent(py::module m) {
             py::gil_scoped_acquire gil;
             auto result = python_projection_function(in);
             DRAKE_THROW_UNLESS(py::isinstance<py::tuple>(result));
-            py::tuple result_tuple = result.cast<py::tuple>();
+            py::tuple result_tuple = py::cast<py::tuple>(result);
             DRAKE_THROW_UNLESS(result_tuple.size() == 2);
             DRAKE_THROW_UNLESS(py::isinstance<py::bool_>(result_tuple[0]));
             DRAKE_THROW_UNLESS(py::isinstance<py::array>(result_tuple[1]));
-            *out = result_tuple[1].cast<Eigen::VectorXd>();
-            return result_tuple[0].cast<bool>();
+            *out = py::cast<Eigen::VectorXd>(result_tuple[1]);
+            return py::cast<bool>(result_tuple[0]);
           };
           self.SetCustomProjectionFunction(cpp_projection_function);
         },

@@ -18,7 +18,7 @@ namespace internal {
 using systems::Diagram;
 using systems::LeafSystem;
 
-void DefineManipulationSchunkWsg(py::module m) {
+void DefineManipulationSchunkWsg(py::module_ m) {
   constexpr auto& doc =
       pydrake_doc_manipulation_schunk_wsg.drake.manipulation.schunk_wsg;
 

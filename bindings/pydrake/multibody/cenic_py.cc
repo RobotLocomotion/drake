@@ -11,14 +11,14 @@ using systems::Context;
 using systems::IntegratorBase;
 using systems::System;
 
-PYBIND11_MODULE(cenic, m) {
+PYDRAKE_MODULE(cenic, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_cenic.drake.multibody;
 
-  py::module::import("pydrake.multibody.contact_solvers");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.systems.analysis");
+  py::module_::import_("pydrake.multibody.contact_solvers");
+  py::module_::import_("pydrake.multibody.plant");
+  py::module_::import_("pydrake.systems.analysis");
 
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);

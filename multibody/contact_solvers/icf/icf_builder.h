@@ -90,9 +90,6 @@ class IcfBuilder {
   /* Throws if the plant provided at construction is not compatible with ICF. */
   void ValidatePlant();
 
-  /* Throws if the context passed to UpdateModel is not compatible with ICF. */
-  void ValidateContext(const systems::Context<T>& context);
-
   /* Computes geometry data and stores it internally for later use. */
   void CalcGeometryContactData(const systems::Context<T>& context);
 

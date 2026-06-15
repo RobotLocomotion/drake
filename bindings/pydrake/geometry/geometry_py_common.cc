@@ -5,6 +5,7 @@
  the pydrake.geometry module. */
 
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -43,7 +44,7 @@ constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
 
-void DefineCollisionFilterScope(py::module m) {
+void DefineCollisionFilterScope(py::module_ m) {
   {
     using Class = CollisionFilterScope;
     constexpr auto& cls_doc = doc.CollisionFilterScope;
@@ -54,7 +55,7 @@ void DefineCollisionFilterScope(py::module m) {
   }
 }
 
-void DefineCollisionFilterDeclaration(py::module m) {
+void DefineCollisionFilterDeclaration(py::module_ m) {
   {
     using Class = CollisionFilterDeclaration;
     constexpr auto& cls_doc = doc.CollisionFilterDeclaration;
@@ -74,7 +75,7 @@ void DefineCollisionFilterDeclaration(py::module m) {
   }
 }
 
-void DefineCollisionFilterManager(py::module m) {
+void DefineCollisionFilterManager(py::module_ m) {
   {
     using Class = CollisionFilterManager;
     constexpr auto& cls_doc = doc.CollisionFilterManager;
@@ -91,7 +92,7 @@ void DefineCollisionFilterManager(py::module m) {
   }
 }
 
-void DefineGeometryFrame(py::module m) {
+void DefineGeometryFrame(py::module_ m) {
   {
     using Class = GeometryFrame;
     constexpr auto& cls_doc = doc.GeometryFrame;
@@ -106,7 +107,7 @@ void DefineGeometryFrame(py::module m) {
   }
 }
 
-void DefineGeometryInstance(py::module m) {
+void DefineGeometryInstance(py::module_ m) {
   {
     using Class = GeometryInstance;
     constexpr auto& cls_doc = doc.GeometryInstance;
@@ -149,12 +150,12 @@ void DefineGeometryInstance(py::module m) {
   }
 }
 
-void DefineGeometryProperties(py::module m) {
+void DefineGeometryProperties(py::module_ m) {
   {
     using Class = GeometryProperties;
     constexpr auto& cls_doc = doc.GeometryProperties;
     py::handle abstract_value_cls =
-        py::module::import("pydrake.common.value").attr("AbstractValue");
+        py::module_::import_("pydrake.common.value").attr("AbstractValue");
     py::class_<Class>(m, "GeometryProperties", cls_doc.doc)
         .def("HasGroup", &Class::HasGroup, py::arg("group_name"),
             cls_doc.HasGroup.doc)
@@ -179,7 +180,7 @@ void DefineGeometryProperties(py::module m) {
                 const std::string& name, py::object value) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
               self.AddPropertyAbstract(
-                  group_name, name, abstract.cast<const AbstractValue&>());
+                  group_name, name, py::cast<const AbstractValue&>(abstract));
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.AddProperty.doc)
@@ -189,7 +190,7 @@ void DefineGeometryProperties(py::module m) {
                 const std::string& name, py::object value) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
               self.UpdatePropertyAbstract(
-                  group_name, name, abstract.cast<const AbstractValue&>());
+                  group_name, name, py::cast<const AbstractValue&>(abstract));
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.UpdateProperty.doc)
@@ -228,7 +229,7 @@ void DefineGeometryProperties(py::module m) {
   }
 }
 
-void DefineGeometrySet(py::module m) {
+void DefineGeometrySet(py::module_ m) {
   {
     using Class = GeometrySet;
     constexpr auto& cls_doc = doc.GeometrySet;
@@ -239,18 +240,12 @@ void DefineGeometrySet(py::module m) {
         .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<GeometryId>(), py::arg("geometry_id"), extra_ctor_doc)
         .def(py::init<FrameId>(), py::arg("frame_id"), extra_ctor_doc)
-        .def(py::init([](std::vector<GeometryId> geometry_ids) {
-          return Class(geometry_ids);
-        }),
+        .def(py::init<const std::vector<GeometryId>&>(),
             py::arg("geometry_ids"), extra_ctor_doc)
-        .def(py::init([](std::vector<FrameId> frame_ids) {
-          return Class(frame_ids);
-        }),
-            py::arg("frame_ids"), extra_ctor_doc)
-        .def(py::init([](std::vector<GeometryId> geometry_ids,
-                          std::vector<FrameId> frame_ids) {
-          return Class(geometry_ids, frame_ids);
-        }),
+        .def(py::init<const std::vector<FrameId>&>(), py::arg("frame_ids"),
+            extra_ctor_doc)
+        .def(py::init<const std::vector<GeometryId>&,
+                 const std::vector<FrameId>&>(),
             py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc)
         .def(
             "Add",
@@ -284,12 +279,13 @@ void DefineGeometrySet(py::module m) {
   }
 }
 
-void DefineGeometryVersion(py::module m) {
+void DefineGeometryVersion(py::module_ m) {
   {
     using Class = GeometryVersion;
     constexpr auto& cls_doc = doc.GeometryVersion;
     py::class_<Class> cls(m, "GeometryVersion", cls_doc.doc);
-    cls.def(py::init(), cls_doc.ctor.doc)
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<const GeometryVersion&>(), py::arg("other"),
             "Creates a copy of the GeometryVersion.")
         .def("IsSameAs", &Class::IsSameAs, py::arg("other"), py::arg("role"),
@@ -298,7 +294,7 @@ void DefineGeometryVersion(py::module m) {
   }
 }
 
-void DefineIdentifiers(py::module m) {
+void DefineIdentifiers(py::module_ m) {
   {
     BindIdentifier<FilterId>(m, "FilterId", doc.FilterId.doc);
     BindIdentifier<SourceId>(m, "SourceId", doc.SourceId.doc);
@@ -307,7 +303,7 @@ void DefineIdentifiers(py::module m) {
   }
 }
 
-void DefineInMemoryMesh(py::module m) {
+void DefineInMemoryMesh(py::module_ m) {
   {
     using Class = InMemoryMesh;
     constexpr auto& cls_doc = doc.InMemoryMesh;
@@ -315,23 +311,24 @@ void DefineInMemoryMesh(py::module m) {
     py::object ctor = m.attr("InMemoryMesh");
     cls  // BR
         .def(ParamInit<Class>())
-        .def_readwrite("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
-        .def_readwrite("supporting_files", &Class::supporting_files,
-            cls_doc.supporting_files.doc)
-        .def(py::pickle(
-            [](const InMemoryMesh& self) {
-              return py::dict(py::arg("mesh_file") = self.mesh_file,
-                  py::arg("supporting_files") = self.supporting_files);
-            },
-            [ctor](const py::dict& kwargs) {
-              return ctor(**kwargs).cast<InMemoryMesh>();
-            }));
+        .def_rw("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
+        .def_rw("supporting_files", &Class::supporting_files,
+            cls_doc.supporting_files.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return py::dict(py::arg("mesh_file") = self.mesh_file,
+              py::arg("supporting_files") = self.supporting_files);
+        },
+        [ctor](Class* self, const py::dict& kwargs) {
+          new (self) Class(py::cast<Class>(ctor(**kwargs)));
+        });
     // Note: __repr__ is defined in _geometry_extra.py.
     DefCopyAndDeepCopy(&cls);
   }
 }
 
-void DefineGeometryPropertiesSubclasses(py::module m) {
+void DefineGeometryPropertiesSubclasses(py::module_ m) {
   {
     py::class_<IllustrationProperties, GeometryProperties> cls(
         m, "IllustrationProperties", doc.IllustrationProperties.doc);
@@ -361,7 +358,7 @@ void DefineGeometryPropertiesSubclasses(py::module m) {
   }
 }
 
-void DefineMeshSource(py::module m) {
+void DefineMeshSource(py::module_ m) {
   {
     using Class = MeshSource;
     constexpr auto& cls_doc = doc.MeshSource;
@@ -380,18 +377,19 @@ void DefineMeshSource(py::module m) {
         .def("extension", &Class::extension, cls_doc.extension.doc)
         .def("path", &Class::path, cls_doc.path.doc)
         .def("in_memory", &Class::in_memory, py_rvp::reference_internal,
-            cls_doc.in_memory.doc)
-        .def(py::pickle(
-            [](const MeshSource& self) {
-              if (self.is_path()) {
-                return py::dict(py::arg("path") = self.path());
-              }
-              DRAKE_DEMAND(self.is_in_memory());
-              return py::dict(py::arg("mesh") = self.in_memory());
-            },
-            [ctor](const py::dict& kwargs) {
-              return ctor(**kwargs).cast<MeshSource>();
-            }));
+            cls_doc.in_memory.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          if (self.is_path()) {
+            return py::dict(py::arg("path") = self.path());
+          }
+          DRAKE_DEMAND(self.is_in_memory());
+          return py::dict(py::arg("mesh") = self.in_memory());
+        },
+        [ctor](Class* self, const py::dict& kwargs) {
+          new (self) Class(py::cast<Class>(ctor(**kwargs)));
+        });
     // Note: __repr__ is defined in _geometry_extra.py.
     DefCopyAndDeepCopy(&cls);
 
@@ -400,7 +398,7 @@ void DefineMeshSource(py::module m) {
   }
 }
 
-void DefineRgba(py::module m) {
+void DefineRgba(py::module_ m) {
   {
     using Class = Rgba;
     constexpr auto& cls_doc = doc.Rgba;
@@ -435,7 +433,7 @@ void DefineRgba(py::module m) {
               .format(self.r(), self.g(), self.b(), self.a());
         });
     DefAttributesUsingSerialize(&cls);
-    cls.def_property("rgba",
+    cls.def_prop_rw("rgba",
         // The Serialize-based binding skips the validity checking; we'll
         // add it back here by re-binding the property getter and setter.
         &Class::rgba,
@@ -447,10 +445,10 @@ void DefineRgba(py::module m) {
   }
 }
 
-void DefineRole(py::module m) {
+void DefineRole(py::module_ m) {
   {
     constexpr auto& cls_doc = doc.Role;
-    py::enum_<Role>(m, "Role", py::arithmetic(), cls_doc.doc)
+    py::enum_<Role>(m, "Role", py::is_arithmetic(), cls_doc.doc)
         .value("kUnassigned", Role::kUnassigned, cls_doc.kUnassigned.doc)
         .value("kProximity", Role::kProximity, cls_doc.kProximity.doc)
         .value("kIllustration", Role::kIllustration, cls_doc.kIllustration.doc)
@@ -458,7 +456,7 @@ void DefineRole(py::module m) {
   }
 }
 
-void DefineRoleAssign(py::module m) {
+void DefineRoleAssign(py::module_ m) {
   {
     constexpr auto& cls_doc = doc.RoleAssign;
     using Class = RoleAssign;
@@ -468,15 +466,17 @@ void DefineRoleAssign(py::module m) {
   }
 }
 
-void DefineShapes(py::module m) {
+void DefineShapes(py::module_ m) {
   // Shape constructors.
   {
-    py::class_<Shape> shape_cls(m, "Shape", doc.Shape.doc);
-    shape_cls  // BR
+    py::class_<Shape> cls(m, "Shape", doc.Shape.doc);
+    cls  // BR
         .def("__repr__", [](const Shape& self) { return self.to_string(); });
-    DefClone(&shape_cls);
-
-    py::class_<Box, Shape>(m, "Box", doc.Box.doc)
+    DefClone(&cls);
+  }
+  {
+    py::class_<Box, Shape> cls(m, "Box", doc.Box.doc);
+    cls  // BR
         .def(py::init<double, double, double>(), py::arg("width"),
             py::arg("depth"), py::arg("height"), doc.Box.ctor.doc_3args)
         .def(py::init<const Vector3<double>&>(), py::arg("measures"),
@@ -484,39 +484,38 @@ void DefineShapes(py::module m) {
         .def("width", &Box::width, doc.Box.width.doc)
         .def("depth", &Box::depth, doc.Box.depth.doc)
         .def("height", &Box::height, doc.Box.height.doc)
-        .def("size", &Box::size, py_rvp::reference_internal, doc.Box.size.doc)
-        .def(py::pickle(
-            [](const Box& self) {
-              return std::make_tuple(self.width(), self.depth(), self.height());
-            },
-            [](std::tuple<double, double, double> dims) {
-              return Box(
-                  std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
-            }));
-
-    py::class_<Capsule, Shape>(m, "Capsule", doc.Capsule.doc)
+        .def("size", &Box::size, py_rvp::reference_internal, doc.Box.size.doc);
+    DefPickle(
+        &cls,
+        [](const Box& self) {
+          return std::make_tuple(self.width(), self.depth(), self.height());
+        },
+        [](Box* self, std::tuple<double, double, double> dims) {
+          new (self)
+              Box(std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
+        });
+  }
+  {
+    py::class_<Capsule, Shape> cls(m, "Capsule", doc.Capsule.doc);
+    cls  // BR
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Capsule.ctor.doc_2args)
         .def(py::init<const Vector2<double>&>(), py::arg("measures"),
             doc.Capsule.ctor.doc_1args)
         .def("radius", &Capsule::radius, doc.Capsule.radius.doc)
-        .def("length", &Capsule::length, doc.Capsule.length.doc)
-        .def(py::pickle(
-            [](const Capsule& self) {
-              return std::make_pair(self.radius(), self.length());
-            },
-            [](std::pair<double, double> dims) {
-              return Capsule(dims.first, dims.second);
-            }));
-
-    // Note: meshes used to get pickled with a single scale value (representing
-    // uniform scale). While we now allow for non-uniform scaling, we still
-    // need to depickle the old representation. So, we need to handle both
-    // scale representations.
-    using ScaleVariant = std::variant<double, Vector3<double>>;
-
-    py::class_<Convex, Shape> convex_cls(m, "Convex", doc.Convex.doc);
-    convex_cls
+        .def("length", &Capsule::length, doc.Capsule.length.doc);
+    DefPickle(
+        &cls,
+        [](const Capsule& self) {
+          return std::make_pair(self.radius(), self.length());
+        },
+        [](Capsule* self, std::pair<double, double> dims) {
+          new (self) Capsule(dims.first, dims.second);
+        });
+  }
+  {
+    py::class_<Convex, Shape> cls(m, "Convex", doc.Convex.doc);
+    cls  // BR
         .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_filename_scale)
         .def(py::init<std::filesystem::path, const Vector3<double>&>(),
@@ -544,59 +543,74 @@ void DefineShapes(py::module m) {
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
         .def("scale3", &Convex::scale3, doc.Convex.scale3.doc)
         .def("GetConvexHull", &Convex::GetConvexHull,
-            doc.Convex.GetConvexHull.doc)
-        .def(py::pickle(
-            [](const Convex& self) {
-              return std::make_pair(self.source(), ScaleVariant(self.scale3()));
-            },
-            [](std::pair<MeshSource, ScaleVariant> info) {
-              return std::visit<Convex>(overloaded{[&info](auto&& scale) {
+            doc.Convex.GetConvexHull.doc);
+    // Note: Convex used to get pickled with a single scale value (representing
+    // uniform scale). While we now allow for non-uniform scaling, we still need
+    // to depickle the old representation. So, we need to handle both scale
+    // representations.
+    using ScaleVariant = std::variant<double, Vector3<double>>;
+    DefPickle(
+        &cls,
+        [](const Convex& self) {
+          return std::make_pair(self.source(), ScaleVariant(self.scale3()));
+        },
+        [](Convex* self, std::pair<MeshSource, ScaleVariant> info) {
+          new (self)
+              Convex(std::visit<Convex>(overloaded{[&info](auto&& scale) {
                 return Convex(std::move(info.first), scale);
               }},
-                  info.second);
-            }));
+                  info.second));
+        });
     // Note: Convex.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
-
-    py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
+  }
+  {
+    py::class_<Cylinder, Shape> cls(m, "Cylinder", doc.Cylinder.doc);
+    cls  // BR
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc_2args)
         .def(py::init<const Vector2<double>&>(), py::arg("measures"),
             doc.Cylinder.ctor.doc_1args)
         .def("radius", &Cylinder::radius, doc.Cylinder.radius.doc)
-        .def("length", &Cylinder::length, doc.Cylinder.length.doc)
-        .def(py::pickle(
-            [](const Cylinder& self) {
-              return std::make_pair(self.radius(), self.length());
-            },
-            [](std::pair<double, double> dims) {
-              return Cylinder(dims.first, dims.second);
-            }));
-
-    py::class_<Ellipsoid, Shape>(m, "Ellipsoid", doc.Ellipsoid.doc)
+        .def("length", &Cylinder::length, doc.Cylinder.length.doc);
+    DefPickle(
+        &cls,
+        [](const Cylinder& self) {
+          return std::make_pair(self.radius(), self.length());
+        },
+        [](Cylinder* self, std::pair<double, double> dims) {
+          new (self) Cylinder(dims.first, dims.second);
+        });
+  }
+  {
+    py::class_<Ellipsoid, Shape> cls(m, "Ellipsoid", doc.Ellipsoid.doc);
+    cls  // BR
         .def(py::init<double, double, double>(), py::arg("a"), py::arg("b"),
             py::arg("c"), doc.Ellipsoid.ctor.doc_3args)
         .def(py::init<const Vector3<double>&>(), py::arg("measures"),
             doc.Ellipsoid.ctor.doc_1args)
         .def("a", &Ellipsoid::a, doc.Ellipsoid.a.doc)
         .def("b", &Ellipsoid::b, doc.Ellipsoid.b.doc)
-        .def("c", &Ellipsoid::c, doc.Ellipsoid.c.doc)
-        .def(py::pickle(
-            [](const Ellipsoid& self) {
-              return std::make_tuple(self.a(), self.b(), self.c());
-            },
-            [](std::tuple<double, double, double> dims) {
-              return Ellipsoid(
-                  std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
-            }));
-
+        .def("c", &Ellipsoid::c, doc.Ellipsoid.c.doc);
+    DefPickle(
+        &cls,
+        [](const Ellipsoid& self) {
+          return std::make_tuple(self.a(), self.b(), self.c());
+        },
+        [](Ellipsoid* self, std::tuple<double, double, double> dims) {
+          new (self) Ellipsoid(
+              std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
+        });
+  }
+  {
     py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
         .def(py::init<>(), doc.HalfSpace.ctor.doc)
         .def_static("MakePose", &HalfSpace::MakePose, py::arg("Hz_dir_F"),
             py::arg("p_FB"), doc.HalfSpace.MakePose.doc);
-
-    py::class_<Mesh, Shape> mesh_cls(m, "Mesh", doc.Mesh.doc);
-    mesh_cls
+  }
+  {
+    py::class_<Mesh, Shape> cls(m, "Mesh", doc.Mesh.doc);
+    cls  // BR
         .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_filename_scale)
         .def(py::init<std::filesystem::path, const Vector3<double>&>(),
@@ -615,27 +629,38 @@ void DefineShapes(py::module m) {
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def("scale3", &Mesh::scale3, doc.Mesh.scale3.doc)
-        .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
-        .def(py::pickle(
-            [](const Mesh& self) {
-              return std::make_pair(self.source(), ScaleVariant(self.scale3()));
-            },
-            [](std::pair<MeshSource, ScaleVariant> info) {
-              return std::visit<Mesh>(overloaded{[&info](auto&& scale) {
-                return Mesh(std::move(info.first), scale);
-              }},
-                  info.second);
-            }));
+        .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc);
+    // Note: Mesh used to get pickled with a single scale value (representing
+    // uniform scale). While we now allow for non-uniform scaling, we still need
+    // to depickle the old representation. So, we need to handle both scale
+    // representations.
+    using ScaleVariant = std::variant<double, Vector3<double>>;
+    DefPickle(
+        &cls,
+        [](const Mesh& self) {
+          return std::make_pair(self.source(), ScaleVariant(self.scale3()));
+        },
+        [](Mesh* self, std::pair<MeshSource, ScaleVariant> info) {
+          new (self) Mesh(std::visit<Mesh>(overloaded{[&info](auto&& scale) {
+            return Mesh(std::move(info.first), scale);
+          }},
+              info.second));
+        });
     // Note: Mesh.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
-
-    py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
+  }
+  {
+    py::class_<Sphere, Shape> cls(m, "Sphere", doc.Sphere.doc);
+    cls  // BR
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
-        .def("radius", &Sphere::radius, doc.Sphere.radius.doc)
-        .def(py::pickle([](const Sphere& self) { return self.radius(); },
-            [](const double radius) { return Sphere(radius); }));
-
-    py::class_<MeshcatCone, Shape>(m, "MeshcatCone", doc.MeshcatCone.doc)
+        .def("radius", &Sphere::radius, doc.Sphere.radius.doc);
+    DefPickle(
+        &cls, [](const Sphere& self) { return self.radius(); },
+        [](Sphere* self, const double radius) { new (self) Sphere(radius); });
+  }
+  {
+    py::class_<MeshcatCone, Shape> cls(m, "MeshcatCone", doc.MeshcatCone.doc);
+    cls  // BR
         .def(py::init<double, double, double>(), py::arg("height"),
             py::arg("a") = 1.0, py::arg("b") = 1.0,
             doc.MeshcatCone.ctor.doc_3args)
@@ -643,19 +668,20 @@ void DefineShapes(py::module m) {
             doc.MeshcatCone.ctor.doc_1args)
         .def("height", &MeshcatCone::height, doc.MeshcatCone.height.doc)
         .def("a", &MeshcatCone::a, doc.MeshcatCone.a.doc)
-        .def("b", &MeshcatCone::b, doc.MeshcatCone.b.doc)
-        .def(py::pickle(
-            [](const MeshcatCone& self) {
-              return std::make_tuple(self.height(), self.a(), self.b());
-            },
-            [](std::tuple<double, double, double> params) {
-              return MeshcatCone(std::get<0>(params), std::get<1>(params),
-                  std::get<2>(params));
-            }));
+        .def("b", &MeshcatCone::b, doc.MeshcatCone.b.doc);
+    DefPickle(
+        &cls,
+        [](const MeshcatCone& self) {
+          return std::make_tuple(self.height(), self.a(), self.b());
+        },
+        [](MeshcatCone* self, std::tuple<double, double, double> params) {
+          new (self) MeshcatCone(
+              std::get<0>(params), std::get<1>(params), std::get<2>(params));
+        });
   }
 }
 
-void DefineMiscFunctions(py::module m) {
+void DefineMiscFunctions(py::module_ m) {
   m.def("CalcVolume", &CalcVolume, py::arg("shape"), doc.CalcVolume.doc);
 
   m.def("MakePhongIllustrationProperties", &MakePhongIllustrationProperties,
@@ -690,7 +716,7 @@ void DefineMiscFunctions(py::module m) {
 namespace testing {
 // For use with `test_geometry_properties_cpp_types`.
 template <typename T>
-void DefGetPropertyCpp(py::module m) {
+void DefGetPropertyCpp(py::module_ m) {
   auto func = [](const geometry::GeometryProperties& properties,
                   const std::string& group, const std::string& name) {
     return properties.GetProperty<T>(group, name);
@@ -717,7 +743,7 @@ bool PropertiesIndicateCompliantHydro(
   return hydro_type == HydroelasticType::kCompliant;
 }
 
-void def_testing_module(py::module m) {
+void def_testing_module(py::module_ m) {
   // The get_constant_id() returns a fresh object every time, but always with
   // the same underlying get_value().
   const auto constant_id = geometry::FilterId::get_new_id();
@@ -733,7 +759,7 @@ void def_testing_module(py::module m) {
 }  // namespace testing
 
 template <typename T>
-void DefinePlane(py::module m, T) {
+void DefinePlane(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = Plane<T>;
@@ -757,21 +783,22 @@ void DefinePlane(py::module m, T) {
             cls_doc.reference_point.doc)
         .def("BoxOverlaps", &Class::BoxOverlaps, py::arg("half_width"),
             py::arg("box_center_in_plane"), py::arg("box_orientation_in_plane"),
-            cls_doc.BoxOverlaps.doc)
-        .def(py::pickle(
-            [](const Plane<T>& self) {
-              return std::make_pair(self.unit_normal(), self.reference_point());
-            },
-            [](std::pair<Vector3<T>, Vector3<T>> data) {
-              return Plane<T>(data.first, data.second);
-            }));
+            cls_doc.BoxOverlaps.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return std::make_pair(self.unit_normal(), self.reference_point());
+        },
+        [](Class* self, std::pair<Vector3<T>, Vector3<T>> data) {
+          new (self) Class(data.first, data.second);
+        });
     DefCopyAndDeepCopy(&cls);
   }
 }
 
 }  // namespace
 
-void DefineGeometryCommon(py::module m) {
+void DefineGeometryCommon(py::module_ m) {
   m.doc() = "Bindings for `drake::geometry`";
 
   // This list must remain in topological dependency order.

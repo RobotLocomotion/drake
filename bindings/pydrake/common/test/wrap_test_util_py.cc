@@ -91,10 +91,10 @@ struct type_caster<drake::pydrake::TypeConversionExample>
 
 namespace drake {
 namespace pydrake {
-PYBIND11_MODULE(wrap_test_util, m) {
+PYDRAKE_MODULE(wrap_test_util, m) {
   py::class_<MyValue>(m, "MyValue")
       .def(py::init<double>(), py::arg("value"))
-      .def_readwrite("value", &MyValue::value, py_rvp::reference_internal);
+      .def_rw("value", &MyValue::value, py_rvp::reference_internal);
 
   py::class_<MyContainerRawPtr> my_container(m, "MyContainerRawPtr");
   my_container  // BR

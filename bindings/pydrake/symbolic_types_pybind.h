@@ -8,17 +8,17 @@
 // Whenever we want to cast any array / matrix type of `T` in C++ (e.g.,
 // `Eigen::MatrixX<T>`) to a NumPy array, we should have it in the following
 // list.
-DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+PYDRAKE_NUMPY_OBJECT_DTYPE(  // NOLINT
     drake::symbolic::Expression)
-DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+PYDRAKE_NUMPY_OBJECT_DTYPE(  // NOLINT
     drake::symbolic::Formula)
-DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+PYDRAKE_NUMPY_OBJECT_DTYPE(  // NOLINT
     drake::symbolic::Monomial)
-DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+PYDRAKE_NUMPY_OBJECT_DTYPE(  // NOLINT
     drake::symbolic::Polynomial)
-DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+PYDRAKE_NUMPY_OBJECT_DTYPE(  // NOLINT
     drake::symbolic::RationalFunction)
-DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+PYDRAKE_NUMPY_OBJECT_DTYPE(  // NOLINT
     drake::symbolic::Variable)
 
 namespace drake {
@@ -68,8 +68,8 @@ struct type_caster<drake::symbolic::Variable::Id> {
 
     const pybind11::object hi_py = concat >> pybind11::int_(64);
     const pybind11::object lo_py = concat & pybind11::int_(~uint64_t{});
-    const uint64_t hi = hi_py.cast<uint64_t>();
-    const uint64_t lo = lo_py.cast<uint64_t>();
+    const uint64_t hi = pybind11::cast<uint64_t>(hi_py);
+    const uint64_t lo = pybind11::cast<uint64_t>(lo_py);
     // N.B. "value" is a magic variable declared by pybind11 where we're
     // supposed to put the loaded result.
     value = Attorney::Construct(hi, lo);
@@ -77,8 +77,8 @@ struct type_caster<drake::symbolic::Variable::Id> {
     return true;
   }
 
-  static handle cast(drake::symbolic::Variable::Id src,
-      return_value_policy /* policy */, handle /* parent */) {
+  static handle cast(drake::symbolic::Variable::Id src, rv_policy /* policy */,
+      handle /* parent */) {
     const pybind11::int_ hi_py{Attorney::hi(src)};
     const pybind11::int_ lo_py{Attorney::lo(src)};
     pybind11::object concat = (hi_py << pybind11::int_(64)) + lo_py;

@@ -9,24 +9,25 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversMosek(py::module m) {
+void DefineSolversMosek(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
   py::class_<MosekSolver, SolverInterface> cls(
       m, "MosekSolver", doc.MosekSolver.doc);
-  cls.def(py::init<>(), doc.MosekSolver.ctor.doc)
+  cls  // BR
+      .def(py::init<>(), doc.MosekSolver.ctor.doc)
       .def_static("id", &MosekSolver::id, doc.MosekSolver.id.doc);
   pysolvers::BindAcquireLicense(&cls, doc.MosekSolver);
 
   py::class_<MosekSolverDetails>(
       m, "MosekSolverDetails", doc.MosekSolverDetails.doc)
-      .def_readonly("optimizer_time", &MosekSolverDetails::optimizer_time,
+      .def_ro("optimizer_time", &MosekSolverDetails::optimizer_time,
           doc.MosekSolverDetails.optimizer_time.doc)
-      .def_readonly("rescode", &MosekSolverDetails::rescode,
+      .def_ro("rescode", &MosekSolverDetails::rescode,
           doc.MosekSolverDetails.rescode.doc)
-      .def_readonly("solution_status", &MosekSolverDetails::solution_status,
+      .def_ro("solution_status", &MosekSolverDetails::solution_status,
           doc.MosekSolverDetails.solution_status.doc);
   AddValueInstantiation<MosekSolverDetails>(m);
 }

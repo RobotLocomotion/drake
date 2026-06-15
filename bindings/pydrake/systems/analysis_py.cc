@@ -40,7 +40,7 @@ void ThrowIfPythonHasPendingSignals() {
 }
 }  // namespace
 
-PYBIND11_MODULE(analysis, m) {
+PYDRAKE_MODULE(analysis, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -49,10 +49,10 @@ PYBIND11_MODULE(analysis, m) {
 
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.primitives");
-  py::module::import("pydrake.solvers");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.primitives");
+  py::module_::import_("pydrake.solvers");
+  py::module_::import_("pydrake.trajectories");
 
   {
     using Class = SimulatorConfig;
@@ -420,23 +420,6 @@ Parameter ``interruptible``:
             doc.Simulator.get_num_unrestricted_updates.doc)
         .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // delete with publish_every_time_step 2026-06-01
-    cls.def("set_publish_every_time_step",
-           WrapDeprecated(
-               doc.Simulator.set_publish_every_time_step.doc_deprecated,
-               &Simulator<T>::set_publish_every_time_step),
-           py::arg("publish"),
-           doc.Simulator.set_publish_every_time_step.doc_deprecated)
-        .def("set_publish_at_initialization",
-            WrapDeprecated(
-                doc.Simulator.set_publish_at_initialization.doc_deprecated,
-                &Simulator<T>::set_publish_at_initialization),
-            py::arg("publish"),
-            doc.Simulator.set_publish_at_initialization.doc_deprecated);
-    // delete till here
-#pragma GCC diagnostic pop
     m  // BR
         .def("ApplySimulatorConfig",
             py::overload_cast<const SimulatorConfig&,
@@ -532,9 +515,9 @@ Parameter ``interruptible``:
 
     py::class_<RandomSimulationResult>(
         m, "RandomSimulationResult", doc.analysis.RandomSimulationResult.doc)
-        .def_readwrite("output", &RandomSimulationResult::output,
+        .def_rw("output", &RandomSimulationResult::output,
             doc.analysis.RandomSimulationResult.output.doc)
-        .def_readwrite("generator_snapshot",
+        .def_rw("generator_snapshot",
             &RandomSimulationResult::generator_snapshot,
             doc.analysis.RandomSimulationResult.generator_snapshot.doc);
 
@@ -563,25 +546,24 @@ Parameter ``interruptible``:
     constexpr auto& cls_doc = doc.analysis.RegionOfAttractionOptions;
     py::class_<Class, std::shared_ptr<Class>> cls(
         m, "RegionOfAttractionOptions", cls_doc.doc);
-    cls.def(py::init<>(), cls_doc.ctor.doc)
-        // TODO(jeremy.nimmer): replace the def_readwrite with
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        // TODO(jeremy.nimmer): replace the def_rw with
         // DefAttributesUsingSerialize when we fix binding a
         // VectorX<symbolic::Variable> state_variables to a numpy array of
         // objects.
-        .def_readwrite("lyapunov_candidate",
+        .def_rw("lyapunov_candidate",
             &RegionOfAttractionOptions::lyapunov_candidate,
             cls_doc.lyapunov_candidate.doc)
-        .def_readwrite("state_variables",
-            &RegionOfAttractionOptions::state_variables,
+        .def_rw("state_variables", &RegionOfAttractionOptions::state_variables,
             // dtype = object arrays must be copied, and cannot be referenced.
             py_rvp::copy, cls_doc.state_variables.doc)
-        .def_readwrite("use_implicit_dynamics",
+        .def_rw("use_implicit_dynamics",
             &RegionOfAttractionOptions::use_implicit_dynamics,
             cls_doc.use_implicit_dynamics.doc)
-        .def_readwrite("solver_id", &RegionOfAttractionOptions::solver_id,
+        .def_rw("solver_id", &RegionOfAttractionOptions::solver_id,
             cls_doc.solver_id.doc)
-        .def_readwrite("solver_options",
-            &RegionOfAttractionOptions::solver_options,
+        .def_rw("solver_options", &RegionOfAttractionOptions::solver_options,
             cls_doc.solver_options.doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);

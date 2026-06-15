@@ -323,7 +323,7 @@ GTEST_TEST(IcfBuilder, RetryStep) {
 
 GTEST_TEST(IcfBuilder, BallConstraintUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
@@ -390,18 +390,13 @@ GTEST_TEST(IcfBuilder, DeformableUnsupported) {
                               ".*deformable.*bodies.* == 0.*fail.*");
 }
 
-GTEST_TEST(IcfBuilder, JointLockingUnsupported) {
+GTEST_TEST(IcfBuilder, JointLockingSupport) {
   systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23764): MultibodyPlant does not yet support joint locking on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
   Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
-  // Remove a joint to exercise non-contiguous joint indexing.
-  plant.RemoveJoint(plant.get_joint(JointIndex(0)));
 
   plant.Finalize();
   IcfBuilder<double> dut(&plant);
@@ -412,18 +407,37 @@ GTEST_TEST(IcfBuilder, JointLockingUnsupported) {
       plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   IcfModel<double> model;
-  // Bug regression check: don't accidentally throw by mistakenly iterating
-  // over stale joint indices.
-  EXPECT_NO_THROW(
-      dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model));
+
+  const double time_step = 0.01;  // For UpdateModel().
+  {
+    // Update a model and check for *no* joint locking effects. The only
+    // results of interest are the ReductionParameters at params().reduction.
+    dut.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+    const auto& r = model.params().reduction;
+    const std::vector<int> expected_unlocked_dofs = {0, 1};
+    EXPECT_EQ(r.unlocked_dofs, expected_unlocked_dofs);
+
+    EXPECT_EQ(ssize(r.per_clique_unlocked_dofs), model.num_cliques());
+
+    ASSERT_EQ(model.num_cliques(), 1);
+    EXPECT_EQ(r.per_clique_unlocked_dofs[0], expected_unlocked_dofs);
+  }
 
   plant.get_joint(JointIndex(1)).Lock(&plant_context);
 
-  // Actual joint locking check: now something is locked, refuse to give wrong
-  // answers, and explain that joint locking is the problem.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model),
-      ".*joint 1.*locked.*");
+  {
+    // Update a model and check for joint locking effects. The only results of
+    // interest are the ReductionParameters at params().reduction.
+    dut.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+    const auto& r = model.params().reduction;
+    const std::vector<int> expected_unlocked_dofs = {0};
+    EXPECT_EQ(r.unlocked_dofs, expected_unlocked_dofs);
+
+    EXPECT_EQ(ssize(r.per_clique_unlocked_dofs), model.num_cliques());
+
+    ASSERT_EQ(model.num_cliques(), 1);
+    EXPECT_EQ(r.per_clique_unlocked_dofs[0], expected_unlocked_dofs);
+  }
 }
 
 }  // namespace

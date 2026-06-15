@@ -14,7 +14,7 @@ namespace internal {
 
 using Eigen::Map;
 
-void DefineSensorsImage(py::module m) {
+void DefineSensorsImage(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
   constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
@@ -107,9 +107,9 @@ void DefineSensorsImage(py::module m) {
           .def("at", at, py::arg("x"), py::arg("y"), py_rvp::reference_internal,
               doc.Image.at.doc_2args_x_y_nonconst)
           // Non-C++ properties. Make them Pythonic.
-          .def_property_readonly("shape", get_shape)
-          .def_property_readonly("data", get_data)
-          .def_property_readonly("mutable_data", get_mutable_data);
+          .def_prop_ro("shape", get_shape)
+          .def_prop_ro("data", get_data)
+          .def_prop_ro("mutable_data", get_mutable_data);
       // Constants.
       image.attr("Traits") = traits;
       // - Do not duplicate aliases (e.g. `kNumChannels`) for now.

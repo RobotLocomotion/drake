@@ -37,13 +37,19 @@ class IcfSolverTest : public ::testing::Test {
     params->D0 = VectorXd::Constant(nv, 0.1);
     params->k0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
     params->clique_sizes = {6, 6};
-    params->clique_start = {0, 6, nv};
     params->body_is_floating = {0, 0};
     params->body_mass = {0.2, 1.8};
     params->J_WB.Resize(2, 6, 6);
     params->J_WB[0] = VectorXd::LinSpaced(36, -1.0, 1.0).reshaped(6, 6);
     params->J_WB[1] = 3.4 * Matrix6<double>::Identity();
     params->body_to_clique = {0, 1};
+    auto& reduction = params->reduction;
+    reduction.unlocked_dofs = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    reduction.per_clique_unlocked_dofs =
+        {
+            {0, 1, 2, 3, 4, 5},
+            {0, 1, 2, 3, 4, 5},
+        },
     model_.ResetParameters(std::move(params));
 
     // Add a basic contact (patch) constraint with one pair and one patch.

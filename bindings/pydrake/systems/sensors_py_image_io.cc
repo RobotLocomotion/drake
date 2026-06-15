@@ -16,7 +16,7 @@ namespace internal {
 
 using systems::LeafSystem;
 
-void DefineSensorsImageIo(py::module m) {
+void DefineSensorsImageIo(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
   constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
@@ -51,9 +51,8 @@ void DefineSensorsImageIo(py::module m) {
         .def(
             "LoadMetadata",
             [](const Class& self, py::bytes buffer) {
-              const std::string_view view{buffer};
               return self.LoadMetadata(
-                  Class::ByteSpan{view.data(), view.size()});
+                  Class::ByteSpan{buffer.c_str(), buffer.size()});
             },
             py::arg("buffer"), cls_doc.LoadMetadata.doc_1args_buffer)
         .def(
@@ -68,9 +67,8 @@ void DefineSensorsImageIo(py::module m) {
             "Load",
             [](const Class& self, py::bytes buffer,
                 std::optional<ImageFileFormat> format) {
-              const std::string_view view{buffer};
               return self.Load(
-                  Class::ByteSpan{view.data(), view.size()}, format);
+                  Class::ByteSpan{buffer.c_str(), buffer.size()}, format);
             },
             py::arg("buffer"), py::arg("format") = std::nullopt,
             cls_doc.Load.doc_2args_buffer_format)

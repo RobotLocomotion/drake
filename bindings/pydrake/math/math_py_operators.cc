@@ -8,7 +8,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineMathOperators(py::module m) {
+void DefineMathOperators(py::module_ m) {
   // Define math operations for all three scalar types.
   pydrake::internal::BindMathOperators<double>(&m);
   pydrake::internal::BindMathOperators<AutoDiffXd>(&m);

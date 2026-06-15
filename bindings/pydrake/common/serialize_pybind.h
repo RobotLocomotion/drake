@@ -29,7 +29,7 @@ class DefAttributesArchive {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DefAttributesArchive);
 
-  using CxxClass = typename PyClass::type;
+  using CxxClass = typename PyClass::Type;
 
   // @param ppy_class A pointer to the `py::class_` to add the properties to.
   // @param prototype A pointer to the instance that will be visited.
@@ -43,7 +43,7 @@ class DefAttributesArchive {
     DRAKE_DEMAND((std::is_same_v<Docs, void>) == (cls_docs == nullptr));
   }
 
-  // Creates a class property for one instance field, akin to def_readwrite
+  // Creates a class property for one instance field, akin to def_rw
   // but using `nvp` created by the CxxClass's Serialize function to specify
   // the field to be bound.
   template <typename NameValuePair>
@@ -89,11 +89,11 @@ class DefAttributesArchive {
     }
 
     // Add the binding.
-    ppy_class_->def_property(
-        name, getter, setter, doc, py::return_value_policy::reference_internal);
+    ppy_class_->def_prop_rw(
+        name, getter, setter, doc, py_rvp::reference_internal);
 
     // Remember the field's name and type for later use by Finished().
-    auto field = py::module::import("types").attr("SimpleNamespace")();
+    auto field = py::module_::import_("types").attr("SimpleNamespace")();
     py::setattr(field, "name", py::str(name));
     py::setattr(field, "type", CalcSchemaType(prototype_value));
     fields_.append(field);
@@ -102,7 +102,7 @@ class DefAttributesArchive {
   // To be called after Serialize() is complete; binds any members that are
   // scoped to the entire struct (rather than one field at a time).
   void Finished() {
-    ppy_class_->def_property_readonly_static("__fields__",
+    ppy_class_->def_prop_ro_static("__fields__",
         [fields_tuple = py::tuple(fields_)](py::object /* self */) {  // BR
           return fields_tuple;
         });
@@ -154,7 +154,7 @@ class DefAttributesArchive {
       return py::type::of(py::str());
     } else if constexpr (is_eigen_type<T>::value) {
       // TODO(jwnimmer-tri) Perhaps we can use numpy.typing here some day?
-      return py::module::import("numpy").attr("ndarray");
+      return py::module_::import_("numpy").attr("ndarray");
     } else {
       // Anything that remains should be a registered C++ type.
       constexpr bool is_registered_type =
@@ -211,7 +211,7 @@ class DefAttributesArchive {
   // Returns the cpp_param template class for the given name (e.g., "List",
   // "Dict", etc.).
   static py::object GetTemplateClass(const char* name) {
-    return py::module::import("pydrake.common.cpp_param").attr(name);
+    return py::module_::import_("pydrake.common.cpp_param").attr(name);
   }
 
   // When there is no match found for the schema type, this function will
@@ -245,7 +245,7 @@ class DefAttributesArchive {
 /// `dataclass`.
 template <typename PyClass, typename Docs>
 void DefAttributesUsingSerialize(PyClass* ppy_class, const Docs& cls_docs) {
-  using CxxClass = typename PyClass::type;
+  using CxxClass = typename PyClass::Type;
   CxxClass prototype{};
   internal::DefAttributesArchive archive(ppy_class, &prototype, &cls_docs);
   prototype.Serialize(&archive);
@@ -257,7 +257,7 @@ void DefAttributesUsingSerialize(PyClass* ppy_class, const Docs& cls_docs) {
 /// in some cases (especially downstream projects) that might not be possible.
 template <typename PyClass>
 void DefAttributesUsingSerialize(PyClass* ppy_class) {
-  using CxxClass = typename PyClass::type;
+  using CxxClass = typename PyClass::Type;
   CxxClass prototype{};
   internal::DefAttributesArchive<PyClass, void> archive(
       ppy_class, &prototype, nullptr);
@@ -292,7 +292,7 @@ class DefReprArchive {
 /// The class must be default-constructible.
 template <typename PyClass>
 void DefReprUsingSerialize(PyClass* ppy_class) {
-  using CxxClass = typename PyClass::type;
+  using CxxClass = typename PyClass::Type;
   internal::DefReprArchive archive;
   CxxClass prototype{};
   prototype.Serialize(&archive);

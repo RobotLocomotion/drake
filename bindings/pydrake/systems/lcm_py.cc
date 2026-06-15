@@ -57,7 +57,7 @@ class PySerializerInterface : public SerializerInterface {
           py::object, SerializerInterface, CreateDefaultValue);
     }();
     DRAKE_THROW_UNLESS(!default_value.is_none());
-    return default_value.template cast<const AbstractValue*>()->Clone();
+    return py::cast<const AbstractValue*>(default_value)->Clone();
   }
 
   void Deserialize(const void* message_bytes, int message_length,
@@ -100,7 +100,7 @@ Warning:
 
 }  // namespace
 
-PYBIND11_MODULE(lcm, m) {
+PYDRAKE_MODULE(lcm, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
@@ -108,8 +108,8 @@ PYBIND11_MODULE(lcm, m) {
   using namespace drake::systems::lcm;
   constexpr auto& doc = pydrake_doc_systems_lcm.drake.systems.lcm;
 
-  py::module::import("pydrake.lcm");
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.lcm");
+  py::module_::import_("pydrake.systems.framework");
 
   {
     using Class = LcmInterfaceSystem;
@@ -173,7 +173,7 @@ PYBIND11_MODULE(lcm, m) {
     constexpr auto& cls_doc = doc.LcmBuses;
     py::class_<Class> cls(m, "LcmBuses");
     cls  // BR
-        .def_readonly_static("kLcmUrlMemqNull", &Class::kLcmUrlMemqNull
+        .def_ro_static("kLcmUrlMemqNull", &Class::kLcmUrlMemqNull
             // TODO(jwnimmer-tri) The `cls_doc.kLcmUrlMemqNull.doc` docstring
             // constant is absent for some unknown reason, but it wouldn't help
             // anyway because pybind11 throws away docs on static constants:

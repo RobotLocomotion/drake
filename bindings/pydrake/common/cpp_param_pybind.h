@@ -28,8 +28,7 @@ class Object {
   ~Object();
 
   /// Constructs from raw pointer, incrementing the reference count.
-  /// @note This does not implement any of the `py::reinterpret_borrow<>`
-  /// semantics.
+  /// @note This does not implement any of the `py::borrow<>` semantics.
   explicit Object(::PyObject* ptr);
 
   /// Constructs from another Object, incrementing the reference count.
@@ -47,13 +46,13 @@ class Object {
   /// Accesses raw PyObject pointer (no reference counting).
   ::PyObject* ptr() const { return ptr_; }
 
-  /// Converts to a pybind11 Python type, using py::reinterpret_borrow.
+  /// Converts to a pybind11 Python type, using py::borrow.
   template <typename T>
   T to_pyobject() const {
-    return py::reinterpret_borrow<T>(ptr());
+    return py::borrow<T>(ptr());
   }
 
-  /// Converts from a pybind11 Python type, using py::reinterpret_borrow.
+  /// Converts from a pybind11 Python type, using py::borrow.
   template <typename T>
   static Object from_pyobject(const T& h) {
     return Object(h.ptr());
@@ -121,7 +120,7 @@ inline py::object GetPyParamScalarImpl(type_pack<std::vector<T>> = {}) {
   // Get inner type for validation.
   py::object py_T = GetPyParamScalarImpl(type_pack<T>{});
   if constexpr (!internal::is_generic_pybind_v<std::vector<T>>) {
-    return py::module::import("pydrake.common.cpp_param").attr("List")[py_T];
+    return py::module_::import_("pydrake.common.cpp_param").attr("List")[py_T];
   } else {
     return GetPyParamScalarImpl(typeid(std::vector<T>));
   }

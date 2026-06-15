@@ -29,7 +29,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with weld constraints. */
-GTEST_TEST(IcfModel, LimitMallocOnWeldConstrainedCalcData) {
+GTEST_TEST(WeldConstraintsPool, LimitMallocOnCalcData) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddWeldConstraints(&model);
@@ -54,7 +54,7 @@ GTEST_TEST(IcfModel, LimitMallocOnWeldConstrainedCalcData) {
 }
 
 /* Verifies that weld constraints produce correct data. */
-GTEST_TEST(IcfModel, WeldConstraint) {
+GTEST_TEST(WeldConstraintsPool, Data) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   model.SetSparsityPattern();
@@ -176,7 +176,6 @@ void MakeModelForWeld(IcfModel<T>* model, double time_step = 0.01) {
   params->k0 = VectorX<T>::LinSpaced(nv, -1.0, 1.0);
 
   params->clique_sizes = {6, 6, 6};
-  params->clique_start = {0, 6, 12, nv};
 
   // Body 0 = world (anchored), body 1 = floating, body 2 = floating,
   // body 3 = non-floating (uses non-identity Jacobian).
@@ -193,6 +192,17 @@ void MakeModelForWeld(IcfModel<T>* model, double time_step = 0.01) {
   params->J_WB[1] = Matrix6<T>::Identity();  // Floating body.
   params->J_WB[2] = Matrix6<T>::Identity();  // Floating body.
   params->J_WB[3] = J_WB3;
+
+  // No joint locking.
+  auto& reduction = params->reduction;
+  reduction.unlocked_dofs = {0,  1,  2,  3,  4,  5,   // BR
+                             6,  7,  8,  9,  10, 11,  //
+                             12, 13, 14, 15, 16, 17};
+  reduction.per_clique_unlocked_dofs = {
+      {0, 1, 2, 3, 4, 5},
+      {0, 1, 2, 3, 4, 5},
+      {0, 1, 2, 3, 4, 5},
+  };
 
   model->ResetParameters(std::move(params));
 }

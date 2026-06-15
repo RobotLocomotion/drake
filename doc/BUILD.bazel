@@ -132,6 +132,7 @@ drake_py_binary(
         "//doc/doxygen_cxx:build",
         "//doc/pydrake:build",
         "//doc/styleguide:build",
+        "//doc/tutorials:build",
     ],
     deps = [
         ":defs",
@@ -147,6 +148,7 @@ drake_py_binary(
         "pydrake.math",
         "sitemap",
         "styleguide",
+        "tutorials.solver_parameters",
     ],
     test_rule_tags = DEFAULT_TEST_TAGS,
 )
@@ -162,6 +164,7 @@ test_suite(
         "//doc/doxygen_cxx:build_test",
         "//doc/pydrake:build_test",
         "//doc/styleguide:build_test",
+        "//doc/tutorials:build_test",
     ],
 )
 

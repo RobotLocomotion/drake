@@ -9,7 +9,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversBranchAndBound(py::module m) {
+void DefineSolversBranchAndBound(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;

@@ -921,8 +921,7 @@ class System : public SystemBase {
 
   @param context Optional Context to pass on to Event selection functions;
       not commonly needed. */
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
+  std::map<PeriodicEventData, std::vector<const Event<T>*>>
   MapPeriodicEventsByTiming(const Context<T>* context = nullptr) const;
 
   /** Utility method that computes for _every_ output port i the value y(i) that
@@ -1497,18 +1496,6 @@ class System : public SystemBase {
 
   // Don't promote output_port_ticket() since it is for internal use only.
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // For unfortunate historical reasons the Drake Simulator needs access to
-  // forced publish events to implement its optional publish_every_time_step
-  // feature. Now we have PerStep events that serve the same purpose.
-  // TODO(2026-06-01): Move this to protected with the other forced events when
-  // the Simulator feature is removed.
-  const EventCollection<PublishEvent<T>>& get_forced_publish_events() const {
-    DRAKE_DEMAND(forced_publish_events_ != nullptr);
-    return *forced_publish_events_;
-  }
-#endif
-
  protected:
   // Promote these frequently-used methods so users (and tutorial examples)
   // don't need "this->" everywhere when in templated derived classes.
@@ -1734,8 +1721,7 @@ class System : public SystemBase {
   by timing.
   @see MapPeriodicEventsByTiming() for a detailed description of the returned
        variable. */
-  virtual std::map<PeriodicEventData, std::vector<const Event<T>*>,
-                   PeriodicEventDataComparator>
+  virtual std::map<PeriodicEventData, std::vector<const Event<T>*>>
   DoMapPeriodicEventsByTiming(const Context<T>& context) const = 0;
 
   // TODO(sherm1) Move these three functions adjacent to the event
@@ -1890,6 +1876,11 @@ class System : public SystemBase {
 
   bool forced_unrestricted_update_events_exist() const {
     return forced_unrestricted_update_events_ != nullptr;
+  }
+
+  const EventCollection<PublishEvent<T>>& get_forced_publish_events() const {
+    DRAKE_DEMAND(forced_publish_events_ != nullptr);
+    return *forced_publish_events_;
   }
 
   EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {

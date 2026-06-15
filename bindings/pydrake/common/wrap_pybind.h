@@ -89,10 +89,8 @@ struct type_caster_wrapped {
 
   // C++ to Python.
   template <typename TType>
-  static py::handle cast(
-      TType&& src, py::return_value_policy policy, py::handle parent) {
-    if (policy == py::return_value_policy::reference ||
-        policy == py::return_value_policy::reference_internal) {
+  static py::handle cast(TType&& src, py::rv_policy policy, py::handle parent) {
+    if (policy == py_rvp::reference || policy == py_rvp::reference_internal) {
       // N.B. We must declare a local `static constexpr` here to prevent
       // linking errors. This does not appear achievable with
       // `constexpr char[]`, so we use `py::detail::descr`.
@@ -128,7 +126,7 @@ auto WrapCallbacks(Func&& func) {
   return WrapFunction<internal::wrap_callback, false>(std::forward<Func>(func));
 }
 
-/// Idempotent to pybind11's `def_readwrite()`, with the exception that the
+/// Idempotent to pybind11's `def_rw()`, with the exception that the
 /// setter is protected with keep_alive on a `member` variable that is a bare
 /// pointer.  Should not be used for unique_ptr members.
 ///
@@ -140,7 +138,7 @@ void DefReadWriteKeepAlive(
     PyClass* cls, const char* name, T Class::* member, const char* doc = "") {
   auto getter = [member](const Class* obj) { return obj->*member; };
   auto setter = [member](Class* obj, const T& value) { obj->*member = value; };
-  cls->def_property(name,  // BR
+  cls->def_prop_rw(name,  // BR
       py::cpp_function(getter),
       py::cpp_function(setter,
           // Keep alive, reference: `self` keeps `value` alive.
@@ -148,7 +146,7 @@ void DefReadWriteKeepAlive(
       doc);
 }
 
-/// Idempotent to pybind11's `def_readonly()`, which works for unique_ptr
+/// Idempotent to pybind11's `def_ro()`, which works for unique_ptr
 /// elements; the getter is protected with keep_alive on a `member` variable
 /// that is a unique_ptr.
 ///
@@ -161,7 +159,7 @@ void DefReadUniquePtr(PyClass* cls, const char* name,
   auto getter = py::cpp_function(
       [member](const Class* obj) { return (obj->*member).get(); },
       py_rvp::reference_internal);
-  cls->def_property_readonly(name, getter, doc);
+  cls->def_prop_ro(name, getter, doc);
 }
 
 // Variant of DefReadUniquePtr() for copyable_unique_ptr.
@@ -171,7 +169,7 @@ void DefReadUniquePtr(PyClass* cls, const char* name,
   auto getter = py::cpp_function(
       [member](const Class* obj) { return (obj->*member).get(); },
       py_rvp::reference_internal);
-  cls->def_property_readonly(name, getter, doc);
+  cls->def_prop_ro(name, getter, doc);
 }
 
 }  // namespace pydrake

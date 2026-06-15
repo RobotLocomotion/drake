@@ -12,6 +12,13 @@ namespace internal {
 
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 
+namespace {
+// Returns true if the index is present (not removed by reduction).
+bool have(int index) {
+  return index >= 0;
+}
+}  // namespace
+
 template <typename T>
 CouplerConstraintsPool<T>::CouplerConstraintsPool(
     const IcfModel<T>* parent_model)
@@ -83,8 +90,9 @@ void CouplerConstraintsPool<T>::CalcData(
     const T v_hat = g_hat_[k] / model().time_step();
     const T& R = R_[k];
 
-    const T vi = vk(i);
-    const T vj = vk(j);
+    // If a dof is locked, its velocity is prescribed to be exactly 0.
+    const T vi = have(i) ? vk(i) : T(0.0);
+    const T vj = have(j) ? vk(j) : T(0.0);
     const T vc = vi - rho * vj;  // Constraint velocity.
 
     const T gamma = -(vc - v_hat) / R;
@@ -115,8 +123,12 @@ void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
     //                            ↑      ↑
     //                            i      j
     const T& gamma = coupler_data.gamma(k);
-    gradient_c(i) -= gamma;
-    gradient_c(j) += rho * gamma;
+    if (have(i)) {
+      gradient_c(i) -= gamma;
+    }
+    if (have(j)) {
+      gradient_c(j) += rho * gamma;
+    }
   }
 }
 
@@ -138,10 +150,18 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
     typename EigenPool<MatrixX<T>>::MatrixView Hc = H_cc_pool[0];
     Hc.setZero();
 
-    // clang-format off
-    Hc(i, i) += 1.0 / R;  Hc(i, j) -= rho / R;
-    Hc(j, i) -= rho / R;  Hc(j, j) += rho * rho / R;
-    // clang-format on
+    // On-diagonal entries, if the relevant dof exists.
+    if (have(i)) {
+      Hc(i, i) += 1.0 / R;
+    }
+    if (have(j)) {
+      Hc(j, j) += rho * rho / R;
+    }
+    // Off-diagonal entries, if both dofs exist.
+    if (have(i) && have(j)) {
+      Hc(i, j) -= rho / R;
+      Hc(j, i) -= rho / R;
+    }
 
     hessian->AddToBlock(c, c, Hc);
   }
@@ -164,12 +184,51 @@ void CouplerConstraintsPool<T>::CalcCostAlongLine(
     const T& gamma = coupler_data.gamma(k);
     auto w_c = model().clique_segment(c, w);
 
-    const T wi = w_c(i);
-    const T wj = w_c(j);
+    const T wi = have(i) ? w_c(i) : T(0.0);
+    const T wj = have(j) ? w_c(j) : T(0.0);
     const T vw = wi - rho * wj;  // "Constraint velocity" evaluated on w.
 
     (*dcost) -= gamma * vw;
     (*d2cost) += vw * vw / R;
+  }
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::ReduceInto(
+    const ReducedMapping& mapping,
+    CouplerConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(num_constraints());
+  // Remove old data.
+  reduced_pool->Resize(0);
+
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = constraint_to_clique_[k];
+    if (!mapping.clique_subsequence.participates(c)) {
+      // Entire clique is locked; remove the constraint.
+      continue;
+    }
+    const auto& [i, j] = dofs_[k];
+    const auto& dof_subsequence = mapping.clique_dof_subsequences[c];
+    const bool have_i = dof_subsequence.participates(i);
+    const bool have_j = dof_subsequence.participates(j);
+    if (!have_i && !have_j) {
+      // Both dofs are locked; remove the constraint.
+      continue;
+    }
+
+    const int r_c = mapping.clique_subsequence.permuted_index(c);
+    // Communicate partial constraint model via negative indices. See `have()`
+    // above.
+    const int r_i = have_i ? dof_subsequence.permuted_index(i) : -1;
+    const int r_j = have_j ? dof_subsequence.permuted_index(j) : -1;
+
+    // Fill in the reduced constraint.
+    reduced_pool->constraint_to_clique_.push_back(r_c);
+    reduced_pool->dofs_.emplace_back(r_i, r_j);
+    reduced_pool->gear_ratio_.push_back(gear_ratio_[k]);
+    reduced_pool->g_hat_.push_back(g_hat_[k]);
+    reduced_pool->R_.push_back(R_[k]);
   }
 }
 

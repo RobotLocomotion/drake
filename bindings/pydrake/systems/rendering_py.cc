@@ -10,7 +10,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(rendering, m) {
+PYDRAKE_MODULE(rendering, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -19,7 +19,7 @@ PYBIND11_MODULE(rendering, m) {
 
   m.doc() = "Bindings for the rendering portion of the Systems framework.";
 
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.framework");
 
   using T = double;
 

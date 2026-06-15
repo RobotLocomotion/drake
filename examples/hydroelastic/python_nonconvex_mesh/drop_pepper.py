@@ -74,7 +74,6 @@ def simulate_diagram(
     ApplySimulatorConfig(
         SimulatorConfig(
             target_realtime_rate=target_realtime_rate,
-            publish_every_time_step=True,
         ),
         simulator,
     )

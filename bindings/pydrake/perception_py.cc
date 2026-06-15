@@ -16,7 +16,7 @@ namespace {
 // features (e.g. no descriptors exposed, skipping performance-based args
 // (like `skip_initialization`)). Bind these if they are useful.
 
-void init_pc_flags(py::module m) {
+void init_pc_flags(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::perception::pc_flags;
   constexpr auto& doc = pydrake_doc_perception.drake.perception.pc_flags;
@@ -24,7 +24,7 @@ void init_pc_flags(py::module m) {
   {
     using Class = BaseField;
     constexpr auto& cls_doc = doc.BaseField;
-    py::enum_<Class>(m, "BaseField", py::arithmetic(), cls_doc.doc)
+    py::enum_<Class>(m, "BaseField", py::is_arithmetic(), cls_doc.doc)
         .value("kNone", Class::kNone, cls_doc.kNone.doc)
         .value("kXYZs", Class::kXYZs, cls_doc.kXYZs.doc)
         .value("kNormals", Class::kNormals, cls_doc.kNormals.doc)
@@ -49,7 +49,7 @@ void init_pc_flags(py::module m) {
   }
 }
 
-void init_perception(py::module m) {
+void init_perception(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::perception;
   constexpr auto& doc = pydrake_doc_perception.drake.perception;
@@ -58,8 +58,8 @@ void init_perception(py::module m) {
   using systems::sensors::CameraInfo;
   using systems::sensors::PixelType;
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.sensors");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.sensors");
 
   {
     using Class = PointCloud;
@@ -70,8 +70,9 @@ void init_perception(py::module m) {
     cls.attr("D") = GetPyParam<Class::D>()[0];
     // N.B. Workaround linking error for `constexpr` bits.
     cls.attr("kDefaultValue") = Class::T{Class::kDefaultValue};
-    cls.def_static("IsDefaultValue", &Class::IsDefaultValue, py::arg("value"),
-           cls_doc.IsDefaultValue.doc)
+    cls  // BR
+        .def_static("IsDefaultValue", &Class::IsDefaultValue, py::arg("value"),
+            cls_doc.IsDefaultValue.doc)
         .def_static("IsInvalidValue", &Class::IsInvalidValue, py::arg("value"),
             cls_doc.IsInvalidValue.doc)
         .def(py::init<int, pc_flags::Fields>(), py::arg("new_size") = 0,
@@ -168,10 +169,10 @@ void init_perception(py::module m) {
   }
 }
 
-PYBIND11_MODULE(perception, m) {
+PYDRAKE_MODULE(perception, m) {
   m.doc() = "Python bindings for //perception";
 
-  py::module::import("pydrake.common");
+  py::module_::import_("pydrake.common");
 
   // N.B. To stick to directory structure, we do not define this in a
   // `pc_flags` submodule.

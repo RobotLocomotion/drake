@@ -26,9 +26,9 @@ namespace pydrake {
 /// @returns Reference to the registered Python type.
 template <typename T, typename Class = drake::Value<T>>
 py::class_<Class, drake::AbstractValue> AddValueInstantiation(
-    py::module scope) {
+    py::module_ scope) {
   static_assert(!py::detail::is_pyobject<T>::value, "See docs for GetPyParam");
-  py::module py_common = py::module::import("pydrake.common.value");
+  py::module_ py_common = py::module_::import_("pydrake.common.value");
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
@@ -60,11 +60,11 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   constexpr bool has_get_mutable_value =
       internal::is_generic_pybind_v<T> || std::is_same_v<T, Object>;
   if constexpr (has_get_mutable_value) {
-    py::return_value_policy return_policy = py_rvp::reference_internal;
+    py::rv_policy return_policy = py_rvp::reference_internal;
     if (std::is_same_v<T, Object>) {
       // N.B. This implies that `Object` will be copied by value; however, it
       // is only a shallow copy of the pointer, not a deep copy of the object.
-      return_policy = py::return_value_policy::copy;
+      return_policy = py_rvp::copy;
     }
     std::string set_value_docstring = "Replaces stored value with a new one.";
     if (!std::is_copy_constructible_v<T>) {
@@ -89,7 +89,7 @@ be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
               throw std::logic_error(
                   fmt::format("Cannot get mutable value (or reference) for a "
                               "type-conversion type: {}",
-                      py::str(py_T).cast<std::string>()));
+                      py::cast<std::string>(py::str(py_T))));
             })
         .def("set_value", &Class::set_value);
   }

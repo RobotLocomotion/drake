@@ -39,7 +39,7 @@ void RegisterAddConstraintToAllKnotPoints(
       doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_shared_ptr);
 }
 
-void DefinePlanningTrajectoryOptimization(py::module m) {
+void DefinePlanningTrajectoryOptimization(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::trajectory_optimization;
   constexpr auto& doc = pydrake_doc_planning_trajectory_optimization.drake
@@ -257,7 +257,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
     // things a bit more pythonic -- better would be kwonly named arg.
     py::class_<TimeStep>(cls, "TimeStep", doc.TimeStep.doc)
         .def(py::init<double>(), py::arg("value"))
-        .def_readwrite("value", &TimeStep::value, doc.TimeStep.value.doc);
+        .def_rw("value", &TimeStep::value, doc.TimeStep.value.doc);
 
     cls  // BR
         .def(py::init<const systems::System<double>*,

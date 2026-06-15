@@ -314,9 +314,10 @@ def determine_url(version, is_commit, bazel_filename):
     if is_commit:
         sys.stderr.write("Using unreleased version at commit {}\n".format(version))
         # No need to validate the platform thanks to determine_bazel_filename().
-        return BAZEL_GCS_PATH_PATTERN.format(
-            platform=SUPPORTED_PLATFORMS[platform.system().lower()], commit=version
-        )
+        dirname = SUPPORTED_PLATFORMS[platform.system().lower()]
+        if normalized_machine_arch_name() == "arm64":
+           dirname += "_arm64"
+        return BAZEL_GCS_PATH_PATTERN.format(platform=dirname, commit=version)
 
     # Split version into base version and optional additional identifier.
     # Example: '0.19.1' -> ('0.19.1', None), '0.20.0rc1' -> ('0.20.0', 'rc1')

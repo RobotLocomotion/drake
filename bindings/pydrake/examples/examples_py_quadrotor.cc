@@ -9,7 +9,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineExamplesQuadrotor(py::module m) {
+void DefineExamplesQuadrotor(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -43,7 +43,7 @@ void DefineExamplesQuadrotor(py::module m) {
           doc.QuadrotorGeometry.get_frame_id.doc)
       .def_static("AddToBuilder", &QuadrotorGeometry::AddToBuilder,
           py::arg("builder"), py::arg("quadrotor_state_port"),
-          py::arg("scene_graph"), py::return_value_policy::reference,
+          py::arg("scene_graph"), py_rvp::reference,
           // Keep alive, ownership: `return` keeps `builder` alive.
           py::keep_alive<0, 1>(), doc.QuadrotorGeometry.AddToBuilder.doc);
 

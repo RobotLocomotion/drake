@@ -33,14 +33,14 @@ officially supports when building from source:
      tools/install/libdrake/drake-config.cmake.in (along with the related
      libdrake tests). -->
 
-| Operating System ⁽¹⁾                | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
-|-------------------------------------|--------------|------------|-------|-------|------------------------------|
-| Ubuntu 24.04 LTS (Noble Numbat)     | x86-64       | 3.12       | 9.1   | 3.28  | GCC 13 (default) or Clang 20 |
-|                                     | arm64 ⁽⁴⁾    | 3.12       | 9.1   | 3.28  | GCC 13                       |
-| Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64-v3    | 3.14       | 9.1   | 4.2   | GCC 15 (default) or Clang 21 |
-|                                     | arm64 ⁽⁴⁾    | 3.14       | 9.1   | 4.2   | GCC 15                       |
-| macOS Sequoia (15)                  | arm64        | 3.14       | 9.1   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
-| macOS Tahoe (26)                    | arm64        | 3.14       | 9.1   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
+| Operating System ⁽¹⁾                | Architecture      | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
+|-------------------------------------|-------------------|------------|-------|-------|------------------------------|
+| Ubuntu 24.04 LTS (Noble Numbat)     | x86-64            | 3.12       | 9.1   | 3.28  | GCC 13 (default) or Clang 20 |
+|                                     | arm64 ⁽⁴⁾         | 3.12       | 9.1   | 3.28  | GCC 13                       |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64-v3         | 3.14       | 9.1   | 4.2   | GCC 15 (default) or Clang 21 |
+|                                     | x86-64, arm64 ⁽⁴⁾ | 3.14       | 9.1   | 4.2   | GCC 15                       |
+| macOS Sequoia (15)                  | arm64             | 3.14       | 9.1   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
+| macOS Tahoe (26)                    | arm64             | 3.14       | 9.1   | 4.3   | Apple LLVM 21 (Xcode 26.5)   |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -60,7 +60,7 @@ maybe require extra setup. See the
 
 ⁽³⁾ Drake requires a compiler running in C++23 (or greater) mode.
 
-⁽⁴⁾ This configuration does not support Gurobi.
+⁽⁴⁾ Drake does not support Gurobi for arm64 on Ubuntu.
 
 # Building with CMake
 
@@ -106,11 +106,18 @@ Bazel build.
 
 * [`CMAKE_BUILD_TYPE`](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html)
 * [`CMAKE_(C|Fortran)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* [`CMAKE_(C|CXX)_FLAGS`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
 * [`CMAKE_INSTALL_PREFIX`](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
 
 The `CMAKE_C_COMPILER` is used to compile both C and C++ code, so must be a
 compiler *driver* than can handle both languages, based on the filename. All
 of the supported compilers (GCC, Clang, Xcode) work fine.
+
+Any additional compilation flags specified via `CMAKE_C_FLAGS` and
+`CMAKE_CXX_FLAGS` will be forwarded. Build-type specific variants (like
+`CMAKE_C_FLAGS_RELEASE` or `CMAKE_CXX_FLAGS_DEBUG`) may also be provided to
+specify config-specific flags. In some cases, Drake's default flags will have
+priority over the user's flags.
 
 Building and installing Drake also requires a working installation of Python.
 When `Python_EXECUTABLE` is specified, it uses the given path to the Python

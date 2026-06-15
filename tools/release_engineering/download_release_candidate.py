@@ -128,7 +128,7 @@ def _download_binaries(*, version):
     The `version` is a string like "vM.m.p", or None.
     """
     # This is a partial inventory of our binary releases (tgz and wheel only).
-    # The apt and Docker releases are handled separately.
+    # The apt release is handled separately.
     binaries = {
         "https://drake-packages.csail.mit.edu/drake/staging": [
             # Wheel filenames.
@@ -143,11 +143,13 @@ def _download_binaries(*, version):
             # Deb filenames.
             f"drake-dev_{version[1:]}-1_amd64-noble.deb",
             f"drake-dev_{version[1:]}-1_arm64-noble.deb",
+            f"drake-dev_{version[1:]}-1_amd64-resolute.deb",
             f"drake-dev_{version[1:]}-1_amd64v3-resolute.deb",
             f"drake-dev_{version[1:]}-1_arm64-resolute.deb",
             # Tarball filenames.
             f"drake-{version[1:]}-noble.tar.gz",
             f"drake-{version[1:]}-noble-arm64.tar.gz",
+            f"drake-{version[1:]}-resolute-amd64.tar.gz",
             f"drake-{version[1:]}-resolute-amd64v3.tar.gz",
             f"drake-{version[1:]}-resolute-arm64.tar.gz",
             f"drake-{version[1:]}-mac-arm64.tar.gz",

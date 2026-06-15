@@ -3,7 +3,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(solvers, m) {
+PYDRAKE_MODULE(solvers, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
   m.doc() = R"""(
@@ -13,9 +13,9 @@ If you are formulating constraints using symbolic formulas, please review the
 top-level documentation for :py:mod:`pydrake.math`.
 )""";
 
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.common.value");
-  py::module::import("pydrake.symbolic");
+  py::module_::import_("pydrake.autodiffutils");
+  py::module_::import_("pydrake.common.value");
+  py::module_::import_("pydrake.symbolic");
 
   // The order of these calls matters. Some modules rely on prior definitions.
   internal::DefineSolversEvaluators(m);

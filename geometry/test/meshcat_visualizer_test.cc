@@ -4,14 +4,17 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <msgpack.hpp>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -22,6 +25,8 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using drake::multibody::DeformableModel;
+using drake::multibody::fem::DeformableBodyConfig;
 using internal::TransformGeometryName;
 using multibody::AddMultibodyPlantSceneGraph;
 
@@ -466,6 +471,136 @@ GTEST_TEST(MeshcatVisualizerTest, ConvexHull) {
   EXPECT_THAT(data, testing::HasSubstr("BufferGeometry"));
 }
 
+// Confirms that paths are added for different geometry types -- in this case
+// a Mesh referencing a VTK file and a Sphere representing all primitives.
+GTEST_TEST(MeshcatVisualizerTest, DeformableGeometry) {
+  auto meshcat = std::make_shared<Meshcat>();
+
+  /* Set up a deformable bodies. Values are just an example here */
+  DeformableBodyConfig<double> deformable_config;
+  deformable_config.set_youngs_modulus(1e4);
+  deformable_config.set_poissons_ratio(0.4);
+  deformable_config.set_mass_density(1e3);
+  deformable_config.set_stiffness_damping_coefficient(0.01);
+
+  ProximityProperties prox_props;
+  IllustrationProperties illus_props;
+
+  const math::RigidTransformd X_WB(Vector3<double>(0.0, 0.0, 0.0));
+  const Mesh mesh(FindResourceOrThrow(
+      "drake/examples/multibody/deformable/models/torus.vtk"));
+  const Sphere sphere(1.0);
+
+  const double kRezHint = 0.5;
+
+  std::vector<const Shape*> testing_shapes{&mesh, &sphere};
+
+  for (const auto& shape : testing_shapes) {
+    SCOPED_TRACE(shape->type_name());
+
+    // Load a scene with mesh collision geometry.
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+
+    DeformableModel<double>& deformable_model =
+        plant.mutable_deformable_model();
+
+    auto instance = std::make_unique<GeometryInstance>(X_WB, *shape, "object");
+    instance->set_proximity_properties(prox_props);
+    instance->set_illustration_properties(illus_props);
+    deformable_model.RegisterDeformableBody(std::move(instance),
+                                            deformable_config, kRezHint);
+
+    plant.Finalize();
+
+    // We set show_hydroelastic to true to make sure the deformable still comes
+    // through for meshes that don't have hydro representations (see above).
+    const MeshcatVisualizerParams params{
+        .role = Role::kIllustration,
+        .prefix = std::string(shape->type_name()),
+        .show_hydroelastic = true};
+    MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                            params);
+
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+
+    auto expected_path = fmt::format(
+        "/drake/{}/deformable_geometries/DefaultModelInstance/object",
+        params.prefix);
+    EXPECT_FALSE(meshcat->HasPath(expected_path));
+    // Send the geometry to Meshcat.
+    diagram->ForcedPublish(*context);
+    EXPECT_TRUE(meshcat->HasPath(expected_path));
+  }
+}
+
+// Confirms that a SceneGraph geometry version change (here caused by updating
+// illustration properties) triggers re-registration of a deformable geometry
+// in MeshcatVisualizer, including picking up the new color.
+GTEST_TEST(MeshcatVisualizerTest, DeformableGeometrySceneGraphVersionChange) {
+  auto meshcat = std::make_shared<Meshcat>();
+
+  DeformableBodyConfig<double> config;
+  config.set_youngs_modulus(1e4);
+  config.set_poissons_ratio(0.4);
+  config.set_mass_density(1e3);
+  config.set_stiffness_damping_coefficient(0.01);
+
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
+
+  IllustrationProperties illus_props;
+  const Rgba red(1, 0, 0);
+  const Rgba blue(0, 0, 1);
+  illus_props.AddProperty("phong", "diffuse", red);
+
+  auto instance = std::make_unique<GeometryInstance>(math::RigidTransformd{},
+                                                     Sphere(1.0), "body");
+  instance->set_proximity_properties(ProximityProperties{});
+  instance->set_illustration_properties(illus_props);
+  const auto body_id =
+      deformable_model.RegisterDeformableBody(std::move(instance), config, 0.5);
+
+  plant.Finalize();
+
+  const GeometryId geom_id = deformable_model.GetGeometryId(body_id);
+
+  MeshcatVisualizer<double>::AddToBuilder(
+      &builder, scene_graph, meshcat,
+      MeshcatVisualizerParams{.role = Role::kIllustration});
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  // First publish establishes the deformable in Meshcat with the initial color.
+  diagram->ForcedPublish(*context);
+  const std::string path =
+      "/drake/visualizer/deformable_geometries/DefaultModelInstance/body";
+  ASSERT_TRUE(meshcat->HasPath(path));
+  const std::string packed_initial = meshcat->GetPackedObject(path);
+  ASSERT_FALSE(packed_initial.empty());
+
+  // Updating illustration properties bumps the geometry version. On the next
+  // publish, MeshcatVisualizer should detect the change, re-register the
+  // deformable (picking up the new color), and re-send the mesh to Meshcat.
+  IllustrationProperties new_illus_props;
+  new_illus_props.AddProperty("phong", "diffuse", blue);
+  auto& sg_context =
+      diagram->GetMutableSubsystemContext(scene_graph, context.get());
+  scene_graph.AssignRole(&sg_context, *plant.get_source_id(), geom_id,
+                         new_illus_props, RoleAssign::kReplace);
+
+  diagram->ForcedPublish(*context);
+  ASSERT_TRUE(meshcat->HasPath(path));
+  // We use the fact that the packed data doesn't match as evidence that the
+  // geometry changed because of the SceneGraph change. If this assumption
+  // proves too aggressive in the future, we can be more explicit about the
+  // nature of the change.
+  EXPECT_NE(meshcat->GetPackedObject(path), packed_initial);
+}
+
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   auto meshcat = std::make_shared<Meshcat>();
 
@@ -702,6 +837,59 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Graphviz) {
   SetUpDiagram();
   EXPECT_THAT(visualizer_->GetGraphvizString(),
               testing::HasSubstr("-> meshcat_in"));
+}
+
+GTEST_TEST(MeshcatVisualizerTest, DiffuseMapIllustrationProperty) {
+  auto meshcat = std::make_shared<Meshcat>();
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+  const std::string sdf_content = R"""(
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="box">
+    <link name="box">
+      <visual name="visual">
+        <geometry>
+          <box><size>0.2 0.2 0.02</size></box>
+        </geometry>
+        <material>
+          <drake:diffuse_map>package://drake/geometry/render/test/meshes/rainbow_stripes.png</drake:diffuse_map>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
+)""";
+  multibody::Parser(&plant).AddModelsFromString(sdf_content, "sdf");
+  plant.Finalize();
+
+  // Confirm there's a single geometry with illustration properties and it has
+  // the expected diffuse map.
+  const auto& inspector = scene_graph.model_inspector();
+  std::vector<GeometryId> g_ids =
+      inspector.GetAllGeometryIds(Role::kIllustration);
+  ASSERT_EQ(g_ids.size(), 1);
+  const GeometryId geom_id = g_ids.front();
+  const IllustrationProperties* props =
+      inspector.GetIllustrationProperties(geom_id);
+  ASSERT_NE(props, nullptr);
+  ASSERT_TRUE(props->HasProperty("phong", "diffuse_map"));
+
+  MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat);
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  diagram->ForcedPublish(*context);
+
+  const std::string geom_path = fmt::format(
+      "visualizer/box/box/{}", TransformGeometryName(geom_id, inspector));
+  ASSERT_TRUE(meshcat->HasPath(geom_path));
+  // A mere indicator that the texture information was provided to Meshcat. See
+  // the SetObjectWithDiffuseMap test in meshcat_test.cc or
+  // meshcat_manual_test for the more definitive tests. This merely serves as
+  // regression protection.
+  EXPECT_THAT(meshcat->GetPackedObject(geom_path),
+              testing::HasSubstr("cas-v1/"));
 }
 
 }  // namespace

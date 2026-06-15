@@ -2,6 +2,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/bindings/generated_docstrings/multibody_plant.h"
@@ -64,7 +65,7 @@ int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
  * @param T Template.
  */
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
@@ -172,14 +173,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
-            cls_doc.dynamic_friction.doc)
-        .def(py::pickle(
-            [](const Class& self) {
-              return std::pair(self.static_friction(), self.dynamic_friction());
-            },
-            [](std::pair<T, T> frictions) {
-              return Class(frictions.first, frictions.second);
-            }));
+            cls_doc.dynamic_friction.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return std::pair(self.static_friction(), self.dynamic_friction());
+        },
+        [](Class* self, std::pair<T, T> frictions) {
+          new (self) Class(frictions.first, frictions.second);
+        });
     DefCopyAndDeepCopy(&cls);
 
     AddValueInstantiation<CoulombFriction<T>>(m);
@@ -624,52 +626,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("body"),
             cls_doc.EvalBodySpatialVelocityInWorld.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const char* X_PB_parameter_name_deprecated =
-        "X_PB parameter name for SetFreeBodyPose() is deprecated and will be "
-        "removed 2026-06-01. Use X_JpJc instead.";
-    const char* V_PB_parameter_name_deprecated =
-        "The parameter order and V_PB parameter name for "
-        "SetFreeBodySpatialVelocity() are deprecated and will be removed "
-        "2026-06-01. Use context, body, V_JpJc instead.";
-    cls  // BR
-        .def("SetDefaultFreeBodyPose",
-            WrapDeprecated(cls_doc.SetDefaultFreeBodyPose.doc_deprecated,
-                &Class::SetDefaultFreeBodyPose),
-            py::arg("body"), py::arg("X_PB"),
-            cls_doc.SetDefaultFreeBodyPose.doc_deprecated)
-        .def("GetDefaultFreeBodyPose",
-            WrapDeprecated(cls_doc.GetDefaultFreeBodyPose.doc_deprecated,
-                &Class::GetDefaultFreeBodyPose),
-            py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc_deprecated)
-        .def("HasUniqueFreeBaseBody",
-            WrapDeprecated(cls_doc.HasUniqueFreeBaseBody.doc_deprecated,
-                &Class::HasUniqueFreeBaseBody),
-            py::arg("model_instance"),
-            cls_doc.HasUniqueFreeBaseBody.doc_deprecated)
-        .def("GetUniqueFreeBaseBodyOrThrow",
-            WrapDeprecated(cls_doc.GetUniqueFreeBaseBodyOrThrow.doc_deprecated,
-                &Class::GetUniqueFreeBaseBodyOrThrow),
-            py::arg("model_instance"), py_rvp::reference_internal,
-            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc_deprecated)
-        .def("SetFreeBodyPose",
-            WrapDeprecated(X_PB_parameter_name_deprecated,
-                overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
-                    const RigidTransform<T>&>(&Class::SetFreeBodyPose)),
-            py::arg("context"), py::arg("body"), py::arg("X_PB"),
-            X_PB_parameter_name_deprecated)
-        .def("SetFreeBodySpatialVelocity",
-            WrapDeprecated(V_PB_parameter_name_deprecated,
-                [](const Class* self, const RigidBody<T>& body,
-                    const SpatialVelocity<T>& V_PB, Context<T>* context) {
-                  self->SetFreeBodySpatialVelocity(context, body, V_PB);
-                }),
-            py::arg("body"), py::arg("V_PB"), py::arg("context"),
-            V_PB_parameter_name_deprecated);
-#pragma GCC diagnostic pop
-
     auto CalcJacobianSpatialVelocity =
         [](const Class* self, const systems::Context<T>& context,
             JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
@@ -1466,10 +1422,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         "AddMultibodyPlantSceneGraph",
         [result_to_tuple](systems::DiagramBuilder<T>* builder,
             MultibodyPlant<T>& plant, SceneGraph<T>* scene_graph) {
-          // The C++ method doesn't offer a bare-pointer overload, only
-          // shared_ptr. Because object lifetimes are already handled by the
-          // ref_cycle annotations above, we can pass the systems via unowned
-          // shared_ptr.
+          // The plant is already owned by Python. The scene_graph is either
+          // nullptr or already owned by Python. Therefore, both can be passed
+          // into C++ via an unowned shared_ptr.
           auto pair =
               multibody::internal::AddMultibodyPlantSceneGraphFromShared<T>(
                   builder, make_unowned_shared_ptr_from_raw(&plant),
@@ -1484,15 +1439,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         "AddMultibodyPlantSceneGraph",
         [result_to_tuple](systems::DiagramBuilder<T>* builder, double time_step,
             SceneGraph<T>* scene_graph) {
-          // The C++ method doesn't offer a bare-pointer overload, only
-          // shared_ptr. Because object lifetimes are already handled by the
-          // ref_cycle annotations above, we can pass the systems via unowned
-          // shared_ptr.
+          // The newly-minted plant will be owned by C++. The scene_graph is
+          // either nullptr or already owned by Python, so it can be passed
+          // into C++ via an unowned shared_ptr.
           auto pair =
               multibody::internal::AddMultibodyPlantSceneGraphFromShared<T>(
-                  builder,
-                  make_unowned_shared_ptr_from_raw(
-                      new MultibodyPlant<T>(time_step)),
+                  builder, std::make_unique<MultibodyPlant<T>>(time_step),
                   make_unowned_shared_ptr_from_raw(scene_graph));
           return result_to_tuple(builder, pair);
         },
@@ -1537,10 +1489,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "ExternallyAppliedSpatialForce", param, cls_doc.doc);
     cls  // BR
         .def(py::init<>())
-        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
-        .def_readwrite("p_BoBq_B", &Class::p_BoBq_B,
+        .def_rw("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_rw("p_BoBq_B", &Class::p_BoBq_B,
             return_value_policy_for_scalar_type<T>(), cls_doc.p_BoBq_B.doc)
-        .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
+        .def_rw("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -1628,19 +1580,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 }  // namespace
 
-PYBIND11_MODULE(plant, m) {
+PYDRAKE_MODULE(plant, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
   m.doc() = "Bindings for MultibodyPlant and related classes.";
 
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.fem");
-  py::module::import("pydrake.multibody.math");
-  py::module::import("pydrake.multibody.tree");
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.geometry");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.fem");
+  py::module_::import_("pydrake.multibody.math");
+  py::module_::import_("pydrake.multibody.tree");
+  py::module_::import_("pydrake.systems.framework");
 
   constexpr auto& doc = pydrake_doc_multibody_plant.drake.multibody;
 
@@ -1694,12 +1646,10 @@ PYBIND11_MODULE(plant, m) {
             py::arg("body_index"),
             py::arg("X_BP") = math::RigidTransform<double>::Identity(),
             py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
-        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
-        .def_readwrite("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
-        .def_readwrite(
-            "thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
-        .def_readwrite(
-            "moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
+        .def_rw("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_rw("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
+        .def_rw("thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
+        .def_rw("moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
     DefCopyAndDeepCopy(&cls);
   }
 

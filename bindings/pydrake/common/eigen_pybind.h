@@ -24,7 +24,7 @@ auto ToEigenRef(Eigen::VectorBlock<Derived>* derived) {
 /** Converts a raw array to a numpy array. */
 template <typename T>
 py::object ToArray(T* ptr, int size, py::tuple shape,
-    py::return_value_policy policy = py_rvp::reference,
+    py::rv_policy policy = py_rvp::reference,
     py::handle parent = py::handle()) {
   // Create flat array to be reshaped in numpy.
   using Vector = VectorX<T>;
@@ -36,7 +36,7 @@ py::object ToArray(T* ptr, int size, py::tuple shape,
 /** Converts a raw array to a numpy array (`const` variant). */
 template <typename T>
 py::object ToArray(const T* ptr, int size, py::tuple shape,
-    py::return_value_policy policy = py_rvp::reference,
+    py::rv_policy policy = py_rvp::reference,
     py::handle parent = py::handle()) {
   // Create flat array to be reshaped in numpy.
   using Vector = const VectorX<T>;
@@ -67,7 +67,7 @@ cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
 */
 inline py::object WrapToMatchInputShape(py::handle func) {
   py::handle wrap =
-      py::module::import("pydrake.common").attr("_wrap_to_match_input_shape");
+      py::module_::import_("pydrake.common").attr("_wrap_to_match_input_shape");
   return wrap(func);
 }
 
@@ -114,7 +114,7 @@ struct type_caster<drake::EigenPtr<T>> {
     return success;
   }
 
-  static handle cast(PtrType src, return_value_policy policy, handle parent) {
+  static handle cast(PtrType src, rv_policy policy, handle parent) {
     if (src == nullptr) {
       return Py_None;
     } else {

@@ -123,6 +123,12 @@ class BodyNodeImpl final : public BodyNode<T> {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const final;
 
+  void CalcSystemJacobianTransposeTimesF_TipToBase(
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<Vector6<T>>& H_PB_W_cache,
+      std::vector<SpatialForce<T>>* F_Bo_W_array,
+      EigenPtr<VectorX<T>> tau) const final;
+
   void CalcArticulatedBodyInertiaCache_TipToBase(
       const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,

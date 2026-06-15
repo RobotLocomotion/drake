@@ -10,7 +10,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversMixedIntegerOptimizationUtil(py::module m) {
+void DefineSolversMixedIntegerOptimizationUtil(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;

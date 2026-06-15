@@ -100,15 +100,16 @@ void CheckTyping() {
 
 }  // namespace
 
-PYBIND11_MODULE(cpp_param_test_util, m) {
+PYDRAKE_MODULE(cpp_param_test_util, m) {
   // Define custom class only once here.
   py::class_<CustomCppType>(m, "CustomCppType");
 
   m.def("execute_tests", [m]() {
     // Import some definitions from the modules where they are defined into the
     // module where the tests will execute.
-    py::exec("from pydrake.common.cpp_param_test_util import CustomCppType");
-    py::exec("from pydrake.common.cpp_param import List");
+    py::exec("from pydrake.common.cpp_param_test_util import CustomCppType",
+        py::globals());
+    py::exec("from pydrake.common.cpp_param import List", py::globals());
 
     CheckPrimitiveTypes();
     CheckCustomTypes();

@@ -4602,16 +4602,6 @@ ineffective (not counted) if *any* of the unrestricted update events
 fails or *all* the unrestricted update events return "did nothing". A
 single dispatcher call may handle multiple unrestricted update events.)""";
         } get_num_unrestricted_updates;
-        // Symbol: drake::systems::Simulator::get_publish_every_time_step
-        struct /* get_publish_every_time_step */ {
-          // Source: drake/systems/analysis/simulator.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    See https://drake.mit.edu/troubleshooting.html#force-publishing
-    for help. This will be removed from Drake on or after 2026-06-01.)""";
-        } get_publish_every_time_step;
         // Symbol: drake::systems::Simulator::get_system
         struct /* get_system */ {
           // Source: drake/systems/analysis/simulator.h
@@ -4833,30 +4823,6 @@ Note:
     localized. Use witness-triggered events instead if you need
     precise isolation.)""";
         } set_monitor;
-        // Symbol: drake::systems::Simulator::set_publish_at_initialization
-        struct /* set_publish_at_initialization */ {
-          // Source: drake/systems/analysis/simulator.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    This is no longer controlled by the Simulator. It must be be
-    defined in the LeafSystem instead. See
-    https://drake.mit.edu/troubleshooting.html#force-publishing for
-    help. This will be removed from Drake on or after 2026-06-01.)""";
-        } set_publish_at_initialization;
-        // Symbol: drake::systems::Simulator::set_publish_every_time_step
-        struct /* set_publish_every_time_step */ {
-          // Source: drake/systems/analysis/simulator.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    This is no longer controlled by the Simulator. It must be defined
-    in the LeafSystem instead. See
-    https://drake.mit.edu/troubleshooting.html#force-publishing for
-    help. This will be removed from Drake on or after 2026-06-01.)""";
-        } set_publish_every_time_step;
         // Symbol: drake::systems::Simulator::set_target_realtime_rate
         struct /* set_target_realtime_rate */ {
           // Source: drake/systems/analysis/simulator.h
@@ -4915,16 +4881,6 @@ IntegratorBase.)""";
           // Source: drake/systems/analysis/simulator_config.h
           const char* doc = R"""()""";
         } max_step_size;
-        // Symbol: drake::systems::SimulatorConfig::publish_every_time_step
-        struct /* publish_every_time_step */ {
-          // Source: drake/systems/analysis/simulator_config.h
-          const char* doc =
-R"""(DEPRECATED: removal date: 2026-06-01. See
-https://drake.mit.edu/troubleshooting.html#force-publishing for
-guidance. Sets Simulator∷set_publish_at_initialization() in addition
-to Simulator∷set_publish_every_time_step() when applied by
-ApplySimulatorConfig().)""";
-        } publish_every_time_step;
         // Symbol: drake::systems::SimulatorConfig::start_time
         struct /* start_time */ {
           // Source: drake/systems/analysis/simulator_config.h
@@ -4947,7 +4903,6 @@ R"""(Starting time of the simulation. We will set the context time to
             std::make_pair("accuracy", accuracy.doc),
             std::make_pair("integration_scheme", integration_scheme.doc),
             std::make_pair("max_step_size", max_step_size.doc),
-            std::make_pair("publish_every_time_step", publish_every_time_step.doc),
             std::make_pair("start_time", start_time.doc),
             std::make_pair("target_realtime_rate", target_realtime_rate.doc),
             std::make_pair("use_error_control", use_error_control.doc),

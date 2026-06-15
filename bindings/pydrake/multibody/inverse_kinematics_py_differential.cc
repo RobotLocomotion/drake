@@ -23,14 +23,14 @@ using planning::JointLimits;
 using Recipe = DifferentialInverseKinematicsSystem::Recipe;
 using systems::LeafSystem;
 
-void DefineDifferentialIkLegacy(py::module m) {
+void DefineDifferentialIkLegacy(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
   constexpr auto& doc =
       pydrake_doc_multibody_inverse_kinematics.drake.multibody;
 
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.framework");
 
   py::enum_<DifferentialInverseKinematicsStatus>(m,
       "DifferentialInverseKinematicsStatus",
@@ -53,9 +53,9 @@ void DefineDifferentialIkLegacy(py::module m) {
     // TODO(m-chaturvedi) Add Pybind11 documentation.
     cls  // BR
         .def(ParamInit<Class>())
-        .def_readwrite("joint_velocities", &Class::joint_velocities,
+        .def_rw("joint_velocities", &Class::joint_velocities,
             cls_doc.joint_velocities.doc)
-        .def_readwrite("status", &Class::status, cls_doc.status.doc);
+        .def_rw("status", &Class::status, cls_doc.status.doc);
   }
   {
     using Class = DifferentialInverseKinematicsParameters;
@@ -64,11 +64,9 @@ void DefineDifferentialIkLegacy(py::module m) {
     py::class_<Class> cls(m, "DifferentialInverseKinematicsParameters",
         doc.DifferentialInverseKinematicsParameters.doc);
 
-    cls.def(py::init([](int num_positions, int num_velocities) {
-         return Class{num_positions, num_velocities};
-       }),
-           py::arg("num_positions"), py::arg("num_velocities") = std::nullopt,
-           cls_doc.ctor.doc)
+    cls  // BR
+        .def(py::init<int, int>(), py::arg("num_positions"),
+            py::arg("num_velocities") = std::nullopt, cls_doc.ctor.doc)
         .def("get_time_step", &Class::get_time_step, cls_doc.get_time_step.doc)
         .def("set_time_step", &Class::set_time_step, py::arg("dt"),
             cls_doc.set_time_step.doc)
@@ -291,7 +289,7 @@ PyClassIngredient<Derived> BindIngredient(const char* class_name,
   return cls;
 }
 
-void DefineDifferentialIkSystem(py::module m) {
+void DefineDifferentialIkSystem(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc =
@@ -424,7 +422,7 @@ void DefineDifferentialIkSystem(py::module m) {
   }
 }
 
-void DefineDifferentialIkController(py::module m) {
+void DefineDifferentialIkController(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc =
@@ -434,13 +432,15 @@ void DefineDifferentialIkController(py::module m) {
   constexpr auto& cls_doc = doc.DifferentialInverseKinematicsController;
   py::class_<Class, systems::Diagram<double>>(
       m, "DifferentialInverseKinematicsController")
-      .def(py::init([](py::object differential_inverse_kinematics,
-                        const std::vector<int>& planar_rotation_dof_indices) {
-        return std::make_unique<Class>(
-            make_shared_ptr_from_py_object<DifferentialInverseKinematicsSystem>(
-                differential_inverse_kinematics),
-            planar_rotation_dof_indices);
-      }),
+      .def(
+          "__init__",
+          [](Class* self, py::object differential_inverse_kinematics,
+              const std::vector<int>& planar_rotation_dof_indices) {
+            new (self) Class(make_shared_ptr_from_py_object<
+                                 DifferentialInverseKinematicsSystem>(
+                                 differential_inverse_kinematics),
+                planar_rotation_dof_indices);
+          },
           py::arg("differential_inverse_kinematics"),
           py::arg("planar_rotation_dof_indices"), cls_doc.ctor.doc)
       .def("set_initial_position", &Class::set_initial_position,
@@ -457,7 +457,7 @@ void DefineDifferentialIkController(py::module m) {
 
 }  // namespace
 
-void DefineIkDifferential(py::module m) {
+void DefineIkDifferential(py::module_ m) {
   DefineDifferentialIkLegacy(m);
   DefineDifferentialIkSystem(m);
   DefineDifferentialIkController(m);

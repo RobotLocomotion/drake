@@ -1976,10 +1976,7 @@ invoked during stack unwinding.)""";
       // Source: drake/common/sha256.h
       const char* doc =
 R"""(Represents a SHA-256 cryptographic checksum. See also
-https://en.wikipedia.org/wiki/SHA-2.
-
-This class is not bound in pydrake, because Python programmers should
-prefer using https://docs.python.org/3/library/hashlib.html instead.)""";
+https://en.wikipedia.org/wiki/SHA-2.)""";
       // Symbol: drake::Sha256::Checksum
       struct /* Checksum */ {
         // Source: drake/common/sha256.h
@@ -3424,16 +3421,6 @@ Parameter ``pattern``:
     Formatting for message. For more information, see:
     https://github.com/gabime/spdlog/wiki/3.-Custom-formatting)""";
       } set_log_pattern;
-      // Symbol: drake::logging::sink
-      struct /* sink */ {
-        // Source: drake/common/text_logging_spdlog.h
-        const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use spdlog∷sinks∷sink instead. This will be removed from Drake on
-    or after 2026-06-01.)""";
-      } sink;
     } logging;
     // Symbol: drake::never_destroyed
     struct /* never_destroyed */ {

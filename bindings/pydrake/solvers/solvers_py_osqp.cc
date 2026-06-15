@@ -8,7 +8,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversOsqp(py::module m) {
+void DefineSolversOsqp(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
@@ -19,23 +19,22 @@ void DefineSolversOsqp(py::module m) {
 
   py::class_<OsqpSolverDetails>(
       m, "OsqpSolverDetails", doc.OsqpSolverDetails.doc)
-      .def_readonly(
-          "iter", &OsqpSolverDetails::iter, doc.OsqpSolverDetails.iter.doc)
-      .def_readonly("status_val", &OsqpSolverDetails::status_val,
+      .def_ro("iter", &OsqpSolverDetails::iter, doc.OsqpSolverDetails.iter.doc)
+      .def_ro("status_val", &OsqpSolverDetails::status_val,
           doc.OsqpSolverDetails.status_val.doc)
-      .def_readonly("primal_res", &OsqpSolverDetails::primal_res,
+      .def_ro("primal_res", &OsqpSolverDetails::primal_res,
           doc.OsqpSolverDetails.primal_res.doc)
-      .def_readonly("dual_res", &OsqpSolverDetails::dual_res,
+      .def_ro("dual_res", &OsqpSolverDetails::dual_res,
           doc.OsqpSolverDetails.dual_res.doc)
-      .def_readonly("setup_time", &OsqpSolverDetails::setup_time,
+      .def_ro("setup_time", &OsqpSolverDetails::setup_time,
           doc.OsqpSolverDetails.setup_time.doc)
-      .def_readonly("solve_time", &OsqpSolverDetails::solve_time,
+      .def_ro("solve_time", &OsqpSolverDetails::solve_time,
           doc.OsqpSolverDetails.solve_time.doc)
-      .def_readonly("polish_time", &OsqpSolverDetails::polish_time,
+      .def_ro("polish_time", &OsqpSolverDetails::polish_time,
           doc.OsqpSolverDetails.polish_time.doc)
-      .def_readonly("run_time", &OsqpSolverDetails::run_time,
+      .def_ro("run_time", &OsqpSolverDetails::run_time,
           doc.OsqpSolverDetails.run_time.doc)
-      .def_readonly("y", &OsqpSolverDetails::y, doc.OsqpSolverDetails.y.doc);
+      .def_ro("y", &OsqpSolverDetails::y, doc.OsqpSolverDetails.y.doc);
   AddValueInstantiation<OsqpSolverDetails>(m);
 }
 

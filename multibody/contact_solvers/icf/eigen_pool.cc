@@ -41,8 +41,10 @@ void EigenPoolFixedSizeStorage<EigenType>::SetZero() {
 }
 
 template <typename EigenType>
-void EigenPoolFixedSizeStorage<EigenType>::Add(int /* rows */, int /* cols */) {
+EigenPoolFixedSizeStorage<EigenType>::MatrixView
+EigenPoolFixedSizeStorage<EigenType>::Add(int /* rows */, int /* cols */) {
   data_.push_back({});
+  return data_.back();
 }
 
 template <typename EigenType>
@@ -120,10 +122,12 @@ void EigenPoolDynamicSizeStorage<EigenType>::Clear() {
 }
 
 template <typename EigenType>
-void EigenPoolDynamicSizeStorage<EigenType>::Add(int rows, int cols) {
+EigenPoolDynamicSizeStorage<EigenType>::MatrixView
+EigenPoolDynamicSizeStorage<EigenType>::Add(int rows, int cols) {
   const int index = ssize(data_);
   blocks_.push_back({index, rows, cols});
   data_.resize(data_.size() + rows * cols);
+  return operator[](size() - 1);
 }
 
 template <typename EigenType>

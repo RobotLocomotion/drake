@@ -64,7 +64,11 @@ def StartMeshcat():
     On Deepnote, however, this does extra work to expose Meshcat to the public
     internet by setting up a reverse proxy for the single available network
     port. To access it, you must enable "Allow incoming connections" in the
-    Environment settings pane.
+    Environment settings pane and use an Init notebook with NginX similar to
+    https://github.com/RobotLocomotion/drake/blob/v1.53.0/doc/_pages/release_playbook.md?plain=1#L234-L279
+
+    (Drake no longer uses Deepnote, but we've kept the code for it here intact
+    for any downstream users who are still using it.)
     """
     if "DEEPNOTE_PROJECT_ID" in os.environ:
         return _start_meshcat_deepnote()

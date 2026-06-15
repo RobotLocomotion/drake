@@ -77,7 +77,7 @@ struct has_name_func<T, decltype(std::declval<T>().name(), void())>
 // function.
 template <typename T, typename PyClass>
 void BindMultibodyElementMixin(PyClass* pcls) {
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   // TODO(eric.cousineau): Fix docstring generation for `MultibodyElement`.
   auto& cls = *pcls;
   cls  // BR
@@ -103,7 +103,7 @@ void BindMultibodyElementMixin(PyClass* pcls) {
       });
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
   BindTypeSafeIndex<FrameIndex>(m, "FrameIndex", doc.FrameIndex.doc);
@@ -173,11 +173,12 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.set_element.doc)
         .def("__str__", &Class::to_string, cls_doc.to_string.doc)
         .def("__repr__", [](const Class& self) {
-          py::str py_namespace = std::string{self.get_namespace()};
-          py::str py_element = std::string{self.get_element()};
+          const std::string_view cxx_namespace = self.get_namespace();
+          const std::string_view cxx_element = self.get_element();
+          py::str py_namespace{cxx_namespace.data(), cxx_namespace.size()};
+          py::str py_element{cxx_element.data(), cxx_element.size()};
           return fmt::format("ScopedName({}, {})",
-              std::string(py::repr(py_namespace)),
-              std::string(py::repr(py_element)));
+              py::repr(py_namespace).c_str(), py::repr(py_element).c_str());
         });
     DefCopyAndDeepCopy(&cls);
   }
@@ -189,8 +190,8 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls  // BR
         .def(ParamInit<Class>());
     cls  // BR
-        .def_readwrite("p", &Class::p, cls_doc.p.doc)
-        .def_readwrite("d", &Class::d, cls_doc.d.doc);
+        .def_rw("p", &Class::p, cls_doc.p.doc)
+        .def_rw("d", &Class::d, cls_doc.d.doc);
     DefCopyAndDeepCopy(&cls);
   }
 }
@@ -198,7 +199,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 // TODO(jwnimmer-tri) This function is just a grab-bag of several classes. We
 // should split it up into smaller pieces.
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // Frames.
@@ -403,14 +404,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetSpatialInertiaInBodyFrame",
             &Class::SetSpatialInertiaInBodyFrame, py::arg("context"),
             py::arg("M_Bo_B"), cls_doc.SetSpatialInertiaInBodyFrame.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("is_floating",
-            WrapDeprecated(
-                cls_doc.is_floating.doc_deprecated, &Class::is_floating),
-            cls_doc.is_floating.doc_deprecated);
-#pragma GCC diagnostic pop
 
     // Aliases for backwards compatibility (dispreferred).
     m.attr("Body") = m.attr("RigidBody");
@@ -515,7 +508,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "BallRpyJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
@@ -548,7 +541,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "PlanarJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  Vector3<double>>(),
@@ -599,7 +592,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "PrismaticJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double, double, double>(),
@@ -657,7 +650,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "QuaternionFloatingJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -719,7 +712,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "RevoluteJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double>(),
@@ -777,7 +770,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "RpyFloatingJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -836,7 +829,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "ScrewJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -891,7 +884,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "UniversalJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
@@ -923,7 +916,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "WeldJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const RigidTransform<double>&>(),
@@ -1064,7 +1057,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
         m, "UniformGravityFieldElement", param, cls_doc.doc);
     cls  // BR
-        .def_readonly_static("kDefaultStrength", &Class::kDefaultStrength)
+        .def_ro_static("kDefaultStrength", &Class::kDefaultStrength)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             py::init<Vector3<double>>(), py::arg("g_W"), cls_doc.ctor.doc_1args)
@@ -1161,7 +1154,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 
 template <typename T>
-void DefineMultibodyForces(py::module m, T) {
+void DefineMultibodyForces(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = MultibodyForces<T>;
@@ -1174,10 +1167,8 @@ void DefineMultibodyForces(py::module m, T) {
     // activated if this module is present, and thus should not create a runtime
     // error.
     cls  // BR
-        .def(py::init([](const MultibodyPlant<T>& plant) {
-          return std::make_unique<Class>(plant);
-        }),
-            py::arg("plant"), cls_doc.ctor.doc_1args_plant)
+        .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
+            cls_doc.ctor.doc_1args_plant)
         .def(py::init<int, int>(), py::arg("nb"), py::arg("nv"),
             cls_doc.ctor.doc_2args_nb_nv)
         .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)
@@ -1268,12 +1259,12 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
     py::object result_obj =
         override(py::cast(context, py_rvp::reference), py::cast(p_WQ));
     try {
-      return result_obj.cast<Vector3<T>>();
+      return py::cast<Vector3<T>>(result_obj);
     } catch (const py::cast_error& e) {
       throw std::logic_error(
           "DoEvaluateAt() must return a 3-element list or NumPy array that can "
           "be converted to Vector3<T>. Got " +
-          py::str(result_obj).cast<std::string>() + ".");
+          py::cast<std::string>(py::str(result_obj)) + ".");
     }
   }
 
@@ -1290,11 +1281,11 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
     py::object result_obj = override();
     std::shared_ptr<ForceDensityField<T>> cloned;
     try {
-      cloned = result_obj.cast<std::shared_ptr<ForceDensityField<T>>>();
+      cloned = py::cast<std::shared_ptr<ForceDensityField<T>>>(result_obj);
     } catch (const py::cast_error& e) {
       throw std::logic_error(
           "DoClone() must return a `ForceDensityField<T>`. Got " +
-          py::str(result_obj.get_type()).cast<std::string>() +
+          py::cast<std::string>(py::str(result_obj.get_type())) +
           " Make sure your DoClone() returns a new instance of the same "
           "Python class, e.g., `return MyForceDensityField(...)`.");
     }
@@ -1320,7 +1311,7 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
 };
 
 template <typename T>
-void DefineForceDensityField(py::module m, T) {
+void DefineForceDensityField(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     constexpr auto& cls_doc = doc.ForceDensityField;
@@ -1363,7 +1354,7 @@ void DefineForceDensityField(py::module m, T) {
   }
 }
 
-void DefineDeformableBody(py::module m) {
+void DefineDeformableBody(py::module_ m) {
   using Class = DeformableBody<double>;
   constexpr auto& cls_doc = doc.DeformableBody;
   py::class_<Class> cls(m, "DeformableBody", cls_doc.doc);
@@ -1426,17 +1417,17 @@ void DefineDeformableBody(py::module m) {
 
 }  // namespace
 
-PYBIND11_MODULE(tree, m) {
+PYDRAKE_MODULE(tree, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
   m.doc() = "Bindings for MultibodyTree and related components.";
 
-  py::module::import("pydrake.common.eigen_geometry");
-  py::module::import("pydrake.multibody.math");
-  py::module::import("pydrake.multibody.fem");
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.geometry");
+  py::module_::import_("pydrake.common.eigen_geometry");
+  py::module_::import_("pydrake.multibody.math");
+  py::module_::import_("pydrake.multibody.fem");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.geometry");
 
   internal::DefineTreeInertia(m);
   DoScalarIndependentDefinitions(m);

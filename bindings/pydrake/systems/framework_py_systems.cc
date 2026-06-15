@@ -406,7 +406,7 @@ struct Impl {
   };
 
   static py::class_<System<T>, SystemBase, PySystem> DefineSystem(
-      py::module m) {
+      py::module_ m) {
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
     auto system_cls =
@@ -701,7 +701,7 @@ Note: The above is for the C++ documentation. For Python, use
     type_visit(def_to_scalar_type_maybe, CommonScalarPack{});
   }
 
-  static void DefineLeafSystem(py::module m) {
+  static void DefineLeafSystem(py::module_ m) {
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
     auto leaf_system_cls =
         DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
@@ -1061,7 +1061,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("model_value"), doc.LeafSystem.DeclareAbstractState.doc);
   }
 
-  static void DefineDiagram(py::module m) {
+  static void DefineDiagram(py::module_ m) {
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
         .def(py::init<>(), doc.Diagram.ctor.doc_0args)
@@ -1155,7 +1155,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("input"), doc.Diagram.AreConnected.doc);
   }
 
-  static void DefineVectorSystem(py::module m) {
+  static void DefineVectorSystem(py::module_ m) {
     {
       // N.B. This will effectively allow derived classes of `VectorSystem` to
       // override `LeafSystem` methods, disrespecting `final`-ity.
@@ -1175,7 +1175,7 @@ Note: The above is for the C++ documentation. For Python, use
     }
   }
 
-  static void DefineWrappedSystem(py::module m) {
+  static void DefineWrappedSystem(py::module_ m) {
     using Class = WrappedSystem<T>;
     auto cls = DefineTemplateClassWithDefault<Class, Diagram<T>>(m,
         "_WrappedSystem", GetPyParam<T>(),
@@ -1186,7 +1186,7 @@ Note: The above is for the C++ documentation. For Python, use
   }
 
   template <typename PyClass>
-  static void DefineSystemVisitor(py::module m, PyClass* system_cls) {
+  static void DefineSystemVisitor(py::module_ m, PyClass* system_cls) {
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in
@@ -1212,7 +1212,7 @@ py::tuple GetPyParamList(type_pack<Packs...> = {}) {
   return py::make_tuple(GetPyParam(Packs{})...);
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = SystemBase;
     constexpr auto& cls_doc = doc.SystemBase;
@@ -1222,23 +1222,21 @@ void DoScalarIndependentDefinitions(py::module m) {
       using Nested = SystemBase::GraphvizFragment;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragment;
       py::class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
-          .def_readwrite(
+          .def_rw(
               "input_ports", &Nested::input_ports, nested_doc.input_ports.doc)
-          .def_readwrite("output_ports", &Nested::output_ports,
+          .def_rw("output_ports", &Nested::output_ports,
               nested_doc.output_ports.doc)
-          .def_readwrite(
-              "fragments", &Nested::fragments, nested_doc.fragments.doc);
+          .def_rw("fragments", &Nested::fragments, nested_doc.fragments.doc);
     }
     {
       // GraphvizFragmentParams
       using Nested = SystemBasePublic::GraphvizFragmentParams;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragmentParams;
       py::class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
-          .def_readwrite(
-              "max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
-          .def_readwrite("options", &Nested::options, nested_doc.options.doc)
-          .def_readwrite("node_id", &Nested::node_id, nested_doc.node_id.doc)
-          .def_readwrite("header_lines", &Nested::header_lines,
+          .def_rw("max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
+          .def_rw("options", &Nested::options, nested_doc.options.doc)
+          .def_rw("node_id", &Nested::node_id, nested_doc.node_id.doc)
+          .def_rw("header_lines", &Nested::header_lines,
               nested_doc.header_lines.doc);
     }
     cls  // BR
@@ -1427,7 +1425,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
 
 }  // namespace
 
-void DefineFrameworkPySystems(py::module m) {
+void DefineFrameworkPySystems(py::module_ m) {
   DoScalarIndependentDefinitions(m);
 
   // Declare (but don't define) to resolve a dependency cycle.

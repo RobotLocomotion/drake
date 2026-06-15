@@ -48,11 +48,11 @@ The simple policy these functions help enforce:
 /** Permits referencing for builtin dtypes (e.g., T == double), but then
 switches to copying for custom dtypes (T ∈ {AutoDiffXd, Expression}). */
 template <typename T>
-py::return_value_policy return_value_policy_for_scalar_type() {
+py::rv_policy return_value_policy_for_scalar_type() {
   if (std::is_same_v<T, double>) {
-    return py::return_value_policy::reference_internal;
+    return py_rvp::reference_internal;
   } else {
-    return py::return_value_policy::copy;
+    return py_rvp::copy;
   }
 }
 
@@ -93,7 +93,7 @@ struct CastUPack<double> {
 template <typename T, typename PyClass,
     typename UPack = typename internal::CastUPack<T>::Pack>
 void DefCast(PyClass* cls, const char* doc, UPack U_pack = {}) {
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   auto bind_scalar = [cls, doc](auto U_dummy) {
     using U = decltype(U_dummy);
     AddTemplateMethod(

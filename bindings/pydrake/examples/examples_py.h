@@ -13,22 +13,22 @@ namespace pydrake {
 namespace internal {
 
 /* Defines bindings per examples_py_acrobot.cc. */
-void DefineExamplesAcrobot(py::module m);
+void DefineExamplesAcrobot(py::module_ m);
 
 /* Defines bindings per examples_py_compass_gait.cc. */
-void DefineExamplesCompassGait(py::module m);
+void DefineExamplesCompassGait(py::module_ m);
 
 /* Defines bindings per examples_py_pendulum.cc. */
-void DefineExamplesPendulum(py::module m);
+void DefineExamplesPendulum(py::module_ m);
 
 /* Defines bindings per examples_py_quadrotor.cc. */
-void DefineExamplesQuadrotor(py::module m);
+void DefineExamplesQuadrotor(py::module_ m);
 
 /* Defines bindings per examples_py_rimless_wheel.cc. */
-void DefineExamplesRimlessWheel(py::module m);
+void DefineExamplesRimlessWheel(py::module_ m);
 
 /* Defines bindings per examples_py_van_der_pol.cc. */
-void DefineExamplesVanDerPol(py::module m);
+void DefineExamplesVanDerPol(py::module_ m);
 
 }  // namespace internal
 }  // namespace pydrake

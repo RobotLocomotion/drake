@@ -10,7 +10,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningIrisFromCliqueCover(py::module m) {
+void DefinePlanningIrisFromCliqueCover(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
@@ -18,31 +18,29 @@ void DefinePlanningIrisFromCliqueCover(py::module m) {
   py::class_<IrisFromCliqueCoverOptions>(
       m, "IrisFromCliqueCoverOptions", cls_doc.doc)
       .def(py::init<>())
-      .def_readwrite("iris_options", &IrisFromCliqueCoverOptions::iris_options,
+      .def_rw("iris_options", &IrisFromCliqueCoverOptions::iris_options,
           cls_doc.iris_options.doc)
-      .def_readwrite("coverage_termination_threshold",
+      .def_rw("coverage_termination_threshold",
           &IrisFromCliqueCoverOptions::coverage_termination_threshold,
           cls_doc.coverage_termination_threshold.doc)
-      .def_readwrite("iteration_limit",
-          &IrisFromCliqueCoverOptions::iteration_limit,
+      .def_rw("iteration_limit", &IrisFromCliqueCoverOptions::iteration_limit,
           cls_doc.iteration_limit.doc)
-      .def_readwrite("num_points_per_coverage_check",
+      .def_rw("num_points_per_coverage_check",
           &IrisFromCliqueCoverOptions::num_points_per_coverage_check,
           cls_doc.num_points_per_coverage_check.doc)
-      .def_readwrite("parallelism", &IrisFromCliqueCoverOptions::parallelism,
+      .def_rw("parallelism", &IrisFromCliqueCoverOptions::parallelism,
           cls_doc.parallelism.doc)
-      .def_readwrite("minimum_clique_size",
+      .def_rw("minimum_clique_size",
           &IrisFromCliqueCoverOptions::minimum_clique_size,
           cls_doc.minimum_clique_size.doc)
-      .def_readwrite("num_points_per_visibility_round",
+      .def_rw("num_points_per_visibility_round",
           &IrisFromCliqueCoverOptions::num_points_per_visibility_round,
           cls_doc.num_points_per_visibility_round.doc)
-      .def_readwrite("rank_tol_for_minimum_volume_circumscribed_ellipsoid",
+      .def_rw("rank_tol_for_minimum_volume_circumscribed_ellipsoid",
           &IrisFromCliqueCoverOptions::
               rank_tol_for_minimum_volume_circumscribed_ellipsoid,
           cls_doc.rank_tol_for_minimum_volume_circumscribed_ellipsoid.doc)
-      .def_readwrite("point_in_set_tol",
-          &IrisFromCliqueCoverOptions::point_in_set_tol,
+      .def_rw("point_in_set_tol", &IrisFromCliqueCoverOptions::point_in_set_tol,
           cls_doc.point_in_set_tol.doc);
 
   m.def(

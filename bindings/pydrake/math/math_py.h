@@ -19,13 +19,13 @@ namespace internal {
 important for performance until numpy allows us to define dtype-specific
 implementations. Doing a matmul elementwise with a C++ <=> Python call for every
 flop is extraordinarily slow. */
-void DefineMathMatmul(py::module m);
+void DefineMathMatmul(py::module_ m);
 
 /* Defines bindings per math_py_monolith.cc. */
-void DefineMathMonolith(py::module m);
+void DefineMathMonolith(py::module_ m);
 
 /* Defines bindings per math_py_operators.cc. */
-void DefineMathOperators(py::module m);
+void DefineMathOperators(py::module_ m);
 
 }  // namespace internal
 }  // namespace pydrake

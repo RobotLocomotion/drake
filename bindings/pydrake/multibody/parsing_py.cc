@@ -19,7 +19,7 @@ using std::string;
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(parsing, m) {
+PYDRAKE_MODULE(parsing, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "SDF and URDF parsing for MultibodyPlant and SceneGraph.";
 
@@ -27,9 +27,9 @@ PYBIND11_MODULE(parsing, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_parsing.drake.multibody;
 
-  py::module::import("pydrake.common.schema");
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.tree");
+  py::module_::import_("pydrake.common.schema");
+  py::module_::import_("pydrake.geometry");
+  py::module_::import_("pydrake.multibody.tree");
 
   // CollisionFilterGroups
   {
@@ -250,14 +250,14 @@ PYBIND11_MODULE(parsing, m) {
     using Class = parsing::ModelInstanceInfo;
     constexpr auto& cls_doc = doc.parsing.ModelInstanceInfo;
     py::class_<Class>(m, "ModelInstanceInfo", cls_doc.doc)
-        .def_readonly("model_name", &Class::model_name, cls_doc.model_name.doc)
-        .def_readonly("model_path", &Class::model_path, cls_doc.model_path.doc)
-        .def_readonly("parent_frame_name", &Class::parent_frame_name,
+        .def_ro("model_name", &Class::model_name, cls_doc.model_name.doc)
+        .def_ro("model_path", &Class::model_path, cls_doc.model_path.doc)
+        .def_ro("parent_frame_name", &Class::parent_frame_name,
             cls_doc.parent_frame_name.doc)
-        .def_readonly("child_frame_name", &Class::child_frame_name,
+        .def_ro("child_frame_name", &Class::child_frame_name,
             cls_doc.child_frame_name.doc)
-        .def_readonly("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
-        .def_readonly("model_instance", &Class::model_instance,
+        .def_ro("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
+        .def_ro("model_instance", &Class::model_instance,
             cls_doc.model_instance.doc);
   }
 
@@ -295,8 +295,7 @@ PYBIND11_MODULE(parsing, m) {
         m.def("GetScopedFrameByName",
             overload_cast_explicit<const Frame<T>&, const MultibodyPlant<T>&,
                 std::string_view>(&parsing::GetScopedFrameByName),
-            py::arg("plant"), py::arg("full_name"),
-            py::return_value_policy::reference,
+            py::arg("plant"), py::arg("full_name"), py_rvp::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
             doc.parsing.GetScopedFrameByName.doc);
       },
@@ -307,8 +306,7 @@ PYBIND11_MODULE(parsing, m) {
         m.def("GetScopedFrameByNameMaybe",
             overload_cast_explicit<const Frame<T>*, const MultibodyPlant<T>&,
                 std::string_view>(&parsing::GetScopedFrameByNameMaybe),
-            py::arg("plant"), py::arg("full_name"),
-            py::return_value_policy::reference,
+            py::arg("plant"), py::arg("full_name"), py_rvp::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
             doc.parsing.GetScopedFrameByNameMaybe.doc);
       },

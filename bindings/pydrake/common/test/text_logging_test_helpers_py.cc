@@ -4,8 +4,7 @@
 #include <memory>
 #include <thread>
 
-#include "pybind11/pybind11.h"
-
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 
@@ -70,7 +69,7 @@ class Worker {
 
 }  // namespace
 
-PYBIND11_MODULE(text_logging_test_helpers, m) {
+PYDRAKE_MODULE(text_logging_test_helpers, m) {
   m.doc() = "Test text logging";
 
   m.def("do_log_test", &do_log_test);

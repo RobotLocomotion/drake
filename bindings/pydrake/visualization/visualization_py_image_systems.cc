@@ -9,7 +9,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineVisualizationImageSystems(py::module m) {
+void DefineVisualizationImageSystems(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::visualization;
   constexpr auto& doc = pydrake_doc_visualization.drake.visualization;
@@ -20,7 +20,7 @@ void DefineVisualizationImageSystems(py::module m) {
     py::class_<Class, systems::LeafSystem<double>>(
         m, "ColorizeDepthImage", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def_property("invalid_color", &Class::get_invalid_color,
+        .def_prop_rw("invalid_color", &Class::get_invalid_color,
             &Class::set_invalid_color,
             "The color used for pixels with too-near or too-far depth.")
         .def("Calc",
@@ -39,7 +39,7 @@ void DefineVisualizationImageSystems(py::module m) {
     py::class_<Class, systems::LeafSystem<double>>(
         m, "ColorizeLabelImage", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def_property("background_color", &Class::get_background_color,
+        .def_prop_rw("background_color", &Class::get_background_color,
             &Class::set_background_color,
             "The color used for pixels with no label.")
         .def("Calc", &Class::Calc, cls_doc.Calc.doc);

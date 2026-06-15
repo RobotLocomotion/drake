@@ -8,7 +8,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversClp(py::module m) {
+void DefineSolversClp(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
@@ -18,7 +18,7 @@ void DefineSolversClp(py::module m) {
       .def_static("id", &ClpSolver::id, doc.ClpSolver.id.doc);
 
   py::class_<ClpSolverDetails>(m, "ClpSolverDetails", doc.ClpSolverDetails.doc)
-      .def_readonly(
+      .def_ro(
           "status", &ClpSolverDetails::status, doc.ClpSolverDetails.status.doc);
   AddValueInstantiation<ClpSolverDetails>(m);
 }

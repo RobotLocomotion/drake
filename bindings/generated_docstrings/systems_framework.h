@@ -6703,12 +6703,6 @@ function (method) with this signature:
 where ``MySystem`` is a class derived from ``LeafSystem<T>`` and the
 method name is arbitrary.
 
-Warning:
-    These per-step publish events are independent of the Simulator's
-    optional "publish every time step" and "publish at initialization"
-    features. Generally if you are declaring per-step publish events
-    yourself you should turn off those Simulation options.
-
 See declare_per-step_events "Declare per-step events" for more
 information.
 
@@ -6725,13 +6719,7 @@ See also:
     DeclarePerStepUnrestrictedUpdateEvent()
 
 See also:
-    DeclarePerStepEvent()
-
-See also:
-    Simulator∷set_publish_at_initialization()
-
-See also:
-    Simulator∷set_publish_every_time_step())""";
+    DeclarePerStepEvent())""";
         } DeclarePerStepPublishEvent;
         // Symbol: drake::systems::LeafSystem::DeclarePerStepUnrestrictedUpdateEvent
         struct /* DeclarePerStepUnrestrictedUpdateEvent */ {
@@ -7582,6 +7570,11 @@ period_sec, where i is a non-negative integer.)""";
           const char* doc =
 R"""(Gets the time after zero when this event should first occur.)""";
         } offset_sec;
+        // Symbol: drake::systems::PeriodicEventData::operator<=>
+        struct /* operator_le_ */ {
+          // Source: drake/systems/framework/event.h
+          const char* doc = R"""()""";
+        } operator_le_;
         // Symbol: drake::systems::PeriodicEventData::period_sec
         struct /* period_sec */ {
           // Source: drake/systems/framework/event.h
@@ -7604,9 +7597,12 @@ R"""(Sets the period with which this event should recur.)""";
       // Symbol: drake::systems::PeriodicEventDataComparator
       struct /* PeriodicEventDataComparator */ {
         // Source: drake/systems/framework/event.h
-        const char* doc =
-R"""(Structure for comparing two PeriodicEventData objects for use in a map
-container, using an arbitrary comparison method.)""";
+        const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use the built-in spaceship operator instead. This will be removed
+    from Drake on or after 2026-09-01.)""";
         // Symbol: drake::systems::PeriodicEventDataComparator::operator()
         struct /* operator_call */ {
           // Source: drake/systems/framework/event.h

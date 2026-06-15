@@ -18,7 +18,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineModuleSchema(py::module m) {
+void DefineModuleSchema(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::schema;
   constexpr auto& doc = pydrake_doc_common_schema.drake.schema;
@@ -302,24 +302,24 @@ void DefineModuleSchema(py::module m) {
     // adding special-cases to getattr and setattr.
     cls.def("__getattr__", [](const Class& self, py::str name) -> py::object {
       if (std::holds_alternative<Rotation::Rpy>(self.value)) {
-        const std::string name_cxx = name;
+        const std::string_view name_cxx(name.c_str());
         if (name_cxx == "deg") {
           py::object self_py = py::cast(self, py_rvp::reference);
           return self_py.attr("value").attr(name);
         }
       }
       if (std::holds_alternative<Rotation::AngleAxis>(self.value)) {
-        const std::string name_cxx = name;
+        const std::string_view name_cxx(name.c_str());
         if ((name_cxx == "angle_deg") || (name_cxx == "axis")) {
           py::object self_py = py::cast(self, py_rvp::reference);
           return self_py.attr("value").attr(name);
         }
       }
-      return py::eval("object.__getattr__")(self, name);
+      return py::eval("object.__getattr__", py::globals())(self, name);
     });
     cls.def("__setattr__", [](Class& self, py::str name, py::object value) {
       if (std::holds_alternative<Rotation::Rpy>(self.value)) {
-        const std::string name_cxx = name;
+        const std::string_view name_cxx(name.c_str());
         if (name_cxx == "deg") {
           py::object self_py = py::cast(self, py_rvp::reference);
           self_py.attr("value").attr(name) = value;
@@ -327,14 +327,14 @@ void DefineModuleSchema(py::module m) {
         }
       }
       if (std::holds_alternative<Rotation::AngleAxis>(self.value)) {
-        const std::string name_cxx = name;
+        const std::string_view name_cxx(name.c_str());
         if ((name_cxx == "angle_deg") || (name_cxx == "axis")) {
           py::object self_py = py::cast(self, py_rvp::reference);
           self_py.attr("value").attr(name) = value;
           return;
         }
       }
-      py::eval("object.__setattr__")(self, name, value);
+      py::eval("object.__setattr__", py::globals())(self, name, value);
     });
   }
 
@@ -371,7 +371,7 @@ void DefineModuleSchema(py::module m) {
     static_assert(
         std::variant_size_v<RotationOrNestedValue> ==
         1 /* for Rotation */ + std::variant_size_v<Rotation::Variant>);
-    cls.def_property(
+    cls.def_prop_rw(
         "rotation", [](const Class& self) { return &self.rotation; },
         // The setter accepts a more generous allowed set of argument types.
         [](Class& self, RotationOrNestedValue value_variant) {
@@ -395,7 +395,7 @@ void DefineModuleSchema(py::module m) {
           }
           return name;
         });
-    cls.def_property_readonly(
+    cls.def_prop_ro(
         "_rotation_value",
         [](const Class& self) { return &self.rotation.value; },
         py_rvp::reference_internal);

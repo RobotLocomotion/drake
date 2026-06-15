@@ -122,8 +122,6 @@ def coin_cc_library(
         linkstatic = True,
         copts = [
             "-w",
-            # On Clang 12, "-w" doesn't suppress this for some reason.
-            "-Wno-register",
             # The Coin family of software uses NDEBUG for gross things, not
             # just controlling <cassert> but actually inserting huge swaths
             # of debugging code, some of which is not thread-safe. Even in

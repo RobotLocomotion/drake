@@ -10,7 +10,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineManipulationUtil(py::module m) {
+void DefineManipulationUtil(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation;
   constexpr auto& doc = pydrake_doc_manipulation_util.drake.manipulation;

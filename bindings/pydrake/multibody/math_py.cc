@@ -15,15 +15,16 @@ using math::RotationMatrix;
 template <typename T, typename PyClass>
 void BindSpatialVectorMixin(PyClass* pcls) {
   constexpr auto& doc = pydrake_doc_multibody_math.drake.multibody;
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   auto& cls = *pcls;
   cls  // BR
-      .def(py::init([]() {
-        // See #14086 for more details.
-        Class out;
-        out.SetNaN();
-        return out;
-      }),
+      .def(
+          "__init__",
+          [](Class* self) {
+            // See #14086 for more details.
+            new (self) Class;
+            self->SetNaN();
+          },
           R"""(
       Constructs to all NaNs.
 
@@ -72,15 +73,16 @@ void BindSpatialVectorMixin(PyClass* pcls) {
               This is done because defining ``__rmatmul__`` on this class does
               not disambiguate against the definitions of
               ``RotationMatrix.__matmul__``.
-          )""")
-      .def(py::pickle([](const Class& self) { return self.get_coeffs(); },
-          [](const Vector6<T>& coeffs) { return Class(coeffs); }));
+          )""");
+  DefPickle(
+      &cls, [](const Class& self) { return self.get_coeffs(); },
+      [](Class* self, const Vector6<T>& coeffs) { new (self) Class(coeffs); });
   DefCopyAndDeepCopy(&cls);
 }
 
 namespace {
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
@@ -193,10 +195,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::init<const Vector6<T>&>(), py::arg("F"), cls_doc.ctor.doc_1args)
         .def("Shift",
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
-            py::arg("offset"), cls_doc.Shift.doc_1args);
-    cls.def("dot",
-        overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
-        py::arg("velocity"), cls_doc.dot.doc);
+            py::arg("offset"), cls_doc.Shift.doc_1args)
+        .def("dot",
+            overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
+            py::arg("velocity"), cls_doc.dot.doc);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -205,13 +207,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 }  // namespace
 
-PYBIND11_MODULE(math, m) {
+PYDRAKE_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.symbolic");
+  py::module_::import_("pydrake.autodiffutils");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.symbolic");
 
   m.doc() = "Bindings for multibody math.";
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

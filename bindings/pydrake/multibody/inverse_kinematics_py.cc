@@ -45,9 +45,9 @@ CppPenaltyFunction UnwrapPyPenaltyFunction(PyPenaltyFunction penalty_function) {
       py::tuple penalty_tuple(2);
       const bool compute_grad = dpenalty != nullptr;
       penalty_tuple = penalty_function(x, compute_grad);
-      *penalty = penalty_tuple[0].cast<double>();
+      *penalty = py::cast<double>(penalty_tuple[0]);
       if (compute_grad) {
-        *dpenalty = penalty_tuple[1].cast<double>();
+        *dpenalty = py::cast<double>(penalty_tuple[1]);
       }
     };
   } else {
@@ -57,7 +57,7 @@ CppPenaltyFunction UnwrapPyPenaltyFunction(PyPenaltyFunction penalty_function) {
 
 using solvers::Constraint;
 
-PYBIND11_MODULE(inverse_kinematics, m) {
+PYDRAKE_MODULE(inverse_kinematics, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc =
@@ -66,21 +66,22 @@ PYBIND11_MODULE(inverse_kinematics, m) {
 
   m.doc() = "InverseKinematics module";
 
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.planning");
-  py::module::import("pydrake.solvers");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.plant");
+  py::module_::import_("pydrake.planning");
+  py::module_::import_("pydrake.solvers");
 
   {
     using Class = InverseKinematics;
     constexpr auto& cls_doc = doc.InverseKinematics;
     py::class_<Class> cls(
         m, "InverseKinematics", py::dynamic_attr(), cls_doc.doc);
-    cls.def(py::init<const MultibodyPlant<double>&, bool>(), py::arg("plant"),
-           py::arg("with_joint_limits") = true,
-           // Keep alive, reference: `self` keeps `plant` alive.
-           py::keep_alive<1, 2>(),  // BR
-           cls_doc.ctor.doc_2args)
+    cls  // BR
+        .def(py::init<const MultibodyPlant<double>&, bool>(), py::arg("plant"),
+            py::arg("with_joint_limits") = true,
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),  // BR
+            cls_doc.ctor.doc_2args)
         .def(py::init<const MultibodyPlant<double>&, systems::Context<double>*,
                  bool>(),
             py::arg("plant"), py::arg("plant_context"),
@@ -195,16 +196,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(
         m, "AngleBetweenVectorsConstraint", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& a_A,
-                          const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& b_B,
-                          double angle_lower, double angle_upper,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(plant, frameA, a_A, frameB, b_B,
-              angle_lower, angle_upper, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double, double,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
             py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
             py::arg("angle_upper"), py::arg("plant_context"),
@@ -212,16 +207,12 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 9>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const Frame<AutoDiffXd>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& a_A,
-                          const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& b_B,
-                          double angle_lower, double angle_upper,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(plant, frameA, a_A, frameB, b_B,
-              angle_lower, angle_upper, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double, double,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
             py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
             py::arg("angle_upper"), py::arg("plant_context"),
@@ -236,15 +227,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, solvers::Cost, Ptr>(
         m, "AngleBetweenVectorsCost", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& a_A,
-                          const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& b_B,
-                          double c, systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameA, a_A, frameB, b_B, c, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
             py::arg("frameB"), py::arg("b_B"), py::arg("c"),
             py::arg("plant_context"),
@@ -252,16 +238,12 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
-        .def(
-            py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                         const Frame<AutoDiffXd>& frameA,
-                         const Eigen::Ref<const Eigen::Vector3d>& a_A,
-                         const Frame<AutoDiffXd>& frameB,
-                         const Eigen::Ref<const Eigen::Vector3d>& b_B, double c,
-                         systems::Context<AutoDiffXd>* plant_context) {
-              return std::make_unique<Class>(
-                  plant, frameA, a_A, frameB, b_B, c, plant_context);
-            }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
             py::arg("frameB"), py::arg("b_B"), py::arg("c"),
             py::arg("plant_context"),
@@ -276,16 +258,12 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(
         m, "PointToPointDistanceConstraint", cls_doc.doc)
-        .def(py::init([](const multibody::MultibodyPlant<double>* const plant,
-                          const multibody::Frame<double>& frame1,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,
-                          const multibody::Frame<double>& frame2,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_B2P2,
-                          double distance_lower, double distance_upper,
-                          systems::Context<double>* plant_context) {
-          return std::make_shared<Class>(plant, frame1, p_B1P1, frame2, p_B2P2,
-              distance_lower, distance_upper, plant_context);
-        }),
+        .def(py::init<const multibody::MultibodyPlant<double>* const,
+                 const multibody::Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const multibody::Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double, double,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frame1"), py::arg("p_B1P1"),
             py::arg("frame2"), py::arg("p_B2P2"), py::arg("distance_lower"),
             py::arg("distance_upper"), py::arg("plant_context"),
@@ -293,17 +271,12 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 9>(), cls_doc.ctor.doc_double)
-        .def(py::init(
-                 [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
-                     const multibody::Frame<AutoDiffXd>& frame1,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,
-                     const multibody::Frame<AutoDiffXd>& frame2,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_B2P2,
-                     double distance_lower, double distance_upper,
-                     systems::Context<AutoDiffXd>* plant_context) {
-                   return std::make_shared<Class>(plant, frame1, p_B1P1, frame2,
-                       p_B2P2, distance_lower, distance_upper, plant_context);
-                 }),
+        .def(py::init<const multibody::MultibodyPlant<AutoDiffXd>* const,
+                 const multibody::Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const multibody::Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double, double,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frame1"), py::arg("p_B1P1"),
             py::arg("frame2"), py::arg("p_B2P2"), py::arg("distance_lower"),
             py::arg("distance_upper"), py::arg("plant_context"),
@@ -318,17 +291,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(
         m, "PointToLineDistanceConstraint", cls_doc.doc)
-        .def(py::init([](const multibody::MultibodyPlant<double>* const plant,
-                          const multibody::Frame<double>& frame_point,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_B1P,
-                          const multibody::Frame<double>& frame_line,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_B2Q,
-                          const Eigen::Ref<const Eigen::Vector3d>& n_B2,
-                          double distance_lower, double distance_upper,
-                          systems::Context<double>* plant_context) {
-          return std::make_shared<Class>(plant, frame_point, p_B1P, frame_line,
-              p_B2Q, n_B2, distance_lower, distance_upper, plant_context);
-        }),
+        .def(py::init<const multibody::MultibodyPlant<double>* const,
+                 const multibody::Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const multibody::Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double, double,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frame_point"), py::arg("p_B1P"),
             py::arg("frame_line"), py::arg("p_B2Q"), py::arg("n_B2"),
             py::arg("distance_lower"), py::arg("distance_upper"),
@@ -337,19 +306,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 10>(), cls_doc.ctor.doc_double)
-        .def(py::init(
-                 [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
-                     const multibody::Frame<AutoDiffXd>& frame_point,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_B1P,
-                     const multibody::Frame<AutoDiffXd>& frame_line,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_B2Q,
-                     const Eigen::Ref<const Eigen::Vector3d>& n_B2,
-                     double distance_lower, double distance_upper,
-                     systems::Context<AutoDiffXd>* plant_context) {
-                   return std::make_shared<Class>(plant, frame_point, p_B1P,
-                       frame_line, p_B2Q, n_B2, distance_lower, distance_upper,
-                       plant_context);
-                 }),
+        .def(py::init<const multibody::MultibodyPlant<AutoDiffXd>* const,
+                 const multibody::Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const multibody::Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double, double,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frame_point"), py::arg("p_B1P"),
             py::arg("frame_line"), py::arg("p_B2Q"), py::arg("n_B2"),
             py::arg("distance_lower"), py::arg("distance_upper"),
@@ -364,16 +327,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.PolyhedronConstraint;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(m, "PolyhedronConstraint", cls_doc.doc)
-        .def(py::init([](const multibody::MultibodyPlant<double>* const plant,
-                          const multibody::Frame<double>& frameF,
-                          const multibody::Frame<double>& frameG,
-                          const Eigen::Ref<const Eigen::Matrix3Xd>& p_GP,
-                          const Eigen::Ref<const Eigen::MatrixXd>& A,
-                          const Eigen::Ref<const Eigen::VectorXd>& b,
-                          systems::Context<double>* plant_context) {
-          return std::make_shared<Class>(
-              plant, frameF, frameG, p_GP, A, b, plant_context);
-        }),
+        .def(py::init<const multibody::MultibodyPlant<double>* const,
+                 const multibody::Frame<double>&,
+                 const multibody::Frame<double>&,
+                 const Eigen::Ref<const Eigen::Matrix3Xd>&,
+                 const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameF"), py::arg("frameG"),
             py::arg("p_GP"), py::arg("A"), py::arg("b"),
             py::arg("plant_context"),
@@ -381,17 +341,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
-        .def(py::init(
-                 [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
-                     const multibody::Frame<AutoDiffXd>& frameF,
-                     const multibody::Frame<AutoDiffXd>& frameG,
-                     const Eigen::Ref<const Eigen::Matrix3Xd>& p_GP,
-                     const Eigen::Ref<const Eigen::MatrixXd>& A,
-                     const Eigen::Ref<const Eigen::VectorXd>& b,
-                     systems::Context<AutoDiffXd>* plant_context) {
-                   return std::make_shared<Class>(
-                       plant, frameF, frameG, p_GP, A, b, plant_context);
-                 }),
+        .def(py::init<const multibody::MultibodyPlant<AutoDiffXd>* const,
+                 const multibody::Frame<AutoDiffXd>&,
+                 const multibody::Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Matrix3Xd>&,
+                 const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameF"), py::arg("frameG"),
             py::arg("p_GP"), py::arg("A"), py::arg("b"),
             py::arg("plant_context"),
@@ -405,13 +361,9 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.DistanceConstraint;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(m, "DistanceConstraint", cls_doc.doc)
-        .def(py::init([](const multibody::MultibodyPlant<double>* const plant,
-                          SortedPair<geometry::GeometryId> geometry_pair,
-                          systems::Context<double>* plant_context,
-                          double distance_lower, double distance_upper) {
-          return std::make_unique<Class>(plant, geometry_pair, plant_context,
-              distance_lower, distance_upper);
-        }),
+        .def(py::init<const multibody::MultibodyPlant<double>* const,
+                 SortedPair<geometry::GeometryId>, systems::Context<double>*,
+                 double, double>(),
             py::arg("plant"), py::arg("geometry_pair"),
             py::arg("plant_context"), py::arg("distance_lower"),
             py::arg("distance_upper"),
@@ -419,14 +371,9 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 4>(), cls_doc.ctor.doc_double)
-        .def(py::init(
-                 [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
-                     SortedPair<geometry::GeometryId> geometry_pair,
-                     systems::Context<AutoDiffXd>* plant_context,
-                     double distance_lower, double distance_upper) {
-                   return std::make_unique<Class>(plant, geometry_pair,
-                       plant_context, distance_lower, distance_upper);
-                 }),
+        .def(py::init<const multibody::MultibodyPlant<AutoDiffXd>* const,
+                 SortedPair<geometry::GeometryId>,
+                 systems::Context<AutoDiffXd>*, double, double>(),
             py::arg("plant"), py::arg("geometry_pair"),
             py::arg("plant_context"), py::arg("distance_lower"),
             py::arg("distance_upper"),
@@ -441,17 +388,11 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.GazeTargetConstraint;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(m, "GazeTargetConstraint", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AS,
-                          const Eigen::Ref<const Eigen::Vector3d>& n_A,
-                          const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BT,
-                          double cone_half_angle,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(plant, frameA, p_AS, n_A, frameB, p_BT,
-              cone_half_angle, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
             py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
             py::arg("cone_half_angle"), py::arg("plant_context"),
@@ -459,17 +400,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 9>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const Frame<AutoDiffXd>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AS,
-                          const Eigen::Ref<const Eigen::Vector3d>& n_A,
-                          const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BT,
-                          double cone_half_angle,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(plant, frameA, p_AS, n_A, frameB, p_BT,
-              cone_half_angle, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, double,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
             py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
             py::arg("cone_half_angle"), py::arg("plant_context"),
@@ -498,14 +435,15 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         cls_doc.ctor.doc_double_mbp + py_penalty_doc;
 
     minimum_distance_lower_bound_constraint.def(
-        py::init([](const multibody::MultibodyPlant<double>* plant,
-                     double bound, systems::Context<double>* plant_context,
-                     PyPenaltyFunction penalty_function,
-                     double influence_distance_offset) {
-          return std::make_unique<MinimumDistanceLowerBoundConstraint>(plant,
-              bound, plant_context, UnwrapPyPenaltyFunction(penalty_function),
+        "__init__",
+        [](Class* self, const multibody::MultibodyPlant<double>* plant,
+            double bound, systems::Context<double>* plant_context,
+            PyPenaltyFunction penalty_function,
+            double influence_distance_offset) {
+          new (self) Class(plant, bound, plant_context,
+              UnwrapPyPenaltyFunction(penalty_function),
               influence_distance_offset);
-        }),
+        },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
         py::arg("penalty_function") = nullptr,
         py::arg("influence_distance_offset") = 0.01,
@@ -518,14 +456,15 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         cls_doc.ctor.doc_autodiff_mbp + py_penalty_doc;
 
     minimum_distance_lower_bound_constraint.def(
-        py::init([](const multibody::MultibodyPlant<AutoDiffXd>* plant,
-                     double bound, systems::Context<AutoDiffXd>* plant_context,
-                     PyPenaltyFunction penalty_function,
-                     double influence_distance_offset) {
-          return std::make_unique<MinimumDistanceLowerBoundConstraint>(plant,
-              bound, plant_context, UnwrapPyPenaltyFunction(penalty_function),
+        "__init__",
+        [](Class* self, const multibody::MultibodyPlant<AutoDiffXd>* plant,
+            double bound, systems::Context<AutoDiffXd>* plant_context,
+            PyPenaltyFunction penalty_function,
+            double influence_distance_offset) {
+          new (self) Class(plant, bound, plant_context,
+              UnwrapPyPenaltyFunction(penalty_function),
               influence_distance_offset);
-        }),
+        },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
         py::arg("penalty_function") = nullptr,
         py::arg("influence_distance_offset") = 0.01,
@@ -537,17 +476,18 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     const std::string constructor_collision_checker_py_penalty =
         cls_doc.ctor.doc_collision_checker + py_penalty_doc;
     minimum_distance_lower_bound_constraint
-        .def(py::init([](const planning::CollisionChecker* collision_checker,
-                          double bound,
-                          planning::CollisionCheckerContext*
-                              collision_checker_context,
-                          PyPenaltyFunction penalty_function,
-                          double influence_distance_offset) {
-          return std::make_unique<Class>(collision_checker, bound,
-              collision_checker_context,
-              UnwrapPyPenaltyFunction(penalty_function),
-              influence_distance_offset);
-        }),
+        .def(
+            "__init__",
+            [](Class* self, const planning::CollisionChecker* collision_checker,
+                double bound,
+                planning::CollisionCheckerContext* collision_checker_context,
+                PyPenaltyFunction penalty_function,
+                double influence_distance_offset) {
+              new (self)
+                  Class(collision_checker, bound, collision_checker_context,
+                      UnwrapPyPenaltyFunction(penalty_function),
+                      influence_distance_offset);
+            },
             py::arg("collision_checker"), py::arg("bound"),
             py::arg("collision_checker_context"),
             py::arg("penalty_function") =
@@ -585,14 +525,15 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         cls_doc.ctor.doc_double_mbp + py_penalty_doc;
 
     minimum_distance_upper_bound_constraint.def(
-        py::init([](const multibody::MultibodyPlant<double>* plant,
-                     double bound, systems::Context<double>* plant_context,
-                     double influence_distance_offset,
-                     PyPenaltyFunction penalty_function) {
-          return std::make_unique<MinimumDistanceUpperBoundConstraint>(plant,
-              bound, plant_context, influence_distance_offset,
-              UnwrapPyPenaltyFunction(penalty_function));
-        }),
+        "__init__",
+        [](Class* self, const multibody::MultibodyPlant<double>* plant,
+            double bound, systems::Context<double>* plant_context,
+            double influence_distance_offset,
+            PyPenaltyFunction penalty_function) {
+          new (self)
+              Class(plant, bound, plant_context, influence_distance_offset,
+                  UnwrapPyPenaltyFunction(penalty_function));
+        },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
         py::arg("influence_distance_offset"),
         py::arg("penalty_function") = nullptr,
@@ -605,14 +546,15 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         cls_doc.ctor.doc_autodiff_mbp + py_penalty_doc;
 
     minimum_distance_upper_bound_constraint.def(
-        py::init([](const multibody::MultibodyPlant<AutoDiffXd>* plant,
-                     double bound, systems::Context<AutoDiffXd>* plant_context,
-                     double influence_distance_offset,
-                     PyPenaltyFunction penalty_function) {
-          return std::make_unique<MinimumDistanceUpperBoundConstraint>(plant,
-              bound, plant_context, influence_distance_offset,
-              UnwrapPyPenaltyFunction(penalty_function));
-        }),
+        "__init__",
+        [](Class* self, const multibody::MultibodyPlant<AutoDiffXd>* plant,
+            double bound, systems::Context<AutoDiffXd>* plant_context,
+            double influence_distance_offset,
+            PyPenaltyFunction penalty_function) {
+          new (self)
+              Class(plant, bound, plant_context, influence_distance_offset,
+                  UnwrapPyPenaltyFunction(penalty_function));
+        },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
         py::arg("influence_distance_offset"),
         py::arg("penalty_function") = nullptr,
@@ -624,16 +566,17 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     const std::string constructor_collision_checker_py_penalty =
         cls_doc.ctor.doc_collision_checker + py_penalty_doc;
     minimum_distance_upper_bound_constraint
-        .def(py::init([](const planning::CollisionChecker* collision_checker,
-                          double bound,
-                          planning::CollisionCheckerContext*
-                              collision_checker_context,
-                          double influence_distance_offset,
-                          PyPenaltyFunction penalty_function) {
-          return std::make_unique<Class>(collision_checker, bound,
-              collision_checker_context, influence_distance_offset,
-              UnwrapPyPenaltyFunction(penalty_function));
-        }),
+        .def(
+            "__init__",
+            [](Class* self, const planning::CollisionChecker* collision_checker,
+                double bound,
+                planning::CollisionCheckerContext* collision_checker_context,
+                double influence_distance_offset,
+                PyPenaltyFunction penalty_function) {
+              new (self) Class(collision_checker, bound,
+                  collision_checker_context, influence_distance_offset,
+                  UnwrapPyPenaltyFunction(penalty_function));
+            },
             py::arg("collision_checker"), py::arg("bound"),
             py::arg("collision_checker_context"),
             py::arg("influence_distance_offset"),
@@ -656,16 +599,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.PositionConstraint;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(m, "PositionConstraint", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                          const Frame<double>& frameB,
-                          std::optional<Eigen::Vector3d> p_BQ,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
-              frameB, p_BQ, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
+                 std::optional<Eigen::Vector3d>, systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
             py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
             py::arg("plant_context"),
@@ -673,17 +610,11 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameAbar,
-                          const std::optional<math::RigidTransformd>& X_AbarA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                          const Frame<double>& frameB,
-                          std::optional<Eigen::Vector3d> p_BQ,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(plant, frameAbar, X_AbarA, p_AQ_lower,
-              p_AQ_upper, frameB, p_BQ, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const std::optional<math::RigidTransformd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
+                 std::optional<Eigen::Vector3d>, systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameAbar"), py::arg("X_AbarA"),
             py::arg("p_AQ_lower"), py::arg("p_AQ_upper"), py::arg("frameB"),
             py::arg("p_BQ"), py::arg("plant_context"),
@@ -691,16 +622,12 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 9>(), cls_doc.ctor.doc_double_Abar)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const Frame<AutoDiffXd>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                          const Frame<AutoDiffXd>& frameB,
-                          std::optional<Eigen::Vector3d> p_BQ,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
-              frameB, p_BQ, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Frame<AutoDiffXd>&, std::optional<Eigen::Vector3d>,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
             py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
             py::arg("plant_context"),
@@ -708,17 +635,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_autodiff)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const Frame<AutoDiffXd>& frameAbar,
-                          const std::optional<math::RigidTransformd>& X_AbarA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                          const Frame<AutoDiffXd>& frameB,
-                          std::optional<Eigen::Vector3d> p_BQ,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(plant, frameAbar, X_AbarA, p_AQ_lower,
-              p_AQ_upper, frameB, p_BQ, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 const Frame<AutoDiffXd>&,
+                 const std::optional<math::RigidTransformd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Frame<AutoDiffXd>&, std::optional<Eigen::Vector3d>,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameAbar"), py::arg("X_AbarA"),
             py::arg("p_AQ_lower"), py::arg("p_AQ_upper"), py::arg("frameB"),
             py::arg("p_BQ"), py::arg("plant_context"),
@@ -739,16 +662,11 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.PositionCost;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, solvers::Cost, Ptr>(m, "PositionCost", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AP,
-                          const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                          const Eigen::Ref<const Eigen::Matrix3d>& C,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameA, p_AP, frameB, p_BQ, C, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Matrix3d>&,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AP"),
             py::arg("frameB"), py::arg("p_BQ"), py::arg("C"),
             py::arg("plant_context"),
@@ -756,16 +674,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const Frame<AutoDiffXd>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AP,
-                          const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                          const Eigen::Ref<const Eigen::Matrix3d>& C,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameA, p_AP, frameB, p_BQ, C, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::Vector3d>&,
+                 const Eigen::Ref<const Eigen::Matrix3d>&,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AP"),
             py::arg("frameB"), py::arg("p_BQ"), py::arg("C"),
             py::arg("plant_context"),
@@ -780,28 +695,18 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.ComPositionConstraint;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(m, "ComPositionConstraint", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const std::optional<std::vector<ModelInstanceIndex>>&
-                              model_instances,
-                          const Frame<double>& expressed_frame,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(
-              plant, model_instances, expressed_frame, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>*,
+                 const std::optional<std::vector<ModelInstanceIndex>>&,
+                 const Frame<double>&, systems::Context<double>*>(),
             py::arg("plant"), py::arg("model_instances"),
             py::arg("expressed_frame"), py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 5>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const std::optional<std::vector<ModelInstanceIndex>>&
-                              model_instances,
-                          const Frame<AutoDiffXd>& expressed_frame,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(
-              plant, model_instances, expressed_frame, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 const std::optional<std::vector<ModelInstanceIndex>>&,
+                 const Frame<AutoDiffXd>&, systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("model_instances"),
             py::arg("expressed_frame"), py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
@@ -816,17 +721,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(
         m, "ComInPolyhedronConstraint", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          std::optional<std::vector<ModelInstanceIndex>>
-                              model_instances,
-                          const Frame<double>& expressed_frame,
-                          const Eigen::Ref<const Eigen::MatrixX3d>& A,
-                          const Eigen::Ref<const Eigen::VectorXd>& lb,
-                          const Eigen::Ref<const Eigen::VectorXd>& ub,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(plant, model_instances,
-              expressed_frame, A, lb, ub, plant_context);
-        }),
+        .def(
+            py::init<const MultibodyPlant<double>*,
+                std::optional<std::vector<ModelInstanceIndex>>,
+                const Frame<double>&, const Eigen::Ref<const Eigen::MatrixX3d>&,
+                const Eigen::Ref<const Eigen::VectorXd>&,
+                const Eigen::Ref<const Eigen::VectorXd>&,
+                systems::Context<double>*>(),
             py::arg("plant"), py::arg("model_instances"),
             py::arg("expressed_frame"), py::arg("A"), py::arg("lb"),
             py::arg("ub"), py::arg("plant_context"),
@@ -834,17 +735,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          std::optional<std::vector<ModelInstanceIndex>>
-                              model_instances,
-                          const Frame<AutoDiffXd>& expressed_frame,
-                          const Eigen::Ref<const Eigen::MatrixX3d>& A,
-                          const Eigen::Ref<const Eigen::VectorXd>& lb,
-                          const Eigen::Ref<const Eigen::VectorXd>& ub,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(plant, model_instances,
-              expressed_frame, A, lb, ub, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 std::optional<std::vector<ModelInstanceIndex>>,
+                 const Frame<AutoDiffXd>&,
+                 const Eigen::Ref<const Eigen::MatrixX3d>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("model_instances"),
             py::arg("expressed_frame"), py::arg("A"), py::arg("lb"),
             py::arg("ub"), py::arg("plant_context"),
@@ -859,16 +756,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.OrientationConstraint;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(m, "OrientationConstraint", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* const plant,
-                          const Frame<double>& frameAbar,
-                          const math::RotationMatrix<double>& R_AbarA,
-                          const Frame<double>& frameBbar,
-                          const math::RotationMatrix<double>& R_BbarB,
-                          double theta_bound,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(plant, frameAbar, R_AbarA, frameBbar,
-              R_BbarB, theta_bound, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>* const, const Frame<double>&,
+                 const math::RotationMatrix<double>&, const Frame<double>&,
+                 const math::RotationMatrix<double>&, double,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
             py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
             py::arg("plant_context"),
@@ -876,16 +767,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* const plant,
-                          const Frame<AutoDiffXd>& frameAbar,
-                          const math::RotationMatrix<double>& R_AbarA,
-                          const Frame<AutoDiffXd>& frameBbar,
-                          const math::RotationMatrix<double>& R_BbarB,
-                          double theta_bound,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(plant, frameAbar, R_AbarA, frameBbar,
-              R_BbarB, theta_bound, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>* const,
+                 const Frame<AutoDiffXd>&, const math::RotationMatrix<double>&,
+                 const Frame<AutoDiffXd>&, const math::RotationMatrix<double>&,
+                 double, systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
             py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
             py::arg("plant_context"),
@@ -900,15 +785,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.OrientationCost;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, solvers::Cost, Ptr>(m, "OrientationCost", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameAbar,
-                          const math::RotationMatrix<double>& R_AbarA,
-                          const Frame<double>& frameBbar,
-                          const math::RotationMatrix<double>& R_BbarB, double c,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameAbar, R_AbarA, frameBbar, R_BbarB, c, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
+                 const math::RotationMatrix<double>&, const Frame<double>&,
+                 const math::RotationMatrix<double>&, double,
+                 systems::Context<double>*>(),
             py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
             py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("c"),
             py::arg("plant_context"),
@@ -916,15 +796,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const Frame<AutoDiffXd>& frameAbar,
-                          const math::RotationMatrix<double>& R_AbarA,
-                          const Frame<AutoDiffXd>& frameBbar,
-                          const math::RotationMatrix<double>& R_BbarB, double c,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameAbar, R_AbarA, frameBbar, R_BbarB, c, plant_context);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 const Frame<AutoDiffXd>&, const math::RotationMatrix<double>&,
+                 const Frame<AutoDiffXd>&, const math::RotationMatrix<double>&,
+                 double, systems::Context<AutoDiffXd>*>(),
             py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
             py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("c"),
             py::arg("plant_context"),
@@ -940,8 +815,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(
         m, "UnitQuaternionConstraint", cls_doc.doc)
-        .def(py::init([]() { return std::make_unique<Class>(); }),
-            cls_doc.ctor.doc);
+        .def(py::init<>(), cls_doc.ctor.doc);
     m.def("AddUnitQuaternionConstraintOnPlant",
         &AddUnitQuaternionConstraintOnPlant<double>, py::arg("plant"),
         py::arg("q_vars"), py::arg("prog"),
@@ -959,15 +833,15 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     py::class_<GlobalInverseKinematics::Options>(
         global_ik, "Options", cls_doc.Options.doc)
         .def(py::init<>(), cls_doc.Options.ctor.doc)
-        .def_readwrite("num_intervals_per_half_axis",
+        .def_rw("num_intervals_per_half_axis",
             &GlobalInverseKinematics::Options::num_intervals_per_half_axis,
             cls_doc.Options.num_intervals_per_half_axis.doc)
-        .def_readwrite("approach", &GlobalInverseKinematics::Options::approach,
+        .def_rw("approach", &GlobalInverseKinematics::Options::approach,
             cls_doc.Options.approach.doc)
-        .def_readwrite("interval_binning",
+        .def_rw("interval_binning",
             &GlobalInverseKinematics::Options::interval_binning,
             cls_doc.Options.interval_binning.doc)
-        .def_readwrite("linear_constraint_only",
+        .def_rw("linear_constraint_only",
             &GlobalInverseKinematics::Options::linear_constraint_only,
             cls_doc.Options.linear_constraint_only.doc)
         .def("__repr__", [](const GlobalInverseKinematics::Options& self) {
@@ -986,9 +860,9 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         .def(py::init<const Eigen::Ref<const Eigen::MatrixX3d>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("A"), py::arg("b"), cls_doc.Polytope3D.ctor.doc)
-        .def_readwrite("A", &GlobalInverseKinematics::Polytope3D::A,
+        .def_rw("A", &GlobalInverseKinematics::Polytope3D::A,
             cls_doc.Polytope3D.A.doc)
-        .def_readwrite("b", &GlobalInverseKinematics::Polytope3D::b,
+        .def_rw("b", &GlobalInverseKinematics::Polytope3D::b,
             cls_doc.Polytope3D.b.doc)
         .def("__repr__", [](const GlobalInverseKinematics::Polytope3D& self) {
           return py::str("GlobalInverseKinematics.Polytope(A={}, b={})")

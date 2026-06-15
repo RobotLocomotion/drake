@@ -39,7 +39,7 @@ std::string_view GetDtypeName() {
 
 }  // namespace
 
-void DefineMathMatmul(py::module m) {
+void DefineMathMatmul(py::module_ m) {
   const auto bind = [&m]<typename T1, typename T2>() {
     using T3 = typename decltype(std::declval<MatrixX<T1>>() *
                                  std::declval<MatrixX<T2>>())::Scalar;

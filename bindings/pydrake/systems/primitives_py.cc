@@ -54,15 +54,15 @@ using symbolic::Variable;
 
 namespace pydrake {
 
-PYBIND11_MODULE(primitives, m) {
+PYDRAKE_MODULE(primitives, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
 
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
   constexpr auto& doc = pydrake_doc_systems_primitives.drake.systems;
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.trajectories");
 
   py::enum_<PerceptronActivationType>(
       m, "PerceptronActivationType", doc.PerceptronActivationType.doc)
@@ -483,11 +483,14 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<SparseMatrixGain<T>, LeafSystem<T>>(
         m, "SparseMatrixGain", GetPyParam<T>(), doc.SparseMatrixGain.doc)
-        .def(py::init([](const Eigen::SparseMatrix<double>& D) {
-          // Our interactions with scipy don't work yet with (0,N) matrices.
-          DRAKE_THROW_UNLESS(D.rows() > 0 || D.cols() == 0);
-          return std::make_unique<SparseMatrixGain<T>>(D);
-        }),
+        .def(
+            "__init__",
+            [](SparseMatrixGain<T>* self,
+                const Eigen::SparseMatrix<double>& D) {
+              // Our interactions with scipy don't work yet with (0,N) matrices.
+              DRAKE_THROW_UNLESS(D.rows() > 0 || D.cols() == 0);
+              new (self) SparseMatrixGain<T>(D);
+            },
             py::arg("D"), doc.SparseMatrixGain.ctor.doc)
         .def("D", &SparseMatrixGain<T>::D, doc.SparseMatrixGain.D.doc)
         .def("set_D", &SparseMatrixGain<T>::set_D, py::arg("D"),
@@ -526,10 +529,13 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<SharedPointerSystem<T>, LeafSystem<T>>(
         m, "SharedPointerSystem", GetPyParam<T>(), doc.SharedPointerSystem.doc)
-        .def(py::init([](py::object value_to_hold) {
-          auto wrapped = std::make_unique<py::object>(std::move(value_to_hold));
-          return std::make_unique<SharedPointerSystem<T>>(std::move(wrapped));
-        }),
+        .def(
+            "__init__",
+            [](SharedPointerSystem<T>* self, py::object value_to_hold) {
+              auto wrapped =
+                  std::make_unique<py::object>(std::move(value_to_hold));
+              new (self) SharedPointerSystem<T>(std::move(wrapped));
+            },
             py::arg("value_to_hold"), doc.SharedPointerSystem.ctor.doc)
         .def_static(
             "AddToBuilder",
@@ -582,7 +588,7 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<VectorLog<T>>(
         m, "VectorLog", GetPyParam<T>(), doc.VectorLog.doc)
-        .def_property_readonly_static("kDefaultCapacity",
+        .def_prop_ro_static("kDefaultCapacity",
             [](py::object) { return VectorLog<T>::kDefaultCapacity; })
         .def(py::init<int>(), py::arg("input_size"), doc.VectorLog.ctor.doc)
         .def("num_samples", &VectorLog<T>::num_samples,

@@ -205,6 +205,13 @@ T LimitConstraintsPool<T>::CalcLimitData(const T& v_hat, const T& R, const T& v,
   return cost;
 }
 
+template <typename T>
+void LimitConstraintsPool<T>::ReduceInto(const ReducedMapping&,
+                                         LimitConstraintsPool<T>*) const {
+  // TODO(#23764): implement.
+  DRAKE_THROW_UNLESS(num_constraints() == 0);
+}
+
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers

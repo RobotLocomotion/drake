@@ -9,7 +9,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversMixedIntegerRotationConstraint(py::module m) {
+void DefineSolversMixedIntegerRotationConstraint(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
@@ -41,13 +41,14 @@ void DefineSolversMixedIntegerRotationConstraint(py::module m) {
     constexpr auto& struct_doc = cls_doc.ReturnType;
     py::class_<Struct>(cls, "ReturnType", struct_doc.doc)
         // Massage these return types to return copies, not references (#8116).
-        .def_readonly("B_", &Struct::B_, py_rvp::copy, struct_doc.B_.doc)
-        .def_readonly(
+        .def_ro("B_", &Struct::B_, py_rvp::copy, struct_doc.B_.doc)
+        .def_ro(
             "lambda_", &Struct::lambda_, py_rvp::copy, struct_doc.lambda_.doc);
 
-    cls.def(py::init<Class::Approach, int, IntervalBinning>(),
-           py::arg("approach"), py::arg("num_intervals_per_half_axis"),
-           py::arg("interval_binning"), cls_doc.ctor.doc)
+    cls  // BR
+        .def(py::init<Class::Approach, int, IntervalBinning>(),
+            py::arg("approach"), py::arg("num_intervals_per_half_axis"),
+            py::arg("interval_binning"), cls_doc.ctor.doc)
         .def("AddToProgram", &Class::AddToProgram, py::arg("R"),
             py::arg("prog"), cls_doc.AddToProgram.doc);
   }

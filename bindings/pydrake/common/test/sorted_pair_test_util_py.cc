@@ -23,7 +23,7 @@ ExampleMap PassThroughMap(const ExampleMap& in) {
 
 }  // namespace
 
-PYBIND11_MODULE(sorted_pair_test_util, m) {
+PYDRAKE_MODULE(sorted_pair_test_util, m) {
   m.def("PassThrough", &PassThrough);
   m.def("PassThroughMap", &PassThroughMap);
 }

@@ -1463,12 +1463,9 @@ Diagram<T>::ConvertScalarType() const {
 }
 
 template <typename T>
-std::map<PeriodicEventData, std::vector<const Event<T>*>,
-         PeriodicEventDataComparator>
+std::map<PeriodicEventData, std::vector<const Event<T>*>>
 Diagram<T>::DoMapPeriodicEventsByTiming(const Context<T>& context) const {
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
-      periodic_events_map;
+  std::map<PeriodicEventData, std::vector<const Event<T>*>> periodic_events_map;
 
   for (int i = 0; i < num_subsystems(); ++i) {
     const System<T>& sub_system = *registered_systems_[i];

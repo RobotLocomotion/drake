@@ -9,7 +9,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningIrisZo(py::module m) {
+void DefinePlanningIrisZo(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
@@ -17,13 +17,13 @@ void DefinePlanningIrisZo(py::module m) {
   // IrisZoOptions
   const auto& cls_doc = doc.IrisZoOptions;
   py::class_<IrisZoOptions> iris_zo_options(m, "IrisZoOptions", cls_doc.doc);
-  iris_zo_options.def(py::init<>())
-      .def_readwrite("sampled_iris_options",
-          &IrisZoOptions::sampled_iris_options,
+  iris_zo_options  // BR
+      .def(py::init<>())
+      .def_rw("sampled_iris_options", &IrisZoOptions::sampled_iris_options,
           cls_doc.sampled_iris_options.doc)
-      .def_readwrite("bisection_steps", &IrisZoOptions::bisection_steps,
+      .def_rw("bisection_steps", &IrisZoOptions::bisection_steps,
           cls_doc.bisection_steps.doc)
-      .def_readwrite("parameterization", &IrisZoOptions::parameterization,
+      .def_rw("parameterization", &IrisZoOptions::parameterization,
           cls_doc.parameterization.doc)
       .def("__repr__", [](const IrisZoOptions& self) {
         return py::str(

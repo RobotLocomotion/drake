@@ -12,7 +12,7 @@ namespace pydrake {
 
 namespace {
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   using Class = Polynomial<T>;
@@ -65,7 +65,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
   using PickledMonomial =
       std::pair<T /* coefficient */, std::vector<PickledTerm>>;
   using PickledPolynomial = std::vector<PickledMonomial>;
-  cls.def(py::pickle(
+  DefPickle(
+      &cls,
       [](const Class& self) {
         PickledPolynomial pickled_polynomial;
         pickled_polynomial.reserve(self.GetMonomials().size());
@@ -80,7 +81,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         }
         return pickled_polynomial;
       },
-      [](PickledPolynomial pickled_polynomial) {
+      [](Class* self, PickledPolynomial pickled_polynomial) {
         std::vector<typename Class::Monomial> monomials;
         monomials.reserve(pickled_polynomial.size());
         for (const auto& [coefficient, pickled_terms] : pickled_polynomial) {
@@ -91,16 +92,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
           }
           monomials.emplace_back(coefficient, monomial_terms);
         }
-        return Class(
+        new (self) Class(
             monomials.begin(), monomials.end(), /* canonicalize= */ false);
-      }));
+      });
 }
 }  // namespace
 
-PYBIND11_MODULE(polynomial, m) {
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.common");
-  py::module::import("pydrake.symbolic");
+PYDRAKE_MODULE(polynomial, m) {
+  py::module_::import_("pydrake.autodiffutils");
+  py::module_::import_("pydrake.common");
+  py::module_::import_("pydrake.symbolic");
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});

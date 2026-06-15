@@ -41,7 +41,7 @@ using std::map;
 using std::string;
 
 // TODO(eric.cousineau): Use py::self for operator overloads?
-void DefineSymbolicMonolith(py::module m) {
+void DefineSymbolicMonolith(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
   constexpr auto& doc = pydrake_doc_common_symbolic.drake.symbolic;
@@ -156,16 +156,17 @@ void DefineSymbolicMonolith(py::module m) {
       .def(py::self != double());
   internal::BindMathOperators<Variable>(&var_cls);
   DefCopyAndDeepCopy(&var_cls);
-  var_cls.def(py::pickle(
+  DefPickle(
+      &var_cls,
       [m](const Variable& self) -> std::pair<Variable::Id, std::string> {
         return std::pair<Variable::Id, std::string>(
             self.get_id(), self.get_name());
       },
-      [m](std::pair<Variable::Id, std::string> args) -> Variable {
-        return symbolic::VariablePythonAttorney::Construct(
+      [m](Variable* self, std::pair<Variable::Id, std::string> args) {
+        new (self) Variable(symbolic::VariablePythonAttorney::Construct(
             /* id = */ std::get<0>(args),
-            /* name = */ std::move(std::get<1>(args)));
-      }));
+            /* name = */ std::move(std::get<1>(args))));
+      });
 
   // Bind the free function TaylorExpand.
   m.def(
@@ -240,7 +241,8 @@ void DefineSymbolicMonolith(py::module m) {
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads,
   // etc.
   constexpr auto& doc_variables = doc_expr.Variables;
-  py::class_<Variables>(m, "Variables", doc_variables.doc)
+  py::class_<Variables> cls_variables(m, "Variables", doc_variables.doc);
+  cls_variables  // BR
       .def(py::init<>(), doc_variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
           doc_variables.ctor.doc_1args_vec)
@@ -299,16 +301,16 @@ void DefineSymbolicMonolith(py::module m) {
       .def(py::self + Variable())
       .def(Variable() + py::self)
       .def(py::self - py::self)
-      .def(py::self - Variable())
-      .def(py::pickle(
-          [m](const Variables& self) -> std::vector<Variable> {
-            return std::vector<Variable>(self.begin(), self.end());
-          },
-          [m](const std::vector<Variable>& args) -> Variables {
-            Variables result;
-            result.insert(args.begin(), args.end());
-            return result;
-          }));
+      .def(py::self - Variable());
+  DefPickle(
+      &cls_variables,
+      [m](const Variables& self) -> std::vector<Variable> {
+        return std::vector<Variable>(self.begin(), self.end());
+      },
+      [m](Variables* self, const std::vector<Variable>& args) {
+        new (self) Variables();
+        self->insert(args.begin(), args.end());
+      });
 
   m.def(
       "intersect",
@@ -352,7 +354,8 @@ void DefineSymbolicMonolith(py::module m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   constexpr auto doc_expression = doc_expr.Expression;
-  expr_cls.def(py::init<>(), doc_expression.ctor.doc_0args)
+  expr_cls  // BR
+      .def(py::init<>(), doc_expression.ctor.doc_0args)
       .def(py::init<double>(), py::arg("constant"),
           doc_expression.ctor.doc_1args_constant)
       .def(py::init<const Variable&>(), py::arg("var"),
@@ -572,9 +575,9 @@ void DefineSymbolicMonolith(py::module m) {
       .def(py::init<Variable, Variable, SinCosSubstitutionType>(), py::arg("s"),
           py::arg("c"), py::arg("type") = SinCosSubstitutionType::kAngle,
           doc.SinCos.ctor.doc)
-      .def_readwrite("s", &SinCos::s, doc.SinCos.s.doc)
-      .def_readwrite("c", &SinCos::c, doc.SinCos.c.doc)
-      .def_readwrite("type", &SinCos::type, doc.SinCos.type.doc);
+      .def_rw("s", &SinCos::s, doc.SinCos.s.doc)
+      .def_rw("c", &SinCos::c, doc.SinCos.c.doc)
+      .def_rw("type", &SinCos::type, doc.SinCos.type.doc);
 
   m.def(
       "Substitute",
@@ -622,7 +625,8 @@ void DefineSymbolicMonolith(py::module m) {
   }
 
   constexpr auto& doc_formula = doc_expr.Formula;
-  formula_cls.def(py::init<>(), doc_formula.ctor.doc_0args)
+  formula_cls  // BR
+      .def(py::init<>(), doc_formula.ctor.doc_0args)
       .def(py::init<bool>(), py::arg("value").noconvert(),
           doc_formula.ctor.doc_1args_value)
       .def(py::init<const Variable&>(), py::arg("var"),
@@ -838,7 +842,8 @@ void DefineSymbolicMonolith(py::module m) {
   using symbolic::Polynomial;
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  polynomial_cls.def(py::init<>(), doc.Polynomial.ctor.doc_0args)
+  polynomial_cls  // BR
+      .def(py::init<>(), doc.Polynomial.ctor.doc_0args)
       .def(py::init<Polynomial::MapType>(), py::arg("map"),
           doc.Polynomial.ctor.doc_1args_map)
       .def(py::init<const Monomial&>(), py::arg("m"),
@@ -848,10 +853,12 @@ void DefineSymbolicMonolith(py::module m) {
       .def(py::init<const Expression&, const Variables&>(), py::arg("e"),
           py::arg("indeterminates"),
           doc.Polynomial.ctor.doc_2args_e_indeterminates)
-      .def(py::init([](const Expression& e,
-                        const Eigen::Ref<const VectorX<Variable>>& vars) {
-        return Polynomial{e, Variables{vars}};
-      }),
+      .def(
+          "__init__",
+          [](Polynomial* self, const Expression& e,
+              const Eigen::Ref<const VectorX<Variable>>& vars) {
+            new (self) Polynomial{e, Variables{vars}};
+          },
           py::arg("e"), py::arg("indeterminates"),
           doc.Polynomial.ctor.doc_2args_e_indeterminates)
       .def("indeterminates", &Polynomial::indeterminates,
@@ -1031,7 +1038,8 @@ void DefineSymbolicMonolith(py::module m) {
           py::arg("monomial_basis"), py::arg("gram_lower"),
           doc.CalcPolynomialWLowerTriangularPart.doc);
 
-  rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+  rat_fun_cls  // BR
+      .def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
       .def(py::init<Polynomial, Polynomial>(), py::arg("numerator"),
           py::arg("denominator"),
           doc.RationalFunction.ctor.doc_2args_numerator_denominator)

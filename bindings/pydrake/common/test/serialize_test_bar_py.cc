@@ -16,8 +16,8 @@ struct Bar {
   Foo bar_value{};
 };
 
-PYBIND11_MODULE(serialize_test_bar, m) {
-  // N.B. We're _supposed_ to do `py::module::import("foo")` here because we
+PYDRAKE_MODULE(serialize_test_bar, m) {
+  // N.B. We're _supposed_ to do `py::module_::import_("foo")` here because we
   // have a serialized member field of type Foo, but instead we've injected a
   // bug into this binding by omitting it. The regression test will confirm
   // that `import bar` raises an exception.

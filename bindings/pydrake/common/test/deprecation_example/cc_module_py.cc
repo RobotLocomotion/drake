@@ -16,7 +16,7 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-PYBIND11_MODULE(cc_module, m) {
+PYDRAKE_MODULE(cc_module, m) {
   constexpr auto& doc = pydrake_doc.drake.example_class;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::example_class;
@@ -36,8 +36,8 @@ PYBIND11_MODULE(cc_module, m) {
     py::class_<Class> cls(m, "ExampleCppStruct", cls_doc.doc_deprecated);
     cls  // BR
         .def(DeprecatedParamInit<Class>(cls_doc.doc_deprecated))
-        .def_readwrite("i", &Class::i)
-        .def_readwrite("j", &Class::j);
+        .def_rw("i", &Class::i)
+        .def_rw("j", &Class::j);
 #pragma GCC diagnostic pop
   }
 
@@ -47,7 +47,7 @@ PYBIND11_MODULE(cc_module, m) {
     py::class_<Class> cls(m, "ExampleCppClass", cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
-        .def_readwrite("prop", &Class::prop, cls_doc.prop.doc);
+        .def_rw("prop", &Class::prop, cls_doc.prop.doc);
 
     // Example: Deprecation of constructor previously bound with `py::init<>`.
     // Can be used to deprecate a class (if all constructor overloads are
@@ -131,8 +131,8 @@ PYBIND11_MODULE(cc_module, m) {
         py::overload_cast<int>(&Class::DeprecatedMethod),
         cls_doc.DeprecatedMethod.doc_deprecated);
 #pragma GCC diagnostic pop
-    DeprecateAttribute(
-        cls, "DeprecatedMethod", cls_doc.DeprecatedMethod.doc_deprecated);
+    DeprecateAttribute(cls, py::str("DeprecatedMethod"),
+        py::str(cls_doc.DeprecatedMethod.doc_deprecated));
   }
 }
 

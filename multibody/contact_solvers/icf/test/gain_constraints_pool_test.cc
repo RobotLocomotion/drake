@@ -3,6 +3,8 @@
 #include <limits>
 #include <vector>
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -12,6 +14,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/test_utilities/icf_model_test_helpers.h"
 
+using drake::math::internal::PartialPermutation;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -25,7 +28,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with gain constraints. */
-GTEST_TEST(IcfModel, LimitMallocOnGainConstrainedCalcData) {
+GTEST_TEST(GainConstraintsPool, LimitMallocOnCalcData) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddGainConstraints(&model);
@@ -46,8 +49,32 @@ GTEST_TEST(IcfModel, LimitMallocOnGainConstrainedCalcData) {
   }
 }
 
+/* Checks that pool.ReduceInto does not incur any heap allocations on a
+problem with gain constraints. */
+GTEST_TEST(GainConstraintsPool, LimitMallocOnReduceInto) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddGainConstraints(&model);
+
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+
+  // Do a not-smaller reduction to allocate memory in the reduced model.
+  MakeModelReducible(&model, /* dofs_to_remove = */ {});
+  model.ReduceInto(&reduced_model, &mapping);
+
+  // Given prior allocation of a big enough model, the couple constraint pool
+  // reduction does not allocate.
+  {
+    // TODO(#23912): consider removing these allocations.
+    drake::test::LimitMalloc guard({16});
+    model.gain_constraints_pool().ReduceInto(
+        mapping, &reduced_model.gain_constraints_pool());
+  }
+}
+
 /* Verifies that gain constraints produce correct data. */
-GTEST_TEST(IcfModel, GainConstraint) {
+GTEST_TEST(GainConstraintsPool, Data) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   model.SetSparsityPattern();
@@ -145,6 +172,85 @@ GTEST_TEST(IcfModel, GainConstraint) {
 
   EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
                               2 * kEpsilon, MatrixCompareType::relative));
+}
+
+/* Verifies that reducing the gain constraint pool produces correct data. */
+GTEST_TEST(GainConstraintsPool, Reduce) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddGainConstraints(&model);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
+  model.CalcData(v, &data);
+  const auto& full_pool = model.gain_constraints_pool();
+
+  auto check_reduced = [&](const std::vector<int>& locked_dofs) {
+    SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
+    IcfModel<double> reduced_model;
+    ReducedMapping mapping;
+    MakeModelReducible(&model, locked_dofs);
+    model.ReduceInto(&reduced_model, &mapping);
+    const auto& reduced_pool = reduced_model.gain_constraints_pool();
+    int reduced_constraint_cursor{0};
+    for (int k = 0; k < full_pool.num_constraints(); ++k) {
+      SCOPED_TRACE(fmt::format("full constraint {} vs. reduced constraint {}",
+                               k, reduced_constraint_cursor));
+      const int full_clique = full_pool.clique()[k];
+      if (!mapping.clique_subsequence.participates(full_clique)) {
+        continue;
+      }
+
+      // Check the data transmitted by pool.ReduceInto().
+      const PartialPermutation& dof_subsequence =
+          mapping.clique_dof_subsequences[full_clique];
+      const std::vector<int>& indices = dof_subsequence.inverse_permutation();
+      const int reduced_clique =
+          reduced_pool.clique()[reduced_constraint_cursor];
+      EXPECT_EQ(reduced_clique,
+                mapping.clique_subsequence.permuted_index(full_clique));
+      EXPECT_EQ(reduced_pool.constraint_size()[reduced_constraint_cursor],
+                dof_subsequence.permuted_domain_size());
+      EXPECT_TRUE(CompareMatrices(reduced_pool.K()[reduced_constraint_cursor],
+                                  full_pool.K()[k](indices)));
+      EXPECT_TRUE(CompareMatrices(reduced_pool.b()[reduced_constraint_cursor],
+                                  full_pool.b()[k](indices)));
+      EXPECT_TRUE(CompareMatrices(reduced_pool.le()[reduced_constraint_cursor],
+                                  full_pool.le()[k](indices)));
+      EXPECT_TRUE(CompareMatrices(reduced_pool.ue()[reduced_constraint_cursor],
+                                  full_pool.ue()[k](indices)));
+
+      ++reduced_constraint_cursor;
+    }
+    EXPECT_EQ(reduced_model.num_gain_constraints(), reduced_constraint_cursor);
+  };
+
+  // Reduce by none; essentially, just copy.
+  const std::vector<int> none_locked;
+  check_reduced(none_locked);
+
+  // Lock some arbitrary dofs.
+  const std::vector<int> arbitrary_locked = {0, 17};
+  check_reduced(arbitrary_locked);
+
+  // Lock a constrained clique.
+  const std::vector<int> clique0_locked = {0, 1, 2, 3, 4, 5};
+  check_reduced(clique0_locked);
+
+  // Lock an unconstrained clique.
+  const std::vector<int> clique1_locked = {6, 7, 8, 9, 10, 11};
+  check_reduced(clique1_locked);
+
+  // Lock other constrained clique.
+  const std::vector<int> clique2_locked = {12, 13, 14, 15, 16, 17};
+  check_reduced(clique2_locked);
+
+  // Lock everything.
+  std::vector<int> all_locked(model.num_velocities());
+  std::iota(all_locked.begin(), all_locked.end(), 0);
+  check_reduced(all_locked);
 }
 
 }  // namespace
