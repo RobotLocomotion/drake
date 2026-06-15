@@ -1,0 +1,28 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_binary(
+    name = "run_mouse_spring_demo",
+    srcs = ["run_mouse_spring_demo.cc"],
+    deps = [
+        "//common:essential",
+        "//geometry:meshcat",
+        "//geometry:meshcat_visualizer",
+        "//geometry:proximity_properties",
+        "//geometry:scene_graph",
+        "//multibody/meshcat:meshcat_mouse_spring",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/framework:diagram_builder",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
