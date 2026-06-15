@@ -3752,6 +3752,26 @@ https://beej.us/blog/data/javascript-gamepad/.)""";
           const char* doc =
 R"""((Advanced) Returns the number of currently-open websocket connections.)""";
         } GetNumActiveConnections;
+        // Symbol: drake::geometry::Meshcat::GetObjectDrag
+        struct /* GetObjectDrag */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(Returns the current mouse-drag state if a user is presently dragging
+an object in a connected Meshcat browser, or std∷nullopt otherwise.
+
+A drag is initiated in the browser by holding the <kbd>Ctrl</kbd> key
+and pressing the left mouse button down on an object, then moving the
+mouse (while still holding <kbd>Ctrl</kbd> and the mouse button). The
+orbit/pan camera controls are suspended for the duration of the drag.
+Releasing the mouse button ends the drag.
+
+A downstream system (see multibody∷meshcat∷MeshcatMouseSpring) can
+read this state and convert it into a force applied to the simulated
+body, letting users drag objects with the cursor.
+
+If multiple browsers are connected and more than one initiates a drag,
+the returned value reflects the most recently received drag message.)""";
+        } GetObjectDrag;
         // Symbol: drake::geometry::Meshcat::GetPackedObject
         struct /* GetPackedObject */ {
           // Source: drake/geometry/meshcat.h
@@ -3863,6 +3883,39 @@ Raises:
           const char* doc_1args_params =
 R"""(Constructs the Meshcat instance using the given ``params``.)""";
         } ctor;
+        // Symbol: drake::geometry::Meshcat::ObjectDrag
+        struct /* ObjectDrag */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(The state of an in-progress mouse drag of a scene object, as reported
+by a Meshcat browser. See GetObjectDrag().)""";
+          // Symbol: drake::geometry::Meshcat::ObjectDrag::anchor_in_world
+          struct /* anchor_in_world */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The current position of the drag's *attachment point* -- the point on
+the object where the drag began. The browser keeps this point rigidly
+attached to the object, so as the object moves (e.g., under simulated
+physics) this value tracks the world-frame location of that material
+point. Expressed in Drake's z-up world frame (p_WA).)""";
+          } anchor_in_world;
+          // Symbol: drake::geometry::Meshcat::ObjectDrag::path
+          struct /* path */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The "/"-delimited Meshcat path of the object being dragged (e.g.,
+"/drake/visualizer/my_model/my_body/my_geometry").)""";
+          } path;
+          // Symbol: drake::geometry::Meshcat::ObjectDrag::target_in_world
+          struct /* target_in_world */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The current position of the cursor's drag *target*. As the user moves
+the mouse, the cursor is projected into the scene to form this point.
+A virtual spring should pull ``anchor_in_world`` toward this point.
+Expressed in Drake's z-up world frame (p_WT).)""";
+          } target_in_world;
+        } ObjectDrag;
         // Symbol: drake::geometry::Meshcat::OrthographicCamera
         struct /* OrthographicCamera */ {
           // Source: drake/geometry/meshcat.h

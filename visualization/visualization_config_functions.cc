@@ -4,9 +4,11 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
+#include "drake/multibody/meshcat/meshcat_mouse_spring.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
 #include "drake/visualization/inertia_visualizer.h"
@@ -27,6 +29,7 @@ using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::MultibodyPlant;
 using multibody::meshcat::ContactVisualizer;
 using multibody::meshcat::ContactVisualizerParams;
+using multibody::meshcat::MeshcatMouseSpring;
 using systems::DiagramBuilder;
 using systems::System;
 using systems::lcm::LcmBuses;
@@ -74,6 +77,22 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
       ContactVisualizer<double>::AddToBuilder(
           builder, plant, meshcat,
           internal::ConvertVisualizationConfigToMeshcatContactParams(config));
+    }
+    if (config.enable_mouse_interaction) {
+      // MeshcatMouseSpring drives the plant's applied-spatial-force input port.
+      // Only add it if that port is still available; otherwise (e.g., the user
+      // has already connected their own external forces) skip it with a warning
+      // rather than failing the whole visualization setup.
+      if (builder->IsConnectedOrExported(
+              plant.get_applied_spatial_force_input_port())) {
+        log()->warn(
+            "VisualizationConfig.enable_mouse_interaction is set, but the "
+            "plant's applied-spatial-force input port is already connected, so "
+            "interactive mouse dragging will not be enabled.");
+      } else {
+        MeshcatMouseSpring<double>::AddToBuilder(
+            builder, &plant, meshcat, config.mouse_interaction_stiffness);
+      }
     }
     if (config.publish_inertia && config.enable_alpha_sliders) {
       meshcat->SetSliderValue("inertia α", 0.5);
