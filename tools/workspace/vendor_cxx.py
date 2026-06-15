@@ -182,13 +182,92 @@ def _rewrite_one_text(*, text, inline_namespace):
     # Do this in reverse order so that the indices into lines[] are stable.
     open_inline = " ".join(["inline namespace drake_vendor", hidden, "{"])
     close_inline = "}  /* inline namespace drake_vendor */"
-    for i in range(len(lines), -1, -1):
-        this_wrap = should_wrap[i] if i < len(lines) else False
-        prior_wrap = should_wrap[i - 1] if i > 1 else False
-        if this_wrap == prior_wrap:
+
+    # Wrap each maximal contiguous WRAP span with its own open/close pair.
+    spans = []
+    i = 0
+    while i < len(should_wrap):
+        if not should_wrap[i]:
+            i += 1
             continue
-        insertion = open_inline if this_wrap else close_inline
-        lines.insert(i, insertion)
+        start = i
+        while i < len(should_wrap) and should_wrap[i]:
+            i += 1
+        end = i - 1
+        spans.append((start, end))
+
+    if not spans:
+        text = "\n".join(lines) + "\n"
+        return text
+
+    # Compute brace depth before each line so we only insert wrappers at
+    # top-level boundaries (depth == 0). This avoids splitting existing
+    # namespace/class scopes while still wrapping non-include code.
+    depth_before = [0] * (len(lines) + 1)
+    depth = 0
+    in_c_comment = False
+    for idx, line in enumerate(lines):
+        depth_before[idx] = depth
+        j = 0
+        L = len(line)
+        while j < L:
+            if in_c_comment:
+                if j + 1 < L and line[j] == "*" and line[j + 1] == "/":
+                    in_c_comment = False
+                    j += 2
+                    continue
+                j += 1
+                continue
+            if j + 1 < L and line[j] == "/" and line[j + 1] == "*":
+                # Handle start of C comment.
+                in_c_comment = True
+                j += 2
+                continue
+            if j + 1 < L and line[j] == "/" and line[j + 1] == "/":
+                # Handle single-line comment.
+                break
+            ch = line[j]
+            if ch == '"':
+                # Enter string literal, skip until closing quote.
+                j += 1
+                while j < L:
+                    if line[j] == "\\":
+                        j += 2
+                        continue
+                    if line[j] == '"':
+                        j += 1
+                        break
+                    j += 1
+                continue
+            if ch == "'":
+                # Enter char literal, skip until closing quote.
+                j += 1
+                while j < L:
+                    if line[j] == "\\":
+                        j += 2
+                        continue
+                    if line[j] == "'":
+                        j += 1
+                        break
+                    j += 1
+                continue
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+            j += 1
+    depth_before[len(lines)] = depth
+
+    # Only insert wrappers for spans that start and end at top-level.
+    filtered_spans = []
+    for start, end in spans:
+        if depth_before[start] == 0 and depth_before[end + 1] == 0:
+            filtered_spans.append((start, end))
+
+    # Insert in reverse order so indices remain valid.
+    for start, end in reversed(filtered_spans):
+        lines.insert(end + 1, close_inline)
+        lines.insert(start, open_inline)
 
     text = "\n".join(lines) + "\n"
     return text
