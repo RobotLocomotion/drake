@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace drake {
@@ -104,7 +105,7 @@ TEST_F(CollisionFilterTest, AllowBetween) {
 
     filters.Apply(CollisionFilterDeclaration().AllowBetween(
                       GeometrySet(id_A), GeometrySet({id_B, id_C})),
-                  this->get_extract_ids_functor(), false);
+                  this->get_extract_ids_functor());
     /* Our ability to remove the filter depends on whether it was invariant when
      added. */
     EXPECT_EQ(filters.CanCollideWith(id_A, id_B), !is_invariant);
@@ -126,7 +127,7 @@ TEST_F(CollisionFilterTest, AllowWithin) {
     filters.Apply(CollisionFilterDeclaration()
                       .AllowWithin(GeometrySet({id_A, id_B}))
                       .AllowWithin(GeometrySet({id_A, id_C})),
-                  this->get_extract_ids_functor(), false);
+                  this->get_extract_ids_functor());
     /* Our ability to remove the filter depends on whether it was invariant when
      added. */
     EXPECT_EQ(filters.CanCollideWith(id_A, id_B), !is_invariant);
@@ -148,7 +149,7 @@ TEST_F(CollisionFilterTest, ExcludeBetween) {
 
   filters.Apply(CollisionFilterDeclaration().ExcludeBetween(
                     GeometrySet(id_A), GeometrySet({id_B, id_C})),
-                this->get_extract_ids_functor(), false);
+                this->get_extract_ids_functor());
 
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
@@ -174,7 +175,7 @@ TEST_F(CollisionFilterTest, ExcludeWithin) {
   filters.Apply(CollisionFilterDeclaration()
                     .ExcludeWithin(GeometrySet({id_A, id_B, id_D}))
                     .ExcludeWithin(GeometrySet({id_A, id_C})),
-                this->get_extract_ids_functor(), false);
+                this->get_extract_ids_functor());
 
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
@@ -447,30 +448,30 @@ TEST_F(CollisionFilterTest, Equivalency) {
    depends on the order; do not re-order these operations. */
   filters1.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_A, id_B})),
-      this->get_extract_ids_functor(), false);
+      this->get_extract_ids_functor());
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
   filters2.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_A, id_B})),
-      this->get_extract_ids_functor(), false);
+      this->get_extract_ids_functor());
   EXPECT_TRUE(filters1.IsEquivalent(filters2));
   filters1.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_A, id_C})),
-      this->get_extract_ids_functor(), false);
+      this->get_extract_ids_functor());
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
   filters2.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_B, id_C})),
-      this->get_extract_ids_functor(), false);
+      this->get_extract_ids_functor());
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
   filters1.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_B, id_C})),
-      this->get_extract_ids_functor(), false);
+      this->get_extract_ids_functor());
   filters2.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_A, id_C})),
-      this->get_extract_ids_functor(), false);
+      this->get_extract_ids_functor());
   EXPECT_TRUE(filters1.IsEquivalent(filters2));
   filters1.Apply(
       CollisionFilterDeclaration().AllowWithin(GeometrySet({id_A, id_C})),
-      this->get_extract_ids_functor(), false);
+      this->get_extract_ids_functor());
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
 
   /* Neither set has filters between (A, *). The first simply doesn't have A,
@@ -482,110 +483,108 @@ TEST_F(CollisionFilterTest, Equivalency) {
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
 }
 
-/* Gtest matcher support: compares an ActiveStatusChange against expected
- (unordered) contents. */
-::testing::AssertionResult DeltaMatches(
-    const CollisionFilter::ActiveStatusChange& delta,
-    std::initializer_list<GeometryId> deactivated,
-    std::initializer_list<GeometryId> activated) {
-  auto as_set = [](const auto& range) {
-    return std::unordered_set<GeometryId>(range.begin(), range.end());
-  };
-  if (as_set(delta.deactivated()) != as_set(deactivated)) {
-    return ::testing::AssertionFailure()
-           << fmt::format("Expected {} newly deactivated ids, got {}",
-                          deactivated.size(), delta.deactivated().size());
-  }
-  if (as_set(delta.activated()) != as_set(activated)) {
-    return ::testing::AssertionFailure()
-           << fmt::format("Expected {} newly activated ids, got {}",
-                          activated.size(), delta.activated().size());
-  }
-  return ::testing::AssertionSuccess();
-}
-
 /* Sets the active status of `set` in `filter` and returns the net change the
  call reported through its callback (an empty change if the callback was not
  invoked). */
 CollisionFilter::ActiveStatusChange SetActiveStatus(
-    CollisionFilter* filter, const GeometrySet& set,
-    const CollisionFilter::ExtractIds& extract, bool active) {
+    CollisionFilter* filter, const GeometrySet& set, bool active,
+    const CollisionFilter::ExtractIds& extract) {
   CollisionFilter::ActiveStatusChange change;
   filter->SetActiveStatus(
-      set, extract, active,
+      set, active, extract,
       [&change](const CollisionFilter::ActiveStatusChange& c) {
         change = c;
       });
   return change;
 }
 
-/* Tests the basic semantics of geometry deactivation: an inactive geometry can
- collide with nothing -- including geometries registered after it was
- deactivated -- and reactivating restores exactly the pairwise filter state. */
-TEST_F(CollisionFilterTest, Deactivate) {
+/* Tests the semantics of geometry (de)activation:
+  1. Inactive geometries don't collide with pre-existing geometries.
+  2. Inactive geometries don't collide with subsequent geometries.
+  3. Invoking Allow* on an inactive geometry, doesn't activate it.
+  4. Filters *can* be configured for inactive geometries, but the effect isn't
+     apparent until the geometry is reactivated.
+  5. (De)activating an already (in)active geometry is a no-op.
+  6. MakeClearCopy() drops the inactive set along with all pairwise filters.
+
+  Note: order of operations matters in this test -- the state accumulates so
+  each test depends on the successful completion of the previous step. */
+TEST_F(CollisionFilterTest, Activation) {
   CollisionFilter filters;
   auto [id_A, id_B, id_C] = this->InitIds(&filters);
   const auto& extract = this->get_extract_ids_functor();
   using Decl = CollisionFilterDeclaration;
 
   /* Initial condition: everything can collide. */
-  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
-  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
-  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, kCanCollide));
+  ASSERT_TRUE(ExpectCanCollide(filters, id_A, id_B, kCanCollide));
+  ASSERT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
+  ASSERT_TRUE(ExpectCanCollide(filters, id_B, id_C, kCanCollide));
 
-  /* Deactivate A: it collides with nothing; B-C is untouched. */
-  SetActiveStatus(&filters, GeometrySet(id_A), extract, /*active=*/false);
+  /* (1) Deactivate A: it collides with nothing; B-C is untouched. */
+  SetActiveStatus(&filters, GeometrySet(id_A), /* active= */ false, extract);
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, kCanCollide));
 
-  /* The key property: a geometry registered *after* A was deactivated is also
-   excluded against A (an ExcludeBetween-based emulation would leak here). */
+  /* (5) Deactivating an inactive geometry is a no-op. */
+  SetActiveStatus(&filters, GeometrySet(id_A), /* active= */ false, extract);
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, !kCanCollide));
+  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, kCanCollide));
+
+  /* (6) MakeClearCopy drops the inactive set. The cleared copy allows collision
+   between A and B. */
+  const CollisionFilter clear = this->ClearCopy(filters);
+  EXPECT_TRUE(ExpectCanCollide(clear, id_A, id_B, kCanCollide));
+
+  /* (2) A doesn't collide with geometries added after its deactivation. */
   const GeometryId id_D = GeometryId::get_new_id();
   filters.AddGeometry(id_D);
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_D, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_D, kCanCollide));
 
-  /* Pairwise Allow* statements do not reactivate A. */
+  /* (3) Allow* statements do not reactivate A. All Allow* variants are
+   resolved by the same underlying method (RemovePairsBetween()), so we'll use
+   just a single Allow* declaration. */
   filters.Apply(
       Decl().AllowBetween(GeometrySet(id_A), GeometrySet({id_B, id_C, id_D})),
       extract, false);
-  filters.Apply(Decl().AllowWithin(GeometrySet({id_A, id_B, id_C, id_D})),
-                extract, false);
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_D, !kCanCollide));
 
-  /* Active status and pairwise filters are independent: add a pairwise filter
+  /* (4) Active status and pairwise filters are independent: adding filter
    (A, B) while A is inactive; reactivating A leaves that pairwise filter in
    force while (A, C) and (A, D) become collidable again. */
   filters.Apply(Decl().ExcludeWithin(GeometrySet({id_A, id_B})), extract,
                 false);
-  SetActiveStatus(&filters, GeometrySet(id_A), extract, /*active=*/true);
+  SetActiveStatus(&filters, GeometrySet(id_A), /* active= */ true, extract);
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_D, kCanCollide));
 
-  /* Reactivating an active geometry is a no-op. */
-  SetActiveStatus(&filters, GeometrySet({id_A, id_C}), extract,
-                  /*active=*/true);
+  /* (5) Reactivating an active geometry is a no-op. */
+  SetActiveStatus(&filters, GeometrySet({id_A, id_C}), /* active= */ true,
+                  extract);
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
-
-  /* Active-status edits are order-independent across calls: deactivate {B, C},
-   then reactivate C. */
-  SetActiveStatus(&filters, GeometrySet({id_B, id_C}), extract,
-                  /*active=*/false);
-  SetActiveStatus(&filters, GeometrySet(id_C), extract, /*active=*/true);
-  EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, !kCanCollide));  // B off.
-  EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));   // C on.
-
-  /* MakeClearCopy drops the inactive set along with all pairwise filters. */
-  const CollisionFilter clear = this->ClearCopy(filters);
-  EXPECT_TRUE(ExpectCanCollide(clear, id_A, id_B, kCanCollide));
-  EXPECT_TRUE(ExpectCanCollide(clear, id_B, id_C, kCanCollide));
 }
 
-/* Tests that SetActiveStatus reports the *net* change to the inactive set
- through its callback, and only invokes the callback when something changes. */
+/* Asserts the status changes deactivated and activated sets have the
+ expected values present. */
+void ExpectStatusChangeMatches(
+    const CollisionFilter::ActiveStatusChange& delta,
+    const CollisionFilter::ActiveStatusChange& expected,
+    std::string_view scope_title) {
+  SCOPED_TRACE(scope_title);
+  EXPECT_THAT(delta.deactivated,
+              ::testing::UnorderedElementsAreArray(expected.deactivated));
+  EXPECT_THAT(delta.activated,
+              ::testing::UnorderedElementsAreArray(expected.activated));
+}
+
+/* Tests that SetActiveStatus() reports the *net* change to the inactive set
+ through its callback, and only invokes the callback when something changes.
+ This is implicitly confirming the promise that the active and inactive sets
+ are disjoint -- based on the declarations of expected set membership. */
 TEST_F(CollisionFilterTest, ActiveStatusChange) {
   CollisionFilter filters;
   auto [id_A, id_B, id_C] = this->InitIds(&filters);
@@ -598,20 +597,24 @@ TEST_F(CollisionFilterTest, ActiveStatusChange) {
 
   /* Deactivating reports `deactivated`; re-deactivating is idempotent (no
    change, so the callback is not invoked and the returned change is empty). */
-  EXPECT_TRUE(DeltaMatches(
-      SetActiveStatus(&filters, GeometrySet({id_A, id_B}), extract, false),
-      {id_A, id_B}, {}));
-  EXPECT_TRUE(
-      SetActiveStatus(&filters, GeometrySet(id_A), extract, false).empty());
+  ExpectStatusChangeMatches(SetActiveStatus(&filters, GeometrySet({id_A, id_B}),
+                                            /* active= */ false, extract),
+                            {.deactivated = {id_A, id_B}, .activated = {}},
+                            "Initial deactivation");
+  ExpectStatusChangeMatches(SetActiveStatus(&filters, GeometrySet(id_A),
+                                            /* active= */ false, extract),
+                            {.deactivated = {}, .activated = {}},
+                            "Redundant deactivation");
 
   /* Reactivating {A, C} reports only the id that flipped: A becomes active, C
    was already active. The inactive set is now {B}. */
-  EXPECT_TRUE(DeltaMatches(
-      SetActiveStatus(&filters, GeometrySet({id_A, id_C}), extract, true), {},
-      {id_A}));
+  ExpectStatusChangeMatches(SetActiveStatus(&filters, GeometrySet({id_A, id_C}),
+                                            /* active= */ true, extract),
+                            {.deactivated = {}, .activated = {id_A}},
+                            "Reactivation");
 
-  /* End state: (A, B) still blocked by the pairwise filter from above; (A, C)
-   collidable (both active); (B, C) blocked because B is inactive. */
+  /* End state: (*, B) blocked because B is inactive; (A, C) collidable (both
+   active). */
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_B, !kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_A, id_C, kCanCollide));
   EXPECT_TRUE(ExpectCanCollide(filters, id_B, id_C, !kCanCollide));
@@ -637,7 +640,7 @@ TEST_F(CollisionFilterTest, EquivalencyWithInactive) {
   /* Deactivate A in filter 1; emulate it pairwise in filter 2. Every *current*
    pair agrees, but the filters are NOT equivalent: their future behavior
    (w.r.t. geometries added later) differs. */
-  SetActiveStatus(&filters1, GeometrySet(id_A), extract, /*active=*/false);
+  SetActiveStatus(&filters1, GeometrySet(id_A), /* active= */ false, extract);
   filters2.Apply(
       Decl().ExcludeBetween(GeometrySet(id_A), GeometrySet({id_B, id_C})),
       extract, false);
@@ -646,7 +649,7 @@ TEST_F(CollisionFilterTest, EquivalencyWithInactive) {
   /* Matching inactive sets (and matching pairwise states) are equivalent. */
   CollisionFilter filters3;
   for (GeometryId id : {id_A, id_B, id_C}) filters3.AddGeometry(id);
-  SetActiveStatus(&filters3, GeometrySet(id_A), extract, /*active=*/false);
+  SetActiveStatus(&filters3, GeometrySet(id_A), /* active= */ false, extract);
   EXPECT_TRUE(filters1.IsEquivalent(filters3));
 }
 

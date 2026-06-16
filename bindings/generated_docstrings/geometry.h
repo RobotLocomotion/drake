@@ -452,13 +452,12 @@ Warning:
     role is subsequently assigned, those geometries will *still* not
     be part of any user-declared collision filters. - In general,
     adding collisions and assigning proximity roles should happen
-    prior to collision filter configuration. - The inactive set ``Nₚ``
-    is the deliberate exception to the apply-time-resolution rule --
-    in one direction only. *Which* geometries get deactivated (or
-    reactivated) is resolved at apply time, exactly as above; but the
-    pairs an inactive geometry suppresses are evaluated against the
-    live geometry set, so an inactive geometry also forms no pair with
-    geometries registered later.
+    prior to collision filter configuration. - It's worth emphasizing
+    that the inactive set ``Nₚ`` is unique. it is not affected by
+    declarations and doesn't have the same limited scope that
+    declarations have. No collision is allowed between an inactive
+    geometry and any other geometry. Period. Regardless of whether the
+    other geometry was added before or after the deactivation.
 
 **Transient vs Persistent changes**
 
@@ -555,9 +554,9 @@ active transient declarations in the history will throw an exception.)""";
           // Source: drake/geometry/collision_filter_manager.h
           const char* doc =
 R"""(Marks every geometry in ``geometry_set`` *active* again (see
-Deactivate()), returning it to proximity queries with its pairwise
-filter state unchanged. Reactivating an already-active geometry is a
-no-op.
+Deactivate()), returning it to proximity queries governed by the
+current, declared filters. Reactivating an already-active geometry is
+a no-op.
 
 Raises:
     RuntimeError if ``geometry_set`` references invalid ids.)""";
@@ -7780,9 +7779,8 @@ Raises:
           const char* doc =
 R"""(Reports true if the two geometries with given ids ``geometry_id1`` and
 ``geometry_id2``, define a collision pair that has been filtered out.
-See CollisionFilterManager for the definition of which pairs are
-filtered (pairwise filters together with the set of inactive
-geometries).
+See CollisionFilterManager for the definition of what would consider a
+pair to be considered "filtered out".
 
 Raises:
     RuntimeError if either id does not map to a registered geometry or

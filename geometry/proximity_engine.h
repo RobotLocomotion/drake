@@ -92,21 +92,21 @@ class ProximityEngine {
 
    An inactive geometry cannot contribute to any filter-respecting pairwise
    query, so the engine moves inactive *dynamic* geometries out of the active
-   broadphase tree (whose per-step refit and traversal cost then scales with
-   the active geometry count) and into a separate tree that serves only the
-   queries that ignore collision filters (signed distance to point).
-   Reactivated geometries move back. This is a pure optimization: query results
-   are identical with or without it -- inactive pairs are equally discarded by
-   the collision filter -- just cheaper when many geometries are inactive
-   (e.g., locked bodies; see issue #24607).
+   broadphase tree (whose per-step refit and traversal cost scales with the
+   active geometry count) and into a separate tree that serves only the queries
+   that ignore collision filters (signed distance to point). Reactivated
+   geometries move back. This is a pure optimization: query results are
+   identical with or without it -- inactive pairs are equally discarded by the
+   collision filter -- just cheaper when many geometries are inactive (e.g.,
+   locked bodies; see issue #24607).
 
-   The per-call cost is O(|delta| log n) tree updates; no full-tree refit
+   The per-call cost is O(|change| log n) tree updates; no full-tree refit
    occurs. */
   // TODO(xuchen-han): Only dynamic geometries are culled. We are not optimizing
   // for anchored geometries yet. Do that when there's a use where it brings
   // noticeable performance improvement.
   void ApplyActiveStatusChange(
-      const CollisionFilter::ActiveStatusChange& delta);
+      const CollisionFilter::ActiveStatusChange& change);
 
   /* (Introspection) Reports whether the dynamic geometry with the given `id`
    is currently inactive and thus culled from the filter-respecting broadphase.
@@ -377,6 +377,9 @@ class ProximityEngine {
   // Reports the pose (X_WG) of the geometry with the given id.
   const math::RigidTransform<double> GetX_WG(GeometryId id,
                                              bool is_dynamic) const;
+
+  // Reports whether the inactive-geometry cache is currently marked stale.
+  bool is_inactive_dynamic_stale() const;
 
   ////////////////////////////////////////////////////////////////////////////
 

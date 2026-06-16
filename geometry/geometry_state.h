@@ -628,7 +628,7 @@ class GeometryState {
         [this](const GeometrySet& set, CollisionFilterScope scope) {
           return this->CollectIds(set, Role::kProximity, scope);
         },
-        /* Reflect changes of the filter's inactive set into the engine's
+        /* Reflect changes to the filter's inactive set into the engine's
          broadphase, where inactive dynamic geometries are culled -- a pure
          optimization. Like the filter pointer above, the captured engine is a
          view into this %GeometryState's data. */

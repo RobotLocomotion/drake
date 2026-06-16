@@ -2747,53 +2747,27 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 }
 
-// Tests that geometry deactivation applied through collision_filter_manager()
-// is wired end to end: queries honor the inactive set, and the active-status
-// changes reach the ProximityEngine, which culls inactive dynamic geometries
-// from its broadphase -- a pure optimization whose bookkeeping we confirm
-// through the tester (see ProximityEngine::ApplyActiveStatusChange()).
+// For CollisionFilterManager's (De)Activate() methods, GeometryState has the
+// responsibility of making sure that the ProximityEngine's activation change
+// callback is invoked. So, we'll make sure that the calling activation methods
+// on the CollisionFilterManager by the state has the downstream impact on the
+// state's proximity engine (the observable set of inactive geometries changes).
+// The correctness of the set and the handling of that set is tested in the
+// requisite components.
 TEST_F(GeometryStateTest, DeactivateReachesProximityEngine) {
   SetUpSingleSourceTree(Assign::kProximity);
-
-  // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses;
-  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
-    poses.set_value(frames_[f], X_PFs_[f]);
-  }
-  gs_tester_.SetFramePoses(source_id_, poses,
-                           &gs_tester_.mutable_kinematics_data());
-  gs_tester_.FinalizePoseUpdate();
-
-  const int expected_collisions = default_collision_pair_count();
-  EXPECT_EQ(
-      static_cast<int>(geometry_state_.ComputePointPairPenetration().size()),
-      expected_collisions);
   const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
-  EXPECT_EQ(engine.num_inactive_dynamic(), 0);
 
-  // Deactivate all dynamic geometries. Every contact involves at least one
-  // dynamic geometry, so they all vanish, and the engine puts every inactive
-  // dynamic geometry to sleep -- eagerly, with no intervening query or pose
-  // update.
+  ASSERT_EQ(engine.num_inactive_dynamic(), 0);
+
   geometry_state_.collision_filter_manager().Deactivate(
-      GeometrySet(geometries_));
-  EXPECT_EQ(engine.num_inactive_dynamic(),
-            static_cast<int>(geometries_.size()));
+      GeometrySet(geometries_[0]));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 1);
   EXPECT_TRUE(engine.IsInactiveDynamic(geometries_[0]));
-  EXPECT_TRUE(geometry_state_.ComputePointPairPenetration().empty());
-  // Introspection reflects the inactive set too. (We compare geometries on
-  // *different* frames; same-frame pairs are invariant-filtered regardless.)
-  EXPECT_TRUE(
-      geometry_state_.CollisionFiltered(geometries_[0], geometries_[2]));
 
-  // Reactivate: everything returns and the contacts come back.
-  geometry_state_.collision_filter_manager().Activate(GeometrySet(geometries_));
+  geometry_state_.collision_filter_manager().Activate(
+      GeometrySet(geometries_[0]));
   EXPECT_EQ(engine.num_inactive_dynamic(), 0);
-  EXPECT_FALSE(
-      geometry_state_.CollisionFiltered(geometries_[0], geometries_[2]));
-  EXPECT_EQ(
-      static_cast<int>(geometry_state_.ComputePointPairPenetration().size()),
-      expected_collisions);
 }
 
 // Tests two aspects of GeometryState collision filter behavior:

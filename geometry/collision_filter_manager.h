@@ -88,12 +88,11 @@ class GeometryState;
    not be part of any user-declared collision filters.
  - In general, adding collisions and assigning proximity roles should
    happen prior to collision filter configuration.
- - The inactive set `Nₚ` is the deliberate exception to the
-   apply-time-resolution rule -- in one direction only. *Which* geometries get
-   deactivated (or reactivated) is resolved at apply time, exactly as above;
-   but the pairs an inactive geometry suppresses are evaluated against the live
-   geometry set, so an inactive geometry also forms no pair with geometries
-   registered later.
+ - It's worth emphasizing that the inactive set `Nₚ` is unique. it is not
+   affected by declarations and doesn't have the same limited scope that
+   declarations have. No collision is allowed between an inactive geometry and
+   any other geometry. Period. Regardless of whether the other geometry was
+   added before or after the deactivation.
 
  <h3>Transient vs Persistent changes</h3>
 
@@ -213,32 +212,35 @@ class CollisionFilterManager {
 
    By default every geometry is *active* and participates in proximity queries
    subject to the pairwise filters configured via Apply(). A geometry can
-   instead be marked *inactive*: an inactive geometry forms no candidate pair
-   with any other geometry -- including geometries registered later -- so it
-   drops out of every collision-filter-respecting proximity query until it is
-   reactivated. See the class documentation for how active status participates
-   in the definition of the candidate pair set C (the set `Nₚ`).
+   also be "deactivated". An inactive geometry is omitted from the geometry set
+   that populates the collision candidate pairs. Therefore, no collision
+   candidate pair can include an inactive geometry until it is reactivated.
+   See the class documentation for how active status participates in the
+   definition of the candidate pair set C (the set `Nₚ`).
 
-   Active status is independent of the pairwise filters: Apply() never changes
-   it, and reactivating a geometry restores exactly the pairwise-filter state it
-   had before. Unlike Apply(), these may be called even when there is an active
-   transient history. */
+   Active status is independent of the declared pair-wise filters: Apply() never
+   changes it just as activating and deactivating a geometry does not change the
+   _declared_ pair-wise filters between that geometry and others. Unlike
+   Apply(), these may be called even when there is an active transient history.
+   Apply() can reference an inactive geometry, but the effect of the declaration
+   on any candidate pair including that geometry will not be apparent until the
+   geometry is reactivate. */
   //@{
 
   /** Marks every geometry in `geometry_set` *inactive* (see the group
    documentation). Deactivating an already-inactive geometry is a no-op.
    @throws std::exception if `geometry_set` references invalid ids. */
   void Deactivate(const GeometrySet& geometry_set) {
-    filter_->SetActiveStatus(geometry_set, extract_ids_, false /* active */,
+    filter_->SetActiveStatus(geometry_set, /* active= */ false, extract_ids_,
                              active_status_change_callback_);
   }
 
   /** Marks every geometry in `geometry_set` *active* again (see Deactivate()),
-   returning it to proximity queries with its pairwise filter state unchanged.
+   returning it to proximity queries governed by the current, declared filters.
    Reactivating an already-active geometry is a no-op.
    @throws std::exception if `geometry_set` references invalid ids. */
   void Activate(const GeometrySet& geometry_set) {
-    filter_->SetActiveStatus(geometry_set, extract_ids_, true /* active */,
+    filter_->SetActiveStatus(geometry_set, /* active= */ true, extract_ids_,
                              active_status_change_callback_);
   }
 
@@ -291,30 +293,24 @@ class CollisionFilterManager {
   template <typename>
   friend class GeometryState;
 
-  /* The callback type used to push net changes of the filter's active-status
-   (inactive) set to the owning geometry data. GeometryState binds this to its
-   ProximityEngine (see ProximityEngine::ApplyActiveStatusChange()), which
-   exploits the inactive set to cull inactive dynamic geometries from its
-   broadphase structures. This is internal plumbing for that pure optimization;
-   it has no observable effect on query results. Like `filter`, the bound
-   target is a view into the geometry data this manager fronts and shares its
-   lifetime contract. */
-  using ActiveStatusChangeCallback =
-      internal::CollisionFilter::ActiveStatusChangeCallback;
+  friend class CollisionFilterManagerTester;
 
   /* Constructs the manager for a `filter` with a callback for resolving a
    GeometrySet into a set of GeometryIds and a callback for active-status
    changes.
    @pre filter is non-null.
-   @pre active_status_change_callback is non-empty. */
+   @pre active_status_change_callback is non-null. */
   explicit CollisionFilterManager(
       internal::CollisionFilter* filter,
       internal::CollisionFilter::ExtractIds extract_ids,
-      ActiveStatusChangeCallback active_status_change_callback);
+      internal::CollisionFilter::ActiveStatusChangeCallback
+          active_status_change_callback);
 
   internal::CollisionFilter* filter_{};
   internal::CollisionFilter::ExtractIds extract_ids_;
-  ActiveStatusChangeCallback active_status_change_callback_;
+  internal::CollisionFilter::ActiveStatusChangeCallback
+      active_status_change_callback_;
 };
+
 }  // namespace geometry
 }  // namespace drake

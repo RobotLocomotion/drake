@@ -2,9 +2,11 @@
 
 #include <array>
 #include <memory>
+#include <unordered_set>
 #include <utility>
 
 #include <fmt/format.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -19,6 +21,18 @@
 
 namespace drake {
 namespace geometry {
+
+using internal::CollisionFilter;
+
+class CollisionFilterManagerTester {
+ public:
+  static CollisionFilterManager MakeManager(
+      CollisionFilter* filter, CollisionFilter::ExtractIds extract,
+      CollisionFilter::ActiveStatusChangeCallback status_change) {
+    return CollisionFilterManager(filter, extract, status_change);
+  }
+};
+
 namespace {
 
 using math::RigidTransformd;
@@ -88,8 +102,10 @@ GTEST_TEST(CollisionFilterManagerTest, Apply) {
 
   auto filter_manager = scene_graph.collision_filter_manager(context.get());
 
-  filter_manager.Apply(
-      CollisionFilterDeclaration().ExcludeWithin(GeometrySet({g_id1, g_id2})));
+  // By passing the frame for g_id2, we're confirming that extract_ids is
+  // passed correctly.
+  filter_manager.Apply(CollisionFilterDeclaration().ExcludeWithin(
+      GeometrySet({g_id1}, {inspector.GetFrameId(g_id2)})));
   EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
   EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
   EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
@@ -117,47 +133,46 @@ GTEST_TEST(CollisionFilterManagerTest, Apply) {
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id2, g_id3));
 }
 
-/* End-to-end exercise of geometry deactivation through SceneGraph: an inactive
- geometry is filtered against everything -- including a geometry whose proximity
- role is assigned *after* it was deactivated -- and reactivating restores the
- unfiltered state. The inactive-set semantics themselves are tested exhaustively
- in collision_filter_test.cc; this confirms the SceneGraph plumbing. */
-GTEST_TEST(CollisionFilterManagerTest, Deactivate) {
-  SceneGraph<double> scene_graph;
-  const auto [g_id1, g_id2, g_id3] = PopulateSceneGraph(&scene_graph);
+/* CollisionFilterManager is a thin wrapper. When it comes to activation status
+ changes it has few responsibilities:
 
-  // Work on the model so that we can register new geometry afterwards.
-  auto filter_manager = scene_graph.collision_filter_manager();
-  filter_manager.Deactivate(GeometrySet(g_id1));
+ 1. Make sure the activate/deactivate semantics gets through.
+ 2. Make sure the extract id and status change callbacks get passed. */
+GTEST_TEST(CollisionFilterManagerTest, Activation) {
+  CollisionFilter filter;
 
-  const auto& model_inspector = scene_graph.model_inspector();
-  EXPECT_TRUE(model_inspector.CollisionFiltered(g_id1, g_id2));
-  EXPECT_TRUE(model_inspector.CollisionFiltered(g_id1, g_id3));
-  EXPECT_FALSE(model_inspector.CollisionFiltered(g_id2, g_id3));
+  // Regardless the input set, return dummy_id. The fact that changes are
+  // only reported on dummy_id confirms the extract_ids callback is used.
+  const auto dummy_id = GeometryId::get_new_id();
+  auto extract = [dummy_id](const GeometrySet&, CollisionFilterScope) {
+    return std::unordered_set<GeometryId>{{dummy_id}};
+  };
 
-  // A geometry registered (and given the proximity role) *after* a geometry is
-  // deactivated is still filtered against the inactive geometry.
-  const SourceId source_id = scene_graph.RegisterSource("late_source");
-  const FrameId f_id =
-      scene_graph.RegisterFrame(source_id, GeometryFrame("late_frame"));
-  const GeometryId late_id =
-      scene_graph.RegisterGeometry(source_id, f_id, make_sphere_instance());
-  scene_graph.AssignRole(source_id, late_id, ProximityProperties());
-  EXPECT_TRUE(model_inspector.CollisionFiltered(g_id1, late_id));
-  EXPECT_FALSE(model_inspector.CollisionFiltered(g_id2, late_id));
+  // Capture reported change. Contents of observed_change show that the
+  // status change callback is used.
+  CollisionFilter::ActiveStatusChange observed_change;
+  auto status_change =
+      [&observed_change](const CollisionFilter::ActiveStatusChange& change) {
+        observed_change = change;
+      };
 
-  // Reactivating restores collision candidacy with everything.
-  filter_manager.Activate(GeometrySet(g_id1));
-  EXPECT_FALSE(model_inspector.CollisionFiltered(g_id1, g_id2));
-  EXPECT_FALSE(model_inspector.CollisionFiltered(g_id1, late_id));
+  auto manager = CollisionFilterManagerTester::MakeManager(&filter, extract,
+                                                           status_change);
+  const auto g_id = GeometryId::get_new_id();
 
-  // Active status is decoupled from the transient pairwise history:
-  // deactivation works even while a transient declaration is active (Apply()
-  // would throw).
-  filter_manager.ApplyTransient(
-      CollisionFilterDeclaration().ExcludeWithin(GeometrySet({g_id2, g_id3})));
-  EXPECT_NO_THROW(filter_manager.Deactivate(GeometrySet(g_id2)));
-  EXPECT_TRUE(model_inspector.CollisionFiltered(g_id2, late_id));
+  // Newly deactivating produces the expected change.
+  observed_change = {};
+  manager.Deactivate(GeometrySet(g_id));
+  EXPECT_TRUE(observed_change.activated.empty());
+  EXPECT_THAT(observed_change.deactivated,
+              ::testing::UnorderedElementsAre(dummy_id));
+
+  // Newly activating produces the expected change.
+  observed_change = {};
+  manager.Activate(GeometrySet(g_id));
+  EXPECT_TRUE(observed_change.deactivated.empty());
+  EXPECT_THAT(observed_change.activated,
+              ::testing::UnorderedElementsAre(dummy_id));
 }
 
 /* Confirm that the CollisionFilterManager can be copy constructed and assigned

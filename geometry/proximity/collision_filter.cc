@@ -90,8 +90,8 @@ bool CollisionFilter::RemoveDeclaration(FilterId id) {
 }
 
 void CollisionFilter::SetActiveStatus(
-    const GeometrySet& geometry_set,
-    const CollisionFilter::ExtractIds& extract_ids, bool active,
+    const GeometrySet& geometry_set, bool active,
+    const CollisionFilter::ExtractIds& extract_ids,
     const CollisionFilter::ActiveStatusChangeCallback& on_change) {
   const std::unordered_set<GeometryId> ids =
       extract_ids(geometry_set, CollisionFilterScope::kAll);
@@ -102,13 +102,13 @@ void CollisionFilter::SetActiveStatus(
   if (active) {
     for (GeometryId id : ids) {
       if (inactive_.erase(id) > 0) {
-        change.add_activated(id);
+        change.activated.push_back(id);
       }
     }
   } else {
     for (GeometryId id : ids) {
       if (inactive_.insert(id).second) {
-        change.add_deactivated(id);
+        change.deactivated.push_back(id);
       }
     }
   }

@@ -9,7 +9,7 @@ using internal::CollisionFilter;
 
 CollisionFilterManager::CollisionFilterManager(
     CollisionFilter* filter, CollisionFilter::ExtractIds extract_ids,
-    ActiveStatusChangeCallback active_status_change_callback)
+    CollisionFilter::ActiveStatusChangeCallback active_status_change_callback)
     : filter_(filter),
       extract_ids_(std::move(extract_ids)),
       active_status_change_callback_(std::move(active_status_change_callback)) {

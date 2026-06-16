@@ -31,38 +31,19 @@ class CollisionFilter {
   CollisionFilter();
 
   /* The net change to the inactive set (see the class documentation) produced
-   by a SetActiveStatus() call. Clients that derive data structures from the
-   inactive set (e.g., ProximityEngine culls inactive geometries from its
-   broadphase trees) use this to update incrementally, without inspecting the
-   full filter state. A SetActiveStatus() call with no net effect on the
-   inactive set produces an empty change. */
-  class ActiveStatusChange {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ActiveStatusChange);
-    ActiveStatusChange() = default;
+   by a SetActiveStatus() call. Clients can adapt their internal state to the
+   changes to the inactive set to improve query performance (see
+   ProximityEngine).
 
-    /* The geometries that became inactive (were active before the change). */
-    const std::vector<GeometryId>& deactivated() const { return deactivated_; }
-
-    /* The geometries that became active (were inactive before the change). */
-    const std::vector<GeometryId>& activated() const { return activated_; }
-
-    /* Reports whether this change is empty (no geometry changed status). */
-    bool empty() const { return deactivated_.empty() && activated_.empty(); }
-
-    /* Appends `id` to the deactivated() list.
-     @pre `id` is absent from both lists (preserving the invariant that the
-          lists are disjoint and duplicate-free). */
-    void add_deactivated(GeometryId id) { deactivated_.push_back(id); }
-
-    /* Appends `id` to the activated() list.
-     @pre `id` is absent from both lists (preserving the invariant that the
-          lists are disjoint and duplicate-free). */
-    void add_activated(GeometryId id) { activated_.push_back(id); }
-
-   private:
-    std::vector<GeometryId> deactivated_;
-    std::vector<GeometryId> activated_;
+   Whether `deactivated` and `activated` are disjoint sets or what to do about
+   them is determined by the producer and consumer of the change. */
+  struct ActiveStatusChange {
+    /* Geometries that became inactive (were active before the operation). */
+    std::vector<GeometryId> deactivated;
+    /* Geometries that became active. */
+    std::vector<GeometryId> activated;
+    /* Reports if *both* lists are empty -- no change to the inactive set. */
+    bool empty() const { return deactivated.empty() && activated.empty(); }
   };
 
   /* The callback used to forward a net active-status change to the owner of the
@@ -144,12 +125,14 @@ class CollisionFilter {
    GeometryIds.
 
    If the call produces a net change to the inactive set, `on_change` is invoked
-   with that change; otherwise `on_change` is not called.
+   with that change; otherwise `on_change` is not called. If `on_change` is
+   invoked, the change will be non-empty and the deactivated and activated lists
+   will be disjoint.
 
    @throws std::exception if any GeometryId referenced by `geometry_set` has not
                           previously been added to `this` filter system. */
-  void SetActiveStatus(const GeometrySet& geometry_set,
-                       const ExtractIds& extract_ids, bool active,
+  void SetActiveStatus(const GeometrySet& geometry_set, bool active,
+                       const ExtractIds& extract_ids,
                        const ActiveStatusChangeCallback& on_change);
 
   /* Flattens the history. The current configuration becomes the persistent
@@ -176,12 +159,9 @@ class CollisionFilter {
 
   /* Reports if two collision filters are "equivalent" -- in that they are
    defined over the same set of geometry ids, have the same inactive set, and
-   report the same pairs as being filtered (or not). (The inactive sets are
-   compared directly rather than via their current pair closure because an
-   inactive geometry also affects geometries added in the future.) This says
-   nothing about how the two filters are articulated (e.g., different
-   declarations of invariance, transient versus permanent declarations,
-   etc.). */
+   report the same pairs as being filtered (or not). This says nothing about how
+   the two filters are articulated (e.g., different declarations of invariance,
+   transient versus permanent declarations, etc.). */
   bool IsEquivalent(const CollisionFilter& other) const;
 
   /* Reports if the given `id` has been added to this filter system. */
