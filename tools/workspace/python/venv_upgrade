@@ -8,11 +8,19 @@
 # - Users can make edits to drake/setup/python/mypy/requirements.in, and then
 #   run this script to compile it to drake/setup/python/mypy/requirements.txt.
 #
+# The --commit option may be given to commit the changes.
+#
 # The --reuse option may be given to apply changes to pyproject.toml while
 # attempting to preserve existing version pins.
 #
 # This script should also be run periodically to update pinned Python packages
 # to the latest available versions.
+
+if [[ "$(uname)" != "Darwin" && "${DRAKE_WHEEL}" -ne 1 ]]; then
+    echo "This script is only supported where Drake uses a venv, " >&2
+    echo "which is currently on macOS or when building a wheel." >&2
+    exit 1
+fi
 
 set -eux -o pipefail
 
