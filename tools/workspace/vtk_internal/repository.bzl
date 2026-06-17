@@ -196,6 +196,7 @@ def vtk_internal_repository(
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/gltf_export_with_object_names.patch",
             ":patches/upstream/ignore_unsupported_image_types.patch",
+            ":patches/upstream/skybox_disables_lighting.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
