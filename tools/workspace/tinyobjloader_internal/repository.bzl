@@ -6,6 +6,7 @@ def tinyobjloader_internal_repository(
     github_archive(
         name = name,
         repository = "tinyobjloader/tinyobjloader",
+        upgrade_type = "commit",
         commit = "62ff207968f3dc14a64a1e2378dce67b760e7c4a",
         sha256 = "672aa67aae74ebf90edf493015d45010423135720ebbf86d8441abf19bb8f94c",  # noqa
         build_file = ":package.BUILD.bazel",
