@@ -562,6 +562,48 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
             deformable_model_ptr_->HasConstraint(body_id));
 }
 
+/* A plant that owns a non-empty DeformableModel must not be scalar-convertible
+ to AutoDiffXd or symbolic::Expression. Finalize() disables those conversions on
+ the plant's SystemScalarConverter so that the attempt fails immediately with a
+ clear message, rather than silently producing a plant with an empty deformable
+ model that fails downstream (e.g. when SceneGraph tries to read the missing
+ deformable configurations). */
+TEST_F(DeformableModelTest, PlantWithDeformableIsNotScalarConvertible) {
+  RegisterSphere(0.5);
+  EXPECT_FALSE(deformable_model_ptr_->is_empty());
+  plant_->Finalize();
+
+  /* The failure message explains *why* the plant is not convertible. */
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->ToAutoDiffXd(),
+      ".*does not support scalar conversion to type drake::AutoDiffXd"
+      ".*because its DeformableModel has 1 registered deformable body.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->ToSymbolic(),
+      ".*drake::symbolic::Expression.*because its DeformableModel has 1 "
+      "registered deformable body.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MultibodyPlant<AutoDiffXd>(*plant_),
+      ".*DeformableModel.*registered deformable body.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MultibodyPlant<symbolic::Expression>(*plant_),
+      ".*DeformableModel.*registered deformable body.*");
+
+  /* The reason also surfaces when the plant is nested in a Diagram (the path
+   that propagates through Diagram::GetUnsupportedScalarConversionMessage). */
+  auto diagram = builder_.Build();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      diagram->ToAutoDiffXd(),
+      ".*because its DeformableModel has 1 registered deformable body.*");
+
+  /* An empty DeformableModel does not impede scalar conversion. */
+  systems::DiagramBuilder<double> empty_builder;
+  auto added = AddMultibodyPlant(MultibodyPlantConfig{.time_step = 0.01},
+                                 &empty_builder);
+  added.plant.Finalize();
+  EXPECT_NO_THROW(added.plant.ToAutoDiffXd());
+}
+
 // Remove on 2026-09-01 per TAMSI deprecation.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
