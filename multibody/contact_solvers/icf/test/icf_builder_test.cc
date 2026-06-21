@@ -11,6 +11,7 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -152,6 +153,67 @@ GTEST_TEST(IcfBuilder, WeldConstraint) {
   EXPECT_EQ(pool.body_pairs()[0].second, 2);
 }
 
+// A single SpanningForest tree can hold several dynamically independent
+// sub-mechanisms when they branch off bodies that are welded to the world: with
+// weld joints modeled explicitly (the default), a body welded to World seeds a
+// tree, and everything mobilized off it joins that same tree. Such branches are
+// inertially decoupled (they share only anchored, zero-velocity ancestors), so
+// ICF must split the tree into one clique per branch -- otherwise the whole
+// mechanism collapses into a single clique/island. This mirrors the hero_demo
+// scenario where two robots and several free bodies all mount on a table welded
+// to the world.
+GTEST_TEST(IcfBuilder, MultipleCliquesPerTree) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  const auto M_B = SpatialInertia<double>::MakeUnitary();
+
+  // A table welded to the world via an explicit weld joint (so it is anchored,
+  // but not merged into the World mobod), with two independent pendulums
+  // hanging off it. The result is a single tree with two decoupled branches.
+  const RigidBody<double>& table = plant.AddRigidBody("table", M_B);
+  const RigidBody<double>& p1 = plant.AddRigidBody("p1", M_B);
+  const RigidBody<double>& p2 = plant.AddRigidBody("p2", M_B);
+  plant.AddJoint<WeldJoint>("weld_table", plant.world_body(), RigidTransformd(),
+                            table, RigidTransformd(), RigidTransformd());
+  plant.AddJoint<RevoluteJoint>("j1", table, RigidTransformd(), p1,
+                                RigidTransformd(), Vector3d::UnitY());
+  plant.AddJoint<RevoluteJoint>("j2", table, RigidTransformd(), p2,
+                                RigidTransformd(), Vector3d::UnitY());
+  plant.Finalize();
+  EXPECT_EQ(plant.num_velocities(), 2);
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+
+  // The two pendulums are inertially decoupled, so they land in separate
+  // cliques even though Drake models them as a single spanning tree.
+  EXPECT_EQ(model.num_cliques(), 2);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  EXPECT_EQ(model.clique_size(0), 1);
+  EXPECT_EQ(model.clique_size(1), 1);
+
+  // The two cliques are uncoupled (no constraints), so the partition reports
+  // two independent islands.
+  EXPECT_EQ(model.partition().num_islands(), 2);
+
+  // The anchored table maps to no clique; each pendulum body maps to its own.
+  EXPECT_EQ(model.body_to_clique(plant.GetBodyByName("table").index()), -1);
+  const int c1 = model.body_to_clique(plant.GetBodyByName("p1").index());
+  const int c2 = model.body_to_clique(plant.GetBodyByName("p2").index());
+  EXPECT_GE(c1, 0);
+  EXPECT_GE(c2, 0);
+  EXPECT_NE(c1, c2);
+}
+
 GTEST_TEST(IcfBuilder, NoWeldBetweenAnchoredBodies) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
@@ -194,7 +256,7 @@ GTEST_TEST(IcfBuilder, CouplerBad) {
 
   Parser(&plant, "Pendulum1").AddModelsFromString(kRobotXml, "xml");
   Parser(&plant, "Pendulum2").AddModelsFromString(kRobotXml, "xml");
-  // The bad coupler selects joints from different trees.
+  // The bad coupler selects joints from different cliques.
   plant.AddCouplerConstraint(plant.get_joint(JointIndex(0)),
                              plant.get_joint(JointIndex(3)), 0.8);
   plant.Finalize();
@@ -208,7 +270,7 @@ GTEST_TEST(IcfBuilder, CouplerBad) {
   IcfModel<double> model;
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model),
-      ".*only.*same tree.*");
+      ".*only.*same clique.*");
 }
 
 GTEST_TEST(IcfBuilder, RetryStep) {

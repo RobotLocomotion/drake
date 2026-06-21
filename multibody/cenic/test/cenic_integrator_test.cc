@@ -10,6 +10,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
@@ -740,6 +741,65 @@ INSTANTIATE_TEST_SUITE_P(
                          std::get<0>(x.param), std::get<1>(x.param),
                          std::get<2>(x.param));
     });
+
+constexpr char kThreeBallsMjcf[] = R"""(
+  <?xml version="1.0"?>
+  <mujoco model="three_balls">
+    <worldbody>
+      <geom name="floor" type="box" pos="0 0 -0.1" size="50 50 0.1"/>
+      <body name="ball1" pos="-5 0 0.1">
+        <joint type="free"/>
+        <geom type="sphere" size="0.1"/>
+      </body>
+      <body name="ball2" pos="0 0 0.1">
+        <joint type="free"/>
+        <geom type="sphere" size="0.1"/>
+      </body>
+      <body name="ball3" pos="5 0 0.1">
+        <joint type="free"/>
+        <geom type="sphere" size="0.1"/>
+      </body>
+    </worldbody>
+  </mujoco>
+  )""";
+
+/* Three free spheres rest on a floor, spaced far apart so they never touch one
+another. Each sphere-floor contact is an independent island, so this scene
+exercises CENIC's optional per-island parallelism. The simulated trajectory must
+be identical whether the islands are solved serially or in parallel. */
+GTEST_TEST(CenicIntegratorParallelism, MultiIslandDeterminism) {
+  auto simulate = [](Parallelism parallelism) {
+    DiagramBuilder<double> builder;
+    MultibodyPlant<double>& plant =
+        AddMultibodyPlantSceneGraph(&builder, 0.0).plant;
+    Parser(&plant).AddModelsFromString(kThreeBallsMjcf, "xml");
+    plant.Finalize();
+    auto diagram = builder.Build();
+
+    Simulator<double> simulator(*diagram);
+    auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
+    integrator.set_maximum_step_size(0.1);
+    integrator.set_target_accuracy(1e-3);
+    integrator.set_parallelism(parallelism);
+    EXPECT_EQ(integrator.get_parallelism().num_threads(),
+              parallelism.num_threads());
+
+    simulator.Initialize();
+    simulator.AdvanceTo(0.5);
+
+    const Context<double>& plant_context =
+        plant.GetMyContextFromRoot(simulator.get_context());
+    return VectorXd(plant.GetPositionsAndVelocities(plant_context));
+  };
+
+  const VectorXd serial = simulate(Parallelism::None());
+  const VectorXd parallel = simulate(Parallelism(4));
+
+  // The scene must have produced a nontrivial trajectory, and the parallel and
+  // serial results must be bit-identical (independent of the thread count).
+  EXPECT_GT(serial.size(), 0);
+  EXPECT_TRUE(CompareMatrices(parallel, serial, 0.0));
+}
 
 }  // namespace
 }  // namespace cenic

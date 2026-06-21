@@ -35,7 +35,11 @@ PYDRAKE_MODULE(cenic, m) {
             &CenicIntegrator<T>::get_solver_parameters,
             doc.CenicIntegrator.get_solver_parameters.doc)
         .def("SetSolverParameters", &CenicIntegrator<T>::SetSolverParameters,
-            py::arg("parameters"), doc.CenicIntegrator.SetSolverParameters.doc);
+            py::arg("parameters"), doc.CenicIntegrator.SetSolverParameters.doc)
+        .def("get_parallelism", &CenicIntegrator<T>::get_parallelism,
+            doc.CenicIntegrator.get_parallelism.doc)
+        .def("set_parallelism", &CenicIntegrator<T>::set_parallelism,
+            py::arg("parallelism"), doc.CenicIntegrator.set_parallelism.doc);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 }
