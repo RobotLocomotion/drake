@@ -212,7 +212,8 @@ enum class Role {
 /** The operations that can be performed on the given properties when assigning
  roles to geometry.  */
 enum class RoleAssign {
-  kNew,     ///< Assign the properties to a geometry that doesn't already have
+  // XXX Hack set to 1 to avoid ODR problems with robin_map (*sigh*).
+  kNew = 1, ///< Assign the properties to a geometry that doesn't already have
             ///< the role.
   kReplace  ///< Replace the existing role properties completely.
 };

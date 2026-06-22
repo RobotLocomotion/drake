@@ -45,8 +45,9 @@ std::string to_string(PixelType);
 /// This also expresses the order of channels in a pixel if the pixel has
 /// multiple channels.
 enum class PixelFormat {
+  // XXX Hack set to 1 to avoid ODR problems with robin_map (*sigh*).
   /// The pixel format used for all the RGB images.
-  kRgb,
+  kRgb = 1,
   /// The pixel format used for all the BGR images.
   kBgr,
   /// The pixel format used for all the RGBA images.
