@@ -321,6 +321,7 @@ void DefineInMemoryMesh(py::module_ m) {
     using Class = InMemoryMesh;
     constexpr auto& cls_doc = doc.InMemoryMesh;
     py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
+    py::object ctor = m.attr("InMemoryMesh");
     cls  // BR
         .def(ParamInit<Class>())
         .def_rw("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
@@ -334,11 +335,8 @@ void DefineInMemoryMesh(py::module_ m) {
               result["supporting_files"] = self.supporting_files;
               return result;
         },
-        [](Class* self, const py::dict& kwargs) {
-          new (self) Class;
-          self->mesh_file = py::cast<MemoryFile>(kwargs["mesh_file"]);
-          self->supporting_files =
-              py::cast<string_map<FileSource>>(kwargs["supporting_files"]);
+        [ctor](Class* self, const py::dict& kwargs) {
+          new (self) Class(py::cast<Class>(ctor(**kwargs)));
         });
     // Note: __repr__ is defined in _geometry_extra.py.
     DefCopyAndDeepCopy(&cls);
