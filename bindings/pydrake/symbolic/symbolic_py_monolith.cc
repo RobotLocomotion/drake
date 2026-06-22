@@ -380,7 +380,6 @@ void DefineSymbolicMonolith(py::module_ m) {
           },
           internal::kUnapplyExpressionDoc)
       .def("Expand", &Expression::Expand, doc_expression.Expand.doc)
-      // XXX porting -- raises exception and error info lost
       .def(
           "Evaluate",
           [](const Expression& self, const Environment::map& env,
@@ -538,7 +537,6 @@ void DefineSymbolicMonolith(py::module_ m) {
       },
       py::arg("m"), doc.IsAffine.doc_1args);
 
-#if PYDRAKE_USE_PYBIND11  // XXX porting -- raises exception and error info lost
   m.def(
       "Evaluate",
       [](const MatrixX<Expression>& M, const Environment::map& env,
@@ -546,8 +544,7 @@ void DefineSymbolicMonolith(py::module_ m) {
         return Evaluate(M, Environment{env}, random_generator);
       },
       py::arg("m"), py::arg("env") = Environment::map{},
-      py::arg("generator") = nullptr, doc_expr.Evaluate.doc_expression);
-#endif
+      py::arg("generator") = py::none(), doc_expr.Evaluate.doc_expression);
 
   m.def("GetVariableVector", &symbolic::GetVariableVector,
       py::arg("expressions"), doc_expr.GetVariableVector.doc);
@@ -646,15 +643,12 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def("GetFreeVariables", &Formula::GetFreeVariables,
           doc_formula.GetFreeVariables.doc)
       .def("EqualTo", &Formula::EqualTo, doc_formula.EqualTo.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting -- raises exception and error info lost
       .def(
           "Evaluate",
           [](const Formula& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          py::arg("env") = Environment::map{},
-          doc_formula.Evaluate.doc_2args)
-#endif
+          py::arg("env") = Environment::map{}, doc_formula.Evaluate.doc_2args)
       .def(
           "Substitute",
           [](const Formula& self, const Variable& var, const Expression& e) {
