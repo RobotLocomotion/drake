@@ -7,9 +7,11 @@ def github3_py_internal_repository(
         name = name,
         repository = "sigmavirus24/github3.py",
         upgrade_type = "tag",
-        tags_pattern = "^(\\d+\\.)",
-        commit = "3.2.0",
-        sha256 = "42cf8e721437a0bcfb05e767302c3221cdc96f3e9db3d76ce990fd0526af1d99",  # noqa
+        # github3.py has some older tags beginning with "v" (plus some other
+        # randoms like "test") that we should ignore.
+        tags_pattern = "^\\d(\\.)",
+        commit = "4.0.1",
+        sha256 = "7a1c3f157aa3b9e0973e957ac0b402c09a83d405247d278c10eb4c390977f132",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
