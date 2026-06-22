@@ -608,7 +608,7 @@ MODULE_SETTINGS = {
             "ThirdParty/jpeg/vtkjpeg/**",
         ],
         "deps_extra": [
-            "@libjpeg_turbo_internal//:jpeg",
+            "@libjpeg_turbo_internal//:libjpeg_turbo",
         ],
     },
     "VTK::nlohmannjson": {
