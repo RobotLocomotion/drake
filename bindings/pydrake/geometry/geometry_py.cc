@@ -30,7 +30,12 @@ PYDRAKE_MODULE(geometry, m) {
   DefineGeometryHydro(m);
   DefineGeometryRender(m);
   DefineGeometrySceneGraph(m);
+#ifdef PYDRAKE_USE_PYBIND11
   DefineGeometryOptimization(m.def_submodule("optimization"));
+#else
+  // XXX Skip DefineGeometryOptimization (crashes during setup).
+  m.def_submodule("optimization");
+#endif
   DefineGeometryVisualizers(m);
 
   ExecuteExtraPythonCode(m, true);
