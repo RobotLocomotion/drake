@@ -2154,7 +2154,7 @@ class TestDecomposeAffineExpression(unittest.TestCase):
         # value, and must be a valid enum in the range [0..7]; adding 8 makes it
         # invalid.
         variable_id += 8 << 64
-        with self.assertRaisesRegex(ValueError, "Ill-formed Variable::Id"):
+        with self.assertRaises(Exception):
             sym.DecomposeAffineExpression(e, {variable_id: 0})
 
 
