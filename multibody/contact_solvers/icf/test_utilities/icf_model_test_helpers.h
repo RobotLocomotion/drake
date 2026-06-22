@@ -17,6 +17,25 @@ template <typename T>
 void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
                             double time_step = 0.01);
 
+/* Makes a model reducible by setting the ReductionParameters such that
+`dofs_to_remove` would be removed in the reduced model.
+
+For test purposes, it is valid to pass an empty `dofs_to_remove`. The resulting
+model's reduction parameters are valid, so `model.ReduceInto()` can be used to
+effectively copy the model. However, the described problem is not smaller than
+the original, so `model.is_reducible()` would return false.
+
+@pre `model` != nullptr.
+@pre `dofs_to_remove` is a subsequence of the velocity indices:
+  * all non-negative,
+  * all < `model.num_velocities()`,
+  * sequence is sorted,
+  * elements are unique.
+*/
+template <typename T>
+void MakeModelReducible(IcfModel<T>* model,
+                        const std::vector<int>& dofs_to_remove);
+
 /* Adds a coupler constraint to the given model. */
 template <typename T>
 void AddCouplerConstraint(IcfModel<T>* model);

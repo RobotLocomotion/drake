@@ -7,9 +7,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -51,11 +53,16 @@ class GainConstraintsPool {
 
   ~GainConstraintsPool();
 
-  /* Returns a reference to the parent model. */
+  /* @see IsAbstractConstraintsPool. */
   const IcfModel<T>& model() const { return *model_; }
-
-  /* Returns the total number of gain constraints stored in this pool. */
   int num_constraints() const { return clique_.size(); }
+  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateHessian(
+      const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
+  void ReduceInto(const ReducedMapping& mapping,
+                  GainConstraintsPool<T>* reduced_pool) const;
 
   /* Returns the number of velocities for each gain constraint. */
   std::span<const int> constraint_sizes() const {
@@ -89,16 +96,6 @@ class GainConstraintsPool {
   the full plant. */
   void CalcData(const VectorX<T>& v,
                 GainConstraintsDataPool<T>* gain_data) const;
-
-  /* Adds the gradient contribution of this constraint, ∇ℓ = −γ, to the
-  model-wide gradient. */
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-
-  /* Adds the contribution of this constraint to the model-wide Hessian. */
-  void AccumulateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
-          hessian) const;
 
   /* Computes the first and second derivatives of the constraint cost
   ℓ̃(α) = ℓ(v + α⋅w).
@@ -143,6 +140,7 @@ class GainConstraintsPool {
   EigenPool<VectorX<T>> le_;  // Lower effort limit.
   EigenPool<VectorX<T>> ue_;  // Upper effort limit.
 };
+static_assert(IsAbstractConstraintsPool<GainConstraintsPool>);
 
 }  // namespace internal
 }  // namespace icf

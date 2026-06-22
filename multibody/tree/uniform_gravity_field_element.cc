@@ -6,9 +6,6 @@
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/rigid_body.h"
 
-// TODO(sherm1) Everything here needs to be reworked in terms of mobilized
-//  bodies rather than individual links. Also, use the available caches
-//  rather than recalculating them.
 namespace drake {
 namespace multibody {
 
@@ -48,52 +45,81 @@ UniformGravityFieldElement<T>::UniformGravityFieldElement(
       g_W_(g_W),
       disabled_model_instances_(std::move(disabled_model_instances)) {}
 
+// This is a private helper method to collect all the gravity forces, shifted
+// to each mobilized body B's body frame origin Bo, and expressed in World.
+template <typename T>
+void UniformGravityFieldElement<T>::AccumulateGravitySpatialForces(
+    const systems::Context<T>& context,
+    const internal::PositionKinematicsCache<T>& pc,
+    std::vector<SpatialForce<T>>* F_Bo_W_array) const {
+  DRAKE_ASSERT(F_Bo_W_array != nullptr);
+  const internal::MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::FrameBodyPoseCache<T>& fbpc =
+      model.EvalFrameBodyPoses(context);
+
+  const Vector3<double>& g_W = gravity_vector();
+
+  // Loop over all mobilized bodies, skipping World.
+  for (const auto& mobod : model.forest().mobods()) {
+    if (mobod.is_world()) continue;
+    const internal::MobodIndex mobod_index = mobod.index();
+    const math::RotationMatrix<T>& R_WB = pc.get_R_WB(mobod_index);
+
+    // Loop over all the links that follow this mobod (can be more than
+    // one link if we're combining welded-together links into composites).
+
+    // TODO(sherm1) It seems very unlikely that there would be individual links
+    //  for which gravity has been disabled -- the useful cases (if any!) would
+    //  likely turn off gravity for the whole mobod. Consider making it a
+    //  modeling error to mix gravity on/off within a composite. In that case
+    //  we could simply use the precalculated mobod spatial inertia M_BBo_B
+    //  for mass and center of mass and not have to loop through links at all.
+    for (const auto& link_ordinal : mobod.follower_link_ordinals()) {
+      const auto& topo_link = model.graph().links(link_ordinal);
+
+      // Skip this link if gravity is disabled for its model instance.
+      if (!is_enabled(topo_link.model_instance())) continue;
+
+      // Compute p_BoLcm_W, the position vector from the mobod origin Bo to
+      // the link's center of mass, expressed in the World frame W. (Could
+      // be cached in the PositionKinematicsCache.)
+      const Vector3<T>& p_BoLcm_B = fbpc.get_p_BoLcm_B(link_ordinal);
+      const Vector3<T> p_BoLcm_W = R_WB * p_BoLcm_B;  // 15 flops
+
+      // Compute f_Lcm_W, the gravity force at the link's center of mass,
+      // expressed in World. Then shift to the mobod origin Bo and accumulate.
+      const T& mass_of_L = fbpc.get_M_LLo_L(link_ordinal).get_mass();
+      const Vector3<T> f_Lcm_W = mass_of_L * g_W;
+      (*F_Bo_W_array)[mobod_index] +=
+          SpatialForce<T>(p_BoLcm_W.cross(f_Lcm_W), f_Lcm_W);
+    }
+  }
+}
+
 template <typename T>
 VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
     const systems::Context<T>& context) const {
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::PositionKinematicsCache<T>& pc =
+      model.EvalPositionKinematics(context);
 
-  // TODO(amcastro-tri): Get these from the cache.
-  internal::PositionKinematicsCache<T> pc(model.forest());
-  model.CalcPositionKinematicsCache(context, &pc);
-  internal::VelocityKinematicsCache<T> vc(model.forest());
-  vc.InitializeToZero();
+  const int num_mobods = model.num_mobods();
 
-  // Create a multibody forces initialized by default to zero forces.
-  MultibodyForces<T> forces(model);
-  // Add this element's force contributions, gravity, into the forces object.
-  this->CalcAndAddForceContribution(context, pc, vc, &forces);
+  // Accumulate the gravity spatial force on each mobod, applied at the
+  // mobod origin Bo, expressed in the World frame W. Zero-initialize so
+  // we can skip some links and accumulate others.
+  std::vector<SpatialForce<T>> F_Bo_W_array(num_mobods,
+                                            SpatialForce<T>::Zero());
+  AccumulateGravitySpatialForces(context, pc, &F_Bo_W_array);
 
-  // Temporary output vector of spatial forces for each body B at their inboard
-  // frame Mo, expressed in the world W.
-  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_links());
-
-  // Zero vector of generalized accelerations.
-  const VectorX<T> vdot = VectorX<T>::Zero(model.num_velocities());
-
-  // Temporary array for body accelerations.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_links());
-
-  // Output vector of generalized forces:
+  // tau_g = ∑ Jv_V_WBo_Wᵀ ⋅ F_grav_Bo_W, computed in O(n) without
+  // forming the entire system Jacobian matrix. The function
+  // CalcSystemJacobianTransposeTimesF() overwrites (accumulates)
+  // into F_Bo_W_array during its tip-to-base sweep.
   VectorX<T> tau_g(model.num_velocities());
-
-  // Compute inverse dynamics with zero generalized velocities and zero
-  // generalized accelerations. Since inverse dynamics computes:
-  // ID(q, v, v̇)  = M(q)v̇ + C(q, v)v - ∑ J_WBᵀ(q) Fgrav_Bo_W
-  // with v = 0 and v̇ = 0 we get:
-  // ID(q, v, v̇) = - ∑ J_WBᵀ(q) Fgrav_Bo_W = -tau_g(q), which is the negative of
-  // the generalized forces due to gravity.
-  // TODO(amcastro-tri): Replace this inverse dynamics implementation by a JᵀF
-  // operator implementation, which would be more efficient.
-  const double ignore_velocities = true;
-  model.CalcInverseDynamics(
-      context, VectorX<T>::Zero(model.num_velocities()), /* vdot = 0 */
-      /* Applied forces. In this case only gravity. */
-      forces.body_forces(), forces.generalized_forces(), ignore_velocities,
-      &A_WB_array, &F_BMo_W_array, /* temporary arrays. */
-      &tau_g /* Output, the generalized forces. */);
-  return -tau_g;
+  model.CalcSystemJacobianTransposeTimesF(context, &F_Bo_W_array, &tau_g);
+  return tau_g;
 }
 
 template <typename T>
@@ -102,35 +128,9 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>&,
     MultibodyForces<T>* forces) const {
-  // Alias to the array of applied body forces:
-  std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
-
-  // Add the force of gravity contribution for each body in the model.
-  // Skip the world.
   DRAKE_ASSERT(this->has_parent_tree());
-  const internal::MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_links = model.num_links();
-  // Skip the "world" link.
-  for (LinkIndex link_index(1); link_index < num_links; ++link_index) {
-    const RigidBody<T>& link = model.get_link(link_index);
-
-    // Skip this link if gravity is disabled.
-    if (!is_enabled(link.model_instance())) continue;
-
-    internal::MobodIndex mobod_index = link.mobod_index();
-
-    // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
-    //  caching is in place.
-    const T mass = link.get_mass(context);
-    const Vector3<T> p_BoBcm_B = link.CalcCenterOfMassInBodyFrame(context);
-    const math::RotationMatrix<T> R_WB = pc.get_R_WB(mobod_index);
-    // TODO(amcastro-tri): Consider caching p_BoBcm_W.
-    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
-
-    const Vector3<T> f_Bcm_W = mass * gravity_vector();
-    const SpatialForce<T> F_Bo_W(p_BoBcm_W.cross(f_Bcm_W), f_Bcm_W);
-    F_Bo_W_array[mobod_index] += F_Bo_W;
-  }
+  std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
+  AccumulateGravitySpatialForces(context, pc, &F_Bo_W_array);
 }
 
 template <typename T>
@@ -141,27 +141,26 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   // Skip the world.
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::FrameBodyPoseCache<T>& fbpc =
+      model.EvalFrameBodyPoses(context);
   const int num_links = model.num_links();
   T TotalPotentialEnergy = 0.0;
   // Skip the "world" link.
-  for (LinkIndex link_index(1); link_index < num_links; ++link_index) {
-    const RigidBody<T>& link = model.get_link(link_index);
+  for (LinkOrdinal link_ordinal(1); link_ordinal < num_links; ++link_ordinal) {
+    const auto& topo_link = model.graph().links(link_ordinal);
 
-    // Skip this link if gravity is disabled.
-    if (!is_enabled(link.model_instance())) continue;
+    // Skip this link if gravity is disabled for its model instance.
+    if (!is_enabled(topo_link.model_instance())) continue;
 
-    // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
-    // caching is in place.
-    const T mass = link.get_mass(context);
-    const Vector3<T> p_BoBcm_B = link.CalcCenterOfMassInBodyFrame(context);
-    const math::RigidTransform<T>& X_WB = pc.get_X_WB(link.mobod_index());
-    const math::RotationMatrix<T> R_WB = X_WB.rotation();
-    const Vector3<T> p_WBo = X_WB.translation();
-    // TODO(amcastro-tri): Consider caching p_BoBcm_W and/or p_WBcm.
-    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
-    const Vector3<T> p_WBcm = p_WBo + p_BoBcm_W;
+    // Compute p_WLcm_W, the position of the link's center of mass in the World
+    // frame, expressed in World. (Could be cached in PositionKinematicsCache.)
+    const SpatialInertia<T>& M_LLo_L = fbpc.get_M_LLo_L(link_ordinal);
+    const Vector3<T>& p_LoLcm_L = M_LLo_L.get_com();
+    const math::RigidTransform<T>& X_WL = pc.get_X_WL(link_ordinal);
+    const Vector3<T>& p_WLcm_W = X_WL * p_LoLcm_L;
 
-    TotalPotentialEnergy -= (mass * p_WBcm.dot(gravity_vector()));
+    const T& mass = M_LLo_L.get_mass();
+    TotalPotentialEnergy -= (mass * p_WLcm_W.dot(gravity_vector()));
   }
   return TotalPotentialEnergy;
 }
@@ -175,31 +174,35 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   // Skip the world.
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::FrameBodyPoseCache<T>& fbpc =
+      model.EvalFrameBodyPoses(context);
   const int num_links = model.num_links();
   T TotalConservativePower = 0.0;
   // Skip the "world" link.
-  for (LinkIndex link_index(1); link_index < num_links; ++link_index) {
-    const RigidBody<T>& link = model.get_link(link_index);
+  for (LinkOrdinal link_ordinal(1); link_ordinal < num_links; ++link_ordinal) {
+    const auto& topo_link = model.graph().links(link_ordinal);
 
-    // Skip this link if gravity is disabled.
-    if (!is_enabled(link.model_instance())) continue;
+    // Skip this link if gravity is disabled for its model instance.
+    if (!is_enabled(topo_link.model_instance())) continue;
 
-    // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
-    //  caching is in place.
-    const T mass = link.get_mass(context);
-    const Vector3<T> p_BoBcm_B = link.CalcCenterOfMassInBodyFrame(context);
-    const math::RigidTransform<T>& X_WB = pc.get_X_WB(link.mobod_index());
-    const math::RotationMatrix<T> R_WB = X_WB.rotation();
-    // TODO(amcastro-tri): Consider caching p_BoBcm_W.
-    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+    // Compute p_LoLcm_W, the vector from link origin to its center of mass,
+    // expressed in World. (Could be cached in PositionKinematicsCache.)
+    const SpatialInertia<T>& M_LLo_L = fbpc.get_M_LLo_L(link_ordinal);
+    const Vector3<T>& p_LoLcm_L = M_LLo_L.get_com();
+    const math::RotationMatrix<T>& R_WL = pc.get_X_WL(link_ordinal).rotation();
+    const Vector3<T>& p_LoLcm_W = R_WL * p_LoLcm_L;
 
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(link.mobod_index());
-    const SpatialVelocity<T> V_WBcm = V_WB.Shift(p_BoBcm_W);
-    const Vector3<T>& v_WBcm = V_WBcm.translational();
+    // Form v_WLcm_W, Lcm's translational velocity in the World frame W,
+    // expressed in World. (Could be cached in VelocityKinematicsCache.)
+    const SpatialVelocity<T>& V_WLo_W = vc.get_V_WL(link_ordinal);
+    const SpatialVelocity<T> V_WLcm_W = V_WLo_W.Shift(p_LoLcm_W);
+    const Vector3<T>& v_WLcm_W = V_WLcm_W.translational();
 
-    // The conservative power is defined to be positive when the potential
-    // energy decreases.
-    TotalConservativePower += (mass * v_WBcm.dot(gravity_vector()));
+    // Power = force · velocity. Here force = m*g, so power = m*g · velocity.
+    // Note: Conservative power = -𝑑(PE)/𝑑𝑡, where PE is potential energy.
+    // Hence, power is positive when potential energy decreases.
+    const T& mass = M_LLo_L.get_mass();
+    TotalConservativePower += (mass * v_WLcm_W.dot(gravity_vector()));
   }
   return TotalConservativePower;
 }

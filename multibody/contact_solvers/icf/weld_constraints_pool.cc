@@ -56,8 +56,8 @@ void WeldConstraintsPool<T>::Resize(const int num_constraints) {
   p_AP_W_.Resize(num_constraints, 3, 1);
   p_BQ_W_.Resize(num_constraints, 3, 1);
   p_PoQo_W_.Resize(num_constraints, 3, 1);
-  g0_.resize(num_constraints);
-  R_.resize(num_constraints);
+  g0_.Resize(num_constraints, 6, 1);
+  R_.Resize(num_constraints, 6, 1);
 }
 
 template <typename T>
@@ -423,6 +423,62 @@ void WeldConstraintsPool<T>::CalcCostAlongLine(
     // d²ℓ̃/dα² = ucᵀ⋅R⁻¹⋅uc
     (*d2cost) += uc.cwiseQuotient(R_diag).dot(uc);
   }
+}
+
+template <typename T>
+void WeldConstraintsPool<T>::ReduceInto(
+    const ReducedMapping& mapping, WeldConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(num_constraints());
+  // Remove old data.
+  reduced_pool->Resize(0);
+
+  int reduced_size{0};
+  for (int k = 0; k < num_constraints(); ++k) {
+    // In order to include the constraint, at least one body in the pair must
+    // be in a clique participating in the reduced model. If only the first
+    // body's clique participates, we reverse the ordering of the two bodies
+    // for the reduced-model constraint to match the constraint conventions.
+    const int body_a = body_pairs_[k].first;
+    const int body_b = body_pairs_[k].second;
+    const int c_b = model().body_to_clique(body_b);
+    const int c_a = model().body_to_clique(body_a);  // negative if anchored.
+    // Notation: `r_` variables refer to the reduced problem.
+    const bool have_r_c_b = mapping.clique_subsequence.participates(c_b);
+    const bool have_r_c_a =
+        (c_a >= 0 && mapping.clique_subsequence.participates(c_a));
+    const int r_num_cliques = have_r_c_b + have_r_c_a;
+    // If both bodies' cliques have been removed, remove the whole constraint.
+    if (r_num_cliques == 0) {
+      continue;
+    }
+    // At this point, we could have an `r_num_cliques==1` case where body_b has
+    // become anchored (no clique), and body_a is not anchored. This will
+    // require flipping the direction of the weld constraint.
+    bool need_flip = (r_num_cliques == 1 && have_r_c_a);
+
+    // Fill in the reduced constraint.
+    if (need_flip) {
+      reduced_pool->body_pairs_.emplace_back(body_b, body_a);
+      reduced_pool->p_AP_W_.Add(3, 1) = p_BQ_W_[k];
+      reduced_pool->p_BQ_W_.Add(3, 1) = p_AP_W_[k];
+      reduced_pool->p_PoQo_W_.Add(3, 1) = -p_PoQo_W_[k];
+      reduced_pool->g0_.Add(6, 1) = -g0_[k];
+    } else {
+      reduced_pool->body_pairs_.push_back(body_pairs_[k]);
+      reduced_pool->p_AP_W_.Add(3, 1) = p_AP_W_[k];
+      reduced_pool->p_BQ_W_.Add(3, 1) = p_BQ_W_[k];
+      reduced_pool->p_PoQo_W_.Add(3, 1) = p_PoQo_W_[k];
+      reduced_pool->g0_.Add(6, 1) = g0_[k];
+    }
+
+    // Track the reduced pool size.
+    ++reduced_size;
+  }
+  // The values within R_ and HessianBlock will be set by
+  // PrecomputeHessianBlocks(). Set the arrays to the correct size.
+  reduced_pool->R_.Resize(reduced_size, 6, 1);
+  reduced_pool->hessian_blocks_.resize(reduced_size);
 }
 
 }  // namespace internal

@@ -4,11 +4,16 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <typeinfo>
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+
 #include "drake/common/eigen_types.h"
 #include "drake/common/identifier.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/parallelism.h"
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
@@ -505,6 +510,12 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   /** Returns true if and only if this %DeformableModel is empty. */
   bool is_cloneable_to_symbolic() const final { return is_empty(); }
 
+  /** DeformableModel can't convert to non-double scalar types, so it implements
+   the ScalarConvertibleComponent interface for describing the failure reasons.
+   */
+  std::string GetScalarConversionFailureReason(
+      const std::type_info& scalar) const final;
+
   // TODO(xuchenhan-tri): Restrict the entry point to parallelism configuration
   // so that's more difficult to misuse. We want to avoid, for example, a user
   // calling SetParallelism(Parallelism::Max()) on a model that has already been
@@ -545,6 +556,16 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    empty, the clone simply returns an empty model. */
   std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic(
       MultibodyPlant<symbolic::Expression>* plant) const final;
+
+  template <typename U>
+  void ThrowForUnsupportedScalarType() const {
+    if (!is_empty()) {
+      throw std::logic_error(fmt::format(
+          "DeformableModel does not support scalar conversion to type "
+          "drake::{} because {}.",
+          NiceTypeName::Get<U>(), GetScalarConversionFailureReason(typeid(U))));
+    }
+  }
 
   void DoDeclareSystemResources() final;
 

@@ -227,16 +227,6 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             py::arg("wxyz"))
         .def(
             "__init__",
-            [](Class* self, py::list wxyz) {
-              DRAKE_THROW_UNLESS(wxyz.size() == 4);
-              Class out(py::cast<T>(wxyz[0]), py::cast<T>(wxyz[1]),
-                  py::cast<T>(wxyz[2]), py::cast<T>(wxyz[3]));
-              CheckQuaternion(out);
-              new (self) Class(std::move(out));
-            },
-            py::arg("wxyz"))
-        .def(
-            "__init__",
             [](Class* self, T w, T x, T y, T z) {
               Class out(w, x, y, z);
               CheckQuaternion(out);

@@ -34,6 +34,7 @@ void LimitConstraintsPool<T>::Resize(std::span<const int> sizes) {
   R_.Resize(num_limit_constraints, sizes);
   constraint_size_.assign(sizes.begin(), sizes.end());
   clique_.resize(num_limit_constraints);
+  dof_.resize(num_limit_constraints);
 
   // All constraints are disabled (i.e., infinite bounds) by default. This
   // allows us to add a limit constraint on only one DoF in a multi-DoF
@@ -57,6 +58,7 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   DRAKE_ASSERT(ql <= qu);
 
   clique_[index] = clique;
+  dof_[index] = dof;
   ql_[index](dof) = ql;
   qu_[index](dof) = qu;
   q0_[index](dof) = q0;
@@ -185,6 +187,42 @@ void LimitConstraintsPool<T>::CalcCostAlongLine(
     G_times_w = G_upper.asDiagonal() * w_c;
     (*dcost) += w_c.dot(gamma_upper);
     (*d2cost) += w_c.dot(G_times_w);
+  }
+}
+
+template <typename T>
+void LimitConstraintsPool<T>::ReduceInto(
+    const ReducedMapping& mapping,
+    LimitConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(constraint_sizes());
+  // Remove old data.
+  reduced_pool->Resize({});
+
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = clique_[k];
+    if (!mapping.clique_subsequence.participates(c)) {
+      continue;
+    }
+    const auto& dof_subsequence = mapping.clique_dof_subsequences[c];
+    if (!dof_subsequence.participates(dof_[k])) {
+      continue;
+    }
+    const auto& indices = dof_subsequence.inverse_permutation();
+    const int r_c = mapping.clique_subsequence.permuted_index(c);
+    const int r_dof = dof_subsequence.permuted_index(dof_[k]);
+    const int r_c_size = dof_subsequence.permuted_domain_size();
+
+    // Fill in the reduced constraint.
+    reduced_pool->clique_.push_back(r_c);
+    reduced_pool->dof_.push_back(r_dof);
+    reduced_pool->constraint_size_.push_back(r_c_size);
+    reduced_pool->ql_.Add(r_c_size, 1) = ql_[k](indices);
+    reduced_pool->qu_.Add(r_c_size, 1) = qu_[k](indices);
+    reduced_pool->q0_.Add(r_c_size, 1) = q0_[k](indices);
+    reduced_pool->gl_hat_.Add(r_c_size, 1) = gl_hat_[k](indices);
+    reduced_pool->gu_hat_.Add(r_c_size, 1) = gu_hat_[k](indices);
+    reduced_pool->R_.Add(r_c_size, 1) = R_[k](indices);
   }
 }
 

@@ -133,14 +133,14 @@ if [[ "${developer}" -eq 1 ]]; then
   ${maybe_sudo} apt-get remove bazel || true
   if [[ $(arch) = "aarch64" ]]; then
     dpkg_install_from_wget \
-      bazelisk 1.28.1 \
-      https://github.com/bazelbuild/bazelisk/releases/download/v1.28.1/bazelisk-arm64.deb \
-      47f787fe814c1bbc3b414ec5a876de706fd12fd0fa62f51549f3487575a827f3
+      bazelisk 1.29.0 \
+      https://github.com/bazelbuild/bazelisk/releases/download/v1.29.0/bazelisk-arm64.deb \
+      db8ada89c841afd2cb33db7d13aa98ea4fb14612579a8bae84722250caa84272
   else
     dpkg_install_from_wget \
-      bazelisk 1.28.1 \
-      https://github.com/bazelbuild/bazelisk/releases/download/v1.28.1/bazelisk-amd64.deb \
-      16c2d58a2e78171cf8db21bb4ae7908d91d9cf54ba62efb140d2a42731a3ed60
+      bazelisk 1.29.0 \
+      https://github.com/bazelbuild/bazelisk/releases/download/v1.29.0/bazelisk-amd64.deb \
+      186d78a20e1a64f59ba08987791a989892d142c9d3a9f9cc0c5c35e201f53924
   fi
 
   # Install kcov.

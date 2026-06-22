@@ -104,9 +104,9 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
                 int min_clique_size) {
               // The keep_alive is responsible for object lifetime, so we'll
               // give the constructor an unowned pointer.
-              new (self) MinCliqueCoverSolverViaGreedy(
-                  make_unowned_shared_ptr_from_raw(&max_clique_solver),
-                  min_clique_size);
+              new (self)
+                  Class(make_unowned_shared_ptr_from_raw(&max_clique_solver),
+                      min_clique_size);
             },
             py::arg("max_clique_solver"), py::arg("min_clique_size") = 1,
             // Keep alive, reference: `self` keeps `max_clique_solver` alive.

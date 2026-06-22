@@ -330,6 +330,24 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 }
 
 template <typename T>
+std::string DeformableModel<T>::GetScalarConversionFailureReason(
+    const std::type_info& scalar) const {
+  // NOLINTNEXTLINE(readability/casting) False positive.
+  if (scalar == typeid(double) || is_empty()) return {};
+  std::vector<std::string> parts;
+  if (num_bodies() > 0) {
+    parts.push_back(fmt::format("{} registered deformable {}", num_bodies(),
+                                num_bodies() == 1 ? "body" : "bodies"));
+  }
+  if (!force_densities_.empty()) {
+    parts.push_back(fmt::format(
+        "{} registered external force density {}", force_densities_.size(),
+        force_densities_.size() == 1 ? "field" : "fields"));
+  }
+  return fmt::format("its DeformableModel has {}", fmt::join(parts, " and "));
+}
+
+template <typename T>
 void DeformableModel<T>::SetParallelism(Parallelism parallelism) {
   parallelism_ = parallelism;
   const std::vector<DeformableBodyIndex>& body_indices =
@@ -397,6 +415,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
 template <typename T>
 std::unique_ptr<PhysicalModel<AutoDiffXd>>
 DeformableModel<T>::CloneToAutoDiffXd(MultibodyPlant<AutoDiffXd>* plant) const {
+  ThrowForUnsupportedScalarType<AutoDiffXd>();
   return std::make_unique<DeformableModel<AutoDiffXd>>(plant);
 }
 
@@ -404,6 +423,7 @@ template <typename T>
 std::unique_ptr<PhysicalModel<symbolic::Expression>>
 DeformableModel<T>::CloneToSymbolic(
     MultibodyPlant<symbolic::Expression>* plant) const {
+  ThrowForUnsupportedScalarType<symbolic::Expression>();
   return std::make_unique<DeformableModel<symbolic::Expression>>(plant);
 }
 

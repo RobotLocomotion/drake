@@ -3,7 +3,10 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -50,6 +53,29 @@ GTEST_TEST(WeldConstraintsPool, LimitMallocOnCalcData) {
   {
     drake::test::LimitMalloc guard;
     model.CalcData(v, &data);
+  }
+}
+
+/* Checks that pool.ReduceInto does not incur any heap allocations on a
+problem with weld constraints. */
+GTEST_TEST(WeldConstraintsPool, LimitMallocOnReduceInto) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddWeldConstraints(&model);
+
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+
+  // Do a not-smaller reduction to allocate memory in the reduced model.
+  MakeModelReducible(&model, {});
+  model.ReduceInto(&reduced_model, &mapping);
+
+  // Given prior allocation of a big enough model, the constraint pool
+  // reduction does not allocate.
+  {
+    drake::test::LimitMalloc guard;
+    model.weld_constraints_pool().ReduceInto(
+        mapping, &reduced_model.weld_constraints_pool());
   }
 }
 
@@ -176,7 +202,6 @@ void MakeModelForWeld(IcfModel<T>* model, double time_step = 0.01) {
   params->k0 = VectorX<T>::LinSpaced(nv, -1.0, 1.0);
 
   params->clique_sizes = {6, 6, 6};
-  params->clique_start = {0, 6, 12, nv};
 
   // Body 0 = world (anchored), body 1 = floating, body 2 = floating,
   // body 3 = non-floating (uses non-identity Jacobian).
@@ -515,6 +540,94 @@ GTEST_TEST(WeldConstraintsPool, GradientConsistency) {
 
   EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 100 * kEpsilon,
                               MatrixCompareType::relative));
+}
+
+/* Verifies that reducing the weld constraint pool produces correct data. */
+GTEST_TEST(WeldConstraintsPool, Reduce) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddWeldConstraints(&model);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
+  model.CalcData(v, &data);
+
+  auto check_reduced = [&](const std::vector<int>& locked_dofs) {
+    SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
+    MakeModelReducible(&model, locked_dofs);
+    IcfModel<double> reduced_model;
+    ReducedMapping mapping;
+    model.ReduceInto(&reduced_model, &mapping);
+
+    // Check the data transmitted by pool.ReduceInto().
+    const auto& full_pool = model.weld_constraints_pool();
+    const auto& reduced_pool = reduced_model.weld_constraints_pool();
+
+    int r_k{0};  // Reduced constraints cursor.
+    for (int k = 0; k < full_pool.num_constraints(); ++k) {
+      SCOPED_TRACE(
+          fmt::format("full constraint {} vs. reduced constraint {}", k, r_k));
+      const auto& [a, b] = full_pool.body_pairs()[k];
+      const int clique_b = model.params().body_to_clique[b];
+      const int clique_a = model.params().body_to_clique[a];
+      const bool have_b = mapping.clique_subsequence.participates(clique_b);
+      const bool have_a =
+          clique_a >= 0 && mapping.clique_subsequence.participates(clique_a);
+      if (!(have_a || have_b)) {
+        continue;
+      }
+      const bool is_flipped = have_a && !have_b;
+      const auto& [r_a, r_b] = reduced_pool.body_pairs()[r_k];
+      SCOPED_TRACE(fmt::format("flipped? {} have a? {} have b? {}", is_flipped,
+                               have_a, have_b));
+      if (is_flipped) {
+        EXPECT_EQ(r_a, b);
+        EXPECT_EQ(r_b, a);
+        EXPECT_EQ(reduced_pool.p_AP_W()[r_k], full_pool.p_BQ_W()[k]);
+        EXPECT_EQ(reduced_pool.p_BQ_W()[r_k], full_pool.p_AP_W()[k]);
+        EXPECT_EQ(reduced_pool.p_PoQo_W()[r_k], -full_pool.p_PoQo_W()[k]);
+        EXPECT_EQ(reduced_pool.g0()[r_k], -full_pool.g0()[k]);
+      } else {
+        EXPECT_EQ(r_a, a);
+        EXPECT_EQ(r_b, b);
+        EXPECT_EQ(reduced_pool.p_AP_W()[r_k], full_pool.p_AP_W()[k]);
+        EXPECT_EQ(reduced_pool.p_BQ_W()[r_k], full_pool.p_BQ_W()[k]);
+        EXPECT_EQ(reduced_pool.p_PoQo_W()[r_k], full_pool.p_PoQo_W()[k]);
+        EXPECT_EQ(reduced_pool.g0()[r_k], full_pool.g0()[k]);
+      }
+      ++r_k;
+    }
+    EXPECT_EQ(ssize(reduced_pool.R()), r_k);
+    EXPECT_EQ(reduced_pool.hessian_blocks_size(), r_k);
+    EXPECT_EQ(reduced_pool.num_constraints(), r_k);
+  };
+
+  // Reduce by none; essentially, just copy.
+  const std::vector<int> none_locked;
+  check_reduced(none_locked);
+
+  // Lock some arbitrary dofs.
+  const std::vector<int> arbitrary_locked = {0, 17};
+  check_reduced(arbitrary_locked);
+
+  // Lock clique 0.
+  const std::vector<int> clique0_locked = {0, 1, 2, 3, 4, 5};
+  check_reduced(clique0_locked);
+
+  // Lock clique 1.
+  const std::vector<int> clique1_locked = {6, 7, 8, 9, 10, 11};
+  check_reduced(clique1_locked);
+
+  // Lock clique 2.
+  const std::vector<int> clique2_locked = {12, 13, 14, 15, 16, 17};
+  check_reduced(clique2_locked);
+
+  // Lock everything.
+  std::vector<int> all_locked(model.num_velocities());
+  std::iota(all_locked.begin(), all_locked.end(), 0);
+  check_reduced(all_locked);
 }
 
 }  // namespace

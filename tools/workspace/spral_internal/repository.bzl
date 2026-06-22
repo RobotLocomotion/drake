@@ -6,6 +6,7 @@ def spral_internal_repository(
     github_archive(
         name = name,
         repository = "ralna/spral",
+        upgrade_type = "release",
         commit = "v2025.09.18",
         sha256 = "1358168ac95297049e4fc810e54a16e0c765796cfbaa156e09979e2620b7dae7",  # noqa
         build_file = ":package.BUILD.bazel",

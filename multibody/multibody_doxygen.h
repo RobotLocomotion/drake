@@ -412,6 +412,10 @@ vset_E     | vlist_E      |  Set of generic vectors v = {v₀,  v₁,  v₂} exp
 mesh_B                    || A mesh whose underlying vertices' positions are from Bo (frame B's origin), expressed in frame B
 point_cloud_B             || A point cloud whose underlying points' positions are from Bo (frame B's origin), expressed in frame B
 
+<b>Historical note</b>: In the 1980s, monogram notation extended Thomas Kane's 
+1960s kinematic and dynamics typeset notation to software by Kane's associates,
+e.g., Michael Sherman, David Schaechter, David Levinson, and Paul Mitiguy.
+
  Next topic: @ref multibody_quantities_units
 */
 

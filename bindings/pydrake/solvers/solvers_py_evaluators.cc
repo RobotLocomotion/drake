@@ -571,7 +571,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
             py::arg("value_function"),
             py::arg("value_function_double") = std::function<Eigen::VectorXd(
                 const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
-            doc.MinimumValueUpperBoundConstraint.ctor.doc)
+            cls_doc.ctor.doc)
         .def("minimum_value_upper", &Class::minimum_value_upper,
             cls_doc.minimum_value_upper.doc)
         .def("influence_value", &Class::influence_value,

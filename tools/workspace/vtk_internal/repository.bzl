@@ -153,10 +153,13 @@ _vtk_internal_repository_impl = repository_rule(
     attrs = {
         # These are the attributes for setup_github_repository.
         "repository": attr.string(),
+        "upgrade_type": attr.string(),
         "commit": attr.string(),
         "sha256": attr.string(),
         "build_file": attr.label(),
         "patches": attr.label_list(),
+        "patch_tool": attr.string(default = "patch"),
+        "patch_args": attr.string_list(default = ["-p0"]),
         "extra_strip_prefix": attr.string(),
         "mirrors": attr.string_list_dict(),
         # This attribute is specific to our rule, not setup_github_repository.
@@ -181,8 +184,9 @@ def vtk_internal_repository(
         name,
         local_repository_override = None,
         repository = "Kitware/VTK",
-        commit = "eb5aa5ae41634a9777af6f9f3de4e32bfdca1644",
-        sha256 = "a6288de30ede73f993f345cd5bb0eb31d42480b230ab21e5cf1b5c6eb1dfbee1",  # noqa
+        upgrade_type = "commit",
+        commit = "45f8cc6b6a4b14439ee3bab2025fa3ebeb20bfc0",
+        sha256 = "a160dea5f99042521364f57a69d5ec85ff6e5ed58528a2925fc080a75b6fa3aa",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -194,12 +198,14 @@ def vtk_internal_repository(
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/gltf_export_with_object_names.patch",
             ":patches/upstream/ignore_unsupported_image_types.patch",
+            ":patches/upstream/skybox_disables_lighting.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
             ":patches/common_datamodel_no_pegtl.patch",
             ":patches/common_executionmodel_disable_static_destructors.patch",
+            ":patches/gltf_importer_observer.patch",
             ":patches/io_image_formats.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
@@ -239,6 +245,7 @@ def vtk_internal_repository(
         _vtk_internal_repository_impl(
             name = name,
             repository = repository,
+            upgrade_type = upgrade_type,
             commit = commit,
             sha256 = sha256,
             build_file = build_file,
