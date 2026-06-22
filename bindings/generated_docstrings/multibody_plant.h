@@ -5172,15 +5172,17 @@ See also:
         struct /* GetCombineWeldedBodies */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""((Internal use only for now) Returns the currently-set choice for
-whether welded-together bodies should be combined or modeled
-separately, either for the global setting or for a specific model
-instance. If a model instance is provided for which no explicit choice
-was made, the global setting is returned. Any model instance index is
-acceptable here; if not recognized then the global setting is
-returned. This can be called any time -- pre-finalize it returns the
-setting that will be used by Finalize(); post-finalize it returns the
-setting that *was* used if there were any welded-together bodies.
+R"""((Internal use only for now) Returns the global or a model_instance
+setting for whether or not to combine welded RigidBody (Link)
+elements.
+
+Note:
+    This function can be called pre-Finalize() or post-Finalize().
+
+Parameter ``model_instance``:
+    (optional). If this argument is missing or not recognized, returns
+    the global setting. Otherwise returns the setting for this
+    specific model_instance.
 
 See also:
     SetCombineWeldedBodies(), GetBaseBodyJointType(), Finalize())""";
@@ -6681,6 +6683,15 @@ used; otherwise, the global setting is used.
 
 The default global setting for Drake is *not* to combine welded
 RigidBody elements.
+
+Parameter ``combine``:
+    Whether to combine welded-together bodies Limited to a particular
+    model instance if the ``model_instance`` argument is also
+    provided, otherwise sets the global value.
+
+Parameter ``model_instance``:
+    (optional) if present, specifies a particular model instance to
+    which the ``combine`` argument applies.
 
 Raises:
     RuntimeError if called after Finalize().

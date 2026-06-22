@@ -107,9 +107,9 @@ TestModel MakeModel(bool combine_welded_bodies) {
   // Sanity check: Both models should have the same number of bodies (links),
   // joints, and number of states, but they should differ in the number of
   // mobilized bodies.
-  EXPECT_EQ(m.plant->num_bodies(), 4);  // World + 3 links.
-  EXPECT_EQ(m.plant->num_joints(), 3);  // 1 revolute + 2 welds.
-  EXPECT_EQ(m.plant->num_positions(), 1);  // 1 revolute angle.
+  EXPECT_EQ(m.plant->num_bodies(), 4);      // World + 3 links.
+  EXPECT_EQ(m.plant->num_joints(), 3);      // 1 revolute + 2 welds.
+  EXPECT_EQ(m.plant->num_positions(), 1);   // 1 revolute angle.
   EXPECT_EQ(m.plant->num_velocities(), 1);  // 1 revolute angular rate.
   const internal::MultibodyTree<double>& tree = GetInternalTree(*m.plant);
   EXPECT_EQ(tree.num_mobods(), combine_welded_bodies ? 2 : 4);
