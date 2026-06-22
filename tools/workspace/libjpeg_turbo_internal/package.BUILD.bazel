@@ -8,10 +8,11 @@ package(default_visibility = ["//visibility:private"])
 cc_static_hidden_library(
     name = "libjpeg_turbo",
     visibility = ["//visibility:public"],
-    deps = ["@libjpeg_turbo//:jpeg"],
+    deps = ["@module_jpeg//:jpeg"],
 )
 
-install_files(
+# XXX
+True or install_files(
     name = "install",
     dest = "share/doc/libjpeg_turbo_internal",
     files = [

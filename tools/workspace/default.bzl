@@ -47,6 +47,7 @@ load("//tools/workspace/pkgconfig_blas_internal:repository.bzl", "pkgconfig_blas
 load("//tools/workspace/pkgconfig_eigen_internal:repository.bzl", "pkgconfig_eigen_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_fmt_internal:repository.bzl", "pkgconfig_fmt_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_glib_internal:repository.bzl", "pkgconfig_glib_internal_repository")  # noqa
+load("//tools/workspace/pkgconfig_jpeg_internal:repository.bzl", "pkgconfig_jpeg_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_lapack_internal:repository.bzl", "pkgconfig_lapack_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_opencl_internal:repository.bzl", "pkgconfig_opencl_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_spdlog_internal:repository.bzl", "pkgconfig_spdlog_internal_repository")  # noqa
@@ -123,6 +124,7 @@ def _add_internal_repositories():
     pkgconfig_eigen_internal_repository(name = "pkgconfig_eigen_internal")
     pkgconfig_fmt_internal_repository(name = "pkgconfig_fmt_internal")
     pkgconfig_glib_internal_repository(name = "pkgconfig_glib_internal")
+    pkgconfig_jpeg_internal_repository(name = "pkgconfig_jpeg_internal")
     pkgconfig_lapack_internal_repository(name = "pkgconfig_lapack_internal")
     pkgconfig_opencl_internal_repository(name = "pkgconfig_opencl_internal")
     pkgconfig_spdlog_internal_repository(name = "pkgconfig_spdlog_internal")
@@ -164,6 +166,7 @@ def _drake_dep_repositories_impl(module_ctx):
         "eigen",
         "fmt",
         "glib",
+        "jpeg",
         "lapack",
         "opencl",
         "spdlog",
