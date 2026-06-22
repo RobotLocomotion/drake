@@ -496,19 +496,29 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def("Differentiate", &Expression::Differentiate, py::arg("x"),
           doc_expression.Differentiate.doc)
       .def("Jacobian", &Expression::Jacobian, py::arg("vars"),
-          doc_expression.Jacobian.doc)
-      // Private for use by pickling.
-      .def("_assign",
-          [](Expression& self, const Expression& other) -> void {
-            self = other;
-          })
-      .def_static("_MakeUnapplyConstructor", [m](ExpressionKind kind) {
-        return internal::MakeUnapplyConstructor(m, kind);
-      });
+          doc_expression.Jacobian.doc);
   // TODO(eric.cousineau): Clean this overload stuff up (#15041).
   pydrake::internal::BindMathOperators<Expression>(&expr_cls);
   pydrake::internal::BindMathOperators<Expression>(&m);
   DefCopyAndDeepCopy(&expr_cls);
+  DefPickle(
+      &expr_cls,
+      [m](const Expression& self) -> py::tuple {
+	py::list state;
+	py::tuple ctor_and_args(internal::Unapply(m, self));
+	py::list args = ctor_and_args[1];
+	state.append(self.get_kind());
+	state.extend(args);
+	return py::tuple(state);
+      },
+      [m](Expression* self, py::tuple state) {
+	auto kind = py::cast<ExpressionKind>(state[0]);
+	py::object ctor = internal::MakeUnapplyConstructor(m, kind);
+	py::list args(state);
+	args.attr("pop")(0);
+	py::object resurrected = ctor(*args);
+	new (self) Expression(py::cast<Expression>(resurrected));
+      });
 
   m.def("if_then_else", &symbolic::if_then_else, py::arg("f_cond"),
       py::arg("e_then"), py::arg("e_else"), doc_expr.if_then_else.doc);
@@ -696,16 +706,28 @@ void DefineSymbolicMonolith(py::module_ m) {
                 "`Expression`, or `Polynomial` as keys (and then access the "
                 "map in Python), please use "
                 "pydrake.common.containers.EqualToDict`.");
-          })
-      // Private for use by pickling.
-      .def("_assign",
-          [](Formula& self, const Formula& other) -> void { self = other; })
-      .def_static("_MakeUnapplyConstructor", [m](FormulaKind kind) {
-        return internal::MakeUnapplyConstructor(m, kind);
-      });
+          });
   formula_cls.attr("__bool__") = formula_cls.attr("__nonzero__");
   py::implicitly_convertible<bool, Formula>();
   py::implicitly_convertible<Variable, Formula>();
+  DefPickle(
+      &formula_cls,
+      [m](const Formula& self) -> py::tuple {
+	py::list state;
+	py::tuple ctor_and_args(internal::Unapply(m, self));
+	py::list args = ctor_and_args[1];
+	state.append(self.get_kind());
+	state.extend(args);
+	return py::tuple(state);
+      },
+      [m](Formula* self, py::tuple state) {
+	auto kind = py::cast<FormulaKind>(state[0]);
+	py::object ctor = internal::MakeUnapplyConstructor(m, kind);
+	py::list args(state);
+	args.attr("pop")(0);
+	py::object resurrected = ctor(*args);
+	new (self) Formula(py::cast<Formula>(resurrected));
+      });
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.
