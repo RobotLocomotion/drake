@@ -168,15 +168,34 @@ class PatchConstraintsPool {
                          EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
                          T* d2cost) const;
 
-  /* Testing only access. */
-  const std::vector<std::pair<int, int>>& bodies() { return bodies_; }
+  /* Testing only access to pool-wide data. */
+  double stiction_tolerance() const { return stiction_tolerance_; }
 
- private:
+  /* Testing only access to per-patch data. */
+  const std::vector<int>& num_cliques() const { return num_cliques_; }
+  const std::vector<T>& Rt() const { return Rt_; }
+  const std::vector<std::pair<int, int>>& bodies() const { return bodies_; }
+  const EigenPool<Vector3<T>>& p_AB_W() const { return p_AB_W_; }
+  const std::vector<T>& dissipation() const { return dissipation_; }
+  const std::vector<T>& static_friction() const { return static_friction_; }
+  const std::vector<T>& dynamic_friction() const { return dynamic_friction_; }
+
+  /* Testing only access to per-pair data. */
+  const EigenPool<Vector3<T>>& p_BC_W() const { return p_BC_W_; }
+  const EigenPool<Vector3<T>>& normal_W() const { return normal_W_; }
+  const std::vector<T>& stiffness() const { return stiffness_; }
+  const std::vector<T>& fe0() const { return fe0_; }
+  const std::vector<T>& fn0() const { return fn0_; }
+  const std::vector<T>& net_friction() const { return net_friction_; }
+
   /* Returns the index into data per patch and per contact pair.
+  Exposed for testing, but also used internally.
+
   @param p Patch index p < num_pairs().
   @param k Pair index k < num_pairs(p). */
   int patch_pair_index(int p, int k) const { return pair_data_start_[p] + k; }
 
+ private:
   /* Computes cost, gradient, and Hessian contributions for the given pair.
 
   @param p Patch index.
@@ -203,18 +222,14 @@ class PatchConstraintsPool {
                            EigenPool<Vector6<T>>* spatial_impulses_pool,
                            EigenPool<Matrix6<T>>* patch_hessians_pool) const;
 
+  /* Computes friction regularization Rₜ = σ⋅wₜ for a patch. */
+  T CalcRt(int patch_index) const;
+
   // The parent model.
   const IcfModel<T>* const model_;
 
   // The stiction tolerance vₛ (m/s) for regularized friction.
   double stiction_tolerance_{1.0e-4};
-
-  // SAP regularization parameter σ. Each frictional contact is regularized by
-  // εₛ = max(vₛ, μ⋅σ⋅wₜ⋅n₀), where vₛ is the stiction tolerance, μ is the
-  // friction coefficient, wₜ is the Delassus operator approximation, and n₀ is
-  // the normal impulse from the previous time step. See the ICF paper [Castro
-  // et al., 2023] for further details.
-  double sigma_{1.0e-3};
 
   // Data per patch. Indexed by patch index p < num_patches().
   std::vector<int> num_pairs_;    // Number of pairs per patch.
