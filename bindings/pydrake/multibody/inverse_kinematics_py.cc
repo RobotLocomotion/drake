@@ -42,9 +42,8 @@ using PyPenaltyFunction = std::function<py::tuple(double, bool)>;
 CppPenaltyFunction UnwrapPyPenaltyFunction(PyPenaltyFunction penalty_function) {
   if (penalty_function) {
     return [penalty_function](double x, double* penalty, double* dpenalty) {
-      py::tuple penalty_tuple(2);
       const bool compute_grad = dpenalty != nullptr;
-      penalty_tuple = penalty_function(x, compute_grad);
+      py::tuple penalty_tuple = penalty_function(x, compute_grad);
       *penalty = py::cast<double>(penalty_tuple[0]);
       if (compute_grad) {
         *dpenalty = py::cast<double>(penalty_tuple[1]);

@@ -730,18 +730,16 @@ void DoDefineFrameworkDiagramBuilder(py::module_ m) {
                   input_locator.first, py_rvp::reference_internal, self_py);
               py::object input_port_index_py = py::cast(input_locator.second);
 
-              py::tuple input_locator_py(2);
-              input_locator_py[0] = input_system_py;
-              input_locator_py[1] = input_port_index_py;
+              py::tuple input_locator_py =
+                  py::make_tuple(input_system_py, input_port_index_py);
 
               // Keep alive, ownership: `output_system_py` keeps `self` alive.
               py::object output_system_py = py::cast(
                   output_locator.first, py_rvp::reference_internal, self_py);
               py::object output_port_index_py = py::cast(output_locator.second);
 
-              py::tuple output_locator_py(2);
-              output_locator_py[0] = output_system_py;
-              output_locator_py[1] = output_port_index_py;
+              py::tuple output_locator_py =
+                  py::make_tuple(output_system_py, output_port_index_py);
 
               out[input_locator_py] = output_locator_py;
             }

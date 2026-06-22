@@ -73,10 +73,7 @@ constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 // common/ref_cycle_pybind bookkeeping scheme.
 py::object UniquelyWrapCallback(py::object callback) {
   static std::atomic<uint64_t> uniquifier{0};
-  py::tuple wrapped(2);
-  wrapped[0] = callback;
-  wrapped[1] = uniquifier.fetch_add(1);
-  return wrapped;
+  return py::make_tuple(callback, uniquifier.fetch_add(1));
 }
 
 // This helper function causes the lifetime of `callback` to be at least as
@@ -1081,9 +1078,8 @@ Note: The above is for the C++ documentation. For Python, use
                     input_locator.first, py_rvp::reference_internal, self_py);
                 py::object input_port_index_py = py::cast(input_locator.second);
 
-                py::tuple input_locator_py(2);
-                input_locator_py[0] = input_system_py;
-                input_locator_py[1] = input_port_index_py;
+                py::tuple input_locator_py =
+                    py::make_tuple(input_system_py, input_port_index_py);
 
                 // Keep alive, ownership: `output_system_py` keeps `self` alive.
                 py::object output_system_py = py::cast(
@@ -1091,9 +1087,8 @@ Note: The above is for the C++ documentation. For Python, use
                 py::object output_port_index_py =
                     py::cast(output_locator.second);
 
-                py::tuple output_locator_py(2);
-                output_locator_py[0] = output_system_py;
-                output_locator_py[1] = output_port_index_py;
+                py::tuple output_locator_py =
+                    py::make_tuple(output_system_py, output_port_index_py);
 
                 out[input_locator_py] = output_locator_py;
               }
@@ -1111,9 +1106,7 @@ Note: The above is for the C++ documentation. For Python, use
                     locator.first, py_rvp::reference_internal, self_py);
                 py::object port_index_py = py::cast(locator.second);
 
-                py::tuple locator_py(2);
-                locator_py[0] = system_py;
-                locator_py[1] = port_index_py;
+                py::tuple locator_py = py::make_tuple(system_py, port_index_py);
                 out.append(locator_py);
               }
               return out;
@@ -1129,9 +1122,7 @@ Note: The above is for the C++ documentation. For Python, use
                   py::cast(locator.first, py_rvp::reference_internal, self_py);
               py::object port_index_py = py::cast(locator.second);
 
-              py::tuple locator_py(2);
-              locator_py[0] = system_py;
-              locator_py[1] = port_index_py;
+              py::tuple locator_py = py::make_tuple(system_py, port_index_py);
               return locator_py;
             },
             py::arg("port_index"), doc.Diagram.get_output_port_locator.doc)
