@@ -76,6 +76,16 @@ struct pydrake_numpy_dtype_object_type_caster {
     }
 
     try {
+      if constexpr (T::RowsAtCompileTime != Eigen::Dynamic) {
+        if (rows != T::RowsAtCompileTime) {
+          return false;
+        }
+      }
+      if constexpr (T::ColsAtCompileTime != Eigen::Dynamic) {
+        if (cols != T::ColsAtCompileTime) {
+          return false;
+        }
+      }
       value.resize(rows, cols);
       if constexpr (kCompileTime1D) {
         for (Eigen::Index i = 0; i < rows; ++i) {
