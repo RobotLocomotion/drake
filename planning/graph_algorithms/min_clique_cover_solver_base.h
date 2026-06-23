@@ -52,7 +52,6 @@ class MinCliqueCoverSolverBase {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinCliqueCoverSolverBase);
   MinCliqueCoverSolverBase() = default;
 
- private:
   virtual std::vector<std::set<int>> DoSolveMinCliqueCover(
       const Eigen::SparseMatrix<bool>& adjacency_matrix,
       bool partition = false) = 0;
