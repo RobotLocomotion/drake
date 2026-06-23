@@ -30,9 +30,9 @@ void LimitConstraintsPool<T>::Resize(std::span<const int> sizes) {
   ql_.Resize(num_limit_constraints, sizes);
   qu_.Resize(num_limit_constraints, sizes);
   q0_.Resize(num_limit_constraints, sizes);
-  gl_hat_.Resize(num_limit_constraints, sizes);
-  gu_hat_.Resize(num_limit_constraints, sizes);
-  R_.Resize(num_limit_constraints, sizes);
+  gl0_.Resize(num_limit_constraints, sizes);
+  gu0_.Resize(num_limit_constraints, sizes);
+  R_fragment_.Resize(num_limit_constraints, sizes);
   constraint_size_.assign(sizes.begin(), sizes.end());
   clique_.resize(num_limit_constraints);
   dof_.resize(num_limit_constraints);
@@ -45,9 +45,9 @@ void LimitConstraintsPool<T>::Resize(std::span<const int> sizes) {
     ql_[k].setConstant(-std::numeric_limits<double>::infinity());
     qu_[k].setConstant(std::numeric_limits<double>::infinity());
     q0_[k].setConstant(0.0);
-    R_[k].setConstant(std::numeric_limits<double>::infinity());
-    gl_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
-    gu_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
+    gl0_[k].setConstant(-std::numeric_limits<double>::infinity());
+    gu0_[k].setConstant(-std::numeric_limits<double>::infinity());
+    R_fragment_[k].setConstant(std::numeric_limits<double>::infinity());
   }
 }
 
@@ -64,26 +64,31 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   qu_[index](dof) = qu;
   q0_[index](dof) = q0;
 
-  // Near-rigid regularization [Castro et al., 2022].
-  constexpr double beta = 0.1;
-  constexpr double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
+  // Eventually we will use
+  //  v̂ₗ = (qₗ − q₀) / (δt + τd)
+  //  v̂ᵤ = (q₀ − qᵤ) / (δt + τd)
+  // Where
+  //  τd = β·dt_eff/π
+  // However, since model.time_step() may change between now and when we
+  // actually solve the problem, we precompute
+  //  g₀ₗ  = (qₗ − q₀)
+  //  g₀ᵤ = (q₀ − qᵤ)
+  // so that we can compute v̂ = g₀ / (δt + τd) from the current time step in
+  // calls to CalcData().
+  gl0_[index](dof) = (ql - q0);
+  gu0_[index](dof) = (q0 - qu);
 
   // Approximation of W = J⋅M⁻¹⋅Jᵀ = M⁻¹ ≈ diag(M)⁻¹. The Jacobian J = Iₙ for
   // lower limits, and J = -Iₙ for upper limits.
   ConstVectorXView w_clique = model().clique_diagonal_mass_inverse(clique);
-  R_[index](dof) = eps * w_clique(dof);
 
-  // Eventually we will use
-  //  v̂ₗ = (qₗ − q₀) / (δt (1 + β))
-  //  v̂ᵤ = (q₀ − qᵤ) / (δt (1 + β))
-  // However, since model.time_step() may change between now and when we
-  // actually solve the problem, we precompute
-  //  ĝₗ = v̂ₗ⋅δt = (qₗ − q₀) / (1 + β)
-  //  ĝᵤ = v̂ᵤ⋅δt = (q₀ − qᵤ) / (1 + β)
-  // so that we can compute v̂ = ĝ/δt from the current time step in calls to
+  // For now, we will just store the part that does not depend on the time
+  // step or the effective time step. That contribution will come later in
   // CalcData().
-  gl_hat_[index](dof) = (ql - q0) / (1.0 + beta);
-  gu_hat_[index](dof) = (q0 - qu) / (1.0 + beta);
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  constexpr double kEps = kBeta * kBeta / (4 * M_PI * M_PI);
+
+  R_fragment_[index](dof) = kEps * w_clique(dof);
 }
 
 template <typename T>
@@ -92,6 +97,11 @@ void LimitConstraintsPool<T>::CalcData(
   DRAKE_ASSERT(limit_data != nullptr);
 
   const T& dt = model().time_step();
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
   T& cost = limit_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
@@ -103,18 +113,24 @@ void LimitConstraintsPool<T>::CalcData(
     VectorXView G_lower = limit_data->mutable_G_lower(k);
     VectorXView G_upper = limit_data->mutable_G_upper(k);
     for (int i = 0; i < nv; ++i) {
+      // Compute the full regularization:
+      //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
+      // R_fragment_[k](i) only stores the non-time-step-dependent part:
+      //  R_fragment_[k](i) = β²·w / (4π²)
+      const T R = R_fragment_[k](i) * R_time_step_factor;
+
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
-      cost += CalcLimitData(gl_hat_[k](i) / dt, R_[k](i), vl, &gamma_lower(i),
-                            &G_lower(i));
+      const T v_hat_lower = gl0_[k](i) / (dt + taud);
+      cost += CalcLimitData(v_hat_lower, R, vl, &gamma_lower(i), &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
       // N.B. The negative sign comes from the constraint velocity defined as
       // positive when moving away from the limit. Impulses are similarly
       // defined as positive when pushing away from the limit.
       const T vu = -vk(i);
-      cost += CalcLimitData(gu_hat_[k](i) / dt, R_[k](i), vu, &gamma_upper(i),
-                            &G_upper(i));
+      const T v_hat_upper = gu0_[k](i) / (dt + taud);
+      cost += CalcLimitData(v_hat_upper, R, vu, &gamma_upper(i), &G_upper(i));
     }
   }
 }
@@ -222,9 +238,10 @@ void LimitConstraintsPool<T>::ReduceInto(
     reduced_pool->ql_.Add(r_constraint_size, 1) = ql_[k](indices);
     reduced_pool->qu_.Add(r_constraint_size, 1) = qu_[k](indices);
     reduced_pool->q0_.Add(r_constraint_size, 1) = q0_[k](indices);
-    reduced_pool->gl_hat_.Add(r_constraint_size, 1) = gl_hat_[k](indices);
-    reduced_pool->gu_hat_.Add(r_constraint_size, 1) = gu_hat_[k](indices);
-    reduced_pool->R_.Add(r_constraint_size, 1) = R_[k](indices);
+    reduced_pool->gl0_.Add(r_constraint_size, 1) = gl0_[k](indices);
+    reduced_pool->gu0_.Add(r_constraint_size, 1) = gu0_[k](indices);
+    reduced_pool->R_fragment_.Add(r_constraint_size, 1) =
+        R_fragment_[k](indices);
   }
 }
 
