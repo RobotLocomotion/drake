@@ -73,10 +73,7 @@ constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 // common/ref_cycle_pybind bookkeeping scheme.
 py::object UniquelyWrapCallback(py::object callback) {
   static std::atomic<uint64_t> uniquifier{0};
-  py::list wrapped;
-  wrapped.append(callback);
-  wrapped.append(uniquifier.fetch_add(1));
-  return py::tuple(wrapped);
+  return py::make_tuple(callback, uniquifier.fetch_add(1));
 }
 
 // This helper function causes the lifetime of `callback` to be at least as

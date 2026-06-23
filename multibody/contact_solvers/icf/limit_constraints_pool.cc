@@ -13,6 +13,7 @@ namespace internal {
 
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 using Eigen::VectorBlock;
+using math::internal::PartialPermutation;
 
 template <typename T>
 LimitConstraintsPool<T>::LimitConstraintsPool(const IcfModel<T>* parent_model)
@@ -204,25 +205,26 @@ void LimitConstraintsPool<T>::ReduceInto(
     if (!mapping.clique_subsequence.participates(c)) {
       continue;
     }
-    const auto& dof_subsequence = mapping.clique_dof_subsequences[c];
+    const PartialPermutation& dof_subsequence =
+        mapping.clique_dof_subsequences[c];
     if (!dof_subsequence.participates(dof_[k])) {
       continue;
     }
-    const auto& indices = dof_subsequence.inverse_permutation();
+    const std::vector<int>& indices = dof_subsequence.inverse_permutation();
     const int r_c = mapping.clique_subsequence.permuted_index(c);
     const int r_dof = dof_subsequence.permuted_index(dof_[k]);
-    const int r_c_size = dof_subsequence.permuted_domain_size();
+    const int r_constraint_size = dof_subsequence.permuted_domain_size();
 
     // Fill in the reduced constraint.
     reduced_pool->clique_.push_back(r_c);
     reduced_pool->dof_.push_back(r_dof);
-    reduced_pool->constraint_size_.push_back(r_c_size);
-    reduced_pool->ql_.Add(r_c_size, 1) = ql_[k](indices);
-    reduced_pool->qu_.Add(r_c_size, 1) = qu_[k](indices);
-    reduced_pool->q0_.Add(r_c_size, 1) = q0_[k](indices);
-    reduced_pool->gl_hat_.Add(r_c_size, 1) = gl_hat_[k](indices);
-    reduced_pool->gu_hat_.Add(r_c_size, 1) = gu_hat_[k](indices);
-    reduced_pool->R_.Add(r_c_size, 1) = R_[k](indices);
+    reduced_pool->constraint_size_.push_back(r_constraint_size);
+    reduced_pool->ql_.Add(r_constraint_size, 1) = ql_[k](indices);
+    reduced_pool->qu_.Add(r_constraint_size, 1) = qu_[k](indices);
+    reduced_pool->q0_.Add(r_constraint_size, 1) = q0_[k](indices);
+    reduced_pool->gl_hat_.Add(r_constraint_size, 1) = gl_hat_[k](indices);
+    reduced_pool->gu_hat_.Add(r_constraint_size, 1) = gu_hat_[k](indices);
+    reduced_pool->R_.Add(r_constraint_size, 1) = R_[k](indices);
   }
 }
 
