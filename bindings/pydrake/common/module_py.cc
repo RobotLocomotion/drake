@@ -55,7 +55,7 @@ std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
   if (cc_name.find("pydrake::") != std::string::npos) {
     py::handle obj = ResolvePyObject(ptr);
     if (obj) {
-      py::handle cls = obj.get_type();
+      py::handle cls = obj.type();
       const bool use_qualname = true;
       return py::cast<std::string>(
           py::str("{}.{}").format(cls.attr("__module__"),

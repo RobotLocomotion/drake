@@ -89,8 +89,7 @@ void BindMultibodyElementMixin(PyClass* pcls) {
             return self.GetParentPlant();
           })
       .def("__repr__", [](const Class& self) {
-        py::str cls_name =
-            internal::PrettyClassName(py::cast(&self).get_type());
+        py::str cls_name = internal::PrettyClassName(py::cast(&self).type());
         const int index = self.index();
         const int model_instance = self.model_instance();
         if constexpr (has_name_func<Class>::value) {
@@ -1285,7 +1284,7 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
     } catch (const py::cast_error& e) {
       throw std::logic_error(
           "DoClone() must return a `ForceDensityField<T>`. Got " +
-          py::cast<std::string>(py::str(result_obj.get_type())) +
+          py::cast<std::string>(py::str(result_obj.type())) +
           " Make sure your DoClone() returns a new instance of the same "
           "Python class, e.g., `return MyForceDensityField(...)`.");
     }
