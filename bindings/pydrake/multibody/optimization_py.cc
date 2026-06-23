@@ -70,14 +70,11 @@ PYDRAKE_MODULE(optimization, m) {
         std::shared_ptr<Class>
 #endif
         >(m, "ContactWrenchFromForceInWorldFrameEvaluator", cls_doc.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(py::init<const MultibodyPlant<AutoDiffXd>*,
                  systems::Context<AutoDiffXd>*,
                  const SortedPair<geometry::GeometryId>&>(),
             py::arg("plant"), py::arg("context"), py::arg("geometry_id_pair"),
-            cls_doc.ctor.doc)
-#endif     // XXX porting
-        ;  // NOLINT(whitespace/semicolon)
+            cls_doc.ctor.doc);
   }
 
   {
