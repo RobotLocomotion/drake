@@ -148,11 +148,9 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
             &Class::AddMinimumDistanceUpperBoundConstraint, py::arg("bound"),
             py::arg("influence_distance_offset"),
             cls_doc.AddMinimumDistanceUpperBoundConstraint.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("AddDistanceConstraint", &Class::AddDistanceConstraint,
             py::arg("geometry_pair"), py::arg("distance_lower"),
             py::arg("distance_upper"), cls_doc.AddDistanceConstraint.doc)
-#endif  // XXX porting
         .def("AddPointToLineDistanceConstraint",
             &Class::AddPointToLineDistanceConstraint, py::arg("frame_point"),
             py::arg("p_B1P"), py::arg("frame_line"), py::arg("p_B2Q"),
