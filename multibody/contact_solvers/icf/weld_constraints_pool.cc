@@ -33,12 +33,6 @@ Vector6<T> ShiftSpatialImpulse(const Vector6<T>& F, const Vector3<T>& p) {
 // Near-rigid parameter β.
 constexpr double kBeta = 0.1;
 
-// Minimum time scale h_min for weld constraints.
-// For δt ≥ h_min the formula recovers the near-rigid model;
-// for δt < h_min stiffness and dissipation are capped at
-// the h_min near-rigid values.
-constexpr double kHMin = 1e-4;
-
 }  // namespace
 
 template <typename T>
@@ -106,8 +100,7 @@ void WeldConstraintsPool<T>::CalcData(
 
   using std::max;
   const T dt = model().time_step();
-  // Effective time scale for computing stiffness and dissipation.
-  const T dt_eff = max(dt, static_cast<T>(kHMin));
+  const T dt_eff = model().effective_time_step();
   const T taud = kBeta * dt_eff / M_PI;
   const T dt_plus_taud = dt + taud;
 
@@ -219,8 +212,7 @@ void WeldConstraintsPool<T>::PrecomputeHessianBlocks() {
 
   using std::max;
   const T dt = model().time_step();
-  // Effective time scale for computing stiffness and dissipation.
-  const T dt_eff = max(dt, static_cast<T>(kHMin));
+  const T dt_eff = model().effective_time_step();
   const T taud = kBeta * dt_eff / M_PI;
   // R⁻¹ = K·dt·(dt + taud) where K = 4π²/(β²·dt_eff²·w), so
   // R_diag = w / (K·dt·(dt + taud)) = β²·dt_eff²·w / (4π²·dt·(dt + taud)).
