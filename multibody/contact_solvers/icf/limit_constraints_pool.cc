@@ -91,7 +91,7 @@ void LimitConstraintsPool<T>::CalcData(
     const VectorX<T>& v, LimitConstraintsDataPool<T>* limit_data) const {
   DRAKE_ASSERT(limit_data != nullptr);
 
-  const T& dt = model().time_step();
+  const T& dt_eff = model().effective_time_step();
   T& cost = limit_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
@@ -105,16 +105,16 @@ void LimitConstraintsPool<T>::CalcData(
     for (int i = 0; i < nv; ++i) {
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
-      cost += CalcLimitData(gl_hat_[k](i) / dt, R_[k](i), vl, &gamma_lower(i),
-                            &G_lower(i));
+      cost += CalcLimitData(gl_hat_[k](i) / dt_eff, R_[k](i), vl,
+                            &gamma_lower(i), &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
       // N.B. The negative sign comes from the constraint velocity defined as
       // positive when moving away from the limit. Impulses are similarly
       // defined as positive when pushing away from the limit.
       const T vu = -vk(i);
-      cost += CalcLimitData(gu_hat_[k](i) / dt, R_[k](i), vu, &gamma_upper(i),
-                            &G_upper(i));
+      cost += CalcLimitData(gu_hat_[k](i) / dt_eff, R_[k](i), vu,
+                            &gamma_upper(i), &G_upper(i));
     }
   }
 }
