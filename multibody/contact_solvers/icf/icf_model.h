@@ -242,7 +242,7 @@ class IcfModel {
   steps, the effective time step will be limited to some minimum value to
   avoid unreasonable stiffness and dissipation effects.
   */
-  const T& effective_time_step() const {
+  T effective_time_step() const {
     using std::max;
     return max(time_step(), static_cast<T>(kHMin));
   }
