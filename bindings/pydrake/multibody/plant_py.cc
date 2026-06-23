@@ -542,33 +542,27 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("GetActuationFromArray", &Class::GetActuationFromArray,
             py::arg("model_instance"), py::arg("u"),
             cls_doc.GetActuationFromArray.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("SetActuationInArray", &Class::SetActuationInArray,
             py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
             cls_doc.SetActuationInArray.doc)
-#endif  // XXX porting
         .def("GetPositionsFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetPositionsFromArray),
             py::arg("model_instance"), py::arg("q"),
             cls_doc.GetPositionsFromArray.doc_2args)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("SetPositionsInArray", &Class::SetPositionsInArray,
             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
             cls_doc.SetPositionsInArray.doc)
-#endif  // XXX porting
         .def("GetVelocitiesFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetVelocitiesFromArray),
             py::arg("model_instance"), py::arg("v"),
             cls_doc.GetVelocitiesFromArray.doc_2args)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
             py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
             cls_doc.SetVelocitiesInArray.doc)
-#endif  // XXX porting
         // TODO(eric.cousineau): Ensure all of these return either references,
         // or copies, consistently. At present, `GetX(context)` returns a
         // reference, while `GetX(context, model_instance)` returns a copy.
