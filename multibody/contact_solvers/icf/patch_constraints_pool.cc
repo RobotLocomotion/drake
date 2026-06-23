@@ -562,23 +562,18 @@ void PatchConstraintsPool<T>::ReduceInto(
     // become anchored (no clique), and body_a is not anchored. This will
     // require flipping the direction of the patch and pairs.
     bool need_flip = (r_num_cliques == 1 && have_r_c_a);
-    const int r_n = reduced_pool->num_constraints();
+    const int r_k = reduced_pool->num_constraints();
 
     // Fill in the reduced constraint.
     reduced_pool->num_pairs_.push_back(num_pairs_[k]);
     reduced_pool->num_cliques_.push_back(r_num_cliques);
-    // Rt is sensitive to clique changes.
+    reduced_pool->bodies_.emplace_back(need_flip ? body_a : body_b,
+                                       need_flip ? body_b : body_a);
+    // Rt is sensitive to clique changes and requires bodies_ to be set first.
     reduced_pool->Rt_.push_back((r_num_cliques == num_cliques_[k])
                                     ? Rt_[k]
-                                    : reduced_pool->CalcRt(r_n));
-    // Handle quantities sensitive to flipping.
-    if (need_flip) {
-      reduced_pool->bodies_.emplace_back(body_a, body_b);
-      reduced_pool->p_AB_W_.Add(3, 1) = -p_AB_W_[k];
-    } else {
-      reduced_pool->bodies_.push_back(bodies_[k]);
-      reduced_pool->p_AB_W_.Add(3, 1) = p_AB_W_[k];
-    }
+                                    : reduced_pool->CalcRt(r_k));
+    reduced_pool->p_AB_W_.Add(3, 1) = need_flip ? -p_AB_W_[k] : p_AB_W_[k];
     reduced_pool->dissipation_.push_back(dissipation_[k]);
     reduced_pool->static_friction_.push_back(static_friction_[k]);
     reduced_pool->dynamic_friction_.push_back(dynamic_friction_[k]);
