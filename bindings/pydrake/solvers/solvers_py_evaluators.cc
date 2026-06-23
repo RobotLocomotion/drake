@@ -517,8 +517,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
                 std::function<py::tuple(double, bool)> new_penalty_function) {
               auto penalty_fun = [new_penalty_function](double x,
                                      double* penalty, double* dpenalty) {
-                py::tuple penalty_tuple(2);
-                penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+                py::tuple penalty_tuple =
+                    new_penalty_function(x, dpenalty != nullptr);
                 *penalty = py::cast<double>(penalty_tuple[0]);
                 if (dpenalty) {
                   *dpenalty = py::cast<double>(penalty_tuple[1]);
@@ -574,8 +574,8 @@ void BindEvaluatorsAndBindings(py::module_ m) {
                 std::function<py::tuple(double, bool)> new_penalty_function) {
               auto penalty_fun = [new_penalty_function](double x,
                                      double* penalty, double* dpenalty) {
-                py::tuple penalty_tuple(2);
-                penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+                py::tuple penalty_tuple =
+                    new_penalty_function(x, dpenalty != nullptr);
                 *penalty = py::cast<double>(penalty_tuple[0]);
                 if (dpenalty) {
                   *dpenalty = py::cast<double>(penalty_tuple[1]);
