@@ -139,6 +139,12 @@ void InitLowLevelModules(py::module_ m) {
   internal::MaybeRedirectPythonLogging();
   m.def("_use_native_cpp_logging", &internal::UseNativeCppLogging);
 
+#ifdef PYDRAKE_USE_PYBIND11
+  m.attr("_binder") = "pybind11";
+#else
+  m.attr("_binder") = "nanobind";
+#endif
+
   {
     using Class = Parallelism;
     constexpr auto& cls_doc = doc.Parallelism;

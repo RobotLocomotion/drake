@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 
+from pydrake.common import _binder
 from pydrake.common.test.serialize_test_util import (
     MyData1,
     MyData2,
@@ -41,8 +42,11 @@ class TestSerializePybind(unittest.TestCase):
 
         # No docs.
         self.assertEqual(dut.quux, -1.0)
-        # XXX porting: nanobind adds doc itself.
-        self.assertEqual(inspect.getdoc(MyData1.quux), "(self) -> float")
+        if _binder == "pybind11":
+            self.assertEqual(inspect.getdoc(MyData1.quux), "")
+        else:
+            # Nanobind adds doc itself.
+            self.assertEqual(inspect.getdoc(MyData1.quux), "(self) -> float")
 
         # Test fields.
         fields = getattr(MyData1, "__fields__")

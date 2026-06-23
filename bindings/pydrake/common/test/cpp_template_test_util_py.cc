@@ -80,7 +80,7 @@ PYDRAKE_MODULE(cpp_template_test_util, m) {
   BindTemplateWithDefault<double>(m);
   BindTemplateWithDefault<int>(m);
 
-  m.def("simple_func", [](const SimpleTemplate<int>&) {});
+  m.def("simple_func", [](const SimpleTemplate<int>&) {}, py::arg("x"));
 
   // Add dummy constructors to check __call__ pseudo-deduction.
   {
