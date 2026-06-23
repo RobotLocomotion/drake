@@ -91,7 +91,7 @@ void LimitConstraintsPool<T>::CalcData(
     const VectorX<T>& v, LimitConstraintsDataPool<T>* limit_data) const {
   DRAKE_ASSERT(limit_data != nullptr);
 
-  const T& dt_eff = model().effective_time_step();
+  const T dt_eff = model().effective_time_step();
   T& cost = limit_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
