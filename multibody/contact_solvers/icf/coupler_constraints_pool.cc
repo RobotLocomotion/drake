@@ -34,8 +34,8 @@ void CouplerConstraintsPool<T>::Resize(const int num_constraints) {
   constraint_to_clique_.resize(num_constraints);
   dofs_.resize(num_constraints);
   gear_ratio_.resize(num_constraints);
-  g_hat_.resize(num_constraints);
-  R_.resize(num_constraints);
+  g0_.resize(num_constraints);
+  R_fragment_.resize(num_constraints);
 }
 
 template <typename T>
@@ -52,17 +52,20 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
 
   // Near-rigid regularization: this constraint acts as a very stiff
   // critically-damped spring with time scale β⋅δt [Castro et al., 2022].
-  const double beta = 0.1;
-  const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
+  // For now, we will just compute the part that does not depend on the time
+  // step or the effective time step. That contribution will come later in
+  // CalcData().
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  constexpr double kEps = kBeta * kBeta / (4 * M_PI * M_PI);
 
   const T g0 = qi - gear_ratio * qj - offset;
 
   // Eventually we will use
-  //  v̂ = −g₀ / (δt (1 + β/π)),
-  // However, since model.time_step() may change between now and when we
-  // actually solve the problem, we precompute ĝ = v̂⋅δt = −g₀/(1 + β/π), so that
-  // we can compute v̂ = ĝ/δt from the current time step in calls to CalcData().
-  g_hat_[index] = -g0 / (1.0 + beta / M_PI);
+  //  v̂ = −g₀ / (δt  + τd),
+  // For now, we will just store the part that does not depend on the time
+  // step or the effective time step. That contribution will come later in
+  // CalcData().
+  g0_[index] = g0;
 
   const auto w_clique = model().clique_diagonal_mass_inverse(clique);
   // Approximation of W = Jᵀ⋅M⁻¹⋅J ≈ J⋅diag(M)⁻¹⋅Jᵀ, with
@@ -71,7 +74,8 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
   //             i      j
   const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
 
-  R_[index] = eps * w;  // Near-rigid regularization [Castro et al., 2022].
+  R_fragment_[index] =
+      kEps * w;  // Near-rigid regularization [Castro et al., 2022].
 }
 
 template <typename T>
@@ -79,6 +83,12 @@ void CouplerConstraintsPool<T>::CalcData(
     const VectorX<T>& v, CouplerConstraintsDataPool<T>* coupler_data) const {
   DRAKE_ASSERT(coupler_data != nullptr);
 
+  const T& dt = model().time_step();
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
   T& cost = coupler_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
@@ -87,8 +97,12 @@ void CouplerConstraintsPool<T>::CalcData(
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];
-    const T v_hat = g_hat_[k] / model().time_step();
-    const T& R = R_[k];
+    const T v_hat = -g0_[k] / (dt + taud);
+    // Compute the full regularization:
+    //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
+    // R_fragment_[k] only stores the non-time-step-dependent part:
+    //  R_fragment_[k] = β²·w / (4π²)
+    const T R = R_fragment_[k] * R_time_step_factor;
 
     // If a dof is locked, its velocity is prescribed to be exactly 0.
     const T vi = have(i) ? vk(i) : T(0.0);
@@ -138,12 +152,22 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
     BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
   DRAKE_ASSERT(hessian != nullptr);
 
+  const T& dt = model().time_step();
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];
-    const T& R = R_[k];
+    // Compute the full regularization:
+    //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
+    // R_fragment_[k] only stores the non-time-step-dependent part:
+    //  R_fragment_[k] = β²·w / (4π²)
+    const T R = R_fragment_[k] * R_time_step_factor;
 
     EigenPool<MatrixX<T>>& H_cc_pool = data.scratch().H_cc_pool;
     H_cc_pool.Resize(1, model().clique_size(c), model().clique_size(c));
@@ -175,12 +199,22 @@ void CouplerConstraintsPool<T>::CalcCostAlongLine(
   DRAKE_ASSERT(d2cost != nullptr);
   *dcost = 0.0;
   *d2cost = 0.0;
+  const T& dt = model().time_step();
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];
-    const T& R = R_[k];
+    // Compute the full regularization:
+    //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
+    // R_fragment_[k] only stores the non-time-step-dependent part:
+    //  R_fragment_[k] = β²·w / (4π²)
+    const T R = R_fragment_[k] * R_time_step_factor;
     const T& gamma = coupler_data.gamma(k);
     auto w_c = model().clique_segment(c, w);
 
@@ -227,8 +261,8 @@ void CouplerConstraintsPool<T>::ReduceInto(
     reduced_pool->constraint_to_clique_.push_back(r_c);
     reduced_pool->dofs_.emplace_back(r_i, r_j);
     reduced_pool->gear_ratio_.push_back(gear_ratio_[k]);
-    reduced_pool->g_hat_.push_back(g_hat_[k]);
-    reduced_pool->R_.push_back(R_[k]);
+    reduced_pool->g0_.push_back(g0_[k]);
+    reduced_pool->R_fragment_.push_back(R_fragment_[k]);
   }
 }
 
