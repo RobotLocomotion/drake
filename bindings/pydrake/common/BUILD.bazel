@@ -140,7 +140,6 @@ drake_cc_library(
         ":type_pack",
         ":wrap_pybind",
         "//bindings/pydrake:pydrake_pybind",
-        "@pybind11",
     ],
 )
 
@@ -152,7 +151,6 @@ drake_cc_library(
     deps = [
         ":cpp_param_pybind",
         "//bindings/pydrake:pydrake_pybind",
-        "@pybind11",
     ],
 )
 
@@ -253,7 +251,6 @@ drake_cc_library(
         "//bindings/pydrake:pydrake_pybind",
         "//common:essential",
         "@fmt",
-        "@pybind11",
     ],
 )
 
