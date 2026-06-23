@@ -503,21 +503,11 @@ void DefineSymbolicMonolith(py::module_ m) {
   DefCopyAndDeepCopy(&expr_cls);
   DefPickle(
       &expr_cls,
-      [m](const Expression& self) -> py::tuple {
-	py::list state;
-	py::tuple ctor_and_args(internal::Unapply(m, self));
-	py::list args = ctor_and_args[1];
-	state.append(self.get_kind());
-	state.extend(args);
-	return py::tuple(state);
+      [](const Expression& self) -> py::tuple {
+        return internal::PickleExpression(self);
       },
       [m](Expression* self, py::tuple state) {
-	auto kind = py::cast<ExpressionKind>(state[0]);
-	py::object ctor = internal::MakeUnapplyConstructor(m, kind);
-	py::list args(state);
-	args.attr("pop")(0);
-	py::object resurrected = ctor(*args);
-	new (self) Expression(py::cast<Expression>(resurrected));
+        new (self) Expression(internal::UnpickleExpression(m, state));
       });
 
   m.def("if_then_else", &symbolic::if_then_else, py::arg("f_cond"),
@@ -698,35 +688,23 @@ void DefineSymbolicMonolith(py::module_ m) {
       // `True` and `False` are reserved keywords as of Python3.
       .def_static("True_", &Formula::True, doc_expr.Formula.True.doc)
       .def_static("False_", &Formula::False, doc_expr.Formula.False.doc)
-      .def("__nonzero__",
-          [](const Formula&) {
-            throw std::runtime_error(
-                "You should not call `__bool__` / `__nonzero__` on `Formula`. "
-                "If you are trying to make a map with `Variable`, "
-                "`Expression`, or `Polynomial` as keys (and then access the "
-                "map in Python), please use "
-                "pydrake.common.containers.EqualToDict`.");
-          });
+      .def("__nonzero__", [](const Formula&) {
+        throw std::runtime_error(
+            "You should not call `__bool__` / `__nonzero__` on `Formula`. "
+            "If you are trying to make a map with `Variable`, `Expression`, "
+            "or `Polynomial` as keys (and then access the map in Python), "
+            "please use pydrake.common.containers.EqualToDict`.");
+      });
   formula_cls.attr("__bool__") = formula_cls.attr("__nonzero__");
   py::implicitly_convertible<bool, Formula>();
   py::implicitly_convertible<Variable, Formula>();
   DefPickle(
       &formula_cls,
-      [m](const Formula& self) -> py::tuple {
-	py::list state;
-	py::tuple ctor_and_args(internal::Unapply(m, self));
-	py::list args = ctor_and_args[1];
-	state.append(self.get_kind());
-	state.extend(args);
-	return py::tuple(state);
+      [](const Formula& self) -> py::tuple {
+        return internal::PickleFormula(self);
       },
       [m](Formula* self, py::tuple state) {
-	auto kind = py::cast<FormulaKind>(state[0]);
-	py::object ctor = internal::MakeUnapplyConstructor(m, kind);
-	py::list args(state);
-	args.attr("pop")(0);
-	py::object resurrected = ctor(*args);
-	new (self) Formula(py::cast<Formula>(resurrected));
+        new (self) Formula(internal::UnpickleFormula(m, state));
       });
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
