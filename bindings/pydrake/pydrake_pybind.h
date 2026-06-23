@@ -376,7 +376,12 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 #ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_MODULE PYBIND11_MODULE
 #define PYDRAKE_BINDER_NAMESPACE pybind11
+#define PYDRAKE_OVERRIDE PYBIND11_OVERRIDE
+#define PYDRAKE_OVERRIDE_PURE PYBIND11_OVERRIDE_PURE
+#define NB_TRAMPOLINE(...)
 #else  // PYDRAKE_USE_NANOBIND
 #define PYDRAKE_MODULE NB_MODULE
 #define PYDRAKE_BINDER_NAMESPACE nanobind
+#define PYDRAKE_OVERRIDE(unused1, unused2, ...) NB_OVERRIDE(__VA_ARGS__)
+#define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) NB_OVERRIDE_PURE(__VA_ARGS__)
 #endif

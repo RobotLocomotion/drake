@@ -1307,11 +1307,11 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
 #endif  // XXX porting
 
   void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
-    NB_OVERRIDE(DoDeclareCacheEntries, plant);
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
   }
 
   void DoDeclareInputPorts(MultibodyPlant<T>* plant) override {
-    NB_OVERRIDE(DoDeclareInputPorts, plant);
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
   }
 };
 
@@ -1360,7 +1360,7 @@ void DefineForceDensityField(py::module_ m, T) {
         ForceDensityField<T>
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         ,
-        std::shared_ptr<GracityForceField<T>>
+        std::shared_ptr<GravityForceField<T>>
 #endif
         >(
         m, "GravityForceField", param, cls_doc.doc);

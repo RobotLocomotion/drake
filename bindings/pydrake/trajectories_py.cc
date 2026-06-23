@@ -42,8 +42,6 @@ using trajectories::Trajectory;
 // fields as would be typical), so we must bind the attributes manually.
 template <typename PyClass>
 void BindPiecewisePolynomialSerialize(PyClass* cls) {
-  // XXX porting -- unused
-  // using Class = trajectories::PiecewisePolynomial<double>;
   // The C++ types of the serialized fields.
   using Breaks = std::vector<double>;
   using Polynomials = std::vector<MatrixX<Eigen::VectorXd>>;
@@ -88,6 +86,7 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // want to expose those properties to users so we'll respell the name to add a
   // leading underscore, and bind the properties using the private name.
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+  using Class = trajectories::PiecewisePolynomial<double>;
   cls->def("__getattr__", [](Class& self, py::str name) -> py::object {
     py::object self_py = py::cast(self, py_rvp::reference);
     const std::string_view name_cxx(name.c_str());
@@ -267,15 +266,16 @@ struct Impl {
     }
 
     MatrixX<T> do_value(const T& t) const final {
-      NB_OVERRIDE_PURE(do_value, t);
+      PYDRAKE_OVERRIDE_PURE(MatrixX<T>, Trajectory<T>, do_value, t);
     }
 
     bool do_has_derivative() const final {
-      NB_OVERRIDE_PURE(do_has_derivative);
+      PYDRAKE_OVERRIDE_PURE(bool, Trajectory<T>, do_has_derivative);
     }
 
     MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final {
-      NB_OVERRIDE_PURE(DoEvalDerivative, t, derivative_order);
+      PYDRAKE_OVERRIDE_PURE(
+          MatrixX<T>, Trajectory<T>, DoEvalDerivative, t, derivative_order);
     }
 
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
@@ -283,11 +283,12 @@ struct Impl {
       py::gil_scoped_acquire guard;
 #ifdef PYDRAKE_USE_PYBIND11
       // XXX porting -- change of signature issues with macro
-      // Because the NB_OVERRIDE_PURE macro embeds a `return ...;`
+      // Because the PYDRAKE_OVERRIDE_PURE macro embeds a `return ...;`
       // statement, we must wrap it in lambda so that we can post-process the
       // return value.
       auto make_python_derivative = [&]() -> py::object {
-        NB_OVERRIDE_PURE(DoMakeDerivative, derivative_order);
+        PYDRAKE_OVERRIDE_PURE(
+            py::object, Trajectory<T>, DoMakeDerivative, derivative_order);
       };
       return WrapPyTrajectory(make_python_derivative());
 #else
@@ -297,13 +298,21 @@ struct Impl {
 #endif
     }
 
-    T do_start_time() const final { NB_OVERRIDE_PURE(do_start_time); }
+    T do_start_time() const final {
+      PYDRAKE_OVERRIDE_PURE(T, Trajectory<T>, do_start_time);
+    }
 
-    T do_end_time() const final { NB_OVERRIDE_PURE(do_end_time); }
+    T do_end_time() const final {
+      PYDRAKE_OVERRIDE_PURE(T, Trajectory<T>, do_end_time);
+    }
 
-    Eigen::Index do_rows() const final { NB_OVERRIDE_PURE(do_rows); }
+    Eigen::Index do_rows() const final {
+      PYDRAKE_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_rows);
+    }
 
-    Eigen::Index do_cols() const final { NB_OVERRIDE_PURE(do_cols); }
+    Eigen::Index do_cols() const final {
+      PYDRAKE_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_cols);
+    }
   };
 
   static void DoScalarDependentDefinitions(py::module_ m) {

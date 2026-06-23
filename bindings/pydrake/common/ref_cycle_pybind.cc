@@ -9,6 +9,10 @@ namespace pydrake {
 
 using py::handle;
 
+#ifdef PYDRAKE_USE_PYBIND11
+using py::detail::function_call;
+#endif
+
 namespace internal {
 
 namespace {
@@ -97,6 +101,41 @@ void check_and_make_ref_cycle(size_t peer0, handle p0, size_t peer1, handle p1,
 
 }  // namespace
 
+#ifdef PYDRAKE_USE_PYBIND11
+
+void ref_cycle_impl(
+    size_t peer0, size_t peer1, const function_call& call, handle ret) {
+  // Returns the handle selected by the given index. Throws if the index is
+  // invalid.
+  auto get_arg = [&](size_t n) -> handle {
+    if (n == 0) {
+      return ret;
+    }
+    if (n == 1 && call.init_self) {
+      return call.init_self;
+    }
+    if (n <= call.args.size()) {
+      return call.args[n - 1];
+    }
+    py::pybind11_fail(fmt::format(
+        "Could not activate ref_cycle: index {} is invalid for function '{}'",
+        n, call.func.name));
+  };
+  handle p0 = get_arg(peer0);
+  handle p1 = get_arg(peer1);
+
+  auto not_gc_error = [&call](size_t n) -> std::string {
+    return fmt::format(
+        "Could not activate ref_cycle: object type at index {} for binding at "
+        "'{}' is not tracked by garbage collection.  Was the object defined "
+        "with `pybind11::class_<...>(... pybind11::dynamic_attr())`?",
+        n, call.func.name);
+  };
+  check_and_make_ref_cycle(peer0, p0, peer1, p1, not_gc_error);
+}
+
+#else  // PYDRAKE_USE_NANOBIND
+
 void ref_cycle_impl(
     size_t peer0, size_t peer1, PyObject** args, size_t nargs, handle ret) {
   // Returns the handle selected by the given index. Throws if the index is
@@ -123,6 +162,8 @@ void ref_cycle_impl(
   };
   check_and_make_ref_cycle(peer0, p0, peer1, p1, not_gc_error);
 }
+
+#endif  // PYDRAKE_USE_PYBIND11
 
 void make_arbitrary_ref_link(
     handle p0, handle p1, const std::string& location_hint) {

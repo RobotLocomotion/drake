@@ -99,8 +99,13 @@ template <typename... Args>
 using EventCallback = std::function<EventSignature<Args...>>;
 // Declare the handler signature as a python function object with compile-time
 // readable type signature.
+#ifdef PYDRAKE_USE_PYBIND11
+template <typename... Args>
+using PyEventCallback = py::typing::Callable<EventSignature<Args...>>;
+#else  // PYDRAKE_USE_NANOBIND
 template <typename... Args>
 using PyEventCallback = py::typed<py::callable, EventSignature<Args...>>;
+#endif  // PYDRAKE_USE_PYBIND11
 
 // Declare the various callback types that will appear as parameters of
 // bindings, such that automatic documentation has correct type signatures.
@@ -243,23 +248,31 @@ struct Impl {
    public:
     NB_TRAMPOLINE(LeafSystemBase, 100);
     using Base = LeafSystemBase;
+#ifdef PYDRAKE_USE_PYBIND11
+    using Base::Base;
+#endif
 
     // Trampoline virtual methods.
 
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
+#ifdef PYDRAKE_USE_PYBIND11
       // Yuck! We have to dig in and use internals :(
       // We must ensure that pybind only sees pointers, since this method may
       // be called from C++, and pybind will not have seen these objects yet.
       // @see https://github.com/pybind/pybind11/issues/1241
       // TODO(eric.cousineau): Figure out how to supply different behavior,
       // possibly using function wrapping.
-      NB_OVERRIDE(DoCalcTimeDerivatives, context, derivatives);
+      PYBIND11_OVERLOAD_INT(
+          void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
       // If the macro did not return, use default functionality.
       Base::DoCalcTimeDerivatives(context, derivatives);
+#else  // PYDRAKE_USE_NANOBIND
+      NB_OVERRIDE(DoCalcTimeDerivatives, context, derivatives);
+#endif  // PYDRAKE_USE_PYBIND11
     }
 
-#if 0   // XXX porting
+#if PYDRAKE_USE_PYBIND11   // XXX porting
     // This actually changes the signature of DoGetWitnessFunction,
     // expecting the python overload to return a list of witnesses (instead
     // of taking in an empty pointer to std::vector<>.
@@ -270,8 +283,10 @@ struct Impl {
       py::gil_scoped_acquire guard;
       auto wrapped =
           [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
+        PYBIND11_OVERLOAD_INT(
+            std::optional<std::vector<const WitnessFunction<T>*>>,
+            LeafSystem<T>, "DoGetWitnessFunctions", &context);
         std::vector<const WitnessFunction<T>*> result;
-        NB_OVERRIDE(DoGetWitnessFunctions, context, &result);
         // If the macro did not return, use default functionality.
         Base::DoGetWitnessFunctions(context, &result);
         return {result};
@@ -289,7 +304,8 @@ struct Impl {
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      NB_OVERRIDE(DoGetGraphvizFragment, params);
+      PYDRAKE_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
+          DoGetGraphvizFragment, params);
     }
   };
 
@@ -313,7 +329,8 @@ struct Impl {
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      NB_OVERRIDE(DoGetGraphvizFragment, params);
+      PYDRAKE_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
+          DoGetGraphvizFragment, params);
     }
   };
 
@@ -340,8 +357,11 @@ struct Impl {
    public:
     NB_TRAMPOLINE(VectorSystemPublic, 100);
     using Base = VectorSystemPublic;
+#ifdef PYDRAKE_USE_PYBIND11
+    using Base::Base;
+#endif
 
-#if 0  // XXX porting
+#if PYDRAKE_USE_PYBIND11  // XXX porting
     // something something ToEigenRef().
     void DoCalcVectorOutput(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
@@ -352,11 +372,11 @@ struct Impl {
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
       // TODO(eric.cousineau): This will be resolved once dtype=custom is
       // resolved.
-      NB_OVERRIDE(DoCalcVectorOutput,
+      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>, "DoCalcVectorOutput",
           // N.B. Passing `Eigen::Map<>` derived classes by reference rather
           // than pointer to ensure conceptual clarity. pybind11 `type_caster`
           // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
-          context, input, state, ToEigenRef(output));
+          &context, input, state, ToEigenRef(output));
       // If the macro did not return, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, output);
     }
@@ -367,7 +387,8 @@ struct Impl {
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      NB_OVERRIDE(DoCalcVectorTimeDerivatives, context, input, state,
+      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
+          "DoCalcVectorTimeDerivatives", &context, input, state,
           ToEigenRef(derivatives));
       // If the macro did not return, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, derivatives);
@@ -379,7 +400,8 @@ struct Impl {
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      NB_OVERRIDE(DoCalcVectorDiscreteVariableUpdates, &context, input, state,
+      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
+          "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
           ToEigenRef(next_state));
       // If the macro did not return, use default functionality.
       Base::DoCalcVectorDiscreteVariableUpdates(
@@ -393,11 +415,11 @@ struct Impl {
     NB_TRAMPOLINE(SystemVisitor<T>, 100);
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
-      NB_OVERRIDE_PURE(VisitSystem, system);
+      PYDRAKE_OVERRIDE_PURE(void, SystemVisitor<T>, VisitSystem, system);
     };
 
     void VisitDiagram(const Diagram<T>& diagram) override {
-      NB_OVERRIDE_PURE(VisitDiagram, diagram);
+      PYDRAKE_OVERRIDE_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
     }
   };
 
@@ -481,7 +503,7 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
-#if 0  // XXX porting
+#if PYDRAKE_USE_PYBIND11  // XXX porting
         .def("CalcImplicitTimeDerivativesResidual",
             &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
             py::arg("proposed_derivatives"), py::arg("residual"),
@@ -729,7 +751,7 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareAbstractParameter.doc)
         .def("DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
-#if 0   // XXX porting
+#if PYDRAKE_USE_PYBIND11   // XXX porting
         .def(
             "DeclareAbstractOutputPort",
             [](PyLeafSystem* self, const std::string& name, py::function alloc,
@@ -750,7 +772,6 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_calc_prerequisites_of_calc)
 #endif  // XXX porting
-
         .def(
             "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
@@ -1370,9 +1391,8 @@ void DefineSystemScalarConverter(PyClass* cls) {
       using system_scalar_converter_internal::AddPydrakeConverterFunction;
       // N.B. The "_AddConstructor" method is called by scalar_conversion.py
       // to register a constructor, similar to MaybeAddConstructor in C++.
-      // XXX porting unused
-      //using ConverterFunction = std::function<System<T>*(const System<U>&)>;
-#if 0   // XXX porting
+#if PYDRAKE_USE_PYBIND11   // XXX porting
+      using ConverterFunction = std::function<System<T>*(const System<U>&)>;
       AddTemplateMethod(
           converter, "_AddConstructor",
           [](SystemScalarConverter* self,

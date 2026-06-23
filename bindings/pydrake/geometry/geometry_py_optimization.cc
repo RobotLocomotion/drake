@@ -457,6 +457,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
         .def_static("MaybeCalcAxisAlignedBoundingBox",
             &Class::MaybeCalcAxisAlignedBoundingBox, py::arg("set"),
             cls_doc.MaybeCalcAxisAlignedBoundingBox.doc);
+
     DefPickle(
         &cls,
         [](const Class& self) { return std::make_pair(self.lb(), self.ub()); },
@@ -1146,7 +1147,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
     // Trampoline virtual methods.
 
     void Expand(GraphOfConvexSets::Vertex* v) override {
-      NB_OVERRIDE_PURE(Expand, v);
+      PYDRAKE_OVERRIDE_PURE(void, ImplicitGraphOfConvexSets, Expand, v);
     }
   };
 
