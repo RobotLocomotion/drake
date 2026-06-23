@@ -262,7 +262,19 @@ void PatchConstraintsPool<T>::SetPatch(int patch_index, int bodyA, int bodyB,
       (model().is_anchored(bodyA) || model().is_anchored(bodyB)) ? 1 : 2;
   num_cliques_[patch_index] = num_cliques;
 
-  Rt_[patch_index] = CalcRt(patch_index);
+  // Compute per-patch regularization of friction. We use a "spherical body
+  // approximation" for the estimation of the Delassus operator. A sphere has
+  // gyration radius of g = 5/2 R (with R the radius). A contact will happen
+  // at distance R from the CoM.
+  // Thus the Delassus operator will be:
+  //   W = 1/m⋅[I₃   0
+  //           [ 0   R²/g²]
+  // It's RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
+  T w = 2.65 / model().body_mass(bodies_[patch_index].first);
+  if (num_cliques == 2) {
+    w += 2.65 / model().body_mass(bodies_[patch_index].second);
+  }
+  Rt_[patch_index] = sigma_ * w;
 }
 
 template <typename T>
@@ -531,79 +543,10 @@ void PatchConstraintsPool<T>::CalcCostAlongLine(
 }
 
 template <typename T>
-void PatchConstraintsPool<T>::ReduceInto(
-    const ReducedMapping& mapping,
-    PatchConstraintsPool<T>* reduced_pool) const {
-  // Make sure the pool is (over) allocated.
-  reduced_pool->Resize(patch_sizes());
-  // Remove old data.
-  reduced_pool->Resize({});
-
-  reduced_pool->stiction_tolerance_ = stiction_tolerance_;
-
-  int pair_data_cursor{0};
-  for (int k = 0; k < num_constraints(); ++k) {
-    // In order to include the constraint, at least one body in the patch must
-    // be in a clique participating in the reduced model. If only the first
-    // body's clique participates, we reverse the ordering of the two bodies
-    // for the reduced-model constraint to match the constraint conventions.
-    const int body_a = bodies_[k].second;
-    const int body_b = bodies_[k].first;
-    const int c_b = model().body_to_clique(body_b);
-    const int c_a = model().body_to_clique(body_a);  // negative if anchored.
-    const bool have_r_c_b = mapping.clique_subsequence.participates(c_b);
-    const bool have_r_c_a =
-        (c_a >= 0 && mapping.clique_subsequence.participates(c_a));
-    const int r_num_cliques = have_r_c_b + have_r_c_a;
-    if (r_num_cliques == 0) {
-      continue;
-    }
-    // At this point, we could have an `r_num_cliques==1` case where body_b has
-    // become anchored (no clique), and body_a is not anchored. This will
-    // require flipping the direction of the patch and pairs.
-    bool need_flip = (r_num_cliques == 1 && have_r_c_a);
-    const int r_n = reduced_pool->num_constraints();
-
-    // Fill in the reduced constraint.
-    reduced_pool->num_pairs_.push_back(num_pairs_[k]);
-    reduced_pool->num_cliques_.push_back(r_num_cliques);
-    // Rt is sensitive to clique changes.
-    reduced_pool->Rt_.push_back((r_num_cliques == num_cliques_[k])
-                                    ? Rt_[k]
-                                    : reduced_pool->CalcRt(r_n));
-    // Handle quantities sensitive to flipping.
-    if (need_flip) {
-      reduced_pool->bodies_.emplace_back(body_a, body_b);
-      reduced_pool->p_AB_W_.Add(3, 1) = -p_AB_W_[k];
-    } else {
-      reduced_pool->bodies_.push_back(bodies_[k]);
-      reduced_pool->p_AB_W_.Add(3, 1) = p_AB_W_[k];
-    }
-    reduced_pool->dissipation_.push_back(dissipation_[k]);
-    reduced_pool->static_friction_.push_back(static_friction_[k]);
-    reduced_pool->dynamic_friction_.push_back(dynamic_friction_[k]);
-
-    // Adapt the reduced per pair indexing.
-    reduced_pool->pair_data_start_.push_back(pair_data_cursor);
-    pair_data_cursor += num_pairs(k);
-
-    // Fill in the per pair constraint data.
-    for (int q = 0; q < num_pairs(k); ++q) {
-      const int from = patch_pair_index(k, q);
-      // Handle quantities sensitive to flipping.
-      if (need_flip) {
-        reduced_pool->p_BC_W_.Add(3, 1) = p_AB_W_[k] + p_BC_W_[from];
-        reduced_pool->normal_W_.Add(3, 1) = -normal_W_[from];
-      } else {
-        reduced_pool->p_BC_W_.Add(3, 1) = p_BC_W_[from];
-        reduced_pool->normal_W_.Add(3, 1) = normal_W_[from];
-      }
-      reduced_pool->stiffness_.push_back(stiffness_[from]);
-      reduced_pool->fe0_.push_back(fe0_[from]);
-      reduced_pool->fn0_.push_back(fn0_[from]);
-      reduced_pool->net_friction_.push_back(net_friction_[from]);
-    }
-  }
+void PatchConstraintsPool<T>::ReduceInto(const ReducedMapping&,
+                                         PatchConstraintsPool<T>*) const {
+  // TODO(#23764): implement.
+  DRAKE_THROW_UNLESS(num_constraints() == 0);
 }
 
 template <typename T>
@@ -766,31 +709,6 @@ void PatchConstraintsPool<T>::CalcPatchQuantities(
       G_Bp += ShiftSecondOrderTensor(Gk, p_BC_W);
     }
   }
-}
-
-template <typename T>
-T PatchConstraintsPool<T>::CalcRt(int patch_index) const {
-  // Compute per-patch regularization of friction. We use a "spherical body
-  // approximation" for the estimation of the Delassus operator. A sphere has
-  // gyration radius of g = 5/2 R (with R the radius). A contact will happen
-  // at distance R from the CoM.
-  // Thus the Delassus operator will be:
-  //   W = 1/m⋅[I₃   0
-  //           [ 0   R²/g²]
-  // Its RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
-  T w = 2.65 / model().body_mass(bodies_[patch_index].first);
-  if (num_cliques_[patch_index] == 2) {
-    w += 2.65 / model().body_mass(bodies_[patch_index].second);
-  }
-
-  // SAP regularization parameter σ. Each frictional contact is regularized by
-  // εₛ = max(vₛ, μ⋅σ⋅wₜ⋅n₀), where vₛ is the stiction tolerance, μ is the
-  // friction coefficient, wₜ is the Delassus operator approximation, and n₀ is
-  // the normal impulse from the previous time step. See the ICF paper [Castro
-  // et al., 2023] for further details.
-  static constexpr double kSigma{1.0e-3};
-
-  return kSigma * w;
 }
 
 }  // namespace internal
