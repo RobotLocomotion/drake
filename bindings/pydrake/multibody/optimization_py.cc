@@ -44,9 +44,11 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = CentroidalMomentumConstraint;
     constexpr auto& cls_doc = doc.CentroidalMomentumConstraint;
-    // XXX porting unused
-    // using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, solvers::Constraint /*, Ptr XXX porting */>(
+    py::class_<Class, solvers::Constraint
+#ifdef PYDRAKE_USE_PYBIND11
+	       , std::shared_ptr<Class>
+#endif
+>(
         m, "CentroidalMomentumConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<AutoDiffXd>*,
                  std::optional<std::vector<ModelInstanceIndex>>,
@@ -62,11 +64,13 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = ContactWrenchFromForceInWorldFrameEvaluator;
     constexpr auto& cls_doc = doc.ContactWrenchFromForceInWorldFrameEvaluator;
-    // XXX porting unused
-    // using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, solvers::EvaluatorBase/*, Ptr XXX porting */>(
+    py::class_<Class, solvers::EvaluatorBase
+#ifdef PYDRAKE_USE_PYBIND11
+	       , std::shared_ptr<Class>
+#endif
+>(
         m, "ContactWrenchFromForceInWorldFrameEvaluator", cls_doc.doc)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(py::init<const MultibodyPlant<AutoDiffXd>*,
                  systems::Context<AutoDiffXd>*,
                  const SortedPair<geometry::GeometryId>&>(),
@@ -91,9 +95,11 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = QuaternionEulerIntegrationConstraint;
     constexpr auto& cls_doc = doc.QuaternionEulerIntegrationConstraint;
-    // XXX porting unused
-    // using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, solvers::Constraint/*, Ptr XXX porting */>(
+    py::class_<Class, solvers::Constraint
+#ifdef PYDRAKE_USE_PYBIND11
+	       , std::shared_ptr<Class>
+#endif
+>(
         m, "QuaternionEulerIntegrationConstraint", cls_doc.doc)
         .def(py::init<bool>(), py::arg("allow_quaternion_negation"),
             cls_doc.ctor.doc)
@@ -113,9 +119,11 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = SpatialVelocityConstraint;
     constexpr auto& cls_doc = doc.SpatialVelocityConstraint;
-    // XXX porting unused
-    // using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, solvers::Constraint/*, Ptr XXX porting */> cls(
+    py::class_<Class, solvers::Constraint
+#ifdef PYDRAKE_USE_PYBIND11
+	       , std::shared_ptr<Class>
+#endif
+> cls(
         m, "SpatialVelocityConstraint", cls_doc.doc);
     cls.def(
         py::init<const MultibodyPlant<AutoDiffXd>*, const Frame<AutoDiffXd>&,

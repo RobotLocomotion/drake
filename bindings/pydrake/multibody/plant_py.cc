@@ -547,7 +547,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             .def("GetActuationFromArray", &Class::GetActuationFromArray,
                 py::arg("model_instance"), py::arg("u"),
                 cls_doc.GetActuationFromArray.doc)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("SetActuationInArray", &Class::SetActuationInArray,
             py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
             cls_doc.SetActuationInArray.doc)
@@ -558,7 +558,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 &Class::GetPositionsFromArray),
             py::arg("model_instance"), py::arg("q"),
             cls_doc.GetPositionsFromArray.doc_2args)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("SetPositionsInArray", &Class::SetPositionsInArray,
             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
             cls_doc.SetPositionsInArray.doc)
@@ -569,7 +569,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 &Class::GetVelocitiesFromArray),
             py::arg("model_instance"), py::arg("v"),
             cls_doc.GetVelocitiesFromArray.doc_2args)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
             py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
             cls_doc.SetVelocitiesInArray.doc)

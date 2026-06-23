@@ -111,7 +111,7 @@ void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
 // TODO(cohnt): Refactor for better code reuse.
 enum class ArrayShapeType { Scalar, Vector };
 
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
 // Checks array shape, provides user-friendly message if it fails.
 void CheckArrayShape(
     py::str var_name, py::array x, ArrayShapeType shape, int size) {
@@ -186,7 +186,7 @@ is the input dimension.
       m, "IrisParameterizationFunction", cls_doc.doc);
   iris_parameterization_function  // BR
       .def(py::init<>(), cls_doc.ctor.doc_0args)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def(
           "__init__",
           [](IrisParameterizationFunction* self,

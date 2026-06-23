@@ -51,7 +51,7 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
     pgd_cls.attr("kDefaultMaxLineSearchSteps") =
         &Class::kDefaultMaxLineSearchSteps;
 
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     pgd_cls.def(
         "SetCustomProjectionFunction",
         [](Class& self, py::function python_projection_function) {

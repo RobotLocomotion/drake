@@ -74,7 +74,7 @@ using symbolic::Variables;
 namespace {
 enum class ArrayShapeType { Scalar, Vector };
 
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
 // Checks array shape, provides user-friendly message if it fails.
 void CheckArrayShape(
     py::str var_name, py::array x, ArrayShapeType shape, int size) {
@@ -136,7 +136,7 @@ class PyFunctionCost : public Cost {
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
   using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
 
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
   // Note that we do not allow Python implementations of Cost to be declared as
   // thread safe.
   PyFunctionCost(
@@ -166,7 +166,7 @@ class PyFunctionCost : public Cost {
   }
 
  private:
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
   template <typename T, typename Func>
   Func Wrap(py::function func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
@@ -186,7 +186,7 @@ class PyFunctionConstraint : public Constraint {
   using AutoDiffFunc =
       std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
 
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
   // Note that we do not allow Python implementations of Constraint to be
   // declared as thread safe.
   PyFunctionConstraint(int num_vars, const py::function& func,
@@ -219,7 +219,7 @@ class PyFunctionConstraint : public Constraint {
   }
 
  private:
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
   template <typename T, typename Func>
   Func Wrap(py::function func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
@@ -636,7 +636,7 @@ void BindMathematicalProgram(py::module_ m) {
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddVisualizationCallback),
           doc.MathematicalProgram.AddVisualizationCallback.doc)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def(
           "AddCost",
           [](MathematicalProgram* self, py::function func,
@@ -789,7 +789,7 @@ void BindMathematicalProgram(py::module_ m) {
               &MathematicalProgram::AddMaximizeGeometricMeanCost),
           py::arg("x"), py::arg("c"),
           doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def(
           "AddConstraint",
           [](MathematicalProgram* self, py::function func,
@@ -1322,7 +1322,7 @@ void BindMathematicalProgram(py::module_ m) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def("SetDecisionVariableValueInVector",
           py::overload_cast<const symbolic::Variable&, double,
               EigenPtr<Eigen::VectorXd>>(
@@ -1596,9 +1596,12 @@ void BindSolutionResult(py::module_ m) {
 
 void BindPyFunctionCost(py::module_ m) {
   py::class_<PyFunctionCost, Cost
-      /*, std::shared_ptr<PyFunctionCost> XXX porting */>(
+#ifdef PYDRAKE_USE_PYBIND11
+      , std::shared_ptr<PyFunctionCost>
+#endif
+>(
       m, "PyFunctionCost", "Cost with its evaluator as a Python function")
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
       .def(py::init<int, const py::function&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
@@ -1609,10 +1612,13 @@ void BindPyFunctionCost(py::module_ m) {
 
 void BindPyFunctionConstraint(py::module_ m) {
   py::class_<PyFunctionConstraint, Constraint
-      /*, std::shared_ptr<PyFunctionConstraint> XXX porting */>(m,
+#ifdef PYDRAKE_USE_PYBIND11
+      , std::shared_ptr<PyFunctionConstraint>
+#endif
+>(m,
       "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def(py::init<int, const py::function&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("lb"), py::arg("ub"),

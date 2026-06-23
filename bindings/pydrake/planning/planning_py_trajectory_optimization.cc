@@ -664,7 +664,7 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("show_vars") = true, py::arg("show_flows") = true,
             py::arg("show_costs") = true, py::arg("scientific") = false,
             py::arg("precision") = 3, cls_doc.GetGraphvizString.doc)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(
             "AddRegions",
             // Pybind does not support None arguments for pointers to built-in
@@ -703,7 +703,7 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
 #endif  // XXX porting
         .def("RemoveSubgraph", &Class::RemoveSubgraph, py::arg("subgraph"),
             cls_doc.RemoveSubgraph.doc)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(
             "AddEdges",
             // Pybind does not support None arguments for pointers to built-in

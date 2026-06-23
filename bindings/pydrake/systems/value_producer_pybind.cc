@@ -6,7 +6,7 @@
 namespace drake {
 namespace pydrake {
 
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 std::function<std::unique_ptr<AbstractValue>()>
 MakeCppCompatibleAllocateCallback(py::function allocate) {
   return [allocate = std::move(allocate)]() -> std::unique_ptr<AbstractValue> {

@@ -414,7 +414,7 @@ PYDRAKE_MODULE(primitives, m) {
             py::arg("params"), py::arg("layer"),
             py::keep_alive<0, 2>() /* return keeps params alive */,
             py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_vector)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("SetWeights",
             py::overload_cast<EigenPtr<VectorX<T>>, int,
                 const Eigen::Ref<const MatrixX<T>>&>(

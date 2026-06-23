@@ -53,10 +53,10 @@ class PySerializerInterface : public SerializerInterface {
     // then just Clone it to obtain the necessary C++ signature. Because the
     // PYDRAKE_OVERRIDE_PURE macro embeds a `return ...;` statement, we must
     // wrap it in lambda so that we can post-process the return value.
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
     // c++<=>py type conversion issues.
     py::object default_value = [this]() -> py::object {
-      PYDRAKE_OVERLOAD_PURE(
+      PYDRAKE_OVERRIDE_PURE(
           py::object, SerializerInterface, CreateDefaultValue);
     }();
     DRAKE_THROW_UNLESS(!default_value.is_none());
@@ -66,31 +66,35 @@ class PySerializerInterface : public SerializerInterface {
   }
 
   void Deserialize(const void* message_bytes, int message_length,
-      AbstractValue* /* abstract_value XXX porting */) const override {
+      AbstractValue* abstract_value) const override {
     py::gil_scoped_acquire guard;
     py::bytes buffer(
         reinterpret_cast<const char*>(message_bytes), message_length);
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
     // change of signature issues.
-    PYDRAKE_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         void, SerializerInterface, Deserialize, buffer, abstract_value);
+#else
+    unused(abstract_value);
 #endif  // XXX porting
   }
 
-  void Serialize(const AbstractValue& /* abstract_value XXX porting */,
-      std::vector<uint8_t>* /* message_bytes XXX porting */) const override {
+  void Serialize(const AbstractValue& abstract_value,
+      std::vector<uint8_t>* message_bytes) const override {
     py::gil_scoped_acquire guard;
-#if 0   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
     // change of signature issues with override macro.
     auto wrapped = [&]() -> py::bytes {
       // N.B. We must pass `abstract_value` as a pointer to prevent `pybind11`
       // from copying it.
-      PYDRAKE_OVERLOAD_PURE(
+      PYDRAKE_OVERRIDE_PURE(
           py::bytes, SerializerInterface, Serialize, &abstract_value);
     };
     py::bytes str = wrapped();
     message_bytes->resize(str.size());
     std::copy(str.c_str(), str.c_str() + str.size(), message_bytes->data());
+#else
+    unused(abstract_value, message_bytes);
 #endif  // XXX porting
   }
 };

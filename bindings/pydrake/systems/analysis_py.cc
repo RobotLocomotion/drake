@@ -64,7 +64,7 @@ PYDRAKE_MODULE(analysis, m) {
     py::class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
 #endif  // XXX porting
     DefReprUsingSerialize(&cls);
@@ -114,7 +114,7 @@ PYDRAKE_MODULE(analysis, m) {
   auto bind_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     m.def("BatchEvalUniquePeriodicDiscreteUpdate",
         &BatchEvalUniquePeriodicDiscreteUpdate<T>, py::arg("system"),
         py::arg("context"), py::arg("times"), py::arg("states"),
@@ -299,7 +299,7 @@ PYDRAKE_MODULE(analysis, m) {
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(py::init([](const System<T>& system, py::object py_context) {
           // Handle the two cases for context ownership explicitly:
           // 1. If py_context is None, create a new context and take ownership.

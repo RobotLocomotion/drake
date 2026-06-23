@@ -177,7 +177,7 @@ void DefineDrakeVisualizerParams(py::module_ m) {
         m, "DrakeVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
 #endif  // XXX porting
     DefReprUsingSerialize(&cls);
@@ -414,7 +414,7 @@ void DefineMeshcat(py::module_ m) {
             // This function costs a non-trivial amount of CPU time and blocks
             // on a worker thread; for both reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(), cls_doc.StaticHtml.doc)
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(
             "StaticZip",
             [](const Class& self) {
@@ -553,7 +553,7 @@ void DefineMeshcatVisualizerParams(py::module_ m) {
         m, "MeshcatVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
 #endif  // XXX porting
     DefReprUsingSerialize(&cls);

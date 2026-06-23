@@ -46,7 +46,7 @@ void DefinePlanningIrisNp2(py::module_ m) {
   py::class_<IrisNp2Options> iris_np2_options(m, "IrisNp2Options", cls_doc.doc);
   iris_np2_options  // BR
       .def(py::init<>())
-#if 0  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def_prop_rw("solver_options",
           py::cpp_function(
               [](IrisNp2Options& self) { return &(self.solver_options); },
