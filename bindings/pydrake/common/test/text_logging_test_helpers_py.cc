@@ -8,8 +8,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 
-namespace py = pybind11;
-
 namespace drake {
 namespace pydrake {
 namespace {
@@ -49,7 +47,7 @@ class Worker {
 
   void Stop() {
     DRAKE_THROW_UNLESS(thread_ != nullptr);
-    pybind11::gil_scoped_release guard;
+    py::gil_scoped_release guard;
     keep_running_.store(false);
     thread_->join();
     thread_.reset();
