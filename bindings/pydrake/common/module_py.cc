@@ -62,7 +62,7 @@ std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
 #ifdef PYDRAKE_USE_PYBIND11
     py::handle obj = ResolvePyObject(ptr);
     if (obj) {
-      py::handle cls = obj.get_type();
+      py::handle cls = obj.type();
       const bool use_qualname = true;
       return py::cast<std::string>(
           py::str("{}.{}").format(cls.attr("__module__"),

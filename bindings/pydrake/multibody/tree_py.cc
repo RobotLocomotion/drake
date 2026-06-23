@@ -1289,7 +1289,7 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
     } catch (const py::cast_error& e) {
       throw std::logic_error(
           "DoClone() must return a `ForceDensityField<T>`. Got " +
-          py::cast<std::string>(py::str(result_obj.get_type())) +
+          py::cast<std::string>(py::str(result_obj.type())) +
           " Make sure your DoClone() returns a new instance of the same "
           "Python class, e.g., `return MyForceDensityField(...)`.");
     }
