@@ -45,7 +45,6 @@ class MaxCliqueSolverBase {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverBase);
   MaxCliqueSolverBase() = default;
 
- private:
   virtual VectorX<bool> DoSolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const = 0;
 };
