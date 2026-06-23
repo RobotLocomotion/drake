@@ -492,19 +492,19 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def("Differentiate", &Expression::Differentiate, py::arg("x"),
           doc_expression.Differentiate.doc)
       .def("Jacobian", &Expression::Jacobian, py::arg("vars"),
-          doc_expression.Jacobian.doc)
-      // Private for use by pickling.
-      .def("_assign",
-          [](Expression& self, const Expression& other) -> void {
-            self = other;
-          })
-      .def_static("_MakeUnapplyConstructor", [m](ExpressionKind kind) {
-        return internal::MakeUnapplyConstructor(m, kind);
-      });
+          doc_expression.Jacobian.doc);
   // TODO(eric.cousineau): Clean this overload stuff up (#15041).
   pydrake::internal::BindMathOperators<Expression>(&expr_cls);
   pydrake::internal::BindMathOperators<Expression>(&m);
   DefCopyAndDeepCopy(&expr_cls);
+  DefPickle(
+      &expr_cls,
+      [](const Expression& self) -> py::tuple {
+        return internal::PickleExpression(self);
+      },
+      [m](Expression* self, py::tuple state) {
+        new (self) Expression(internal::UnpickleExpression(m, state));
+      });
 
   m.def("if_then_else", &symbolic::if_then_else, py::arg("f_cond"),
       py::arg("e_then"), py::arg("e_else"), doc_expr.if_then_else.doc);
@@ -684,24 +684,24 @@ void DefineSymbolicMonolith(py::module_ m) {
       // `True` and `False` are reserved keywords as of Python3.
       .def_static("True_", &Formula::True, doc_expr.Formula.True.doc)
       .def_static("False_", &Formula::False, doc_expr.Formula.False.doc)
-      .def("__nonzero__",
-          [](const Formula&) {
-            throw std::runtime_error(
-                "You should not call `__bool__` / `__nonzero__` on `Formula`. "
-                "If you are trying to make a map with `Variable`, "
-                "`Expression`, or `Polynomial` as keys (and then access the "
-                "map in Python), please use "
-                "pydrake.common.containers.EqualToDict`.");
-          })
-      // Private for use by pickling.
-      .def("_assign",
-          [](Formula& self, const Formula& other) -> void { self = other; })
-      .def_static("_MakeUnapplyConstructor", [m](FormulaKind kind) {
-        return internal::MakeUnapplyConstructor(m, kind);
+      .def("__nonzero__", [](const Formula&) {
+        throw std::runtime_error(
+            "You should not call `__bool__` / `__nonzero__` on `Formula`. "
+            "If you are trying to make a map with `Variable`, `Expression`, "
+            "or `Polynomial` as keys (and then access the map in Python), "
+            "please use pydrake.common.containers.EqualToDict`.");
       });
   formula_cls.attr("__bool__") = formula_cls.attr("__nonzero__");
   py::implicitly_convertible<bool, Formula>();
   py::implicitly_convertible<Variable, Formula>();
+  DefPickle(
+      &formula_cls,
+      [](const Formula& self) -> py::tuple {
+        return internal::PickleFormula(self);
+      },
+      [m](Formula* self, py::tuple state) {
+        new (self) Formula(internal::UnpickleFormula(m, state));
+      });
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.

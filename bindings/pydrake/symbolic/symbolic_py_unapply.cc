@@ -5,6 +5,7 @@
 namespace drake {
 namespace pydrake {
 namespace internal {
+namespace {
 
 using drake::symbolic::Expression;
 using drake::symbolic::ExpressionKind;
@@ -71,8 +72,6 @@ py::object MakeUnapplyConstructor(py::module_ m, ExpressionKind kind) {
   }
   DRAKE_UNREACHABLE();
 }
-
-namespace {
 
 // Given the expression "e", returns an extracted list of arguments that would
 // be able to re-construct the same expression, when passed to the result of
@@ -159,8 +158,6 @@ py::list MakeArgs(const Expression& e) {
   return result;
 }
 
-}  // namespace
-
 py::object MakeUnapplyConstructor(py::module_ m, FormulaKind kind) {
   switch (kind) {
     case FormulaKind::False:
@@ -196,8 +193,6 @@ py::object MakeUnapplyConstructor(py::module_ m, FormulaKind kind) {
   }
   DRAKE_UNREACHABLE();
 }
-
-namespace {
 
 // Given the formula "f", returns an extracted list of arguments that would
 // be able to re-construct the same formula, when passed to the result of
@@ -259,6 +254,34 @@ py::object Unapply(py::module_ m, const Expression& e) {
 
 py::object Unapply(py::module_ m, const Formula& f) {
   return py::make_tuple(MakeUnapplyConstructor(m, f.get_kind()), MakeArgs(f));
+}
+
+py::tuple PickleExpression(const Expression& e) {
+  py::list result = MakeArgs(e);
+  result.insert(0, e.get_kind());
+  return py::tuple(result);
+}
+
+Expression UnpickleExpression(py::module_ m, py::tuple state) {
+  py::list args(state);
+  auto kind = py::cast<ExpressionKind>(args.attr("pop")(0));
+  py::object ctor = MakeUnapplyConstructor(m, kind);
+  py::object result = ctor(*args);
+  return cast<Expression>(result);
+}
+
+py::tuple PickleFormula(const Formula& f) {
+  py::list result = MakeArgs(f);
+  result.insert(0, f.get_kind());
+  return py::tuple(result);
+}
+
+Formula UnpickleFormula(py::module_ m, py::tuple state) {
+  py::list args(state);
+  auto kind = py::cast<FormulaKind>(args.attr("pop")(0));
+  py::object ctor = MakeUnapplyConstructor(m, kind);
+  py::object result = ctor(*args);
+  return cast<Formula>(result);
 }
 
 }  // namespace internal
