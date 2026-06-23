@@ -33,6 +33,7 @@
 #pragma GCC diagnostic ignored "-Wnarrowing"
 #endif  // __clang__
 #include "nanobind/eigen/dense.h"
+#include "nanobind/eigen/sparse.h"
 #include "nanobind/eval.h"
 #include "nanobind/make_iterator.h"
 #include "nanobind/nanobind.h"
@@ -51,6 +52,7 @@
 #include "nanobind/stl/tuple.h"
 #include "nanobind/stl/unique_ptr.h"
 #include "nanobind/stl/unordered_map.h"
+#include "nanobind/stl/unordered_set.h"
 #include "nanobind/stl/variant.h"
 #include "nanobind/stl/vector.h"
 #include "nanobind/trampoline.h"
