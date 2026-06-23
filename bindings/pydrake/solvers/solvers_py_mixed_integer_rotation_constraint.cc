@@ -49,11 +49,8 @@ void DefineSolversMixedIntegerRotationConstraint(py::module_ m) {
         .def(py::init<Class::Approach, int, IntervalBinning>(),
             py::arg("approach"), py::arg("num_intervals_per_half_axis"),
             py::arg("interval_binning"), cls_doc.ctor.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("AddToProgram", &Class::AddToProgram, py::arg("R"),
-            py::arg("prog"), cls_doc.AddToProgram.doc)
-#endif     // XXX porting
-        ;  // NOLINT(whitespace/semicolon)
+            py::arg("prog"), cls_doc.AddToProgram.doc);
   }
 }
 
