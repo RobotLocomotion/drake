@@ -112,5 +112,4 @@ install(
     deps = get_drake_py_installs([":manipulation"]),
 )
 
-# XXX porting
-# add_lint_tests_pydrake()
+add_lint_tests_pydrake()

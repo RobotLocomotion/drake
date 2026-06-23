@@ -302,7 +302,8 @@ void DoScalarIndependentDefinitions(py::module_ m) {
         ,
         std::shared_ptr<Class>
 #endif
-        > cls(m, "RenderEngine");
+        >
+        cls(m, "RenderEngine");
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("Clone",

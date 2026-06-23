@@ -122,9 +122,10 @@ void builder_life_support_stash_impl(size_t builder_index,
   BuilderLifeSupport<T>::attrs(cc_builder)
       .emplace(BuilderLifeSupport<T>::kKey, py_builder);
 }
-#else  // PYDRAKE_USE_NANOBIND
+#else   // PYDRAKE_USE_NANOBIND
 template <typename F, typename T, size_t Builder>
-NB_INLINE void func_extra_apply(F&, builder_life_support_stash<T, Builder>, size_t&) {
+NB_INLINE void func_extra_apply(
+    F&, builder_life_support_stash<T, Builder>, size_t&) {
   // XXX porting
 }
 #endif  // PYDRAKE_USE_PYBIND11
@@ -154,17 +155,18 @@ class process_attribute<
 };
 }  // namespace detail
 }  // namespace pybind11
-#else  // PYDRAKE_USE_NANOBIND
+#else   // PYDRAKE_USE_NANOBIND
 namespace nanobind {
 namespace detail {
 
 template <typename T, size_t Builder, typename... Ts>
-struct func_extra_info<drake::pydrake::internal::builder_life_support_stash<T, Builder>, Ts...>
+struct func_extra_info<
+    drake::pydrake::internal::builder_life_support_stash<T, Builder>, Ts...>
     : func_extra_info<Ts...> {
   // XXX porting
   // static constexpr bool pre_post_hooks = true;
 };
 
-}  // namespace nanobind
 }  // namespace detail
+}  // namespace nanobind
 #endif  // PYDRAKE_USE_PYBIND11

@@ -298,7 +298,7 @@ PYDRAKE_MODULE(analysis, m) {
 
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
-    cls  // BR
+    cls                      // BR
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(py::init([](const System<T>& system, py::object py_context) {
           // Handle the two cases for context ownership explicitly:
@@ -559,8 +559,8 @@ Parameter ``interruptible``:
         ,
         std::shared_ptr<Class>
 #endif
-        > cls(
-        m, "RegionOfAttractionOptions", cls_doc.doc);
+        >
+        cls(m, "RegionOfAttractionOptions", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         // TODO(jeremy.nimmer): replace the def_rw with

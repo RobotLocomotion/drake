@@ -608,10 +608,9 @@ drake_py_unittest(
     ],
 )
 
-# XXX porting
-# add_lint_tests_pydrake(
-#     python_lint_extra_srcs = [
-#         "run_installed_mesh_to_model.py",
-#         "run_installed_fix_inertia.py",
-#     ],
-# )
+add_lint_tests_pydrake(
+    python_lint_extra_srcs = [
+        "run_installed_mesh_to_model.py",
+        "run_installed_fix_inertia.py",
+    ],
+)

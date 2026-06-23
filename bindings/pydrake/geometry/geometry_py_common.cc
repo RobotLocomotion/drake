@@ -330,10 +330,10 @@ void DefineInMemoryMesh(py::module_ m) {
     DefPickle(
         &cls,
         [](const Class& self) {
-              py::dict result;
-              result["mesh_file"] = self.mesh_file;
-              result["supporting_files"] = self.supporting_files;
-              return result;
+          py::dict result;
+          result["mesh_file"] = self.mesh_file;
+          result["supporting_files"] = self.supporting_files;
+          return result;
         },
         [ctor](Class* self, const py::dict& kwargs) {
           new (self) Class(py::cast<Class>(ctor(**kwargs)));
@@ -396,14 +396,14 @@ void DefineMeshSource(py::module_ m) {
     DefPickle(
         &cls,
         [](const Class& self) {
-              py::dict result;
-              if (self.is_path()) {
-                result["path"] = self.path();
-                return result;
-              }
-              DRAKE_DEMAND(self.is_in_memory());
-              result["mesh"] = self.in_memory();
-              return result;
+          py::dict result;
+          if (self.is_path()) {
+            result["path"] = self.path();
+            return result;
+          }
+          DRAKE_DEMAND(self.is_in_memory());
+          result["mesh"] = self.in_memory();
+          return result;
         },
         [ctor](Class* self, const py::dict& kwargs) {
           new (self) Class(py::cast<Class>(ctor(**kwargs)));

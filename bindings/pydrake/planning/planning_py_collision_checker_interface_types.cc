@@ -54,8 +54,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
         ,
         std::shared_ptr<Class>
 #endif
-        > cls(
-        m, "CollisionCheckerContext", cls_doc.doc);
+        >
+        cls(m, "CollisionCheckerContext", cls_doc.doc);
     cls  // BR
         .def(py::init<const RobotDiagram<double>*>(), py::arg("model"),
             // Keep alive, reference: `self` keeps `model` alive.
@@ -79,8 +79,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
         ,
         std::shared_ptr<Class>
 #endif
-        > cls(
-        m, "DistanceAndInterpolationProvider", cls_doc.doc);
+        >
+        cls(m, "DistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def("ComputeConfigurationDistance",
             &Class::ComputeConfigurationDistance,

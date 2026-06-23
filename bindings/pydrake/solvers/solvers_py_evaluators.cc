@@ -137,10 +137,10 @@ void DefTesting(py::module_ m) {
   // Test helpers for binding casting.
   py::class_<StubEvaluatorBase, EvaluatorBase
 #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<StubEvaluatorBase>
+      ,
+      std::shared_ptr<StubEvaluatorBase>
 #endif
->(
-      m, "StubEvaluatorBase");
+      >(m, "StubEvaluatorBase");
   RegisterBinding<StubEvaluatorBase>(&m)  // BR
       .def_static(
           "Make", [](const Eigen::Ref<const VectorXDecisionVariable>& v) {
@@ -166,10 +166,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     constexpr auto& cls_doc = doc.EvaluatorBase;
     py::class_<Class
 #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<EvaluatorBase>
+        ,
+        std::shared_ptr<EvaluatorBase>
 #endif
-> cls(
-        m, "EvaluatorBase");
+        >
+        cls(m, "EvaluatorBase");
     cls  // BR
         .def("num_outputs", &Class::num_outputs, cls_doc.num_outputs.doc)
         .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc)
@@ -206,13 +207,12 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   auto evaluator_binding = RegisterBinding<EvaluatorBase>(&m);
   DefBindingCastConstructor<EvaluatorBase>(&evaluator_binding);
 
-  py::class_<Constraint,
-      EvaluatorBase
+  py::class_<Constraint, EvaluatorBase
 #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<Constraint>
+      ,
+      std::shared_ptr<Constraint>
 #endif
->(
-      m, "Constraint", doc.Constraint.doc)
+      >(m, "Constraint", doc.Constraint.doc)
       .def("num_constraints", &Constraint::num_constraints,
           doc.Constraint.num_constraints.doc)
       .def("lower_bound", &Constraint::lower_bound,
@@ -252,12 +252,12 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           },
           py::arg("x"), doc.Constraint.CheckSatisfied.doc);
 
-  py::class_<LinearConstraint,
-      Constraint
+  py::class_<LinearConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<LinearConstraint>
+      ,
+      std::shared_ptr<LinearConstraint>
 #endif
->
+      >
       linear_constraint_cls(m, "LinearConstraint", doc.LinearConstraint.doc);
   linear_constraint_cls
       .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -314,11 +314,12 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           },
           py::arg("new_lb"), py::arg("new_ub"), doc.Constraint.set_bounds.doc);
 
-  py::class_<LorentzConeConstraint, Constraint      
+  py::class_<LorentzConeConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<LorentzConeConstraint>
+      ,
+      std::shared_ptr<LorentzConeConstraint>
 #endif
->
+      >
       lorentz_cone_cls(
           m, "LorentzConeConstraint", doc.LorentzConeConstraint.doc);
 
@@ -347,11 +348,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.LorentzConeConstraint.UpdateCoefficients.doc);
 
   py::class_<RotatedLorentzConeConstraint, Constraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<RotatedLorentzConeConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<RotatedLorentzConeConstraint>
 #endif
->(
-      m, "RotatedLorentzConeConstraint", doc.RotatedLorentzConeConstraint.doc)
+      >(m, "RotatedLorentzConeConstraint", doc.RotatedLorentzConeConstraint.doc)
       .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.RotatedLorentzConeConstraint.ctor.doc)
@@ -365,11 +366,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.RotatedLorentzConeConstraint.UpdateCoefficients.doc);
 
   py::class_<LinearEqualityConstraint, LinearConstraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<LinearEqualityConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<LinearEqualityConstraint>
 #endif
->(
-      m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
+      >(m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
       .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("Aeq"), py::arg("beq"),
@@ -400,20 +401,21 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.LinearEqualityConstraint.UpdateCoefficients.doc);
 
   py::class_<BoundingBoxConstraint, LinearConstraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<BoundingBoxConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<BoundingBoxConstraint>
 #endif
->(
-      m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.doc)
+      >(m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.doc)
       .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc);
 
   py::class_<QuadraticConstraint, Constraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<QuadraticConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<QuadraticConstraint>
 #endif
->
+      >
       quadratic_constraint_cls(
           m, "QuadraticConstraint", doc.QuadraticConstraint.doc);
 
@@ -458,22 +460,23 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.QuadraticConstraint.hessian_type.doc);
 
   py::class_<PositiveSemidefiniteConstraint, Constraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<PositiveSemidefiniteConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<PositiveSemidefiniteConstraint>
 #endif
->(m,
-      "PositiveSemidefiniteConstraint", doc.PositiveSemidefiniteConstraint.doc)
+      >(m, "PositiveSemidefiniteConstraint",
+      doc.PositiveSemidefiniteConstraint.doc)
       .def(py::init<int>(), py::arg("rows"),
           doc.PositiveSemidefiniteConstraint.ctor.doc)
       .def("matrix_rows", &PositiveSemidefiniteConstraint::matrix_rows,
           doc.PositiveSemidefiniteConstraint.matrix_rows.doc);
 
   py::class_<LinearMatrixInequalityConstraint, Constraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<LinearMatrixInequalityConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<LinearMatrixInequalityConstraint>
 #endif
->(m,
-      "LinearMatrixInequalityConstraint",
+      >(m, "LinearMatrixInequalityConstraint",
       doc.LinearMatrixInequalityConstraint.doc)
       .def(py::init<std::vector<Eigen::MatrixXd>, double>(), py::arg("F"),
           py::arg("symmetry_tolerance") = 1E-10,
@@ -484,11 +487,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.LinearMatrixInequalityConstraint.matrix_rows.doc);
 
   py::class_<LinearComplementarityConstraint, Constraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<LinearComplementarityConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<LinearComplementarityConstraint>
 #endif
->(m,
-      "LinearComplementarityConstraint",
+      >(m, "LinearComplementarityConstraint",
       doc.LinearComplementarityConstraint.doc)
       .def("M", &LinearComplementarityConstraint::M,
           doc.LinearComplementarityConstraint.M.doc)
@@ -496,11 +499,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.LinearComplementarityConstraint.q.doc);
 
   py::class_<ExponentialConeConstraint, Constraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<ExponentialConeConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<ExponentialConeConstraint>
 #endif
->(
-      m, "ExponentialConeConstraint", doc.ExponentialConeConstraint.doc)
+      >(m, "ExponentialConeConstraint", doc.ExponentialConeConstraint.doc)
       .def(py::init<const Eigen::SparseMatrix<double>&,
                const Eigen::Ref<const Eigen::Vector3d>&>(),
           py::arg("A"), py::arg("b"), doc.ExponentialConeConstraint.ctor.doc)
@@ -514,11 +517,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.ExponentialConeConstraint.b.doc);
 
   py::class_<ExpressionConstraint, Constraint
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<ExpressionConstraint>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<ExpressionConstraint>
 #endif
->(
-      m, "ExpressionConstraint", doc.ExpressionConstraint.doc)
+      >(m, "ExpressionConstraint", doc.ExpressionConstraint.doc)
       .def(py::init<const Eigen::Ref<const VectorX<symbolic::Expression>>&,
                const Eigen::Ref<const Eigen::VectorXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&>(),
@@ -536,10 +539,10 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     constexpr auto& cls_doc = doc.MinimumValueLowerBoundConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-        , std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(m,
-        "MinimumValueLowerBoundConstraint", cls_doc.doc)
+        >(m, "MinimumValueLowerBoundConstraint", cls_doc.doc)
         .def(
             "__init__",
             [](Class* self, int num_vars, double minimum_value_lower,
@@ -596,10 +599,10 @@ void BindEvaluatorsAndBindings(py::module_ m) {
     constexpr auto& cls_doc = doc.MinimumValueUpperBoundConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-        , std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(m,
-        "MinimumValueUpperBoundConstraint", cls_doc.doc)
+        >(m, "MinimumValueUpperBoundConstraint", cls_doc.doc)
         .def(
             "__init__",
             [](MinimumValueUpperBoundConstraint* self, int num_vars,
@@ -674,17 +677,18 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   // Mirror procedure for costs
   py::class_<Cost, EvaluatorBase
 #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<Cost>
+      ,
+      std::shared_ptr<Cost>
 #endif
-> cost(
-      m, "Cost", doc.Cost.doc);
+      >
+      cost(m, "Cost", doc.Cost.doc);
 
   py::class_<LinearCost, Cost
- #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<LinearCost>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<LinearCost>
 #endif
->(
-      m, "LinearCost", doc.LinearCost.doc)
+      >(m, "LinearCost", doc.LinearCost.doc)
       .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&, double>(),
           py::arg("a"), py::arg("b"), doc.LinearCost.ctor.doc)
       .def("a", &LinearCost::a, doc.LinearCost.a.doc)
@@ -702,13 +706,12 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("update_constant_term", &LinearCost::update_constant_term,
           py::arg("new_b"), doc.LinearCost.update_constant_term.doc);
 
-  py::class_<QuadraticCost,
-      Cost
- #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<QuadraticCost>
+  py::class_<QuadraticCost, Cost
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<QuadraticCost>
 #endif
->(
-      m, "QuadraticCost", doc.QuadraticCost.doc)
+      >(m, "QuadraticCost", doc.QuadraticCost.doc)
       .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&, double,
                std::optional<bool>>(),
@@ -740,11 +743,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           py::arg("new_c"), doc.QuadraticCost.update_constant_term.doc);
 
   py::class_<L1NormCost, Cost
- #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<L1NormCost>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<L1NormCost>
 #endif
->(
-      m, "L1NormCost", doc.L1NormCost.doc)
+      >(m, "L1NormCost", doc.L1NormCost.doc)
       .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.L1NormCost.ctor.doc)
@@ -765,10 +768,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
 
   {
     py::class_<L2NormCost, Cost
- #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<L2NormCost>
+#ifdef PYDRAKE_USE_PYBIND11
+        ,
+        std::shared_ptr<L2NormCost>
 #endif
->
+        >
         cls(m, "L2NormCost", doc.L2NormCost.doc);
     cls  // BR
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -799,13 +803,12 @@ void BindEvaluatorsAndBindings(py::module_ m) {
             doc.L2NormCost.UpdateCoefficients.doc_sparse_A);
   }
 
-  py::class_<LInfNormCost,
-      Cost
- #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<LInfNormCost>
+  py::class_<LInfNormCost, Cost
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<LInfNormCost>
 #endif
->(
-      m, "LInfNormCost", doc.LInfNormCost.doc)
+      >(m, "LInfNormCost", doc.LInfNormCost.doc)
       .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.LInfNormCost.ctor.doc)
@@ -825,11 +828,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           py::arg("val"), doc.LInfNormCost.update_b_entry.doc);
 
   py::class_<PerspectiveQuadraticCost, Cost
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<PerspectiveQuadraticCost>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<PerspectiveQuadraticCost>
 #endif
->(
-      m, "PerspectiveQuadraticCost", doc.PerspectiveQuadraticCost.doc)
+      >(m, "PerspectiveQuadraticCost", doc.PerspectiveQuadraticCost.doc)
       .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.PerspectiveQuadraticCost.ctor.doc)
@@ -853,11 +856,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           doc.PerspectiveQuadraticCost.update_b_entry.doc);
 
   py::class_<ExpressionCost, Cost
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<ExpressionCost>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<ExpressionCost>
 #endif
->(
-      m, "ExpressionCost", doc.ExpressionCost.doc)
+      >(m, "ExpressionCost", doc.ExpressionCost.doc)
       .def(py::init<const symbolic::Expression&>(), py::arg("e"),
           doc.ExpressionCost.ctor.doc)
       .def("expression", &ExpressionCost::expression,
@@ -880,11 +883,11 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   RegisterBinding<ExpressionCost>(&m);
 
   py::class_<VisualizationCallback, EvaluatorBase
-      #ifdef PYDRAKE_USE_PYBIND11
-, std::shared_ptr<VisualizationCallback>
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<VisualizationCallback>
 #endif
->(
-      m, "VisualizationCallback", doc.VisualizationCallback.doc);
+      >(m, "VisualizationCallback", doc.VisualizationCallback.doc);
 
   RegisterBinding<VisualizationCallback>(&m);
 }  // NOLINT(readability/fn_size)

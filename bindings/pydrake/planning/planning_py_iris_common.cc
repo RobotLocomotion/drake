@@ -111,7 +111,7 @@ void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
 // TODO(cohnt): Refactor for better code reuse.
 enum class ArrayShapeType { Scalar, Vector };
 
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 // Checks array shape, provides user-friendly message if it fails.
 void CheckArrayShape(
     py::str var_name, py::array x, ArrayShapeType shape, int size) {

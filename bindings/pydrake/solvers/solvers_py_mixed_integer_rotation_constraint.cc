@@ -52,8 +52,8 @@ void DefineSolversMixedIntegerRotationConstraint(py::module_ m) {
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("AddToProgram", &Class::AddToProgram, py::arg("R"),
             py::arg("prog"), cls_doc.AddToProgram.doc)
-#endif  // XXX porting
-        ;
+#endif     // XXX porting
+        ;  // NOLINT(whitespace/semicolon)
   }
 }
 

@@ -194,8 +194,8 @@ void DefineMeshcatParams(py::module_ m) {
         ,
         std::shared_ptr<Class>
 #endif
-        > cls(
-        m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
+        >
+        cls(m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
     // MeshcatParams::PropertyTuple
     {
       using Nested = MeshcatParams::PropertyTuple;
@@ -222,8 +222,8 @@ void DefineMeshcat(py::module_ m) {
         ,
         std::shared_ptr<Class>
 #endif
-        > meshcat(
-        m, "Meshcat", cls_doc.doc);
+        >
+        meshcat(m, "Meshcat", cls_doc.doc);
 
     // Meshcat::SideOfFaceToRender enumeration
     constexpr auto& side_doc = doc.Meshcat.SideOfFaceToRender;

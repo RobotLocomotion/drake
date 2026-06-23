@@ -263,7 +263,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = ValueProducer;
     constexpr auto& cls_doc = doc.ValueProducer;
     py::class_<Class>(m, "ValueProducer", cls_doc.doc)
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(py::init([](py::function allocate,
                           std::function<void(py::object, py::object)> calc) {
           return Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),

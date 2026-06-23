@@ -102,7 +102,7 @@ using EventCallback = std::function<EventSignature<Args...>>;
 #ifdef PYDRAKE_USE_PYBIND11
 template <typename... Args>
 using PyEventCallback = py::typing::Callable<EventSignature<Args...>>;
-#else  // PYDRAKE_USE_NANOBIND
+#else   // PYDRAKE_USE_NANOBIND
 template <typename... Args>
 using PyEventCallback = py::typed<py::callable, EventSignature<Args...>>;
 #endif  // PYDRAKE_USE_PYBIND11
@@ -267,12 +267,12 @@ struct Impl {
           void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
       // If the macro did not return, use default functionality.
       Base::DoCalcTimeDerivatives(context, derivatives);
-#else  // PYDRAKE_USE_NANOBIND
+#else   // PYDRAKE_USE_NANOBIND
       NB_OVERRIDE(DoCalcTimeDerivatives, context, derivatives);
 #endif  // PYDRAKE_USE_PYBIND11
     }
 
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     // This actually changes the signature of DoGetWitnessFunction,
     // expecting the python overload to return a list of witnesses (instead
     // of taking in an empty pointer to std::vector<>.
@@ -751,7 +751,7 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareAbstractParameter.doc)
         .def("DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(
             "DeclareAbstractOutputPort",
             [](PyLeafSystem* self, const std::string& name, py::function alloc,
@@ -1391,7 +1391,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
       using system_scalar_converter_internal::AddPydrakeConverterFunction;
       // N.B. The "_AddConstructor" method is called by scalar_conversion.py
       // to register a constructor, similar to MaybeAddConstructor in C++.
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       using ConverterFunction = std::function<System<T>*(const System<U>&)>;
       AddTemplateMethod(
           converter, "_AddConstructor",

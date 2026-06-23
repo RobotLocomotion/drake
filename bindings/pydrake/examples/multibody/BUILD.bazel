@@ -124,5 +124,4 @@ install(
     py_dest = PACKAGE_INFO.py_dest,
 )
 
-# XXX porting
-# add_lint_tests_pydrake()
+add_lint_tests_pydrake()

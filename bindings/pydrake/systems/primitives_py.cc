@@ -310,7 +310,7 @@ PYDRAKE_MODULE(primitives, m) {
             &Integrator<T>::set_default_integral_value,
             py::arg("initial_value"),
             doc.Integrator.set_default_integral_value.doc)
-       .def("set_integral_value", &Integrator<T>::set_integral_value,
+        .def("set_integral_value", &Integrator<T>::set_integral_value,
             py::arg("context"), py::arg("value"),
             doc.Integrator.set_integral_value.doc);
 

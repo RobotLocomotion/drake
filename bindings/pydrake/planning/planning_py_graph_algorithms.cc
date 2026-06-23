@@ -23,7 +23,8 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
     class PyMaxCliqueSolverBase : public MaxCliqueSolverBase {
      public:
       NB_TRAMPOLINE(MaxCliqueSolverBase, 1);
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting: method needs to be made actually public.
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting: method needs to be made actually
+                             // public.
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMaxClique is made public to enable
       // Python implementations to override it.
@@ -34,7 +35,8 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
       }
 #endif  // XXX porting
     };
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting: method needs to be made actually public.
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting: method needs to be made actually
+                             // public.
     const auto& cls_doc = doc.MaxCliqueSolverBase;
     py::class_<MaxCliqueSolverBase, PyMaxCliqueSolverBase>(
         m, "MaxCliqueSolverBase", cls_doc.doc)
@@ -71,7 +73,8 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
     class PyMinCliqueCoverSolverBase : public MinCliqueCoverSolverBase {
      public:
       NB_TRAMPOLINE(MinCliqueCoverSolverBase, 1);
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting: method needs to be made actually public.
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting: method needs to be made actually
+                             // public.
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMinCliqueCover is made public to
       // enable Python implementations to override it.
@@ -84,7 +87,8 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
       }
 #endif  // XXX porting
     };
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting: method needs to be made actually public.
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting: method needs to be made actually
+                             // public.
     const auto& cls_doc = doc.MinCliqueCoverSolverBase;
     py::class_<MinCliqueCoverSolverBase, PyMinCliqueCoverSolverBase>(
         m, "MinCliqueCoverSolverBase", cls_doc.doc)

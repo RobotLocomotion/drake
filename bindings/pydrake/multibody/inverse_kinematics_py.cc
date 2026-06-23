@@ -196,11 +196,10 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.AngleBetweenVectorsConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "AngleBetweenVectorsConstraint", cls_doc.doc)
+        >(m, "AngleBetweenVectorsConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, double, double,
@@ -231,11 +230,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.AngleBetweenVectorsCost;
     py::class_<Class, solvers::Cost
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "AngleBetweenVectorsCost", cls_doc.doc)
+        >(m, "AngleBetweenVectorsCost", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, double,
@@ -266,11 +264,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.PointToPointDistanceConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "PointToPointDistanceConstraint", cls_doc.doc)
+        >(m, "PointToPointDistanceConstraint", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>* const,
                  const multibody::Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
@@ -303,11 +300,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.PointToLineDistanceConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "PointToLineDistanceConstraint", cls_doc.doc)
+        >(m, "PointToLineDistanceConstraint", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>* const,
                  const multibody::Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
@@ -344,11 +340,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.PolyhedronConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "PolyhedronConstraint", cls_doc.doc)
+        >(m, "PolyhedronConstraint", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>* const,
                  const multibody::Frame<double>&,
                  const multibody::Frame<double>&,
@@ -383,11 +378,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.DistanceConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "DistanceConstraint", cls_doc.doc)
+        >(m, "DistanceConstraint", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>* const,
                  SortedPair<geometry::GeometryId>, systems::Context<double>*,
                  double, double>(),
@@ -415,11 +409,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.GazeTargetConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "GazeTargetConstraint", cls_doc.doc)
+        >(m, "GazeTargetConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
@@ -453,10 +446,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.MinimumDistanceLowerBoundConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->
+        >
         minimum_distance_lower_bound_constraint(
             m, "MinimumDistanceLowerBoundConstraint", cls_doc.doc);
 
@@ -548,10 +541,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.MinimumDistanceUpperBoundConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->
+        >
         minimum_distance_upper_bound_constraint(
             m, "MinimumDistanceUpperBoundConstraint", cls_doc.doc);
 
@@ -641,11 +634,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.PositionConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "PositionConstraint", cls_doc.doc)
+        >(m, "PositionConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
@@ -709,11 +701,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.PositionCost;
     py::class_<Class, solvers::Cost
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "PositionCost", cls_doc.doc)
+        >(m, "PositionCost", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
@@ -747,11 +738,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.ComPositionConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "ComPositionConstraint", cls_doc.doc)
+        >(m, "ComPositionConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*,
                  const std::optional<std::vector<ModelInstanceIndex>>&,
                  const Frame<double>&, systems::Context<double>*>(),
@@ -777,11 +767,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.ComInPolyhedronConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "ComInPolyhedronConstraint", cls_doc.doc)
+        >(m, "ComInPolyhedronConstraint", cls_doc.doc)
         .def(
             py::init<const MultibodyPlant<double>*,
                 std::optional<std::vector<ModelInstanceIndex>>,
@@ -817,11 +806,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.OrientationConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "OrientationConstraint", cls_doc.doc)
+        >(m, "OrientationConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>* const, const Frame<double>&,
                  const math::RotationMatrix<double>&, const Frame<double>&,
                  const math::RotationMatrix<double>&, double,
@@ -851,11 +839,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.OrientationCost;
     py::class_<Class, solvers::Cost
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "OrientationCost", cls_doc.doc)
+        >(m, "OrientationCost", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const math::RotationMatrix<double>&, const Frame<double>&,
                  const math::RotationMatrix<double>&, double,
@@ -885,11 +872,10 @@ std::shared_ptr<Class>
     constexpr auto& cls_doc = doc.UnitQuaternionConstraint;
     py::class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-,
-std::shared_ptr<Class>
+        ,
+        std::shared_ptr<Class>
 #endif
->(
-        m, "UnitQuaternionConstraint", cls_doc.doc)
+        >(m, "UnitQuaternionConstraint", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc);
     m.def("AddUnitQuaternionConstraintOnPlant",
         &AddUnitQuaternionConstraintOnPlant<double>, py::arg("plant"),

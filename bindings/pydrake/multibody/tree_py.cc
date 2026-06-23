@@ -942,7 +942,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
               return self.get_actuation_vector(u);
             },
             py::arg("u"), cls_doc.get_actuation_vector.doc)
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("set_actuation_vector", &Class::set_actuation_vector,
             py::arg("u_actuator"), py::arg("u"),
             cls_doc.set_actuation_vector.doc)
@@ -1248,7 +1248,7 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
   explicit PyForceDensityField(ForceDensityType density_type)
       : ForceDensityFieldPublic<T>(density_type) {}
 
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
     py::gil_scoped_acquire gil;
@@ -1326,14 +1326,13 @@ void DefineForceDensityField(py::module_ m, T) {
         ,
         std::shared_ptr<ForceDensityField<T>>
 #endif
-        >(
-        m, "ForceDensityField", param, cls_doc.doc);
-    cls  // BR
-#ifdef PYDRAKE_USE_PYBIND11    // XXX porting
+        >(m, "ForceDensityField", param, cls_doc.doc);
+    cls                      // BR
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(py::init<ForceDensityType>(),
             py::arg("density_type") = ForceDensityType::kPerCurrentVolume,
             cls_doc.ctor.doc)
-#endif   // XXX porting
+#endif  // XXX porting
         .def("has_parent_system", &ForceDensityField<T>::has_parent_system,
             cls_doc.has_parent_system.doc)
         .def("parent_system_or_throw",
@@ -1362,8 +1361,7 @@ void DefineForceDensityField(py::module_ m, T) {
         ,
         std::shared_ptr<GravityForceField<T>>
 #endif
-        >(
-        m, "GravityForceField", param, cls_doc.doc);
+        >(m, "GravityForceField", param, cls_doc.doc);
     cls  // BR
         .def(py::init<const Vector3<T>&, const T&>(), py::arg("gravity_vector"),
             py::arg("mass_density"), cls_doc.ctor.doc);

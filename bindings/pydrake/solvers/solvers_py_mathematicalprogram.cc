@@ -74,7 +74,7 @@ using symbolic::Variables;
 namespace {
 enum class ArrayShapeType { Scalar, Vector };
 
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 // Checks array shape, provides user-friendly message if it fails.
 void CheckArrayShape(
     py::str var_name, py::array x, ArrayShapeType shape, int size) {
@@ -136,7 +136,7 @@ class PyFunctionCost : public Cost {
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
   using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
 
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   // Note that we do not allow Python implementations of Cost to be declared as
   // thread safe.
   PyFunctionCost(
@@ -166,7 +166,7 @@ class PyFunctionCost : public Cost {
   }
 
  private:
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   template <typename T, typename Func>
   Func Wrap(py::function func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
@@ -186,7 +186,7 @@ class PyFunctionConstraint : public Constraint {
   using AutoDiffFunc =
       std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
 
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   // Note that we do not allow Python implementations of Constraint to be
   // declared as thread safe.
   PyFunctionConstraint(int num_vars, const py::function& func,
@@ -219,7 +219,7 @@ class PyFunctionConstraint : public Constraint {
   }
 
  private:
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   template <typename T, typename Func>
   Func Wrap(py::function func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
@@ -1597,26 +1597,26 @@ void BindSolutionResult(py::module_ m) {
 void BindPyFunctionCost(py::module_ m) {
   py::class_<PyFunctionCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
-      , std::shared_ptr<PyFunctionCost>
+      ,
+      std::shared_ptr<PyFunctionCost>
 #endif
->(
-      m, "PyFunctionCost", "Cost with its evaluator as a Python function")
-#ifdef PYDRAKE_USE_PYBIND11   // XXX porting
+      >(m, "PyFunctionCost", "Cost with its evaluator as a Python function")
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def(py::init<int, const py::function&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
           "`num_vars` variables.")
-#endif  // XXX porting
-      ;
+#endif   // XXX porting
+      ;  // NOLINT(whitespace/semicolon)
 }
 
 void BindPyFunctionConstraint(py::module_ m) {
   py::class_<PyFunctionConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
-      , std::shared_ptr<PyFunctionConstraint>
+      ,
+      std::shared_ptr<PyFunctionConstraint>
 #endif
->(m,
-      "PyFunctionConstraint",
+      >(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def(py::init<int, const py::function&, const Eigen::VectorXd&,
