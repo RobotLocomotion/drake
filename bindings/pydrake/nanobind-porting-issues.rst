@@ -170,3 +170,6 @@ Compile time issues
 
 * nanobind includes a pyi stub generator that is probably superior to what MyPy
   does; we should probably switch to using it.
+
+* https://nanobind.readthedocs.io/en/latest/classes.html#weak-references
+  is a breaking change and we might need to add it to *every* class?
