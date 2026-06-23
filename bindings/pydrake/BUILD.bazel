@@ -72,13 +72,10 @@ drake_cc_library(
     }),
     visibility = ["//visibility:public"],
     deps = [
-        "//common:autodiff",
         "//common:drake_export",
     ] + select({
         "//tools/workspace/nanobind:enabled": [
             "@drake//tools/workspace/nanobind",
-            "@drake//tools/workspace/python:cc_headers",
-            "@drake//tools/workspace/python:cc_libs",
         ],
         "//conditions:default": [
             "@drake//tools/workspace/pybind11",

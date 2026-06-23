@@ -57,7 +57,6 @@
 #pragma GCC diagnostic pop
 
 #include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
-#include "drake/common/autodiff.h"
 #include "drake/common/drake_export.h"
 
 // XXX porting shim-fest

@@ -72,8 +72,6 @@ def pybind_py_library(
         deps = select({
             "//tools/workspace/nanobind:enabled": [
                 "@drake//tools/workspace/nanobind",
-                "@drake//tools/workspace/python:cc_headers",
-                "@drake//tools/workspace/python:cc_libs",
             ],
             "//conditions:default": [
                 "@drake//tools/workspace/pybind11",
@@ -115,6 +113,7 @@ def _check_cc_deps(*, cc_deps, testonly):
         # dependencies are also header-only).
         "//common:nice_type_name_override_header",
         "//systems/analysis:simulator_python_internal_header",
+        # XXX This is actually not safe (not header-only).
         "//tools/workspace/nanobind",
     ]
     if testonly:
