@@ -87,7 +87,7 @@ void CouplerConstraintsPool<T>::CalcData(
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];
-    const T v_hat = g_hat_[k] / model().time_step();
+    const T v_hat = g_hat_[k] / model().effective_time_step();
     const T& R = R_[k];
 
     // If a dof is locked, its velocity is prescribed to be exactly 0.

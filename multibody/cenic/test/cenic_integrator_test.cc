@@ -535,10 +535,15 @@ TEST_P(DoublePendulum, JointLimits) {
   VectorXd error_estimate(integrator_->get_error_estimate()->CopyToVector());
   EXPECT_EQ(error_estimate.norm(), 0);
 
+  // Check handling of extreme initial conditions (#24403).
+  const VectorXd q_bad = VectorXd::Zero(2);
+  plant_->SetPositions(plant_context_, q_bad);
+  simulator_->AdvanceTo(1.1);
+
   // Check joint locking support with limit constraint.
   const auto& joint1 = plant_->GetJointByName("joint1");
   joint1.Lock(plant_context_);
-  EXPECT_NO_THROW(simulator_->AdvanceTo(1.1));
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.2));
 }
 
 /* Checks that effort limits are enforced by the integrator. */
@@ -610,9 +615,15 @@ TEST_P(DoublePendulum, CoupledJoints) {
   const VectorXd q = plant_->GetPositions(*plant_context_);
   EXPECT_NEAR(q(0), gear_ratio * q(1), 1e-5);
 
+  // Check handling of extreme initial conditions (#24403).
+  VectorXd q_bad = q;
+  q_bad(1) += 0.2;
+  plant_->SetPositions(plant_context_, q_bad);
+  simulator_->AdvanceTo(1.1);
+
   // Check joint locking support with coupler constraint.
   joint1.Lock(plant_context_);
-  EXPECT_NO_THROW(simulator_->AdvanceTo(1.1));
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.2));
 }
 
 /* Checks that weld constraints and joint locking don't blow up the
