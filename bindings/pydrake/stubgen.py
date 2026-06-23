@@ -16,8 +16,7 @@ def _pydrake_modules():
     # This import should (as a side effect) load all pydrake modules. We have
     # it as a function-local import because we don't want `_wrapper_main` to
     # pay the expense of importing this.
-    # XXX porting
-    # importlib.__import__("pydrake._all_everything")
+    importlib.__import__("pydrake._all_everything")
 
     # Scrape sys.modules for pydrake modules, but excluding private modules.
     result = [
@@ -40,9 +39,6 @@ def _pyi_generated(directory: Path):
     else is an error.
     """
     result = []
-    # XXX porting
-    return result
-
     for dirpath, dirnames, filenames in os.walk(directory):
         for one_filename in filenames:
             assert Path(one_filename).suffix == ".pyi"
@@ -57,14 +53,13 @@ def _copy_pyi(pyi_generated, output_root, pyi_outputs):
     """Copies pyi_generated to pyi_outputs, with cross-checking."""
     # Check for too few *.pyi files.
     missing_pyi = [x for x in pyi_outputs if x not in pyi_generated]
-    # XXX porting
-    # if missing_pyi:
-    #     raise RuntimeError(
-    #         "The PYI_FILES = ... in the BUILD.bazel file specified that the "
-    #         f"{missing_pyi} should have been created, but they were not. "
-    #         "Possibly PYI_FILES should not have listed those items, or there "
-    #         "are missing imports in all.py or _all_everything.py."
-    #     )
+    if missing_pyi:
+        raise RuntimeError(
+            "The PYI_FILES = ... in the BUILD.bazel file specified that the "
+            f"{missing_pyi} should have been created, but they were not. "
+            "Possibly PYI_FILES should not have listed those items, or there "
+            "are missing imports in all.py or _all_everything.py."
+        )
 
     # Check for too many *.pyi files.
     extra_pyi = [x for x in pyi_generated if x not in pyi_outputs]
@@ -75,10 +70,9 @@ def _copy_pyi(pyi_generated, output_root, pyi_outputs):
             "Possibly PYI_FILES should list those items."
         )
 
-    # XXX porting
-    # # Just right. The lists are identical.
-    # for pyi in pyi_outputs:
-    #     shutil.copyfile(pyi, output_root / pyi)
+    # Just right. The lists are identical.
+    for pyi in pyi_outputs:
+        shutil.copyfile(pyi, output_root / pyi)
 
 
 def _actual_main():
@@ -99,11 +93,10 @@ def _actual_main():
 
     # Find all native modules in pydrake (i.e., excluding pure python modules).
     native_modules = _pydrake_modules()
-    # XXX porting
-    # for name in native_modules[:]:
-    #     source = getattr(sys.modules[name], "__file__", "")
-    #     if source.endswith(".py"):
-    #         native_modules.remove(name)
+    for name in native_modules[:]:
+        source = getattr(sys.modules[name], "__file__", "")
+        if source.endswith(".py"):
+            native_modules.remove(name)
 
     # Run stubgen. It writes junk in the current directory, so we need to run
     # it from a safe place.
@@ -119,6 +112,13 @@ def _actual_main():
 
 
 def _wrapper_main():
+    # XXX porting
+    import pydrake.common
+
+    # XXX porting
+    if pydrake.common._binder == "nanobind":
+        sys.exit(0)
+
     # By default, any console output from build actions is passed along to the
     # user (in contrast with tests, whose output is muted when they succeed).
     # However, it's difficult to teach mypy how to be quiet when successful, so
