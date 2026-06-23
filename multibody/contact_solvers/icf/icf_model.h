@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -111,6 +112,10 @@ class IcfModel {
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
   using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
   using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
+
+  /* The near-rigid time scale factor β.  See [Castro et al., 2022], section
+  V.B. */
+  static constexpr double kBeta = 0.1;
 
   /* Constructs an empty model. */
   IcfModel();
@@ -236,6 +241,16 @@ class IcfModel {
 
   /* Returns the time step δt. */
   const T& time_step() const { return params().time_step; }
+
+  /* Returns the effective time step for computing near-rigid parameters for
+  constraints. At very small actual time steps, the effective time step will be
+  limited to some minimum value to avoid unreasonable stiffness and dissipation
+  effects.
+  */
+  T effective_time_step() const {
+    using std::max;
+    return max(time_step(), static_cast<T>(kHMin));
+  }
 
   /* Returns the initial generalized velocities v₀. */
   const VectorX<T>& v0() const { return params().v0; }
@@ -447,6 +462,12 @@ class IcfModel {
   velocities v. */
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_WB) const;
+
+  // Minimum time scale h_min for constraints.
+  // For δt ≥ h_min, constraint calculations follow the near-rigid model;
+  // for δt < h_min, stiffness and dissipation are capped at
+  // the h_min near-rigid values.
+  static constexpr double kHMin = 1e-4;
 
   // Core parameters that define the optimization problem.
   std::unique_ptr<IcfParameters<T>> params_;

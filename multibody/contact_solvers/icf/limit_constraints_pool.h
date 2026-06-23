@@ -126,9 +126,9 @@ class LimitConstraintsPool {
   const EigenPool<VectorX<T>>& ql() const { return ql_; }
   const EigenPool<VectorX<T>>& qu() const { return qu_; }
   const EigenPool<VectorX<T>>& q0() const { return q0_; }
-  const EigenPool<VectorX<T>>& gl_hat() const { return gl_hat_; }
-  const EigenPool<VectorX<T>>& gu_hat() const { return gu_hat_; }
-  const EigenPool<VectorX<T>>& R() const { return R_; }
+  const EigenPool<VectorX<T>>& gl0() const { return gl0_; }
+  const EigenPool<VectorX<T>>& gu0() const { return gu0_; }
+  const EigenPool<VectorX<T>>& R_fragment() const { return R_fragment_; }
 
  private:
   /* Computes cost, gradient, and Hessian contribution for a single limit
@@ -153,9 +153,17 @@ class LimitConstraintsPool {
   EigenPool<VectorX<T>> ql_;          // Lower limit.
   EigenPool<VectorX<T>> qu_;          // Upper limit.
   EigenPool<VectorX<T>> q0_;          // Initial configuration.
-  EigenPool<VectorX<T>> gl_hat_;  // Lower bound velocity target scaled by dt.
-  EigenPool<VectorX<T>> gu_hat_;  // Upper bound velocity target scaled by dt.
-  EigenPool<VectorX<T>> R_;       // Near-rigid regularization parameter.
+
+  // Initial constraint violation at t0 per constraint, of size
+  // num_constrains(). Used to compute the bias term in CalcData().
+  EigenPool<VectorX<T>> gl0_;
+  EigenPool<VectorX<T>> gu0_;
+
+  // Regularization per constraint, of size num_constraints(). Note
+  // that the value stored here is only the time-step independent portion;
+  // the full quantity is reconstructed as needed once the time step is
+  // determined.
+  EigenPool<VectorX<T>> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<LimitConstraintsPool>);
 
