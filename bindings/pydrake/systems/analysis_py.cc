@@ -35,7 +35,11 @@ namespace {
 void ThrowIfPythonHasPendingSignals() {
   py::gil_scoped_acquire guard;
   if (PyErr_CheckSignals() != 0) {
+#ifdef PYDRAKE_USE_PYBIND11
+    throw py::error_already_set();
+#else  // PYDRAKE_USE_NANOBIND
     throw py::python_error();
+#endif
   }
 }
 }  // namespace

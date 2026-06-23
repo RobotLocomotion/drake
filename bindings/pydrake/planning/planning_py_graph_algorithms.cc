@@ -29,7 +29,8 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
       // Python implementations to override it.
       VectorX<bool> DoSolveMaxClique(
           const Eigen::SparseMatrix<bool>& adjacency_matrix) const override {
-        NB_OVERRIDE_PURE(DoSolveMaxClique, adjacency_matrix);
+        PYDRAKE_OVERRIDE_PURE(VectorX<bool>, MaxCliqueSolverBase,
+            DoSolveMaxClique, adjacency_matrix);
       }
 #endif  // XXX porting
     };
@@ -77,7 +78,8 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
       std::vector<std::set<int>> DoSolveMinCliqueCover(
           const Eigen::SparseMatrix<bool>& adjacency_matrix,
           bool partition) override {
-        NB_OVERRIDE_PURE(DoSolveMinCliqueCover, adjacency_matrix,
+        PYDRAKE_OVERRIDE_PURE(std::vector<std::set<int>>,
+            MinCliqueCoverSolverBase, DoSolveMinCliqueCover, adjacency_matrix,
             partition);
       }
 #endif  // XXX porting

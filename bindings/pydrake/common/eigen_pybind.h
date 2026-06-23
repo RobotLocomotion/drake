@@ -120,7 +120,7 @@ struct type_caster<drake::EigenPtr<T>> {
  private:
   InnerCaster inner_caster;
 };
-#else   // PYDRAKE_USE_NANODING
+#else   // PYDRAKE_USE_NANOBIND
 template <typename T>
 struct type_caster<drake::EigenPtr<T>> {
   using PtrType = drake::EigenPtr<T>;

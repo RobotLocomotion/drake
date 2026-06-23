@@ -252,27 +252,37 @@ class PySolverInterface : public solvers::SolverInterface {
   // `PySolverInterface`). C++ implementations will use the bindings on the
   // interface below.
 
-  bool available() const override { NB_OVERRIDE_PURE(available); }
+  bool available() const override {
+    PYDRAKE_OVERRIDE_PURE(bool, solvers::SolverInterface, available);
+  }
 
-  bool enabled() const override { NB_OVERRIDE_PURE(enabled); }
+  bool enabled() const override {
+    PYDRAKE_OVERRIDE_PURE(bool, solvers::SolverInterface, enabled);
+  }
 
   void Solve(const solvers::MathematicalProgram& prog,
       const std::optional<Eigen::VectorXd>& initial_guess,
       const std::optional<solvers::SolverOptions>& solver_options,
       solvers::MathematicalProgramResult* result) const override {
-    NB_OVERRIDE_PURE(Solve, prog, initial_guess, solver_options, result);
+    PYDRAKE_OVERRIDE_PURE(void, solvers::SolverInterface, Solve, prog,
+        initial_guess, solver_options, result);
   }
 
-  solvers::SolverId solver_id() const override { NB_OVERRIDE_PURE(solver_id); }
+  solvers::SolverId solver_id() const override {
+    PYDRAKE_OVERRIDE_PURE(
+        solvers::SolverId, solvers::SolverInterface, solver_id);
+  }
 
   bool AreProgramAttributesSatisfied(
       const solvers::MathematicalProgram& prog) const override {
-    NB_OVERRIDE_PURE(AreProgramAttributesSatisfied, prog);
+    PYDRAKE_OVERRIDE_PURE(
+        bool, solvers::SolverInterface, AreProgramAttributesSatisfied, prog);
   }
 
   std::string ExplainUnsatisfiedProgramAttributes(
       const MathematicalProgram& prog) const override {
-    NB_OVERRIDE_PURE(ExplainUnsatisfiedProgramAttributes, prog);
+    PYDRAKE_OVERRIDE_PURE(std::string, solvers::SolverInterface,
+        ExplainUnsatisfiedProgramAttributes, prog);
   }
 };
 
