@@ -1322,7 +1322,6 @@ void BindMathematicalProgram(py::module_ m) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def("SetDecisionVariableValueInVector",
           py::overload_cast<const symbolic::Variable&, double,
               EigenPtr<Eigen::VectorXd>>(
@@ -1342,7 +1341,6 @@ void BindMathematicalProgram(py::module_ m) {
           py::arg("decision_variables_new_values"), py::arg("values"),
           doc.MathematicalProgram.SetDecisionVariableValueInVector
               .doc_3args_decision_variables_decision_variables_new_values_values)
-#endif  // XXX porting
       .def("SetSolverOption",
           py::overload_cast<const SolverId&, const std::string&, double>(
               &MathematicalProgram::SetSolverOption),
