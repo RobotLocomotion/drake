@@ -200,32 +200,60 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
     EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
                                 MatrixCompareType::relative))
-        << "Spatial inertia mismatch at angle=" << angle;
+        << "Spatial inertia mismatch at angle = " << angle;
 
+    // TODO(Mitiguy) This test and the previous and next test should NOT pass.
     M_CWo_W = composite_model.plant->CalcSpatialInertia(
         *composite_model.context, world_frame,
         {composite_model.link2->index()});
     EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
                                 MatrixCompareType::relative))
-        << "Spatial inertia mismatch at angle=" << angle;
-
+        << "Spatial inertia mismatch at angle = " << angle;
+    // TODO(Mitiguy) This test and the previous two test should NOT pass.
     M_CWo_W = composite_model.plant->CalcSpatialInertia(
         *composite_model.context, world_frame,
         {composite_model.link3->index()});
     EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
                                 MatrixCompareType::relative))
-        << "Spatial inertia mismatch at angle=" << angle;
+        << "Spatial inertia mismatch at angle = " << angle;
 
+    // Calculate Link4's spatial inertia about Wo (world origin) expressed in W.
+    const double m = 1.0, a = 0.1;  // Cube's mass (kg) and side-length (meter).
+    const Vector3<double> p_WoL4o_W(4.0, 0.0, 0.0);
+    SpatialInertia<double> M_L4Wo_W_expected =
+        SpatialInertia<double>::SolidCubeWithMass(m, a).Shift(-p_WoL4o_W);
+
+    // Ensure the spatial inertia for Link 4 is correct in the explicit model.
+    SpatialInertia<double> M_L4Wo_W = explicit_model.plant->CalcSpatialInertia(
+        *explicit_model.context, world_frame, {explicit_model.link4->index()});
+    EXPECT_TRUE(CompareMatrices(M_L4Wo_W.CopyToFullMatrix6(),
+                                M_L4Wo_W_expected.CopyToFullMatrix6(),
+                                kTolerance, MatrixCompareType::relative))
+        << "Spatial inertia mismatch for Link4 at angle = " << angle;
+
+    // Ensure the spatial inertia for Link 4 is correct in the composite model.
     // TODO(Mitiguy) There is a bug in MultibodyPlant::CalcSpatialInertia() when
     // composite mobilized bodies are used. The spatial inertia for the World
     // body (which is nan) replaces that of Link 4 (which is welded to world).
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        composite_model.plant->CalcSpatialInertia(
-            *composite_model.context, world_frame,
-            {composite_model.link4->index()}),
-        "[\\s\\S]*did not pass the test CouldBePhysicallyValid\\(\\)[\\s\\S]*");
+    if (!kDrakeAssertIsArmed) {
+      M_L4Wo_W = composite_model.plant->CalcSpatialInertia(
+          *composite_model.context, world_frame,
+          {composite_model.link4->index()});
+      // TODO(Mitiguy) This test should be EXPECT_TRUE not EXPECT_FALSE.
+      EXPECT_FALSE(CompareMatrices(M_L4Wo_W.CopyToFullMatrix6(),
+                                   M_L4Wo_W_expected.CopyToFullMatrix6(),
+                                   kTolerance, MatrixCompareType::relative))
+          << "Spatial inertia mismatch for Link4 at angle = " << angle;
+    } else {
+      // TODO(Mitiguy) Fix as an exception should not be thrown here.
+      DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+          composite_model.plant->CalcSpatialInertia(
+              *composite_model.context, world_frame,
+              {composite_model.link4->index()}),
+          "[\\s\\S]*did not pass the test CouldBePhysicallyValid[\\s\\S]*");
+    }
 
     // Ensure the mass matrix does not depend on welded links being combined.
     MatrixX<double> M_explicit(1, 1), M_composite(1, 1);
@@ -234,17 +262,15 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
                                           &M_composite);
     EXPECT_TRUE(CompareMatrices(M_explicit, M_composite, kTolerance,
                                 MatrixCompareType::relative))
-        << "Mass matrix mismatch at angle=" << angle;
+        << "Mass matrix mismatch at angle = " << angle;
 
     // Verify the analytical value.
-    const double a = 0.1;                // Length of each cube's side.
-    const double m = 1.0;                // Mass of each link (cube).
     const double Izz = m * a * a / 6.0;  // Izz of one cube about its COM.
     const double M_expected = (Izz + m * 0.0) +  // Link1: d² = 0
                               (Izz + m * 1.0) +  // Link2: d² = 1² = 1
                               (Izz + m * 2.0);   // Link3: d² = √2² = 2
     EXPECT_NEAR(M_composite(0, 0), M_expected, kTolerance)
-        << "Mass matrix analytical mismatch at angle=" << angle;
+        << "Mass matrix analytical mismatch at angle = " << angle;
   }
 }
 
