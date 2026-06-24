@@ -9,9 +9,9 @@ EXTRA_PYBIND_COPTS = select({
         # GCC and Clang don't always agree / succeed when inferring storage
         # duration (#9600). Workaround it for now.
         "-Wno-unused-lambda-capture",
-        # pybind11's operator overloading (e.g., .def(py::self + py::self))
-        # spuriously triggers this warning, so we'll suppress it anytime we're
-        # compiling pybind11 modules.
+        # Operator overloading bindings (e.g., .def(py::self + py::self))
+        # spuriously trigger this warning, so we'll suppress it anytime we're
+        # compiling binding files.
         "-Wno-self-assign-overloaded",
     ],
     "//conditions:default": [],
@@ -30,7 +30,7 @@ def pybind_py_library(
         py_data = [],
         py_library_rule = py_library,
         **kwargs):
-    """Declares a pybind11 Python library with C++ and Python portions.
+    """Declares a Python binding library with C++ and Python portions.
 
     @param cc_srcs
         C++ source files.
@@ -143,7 +143,7 @@ def drake_pybind_library(
         add_install = True,
         visibility = None,
         testonly = None):
-    """Declares a pybind11 library with C++ and Python portions.
+    """Declares a Python binding library with C++ and Python portions.
 
     For parameters `cc_srcs`, `py_srcs`, `py_deps`, `py_imports`, please refer
     to `pybind_py_library`.
