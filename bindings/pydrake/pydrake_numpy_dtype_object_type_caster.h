@@ -7,6 +7,7 @@
 #endif
 
 #include <iostream>
+#include <string>
 
 namespace nanobind {
 namespace detail {
@@ -55,7 +56,8 @@ struct pydrake_numpy_dtype_object_type_caster {
     int cols = 0;
     if constexpr (kCompileTime1D) {
       if (shape.size() != 1) {
-        std::cerr << "from_python wrong shape 1d\n";
+        std::cerr << "from_python wrong shape 1d "
+                  << cast<std::string>(str(shape)) << "\n";
         return false;
       }
       rows = cast<int>(shape[0]);
