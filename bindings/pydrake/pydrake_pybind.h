@@ -118,6 +118,19 @@ namespace py = nanobind;
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
 using py_rvp = py::rv_policy;
 
+// This alias helps ease Drake's transition to nanobind.
+#ifdef PYDRAKE_USE_PYBIND11
+using py::class_;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T, typename... Ts>
+class DRAKE_NO_EXPORT class_ : public py::class_<T, Ts...> {
+ public:
+  explicit class_(auto&&... args)
+      : py::class_<T, Ts...>(std::forward<decltype(args)>(args)...,
+            py::is_weak_referenceable()) {}
+};
+#endif  // PYDRAKE_USE_PYBIND11
+
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
 // the compiler.

@@ -516,7 +516,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("b", &ExponentialConeConstraint::b,
           doc.ExponentialConeConstraint.b.doc);
 
-  py::class_<ExpressionConstraint, Constraint
+  class_<ExpressionConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<ExpressionConstraint>
@@ -855,7 +855,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           py::arg("i"), py::arg("val"),
           doc.PerspectiveQuadraticCost.update_b_entry.doc);
 
-  py::class_<ExpressionCost, Cost
+  class_<ExpressionCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<ExpressionCost>
