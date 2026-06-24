@@ -51,7 +51,7 @@ elaborate, the binding of `Parser` is found in
 
 ```{.cc}
 using Class = Parser;
-py::class_<Class>(m, "Parser", ...)
+class_<Class>(m, "Parser", ...)
 ```
 
 and binding of `MultibodyPlant` template instantiations are in
@@ -267,7 +267,7 @@ An example of incorporating docstrings:
       using namespace drake::math;
       constexpr auto& doc = pydrake_doc_math.drake.math;
       using T = double;
-      py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
+      class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
           .def(py::init(), doc.RigidTransform.ctor.doc_0args)
           ...
           .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
@@ -303,7 +303,7 @@ and the docstring structures. Borrowing from above:
     {
       using Class = RigidTransform<T>;
       constexpr auto& cls_doc = doc.RigidTransform;
-      py::class_<Class>(m, "RigidTransform", cls_doc.doc)
+      class_<Class>(m, "RigidTransform", cls_doc.doc)
           .def(py::init(), cls_doc.ctor.doc_0args)
           ...
     }

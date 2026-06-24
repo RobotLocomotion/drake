@@ -115,7 +115,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = LcmInterfaceSystem;
     constexpr auto& cls_doc = doc.LcmInterfaceSystem;
-    py::class_<Class, LeafSystem<double>>(m, "LcmInterfaceSystem",
+    class_<Class, LeafSystem<double>>(m, "LcmInterfaceSystem",
         (std::string(cls_doc.doc) + kLcmInterfaceSystemClassWarning).c_str())
         .def(py::init<DrakeLcmInterface*>(),
             // Keep alive, reference: `self` keeps `lcm` alive.
@@ -135,7 +135,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = SerializerInterface;
     constexpr auto& cls_doc = doc.SerializerInterface;
-    py::class_<Class, PySerializerInterface, std::shared_ptr<Class>> cls(
+    class_<Class, PySerializerInterface, std::shared_ptr<Class>> cls(
         m, "SerializerInterface");
     cls  // BR
          // Adding a constructor permits implementing this interface in Python.
@@ -172,7 +172,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = LcmBuses;
     constexpr auto& cls_doc = doc.LcmBuses;
-    py::class_<Class> cls(m, "LcmBuses");
+    class_<Class> cls(m, "LcmBuses");
     cls  // BR
         .def_ro_static("kLcmUrlMemqNull", &Class::kLcmUrlMemqNull
             // TODO(jwnimmer-tri) The `cls_doc.kLcmUrlMemqNull.doc` docstring
@@ -200,7 +200,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = LcmPublisherSystem;
     constexpr auto& cls_doc = doc.LcmPublisherSystem;
-    py::class_<Class, LeafSystem<double>> cls(m, "LcmPublisherSystem");
+    class_<Class, LeafSystem<double>> cls(m, "LcmPublisherSystem");
     cls  // BR
         .def(py::init<const std::string&,
                  std::shared_ptr<const SerializerInterface>,
@@ -238,7 +238,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = LcmSubscriberSystem;
     constexpr auto& cls_doc = doc.LcmSubscriberSystem;
-    py::class_<Class, LeafSystem<double>>(m, "LcmSubscriberSystem")
+    class_<Class, LeafSystem<double>>(m, "LcmSubscriberSystem")
         .def(py::init<const std::string&,
                  std::shared_ptr<const SerializerInterface>,
                  LcmInterfaceSystem*, double>(),
@@ -261,7 +261,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = LcmScopeSystem;
     constexpr auto& cls_doc = doc.LcmScopeSystem;
-    py::class_<Class, LeafSystem<double>>(m, "LcmScopeSystem")
+    class_<Class, LeafSystem<double>>(m, "LcmScopeSystem")
         .def(py::init<int>(), py::arg("size"), cls_doc.ctor.doc)
         .def_static(
             "AddToBuilder",

@@ -21,7 +21,7 @@ void DefinePlanningDofMask(py::module_ m) {
   {
     using Class = DofMask;
     constexpr auto& cls_doc = doc.DofMask;
-    py::class_<Class>(m, "DofMask", cls_doc.doc)
+    class_<Class>(m, "DofMask", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_default)
         .def(py::init<int, bool>(), py::arg("size"), py::arg("value"),
             cls_doc.ctor.doc_by_size)

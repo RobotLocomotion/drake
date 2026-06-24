@@ -32,7 +32,7 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
       }
     };
     const auto& cls_doc = doc.MaxCliqueSolverBase;
-    py::class_<MaxCliqueSolverBase, PyMaxCliqueSolverBase>(
+    class_<MaxCliqueSolverBase, PyMaxCliqueSolverBase>(
         m, "MaxCliqueSolverBase", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("SolveMaxClique", &MaxCliqueSolverBase::SolveMaxClique,
@@ -40,7 +40,7 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   }
   {
     const auto& cls_doc = doc.MaxCliqueSolverViaMip;
-    py::class_<MaxCliqueSolverViaMip, MaxCliqueSolverBase>(
+    class_<MaxCliqueSolverViaMip, MaxCliqueSolverBase>(
         m, "MaxCliqueSolverViaMip", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const std::optional<Eigen::VectorXd>&,
@@ -58,7 +58,7 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   }
   {
     const auto& cls_doc = doc.MaxCliqueSolverViaGreedy;
-    py::class_<MaxCliqueSolverViaGreedy, MaxCliqueSolverBase>(
+    class_<MaxCliqueSolverViaGreedy, MaxCliqueSolverBase>(
         m, "MaxCliqueSolverViaGreedy", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc);
   }
@@ -77,7 +77,7 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
       }
     };
     const auto& cls_doc = doc.MinCliqueCoverSolverBase;
-    py::class_<MinCliqueCoverSolverBase, PyMinCliqueCoverSolverBase>(
+    class_<MinCliqueCoverSolverBase, PyMinCliqueCoverSolverBase>(
         m, "MinCliqueCoverSolverBase", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("SolveMinCliqueCover",
@@ -88,7 +88,7 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   {
     using Class = MinCliqueCoverSolverViaGreedy;
     const auto& cls_doc = doc.MinCliqueCoverSolverViaGreedy;
-    py::class_<Class, MinCliqueCoverSolverBase>(
+    class_<Class, MinCliqueCoverSolverBase>(
         m, "MinCliqueCoverSolverViaGreedy", cls_doc.doc)
         .def(
             "__init__",

@@ -277,7 +277,7 @@ class PySolverInterface : public solvers::SolverInterface {
 
 void BindSolverInterface(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<SolverInterface, PySolverInterface>(
+  class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
       .def(py::init([]() { return std::make_unique<PySolverInterface>(); }),
           doc.SolverInterface.ctor.doc)
@@ -340,7 +340,7 @@ void BindSolverInterface(py::module_ m) {
 
 void BindMathematicalProgramResult(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<MathematicalProgramResult>(
+  class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
       .def(py::init<>(), doc.MathematicalProgramResult.ctor.doc)
       .def("is_success", &MathematicalProgramResult::is_success,
@@ -472,7 +472,7 @@ void BindMathematicalProgramResult(py::module_ m) {
 
 void BindMathematicalProgram(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram",
+  class_<MathematicalProgram> prog_cls(m, "MathematicalProgram",
       py::dynamic_attr(), doc.MathematicalProgram.doc);
   prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc);
   DefClone(&prog_cls);
@@ -1576,7 +1576,7 @@ void BindSolutionResult(py::module_ m) {
 }
 
 void BindPyFunctionCost(py::module_ m) {
-  py::class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
+  class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
       m, "PyFunctionCost", "Cost with its evaluator as a Python function")
       .def(py::init<int, const py::function&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
@@ -1585,7 +1585,7 @@ void BindPyFunctionCost(py::module_ m) {
 }
 
 void BindPyFunctionConstraint(py::module_ m) {
-  py::class_<PyFunctionConstraint, Constraint,
+  class_<PyFunctionConstraint, Constraint,
       std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
       .def(py::init<int, const py::function&, const Eigen::VectorXd&,

@@ -11,7 +11,7 @@ void DefineSolversMobyLCP(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<MobyLcpSolver, SolverInterface>(
+  class_<MobyLcpSolver, SolverInterface>(
       m, "MobyLcpSolver", doc.MobyLcpSolver.doc)
       .def(py::init<>(), doc.MobyLcpSolver.ctor.doc)
       .def_static("id", &MobyLcpSolver::id, doc.MobyLcpSolver.id.doc);

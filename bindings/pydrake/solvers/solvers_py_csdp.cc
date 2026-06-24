@@ -14,14 +14,13 @@ void DefineSolversCsdp(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<CsdpSolver, SolverInterface> csdp_cls(
+  class_<CsdpSolver, SolverInterface> csdp_cls(
       m, "CsdpSolver", doc.CsdpSolver.doc);
   csdp_cls  // BR
       .def(py::init<>(), doc.CsdpSolver.ctor.doc)
       .def_static("id", &CsdpSolver::id, doc.CsdpSolver.id.doc);
 
-  py::class_<CsdpSolverDetails>(
-      m, "CsdpSolverDetails", doc.CsdpSolverDetails.doc)
+  class_<CsdpSolverDetails>(m, "CsdpSolverDetails", doc.CsdpSolverDetails.doc)
       .def_ro("return_code", &CsdpSolverDetails::return_code,
           doc.CsdpSolverDetails.return_code.doc)
       .def_ro("primal_objective", &CsdpSolverDetails::primal_objective,

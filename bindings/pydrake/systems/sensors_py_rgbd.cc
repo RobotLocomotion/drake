@@ -48,7 +48,7 @@ void DefineSensorsRgbd(py::module_ m) {
   {
     using Class = CameraInfo;
     constexpr auto& cls_doc = doc.CameraInfo;
-    py::class_<Class> cls(m, "CameraInfo", cls_doc.doc);
+    class_<Class> cls(m, "CameraInfo", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, double>(), py::arg("width"), py::arg("height"),
             py::arg("fov_y"), cls_doc.ctor.doc_3args_width_height_fov_y)
@@ -84,7 +84,7 @@ void DefineSensorsRgbd(py::module_ m) {
         });
   }
 
-  py::class_<RgbdSensor, LeafSystem<double>> rgbd_sensor(
+  class_<RgbdSensor, LeafSystem<double>> rgbd_sensor(
       m, "RgbdSensor", doc.RgbdSensor.doc);
 
   rgbd_sensor
@@ -145,8 +145,7 @@ void DefineSensorsRgbd(py::module_ m) {
   {
     using Class = RgbdSensorDiscrete;
     constexpr auto& cls_doc = doc.RgbdSensorDiscrete;
-    py::class_<Class, Diagram<double>> cls(
-        m, "RgbdSensorDiscrete", cls_doc.doc);
+    class_<Class, Diagram<double>> cls(m, "RgbdSensorDiscrete", cls_doc.doc);
     cls  // BR
         .def(
             "__init__",
@@ -176,7 +175,7 @@ void DefineSensorsRgbd(py::module_ m) {
   {
     using Class = RgbdSensorAsync;
     constexpr auto& cls_doc = doc.RgbdSensorAsync;
-    py::class_<Class, LeafSystem<double>> rgbd_sensor_async(
+    class_<Class, LeafSystem<double>> rgbd_sensor_async(
         m, "RgbdSensorAsync", cls_doc.doc);
     rgbd_sensor_async
         .def(py::init<const geometry::SceneGraph<double>*, geometry::FrameId,

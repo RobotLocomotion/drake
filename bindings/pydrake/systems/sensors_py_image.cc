@@ -59,7 +59,7 @@ void DefineSensorsImage(py::module_ m) {
 
       // Add traits. Note that we choose not to bind kPixelScalar because the
       // ChannelType already makes the same information easily available.
-      py::class_<ImageTraitsT> traits(
+      class_<ImageTraitsT> traits(
           m, TemporaryClassName<ImageTraitsT>().c_str());
       traits.attr("ChannelType") = GetPyParam<T>()[0];
       traits.attr("kNumChannels") = int{ImageTraitsT::kNumChannels};
@@ -92,7 +92,7 @@ void DefineSensorsImage(py::module_ m) {
         return array;
       };
 
-      py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
+      class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
       AddTemplateClass(m, "Image", image, py_param);
       image  // BR
           .def(py::init<>(), doc.Image.ctor.doc_0args)

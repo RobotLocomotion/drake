@@ -15,7 +15,7 @@ void DefinePlanningIrisFromCliqueCover(py::module_ m) {
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
   auto cls_doc = doc.IrisFromCliqueCoverOptions;
-  py::class_<IrisFromCliqueCoverOptions>(
+  class_<IrisFromCliqueCoverOptions>(
       m, "IrisFromCliqueCoverOptions", cls_doc.doc)
       .def(py::init<>())
       .def_rw("iris_options", &IrisFromCliqueCoverOptions::iris_options,

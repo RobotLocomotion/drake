@@ -75,10 +75,10 @@ PYDRAKE_MODULE(primitives, m) {
 
   {
     using Class = SelectorParams;
-    py::class_<Class> cls(m, "SelectorParams", doc.SelectorParams.doc);
+    class_<Class> cls(m, "SelectorParams", doc.SelectorParams.doc);
     {
       using Nested = Class::InputPortParams;
-      py::class_<Nested> nested(
+      class_<Nested> nested(
           cls, "InputPortParams", doc.SelectorParams.InputPortParams.doc);
       nested.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&nested, doc.SelectorParams.InputPortParams);
@@ -87,7 +87,7 @@ PYDRAKE_MODULE(primitives, m) {
     }
     {
       using Nested = Class::OutputSelection;
-      py::class_<Nested> nested(
+      class_<Nested> nested(
           cls, "OutputSelection", doc.SelectorParams.OutputSelection.doc);
       nested.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&nested, doc.SelectorParams.OutputSelection);
@@ -96,7 +96,7 @@ PYDRAKE_MODULE(primitives, m) {
     }
     {
       using Nested = Class::OutputPortParams;
-      py::class_<Nested> nested(
+      class_<Nested> nested(
           cls, "OutputPortParams", doc.SelectorParams.OutputPortParams.doc);
       nested.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&nested, doc.SelectorParams.OutputPortParams);
@@ -834,7 +834,7 @@ PYDRAKE_MODULE(primitives, m) {
   };
   type_visit(bind_non_symbolic_scalar_types, NonSymbolicScalarPack{});
 
-  py::class_<BarycentricMeshSystem<double>, LeafSystem<double>>(
+  class_<BarycentricMeshSystem<double>, LeafSystem<double>>(
       m, "BarycentricMeshSystem", doc.BarycentricMeshSystem.doc)
       .def(py::init<math::BarycentricMesh<double>,
                const Eigen::Ref<const MatrixX<double>>&>(),
@@ -846,7 +846,7 @@ PYDRAKE_MODULE(primitives, m) {
           doc.BarycentricMeshSystem.get_output_values.doc);
 
   // TODO(jwnimmer-tri) Add more scalar types bindings for this class.
-  py::class_<RandomSource<double>, LeafSystem<double>>(
+  class_<RandomSource<double>, LeafSystem<double>>(
       m, "RandomSource", doc.RandomSource.doc)
       .def(py::init<RandomDistribution, int, double>(), py::arg("distribution"),
           py::arg("num_outputs"), py::arg("sampling_interval_sec"),

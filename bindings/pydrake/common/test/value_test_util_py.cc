@@ -39,14 +39,14 @@ struct UnregisteredType {
 PYDRAKE_MODULE(value_test_util, m) {
   py::module_::import_("pydrake.common");
 
-  py::class_<MoveOnlyType>(m, "MoveOnlyType")
+  class_<MoveOnlyType>(m, "MoveOnlyType")
       .def(py::init<int>())
       .def("x", &MoveOnlyType::x)
       .def("set_x", &MoveOnlyType::set_x);
   // Define `Value[MoveOnlyType]` instantiation.
   AddValueInstantiation<MoveOnlyType>(m);
 
-  py::class_<CustomType>(m, "CustomType")
+  class_<CustomType>(m, "CustomType")  // BR
       .def(py::init())
       .def(py::self == py::self);
   // Define `Value[List[CustomType]]` instantiation.

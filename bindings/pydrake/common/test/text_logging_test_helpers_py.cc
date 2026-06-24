@@ -77,7 +77,7 @@ PYDRAKE_MODULE(text_logging_test_helpers, m) {
 
   {
     using Class = Worker;
-    py::class_<Class>(m, "Worker")
+    class_<Class>(m, "Worker")
         .def(py::init<>())
         .def("Start", &Class::Start)
         .def("Stop", &Class::Stop);

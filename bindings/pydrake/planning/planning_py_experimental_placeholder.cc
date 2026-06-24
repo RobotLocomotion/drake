@@ -16,7 +16,7 @@ void DefinePlanningPlaceholder(py::module_ m) {
   {
     using Class = Placeholder;
     constexpr auto& cls_doc = doc.Placeholder;
-    py::class_<Class>(m, "Placeholder", cls_doc.doc)
+    class_<Class>(m, "Placeholder", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc);
   }
 }

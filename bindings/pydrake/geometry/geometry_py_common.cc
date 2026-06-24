@@ -60,7 +60,7 @@ void DefineCollisionFilterDeclaration(py::module_ m) {
     using Class = CollisionFilterDeclaration;
     constexpr auto& cls_doc = doc.CollisionFilterDeclaration;
 
-    py::class_<Class>(m, "CollisionFilterDeclaration", cls_doc.doc)
+    class_<Class>(m, "CollisionFilterDeclaration", cls_doc.doc)
         .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<CollisionFilterScope>(), py::arg("scope"),
             cls_doc.ctor.doc)
@@ -79,7 +79,7 @@ void DefineCollisionFilterManager(py::module_ m) {
   {
     using Class = CollisionFilterManager;
     constexpr auto& cls_doc = doc.CollisionFilterManager;
-    py::class_<Class>(m, "CollisionFilterManager", cls_doc.doc)
+    class_<Class>(m, "CollisionFilterManager", cls_doc.doc)
         .def("Apply", &Class::Apply, py::arg("declaration"), cls_doc.Apply.doc)
         .def("ApplyTransient", &Class::ApplyTransient, py::arg("declaration"),
             cls_doc.ApplyTransient.doc)
@@ -96,7 +96,7 @@ void DefineGeometryFrame(py::module_ m) {
   {
     using Class = GeometryFrame;
     constexpr auto& cls_doc = doc.GeometryFrame;
-    py::class_<Class> cls(m, "GeometryFrame", cls_doc.doc);
+    class_<Class> cls(m, "GeometryFrame", cls_doc.doc);
     cls  // BR
         .def(py::init<const std::string&, int>(), py::arg("frame_name"),
             py::arg("frame_group_id") = 0, cls_doc.ctor.doc)
@@ -111,7 +111,7 @@ void DefineGeometryInstance(py::module_ m) {
   {
     using Class = GeometryInstance;
     constexpr auto& cls_doc = doc.GeometryInstance;
-    py::class_<Class> cls(m, "GeometryInstance", cls_doc.doc);
+    class_<Class> cls(m, "GeometryInstance", cls_doc.doc);
     cls  // BR
         .def(py::init<const math::RigidTransform<double>&, const Shape&,
                  const std::string&>(),
@@ -156,7 +156,7 @@ void DefineGeometryProperties(py::module_ m) {
     constexpr auto& cls_doc = doc.GeometryProperties;
     py::handle abstract_value_cls =
         py::module_::import_("pydrake.common.value").attr("AbstractValue");
-    py::class_<Class>(m, "GeometryProperties", cls_doc.doc)
+    class_<Class>(m, "GeometryProperties", cls_doc.doc)
         .def("HasGroup", &Class::HasGroup, py::arg("group_name"),
             cls_doc.HasGroup.doc)
         .def("num_groups", &Class::num_groups, cls_doc.num_groups.doc)
@@ -236,7 +236,7 @@ void DefineGeometrySet(py::module_ m) {
     constexpr char extra_ctor_doc[] = "See main constructor";
     // N.B. For containers, we use `std::vector<>` rather than abstract
     // iterators / containers.
-    py::class_<Class>(m, "GeometrySet", cls_doc.doc)
+    class_<Class>(m, "GeometrySet", cls_doc.doc)
         .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<GeometryId>(), py::arg("geometry_id"), extra_ctor_doc)
         .def(py::init<FrameId>(), py::arg("frame_id"), extra_ctor_doc)
@@ -283,7 +283,7 @@ void DefineGeometryVersion(py::module_ m) {
   {
     using Class = GeometryVersion;
     constexpr auto& cls_doc = doc.GeometryVersion;
-    py::class_<Class> cls(m, "GeometryVersion", cls_doc.doc);
+    class_<Class> cls(m, "GeometryVersion", cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc)
         .def(py::init<const GeometryVersion&>(), py::arg("other"),
@@ -307,7 +307,7 @@ void DefineInMemoryMesh(py::module_ m) {
   {
     using Class = InMemoryMesh;
     constexpr auto& cls_doc = doc.InMemoryMesh;
-    py::class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
+    class_<Class> cls(m, "InMemoryMesh", cls_doc.doc);
     py::object ctor = m.attr("InMemoryMesh");
     cls  // BR
         .def(ParamInit<Class>())
@@ -330,7 +330,7 @@ void DefineInMemoryMesh(py::module_ m) {
 
 void DefineGeometryPropertiesSubclasses(py::module_ m) {
   {
-    py::class_<IllustrationProperties, GeometryProperties> cls(
+    class_<IllustrationProperties, GeometryProperties> cls(
         m, "IllustrationProperties", doc.IllustrationProperties.doc);
     cls  // BR
         .def(py::init(), doc.IllustrationProperties.ctor.doc)
@@ -339,7 +339,7 @@ void DefineGeometryPropertiesSubclasses(py::module_ m) {
     DefCopyAndDeepCopy(&cls);
   }
   {
-    py::class_<PerceptionProperties, GeometryProperties> cls(
+    class_<PerceptionProperties, GeometryProperties> cls(
         m, "PerceptionProperties", doc.PerceptionProperties.doc);
     cls  // BR
         .def(py::init(), doc.PerceptionProperties.ctor.doc)
@@ -348,7 +348,7 @@ void DefineGeometryPropertiesSubclasses(py::module_ m) {
     DefCopyAndDeepCopy(&cls);
   }
   {
-    py::class_<ProximityProperties, GeometryProperties> cls(
+    class_<ProximityProperties, GeometryProperties> cls(
         m, "ProximityProperties", doc.ProximityProperties.doc);
     cls  // BR
         .def(py::init(), doc.ProximityProperties.ctor.doc)
@@ -362,7 +362,7 @@ void DefineMeshSource(py::module_ m) {
   {
     using Class = MeshSource;
     constexpr auto& cls_doc = doc.MeshSource;
-    py::class_<Class> cls(m, "MeshSource", cls_doc.doc);
+    class_<Class> cls(m, "MeshSource", cls_doc.doc);
     py::object ctor = m.attr("MeshSource");
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
@@ -402,7 +402,7 @@ void DefineRgba(py::module_ m) {
   {
     using Class = Rgba;
     constexpr auto& cls_doc = doc.Rgba;
-    py::class_<Class> cls(m, "Rgba", cls_doc.doc);
+    class_<Class> cls(m, "Rgba", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<double, double, double, double>(), py::arg("r"),
@@ -469,13 +469,13 @@ void DefineRoleAssign(py::module_ m) {
 void DefineShapes(py::module_ m) {
   // Shape constructors.
   {
-    py::class_<Shape> cls(m, "Shape", doc.Shape.doc);
+    class_<Shape> cls(m, "Shape", doc.Shape.doc);
     cls  // BR
         .def("__repr__", [](const Shape& self) { return self.to_string(); });
     DefClone(&cls);
   }
   {
-    py::class_<Box, Shape> cls(m, "Box", doc.Box.doc);
+    class_<Box, Shape> cls(m, "Box", doc.Box.doc);
     cls  // BR
         .def(py::init<double, double, double>(), py::arg("width"),
             py::arg("depth"), py::arg("height"), doc.Box.ctor.doc_3args)
@@ -496,7 +496,7 @@ void DefineShapes(py::module_ m) {
         });
   }
   {
-    py::class_<Capsule, Shape> cls(m, "Capsule", doc.Capsule.doc);
+    class_<Capsule, Shape> cls(m, "Capsule", doc.Capsule.doc);
     cls  // BR
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Capsule.ctor.doc_2args)
@@ -514,7 +514,7 @@ void DefineShapes(py::module_ m) {
         });
   }
   {
-    py::class_<Convex, Shape> cls(m, "Convex", doc.Convex.doc);
+    class_<Convex, Shape> cls(m, "Convex", doc.Convex.doc);
     cls  // BR
         .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_filename_scale)
@@ -565,7 +565,7 @@ void DefineShapes(py::module_ m) {
     // Shape::to_string() does not properly condition strings for python.
   }
   {
-    py::class_<Cylinder, Shape> cls(m, "Cylinder", doc.Cylinder.doc);
+    class_<Cylinder, Shape> cls(m, "Cylinder", doc.Cylinder.doc);
     cls  // BR
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc_2args)
@@ -583,7 +583,7 @@ void DefineShapes(py::module_ m) {
         });
   }
   {
-    py::class_<Ellipsoid, Shape> cls(m, "Ellipsoid", doc.Ellipsoid.doc);
+    class_<Ellipsoid, Shape> cls(m, "Ellipsoid", doc.Ellipsoid.doc);
     cls  // BR
         .def(py::init<double, double, double>(), py::arg("a"), py::arg("b"),
             py::arg("c"), doc.Ellipsoid.ctor.doc_3args)
@@ -603,13 +603,13 @@ void DefineShapes(py::module_ m) {
         });
   }
   {
-    py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
+    class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
         .def(py::init<>(), doc.HalfSpace.ctor.doc)
         .def_static("MakePose", &HalfSpace::MakePose, py::arg("Hz_dir_F"),
             py::arg("p_FB"), doc.HalfSpace.MakePose.doc);
   }
   {
-    py::class_<Mesh, Shape> cls(m, "Mesh", doc.Mesh.doc);
+    class_<Mesh, Shape> cls(m, "Mesh", doc.Mesh.doc);
     cls  // BR
         .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_filename_scale)
@@ -650,7 +650,7 @@ void DefineShapes(py::module_ m) {
     // Shape::to_string() does not properly condition strings for python.
   }
   {
-    py::class_<Sphere, Shape> cls(m, "Sphere", doc.Sphere.doc);
+    class_<Sphere, Shape> cls(m, "Sphere", doc.Sphere.doc);
     cls  // BR
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
         .def("radius", &Sphere::radius, doc.Sphere.radius.doc);
@@ -659,7 +659,7 @@ void DefineShapes(py::module_ m) {
         [](Sphere* self, const double radius) { new (self) Sphere(radius); });
   }
   {
-    py::class_<MeshcatCone, Shape> cls(m, "MeshcatCone", doc.MeshcatCone.doc);
+    class_<MeshcatCone, Shape> cls(m, "MeshcatCone", doc.MeshcatCone.doc);
     cls  // BR
         .def(py::init<double, double, double>(), py::arg("height"),
             py::arg("a") = 1.0, py::arg("b") = 1.0,

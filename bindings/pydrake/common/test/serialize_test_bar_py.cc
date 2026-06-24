@@ -22,7 +22,7 @@ PYDRAKE_MODULE(serialize_test_bar, m) {
   // bug into this binding by omitting it. The regression test will confirm
   // that `import bar` raises an exception.
 
-  py::class_<Bar> cls(m, "Bar");
+  class_<Bar> cls(m, "Bar");
   DefAttributesUsingSerialize(&cls);
 }
 

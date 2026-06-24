@@ -16,7 +16,7 @@ void DefineSolversSemidefiniteRelaxation(py::module_ m) {
 
   {
     const auto& cls_doc = doc.SemidefiniteRelaxationOptions;
-    py::class_<SemidefiniteRelaxationOptions> options(
+    class_<SemidefiniteRelaxationOptions> options(
         m, "SemidefiniteRelaxationOptions", cls_doc.doc);
     options  // BR
         .def(ParamInit<SemidefiniteRelaxationOptions>())
