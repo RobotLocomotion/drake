@@ -466,7 +466,6 @@ PYI_FILES = [
 # TODO(mwoehlke-kitware): genrule inappropriately gives execute permission to
 # all its outputs; see https://github.com/bazelbuild/bazel/issues/3359.
 # (Applies to both :pydrake_pyi and, below, :pydrake_typed.)
-# XXX porting
 generate_python_stubs(
     name = "pydrake_pyi",
     outs = PYI_FILES,
@@ -487,7 +486,6 @@ generate_file(
     visibility = ["//visibility:private"],
 )
 
-# XXX porting
 drake_py_unittest(
     name = "stubgen_test",
     data = [
@@ -501,7 +499,6 @@ drake_py_unittest(
     ],
 )
 
-# XXX porting
 install(
     name = "install",
     install_tests = [

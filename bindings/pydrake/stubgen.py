@@ -112,13 +112,6 @@ def _actual_main():
 
 
 def _wrapper_main():
-    # XXX porting
-    import pydrake.common
-
-    # XXX porting
-    if pydrake.common._binder == "nanobind":
-        sys.exit(0)
-
     # By default, any console output from build actions is passed along to the
     # user (in contrast with tests, whose output is muted when they succeed).
     # However, it's difficult to teach mypy how to be quiet when successful, so
