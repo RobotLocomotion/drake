@@ -35,6 +35,11 @@ R"""(The problem of finding the maximum clique in a graph is known to be
 NP-complete. This base class provides a unified interface for various
 implementations of a solver for this problem which may be solved
 rigorously or via heuristics.)""";
+          // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverBase::DoSolveMaxClique
+          struct /* DoSolveMaxClique */ {
+            // Source: drake/planning/graph_algorithms/max_clique_solver_base.h
+            const char* doc = R"""()""";
+          } DoSolveMaxClique;
           // Symbol: drake::planning::graph_algorithms::MaxCliqueSolverBase::MaxCliqueSolverBase
           struct /* ctor */ {
             // Source: drake/planning/graph_algorithms/max_clique_solver_base.h
@@ -133,6 +138,11 @@ Raises:
         struct /* MinCliqueCoverSolverBase */ {
           // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h
           const char* doc = R"""()""";
+          // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverBase::DoSolveMinCliqueCover
+          struct /* DoSolveMinCliqueCover */ {
+            // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h
+            const char* doc = R"""()""";
+          } DoSolveMinCliqueCover;
           // Symbol: drake::planning::graph_algorithms::MinCliqueCoverSolverBase::MinCliqueCoverSolverBase
           struct /* ctor */ {
             // Source: drake/planning/graph_algorithms/min_clique_cover_solver_base.h
