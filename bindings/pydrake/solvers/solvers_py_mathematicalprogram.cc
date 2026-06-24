@@ -101,15 +101,17 @@ void CheckReturnedArrayType(py::str cls_name, py::array y) {
   py::module_ m = py::module_::import_("pydrake.solvers._extra");
   m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
 }
+#endif  // XXX porting
 
 // Wraps user function to provide better user-friendliness.
 template <typename T, typename Func>
-Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
+Func WrapUserFunc(py::str cls_name, py::object func, int num_vars,
     int num_outputs, ArrayShapeType output_shape) {
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   // TODO(eric.cousineau): It would be nicer to write this in Python.
   // TODO(eric.cousineau): Consider using `py::detail::make_caster<>`. However,
   // this may mean the argument is converted twice.
-  py::cpp_function wrapped = [=](py::array x) {
+  auto wrapped = [=](py::object x) {
     // Check input.
     // WARNING: If the input is badly sized, we will only reach this error in
     // Release mode. In debug mode, an assertion error will be triggered.
@@ -123,11 +125,16 @@ Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
     CheckArrayShape(py::str("{}: Return value").format(cls_name), y,
         output_shape, num_outputs);
     CheckReturnedArrayType<T>(cls_name, y);
+    py::object y = func(x);
     return y;
   };
   return py::cast<Func>(wrapped);
+#else   // PYDRAKE_USE_NANOBIND
+  // XXX porting Add back size/type error checking.
+  unused(cls_name, num_vars, num_outputs, output_shape);
+  return py::cast<Func>(func);
+#endif  // PYDRAKE_USE_PYBIND11
 }
-#endif  // XXX porting
 
 // TODO(eric.cousineau): Make a Python virtual base, and implement this in
 // Python instead.
@@ -136,15 +143,13 @@ class PyFunctionCost : public Cost {
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
   using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   // Note that we do not allow Python implementations of Cost to be declared as
   // thread safe.
   PyFunctionCost(
-      int num_vars, const py::function& func, const std::string& description)
+      int num_vars, const py::object& func, const std::string& description)
       : Cost(num_vars, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
-#endif  // XXX porting
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -166,13 +171,11 @@ class PyFunctionCost : public Cost {
   }
 
  private:
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   template <typename T, typename Func>
-  Func Wrap(py::function func) {
+  Func Wrap(py::object func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
         num_outputs(), ArrayShapeType::Scalar);
   }
-#endif  // XXX porting
 
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
@@ -186,16 +189,14 @@ class PyFunctionConstraint : public Constraint {
   using AutoDiffFunc =
       std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   // Note that we do not allow Python implementations of Constraint to be
   // declared as thread safe.
-  PyFunctionConstraint(int num_vars, const py::function& func,
+  PyFunctionConstraint(int num_vars, const py::object& func,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
       : Constraint(lb.size(), num_vars, lb, ub, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
-#endif  // XXX porting
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
@@ -219,13 +220,11 @@ class PyFunctionConstraint : public Constraint {
   }
 
  private:
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   template <typename T, typename Func>
-  Func Wrap(py::function func) {
+  Func Wrap(py::object func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
         num_vars(), num_outputs(), ArrayShapeType::Vector);
   }
-#endif  // XXX porting
 
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
@@ -636,10 +635,9 @@ void BindMathematicalProgram(py::module_ m) {
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddVisualizationCallback),
           doc.MathematicalProgram.AddVisualizationCallback.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def(
           "AddCost",
-          [](MathematicalProgram* self, py::function func,
+          [](MathematicalProgram* self, py::object func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
             return self->AddCost(std::make_shared<PyFunctionCost>(
@@ -650,7 +648,6 @@ void BindMathematicalProgram(py::module_ m) {
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to generated_docstrings.
           "Adds a cost function.")
-#endif  // XXX porting
       .def(
           "AddCost",
           [](MathematicalProgram* self, const Binding<Cost>& binding) {
@@ -789,10 +786,9 @@ void BindMathematicalProgram(py::module_ m) {
               &MathematicalProgram::AddMaximizeGeometricMeanCost),
           py::arg("x"), py::arg("c"),
           doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       .def(
           "AddConstraint",
-          [](MathematicalProgram* self, py::function func,
+          [](MathematicalProgram* self, py::object func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
@@ -804,7 +800,6 @@ void BindMathematicalProgram(py::module_ m) {
           py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           py::arg("description") = "",
           "Adds a constraint using a Python function.")
-#endif  // XXX porting
       .def("AddConstraint",
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
@@ -1599,13 +1594,10 @@ void BindPyFunctionCost(py::module_ m) {
       std::shared_ptr<PyFunctionCost>
 #endif
       >(m, "PyFunctionCost", "Cost with its evaluator as a Python function")
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-      .def(py::init<int, const py::function&, const std::string&>(),
+      .def(py::init<int, const py::object&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
-          "`num_vars` variables.")
-#endif   // XXX porting
-      ;  // NOLINT(whitespace/semicolon)
+          "`num_vars` variables.");
 }
 
 void BindPyFunctionConstraint(py::module_ m) {
@@ -1616,14 +1608,12 @@ void BindPyFunctionConstraint(py::module_ m) {
 #endif
       >(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-      .def(py::init<int, const py::function&, const Eigen::VectorXd&,
+      .def(py::init<int, const py::object&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("lb"), py::arg("ub"),
           py::arg("description") = "",
           "Constructs a constraint for a python function `func`, encoding `lb` "
           "<= `func` (x) <= `ub`, where x is of size `num_vars`.")
-#endif  // XXX porting
       .def("UpdateLowerBound", &PyFunctionConstraint::UpdateLowerBound,
           py::arg("new_lb"), "Update the lower bound of the constraint.")
       .def("UpdateUpperBound", &PyFunctionConstraint::UpdateUpperBound,
