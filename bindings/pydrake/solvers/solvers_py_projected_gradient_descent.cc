@@ -51,25 +51,19 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
     pgd_cls.attr("kDefaultMaxLineSearchSteps") =
         &Class::kDefaultMaxLineSearchSteps;
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     pgd_cls.def(
         "SetCustomProjectionFunction",
-        [](Class& self, py::function python_projection_function) {
-          auto cpp_projection_function = [python_projection_function](
-                                             const Eigen::VectorXd& in,
-                                             Eigen::VectorXd* out) {
-            DRAKE_ASSERT(out != nullptr);
-            py::gil_scoped_acquire gil;
-            auto result = python_projection_function(in);
-            DRAKE_THROW_UNLESS(py::isinstance<py::tuple>(result));
-            py::tuple result_tuple = py::cast<py::tuple>(result);
-            DRAKE_THROW_UNLESS(result_tuple.size() == 2);
-            DRAKE_THROW_UNLESS(py::isinstance<py::bool_>(result_tuple[0]));
-            DRAKE_THROW_UNLESS(py::isinstance<py::array>(result_tuple[1]));
-            *out = py::cast<Eigen::VectorXd>(result_tuple[1]);
-            return py::cast<bool>(result_tuple[0]);
-          };
-          self.SetCustomProjectionFunction(cpp_projection_function);
+        [](Class& self, std::function<std::pair<bool, Eigen::VectorXd>(
+                            const Eigen::VectorXd& in)>
+                            python_projection_function) {
+          self.SetCustomProjectionFunction(
+              [python_projection_function](
+                  const Eigen::VectorXd& in, Eigen::VectorXd* out) {
+                DRAKE_DEMAND(out != nullptr);
+                bool result;
+                std::tie(result, *out) = python_projection_function(in);
+                return result;
+              });
         },
         py::arg("custom_projection_function"),
         R"""(
@@ -91,7 +85,6 @@ You can define a custom projection function in Python, such as projecting onto t
         # Project onto the set {x | x >= 0}
         return True, np.maximum(x, 0)
 )""");
-#endif  // XXX porting
   }
 }
 
