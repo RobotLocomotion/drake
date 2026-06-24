@@ -65,8 +65,18 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   q0_[index](dof) = q0;
 
   // Near-rigid regularization [Castro et al., 2022].
+  // Eventually we will use:
+  //  R⁻¹ = K·dt·(dt + taud)
+  // Where:
+  //  K = 4π²/(β²·dt_eff²·w)
+  //  taud = β·dt_eff/π, so
+  // Therefore:
+  //  R = w / (K·dt·(dt + taud)) = β²·dt_eff²·w / (4π²·dt·(dt + taud)).
+  // For now, we will just store the part that does not depend on the time
+  // step or the effective time step. That contribution will come later in
+  // CalcData().
   constexpr double beta = 0.1;
-  constexpr double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
+  constexpr double eps = beta * beta / (4 * M_PI * M_PI);
 
   // Approximation of W = J⋅M⁻¹⋅Jᵀ = M⁻¹ ≈ diag(M)⁻¹. The Jacobian J = Iₙ for
   // lower limits, and J = -Iₙ for upper limits.
@@ -74,16 +84,18 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   R_[index](dof) = eps * w_clique(dof);
 
   // Eventually we will use
-  //  v̂ₗ = (qₗ − q₀) / (δt (1 + β))
-  //  v̂ᵤ = (q₀ − qᵤ) / (δt (1 + β))
+  //  v̂ₗ = (qₗ − q₀) / (δt + taud)
+  //  v̂ᵤ = (q₀ − qᵤ) / (δt + taud)
+  // Where
+  //  taud = β·dt_eff/π
   // However, since model.time_step() may change between now and when we
   // actually solve the problem, we precompute
-  //  ĝₗ = v̂ₗ⋅δt = (qₗ − q₀) / (1 + β)
-  //  ĝᵤ = v̂ᵤ⋅δt = (q₀ − qᵤ) / (1 + β)
-  // so that we can compute v̂ = ĝ/δt from the current time step in calls to
-  // CalcData().
-  gl_hat_[index](dof) = (ql - q0) / (1.0 + beta);
-  gu_hat_[index](dof) = (q0 - qu) / (1.0 + beta);
+  //  ĝₗ = v̂ₗ⋅(δt + taud) = (qₗ − q₀)
+  //  ĝᵤ = v̂ᵤ⋅(δt + taud) = (q₀ − qᵤ)
+  // so that we can compute v̂ = ĝ / (δt + taud) from the current time
+  // step in calls to CalcData().
+  gl_hat_[index](dof) = (ql - q0);
+  gu_hat_[index](dof) = (q0 - qu);
 }
 
 template <typename T>
@@ -92,6 +104,9 @@ void LimitConstraintsPool<T>::CalcData(
   DRAKE_ASSERT(limit_data != nullptr);
 
   const T dt_eff = model().effective_time_step();
+  const T& dt = model().time_step();
+  constexpr double beta = 0.1;
+  const T taud = beta * dt_eff / M_PI;
   T& cost = limit_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
@@ -103,9 +118,16 @@ void LimitConstraintsPool<T>::CalcData(
     VectorXView G_lower = limit_data->mutable_G_lower(k);
     VectorXView G_upper = limit_data->mutable_G_upper(k);
     for (int i = 0; i < nv; ++i) {
+      // Compute the full regularization:
+      //  R = β²·dt_eff²·w / (4π²·dt·(dt + taud))
+      // R_[k](i) only stores the non-time-step-dependent part:
+      //  R_[k](i) = β²·w / (4π²)
+      const T R = (R_[k](i) * dt_eff * dt_eff) / (dt * (dt + taud));
+
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
-      cost += CalcLimitData(gl_hat_[k](i) / dt_eff, R_[k](i), vl,
+      const T v_hat_lower = gl_hat_[k](i) / (dt + taud);
+      cost += CalcLimitData(v_hat_lower, R, vl,
                             &gamma_lower(i), &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
@@ -113,7 +135,8 @@ void LimitConstraintsPool<T>::CalcData(
       // positive when moving away from the limit. Impulses are similarly
       // defined as positive when pushing away from the limit.
       const T vu = -vk(i);
-      cost += CalcLimitData(gu_hat_[k](i) / dt_eff, R_[k](i), vu,
+      const T v_hat_upper = gu_hat_[k](i) / (dt + taud);
+      cost += CalcLimitData(v_hat_upper, R, vu,
                             &gamma_upper(i), &G_upper(i));
     }
   }
