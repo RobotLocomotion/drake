@@ -34,10 +34,7 @@ PYDRAKE_MODULE(lcm, m) {
             "Publish",
             [](Class* self, const std::string& channel, py::bytes buffer,
                 std::optional<double> time_sec) {
-              // TODO(eric.cousineau): See if there is a way to extra the raw
-              // bytes from `buffer` without copying.
-              std::string str = buffer;
-              self->Publish(channel, str.data(), str.size(), time_sec);
+              self->Publish(channel, buffer.c_str(), buffer.size(), time_sec);
             },
             py::arg("channel"), py::arg("buffer"),
             py::arg("time_sec") = py::none(), cls_doc.Publish.doc)

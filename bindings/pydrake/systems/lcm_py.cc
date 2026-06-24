@@ -78,9 +78,10 @@ class PySerializerInterface : public SerializerInterface {
       PYBIND11_OVERLOAD_PURE(
           py::bytes, SerializerInterface, Serialize, &abstract_value);
     };
-    std::string str = wrapped();
-    message_bytes->resize(str.size());
-    std::copy(str.data(), str.data() + str.size(), message_bytes->data());
+    py::bytes result = wrapped();
+    message_bytes->resize(result.size());
+    std::copy(
+        result.c_str(), result.c_str() + result.size(), message_bytes->data());
   }
 };
 
@@ -151,8 +152,8 @@ PYDRAKE_MODULE(lcm, m) {
             "Deserialize",
             [](const Class& self, py::bytes message_bytes,
                 AbstractValue* abstract_value) {
-              std::string str = message_bytes;
-              self.Deserialize(str.data(), str.size(), abstract_value);
+              self.Deserialize(
+                  message_bytes.c_str(), message_bytes.size(), abstract_value);
             },
             py::arg("message_bytes"), py::arg("abstract_value"),
             cls_doc.Deserialize.doc)
