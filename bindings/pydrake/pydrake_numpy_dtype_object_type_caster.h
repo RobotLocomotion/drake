@@ -6,9 +6,6 @@
 #error "Should only be used when the binder is nanobind!"
 #endif
 
-#include <iostream>
-#include <string>
-
 namespace nanobind {
 namespace detail {
 
@@ -52,29 +49,31 @@ struct pydrake_numpy_dtype_object_type_caster {
     auto array = numpy.attr("asarray")(src, arg("dtype") = "object");
     auto shape = cast<nanobind::tuple>(array.attr("shape"));
 
-    int rows = 0;
-    int cols = 0;
-    if constexpr (kCompileTime1D) {
-      if (shape.size() != 1) {
-        std::cerr << "from_python wrong shape 1d "
-                  << cast<std::string>(str(shape)) << "\n";
-        return false;
-      }
-      rows = cast<int>(shape[0]);
-      cols = 1;
-    } else {
-      if (shape.size() == 1) {
+    int rows{};
+    int cols{};
+    bool np_1d{};
+    if (shape.size() == 1) {
+      if constexpr (T::ColsAtCompileTime == 1) {
+        rows = cast<int>(shape[0]);
+        cols = 1;
+        np_1d = true;
+      } else if constexpr (T::RowsAtCompileTime == 1) {
+        rows = 1;
+        cols = cast<int>(shape[0]);
+        np_1d = true;
+      } else {
         // Promote from 1d array to 2d array (as column vector).
         array = array.attr("reshape")(-1, 1);
         rows = cast<int>(shape[0]);
         cols = 1;
-      } else if (shape.size() == 2) {
-        rows = cast<int>(shape[0]);
-        cols = cast<int>(shape[1]);
-      } else {
-        std::cerr << "from_python wrong shape 2d\n";
-        return false;
+        np_1d = false;
       }
+    } else if (shape.size() == 2) {
+      rows = cast<int>(shape[0]);
+      cols = cast<int>(shape[1]);
+      np_1d = false;
+    } else {
+      return false;
     }
 
     try {
@@ -89,18 +88,11 @@ struct pydrake_numpy_dtype_object_type_caster {
         }
       }
       value.resize(rows, cols);
-      if constexpr (kCompileTime1D) {
-        for (Eigen::Index i = 0; i < rows; ++i) {
-          value(i) = cast<PlainScalar>(array[i]);
-        }
-      } else {
-        for (Eigen::Index i = 0; i < rows; ++i) {
-          for (Eigen::Index j = 0; j < cols; ++j) {
-            list ij;
-            ij.append(i);
-            ij.append(j);
-            value(i, j) = cast<PlainScalar>(array[nanobind::tuple(ij)]);
-          }
+      for (Eigen::Index i = 0; i < rows; ++i) {
+        for (Eigen::Index j = 0; j < cols; ++j) {
+          value(i, j) = cast<PlainScalar>(
+              array[np_1d ? nanobind::object(nanobind::int_(i + j))
+                          : nanobind::object(nanobind::make_tuple(i, j))]);
         }
       }
     } catch (const cast_error&) {
