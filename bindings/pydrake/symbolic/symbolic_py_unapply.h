@@ -35,17 +35,15 @@ ctor's identity.
 // @param m The pydrake.symbolic module.
 py::object Unapply(py::module_ m, const symbolic::Formula& f);
 
-// Given the pydrake.symbolic module as "m" and an expression "kind", returns
-// the callable object (i.e., factory function or constructor) that would be
-// able to re-construct the same expression, given appropriate arguments. This
-// is the "ctor" returned by Unapply() for the "e.get_kind()".
-py::object MakeUnapplyConstructor(py::module_ m, symbolic::ExpressionKind kind);
+py::tuple PickleExpression(const symbolic::Expression& e);
 
-// Given the pydrake.symbolic module as "m" and a formula "kind", returns the
-// callable object (i.e., factory function or constructor) that would be able to
-// re-construct the same formula, given appropriate arguments. This is the
-// "ctor" returned by Unapply() for the "f.get_kind()".
-py::object MakeUnapplyConstructor(py::module_ m, symbolic::FormulaKind kind);
+// @param m The pydrake.symbolic module.
+symbolic::Expression UnpickleExpression(py::module_ m, py::tuple state);
+
+py::tuple PickleFormula(const symbolic::Formula& f);
+
+// @param m The pydrake.symbolic module.
+symbolic::Formula UnpickleFormula(py::module_ m, py::tuple state);
 
 }  // namespace internal
 }  // namespace pydrake
