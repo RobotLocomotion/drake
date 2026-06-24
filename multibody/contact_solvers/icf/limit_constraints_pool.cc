@@ -127,8 +127,7 @@ void LimitConstraintsPool<T>::CalcData(
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
       const T v_hat_lower = gl_hat_[k](i) / (dt + taud);
-      cost += CalcLimitData(v_hat_lower, R, vl,
-                            &gamma_lower(i), &G_lower(i));
+      cost += CalcLimitData(v_hat_lower, R, vl, &gamma_lower(i), &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
       // N.B. The negative sign comes from the constraint velocity defined as
@@ -136,8 +135,7 @@ void LimitConstraintsPool<T>::CalcData(
       // defined as positive when pushing away from the limit.
       const T vu = -vk(i);
       const T v_hat_upper = gu_hat_[k](i) / (dt + taud);
-      cost += CalcLimitData(v_hat_upper, R, vu,
-                            &gamma_upper(i), &G_upper(i));
+      cost += CalcLimitData(v_hat_upper, R, vu, &gamma_upper(i), &G_upper(i));
     }
   }
 }
