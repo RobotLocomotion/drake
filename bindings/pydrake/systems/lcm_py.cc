@@ -90,9 +90,10 @@ class PySerializerInterface : public SerializerInterface {
       PYDRAKE_OVERRIDE_PURE(
           py::bytes, SerializerInterface, Serialize, &abstract_value);
     };
-    py::bytes str = wrapped();
-    message_bytes->resize(str.size());
-    std::copy(str.c_str(), str.c_str() + str.size(), message_bytes->data());
+    py::bytes result = wrapped();
+    message_bytes->resize(result.size());
+    std::copy(
+        result.c_str(), result.c_str() + result.size(), message_bytes->data());
 #else
     unused(abstract_value, message_bytes);
 #endif  // XXX porting
