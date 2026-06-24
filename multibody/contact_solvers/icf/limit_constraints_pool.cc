@@ -75,7 +75,7 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   // For now, we will just store the part that does not depend on the time
   // step or the effective time step. That contribution will come later in
   // CalcData().
-  constexpr double beta = 0.1;
+  constexpr double beta = IcfModel<T>::beta;
   constexpr double eps = beta * beta / (4 * M_PI * M_PI);
 
   // Approximation of W = J⋅M⁻¹⋅Jᵀ = M⁻¹ ≈ diag(M)⁻¹. The Jacobian J = Iₙ for
@@ -105,7 +105,7 @@ void LimitConstraintsPool<T>::CalcData(
 
   const T dt_eff = model().effective_time_step();
   const T& dt = model().time_step();
-  constexpr double beta = 0.1;
+  constexpr double beta = IcfModel<T>::beta;
   const T taud = beta * dt_eff / M_PI;
   T& cost = limit_data->mutable_cost();
   cost = 0;

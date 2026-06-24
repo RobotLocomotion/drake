@@ -113,6 +113,10 @@ class IcfModel {
   using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
   using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
 
+  /* The near-rigid contact stabilization parameter β.  See [Castro et al.,
+  2022], section V.B. */
+  static constexpr double beta = 0.1;
+
   /* Constructs an empty model. */
   IcfModel();
 

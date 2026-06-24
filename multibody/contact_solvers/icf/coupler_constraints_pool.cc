@@ -52,8 +52,8 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
 
   // Near-rigid regularization: this constraint acts as a very stiff
   // critically-damped spring with time scale β⋅δt [Castro et al., 2022].
-  const double beta = 0.1;
-  const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
+  constexpr double beta = IcfModel<T>::beta;
+  constexpr double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
 
   const T g0 = qi - gear_ratio * qj - offset;
 
