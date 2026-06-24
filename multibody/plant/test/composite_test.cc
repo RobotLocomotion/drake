@@ -14,6 +14,7 @@ SetCombineWeldedBodies() is enabled. */
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -43,6 +44,7 @@ struct TestModel {
   const RigidBody<double>* link1{};
   const RigidBody<double>* link2{};
   const RigidBody<double>* link3{};
+  const RigidBody<double>* link4{};
 };
 
 /* Builds a test model with the topology:
@@ -56,20 +58,22 @@ struct TestModel {
           /                              /
     [revolute z] (angle θ)              z
         /
-      World
+      World --[weld]--> Link4
 
-where Link2 is offset +1 m in x from Link1's frame and Link3 is offset +1 m in y
-from Link2's frame.
+Link2 is offset +1 m in x from Link1's frame.
+Link3 is offset +1 m in y from Link2's frame.
+Link4 is offset +4 m in x from World frame.
 
 The positions of the link origins from World origin Wo, expressed in World are:
   Link1: (0, 0, 0)
   Link2: (cos θ, sin θ, 0)
   Link3: (cos θ − sin θ, sin θ + cos θ, 0)
+  Link4: (4, 0, 0)
 
-With combine_welded_bodies = false, four mobilized bodies are created
-(World, Link1 via revolute, Link2 via weld, and Link3 via weld).
+With combine_welded_bodies = false, five mobilized bodies are created,
+(World, Link1 via revolute, Link2 via weld, Link3 via weld, Link 4 via weld).
 With combine_welded_bodies = true two mobilized bodies are created,
-(World and one composite mobilized body that contains all three links). */
+(World with link4 and one composite mobilized body with Link1, Link2, Link3). */
 TestModel MakeModel(bool combine_welded_bodies) {
   TestModel m;
   m.plant = std::make_unique<MultibodyPlant<double>>(0.0 /* continuous */);
@@ -80,12 +84,13 @@ TestModel MakeModel(bool combine_welded_bodies) {
   const SpatialInertia<double> M =
       SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1);
 
-  // Add the three links.
+  // Add the four links.
   m.link1 = &m.plant->AddRigidBody("Link1", M);
   m.link2 = &m.plant->AddRigidBody("Link2", M);
   m.link3 = &m.plant->AddRigidBody("Link3", M);
+  m.link4 = &m.plant->AddRigidBody("Link4", M);
 
-  // Revolute joint: World to Link1, rotating about z.
+  // Revolute joint (z-axis): World to Link1.
   m.revolute = &m.plant->AddJoint<RevoluteJoint>(
       "revolute", m.plant->world_body(), RigidTransformd{}, *m.link1,
       RigidTransformd{}, Vector3<double>::UnitZ());
@@ -101,26 +106,37 @@ TestModel MakeModel(bool combine_welded_bodies) {
   m.plant->AddJoint<WeldJoint>("weld23", *m.link2, X_2to3, *m.link3,
                                RigidTransformd{}, RigidTransformd{});
 
+  // Weld Link4 to World, with Link4's joint frame offset +4 m in x from World.
+  const RigidTransformd X_Wto4(Vector3<double>(4.0, 0.0, 0.0));
+  m.plant->AddJoint<WeldJoint>("weldW4", m.plant->world_body(), X_Wto4,
+                               *m.link4, RigidTransformd{}, RigidTransformd{});
   m.plant->Finalize();
   m.context = m.plant->CreateDefaultContext();
 
   // Sanity check: Both models should have the same number of bodies (links),
   // joints, and number of states, but they should differ in the number of
   // mobilized bodies.
-  EXPECT_EQ(m.plant->num_bodies(), 4);      // World + 3 links.
-  EXPECT_EQ(m.plant->num_joints(), 3);      // 1 revolute + 2 welds.
+  EXPECT_EQ(m.plant->num_bodies(), 5);      // World + 4 links.
+  EXPECT_EQ(m.plant->num_joints(), 4);      // 1 revolute + 3 welds.
   EXPECT_EQ(m.plant->num_positions(), 1);   // 1 revolute angle.
   EXPECT_EQ(m.plant->num_velocities(), 1);  // 1 revolute angular rate.
   const internal::MultibodyTree<double>& tree = GetInternalTree(*m.plant);
-  EXPECT_EQ(tree.num_mobods(), combine_welded_bodies ? 2 : 4);
+  EXPECT_EQ(tree.num_mobods(), combine_welded_bodies ? 2 : 5);
 
+  // Sanity check: Some information in the SpanningForest should be the same,
+  // whether or not the welded links are combined.
+  const internal::SpanningForest& forest = tree.forest();
+  const internal::SpanningForest::Mobod& mobod_1 =
+      forest.mobods(internal::MobodIndex(1));
+  EXPECT_EQ(mobod_1.active_link_ordinal(), LinkOrdinal(1));
+  EXPECT_TRUE(mobod_1.is_base_body());  // Connects to World via revolute joint.
+
+  // If the welded links are combined, verify that the composite mobilized body
+  // has the proper follower link ordinals (the active link ordinal which
+  // corresponds to the mobilized body and the two other links welded to it).
   if (combine_welded_bodies) {
-    const internal::SpanningForest& forest = tree.forest();
-    const internal::SpanningForest::Mobod& mobod_1 =
-        forest.mobods(internal::MobodIndex(1));
     EXPECT_EQ(mobod_1.follower_link_ordinals(),
               (std::vector{LinkOrdinal(1), LinkOrdinal(2), LinkOrdinal(3)}));
-    EXPECT_EQ(mobod_1.active_link_ordinal(), LinkOrdinal(1));
   }
   return m;
 }
@@ -131,9 +147,9 @@ void SetState(const TestModel& m, double angle_rad, double angular_vel) {
   m.revolute->set_angular_rate(m.context.get(), angular_vel);
 }
 
-/* Tests that the composite mobilized body's combined spatial inertia is
-computed correctly. The mass matrix (a 1×1 matrix for this 1-DOF model) directly
-depends on the combined spatial inertia of the composite, so we verify:
+/* Ensure the composite mobilized body's combined spatial inertia for Link123
+(links 1, 2, 3) is computed correctly. The 1x1 mass matrix for this 1-DOF model
+directly depends on the spatial inertia of Link123, so we also verify:
   (a) The mass matrix is identical between the explicit-weld and composite
       models at several configurations.
   (b) The mass matrix matches the analytically computed value.
@@ -141,25 +157,22 @@ depends on the combined spatial inertia of the composite, so we verify:
 Analytical derivation
 ---------------------
 The model has a single revolute joint (z-axis at World origin) with three welded
-links, each a 1 kg solid cube of side 0.1 m. Their body-frame origins p₁₋₃ are
-coincident with their centers of mass and located (in Link1's frame):
+links, each a 1 kg solid cube of side 0.1 m. Their body-frame origins p₁, p₂, p₃
+are coincident with their centers of mass and located (in Link1's frame):
   Link1: p₁ = (0, 0, 0)   — at the joint
   Link2: p₂ = (1, 0, 0)   in Link1's frame
   Link3: p₃ = (1, 1, 0)   in Link1's frame (1 m in x then 1 m in Link2's y)
 
-For a solid cube of mass m and side a, the moment of inertia about any axis
-through the COM equals m*a²/6. The moment of inertia about the revolute axis (z
-through world origin) follows from the parallel axis theorem: I = m*a²/6 +
-m*d², where d is the distance from the COM to the z-axis.
-
-The result is independent of joint angle because:
-  - For a cube, Ixx = Iyy = Izz, so rotation doesn't change its Izz.
-  - The distance from each COM to the z-axis is preserved by rotation about z.
+For a solid cube of mass m and side a, its moment of inertia about any axis
+through its COM is m*a²/6. The parallel axis theorem calculates each cube's
+moment of inertia about the revolute's z-axis via: Iᵢ = m*a²/6 + m*(dᵢ)², where
+dᵢ (i=1,2,3) is the distance between each cube's COM and the revolute's z-axis.
+Iᵢ is independent of joint angle because the composite is welded together.
 
   Link1: I₁ = 1*(0.1)²/6 + 1*0²    = 1/600 + 0   (d² = 0)
   Link2: I₂ = 1*(0.1)²/6 + 1*1²    = 1/600 + 1   (d² = 1)
   Link3: I₃ = 1*(0.1)²/6 + 1*√2²   = 1/600 + 2   (d² = 2)
-  Total: M = 3/600 + 3 = 1/200 + 3 = 3.005 kg·m² */
+  Total: Iₜ = 3/600 + 3 = 1/200 + 3 = 3.005 kg·m² */
 GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
   const TestModel explicit_model = MakeModel(false /* no combining */);
   const TestModel composite_model = MakeModel(true /* combine welds */);
@@ -167,27 +180,69 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
   // The mass matrix is configuration-independent for this model (see above),
   // but we check at several angles to guard against future changes.
   const std::vector<double> angles = {0.0, M_PI / 6, M_PI / 4, -M_PI / 3};
-
   for (double angle : angles) {
     SetState(explicit_model, angle, 0.0);
     SetState(composite_model, angle, 0.0);
 
+    // Verify Link123's spatial inertia not depend on combined welded links
+    const Frame<double>& world_frame = explicit_model.plant->world_frame();
+    SpatialInertia<double> M_EWo_W = explicit_model.plant->CalcSpatialInertia(
+        *explicit_model.context, world_frame,
+        {explicit_model.link1->index(), explicit_model.link2->index(),
+         explicit_model.link3->index()});
+
+    // TODO(Mitiguy) The next three tests show that there is a bug in
+    // MultibodyPlant::CalcSpatialInertia() that incorrectly associates the
+    // Link123 composite spatial inertia with a single link (Link 1 or 2 or 3).
+    SpatialInertia<double> M_CWo_W = composite_model.plant->CalcSpatialInertia(
+        *composite_model.context, world_frame,
+        {composite_model.link1->index()});
+    EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+                                M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                MatrixCompareType::relative))
+        << "Spatial inertia mismatch at angle=" << angle;
+
+    M_CWo_W = composite_model.plant->CalcSpatialInertia(
+        *composite_model.context, world_frame,
+        {composite_model.link2->index()});
+    EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+                                M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                MatrixCompareType::relative))
+        << "Spatial inertia mismatch at angle=" << angle;
+
+    M_CWo_W = composite_model.plant->CalcSpatialInertia(
+        *composite_model.context, world_frame,
+        {composite_model.link3->index()});
+    EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+                                M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                MatrixCompareType::relative))
+        << "Spatial inertia mismatch at angle=" << angle;
+
+    // TODO(Mitiguy) There is a bug in MultibodyPlant::CalcSpatialInertia() when
+    // composite mobilized bodies are used. The spatial inertia for the World
+    // body (which is nan) replaces that of Link 4 (which is welded to world).
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        composite_model.plant->CalcSpatialInertia(
+            *composite_model.context, world_frame,
+            {composite_model.link4->index()}),
+        "[\\s\\S]*did not pass the test CouldBePhysicallyValid\\(\\)[\\s\\S]*");
+
+    // Ensure the mass matrix does not depend on welded links being combined.
     MatrixX<double> M_explicit(1, 1), M_composite(1, 1);
     explicit_model.plant->CalcMassMatrix(*explicit_model.context, &M_explicit);
     composite_model.plant->CalcMassMatrix(*composite_model.context,
                                           &M_composite);
-
     EXPECT_TRUE(CompareMatrices(M_explicit, M_composite, kTolerance,
                                 MatrixCompareType::relative))
         << "Mass matrix mismatch at angle=" << angle;
 
     // Verify the analytical value.
-    const double a = 0.1;                     // cube side
-    const double m = 1.0;                     // mass per link
-    const double I_cube_z = m * a * a / 6.0;  // Izz of one cube about its COM
-    const double M_expected = (I_cube_z + m * 0.0) +  // Link1: d² = 0
-                              (I_cube_z + m * 1.0) +  // Link2: d² = 1² = 1
-                              (I_cube_z + m * 2.0);   // Link3: d² = √2² = 2
+    const double a = 0.1;                // Length of each cube's side.
+    const double m = 1.0;                // Mass of each link (cube).
+    const double Izz = m * a * a / 6.0;  // Izz of one cube about its COM.
+    const double M_expected = (Izz + m * 0.0) +  // Link1: d² = 0
+                              (Izz + m * 1.0) +  // Link2: d² = 1² = 1
+                              (Izz + m * 2.0);   // Link3: d² = √2² = 2
     EXPECT_NEAR(M_composite(0, 0), M_expected, kTolerance)
         << "Mass matrix analytical mismatch at angle=" << angle;
   }
