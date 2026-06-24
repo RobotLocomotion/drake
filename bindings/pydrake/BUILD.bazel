@@ -278,7 +278,6 @@ drake_py_binary(
     srcs = ["test/print_symbol_collisions.py"],
     deps = [":all_py"],
     add_test_rule = True,
-    test_rule_tags = ["manual"],  # XXX porting
 )
 
 drake_py_unittest(
