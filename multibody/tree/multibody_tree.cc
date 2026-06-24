@@ -1546,6 +1546,10 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
   //  inertias for locked floating bodies.
   for (LinkIndex link_index(1); link_index < num_links(); ++link_index) {
     const Link<T>& link = get_link(link_index);
+    // When composite bodies are enabled, ensure "follower links" that are
+    // welded to the World body are skipped because the world body's spatial
+    // inertia is initialized to nan (do not add or ReExpressInPlace to nan).
+    if (link.mobod_index() == world_mobod_index()) continue;
     const RigidTransform<T>& X_WB = pc.get_X_WB(link.mobod_index());
 
     // Orientation of Mobod B in W.

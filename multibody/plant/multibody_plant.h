@@ -1781,9 +1781,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// The default global setting for Drake is _not_ to combine welded RigidBody
   /// elements.
   ///
-  /// @param[in] combine Whether to combine welded-together bodies Limited to
-  ///   a particular model instance if the `model_instance` argument is
-  ///   also provided, otherwise sets the global value.
+  /// @param[in] combine Whether to combine welded-together bodies. This only
+  ///   affects a particular model instance if the `model_instance` argument is
+  ///   also provided, otherwise it sets the global value.
   /// @param[in] model_instance (optional) if present, specifies a particular
   ///   model instance to which the `combine` argument applies.
   ///

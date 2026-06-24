@@ -6685,9 +6685,9 @@ The default global setting for Drake is *not* to combine welded
 RigidBody elements.
 
 Parameter ``combine``:
-    Whether to combine welded-together bodies Limited to a particular
-    model instance if the ``model_instance`` argument is also
-    provided, otherwise sets the global value.
+    Whether to combine welded-together bodies. This only affects a
+    particular model instance if the ``model_instance`` argument is
+    also provided, otherwise it sets the global value.
 
 Parameter ``model_instance``:
     (optional) if present, specifies a particular model instance to
