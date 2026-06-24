@@ -35,7 +35,7 @@ PYDRAKE_MODULE(rational, m) {
   {
     using Class = drake::multibody::RationalForwardKinematics;
     constexpr auto& cls_doc = doc.RationalForwardKinematics;
-    py::class_<Class>(m, "RationalForwardKinematics")
+    class_<Class>(m, "RationalForwardKinematics")
         .def(py::init<const MultibodyPlant<double>*>(), py::arg("plant"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>()  // BR

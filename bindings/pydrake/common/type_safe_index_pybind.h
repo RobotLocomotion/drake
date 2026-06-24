@@ -16,7 +16,7 @@ template <typename Class>
 auto BindTypeSafeIndex(
     py::module_ m, const std::string& name, const std::string& class_doc = "") {
   constexpr auto& cls_doc = pydrake_doc_common.drake.TypeSafeIndex;
-  py::class_<Class> cls(m, name.c_str(), class_doc.c_str());
+  class_<Class> cls(m, name.c_str(), class_doc.c_str());
   cls  // BR
       .def(py::init<>(), cls_doc.ctor.doc_0args)
       .def(py::init<int>(), cls_doc.ctor.doc_1args_index)

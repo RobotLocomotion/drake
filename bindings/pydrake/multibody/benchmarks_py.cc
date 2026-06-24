@@ -26,8 +26,7 @@ void init_acrobot(py::module_ m) {
   py::module_::import_("pydrake.geometry");
   py::module_::import_("pydrake.multibody.plant");
 
-  py::class_<AcrobotParameters>(
-      m, "AcrobotParameters", doc.AcrobotParameters.doc)
+  class_<AcrobotParameters>(m, "AcrobotParameters", doc.AcrobotParameters.doc)
       .def(py::init(), doc.AcrobotParameters.doc);
 
   m.def("MakeAcrobotPlant",
@@ -54,7 +53,7 @@ PYDRAKE_MODULE(benchmarks, m) {
     constexpr auto& cls_doc =
         pydrake_doc_multibody_benchmarks_mass_damper_spring.drake.multibody
             .benchmarks.MassDamperSpringAnalyticalSolution;
-    py::class_<Class>(m, "MassDamperSpringAnalyticalSolution", cls_doc.doc)
+    class_<Class>(m, "MassDamperSpringAnalyticalSolution", cls_doc.doc)
         .def(py::init<const T&, const T&, const T&>(), py::arg("mass"),
             py::arg("b"), py::arg("k"), cls_doc.ctor.doc)
         .def("SetInitialValue", &Class::SetInitialValue, py::arg("x0"),

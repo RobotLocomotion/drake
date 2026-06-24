@@ -17,7 +17,7 @@ void DefineVisualizationImageSystems(py::module_ m) {
   {
     using Class = ColorizeDepthImage<double>;
     constexpr auto& cls_doc = doc.ColorizeDepthImage;
-    py::class_<Class, systems::LeafSystem<double>>(
+    class_<Class, systems::LeafSystem<double>>(
         m, "ColorizeDepthImage", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
         .def_prop_rw("invalid_color", &Class::get_invalid_color,
@@ -36,7 +36,7 @@ void DefineVisualizationImageSystems(py::module_ m) {
   {
     using Class = ColorizeLabelImage<double>;
     constexpr auto& cls_doc = doc.ColorizeLabelImage;
-    py::class_<Class, systems::LeafSystem<double>>(
+    class_<Class, systems::LeafSystem<double>>(
         m, "ColorizeLabelImage", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
         .def_prop_rw("background_color", &Class::get_background_color,
@@ -48,7 +48,7 @@ void DefineVisualizationImageSystems(py::module_ m) {
   {
     using Class = ConcatenateImages<double>;
     constexpr auto& cls_doc = doc.ConcatenateImages;
-    py::class_<Class, systems::LeafSystem<double>>(
+    class_<Class, systems::LeafSystem<double>>(
         m, "ConcatenateImages", cls_doc.doc)
         .def(py::init<int, int>(), py::kw_only(), py::arg("rows") = 1,
             py::arg("cols") = 1, cls_doc.ctor.doc)

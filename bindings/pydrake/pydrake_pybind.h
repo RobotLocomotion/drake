@@ -43,6 +43,9 @@ namespace py = pybind11;
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
 using py_rvp = py::rv_policy;
 
+// This alias helps ease Drake's transition to nanobind.
+using py::class_;
+
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
 // the compiler.
@@ -110,7 +113,7 @@ void DefClone(PyClass* ppy_class) {
 }
 
 /// Binds `__getstate__` and `__setstate__` for pickling on the given
-/// `ppy_class` (which must point to a `py::class_`).
+/// `ppy_class` (which must point to a `class_`).
 ///
 /// The get_state functor should take `(const Class& self)` and return a
 /// newly-pickled class `-> Pickled` by value.
@@ -149,7 +152,7 @@ void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
 /// useful when the C++ class only has a default constructor. Example:
 /// @code
 /// using Class = ExampleClass;
-/// py::class_<Class>(m, "ExampleClass")  // BR
+/// class_<Class>(m, "ExampleClass")  // BR
 ///     .def(ParamInit<Class>());
 /// @endcode
 ///

@@ -23,7 +23,7 @@ void DefineAutodiffutils(py::module_ m) {
   constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // TODO(m-chaturvedi) Add Pybind11 documentation.
-  py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
+  class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
   autodiff  // BR
       .def(py::init<double>(), py::arg("value"),
           "Constructs a value with empty derivatives.")

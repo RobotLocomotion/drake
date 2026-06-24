@@ -17,7 +17,7 @@ void DefineSolversMixedIntegerRotationConstraint(py::module_ m) {
   {
     using Class = MixedIntegerRotationConstraintGenerator;
     constexpr auto& cls_doc = doc.MixedIntegerRotationConstraintGenerator;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "MixedIntegerRotationConstraintGenerator", cls_doc.doc);
     cls  // BR
         .def("phi", &Class::phi, cls_doc.phi.doc)
@@ -39,7 +39,7 @@ void DefineSolversMixedIntegerRotationConstraint(py::module_ m) {
 
     using Struct = Class::ReturnType;
     constexpr auto& struct_doc = cls_doc.ReturnType;
-    py::class_<Struct>(cls, "ReturnType", struct_doc.doc)
+    class_<Struct>(cls, "ReturnType", struct_doc.doc)
         // Massage these return types to return copies, not references (#8116).
         .def_ro("B_", &Struct::B_, py_rvp::copy, struct_doc.B_.doc)
         .def_ro(

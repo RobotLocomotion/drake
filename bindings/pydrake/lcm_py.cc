@@ -27,7 +27,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = DrakeLcmInterface;
     constexpr auto& cls_doc = doc.DrakeLcmInterface;
-    py::class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
+    class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
         .def("get_lcm_url", &DrakeLcmInterface::get_lcm_url,
             cls_doc.get_lcm_url.doc)
         .def(
@@ -91,7 +91,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = DrakeLcmParams;
     constexpr auto& cls_doc = doc.DrakeLcmParams;
-    py::class_<Class> cls(m, "DrakeLcmParams", cls_doc.doc);
+    class_<Class> cls(m, "DrakeLcmParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -102,7 +102,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = DrakeLcm;
     constexpr auto& cls_doc = doc.DrakeLcm;
-    py::class_<Class, DrakeLcmInterface> cls(m, "DrakeLcm", cls_doc.doc);
+    class_<Class, DrakeLcmInterface> cls(m, "DrakeLcm", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::string>(), py::arg("lcm_url"),

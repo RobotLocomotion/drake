@@ -14,14 +14,14 @@ void DefineSolversMosek(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<MosekSolver, SolverInterface> cls(
+  class_<MosekSolver, SolverInterface> cls(
       m, "MosekSolver", doc.MosekSolver.doc);
   cls  // BR
       .def(py::init<>(), doc.MosekSolver.ctor.doc)
       .def_static("id", &MosekSolver::id, doc.MosekSolver.id.doc);
   pysolvers::BindAcquireLicense(&cls, doc.MosekSolver);
 
-  py::class_<MosekSolverDetails>(
+  class_<MosekSolverDetails>(
       m, "MosekSolverDetails", doc.MosekSolverDetails.doc)
       .def_ro("optimizer_time", &MosekSolverDetails::optimizer_time,
           doc.MosekSolverDetails.optimizer_time.doc)

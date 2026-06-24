@@ -40,13 +40,12 @@ PYDRAKE_MODULE(controllers, m) {
   {
     using Class = DynamicProgrammingOptions;
     constexpr auto& cls_doc = doc.DynamicProgrammingOptions;
-    py::class_<DynamicProgrammingOptions> cls(
+    class_<DynamicProgrammingOptions> cls(
         m, "DynamicProgrammingOptions", cls_doc.doc);
     {
       using Nested = Class::PeriodicBoundaryCondition;
       constexpr auto& nested_doc = cls_doc.PeriodicBoundaryCondition;
-      py::class_<Nested> nested(
-          cls, "PeriodicBoundaryCondition", nested_doc.doc);
+      class_<Nested> nested(cls, "PeriodicBoundaryCondition", nested_doc.doc);
       nested  // BR
           .def(py::init<int, double, double>(), py::arg("state_index"),
               py::arg("low"), py::arg("high"), nested_doc.ctor.doc)
@@ -80,8 +79,7 @@ PYDRAKE_MODULE(controllers, m) {
   {
     using Class = InverseDynamics<double>;
     constexpr auto& cls_doc = doc.InverseDynamics;
-    py::class_<Class, LeafSystem<double>> cls(
-        m, "InverseDynamics", cls_doc.doc);
+    class_<Class, LeafSystem<double>> cls(m, "InverseDynamics", cls_doc.doc);
     {
       using Nested = Class::InverseDynamicsMode;
       constexpr auto& nested_doc = cls_doc.InverseDynamicsMode;
@@ -117,8 +115,7 @@ PYDRAKE_MODULE(controllers, m) {
   {
     using Class = InverseDynamicsController<double>;
     constexpr auto& cls_doc = doc.InverseDynamicsController;
-    py::class_<Class, Diagram<double>>(
-        m, "InverseDynamicsController", cls_doc.doc)
+    class_<Class, Diagram<double>>(m, "InverseDynamicsController", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>&, const VectorX<double>&,
                  const VectorX<double>&, const VectorX<double>&, bool,
                  const systems::Context<double>*>(),
@@ -154,7 +151,7 @@ PYDRAKE_MODULE(controllers, m) {
   {
     using Class = JointStiffnessController<double>;
     constexpr auto& cls_doc = doc.JointStiffnessController;
-    py::class_<Class, LeafSystem<double>> cls(
+    class_<Class, LeafSystem<double>> cls(
         m, "JointStiffnessController", cls_doc.doc);
     cls  // BR
         .def(py::init<const MultibodyPlant<double>&,
@@ -179,7 +176,7 @@ PYDRAKE_MODULE(controllers, m) {
     using T = double;
     using Class = PidControlledSystem<T>;
     constexpr auto& cls_doc = doc.PidControlledSystem;
-    py::class_<Class, Diagram<T>>(m, "PidControlledSystem", cls_doc.doc)
+    class_<Class, Diagram<T>>(m, "PidControlledSystem", cls_doc.doc)
         .def(
             "__init__",
             [](Class* self, System<T>& plant, double Kp, double Ki, double Kd,
@@ -258,7 +255,7 @@ PYDRAKE_MODULE(controllers, m) {
   {
     using Class = PidController<double>;
     constexpr auto& cls_doc = doc.PidController;
-    py::class_<Class, LeafSystem<double>>(m, "PidController", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "PidController", cls_doc.doc)
         .def(py::init<const VectorX<double>&, const VectorX<double>&,
                  const VectorX<double>&>(),
             py::arg("kp"), py::arg("ki"), py::arg("kd"), cls_doc.ctor.doc_3args)
@@ -345,7 +342,7 @@ PYDRAKE_MODULE(controllers, m) {
   {
     using Class = FiniteHorizonLinearQuadraticRegulatorOptions;
     constexpr auto& cls_doc = doc.FiniteHorizonLinearQuadraticRegulatorOptions;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "FiniteHorizonLinearQuadraticRegulatorOptions", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
@@ -377,7 +374,7 @@ PYDRAKE_MODULE(controllers, m) {
   {
     using Class = FiniteHorizonLinearQuadraticRegulatorResult;
     constexpr auto& cls_doc = doc.FiniteHorizonLinearQuadraticRegulatorResult;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "FiniteHorizonLinearQuadraticRegulatorResult", cls_doc.doc);
     DefReadUniquePtr(&cls, "x0", &Class::x0, cls_doc.x0.doc);
     DefReadUniquePtr(&cls, "u0", &Class::u0, cls_doc.u0.doc);

@@ -76,7 +76,7 @@ py::object DoEval(const SomeObject* self, const systems::Context<T>& context) {
 void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = UseDefaultName;
-    py::class_<Class>(m, "UseDefaultName", doc.UseDefaultName.doc)
+    class_<Class>(m, "UseDefaultName", doc.UseDefaultName.doc)
         .def("__repr__", [](const Class&) { return "kUseDefaultName"; });
   }
   m.attr("kUseDefaultName") = kUseDefaultName;
@@ -106,7 +106,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
   BindTypeSafeIndex<SystemConstraintIndex>(m, "SystemConstraintIndex");
 
-  py::class_<FixedInputPortValue>(
+  class_<FixedInputPortValue>(
       m, "FixedInputPortValue", doc.FixedInputPortValue.doc)
       .def("GetMutableData", &FixedInputPortValue::GetMutableData,
           py_rvp::reference_internal,
@@ -115,7 +115,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   // N.B. `AbstractValues` provides the ability to reference non-owned values,
   // without copying them. For consistency with other model-value Python
   // bindings, only the ownership variant is exposed.
-  py::class_<AbstractValues> abstract_values(
+  class_<AbstractValues> abstract_values(
       m, "AbstractValues", doc.AbstractValues.doc);
   DefClone(&abstract_values);
   abstract_values  // BR
@@ -163,7 +163,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
           doc.WitnessFunctionDirection.kCrossesZero.doc);
 
   {
-    py::class_<PeriodicEventData> cls(
+    class_<PeriodicEventData> cls(
         m, "PeriodicEventData", doc.PeriodicEventData.doc);
     DefCopyAndDeepCopy(&cls);
     cls  // BR
@@ -176,7 +176,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = EventStatus;
     constexpr auto& cls_doc = doc.EventStatus;
-    py::class_<Class> cls(m, "EventStatus", cls_doc.doc);
+    class_<Class> cls(m, "EventStatus", cls_doc.doc);
 
     using Enum = Class::Severity;
     constexpr auto& enum_doc = cls_doc.Severity;
@@ -239,7 +239,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  py::class_<ContextBase>(m, "ContextBase", doc.ContextBase.doc)
+  class_<ContextBase>(m, "ContextBase", doc.ContextBase.doc)
       .def("num_input_ports", &ContextBase::num_input_ports,
           doc.ContextBase.num_input_ports.doc)
       .def("num_output_ports", &ContextBase::num_output_ports,
@@ -262,7 +262,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = ValueProducer;
     constexpr auto& cls_doc = doc.ValueProducer;
-    py::class_<Class>(m, "ValueProducer", cls_doc.doc)
+    class_<Class>(m, "ValueProducer", cls_doc.doc)
         .def(py::init([](py::function allocate,
                           std::function<void(py::object, py::object)> calc) {
           return Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),
@@ -275,7 +275,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = CacheEntryValue;
     constexpr auto& cls_doc = doc.CacheEntryValue;
-    py::class_<Class>(m, "CacheEntryValue", cls_doc.doc)
+    class_<Class>(m, "CacheEntryValue", cls_doc.doc)
         .def(
             "GetValueOrThrow",
             [](const Class& self) {
@@ -297,7 +297,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = CacheEntry;
     constexpr auto& cls_doc = doc.CacheEntry;
-    py::class_<Class>(m, "CacheEntry", cls_doc.doc)
+    class_<Class>(m, "CacheEntry", cls_doc.doc)
         .def("prerequisites", &Class::prerequisites, cls_doc.prerequisites.doc)
         .def("EvalAbstract", &Class::EvalAbstract, py::arg("context"),
             py_rvp::reference_internal, cls_doc.EvalAbstract.doc)
@@ -348,13 +348,13 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     // useful without the full bindings.
     using Class = ExternalSystemConstraint;
     constexpr auto& cls_doc = doc.ExternalSystemConstraint;
-    py::class_<Class>(m, "_ExternalSystemConstraint", cls_doc.doc)
+    class_<Class>(m, "_ExternalSystemConstraint", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args);
   }
 }
 
 template <typename T>
-py::class_<Context<T>, ContextBase> DefineContext(py::module_ m) {
+class_<Context<T>, ContextBase> DefineContext(py::module_ m) {
   auto context_cls = DefineTemplateClassWithDefault<Context<T>, ContextBase>(
       m, "Context", GetPyParam<T>(), doc.Context.doc);
   context_cls

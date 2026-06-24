@@ -13,12 +13,12 @@ void DefineSolversClarabel(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<ClarabelSolver, SolverInterface>(
+  class_<ClarabelSolver, SolverInterface>(
       m, "ClarabelSolver", doc.ClarabelSolver.doc)
       .def(py::init<>(), doc.ClarabelSolver.ctor.doc)
       .def_static("id", &ClarabelSolver::id, doc.ClarabelSolver.id.doc);
 
-  py::class_<ClarabelSolverDetails>(
+  class_<ClarabelSolverDetails>(
       m, "ClarabelSolverDetails", doc.ClarabelSolverDetails.doc)
       .def_ro("solve_time", &ClarabelSolverDetails::solve_time,
           doc.ClarabelSolverDetails.solve_time.doc)

@@ -20,7 +20,7 @@ void DefineSensorsLcm(py::module_ m) {
   {
     using Class = LcmImageArrayToImages;
     constexpr auto& cls_doc = doc.LcmImageArrayToImages;
-    py::class_<Class, LeafSystem<double>> cls(
+    class_<Class, LeafSystem<double>> cls(
         m, "LcmImageArrayToImages", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
@@ -37,7 +37,7 @@ void DefineSensorsLcm(py::module_ m) {
   {
     using Class = ImageToLcmImageArrayT;
     constexpr auto& cls_doc = doc.ImageToLcmImageArrayT;
-    py::class_<Class, LeafSystem<double>> cls(
+    class_<Class, LeafSystem<double>> cls(
         m, "ImageToLcmImageArrayT", cls_doc.doc);
     cls  // BR
         .def(py::init<const std::string&, const std::string&,

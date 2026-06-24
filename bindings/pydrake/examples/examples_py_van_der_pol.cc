@@ -20,7 +20,7 @@ void DefineExamplesVanDerPol(py::module_ m) {
   // conversion.
   using T = double;
 
-  py::class_<VanDerPolOscillator<T>, LeafSystem<T>>(
+  class_<VanDerPolOscillator<T>, LeafSystem<T>>(
       m, "VanDerPolOscillator", doc.VanDerPolOscillator.doc)
       .def(py::init<>(), doc.VanDerPolOscillator.ctor.doc)
       .def("get_position_output_port",

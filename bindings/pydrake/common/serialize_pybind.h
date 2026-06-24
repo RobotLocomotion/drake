@@ -31,7 +31,7 @@ class DefAttributesArchive {
 
   using CxxClass = typename PyClass::Type;
 
-  // @param ppy_class A pointer to the `py::class_` to add the properties to.
+  // @param ppy_class A pointer to the `class_` to add the properties to.
   // @param prototype A pointer to the instance that will be visited.
   // @param docs A pointer to the mkdoc struct for this ppy_class; can be null
   //   iff `Docs` is `void`, in which case docstrings will not be added.

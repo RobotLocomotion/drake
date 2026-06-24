@@ -41,7 +41,7 @@ MatrixX<T> CalcMatrixInverse(const MatrixX<T>& X) {
 
 /* Adds math function overloads (ADL free functions) for the given class `T`.
 This is used for both NumPy methods and `pydrake.math` module functions.
-@param obj If this is py::class_, this is intended to register class methods on
+@param obj If this is class_, this is intended to register class methods on
 to overload NumPy's math methods. If this is py::module_, this is intended to
 register the overloads in `pydrake.math`. */
 template <typename T, typename PyObject>
