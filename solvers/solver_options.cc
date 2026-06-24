@@ -65,7 +65,7 @@ void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
       if (std::holds_alternative<double>(value)) {
         const double double_value = std::get<double>(value);
         if (double_value == 0.0 || double_value == 1.0) {
-	  const int int_value = static_cast<int>(double_value);
+          const int int_value = static_cast<int>(double_value);
           options[kCommonKey][fmt::to_string(key)] = OptionValue{int_value};
           return;
         }
