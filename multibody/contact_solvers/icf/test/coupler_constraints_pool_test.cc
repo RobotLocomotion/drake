@@ -129,9 +129,8 @@ GTEST_TEST(CouplerConstraintsPool, Data) {
   const auto v_clique = model.clique_segment(1, v);
 
   // Compute regularization manually.
-  const double beta =
-      0.1;  // Keep in sync with hard-coded value in the implementation.
-  const double m = 2.3;                           // "mass" for clique 1.
+  constexpr double beta = IcfModel<AutoDiffXd>::beta;
+  constexpr double m = 2.3;                       // "mass" for clique 1.
   const double w_delassus = (1 + rho * rho) / m;  // Delassus for clique 1.
   const double m_effective = 1.0 / w_delassus;    // Effective mass.
   const double omega_near_rigid =
