@@ -23,6 +23,3 @@ echo "REPO_NAMES = [" > lock/repo_names.bzl
     sed -e 's#^BUILD\.#    "crate__#; s#\.bazel$#",#g;' \
     >> lock/repo_names.bzl
 echo "]" >> lock/repo_names.bzl
-
-# Stage the changes.
-git add lock

@@ -307,11 +307,8 @@ def _modified_paths(repo: git.Repo, root: str) -> set[str]:
 
 def _is_unmodified(repo: git.Repo, path: str) -> bool:
     """Returns true iff the given path is unmodified in the working tree of
-    the given repo. If repo is None, returns False.
+    the given repo.
     """
-    if repo is None:
-        return False
-
     if os.path.isdir(os.path.join(repo.working_tree_dir, path)):
         return len(_modified_paths(repo, path)) == 0
 
@@ -475,6 +472,7 @@ def _do_upgrade(
     temp_dir: str,
     workspace_name: str,
     metadata: dict[str, Any],
+    commit: bool,
 ) -> UpgradeResult:
     """Determines whether the given workspace can be upgraded. Returns an
     `UpgradeResult` describing what (if anything) was done."""
@@ -483,7 +481,6 @@ def _do_upgrade(
 
     data = metadata[workspace_name]
     rule_type = RuleType(data["repository_rule_type"])
-    upgrade_type = UpgradeType(data["upgrade_type"])
     bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
 
     if workspace_name in _OTHER_REPOSITORIES + _CHECK_ONLY_REPOSITORIES:
@@ -504,7 +501,7 @@ def _do_upgrade(
         # Determine if we should and can commit the changes made.
         workspace_root = f"tools/workspace/{workspace_name}/"
         can_commit = _is_unmodified(local_drake_checkout, workspace_root)
-        if local_drake_checkout and not can_commit:
+        if commit and not can_commit:
             warn(f"{workspace_root} has local changes.")
             warn(f"Changes made for {workspace_name} will NOT be committed.")
 
@@ -518,6 +515,8 @@ def _do_upgrade(
         if not len(modified_paths):
             return UpgradeResult(False)
 
+        # Finalize the result field(s).
+        message = f"Update {workspace_name} to latest"
     else:
         assert rule_type.is_github, f"Cannot auto-upgrade {workspace_name}"
 
@@ -531,11 +530,12 @@ def _do_upgrade(
 
         # Determine if we should and can commit the changes made.
         can_commit = _is_unmodified(local_drake_checkout, bzl_filename)
-        if local_drake_checkout and not can_commit:
+        if commit and not can_commit:
             warn(f"{bzl_filename} has local changes.")
             warn(f"Changes made for {workspace_name} will NOT be committed.")
 
         # Do the upgrade.
+        upgrade_type = UpgradeType(data["upgrade_type"])
         if rule_type == RuleType.GITHUB:
             _do_upgrade_github_archive(
                 temp_dir=temp_dir,
@@ -556,7 +556,13 @@ def _do_upgrade(
                 old_attachments=data["attachments"],
             )
 
+        # Finalize the result field(s).
         modified_paths = {bzl_filename}
+        if upgrade_type == UpgradeType.COMMIT:
+            message = f"Update dependency {workspace_name} to latest commit"
+        else:
+            release = new_commit.lstrip("releases/").lstrip("v")
+            message = f"Update dependency {workspace_name} to {release}"
 
     # Copy the downloaded tarball into the repository cache.
     info("Populating repository cache ...")
@@ -571,18 +577,6 @@ def _do_upgrade(
         warn("*" * 72)
         warn("")
 
-    # Finalize the result.
-    if new_commit:
-        if upgrade_type == UpgradeType.COMMIT:
-            message = f"Update dependency {workspace_name} to latest commit"
-        else:
-            release = new_commit.lstrip("releases/").lstrip("v")
-            message = f"Update dependency {workspace_name} to {release}"
-    else:
-        # This is a scripted upgrade of multiple packages, so we'll omit
-        # the word "dependency" from the commit message.
-        message = f"Update {workspace_name} to latest"
-
     return UpgradeResult(True, can_commit, modified_paths, message)
 
 
@@ -592,6 +586,7 @@ def _do_upgrades(
     temp_dir: str,
     workspace_names: list[str],
     metadata: dict[str, Any],
+    commit: bool,
 ) -> None:
     """Determines possible upgrades and performs them for the given list of
     workspaces."""
@@ -605,7 +600,7 @@ def _do_upgrades(
     modified_workspace_names = []
     for workspace_name in workspace_names:
         result = _do_upgrade(
-            gh, local_drake_checkout, temp_dir, workspace_name, metadata
+            gh, local_drake_checkout, temp_dir, workspace_name, metadata, commit
         )
         if result.was_upgraded:
             can_commit = can_commit and result.can_be_committed
@@ -626,10 +621,11 @@ def _do_upgrades(
         return
 
     # Determine if we should and can commit the changes made.
+    actually_commit = commit and can_commit
     if len(modified_workspace_names) == 1:
         _do_commit(
             local_drake_checkout,
-            actually_commit=can_commit,
+            actually_commit=actually_commit,
             workspace_names=modified_workspace_names,
             paths=modified_paths,
             message=commit_messages[0],
@@ -637,14 +633,14 @@ def _do_upgrades(
     else:
         cohort = ", ".join(modified_workspace_names)
 
-        if not can_commit:
+        if commit and not can_commit:
             warn(f"Changes made for {cohort} will NOT be committed.")
 
         message = f"Upgrade {cohort} to latest\n\n"
         message += "- " + "\n- ".join(commit_messages)
         _do_commit(
             local_drake_checkout,
-            actually_commit=can_commit,
+            actually_commit=actually_commit,
             workspace_names=modified_workspace_names,
             paths=modified_paths,
             message=message,
@@ -743,10 +739,7 @@ def main():
         # (None denotes "all".)
         workspaces = None
 
-    if args.commit:
-        local_drake_checkout = git.Repo(os.path.realpath("."))
-    else:
-        local_drake_checkout = None
+    local_drake_checkout = git.Repo(os.path.realpath("."))
 
     # Grab the workspace metadata.
     info("Collecting bazel repository details...")
@@ -781,6 +774,7 @@ def main():
                     temp_dir,
                     cohort_workspaces,
                     metadata,
+                    args.commit,
                 )
                 visited_workspaces.update(cohort_workspaces)
     else:
