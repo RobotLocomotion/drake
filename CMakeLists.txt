@@ -11,10 +11,35 @@
 # corresponding tests should also be updated.
 cmake_minimum_required(VERSION 3.20...4.3)
 
+# Record which per-config C compiler flags the user explicitly provided (on the
+# command line or in the cache) before project() runs, so that we can tell them
+# apart from the compiler defaults that project() is about to seed below.
+set(_USER_C_FLAGS_CONFIGS)
+foreach(_config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+  if(DEFINED CMAKE_C_FLAGS_${_config})
+    list(APPEND _USER_C_FLAGS_CONFIGS ${_config})
+  endif()
+endforeach()
+
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
   LANGUAGES C
 )
+
+# CMake config flag transcriptions are handled in cmake/bazel.rc.in. CMake's
+# GNU/Clang modules otherwise seed per-config C flags (e.g. CMAKE_C_FLAGS_RELEASE
+# becomes "-O3 -DNDEBUG") which we'd forward to Bazel and which would override
+# its --compilation_mode; e.g. the default -O3 would compile C at -O3 while C++
+# stays at -O2. Clear CMake's defaults in favor of the transcriptions there. Any
+# flags the user specified via CMAKE_C_FLAGS_<config> are preserved (and still
+# propagated to bazel).
+foreach(_config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+  if(NOT _config IN_LIST _USER_C_FLAGS_CONFIGS)
+    set(CMAKE_C_FLAGS_${_config} "" CACHE STRING
+      "Flags used by the C compiler during ${_config} builds." FORCE
+    )
+  endif()
+endforeach()
 
 # The primary build system for Drake is Bazel (https://bazel.build/). For CMake,
 # our objective is to accept configuration options using their standard spelling
