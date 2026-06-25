@@ -11,7 +11,7 @@ void DefineSolversUnrevisedLemke(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<UnrevisedLemkeSolver<double>, SolverInterface>(
+  class_<UnrevisedLemkeSolver<double>, SolverInterface>(
       m, "UnrevisedLemkeSolver", doc.UnrevisedLemkeSolver.doc)
       .def(py::init<>(), doc.UnrevisedLemkeSolver.ctor.doc)
       .def_static("id", &UnrevisedLemkeSolver<double>::id,

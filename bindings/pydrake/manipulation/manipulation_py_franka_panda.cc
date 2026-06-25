@@ -40,8 +40,7 @@ void DefineManipulationFrankaPanda(py::module_ m) {
   {
     using Class = PandaCommandReceiver;
     constexpr auto& cls_doc = doc.PandaCommandReceiver;
-    py::class_<Class, LeafSystem<double>>(
-        m, "PandaCommandReceiver", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "PandaCommandReceiver", cls_doc.doc)
         .def(py::init<int, PandaControlMode>(), py::arg("num_joints"),
             py::arg("control_mode"), cls_doc.ctor.doc)
         .def("LatchInitialPosition",
@@ -71,7 +70,7 @@ void DefineManipulationFrankaPanda(py::module_ m) {
   {
     using Class = PandaCommandSender;
     constexpr auto& cls_doc = doc.PandaCommandSender;
-    py::class_<Class, LeafSystem<double>>(m, "PandaCommandSender", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "PandaCommandSender", cls_doc.doc)
         .def(py::init<int, PandaControlMode>(), py::arg("num_joints"),
             py::arg("control_mode"), cls_doc.ctor.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
@@ -85,7 +84,7 @@ void DefineManipulationFrankaPanda(py::module_ m) {
   {
     using Class = PandaStatusReceiver;
     constexpr auto& cls_doc = doc.PandaStatusReceiver;
-    py::class_<Class, LeafSystem<double>>(m, "PandaStatusReceiver", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "PandaStatusReceiver", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kPandaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_position_commanded_output_port",
@@ -123,7 +122,7 @@ void DefineManipulationFrankaPanda(py::module_ m) {
   {
     using Class = PandaStatusSender;
     constexpr auto& cls_doc = doc.PandaStatusSender;
-    py::class_<Class, LeafSystem<double>>(m, "PandaStatusSender", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "PandaStatusSender", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kPandaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_position_commanded_input_port",

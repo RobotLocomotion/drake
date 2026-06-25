@@ -29,13 +29,13 @@ void DefineExamplesAcrobot(py::module_ m) {
   // conversion. Issue #7660.
   using T = double;
 
-  py::class_<AcrobotInput<T>, BasicVector<T>>(
+  class_<AcrobotInput<T>, BasicVector<T>>(
       m, "AcrobotInput", doc.AcrobotInput.doc)
       .def(py::init<>(), doc.AcrobotInput.ctor.doc)
       .def("tau", &AcrobotInput<T>::tau, doc.AcrobotInput.tau.doc)
       .def("set_tau", &AcrobotInput<T>::set_tau, doc.AcrobotInput.set_tau.doc);
 
-  py::class_<AcrobotParams<T>, BasicVector<T>>(
+  class_<AcrobotParams<T>, BasicVector<T>>(
       m, "AcrobotParams", doc.AcrobotParams.doc)
       .def(py::init<>(), doc.AcrobotParams.ctor.doc)
       .def("m1", &AcrobotParams<T>::m1, doc.AcrobotParams.m1.doc)
@@ -60,7 +60,7 @@ void DefineExamplesAcrobot(py::module_ m) {
       .def("set_gravity", &AcrobotParams<T>::set_gravity,
           doc.AcrobotParams.set_gravity.doc);
 
-  py::class_<AcrobotState<T>, BasicVector<T>>(
+  class_<AcrobotState<T>, BasicVector<T>>(
       m, "AcrobotState", doc.AcrobotState.doc)
       .def(py::init<>(), doc.AcrobotState.ctor.doc)
       .def("theta1", &AcrobotState<T>::theta1, doc.AcrobotState.theta1.doc)
@@ -78,7 +78,7 @@ void DefineExamplesAcrobot(py::module_ m) {
       .def("set_theta2dot", &AcrobotState<T>::set_theta2dot,
           doc.AcrobotState.set_theta2dot.doc);
 
-  py::class_<SpongControllerParams<T>, BasicVector<T>>(
+  class_<SpongControllerParams<T>, BasicVector<T>>(
       m, "SpongControllerParams", doc.AcrobotParams.doc)
       .def(py::init<>(), doc.SpongControllerParams.ctor.doc)
       .def("k_e", &SpongControllerParams<T>::k_e,
@@ -100,7 +100,7 @@ void DefineExamplesAcrobot(py::module_ m) {
           &SpongControllerParams<T>::set_balancing_threshold,
           doc.SpongControllerParams.set_balancing_threshold.doc);
 
-  py::class_<AcrobotPlant<T>, LeafSystem<T>>(
+  class_<AcrobotPlant<T>, LeafSystem<T>>(
       m, "AcrobotPlant", doc.AcrobotPlant.doc)
       .def(py::init<>(), doc.AcrobotPlant.ctor.doc)
       .def("DynamicsBiasTerm", &AcrobotPlant<T>::DynamicsBiasTerm,
@@ -126,7 +126,7 @@ void DefineExamplesAcrobot(py::module_ m) {
           py_rvp::reference_internal, py::arg("context"),
           doc.AcrobotPlant.get_mutable_parameters.doc);
 
-  py::class_<AcrobotWEncoder<T>, Diagram<T>>(
+  class_<AcrobotWEncoder<T>, Diagram<T>>(
       m, "AcrobotWEncoder", doc.AcrobotWEncoder.doc)
       .def(py::init<bool>(), py::arg("acrobot_state_as_second_output") = false,
           doc.AcrobotWEncoder.ctor.doc)
@@ -139,7 +139,7 @@ void DefineExamplesAcrobot(py::module_ m) {
           py::keep_alive<0, 1>(),
           doc.AcrobotWEncoder.get_mutable_acrobot_state.doc);
 
-  py::class_<AcrobotSpongController<T>, LeafSystem<T>>(
+  class_<AcrobotSpongController<T>, LeafSystem<T>>(
       m, "AcrobotSpongController", doc.AcrobotSpongController.doc)
       .def(py::init<>(), doc.AcrobotSpongController.ctor.doc)
       .def("get_parameters", &AcrobotSpongController<T>::get_parameters,
@@ -153,7 +153,7 @@ void DefineExamplesAcrobot(py::module_ m) {
           py::keep_alive<0, 2>(),
           doc.AcrobotSpongController.get_mutable_parameters.doc);
 
-  py::class_<AcrobotGeometry, LeafSystem<double>>(
+  class_<AcrobotGeometry, LeafSystem<double>>(
       m, "AcrobotGeometry", doc.AcrobotGeometry.doc)
       .def_static("AddToBuilder",
           py::overload_cast<systems::DiagramBuilder<double>*,

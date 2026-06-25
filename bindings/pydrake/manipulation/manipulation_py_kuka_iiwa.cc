@@ -53,7 +53,7 @@ void DefineManipulationKukaIiwa(py::module_ m) {
   {
     using Class = IiwaCommandReceiver;
     constexpr auto& cls_doc = doc.IiwaCommandReceiver;
-    py::class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
         .def(py::init<int, IiwaControlMode>(),
             py::arg("num_joints") = kIiwaArmNumJoints,
             py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
@@ -79,7 +79,7 @@ void DefineManipulationKukaIiwa(py::module_ m) {
   {
     using Class = IiwaCommandSender;
     constexpr auto& cls_doc = doc.IiwaCommandSender;
-    py::class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
         .def(py::init<int, IiwaControlMode>(),
             py::arg("num_joints") = kIiwaArmNumJoints,
             py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
@@ -95,7 +95,7 @@ void DefineManipulationKukaIiwa(py::module_ m) {
   {
     using Class = IiwaStatusReceiver;
     constexpr auto& cls_doc = doc.IiwaStatusReceiver;
-    py::class_<Class, LeafSystem<double>>(m, "IiwaStatusReceiver", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "IiwaStatusReceiver", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_time_measured_output_port",
@@ -128,7 +128,7 @@ void DefineManipulationKukaIiwa(py::module_ m) {
   {
     using Class = IiwaStatusSender;
     constexpr auto& cls_doc = doc.IiwaStatusSender;
-    py::class_<Class, LeafSystem<double>>(m, "IiwaStatusSender", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "IiwaStatusSender", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_time_measured_input_port",
@@ -160,7 +160,7 @@ void DefineManipulationKukaIiwa(py::module_ m) {
   {
     using Class = IiwaDriver;
     constexpr auto& cls_doc = doc.IiwaDriver;
-    py::class_<Class> cls(m, "IiwaDriver", cls_doc.doc);
+    class_<Class> cls(m, "IiwaDriver", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -171,7 +171,7 @@ void DefineManipulationKukaIiwa(py::module_ m) {
   {
     using Class = SimIiwaDriver<double>;
     constexpr auto& cls_doc = doc.SimIiwaDriver;
-    py::class_<Class, Diagram<double>>(m, "SimIiwaDriver", cls_doc.doc)
+    class_<Class, Diagram<double>>(m, "SimIiwaDriver", cls_doc.doc)
         .def(py::init<const IiwaDriver&,
                  const multibody::MultibodyPlant<double>*>(),
             py::arg("driver_config"), py::arg("controller_plant"),

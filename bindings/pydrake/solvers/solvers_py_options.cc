@@ -36,7 +36,7 @@ void DefineSolversOptions(py::module_ m) {
     using Class = SolverOptions;
     using NestedOptionsDict = decltype(Class{}.options);
     using OptionValue = SolverOptions::OptionValue;
-    py::class_<Class> cls(m, "SolverOptions", doc.SolverOptions.doc);
+    class_<Class> cls(m, "SolverOptions", doc.SolverOptions.doc);
     cls  // BR
         .def(
             "__init__",

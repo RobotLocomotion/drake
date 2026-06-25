@@ -16,7 +16,7 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
   {
     using Class = ProjectedGradientDescentSolver;
     constexpr auto& cls_doc = doc.ProjectedGradientDescentSolver;
-    py::class_<Class, SolverInterface> pgd_cls(
+    class_<Class, SolverInterface> pgd_cls(
         m, "ProjectedGradientDescentSolver", cls_doc.doc);
 
     pgd_cls  // BR

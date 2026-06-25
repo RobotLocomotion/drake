@@ -47,7 +47,7 @@ void DefineDifferentialIkLegacy(py::module_ m) {
   {
     using Class = DifferentialInverseKinematicsResult;
     constexpr auto& cls_doc = doc.DifferentialInverseKinematicsResult;
-    py::class_<Class> cls(m, "DifferentialInverseKinematicsResult",
+    class_<Class> cls(m, "DifferentialInverseKinematicsResult",
         doc.DifferentialInverseKinematicsResult.doc);
 
     // TODO(m-chaturvedi) Add Pybind11 documentation.
@@ -61,7 +61,7 @@ void DefineDifferentialIkLegacy(py::module_ m) {
     using Class = DifferentialInverseKinematicsParameters;
     constexpr auto& cls_doc = doc.DifferentialInverseKinematicsParameters;
 
-    py::class_<Class> cls(m, "DifferentialInverseKinematicsParameters",
+    class_<Class> cls(m, "DifferentialInverseKinematicsParameters",
         doc.DifferentialInverseKinematicsParameters.doc);
 
     cls  // BR
@@ -214,7 +214,7 @@ void DefineDifferentialIkLegacy(py::module_ m) {
   {
     using Class = DifferentialInverseKinematicsIntegrator;
     constexpr auto& cls_doc = doc.DifferentialInverseKinematicsIntegrator;
-    py::class_<Class, LeafSystem<double>>(
+    class_<Class, LeafSystem<double>>(
         m, "DifferentialInverseKinematicsIntegrator", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>&,
                  const multibody::Frame<double>&,
@@ -250,11 +250,11 @@ void DefineDifferentialIkLegacy(py::module_ m) {
 
 // The pybind class for the DifferentialInverseKinematicsSystem.
 using PyClassDifferentialInverseKinematicsSystem =
-    py::class_<DifferentialInverseKinematicsSystem, LeafSystem<double>>;
+    class_<DifferentialInverseKinematicsSystem, LeafSystem<double>>;
 
 // The pybind class for DifferentialInverseKinematicsSystem's ingredients.
 template <typename Derived>
-using PyClassIngredient = py::class_<Derived, Ingredient>;
+using PyClassIngredient = class_<Derived, Ingredient>;
 
 // Bind the common Ingredient API for both Ingredient and its Config struct.
 // The bound class gets returned so non-common APIs can be subsequently bound.
@@ -271,7 +271,7 @@ PyClassIngredient<Derived> BindIngredient(const char* class_name,
 
   PyClassIngredient<Derived> cls(*diff_ik_cls, class_name, cls_doc.doc);
 
-  py::class_<Config> config_cls(cls, "Config", cls_doc.Config.doc);
+  class_<Config> config_cls(cls, "Config", cls_doc.Config.doc);
   config_cls.def(ParamInit<Config>());
   DefAttributesUsingSerialize(&config_cls, cls_doc.Config);
   DefReprUsingSerialize(&config_cls);
@@ -303,7 +303,7 @@ void DefineDifferentialIkSystem(py::module_ m) {
 
   {
     constexpr auto nested_cls_doc = cls_doc.Ingredient;
-    py::class_<Ingredient>(cls, "Ingredient", nested_cls_doc.doc);
+    class_<Ingredient>(cls, "Ingredient", nested_cls_doc.doc);
     // We're explicitly not binding `AddToProgram` because we expect only the
     // C++ DifferentialInverseKinematicsSystem would call it.
   }
@@ -311,7 +311,7 @@ void DefineDifferentialIkSystem(py::module_ m) {
   {
     using NestedClass = Recipe;
     constexpr auto nested_cls_doc = cls_doc.Recipe;
-    py::class_<NestedClass>(cls, "Recipe", nested_cls_doc.doc)
+    class_<NestedClass>(cls, "Recipe", nested_cls_doc.doc)
         .def(py::init<>(), nested_cls_doc.ctor.doc)
         .def(
             "AddIngredient",
@@ -430,7 +430,7 @@ void DefineDifferentialIkController(py::module_ m) {
 
   using Class = DifferentialInverseKinematicsController;
   constexpr auto& cls_doc = doc.DifferentialInverseKinematicsController;
-  py::class_<Class, systems::Diagram<double>>(
+  class_<Class, systems::Diagram<double>>(
       m, "DifferentialInverseKinematicsController")
       .def(
           "__init__",

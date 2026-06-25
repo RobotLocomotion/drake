@@ -15,7 +15,7 @@ void DefinePlanningZmpPlanner(py::module_ m) {
   {
     using Class = ZmpPlanner;
     constexpr auto& cls_doc = doc.ZmpPlanner;
-    auto cls = py::class_<Class>(m, "ZmpPlanner", cls_doc.doc)
+    auto cls = class_<Class>(m, "ZmpPlanner", cls_doc.doc)
                    .def(py::init<>(), cls_doc.ctor.doc);
     cls  // BR
         .def("Plan", &Class::Plan, py::arg("zmp_d"), py::arg("x0"),

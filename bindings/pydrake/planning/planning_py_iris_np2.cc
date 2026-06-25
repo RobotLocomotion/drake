@@ -18,7 +18,7 @@ void DefinePlanningIrisNp2(py::module_ m) {
 
   // RaySamplerOptions
   const auto& ray_sampler_options_doc = doc.RaySamplerOptions;
-  py::class_<RaySamplerOptions> ray_sampler_options(
+  class_<RaySamplerOptions> ray_sampler_options(
       m, "RaySamplerOptions", ray_sampler_options_doc.doc);
   ray_sampler_options  // BR
       .def(py::init<>())
@@ -43,7 +43,7 @@ void DefinePlanningIrisNp2(py::module_ m) {
 
   // IrisNp2Options
   const auto& cls_doc = doc.IrisNp2Options;
-  py::class_<IrisNp2Options> iris_np2_options(m, "IrisNp2Options", cls_doc.doc);
+  class_<IrisNp2Options> iris_np2_options(m, "IrisNp2Options", cls_doc.doc);
   iris_np2_options  // BR
       .def(py::init<>())
       .def_prop_rw("solver_options",

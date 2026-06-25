@@ -92,17 +92,17 @@ struct type_caster<drake::pydrake::TypeConversionExample>
 namespace drake {
 namespace pydrake {
 PYDRAKE_MODULE(wrap_test_util, m) {
-  py::class_<MyValue>(m, "MyValue")
+  class_<MyValue>(m, "MyValue")
       .def(py::init<double>(), py::arg("value"))
       .def_rw("value", &MyValue::value, py_rvp::reference_internal);
 
-  py::class_<MyContainerRawPtr> my_container(m, "MyContainerRawPtr");
+  class_<MyContainerRawPtr> my_container(m, "MyContainerRawPtr");
   my_container  // BR
       .def(py::init());
   DefReadWriteKeepAlive(&my_container, "member", &MyContainerRawPtr::member,
       "MyContainerRawPtr doc");
 
-  py::class_<MyContainerUniquePtr> my_unique(m, "MyContainerUniquePtr");
+  class_<MyContainerUniquePtr> my_unique(m, "MyContainerUniquePtr");
   my_unique.def(py::init<MyValue, MyValue>(), py::arg("member"),
       py::arg("copyable_member"));
   DefReadUniquePtr(&my_unique, "member", &MyContainerUniquePtr::member,
@@ -116,7 +116,7 @@ PYDRAKE_MODULE(wrap_test_util, m) {
   m.def("CheckTypeConversionExample", &CheckTypeConversionExample,
       py::arg("obj"));
 
-  py::class_<NotCopyable>(m, "NotCopyable")  // BR
+  class_<NotCopyable>(m, "NotCopyable")  // BR
       .def(py::init());
 
   // Using WrapCallbacks() -> Good.

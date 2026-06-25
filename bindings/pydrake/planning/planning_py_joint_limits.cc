@@ -14,7 +14,7 @@ void DefinePlanningJointLimits(py::module_ m) {
 
   using Class = JointLimits;
   constexpr auto& cls_doc = doc.JointLimits;
-  py::class_<Class>(m, "JointLimits")
+  class_<Class>(m, "JointLimits")
       .def(py::init<>(), cls_doc.ctor.doc)
       .def(py::init<const multibody::MultibodyPlant<double>&, bool, bool,
                bool>(),

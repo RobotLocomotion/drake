@@ -17,7 +17,7 @@ void DefineIcf(py::module_ m) {
   {
     using Class = IcfSolverParameters;
     constexpr auto& cls_doc = doc.IcfSolverParameters;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "IcfSolverParameters", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());

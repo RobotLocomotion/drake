@@ -13,11 +13,11 @@ void DefineSolversClp(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<ClpSolver, SolverInterface>(m, "ClpSolver", doc.ClpSolver.doc)
+  class_<ClpSolver, SolverInterface>(m, "ClpSolver", doc.ClpSolver.doc)
       .def(py::init<>(), doc.ClpSolver.ctor.doc)
       .def_static("id", &ClpSolver::id, doc.ClpSolver.id.doc);
 
-  py::class_<ClpSolverDetails>(m, "ClpSolverDetails", doc.ClpSolverDetails.doc)
+  class_<ClpSolverDetails>(m, "ClpSolverDetails", doc.ClpSolverDetails.doc)
       .def_ro(
           "status", &ClpSolverDetails::status, doc.ClpSolverDetails.status.doc);
   AddValueInstantiation<ClpSolverDetails>(m);

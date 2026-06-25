@@ -7,7 +7,7 @@ namespace pydrake {
 namespace test {
 
 PYDRAKE_MODULE(serialize_test_foo, m) {
-  py::class_<Foo> cls(m, "Foo");
+  class_<Foo> cls(m, "Foo");
   DefAttributesUsingSerialize(&cls);
 }
 

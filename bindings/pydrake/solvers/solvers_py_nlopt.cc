@@ -13,8 +13,7 @@ void DefineSolversNlopt(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<NloptSolver, SolverInterface>(
-      m, "NloptSolver", doc.NloptSolver.doc)
+  class_<NloptSolver, SolverInterface>(m, "NloptSolver", doc.NloptSolver.doc)
       .def(py::init<>(), doc.NloptSolver.ctor.doc)
       .def_static("id", &NloptSolver::id, doc.NloptSolver.id.doc)
       .def_static("ConstraintToleranceName",
@@ -33,7 +32,7 @@ void DefineSolversNlopt(py::module_ m) {
       .def_static("MaxTimeName", &NloptSolver::MaxTimeName,
           doc.NloptSolver.MaxTimeName.doc);
 
-  py::class_<NloptSolverDetails>(
+  class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)
       .def_ro("status", &NloptSolverDetails::status,
           doc.NloptSolverDetails.status.doc);

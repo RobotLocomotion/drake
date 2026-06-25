@@ -67,7 +67,7 @@ void DefineModuleValue(py::module_ m) {
     };
   };
 
-  py::class_<AbstractValue> abstract_value(m, "AbstractValue");
+  class_<AbstractValue> abstract_value(m, "AbstractValue");
   DefClone(&abstract_value);
   abstract_value  // BR
       .def("SetFrom", &AbstractValue::SetFrom, doc.AbstractValue.SetFrom.doc)
