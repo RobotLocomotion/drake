@@ -169,11 +169,26 @@ endif()
 # corresponding comment in bazel.rc.in above the
 # `build @BAZEL_USER_COMPILE_FLAGS@` line for more details.
 set(BAZEL_USER_COMPILE_FLAGS)
-separate_arguments(_user_c_flags UNIX_COMMAND
-  "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UPPER}}"
+
+# Collect the tokenized flags from each named CMAKE_*_FLAGS variable that is set
+# and non-empty. We must guard on emptiness because the CMAKE_CXX_FLAGS*
+# variables are not initialized (Drake's project() enables only C, not CXX);
+# referencing them unconditionally could raise a warning.
+function(_collect_user_flags _out_var)
+  set(_result)
+  foreach(_flag_var IN LISTS ARGN)
+    if(${_flag_var})
+      separate_arguments(_tokens UNIX_COMMAND "${${_flag_var}}")
+      list(APPEND _result ${_tokens})
+    endif()
+  endforeach()
+  set(${_out_var} ${_result} PARENT_SCOPE)
+endfunction()
+_collect_user_flags(_user_c_flags
+  CMAKE_C_FLAGS CMAKE_C_FLAGS_${BUILD_TYPE_UPPER}
 )
-separate_arguments(_user_cxx_flags UNIX_COMMAND
-  "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE_UPPER}}"
+_collect_user_flags(_user_cxx_flags
+  CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_${BUILD_TYPE_UPPER}
 )
 # Entries in the .bazelrc file are tokenized according to the same rules as the
 # Bourne shell. See https://bazel.build/run/bazelrc#bazelrc-syntax-semantics
