@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_set.h"
@@ -10,9 +8,11 @@
 namespace drake {
 namespace geometry {
 
+#ifndef DRAKE_DOXYGEN_CXX
 // Forward declarations.
 template <typename T>
 class GeometryState;
+#endif
 
 // Disable formatter to preserve doxygen tables.
 // clang-format off
@@ -28,22 +28,22 @@ class GeometryState;
  A is the set of anchored geometries (by definition `D ⋂ A = ∅`). `Gₚ ⊂ G` is
  the subset of geometries that have a proximity role (with an analogous
  interpretation of `Dₚ` and `Aₚ`). Many proximity queries operate on pairs of
- geometries (e.g., (gᵢ, gⱼ)). The set of proximity candidate pairs for such
+ geometries (e.g., {gᵢ, gⱼ}). The set of proximity candidate pairs for such
  queries is initially defined as
  `C = (Gₚ × Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ - Nₚ*`, where:
 
-  - `Gₚ × Gₚ = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ Gₚ` is the Cartesian product of the set
+  - `Gₚ × Gₚ = {{gᵢ, gⱼ}}, ∀ gᵢ, gⱼ ∈ Gₚ` is the Cartesian product of the set
     of SceneGraph proximity geometries.
   - `Aₚ × Aₚ` represents all pairs consisting only of anchored geometries;
     an anchored geometry is never tested against another anchored geometry.
-  - `Fₚ = {(gᵢ, gⱼ)} ∀ i, j`, such that `gᵢ, gⱼ ∈ Dₚ` and
+  - `Fₚ = {{gᵢ, gⱼ}} ∀ i, j`, such that `gᵢ, gⱼ ∈ Dₚ` and
     `frame(gᵢ) == frame(gⱼ)`; the pairs where both geometries are rigidly
     affixed to the same frame.
-  - `Iₚ = {(g, g)}, ∀ g ∈ Gₚ` is the set of all pairs consisting of a
+  - `Iₚ = {{g, g}}, ∀ g ∈ Gₚ` is the set of all pairs consisting of a
     geometry with itself; there is no meaningful proximity query on a
     geometry with itself.
-  - `Nₚ* = {(g, x)}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x`, where `Nₚ ⊂ Gₚ` is the set of
-    *inactive* geometries (see Deactivate()). An inactive geometry forms no
+  - `Nₚ* = {{g, x}}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x`, where `Nₚ ⊂ Gₚ` is the set of
+    _inactive_ geometries (see Deactivate()). An inactive geometry forms no
     candidate pair with any other geometry. Unlike the other terms, `Nₚ*` is
     evaluated against the *live* set `Gₚ`: a geometry registered after `g` was
     deactivated still forms no pair with `g`. Membership in `Nₚ` is edited
@@ -60,7 +60,7 @@ class GeometryState;
 
  There are limits to how C can be modified.
 
-   - `∀ (gᵢ, gⱼ) ∈ C`, both gᵢ and gⱼ must be registered with SceneGraph; you
+   - `∀ {gᵢ, gⱼ} ∈ C`, both gᵢ and gⱼ must be registered with SceneGraph; you
      can't inject arbitrary ids. Attempting to do so will result in an error.
    - No pairs in `Aₚ × Aₚ`, `Fₚ`, or `Iₚ` can ever be added to C. Excluding
      those pairs is a SceneGraph invariant. Attempts to do so will be ignored.
@@ -88,11 +88,11 @@ class GeometryState;
    not be part of any user-declared collision filters.
  - In general, adding collisions and assigning proximity roles should
    happen prior to collision filter configuration.
- - It's worth emphasizing that the inactive set `Nₚ` is unique. it is not
+ - It's worth emphasizing that the inactive set `Nₚ` is unique. It is not
    affected by declarations and doesn't have the same limited scope that
    declarations have. No collision is allowed between an inactive geometry and
-   any other geometry. Period. Regardless of whether the other geometry was
-   added before or after the deactivation.
+   any other geometry, regardless of whether the other geometry was added before
+   or after the deactivation.
 
  <h3>Transient vs Persistent changes</h3>
 
@@ -208,43 +208,12 @@ class CollisionFilterManager {
     filter_->Apply(declaration, extract_ids_, false /* is_invariant */);
   }
 
-  /** @name  Deactivating and reactivating geometries
+  /** @name Evaluating CollisionFilterDeclarations
+  @anchor collision_filter_manager_stuff
 
-   By default every geometry is *active* and participates in proximity queries
-   subject to the pairwise filters configured via Apply(). A geometry can
-   also be "deactivated". An inactive geometry is omitted from the geometry set
-   that populates the collision candidate pairs. Therefore, no collision
-   candidate pair can include an inactive geometry until it is reactivated.
-   See the class documentation for how active status participates in the
-   definition of the candidate pair set C (the set `Nₚ`).
-
-   Active status is independent of the declared pair-wise filters: Apply() never
-   changes it just as activating and deactivating a geometry does not change the
-   _declared_ pair-wise filters between that geometry and others. Unlike
-   Apply(), these may be called even when there is an active transient history.
-   Apply() can reference an inactive geometry, but the effect of the declaration
-   on any candidate pair including that geometry will not be apparent until the
-   geometry is reactivate. */
-  //@{
-
-  /** Marks every geometry in `geometry_set` *inactive* (see the group
-   documentation). Deactivating an already-inactive geometry is a no-op.
-   @throws std::exception if `geometry_set` references invalid ids. */
-  void Deactivate(const GeometrySet& geometry_set) {
-    filter_->SetActiveStatus(geometry_set, /* active= */ false, extract_ids_,
-                             active_status_change_callback_);
-  }
-
-  /** Marks every geometry in `geometry_set` *active* again (see Deactivate()),
-   returning it to proximity queries governed by the current, declared filters.
-   Reactivating an already-active geometry is a no-op.
-   @throws std::exception if `geometry_set` references invalid ids. */
-  void Activate(const GeometrySet& geometry_set) {
-    filter_->SetActiveStatus(geometry_set, /* active= */ true, extract_ids_,
-                             active_status_change_callback_);
-  }
-
-  //@}
+   More content
+  */
+  ///@{
 
   // TODO(SeanCurtis-TRI) SceneGraphInspector includes the method
   //  CollisionFiltered. It reports whether two geometries are filtered. It
@@ -288,17 +257,64 @@ class CollisionFilterManager {
     return filter_->IsActive(filter_id);
   }
 
+  ///@}
+
+  /** @name  Deactivating and reactivating geometries
+  @anchor collision_filter_manager_activation
+
+   By default every geometry is *active* and participates in proximity queries
+   subject to the pairwise filters configured via Apply(). A geometry can
+   also be "deactivated". An inactive geometry is omitted from the geometry set
+   that populates the collision candidate pairs. Therefore, no collision
+   candidate pair can include an inactive geometry until it is reactivated.
+   See the class documentation for how active status participates in the
+   definition of the candidate pair set C (the set `Nₚ`).
+
+   Active status is independent of the declared pair-wise filters: Apply() never
+   changes it just as activating and deactivating a geometry does not change the
+   _declared_ pair-wise filters between that geometry and others. Unlike
+   Apply(), these may be called even when there is an active transient history.
+   Apply() can reference an inactive geometry, but the effect of the declaration
+   on any candidate pair including that geometry will not be apparent until the
+   geometry is reactivated. */
+  ///@{
+
+  /** Marks every geometry in `geometry_set` *inactive*. The inverse of calling
+   Activate(). Deactivating an already-inactive geometry is a no-op.
+   For more information, see the @ref collision_filter_manager_activation
+   "Activation" documentation.
+   @throws std::exception if `geometry_set` references invalid ids. */
+  void Deactivate(const GeometrySet& geometry_set) {
+    filter_->SetActiveStatus(geometry_set, /* active= */ false, extract_ids_,
+                             active_status_change_callback_);
+  }
+
+  /** Marks every geometry in `geometry_set` *active*. The inverse of calling
+   Deactivate(). Activating an already-active geometry is a no-op.
+   For more information, see the @ref collision_filter_manager_activation
+   "Activation" documentation.
+   @throws std::exception if `geometry_set` references invalid ids. */
+  void Activate(const GeometrySet& geometry_set) {
+    filter_->SetActiveStatus(geometry_set, /* active= */ true, extract_ids_,
+                             active_status_change_callback_);
+  }
+
+  ///@}
+
  private:
+#ifndef DRAKE_DOXYGEN_CXX
   /* Only GeometryState can construct a collision filter manager. */
   template <typename>
   friend class GeometryState;
 
   friend class CollisionFilterManagerTester;
+#endif
 
   /* Constructs the manager for a `filter` with a callback for resolving a
    GeometrySet into a set of GeometryIds and a callback for active-status
    changes.
    @pre filter is non-null.
+   @pre extract_ids is non-null.
    @pre active_status_change_callback is non-null. */
   explicit CollisionFilterManager(
       internal::CollisionFilter* filter,
