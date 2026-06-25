@@ -135,6 +135,7 @@
       // Mark the grab point with a small sphere at the line's anchor end.
       if (!drakeDrag.marker) {
         const geometry = new THREE.SphereGeometry(0.001, 16, 12);
+        // TODO(vincekurtz): consider exposing the line color as a user option.
         const material = new THREE.MeshBasicMaterial({color: 0x000000});
         drakeDrag.marker = new THREE.Mesh(geometry, material);
         drakeDrag.marker.frustumCulled = false;
