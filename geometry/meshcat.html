@@ -100,11 +100,12 @@
     // helpers like the grid, axes, and background, as well as any hidden
     // geometry layer.
     function drakeRaycast(event) {
+      // TODO(vincekurtz): consider allowing users to specify the subtree that
+      // is draggable, rather than hard-coding "/drake".
+      const drakeRoot = viewer.scene_tree.find(["drake"]);
       drakeDrag.raycaster.setFromCamera(drakeMouseNdc(event), viewer.camera);
-      const hits = drakeDrag.raycaster.intersectObject(viewer.scene, true);
-      return hits.find(
-        (h) => drakeVisible(h.object) &&
-               drakeObjectPath(h.object).startsWith("/drake")) || null;
+      const hits = drakeDrag.raycaster.intersectObject(drakeRoot.object, true);
+      return hits.find((h) => drakeVisible(h.object)) || null;
     }
 
     // Creates (lazily) and updates the line that visualizes the virtual spring
