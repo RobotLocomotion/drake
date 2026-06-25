@@ -85,7 +85,6 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // to getattr (and setattr) on "breaks" and "polynomials". However, we don't
   // want to expose those properties to users so we'll respell the name to add a
   // leading underscore, and bind the properties using the private name.
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   using Class = trajectories::PiecewisePolynomial<double>;
   cls->def("__getattr__", [](Class& self, py::str name) -> py::object {
     py::object self_py = py::cast(self, py_rvp::reference);
@@ -96,7 +95,8 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
       return self_py.attr("_polynomials");
     }
     throw py::attribute_error(
-        fmt::format("PiecewisePolynomial has no attribute '{}'", name_cxx));
+        fmt::format("PiecewisePolynomial has no attribute '{}'", name_cxx)
+            .c_str());
   });
   cls->def("__setattr__", [](Class& self, py::str name, py::object value) {
     const std::string_view name_cxx(name.c_str());
@@ -138,7 +138,13 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // that we biject to C++'s convention of vector-of-matrix-of-coeffs storage.
   cls->def_prop_rw(
       "_polynomials",
-      [](const Class& self) -> py::array_t<double> {
+      [](const Class& self)
+#ifdef PYDRAKE_USE_PYBIND11
+          -> py::array_t<double>
+#else
+          -> py::ndarray<double, py::ndim<4>>
+#endif
+      {
         Archive archive;
         const_cast<Class&>(self).Serialize(&archive);
         const Polynomials& polynomials = archive.polynomials;
@@ -148,7 +154,6 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
         const int num_coeffs = (num_rows == 0 || num_cols == 0)
                                    ? 0
                                    : polynomials.at(0)(0, 0).size();
-        const std::vector<int> shape{num_poly, num_rows, num_cols, num_coeffs};
         std::vector<double> buffer;
         for (int i = 0; i < num_poly; ++i) {
           for (int j = 0; j < num_rows; ++j) {
@@ -159,9 +164,23 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
             }
           }
         }
+#ifdef PYDRAKE_USE_PYBIND11
+        const std::vector<int> shape{num_poly, num_rows, num_cols, num_coeffs};
         return py::array_t<double>(shape, buffer.data());
+#else
+        const std::initializer_list<size_t> shape{static_cast<size_t>(num_poly),
+            static_cast<size_t>(num_rows), static_cast<size_t>(num_cols),
+            static_cast<size_t>(num_coeffs)};
+        return py::ndarray<double, py::ndim<4>>(buffer.data(), shape);
+#endif
       },
-      [](Class& self, const py::array_t<double>& polynomials) {
+      [](Class& self,
+#ifdef PYDRAKE_USE_PYBIND11
+          const py::array_t<double>& polynomials
+#else
+          const py::ndarray<double, py::ndim<4>>& polynomials
+#endif
+      ) {
         Polynomials cxx_poly;
         if (polynomials.size() > 0) {
           DRAKE_THROW_UNLESS(polynomials.ndim() == 4);
@@ -176,7 +195,11 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
               for (int k = 0; k < num_cols; ++k) {
                 cxx_poly[i](j, k).resize(num_coeffs);
                 for (int c = 0; c < num_coeffs; ++c) {
+#ifdef PYDRAKE_USE_PYBIND11
                   cxx_poly[i](j, k)(c) = polynomials.at(i, j, k, c);
+#else
+                  cxx_poly[i](j, k)(c) = polynomials(i, j, k, c);
+#endif
                 }
               }
             }
@@ -186,7 +209,6 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
             .set_polynomials = true, .polynomials = std::move(cxx_poly)};
         self.Serialize(&archive);
       });
-#endif  // XXX porting
 }
 
 // Provides a templated 'namespace'.
