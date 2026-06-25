@@ -417,7 +417,11 @@ independent of the body's mass.
 
 When no drag is in progress the output is empty. Any body with
 geometry published to Meshcat by a geometry∷MeshcatVisualizer can be
-dragged; the world body cannot.)""";
+dragged; the world body cannot.
+
+This system is ``double``-only, because Meshcat reports drag state as
+plain doubles and mouse interaction is not meaningful for other scalar
+types.)""";
           // Symbol: drake::multibody::meshcat::MeshcatMouseSpring::AddToBuilder
           struct /* AddToBuilder */ {
             // Source: drake/multibody/meshcat/meshcat_mouse_spring.h
@@ -434,7 +438,7 @@ Precondition:
     `plant`'s applied-spatial-force input port is not already
     connected.)""";
           } AddToBuilder;
-          // Symbol: drake::multibody::meshcat::MeshcatMouseSpring::MeshcatMouseSpring<T>
+          // Symbol: drake::multibody::meshcat::MeshcatMouseSpring::MeshcatMouseSpring
           struct /* ctor */ {
             // Source: drake/multibody/meshcat/meshcat_mouse_spring.h
             const char* doc =
@@ -464,21 +468,21 @@ Precondition:
             // Source: drake/multibody/meshcat/meshcat_mouse_spring.h
             const char* doc =
 R"""(Returns the input port for the bodies' poses (a
-``std∷vector<math∷RigidTransform<T>>``).)""";
+``std∷vector<math∷RigidTransform<double>>``).)""";
           } get_body_poses_input_port;
           // Symbol: drake::multibody::meshcat::MeshcatMouseSpring::get_body_spatial_velocities_input_port
           struct /* get_body_spatial_velocities_input_port */ {
             // Source: drake/multibody/meshcat/meshcat_mouse_spring.h
             const char* doc =
 R"""(Returns the input port for the bodies' spatial velocities (a
-``std∷vector<SpatialVelocity<T>>``).)""";
+``std∷vector<SpatialVelocity<double>>``).)""";
           } get_body_spatial_velocities_input_port;
           // Symbol: drake::multibody::meshcat::MeshcatMouseSpring::get_spatial_forces_output_port
           struct /* get_spatial_forces_output_port */ {
             // Source: drake/multibody/meshcat/meshcat_mouse_spring.h
             const char* doc =
 R"""(Returns the output port for the applied spatial forces (a
-``std∷vector<ExternallyAppliedSpatialForce<T>>``).)""";
+``std∷vector<ExternallyAppliedSpatialForce<double>>``).)""";
           } get_spatial_forces_output_port;
         } MeshcatMouseSpring;
       } meshcat;

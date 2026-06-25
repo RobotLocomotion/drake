@@ -581,18 +581,6 @@ R"""(Determines whether to enable alpha sliders for geometry display.)""";
           const char* doc =
 R"""(Whether to create a Meshcat object if needed.)""";
         } enable_meshcat_creation;
-        // Symbol: drake::visualization::VisualizationConfig::enable_mouse_interaction
-        struct /* enable_mouse_interaction */ {
-          // Source: drake/visualization/visualization_config.h
-          const char* doc =
-R"""(Whether to enable interactively dragging bodies with the mouse in
-Meshcat. In a connected Meshcat browser, holding Ctrl and dragging a
-body with the left mouse button applies a virtual spring force that
-pulls the body toward the cursor (see
-multibody∷meshcat∷MeshcatMouseSpring). Has no effect for Meldis/LCM,
-and is skipped if the plant's applied-spatial-force input port is
-already connected.)""";
-        } enable_mouse_interaction;
         // Symbol: drake::visualization::VisualizationConfig::initial_proximity_alpha
         struct /* initial_proximity_alpha */ {
           // Source: drake/visualization/visualization_config.h
@@ -617,8 +605,14 @@ See also:
           // Source: drake/visualization/visualization_config.h
           const char* doc =
 R"""(The mass-normalized stiffness (in 1/s²) of the interactive mouse
-spring; see multibody∷meshcat∷MeshcatMouseSpring. Only used when
-enable_mouse_interaction is true.)""";
+spring that lets a user drag bodies with the mouse in Meshcat. In a
+connected Meshcat browser, holding Ctrl and dragging a body with the
+left mouse button applies a virtual spring force that pulls the body
+toward the cursor (see multibody∷meshcat∷MeshcatMouseSpring).
+
+Setting this to std∷nullopt disables mouse interaction. It also has no
+effect for Meldis/LCM, and is skipped if the plant's
+applied-spatial-force input port is already connected.)""";
         } mouse_interaction_stiffness;
         // Symbol: drake::visualization::VisualizationConfig::publish_contacts
         struct /* publish_contacts */ {
@@ -656,7 +650,6 @@ point; see drake#15021 for details.))""";
             std::make_pair("delete_on_initialization_event", delete_on_initialization_event.doc),
             std::make_pair("enable_alpha_sliders", enable_alpha_sliders.doc),
             std::make_pair("enable_meshcat_creation", enable_meshcat_creation.doc),
-            std::make_pair("enable_mouse_interaction", enable_mouse_interaction.doc),
             std::make_pair("initial_proximity_alpha", initial_proximity_alpha.doc),
             std::make_pair("lcm_bus", lcm_bus.doc),
             std::make_pair("mouse_interaction_stiffness", mouse_interaction_stiffness.doc),

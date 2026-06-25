@@ -1,6 +1,7 @@
 #include "drake/visualization/visualization_config_functions.h"
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -247,7 +248,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   config.publish_inertia = false;
   config.publish_proximity = false;
   config.publish_contacts = false;
-  config.enable_mouse_interaction = false;
+  config.mouse_interaction_stiffness = std::nullopt;
 
   // We'll fail in case any message is transmitted.
   DrakeLcm drake_lcm;
@@ -311,13 +312,13 @@ GTEST_TEST(VisualizationConfigFunctionsTest, MouseInteraction) {
     EXPECT_EQ(count_springs(builder), 1);
   }
 
-  // Disabled via the config flag.
+  // Disabled by clearing the stiffness.
   {
     DiagramBuilder<double> builder;
     auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
     plant.Finalize();
     VisualizationConfig config;
-    config.enable_mouse_interaction = false;
+    config.mouse_interaction_stiffness = std::nullopt;
     ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
                              meshcat);
     EXPECT_EQ(count_springs(builder), 0);
