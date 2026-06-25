@@ -71,7 +71,7 @@ void AddHydroelasticBox(MultibodyPlant<double>* plant,
   geometry::AddContactMaterial(/* dissipation */ {}, /* point_stiffness */ {},
                                friction, &props);
   geometry::AddCompliantHydroelasticProperties(
-      /* resolution_hint */ 0.05, /* hydroelastic_modulus */ 1.0e5, &props);
+      /* resolution_hint */ 0.05, /* hydroelastic_modulus */ 1.0e8, &props);
   plant->RegisterCollisionGeometry(body, RigidTransformd(), box,
                                    name + "_collision", std::move(props));
   plant->RegisterVisualGeometry(body, RigidTransformd(), box, name + "_visual",
