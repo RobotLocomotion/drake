@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/polynomial_basis_element.h"
@@ -134,12 +133,6 @@ std::map<ChebyshevBasisElement, double> operator*(
     const ChebyshevBasisElement& a, const ChebyshevBasisElement& b);
 
 std::string to_string(const ChebyshevBasisElement& m);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& out, const ChebyshevBasisElement& m);
 }  // namespace symbolic
 }  // namespace drake
 

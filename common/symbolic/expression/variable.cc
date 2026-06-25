@@ -80,15 +80,6 @@ string Variable::to_string() const {
   return get_name();
 }
 
-ostream& operator<<(ostream& os, const Variable& var) {
-  os << var.get_name();
-  return os;
-}
-
-ostream& operator<<(ostream& os, Variable::Type type) {
-  return os << fmt::to_string(type);
-}
-
 std::string_view to_string(const Variable::Type& type) {
   switch (type) {
     case Variable::Type::CONTINUOUS:

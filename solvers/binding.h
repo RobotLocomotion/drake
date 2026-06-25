@@ -6,11 +6,7 @@
 #include <string>
 #include <utility>
 
-// TODO(2026-07-01): Remove ostream header when `operator<<` is removed.
-#include <ostream>
-
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/solvers/decision_variable.h"
@@ -142,19 +138,6 @@ class Binding {
   std::shared_ptr<C> evaluator_;
   VectorXDecisionVariable vars_;
 };
-
-/**
- * Print out the Binding.
- */
-template <typename C>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& os, const Binding<C>& binding) {
-  return os << binding.to_string();
-}
 
 namespace internal {
 

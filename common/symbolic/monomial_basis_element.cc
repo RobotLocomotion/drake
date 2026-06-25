@@ -134,10 +134,6 @@ std::string to_string(const MonomialBasisElement& m) {
   return result;
 }
 
-std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m) {
-  return out << fmt::to_string(m);
-}
-
 MonomialBasisElement& MonomialBasisElement::pow_in_place(const int p) {
   if (p < 0) {
     throw std::runtime_error(fmt::format(

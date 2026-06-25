@@ -112,10 +112,6 @@ const Environment::mapped_type& Environment::operator[](
   return map_.at(key);
 }
 
-ostream& operator<<(ostream& os, const Environment& env) {
-  return os << env.to_string();
-}
-
 Environment PopulateRandomVariables(Environment env, const Variables& variables,
                                     RandomGenerator* const random_generator) {
   DRAKE_DEMAND(random_generator != nullptr);
