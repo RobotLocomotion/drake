@@ -73,8 +73,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = InverseKinematics;
     constexpr auto& cls_doc = doc.InverseKinematics;
-    class_<Class> cls(
-        m, "InverseKinematics", py::dynamic_attr(), cls_doc.doc);
+    class_<Class> cls(m, "InverseKinematics", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(py::init<const MultibodyPlant<double>&, bool>(), py::arg("plant"),
             py::arg("with_joint_limits") = true,
