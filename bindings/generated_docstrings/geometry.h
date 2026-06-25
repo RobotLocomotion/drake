@@ -3825,6 +3825,20 @@ std∷nullopt is returned if:
 connected.
 - The meshcat session transmitting has an orthographic camera.)""";
         } GetTrackedCameraPose;
+        // Symbol: drake::geometry::Meshcat::GetVirtualSpringKinematics
+        struct /* GetVirtualSpringKinematics */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(Returns the current mouse-drag state if a user is presently dragging
+an object in a connected Meshcat browser, or std∷nullopt otherwise.
+
+A downstream system (see multibody∷meshcat∷MeshcatMouseSpring) can
+read this state and convert it into a force applied to a simulated
+body, letting users drag objects with the cursor.
+
+If multiple browsers report drags concurrently, the returned value
+reflects the most recently received message.)""";
+        } GetVirtualSpringKinematics;
         // Symbol: drake::geometry::Meshcat::HasPath
         struct /* HasPath */ {
           // Source: drake/geometry/meshcat.h
@@ -4668,6 +4682,49 @@ You can also use your browser to download this file, by typing
 R"""(Sets a flag to pause/stop recording. When stopped, publish events will
 not add frames to the animation.)""";
         } StopRecording;
+        // Symbol: drake::geometry::Meshcat::VirtualSpringKinematics
+        struct /* VirtualSpringKinematics */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(The geometry of a virtual, interactive spring. This spring connects
+the point F (a point fixed on the body B -- named by ``path``) with an
+immovable target point T. Both points are measured and expressed in
+the world frame. This definition is for kinematics only: the spring's
+stiffness, damping, and resultant forces are not defined here.)""";
+          // Symbol: drake::geometry::Meshcat::VirtualSpringKinematics::body_point_in_world
+          struct /* body_point_in_world */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The current position of F affixed to body B. Note: in an interactive
+scenario with active dynamics, this position will change as the body B
+moves.
+
+Note: This is expressed in Drake's z-up world frame (not Meshcat's
+y-up frame).)""";
+          } body_point_in_world;
+          // Symbol: drake::geometry::Meshcat::VirtualSpringKinematics::path
+          struct /* path */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The "/"-delimited Meshcat path of the object being dragged (e.g.,
+"/drake/visualizer/my_model/my_body/my_geometry").
+
+This could be any valid Meshcat path, including for either a body or a
+geometry. Whether it has any effect depends on the caller's treatment.)""";
+          } path;
+          // Symbol: drake::geometry::Meshcat::VirtualSpringKinematics::target_point_in_world
+          struct /* target_point_in_world */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The current position of the fixed target point T. The target point is
+solely determined by the interactive Meshcat application. From Drake's
+perspective it is a point with a prescribed position in the world
+frame.
+
+Note: This is expressed in Drake's z-up world frame (not Meshcat's
+y-up frame).)""";
+          } target_point_in_world;
+        } VirtualSpringKinematics;
         // Symbol: drake::geometry::Meshcat::get_mutable_recording
         struct /* get_mutable_recording */ {
           // Source: drake/geometry/meshcat.h
