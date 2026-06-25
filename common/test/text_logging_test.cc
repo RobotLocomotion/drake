@@ -12,19 +12,6 @@
 #error Missing a required definition to compile this test case.
 #endif
 
-// Check for the expected HAVE_SPDLOG value.
-// clang-format off
-#if TEXT_LOGGING_TEST_SPDLOG
-  #ifndef HAVE_SPDLOG
-    #error Missing HAVE_SPDLOG.
-  #endif
-#else
-  #ifdef HAVE_SPDLOG
-    #error Unwanted HAVE_SPDLOG.
-  #endif
-#endif
-// clang-format on
-
 namespace {
 class Formattable {
  public:
@@ -35,8 +22,6 @@ class Formattable {
 DRAKE_FORMATTER_AS(, , Formattable, x, x.to_string())
 
 namespace {
-
-using drake::logging::kHaveSpdlog;
 
 // Call each API function and macro to ensure that all of them compile.
 // These should all compile and run both with and without spdlog.

@@ -14,13 +14,6 @@
 
 namespace drake {
 
-[[deprecated(
-    "\nDRAKE DEPRECATED: Use fmt::runtime instead.\n"
-    "The deprecated code will be removed from Drake on or after 2026-07-01.")]]
-inline auto fmt_runtime(std::string_view s) {
-  return fmt::runtime(s);
-}
-
 /** Returns `fmt::to_string(x)` but always with at least one digit after the
 decimal point. Different versions of fmt disagree on whether to omit the
 trailing ".0" when formatting integer-valued floating-point numbers.
@@ -172,7 +165,3 @@ Drake drops support for earlier version of fmt. */
   struct formatter<NAMESPACE::TYPE>                                            \
       : drake::internal::formatter_as::Formatter<NAMESPACE::TYPE> {};          \
   } /* namespace fmt */
-
-// DRAKE DEPRECATED: This macro is deprecated and will be removed from Drake on
-// or after 2026-07-01.
-#define DRAKE_FMT8_CONST const
