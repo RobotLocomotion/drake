@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":contact_visualizer_params",
         ":hydroelastic_contact_visualizer",
         ":joint_sliders",
+        ":meshcat_mouse_spring",
         ":point_contact_visualizer",
     ],
 )
@@ -108,6 +109,30 @@ drake_cc_googletest(
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
         "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_mouse_spring",
+    srcs = ["meshcat_mouse_spring.cc"],
+    hdrs = ["meshcat_mouse_spring.h"],
+    deps = [
+        "//common:essential",
+        "//geometry:meshcat",
+        "//multibody/plant",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_mouse_spring_test",
+    deps = [
+        ":meshcat_mouse_spring",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/plant",
+        "@msgpack_internal//:msgpack",
     ],
 )
 
