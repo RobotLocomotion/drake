@@ -528,10 +528,6 @@ void Expression::DivImpl(const Expression& rhs) {
   lhs = Expression{make_unique<ExpressionDiv>(lhs, rhs)};
 }
 
-ostream& operator<<(ostream& os, const Expression& e) {
-  return os << e.to_string();
-}
-
 Expression log(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {

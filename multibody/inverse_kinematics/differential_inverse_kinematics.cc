@@ -65,11 +65,6 @@ std::string_view to_string(const DifferentialInverseKinematicsStatus value) {
   DRAKE_UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& os,
-                         const DifferentialInverseKinematicsStatus value) {
-  return os << to_string(value);
-}
-
 const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
 DifferentialInverseKinematicsParameters::get_linear_velocity_constraints()
     const {

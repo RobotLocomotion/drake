@@ -12,9 +12,5 @@ std::string to_string(const LoadYamlOptions& options) {
       options.retain_map_defaults);
 }
 
-std::ostream& operator<<(std::ostream& os, const LoadYamlOptions& x) {
-  return os << fmt::to_string(x);
-}
-
 }  // namespace yaml
 }  // namespace drake

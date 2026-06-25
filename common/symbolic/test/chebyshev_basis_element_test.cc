@@ -225,28 +225,6 @@ TEST_F(SymbolicChebyshevBasisElementTest, ToStringFmtFormatter) {
             "T1(x)T2(y)");
 }
 
-// Remove StringOutput test with deprecation 2026-07-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(SymbolicChebyshevBasisElementTest, StringOutput) {
-  std::ostringstream os1;
-  os1 << ChebyshevBasisElement();
-  EXPECT_EQ(fmt::format("{}", os1.str()), "T0()");
-
-  std::ostringstream os2;
-  os2 << ChebyshevBasisElement({{x_, 1}});
-  EXPECT_EQ(fmt::format("{}", os2.str()), "T1(x)");
-
-  std::ostringstream os3;
-  os3 << ChebyshevBasisElement({{x_, 0}});
-  EXPECT_EQ(fmt::format("{}", os3.str()), "T0()");
-
-  std::ostringstream os4;
-  os4 << ChebyshevBasisElement({{x_, 1}, {y_, 2}});
-  EXPECT_EQ(fmt::format("{}", os4.str()), "T1(x)T2(y)");
-}
-#pragma GCC diagnostic pop
-
 TEST_F(SymbolicChebyshevBasisElementTest, ToExpression) {
   EXPECT_PRED2(test::ExprEqual, ChebyshevBasisElement().ToExpression(),
                Expression(1.));

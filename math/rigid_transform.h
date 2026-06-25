@@ -7,7 +7,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
@@ -1018,17 +1017,6 @@ class RigidTransform {
 static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
               "Low-level optimizations depend on RigidTransform<double> being "
               "stored as 12 sequential doubles in memory.");
-
-/// Stream insertion operator to write an instance of RigidTransform into a
-/// `std::ostream`. Especially useful for debugging.
-/// @relates RigidTransform
-template <typename T>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& out, const RigidTransform<T>& X);
 
 template <typename T>
 std::string to_string(const RigidTransform<T>& X);

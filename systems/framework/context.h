@@ -7,7 +7,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/context_base.h"
@@ -892,17 +891,6 @@ class Context : public ContextBase {
   copyable_unique_ptr<Parameters<T>> parameters_{
       std::make_unique<Parameters<T>>()};
 };
-
-template <typename T>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& os, const Context<T>& context) {
-  os << context.to_string();
-  return os;
-}
 
 }  // namespace systems
 }  // namespace drake

@@ -270,7 +270,6 @@ drake_cc_library(
 
 drake_cc_library(
     name = "file_source",
-    srcs = ["file_source.cc"],
     hdrs = ["file_source.h"],
     deps = [
         ":memory_file",

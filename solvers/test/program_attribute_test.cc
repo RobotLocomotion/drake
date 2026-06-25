@@ -11,21 +11,6 @@ namespace solvers {
 namespace test {
 namespace {
 
-// TODO(2026-07-01): Delete test `StreamInsertionOperator`.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(ProgramAttributeTest, StreamInsertionOperator) {
-  const ProgramAttributes attrs{ProgramAttribute::kGenericCost,
-                                ProgramAttribute::kGenericConstraint};
-  std::ostringstream os;
-  os << ProgramAttribute::kGenericCost;
-  EXPECT_EQ(os.str(), "GenericCost");
-  os = std::ostringstream{};
-  os << attrs;
-  EXPECT_EQ(os.str(), "{ProgramAttributes: GenericCost, GenericConstraint}");
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(ProgramAttributeTest, ProgramAttributeToStringFmtFormatter) {
   EXPECT_EQ(fmt::to_string(ProgramAttribute::kGenericCost), "GenericCost");
   EXPECT_EQ(fmt::to_string(ProgramAttribute::kGenericConstraint),

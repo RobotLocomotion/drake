@@ -7,14 +7,10 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
-
-// Remove with deprecation 2026-07-01.
-#include <ostream>
 
 namespace drake {
 namespace symbolic {
@@ -120,12 +116,6 @@ class ChebyshevPolynomial {
 };
 
 std::string to_string(const ChebyshevPolynomial& p);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& out, const ChebyshevPolynomial& p);
 
 /**
  * Evaluates a Chebyshev polynomial at a given value.

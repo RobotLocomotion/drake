@@ -2,10 +2,6 @@
 
 #include <string>
 
-// Remove with deprecation 2026-07-01.
-#include <ostream>
-
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 
 namespace drake {
@@ -36,11 +32,6 @@ enum SolutionResult {
 };
 
 std::string to_string(SolutionResult solution_result);
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& os, SolutionResult solution_result);
 }  // namespace solvers
 }  // namespace drake
 

@@ -19,11 +19,6 @@ std::string to_string(IntervalBinning binning) {
   DRAKE_UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning) {
-  os << to_string(binning);
-  return os;
-}
-
 void AddLogarithmicSos2Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,

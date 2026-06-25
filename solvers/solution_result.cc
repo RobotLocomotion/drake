@@ -27,10 +27,5 @@ std::string to_string(SolutionResult solution_result) {
   // in the compiler.
   throw std::runtime_error("Should not reach here");
 }
-
-std::ostream& operator<<(std::ostream& os, SolutionResult solution_result) {
-  os << to_string(solution_result);
-  return os;
-}
 }  // namespace solvers
 }  // namespace drake

@@ -836,12 +836,6 @@ std::string to_string(
   throw std::runtime_error("Should not reach this part of the code.\n");
 }
 
-std::ostream& operator<<(
-    std::ostream& os,
-    const MixedIntegerRotationConstraintGenerator::Approach& type) {
-  return os << fmt::to_string(type);
-}
-
 MixedIntegerRotationConstraintGenerator::
     MixedIntegerRotationConstraintGenerator(
         MixedIntegerRotationConstraintGenerator::Approach approach,

@@ -404,21 +404,6 @@ GTEST_TEST(PolynomialTest, EigenMatrixPolynomialToStringFmtFormatter) {
             " [z1, w1]]");
 }
 
-// TODO(2026-07-01): delete test
-// DeprecatedEigenMatrixPolynomialOutStreemOperator on removal date.
-GTEST_TEST(PolynomialTest, DeprecatedEigenMatrixPolynomialOutputOperator) {
-  Eigen::Matrix<Polynomiald, 2, 2> poly_mat;
-  poly_mat << Polynomiald("x"), Polynomiald("y"), Polynomiald("z"),
-      Polynomiald("w");
-  std::stringstream test_stream;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  test_stream << poly_mat;
-#pragma GCC diagnostic pop
-  std::string result{test_stream.str()};
-  EXPECT_EQ(result, "[ x1 , y1 ]\n[ z1 , w1 ]\n");
-}
-
 GTEST_TEST(PolynomialTest, MonomialFactor) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");

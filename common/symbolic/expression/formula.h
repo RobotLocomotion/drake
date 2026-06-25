@@ -10,15 +10,11 @@
 #include <string>
 #include <utility>
 
-// Remove with deprecation 2026-07-01.
-#include <ostream>
-
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
@@ -430,12 +426,6 @@ typename std::enable_if_t<
 positive_semidefinite(const Eigen::TriangularView<Derived, Eigen::Upper>& u) {
   return positive_semidefinite(u, Eigen::Upper);
 }
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& os, const Formula& f);
 
 /** Checks if @p f is structurally equal to False formula. */
 bool is_false(const Formula& f);

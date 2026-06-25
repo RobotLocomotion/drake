@@ -2,9 +2,6 @@
 
 #include <stdexcept>
 
-// TODO(2026-07-01): Remove sstream header when `Formatting` is removed.
-#include <sstream>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -15,25 +12,6 @@ namespace perception {
 namespace pcf = pc_flags;
 
 namespace {
-
-// TODO(2026-07-01): Delete test `Formatting`.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(PointCloudFlagsTest, Formatting) {
-  // Check human-friendly formatting.
-  {
-    std::ostringstream os;
-    os << (pcf::kXYZs | pcf::kDescriptorCurvature);
-    EXPECT_EQ("(kXYZs | kDescriptorCurvature)", os.str());
-  }
-  // Ensure it works for multiple types.
-  {
-    std::ostringstream os;
-    os << (pcf::kXYZs | pcf::kRGBs | pcf::kDescriptorCurvature);
-    EXPECT_EQ("(kXYZs | kRGBs | kDescriptorCurvature)", os.str());
-  }
-}
-#pragma GCC diagnostic pop
 
 GTEST_TEST(PointCloudFlagsTest, DescriptorTypeToStringFmtFormatter) {
   EXPECT_EQ(fmt::to_string(pcf::kDescriptorNone), "kDescriptorNone");

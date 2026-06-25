@@ -10,7 +10,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/math/rotation_matrix.h"
@@ -320,19 +319,6 @@ std::string to_string(const SpatialVector<SpatialQuantity, T>& V) {
   }
   result.append("]ᵀ");  // The "transpose" symbol.
   return result;
-}
-
-/// Stream insertion operator to write SpatialVector objects into a
-/// `std::ostream`. Especially useful for debugging.
-/// @relates SpatialVector.
-template <template <typename> class SpatialQuantity, typename T>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& o, const SpatialVector<SpatialQuantity, T>& V) {
-  return o << to_string(V);
 }
 
 }  // namespace multibody

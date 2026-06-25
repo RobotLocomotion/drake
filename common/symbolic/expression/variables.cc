@@ -141,9 +141,5 @@ Variables intersect(const Variables& vars1, const Variables& vars2) {
   return Variables{std::move(intersection)};
 }
 
-ostream& operator<<(ostream& os, const Variables& vars) {
-  return os << vars.to_string();
-}
-
 }  // namespace symbolic
 }  // namespace drake
