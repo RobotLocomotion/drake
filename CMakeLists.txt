@@ -11,10 +11,41 @@
 # corresponding tests should also be updated.
 cmake_minimum_required(VERSION 3.20...4.3)
 
+# The build types that Drake's CMake build supports. This is the single source
+# of truth.
+set(SUPPORTED_BUILD_TYPES Release RelWithDebInfo Debug MinSizeRel)
+
+# Record which configuration-specific C compiler flags the user explicitly
+# provided before project() runs, so that we can tell them apart from the
+# compiler defaults that project() is about to seed below.
+set(_USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES)
+foreach(_config IN LISTS SUPPORTED_BUILD_TYPES)
+  string(TOUPPER "${_config}" _config_upper)
+  if(DEFINED CMAKE_C_FLAGS_${_config_upper})
+    list(APPEND _USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES ${_config_upper})
+  endif()
+endforeach()
+
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
   LANGUAGES C
 )
+
+# CMake build type flag transcriptions are handled in cmake/bazel.rc.in. CMake's
+# modules otherwise seed configuration-specific C flags which we'd forward to
+# Bazel, thus overriding its --compilation_mode; e.g., the default -O3 from
+# CMAKE_C_FLAGS_RELEASE would be inconsistent with CXX at -O2 from
+# --compilation_mode=opt. Clear CMake's defaults in favor of the transcriptions
+# there. Any flags the user specified via CMAKE_C_FLAGS_<config> are preserved
+# (and still propagated to Bazel).
+foreach(_config IN LISTS SUPPORTED_BUILD_TYPES)
+  string(TOUPPER "${_config}" _config_upper)
+  if(NOT _config_upper IN_LIST _USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES)
+    set(CMAKE_C_FLAGS_${_config_upper} "" CACHE STRING
+      "Flags used by the C compiler during ${_config} builds." FORCE
+    )
+  endif()
+endforeach()
 
 # The primary build system for Drake is Bazel (https://bazel.build/). For CMake,
 # our objective is to accept configuration options using their standard spelling
@@ -137,7 +168,7 @@ get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTI_CONFIG)
   message(FATAL_ERROR "Drake does not support multi-config generators")
 endif()
-set(SUPPORTED_BUILD_TYPES Release RelWithDebInfo Debug MinSizeRel)
+
 string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
   "${SUPPORTED_BUILD_TYPES}"
 )
