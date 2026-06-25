@@ -52,8 +52,9 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
 
   // Near-rigid regularization: this constraint acts as a very stiff
   // critically-damped spring with time scale β⋅δt [Castro et al., 2022].
-  constexpr double beta = IcfModel<T>::beta;
-  constexpr double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  constexpr double kEps =
+      kBeta * kBeta / ((4 * M_PI * M_PI) * (1 + kBeta / M_PI));
 
   const T g0 = qi - gear_ratio * qj - offset;
 
@@ -62,7 +63,7 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
   // However, since model.time_step() may change between now and when we
   // actually solve the problem, we precompute ĝ = v̂⋅δt = −g₀/(1 + β/π), so that
   // we can compute v̂ = ĝ/δt from the current time step in calls to CalcData().
-  g_hat_[index] = -g0 / (1.0 + beta / M_PI);
+  g_hat_[index] = -g0 / (1.0 + kBeta / M_PI);
 
   const auto w_clique = model().clique_diagonal_mass_inverse(clique);
   // Approximation of W = Jᵀ⋅M⁻¹⋅J ≈ J⋅diag(M)⁻¹⋅Jᵀ, with
@@ -71,7 +72,7 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
   //             i      j
   const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
 
-  R_[index] = eps * w;  // Near-rigid regularization [Castro et al., 2022].
+  R_[index] = kEps * w;  // Near-rigid regularization [Castro et al., 2022].
 }
 
 template <typename T>

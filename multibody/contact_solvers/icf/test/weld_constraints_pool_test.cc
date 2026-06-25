@@ -299,7 +299,7 @@ GTEST_TEST(WeldConstraintsPool, WeldToWorld) {
   vc.tail<3>() = v_WBm;
 
   // Near-rigid regularization (from weld_constraints_pool.cc constants).
-  constexpr double kBeta = 0.1;
+  constexpr double kBeta = IcfModel<double>::kBeta;
   const double taud = kBeta * dt / M_PI;
   const double dt_plus_taud = dt + taud;
 

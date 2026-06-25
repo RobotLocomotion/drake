@@ -129,14 +129,14 @@ GTEST_TEST(CouplerConstraintsPool, Data) {
   const auto v_clique = model.clique_segment(1, v);
 
   // Compute regularization manually.
-  constexpr double beta = IcfModel<AutoDiffXd>::beta;
-  constexpr double m = 2.3;                       // "mass" for clique 1.
+  constexpr double kBeta = IcfModel<AutoDiffXd>::kBeta;
+  const double m = 2.3;                           // "mass" for clique 1.
   const double w_delassus = (1 + rho * rho) / m;  // Delassus for clique 1.
   const double m_effective = 1.0 / w_delassus;    // Effective mass.
   const double omega_near_rigid =
-      2 * M_PI / (beta * dt);  // period_nr = beta * dt, by definition.
+      2 * M_PI / (kBeta * dt);  // period_nr = kBeta * dt, by definition.
   const double k = m_effective * omega_near_rigid * omega_near_rigid;
-  const double tau = beta / M_PI * dt;
+  const double tau = kBeta / M_PI * dt;
 
   const CouplerConstraintsDataPool<AutoDiffXd>& couplers_data =
       data.coupler_constraints_data();

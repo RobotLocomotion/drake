@@ -31,7 +31,7 @@ Vector6<T> ShiftSpatialImpulse(const Vector6<T>& F, const Vector3<T>& p) {
 }
 
 // Near-rigid parameter β.
-constexpr double kBeta = 0.1;
+constexpr double kBeta = IcfModel<double>::kBeta;
 
 }  // namespace
 
@@ -139,8 +139,8 @@ void WeldConstraintsPool<T>::CalcData(
       vc.template tail<3>() = v_WBm;
     }
 
-    // v̂ = g₀/(dt + taud) where taud = β·dt_eff/π.
-    // This is bounded as dt → 0 (v̂ → g₀/taud).
+    // v̂ = g₀/(dt + τd) where τd = β·dt_eff/π.
+    // This is bounded as dt → 0 (v̂ → g₀/τd).
     const Vector6<T> v_hat = -g0_[k] / dt_plus_taud;
     const Vector6<T>& R_diag = R_[k];
 
@@ -214,8 +214,8 @@ void WeldConstraintsPool<T>::PrecomputeHessianBlocks() {
   const T dt = model().time_step();
   const T dt_eff = model().effective_time_step();
   const T taud = kBeta * dt_eff / M_PI;
-  // R⁻¹ = K·dt·(dt + taud) where K = 4π²/(β²·dt_eff²·w), so
-  // R_diag = w / (K·dt·(dt + taud)) = β²·dt_eff²·w / (4π²·dt·(dt + taud)).
+  // R⁻¹ = K·dt·(dt + τd) where K = 4π²/(β²·dt_eff²·w), so
+  // R_diag = w / (K·dt·(dt + τd)) = β²·dt_eff²·w / (4π²·dt·(dt + τd)).
   const T r_scale = (kBeta * kBeta * dt_eff * dt_eff) /
                     (4.0 * M_PI * M_PI * dt * (dt + taud));
 

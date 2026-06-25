@@ -115,7 +115,7 @@ class IcfModel {
 
   /* The near-rigid contact stabilization parameter β.  See [Castro et al.,
   2022], section V.B. */
-  static constexpr double beta = 0.1;
+  static constexpr double kBeta = 0.1;
 
   /* Constructs an empty model. */
   IcfModel();
@@ -463,8 +463,8 @@ class IcfModel {
                                  EigenPool<Vector6<T>>* V_WB) const;
 
   // Minimum time scale h_min for constraints.
-  // For δt ≥ h_min the formula recovers the near-rigid model;
-  // for δt < h_min stiffness and dissipation are capped at
+  // For δt ≥ h_min, constraint calculations follow the near-rigid model;
+  // for δt < h_min, stiffness and dissipation are capped at
   // the h_min near-rigid values.
   static constexpr double kHMin = 1e-4;
 
