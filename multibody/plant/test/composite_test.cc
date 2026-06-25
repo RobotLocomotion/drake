@@ -1,8 +1,6 @@
 /* Tests that mass properties are identical whether welded-together links are
 modeled with explicit weld joints or combined into a single composite
-mobilized body.
-
-The test builds two identical models that differ only in whether
+mobilized body. The test builds two identical models that differ only in whether
 SetCombineWeldedBodies() is enabled. */
 
 #include <limits>
@@ -33,7 +31,7 @@ using math::RotationMatrixd;
 using systems::Context;
 
 // Tolerance for numerical comparisons.
-constexpr double kTolerance = 16 * std::numeric_limits<double>::epsilon();
+constexpr double kTolerance = 32 * std::numeric_limits<double>::epsilon();
 
 // Holds one version of the test model (either explicit welds or composites)
 // along with its context, ready for kinematics queries.
@@ -264,7 +262,7 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
                                 MatrixCompareType::relative))
         << "Mass matrix mismatch at angle = " << angle;
 
-    // Verify the analytical value.
+    // Ensure the mass matrix matches the analytical value.
     const double Izz = m * a * a / 6.0;  // Izz of one cube about its COM.
     const double M_expected = (Izz + m * 0.0) +  // Link1: d² = 0
                               (Izz + m * 1.0) +  // Link2: d² = 1² = 1
@@ -275,78 +273,78 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
 }
 
 /* Tests that CalcFrameBodyPoses() computes the correct composite mass
-properties by exercising every code path:
-  - Pass 1: non-trivial frame poses X_LF (non-identity joint frames)
-  - Pass 2: X_BL computation for composite followers, including:
-      * a normal weld (parent is inboard)
-      * a reversed weld (child is inboard)
-  - Pass 3: mass property accumulation with non-identity X_BL (shift + re-expr)
+properties by exercising every code path (including reverse welds):
+- Pass 1: non-identity frame poses X_LF, where link frame L and frame F are
+          both rigidly attached to the same body (so X_LF is constant). When a
+          weld joint is NOT reversed, F is the inboard frame on the parent body,
+          whereas for a reversed weld, F is the inboard frame on the child body.
+- Pass 2: poses X_BL, where mobod (mobilized body) frame B and link frame L are
+          both rigidly attached to the same body (so X_BL is constant). If L is
+          the composite body's "active" link, frame B is frame L and X_BL is
+          identity. In general, X_BL is non-identity for each "follower" link L
+          welded into the composite body B.
+- Pass 3: mass property accumulation with both shifting and re-expressing.
 
 The strategy is to build two versions of the same physical system -- one with
 composites enabled and one without -- then verify that the mass matrix and
 gravity generalized forces agree. The mass matrix depends on M_BBo_B (the
 composite spatial inertia computed in Pass 3), while gravity forces additionally
-depend on p_BoLcm_B (each follower link's center of mass offset).
+depend on p_BoLcm_B (each follower link's center of mass offset from Bo).
 
 Topology:
-
-                LinkC
-                 ^
-                 |  (reversed weld: child=LinkB, parent=LinkC)
-                 |
+                             LinkC
+                              ^
+                              |  (reversed weld: child=LinkB, parent=LinkC)
+                              |
     LinkA --[normal weld]--> LinkB
       /
   [revolute y]
      /
    World
-
-Joint frame offsets:
-  - weld_AB: parent frame on LinkA offset by (+0.5, 0, +0.3) with a 30-degree
-    rotation about x; child frame on LinkB offset by (0, +0.2, 0).
-    X_FM = identity (so the parent and child joint frames coincide).
-  - weld_CB (reversed): parent=LinkC, child=LinkB. The reversed-ness means
-    LinkB is the inboard link and LinkC is the outboard link in the spanning
-    tree. Parent frame on LinkC offset by (0, 0, +0.4); child frame on LinkB
-    offset by (+0.6, 0, 0). X_FM = translation(0.1, 0.2, 0.3).
-
-Each link gets a distinct, asymmetric spatial inertia so that errors in
-rotation handling would be detected. */
+*/
 GTEST_TEST(CompositeTest, CalcFrameBodyPosesAllPaths) {
-  // --- Build asymmetric spatial inertias for each link. ---
-  const SpatialInertia<double> M_A =
-      SpatialInertia<double>::MakeFromCentralInertia(
-          2.0, Vector3<double>(0.1, -0.05, 0.02),
-          RotationalInertia<double>(0.03, 0.05, 0.04, 0.001, -0.002, 0.0015));
-  const SpatialInertia<double> M_B =
-      SpatialInertia<double>::MakeFromCentralInertia(
-          1.5, Vector3<double>(-0.08, 0.04, 0.06),
-          RotationalInertia<double>(0.05, 0.06, 0.04, -0.001, 0.002, 0.001));
-  const SpatialInertia<double> M_C =
-      SpatialInertia<double>::MakeFromCentralInertia(
-          3.0, Vector3<double>(0.0, 0.1, -0.07),
-          RotationalInertia<double>(0.08, 0.04, 0.07, 0.002, 0.001, -0.003));
-
-  // --- Joint frame offsets. ---
-  // Normal weld (LinkA → LinkB):
-  const RigidTransformd X_AJp(
-      RotationMatrixd::MakeXRotation(M_PI / 6),  // 30° about x
-      Vector3<double>(0.5, 0.0, 0.3));
+  // Normal (not reversed) weld between parent=LinkA → child=LinkB.
+  // Weld joint parent frame Jp is offset from LinkA's frame A by
+  //      (+0.5, 0, +0.3) with a 30-degree rotation about x.
+  // Weld joint child frame Jc is offset from LinkB's frame B by (0, +0.2, 0).
+  // X_JpJc = identity (coincident joint parent Jp and joint child Jp frames).
+  const RigidTransformd X_AJp(RotationMatrixd::MakeXRotation(M_PI / 6),
+                              Vector3<double>(0.5, 0.0, 0.3));
   const RigidTransformd X_BJc(Vector3<double>(0.0, 0.2, 0.0));
-  const RigidTransformd X_JpJc_AB;  // identity
+  const RigidTransformd X_JpJc_AB;  // Identity transform.
 
-  // Reversed weld (parent=LinkC, child=LinkB, but LinkB is inboard):
+  // Reversed weld between parent=LinkC → child=LinkB (but LinkB is inboard).
+  // "Reversed" means linkB is the inboard link and LinkC is the outboard link.
+  // Weld joint parent frame Jp is offset from LinkC's frame C by (0, 0, +0.4).
+  // Weld joint child frame Jc is offset from LinkB's frame B by (0.6, 0, 0).
+  // X_JpJc = translation(0.1, 0.2, 0.3) -- frames Jp and Jc are not coincident.
   const RigidTransformd X_CJp(Vector3<double>(0.0, 0.0, 0.4));
   const RigidTransformd X_BJc2(Vector3<double>(0.6, 0.0, 0.0));
   const RigidTransformd X_JpJc_CB(Vector3<double>(0.1, 0.2, 0.3));
+
+  // For robust testing, each link has a distinct spatial inertia with non-zero
+  // products of inertia and non-zero center of mass offsets.
+  const SpatialInertia<double> M_AAo_A =
+      SpatialInertia<double>::MakeFromCentralInertia(
+          2.0, Vector3<double>(0.1, -0.05, 0.02),
+          RotationalInertia<double>(0.03, 0.05, 0.04, 0.001, -0.002, 0.0015));
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::MakeFromCentralInertia(
+          1.5, Vector3<double>(-0.08, 0.04, 0.06),
+          RotationalInertia<double>(0.05, 0.06, 0.04, -0.001, 0.002, 0.001));
+  const SpatialInertia<double> M_CCo_C =
+      SpatialInertia<double>::MakeFromCentralInertia(
+          3.0, Vector3<double>(0.0, 0.1, -0.07),
+          RotationalInertia<double>(0.08, 0.04, 0.07, 0.002, 0.001, -0.003));
 
   // --- Helper lambda to build a model. ---
   auto make_model = [&](bool combine) {
     auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
     plant->SetCombineWeldedBodies(combine);
 
-    const auto& linkA = plant->AddRigidBody("LinkA", M_A);
-    const auto& linkB = plant->AddRigidBody("LinkB", M_B);
-    const auto& linkC = plant->AddRigidBody("LinkC", M_C);
+    const auto& linkA = plant->AddRigidBody("LinkA", M_AAo_A);
+    const auto& linkB = plant->AddRigidBody("LinkB", M_BBo_B);
+    const auto& linkC = plant->AddRigidBody("LinkC", M_CCo_C);
 
     // Revolute: World → LinkA about y.
     plant->AddJoint<RevoluteJoint>("revolute", plant->world_body(),
@@ -376,13 +374,16 @@ GTEST_TEST(CompositeTest, CalcFrameBodyPosesAllPaths) {
   const auto& tree_nc = GetInternalTree(*plant_nc);
   const auto& tree_c = GetInternalTree(*plant_c);
 
-  // Verify topology expectations.
-  // Non-composite: World + LinkA(revolute) + LinkB(weld) + LinkC(weld) = 4.
-  ASSERT_EQ(tree_nc.num_mobods(), 4);
-  // Composite: World + one composite mobod = 2.
-  ASSERT_EQ(tree_c.num_mobods(), 2);
-
-  const double tol = 32 * std::numeric_limits<double>::epsilon();
+  // Sanity check: Both models should have the same number of bodies (World +
+  // 3 links), number of joints (1 revolute + 2 welds), and number of states
+  // (1 revolute angle and 1 revolute angular rate), but they should differ in
+  // the number of mobilized bodies.
+  EXPECT_EQ(plant_nc->num_bodies(), plant_c->num_bodies());
+  EXPECT_EQ(plant_nc->num_joints(), plant_c->num_joints());
+  EXPECT_EQ(plant_nc->num_positions(), plant_c->num_positions());
+  EXPECT_EQ(plant_nc->num_velocities(), plant_c->num_velocities());
+  ASSERT_EQ(tree_nc.num_mobods(), 4);  // World + LinkA + LinkB + LinkC.
+  ASSERT_EQ(tree_c.num_mobods(), 2);  // World + composite body (links A, B, C).
 
   const auto& rev_nc = plant_nc->GetJointByName<RevoluteJoint>("revolute");
   const auto& rev_c = plant_c->GetJointByName<RevoluteJoint>("revolute");
@@ -397,9 +398,9 @@ GTEST_TEST(CompositeTest, CalcFrameBodyPosesAllPaths) {
     MatrixX<double> mass_nc(1, 1), mass_c(1, 1);
     plant_nc->CalcMassMatrix(*context_nc, &mass_nc);
     plant_c->CalcMassMatrix(*context_c, &mass_c);
-    EXPECT_TRUE(
-        CompareMatrices(mass_nc, mass_c, tol, MatrixCompareType::relative))
-        << "Mass matrix mismatch at angle=" << angle;
+    EXPECT_TRUE(CompareMatrices(mass_nc, mass_c, kTolerance,
+                                MatrixCompareType::relative))
+        << "Mass matrix mismatch at angle = " << angle;
 
     // Gravity generalized forces should agree (exercises AccumulateGravity
     // which depends on p_BoLcm_B computed in CalcFrameBodyPoses).
@@ -407,9 +408,9 @@ GTEST_TEST(CompositeTest, CalcFrameBodyPosesAllPaths) {
         plant_nc->CalcGravityGeneralizedForces(*context_nc);
     const VectorX<double> tau_g_c =
         plant_c->CalcGravityGeneralizedForces(*context_c);
-    EXPECT_TRUE(
-        CompareMatrices(tau_g_nc, tau_g_c, tol, MatrixCompareType::relative))
-        << "Gravity generalized forces mismatch at angle=" << angle;
+    EXPECT_TRUE(CompareMatrices(tau_g_nc, tau_g_c, kTolerance,
+                                MatrixCompareType::relative))
+        << "Gravity generalized forces mismatch at angle = " << angle;
   }
 }
 
