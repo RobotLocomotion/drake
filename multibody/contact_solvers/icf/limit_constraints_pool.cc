@@ -71,7 +71,7 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   //  K = 4π²/(β²·dt_eff²·w)
   //  τd = β·dt_eff/π, so
   // Therefore:
-  //  R = w / (K·dt·(dt + τd)) = β²·dt_eff²·w / (4π²·dt·(dt + τd)).
+  //  R = 1 / (K·dt·(dt + τd)) = β²·dt_eff²·w / (4π²·dt·(dt + τd)).
   // For now, we will just store the part that does not depend on the time
   // step or the effective time step. That contribution will come later in
   // CalcData().
