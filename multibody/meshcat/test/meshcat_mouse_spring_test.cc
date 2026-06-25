@@ -74,14 +74,13 @@ class MeshcatMouseSpringTest : public ::testing::Test {
   std::vector<ExternallyAppliedSpatialForce<double>> CalcForces(
       const std::vector<RigidTransformd>& X_WB,
       const std::vector<SpatialVelocity<double>>& V_WB) {
-    MeshcatMouseSpring<double> spring(meshcat_, &plant_, kStiffness);
+    MeshcatMouseSpring spring(meshcat_, &plant_, kStiffness);
     auto context = spring.CreateDefaultContext();
     spring.get_body_poses_input_port().FixValue(context.get(), X_WB);
     spring.get_body_spatial_velocities_input_port().FixValue(context.get(),
                                                              V_WB);
     return spring.get_spatial_forces_output_port()
-        .template Eval<std::vector<ExternallyAppliedSpatialForce<double>>>(
-            *context);
+        .Eval<std::vector<ExternallyAppliedSpatialForce<double>>>(*context);
   }
 
   std::vector<RigidTransformd> DefaultPoses() const {
@@ -213,11 +212,11 @@ TEST_F(MeshcatMouseSpringTest, DragEnd) {
 // Construction precondition checks.
 TEST_F(MeshcatMouseSpringTest, ConstructorErrors) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MeshcatMouseSpring<double>(meshcat_, &plant_, -1.0 /* stiffness */),
+      MeshcatMouseSpring(meshcat_, &plant_, -1.0 /* stiffness */),
       ".*stiffness.*");
   MultibodyPlant<double> unfinalized(0.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MeshcatMouseSpring<double>(meshcat_, &unfinalized), ".*is_finalized.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(MeshcatMouseSpring(meshcat_, &unfinalized),
+                              ".*is_finalized.*");
 }
 
 }  // namespace

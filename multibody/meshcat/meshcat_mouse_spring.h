@@ -48,10 +48,11 @@ When no drag is in progress the output is empty. Any body with geometry
 published to Meshcat by a geometry::MeshcatVisualizer can be dragged; the world
 body cannot.
 
-@tparam_nonsymbolic_scalar
+This system is `double`-only, because Meshcat reports drag state as plain
+doubles and mouse interaction is not meaningful for other scalar types.
+
 @ingroup visualization */
-template <typename T>
-class MeshcatMouseSpring final : public systems::LeafSystem<T> {
+class MeshcatMouseSpring final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatMouseSpring);
 
@@ -72,26 +73,27 @@ class MeshcatMouseSpring final : public systems::LeafSystem<T> {
   @pre plant->is_finalized() is true.
   @pre stiffness >= 0. */
   MeshcatMouseSpring(std::shared_ptr<geometry::Meshcat> meshcat,
-                     const MultibodyPlant<T>* plant,
+                     const MultibodyPlant<double>* plant,
                      double stiffness = kDefaultStiffness);
 
   ~MeshcatMouseSpring() final;
 
   /** Returns the input port for the bodies' poses (a
-  `std::vector<math::RigidTransform<T>>`). */
-  const systems::InputPort<T>& get_body_poses_input_port() const {
+  `std::vector<math::RigidTransform<double>>`). */
+  const systems::InputPort<double>& get_body_poses_input_port() const {
     return this->get_input_port(body_poses_input_port_);
   }
 
   /** Returns the input port for the bodies' spatial velocities (a
-  `std::vector<SpatialVelocity<T>>`). */
-  const systems::InputPort<T>& get_body_spatial_velocities_input_port() const {
+  `std::vector<SpatialVelocity<double>>`). */
+  const systems::InputPort<double>& get_body_spatial_velocities_input_port()
+      const {
     return this->get_input_port(body_spatial_velocities_input_port_);
   }
 
   /** Returns the output port for the applied spatial forces (a
-  `std::vector<ExternallyAppliedSpatialForce<T>>`). */
-  const systems::OutputPort<T>& get_spatial_forces_output_port() const {
+  `std::vector<ExternallyAppliedSpatialForce<double>>`). */
+  const systems::OutputPort<double>& get_spatial_forces_output_port() const {
     return this->get_output_port(spatial_forces_output_port_);
   }
 
@@ -101,21 +103,22 @@ class MeshcatMouseSpring final : public systems::LeafSystem<T> {
 
   @pre plant is part of builder and is finalized.
   @pre `plant`'s applied-spatial-force input port is not already connected. */
-  static MeshcatMouseSpring<T>& AddToBuilder(
-      systems::DiagramBuilder<T>* builder, const MultibodyPlant<T>* plant,
+  static MeshcatMouseSpring& AddToBuilder(
+      systems::DiagramBuilder<double>* builder,
+      const MultibodyPlant<double>* plant,
       std::shared_ptr<geometry::Meshcat> meshcat,
       double stiffness = kDefaultStiffness);
 
  private:
   // Builds the map from each body's scoped frame name to its index.
-  void BuildPathToBodyMap(const MultibodyPlant<T>& plant);
+  void BuildPathToBodyMap(const MultibodyPlant<double>& plant);
 
   void CalcSpatialForces(
-      const systems::Context<T>& context,
-      std::vector<ExternallyAppliedSpatialForce<T>>* forces) const;
+      const systems::Context<double>& context,
+      std::vector<ExternallyAppliedSpatialForce<double>>* forces) const;
 
   std::shared_ptr<geometry::Meshcat> meshcat_;
-  const MultibodyPlant<T>* const plant_;
+  const MultibodyPlant<double>* const plant_;
   const double stiffness_;
 
   // Maps each (non-world) body's scoped frame name as it appears in the Meshcat
@@ -133,6 +136,3 @@ class MeshcatMouseSpring final : public systems::LeafSystem<T> {
 }  // namespace meshcat
 }  // namespace multibody
 }  // namespace drake
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::meshcat::MeshcatMouseSpring);
