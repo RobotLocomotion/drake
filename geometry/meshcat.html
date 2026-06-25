@@ -210,12 +210,21 @@
       drakeDrag.plane.setFromNormalAndCoplanarPoint(normal, hit.point);
       // Suspend orbit/pan controls for the duration of the drag.
       viewer.controls.enabled = false;
+      viewer.renderer.domElement.style.cursor = "grabbing";
       viewer.renderer.domElement.setPointerCapture(event.pointerId);
       sendDrakeDrag();
     }
 
     function drakeDragMove(event) {
       if (!drakeDrag.active) {
+        // Not dragging: when Ctrl is held, hint that the object under the
+        // cursor is grabbable by showing a hand ("grab") cursor.
+        const domElement = viewer.renderer.domElement;
+        if (event.ctrlKey && drakeRaycast(event)) {
+          domElement.style.cursor = "grab";
+        } else {
+          domElement.style.cursor = "";
+        }
         return;
       }
       event.preventDefault();
@@ -234,6 +243,7 @@
       drakeDrag.active = false;
       drakeDrag.object = null;
       viewer.controls.enabled = true;
+      viewer.renderer.domElement.style.cursor = "";
       try {
         viewer.renderer.domElement.releasePointerCapture(event.pointerId);
       } catch (e) { /* The pointer may already have been released. */ }
