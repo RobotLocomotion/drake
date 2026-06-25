@@ -66,33 +66,33 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
 
   // Near-rigid regularization [Castro et al., 2022].
   // Eventually we will use:
-  //  R⁻¹ = K·dt·(dt + taud)
+  //  R⁻¹ = K·dt·(dt + τd)
   // Where:
   //  K = 4π²/(β²·dt_eff²·w)
-  //  taud = β·dt_eff/π, so
+  //  τd = β·dt_eff/π, so
   // Therefore:
-  //  R = w / (K·dt·(dt + taud)) = β²·dt_eff²·w / (4π²·dt·(dt + taud)).
+  //  R = w / (K·dt·(dt + τd)) = β²·dt_eff²·w / (4π²·dt·(dt + τd)).
   // For now, we will just store the part that does not depend on the time
   // step or the effective time step. That contribution will come later in
   // CalcData().
-  constexpr double beta = IcfModel<T>::beta;
-  constexpr double eps = beta * beta / (4 * M_PI * M_PI);
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  constexpr double kEps = kBeta * kBeta / (4 * M_PI * M_PI);
 
   // Approximation of W = J⋅M⁻¹⋅Jᵀ = M⁻¹ ≈ diag(M)⁻¹. The Jacobian J = Iₙ for
   // lower limits, and J = -Iₙ for upper limits.
   ConstVectorXView w_clique = model().clique_diagonal_mass_inverse(clique);
-  R_[index](dof) = eps * w_clique(dof);
+  R_[index](dof) = kEps * w_clique(dof);
 
   // Eventually we will use
-  //  v̂ₗ = (qₗ − q₀) / (δt + taud)
-  //  v̂ᵤ = (q₀ − qᵤ) / (δt + taud)
+  //  v̂ₗ = (qₗ − q₀) / (δt + τd)
+  //  v̂ᵤ = (q₀ − qᵤ) / (δt + τd)
   // Where
-  //  taud = β·dt_eff/π
+  //  τd = β·dt_eff/π
   // However, since model.time_step() may change between now and when we
   // actually solve the problem, we precompute
-  //  ĝₗ = v̂ₗ⋅(δt + taud) = (qₗ − q₀)
-  //  ĝᵤ = v̂ᵤ⋅(δt + taud) = (q₀ − qᵤ)
-  // so that we can compute v̂ = ĝ / (δt + taud) from the current time
+  //  ĝₗ = v̂ₗ⋅(δt + τd) = (qₗ − q₀)
+  //  ĝᵤ = v̂ᵤ⋅(δt + τd) = (q₀ − qᵤ)
+  // so that we can compute v̂ = ĝ / (δt + τd) from the current time
   // step in calls to CalcData().
   gl_hat_[index](dof) = (ql - q0);
   gu_hat_[index](dof) = (q0 - qu);
@@ -103,10 +103,12 @@ void LimitConstraintsPool<T>::CalcData(
     const VectorX<T>& v, LimitConstraintsDataPool<T>* limit_data) const {
   DRAKE_ASSERT(limit_data != nullptr);
 
-  const T dt_eff = model().effective_time_step();
   const T& dt = model().time_step();
-  constexpr double beta = IcfModel<T>::beta;
-  const T taud = beta * dt_eff / M_PI;
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
   T& cost = limit_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
@@ -119,10 +121,10 @@ void LimitConstraintsPool<T>::CalcData(
     VectorXView G_upper = limit_data->mutable_G_upper(k);
     for (int i = 0; i < nv; ++i) {
       // Compute the full regularization:
-      //  R = β²·dt_eff²·w / (4π²·dt·(dt + taud))
+      //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
       // R_[k](i) only stores the non-time-step-dependent part:
       //  R_[k](i) = β²·w / (4π²)
-      const T R = (R_[k](i) * dt_eff * dt_eff) / (dt * (dt + taud));
+      const T R = R_[k](i) * R_time_step_factor;
 
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
