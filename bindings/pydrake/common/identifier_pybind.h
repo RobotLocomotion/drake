@@ -15,7 +15,7 @@ void BindIdentifier(
     ModuleOrClass m, const std::string& name, const char* id_doc) {
   constexpr auto& cls_doc = pydrake_doc_common.drake.Identifier;
 
-  py::class_<Class>(m, name.c_str(), id_doc)
+  class_<Class>(m, name.c_str(), id_doc)
       .def("get_value", &Class::get_value, cls_doc.get_value.doc)
       .def("is_valid", &Class::is_valid, cls_doc.is_valid.doc)
       .def(py::self == py::self)

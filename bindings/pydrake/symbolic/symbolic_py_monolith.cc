@@ -49,14 +49,14 @@ void DefineSymbolicMonolith(py::module_ m) {
       pydrake_doc_common_symbolic_expression.drake.symbolic;
 
   // These declarations must be first, because low-level operators return them.
-  py::class_<Expression> expr_cls(m, "Expression", doc_expr.Expression.doc);
-  py::class_<Formula> formula_cls(m, "Formula", doc_expr.Formula.doc);
-  py::class_<Polynomial> polynomial_cls(m, "Polynomial", doc.Polynomial.doc);
-  py::class_<RationalFunction> rat_fun_cls(
+  class_<Expression> expr_cls(m, "Expression", doc_expr.Expression.doc);
+  class_<Formula> formula_cls(m, "Formula", doc_expr.Formula.doc);
+  class_<Polynomial> polynomial_cls(m, "Polynomial", doc.Polynomial.doc);
+  class_<RationalFunction> rat_fun_cls(
       m, "RationalFunction", doc.RationalFunction.doc);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Variable> var_cls(m, "Variable", doc_expr.Variable.doc);
+  class_<Variable> var_cls(m, "Variable", doc_expr.Variable.doc);
   constexpr auto& var_doc = doc_expr.Variable;
   py::enum_<Variable::Type>(var_cls, "Type")
       .value(
@@ -241,7 +241,7 @@ void DefineSymbolicMonolith(py::module_ m) {
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads,
   // etc.
   constexpr auto& doc_variables = doc_expr.Variables;
-  py::class_<Variables> cls_variables(m, "Variables", doc_variables.doc);
+  class_<Variables> cls_variables(m, "Variables", doc_variables.doc);
   cls_variables  // BR
       .def(py::init<>(), doc_variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
@@ -575,7 +575,7 @@ void DefineSymbolicMonolith(py::module_ m) {
             enum_doc.kHalfAnglePreferCos.doc);
   }
 
-  py::class_<SinCos>(m, "SinCos", doc.SinCos.doc)
+  class_<SinCos>(m, "SinCos", doc.SinCos.doc)
       .def(py::init<Variable, Variable, SinCosSubstitutionType>(), py::arg("s"),
           py::arg("c"), py::arg("type") = SinCosSubstitutionType::kAngle,
           doc.SinCos.ctor.doc)
@@ -732,7 +732,7 @@ void DefineSymbolicMonolith(py::module_ m) {
       py::arg("m"), doc_expr.positive_semidefinite.doc_1args_m);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Monomial>(m, "Monomial", doc.Monomial.doc)
+  class_<Monomial>(m, "Monomial", doc.Monomial.doc)
       .def(py::init<>(), doc.Monomial.ctor.doc_0args)
       .def(py::init<const Variable&>(), py::arg("var"),
           doc.Monomial.ctor.doc_1args_var)
@@ -836,7 +836,7 @@ void DefineSymbolicMonolith(py::module_ m) {
           py::arg("sort_monomial") = false,
           doc.CalcMonomialBasisOrderUpToOne.doc);
 
-  py::class_<Polynomial::SubstituteAndExpandCacheData>(m,
+  class_<Polynomial::SubstituteAndExpandCacheData>(m,
       "SubstituteAndExpandCacheData",
       doc.Polynomial.SubstituteAndExpandCacheData.doc)
       .def(py::init<>())

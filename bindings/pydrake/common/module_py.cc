@@ -96,7 +96,7 @@ class UnregisteredType {};
 class UnregisteredDerivedType : public RegisteredType {};
 
 void def_testing(py::module_ m) {
-  py::class_<RegisteredType>(m, "RegisteredType").def(py::init());
+  class_<RegisteredType>(m, "RegisteredType").def(py::init());
   // See comments in `module_test.py`.
   m.def("get_nice_type_name_cc_registered_instance",
       [](const RegisteredType& obj) { return NiceTypeName::Get(obj); });
@@ -148,7 +148,7 @@ void InitLowLevelModules(py::module_ m) {
   {
     using Class = Parallelism;
     constexpr auto& cls_doc = doc.Parallelism;
-    py::class_<Class> cls(m, "Parallelism", cls_doc.doc);
+    class_<Class> cls(m, "Parallelism", cls_doc.doc);
     py::implicitly_convertible<bool, Class>();
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
@@ -170,7 +170,7 @@ void InitLowLevelModules(py::module_ m) {
   {
     using Class = Sha256;
     constexpr auto& cls_doc = doc.Sha256;
-    py::class_<Class> cls(m, "Sha256", cls_doc.doc);
+    class_<Class> cls(m, "Sha256", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def_static(
@@ -206,7 +206,7 @@ void InitLowLevelModules(py::module_ m) {
   {
     using Class = MemoryFile;
     constexpr auto& cls_doc = doc.MemoryFile;
-    py::class_<Class> cls(m, "MemoryFile", cls_doc.doc);
+    class_<Class> cls(m, "MemoryFile", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
@@ -342,7 +342,7 @@ void InitLowLevelModules(py::module_ m) {
   // N.B. The AutoDiffXd overload is bound later on in this function.
 
   // Adds a binding for drake::RandomGenerator.
-  py::class_<RandomGenerator> random_generator_cls(m, "RandomGenerator",
+  class_<RandomGenerator> random_generator_cls(m, "RandomGenerator",
       (std::string(doc.RandomGenerator.doc) + R"""(
 
 Note: For many workflows in drake, we aim to have computations that are fully

@@ -1602,7 +1602,7 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = ContactResultsToLcmSystem<T>;
     constexpr auto& cls_doc = doc.ContactResultsToLcmSystem;
-    py::class_<Class, systems::LeafSystem<T>>(
+    class_<Class, systems::LeafSystem<T>>(
         m, "ContactResultsToLcmSystem", cls_doc.doc)
         .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
             cls_doc.ctor.doc)
@@ -1639,7 +1639,7 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = PropellerInfo;
     constexpr auto& cls_doc = doc.PropellerInfo;
-    py::class_<Class> cls(m, "PropellerInfo", cls_doc.doc);
+    class_<Class> cls(m, "PropellerInfo", cls_doc.doc);
     cls  // BR
         .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
                  double, double>(),
@@ -1656,7 +1656,7 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = DistanceConstraintParams;
     constexpr auto& cls_doc = doc.DistanceConstraintParams;
-    py::class_<Class> cls(m, "DistanceConstraintParams", cls_doc.doc);
+    class_<Class> cls(m, "DistanceConstraintParams", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<BodyIndex, Vector3<double>&, BodyIndex, Vector3<double>&,
@@ -1743,7 +1743,7 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = MultibodyPlantConfig;
     constexpr auto& cls_doc = doc.MultibodyPlantConfig;
-    py::class_<Class> cls(m, "MultibodyPlantConfig", cls_doc.doc);
+    class_<Class> cls(m, "MultibodyPlantConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -1755,14 +1755,14 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = PhysicalModel<T>;
     constexpr auto& cls_doc = doc.PhysicalModel;
-    auto cls = py::class_<Class>(m, "PhysicalModel", cls_doc.doc);
+    auto cls = class_<Class>(m, "PhysicalModel", cls_doc.doc);
   }
 
   // DeformableModel
   {
     using Class = DeformableModel<double>;
     constexpr auto& cls_doc = doc.DeformableModel;
-    py::class_<Class, PhysicalModel<T>> cls(m, "DeformableModel", cls_doc.doc);
+    class_<Class, PhysicalModel<T>> cls(m, "DeformableModel", cls_doc.doc);
     cls  // BR
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
         .def(

@@ -131,7 +131,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = DoorHingeConfig;
     constexpr auto& cls_doc = doc.DoorHingeConfig;
-    py::class_<Class> cls(m, "DoorHingeConfig", cls_doc.doc);
+    class_<Class> cls(m, "DoorHingeConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>(), cls_doc.ctor.doc);
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -151,7 +151,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = ScopedName;
     constexpr auto& cls_doc = doc.ScopedName;
-    py::class_<Class> cls(m, "ScopedName", cls_doc.doc);
+    class_<Class> cls(m, "ScopedName", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::string_view, std::string_view>(),
@@ -186,7 +186,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = PdControllerGains;
     constexpr auto& cls_doc = doc.PdControllerGains;
-    py::class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
+    class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     cls  // BR
@@ -1369,7 +1369,7 @@ void DefineForceDensityField(py::module_ m, T) {
 void DefineDeformableBody(py::module_ m) {
   using Class = DeformableBody<double>;
   constexpr auto& cls_doc = doc.DeformableBody;
-  py::class_<Class> cls(m, "DeformableBody", cls_doc.doc);
+  class_<Class> cls(m, "DeformableBody", cls_doc.doc);
   BindMultibodyElementMixin<double>(&cls);
   cls  // BR
       .def("body_id", &Class::body_id, cls_doc.body_id.doc)

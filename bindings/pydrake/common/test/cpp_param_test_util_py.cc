@@ -102,7 +102,7 @@ void CheckTyping() {
 
 PYDRAKE_MODULE(cpp_param_test_util, m) {
   // Define custom class only once here.
-  py::class_<CustomCppType>(m, "CustomCppType");
+  class_<CustomCppType>(m, "CustomCppType");
 
   m.def("execute_tests", [m]() {
     // Import some definitions from the modules where they are defined into the

@@ -20,7 +20,7 @@ namespace pydrake {
 namespace internal {
 
 // Determines if a type will go through pybind11's generic caster. This
-// implies that the type has been declared using `py::class_`, and can have
+// implies that the type has been declared using `class_`, and can have
 // a reference passed through. Otherwise, the type uses type-conversion:
 // https://pybind11.readthedocs.io/en/stable/advanced/cast/index.html
 #ifdef PYDRAKE_USE_PYBIND11

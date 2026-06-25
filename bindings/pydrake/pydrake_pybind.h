@@ -198,7 +198,7 @@ void DefClone(PyClass* ppy_class) {
 }
 
 /// Binds `__getstate__` and `__setstate__` for pickling on the given
-/// `ppy_class` (which must point to a `py::class_`).
+/// `ppy_class` (which must point to a `class_`).
 ///
 /// The get_state functor should take `(const Class& self)` and return a
 /// newly-pickled class `-> Pickled` by value.
@@ -241,7 +241,7 @@ void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
 /// useful when the C++ class only has a default constructor. Example:
 /// @code
 /// using Class = ExampleClass;
-/// py::class_<Class>(m, "ExampleClass")  // BR
+/// class_<Class>(m, "ExampleClass")  // BR
 ///     .def(ParamInit<Class>());
 /// @endcode
 ///

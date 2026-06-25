@@ -44,7 +44,7 @@ using symbolic::Variable;
 namespace {
 template <template <typename> typename PyClass, typename T>
 // NOLINTNEXTLINE(runtime/references)
-void DefineRigidTransform(py::module_ m, py::class_<PyClass<T>>& cls) {
+void DefineRigidTransform(py::module_ m, class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -165,7 +165,7 @@ void DefineRigidTransform(py::module_ m, py::class_<PyClass<T>>& cls) {
 
 template <template <typename> typename PyClass, typename T>
 // NOLINTNEXTLINE(runtime/references)
-void DefineRotationMatrix(py::module_ m, py::class_<PyClass<T>>& cls) {
+void DefineRotationMatrix(py::module_ m, class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -264,7 +264,7 @@ void DefineRotationMatrix(py::module_ m, py::class_<PyClass<T>>& cls) {
 
 template <template <typename> typename PyClass, typename T>
 // NOLINTNEXTLINE(runtime/references)
-void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
+void DefineRollPitchYaw(class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -507,7 +507,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
   using T = double;
-  py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
+  class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
           doc.BarycentricMesh.ctor.doc)
       .def("get_input_grid", &BarycentricMesh<T>::get_input_grid,
@@ -654,7 +654,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = NumericalGradientOption;
     constexpr auto& cls_doc = doc.NumericalGradientOption;
-    py::class_<Class>(m, "NumericalGradientOption", cls_doc.doc)
+    class_<Class>(m, "NumericalGradientOption", cls_doc.doc)
         .def(py::init<NumericalGradientMethod, double>(), py::arg("method"),
             py::arg("function_accuracy") = 1E-15, cls_doc.ctor.doc)
         .def("NumericalGradientMethod", &Class::method, cls_doc.method.doc)

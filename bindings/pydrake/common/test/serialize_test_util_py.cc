@@ -84,7 +84,7 @@ struct MyData3 {
 
 PYDRAKE_MODULE(serialize_test_util, m) {
   // Bind MyData1 with no documentation.
-  py::class_<MyData1> cls1(m, "MyData1");
+  class_<MyData1> cls1(m, "MyData1");
   cls1  // BR
       .def(py::init())
       .def(ParamInit<MyData1>());
@@ -94,7 +94,7 @@ PYDRAKE_MODULE(serialize_test_util, m) {
 
   // Bind MyData2 along with its documentation.
   constexpr MyData2Docs cls2_doc;
-  py::class_<MyData2> cls2(m, "MyData2", cls2_doc.doc);
+  class_<MyData2> cls2(m, "MyData2", cls2_doc.doc);
   cls2  // BR
       .def(py::init())
       .def(ParamInit<MyData2>());
@@ -105,7 +105,7 @@ PYDRAKE_MODULE(serialize_test_util, m) {
   // Bind MyData3 with two instantiations.
   {
     using Class = MyData3<double>;
-    py::class_<Class> cls(m, TemporaryClassName<Class>().c_str());
+    class_<Class> cls(m, TemporaryClassName<Class>().c_str());
     AddTemplateClass(m, "MyData3", cls, GetPyParam<double>());
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);
@@ -114,7 +114,7 @@ PYDRAKE_MODULE(serialize_test_util, m) {
   }
   {
     using Class = MyData3<int>;
-    py::class_<Class> cls(m, TemporaryClassName<Class>().c_str());
+    class_<Class> cls(m, TemporaryClassName<Class>().c_str());
     AddTemplateClass(m, "MyData3", cls, GetPyParam<int>());
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);

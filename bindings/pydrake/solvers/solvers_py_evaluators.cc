@@ -63,7 +63,7 @@ auto RegisterBinding(py::handle* scope) {
   constexpr auto& cls_doc = pydrake_doc_solvers.drake.solvers.Binding;
   typedef Binding<C> B;
   const string pyname = TemporaryClassName<B>();
-  py::class_<B> binding_cls(*scope, pyname.c_str());
+  class_<B> binding_cls(*scope, pyname.c_str());
   AddTemplateClass(*scope, "Binding", binding_cls, GetPyParam<C>());
   binding_cls  // BR
       .def(
@@ -135,7 +135,7 @@ class StubEvaluatorBase : public EvaluatorBase {
 
 void DefTesting(py::module_ m) {
   // Test helpers for binding casting.
-  py::class_<StubEvaluatorBase, EvaluatorBase
+  class_<StubEvaluatorBase, EvaluatorBase
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<StubEvaluatorBase>
@@ -164,7 +164,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   {
     using Class = EvaluatorBase;
     constexpr auto& cls_doc = doc.EvaluatorBase;
-    py::class_<Class
+    class_<Class
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<EvaluatorBase>
@@ -207,7 +207,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   auto evaluator_binding = RegisterBinding<EvaluatorBase>(&m);
   DefBindingCastConstructor<EvaluatorBase>(&evaluator_binding);
 
-  py::class_<Constraint, EvaluatorBase
+  class_<Constraint, EvaluatorBase
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<Constraint>
@@ -252,7 +252,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           },
           py::arg("x"), doc.Constraint.CheckSatisfied.doc);
 
-  py::class_<LinearConstraint, Constraint
+  class_<LinearConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<LinearConstraint>
@@ -314,7 +314,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           },
           py::arg("new_lb"), py::arg("new_ub"), doc.Constraint.set_bounds.doc);
 
-  py::class_<LorentzConeConstraint, Constraint
+  class_<LorentzConeConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<LorentzConeConstraint>
@@ -347,7 +347,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           py::arg("new_A"), py::arg("new_b"),
           doc.LorentzConeConstraint.UpdateCoefficients.doc);
 
-  py::class_<RotatedLorentzConeConstraint, Constraint
+  class_<RotatedLorentzConeConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<RotatedLorentzConeConstraint>
@@ -365,7 +365,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           py::arg("new_b"),
           doc.RotatedLorentzConeConstraint.UpdateCoefficients.doc);
 
-  py::class_<LinearEqualityConstraint, LinearConstraint
+  class_<LinearEqualityConstraint, LinearConstraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<LinearEqualityConstraint>
@@ -400,7 +400,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           py::arg("Aeq"), py::arg("beq"),
           doc.LinearEqualityConstraint.UpdateCoefficients.doc);
 
-  py::class_<BoundingBoxConstraint, LinearConstraint
+  class_<BoundingBoxConstraint, LinearConstraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<BoundingBoxConstraint>
@@ -410,7 +410,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
                const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc);
 
-  py::class_<QuadraticConstraint, Constraint
+  class_<QuadraticConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<QuadraticConstraint>
@@ -459,7 +459,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("hessian_type", &QuadraticConstraint::hessian_type,
           doc.QuadraticConstraint.hessian_type.doc);
 
-  py::class_<PositiveSemidefiniteConstraint, Constraint
+  class_<PositiveSemidefiniteConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<PositiveSemidefiniteConstraint>
@@ -471,7 +471,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("matrix_rows", &PositiveSemidefiniteConstraint::matrix_rows,
           doc.PositiveSemidefiniteConstraint.matrix_rows.doc);
 
-  py::class_<LinearMatrixInequalityConstraint, Constraint
+  class_<LinearMatrixInequalityConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<LinearMatrixInequalityConstraint>
@@ -486,7 +486,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("matrix_rows", &LinearMatrixInequalityConstraint::matrix_rows,
           doc.LinearMatrixInequalityConstraint.matrix_rows.doc);
 
-  py::class_<LinearComplementarityConstraint, Constraint
+  class_<LinearComplementarityConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<LinearComplementarityConstraint>
@@ -498,7 +498,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("q", &LinearComplementarityConstraint::q,
           doc.LinearComplementarityConstraint.q.doc);
 
-  py::class_<ExponentialConeConstraint, Constraint
+  class_<ExponentialConeConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<ExponentialConeConstraint>
@@ -537,7 +537,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   {
     using Class = MinimumValueLowerBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumValueLowerBoundConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -597,7 +597,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   {
     using Class = MinimumValueUpperBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumValueUpperBoundConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -675,7 +675,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   RegisterBinding<ExpressionConstraint>(&m);
 
   // Mirror procedure for costs
-  py::class_<Cost, EvaluatorBase
+  class_<Cost, EvaluatorBase
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<Cost>
@@ -683,7 +683,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       >
       cost(m, "Cost", doc.Cost.doc);
 
-  py::class_<LinearCost, Cost
+  class_<LinearCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<LinearCost>
@@ -706,7 +706,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("update_constant_term", &LinearCost::update_constant_term,
           py::arg("new_b"), doc.LinearCost.update_constant_term.doc);
 
-  py::class_<QuadraticCost, Cost
+  class_<QuadraticCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<QuadraticCost>
@@ -742,7 +742,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("update_constant_term", &QuadraticCost::update_constant_term,
           py::arg("new_c"), doc.QuadraticCost.update_constant_term.doc);
 
-  py::class_<L1NormCost, Cost
+  class_<L1NormCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<L1NormCost>
@@ -767,7 +767,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
           py::arg("val"), doc.L1NormCost.update_b_entry.doc);
 
   {
-    py::class_<L2NormCost, Cost
+    class_<L2NormCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<L2NormCost>
@@ -803,7 +803,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
             doc.L2NormCost.UpdateCoefficients.doc_sparse_A);
   }
 
-  py::class_<LInfNormCost, Cost
+  class_<LInfNormCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<LInfNormCost>
@@ -827,7 +827,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       .def("update_b_entry", &LInfNormCost::update_b_entry, py::arg("i"),
           py::arg("val"), doc.LInfNormCost.update_b_entry.doc);
 
-  py::class_<PerspectiveQuadraticCost, Cost
+  class_<PerspectiveQuadraticCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<PerspectiveQuadraticCost>
@@ -882,7 +882,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
   // implementation as is, or convert it to symbolic::Polynomial first.
   RegisterBinding<ExpressionCost>(&m);
 
-  py::class_<VisualizationCallback, EvaluatorBase
+  class_<VisualizationCallback, EvaluatorBase
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<VisualizationCallback>

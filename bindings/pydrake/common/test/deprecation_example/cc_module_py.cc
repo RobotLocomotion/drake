@@ -33,7 +33,7 @@ PYDRAKE_MODULE(cc_module, m) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     using Class = ExampleCppStruct;
     constexpr auto& cls_doc = doc.ExampleCppStruct;
-    py::class_<Class> cls(m, "ExampleCppStruct", cls_doc.doc_deprecated);
+    class_<Class> cls(m, "ExampleCppStruct", cls_doc.doc_deprecated);
     cls  // BR
         .def(DeprecatedParamInit<Class>(cls_doc.doc_deprecated))
         .def_rw("i", &Class::i)
@@ -44,7 +44,7 @@ PYDRAKE_MODULE(cc_module, m) {
   {
     using Class = ExampleCppClass;
     constexpr auto& cls_doc = doc.ExampleCppClass;
-    py::class_<Class> cls(m, "ExampleCppClass", cls_doc.doc);
+    class_<Class> cls(m, "ExampleCppClass", cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def_rw("prop", &Class::prop, cls_doc.prop.doc);

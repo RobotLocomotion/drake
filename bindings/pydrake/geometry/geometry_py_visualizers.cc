@@ -173,7 +173,7 @@ void DefineDrakeVisualizerParams(py::module_ m) {
   {
     using Class = DrakeVisualizerParams;
     constexpr auto& cls_doc = doc.DrakeVisualizerParams;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "DrakeVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -189,7 +189,7 @@ void DefineMeshcatParams(py::module_ m) {
   {
     using Class = MeshcatParams;
     constexpr auto& cls_doc = doc.MeshcatParams;
-    py::class_<Class
+    class_<Class
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         ,
         std::shared_ptr<Class>
@@ -200,7 +200,7 @@ void DefineMeshcatParams(py::module_ m) {
     {
       using Nested = MeshcatParams::PropertyTuple;
       constexpr auto& nested_doc = doc.MeshcatParams.PropertyTuple;
-      py::class_<Nested> nested(cls, "PropertyTuple", nested_doc.doc);
+      class_<Nested> nested(cls, "PropertyTuple", nested_doc.doc);
       nested.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&nested, nested_doc);
       DefReprUsingSerialize(&nested);
@@ -217,7 +217,7 @@ void DefineMeshcat(py::module_ m) {
   {
     using Class = Meshcat;
     constexpr auto& cls_doc = doc.Meshcat;
-    py::class_<Class
+    class_<Class
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         ,
         std::shared_ptr<Class>
@@ -237,7 +237,7 @@ void DefineMeshcat(py::module_ m) {
             side_doc.kDoubleSide.doc);
 
     const auto& perspective_camera_doc = doc.Meshcat.PerspectiveCamera;
-    py::class_<Meshcat::PerspectiveCamera> perspective_camera_cls(
+    class_<Meshcat::PerspectiveCamera> perspective_camera_cls(
         meshcat, "PerspectiveCamera", perspective_camera_doc.doc);
     perspective_camera_cls  // BR
         .def(ParamInit<Meshcat::PerspectiveCamera>());
@@ -247,7 +247,7 @@ void DefineMeshcat(py::module_ m) {
     DefCopyAndDeepCopy(&perspective_camera_cls);
 
     const auto& orthographic_camera_doc = doc.Meshcat.OrthographicCamera;
-    py::class_<Meshcat::OrthographicCamera> orthographic_camera_cls(
+    class_<Meshcat::OrthographicCamera> orthographic_camera_cls(
         meshcat, "OrthographicCamera", orthographic_camera_doc.doc);
     orthographic_camera_cls  // BR
         .def(ParamInit<Meshcat::OrthographicCamera>());
@@ -257,8 +257,7 @@ void DefineMeshcat(py::module_ m) {
     DefCopyAndDeepCopy(&orthographic_camera_cls);
 
     const auto& gamepad_doc = doc.Meshcat.Gamepad;
-    py::class_<Meshcat::Gamepad> gamepad_cls(
-        meshcat, "Gamepad", gamepad_doc.doc);
+    class_<Meshcat::Gamepad> gamepad_cls(meshcat, "Gamepad", gamepad_doc.doc);
     gamepad_cls  // BR
         .def(ParamInit<Meshcat::Gamepad>());
     DefAttributesUsingSerialize(&gamepad_cls, gamepad_doc);
@@ -487,7 +486,7 @@ void DefineMeshcatAnimation(py::module_ m) {
   {
     using Class = MeshcatAnimation;
     constexpr auto& cls_doc = doc.MeshcatAnimation;
-    py::class_<Class> cls(m, "MeshcatAnimation", cls_doc.doc);
+    class_<Class> cls(m, "MeshcatAnimation", cls_doc.doc);
 
     // MeshcatAnimation::LoopMode enumeration
     constexpr auto& loop_doc = doc.MeshcatAnimation.LoopMode;
@@ -549,7 +548,7 @@ void DefineMeshcatVisualizerParams(py::module_ m) {
   {
     using Class = MeshcatVisualizerParams;
     constexpr auto& cls_doc = doc.MeshcatVisualizerParams;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "MeshcatVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());

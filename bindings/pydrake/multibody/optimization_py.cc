@@ -33,7 +33,7 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = CalcGridPointsOptions;
     constexpr auto& cls_doc = doc.CalcGridPointsOptions;
-    py::class_<Class> cls(m, "CalcGridPointsOptions", cls_doc.doc);
+    class_<Class> cls(m, "CalcGridPointsOptions", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -44,7 +44,7 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = CentroidalMomentumConstraint;
     constexpr auto& cls_doc = doc.CentroidalMomentumConstraint;
-    py::class_<Class, solvers::Constraint
+    class_<Class, solvers::Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -64,7 +64,7 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = ContactWrenchFromForceInWorldFrameEvaluator;
     constexpr auto& cls_doc = doc.ContactWrenchFromForceInWorldFrameEvaluator;
-    py::class_<Class, solvers::EvaluatorBase
+    class_<Class, solvers::EvaluatorBase
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -78,7 +78,7 @@ PYDRAKE_MODULE(optimization, m) {
   }
 
   {
-    py::class_<ContactWrench>(m, "ContactWrench", doc.ContactWrench.doc)
+    class_<ContactWrench>(m, "ContactWrench", doc.ContactWrench.doc)
         .def_ro("bodyA_index", &ContactWrench::bodyA_index,
             doc.ContactWrench.bodyA_index.doc)
         .def_ro("bodyB_index", &ContactWrench::bodyB_index,
@@ -92,7 +92,7 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = QuaternionEulerIntegrationConstraint;
     constexpr auto& cls_doc = doc.QuaternionEulerIntegrationConstraint;
-    py::class_<Class, solvers::Constraint
+    class_<Class, solvers::Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -116,7 +116,7 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = SpatialVelocityConstraint;
     constexpr auto& cls_doc = doc.SpatialVelocityConstraint;
-    py::class_<Class, solvers::Constraint
+    class_<Class, solvers::Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -141,7 +141,7 @@ PYDRAKE_MODULE(optimization, m) {
     using Avb = SpatialVelocityConstraint::AngularVelocityBounds;
     constexpr auto& avb_doc =
         doc.SpatialVelocityConstraint.AngularVelocityBounds;
-    py::class_<SpatialVelocityConstraint::AngularVelocityBounds>(
+    class_<SpatialVelocityConstraint::AngularVelocityBounds>(
         cls, "AngularVelocityBounds", avb_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
         .def_rw("magnitude_lower", &Avb::magnitude_lower,
@@ -156,7 +156,7 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = StaticEquilibriumProblem;
     constexpr auto& cls_doc = doc.StaticEquilibriumProblem;
-    py::class_<Class>(m, "StaticEquilibriumProblem", cls_doc.doc)
+    class_<Class>(m, "StaticEquilibriumProblem", cls_doc.doc)
         .def(py::init<const MultibodyPlant<AutoDiffXd>*,
                  systems::Context<AutoDiffXd>*,
                  const std::set<
@@ -189,7 +189,7 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = Toppra;
     constexpr auto& cls_doc = doc.Toppra;
-    py::class_<Class>(m, "Toppra", cls_doc.doc)
+    class_<Class>(m, "Toppra", cls_doc.doc)
         .def(py::init<const Trajectory<double>&, const MultibodyPlant<double>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("path"), py::arg("plant"), py::arg("gridpoints"),

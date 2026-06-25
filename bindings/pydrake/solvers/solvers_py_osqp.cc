@@ -13,12 +13,11 @@ void DefineSolversOsqp(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<OsqpSolver, SolverInterface>(m, "OsqpSolver", doc.OsqpSolver.doc)
+  class_<OsqpSolver, SolverInterface>(m, "OsqpSolver", doc.OsqpSolver.doc)
       .def(py::init<>(), doc.OsqpSolver.ctor.doc)
       .def_static("id", &OsqpSolver::id, doc.OsqpSolver.id.doc);
 
-  py::class_<OsqpSolverDetails>(
-      m, "OsqpSolverDetails", doc.OsqpSolverDetails.doc)
+  class_<OsqpSolverDetails>(m, "OsqpSolverDetails", doc.OsqpSolverDetails.doc)
       .def_ro("iter", &OsqpSolverDetails::iter, doc.OsqpSolverDetails.iter.doc)
       .def_ro("status_val", &OsqpSolverDetails::status_val,
           doc.OsqpSolverDetails.status_val.doc)

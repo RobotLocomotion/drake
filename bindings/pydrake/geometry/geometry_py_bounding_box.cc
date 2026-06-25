@@ -20,7 +20,7 @@ void DefineGeometryBoundingBox(py::module_ m) {
   constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
 
   // Define Aabb class first.
-  py::class_<Aabb> aabb_cls(m, "Aabb", doc.Aabb.doc);
+  class_<Aabb> aabb_cls(m, "Aabb", doc.Aabb.doc);
   aabb_cls  // BR
       .def(py::init<const Vector3<double>&, const Vector3<double>&>(),
           py::arg("p_HoBo"), py::arg("half_width"), doc.Aabb.ctor.doc)
@@ -44,7 +44,7 @@ void DefineGeometryBoundingBox(py::module_ m) {
   DefCopyAndDeepCopy(&aabb_cls);
 
   // Define Obb class.
-  py::class_<Obb> obb_cls(m, "Obb", doc.Obb.doc);
+  class_<Obb> obb_cls(m, "Obb", doc.Obb.doc);
   obb_cls  // BR
       .def(py::init<const math::RigidTransformd&, const Vector3<double>&>(),
           py::arg("X_HB"), py::arg("half_width"), doc.Obb.ctor.doc)

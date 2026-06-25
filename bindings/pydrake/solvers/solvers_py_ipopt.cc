@@ -13,12 +13,11 @@ void DefineSolversIpopt(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<IpoptSolver, SolverInterface>(
-      m, "IpoptSolver", doc.IpoptSolver.doc)
+  class_<IpoptSolver, SolverInterface>(m, "IpoptSolver", doc.IpoptSolver.doc)
       .def(py::init<>(), doc.IpoptSolver.ctor.doc)
       .def_static("id", &IpoptSolver::id, doc.IpoptSolver.id.doc);
 
-  py::class_<IpoptSolverDetails>(
+  class_<IpoptSolverDetails>(
       m, "IpoptSolverDetails", doc.IpoptSolverDetails.doc)
       .def_ro("status", &IpoptSolverDetails::status,
           doc.IpoptSolverDetails.status.doc)

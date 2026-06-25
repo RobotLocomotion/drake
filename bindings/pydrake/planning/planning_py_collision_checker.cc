@@ -29,7 +29,7 @@ void DefinePlanningCollisionChecker(py::module_ m) {
   {
     using Class = CollisionChecker;
     constexpr auto& cls_doc = doc.CollisionChecker;
-    py::class_<Class> cls(m, "CollisionChecker", cls_doc.doc);
+    class_<Class> cls(m, "CollisionChecker", cls_doc.doc);
     cls  // BR
         .def("model", &Class::model, py_rvp::reference_internal,
             cls_doc.model.doc)
@@ -288,7 +288,7 @@ void DefinePlanningCollisionChecker(py::module_ m) {
   {
     using Class = SceneGraphCollisionChecker;
     constexpr auto& cls_doc = doc.SceneGraphCollisionChecker;
-    py::class_<Class, CollisionChecker> cls(
+    class_<Class, CollisionChecker> cls(
         m, "SceneGraphCollisionChecker", cls_doc.doc);
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR
@@ -324,7 +324,7 @@ void DefinePlanningCollisionChecker(py::module_ m) {
   {
     using Class = UnimplementedCollisionChecker;
     constexpr auto& cls_doc = doc.UnimplementedCollisionChecker;
-    py::class_<Class, CollisionChecker> cls(
+    class_<Class, CollisionChecker> cls(
         m, "UnimplementedCollisionChecker", cls_doc.doc);
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR

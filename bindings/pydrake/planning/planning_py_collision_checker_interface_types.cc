@@ -26,7 +26,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = BodyShapeDescription;
     constexpr auto& cls_doc = doc.BodyShapeDescription;
-    py::class_<Class> cls(m, "BodyShapeDescription", cls_doc.doc);
+    class_<Class> cls(m, "BodyShapeDescription", cls_doc.doc);
     cls  // BR
         .def(py::init<const geometry::Shape&, const math::RigidTransformd&,
                  std::string, std::string>(),
@@ -49,7 +49,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = CollisionCheckerContext;
     constexpr auto& cls_doc = doc.CollisionCheckerContext;
-    py::class_<Class
+    class_<Class
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         ,
         std::shared_ptr<Class>
@@ -74,7 +74,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = DistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.DistanceAndInterpolationProvider;
-    py::class_<Class
+    class_<Class
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         ,
         std::shared_ptr<Class>
@@ -93,7 +93,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = LinearDistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.LinearDistanceAndInterpolationProvider;
-    py::class_<Class, DistanceAndInterpolationProvider
+    class_<Class, DistanceAndInterpolationProvider
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         ,
         std::shared_ptr<Class>
@@ -122,7 +122,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = CollisionCheckerParams;
     constexpr auto& cls_doc = doc.CollisionCheckerParams;
-    py::class_<Class> cls(m, "CollisionCheckerParams", cls_doc.doc);
+    class_<Class> cls(m, "CollisionCheckerParams", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
@@ -164,7 +164,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = EdgeMeasure;
     constexpr auto& cls_doc = doc.EdgeMeasure;
-    py::class_<Class> cls(m, "EdgeMeasure", cls_doc.doc);
+    class_<Class> cls(m, "EdgeMeasure", cls_doc.doc);
     cls  // BR
         .def(py::init<double, double>(), py::arg("distance"), py::arg("alpha"),
             cls_doc.ctor.doc)
@@ -223,7 +223,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = RobotClearance;
     constexpr auto& cls_doc = doc.RobotClearance;
-    py::class_<Class> cls(m, "RobotClearance", cls_doc.doc);
+    class_<Class> cls(m, "RobotClearance", cls_doc.doc);
     cls  // BR
         .def(py::init<int>(), py::arg("num_positions"), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))

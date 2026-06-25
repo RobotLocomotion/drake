@@ -199,7 +199,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /* Store a colored surface mesh for each discrete component of a deformable
    geometry's visible geometry. */
   struct ColoredMesh {
-    TriangleSurfaceMesh<T> mesh;
+    TriangleSurfaceMesh<double> mesh;
     Rgba diffuse;
   };
 

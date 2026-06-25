@@ -13,12 +13,11 @@ void DefineSolversSnopt(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<SnoptSolver, SolverInterface>(
-      m, "SnoptSolver", doc.SnoptSolver.doc)
+  class_<SnoptSolver, SolverInterface>(m, "SnoptSolver", doc.SnoptSolver.doc)
       .def(py::init<>(), doc.SnoptSolver.ctor.doc)
       .def_static("id", &SnoptSolver::id, doc.SnoptSolver.id.doc);
 
-  py::class_<SnoptSolverDetails>(
+  class_<SnoptSolverDetails>(
       m, "SnoptSolverDetails", doc.SnoptSolverDetails.doc)
       .def_ro(
           "info", &SnoptSolverDetails::info, doc.SnoptSolverDetails.info.doc)

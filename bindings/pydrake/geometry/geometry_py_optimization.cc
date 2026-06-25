@@ -98,7 +98,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   // SampledVolume. This struct must be declared before ConvexSet as methods in
   // ConvexSet depend on this struct.
   {
-    py::class_<SampledVolume>(m, "SampledVolume", doc.SampledVolume.doc)
+    class_<SampledVolume>(m, "SampledVolume", doc.SampledVolume.doc)
         .def_rw("volume", &SampledVolume::volume, doc.SampledVolume.volume.doc)
         .def_rw("rel_accuracy", &SampledVolume::rel_accuracy,
             doc.SampledVolume.rel_accuracy.doc)
@@ -108,7 +108,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   // ConvexSet
   {
     const auto& cls_doc = doc.ConvexSet;
-    py::class_<ConvexSet>(m, "ConvexSet", cls_doc.doc)
+    class_<ConvexSet>(m, "ConvexSet", cls_doc.doc)
         .def("Clone", &ConvexSet::Clone, cls_doc.Clone.doc)
         .def("ambient_dimension", &ConvexSet::ambient_dimension,
             cls_doc.ambient_dimension.doc)
@@ -161,18 +161,17 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
 
   // There is a dependency cycle between Hyperellipsoid <=> AffineBall, so we
   // need to "forward declare" the Hyperellipsoid class here.
-  py::class_<Hyperellipsoid, ConvexSet> hyperellipsoid_cls(
+  class_<Hyperellipsoid, ConvexSet> hyperellipsoid_cls(
       m, "Hyperellipsoid", doc.Hyperellipsoid.doc);
 
   // There is a dependency cycle between VPolytope <=> HPolyhedron, so we
   // need to "forward declare" the VPolytope class here.
-  py::class_<VPolytope, ConvexSet> vpolytope_cls(
-      m, "VPolytope", doc.VPolytope.doc);
+  class_<VPolytope, ConvexSet> vpolytope_cls(m, "VPolytope", doc.VPolytope.doc);
 
   // AffineBall
   {
     const auto& cls_doc = doc.AffineBall;
-    py::class_<AffineBall, ConvexSet> cls(m, "AffineBall", cls_doc.doc);
+    class_<AffineBall, ConvexSet> cls(m, "AffineBall", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -203,7 +202,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   // AffineSubspace
   {
     const auto& cls_doc = doc.AffineSubspace;
-    py::class_<AffineSubspace, ConvexSet> cls(m, "AffineSubspace", cls_doc.doc);
+    class_<AffineSubspace, ConvexSet> cls(m, "AffineSubspace", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -236,7 +235,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   {
     using Class = CartesianProduct;
     const auto& cls_doc = doc.CartesianProduct;
-    py::class_<Class, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
+    class_<Class, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             "__init__",
@@ -271,7 +270,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   {
     using Class = ConvexHull;
     const auto& cls_doc = doc.ConvexHull;
-    py::class_<Class, ConvexSet>(m, "ConvexHull", cls_doc.doc)
+    class_<Class, ConvexSet>(m, "ConvexHull", cls_doc.doc)
         .def(
             "__init__",
             [](Class* self, const std::vector<ConvexSet*>& sets,
@@ -313,7 +312,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   {
     using Class = HPolyhedron;
     const auto& cls_doc = doc.HPolyhedron;
-    py::class_<Class, ConvexSet> cls(m, "HPolyhedron", cls_doc.doc);
+    class_<Class, ConvexSet> cls(m, "HPolyhedron", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -439,7 +438,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   {
     using Class = Hyperrectangle;
     const auto& cls_doc = doc.Hyperrectangle;
-    py::class_<Class, ConvexSet> cls(m, "Hyperrectangle", cls_doc.doc);
+    class_<Class, ConvexSet> cls(m, "Hyperrectangle", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&,
@@ -470,7 +469,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   {
     using Class = Intersection;
     const auto& cls_doc = doc.Intersection;
-    py::class_<Class, ConvexSet>(m, "Intersection", cls_doc.doc)
+    class_<Class, ConvexSet>(m, "Intersection", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             "__init__",
@@ -489,7 +488,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   {
     using Class = MinkowskiSum;
     const auto& cls_doc = doc.MinkowskiSum;
-    py::class_<Class, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
+    class_<Class, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             "__init__",
@@ -512,7 +511,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   {
     using Class = Point;
     const auto& cls_doc = doc.Point;
-    py::class_<Class, ConvexSet> cls(m, "Point", cls_doc.doc);
+    class_<Class, ConvexSet> cls(m, "Point", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(), py::arg("x"),
@@ -532,7 +531,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   // Spectrahedron
   {
     const auto& cls_doc = doc.Spectrahedron;
-    py::class_<Spectrahedron, ConvexSet>(m, "Spectrahedron", cls_doc.doc)
+    class_<Spectrahedron, ConvexSet>(m, "Spectrahedron", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const solvers::MathematicalProgram&>(), py::arg("prog"),
             cls_doc.ctor.doc_1args);
@@ -574,7 +573,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
 void DefineIris(py::module_ m) {
   {
     const auto& cls_doc = doc.IrisOptions;
-    py::class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
+    class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
     iris_options  // BR
         .def(ParamInit<IrisOptions>())
         .def_rw("require_sample_point_is_contained",
@@ -714,7 +713,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
   // GraphOfConvexSetsOptions
   {
     const auto& cls_doc = doc.GraphOfConvexSetsOptions;
-    py::class_<GraphOfConvexSetsOptions> gcs_options(
+    class_<GraphOfConvexSetsOptions> gcs_options(
         m, "GraphOfConvexSetsOptions", cls_doc.doc);
     gcs_options  // BR
         .def(py::init<>())
@@ -804,7 +803,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
   {
     using Class = GcsGraphvizOptions;
     constexpr auto& cls_doc = doc.GcsGraphvizOptions;
-    py::class_<Class> cls(m, "GcsGraphvizOptions", cls_doc.doc);
+    class_<Class> cls(m, "GcsGraphvizOptions", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -819,7 +818,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
             GraphOfConvexSets::Transcription::kRestriction};
 
     const auto& cls_doc = doc.GraphOfConvexSets;
-    py::class_<GraphOfConvexSets> graph_of_convex_sets(
+    class_<GraphOfConvexSets> graph_of_convex_sets(
         m, "GraphOfConvexSets", cls_doc.doc);
 
     BindIdentifier<GraphOfConvexSets::VertexId>(
@@ -841,7 +840,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
 
     // Vertex
     const auto& vertex_doc = doc.GraphOfConvexSets.Vertex;
-    py::class_<GraphOfConvexSets::Vertex>(
+    class_<GraphOfConvexSets::Vertex>(
         graph_of_convex_sets, "Vertex", vertex_doc.doc)
         .def("id", &GraphOfConvexSets::Vertex::id, vertex_doc.id.doc)
         .def("ambient_dimension", &GraphOfConvexSets::Vertex::ambient_dimension,
@@ -912,8 +911,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
 
     // Edge
     const auto& edge_doc = doc.GraphOfConvexSets.Edge;
-    py::class_<GraphOfConvexSets::Edge>(
-        graph_of_convex_sets, "Edge", edge_doc.doc)
+    class_<GraphOfConvexSets::Edge>(graph_of_convex_sets, "Edge", edge_doc.doc)
         .def("id", &GraphOfConvexSets::Edge::id, edge_doc.id.doc)
         .def("name", &GraphOfConvexSets::Edge::name, edge_doc.name.doc)
         .def("u",
@@ -1151,7 +1149,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
     }
   };
 
-  py::class_<ImplicitGraphOfConvexSets, PyImplicitGraphOfConvexSets>
+  class_<ImplicitGraphOfConvexSets, PyImplicitGraphOfConvexSets>
       implicit_gcs_cls(
           m, "ImplicitGraphOfConvexSets", doc.ImplicitGraphOfConvexSets.doc);
   implicit_gcs_cls  // BR
@@ -1172,8 +1170,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
   // ImplicitGraphOfConvexSetsFromExplicit
   {
     const auto& cls_doc = doc.ImplicitGraphOfConvexSetsFromExplicit;
-    py::class_<ImplicitGraphOfConvexSetsFromExplicit,
-        ImplicitGraphOfConvexSets>(
+    class_<ImplicitGraphOfConvexSetsFromExplicit, ImplicitGraphOfConvexSets>(
         m, "ImplicitGraphOfConvexSetsFromExplicit", cls_doc.doc)
         .def(py::init<const GraphOfConvexSets&>(), py::arg("gcs"),
             // Keep alive, reference: `self` keeps `gcs` alive.
@@ -1204,7 +1201,7 @@ void DefineCIrisCollisionGeometry(py::module_ m) {
         .value("kCapsule", CIrisGeometryType::kCapsule,
             doc.CIrisGeometryType.kCapsule.doc);
 
-    py::class_<CIrisCollisionGeometry>(
+    class_<CIrisCollisionGeometry>(
         m, "CIrisCollisionGeometry", doc.CIrisCollisionGeometry.doc)
         .def("type", &CIrisCollisionGeometry::type,
             doc.CIrisCollisionGeometry.type.doc)
@@ -1225,7 +1222,7 @@ void DefineCIrisCollisionGeometry(py::module_ m) {
 void DefineCspaceFreeStructs(py::module_ m) {
   {
     constexpr auto& prog_doc = doc.SeparationCertificateProgramBase;
-    auto prog_cls = py::class_<SeparationCertificateProgramBase>(
+    auto prog_cls = class_<SeparationCertificateProgramBase>(
         m, "SeparationCertificateProgramBase", prog_doc.doc)
                         .def(
                             "prog",
@@ -1238,7 +1235,7 @@ void DefineCspaceFreeStructs(py::module_ m) {
 
     constexpr auto& result_doc = doc.SeparationCertificateResultBase;
     auto result_cls =
-        py::class_<SeparationCertificateResultBase>(
+        class_<SeparationCertificateResultBase>(
             m, "SeparationCertificateResultBase", result_doc.doc)
             .def_ro("a", &SeparationCertificateResultBase::a)
             .def_ro("b", &SeparationCertificateResultBase::b)
@@ -1248,7 +1245,7 @@ void DefineCspaceFreeStructs(py::module_ m) {
 
     constexpr auto& find_options_doc = doc.FindSeparationCertificateOptions;
     auto find_options_cls =
-        py::class_<FindSeparationCertificateOptions>(
+        class_<FindSeparationCertificateOptions>(
             m, "FindSeparationCertificateOptions", find_options_doc.doc)
             .def(py::init<>())
             .def_rw(
@@ -1266,7 +1263,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
   {
     using BaseClass = CspaceFreePolytopeBase;
     const auto& base_cls_doc = doc.CspaceFreePolytopeBase;
-    py::class_<BaseClass> cspace_free_polytope_base_cls(
+    class_<BaseClass> cspace_free_polytope_base_cls(
         m, "CspaceFreePolytopeBase", base_cls_doc.doc);
     cspace_free_polytope_base_cls
         // TODO(Alexandre.Amice): Bind rational_forward_kinematics to resolve
@@ -1280,7 +1277,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
 
     {
       const auto& options_cls_doc = base_cls_doc.Options;
-      py::class_<BaseClass::Options> options_cls(
+      class_<BaseClass::Options> options_cls(
           cspace_free_polytope_base_cls, "Options", options_cls_doc.doc);
       options_cls  // BR
           .def(py::init<>(), options_cls_doc.ctor.doc)
@@ -1291,10 +1288,10 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
 
     using Class = CspaceFreePolytope;
     const auto& cls_doc = doc.CspaceFreePolytope;
-    py::class_<Class, BaseClass> cspace_free_polytope_cls(
+    class_<Class, BaseClass> cspace_free_polytope_cls(
         m, "CspaceFreePolytope", cls_doc.doc);
 
-    py::class_<Class::SeparatingPlaneLagrangians>(cspace_free_polytope_cls,
+    class_<Class::SeparatingPlaneLagrangians>(cspace_free_polytope_cls,
         "SeparatingPlaneLagrangians", cls_doc.SeparatingPlaneLagrangians.doc)
         .def(py::init<int, int>(), py::arg("C_rows"), py::arg("s_size"),
             cls_doc.SeparatingPlaneLagrangians.ctor.doc)
@@ -1309,7 +1306,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
         .def("s_upper", &Class::SeparatingPlaneLagrangians::mutable_s_upper);
 
     using SepCertClass = Class::SeparationCertificateResult;
-    py::class_<SepCertClass>(cspace_free_polytope_cls,
+    class_<SepCertClass>(cspace_free_polytope_cls,
         "SeparationCertificateResult", cls_doc.SeparationCertificateResult.doc)
         .def_ro("plane_index", &SepCertClass::plane_index)
         .def_ro("positive_side_rational_lagrangians",
@@ -1334,7 +1331,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
         .def_ro("plane_decision_var_vals",
             &SepCertClass::plane_decision_var_vals, py_rvp::copy);
 
-    py::class_<Class::SeparationCertificate>(cspace_free_polytope_cls,
+    class_<Class::SeparationCertificate>(cspace_free_polytope_cls,
         "SeparationCertificate", cls_doc.SeparationCertificate.doc)
         .def("GetSolution", &Class::SeparationCertificate::GetSolution,
             py::arg("plane_index"), py::arg("a"), py::arg("b"),
@@ -1345,7 +1342,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
         .def_rw("negative_side_rational_lagrangians",
             &Class::SeparationCertificate::negative_side_rational_lagrangians);
 
-    py::class_<Class::SeparationCertificateProgram,
+    class_<Class::SeparationCertificateProgram,
         SeparationCertificateProgramBase>(cspace_free_polytope_cls,
         "SeparationCertificateProgram",
         cls_doc.SeparationCertificateProgram.doc)
@@ -1355,7 +1352,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
         .def_ro(
             "certificate", &Class::SeparationCertificateProgram::certificate);
 
-    py::class_<Class::FindSeparationCertificateGivenPolytopeOptions,
+    class_<Class::FindSeparationCertificateGivenPolytopeOptions,
         FindSeparationCertificateOptions>(cspace_free_polytope_cls,
         "FindSeparationCertificateGivenPolytopeOptions",
         cls_doc.FindSeparationCertificateGivenPolytopeOptions.doc)
@@ -1369,8 +1366,8 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
         .value("kSum", Class::EllipsoidMarginCost::kSum)
         .value("kGeometricMean", Class::EllipsoidMarginCost::kGeometricMean);
 
-    py::class_<Class::FindPolytopeGivenLagrangianOptions>(
-        cspace_free_polytope_cls, "FindPolytopeGivenLagrangianOptions",
+    class_<Class::FindPolytopeGivenLagrangianOptions>(cspace_free_polytope_cls,
+        "FindPolytopeGivenLagrangianOptions",
         cls_doc.FindPolytopeGivenLagrangianOptions.doc)
         .def(py::init<>())
         .def_rw("backoff_scale",
@@ -1390,7 +1387,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
         .def_rw("ellipsoid_margin_cost",
             &Class::FindPolytopeGivenLagrangianOptions::ellipsoid_margin_cost);
 
-    py::class_<Class::SearchResult>(
+    class_<Class::SearchResult>(
         cspace_free_polytope_cls, "SearchResult", cls_doc.SearchResult.doc)
         .def(py::init<>())
         .def("C", &Class::SearchResult::C)
@@ -1402,7 +1399,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
         .def("num_iter", &Class::SearchResult::num_iter)
         .def("certified_polytope", &Class::SearchResult::certified_polytope);
 
-    py::class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
+    class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
         "BilinearAlternationOptions", cls_doc.BilinearAlternationOptions.doc)
         .def(py::init<>())
         .def_rw("max_iter", &Class::BilinearAlternationOptions::max_iter,
@@ -1420,7 +1417,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
             &Class::BilinearAlternationOptions::ellipsoid_scaling,
             cls_doc.BilinearAlternationOptions.ellipsoid_scaling.doc);
 
-    py::class_<Class::BinarySearchOptions>(cspace_free_polytope_cls,
+    class_<Class::BinarySearchOptions>(cspace_free_polytope_cls,
         "BinarySearchOptions", cls_doc.BinarySearchOptions.doc)
         .def(py::init<>())
         .def_rw("scale_max", &Class::BinarySearchOptions::scale_max)

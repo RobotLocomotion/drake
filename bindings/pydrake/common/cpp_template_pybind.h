@@ -63,7 +63,7 @@ std::string TemporaryClassName(const std::string& name = "TemporaryName") {
 /// @param py_class Class instantiation to be added.
 /// @note The class name should be *unique*. If you would like automatic unique
 /// names, consider constructing the class binding as
-/// `py::class_<Class, ...>(m, TemporaryClassName<Class>().c_str())`.
+/// `class_<Class, ...>(m, TemporaryClassName<Class>().c_str())`.
 /// @param param Parameters for the instantiation.
 inline py::object AddTemplateClass(  // BR
     py::handle scope, const std::string& template_name, py::handle py_class,
@@ -82,7 +82,7 @@ inline py::object AddTemplateClass(  // BR
 /// The caller may opt-in to py::dynamic_attr() as the last argument.
 /// @return pybind11 class
 template <typename Class, typename... Options>
-py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
+class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
     py::handle scope, const std::string& default_name, py::tuple param,
     const char* doc_string = "",
     const std::optional<std::string>& template_suffix = {},
@@ -106,12 +106,11 @@ py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
   } else {
     doc = doc_string;
   }
-  py::class_<Class, Options...> py_class =
+  class_<Class, Options...> py_class =
       dynamic_attr.has_value()
-          ? py::class_<Class, Options...>(
+          ? class_<Class, Options...>(
                 scope, class_name.c_str(), doc.c_str(), *dynamic_attr)
-          : py::class_<Class, Options...>(
-                scope, class_name.c_str(), doc.c_str());
+          : class_<Class, Options...>(scope, class_name.c_str(), doc.c_str());
   // Register it as a template instantiation.
   const bool skip_rename = is_default;
   AddTemplateClass(scope, template_name, py_class, param, skip_rename);

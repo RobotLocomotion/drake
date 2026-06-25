@@ -287,7 +287,7 @@ class PySolverInterface : public solvers::SolverInterface {
 
 void BindSolverInterface(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<SolverInterface, PySolverInterface>(
+  class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
       .def(
           "__init__",
@@ -352,7 +352,7 @@ void BindSolverInterface(py::module_ m) {
 
 void BindMathematicalProgramResult(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<MathematicalProgramResult>(
+  class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
       .def(py::init<>(), doc.MathematicalProgramResult.ctor.doc)
       .def("is_success", &MathematicalProgramResult::is_success,
@@ -484,7 +484,7 @@ void BindMathematicalProgramResult(py::module_ m) {
 
 void BindMathematicalProgram(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram",
+  class_<MathematicalProgram> prog_cls(m, "MathematicalProgram",
       py::dynamic_attr(), doc.MathematicalProgram.doc);
   prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc);
   DefClone(&prog_cls);
@@ -1588,7 +1588,7 @@ void BindSolutionResult(py::module_ m) {
 }
 
 void BindPyFunctionCost(py::module_ m) {
-  py::class_<PyFunctionCost, Cost
+  class_<PyFunctionCost, Cost
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<PyFunctionCost>
@@ -1601,7 +1601,7 @@ void BindPyFunctionCost(py::module_ m) {
 }
 
 void BindPyFunctionConstraint(py::module_ m) {
-  py::class_<PyFunctionConstraint, Constraint
+  class_<PyFunctionConstraint, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
       ,
       std::shared_ptr<PyFunctionConstraint>

@@ -165,7 +165,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = ClippingRange;
     const auto& cls_doc = doc.ClippingRange;
-    py::class_<Class>(m, "ClippingRange", cls_doc.doc)
+    class_<Class>(m, "ClippingRange", cls_doc.doc)
         .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
         .def(py::init<double, double>(), py::arg("near"), py::arg("far"),
             cls_doc.ctor.doc)
@@ -177,7 +177,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = RenderCameraCore;
     const auto& cls_doc = doc.RenderCameraCore;
-    py::class_<Class> cls(m, "RenderCameraCore");
+    class_<Class> cls(m, "RenderCameraCore");
     cls  // BR
         .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
         .def(
@@ -205,7 +205,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = ColorRenderCamera;
     const auto& cls_doc = doc.ColorRenderCamera;
-    py::class_<Class> cls(m, "ColorRenderCamera", cls_doc.doc);
+    class_<Class> cls(m, "ColorRenderCamera", cls_doc.doc);
     cls  // BR
         .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
         .def(py::init<RenderCameraCore, bool>(), py::arg("core"),
@@ -222,7 +222,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = DepthRange;
     const auto& cls_doc = doc.DepthRange;
-    py::class_<Class> cls(m, "DepthRange");
+    class_<Class> cls(m, "DepthRange");
     cls  // BR
         .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
         .def(py::init<double, double>(), py::arg("min_in"), py::arg("min_out"),
@@ -238,7 +238,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = DepthRenderCamera;
     const auto& cls_doc = doc.DepthRenderCamera;
-    py::class_<Class> cls(m, "DepthRenderCamera");
+    class_<Class> cls(m, "DepthRenderCamera");
     cls  // BR
         .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
         .def(py::init<RenderCameraCore, DepthRange>(), py::arg("core"),
@@ -255,7 +255,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   }
 
   {
-    py::class_<RenderLabel> render_label(m, "RenderLabel", doc.RenderLabel.doc);
+    class_<RenderLabel> render_label(m, "RenderLabel", doc.RenderLabel.doc);
     render_label
         .def(py::init<int>(), py::arg("value"), doc.RenderLabel.ctor.doc_1args)
         .def("is_reserved", &RenderLabel::is_reserved)
@@ -297,7 +297,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = RenderEngine;
     const auto& cls_doc = doc.RenderEngine;
-    py::class_<Class, PyRenderEngine
+    class_<Class, PyRenderEngine
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         ,
         std::shared_ptr<Class>
@@ -389,7 +389,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = geometry::NullTexture;
     constexpr auto& cls_doc = doc_vtk.NullTexture;
-    py::class_<Class> cls(m, "NullTexture", cls_doc.doc);
+    class_<Class> cls(m, "NullTexture", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);
@@ -400,7 +400,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = geometry::EquirectangularMap;
     constexpr auto& cls_doc = doc_vtk.EquirectangularMap;
-    py::class_<Class> cls(m, "EquirectangularMap", cls_doc.doc);
+    class_<Class> cls(m, "EquirectangularMap", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);
@@ -411,7 +411,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = geometry::EnvironmentMap;
     constexpr auto& cls_doc = doc_vtk.EnvironmentMap;
-    py::class_<Class> cls(m, "EnvironmentMap", cls_doc.doc);
+    class_<Class> cls(m, "EnvironmentMap", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);
@@ -422,7 +422,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = geometry::GltfExtension;
     constexpr auto& cls_doc = doc_vtk.GltfExtension;
-    py::class_<Class> cls(m, "GltfExtension", cls_doc.doc);
+    class_<Class> cls(m, "GltfExtension", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);
@@ -433,7 +433,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = geometry::render::LightParameter;
     constexpr auto& cls_doc = doc.LightParameter;
-    py::class_<Class> cls(m, "LightParameter", cls_doc.doc);
+    class_<Class> cls(m, "LightParameter", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);
@@ -444,7 +444,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = geometry::SsaoParameter;
     constexpr auto& cls_doc = doc_vtk.SsaoParameter;
-    py::class_<Class> cls(m, "SsaoParameter", cls_doc.doc);
+    class_<Class> cls(m, "SsaoParameter", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls);
@@ -455,7 +455,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = RenderEngineVtkParams;
     constexpr auto& cls_doc = doc_vtk.RenderEngineVtkParams;
-    py::class_<Class> cls(m, "RenderEngineVtkParams", cls_doc.doc);
+    class_<Class> cls(m, "RenderEngineVtkParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -485,7 +485,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = RenderEngineGlParams;
     constexpr auto& cls_doc = doc_gl.RenderEngineGlParams;
-    py::class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
+    class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -515,7 +515,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = RenderEngineGltfClientParams;
     constexpr auto& cls_doc = doc_gltf_client.RenderEngineGltfClientParams;
-    py::class_<Class> cls(m, "RenderEngineGltfClientParams", cls_doc.doc);
+    class_<Class> cls(m, "RenderEngineGltfClientParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);

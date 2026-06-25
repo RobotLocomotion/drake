@@ -17,12 +17,12 @@ void DefineSolversBranchAndBound(py::module_ m) {
   {
     using Class = MixedIntegerBranchAndBound;
     constexpr auto& cls_doc = doc.MixedIntegerBranchAndBound;
-    py::class_<Class> bnb_cls(m, "MixedIntegerBranchAndBound", cls_doc.doc);
+    class_<Class> bnb_cls(m, "MixedIntegerBranchAndBound", cls_doc.doc);
 
     {
       using Nested = MixedIntegerBranchAndBound::Options;
       constexpr auto& options_doc = cls_doc.Options;
-      py::class_<Nested> options_cls(bnb_cls, "Options", options_doc.doc);
+      class_<Nested> options_cls(bnb_cls, "Options", options_doc.doc);
       options_cls.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&options_cls, options_doc);
       DefReprUsingSerialize(&options_cls);

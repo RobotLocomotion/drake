@@ -73,7 +73,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = InverseKinematics;
     constexpr auto& cls_doc = doc.InverseKinematics;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "InverseKinematics", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(py::init<const MultibodyPlant<double>&, bool>(), py::arg("plant"),
@@ -192,7 +192,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = AngleBetweenVectorsConstraint;
     constexpr auto& cls_doc = doc.AngleBetweenVectorsConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -226,7 +226,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = AngleBetweenVectorsCost;
     constexpr auto& cls_doc = doc.AngleBetweenVectorsCost;
-    py::class_<Class, solvers::Cost
+    class_<Class, solvers::Cost
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -260,7 +260,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PointToPointDistanceConstraint;
     constexpr auto& cls_doc = doc.PointToPointDistanceConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -296,7 +296,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PointToLineDistanceConstraint;
     constexpr auto& cls_doc = doc.PointToLineDistanceConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -336,7 +336,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PolyhedronConstraint;
     constexpr auto& cls_doc = doc.PolyhedronConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -374,7 +374,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = DistanceConstraint;
     constexpr auto& cls_doc = doc.DistanceConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -405,7 +405,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = GazeTargetConstraint;
     constexpr auto& cls_doc = doc.GazeTargetConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -442,7 +442,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = MinimumDistanceLowerBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceLowerBoundConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -537,7 +537,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = MinimumDistanceUpperBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceUpperBoundConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -630,7 +630,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PositionConstraint;
     constexpr auto& cls_doc = doc.PositionConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -697,7 +697,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PositionCost;
     constexpr auto& cls_doc = doc.PositionCost;
-    py::class_<Class, solvers::Cost
+    class_<Class, solvers::Cost
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -734,7 +734,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = ComPositionConstraint;
     constexpr auto& cls_doc = doc.ComPositionConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -763,7 +763,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = ComInPolyhedronConstraint;
     constexpr auto& cls_doc = doc.ComInPolyhedronConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -802,7 +802,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = OrientationConstraint;
     constexpr auto& cls_doc = doc.OrientationConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -835,7 +835,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = OrientationCost;
     constexpr auto& cls_doc = doc.OrientationCost;
-    py::class_<Class, solvers::Cost
+    class_<Class, solvers::Cost
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -868,7 +868,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = UnitQuaternionConstraint;
     constexpr auto& cls_doc = doc.UnitQuaternionConstraint;
-    py::class_<Class, Constraint
+    class_<Class, Constraint
 #ifdef PYDRAKE_USE_PYBIND11
         ,
         std::shared_ptr<Class>
@@ -887,9 +887,9 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = GlobalInverseKinematics;
     constexpr auto& cls_doc = doc.GlobalInverseKinematics;
-    py::class_<Class> global_ik(m, "GlobalInverseKinematics", cls_doc.doc);
+    class_<Class> global_ik(m, "GlobalInverseKinematics", cls_doc.doc);
 
-    py::class_<GlobalInverseKinematics::Options>(
+    class_<GlobalInverseKinematics::Options>(
         global_ik, "Options", cls_doc.Options.doc)
         .def(py::init<>(), cls_doc.Options.ctor.doc)
         .def_rw("num_intervals_per_half_axis",
@@ -914,7 +914,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
                   self.interval_binning, self.linear_constraint_only);
         });
 
-    py::class_<GlobalInverseKinematics::Polytope3D>(
+    class_<GlobalInverseKinematics::Polytope3D>(
         global_ik, "Polytope3D", cls_doc.Polytope3D.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixX3d>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),

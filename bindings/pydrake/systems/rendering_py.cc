@@ -25,7 +25,7 @@ PYDRAKE_MODULE(rendering, m) {
 
   // See the todo in multibody_position_to_geometry_pose.h. This should
   // ultimately move into a different module.
-  py::class_<MultibodyPositionToGeometryPose<T>, LeafSystem<T>>(m,
+  class_<MultibodyPositionToGeometryPose<T>, LeafSystem<T>>(m,
       "MultibodyPositionToGeometryPose",
       doc.MultibodyPositionToGeometryPose.doc)
       .def(py::init<const multibody::MultibodyPlant<T>&, bool>(),

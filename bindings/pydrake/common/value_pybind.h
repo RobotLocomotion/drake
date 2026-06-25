@@ -25,11 +25,10 @@ namespace pydrake {
 /// @tparam Class Class to be bound. By default, `Value<T>` is used.
 /// @returns Reference to the registered Python type.
 template <typename T, typename Class = drake::Value<T>>
-py::class_<Class, drake::AbstractValue> AddValueInstantiation(
-    py::module_ scope) {
+class_<Class, drake::AbstractValue> AddValueInstantiation(py::module_ scope) {
   static_assert(!py::detail::is_pyobject<T>::value, "See docs for GetPyParam");
   py::module_ py_common = py::module_::import_("pydrake.common.value");
-  py::class_<Class, drake::AbstractValue> py_class(
+  class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
   py::tuple param = GetPyParam<T>();
@@ -73,7 +72,7 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
         new (self) Class(v);
       });
 #endif
-  // If the type is registered via `py::class_`, or is of type `Object`
+  // If the type is registered via `class_`, or is of type `Object`
   // (`py::object`), then we can obtain a mutable view into the value.
   constexpr bool has_get_mutable_value =
       internal::is_generic_caster_v<T> || std::is_same_v<T, Object>;

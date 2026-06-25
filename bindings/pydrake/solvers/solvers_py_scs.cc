@@ -13,11 +13,11 @@ void DefineSolversScs(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<ScsSolver, SolverInterface>(m, "ScsSolver", doc.ScsSolver.doc)
+  class_<ScsSolver, SolverInterface>(m, "ScsSolver", doc.ScsSolver.doc)
       .def(py::init<>(), doc.ScsSolver.ctor.doc)
       .def_static("id", &ScsSolver::id, doc.ScsSolver.id.doc);
 
-  py::class_<ScsSolverDetails>(m, "ScsSolverDetails", doc.ScsSolverDetails.doc)
+  class_<ScsSolverDetails>(m, "ScsSolverDetails", doc.ScsSolverDetails.doc)
       .def_ro("scs_status", &ScsSolverDetails::scs_status,
           doc.ScsSolverDetails.scs_status.doc)
       .def_ro("iter", &ScsSolverDetails::iter, doc.ScsSolverDetails.iter.doc)

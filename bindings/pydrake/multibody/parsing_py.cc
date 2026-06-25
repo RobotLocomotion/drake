@@ -35,7 +35,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = CollisionFilterGroups;
     constexpr auto& cls_doc = doc.CollisionFilterGroups;
-    auto cls = py::class_<Class>(m, "CollisionFilterGroups", cls_doc.doc);
+    auto cls = class_<Class>(m, "CollisionFilterGroups", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("AddGroup", &Class::AddGroup, py::arg("name"), py::arg("members"),
@@ -53,11 +53,11 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = PackageMap;
     constexpr auto& cls_doc = doc.PackageMap;
-    py::class_<Class> cls(m, "PackageMap", cls_doc.doc);
+    class_<Class> cls(m, "PackageMap", cls_doc.doc);
     {
       using Nested = PackageMap::RemoteParams;
       constexpr auto& nested_doc = cls_doc.RemoteParams;
-      py::class_<Nested> nested(cls, "RemoteParams", nested_doc.doc);
+      class_<Nested> nested(cls, "RemoteParams", nested_doc.doc);
       nested.def(ParamInit<Nested>());
       nested.def("ToJson", &Nested::ToJson, nested_doc.ToJson.doc);
       DefAttributesUsingSerialize(&nested, nested_doc);
@@ -112,7 +112,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = Parser;
     constexpr auto& cls_doc = doc.Parser;
-    auto cls = py::class_<Class>(m, "Parser", cls_doc.doc);
+    auto cls = class_<Class>(m, "Parser", cls_doc.doc);
     cls  // BR
         .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*,
                  std::string_view>(),
@@ -161,7 +161,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::AddWeld;
     constexpr auto& cls_doc = doc.parsing.AddWeld;
-    py::class_<Class> cls(m, "AddWeld", cls_doc.doc);
+    class_<Class> cls(m, "AddWeld", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -171,7 +171,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::AddModel;
     constexpr auto& cls_doc = doc.parsing.AddModel;
-    py::class_<Class> cls(m, "AddModel", cls_doc.doc);
+    class_<Class> cls(m, "AddModel", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -181,7 +181,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::AddModelInstance;
     constexpr auto& cls_doc = doc.parsing.AddModelInstance;
-    py::class_<Class> cls(m, "AddModelInstance", cls_doc.doc);
+    class_<Class> cls(m, "AddModelInstance", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -191,7 +191,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::AddFrame;
     constexpr auto& cls_doc = doc.parsing.AddFrame;
-    py::class_<Class> cls(m, "AddFrame", cls_doc.doc);
+    class_<Class> cls(m, "AddFrame", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -201,7 +201,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::AddCollisionFilterGroup;
     constexpr auto& cls_doc = doc.parsing.AddCollisionFilterGroup;
-    py::class_<Class> cls(m, "AddCollisionFilterGroup", cls_doc.doc);
+    class_<Class> cls(m, "AddCollisionFilterGroup", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -211,7 +211,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::AddDirectives;
     constexpr auto& cls_doc = doc.parsing.AddDirectives;
-    py::class_<Class> cls(m, "AddDirectives", cls_doc.doc);
+    class_<Class> cls(m, "AddDirectives", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -221,7 +221,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::ModelDirective;
     constexpr auto& cls_doc = doc.parsing.ModelDirective;
-    py::class_<Class> cls(m, "ModelDirective", cls_doc.doc);
+    class_<Class> cls(m, "ModelDirective", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -231,7 +231,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::ModelDirectives;
     constexpr auto& cls_doc = doc.parsing.ModelDirectives;
-    py::class_<Class> cls(m, "ModelDirectives", cls_doc.doc);
+    class_<Class> cls(m, "ModelDirectives", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -249,7 +249,7 @@ PYDRAKE_MODULE(parsing, m) {
   {
     using Class = parsing::ModelInstanceInfo;
     constexpr auto& cls_doc = doc.parsing.ModelInstanceInfo;
-    py::class_<Class>(m, "ModelInstanceInfo", cls_doc.doc)
+    class_<Class>(m, "ModelInstanceInfo", cls_doc.doc)
         .def_ro("model_name", &Class::model_name, cls_doc.model_name.doc)
         .def_ro("model_path", &Class::model_path, cls_doc.model_path.doc)
         .def_ro("parent_frame_name", &Class::parent_frame_name,

@@ -30,7 +30,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = ContactVisualizerParams;
     constexpr auto& cls_doc = doc.ContactVisualizerParams;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "ContactVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -43,7 +43,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = multibody::meshcat::internal::PointContactVisualizerItem;
     constexpr char doc_internal[] = "(internal use only)";
-    py::class_<Class>(
+    class_<Class>(
         m, "_PointContactVisualizerItem", py::dynamic_attr(), doc_internal)
         .def(py::init<std::string, std::string, Eigen::Vector3d,
                  Eigen::Vector3d>(),
@@ -59,7 +59,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = multibody::meshcat::internal::PointContactVisualizer;
     constexpr char doc_internal[] = "(internal use only)";
-    py::class_<Class>(m, "_PointContactVisualizer", doc_internal)
+    class_<Class>(m, "_PointContactVisualizer", doc_internal)
         .def(py::init<std::shared_ptr<geometry::Meshcat>,
                  ContactVisualizerParams>(),
             py::arg("meshcat"), py::arg("params"), doc_internal)
@@ -71,8 +71,8 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class =
         multibody::meshcat::internal::HydroelasticContactVisualizerItem;
     constexpr char doc_internal[] = "(internal use only)";
-    py::class_<Class>(m, "_HydroelasticContactVisualizerItem",
-        py::dynamic_attr(), doc_internal)
+    class_<Class>(m, "_HydroelasticContactVisualizerItem", py::dynamic_attr(),
+        doc_internal)
         .def(py::init<std::string, std::string, Eigen::Vector3d,
                  Eigen::Vector3d, Eigen::Vector3d, Eigen::Matrix3Xd,
                  Eigen::Matrix3Xi, Eigen::VectorXd>(),
@@ -93,7 +93,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = multibody::meshcat::internal::HydroelasticContactVisualizer;
     constexpr char doc_internal[] = "(internal use only)";
-    py::class_<Class>(m, "_HydroelasticContactVisualizer", doc_internal)
+    class_<Class>(m, "_HydroelasticContactVisualizer", doc_internal)
         .def(py::init<std::shared_ptr<geometry::Meshcat>,
                  ContactVisualizerParams>(),
             py::arg("meshcat"), py::arg("params"), doc_internal)

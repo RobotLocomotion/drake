@@ -236,7 +236,7 @@ struct Impl {
     // to override this method in `PyLeafSystem`, expose the method here for
     // direct(-ish) access. (Otherwise, we get an error about inaccessible
     // downcasting when trying to bind `PyLeafSystem::DoCalcTimeDerivatives` to
-    // `py::class_<LeafSystem<T>, ...>`.
+    // `class_<LeafSystem<T>, ...>`.
     using Base::DoCalcTimeDerivatives;
   };
 
@@ -423,8 +423,7 @@ struct Impl {
     }
   };
 
-  static py::class_<System<T>, SystemBase, PySystem> DefineSystem(
-      py::module_ m) {
+  static class_<System<T>, SystemBase, PySystem> DefineSystem(py::module_ m) {
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
     auto system_cls =
@@ -1235,11 +1234,11 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = SystemBase;
     constexpr auto& cls_doc = doc.SystemBase;
     // TODO(eric.cousineau): Bind remaining methods.
-    py::class_<Class> cls(m, "SystemBase", cls_doc.doc);
+    class_<Class> cls(m, "SystemBase", cls_doc.doc);
     {
       using Nested = SystemBase::GraphvizFragment;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragment;
-      py::class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
+      class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
           .def_rw(
               "input_ports", &Nested::input_ports, nested_doc.input_ports.doc)
           .def_rw("output_ports", &Nested::output_ports,
@@ -1250,7 +1249,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
       // GraphvizFragmentParams
       using Nested = SystemBasePublic::GraphvizFragmentParams;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragmentParams;
-      py::class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
+      class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
           .def_rw("max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
           .def_rw("options", &Nested::options, nested_doc.options.doc)
           .def_rw("node_id", &Nested::node_id, nested_doc.node_id.doc)
@@ -1379,7 +1378,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
               return in;
             });
     // Bind templated instantiations.
-    auto converter_methods = [converter](auto pack) {
+    auto converter_methods = [&converter](auto pack) {
       constexpr auto& cls_doc =
           pydrake_doc_systems_framework.drake.systems.SystemScalarConverter;
       using Pack = decltype(pack);
@@ -1449,7 +1448,7 @@ void DefineFrameworkPySystems(py::module_ m) {
   DoScalarIndependentDefinitions(m);
 
   // Declare (but don't define) to resolve a dependency cycle.
-  py::class_<SystemScalarConverter> cls_system_scalar_converter(
+  class_<SystemScalarConverter> cls_system_scalar_converter(
       m, "SystemScalarConverter");
   auto cls_system_double = Impl<double>::DefineSystem(m);
   auto cls_system_autodiff = Impl<AutoDiffXd>::DefineSystem(m);
@@ -1458,7 +1457,7 @@ void DefineFrameworkPySystems(py::module_ m) {
   // Do templated instantiations of system types.
   auto bind_common_scalar_types = [&](auto dummy) {
     using T = decltype(dummy);
-    py::class_<System<T>, SystemBase, typename Impl<T>::PySystem>* cls_system{};
+    class_<System<T>, SystemBase, typename Impl<T>::PySystem>* cls_system{};
     if constexpr (std::is_same_v<T, double>) {
       cls_system = &cls_system_double;
     } else if constexpr (std::is_same_v<T, AutoDiffXd>) {
