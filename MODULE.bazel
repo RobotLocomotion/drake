@@ -23,6 +23,7 @@ bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "2.0.2")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.70.0")
 bazel_dep(name = "rules_shell", version = "0.8.0")
+bazel_dep(name = "with_cfg.bzl", version = "0.14.6")
 
 # Configure the C++ toolchain.
 
