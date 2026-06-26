@@ -86,7 +86,7 @@ class PolygonSurfaceMesh {
    type. Each mesh type provides specific definitions of _element_ and
    _barycentric coordinates_. For %PolygonSurfaceMesh, an element is a
    polygon. */
-  //@{
+  ///@{
 
   using ScalarType = T;
 
@@ -131,7 +131,7 @@ class PolygonSurfaceMesh {
    mesh consumers to be templated on mesh type. */
   int num_elements() const { return num_faces(); }
 
-  //@}
+  ///@}
 
   /** Advanced() Constructs an *empty* mesh. This enables compatibility with STL
    container types and facilitates some unit tests. Otherwise, it shouldn't be

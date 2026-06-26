@@ -2229,7 +2229,54 @@ of geometries rigidly affixed to frame f).)""";
         // Symbol: drake::geometry::GeometrySet::Add
         struct /* Add */ {
           // Source: drake/geometry/geometry_set.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(@name Methods for adding to the set
+
+The interface for adding geometries to the set is simply an overload
+of the Add() method. For maximum flexibility, the Add method can take:
+
+- a single geometry id
+- a single frame id
+- an iterable object containing geometry ids
+- an iterable object containing frame ids
+- two iterable objects, the first containing geometry ids, the second
+containing frame ids.
+- another GeometrySet instance.
+
+NOTE: the iterable objects don't have to be the same type. The
+"iterable" can also be an initializer list. All of the following
+invocations are valid (this isn't an exhaustive list, but a
+representative set):
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    // Assuming that f_* are valid FrameId instances and g_* are valid GeometryId
+    // instances.
+    GeometrySet group;
+    group.Add(f_1);
+    group.Add(g_1);
+    
+    std∷vector<FrameId> frame_ids{f_2, f_3, f_4};
+    group.Add(frame_ids);
+    std∷vector<GeometryId> geometry_ids{g_2, g_3, g_4};
+    group.Add(geometry_ids);
+    
+    // This is valid, but redundant; the ids in those vectors have already been
+    // added.
+    group.Add(geometry_ids, frame_ids);
+    
+    // Mismatched iterable types.
+    std∷set<FrameId> frame_set{f_5, f_6, f_7};
+    group.Add({g_7, g_8}, frame_set);
+
+.. raw:: html
+
+    </details>)""";
         } Add;
         // Symbol: drake::geometry::GeometrySet::GeometrySet
         struct /* ctor */ {
@@ -8752,7 +8799,11 @@ Raises:
       // Symbol: drake::geometry::to_string
       struct /* to_string */ {
         // Source: drake/geometry/geometry_roles.h
-        const char* doc = R"""()""";
+        const char* doc =
+R"""(@name Geometry role to string conversions
+
+These are simply convenience functions for converting the Role
+enumeration into a human-readable string.)""";
       } to_string;
     } geometry;
     // Symbol: drake::systems

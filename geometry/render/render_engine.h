@@ -129,7 +129,7 @@ class RenderEngine {
    no such property exists). In that case, attempting to assign
    RenderLabel::kEmpty or RenderLabel::kUnspecified will cause an exception to
    be thrown (as @ref reserved_render_label "documented"). */
-  //@{
+  ///@{
 
   /** Requests registration of the given shape as a rigid geometry with this
    render engine.
@@ -181,7 +181,7 @@ class RenderEngine {
       GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
       const PerceptionProperties& properties);
 
-  //@}
+  ///@}
 
   /** Removes the geometry indicated by the given `id` from the engine.
    @param id    The id of the geometry to remove.
@@ -252,7 +252,7 @@ class RenderEngine {
    intrinsics and render engine parameters. See the documentation of
    ColorRenderCamera and DepthRenderCamera for the full details.
    */
-  //@{
+  ///@{
 
   /** Renders the registered geometry into the given color (rgb) image based on
    a _fully_ specified camera.
@@ -303,7 +303,7 @@ class RenderEngine {
     DoRenderLabelImage(camera, label_image_out);
   }
 
-  //@}
+  ///@}
 
   /** Reports the render label value this render engine has been configured to
    use.  */
@@ -457,7 +457,7 @@ class RenderEngine {
    classes are not required to encode labels as colors in the same way. They are
    only obliged to return label images with proper label values according to
    the documented semantics.  */
-  //@{
+  ///@{
 
   /** Transforms the given RGB color into its corresponding RenderLabel.  */
   static RenderLabel MakeLabelFromRgb(uint8_t r, uint8_t g, uint8_t /* b */) {
@@ -473,7 +473,7 @@ class RenderEngine {
     return Rgba{r / 255.0, g / 255.0, /* b = */ 0.0};
   }
 
-  //@}
+  ///@}
 
   // TODO(SeanCurtis-TRI): Deprecate this API in favor of our light parameter
   // specification. First enable lights in RenderEngineVtk and confirm pass

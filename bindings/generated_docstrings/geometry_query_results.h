@@ -244,7 +244,15 @@ and offered as convenient sugar.)""";
         // Symbol: drake::geometry::ContactSurface::num_faces
         struct /* num_faces */ {
           // Source: drake/geometry/query_results/contact_surface.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(@name Representation-independent API
+
+These methods represent sugar which masks the details of the mesh
+representation. They facilitate querying various mesh quantities that
+are common to the two representations, so that code can access the
+properties without worrying about the representation. If necessary,
+the actual meshes and fields can be accessed directly via the
+representation-dependent APIs below.)""";
         } num_faces;
         // Symbol: drake::geometry::ContactSurface::num_vertices
         struct /* num_vertices */ {

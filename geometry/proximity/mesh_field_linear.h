@@ -129,10 +129,10 @@ class MeshFieldLinear {
 
    To copy a %MeshFieldLinear, use CloneAndSetMesh().
   */
-  //@{
+  ///@{
   MeshFieldLinear(MeshFieldLinear&&) = default;
   MeshFieldLinear& operator=(MeshFieldLinear&&) = default;
-  //@}
+  ///@}
 
   /** Constructs a MeshFieldLinear.
    @param values  The field value at each vertex of the mesh.
