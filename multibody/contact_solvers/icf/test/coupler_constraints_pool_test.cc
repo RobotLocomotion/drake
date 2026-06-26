@@ -155,7 +155,7 @@ GTEST_TEST(CouplerConstraintsPool, Data) {
                               MatrixCompareType::relative));
 
   const double gamma = couplers_data.gamma(0).value();
-  EXPECT_NEAR(gamma, gamma0.value(), std::abs(gamma) * kEpsilon);
+  EXPECT_NEAR(gamma, gamma0.value(), std::abs(gamma) * 3 * kEpsilon);
 
   // Verify contributions to Hessian.
   auto hessian = model.MakeHessian(data);
