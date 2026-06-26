@@ -1,4 +1,16 @@
+load("@with_cfg.bzl", "with_cfg")
 load("//tools/skylark:cc.bzl", "cc_library")
+
+# cc_static_hidden_library is a cc_library rule that recompiles the libraries
+# listed in its `deps` adding `copts = ["-fvisibilty=hidden"]` and using only
+# static linking.
+#
+# This is useful when linking third-party C libraries into libdrake.so when we
+# don't control the BUILD files (so can't directly set copts or linkstatic).
+_builder = with_cfg(cc_library)
+_builder.extend("copt", ["-fvisibility=hidden"])
+_builder.extend("features", ["-supports_dynamic_linker"])
+cc_static_hidden_library, _ = _builder.build()
 
 def cc_wrap_static_archive_hidden(
         name,

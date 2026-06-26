@@ -4,6 +4,7 @@ load("//tools/install:check_is_cc_import.bzl", "check_is_cc_import")
 load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_library")
+load("//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
 
 # ---- Logic for choosing which zlib to use. ---
 
@@ -12,6 +13,11 @@ cc_library(
     linkopts = ["-lz"],
     tags = ["manual"],
     visibility = ["@zlib//:__subpackages__"],
+)
+
+cc_static_hidden_library(
+    name = "module_zlib_static_hidden",
+    deps = ["@module_zlib//:zlib"],
 )
 
 config_setting(
@@ -55,7 +61,7 @@ alias(
     name = "zlib",
     actual = select({
         ":use_hardcoded": ":hardcoded",
-        "//conditions:default": "@module_zlib//:zlib",
+        "//conditions:default": ":module_zlib_static_hidden",
     }),
     visibility = ["//visibility:public"],
 )
