@@ -303,33 +303,30 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // volumes), whereas update() is a full O(tree size) refit.
   void ApplyActiveStatusChange(
       const CollisionFilter::ActiveStatusChange& change) {
-    inactive_dynamic_stale_ = !change.empty();
+    DRAKE_DEMAND(!change.empty());
     for (const GeometryId id : change.deactivated) {
       const auto iter = dynamic_objects_.find(id);
-      if (iter == dynamic_objects_.end()) continue;
-      if (!inactive_dynamic_geometries_.insert(id).second) continue;
+      DRAKE_DEMAND(iter != dynamic_objects_.end());
+      DRAKE_DEMAND(inactive_dynamic_geometries_.insert(id).second);
       CollisionObjectd* object = iter->second.get();
       dynamic_tree_.unregisterObject(object);
       inactive_dynamic_tree_.registerObject(object);
     }
     for (const GeometryId id : change.activated) {
       const auto iter = dynamic_objects_.find(id);
-      if (iter == dynamic_objects_.end()) continue;
-      if (inactive_dynamic_geometries_.erase(id) == 0) continue;
+      DRAKE_DEMAND(iter != dynamic_objects_.end());
+      DRAKE_DEMAND(inactive_dynamic_geometries_.erase(id) != 0);
       CollisionObjectd* object = iter->second.get();
       inactive_dynamic_tree_.unregisterObject(object);
       dynamic_tree_.registerObject(object);
     }
+    inactive_dynamic_stale_ = !inactive_dynamic_geometries_.empty();
   }
 
-  // Reports whether the dynamic geometry with the given id is currently
-  // inactive and culled from the filter-respecting broadphase. See
-  // ApplyActiveStatusChange().
   bool IsInactiveDynamic(GeometryId id) const {
     return inactive_dynamic_geometries_.contains(id);
   }
 
-  // Reports the number of currently culled (inactive) dynamic geometries.
   int num_inactive_dynamic() const {
     return ssize(inactive_dynamic_geometries_);
   }
@@ -556,9 +553,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       geometries_for_deformable_contact_.UpdateRigidWorldPose(id, X_WG_d);
     }
     dynamic_tree_.update();
-    // If we have inactive geometries, we are, by definition stale. If we have
-    // no inactive geometries, we can't be stale.
-    inactive_dynamic_stale_ = has_inactive;
   }
 
   void UpdateDeformableVertexPositions(
@@ -778,9 +772,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return distances;
   }
 
-  // Brings the inactive dynamic geometries' object poses (hence AABBs) and
+  // Brings the inactive dynamic geometries' object poses (hence AABBs) in
   // inactive_dynamic_tree_ up to date with `X_WGs`, but only if something has
-  // changed since the last refresh (tracked by inactive_dynamic_stale_).
+  // changed since the last refresh.
+  // @pre X_WGs contains a pose for every inactive dynamic geometry.
   void EnsureInactiveDynamicUpToDate(
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
     if (!inactive_dynamic_stale_) return;
@@ -789,14 +784,18 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // The FCL broadphase requires double-valued poses; so we use ADL to
       // efficiently get double-valued poses out of arbitrary T-valued poses.
       const RigidTransform<double>& X_WG_d = convert_to_double(X_WGs.at(id));
-      // Skip objects that haven't moved (e.g. locked bodies).
+      // Skip objects that haven't moved (e.g., locked bodies).
       if (RigidTransformd(object.getTransform()).IsExactlyEqualTo(X_WG_d)) {
         continue;
       }
       object.setTransform(X_WG_d.GetAsIsometry3());
       object.computeAABB();
     }
-    inactive_dynamic_tree_.update();
+    // Note: We lazily update the inactive geometries when we specifically make
+    // a query that needs them. The queries are const methods, so, to support
+    // that lazy update, we const cast here.
+    const_cast<FclDynamicAABBTreeCollisionManager&>(inactive_dynamic_tree_)
+        .update();
     inactive_dynamic_stale_ = false;
   }
 
@@ -1387,37 +1386,47 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_UNREACHABLE();
   }
 
-  // The BVH of all dynamic geometries; this depends on *all* inputs.
+  // A note on the storage of dynamic objects.
+  //  - Every registered dynamic geometry has a corresponding
+  //    fcl::CollisionObjectd stored in dynamic_objects_.
+  //  - The full set of dynamic geometries is partitioned into two sets: active
+  //    and inactive.
+  //    - The inactive partition is *explicitly* enumerated in
+  //      inactive_dynamic_geometries_.
+  //    - The active partition is _implicitly* defined as the keys in
+  //      dynamic_objects_ that don't appear in inactive_dynamic_geometries_.
+  //  - All active dynamic geometries' collision objects are registered in
+  //    dynamic_tree_.
+  //  - All inactive dynamic geometries' collision objects are registered in
+  //    inactive_dynamic_tree_.
+
+  // All of the *dynamic* collision elements registered on this engine.
+  MapGeometryIdToFclCollisionObject dynamic_objects_;
+
+  // The subset of dynamic geometry ids known to be inactive. Each id is a key
+  // in dynamic_objects_ and its corresponding collision object is registered
+  // in inactive_dynamic_tree_.
+  std::unordered_set<GeometryId> inactive_dynamic_geometries_;
+
+  // The BVH of all active dynamic geometries.
   // TODO(SeanCurtis-TRI): Ultimately, this should probably be a cache entry.
   FclDynamicAABBTreeCollisionManager dynamic_tree_;
 
-  // All of the *dynamic* collision elements (spanning all sources).
-  MapGeometryIdToFclCollisionObject dynamic_objects_;
+  // The BVH of all inactive dynamic geometries.
+  FclDynamicAABBTreeCollisionManager inactive_dynamic_tree_;
 
-  // The ids of the geometries known to be inactive. Every member of this set is
-  // still a valid key to dynamic_objects_. The collision object associated with
-  // each of these ids has been removed from dynamic_tree_ and placed, instead,
-  // in inactive_dynamic_tree_. Removal of an id from this set, moves the
-  // corresponding collision out of inactive_dynamic_tree_ and back into
-  // dynamic_tree_.
-  std::unordered_set<GeometryId> inactive_dynamic_geometries_;
-
-  // The BVH holding exactly the inactive_dynamic_geometries_ objects. It serves
-  // only the queries that ignore collision filters (signed distance to point);
-  // all filter-respecting queries use dynamic_tree_, which excludes these
-  // objects.
-  mutable FclDynamicAABBTreeCollisionManager inactive_dynamic_tree_;
-
-  // True when the inactive geometries' object poses/AABBs and
-  // inactive_dynamic_tree_ may be out of date -- because UpdateWorldPoses()
-  // defers (skips) inactive geometries, or because the inactive set changed.
+  // True when the inactive geometries' object poses/AABBs in
+  // inactive_dynamic_tree_ may be out of date. See
+  // EnsureUpToDateInactiveDynamicTree().
   mutable bool inactive_dynamic_stale_{false};
+
+  // All of the *anchored* collision elements. The anchored geometries are not
+  // partitioned like the dynamic geometries. All anchored geometries are
+  // solely listed in anchored_objects_ and registered in anchored_tree_.
+  MapGeometryIdToFclCollisionObject anchored_objects_;
 
   // The tree containing all of the anchored geometry.
   FclDynamicAABBTreeCollisionManager anchored_tree_;
-
-  // All of the *anchored* collision elements (spanning *all* sources).
-  MapGeometryIdToFclCollisionObject anchored_objects_;
 
   // The mechanism for dictating collision filtering.
   CollisionFilter collision_filter_;

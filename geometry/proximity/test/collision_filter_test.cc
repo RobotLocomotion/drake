@@ -631,7 +631,8 @@ TEST_F(CollisionFilterTest, EquivalencyWithInactive) {
 
   CollisionFilter filters1;
   CollisionFilter filters2;
-  for (auto* f : {&filters1, &filters2}) {
+  CollisionFilter filters3;
+  for (auto* f : {&filters1, &filters2, &filters3}) {
     f->AddGeometry(id_A);
     f->AddGeometry(id_B);
     f->AddGeometry(id_C);
@@ -647,8 +648,6 @@ TEST_F(CollisionFilterTest, EquivalencyWithInactive) {
   EXPECT_FALSE(filters1.IsEquivalent(filters2));
 
   /* Matching inactive sets (and matching pairwise states) are equivalent. */
-  CollisionFilter filters3;
-  for (GeometryId id : {id_A, id_B, id_C}) filters3.AddGeometry(id);
   SetActiveStatus(&filters3, GeometrySet(id_A), /* active= */ false, extract);
   EXPECT_TRUE(filters1.IsEquivalent(filters3));
 }

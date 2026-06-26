@@ -188,6 +188,9 @@ class CollisionFilterManager {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterManager);
 
+  /** @name Evaluating CollisionFilterDeclarations */
+  ///@{
+
   /** Applies the given `declaration` to the geometry state managed by `this`
    instance.
 
@@ -207,13 +210,6 @@ class CollisionFilterManager {
      declare filters to be "invariant". */
     filter_->Apply(declaration, extract_ids_, false /* is_invariant */);
   }
-
-  /** @name Evaluating CollisionFilterDeclarations
-  @anchor collision_filter_manager_stuff
-
-   More content
-  */
-  ///@{
 
   // TODO(SeanCurtis-TRI) SceneGraphInspector includes the method
   //  CollisionFiltered. It reports whether two geometries are filtered. It
@@ -276,7 +272,15 @@ class CollisionFilterManager {
    Apply(), these may be called even when there is an active transient history.
    Apply() can reference an inactive geometry, but the effect of the declaration
    on any candidate pair including that geometry will not be apparent until the
-   geometry is reactivated. */
+   geometry is reactivated.
+
+   Remember, GeometrySet instances can be instantiated using FrameId values. As
+   documented in GeometrySet, specifying a frame is merely a shorthand for
+   specifying all geometries attached to that frame at the time the ids are
+   extracted from the GeometrySet. Activate() and Deactivate() still only
+   operate on those extracted GeometryIds. They shouldn't be interpreted as
+   (de)activating the _frame_ and any subsequent geometries that may be added to
+   those frames. */
   ///@{
 
   /** Marks every geometry in `geometry_set` *inactive*. The inverse of calling

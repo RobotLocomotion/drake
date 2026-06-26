@@ -140,7 +140,7 @@ class CollisionFilter {
   void Flatten();
 
   /* Adds a geometry to the filter system. When added, it will not be part of
-   any filtered pairs.
+   any filtered pairs and it will be active.
    @pre `new_id` has not been previously added to this filter system. */
   void AddGeometry(GeometryId new_id);
 

@@ -389,22 +389,22 @@ g₁, ..., gₙ}``, where D is the set of dynamic geometries and A is the
 set of anchored geometries (by definition ``D ⋂ A = ∅``). `Gₚ ⊂ G` is
 the subset of geometries that have a proximity role (with an analogous
 interpretation of ``Dₚ`` and ``Aₚ``). Many proximity queries operate
-on pairs of geometries (e.g., (gᵢ, gⱼ)). The set of proximity
+on pairs of geometries (e.g., {gᵢ, gⱼ}). The set of proximity
 candidate pairs for such queries is initially defined as ``C = (Gₚ ×
 Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ - Nₚ*``, where:
 
-- ``Gₚ × Gₚ = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ Gₚ`` is the Cartesian product of the set
+- ``Gₚ × Gₚ = {{gᵢ, gⱼ}}, ∀ gᵢ, gⱼ ∈ Gₚ`` is the Cartesian product of the set
 of SceneGraph proximity geometries.
 - ``Aₚ × Aₚ`` represents all pairs consisting only of anchored geometries;
 an anchored geometry is never tested against another anchored geometry.
-- ``Fₚ = {(gᵢ, gⱼ)} ∀ i, j``, such that ``gᵢ, gⱼ ∈ Dₚ`` and
+- ``Fₚ = {{gᵢ, gⱼ}} ∀ i, j``, such that ``gᵢ, gⱼ ∈ Dₚ`` and
 ``frame(gᵢ) == frame(gⱼ)``; the pairs where both geometries are rigidly
 affixed to the same frame.
-- ``Iₚ = {(g, g)}, ∀ g ∈ Gₚ`` is the set of all pairs consisting of a
+- ``Iₚ = {{g, g}}, ∀ g ∈ Gₚ`` is the set of all pairs consisting of a
 geometry with itself; there is no meaningful proximity query on a
 geometry with itself.
-- ``Nₚ* = {(g, x)}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x``, where ``Nₚ ⊂ Gₚ`` is the set of
-inactive* geometries (see Deactivate()). An inactive geometry forms no
+- ``Nₚ* = {{g, x}}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x``, where ``Nₚ ⊂ Gₚ`` is the set of
+*inactive* geometries (see Deactivate()). An inactive geometry forms no
 candidate pair with any other geometry. Unlike the other terms, ``Nₚ*`` is
 evaluated against the *live* set ``Gₚ``: a geometry registered after ``g`` was
 deactivated still forms no pair with ``g``. Membership in ``Nₚ`` is edited
@@ -422,7 +422,7 @@ changed directly via Deactivate() and Activate().
 
 There are limits to how C can be modified.
 
-- ``∀ (gᵢ, gⱼ) ∈ C``, both gᵢ and gⱼ must be registered with SceneGraph; you
+- ``∀ {gᵢ, gⱼ} ∈ C``, both gᵢ and gⱼ must be registered with SceneGraph; you
 can't inject arbitrary ids. Attempting to do so will result in an error.
 - No pairs in ``Aₚ × Aₚ``, `Fₚ`, or ``Iₚ`` can ever be added to C. Excluding
 those pairs is a SceneGraph invariant. Attempts to do so will be ignored.
@@ -453,11 +453,11 @@ Warning:
     be part of any user-declared collision filters. - In general,
     adding collisions and assigning proximity roles should happen
     prior to collision filter configuration. - It's worth emphasizing
-    that the inactive set ``Nₚ`` is unique. it is not affected by
+    that the inactive set ``Nₚ`` is unique. It is not affected by
     declarations and doesn't have the same limited scope that
     declarations have. No collision is allowed between an inactive
-    geometry and any other geometry. Period. Regardless of whether the
-    other geometry was added before or after the deactivation.
+    geometry and any other geometry, regardless of whether the other
+    geometry was added before or after the deactivation.
 
 **Transient vs Persistent changes**
 
@@ -553,10 +553,10 @@ active transient declarations in the history will throw an exception.)""";
         struct /* Activate */ {
           // Source: drake/geometry/collision_filter_manager.h
           const char* doc =
-R"""(Marks every geometry in ``geometry_set`` *active* again (see
-Deactivate()), returning it to proximity queries governed by the
-current, declared filters. Reactivating an already-active geometry is
-a no-op.
+R"""(Marks every geometry in ``geometry_set`` *active*. The inverse of
+calling Deactivate(). Activating an already-active geometry is a
+no-op. For more information, see the
+collision_filter_manager_activation "Activation" documentation.
 
 Raises:
     RuntimeError if ``geometry_set`` references invalid ids.)""";
@@ -598,8 +598,10 @@ collision filter configuration. The declaration must be considered
         struct /* Deactivate */ {
           // Source: drake/geometry/collision_filter_manager.h
           const char* doc =
-R"""(Marks every geometry in ``geometry_set`` *inactive* (see the group
-documentation). Deactivating an already-inactive geometry is a no-op.
+R"""(Marks every geometry in ``geometry_set`` *inactive*. The inverse of
+calling Activate(). Deactivating an already-inactive geometry is a
+no-op. For more information, see the
+collision_filter_manager_activation "Activation" documentation.
 
 Raises:
     RuntimeError if ``geometry_set`` references invalid ids.)""";

@@ -1674,18 +1674,19 @@ TEST_F(ProximityEngineTests, InactiveGeometryInDistanceToPoint) {
 // 1. When are things *not* stale:
 //      a. Original construction.
 //      b. After calling ComputeSignedDistanceToPoint().
+//      c. After calling Activate() on the last inactive geometry.
 //
-// 2. What sets the poses as stale:
+// 2. What changes the staleness:
 //      a. Copy construction - the copy is stale, but the source is unchanged.
 //      b. Scalar-converted copies also start stale.
-//      c. UpdateWorldPoses() itself (but only if there are inactive
-//         geometries).
-//      d. Activate() or Deactivate() (specifically, triggering the callback).
-//      e. Updating margins on hydro-compliant, inactive geometry.
-//      f. Removing inactive geometries.
+//      c. Activate() or Deactivate() (specifically, triggering the callback
+//         resulting in a non-empty inactive set).
+//      d. Updating margins on hydro-compliant, inactive geometry.
+//      e. Removing inactive geometries.
 //
 // 3. Expected behavior:
 //      a. UpdateWorldPoses() never updates the poses of inactive geometries.
+//      b. UpdateWorldPoses() doesn't change the staleness.
 //      b. Multiple calls to ComputeSignedDistanceToPoint() (without any
 //         intervening staleness triggers) will only update the inactive
 //         geometry poses on the first call.
@@ -1720,38 +1721,37 @@ TEST_F(ProximityEngineTests, InactiveGeometryStaleness) {
   // (1a) Copying didn't change the original; still not stale.
   ASSERT_FALSE(is_stale(engine_));
 
-  // (2c) - Calling UpdateWorldPoses() without inactive geometries doesn't make
-  // the engine stale.
+  // (3b) - UpdateWorldPoses() leaves staleness unchanged; still not stale.
   engine_.UpdateWorldPoses(X_WGs_);
   EXPECT_FALSE(is_stale(engine_));
 
-  // (2d) - Deactivate makes it stale.
+  // (2c) - Deactivate makes it stale.
   Deactivate({id_A});
+  EXPECT_TRUE(is_stale(engine_));
+
+  // (3b) - UpdateWorldPoses() leaves staleness unchanged; still stale.
+  engine_.UpdateWorldPoses(X_WGs_);
   EXPECT_TRUE(is_stale(engine_));
 
   // (1b) - Calling ComputeSignedDistanceToPoint() clears the staleness.
   engine_.ComputeSignedDistanceToPoint(V3{0, 0, 1}, X_WGs_);
   EXPECT_FALSE(is_stale(engine_));
 
-  // (2d) - Deactivate that doesn't lead to a change doesn't make it stale.
+  // (2c) - Deactivate that doesn't lead to a change doesn't make it stale.
   Deactivate({id_A});
   EXPECT_FALSE(is_stale(engine_));
 
-  // (2c) - With inactive geometries, UpdateWorldPoses() makes it stale.
-  engine_.UpdateWorldPoses(X_WGs_);
-  EXPECT_TRUE(is_stale(engine_));
-
-  // (2d) - Activate also makes it stale.
+  // (1c) - Activating the last inactive geometry clears staleness.
   Activate({id_A});
-  EXPECT_TRUE(is_stale(engine_));
-  clear_staleness(engine_);
+  ASSERT_EQ(engine_.num_inactive_dynamic(), 0);
+  EXPECT_FALSE(is_stale(engine_));
 
-  // (2d) - Activate that doesn't lead to a change doesn't make it stale.
+  // (2c) - Activate that doesn't lead to a change doesn't make it stale.
   ASSERT_FALSE(is_stale(engine_));
   Activate({id_A});
   EXPECT_FALSE(is_stale(engine_));
 
-  // (2e) - Updating new properties on *inactive* geometries.
+  // (2d) - Updating new properties on *inactive* geometries.
   {
     Deactivate({id_A});
     clear_staleness(engine_);
@@ -1768,7 +1768,7 @@ TEST_F(ProximityEngineTests, InactiveGeometryStaleness) {
     EXPECT_TRUE(is_stale(engine_));
   }
 
-  // (2f) - Removing *inactive* geometry.
+  // (2e) - Removing *inactive* geometry.
   clear_staleness(engine_);
   // Removing active geometries don't affect inactive staleness.
   engine_.RemoveGeometry(id_B, /* is_dynamic= */ true);
@@ -1800,7 +1800,7 @@ TEST_F(ProximityEngineTests, InactiveGeometryStaleness) {
       Tester::GetX_WG(id_C, /* is_dynamic= */ true, engine_).translation(),
       Vector3d(1, 2, 3)));
 
-  // (3b) - For multiple calls to ComputeSignedDistanceToPoint() only the first
+  // (3c) - For multiple calls to ComputeSignedDistanceToPoint() only the first
   //   updates the poses on inactive geometries.
   engine_.ComputeSignedDistanceToPoint(V3{0, 0, 1}, X_WGs_);
   // Pose should have updated.

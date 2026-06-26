@@ -88,20 +88,11 @@ class ProximityEngine {
 
   /* Updates the engine's broadphase culling of inactive dynamic geometries to
    reflect the given net change to the collision filter's inactive set (see
-   CollisionFilterManager::Deactivate()).
+   CollisionFilterManager::Deactivate()) -- a mechanism to resolve issue #24607.
 
-   An inactive geometry cannot contribute to any filter-respecting pairwise
-   query, so the engine moves inactive *dynamic* geometries out of the active
-   broadphase tree (whose per-step refit and traversal cost scales with the
-   active geometry count) and into a separate tree that serves only the queries
-   that ignore collision filters (signed distance to point). Reactivated
-   geometries move back. This is a pure optimization: query results are
-   identical with or without it -- inactive pairs are equally discarded by the
-   collision filter -- just cheaper when many geometries are inactive (e.g.,
-   locked bodies; see issue #24607).
-
-   The per-call cost is O(|change| log n) tree updates; no full-tree refit
-   occurs. */
+   @pre change.empty() == false.
+   @pre Every geometry in `change` is dynamic and its active status change is
+        consistent with the engine's current understanding. */
   // TODO(xuchen-han): Only dynamic geometries are culled. We are not optimizing
   // for anchored geometries yet. Do that when there's a use where it brings
   // noticeable performance improvement.
@@ -221,11 +212,11 @@ class ProximityEngine {
 
   //@}
 
-  /* Updates the poses for all of the _dynamic_ geometries in the engine.
-   @param X_WGs     The poses of each geometry `G` measured and expressed in the
-                    world frame `W` (including geometries which may *not* be
-                    registered with the proximity engine or may not be
-                    dynamic).
+  /* Updates the poses for all active dynamic geometries in the engine.
+   @param X_WGs     The poses of each active dynamic geometry `G` measured and
+                    expressed in the world frame `W` (including geometries which
+                    may *not* be registered with the proximity engine or may not
+                    be dynamic).
   */
   // TODO(SeanCurtis-TRI): I could do things here differently a number of ways:
   //  1. I could make this move semantics (or swap semantics).
