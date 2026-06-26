@@ -113,8 +113,8 @@ class IcfModel {
   using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
   using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
 
-  /* The near-rigid contact stabilization parameter β.  See [Castro et al.,
-  2022], section V.B. */
+  /* The near-rigid time scale factor β.  See [Castro et al., 2022], section
+  V.B. */
   static constexpr double kBeta = 0.1;
 
   /* Constructs an empty model. */
@@ -242,9 +242,10 @@ class IcfModel {
   /* Returns the time step δt. */
   const T& time_step() const { return params().time_step; }
 
-  /* Returns the effective time step for constraints. At very small actual time
-  steps, the effective time step will be limited to some minimum value to
-  avoid unreasonable stiffness and dissipation effects.
+  /* Returns the effective time step computing near-rigid parameters for for
+  constraints. At very small actual time steps, the effective time step will be
+  limited to some minimum value to avoid unreasonable stiffness and dissipation
+  effects.
   */
   T effective_time_step() const {
     using std::max;
