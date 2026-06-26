@@ -121,7 +121,10 @@ class CouplerConstraintsPool {
   // Gear ratio ρ per constraint, of size num_constraints().
   std::vector<T> gear_ratio_;
 
-  // Regularization and bias per constraint, of size num_constraints().
+  // Regularization and bias per constraint, of size num_constraints(). Note
+  // that the values stored here are only the time-step independent portions;
+  // the full quantities are reconstructed as needed once the time step is
+  // chosen.
   std::vector<T> g_hat_;  // The true bias is v̂ = ĝ / δt.
   std::vector<T> R_;
 };

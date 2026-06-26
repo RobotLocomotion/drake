@@ -203,6 +203,14 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
   ASSERT_TRUE((v.array() != 0).all());
   model.CalcData(v, &data);
 
+  // The R and g_hat stored in the pool are only the time-step independent
+  // parts. Calculate the time-step dependent parts here and apply them below.
+  const double& dt = model.time_step();
+  const double dt_eff = model.effective_time_step();
+  constexpr double kBeta = IcfModel<double>::kBeta;
+  const double taud = kBeta * dt_eff / M_PI;
+  const double R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
+
   auto check_reduced = [&](const std::vector<int>& locked_dofs) {
     SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
     IcfModel<double> reduced_model;
@@ -248,6 +256,9 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
     const auto& full_data_pool = data.coupler_constraints_data();
     const auto& reduced_data_pool = reduced_data.coupler_constraints_data();
 
+    // Reconstruct the full regularization.
+    const double R = reduced_pool.R()[0] * R_time_step_factor;
+
     // Check the data pool.
     if (have_i && have_j) {
       // Fully participating reduced constraint data matches the data from the
@@ -267,8 +278,8 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
       const auto expected_vc =
           (have_i ? clique_v(r_i)
                   : -reduced_pool.gear_ratio()[0] * clique_v(r_j));
-      const auto v_hat = reduced_pool.g_hat()[0] / reduced_model.time_step();
-      const auto expected_gamma = (v_hat - expected_vc) / reduced_pool.R()[0];
+      const auto v_hat = reduced_pool.g_hat()[0] / (dt + taud);
+      const auto expected_gamma = (v_hat - expected_vc) / R;
       EXPECT_NEAR(reduced_data_pool.gamma(0), expected_gamma, 1e-15);
     }
 
@@ -300,7 +311,6 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
     reduced_pool.AccumulateHessian(reduced_data, &hessian);
     if (hessian.HasBlock(reduced_clique, reduced_clique)) {
       const auto& block = hessian.diagonal_block(reduced_clique);
-      const double R = reduced_pool.R()[0];
       const double rho = reduced_pool.gear_ratio()[0];
       if (have_i && have_j) {
         EXPECT_EQ(block(r_i, r_j), -rho / R);
@@ -341,8 +351,7 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
           (have_i ? clique_w(r_i)
                   : -reduced_pool.gear_ratio()[0] * clique_w(r_j));
       const auto expected_dcost = -reduced_data_pool.gamma(0) * expected_vw;
-      const auto expected_d2cost =
-          expected_vw * expected_vw / reduced_pool.R()[0];
+      const auto expected_d2cost = expected_vw * expected_vw / R;
       EXPECT_NEAR(reduced_dcost, expected_dcost, 1e-12);
       EXPECT_NEAR(reduced_d2cost, expected_d2cost, 1e-15);
     }

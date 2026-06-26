@@ -153,6 +153,9 @@ class LimitConstraintsPool {
   EigenPool<VectorX<T>> ql_;          // Lower limit.
   EigenPool<VectorX<T>> qu_;          // Upper limit.
   EigenPool<VectorX<T>> q0_;          // Initial configuration.
+  // Note that the values of gl_hat, gu_hat, and R stored here are only the
+  // time-step independent portions; the full quantities are reconstructed as
+  // needed once the time step is chosen.
   EigenPool<VectorX<T>> gl_hat_;  // Lower bound velocity target scaled by dt.
   EigenPool<VectorX<T>> gu_hat_;  // Upper bound velocity target scaled by dt.
   EigenPool<VectorX<T>> R_;       // Near-rigid regularization parameter.
