@@ -1,0 +1,39 @@
+load("@drake//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
+load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+# ---- Logic for choosing which jpeg to use. ---
+
+# For now, the only supported value is --@drake//tools/flags:jpeg_repo=source,
+# to compile jpeg from source. The @libjpeg_turbo_internal is a wrapper around
+# @module_jpeg that enforces hidden visibility.
+
+alias(
+    name = "jpeg",
+    actual = ":module_jpeg_static_hidden",
+    visibility = ["//visibility:public"],
+)
+
+cc_static_hidden_library(
+    name = "module_jpeg_static_hidden",
+    deps = ["@module_jpeg//:jpeg"],
+)
+
+# ---- Logic for installing jpeg-related files. ---
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/jpeg",
+    files = ["@module_jpeg//:LICENSE.md"],
+    allowed_externals = ["@module_jpeg//:LICENSE.md"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()
