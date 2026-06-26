@@ -1603,10 +1603,12 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
   DRAKE_ASSERT(frame_body_poses->get_X_BF(FrameIndex(0)).IsExactlyIdentity());
   DRAKE_ASSERT(frame_body_poses->get_X_FB(FrameIndex(0)).IsExactlyIdentity());
 
-  // The first pass locates each frame with respect to the body frame B
-  // of the body to which it is fixed.
-  // Pass 1 (over all frames): locate each frame by its pose X_LF with respect
-  // to the link frame L of the Link (RigidBody) to which it is fixed.
+  // Pass 1 (over all frames): locate each frame F by its pose X_LF with respect
+  // to the link frame L of the link (RigidBody) to which F is rigidly attached.
+  // Note: Frame F is fixed to L, but its pose X_LF may be parameter-dependent
+  // and may be updated at runtime.
+  // Note: Link frame L is directly or indirectly rigidly connected to a
+  // mobilized body (Mobod) B with known pose X_BL. Hence X_BF = X_BL * X_LF.
   for (const Frame<T>* frame : frames_.elements()) {
     // TODO(sherm1) Note that we're unnecessarily recalculating the parent
     //  and ancestor poses. Likely OK since we expect short sequences and
@@ -1618,69 +1620,74 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
   }
 
   // Pass 2 (over all mobods): find the pose X_BL of each Link frame L on its
-  // Mobod B. This is normally identity except if B is a composite mobod and L
-  // is not its active (most inboard) link.
+  // Mobod B. This is normally identity except if B is a composite mobod and
+  // Link L is not its "active" (most inboard) link.
   std::vector<uint8_t> got_X_BL(num_links(), false);
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
+    // Always set the pose X_BL of the active link L on its mobod B to identity.
     const LinkOrdinal active_link_ordinal = mobod.active_link_ordinal();
     frame_body_poses->SetX_BL(active_link_ordinal,
                               RigidTransform<T>::Identity());
     got_X_BL[active_link_ordinal] = true;
     if (!mobod.is_composite()) continue;
 
-    // Now run through the rest of the links following `mobod`, which are
-    // supposed to be in inboard->outboard order (starting with the active link
-    // that we just did above). For each follower link Lₒ we
-    // should be able to find an attached weld joint where the other (inboard)
-    // link Lᵢ already has a calculated X_BLᵢ. In that case we can use the
-    // weld's transform X_JᵢJₒ and connected frame poses X_LᵢJᵢ and X_LₒJₒ
-    // (just calculated above) to compute
+    // Continue with the "follower" links in mobod B, which should be in
+    // inboard ⇒ outboard order (starting after the "active" link that we just
+    // did above). For each follower link Lₒ we should be able to find an
+    // attached weld joint where the other (inboard) link Lᵢ already has
+    // calculated its X_BLᵢ. We use the weld's transform X_JᵢJₒ and connected
+    // frame poses X_LᵢJᵢ and X_LₒJₒ (just calculated above) to compute
     //     X_BLₒ = X_BLᵢ * X_LᵢJᵢ * X_JᵢJₒ * (X_LₒJₒ)⁻¹
     // This is complicated by the fact that the weld joint is expressed as
     // connecting a parent link P and child link C. Usually Lᵢ=P and Lₒ=C but
     // the joint may be reversed such that Lᵢ=C and Lₒ=P.
     for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
-      if (got_X_BL[link_ordinal]) continue;  // Already done.
+      if (got_X_BL[link_ordinal]) continue;  // Already calculated.
       const LinkJointGraph::Link& link_Lo = graph().links(link_ordinal);
 
       // Search for the weld joint connecting Lₒ to an inboard link Lᵢ.
       for (JointIndex joint_index : link_Lo.joints()) {
         const LinkJointGraph::Joint& graph_joint =
             graph().joint_by_index(joint_index);
-        if (!graph_joint.is_weld()) continue;  // Wrong joint type.
+        if (!graph_joint.is_weld()) continue;  // Wrong joint type (not a weld).
 
-        // We have a weld joint. If it connects to a link we haven't yet
-        // processed it is an outboard joint; skip it for now.
+        // We have a weld joint, but it may connect Lₒ to an outboard link which
+        // has not yet been processed (its X_BL has not yet been computed). If
+        // so skip this weld joint and look for an inboard link Lᵢ whose X_BLᵢ
+        // is already computed (X_BLᵢ is needed to compute X_BLₒ).
         const LinkIndex link_Li_index =
             graph_joint.other_link_index(link_Lo.index());
         const LinkJointGraph::Link& link_Li =
             graph().link_by_index(link_Li_index);
-        if (!got_X_BL[link_Li.ordinal()]) continue;  // Wrong joint.
+        if (!got_X_BL[link_Li.ordinal()]) continue;  // Lᵢ not yet processed.
 
+        // Found the weld joint connecting inboard Lᵢ (X_BLᵢ known) to
+        // outboard Lₒ. Retrieve X_BLᵢ for use below in calculating X_BLₒ.
         const RigidTransform<T>& X_BLi =
             frame_body_poses->get_X_BL(link_Li.ordinal());
 
-        // We have found the weld joint connecting known-location Lᵢ to
-        // our unknown-location Lₒ.
-        const bool is_reversed =
-            graph_joint.child_link_index() != link_Lo.index();
-
+        // The weld joint stores pose X_JpJc (joint parent frame Jp to joint
+        // child frame Jc). If the joint is reversed (Lₒ is the parent link
+        // rather than child link) Jᵢ=Jc and Jₒ=Jp; otherwise Jᵢ=Jp and Jₒ=Jc.
         const WeldJoint<T>& weld_joint =
             dynamic_cast<const WeldJoint<T>&>(get_joint(joint_index));
-        const math::RigidTransformd& X_JpJc = weld_joint.X_FM();
-        const RigidTransform<T> X_JiJo =
-            (is_reversed ? X_JpJc.inverse() : X_JpJc).cast<T>();
+        const bool is_reversed =
+            graph_joint.child_link_index() != link_Lo.index();
         const Frame<T>& frame_Ji = is_reversed ? weld_joint.frame_on_child()
                                                : weld_joint.frame_on_parent();
         const Frame<T>& frame_Jo = is_reversed ? weld_joint.frame_on_parent()
                                                : weld_joint.frame_on_child();
 
-        // Get the frame poses we calculated above.
+        // Get the relevant X_LF frame poses that were calculated in Pass 1.
         const RigidTransform<T>& X_LiJi =
             frame_body_poses->get_X_LF(frame_Ji.index());
         const RigidTransform<T>& X_LoJo =
             frame_body_poses->get_X_LF(frame_Jo.index());
 
+        // Get X_JᵢJₒ to form X_BLₒ = X_BLᵢ * X_LᵢJᵢ * X_JᵢJₒ * (X_LₒJₒ)⁻¹
+        const math::RigidTransformd& X_JpJc = weld_joint.X_FM();
+        const RigidTransform<T> X_JiJo =
+            (is_reversed ? X_JpJc.inverse() : X_JpJc).cast<T>();
         const RigidTransform<T> X_BLo =
             X_BLi * X_LiJi * X_JiJo * X_LoJo.inverse();
         frame_body_poses->SetX_BL(link_ordinal, X_BLo);
@@ -1696,8 +1703,10 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     DRAKE_DEMAND(got_X_BL[link->ordinal()]);
   }
 
-  // Pass 3 (over all frames again): locates each frame with respect to the
-  // mobod frame B of the mobod that its link follows, i.e. X_BF = X_BL * X_LF.
+  // Pass 3 (over all frames again): Calculate the pose X_BF for each frame F
+  // in the Mobod (mobilized body) frame B as X_BF = X_BL * X_LF.
+  // Note: Frame F is fixed to link L and link L is fixed to B, but pose X_LF
+  // may be parameter-dependent. Hence X_BF may need to be updated at runtime.
   for (const Frame<T>* frame : frames_.elements()) {
     const RigidTransform<T>& X_LF = frame_body_poses->get_X_LF(frame->index());
     const Link<T>& link = frame->body();
