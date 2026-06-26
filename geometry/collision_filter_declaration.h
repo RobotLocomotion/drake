@@ -81,7 +81,7 @@ class CollisionFilterDeclaration {
    The *declared* pairs can be invalid (e.g., containing GeometryId values that
    aren't part of the SceneGraph data). This will only be detected when applying
    the declaration (see CollisionFilterManager::Apply()).  */
-  //@{
+  ///@{
 
   /** Allows geometry pairs in proximity evaluation by updating the
    candidate pair set `C ← C ⋃ P*`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B, a ≠ b`
@@ -111,7 +111,7 @@ class CollisionFilterDeclaration {
     return *this;
   }
 
-  //@}
+  ///@}
 
   /** @name  Excluding pairs from consideration (adding collision filters)
 
@@ -124,7 +124,7 @@ class CollisionFilterDeclaration {
    The *declared* pairs can be invalid (e.g., containing GeometryId values that
    aren't part of the SceneGraph data). This will only be detected when applying
    the declaration (see CollisionFilterManager::Apply()). */
-  //@{
+  ///@{
 
   /** Excludes geometry pairs from proximity evaluation by updating the
    candidate pair set `C ← C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
@@ -146,7 +146,7 @@ class CollisionFilterDeclaration {
     return *this;
   }
 
-  //@}
+  ///@}
 
  private:
   friend class CollisionFilterDeclTester;

@@ -193,7 +193,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
         self-configured lcm::DrakeLcmInterface object.
      - `params`: The DrakeVisualizer will be configured according to the
         provided parameters. If omitted, it uses default parameters.  */
-  //@{
+  ///@{
 
   /** Connects the newly added DrakeVisualizer to the given SceneGraph's
    QueryObject-valued output port.
@@ -213,7 +213,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
       lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
-  //@}
+  ///@}
 
   // TODO(#7820) When we can easily bind lcmt_* messages, then replace
   //  the DispatchLoadMessage API with something like:
