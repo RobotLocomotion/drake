@@ -508,6 +508,25 @@ TEST_P(DoublePendulum, PositionVelocityExternalSystem) {
   EXPECT_NEAR(vf, vf_expected, 1e-2);
 }
 
+/* Checks that the integrator can properly handle zero-duration steps. */
+TEST_P(DoublePendulum, ZeroStep) {
+  Build();
+
+  simulator_->AdvanceTo(1.0);
+
+  // Generic integrator behavior: accept 0-duration step with no change to time
+  // or continuous state, and with error estimate updated to all 0.
+  const VectorXd q = plant_->GetPositions(*plant_context_);
+  integrator_->IntegrateWithMultipleStepsToTime(
+      simulator_->get_context().get_time());
+  EXPECT_EQ(simulator_->get_context().get_time(), 1.0);
+  const VectorXd q_after = plant_->GetPositions(*plant_context_);
+  EXPECT_EQ(q_after(0), q(0));
+  EXPECT_EQ(q_after(1), q(1));
+  VectorXd error_estimate(integrator_->get_error_estimate()->CopyToVector());
+  EXPECT_EQ(error_estimate.norm(), 0);
+}
+
 /* Checks that the integrator can enforce joint limits. */
 TEST_P(DoublePendulum, JointLimits) {
   for (multibody::JointIndex i : plant_->GetJointIndices()) {
@@ -523,27 +542,41 @@ TEST_P(DoublePendulum, JointLimits) {
   const VectorXd q = plant_->GetPositions(*plant_context_);
   EXPECT_NEAR(q(0), 0.2, 1e-5);
   EXPECT_NEAR(q(1), 0.4, 1e-5);
+}
 
-  // Generic integrator behavior: accept 0-duration step with no change to time
-  // or continuous state, and with error estimate updated to all 0.
-  integrator_->IntegrateWithMultipleStepsToTime(
-      simulator_->get_context().get_time());
-  EXPECT_EQ(simulator_->get_context().get_time(), 1.0);
-  const VectorXd q_after = plant_->GetPositions(*plant_context_);
-  EXPECT_EQ(q_after(0), q(0));
-  EXPECT_EQ(q_after(1), q(1));
-  VectorXd error_estimate(integrator_->get_error_estimate()->CopyToVector());
-  EXPECT_EQ(error_estimate.norm(), 0);
+/* Checks that the integrator with joint limits in force can resolve initial
+conditions that are extreme violations of the constraints. See #24403. */
+TEST_P(DoublePendulum, JointLimitsExtremeInitialConditions) {
+  for (multibody::JointIndex i : plant_->GetJointIndices()) {
+    multibody::Joint<double>& joint = plant_->get_mutable_joint(i);
+    joint.set_position_limits(VectorXd::Constant(1, 0.2 * (i + 1)),
+                              VectorXd::Constant(1, 3.1));
+  }
+  Build();
 
-  // Check handling of extreme initial conditions (#24403).
+  // An extreme constraint violation can push the integrator into a regime
+  // where it may attempt very small internal time steps. Early implementations
+  // of the limit constraint could fail to make progress and eventually throw
+  // by attempting a prohibitively small step (#24403).
   const VectorXd q_bad = VectorXd::Zero(2);
   plant_->SetPositions(plant_context_, q_bad);
-  simulator_->AdvanceTo(1.1);
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.0));
+}
 
-  // Check joint locking support with limit constraint.
+/* Checks that the integrator joint limit constraints also support joint
+locking. */
+TEST_P(DoublePendulum, JointLimitsAndJointLocking) {
+  for (multibody::JointIndex i : plant_->GetJointIndices()) {
+    multibody::Joint<double>& joint = plant_->get_mutable_joint(i);
+    joint.set_position_limits(VectorXd::Constant(1, 0.2 * (i + 1)),
+                              VectorXd::Constant(1, 3.1));
+  }
+  Build();
+
+  // Check joint locking support with joint limit constraint.
   const auto& joint1 = plant_->GetJointByName("joint1");
   joint1.Lock(plant_context_);
-  EXPECT_NO_THROW(simulator_->AdvanceTo(1.2));
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.0));
 }
 
 /* Checks that effort limits are enforced by the integrator. */
@@ -614,16 +647,43 @@ TEST_P(DoublePendulum, CoupledJoints) {
   // expect exact satisfaction.
   const VectorXd q = plant_->GetPositions(*plant_context_);
   EXPECT_NEAR(q(0), gear_ratio * q(1), 1e-5);
+}
 
-  // Check handling of extreme initial conditions (#24403).
-  VectorXd q_bad = q;
+/* Checks that the integrator with coupler constraints in force can resolve
+initial conditions that are extreme violations of the constraints. See
+#24403. */
+TEST_P(DoublePendulum, CoupledJointsExtremeInitialConditions) {
+  const double gear_ratio = 0.5;
+  const auto& joint1 = plant_->GetJointByName("joint1");
+  const auto& joint2 = plant_->GetJointByName("joint2");
+  plant_->AddCouplerConstraint(joint1, joint2, gear_ratio);
+  Build();
+  const VectorXd q0 = plant_->GetPositions(*plant_context_);
+
+  // An extreme constraint violation can push the integrator into a regime
+  // where it may attempt very small internal time steps. Early implementations
+  // of the coupler constraint could fail to make progress and eventually throw
+  // by attempting a prohibitively small step (#24403).
+  VectorXd q_bad = q0;
   q_bad(1) += 0.2;
   plant_->SetPositions(plant_context_, q_bad);
-  simulator_->AdvanceTo(1.1);
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.0));
+}
 
-  // Check joint locking support with coupler constraint.
+/* Checks that coupler constraints and joint locking don't blow up the
+integrator. */
+TEST_P(DoublePendulum, CoupledJointsAndJointLocking) {
+  const double gear_ratio = 0.5;
+  const auto& joint1 = plant_->GetJointByName("joint1");
+  const auto& joint2 = plant_->GetJointByName("joint2");
+  plant_->AddCouplerConstraint(joint1, joint2, gear_ratio);
+  Build();
+  const VectorXd q0 = plant_->GetPositions(*plant_context_);
+
+  // Check joint locking support with coupler constraint, to the extent that it
+  // does not crash nor throw.
   joint1.Lock(plant_context_);
-  EXPECT_NO_THROW(simulator_->AdvanceTo(1.2));
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1.0));
 }
 
 /* Checks that weld constraints and joint locking don't blow up the
