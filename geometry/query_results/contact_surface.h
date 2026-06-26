@@ -187,7 +187,7 @@ class ContactSurface {
          mesh reversed (to maintain the documented invariants). Comparing the
          input parameters with the members of the resulting %ContactSurface will
          reveal if such a swap has occurred. */
-  //@{
+  ///@{
 
   /** Constructs a %ContactSurface with a triangle mesh representation. */
   ContactSurface(GeometryId id_M, GeometryId id_N,
@@ -209,7 +209,7 @@ class ContactSurface {
 
   ~ContactSurface();
 
-  //@}
+  ///@}
 
   /** Returns the geometry id of Geometry M. */
   GeometryId id_M() const { return id_M_; }
@@ -225,7 +225,7 @@ class ContactSurface {
    without worrying about the representation. If necessary, the actual meshes
    and fields can be accessed directly via the representation-dependent APIs
    below. */
-  //@{
+  ///@{
 
   int num_faces() const {
     return is_triangle() ? tri_mesh_W().num_elements()
@@ -264,14 +264,14 @@ class ContactSurface {
     return is_triangle() ? tri_mesh_W().centroid() : poly_mesh_W().centroid();
   }
 
-  //@}
+  ///@}
 
   /** @name Representation-dependent API
 
    These functions provide insight into what representation the %ContactSurface
    instance uses, and provide access to the representation-dependent quantities:
    mesh and field. */
-  //@{
+  ///@{
 
   /** Simply reports if this contact surface's mesh representation is triangle.
    Equivalent to:
@@ -324,7 +324,7 @@ class ContactSurface {
         e_MN_);
   }
 
-  //@}
+  ///@}
 
   /** @name  Evaluation of constituent pressure fields
 
@@ -344,7 +344,7 @@ class ContactSurface {
 
    The values ∇eₘ and ∇eₘ are piecewise constant over the %ContactSurface and
    can only be evaluate on a per-face basis.  */
-  //@{
+  ///@{
 
   /** @returns `true` if `this` contains values for ∇eₘ.  */
   bool HasGradE_M() const { return grad_eM_W_ != nullptr; }
@@ -362,7 +362,7 @@ class ContactSurface {
    @pre `index ∈ [0, mesh().num_faces())`.  */
   const Vector3<T>& EvaluateGradE_N_W(int index) const;
 
-  //@}
+  ///@}
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
   /** Checks to see whether the given ContactSurface object is equal via deep
