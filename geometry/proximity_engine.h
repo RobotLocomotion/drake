@@ -214,9 +214,10 @@ class ProximityEngine {
 
   /* Updates the poses for all active dynamic geometries in the engine.
    @param X_WGs     The poses of each active dynamic geometry `G` measured and
-                    expressed in the world frame `W` (including geometries which
-                    may *not* be registered with the proximity engine or may not
-                    be dynamic).
+                    expressed in the world frame `W` (the map can include
+                    poses for other geometries as well (e.g., anchored
+                    geometries, unregistered geometries, inactive geometries,
+                    etc.)
   */
   // TODO(SeanCurtis-TRI): I could do things here differently a number of ways:
   //  1. I could make this move semantics (or swap semantics).
