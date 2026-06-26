@@ -297,10 +297,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // broadphase: newly inactive dynamic geometries move out of dynamic_tree_
   // into inactive_dynamic_tree_; reactivated ones move back.
   //
-  // Note the absence of any tree update() call: fcl's registerObject() and
-  // unregisterObject() leave the tree valid and queryable (they insert/remove
-  // the leaf with the object's current AABB and refit the ancestor bounding
-  // volumes), whereas update() is a full O(tree size) refit.
+  // Note: there is no invocation of tree.update() here. This is because
+  // update() is only necessary when geometry *poses* change. The act of adding
+  // or removing objects from the tree does *not* invalidate the tree. What
+  // matters is that the objects being inserted have up-to-date AABBs.
+  //
+  // We rely on UpdateWorldPoses() to always update the object's poses and then
+  // can freely call computeAABB() as necessary to guarantee up-to-date-ness.
   void ApplyActiveStatusChange(
       const CollisionFilter::ActiveStatusChange& change) {
     DRAKE_DEMAND(!change.empty());
@@ -309,6 +312,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       DRAKE_DEMAND(iter != dynamic_objects_.end());
       DRAKE_DEMAND(inactive_dynamic_geometries_.insert(id).second);
       CollisionObjectd* object = iter->second.get();
+      if (!inactive_dynamic_stale_) {
+        // The inactive tree is *not* stale. To guarantee we can keep that
+        // state, we need to guarantee that the object being registered with it
+        // has an up-to-date AABB.
+        object->computeAABB();
+      }
       dynamic_tree_.unregisterObject(object);
       inactive_dynamic_tree_.registerObject(object);
     }
@@ -318,9 +327,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       DRAKE_DEMAND(inactive_dynamic_geometries_.erase(id) != 0);
       CollisionObjectd* object = iter->second.get();
       inactive_dynamic_tree_.unregisterObject(object);
+      if (!inactive_dynamic_stale_) {
+        // We only want to move an object with an up-to-date AABB into the
+        // dynamic tree. So, if the inactive tree is stale, we'll refresh the
+        // AABB.
+        object->computeAABB();
+      }
       dynamic_tree_.registerObject(object);
     }
-    inactive_dynamic_stale_ = !inactive_dynamic_geometries_.empty();
   }
 
   bool IsInactiveDynamic(GeometryId id) const {
@@ -472,9 +486,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // collision_filter_.RemoveGeometry().)
       if (inactive_dynamic_geometries_.erase(id) > 0) {
         RemoveGeometry(id, &inactive_dynamic_tree_, &dynamic_objects_);
-        // The inactive tree changed; a filter-ignoring query must refit (and
-        // re-setup) it before use.
-        inactive_dynamic_stale_ = true;
       } else {
         RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
       }
@@ -540,19 +551,24 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // skip the per-geometry membership test below entirely.
     const bool has_inactive = !inactive_dynamic_geometries_.empty();
     for (const auto& [id, object_ptr] : dynamic_objects_) {
-      // Inactive geometries are updated lazily.
-      if (has_inactive && inactive_dynamic_geometries_.contains(id)) {
-        continue;
-      }
       const RigidTransform<T>& X_WG = X_WGs.at(id);
       // The FCL broadphase requires double-valued poses; so we use ADL to
       // efficiently get double-valued poses out of arbitrary T-valued poses.
       const RigidTransform<double>& X_WG_d = convert_to_double(X_WG);
       object_ptr->setTransform(X_WG_d.GetAsIsometry3());
+      // We'll keep the inactive geometry's *pose* up to date in the collision
+      // object (cheap), but we won't update its AABB or tree until we need to
+      // query against it.
+      if (has_inactive && inactive_dynamic_geometries_.contains(id)) {
+        continue;
+      }
       object_ptr->computeAABB();
       geometries_for_deformable_contact_.UpdateRigidWorldPose(id, X_WG_d);
     }
     dynamic_tree_.update();
+    // The poses of inactive geometries may have changed. We'll conservatively
+    // mark them as stale.
+    inactive_dynamic_stale_ |= has_inactive;
   }
 
   void UpdateDeformableVertexPositions(
@@ -741,7 +757,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // participate. They live in inactive_dynamic_tree_, which
     // UpdateWorldPoses() defers; bring the inactive objects' poses and that
     // tree up to date here, as necessary.
-    EnsureInactiveDynamicUpToDate(X_WGs);
+    EnsureInactiveDynamicUpToDate();
     mesh_distance_boundary_cahe_.ComputeAll();
     // We create a sphere of zero radius centered at the query point and put
     // it into a CollisionObject.
@@ -772,31 +788,23 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return distances;
   }
 
-  // Brings the inactive dynamic geometries' object poses (hence AABBs) in
-  // inactive_dynamic_tree_ up to date with `X_WGs`, but only if something has
-  // changed since the last refresh.
-  // @pre X_WGs contains a pose for every inactive dynamic geometry.
-  void EnsureInactiveDynamicUpToDate(
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+  // Updates the broadphase tree for the inactive geometries based on the fact
+  // that each collision object in that tree already knows its current pose.
+  void EnsureInactiveDynamicUpToDate() const {
     if (!inactive_dynamic_stale_) return;
     for (const GeometryId id : inactive_dynamic_geometries_) {
       CollisionObjectd& object = *dynamic_objects_.at(id);
-      // The FCL broadphase requires double-valued poses; so we use ADL to
-      // efficiently get double-valued poses out of arbitrary T-valued poses.
-      const RigidTransform<double>& X_WG_d = convert_to_double(X_WGs.at(id));
-      // Skip objects that haven't moved (e.g., locked bodies).
-      if (RigidTransformd(object.getTransform()).IsExactlyEqualTo(X_WG_d)) {
-        continue;
-      }
-      object.setTransform(X_WG_d.GetAsIsometry3());
+      // The object's *pose* has been maintained by UpdateWorldPoses().
       object.computeAABB();
     }
     // Note: We lazily update the inactive geometries when we specifically make
     // a query that needs them. The queries are const methods, so, to support
-    // that lazy update, we const cast here.
+    // that lazy update, we const cast here. While not generally thread safe,
+    // we rely on on Drake's convention that we operate on one Context in a
+    // single thread, and that each Context has its own engine instance.
     const_cast<FclDynamicAABBTreeCollisionManager&>(inactive_dynamic_tree_)
         .update();
-    inactive_dynamic_stale_ = false;
+    const_cast<bool&>(inactive_dynamic_stale_) = false;
   }
 
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
@@ -1417,8 +1425,37 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // True when the inactive geometries' object poses/AABBs in
   // inactive_dynamic_tree_ may be out of date. See
-  // EnsureUpToDateInactiveDynamicTree().
-  mutable bool inactive_dynamic_stale_{false};
+  // EnsureUpToDateInactiveDynamicTree(). The staleness protocol is defined as
+  // follows:
+  //
+  //  - UpdateWorldPoses() marks the inactive tree as stale. Poses for
+  //    "inactive" geometries can be moved (even if they wouldn't be for the
+  //    *intended* application).
+  //  - EnsureUpToDateInactiveDynamicTree() will always clear the staleness
+  //    mark.
+  //  - Modifying the properties on an inactive geometry will mark the inactive
+  //    tree as stale.
+  //
+  // Surprisingly ApplyPendingDynamicTreeUpdates() does *not* mark the inactive
+  // tree as stale. That method moves collision objects between the active and
+  // inactive trees. It doesn't incur staleness for the following reasons:
+  //
+  //   - FCL's broadphase tree is immediately queryable after removing a
+  //     collision object. Removing an object doesn't invalidate it.
+  //   - The same can be said about *adding* an object to the tree with one
+  //     caveat: the object's AABB must, itself, be up to date.
+  //     - Moving inactive -> active:
+  //       - The inactive collision object's AABB is explicitly updated prior
+  //         to adding it to the active tree (based on the current pose set in
+  //         UpdateWorldPoses()).
+  //       - So, both trees' validity remains unchanged.
+  //     - Moving active -> inactive:
+  //       - The active tree is valid because removal doesn't harm it.
+  //       - If the inactive tree was already marked stale, it doesn't matter
+  //         if the deactivated collision object's AABB is up to date or not.
+  //       - If the inactive tree was *not* stale, then we explicitly update the
+  //         deactivated collision object's AABB prior to adding it.
+  bool inactive_dynamic_stale_{false};
 
   // All of the *anchored* collision elements. The anchored geometries are not
   // partitioned like the dynamic geometries. All anchored geometries are

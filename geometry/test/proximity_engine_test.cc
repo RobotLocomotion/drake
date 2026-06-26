@@ -1674,26 +1674,28 @@ TEST_F(ProximityEngineTests, InactiveGeometryInDistanceToPoint) {
 // 1. When are things *not* stale:
 //      a. Original construction.
 //      b. After calling ComputeSignedDistanceToPoint().
-//      c. After calling Activate() on the last inactive geometry.
 //
-// 2. What changes the staleness:
+// 2. What causes it to become stale:
 //      a. Copy construction - the copy is stale, but the source is unchanged.
 //      b. Scalar-converted copies also start stale.
-//      c. Activate() or Deactivate() (specifically, triggering the callback
-//         resulting in a non-empty inactive set).
+//      c. Calling UpdateWorldPoses() when there are inactive geometries.
 //      d. Updating margins on hydro-compliant, inactive geometry.
-//      e. Removing inactive geometries.
 //
 // 3. Expected behavior:
-//      a. UpdateWorldPoses() never updates the poses of inactive geometries.
-//      b. UpdateWorldPoses() doesn't change the staleness.
-//      b. Multiple calls to ComputeSignedDistanceToPoint() (without any
+//      a. Activate() does not change staleness.
+//         i. But, if stale, the activated geometry will get its AABB updated.
+//      b. Deactivate() does not change staleness.
+//         i. But, if *not* stale, the deactivated geometry will get its AABB
+//            updated.
+//      c. UpdateWorldPoses() never updates the AABBs of inactive geometries
+//         (but it *does* change the poses).
+//      d. Multiple calls to ComputeSignedDistanceToPoint() (without any
 //         intervening staleness triggers) will only update the inactive
 //         geometry poses on the first call.
 TEST_F(ProximityEngineTests, InactiveGeometryStaleness) {
-  const Sphere sphere(0.5);
-  const GeometryId id_A = AddDynamic(sphere);
-  const GeometryId id_B = AddDynamic(sphere);
+  const Box shape(0.5, 0.5, 0.5);
+  const GeometryId id_A = AddDynamic(shape);
+  // const GeometryId id_B = AddDynamic(shape);
 
   auto is_stale = [](const auto& engine) {
     return Tester::is_inactive_dynamic_stale(engine);
@@ -1721,15 +1723,16 @@ TEST_F(ProximityEngineTests, InactiveGeometryStaleness) {
   // (1a) Copying didn't change the original; still not stale.
   ASSERT_FALSE(is_stale(engine_));
 
-  // (3b) - UpdateWorldPoses() leaves staleness unchanged; still not stale.
+  // (2c) - UpdateWorldPoses(), with no inactive geometries, does *not* make it
+  //        stale.
   engine_.UpdateWorldPoses(X_WGs_);
   EXPECT_FALSE(is_stale(engine_));
 
-  // (2c) - Deactivate makes it stale.
+  // (3b) - Deactivate does *not* make it stale.
   Deactivate({id_A});
-  EXPECT_TRUE(is_stale(engine_));
+  EXPECT_FALSE(is_stale(engine_));
 
-  // (3b) - UpdateWorldPoses() leaves staleness unchanged; still stale.
+  // (2c) - UpdateWorldPoses(), with inactive geometries, makes it stale.
   engine_.UpdateWorldPoses(X_WGs_);
   EXPECT_TRUE(is_stale(engine_));
 
@@ -1737,17 +1740,7 @@ TEST_F(ProximityEngineTests, InactiveGeometryStaleness) {
   engine_.ComputeSignedDistanceToPoint(V3{0, 0, 1}, X_WGs_);
   EXPECT_FALSE(is_stale(engine_));
 
-  // (2c) - Deactivate that doesn't lead to a change doesn't make it stale.
-  Deactivate({id_A});
-  EXPECT_FALSE(is_stale(engine_));
-
-  // (1c) - Activating the last inactive geometry clears staleness.
-  Activate({id_A});
-  ASSERT_EQ(engine_.num_inactive_dynamic(), 0);
-  EXPECT_FALSE(is_stale(engine_));
-
-  // (2c) - Activate that doesn't lead to a change doesn't make it stale.
-  ASSERT_FALSE(is_stale(engine_));
+  // (3a) - Activate does *not* make it stale.
   Activate({id_A});
   EXPECT_FALSE(is_stale(engine_));
 
@@ -1756,66 +1749,93 @@ TEST_F(ProximityEngineTests, InactiveGeometryStaleness) {
     Deactivate({id_A});
     clear_staleness(engine_);
 
-    InternalGeometry sphere_geo(
-        SourceId::get_new_id(), std::make_unique<Sphere>(sphere),
-        FrameId::get_new_id(), id_A, "sphere", RigidTransformd());
+    InternalGeometry geo(SourceId::get_new_id(), std::make_unique<Box>(shape),
+                         FrameId::get_new_id(), id_A, "sphere",
+                         RigidTransformd());
     ProximityProperties props;
-    // props.AddProperty("foo", "bar", 1.0);
     AddCompliantHydroelasticProperties(1.0, 1e17, &props);
 
     ASSERT_FALSE(is_stale(engine_));
-    engine_.UpdateRepresentationForNewProperties(sphere_geo, props);
+    engine_.UpdateRepresentationForNewProperties(geo, props);
     EXPECT_TRUE(is_stale(engine_));
   }
 
-  // (2e) - Removing *inactive* geometry.
-  clear_staleness(engine_);
-  // Removing active geometries don't affect inactive staleness.
-  engine_.RemoveGeometry(id_B, /* is_dynamic= */ true);
-  EXPECT_FALSE(is_stale(engine_));
-  X_WGs_.erase(id_B);
+  // We need to test the effect of the various functions on the poses and the
+  // AABBs of geometries. We *know* that each collision geometry's AABB is
+  // expressed in the world frame. So, simply by moving the geometry, we should
+  // observe in the min & max coordinates of the AABB (we'll use min coordinates
+  // as evidence of change).
+  //
+  // This helper method will capture a geometry's initial pose and AABB,
+  // evaluate the dut function, and determine if the result matches the
+  // expectations.
+  auto validate_expected_change = [this](const GeometryId id,
+                                         bool expect_aabb_change,
+                                         std::function<void()> dut) {
+    const fcl::CollisionObjectd* obj = Tester::GetCollisionObject(engine_, id);
+    ASSERT_NE(obj, nullptr);
+    // Start with translation and AABB in agreement.
+    const_cast<fcl::CollisionObjectd*>(obj)->computeAABB();
+    const Vector3d p_WO_before = obj->getTranslation();
+    const Vector3d min_before = obj->getAABB().min_;
 
-  // Removing inactive geometry does affect staleness.
-  engine_.RemoveGeometry(id_A, /* is_dynamic= */ true);
-  EXPECT_TRUE(is_stale(engine_));
-  X_WGs_.erase(id_A);
+    const Vector3d p_WO_target(p_WO_before + Vector3d(1, 2, 3));
+    X_WGs_[id] = RigidTransformd(p_WO_target);
+    engine_.UpdateWorldPoses(X_WGs_);
 
-  // Put in a new geometry.
-  const GeometryId id_C = AddDynamic(sphere);
-  X_WGs_[id_C] = RigidTransformd(Vector3d(1, 2, 3));
+    dut();
 
-  // (3a) - UpdatedWorldPoses() doesn't update inactive geometry poses.
-  engine_.UpdateWorldPoses(X_WGs_);
-  // id_C currently active; pose should have updated.
-  EXPECT_TRUE(CompareMatrices(
-      Tester::GetX_WG(id_C, /* is_dynamic= */ true, engine_).translation(),
-      Vector3d(1, 2, 3)));
-  Deactivate({id_C});
+    const Vector3d p_WO_after = obj->getTranslation();
+    const Vector3d min_after = obj->getAABB().min_;
 
-  X_WGs_[id_C] = RigidTransformd(Vector3d(4, 5, 6));
+    // Pose should always be updated.
+    EXPECT_TRUE(CompareMatrices(p_WO_after, p_WO_target));
+    EXPECT_EQ(CompareMatrices(min_before, min_after), !expect_aabb_change);
+  };
 
-  engine_.UpdateWorldPoses(X_WGs_);
-  // Deactivated id_C's pose should not have updated.
-  EXPECT_TRUE(CompareMatrices(
-      Tester::GetX_WG(id_C, /* is_dynamic= */ true, engine_).translation(),
-      Vector3d(1, 2, 3)));
+  // (3ai) - Activate() from a stale state updates the AABB of the activated
+  // geometry.
+  // TODO: Fill this in.
 
-  // (3c) - For multiple calls to ComputeSignedDistanceToPoint() only the first
+  // (3bi) - Deactivate() from a stale state updates the AABB of the deactivated
+  // geometry.
+  // TODO: Fill this in.
+
+  // (3c) - UpdateWorldPoses() updates the inactive geometry's pose but not its
+  // AABB.
+  ASSERT_TRUE(engine_.IsInactiveDynamic(id_A));
+  validate_expected_change(
+      id_A,
+      /* expect_aabb_change= */ false,
+      []() {}  // Do nothing; just evaluating the effect of UpdateWorldPoses().
+  );
+
+  // (3d) - For multiple calls to ComputeSignedDistanceToPoint() only the first
   //   updates the poses on inactive geometries.
+  ASSERT_TRUE(engine_.IsInactiveDynamic(id_A));
+  const Vector3d p_WA_before(40, 50, 60);
+  X_WGs_[id_A] = RigidTransformd(p_WA_before);
+  engine_.UpdateWorldPoses(X_WGs_);
+  // Stash the AABB for id_A.
+  ASSERT_TRUE(is_stale(engine_));
+
   engine_.ComputeSignedDistanceToPoint(V3{0, 0, 1}, X_WGs_);
+
   // Pose should have updated.
+  // TODO: Detect that the aabb min changed.
   EXPECT_TRUE(CompareMatrices(
-      Tester::GetX_WG(id_C, /* is_dynamic= */ true, engine_).translation(),
-      Vector3d(4, 5, 6)));
+      Tester::GetX_WG(id_A, /* is_dynamic= */ true, engine_).translation(),
+      p_WA_before));
 
   // Different pose that will be ignored.
-  X_WGs_[id_C] = RigidTransformd(Vector3d(7, 8, 9));
+  X_WGs_[id_A] = RigidTransformd(Vector3d(7, 8, 9));
 
   engine_.ComputeSignedDistanceToPoint(V3{0, 0, 1}, X_WGs_);
   // Alternate pose is ignored.
+  // detect that the aabb didn't change.
   EXPECT_TRUE(CompareMatrices(
-      Tester::GetX_WG(id_C, /* is_dynamic= */ true, engine_).translation(),
-      Vector3d(4, 5, 6)));
+      Tester::GetX_WG(id_A, /* is_dynamic= */ true, engine_).translation(),
+      p_WA_before));
 }
 
 /* When geometries are (de)activated, ProximityEngine's callback reclassifies
