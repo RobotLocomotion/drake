@@ -23,8 +23,7 @@ void DefineExamplesCompassGait(py::module_ m) {
   // conversion.
   using T = double;
 
-  py::class_<CompassGait<T>, LeafSystem<T>>(
-      m, "CompassGait", doc.CompassGait.doc)
+  class_<CompassGait<T>, LeafSystem<T>>(m, "CompassGait", doc.CompassGait.doc)
       .def(py::init<>(), doc.CompassGait.ctor.doc)
       .def("get_minimal_state_output_port",
           &CompassGait<T>::get_minimal_state_output_port,
@@ -35,7 +34,7 @@ void DefineExamplesCompassGait(py::module_ m) {
           py_rvp::reference_internal,
           doc.CompassGait.get_floating_base_state_output_port.doc);
 
-  py::class_<CompassGaitParams<T>, BasicVector<T>>(
+  class_<CompassGaitParams<T>, BasicVector<T>>(
       m, "CompassGaitParams", doc.CompassGaitParams.doc)
       .def(py::init<>(), doc.CompassGaitParams.ctor.doc)
       .def("mass_hip", &CompassGaitParams<T>::mass_hip,
@@ -64,7 +63,7 @@ void DefineExamplesCompassGait(py::module_ m) {
       .def("set_slope", &CompassGaitParams<T>::set_slope,
           doc.CompassGaitParams.set_slope.doc);
 
-  py::class_<CompassGaitContinuousState<T>, BasicVector<T>>(
+  class_<CompassGaitContinuousState<T>, BasicVector<T>>(
       m, "CompassGaitContinuousState", doc.CompassGaitContinuousState.doc)
       .def(py::init<>(), doc.CompassGaitContinuousState.ctor.doc)
       .def("stance", &CompassGaitContinuousState<T>::stance,
@@ -84,7 +83,7 @@ void DefineExamplesCompassGait(py::module_ m) {
       .def("set_swingdot", &CompassGaitContinuousState<T>::set_swingdot,
           doc.CompassGaitContinuousState.set_swingdot.doc);
 
-  py::class_<CompassGaitGeometry, LeafSystem<double>>(
+  class_<CompassGaitGeometry, LeafSystem<double>>(
       m, "CompassGaitGeometry", doc.CompassGaitGeometry.doc)
       .def_static("AddToBuilder",
           py::overload_cast<systems::DiagramBuilder<double>*,

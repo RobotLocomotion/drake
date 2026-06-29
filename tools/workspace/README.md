@@ -191,6 +191,36 @@ If an external required non-trivial changes, even if you were able to make the
 changes yourself, consider separating that external into its own pull request
 and assigning it to the associated feature owner.
 
+## Python
+
+As part of the monthly upgrades process, the pinned Python packages used on
+platforms for which Drake relies on a virtual environment should be updated.
+This is the reminder that the `new_release` tool prints for "python".
+
+The accompanying script to perform the upgrade can only be invoked on a system
+where Drake actually uses a virtual environment, which is currently only macOS.
+(Drake uses a venv when building Python wheels on Linux also, but inside a
+Docker container. Running the script inside a container adds complications and
+is not recommended.)
+
+On a supported platform, run the script:
+
+```
+./tools/workspace/python/venv_upgrade [--commit]
+```
+
+Always push these changes to a separate branch from the regular monthly
+upgrades. Like the other upgrades, it can be tagged
+`status: single reviewer ok`, and typically assigned to the on-call platform
+reviewer in absence of any failures.
+
+For further details, see:
+
+* `//tools/workspace/python/venv_upgrade` for the upgrade script;
+* `//setup/python/pyproject.toml` for the TOML file; and
+* `//setup/python/{hub}/requirements.in` for the requirements files managed by
+  `uv` via `rules_python`.
+
 ## drake-external-examples
 
 The
@@ -249,6 +279,7 @@ argument to the `github_archive` macro call pointing at a local checkout, e.g.:
         name = "foobar",
         local_repository_override = "/path/to/local/foo/bar",
         repository = "foo/bar",
+        type = "commit",
         commit = "0123456789abcdef0123456789abcdef01234567",
         sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",  # noqa
     )
@@ -362,14 +393,17 @@ When indicating licenses in the source, use the identifier from the
 
 For choosing the version or commit to use in `repository.bzl`:
 
-* When upstream provides numbered releases, pin Drake to use the most recent
-stable release. Drake maintainers will automatically upgrade to a more recent
-stable release on a monthly basis.
+* When upstream provides numbered releases, either by official GitHub releases
+  or tagged commits, pin Drake to use the most recent stable release by using
+  either `upgrade_type = "release"` or `upgrade_type = "tag"`, respectively.
+  (Prefer the former if official releases exist and are kept up-to-date.)
+  Drake maintainers will automatically upgrade to a more recent stable release
+  on a monthly basis.
 * Otherwise, pin Drake to use the most recent commit of the upstream mainline
-branch. Drake maintainers will automatically upgrade to a more recent mainline
-commit on a monthly basis.
+  branch by using `upgrade_type = "commit"`. Drake maintainers will
+  automatically upgrade to a more recent mainline commit on a monthly basis.
 * If the pin policy is unsatisfactory for the case of some specific external,
-consult Drake's build system maintainers for advice.
+  consult Drake's build system maintainers for advice.
 
 Mimic an existing example to complete the process, e.g., look at
 `//tools/workspace/tinyobjloader_internal` and mimic the `repository.bzl` and

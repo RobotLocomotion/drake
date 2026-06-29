@@ -36,7 +36,7 @@ void DoScalarDependentDefinitions(py::module_ m) {
           })
       .def("__repr__",
           [](const VectorBase<T>& self) {
-            py::handle cls = py::cast(&self, py_rvp::reference).get_type();
+            py::handle cls = py::cast(&self, py_rvp::reference).type();
             return py::str("{}({})").format(internal::PrettyClassName(cls),
                 py::cast(self.CopyToVector()).attr("tolist")());
           })
@@ -138,7 +138,7 @@ void DefineBusValue(py::module_ m) {
   using Class = systems::BusValue;
   constexpr auto& cls_doc =
       pydrake_doc_systems_framework.drake.systems.BusValue;
-  py::class_<Class> cls(m, "BusValue", cls_doc.doc);
+  class_<Class> cls(m, "BusValue", cls_doc.doc);
   cls  // BR
       .def(py::init<>(), cls_doc.ctor.doc)
       .def(

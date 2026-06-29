@@ -6511,6 +6511,15 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void RemoveUnsupportedScalars(
       const internal::ScalarConvertibleComponent<T>& component);
 
+  // Augments the generic SystemBase message with the specific reason(s) `this`
+  // plant's components disallow conversion to `destination_type` (e.g. a
+  // non-empty DeformableModel), so a failed ToAutoDiffXd()/ToSymbolic()
+  // explains why. See RemoveUnsupportedScalars(), which decides what is
+  // convertible.
+  std::string GetUnsupportedScalarConversionMessage(
+      const std::type_info& source_type,
+      const std::type_info& destination_type) const final;
+
   // Adds a DeformableModel to this plant. The added DeformableModel is owned
   // by `this` MultibodyPlant and calls its `DeclareSystemResources()` method
   // when `this` MultibodyPlant is finalized to declare the system resources it

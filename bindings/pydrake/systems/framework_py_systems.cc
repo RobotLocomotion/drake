@@ -73,10 +73,7 @@ constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 // common/ref_cycle_pybind bookkeeping scheme.
 py::object UniquelyWrapCallback(py::object callback) {
   static std::atomic<uint64_t> uniquifier{0};
-  py::tuple wrapped(2);
-  wrapped[0] = callback;
-  wrapped[1] = uniquifier.fetch_add(1);
-  return wrapped;
+  return py::make_tuple(callback, uniquifier.fetch_add(1));
 }
 
 // This helper function causes the lifetime of `callback` to be at least as
@@ -234,7 +231,7 @@ struct Impl {
     // to override this method in `PyLeafSystem`, expose the method here for
     // direct(-ish) access. (Otherwise, we get an error about inaccessible
     // downcasting when trying to bind `PyLeafSystem::DoCalcTimeDerivatives` to
-    // `py::class_<LeafSystem<T>, ...>`.
+    // `class_<LeafSystem<T>, ...>`.
     using Base::DoCalcTimeDerivatives;
   };
 
@@ -405,8 +402,7 @@ struct Impl {
     }
   };
 
-  static py::class_<System<T>, SystemBase, PySystem> DefineSystem(
-      py::module_ m) {
+  static class_<System<T>, SystemBase, PySystem> DefineSystem(py::module_ m) {
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
     auto system_cls =
@@ -1081,9 +1077,8 @@ Note: The above is for the C++ documentation. For Python, use
                     input_locator.first, py_rvp::reference_internal, self_py);
                 py::object input_port_index_py = py::cast(input_locator.second);
 
-                py::tuple input_locator_py(2);
-                input_locator_py[0] = input_system_py;
-                input_locator_py[1] = input_port_index_py;
+                py::tuple input_locator_py =
+                    py::make_tuple(input_system_py, input_port_index_py);
 
                 // Keep alive, ownership: `output_system_py` keeps `self` alive.
                 py::object output_system_py = py::cast(
@@ -1091,9 +1086,8 @@ Note: The above is for the C++ documentation. For Python, use
                 py::object output_port_index_py =
                     py::cast(output_locator.second);
 
-                py::tuple output_locator_py(2);
-                output_locator_py[0] = output_system_py;
-                output_locator_py[1] = output_port_index_py;
+                py::tuple output_locator_py =
+                    py::make_tuple(output_system_py, output_port_index_py);
 
                 out[input_locator_py] = output_locator_py;
               }
@@ -1111,9 +1105,7 @@ Note: The above is for the C++ documentation. For Python, use
                     locator.first, py_rvp::reference_internal, self_py);
                 py::object port_index_py = py::cast(locator.second);
 
-                py::tuple locator_py(2);
-                locator_py[0] = system_py;
-                locator_py[1] = port_index_py;
+                py::tuple locator_py = py::make_tuple(system_py, port_index_py);
                 out.append(locator_py);
               }
               return out;
@@ -1129,9 +1121,7 @@ Note: The above is for the C++ documentation. For Python, use
                   py::cast(locator.first, py_rvp::reference_internal, self_py);
               py::object port_index_py = py::cast(locator.second);
 
-              py::tuple locator_py(2);
-              locator_py[0] = system_py;
-              locator_py[1] = port_index_py;
+              py::tuple locator_py = py::make_tuple(system_py, port_index_py);
               return locator_py;
             },
             py::arg("port_index"), doc.Diagram.get_output_port_locator.doc)
@@ -1217,11 +1207,11 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = SystemBase;
     constexpr auto& cls_doc = doc.SystemBase;
     // TODO(eric.cousineau): Bind remaining methods.
-    py::class_<Class> cls(m, "SystemBase", cls_doc.doc);
+    class_<Class> cls(m, "SystemBase", cls_doc.doc);
     {
       using Nested = SystemBase::GraphvizFragment;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragment;
-      py::class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
+      class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
           .def_rw(
               "input_ports", &Nested::input_ports, nested_doc.input_ports.doc)
           .def_rw("output_ports", &Nested::output_ports,
@@ -1232,7 +1222,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
       // GraphvizFragmentParams
       using Nested = SystemBasePublic::GraphvizFragmentParams;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragmentParams;
-      py::class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
+      class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
           .def_rw("max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
           .def_rw("options", &Nested::options, nested_doc.options.doc)
           .def_rw("node_id", &Nested::node_id, nested_doc.node_id.doc)
@@ -1429,7 +1419,7 @@ void DefineFrameworkPySystems(py::module_ m) {
   DoScalarIndependentDefinitions(m);
 
   // Declare (but don't define) to resolve a dependency cycle.
-  py::class_<SystemScalarConverter> cls_system_scalar_converter(
+  class_<SystemScalarConverter> cls_system_scalar_converter(
       m, "SystemScalarConverter");
   auto cls_system_double = Impl<double>::DefineSystem(m);
   auto cls_system_autodiff = Impl<AutoDiffXd>::DefineSystem(m);
@@ -1438,7 +1428,7 @@ void DefineFrameworkPySystems(py::module_ m) {
   // Do templated instantiations of system types.
   auto bind_common_scalar_types = [&](auto dummy) {
     using T = decltype(dummy);
-    py::class_<System<T>, SystemBase, typename Impl<T>::PySystem>* cls_system{};
+    class_<System<T>, SystemBase, typename Impl<T>::PySystem>* cls_system{};
     if constexpr (std::is_same_v<T, double>) {
       cls_system = &cls_system_double;
     } else if constexpr (std::is_same_v<T, AutoDiffXd>) {

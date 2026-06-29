@@ -12,7 +12,7 @@ Members of the RobotLocomotion organization can manually schedule these builds
 on pull requests that have not yet been merged, or on arbitrary commits in the
 ``RobotLocomotion/drake`` repository.
 
-To schedule a build of an open pull request merged with master, comment:
+To schedule a build of an open pull request merged with master ⁽¹⁾, comment ⁽²⁾:
 
 * ``@drake-jenkins-bot <job-name> please``
 
@@ -24,6 +24,9 @@ For example:
 * ``@drake-jenkins-bot mac-arm-sequoia-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-noble-clang-bazel-experimental-valgrind-memcheck please``
 
+When Jenkins has received the comment and the requested job(s) are starting,
+the bot will react to the comment with a "thumbs up" emoji.
+
 A list of Jenkins bot commands for experimental builds that covers the full
 set of continuous and nightly production jobs is available
 [here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental.txt).
@@ -32,11 +35,18 @@ excludes the jobs that normally run pre-merge is available
 [here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental-extra.txt).
 
 To rerun all regular builds on an open pull request (if the previous build(s)
-failed for various reasons), comment:
+failed for various reasons), comment ⁽²⁾:
 
 * ``@drake-jenkins-bot retest this please``
 
-**Note:** Immediately after opening a pull request, it can take up to 10
+⁽¹⁾ In particular, the HEAD of the feature branch for the pull request is
+merged with the HEAD of master as of when the pull request was _opened_, not
+the current HEAD of master as of making the comment, or the latest push. If a
+change has landed on master in the intervening time that is needed for CI to
+pass on the pull request (whether logical changes, CI fixes, etc.), it's best
+to rebase on / merge with master locally rather than relying on CI.
+
+⁽²⁾ Immediately after opening a pull request, it can take up to 10
 minutes for the branches of all experimental jobs in Jenkins to be created.
 Requesting special build flavors with the ``@drake-jenkins-bot ... please``
 comments will _not_ work until this occurs. In general, it's safe to wait until
@@ -271,7 +281,7 @@ download URL(s) copied from Jenkins in the drop-down menu.
 All parameters are optional, so you can ignore the package(s) and/or platform(s)
 that you don't need. (For those left blank, the default workflow will run using
 a more "stable" version of Drake, which is usually either source code from
-`master` or a nightly release depending on the example).
+master or a nightly release depending on the example).
 
 ## Local Testing
 

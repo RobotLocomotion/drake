@@ -20,7 +20,7 @@ void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
 
   // CommonSampledIrisOptions
   const auto& cls_doc = doc.CommonSampledIrisOptions;
-  py::class_<CommonSampledIrisOptions> common_sampled_iris_options(
+  class_<CommonSampledIrisOptions> common_sampled_iris_options(
       m, "CommonSampledIrisOptions", cls_doc.doc);
   common_sampled_iris_options  // BR
       .def(py::init<>())
@@ -180,7 +180,7 @@ is the input dimension.
    automatically sets threadsafe to false.
 )";
 
-  py::class_<IrisParameterizationFunction> iris_parameterization_function(
+  class_<IrisParameterizationFunction> iris_parameterization_function(
       m, "IrisParameterizationFunction", cls_doc.doc);
   iris_parameterization_function  // BR
       .def(py::init<>(), cls_doc.ctor.doc_0args)

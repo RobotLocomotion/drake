@@ -28,7 +28,7 @@ void DefineModuleSchema(py::module_ m) {
   {
     using Class = Distribution;
     constexpr auto& cls_doc = doc.Distribution;
-    py::class_<Class>(m, "Distribution", cls_doc.doc)
+    class_<Class>(m, "Distribution", cls_doc.doc)
         .def("Sample", &Class::Sample, py::arg("generator"), cls_doc.Sample.doc)
         .def("Mean", &Class::Mean, cls_doc.Mean.doc)
         .def("ToSymbolic", &Class::ToSymbolic, cls_doc.ToSymbolic.doc);
@@ -37,7 +37,7 @@ void DefineModuleSchema(py::module_ m) {
   {
     using Class = Deterministic;
     constexpr auto& cls_doc = doc.Deterministic;
-    py::class_<Class, Distribution> cls(m, "Deterministic", cls_doc.doc);
+    class_<Class, Distribution> cls(m, "Deterministic", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -49,7 +49,7 @@ void DefineModuleSchema(py::module_ m) {
   {
     using Class = Gaussian;
     constexpr auto& cls_doc = doc.Gaussian;
-    py::class_<Class, Distribution> cls(m, "Gaussian", cls_doc.doc);
+    class_<Class, Distribution> cls(m, "Gaussian", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -62,7 +62,7 @@ void DefineModuleSchema(py::module_ m) {
   {
     using Class = Uniform;
     constexpr auto& cls_doc = doc.Uniform;
-    py::class_<Class, Distribution> cls(m, "Uniform", cls_doc.doc);
+    class_<Class, Distribution> cls(m, "Uniform", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -75,7 +75,7 @@ void DefineModuleSchema(py::module_ m) {
   {
     using Class = UniformDiscrete;
     constexpr auto& cls_doc = doc.UniformDiscrete;
-    py::class_<Class, Distribution> cls(m, "UniformDiscrete", cls_doc.doc);
+    class_<Class, Distribution> cls(m, "UniformDiscrete", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -117,18 +117,18 @@ void DefineModuleSchema(py::module_ m) {
   {
     // We need to bind these to placate some runtime type checks, but we should
     // not expose them to users.
-    py::class_<schema::internal::InvalidVariantSelection<Deterministic>>(
+    class_<schema::internal::InvalidVariantSelection<Deterministic>>(
         m, "_InvalidVariantSelectionDeterministic");
-    py::class_<schema::internal::InvalidVariantSelection<Gaussian>>(
+    class_<schema::internal::InvalidVariantSelection<Gaussian>>(
         m, "_InvalidVariantSelectionGaussian");
-    py::class_<schema::internal::InvalidVariantSelection<Uniform>>(
+    class_<schema::internal::InvalidVariantSelection<Uniform>>(
         m, "_InvalidVariantSelectionUniform");
   }
 
   {
     using Class = DistributionVector;
     constexpr auto& cls_doc = doc.DistributionVector;
-    py::class_<Class>(m, "DistributionVector", cls_doc.doc)
+    class_<Class>(m, "DistributionVector", cls_doc.doc)
         .def("Sample", &Class::Sample, py::arg("generator"), cls_doc.Sample.doc)
         .def("Mean", &Class::Mean, cls_doc.Mean.doc)
         .def("ToSymbolic", &Class::ToSymbolic, cls_doc.ToSymbolic.doc);
@@ -149,7 +149,7 @@ void DefineModuleSchema(py::module_ m) {
     {
       using Class = DeterministicVector<Size>;
       constexpr auto& cls_doc = doc.DeterministicVector;
-      py::class_<Class, DistributionVector> cls(
+      class_<Class, DistributionVector> cls(
           m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
       AddTemplateClass(m, "DeterministicVector", cls, py_param);
       if constexpr (Size == Eigen::Dynamic) {
@@ -167,7 +167,7 @@ void DefineModuleSchema(py::module_ m) {
     {
       using Class = GaussianVector<Size>;
       constexpr auto& cls_doc = doc.GaussianVector;
-      py::class_<Class, DistributionVector> cls(
+      class_<Class, DistributionVector> cls(
           m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
       AddTemplateClass(m, "GaussianVector", cls, py_param);
       if constexpr (Size == Eigen::Dynamic) {
@@ -186,7 +186,7 @@ void DefineModuleSchema(py::module_ m) {
     {
       using Class = UniformVector<Size>;
       constexpr auto& cls_doc = doc.UniformVector;
-      py::class_<Class, DistributionVector> cls(
+      class_<Class, DistributionVector> cls(
           m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
       AddTemplateClass(m, "UniformVector", cls, py_param);
       if constexpr (Size == Eigen::Dynamic) {
@@ -238,12 +238,12 @@ void DefineModuleSchema(py::module_ m) {
     // struct first, then bind its inner structs, then bind the outer struct.
     using Class = Rotation;
     constexpr auto& cls_doc = doc.Rotation;
-    py::class_<Class> cls(m, "Rotation", cls_doc.doc);
+    class_<Class> cls(m, "Rotation", cls_doc.doc);
 
     // Inner structs.
     {
       using Inner = Class::Identity;
-      py::class_<Inner> inner(cls, "Identity", cls_doc.Identity.doc);
+      class_<Inner> inner(cls, "Identity", cls_doc.Identity.doc);
       inner.def(py::init<const Inner&>(), py::arg("other"));
       inner.def(ParamInit<Inner>());
       DefAttributesUsingSerialize(&inner, cls_doc.Identity);
@@ -252,7 +252,7 @@ void DefineModuleSchema(py::module_ m) {
     }
     {
       using Inner = Class::Rpy;
-      py::class_<Inner> inner(cls, "Rpy", cls_doc.Rpy.doc);
+      class_<Inner> inner(cls, "Rpy", cls_doc.Rpy.doc);
       inner.def(py::init<const Inner&>(), py::arg("other"));
       inner.def(ParamInit<Inner>());
       DefAttributesUsingSerialize(&inner, cls_doc.Rpy);
@@ -261,7 +261,7 @@ void DefineModuleSchema(py::module_ m) {
     }
     {
       using Inner = Class::AngleAxis;
-      py::class_<Inner> inner(cls, "AngleAxis", cls_doc.AngleAxis.doc);
+      class_<Inner> inner(cls, "AngleAxis", cls_doc.AngleAxis.doc);
       inner.def(py::init<const Inner&>(), py::arg("other"));
       inner.def(ParamInit<Inner>());
       DefAttributesUsingSerialize(&inner, cls_doc.AngleAxis);
@@ -270,7 +270,7 @@ void DefineModuleSchema(py::module_ m) {
     }
     {
       using Inner = Class::Uniform;
-      py::class_<Inner> inner(cls, "Uniform", cls_doc.Uniform.doc);
+      class_<Inner> inner(cls, "Uniform", cls_doc.Uniform.doc);
       inner.def(py::init<const Inner&>(), py::arg("other"));
       inner.def(ParamInit<Inner>());
       DefAttributesUsingSerialize(&inner, cls_doc.Uniform);
@@ -343,7 +343,7 @@ void DefineModuleSchema(py::module_ m) {
   {
     using Class = Transform;
     constexpr auto& cls_doc = doc.Transform;
-    py::class_<Class> cls(m, "Transform", cls_doc.doc);
+    class_<Class> cls(m, "Transform", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Class&>(), py::arg("other"))

@@ -422,14 +422,11 @@ class IcfModel {
   smaller than the full problem. Use `is_reducible()` to check that the
   parameters describe a smaller problem.
 
-  TODO(#23764): constraints are not yet supported here.
-
   @param[out] reduced_model the reduced model.
   @param[out] mapping the reduction, as partial permutations.
 
   @pre reduced_model != nullptr.
   @pre mapping != nullptr.
-  @throws std::exception if there are any unsupported constraints.
   @post sparsity is uninitialized; call SetSparsity() when needed.
   */
   void ReduceInto(IcfModel<T>* reduced_model, ReducedMapping* mapping) const;

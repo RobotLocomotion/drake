@@ -57,7 +57,7 @@ PYDRAKE_MODULE(analysis, m) {
   {
     using Class = SimulatorConfig;
     constexpr auto& cls_doc = doc.SimulatorConfig;
-    py::class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
+    class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -68,7 +68,7 @@ PYDRAKE_MODULE(analysis, m) {
   {
     using Class = SimulatorStatus;
     constexpr auto& cls_doc = doc.SimulatorStatus;
-    py::class_<Class> cls(m, "SimulatorStatus", cls_doc.doc);
+    class_<Class> cls(m, "SimulatorStatus", cls_doc.doc);
 
     using Enum = Class::ReturnReason;
     constexpr auto& enum_doc = cls_doc.ReturnReason;
@@ -97,7 +97,7 @@ PYDRAKE_MODULE(analysis, m) {
   {
     constexpr auto& cls_doc = doc.InitializeParams;
     using Class = InitializeParams;
-    py::class_<Class> cls(m, "InitializeParams", cls_doc.doc);
+    class_<Class> cls(m, "InitializeParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -513,7 +513,7 @@ Parameter ``interruptible``:
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("generator"), doc.analysis.RandomSimulation.doc);
 
-    py::class_<RandomSimulationResult>(
+    class_<RandomSimulationResult>(
         m, "RandomSimulationResult", doc.analysis.RandomSimulationResult.doc)
         .def_rw("output", &RandomSimulationResult::output,
             doc.analysis.RandomSimulationResult.output.doc)
@@ -544,7 +544,7 @@ Parameter ``interruptible``:
   {
     using Class = RegionOfAttractionOptions;
     constexpr auto& cls_doc = doc.analysis.RegionOfAttractionOptions;
-    py::class_<Class, std::shared_ptr<Class>> cls(
+    class_<Class, std::shared_ptr<Class>> cls(
         m, "RegionOfAttractionOptions", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)

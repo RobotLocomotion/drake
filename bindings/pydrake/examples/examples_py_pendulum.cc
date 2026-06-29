@@ -27,7 +27,7 @@ void DefineExamplesPendulum(py::module_ m) {
   // conversion.
   using T = double;
 
-  py::class_<PendulumInput<T>, BasicVector<T>>(
+  class_<PendulumInput<T>, BasicVector<T>>(
       m, "PendulumInput", doc.PendulumInput.doc)
       .def(py::init<>(), doc.PendulumInput.ctor.doc)
       .def("tau", &PendulumInput<T>::tau, doc.PendulumInput.tau.doc)
@@ -36,7 +36,7 @@ void DefineExamplesPendulum(py::module_ m) {
       .def("with_tau", &PendulumInput<T>::with_tau, py::arg("tau"),
           doc.PendulumInput.with_tau.doc);
 
-  py::class_<PendulumParams<T>, BasicVector<T>>(
+  class_<PendulumParams<T>, BasicVector<T>>(
       m, "PendulumParams", doc.PendulumParams.doc)
       .def(py::init<>(), doc.PendulumParams.ctor.doc)
       .def("mass", &PendulumParams<T>::mass, doc.PendulumParams.mass.doc)
@@ -62,7 +62,7 @@ void DefineExamplesPendulum(py::module_ m) {
       .def("with_gravity", &PendulumParams<T>::with_gravity, py::arg("gravity"),
           doc.PendulumParams.with_gravity.doc);
 
-  py::class_<PendulumState<T>, BasicVector<T>>(
+  class_<PendulumState<T>, BasicVector<T>>(
       m, "PendulumState", doc.PendulumState.doc)
       .def(py::init<>(), doc.PendulumState.ctor.doc)
       .def("theta", &PendulumState<T>::theta, doc.PendulumState.theta.doc)
@@ -77,7 +77,7 @@ void DefineExamplesPendulum(py::module_ m) {
       .def("with_thetadot", &PendulumState<T>::with_thetadot,
           py::arg("thetadot"), doc.PendulumState.with_thetadot.doc);
 
-  py::class_<PendulumPlant<T>, LeafSystem<T>>(
+  class_<PendulumPlant<T>, LeafSystem<T>>(
       m, "PendulumPlant", doc.PendulumPlant.doc)
       .def(py::init<>(), doc.PendulumPlant.ctor.doc)
       .def("get_state_output_port", &PendulumPlant<T>::get_state_output_port,
@@ -100,7 +100,7 @@ void DefineExamplesPendulum(py::module_ m) {
           py_rvp::reference_internal, py::arg("context"),
           doc.PendulumPlant.get_mutable_parameters.doc);
 
-  py::class_<PendulumGeometry, LeafSystem<double>>(
+  class_<PendulumGeometry, LeafSystem<double>>(
       m, "PendulumGeometry", doc.PendulumGeometry.doc)
       .def_static("AddToBuilder", &PendulumGeometry::AddToBuilder,
           py::arg("builder"), py::arg("pendulum_state_port"),

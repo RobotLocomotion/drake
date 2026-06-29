@@ -152,7 +152,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = SurfacePolygon;
     constexpr auto& cls_doc = doc.SurfacePolygon;
-    py::class_<Class> cls(m, "SurfacePolygon", cls_doc.doc);
+    class_<Class> cls(m, "SurfacePolygon", cls_doc.doc);
     cls  // BR
         .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
         .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
@@ -162,7 +162,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = SurfaceTriangle;
     constexpr auto& cls_doc = doc.SurfaceTriangle;
-    py::class_<Class> cls(m, "SurfaceTriangle", cls_doc.doc);
+    class_<Class> cls(m, "SurfaceTriangle", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), cls_doc.ctor.doc_3args)
@@ -176,7 +176,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = VolumeElement;
     constexpr auto& cls_doc = doc.VolumeElement;
-    py::class_<Class> cls(m, "VolumeElement", cls_doc.doc);
+    class_<Class> cls(m, "VolumeElement", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), py::arg("v3"), cls_doc.ctor.doc_4args)

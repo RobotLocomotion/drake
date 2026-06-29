@@ -1,5 +1,13 @@
 #include "drake/multibody/plant/physical_model_collection.h"
 
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
+
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -56,6 +64,19 @@ bool PhysicalModelCollection<T>::is_cloneable_to_symbolic() const {
     }
   }
   return true;
+}
+
+template <typename T>
+std::string PhysicalModelCollection<T>::GetScalarConversionFailureReason(
+    const std::type_info& scalar) const {
+  std::vector<std::string> reasons;
+  for (const auto& model : owned_models_) {
+    std::string reason = model->GetScalarConversionFailureReason(scalar);
+    if (!reason.empty()) {
+      reasons.push_back(std::move(reason));
+    }
+  }
+  return fmt::format("{}", fmt::join(reasons, " and "));
 }
 
 template <typename T>

@@ -60,6 +60,9 @@ drake_cc_library(
     hdrs = ["pydrake_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
+    deps = [
+        "@drake//tools/workspace/pybind11",
+    ],
 )
 
 drake_cc_library(

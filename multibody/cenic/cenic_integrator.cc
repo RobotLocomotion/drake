@@ -1,6 +1,7 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
 #include "drake/common/text_logging.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 #include "drake/systems/framework/system_visitor.h"
 
 namespace drake {
@@ -12,6 +13,7 @@ using contact_solvers::icf::internal::IcfLinearFeedbackGains;
 using contact_solvers::icf::internal::IcfModel;
 using internal::CenicDiagramStructure;
 using internal::SubsystemPath;
+using multibody::internal::ExpandRows;
 using systems::Context;
 using systems::ContinuousState;
 using systems::Diagram;
@@ -238,8 +240,6 @@ template <typename T>
 void CenicIntegrator<T>::DoInitialize() {
   using std::isnan;
 
-  ValidatePlantContext();
-
   // Set the initial time step and accuracy.
   if (isnan(this->get_initial_step_size_target())) {
     if (isnan(this->get_maximum_step_size())) {
@@ -426,6 +426,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   // of the states in `scratch_`, which is always created for the root system.
   // Just to underscore the point, do an explicit safety check.
   this->get_system().ValidateCreatedForThisSystem(*x_next);
+
   const T& h = model.time_step();
   const Context<T>& context = this->get_context();
 
@@ -438,12 +439,29 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
 
   // Solve the optimization problem for next-step velocities,
   // v = min ℓ(v; q₀, v₀, h).
-  model.ResizeData(&data_);
-  data_.set_v(v_guess);
-  if constexpr (!std::is_same_v<T, double>) {
+  bool solved{};
+  if constexpr (std::is_same_v<T, double>) {
+    if (model.is_reducible()) {
+      model.ReduceInto(&reduced_model_, &mapping_);
+      reduced_model_.ResizeData(&data_);
+      const std::vector<int>& indices =
+          mapping_.velocity_subsequence.inverse_permutation();
+      data_.set_v(v_guess(indices));
+      reduced_model_.SetSparsityPattern();
+      solved = solver_.SolveWithGuess(reduced_model_, tolerance, &data_);
+      if (solved) {
+        data_.set_v(ExpandRows(data_.v(), model.num_velocities(), indices));
+      }
+    } else {
+      model.ResizeData(&data_);
+      data_.set_v(v_guess);
+      solved = solver_.SolveWithGuess(model, tolerance, &data_);
+    }
+  } else {
     throw std::runtime_error(
         "CenicIntegrator: ICF solver only supports T = double.");
-  } else if (!solver_.SolveWithGuess(model, tolerance, &data_)) {
+  }
+  if (!solved) {
     // Somehow, the "guaranteed convergence" promise has been violated. Either
     // the problem is not correctly formulated, or there is a bug.
     throw std::runtime_error("CenicIntegrator: optimization failed.");
@@ -517,21 +535,6 @@ void CenicIntegrator<T>::AdvancePlantConfiguration(const T& h,
   const internal::SpanningForest& forest = GetInternalTree(plant()).forest();
   for (int quaternion_start : forest.quaternion_starts()) {
     q->template segment<4>(quaternion_start).normalize();
-  }
-}
-
-template <typename T>
-void CenicIntegrator<T>::ValidatePlantContext() {
-  // Revisit this condition when joint locking support is implemented. See
-  // #23764.
-  const auto& plant_context = plant().GetMyContextFromRoot(this->get_context());
-  for (const JointIndex& j : plant().GetJointIndices()) {
-    if (plant().get_joint(j).is_locked(plant_context)) {
-      throw std::runtime_error(
-          fmt::format("The CENIC integrator does not yet support joint "
-                      "locking, but at least joint {} is locked",
-                      j));
-    }
   }
 }
 

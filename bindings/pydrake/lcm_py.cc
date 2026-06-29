@@ -27,17 +27,14 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = DrakeLcmInterface;
     constexpr auto& cls_doc = doc.DrakeLcmInterface;
-    py::class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
+    class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
         .def("get_lcm_url", &DrakeLcmInterface::get_lcm_url,
             cls_doc.get_lcm_url.doc)
         .def(
             "Publish",
             [](Class* self, const std::string& channel, py::bytes buffer,
                 std::optional<double> time_sec) {
-              // TODO(eric.cousineau): See if there is a way to extra the raw
-              // bytes from `buffer` without copying.
-              std::string str = buffer;
-              self->Publish(channel, str.data(), str.size(), time_sec);
+              self->Publish(channel, buffer.c_str(), buffer.size(), time_sec);
             },
             py::arg("channel"), py::arg("buffer"),
             py::arg("time_sec") = py::none(), cls_doc.Publish.doc)
@@ -94,7 +91,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = DrakeLcmParams;
     constexpr auto& cls_doc = doc.DrakeLcmParams;
-    py::class_<Class> cls(m, "DrakeLcmParams", cls_doc.doc);
+    class_<Class> cls(m, "DrakeLcmParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -105,7 +102,7 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = DrakeLcm;
     constexpr auto& cls_doc = doc.DrakeLcm;
-    py::class_<Class, DrakeLcmInterface> cls(m, "DrakeLcm", cls_doc.doc);
+    class_<Class, DrakeLcmInterface> cls(m, "DrakeLcm", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::string>(), py::arg("lcm_url"),

@@ -49,14 +49,14 @@ void DefineSymbolicMonolith(py::module_ m) {
       pydrake_doc_common_symbolic_expression.drake.symbolic;
 
   // These declarations must be first, because low-level operators return them.
-  py::class_<Expression> expr_cls(m, "Expression", doc_expr.Expression.doc);
-  py::class_<Formula> formula_cls(m, "Formula", doc_expr.Formula.doc);
-  py::class_<Polynomial> polynomial_cls(m, "Polynomial", doc.Polynomial.doc);
-  py::class_<RationalFunction> rat_fun_cls(
+  class_<Expression> expr_cls(m, "Expression", doc_expr.Expression.doc);
+  class_<Formula> formula_cls(m, "Formula", doc_expr.Formula.doc);
+  class_<Polynomial> polynomial_cls(m, "Polynomial", doc.Polynomial.doc);
+  class_<RationalFunction> rat_fun_cls(
       m, "RationalFunction", doc.RationalFunction.doc);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Variable> var_cls(m, "Variable", doc_expr.Variable.doc);
+  class_<Variable> var_cls(m, "Variable", doc_expr.Variable.doc);
   constexpr auto& var_doc = doc_expr.Variable;
   py::enum_<Variable::Type>(var_cls, "Type")
       .value(
@@ -241,7 +241,7 @@ void DefineSymbolicMonolith(py::module_ m) {
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads,
   // etc.
   constexpr auto& doc_variables = doc_expr.Variables;
-  py::class_<Variables> cls_variables(m, "Variables", doc_variables.doc);
+  class_<Variables> cls_variables(m, "Variables", doc_variables.doc);
   cls_variables  // BR
       .def(py::init<>(), doc_variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
@@ -492,19 +492,19 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def("Differentiate", &Expression::Differentiate, py::arg("x"),
           doc_expression.Differentiate.doc)
       .def("Jacobian", &Expression::Jacobian, py::arg("vars"),
-          doc_expression.Jacobian.doc)
-      // Private for use by pickling.
-      .def("_assign",
-          [](Expression& self, const Expression& other) -> void {
-            self = other;
-          })
-      .def_static("_MakeUnapplyConstructor", [m](ExpressionKind kind) {
-        return internal::MakeUnapplyConstructor(m, kind);
-      });
+          doc_expression.Jacobian.doc);
   // TODO(eric.cousineau): Clean this overload stuff up (#15041).
   pydrake::internal::BindMathOperators<Expression>(&expr_cls);
   pydrake::internal::BindMathOperators<Expression>(&m);
   DefCopyAndDeepCopy(&expr_cls);
+  DefPickle(
+      &expr_cls,
+      [](const Expression& self) -> py::tuple {
+        return internal::PickleExpression(self);
+      },
+      [m](Expression* self, py::tuple state) {
+        new (self) Expression(internal::UnpickleExpression(m, state));
+      });
 
   m.def("if_then_else", &symbolic::if_then_else, py::arg("f_cond"),
       py::arg("e_then"), py::arg("e_else"), doc_expr.if_then_else.doc);
@@ -571,7 +571,7 @@ void DefineSymbolicMonolith(py::module_ m) {
             enum_doc.kHalfAnglePreferCos.doc);
   }
 
-  py::class_<SinCos>(m, "SinCos", doc.SinCos.doc)
+  class_<SinCos>(m, "SinCos", doc.SinCos.doc)
       .def(py::init<Variable, Variable, SinCosSubstitutionType>(), py::arg("s"),
           py::arg("c"), py::arg("type") = SinCosSubstitutionType::kAngle,
           doc.SinCos.ctor.doc)
@@ -684,24 +684,24 @@ void DefineSymbolicMonolith(py::module_ m) {
       // `True` and `False` are reserved keywords as of Python3.
       .def_static("True_", &Formula::True, doc_expr.Formula.True.doc)
       .def_static("False_", &Formula::False, doc_expr.Formula.False.doc)
-      .def("__nonzero__",
-          [](const Formula&) {
-            throw std::runtime_error(
-                "You should not call `__bool__` / `__nonzero__` on `Formula`. "
-                "If you are trying to make a map with `Variable`, "
-                "`Expression`, or `Polynomial` as keys (and then access the "
-                "map in Python), please use "
-                "pydrake.common.containers.EqualToDict`.");
-          })
-      // Private for use by pickling.
-      .def("_assign",
-          [](Formula& self, const Formula& other) -> void { self = other; })
-      .def_static("_MakeUnapplyConstructor", [m](FormulaKind kind) {
-        return internal::MakeUnapplyConstructor(m, kind);
+      .def("__nonzero__", [](const Formula&) {
+        throw std::runtime_error(
+            "You should not call `__bool__` / `__nonzero__` on `Formula`. "
+            "If you are trying to make a map with `Variable`, `Expression`, "
+            "or `Polynomial` as keys (and then access the map in Python), "
+            "please use pydrake.common.containers.EqualToDict`.");
       });
   formula_cls.attr("__bool__") = formula_cls.attr("__nonzero__");
   py::implicitly_convertible<bool, Formula>();
   py::implicitly_convertible<Variable, Formula>();
+  DefPickle(
+      &formula_cls,
+      [](const Formula& self) -> py::tuple {
+        return internal::PickleFormula(self);
+      },
+      [m](Formula* self, py::tuple state) {
+        new (self) Formula(internal::UnpickleFormula(m, state));
+      });
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.
@@ -728,7 +728,7 @@ void DefineSymbolicMonolith(py::module_ m) {
       py::arg("m"), doc_expr.positive_semidefinite.doc_1args_m);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Monomial>(m, "Monomial", doc.Monomial.doc)
+  class_<Monomial>(m, "Monomial", doc.Monomial.doc)
       .def(py::init<>(), doc.Monomial.ctor.doc_0args)
       .def(py::init<const Variable&>(), py::arg("var"),
           doc.Monomial.ctor.doc_1args_var)
@@ -832,7 +832,7 @@ void DefineSymbolicMonolith(py::module_ m) {
           py::arg("sort_monomial") = false,
           doc.CalcMonomialBasisOrderUpToOne.doc);
 
-  py::class_<Polynomial::SubstituteAndExpandCacheData>(m,
+  class_<Polynomial::SubstituteAndExpandCacheData>(m,
       "SubstituteAndExpandCacheData",
       doc.Polynomial.SubstituteAndExpandCacheData.doc)
       .def(py::init<>())

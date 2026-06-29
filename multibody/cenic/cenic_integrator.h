@@ -223,9 +223,6 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  /* Throws if the plant context is not compatible with CENIC. */
-  void ValidatePlantContext();
-
   /* Locations of plant and non-plant continuous state. Note that the contained
   `plant` pointer is guaranteed to be non-null by the CenicIntegrator
   constructor .*/
@@ -242,6 +239,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   contact_solvers::icf::internal::IcfModel<T> model_at_x0_;
   /* For the second half-step (at t + h/2). */
   contact_solvers::icf::internal::IcfModel<T> model_at_xh_;
+  /* Reduced-problem data for joint locking. */
+  contact_solvers::icf::internal::IcfModel<T> reduced_model_;
+  contact_solvers::icf::internal::ReducedMapping mapping_;
+  /* Data used with any/all of the above models. */
   contact_solvers::icf::internal::IcfData<T> data_;
 
   /* Track whether solves are initialized at the same time as a previous

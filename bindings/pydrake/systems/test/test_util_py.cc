@@ -49,7 +49,7 @@ class Arbitrary {
 void DeclareBuilderLifeSupportTestHelpers(py::module_ m) {
   // the Arbitrary type exists to test annotations pointing to a wrong-typed
   // argument.
-  py::class_<Arbitrary>(m, "Arbitrary").def(py::init<>());
+  class_<Arbitrary>(m, "Arbitrary").def(py::init<>());
 
   type_visit(
       [&m](auto dummy) {
@@ -220,13 +220,13 @@ PYDRAKE_MODULE(test_util, m) {
   py::module_::import_("pydrake.systems.framework");
   py::module_::import_("pydrake.systems.primitives");
 
-  py::class_<DeleteListenerSystem, LeafSystem<T>>(m, "DeleteListenerSystem")
+  class_<DeleteListenerSystem, LeafSystem<T>>(m, "DeleteListenerSystem")
       .def(py::init<std::function<void()>>());
-  py::class_<DeleteListenerVector, BasicVector<T>>(m, "DeleteListenerVector")
+  class_<DeleteListenerVector, BasicVector<T>>(m, "DeleteListenerVector")
       .def(py::init<std::function<void()>>());
 
   // A 2-dimensional subclass of BasicVector.
-  py::class_<MyVector2<T>, BasicVector<T>>(m, "MyVector2")
+  class_<MyVector2<T>, BasicVector<T>>(m, "MyVector2")
       .def(py::init<const Eigen::Vector2d&>(), py::arg("data"));
 
   // Call overrides to ensure a custom Python class can override these methods.
@@ -300,10 +300,10 @@ PYDRAKE_MODULE(test_util, m) {
   DeclareBuilderLifeSupportTestHelpers(m);
 
   // We only bind the interface class (DummySystemA) and the factory function.
-  py::class_<DummySystemA, LeafSystem<double>>(m, "DummySystemA");
+  class_<DummySystemA, LeafSystem<double>>(m, "DummySystemA");
   m.def("MakeDummySystem", &MakeDummySystem);
 
-  py::class_<CountingContextSystem, LeafSystem<T>>(m, "CountingContextSystem")
+  class_<CountingContextSystem, LeafSystem<T>>(m, "CountingContextSystem")
       .def(py::init<>())
       .def_static("GetNumberOfLiveContexts",
           &CountingContextSystem::GetNumberOfLiveContexts);

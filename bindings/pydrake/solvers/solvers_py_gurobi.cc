@@ -15,14 +15,14 @@ void DefineSolversGurobi(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::class_<GurobiSolver, SolverInterface> cls(
+  class_<GurobiSolver, SolverInterface> cls(
       m, "GurobiSolver", doc.GurobiSolver.doc);
   cls  // BR
       .def(py::init<>(), doc.GurobiSolver.ctor.doc)
       .def_static("id", &GurobiSolver::id, doc.GurobiSolver.id.doc);
   pysolvers::BindAcquireLicense(&cls, doc.GurobiSolver);
 
-  py::class_<GurobiSolverDetails>(
+  class_<GurobiSolverDetails>(
       m, "GurobiSolverDetails", doc.GurobiSolverDetails.doc)
       .def_ro("optimizer_time", &GurobiSolverDetails::optimizer_time,
           doc.GurobiSolverDetails.optimizer_time.doc)
@@ -34,7 +34,7 @@ void DefineSolversGurobi(py::module_ m) {
           doc.GurobiSolverDetails.objective_bound.doc);
   AddValueInstantiation<GurobiSolverDetails>(m);
 
-  py::class_<GurobiSolver::SolveStatusInfo>(
+  class_<GurobiSolver::SolveStatusInfo>(
       cls, "SolveStatusInfo", doc.GurobiSolver.SolveStatusInfo.doc)
       .def_ro("reported_runtime",
           &GurobiSolver::SolveStatusInfo::reported_runtime,

@@ -6,8 +6,19 @@ def github3_py_internal_repository(
     github_archive(
         name = name,
         repository = "sigmavirus24/github3.py",
-        commit = "3.2.0",
-        sha256 = "42cf8e721437a0bcfb05e767302c3221cdc96f3e9db3d76ce990fd0526af1d99",  # noqa
+        upgrade_type = "tag",
+        upgrade_advice = """
+        This upgrade requires manual testing. Check the following for reliance
+        on any changed APIs:
+          * //tools/release_engineering:mirror_to_s3
+          * //tools/release_engineering:relnotes
+          * //tools/workspace:new_release
+        If unsure on how to test these changes locally or in CI, contact
+        @BetsyMcPhail.
+        """,
+        tags_pattern = "^\\d+(\\.)",
+        commit = "4.0.1",
+        sha256 = "7a1c3f157aa3b9e0973e957ac0b402c09a83d405247d278c10eb4c390977f132",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

@@ -18,7 +18,7 @@ body:
   - type: textarea
     attributes:
       label: Post-Release Documentation
-      value: |
+      value: >
 
         This issue tracks the required post-release actions that need to be
         completed after the Drake release has been published to GitHub.

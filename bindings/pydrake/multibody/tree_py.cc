@@ -89,8 +89,7 @@ void BindMultibodyElementMixin(PyClass* pcls) {
             return self.GetParentPlant();
           })
       .def("__repr__", [](const Class& self) {
-        py::str cls_name =
-            internal::PrettyClassName(py::cast(&self).get_type());
+        py::str cls_name = internal::PrettyClassName(py::cast(&self).type());
         const int index = self.index();
         const int model_instance = self.model_instance();
         if constexpr (has_name_func<Class>::value) {
@@ -131,7 +130,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = DoorHingeConfig;
     constexpr auto& cls_doc = doc.DoorHingeConfig;
-    py::class_<Class> cls(m, "DoorHingeConfig", cls_doc.doc);
+    class_<Class> cls(m, "DoorHingeConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>(), cls_doc.ctor.doc);
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -151,7 +150,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = ScopedName;
     constexpr auto& cls_doc = doc.ScopedName;
-    py::class_<Class> cls(m, "ScopedName", cls_doc.doc);
+    class_<Class> cls(m, "ScopedName", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::string_view, std::string_view>(),
@@ -186,7 +185,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = PdControllerGains;
     constexpr auto& cls_doc = doc.PdControllerGains;
-    py::class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
+    class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     cls  // BR
@@ -1285,7 +1284,7 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
     } catch (const py::cast_error& e) {
       throw std::logic_error(
           "DoClone() must return a `ForceDensityField<T>`. Got " +
-          py::cast<std::string>(py::str(result_obj.get_type())) +
+          py::cast<std::string>(py::str(result_obj.type())) +
           " Make sure your DoClone() returns a new instance of the same "
           "Python class, e.g., `return MyForceDensityField(...)`.");
     }
@@ -1357,7 +1356,7 @@ void DefineForceDensityField(py::module_ m, T) {
 void DefineDeformableBody(py::module_ m) {
   using Class = DeformableBody<double>;
   constexpr auto& cls_doc = doc.DeformableBody;
-  py::class_<Class> cls(m, "DeformableBody", cls_doc.doc);
+  class_<Class> cls(m, "DeformableBody", cls_doc.doc);
   BindMultibodyElementMixin<double>(&cls);
   cls  // BR
       .def("body_id", &Class::body_id, cls_doc.body_id.doc)

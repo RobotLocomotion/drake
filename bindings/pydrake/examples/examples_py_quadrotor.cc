@@ -21,7 +21,7 @@ void DefineExamplesQuadrotor(py::module_ m) {
   // conversion. Issue #7660.
   using T = double;
 
-  py::class_<QuadrotorPlant<T>, LeafSystem<T>>(
+  class_<QuadrotorPlant<T>, LeafSystem<T>>(
       m, "QuadrotorPlant", doc.QuadrotorPlant.doc)
       .def(py::init<>(), doc.QuadrotorPlant.ctor.doc)
       .def(py::init<double, double, const Eigen::Matrix3d&, double, double>(),
@@ -37,7 +37,7 @@ void DefineExamplesQuadrotor(py::module_ m) {
       .def("inertia", &QuadrotorPlant<T>::inertia, py_rvp::reference_internal,
           doc.QuadrotorPlant.inertia.doc);
 
-  py::class_<QuadrotorGeometry, LeafSystem<double>>(
+  class_<QuadrotorGeometry, LeafSystem<double>>(
       m, "QuadrotorGeometry", doc.QuadrotorGeometry.doc)
       .def("get_frame_id", &QuadrotorGeometry::get_frame_id,
           doc.QuadrotorGeometry.get_frame_id.doc)

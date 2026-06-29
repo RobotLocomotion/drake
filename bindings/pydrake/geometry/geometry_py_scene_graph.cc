@@ -51,7 +51,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = geometry::DefaultProximityProperties;
     constexpr auto& cls_doc = doc.DefaultProximityProperties;
-    py::class_<Class> cls(m, "DefaultProximityProperties", cls_doc.doc);
+    class_<Class> cls(m, "DefaultProximityProperties", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -62,7 +62,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = geometry::SceneGraphConfig;
     constexpr auto& cls_doc = doc.SceneGraphConfig;
-    py::class_<Class> cls(m, "SceneGraphConfig", cls_doc.doc);
+    class_<Class> cls(m, "SceneGraphConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);

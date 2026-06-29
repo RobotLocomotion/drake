@@ -27,7 +27,7 @@ struct SimpleTemplate {
 template <typename... Ts>
 auto BindSimpleTemplate(py::module_ m) {
   using Class = SimpleTemplate<Ts...>;
-  py::class_<Class> py_class(m, TemporaryClassName<Class>().c_str());
+  class_<Class> py_class(m, TemporaryClassName<Class>().c_str());
   py_class  // BR
       .def(py::init<>())
       .def("GetNames", &Class::GetNames);
@@ -102,7 +102,7 @@ PYDRAKE_MODULE(cpp_template_test_util, m) {
   AddTemplateFunction(
       m, "Callee", py::overload_cast<double>(&Callee), GetPyParam<double>());
 
-  py::class_<SimpleType> py_class(m, "SimpleType");
+  class_<SimpleType> py_class(m, "SimpleType");
   py_class  // BR
       .def(py::init<>());
   AddTemplateMethod(py_class, "SimpleMethod", &SimpleType::SimpleMethod<int>,

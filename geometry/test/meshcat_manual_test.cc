@@ -123,7 +123,7 @@ int do_main() {
   // For every items we add to the initial array, decrement start_x by one half
   // to keep things centered.
   // Use ++x as the x-position of new items.
-  const double start_x = -8.5;
+  const double start_x = -9.0;
   double x = start_x;
 
   const std::string checker_path =
@@ -176,6 +176,17 @@ int do_main() {
 
   const Vector3d box_home =
       make_shape_and_textured("box", Box(0.25, 0.25, 0.5), Rgba(0, 0, 1, 1));
+
+  const Vector3d crawling_texture_home{++x, 0, 0};
+  meshcat->SetObject("crawling_texture", Box(1.25, 0.25, 0.08),
+                     Rgba(1, 1, 1, 1), checker_path);
+  meshcat->SetTransform("crawling_texture",
+                        RigidTransformd(crawling_texture_home));
+  // The crawl axis is specified in the geometry's container frame. For this
+  // long box, the +y crawl axis makes the top-face texture crawl along +x.
+  meshcat->SetProperty("crawling_texture", "crawl_axis",
+                       std::vector<double>{0.0, 1.0, 0.0});
+  meshcat->SetProperty("crawling_texture", "crawl_displacement", 0.0);
 
   // Note: We're explicitly passing a diffuse_map to SetObject() to show that
   // the diffuse_map is *not* used for Mesh or Convex.
@@ -374,6 +385,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   - a pink semi-transparent ellipsoid (long axis in z) (with a checker-textured
     version behind it).
   - a blue box (long axis in z)  (with a checker-textured version behind it).
+  - a long, low checker-textured box for testing crawling textures.
   - an orange polytope (with a similary shaped textured polytope behind it).
     The textured shape has a hole through. The orange polytope is its convex
     hull.
@@ -438,6 +450,31 @@ Ignore those for now; we'll need to circle back and fix them later.
   meshcat->SetAnimation(animation);
 
   std::cout << "You can review/replay the animation from the controls menu.\n";
+  MaybePauseForUser();
+
+  meshcat->SetCameraPose(crawling_texture_home + Vector3d{0, -0.5, 1},
+                         crawling_texture_home);
+  std::cout << "- The camera has moved to a long, low checker-textured box.\n"
+            << "  Press Enter to start a short crawling texture demo; the "
+               "box should stay fixed while the texture crawls along its "
+               "length.\n"
+            << "  FYI: the crawl is _not_ compatible with the animation "
+               "playback controls nor will it appear in the downloaded static "
+               "version of the scene.\n";
+  MaybePauseForUser();
+
+  {
+    const auto start_time = std::chrono::steady_clock::now();
+    for (int i = 0; i < 180; ++i) {
+      const double t = std::chrono::duration<double>(
+                           std::chrono::steady_clock::now() - start_time)
+                           .count();
+      meshcat->SetProperty("crawling_texture", "crawl_displacement", 0.4 * t);
+      std::this_thread::sleep_for(std::chrono::milliseconds(33));
+    }
+  }
+  std::cout << "- The checker texture should have crawled smoothly along the "
+               "box without moving the box itself.\n";
   MaybePauseForUser();
 
   meshcat->Set2dRenderMode(math::RigidTransform(Vector3d{0, -3, 0}), -4, 4, -2,

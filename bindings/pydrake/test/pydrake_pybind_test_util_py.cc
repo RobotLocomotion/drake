@@ -73,11 +73,11 @@ struct ExampleParamInit {
 PYDRAKE_MODULE(pydrake_pybind_test_util, m) {
   {
     using Class = Item;
-    py::class_<Class>(m, "Item").def_ro("value", &Class::value);
+    class_<Class>(m, "Item").def_ro("value", &Class::value);
   }
   {
     using Class = ExamplePyKeepAlive;
-    py::class_<Class>(m, "ExamplePyKeepAlive")
+    class_<Class>(m, "ExamplePyKeepAlive")
         .def(py::init())
         .def("a", &Class::a, py_rvp::reference_internal)
         .def("a_list", &Class::a_list, py_rvp::reference_internal);
@@ -85,7 +85,7 @@ PYDRAKE_MODULE(pydrake_pybind_test_util, m) {
 
   {
     using Class = ExampleDefCopyAndDeepCopy;
-    py::class_<Class> cls(m, "ExampleDefCopyAndDeepCopy");
+    class_<Class> cls(m, "ExampleDefCopyAndDeepCopy");
     cls  // BR
         .def(py::init<int>())
         .def(py::self == py::self);
@@ -94,7 +94,7 @@ PYDRAKE_MODULE(pydrake_pybind_test_util, m) {
 
   {
     using Class = ExampleDefClone;
-    py::class_<Class> cls(m, "ExampleDefClone");
+    class_<Class> cls(m, "ExampleDefClone");
     cls  // BR
         .def(py::init<double>())
         .def(py::self == py::self);
@@ -103,7 +103,7 @@ PYDRAKE_MODULE(pydrake_pybind_test_util, m) {
 
   {
     using Class = ExampleParamInit;
-    py::class_<Class>(m, "ExampleParamInit")
+    class_<Class>(m, "ExampleParamInit")
         .def(ParamInit<Class>())
         .def_rw("a", &Class::a)
         .def_rw("b", &Class::b)

@@ -34,7 +34,7 @@ void init_pc_flags(py::module_ m) {
   {
     using Class = Fields;
     constexpr auto& cls_doc = doc.Fields;
-    py::class_<Class>(m, "Fields", cls_doc.doc)
+    class_<Class>(m, "Fields", cls_doc.doc)
         .def(py::init<BaseFieldT>(), py::arg("base_fields"), cls_doc.ctor.doc)
         .def("base_fields", &Class::base_fields, cls_doc.base_fields.doc)
         .def("has_base_fields", &Class::has_base_fields,
@@ -64,7 +64,7 @@ void init_perception(py::module_ m) {
   {
     using Class = PointCloud;
     constexpr auto& cls_doc = doc.PointCloud;
-    py::class_<Class> cls(m, "PointCloud", cls_doc.doc);
+    class_<Class> cls(m, "PointCloud", cls_doc.doc);
     cls.attr("T") = GetPyParam<Class::T>()[0];
     cls.attr("C") = GetPyParam<Class::C>()[0];
     cls.attr("D") = GetPyParam<Class::D>()[0];
@@ -142,8 +142,7 @@ void init_perception(py::module_ m) {
   {
     using Class = DepthImageToPointCloud;
     constexpr auto& cls_doc = doc.DepthImageToPointCloud;
-    py::class_<Class, LeafSystem<double>>(
-        m, "DepthImageToPointCloud", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "DepthImageToPointCloud", cls_doc.doc)
         .def(py::init<const CameraInfo&, PixelType, float,
                  pc_flags::BaseFieldT>(),
             py::arg("camera_info"),
@@ -163,7 +162,7 @@ void init_perception(py::module_ m) {
   {
     using Class = PointCloudToLcm;
     constexpr auto& cls_doc = doc.PointCloudToLcm;
-    py::class_<Class, LeafSystem<double>>(m, "PointCloudToLcm", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "PointCloudToLcm", cls_doc.doc)
         .def(py::init<std::string>(), py::arg("frame_name") = std::string(),
             cls_doc.ctor.doc);
   }

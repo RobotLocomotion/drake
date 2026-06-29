@@ -31,10 +31,10 @@ void DefineSensorsImageIo(py::module_ m) {
   {
     using Class = ImageIo;
     constexpr auto& cls_doc = doc.ImageIo;
-    py::class_<Class> cls(m, "ImageIo", cls_doc.doc);
+    class_<Class> cls(m, "ImageIo", cls_doc.doc);
 
     {
-      py::class_<Class::Metadata> metadata_cls(
+      class_<Class::Metadata> metadata_cls(
           cls, "Metadata", cls_doc.Metadata.doc);
       metadata_cls.def(ParamInit<Class::Metadata>());
       DefAttributesUsingSerialize(&metadata_cls, cls_doc.Metadata);
@@ -101,7 +101,7 @@ void DefineSensorsImageIo(py::module_ m) {
   {
     using Class = ImageWriter;
     constexpr auto& cls_doc = doc.ImageWriter;
-    py::class_<Class, LeafSystem<double>> cls(m, "ImageWriter", cls_doc.doc);
+    class_<Class, LeafSystem<double>> cls(m, "ImageWriter", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(

@@ -16,7 +16,7 @@ void DefineSolversAugmentedLagrangian(py::module_ m) {
   {
     using Class = AugmentedLagrangianNonsmooth;
     constexpr auto& cls_doc = doc.AugmentedLagrangianNonsmooth;
-    py::class_<AugmentedLagrangianNonsmooth>(
+    class_<AugmentedLagrangianNonsmooth>(
         m, "AugmentedLagrangianNonsmooth", cls_doc.doc)
         .def(py::init<const MathematicalProgram*, bool>(), py::arg("prog"),
             py::arg("include_x_bounds"), cls_doc.ctor.doc)
@@ -59,7 +59,7 @@ void DefineSolversAugmentedLagrangian(py::module_ m) {
   {
     using Class = AugmentedLagrangianSmooth;
     constexpr auto& cls_doc = doc.AugmentedLagrangianSmooth;
-    py::class_<Class>(m, "AugmentedLagrangianSmooth", cls_doc.doc)
+    class_<Class>(m, "AugmentedLagrangianSmooth", cls_doc.doc)
         .def(py::init<const MathematicalProgram*, bool>(), py::arg("prog"),
             py::arg("include_x_bounds"), cls_doc.ctor.doc)
         .def(
