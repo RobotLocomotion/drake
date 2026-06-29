@@ -35,7 +35,8 @@ class TestDummyBase {
 
 PYDRAKE_MODULE(ref_cycle_test_util, m) {
   // The classes refer to each other so we must declare both before defining.
-  class_<IsDynamic> cls_is_dynamic(m, "IsDynamic", py::dynamic_attr());
+  class_<IsDynamic> cls_is_dynamic(
+      m, "IsDynamic", py::dynamic_attr(), py::is_weak_referenceable());
   class_<NotDynamic> cls_not_dynamic(m, "NotDynamic");
 
   using internal::ref_cycle;

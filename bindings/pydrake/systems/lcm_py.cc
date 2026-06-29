@@ -36,6 +36,7 @@ namespace {
 // Python.
 class PySerializerInterface : public SerializerInterface {
  public:
+  NB_TRAMPOLINE(SerializerInterface, 100);
   using Base = SerializerInterface;
 
   PySerializerInterface() : Base() {}
@@ -50,14 +51,18 @@ class PySerializerInterface : public SerializerInterface {
     // Our required unique_ptr return type cannot be directly fulfilled by a
     // Python override, so we only ask the Python override for a py::object and
     // then just Clone it to obtain the necessary C++ signature. Because the
-    // PYBIND11_OVERLOAD_PURE macro embeds a `return ...;` statement, we must
+    // PYDRAKE_OVERRIDE_PURE macro embeds a `return ...;` statement, we must
     // wrap it in lambda so that we can post-process the return value.
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+    // c++<=>py type conversion issues.
     py::object default_value = [this]() -> py::object {
-      PYBIND11_OVERLOAD_PURE(
+      PYDRAKE_OVERRIDE_PURE(
           py::object, SerializerInterface, CreateDefaultValue);
     }();
     DRAKE_THROW_UNLESS(!default_value.is_none());
     return py::cast<const AbstractValue*>(default_value)->Clone();
+#endif  // XXX porting
+    return {};
   }
 
   void Deserialize(const void* message_bytes, int message_length,
@@ -65,23 +70,33 @@ class PySerializerInterface : public SerializerInterface {
     py::gil_scoped_acquire guard;
     py::bytes buffer(
         reinterpret_cast<const char*>(message_bytes), message_length);
-    PYBIND11_OVERLOAD_PURE(
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+    // change of signature issues.
+    PYDRAKE_OVERRIDE_PURE(
         void, SerializerInterface, Deserialize, buffer, abstract_value);
+#else
+    unused(abstract_value);
+#endif  // XXX porting
   }
 
   void Serialize(const AbstractValue& abstract_value,
       std::vector<uint8_t>* message_bytes) const override {
     py::gil_scoped_acquire guard;
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+    // change of signature issues with override macro.
     auto wrapped = [&]() -> py::bytes {
       // N.B. We must pass `abstract_value` as a pointer to prevent `pybind11`
       // from copying it.
-      PYBIND11_OVERLOAD_PURE(
+      PYDRAKE_OVERRIDE_PURE(
           py::bytes, SerializerInterface, Serialize, &abstract_value);
     };
     py::bytes result = wrapped();
     message_bytes->resize(result.size());
     std::copy(
         result.c_str(), result.c_str() + result.size(), message_bytes->data());
+#else
+    unused(abstract_value, message_bytes);
+#endif  // XXX porting
   }
 };
 
@@ -135,12 +150,17 @@ PYDRAKE_MODULE(lcm, m) {
   {
     using Class = SerializerInterface;
     constexpr auto& cls_doc = doc.SerializerInterface;
-    class_<Class, PySerializerInterface, std::shared_ptr<Class>> cls(
-        m, "SerializerInterface");
+    class_<Class, PySerializerInterface
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+        ,
+        std::shared_ptr<Class>
+#endif
+        >
+        cls(m, "SerializerInterface");
     cls  // BR
          // Adding a constructor permits implementing this interface in Python.
-        .def(py::init(
-                 []() { return std::make_unique<PySerializerInterface>(); }),
+        .def(
+            "__init__", [](Class* self) { new (self) PySerializerInterface(); },
             cls_doc.ctor.doc);
     // The following bindings are present to allow Python to call C++
     // implementations of this interface. Python implementations of the

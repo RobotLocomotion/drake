@@ -235,7 +235,8 @@ def _enumerate_field_types(schema):
         return dict([(field.name, field.type) for field in fields])
 
     # Detect when the user forgot to use DefAttributesUsingSerialize.
-    if getattr(type(schema), "__name__", None) == "pybind11_type":
+    schema_type_name = getattr(type(schema), "__name__", "")
+    if "nb_type_" in schema_type_name or schema_type_name == "pybind11_type":
         raise NotImplementedError(
             f"The bound C++ type {schema} cannot be used as a schema because"
             f" it lacks a __fields__ attribute."

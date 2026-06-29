@@ -74,6 +74,7 @@ using symbolic::Variables;
 namespace {
 enum class ArrayShapeType { Scalar, Vector };
 
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 // Checks array shape, provides user-friendly message if it fails.
 void CheckArrayShape(
     py::str var_name, py::array x, ArrayShapeType shape, int size) {
@@ -100,15 +101,17 @@ void CheckReturnedArrayType(py::str cls_name, py::array y) {
   py::module_ m = py::module_::import_("pydrake.solvers._extra");
   m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
 }
+#endif  // XXX porting
 
 // Wraps user function to provide better user-friendliness.
 template <typename T, typename Func>
-Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
+Func WrapUserFunc(py::str cls_name, py::object func, int num_vars,
     int num_outputs, ArrayShapeType output_shape) {
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   // TODO(eric.cousineau): It would be nicer to write this in Python.
   // TODO(eric.cousineau): Consider using `py::detail::make_caster<>`. However,
   // this may mean the argument is converted twice.
-  py::cpp_function wrapped = [=](py::array x) {
+  auto wrapped = [=](py::object x) {
     // Check input.
     // WARNING: If the input is badly sized, we will only reach this error in
     // Release mode. In debug mode, an assertion error will be triggered.
@@ -122,9 +125,15 @@ Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
     CheckArrayShape(py::str("{}: Return value").format(cls_name), y,
         output_shape, num_outputs);
     CheckReturnedArrayType<T>(cls_name, y);
+    py::object y = func(x);
     return y;
   };
   return py::cast<Func>(wrapped);
+#else   // PYDRAKE_USE_NANOBIND
+  // XXX porting Add back size/type error checking.
+  unused(cls_name, num_vars, num_outputs, output_shape);
+  return py::cast<Func>(func);
+#endif  // PYDRAKE_USE_PYBIND11
 }
 
 // TODO(eric.cousineau): Make a Python virtual base, and implement this in
@@ -137,7 +146,7 @@ class PyFunctionCost : public Cost {
   // Note that we do not allow Python implementations of Cost to be declared as
   // thread safe.
   PyFunctionCost(
-      int num_vars, const py::function& func, const std::string& description)
+      int num_vars, const py::object& func, const std::string& description)
       : Cost(num_vars, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
@@ -163,7 +172,7 @@ class PyFunctionCost : public Cost {
 
  private:
   template <typename T, typename Func>
-  Func Wrap(py::function func) {
+  Func Wrap(py::object func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
         num_outputs(), ArrayShapeType::Scalar);
   }
@@ -182,7 +191,7 @@ class PyFunctionConstraint : public Constraint {
 
   // Note that we do not allow Python implementations of Constraint to be
   // declared as thread safe.
-  PyFunctionConstraint(int num_vars, const py::function& func,
+  PyFunctionConstraint(int num_vars, const py::object& func,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
       : Constraint(lb.size(), num_vars, lb, ub, description),
@@ -212,7 +221,7 @@ class PyFunctionConstraint : public Constraint {
 
  private:
   template <typename T, typename Func>
-  Func Wrap(py::function func) {
+  Func Wrap(py::object func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
         num_vars(), num_outputs(), ArrayShapeType::Vector);
   }
@@ -231,6 +240,7 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
 // pybind11 trampoline class to permit overriding virtual functions in Python.
 class PySolverInterface : public solvers::SolverInterface {
  public:
+  NB_TRAMPOLINE(solvers::SolverInterface, 6);
   using Base = solvers::SolverInterface;
 
   PySolverInterface() : Base() {}
@@ -242,35 +252,35 @@ class PySolverInterface : public solvers::SolverInterface {
   // interface below.
 
   bool available() const override {
-    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, available);
+    PYDRAKE_OVERRIDE_PURE(bool, solvers::SolverInterface, available);
   }
 
   bool enabled() const override {
-    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, enabled);
+    PYDRAKE_OVERRIDE_PURE(bool, solvers::SolverInterface, enabled);
   }
 
   void Solve(const solvers::MathematicalProgram& prog,
       const std::optional<Eigen::VectorXd>& initial_guess,
       const std::optional<solvers::SolverOptions>& solver_options,
       solvers::MathematicalProgramResult* result) const override {
-    PYBIND11_OVERLOAD_PURE(void, solvers::SolverInterface, Solve, prog,
+    PYDRAKE_OVERRIDE_PURE(void, solvers::SolverInterface, Solve, prog,
         initial_guess, solver_options, result);
   }
 
   solvers::SolverId solver_id() const override {
-    PYBIND11_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         solvers::SolverId, solvers::SolverInterface, solver_id);
   }
 
   bool AreProgramAttributesSatisfied(
       const solvers::MathematicalProgram& prog) const override {
-    PYBIND11_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         bool, solvers::SolverInterface, AreProgramAttributesSatisfied, prog);
   }
 
   std::string ExplainUnsatisfiedProgramAttributes(
       const MathematicalProgram& prog) const override {
-    PYBIND11_OVERLOAD_PURE(std::string, solvers::SolverInterface,
+    PYDRAKE_OVERRIDE_PURE(std::string, solvers::SolverInterface,
         ExplainUnsatisfiedProgramAttributes, prog);
   }
 };
@@ -279,7 +289,9 @@ void BindSolverInterface(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
-      .def(py::init([]() { return std::make_unique<PySolverInterface>(); }),
+      .def(
+          "__init__",
+          [](SolverInterface* self) { new (self) PySolverInterface(); },
           doc.SolverInterface.ctor.doc)
       // The following bindings are present to allow Python to call C++
       // implementations of this interface.
@@ -625,7 +637,7 @@ void BindMathematicalProgram(py::module_ m) {
           doc.MathematicalProgram.AddVisualizationCallback.doc)
       .def(
           "AddCost",
-          [](MathematicalProgram* self, py::function func,
+          [](MathematicalProgram* self, py::object func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
             return self->AddCost(std::make_shared<PyFunctionCost>(
@@ -776,7 +788,7 @@ void BindMathematicalProgram(py::module_ m) {
           doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args)
       .def(
           "AddConstraint",
-          [](MathematicalProgram* self, py::function func,
+          [](MathematicalProgram* self, py::object func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
@@ -1576,19 +1588,27 @@ void BindSolutionResult(py::module_ m) {
 }
 
 void BindPyFunctionCost(py::module_ m) {
-  class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
-      m, "PyFunctionCost", "Cost with its evaluator as a Python function")
-      .def(py::init<int, const py::function&, const std::string&>(),
+  class_<PyFunctionCost, Cost
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<PyFunctionCost>
+#endif
+      >(m, "PyFunctionCost", "Cost with its evaluator as a Python function")
+      .def(py::init<int, const py::object&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
           "`num_vars` variables.");
 }
 
 void BindPyFunctionConstraint(py::module_ m) {
-  class_<PyFunctionConstraint, Constraint,
-      std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
+  class_<PyFunctionConstraint, Constraint
+#ifdef PYDRAKE_USE_PYBIND11
+      ,
+      std::shared_ptr<PyFunctionConstraint>
+#endif
+      >(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
-      .def(py::init<int, const py::function&, const Eigen::VectorXd&,
+      .def(py::init<int, const py::object&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("lb"), py::arg("ub"),
           py::arg("description") = "",

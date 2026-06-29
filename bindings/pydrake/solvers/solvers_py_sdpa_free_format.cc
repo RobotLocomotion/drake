@@ -12,8 +12,8 @@ void DefineSolversSdpaFreeFormat(py::module_ m) {
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
-  py::enum_<RemoveFreeVariableMethod>(
-      m, "RemoveFreeVariableMethod", doc.RemoveFreeVariableMethod.doc)
+  py::enum_<RemoveFreeVariableMethod>(m, "RemoveFreeVariableMethod",
+      py::is_arithmetic(), doc.RemoveFreeVariableMethod.doc)
       .value("kNullspace", RemoveFreeVariableMethod::kNullspace,
           doc.RemoveFreeVariableMethod.kNullspace.doc)
       .value("kTwoSlackVariables", RemoveFreeVariableMethod::kTwoSlackVariables,

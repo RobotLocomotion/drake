@@ -16,4 +16,9 @@ exports_files(
     visibility = ["@pybind11//:__pkg__"],
 )
 
+config_setting(
+    name = "enabled",
+    flag_values = {"//tools/flags:python_binder": "pybind11"},
+)
+
 add_lint_tests()

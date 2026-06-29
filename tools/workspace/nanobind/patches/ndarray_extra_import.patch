@@ -1,0 +1,43 @@
+[nanobind] Add hook to extend ndarray implicit conversions
+
+In theory, this could be upstreamed, but acceptance is doubtful. For a
+pertinent discussion, see:
+https://github.com/wjakob/nanobind/discussions/327.
+
+diff --git include/nanobind/nb_lib.h include/nanobind/nb_lib.h
+index 8fd35a1..732f513 100644
+--- include/nanobind/nb_lib.h
++++ include/nanobind/nb_lib.h
+@@ -480,6 +480,15 @@ NB_CORE ndarray_handle *ndarray_import(PyObject *o,
+                                        bool convert,
+                                        cleanup_list *cleanup) noexcept;
+ 
++// Hook for additional ndarray implicit conversion.
++NB_INLINE ndarray_handle *ndarray_extra_import(PyObject *,
++                                               const ndarray_config *,
++                                               bool,
++                                               cleanup_list *,
++                                               void*) noexcept {
++  return {};
++}
++
+ // Describe a local ndarray object using a DLPack capsule
+ NB_CORE ndarray_handle *ndarray_create(void *data, size_t ndim,
+                                        const size_t *shape, PyObject *owner,
+diff --git include/nanobind/ndarray.h include/nanobind/ndarray.h
+index 6380296..b28d588 100644
+--- include/nanobind/ndarray.h
++++ include/nanobind/ndarray.h
+@@ -569,6 +569,12 @@ template <typename... Args> struct type_caster<ndarray<Args...>> {
+                                      flags & (uint8_t) cast_flags::convert,
+                                      cleanup));
+ 
++        if (value.is_valid()) { return true; }
++
++        value = Value(ndarray_extra_import(src.ptr(), &config,
++                                     flags & (uint8_t) cast_flags::convert,
++                                     cleanup, (Config*)nullptr));
++
+         return value.is_valid();
+     }
+ 

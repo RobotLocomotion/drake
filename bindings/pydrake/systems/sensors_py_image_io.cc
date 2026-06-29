@@ -37,7 +37,9 @@ void DefineSensorsImageIo(py::module_ m) {
       class_<Class::Metadata> metadata_cls(
           cls, "Metadata", cls_doc.Metadata.doc);
       metadata_cls.def(ParamInit<Class::Metadata>());
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       DefAttributesUsingSerialize(&metadata_cls, cls_doc.Metadata);
+#endif  // XXX porting
       DefReprUsingSerialize(&metadata_cls);
       DefCopyAndDeepCopy(&metadata_cls);
     }

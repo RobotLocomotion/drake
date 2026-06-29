@@ -111,6 +111,7 @@ void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
 // TODO(cohnt): Refactor for better code reuse.
 enum class ArrayShapeType { Scalar, Vector };
 
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 // Checks array shape, provides user-friendly message if it fails.
 void CheckArrayShape(
     py::str var_name, py::array x, ArrayShapeType shape, int size) {
@@ -157,6 +158,7 @@ Func WrapParameterizationFunc(
   };
   return py::cast<Func>(wrapped);
 }
+#endif  // XXX porting
 
 void DefinePlanningIrisParameterizationFunction(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -168,7 +170,7 @@ void DefinePlanningIrisParameterizationFunction(py::module_ m) {
 
   const std::string parameterization_function_docstring = R"(
 Constructor for when the user provides a callable function to be used as the
-parameterization. ``parameterization`` is the function itself and ``dimension`` 
+parameterization. ``parameterization`` is the function itself and ``dimension``
 is the input dimension.
 
 .. note:: In order to use IrisNp2, the user-provided parameterization function
@@ -184,22 +186,29 @@ is the input dimension.
       m, "IrisParameterizationFunction", cls_doc.doc);
   iris_parameterization_function  // BR
       .def(py::init<>(), cls_doc.ctor.doc_0args)
-      .def(py::init([](const py::function& parameterization,
-                        int parameterization_dimension) {
-        return IrisParameterizationFunction(
-            WrapParameterizationFunc<double,
-                IrisParameterizationFunction::ParameterizationFunctionDouble>(
-                py::str("IrisParameterizationFunction"), parameterization,
-                parameterization_dimension),
-            WrapParameterizationFunc<AutoDiffXd,
-                IrisParameterizationFunction::ParameterizationFunctionAutodiff>(
-                py::str("IrisParameterizationFunction"), parameterization,
-                parameterization_dimension),
-            /* parameterization_is_threadsafe = */ false,
-            parameterization_dimension);
-      }),
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+      .def(
+          "__init__",
+          [](IrisParameterizationFunction* self,
+              const py::function& parameterization,
+              int parameterization_dimension) {
+            new (self) IrisParameterizationFunction(
+                WrapParameterizationFunc<double,
+                    IrisParameterizationFunction::
+                        ParameterizationFunctionDouble>(
+                    py::str("IrisParameterizationFunction"), parameterization,
+                    parameterization_dimension),
+                WrapParameterizationFunc<AutoDiffXd,
+                    IrisParameterizationFunction::
+                        ParameterizationFunctionAutodiff>(
+                    py::str("IrisParameterizationFunction"), parameterization,
+                    parameterization_dimension),
+                /* parameterization_is_threadsafe = */ false,
+                parameterization_dimension);
+          },
           py::arg("parameterization"), py::arg("dimension"),
           parameterization_function_docstring.c_str())
+#endif  // XXX porting
       .def(py::init<const Eigen::VectorX<symbolic::Expression>&,
                const Eigen::VectorX<symbolic::Variable>&>(),
           py::arg("expression_parameterization"), py::arg("variables"),

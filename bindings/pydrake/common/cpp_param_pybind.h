@@ -114,12 +114,12 @@ inline py::object GetPyParamScalarImpl(
 }
 
 // Gets Python type for a C++ vector that is not registered using
-// PYBIND11_MAKE_OPAQUE.
+// {PYBIND11,NB}_MAKE_OPAQUE.
 template <typename T>
 inline py::object GetPyParamScalarImpl(type_pack<std::vector<T>> = {}) {
   // Get inner type for validation.
   py::object py_T = GetPyParamScalarImpl(type_pack<T>{});
-  if constexpr (!internal::is_generic_pybind_v<std::vector<T>>) {
+  if constexpr (!internal::is_generic_caster_v<std::vector<T>>) {
     return py::module_::import_("pydrake.common.cpp_param").attr("List")[py_T];
   } else {
     return GetPyParamScalarImpl(typeid(std::vector<T>));
@@ -146,7 +146,7 @@ inline py::tuple GetPyParam(type_pack<Ts...> = {}) {
 }  // namespace pydrake
 }  // namespace drake
 
-namespace pybind11 {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 
 template <>
@@ -155,4 +155,4 @@ struct type_caster<drake::pydrake::Object>
           drake::pydrake::internal::wrapper_pydrake_object> {};
 
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace PYDRAKE_BINDER_NAMESPACE

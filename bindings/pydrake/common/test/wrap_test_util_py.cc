@@ -34,10 +34,12 @@ struct TypeConversionExample {
 };
 
 // Wrapper for TypeConversionExample.
-struct wrapper_type_conversion_exaple {
+struct wrapper_type_conversion_example {
   using Type = TypeConversionExample;
+#ifdef PYDRAKE_USE_PYBIND11
   static constexpr auto original_name =
       py::detail::const_name("TypeConversionExample");
+#endif
   using WrappedType = std::string;
   static constexpr auto wrapped_name = py::detail::const_name("str");
 
@@ -80,14 +82,14 @@ CallbackNeedsWrapping FunctionNeedsWrapCallbacks(
 }  // namespace pydrake
 }  // namespace drake
 
-namespace pybind11 {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 template <>
 struct type_caster<drake::pydrake::TypeConversionExample>
     : public drake::pydrake::internal::type_caster_wrapped<
-          drake::pydrake::wrapper_type_conversion_exaple> {};
+          drake::pydrake::wrapper_type_conversion_example> {};
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace PYDRAKE_BINDER_NAMESPACE
 
 namespace drake {
 namespace pydrake {

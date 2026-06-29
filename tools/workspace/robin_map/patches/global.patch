@@ -1,0 +1,17 @@
+Fix empty bucket initialization
+
+The function-local static somehow doesn't get ODR-linked correctly, so
+ends up being zero'd insetad of latch-initialized. We can manually
+initialize it before using it to work around the problem.
+
+--- include/tsl/robin_hash.h
++++ include/tsl/robin_hash.h
+@@ -1538,7 +1538,8 @@
+    * last_bucket() == true.
+    */
+   bucket_entry* static_empty_bucket_ptr() noexcept {
+     static bucket_entry empty_bucket(true);
++    empty_bucket.clear();
+     tsl_rh_assert(empty_bucket.empty());
+     return &empty_bucket;
+   }

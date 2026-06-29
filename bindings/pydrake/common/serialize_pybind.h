@@ -23,6 +23,12 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
+template <typename T>
+struct is_optional : public std::false_type {};
+
+template <typename T>
+struct is_optional<std::optional<T>> : public std::true_type {};
+
 // Helper for DefAttributesUsingSerialize.
 template <typename PyClass, typename Docs>
 class DefAttributesArchive {
@@ -57,20 +63,16 @@ class DefAttributesArchive {
     const int offset = CalcClassOffset(prototype_value);
 
     // Define property functions to get and set this particular field.
-    py::cpp_function getter(
-        [offset](const CxxClass& self) -> const T& {
-          const T* const field_in_self = reinterpret_cast<const T*>(
-              reinterpret_cast<const char*>(&self) + offset);
-          return *field_in_self;
-        },
-        py::is_method(*ppy_class_));
-    py::cpp_function setter(
-        [offset](CxxClass& self, const T& value) {
-          T* const field_in_self =
-              reinterpret_cast<T*>(reinterpret_cast<char*>(&self) + offset);
-          *field_in_self = value;
-        },
-        py::is_method(*ppy_class_));
+    auto getter = [offset](const CxxClass& self) -> const T& {
+      const T* const field_in_self = reinterpret_cast<const T*>(
+          reinterpret_cast<const char*>(&self) + offset);
+      return *field_in_self;
+    };
+    auto setter = [offset](CxxClass& self, const T& value) {
+      T* const field_in_self =
+          reinterpret_cast<T*>(reinterpret_cast<char*>(&self) + offset);
+      *field_in_self = value;
+    };
 
     // Fetch the docstring (or the empty string, if we aren't using docstrings).
     const char* doc = "";
@@ -89,8 +91,18 @@ class DefAttributesArchive {
     }
 
     // Add the binding.
-    ppy_class_->def_prop_rw(
-        name, getter, setter, doc, py_rvp::reference_internal);
+    if constexpr (is_optional<T>::value) {
+      ppy_class_->def_prop_rw(
+          name, getter, setter, doc, py::rv_policy::reference_internal
+#ifdef PYDRAKE_USE_NANOBIND
+          ,
+          py::for_setter(py::arg("arg").none())
+#endif
+      );
+    } else {
+      ppy_class_->def_prop_rw(
+          name, getter, setter, doc, py_rvp::reference_internal);
+    }
 
     // Remember the field's name and type for later use by Finished().
     auto field = py::module_::import_("types").attr("SimpleNamespace")();
@@ -144,24 +156,33 @@ class DefAttributesArchive {
   static py::object CalcSchemaType(const T*) {
     // Pybind11 doesn't support type::of<> for primitive types, so we must
     // match them manually. See https://github.com/pybind/pybind11/issues/2486.
+    auto type_of = [](const py::object& o) {
+#ifdef PYDRAKE_USE_PYBIND11
+      return py::type::of(o);
+#else  // PYDRAKE_USE_NANOBIND
+      return py::borrow(o.type());
+#endif
+    };
     if constexpr (std::is_same_v<T, bool>) {
-      return py::type::of(py::bool_());
+      return type_of(py::bool_(false));
     } else if constexpr (std::is_integral_v<T>) {
-      return py::type::of(py::int_());
+      return type_of(py::int_(0));
     } else if constexpr (std::is_floating_point_v<T>) {
-      return py::type::of(py::float_());
+      return type_of(py::float_(0.0));
     } else if constexpr (std::is_same_v<T, std::string>) {
-      return py::type::of(py::str());
+      return type_of(py::str(""));
     } else if constexpr (is_eigen_type<T>::value) {
       // TODO(jwnimmer-tri) Perhaps we can use numpy.typing here some day?
       return py::module_::import_("numpy").attr("ndarray");
     } else {
       // Anything that remains should be a registered C++ type.
-      constexpr bool is_registered_type =
-          std::is_base_of_v<py::detail::type_caster_generic,
-              py::detail::make_caster<T>>;
+      constexpr bool is_registered_type = is_generic_caster_v<T>;
       if constexpr (is_registered_type) {
+#ifdef PYDRAKE_USE_PYBIND11
         return py::type::of<T>();
+#else  // PYDRAKE_USE_NANOBIND
+        return py::borrow(py::type<T>());
+#endif
       } else {
         return CannotIdentifySchemaType<T>();
       }
@@ -296,22 +317,23 @@ void DefReprUsingSerialize(PyClass* ppy_class) {
   internal::DefReprArchive archive;
   CxxClass prototype{};
   prototype.Serialize(&archive);
-  ppy_class->def("__repr__",
-      [names = std::move(archive.property_names())](py::object self) {
-        std::ostringstream result;
-        result << py::str(internal::PrettyClassName(self.attr("__class__")));
-        result << "(";
-        bool first = true;
-        for (const std::string& name : names) {
-          if (!first) {
-            result << ", ";
-          }
-          result << name << "=" << py::repr(self.attr(name.c_str()));
-          first = false;
-        }
-        result << ")";
-        return result.str();
-      });
+  ppy_class->def("__repr__", [names = std::move(archive.property_names())](
+                                 py::object self) {
+    std::ostringstream result;
+    result
+        << py::str(internal::PrettyClassName(self.attr("__class__"))).c_str();
+    result << "(";
+    bool first = true;
+    for (const std::string& name : names) {
+      if (!first) {
+        result << ", ";
+      }
+      result << name << "=" << py::repr(self.attr(name.c_str())).c_str();
+      first = false;
+    }
+    result << ")";
+    return result.str();
+  });
 }
 
 }  // namespace pydrake

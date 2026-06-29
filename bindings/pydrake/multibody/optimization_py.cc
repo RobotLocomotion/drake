@@ -44,9 +44,12 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = CentroidalMomentumConstraint;
     constexpr auto& cls_doc = doc.CentroidalMomentumConstraint;
-    using Ptr = std::shared_ptr<Class>;
-    class_<Class, solvers::Constraint, Ptr>(
-        m, "CentroidalMomentumConstraint", cls_doc.doc)
+    class_<Class, solvers::Constraint
+#ifdef PYDRAKE_USE_PYBIND11
+        ,
+        std::shared_ptr<Class>
+#endif
+        >(m, "CentroidalMomentumConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<AutoDiffXd>*,
                  std::optional<std::vector<ModelInstanceIndex>>,
                  systems::Context<AutoDiffXd>*, bool>(),
@@ -61,9 +64,12 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = ContactWrenchFromForceInWorldFrameEvaluator;
     constexpr auto& cls_doc = doc.ContactWrenchFromForceInWorldFrameEvaluator;
-    using Ptr = std::shared_ptr<Class>;
-    class_<Class, solvers::EvaluatorBase, Ptr>(
-        m, "ContactWrenchFromForceInWorldFrameEvaluator", cls_doc.doc)
+    class_<Class, solvers::EvaluatorBase
+#ifdef PYDRAKE_USE_PYBIND11
+        ,
+        std::shared_ptr<Class>
+#endif
+        >(m, "ContactWrenchFromForceInWorldFrameEvaluator", cls_doc.doc)
         .def(py::init<const MultibodyPlant<AutoDiffXd>*,
                  systems::Context<AutoDiffXd>*,
                  const SortedPair<geometry::GeometryId>&>(),
@@ -86,9 +92,12 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = QuaternionEulerIntegrationConstraint;
     constexpr auto& cls_doc = doc.QuaternionEulerIntegrationConstraint;
-    using Ptr = std::shared_ptr<Class>;
-    class_<Class, solvers::Constraint, Ptr>(
-        m, "QuaternionEulerIntegrationConstraint", cls_doc.doc)
+    class_<Class, solvers::Constraint
+#ifdef PYDRAKE_USE_PYBIND11
+        ,
+        std::shared_ptr<Class>
+#endif
+        >(m, "QuaternionEulerIntegrationConstraint", cls_doc.doc)
         .def(py::init<bool>(), py::arg("allow_quaternion_negation"),
             cls_doc.ctor.doc)
         .def("allow_quaternion_negation", &Class::allow_quaternion_negation,
@@ -107,9 +116,13 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = SpatialVelocityConstraint;
     constexpr auto& cls_doc = doc.SpatialVelocityConstraint;
-    using Ptr = std::shared_ptr<Class>;
-    class_<Class, solvers::Constraint, Ptr> cls(
-        m, "SpatialVelocityConstraint", cls_doc.doc);
+    class_<Class, solvers::Constraint
+#ifdef PYDRAKE_USE_PYBIND11
+        ,
+        std::shared_ptr<Class>
+#endif
+        >
+        cls(m, "SpatialVelocityConstraint", cls_doc.doc);
     cls.def(
         py::init<const MultibodyPlant<AutoDiffXd>*, const Frame<AutoDiffXd>&,
             const Eigen::Ref<const Eigen::Vector3d>&,

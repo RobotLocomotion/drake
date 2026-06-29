@@ -291,7 +291,11 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def(
           "__iter__",
           [](const Variables& vars) {
-            return py::make_iterator(vars.begin(), vars.end());
+            return py::make_iterator(
+#ifdef PYDRAKE_USE_NANOBIND
+                py::type<Variables>(), "iterator",
+#endif
+                vars.begin(), vars.end());
           },
           // Keep alive, reference: `return` keeps `self` alive
           py::keep_alive<0, 1>())

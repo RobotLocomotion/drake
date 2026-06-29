@@ -309,6 +309,9 @@ void DefinePlanningCollisionChecker(py::module_ m) {
               new (self) Class(std::move(*params));
             },
             py::kw_only(), py::arg("model"),
+#ifdef PYDRAKE_USE_NANOBIND
+            py::arg("kwargs"),
+#endif
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "
@@ -343,6 +346,9 @@ void DefinePlanningCollisionChecker(py::module_ m) {
             },
             py::kw_only(), py::arg("model"),
             py::arg("supports_parallel_checking"),
+#ifdef PYDRAKE_USE_NANOBIND
+            py::arg("kwargs"),
+#endif
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "

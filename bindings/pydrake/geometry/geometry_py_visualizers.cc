@@ -177,7 +177,9 @@ void DefineDrakeVisualizerParams(py::module_ m) {
         m, "DrakeVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
+#endif  // XXX porting
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
@@ -187,8 +189,13 @@ void DefineMeshcatParams(py::module_ m) {
   {
     using Class = MeshcatParams;
     constexpr auto& cls_doc = doc.MeshcatParams;
-    class_<Class, std::shared_ptr<Class>> cls(
-        m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
+    class_<Class
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+        ,
+        std::shared_ptr<Class>
+#endif
+        >
+        cls(m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
     // MeshcatParams::PropertyTuple
     {
       using Nested = MeshcatParams::PropertyTuple;
@@ -210,7 +217,13 @@ void DefineMeshcat(py::module_ m) {
   {
     using Class = Meshcat;
     constexpr auto& cls_doc = doc.Meshcat;
-    class_<Class, std::shared_ptr<Class>> meshcat(m, "Meshcat", cls_doc.doc);
+    class_<Class
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+        ,
+        std::shared_ptr<Class>
+#endif
+        >
+        meshcat(m, "Meshcat", cls_doc.doc);
 
     // Meshcat::SideOfFaceToRender enumeration
     constexpr auto& side_doc = doc.Meshcat.SideOfFaceToRender;
@@ -400,6 +413,7 @@ void DefineMeshcat(py::module_ m) {
             // This function costs a non-trivial amount of CPU time and blocks
             // on a worker thread; for both reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(), cls_doc.StaticHtml.doc)
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(
             "StaticZip",
             [](const Class& self) {
@@ -414,6 +428,7 @@ void DefineMeshcat(py::module_ m) {
               return py::bytes(result.c_str(), result.size());
             },
             cls_doc.StaticZip.doc)
+#endif  // XXX porting
         .def("StartRecording", &Class::StartRecording,
             py::arg("frames_per_second") = 64.0,
             py::arg("set_visualizations_while_recording") = true,
@@ -537,7 +552,9 @@ void DefineMeshcatVisualizerParams(py::module_ m) {
         m, "MeshcatVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
+#endif  // XXX porting
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }

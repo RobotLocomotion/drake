@@ -227,8 +227,12 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
   {
     using Class = DirectCollocationConstraint;
     constexpr auto& cls_doc = doc.DirectCollocationConstraint;
-    class_<Class, solvers::Constraint, std::shared_ptr<Class>>(
-        m, "DirectCollocationConstraint", cls_doc.doc)
+    class_<Class, solvers::Constraint
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+        ,
+        std::shared_ptr<Class>
+#endif
+        >(m, "DirectCollocationConstraint", cls_doc.doc)
         .def(py::init<const systems::System<double>&,
                  const systems::Context<double>&,
                  std::variant<systems::InputPortSelection,
@@ -660,6 +664,7 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("show_vars") = true, py::arg("show_flows") = true,
             py::arg("show_costs") = true, py::arg("scientific") = false,
             py::arg("precision") = 3, cls_doc.GetGraphvizString.doc)
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(
             "AddRegions",
             // Pybind does not support None arguments for pointers to built-in
@@ -695,8 +700,10 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
             py::arg("name") = "", cls_doc.AddRegions.doc_5args,
             py::call_guard<py::gil_scoped_release>())
+#endif  // XXX porting
         .def("RemoveSubgraph", &Class::RemoveSubgraph, py::arg("subgraph"),
             cls_doc.RemoveSubgraph.doc)
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(
             "AddEdges",
             // Pybind does not support None arguments for pointers to built-in
@@ -721,6 +728,7 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
             py::arg("edges_between_regions") = py::none(),
             py::arg("edge_offsets") = py::none(), cls_doc.AddEdges.doc,
             py::call_guard<py::gil_scoped_release>())
+#endif  // XXX porting
         .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
             cls_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",

@@ -99,8 +99,13 @@ template <typename... Args>
 using EventCallback = std::function<EventSignature<Args...>>;
 // Declare the handler signature as a python function object with compile-time
 // readable type signature.
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename... Args>
 using PyEventCallback = py::typing::Callable<EventSignature<Args...>>;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename... Args>
+using PyEventCallback = py::typed<py::callable, EventSignature<Args...>>;
+#endif  // PYDRAKE_USE_PYBIND11
 
 // Declare the various callback types that will appear as parameters of
 // bindings, such that automatic documentation has correct type signatures.
@@ -241,13 +246,17 @@ struct Impl {
   template <typename LeafSystemBase = LeafSystemPublic>
   class PyLeafSystemBase : public LeafSystemBase {
    public:
+    NB_TRAMPOLINE(LeafSystemBase, 100);
     using Base = LeafSystemBase;
+#ifdef PYDRAKE_USE_PYBIND11
     using Base::Base;
+#endif
 
     // Trampoline virtual methods.
 
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
+#ifdef PYDRAKE_USE_PYBIND11
       // Yuck! We have to dig in and use internals :(
       // We must ensure that pybind only sees pointers, since this method may
       // be called from C++, and pybind will not have seen these objects yet.
@@ -258,8 +267,12 @@ struct Impl {
           void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
       // If the macro did not return, use default functionality.
       Base::DoCalcTimeDerivatives(context, derivatives);
+#else   // PYDRAKE_USE_NANOBIND
+      NB_OVERRIDE(DoCalcTimeDerivatives, context, derivatives);
+#endif  // PYDRAKE_USE_PYBIND11
     }
 
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     // This actually changes the signature of DoGetWitnessFunction,
     // expecting the python overload to return a list of witnesses (instead
     // of taking in an empty pointer to std::vector<>.
@@ -287,10 +300,11 @@ struct Impl {
       }
       *witnesses = std::move(*result);
     }
+#endif  // XXX porting
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
+      PYDRAKE_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
           DoGetGraphvizFragment, params);
     }
   };
@@ -310,12 +324,12 @@ struct Impl {
   template <typename DiagramBase = DiagramPublic>
   class PyDiagramBase : public DiagramBase {
    public:
+    NB_TRAMPOLINE(DiagramBase, 100);
     using Base = DiagramBase;
-    using Base::Base;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
+      PYDRAKE_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
           DoGetGraphvizFragment, params);
     }
   };
@@ -341,9 +355,14 @@ struct Impl {
 
   class PyVectorSystem : public VectorSystemPublic {
    public:
+    NB_TRAMPOLINE(VectorSystemPublic, 100);
     using Base = VectorSystemPublic;
+#ifdef PYDRAKE_USE_PYBIND11
     using Base::Base;
+#endif
 
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+    // something something ToEigenRef().
     void DoCalcVectorOutput(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
@@ -388,17 +407,19 @@ struct Impl {
       Base::DoCalcVectorDiscreteVariableUpdates(
           context, input, state, next_state);
     }
+#endif  // XXX porting
   };
 
   class PySystemVisitor : public SystemVisitor<T> {
    public:
+    NB_TRAMPOLINE(SystemVisitor<T>, 100);
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
-      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitSystem, system);
+      PYDRAKE_OVERRIDE_PURE(void, SystemVisitor<T>, VisitSystem, system);
     };
 
     void VisitDiagram(const Diagram<T>& diagram) override {
-      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
+      PYDRAKE_OVERRIDE_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
     }
   };
 
@@ -481,10 +502,12 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("CalcImplicitTimeDerivativesResidual",
             &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
             py::arg("proposed_derivatives"), py::arg("residual"),
             doc.System.CalcImplicitTimeDerivativesResidual.doc)
+#endif  // XXX porting
         .def(
             "CalcImplicitTimeDerivativesResidual",
             [](const System<T>* self, const Context<T>& context,
@@ -727,6 +750,7 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareAbstractParameter.doc)
         .def("DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def(
             "DeclareAbstractOutputPort",
             [](PyLeafSystem* self, const std::string& name, py::function alloc,
@@ -746,6 +770,7 @@ Note: The above is for the C++ documentation. For Python, use
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_calc_prerequisites_of_calc)
+#endif  // XXX porting
         .def(
             "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
@@ -1155,11 +1180,13 @@ Note: The above is for the C++ documentation. For Python, use
           LeafSystem<T>>(
           m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc);
       cls  // BR
-          .def(py::init([](int input_size, int output_size,
-                            std::optional<bool> direct_feedthrough) {
-            return new PyVectorSystem(
-                input_size, output_size, direct_feedthrough);
-          }),
+          .def(
+              "__init__",
+              [](PyVectorSystem* self, int input_size, int output_size,
+                  std::optional<bool> direct_feedthrough) {
+                new (self)
+                    PyVectorSystem(input_size, output_size, direct_feedthrough);
+              },
               py::arg("input_size"), py::arg("output_size"),
               py::arg("direct_feedthrough"), doc.VectorSystem.ctor.doc_3args);
     }
@@ -1351,7 +1378,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
               return in;
             });
     // Bind templated instantiations.
-    auto converter_methods = [converter](auto pack) {
+    auto converter_methods = [&converter](auto pack) {
       constexpr auto& cls_doc =
           pydrake_doc_systems_framework.drake.systems.SystemScalarConverter;
       using Pack = decltype(pack);
@@ -1363,6 +1390,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
       using system_scalar_converter_internal::AddPydrakeConverterFunction;
       // N.B. The "_AddConstructor" method is called by scalar_conversion.py
       // to register a constructor, similar to MaybeAddConstructor in C++.
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       using ConverterFunction = std::function<System<T>*(const System<U>&)>;
       AddTemplateMethod(
           converter, "_AddConstructor",
@@ -1393,6 +1421,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
                     }});
           },
           GetPyParam<T, U>());
+#endif  // XXX porting
     };
     // N.B. When changing the pairs of supported types below, ensure that these
     // reflect the stanzas for the advanced constructor of

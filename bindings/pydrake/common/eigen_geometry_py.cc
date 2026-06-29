@@ -177,7 +177,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def(
             "multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            py::arg("other"), "RigidTransform multiplication")
+            py::arg("other").noconvert(), "RigidTransform multiplication")
         .def(
             "multiply",
             [](const Class& self, const Vector3<T>& position) {
@@ -265,6 +265,28 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
               Class update;
               update.w() = wxyz(0);
               update.vec() = wxyz.tail(3);
+              CheckQuaternion(update);
+              *self = update;
+            },
+            py::arg("wxyz"))
+        .def(
+            "set_wxyz",
+            [](Class* self, const Vector4<T>& wxyz) {
+              Class update;
+              update.w() = wxyz(0);
+              update.vec() = wxyz.tail(3);
+              CheckQuaternion(update);
+              *self = update;
+            },
+            py::arg("wxyz"))
+        .def(
+            "set_wxyz",
+            [](Class* self, py::list wxyz) {
+              DRAKE_THROW_UNLESS(wxyz.size() == 4);
+              Class update;
+              update.w() = py::cast<T>(wxyz[0]);
+              update.vec() = Vector3<T>{py::cast<T>(wxyz[1]),
+                  py::cast<T>(wxyz[2]), py::cast<T>(wxyz[3])};
               CheckQuaternion(update);
               *self = update;
             },
