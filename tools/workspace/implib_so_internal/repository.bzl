@@ -7,8 +7,8 @@ def implib_so_internal_repository(
         name = name,
         repository = "TaylorSasser/Implib.so",
         upgrade_type = "commit",
-        commit = "3a94ebf1b26e021cfa8c2202e4f4c7b31eab8eec",
-        sha256 = "32aba7aed862d34b8b1e5353c2a69479a61b4e88b7e9388c634161827cb16a40",  # noqa
+        commit = "ead05abb7d1e70d2a412a463208ddbe881037e37",
+        sha256 = "bef5299700faab5454dc72dd1f71f779330c8bca149a3e1fa7c40d4c159bca9b",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
