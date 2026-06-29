@@ -126,9 +126,13 @@ class LimitConstraintsPool {
   const EigenPool<VectorX<T>>& ql() const { return ql_; }
   const EigenPool<VectorX<T>>& qu() const { return qu_; }
   const EigenPool<VectorX<T>>& q0() const { return q0_; }
-  const EigenPool<VectorX<T>>& gl_hat() const { return gl_hat_; }
-  const EigenPool<VectorX<T>>& gu_hat() const { return gu_hat_; }
-  const EigenPool<VectorX<T>>& R() const { return R_; }
+  const EigenPool<VectorX<T>>& gl_hat_fragment() const {
+    return gl_hat_fragment_;
+  }
+  const EigenPool<VectorX<T>>& gu_hat_fragment() const {
+    return gu_hat_fragment_;
+  }
+  const EigenPool<VectorX<T>>& R_fragment() const { return R_fragment_; }
 
  private:
   /* Computes cost, gradient, and Hessian contribution for a single limit
@@ -153,12 +157,13 @@ class LimitConstraintsPool {
   EigenPool<VectorX<T>> ql_;          // Lower limit.
   EigenPool<VectorX<T>> qu_;          // Upper limit.
   EigenPool<VectorX<T>> q0_;          // Initial configuration.
-  // Note that the values of gl_hat, gu_hat, and R stored here are only the
-  // time-step independent portions; the full quantities are reconstructed as
-  // needed once the time step is chosen.
-  EigenPool<VectorX<T>> gl_hat_;  // Lower bound velocity target scaled by dt.
-  EigenPool<VectorX<T>> gu_hat_;  // Upper bound velocity target scaled by dt.
-  EigenPool<VectorX<T>> R_;       // Near-rigid regularization parameter.
+  // Note that the fragments of gl_hat (lower bound velocity factor), gu_hat
+  // (upper bound velocity factor), and R (near-rigid regularization parameter)
+  // stored here are only the time-step independent portions; the full
+  // quantities are reconstructed as needed once the time step is chosen.
+  EigenPool<VectorX<T>> gl_hat_fragment_;
+  EigenPool<VectorX<T>> gu_hat_fragment_;
+  EigenPool<VectorX<T>> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<LimitConstraintsPool>);
 

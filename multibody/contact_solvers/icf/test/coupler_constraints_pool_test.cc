@@ -244,8 +244,8 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
       EXPECT_EQ(clique_mapping.permuted_index(f_j), r_j);
     }
     EXPECT_EQ(full_pool.gear_ratio()[0], reduced_pool.gear_ratio()[0]);
-    EXPECT_EQ(full_pool.g_hat()[0], reduced_pool.g_hat()[0]);
-    EXPECT_EQ(full_pool.R()[0], reduced_pool.R()[0]);
+    EXPECT_EQ(full_pool.g_hat_fragment()[0], reduced_pool.g_hat_fragment()[0]);
+    EXPECT_EQ(full_pool.R_fragment()[0], reduced_pool.R_fragment()[0]);
 
     // Check the downstream calculations.
     IcfData<double> reduced_data;
@@ -257,7 +257,7 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
     const auto& reduced_data_pool = reduced_data.coupler_constraints_data();
 
     // Reconstruct the full regularization.
-    const double R = reduced_pool.R()[0] * R_time_step_factor;
+    const double R = reduced_pool.R_fragment()[0] * R_time_step_factor;
 
     // Check the data pool.
     if (have_i && have_j) {
@@ -278,7 +278,7 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
       const auto expected_vc =
           (have_i ? clique_v(r_i)
                   : -reduced_pool.gear_ratio()[0] * clique_v(r_j));
-      const auto v_hat = reduced_pool.g_hat()[0] / (dt + taud);
+      const auto v_hat = reduced_pool.g_hat_fragment()[0] / (dt + taud);
       const auto expected_gamma = (v_hat - expected_vc) / R;
       EXPECT_NEAR(reduced_data_pool.gamma(0), expected_gamma, 1e-15);
     }

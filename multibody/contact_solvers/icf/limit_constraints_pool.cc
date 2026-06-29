@@ -30,9 +30,9 @@ void LimitConstraintsPool<T>::Resize(std::span<const int> sizes) {
   ql_.Resize(num_limit_constraints, sizes);
   qu_.Resize(num_limit_constraints, sizes);
   q0_.Resize(num_limit_constraints, sizes);
-  gl_hat_.Resize(num_limit_constraints, sizes);
-  gu_hat_.Resize(num_limit_constraints, sizes);
-  R_.Resize(num_limit_constraints, sizes);
+  gl_hat_fragment_.Resize(num_limit_constraints, sizes);
+  gu_hat_fragment_.Resize(num_limit_constraints, sizes);
+  R_fragment_.Resize(num_limit_constraints, sizes);
   constraint_size_.assign(sizes.begin(), sizes.end());
   clique_.resize(num_limit_constraints);
   dof_.resize(num_limit_constraints);
@@ -45,9 +45,9 @@ void LimitConstraintsPool<T>::Resize(std::span<const int> sizes) {
     ql_[k].setConstant(-std::numeric_limits<double>::infinity());
     qu_[k].setConstant(std::numeric_limits<double>::infinity());
     q0_[k].setConstant(0.0);
-    R_[k].setConstant(std::numeric_limits<double>::infinity());
-    gl_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
-    gu_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
+    R_fragment_[k].setConstant(std::numeric_limits<double>::infinity());
+    gl_hat_fragment_[k].setConstant(-std::numeric_limits<double>::infinity());
+    gu_hat_fragment_[k].setConstant(-std::numeric_limits<double>::infinity());
   }
 }
 
@@ -81,7 +81,7 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   // Approximation of W = J⋅M⁻¹⋅Jᵀ = M⁻¹ ≈ diag(M)⁻¹. The Jacobian J = Iₙ for
   // lower limits, and J = -Iₙ for upper limits.
   ConstVectorXView w_clique = model().clique_diagonal_mass_inverse(clique);
-  R_[index](dof) = kEps * w_clique(dof);
+  R_fragment_[index](dof) = kEps * w_clique(dof);
 
   // Eventually we will use
   //  v̂ₗ = (qₗ − q₀) / (δt + τd)
@@ -94,8 +94,8 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   //  ĝᵤ = v̂ᵤ⋅(δt + τd) = (q₀ − qᵤ)
   // so that we can compute v̂ = ĝ / (δt + τd) from the current time
   // step in calls to CalcData().
-  gl_hat_[index](dof) = (ql - q0);
-  gu_hat_[index](dof) = (q0 - qu);
+  gl_hat_fragment_[index](dof) = (ql - q0);
+  gu_hat_fragment_[index](dof) = (q0 - qu);
 }
 
 template <typename T>
@@ -124,11 +124,11 @@ void LimitConstraintsPool<T>::CalcData(
       //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
       // R_[k](i) only stores the non-time-step-dependent part:
       //  R_[k](i) = β²·w / (4π²)
-      const T R = R_[k](i) * R_time_step_factor;
+      const T R = R_fragment_[k](i) * R_time_step_factor;
 
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
-      const T v_hat_lower = gl_hat_[k](i) / (dt + taud);
+      const T v_hat_lower = gl_hat_fragment_[k](i) / (dt + taud);
       cost += CalcLimitData(v_hat_lower, R, vl, &gamma_lower(i), &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
@@ -136,7 +136,7 @@ void LimitConstraintsPool<T>::CalcData(
       // positive when moving away from the limit. Impulses are similarly
       // defined as positive when pushing away from the limit.
       const T vu = -vk(i);
-      const T v_hat_upper = gu_hat_[k](i) / (dt + taud);
+      const T v_hat_upper = gu_hat_fragment_[k](i) / (dt + taud);
       cost += CalcLimitData(v_hat_upper, R, vu, &gamma_upper(i), &G_upper(i));
     }
   }
@@ -245,9 +245,12 @@ void LimitConstraintsPool<T>::ReduceInto(
     reduced_pool->ql_.Add(r_constraint_size, 1) = ql_[k](indices);
     reduced_pool->qu_.Add(r_constraint_size, 1) = qu_[k](indices);
     reduced_pool->q0_.Add(r_constraint_size, 1) = q0_[k](indices);
-    reduced_pool->gl_hat_.Add(r_constraint_size, 1) = gl_hat_[k](indices);
-    reduced_pool->gu_hat_.Add(r_constraint_size, 1) = gu_hat_[k](indices);
-    reduced_pool->R_.Add(r_constraint_size, 1) = R_[k](indices);
+    reduced_pool->gl_hat_fragment_.Add(r_constraint_size, 1) =
+        gl_hat_fragment_[k](indices);
+    reduced_pool->gu_hat_fragment_.Add(r_constraint_size, 1) =
+        gu_hat_fragment_[k](indices);
+    reduced_pool->R_fragment_.Add(r_constraint_size, 1) =
+        R_fragment_[k](indices);
   }
 }
 

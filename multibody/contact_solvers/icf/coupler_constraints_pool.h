@@ -104,8 +104,8 @@ class CouplerConstraintsPool {
   }
   const std::vector<std::pair<int, int>>& dofs() const { return dofs_; }
   const std::vector<T>& gear_ratio() const { return gear_ratio_; }
-  const std::vector<T>& g_hat() const { return g_hat_; }
-  const std::vector<T>& R() const { return R_; }
+  const std::vector<T>& g_hat_fragment() const { return g_hat_fragment_; }
+  const std::vector<T>& R_fragment() const { return R_fragment_; }
 
  private:
   const IcfModel<T>* const model_;  // The parent model.
@@ -125,8 +125,8 @@ class CouplerConstraintsPool {
   // that the values stored here are only the time-step independent portions;
   // the full quantities are reconstructed as needed once the time step is
   // chosen.
-  std::vector<T> g_hat_;  // The true bias is v̂ = ĝ / δt.
-  std::vector<T> R_;
+  std::vector<T> g_hat_fragment_;  // The true bias is v̂ = ĝ / δt.
+  std::vector<T> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<CouplerConstraintsPool>);
 
