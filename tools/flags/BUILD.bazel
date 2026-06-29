@@ -196,6 +196,19 @@ string_flag(
     ],
 )
 
+# The :libjpeg_repo flag configures where Drake obtains @libjpeg from.
+# The public dependency alias is `@drake//tools/workspace/libjpeg` or use the
+# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+string_flag(
+    name = "libjpeg_repo",
+    build_setting_default = "source",
+    values = [
+        # For now, the only supported value is "source", to compile jpeg from
+        # source.
+        "source",
+    ],
+)
+
 # The :lapack_repo flag configures where Drake obtains @lapack from.
 # The public dependency alias is `@drake//tools/workspace/lapack` or use the
 # drake_dep_repositories() module extension at //tools/workspace:default.bzl.
