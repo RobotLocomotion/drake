@@ -191,6 +191,35 @@ If an external required non-trivial changes, even if you were able to make the
 changes yourself, consider separating that external into its own pull request
 and assigning it to the associated feature owner.
 
+## Python
+
+As part of the monthly upgrades process, the pinned Python packages used on
+platforms for which Drake relies on a virtual environment should be updated.
+This is the reminder that the `new_release` tool prints for "python".
+
+The accompanying script to perform the upgrade can only be invoked on a system
+where Drake actually uses a virtual environment, which is currently only macOS.
+(Drake uses a venv when building Python wheels on Linux also, but we're not
+building wheels here.)
+
+On a supported platform, run the script:
+
+```
+./tools/workspace/python/venv_upgrade [--commit]
+```
+
+Always push these changes to a separate branch from the regular monthly
+upgrades. Like the other upgrades, it can be tagged
+`status: single reviewer ok`, and typically assigned to the on-call platform
+reviewer in absence of any failures.
+
+For further details, see:
+
+* `//tools/workspace/python/venv_upgrade` for the upgrade script;
+* `//setup/python/pyproject.toml` for the TOML file; and
+* `//setup/python/{hub}/requirements.in` for the requirements files managed by
+  `uv` via `rules_python`.
+
 ## drake-external-examples
 
 The
