@@ -521,8 +521,7 @@ TEST_P(DoublePendulum, ZeroStep) {
       simulator_->get_context().get_time());
   EXPECT_EQ(simulator_->get_context().get_time(), 1.0);
   const VectorXd q_after = plant_->GetPositions(*plant_context_);
-  EXPECT_EQ(q_after(0), q(0));
-  EXPECT_EQ(q_after(1), q(1));
+  EXPECT_TRUE(CompareMatrices(q_after, q));
   VectorXd error_estimate(integrator_->get_error_estimate()->CopyToVector());
   EXPECT_EQ(error_estimate.norm(), 0);
 }
