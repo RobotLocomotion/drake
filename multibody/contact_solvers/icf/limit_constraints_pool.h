@@ -126,12 +126,8 @@ class LimitConstraintsPool {
   const EigenPool<VectorX<T>>& ql() const { return ql_; }
   const EigenPool<VectorX<T>>& qu() const { return qu_; }
   const EigenPool<VectorX<T>>& q0() const { return q0_; }
-  const EigenPool<VectorX<T>>& gl_hat_fragment() const {
-    return gl_hat_fragment_;
-  }
-  const EigenPool<VectorX<T>>& gu_hat_fragment() const {
-    return gu_hat_fragment_;
-  }
+  const EigenPool<VectorX<T>>& gl0() const { return gl0_; }
+  const EigenPool<VectorX<T>>& gu0() const { return gu0_; }
   const EigenPool<VectorX<T>>& R_fragment() const { return R_fragment_; }
 
  private:
@@ -157,12 +153,16 @@ class LimitConstraintsPool {
   EigenPool<VectorX<T>> ql_;          // Lower limit.
   EigenPool<VectorX<T>> qu_;          // Upper limit.
   EigenPool<VectorX<T>> q0_;          // Initial configuration.
-  // Note that the fragments of gl_hat (lower bound velocity factor), gu_hat
-  // (upper bound velocity factor), and R (near-rigid regularization parameter)
-  // stored here are only the time-step independent portions; the full
-  // quantities are reconstructed as needed once the time step is chosen.
-  EigenPool<VectorX<T>> gl_hat_fragment_;
-  EigenPool<VectorX<T>> gu_hat_fragment_;
+
+  // Initial constraint violation at t0 per constraint, of size
+  // num_constrains(). Used to compute the bias term in CalcData().
+  EigenPool<VectorX<T>> gl0_;
+  EigenPool<VectorX<T>> gu0_;
+
+  // Regularization per constraint, of size num_constraints(). Note
+  // that the value stored here is only the time-step independent portion;
+  // the full quantity is reconstructed as needed once the time step is
+  // determined.
   EigenPool<VectorX<T>> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<LimitConstraintsPool>);

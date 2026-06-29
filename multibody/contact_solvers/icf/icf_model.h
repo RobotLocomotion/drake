@@ -242,7 +242,7 @@ class IcfModel {
   /* Returns the time step δt. */
   const T& time_step() const { return params().time_step; }
 
-  /* Returns the effective time step computing near-rigid parameters for
+  /* Returns the effective time step for computing near-rigid parameters for
   constraints. At very small actual time steps, the effective time step will be
   limited to some minimum value to avoid unreasonable stiffness and dissipation
   effects.

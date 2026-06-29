@@ -244,7 +244,7 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
       EXPECT_EQ(clique_mapping.permuted_index(f_j), r_j);
     }
     EXPECT_EQ(full_pool.gear_ratio()[0], reduced_pool.gear_ratio()[0]);
-    EXPECT_EQ(full_pool.g_hat_fragment()[0], reduced_pool.g_hat_fragment()[0]);
+    EXPECT_EQ(full_pool.g0()[0], reduced_pool.g0()[0]);
     EXPECT_EQ(full_pool.R_fragment()[0], reduced_pool.R_fragment()[0]);
 
     // Check the downstream calculations.
@@ -278,7 +278,7 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
       const auto expected_vc =
           (have_i ? clique_v(r_i)
                   : -reduced_pool.gear_ratio()[0] * clique_v(r_j));
-      const auto v_hat = reduced_pool.g_hat_fragment()[0] / (dt + taud);
+      const auto v_hat = -reduced_pool.g0()[0] / (dt + taud);
       const auto expected_gamma = (v_hat - expected_vc) / R;
       EXPECT_NEAR(reduced_data_pool.gamma(0), expected_gamma, 1e-15);
     }

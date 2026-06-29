@@ -30,8 +30,8 @@ void LimitConstraintsPool<T>::Resize(std::span<const int> sizes) {
   ql_.Resize(num_limit_constraints, sizes);
   qu_.Resize(num_limit_constraints, sizes);
   q0_.Resize(num_limit_constraints, sizes);
-  gl_hat_fragment_.Resize(num_limit_constraints, sizes);
-  gu_hat_fragment_.Resize(num_limit_constraints, sizes);
+  gl0_.Resize(num_limit_constraints, sizes);
+  gu0_.Resize(num_limit_constraints, sizes);
   R_fragment_.Resize(num_limit_constraints, sizes);
   constraint_size_.assign(sizes.begin(), sizes.end());
   clique_.resize(num_limit_constraints);
@@ -46,8 +46,8 @@ void LimitConstraintsPool<T>::Resize(std::span<const int> sizes) {
     qu_[k].setConstant(std::numeric_limits<double>::infinity());
     q0_[k].setConstant(0.0);
     R_fragment_[k].setConstant(std::numeric_limits<double>::infinity());
-    gl_hat_fragment_[k].setConstant(-std::numeric_limits<double>::infinity());
-    gu_hat_fragment_[k].setConstant(-std::numeric_limits<double>::infinity());
+    gl0_[k].setConstant(-std::numeric_limits<double>::infinity());
+    gu0_[k].setConstant(-std::numeric_limits<double>::infinity());
   }
 }
 
@@ -94,8 +94,8 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   //  ĝᵤ = v̂ᵤ⋅(δt + τd) = (q₀ − qᵤ)
   // so that we can compute v̂ = ĝ / (δt + τd) from the current time
   // step in calls to CalcData().
-  gl_hat_fragment_[index](dof) = (ql - q0);
-  gu_hat_fragment_[index](dof) = (q0 - qu);
+  gl0_[index](dof) = (ql - q0);
+  gu0_[index](dof) = (q0 - qu);
 }
 
 template <typename T>
@@ -128,7 +128,7 @@ void LimitConstraintsPool<T>::CalcData(
 
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
-      const T v_hat_lower = gl_hat_fragment_[k](i) / (dt + taud);
+      const T v_hat_lower = gl0_[k](i) / (dt + taud);
       cost += CalcLimitData(v_hat_lower, R, vl, &gamma_lower(i), &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
@@ -136,7 +136,7 @@ void LimitConstraintsPool<T>::CalcData(
       // positive when moving away from the limit. Impulses are similarly
       // defined as positive when pushing away from the limit.
       const T vu = -vk(i);
-      const T v_hat_upper = gu_hat_fragment_[k](i) / (dt + taud);
+      const T v_hat_upper = gu0_[k](i) / (dt + taud);
       cost += CalcLimitData(v_hat_upper, R, vu, &gamma_upper(i), &G_upper(i));
     }
   }
@@ -245,10 +245,8 @@ void LimitConstraintsPool<T>::ReduceInto(
     reduced_pool->ql_.Add(r_constraint_size, 1) = ql_[k](indices);
     reduced_pool->qu_.Add(r_constraint_size, 1) = qu_[k](indices);
     reduced_pool->q0_.Add(r_constraint_size, 1) = q0_[k](indices);
-    reduced_pool->gl_hat_fragment_.Add(r_constraint_size, 1) =
-        gl_hat_fragment_[k](indices);
-    reduced_pool->gu_hat_fragment_.Add(r_constraint_size, 1) =
-        gu_hat_fragment_[k](indices);
+    reduced_pool->gl0_.Add(r_constraint_size, 1) = gl0_[k](indices);
+    reduced_pool->gu0_.Add(r_constraint_size, 1) = gu0_[k](indices);
     reduced_pool->R_fragment_.Add(r_constraint_size, 1) =
         R_fragment_[k](indices);
   }

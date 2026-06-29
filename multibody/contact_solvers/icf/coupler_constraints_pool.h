@@ -104,7 +104,7 @@ class CouplerConstraintsPool {
   }
   const std::vector<std::pair<int, int>>& dofs() const { return dofs_; }
   const std::vector<T>& gear_ratio() const { return gear_ratio_; }
-  const std::vector<T>& g_hat_fragment() const { return g_hat_fragment_; }
+  const std::vector<T>& g0() const { return g0_; }
   const std::vector<T>& R_fragment() const { return R_fragment_; }
 
  private:
@@ -121,11 +121,13 @@ class CouplerConstraintsPool {
   // Gear ratio ρ per constraint, of size num_constraints().
   std::vector<T> gear_ratio_;
 
-  // Regularization and bias per constraint, of size num_constraints(). Note
-  // that the values stored here are only the time-step independent portions;
-  // the full quantities are reconstructed as needed once the time step is
-  // chosen.
-  std::vector<T> g_hat_fragment_;  // The true bias is v̂ = ĝ / δt.
+  // Initial constraint violation at t0 per constraint, of size
+  // num_constrains(). Used to compute the bias term in CalcData().
+  std::vector<T> g0_;
+
+  // Regularization per constraint, of size num_constraints(). Note that the
+  // value stored here is only the time-step independent portion; the full
+  // quantity is reconstructed as needed once the time step is determined.
   std::vector<T> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<CouplerConstraintsPool>);
