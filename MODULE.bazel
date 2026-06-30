@@ -219,6 +219,7 @@ bazel_dep(
 single_version_override(
     module_name = "googletest",
     patches = [
+        "//tools/workspace/googletest:patches/upstream/character_conversion_casting.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/exception_shadowing.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/param_iterator_interface.patch",  # noqa
         "//tools/workspace/googletest:patches/add_printers.patch",
