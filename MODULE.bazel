@@ -243,7 +243,7 @@ single_version_override(
 
 bazel_dep(
     name = "toolchains_llvm",
-    version = "1.7.0",
+    version = "1.8.0",
     dev_dependency = True,
 )
 
