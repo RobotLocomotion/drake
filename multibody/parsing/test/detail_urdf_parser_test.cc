@@ -843,7 +843,7 @@ TEST_F(UrdfParserTest, DoublePendulum) {
   plant_.Finalize();
 
   EXPECT_EQ(plant_.num_bodies(), 4);
-  EXPECT_EQ(plant_.num_frames(), 10);
+  EXPECT_EQ(plant_.num_frames(), 9);
 
   ASSERT_TRUE(plant_.HasFrameNamed("frame_on_link1"));
   ASSERT_TRUE(plant_.HasFrameNamed("frame_on_link2"));
@@ -929,6 +929,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<RevoluteJoint>("revolute_joint"));
   const RevoluteJoint<double>& revolute_joint =
       plant_.GetJointByName<RevoluteJoint>("revolute_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("revolute_joint_parent"));
   EXPECT_EQ(revolute_joint.name(), "revolute_joint");
   EXPECT_EQ(revolute_joint.parent_body().name(), "link1");
   EXPECT_EQ(revolute_joint.child_body().name(), "link2");
@@ -957,6 +958,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<PrismaticJoint>("prismatic_joint"));
   const PrismaticJoint<double>& prismatic_joint =
       plant_.GetJointByName<PrismaticJoint>("prismatic_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("prismatic_joint_parent"));
   EXPECT_EQ(prismatic_joint.name(), "prismatic_joint");
   EXPECT_EQ(prismatic_joint.parent_body().name(), "link2");
   EXPECT_EQ(prismatic_joint.child_body().name(), "link3");
@@ -980,6 +982,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<BallRpyJoint>("ball_joint"));
   const BallRpyJoint<double>& ball_joint =
       plant_.GetJointByName<BallRpyJoint>("ball_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("ball_joint_parent"));
   EXPECT_EQ(ball_joint.name(), "ball_joint");
   EXPECT_EQ(ball_joint.parent_body().name(), "link3");
   EXPECT_EQ(ball_joint.child_body().name(), "link4");
@@ -999,6 +1002,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   // Limitless revolute joint
   const Joint<double>& no_limit_joint =
       plant_.GetJointByName("revolute_joint_no_limits");
+  EXPECT_FALSE(plant_.HasFrameNamed("revolute_joint_no_limits_parent"));
   const Vector1d inf(std::numeric_limits<double>::infinity());
   const Vector1d neg_inf(-std::numeric_limits<double>::infinity());
 
@@ -1021,6 +1025,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<UniversalJoint>("universal_joint"));
   const UniversalJoint<double>& universal_joint =
       plant_.GetJointByName<UniversalJoint>("universal_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("universal_joint_parent"));
   EXPECT_EQ(universal_joint.name(), "universal_joint");
   EXPECT_EQ(universal_joint.parent_body().name(), "link5");
   EXPECT_EQ(universal_joint.child_body().name(), "link6");
@@ -1040,6 +1045,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<PlanarJoint>("planar_joint"));
   const PlanarJoint<double>& planar_joint =
       plant_.GetJointByName<PlanarJoint>("planar_joint");
+  EXPECT_TRUE(plant_.HasFrameNamed("planar_joint_parent"));
   EXPECT_EQ(planar_joint.name(), "planar_joint");
   EXPECT_EQ(planar_joint.parent_body().name(), "link6");
   EXPECT_EQ(planar_joint.child_body().name(), "link7");
@@ -1055,6 +1061,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<RevoluteJoint>("continuous_joint"));
   const RevoluteJoint<double>& continuous_joint =
       plant_.GetJointByName<RevoluteJoint>("continuous_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("continuous_joint_parent"));
   EXPECT_EQ(continuous_joint.name(), "continuous_joint");
   EXPECT_EQ(continuous_joint.parent_body().name(), "link7");
   EXPECT_EQ(continuous_joint.child_body().name(), "link8");
@@ -1074,6 +1081,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<ScrewJoint>("screw_joint"));
   const ScrewJoint<double>& screw_joint =
       plant_.GetJointByName<ScrewJoint>("screw_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("screw_joint_parent"));
   EXPECT_EQ(screw_joint.name(), "screw_joint");
   EXPECT_EQ(screw_joint.parent_body().name(), "link8");
   EXPECT_EQ(screw_joint.child_body().name(), "link9");
@@ -1133,6 +1141,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_periodic"));
   const CurvilinearJoint<double>& curvilinear_joint =
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_periodic");
+  EXPECT_TRUE(plant_.HasFrameNamed("curvilinear_periodic_parent"));
   EXPECT_EQ(curvilinear_joint.name(), "curvilinear_periodic");
   EXPECT_EQ(curvilinear_joint.parent_body().name(), "link12");
   EXPECT_EQ(curvilinear_joint.child_body().name(), "link13");
@@ -1177,6 +1186,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_aperiodic"));
   const CurvilinearJoint<double>& curvilinear_joint2 =
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_aperiodic");
+  EXPECT_TRUE(plant_.HasFrameNamed("curvilinear_aperiodic_parent"));
   const PiecewiseConstantCurvatureTrajectory<double> joint2_curve =
       curvilinear_joint2.get_trajectory();
   EXPECT_EQ(curvilinear_joint2.name(), "curvilinear_aperiodic");
