@@ -189,32 +189,45 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
         {explicit_model.link1->index(), explicit_model.link2->index(),
          explicit_model.link3->index()});
 
+    // TODO(Mitiguy) This next tests should be EXPECT_TRUE, hence a bug in 
+    // MultibodyPlant::CalcSpatialInertia(), maybe something like poses 
+    // using MoBod index rather linkIndex or cache not updated or ...         
+    SpatialInertia<double> M_CWo_W = composite_model.plant->CalcSpatialInertia(
+        *composite_model.context, world_frame,
+        {composite_model.link1->index(), composite_model.link2->index(),
+         composite_model.link3->index()});        
+    EXPECT_FALSE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+                                M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                MatrixCompareType::relative))
+        << "Spatial inertia mismatch at angle = " << angle;
+
     // TODO(Mitiguy) The next three tests show that there is a bug in
     // MultibodyPlant::CalcSpatialInertia() that incorrectly associates the
     // Link123 composite spatial inertia with a single link (Link 1 or 2 or 3).
-    SpatialInertia<double> M_CWo_W = composite_model.plant->CalcSpatialInertia(
+    M_CWo_W = composite_model.plant->CalcSpatialInertia(
         *composite_model.context, world_frame,
         {composite_model.link1->index()});
-    EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
-                                M_CWo_W.CopyToFullMatrix6(), kTolerance,
-                                MatrixCompareType::relative))
+    EXPECT_FALSE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                 MatrixCompareType::relative))
         << "Spatial inertia mismatch at angle = " << angle;
 
     // TODO(Mitiguy) This test and the previous and next test should NOT pass.
     M_CWo_W = composite_model.plant->CalcSpatialInertia(
         *composite_model.context, world_frame,
         {composite_model.link2->index()});
-    EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
-                                M_CWo_W.CopyToFullMatrix6(), kTolerance,
-                                MatrixCompareType::relative))
+    EXPECT_FALSE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                 MatrixCompareType::relative))
         << "Spatial inertia mismatch at angle = " << angle;
+
     // TODO(Mitiguy) This test and the previous two test should NOT pass.
     M_CWo_W = composite_model.plant->CalcSpatialInertia(
         *composite_model.context, world_frame,
         {composite_model.link3->index()});
-    EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
-                                M_CWo_W.CopyToFullMatrix6(), kTolerance,
-                                MatrixCompareType::relative))
+    EXPECT_FALSE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                 MatrixCompareType::relative))
         << "Spatial inertia mismatch at angle = " << angle;
 
     // Calculate Link4's spatial inertia about Wo (world origin) expressed in W.
@@ -235,14 +248,15 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
     // TODO(Mitiguy) There is a bug in MultibodyPlant::CalcSpatialInertia() when
     // composite mobilized bodies are used. The spatial inertia for the World
     // body (which is nan) replaces that of Link 4 (which is welded to world).
-    if (!kDrakeAssertIsArmed) {
+    // TODO(Mitiguy) Remove dead code after we are sure the bug is fixed.    
+    if (!kDrakeAssertIsArmed) { 
       M_L4Wo_W = composite_model.plant->CalcSpatialInertia(
           *composite_model.context, world_frame,
           {composite_model.link4->index()});
       // TODO(Mitiguy) This test should be EXPECT_TRUE not EXPECT_FALSE.
-      EXPECT_FALSE(CompareMatrices(M_L4Wo_W.CopyToFullMatrix6(),
-                                   M_L4Wo_W_expected.CopyToFullMatrix6(),
-                                   kTolerance, MatrixCompareType::relative))
+      EXPECT_TRUE(CompareMatrices(M_L4Wo_W.CopyToFullMatrix6(),
+                                  M_L4Wo_W_expected.CopyToFullMatrix6(),
+                                  kTolerance, MatrixCompareType::relative))
           << "Spatial inertia mismatch for Link4 at angle = " << angle;
     } else {
       // TODO(Mitiguy) Fix as an exception should not be thrown here.
