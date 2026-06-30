@@ -5,13 +5,9 @@
 #include <string>
 #include <utility>
 
-// TODO(2026-07-01): Remove ostream header when `operator<<` is removed.
-#include <ostream>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/nice_type_name.h"
@@ -280,19 +276,6 @@ class VectorBase {
 template <typename T>
 std::string to_string(const VectorBase<T>& vec) {
   return vec.to_string();
-}
-
-/// Allows a VectorBase<T> to be streamed into a string as though it were a
-/// RowVectorX<T>. This is useful for debugging purposes.
-template <typename T>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& os, const VectorBase<T>& vec) {
-  os << to_string(vec);
-  return os;
 }
 
 }  // namespace systems

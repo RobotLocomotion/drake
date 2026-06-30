@@ -4,10 +4,6 @@
 #include <string>
 #include <unordered_map>
 
-// TODO(2026-07-01): Remove sstream header when `Binding::operator<<` is
-// removed.
-#include <sstream>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -100,19 +96,6 @@ TEST_F(TestBinding, TestPrinting) {
             "\\begin{bmatrix} 1 \\\\ 2 \\end{bmatrix} \\le \\begin{bmatrix} 1 "
             "& 2 \\\\ 3 & 4 \\end{bmatrix} \\begin{bmatrix} x1 \\\\ x2 "
             "\\end{bmatrix} \\le \\begin{bmatrix} 2 \\\\ 3 \\end{bmatrix}");
-
-// TODO(2026-07-01): delete `pragma` block when `Binding::operator<<` is
-// removed.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  std::ostringstream ss1, ss2, ss3;
-  ss1 << binding1;
-  EXPECT_EQ(ss1.str(), str_expected1);
-  ss2 << linear_eq_binding;
-  EXPECT_EQ(ss2.str(), str_expected2);
-  ss3 << linear_binding;
-  EXPECT_EQ(ss3.str(), str_expected3);
-#pragma GCC diagnostic pop
 }
 
 TEST_F(TestBinding, TestHash) {

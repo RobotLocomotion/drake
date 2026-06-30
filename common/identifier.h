@@ -6,12 +6,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
-
-// Remove with deprecation 2026-07-01.
-#include <ostream>
 
 namespace drake {
 
@@ -230,21 +226,6 @@ class Identifier {
   // The underlying value.
   int64_t value_{};
 };
-
-/** Streaming output operator.   This is considered invalid for invalid ids and
- is strictly enforced in Debug builds.
- @relates Identifier
- */
-template <typename Tag>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& out, const Identifier<Tag>& id) {
-  out << id.get_value();
-  return out;
-}
 
 /** Enables use of identifiers with to_string. It requires ADL to work. So,
  it should be invoked as: `to_string(id);` and should be preceded by

@@ -125,10 +125,6 @@ std::string to_string(const EvaluatorBase& e) {
   return ss.str();
 }
 
-std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e) {
-  return os << fmt::to_string(e);
-}
-
 void PolynomialEvaluator::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                  Eigen::VectorXd* y) const {
   double_evaluation_point_temp_.clear();

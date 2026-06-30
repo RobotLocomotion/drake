@@ -174,10 +174,6 @@ std::string to_string(const ChebyshevPolynomial& p) {
   return result;
 }
 
-std::ostream& operator<<(std::ostream& out, const ChebyshevPolynomial& p) {
-  return out << fmt::to_string(p);
-}
-
 bool ChebyshevPolynomial::operator<(const ChebyshevPolynomial& other) const {
   // First the special case if either or both lhs and rhs has degree 0.
 
