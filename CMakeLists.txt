@@ -59,7 +59,7 @@ if(APPLE)
 endif()
 
 # This version number should match bazel_compatibility in MODULE.bazel.
-set(MINIMUM_BAZEL_VERSION 8.4.0)
+set(MINIMUM_BAZEL_VERSION 8.5.0)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
 if(NOT Bazel_FOUND)
   set(Bazel_EXECUTABLE "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py")
@@ -224,14 +224,6 @@ set(DRAKE_BAZEL_BUILD_DIR "${CMAKE_BINARY_DIR}/drake_build_cwd")
 file(MAKE_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}")
 
 set(BAZEL_REPO_ENV)
-
-# Put this patch where `cmake/MODULE.bazel.in` expects it during its call to
-# `single_version_override`.
-file(CREATE_LINK
-  "${PROJECT_SOURCE_DIR}/tools/workspace/eigen/patches/upstream/cherry-picks.patch"
-  "${DRAKE_BAZEL_BUILD_DIR}/eigen-cherry-picks.patch"
-  SYMBOLIC
-)
 
 if(NOT APPLE)
   # N.B. Bazel does its own compiler-chasing with Xcode, which we shouldn't
@@ -766,6 +758,31 @@ configure_file(cmake/MODULE.bazel.in "${DRAKE_BAZEL_BUILD_DIR}/MODULE.bazel" @ON
 configure_file(cmake/BUILD.bazel.in "${DRAKE_BAZEL_BUILD_DIR}/BUILD.bazel" @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" "${DRAKE_BAZEL_BUILD_DIR}/.bazeliskrc" SYMBOLIC)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" "${DRAKE_BAZEL_BUILD_DIR}/.bazelversion" SYMBOLIC)
+
+# Bazel only supports module patching in the root module, so we need to forward
+# the drake/patches.MODULE.bazel to be usable by our cmake/MODULE.bazel.in.
+file(CREATE_LINK
+  "${PROJECT_SOURCE_DIR}/patches.MODULE.bazel"
+  "${DRAKE_BAZEL_BUILD_DIR}/patches.MODULE.bazel"
+  SYMBOLIC)
+file(STRINGS
+  "${PROJECT_SOURCE_DIR}/patches.MODULE.bazel"
+  _drake_module_patches)
+foreach(_line IN LISTS _drake_module_patches)
+  # Match lines that look like this:
+  #         "//:path/to/something.patch"
+  # For all matches, symlink the patch from the source dir to the build dir.
+  if(_line MATCHES " *\"//:([^\"]+)\"")
+    set(_patch "${CMAKE_MATCH_1}")
+    cmake_path(GET _patch PARENT_PATH _patch_dir)
+    file(MAKE_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}/${_patch_dir}")
+    file(CREATE_LINK
+      "${PROJECT_SOURCE_DIR}/${_patch}"
+      "${DRAKE_BAZEL_BUILD_DIR}/${_patch}"
+      SYMBOLIC
+    )
+  endif()
+endforeach()
 
 find_package(Git)
 
