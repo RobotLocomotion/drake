@@ -40,7 +40,6 @@
 // #include "drake/common/find_runfiles.h"
 // #include "drake/common/fmt.h"
 // #include "drake/common/fmt_eigen.h"
-// #include "drake/common/fmt_ostream.h"
 // #include "drake/common/hash.h"
 // #include "drake/common/identifier.h"
 // #include "drake/common/is_approx_equal_abstol.h"
@@ -3097,16 +3096,6 @@ numbers.
 Template parameter ``T``:
     must be either ``float`` or ``double``.)""";
     } fmt_floating_point;
-    // Symbol: drake::fmt_runtime
-    struct /* fmt_runtime */ {
-      // Source: drake/common/fmt.h
-      const char* doc = R"""()""";
-    } fmt_runtime;
-    // Symbol: drake::fmt_streamed
-    struct /* fmt_streamed */ {
-      // Source: drake/common/fmt_ostream.h
-      const char* doc = R"""()""";
-    } fmt_streamed;
     // Symbol: drake::hash_append
     struct /* hash_append */ {
       // Source: drake/common/hash.h
@@ -3483,11 +3472,6 @@ R"""(Determines whether ``x > y`` using ``operator<``.)""";
       const char* doc =
 R"""(Determines whether ``x >= y`` using ``operator<``.)""";
     } operator_ge;
-    // Symbol: drake::ostream_formatter
-    struct /* ostream_formatter */ {
-      // Source: drake/common/fmt_ostream.h
-      const char* doc = R"""()""";
-    } ostream_formatter;
     // Symbol: drake::pow
     struct /* pow */ {
       // Source: drake/common/polynomial.h

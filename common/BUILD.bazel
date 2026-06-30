@@ -85,7 +85,6 @@ drake_cc_library(
     hdrs = [
         "fmt.h",
         "fmt_eigen.h",
-        "fmt_ostream.h",
     ],
     visibility = ["//common/test_utilities:__pkg__"],
     deps = [
@@ -1163,13 +1162,6 @@ drake_cc_googletest(
     deps = [
         ":essential",
         "//common/test_utilities:limit_malloc",
-    ],
-)
-
-drake_cc_googletest(
-    name = "fmt_ostream_test",
-    deps = [
-        ":essential",
     ],
 )
 

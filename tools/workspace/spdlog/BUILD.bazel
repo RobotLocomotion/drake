@@ -53,13 +53,6 @@ selects.config_setting_group(
 
 cc_library(
     name = "spdlog",
-    defines = select({
-        ":flag_spdlog_repo_disabled": [],
-        "//conditions:default": [
-            # Remove with deprecation 2026-07-01.
-            "HAVE_SPDLOG",
-        ],
-    }),
     tags = ["nolint"],
     visibility = ["//visibility:public"],
     deps = select({
