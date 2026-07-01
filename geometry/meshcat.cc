@@ -1901,6 +1901,13 @@ class Meshcat::Impl {
     return gamepad_;
   }
 
+  std::optional<Meshcat::ObjectDrag> GetObjectDrag() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    return mouse_drag_;
+  }
+
   // This function is for use by the websocket thread. The Meshcat::StaticHtml()
   // and Meshcat::StaticZip() outer functions call into here using appropriate
   // deferred handling.
@@ -2447,6 +2454,21 @@ class Meshcat::Impl {
       gamepad_.axes = std::move(data.gamepad->axes);
       return;
     }
+    if (data.type == "mouse_drag") {
+      if (data.drag_anchor.size() == 3 && data.drag_target.size() == 3) {
+        Meshcat::ObjectDrag drag;
+        drag.path = std::move(data.name);
+        drag.anchor_in_world = Eigen::Vector3d(
+            data.drag_anchor[0], data.drag_anchor[1], data.drag_anchor[2]);
+        drag.target_in_world = Eigen::Vector3d(
+            data.drag_target[0], data.drag_target[1], data.drag_target[2]);
+        mouse_drag_ = std::move(drag);
+      } else {
+        // An empty payload signals the end of a drag (e.g., mouse release).
+        mouse_drag_ = std::nullopt;
+      }
+      return;
+    }
     if (data.type == "camera_pose" && data.camera_pose.size() == 16 &&
         data.is_perspective.has_value()) {
       if (camera_pose_source_ != nullptr && camera_pose_source_ != ws) {
@@ -2541,6 +2563,12 @@ class Meshcat::Impl {
   // The socket for the browser that is sending the camera pose.
   WebSocket* camera_pose_source_{};
   std::optional<math::RigidTransformd> camera_pose_;
+  // The most recently received object-drag state (nullopt when not dragging),
+  // guarded by controls_mutex_. Drag messages are currently accepted from any
+  // browser; 
+  // TODO(vincekurtz) add per-socket source tracking and mid-drag disconnect
+  // cleanup alongside the browser-side drag implementation.
+  std::optional<Meshcat::ObjectDrag> mouse_drag_;
 
   // These variables should only be accessed in the main thread, where "main
   // thread" is the thread in which this class was constructed.
@@ -2966,6 +2994,10 @@ void Meshcat::DeleteAddedControls() {
 
 Meshcat::Gamepad Meshcat::GetGamepad() const {
   return impl().GetGamepad();
+}
+
+std::optional<Meshcat::ObjectDrag> Meshcat::GetObjectDrag() const {
+  return impl().GetObjectDrag();
 }
 
 std::string Meshcat::StaticHtml() const {
