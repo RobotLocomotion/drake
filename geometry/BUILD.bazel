@@ -653,9 +653,11 @@ drake_cc_binary(
     deps = [
         ":meshcat",
         ":meshcat_visualizer",
+        ":proximity_properties",
         "//common:add_text_logging_gflags",
         "//common/test_utilities:maybe_pause_for_user",
         "//multibody/meshcat:contact_visualizer",
+        "//multibody/meshcat:meshcat_mouse_spring",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

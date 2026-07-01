@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <thread>
@@ -19,11 +20,13 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
+#include "drake/multibody/meshcat/meshcat_mouse_spring.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -677,6 +680,82 @@ Ignore those for now; we'll need to circle back and fix them later.
         << std::endl;
 
     MaybePauseForUser();
+  }
+
+  {
+    // Interactive object dragging. Drops a row of boxes onto the ground and
+    // runs a real-time simulation; a MeshcatMouseSpring converts Ctrl + left-
+    // mouse drags into forces, letting the user pull the boxes around.
+    meshcat->Delete();
+    meshcat->SetCameraPose(Vector3d{0, -1.5, 1}, Vector3d{0, 0, 0.1});
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] =
+        multibody::AddMultibodyPlantSceneGraph(&builder, 0.01);
+    plant.set_contact_model(multibody::ContactModel::kHydroelastic);
+
+    const multibody::CoulombFriction<double> friction(0.5, 0.5);
+
+    // Ground: a rigid hydroelastic half space at z = 0 (not visualized).
+    ProximityProperties ground_props;
+    AddContactMaterial({}, {}, friction, &ground_props);
+    AddRigidHydroelasticProperties(&ground_props);
+    plant.RegisterCollisionGeometry(plant.world_body(), RigidTransformd(),
+                                    HalfSpace(), "ground",
+                                    std::move(ground_props));
+
+    // A row of free compliant hydroelastic boxes resting on the ground.
+    const Eigen::Vector4d colors[] = {
+        {0.9, 0.2, 0.2, 1.0}, {0.2, 0.7, 0.3, 1.0}, {0.2, 0.4, 0.9, 1.0}};
+    const int num_boxes = 3;
+    const double s = 0.1;  // Box edge length.
+    for (int i = 0; i < num_boxes; ++i) {
+      const std::string name = "box_" + std::to_string(i);
+      const auto& body = plant.AddRigidBody(
+          name, multibody::SpatialInertia<double>::SolidBoxWithDensity(
+                    1000.0, s, s, s));
+      ProximityProperties box_props;
+      AddContactMaterial({}, {}, friction, &box_props);
+      AddCompliantHydroelasticProperties(/* resolution_hint */ 0.05,
+                                         /* hydroelastic_modulus */ 1.0e8,
+                                         &box_props);
+      plant.RegisterCollisionGeometry(body, RigidTransformd(), Box(s, s, s),
+                                      name + "_collision", std::move(box_props));
+      plant.RegisterVisualGeometry(body, RigidTransformd(), Box(s, s, s),
+                                   name + "_visual", colors[i]);
+    }
+    plant.Finalize();
+
+    MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat);
+    multibody::meshcat::MeshcatMouseSpring::AddToBuilder(
+        &builder, &plant, meshcat, /* stiffness */ 100.0);
+
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+    auto& plant_context = plant.GetMyMutableContextFromRoot(context.get());
+    for (int i = 0; i < num_boxes; ++i) {
+      plant.SetFreeBodyPose(
+          &plant_context, plant.GetBodyByName("box_" + std::to_string(i)),
+          RigidTransformd(Vector3d((i - 1) * 0.3, 0.0, s / 2)));
+    }
+
+    std::cout
+        << "- Now you should see three boxes resting on the ground.\n"
+        << "- Hold Ctrl and press the left mouse button on a box, then drag to "
+           "pull it around with a virtual spring.\n"
+        << "- Click 'Stop Dragging Demo' (or press Escape) when you are done.\n"
+        << std::endl;
+
+    systems::Simulator<double> simulator(*diagram, std::move(context));
+    simulator.set_target_realtime_rate(1.0);
+    meshcat->AddButton("Stop Dragging Demo", "Escape");
+    simulator.set_monitor([&meshcat, diagram = diagram.get()](
+                              const systems::Context<double>&) {
+      return meshcat->GetButtonClicks("Stop Dragging Demo") > 0
+                 ? systems::EventStatus::ReachedTermination(diagram, "stopped")
+                 : systems::EventStatus::DidNothing();
+    });
+    simulator.AdvanceTo(std::numeric_limits<double>::infinity());
+    meshcat->DeleteButton("Stop Dragging Demo");
   }
 
   std::cout << "Now we'll add back some elements in preparation for testing "

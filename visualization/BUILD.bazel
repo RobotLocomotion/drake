@@ -110,6 +110,7 @@ drake_cc_library(
         ":inertia_visualizer",
         "//geometry:drake_visualizer",
         "//multibody/meshcat:contact_visualizer",
+        "//multibody/meshcat:meshcat_mouse_spring",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/lcm:lcm_config_functions",
     ],

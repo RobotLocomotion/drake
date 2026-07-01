@@ -36,6 +36,238 @@
 
     const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
+    // Interactive object dragging (a Drake extension to upstream meshcat).
+    //
+    // Hold Ctrl and drag an object with the left mouse button to grab the point
+    // under the cursor. The grabbed point and the cursor target are streamed
+    // back to the Drake server (in Drake's z-up world frame); see
+    // Meshcat::GetObjectDrag() and multibody::meshcat::MeshcatMouseSpring.
+    const THREE = MeshCat.THREE;
+    const drakeDrag = {
+      active: false,
+      object: null,         // The grabbed THREE.Object3D (a leaf mesh).
+      path: "",             // The meshcat "/"-path of the grabbed object.
+      pickLocal: null,      // Grab point in the grabbed object's local frame.
+      marker: null,         // Sphere marking the grab point while dragging.
+      targetWorld: null,    // Current drag target, in three.js world coords.
+      plane: new THREE.Plane(),  // Drag plane (in three.js world coords).
+      raycaster: new THREE.Raycaster(),
+      line: null,           // THREE.Line visualizing the spring while dragging.
+    };
+
+    function drakeMouseNdc(event) {
+      const rect = viewer.renderer.domElement.getBoundingClientRect();
+      return new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1);
+    }
+
+    // Reconstructs the meshcat "/"-delimited path of `obj` by walking up the
+    // scene graph to (but not including) the scene root.
+    function drakeObjectPath(obj) {
+      const names = [];
+      let node = obj;
+      while (node && node !== viewer.scene) {
+        if (node.name) {
+          names.unshift(node.name);
+        }
+        node = node.parent;
+      }
+      return "/" + names.join("/");
+    }
+
+    // The grab point's current location in three.js world coords (it follows
+    // the grabbed object as the object moves).
+    function drakeAnchorWorld() {
+      return drakeDrag.object.localToWorld(drakeDrag.pickLocal.clone());
+    }
+
+    // True iff `obj` and all of its ancestors are visible. The three.js
+    // raycaster reports hits on invisible objects, but we only want to grab
+    // geometry the user can actually see (e.g., not hidden proximity/inertia
+    // visualizations).
+    function drakeVisible(obj) {
+      for (let node = obj; node; node = node.parent) {
+        if (node.visible === false) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Raycasts the cursor against the scene and returns the closest hit on a
+    // visible Drake-published object (under "/drake"), or null. This skips
+    // helpers like the grid, axes, and background, as well as any hidden
+    // geometry layer.
+    function drakeRaycast(event) {
+      // TODO(vincekurtz): consider allowing users to specify the subtree that
+      // is draggable, rather than hard-coding "/drake".
+      const drakeRoot = viewer.scene_tree.find(["drake"]);
+      drakeDrag.raycaster.setFromCamera(drakeMouseNdc(event), viewer.camera);
+      const hits = drakeDrag.raycaster.intersectObject(drakeRoot.object, true);
+      return hits.find((h) => drakeVisible(h.object)) || null;
+    }
+
+    // Creates (lazily) and updates the line that visualizes the virtual spring
+    // between the grasped point `a` and the cursor target `b`. Both points are
+    // in Drake's z-up world frame (the local frame of the scene root, to which
+    // the line is parented).
+    function drakeUpdateSpringLine(a, b) {
+      if (!drakeDrag.line) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute(
+          "position", new THREE.BufferAttribute(new Float32Array(6), 3));
+        const material = new THREE.LineBasicMaterial({color: 0x000000});
+        drakeDrag.line = new THREE.Line(geometry, material);
+        drakeDrag.line.frustumCulled = false;
+        drakeDrag.line.raycast = () => {};  // Don't let the line be pickable.
+        viewer.scene.add(drakeDrag.line);
+      }
+      const position = drakeDrag.line.geometry.attributes.position;
+      position.array[0] = a.x;
+      position.array[1] = a.y;
+      position.array[2] = a.z;
+      position.array[3] = b.x;
+      position.array[4] = b.y;
+      position.array[5] = b.z;
+      position.needsUpdate = true;
+      drakeDrag.line.visible = true;
+      // Mark the grab point with a small sphere at the line's anchor end.
+      if (!drakeDrag.marker) {
+        const geometry = new THREE.SphereGeometry(0.001, 16, 12);
+        // TODO(vincekurtz): consider exposing the line color as a user option.
+        const material = new THREE.MeshBasicMaterial({color: 0x000000});
+        drakeDrag.marker = new THREE.Mesh(geometry, material);
+        drakeDrag.marker.frustumCulled = false;
+        drakeDrag.marker.raycast = () => {};  // Don't let the marker be picked.
+        viewer.scene.add(drakeDrag.marker);
+      }
+      drakeDrag.marker.position.set(a.x, a.y, a.z);
+      drakeDrag.marker.visible = true;
+      viewer.set_dirty();
+    }
+
+    function drakeHideSpringLine() {
+      if (drakeDrag.line) {
+        drakeDrag.line.visible = false;
+      }
+      if (drakeDrag.marker) {
+        drakeDrag.marker.visible = false;
+      }
+      viewer.set_dirty();
+    }
+
+    // Sends the current drag state to the server. While a drag is active this
+    // is called every animation frame, so that the attachment point keeps
+    // tracking the (possibly moving) object even when the mouse is still.
+    function sendDrakeDrag() {
+      const conn = viewer.connection;
+      const connected = conn && conn.readyState == WebSocket.OPEN;
+      if (drakeDrag.active && drakeDrag.object) {
+        // The attachment point follows the object; the target follows the
+        // cursor. Convert both into Drake's z-up world frame, which is the
+        // local frame of the (rotated) meshcat scene root.
+        const anchor = viewer.scene.worldToLocal(drakeAnchorWorld());
+        const target = viewer.scene.worldToLocal(drakeDrag.targetWorld.clone());
+        // Draw the spring locally and stream the endpoints to the server.
+        drakeUpdateSpringLine(anchor, target);
+        if (connected) {
+          conn.send(MeshCat.msgpack.encode({
+            type: "mouse_drag",
+            name: drakeDrag.path,
+            drag_anchor: [anchor.x, anchor.y, anchor.z],
+            drag_target: [target.x, target.y, target.z],
+          }));
+        }
+      } else {
+        drakeHideSpringLine();
+        if (connected) {
+          // An empty payload tells the server the drag has ended.
+          conn.send(MeshCat.msgpack.encode(
+            {type: "mouse_drag", name: "", drag_anchor: [], drag_target: []}));
+        }
+      }
+    }
+
+    function drakeDragStart(event) {
+      // A drag requires Ctrl + the left button, over a Drake object.
+      if (!event.ctrlKey || event.button !== 0) {
+        return;
+      }
+      const hit = drakeRaycast(event);
+      if (!hit) {
+        return;  // Nothing grabbable under the cursor; let the controls handle it.
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      drakeDrag.active = true;
+      drakeDrag.object = hit.object;
+      drakeDrag.path = drakeObjectPath(hit.object);
+      drakeDrag.pickLocal = hit.object.worldToLocal(hit.point.clone());
+      drakeDrag.targetWorld = hit.point.clone();
+      // The drag plane passes through the grab point and faces the camera, so
+      // the target tracks the cursor in the screen plane.
+      const normal = new THREE.Vector3();
+      viewer.camera.getWorldDirection(normal);
+      drakeDrag.plane.setFromNormalAndCoplanarPoint(normal, hit.point);
+      // Suspend orbit/pan controls for the duration of the drag.
+      viewer.controls.enabled = false;
+      viewer.renderer.domElement.style.cursor = "grabbing";
+      viewer.renderer.domElement.setPointerCapture(event.pointerId);
+      sendDrakeDrag();
+    }
+
+    function drakeDragMove(event) {
+      if (!drakeDrag.active) {
+        // Not dragging: when Ctrl is held, hint that the object under the
+        // cursor is grabbable by showing a hand ("grab") cursor.
+        const domElement = viewer.renderer.domElement;
+        if (event.ctrlKey && drakeRaycast(event)) {
+          domElement.style.cursor = "grab";
+        } else {
+          domElement.style.cursor = "";
+        }
+        return;
+      }
+      event.preventDefault();
+      drakeDrag.raycaster.setFromCamera(drakeMouseNdc(event), viewer.camera);
+      const target = new THREE.Vector3();
+      if (drakeDrag.raycaster.ray.intersectPlane(drakeDrag.plane, target)) {
+        drakeDrag.targetWorld = target;
+      }
+      sendDrakeDrag();
+    }
+
+    function drakeDragEnd(event) {
+      if (!drakeDrag.active) {
+        return;
+      }
+      drakeDrag.active = false;
+      drakeDrag.object = null;
+      viewer.controls.enabled = true;
+      viewer.renderer.domElement.style.cursor = "";
+      try {
+        viewer.renderer.domElement.releasePointerCapture(event.pointerId);
+      } catch (e) { /* The pointer may already have been released. */ }
+      sendDrakeDrag();
+    }
+
+    viewer.renderer.domElement.addEventListener(
+      "pointerdown", drakeDragStart, true);
+    viewer.renderer.domElement.addEventListener(
+      "pointermove", drakeDragMove, true);
+    viewer.renderer.domElement.addEventListener(
+      "pointerup", drakeDragEnd, true);
+    viewer.renderer.domElement.addEventListener(
+      "pointercancel", drakeDragEnd, true);
+    // On some platforms Ctrl + left-click opens the context menu; suppress it
+    // so it doesn't interrupt a drag.
+    viewer.renderer.domElement.addEventListener("contextmenu", (event) => {
+      if (event.ctrlKey || drakeDrag.active) {
+        event.preventDefault();
+      }
+    }, true);
+
     // Gamepad support - first check if the gamepad feature is available.
     const gamepads_supported = !!navigator.getGamepads;
     if (!gamepads_supported) {
@@ -85,6 +317,12 @@
       stats.end();
       if (gamepads_supported) {
         handle_gamepads();
+      }
+      if (drakeDrag.active) {
+        // Re-send every frame so the attachment point (and marker) keep
+        // tracking the object as the simulation advances, even if the mouse is
+        // stationary.
+        sendDrakeDrag();
       }
       requestAnimationFrame(animate);
     }
@@ -255,6 +493,9 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+      /* Avoid selecting page text when double-clicking to grab an object. */
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     #status-message{
