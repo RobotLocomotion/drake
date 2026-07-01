@@ -1703,6 +1703,7 @@ concepts/notation.
     - <em style="color:gray">model_instance_name[i]</em>_actuation
     - <em style="color:gray">model_instance_name[i]</em>_desired_state
     - <span style="color:green">geometry_query</span>
+    - surface_speeds
     output_ports:
     - state
     - body_poses
@@ -1718,6 +1719,7 @@ concepts/notation.
     - <em style="color:gray">model_instance_name[i]</em>_net_actuation
     - <span style="color:green">geometry_pose</span>
     - <span style="color:green">deformable_body_configuration</span>
+    - surface_displacements
 
 The ports whose names begin with <em style="color:gray">
 model_instance_name[i]</em> represent groups of ports, one for each of
@@ -4767,6 +4769,11 @@ Raises:
     RuntimeError if ``this`` MultibodyPlant was not registered with a
     SceneGraph.)""";
         } CollectRegisteredGeometries;
+        // Symbol: drake::multibody::MultibodyPlant::ComputeSurfaceVelocity
+        struct /* ComputeSurfaceVelocity */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc = R"""()""";
+        } ComputeSurfaceVelocity;
         // Symbol: drake::multibody::MultibodyPlant::EvalBlockSystemJacobian
         struct /* EvalBlockSystemJacobian */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -5759,6 +5766,14 @@ Raises:
     RuntimeError if the plant is not finalized or if the
     ``model_instance`` is invalid.)""";
         } GetStateNames;
+        // Symbol: drake::multibody::MultibodyPlant::GetSurfaceVelocityAxis
+        struct /* GetSurfaceVelocityAxis */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the surface-velocity axis for ``body`` expressed in the body
+frame B, or ``std∷nullopt`` if ``body`` has not been registered. Works
+both before and after Finalize().)""";
+        } GetSurfaceVelocityAxis;
         // Symbol: drake::multibody::MultibodyPlant::GetTopologyGraphvizString
         struct /* GetTopologyGraphvizString */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -7123,6 +7138,33 @@ joint/free body, the default state is used.
 See also:
     stochastic_systems)""";
         } SetRandomState;
+        // Symbol: drake::multibody::MultibodyPlant::SetSurfaceVelocityAxis
+        struct /* SetSurfaceVelocityAxis */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Sets the surface-velocity axis for ``body`` to ``axis_B``, expressed
+in the body frame B. If ``axis_B`` is ``std∷nullopt``, any existing
+registration for ``body`` is cleared. May be called any number of
+times before Finalize(); a subsequent call overwrites any prior
+registration. A nonzero ``axis_B`` is normalized before storage.
+
+Parameter ``body``:
+    The rigid body.
+
+Parameter ``axis_B``:
+    A nonzero vector giving the rotation-axis direction in the body
+    frame B, or ``std∷nullopt`` to clear.
+
+Raises:
+    RuntimeError if called after Finalize().
+
+Raises:
+    RuntimeError if ``axis_B`` has a value and ``body`` is the world
+    body.
+
+Raises:
+    RuntimeError if ``axis_B`` has a value and is the zero vector.)""";
+        } SetSurfaceVelocityAxis;
         // Symbol: drake::multibody::MultibodyPlant::SetUseSampledOutputPorts
         struct /* SetUseSampledOutputPorts */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -7883,6 +7925,34 @@ Raises:
 Raises:
     RuntimeError if the model instance does not exist.)""";
         } get_state_output_port;
+        // Symbol: drake::multibody::MultibodyPlant::get_surface_displacement_output_port
+        struct /* get_surface_displacement_output_port */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the ``"surface_displacements"`` output port, which carries a
+systems∷BusValue whose signals report the cumulative surface
+displacement (in metres) for each body registered via
+SetSurfaceVelocityAxis(). Each signal's name is the fully-qualified
+body name. The displacement is initialized to zero and integrated from
+the ``"surface_speeds"`` input port.
+
+Precondition:
+    Finalize() was already called on ``this`` plant.)""";
+        } get_surface_displacement_output_port;
+        // Symbol: drake::multibody::MultibodyPlant::get_surface_speeds_input_port
+        struct /* get_surface_speeds_input_port */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns a constant reference to the ``"surface_speeds"`` input port,
+which carries a systems∷BusValue whose signals set the surface speed
+for each body registered via SetSurfaceVelocityAxis(). Each signal's
+name is the fully qualified body name and its value is a finite
+``double`` speed in m/s. If the port is not connected, or a body's
+signal is absent, that body's speed is treated as zero.
+
+Precondition:
+    Finalize() was already called on ``this`` plant.)""";
+        } get_surface_speeds_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_tendon_constraint_specs
         struct /* get_tendon_constraint_specs */ {
           // Source: drake/multibody/plant/multibody_plant.h
