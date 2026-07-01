@@ -89,6 +89,34 @@ bool CollisionFilter::RemoveDeclaration(FilterId id) {
   return false;
 }
 
+void CollisionFilter::SetActiveStatus(
+    const GeometrySet& geometry_set, bool active,
+    const CollisionFilter::ExtractIds& extract_ids,
+    const CollisionFilter::ActiveStatusChangeCallback& on_change) {
+  const std::unordered_set<GeometryId> ids =
+      extract_ids(geometry_set, CollisionFilterScope::kAll);
+  /* Build the net change directly from the ids whose membership actually flips;
+   the inactive set is independent of the pairwise sets and the transient
+   history, so it is edited in place. */
+  ActiveStatusChange change;
+  if (active) {
+    for (GeometryId id : ids) {
+      if (inactive_.erase(id) > 0) {
+        change.activated.push_back(id);
+      }
+    }
+  } else {
+    for (GeometryId id : ids) {
+      if (inactive_.insert(id).second) {
+        change.deactivated.push_back(id);
+      }
+    }
+  }
+  if (!change.empty()) {
+    on_change(change);
+  }
+}
+
 void CollisionFilter::Flatten() {
   if (!transient_history_.empty()) {
     /* The composite already reflects all transient deltas applied, so just
@@ -109,6 +137,7 @@ void CollisionFilter::AddGeometry(GeometryId new_id) {
 void CollisionFilter::RemoveGeometry(GeometryId remove_id) {
   DRAKE_DEMAND(geometries_.contains(remove_id));
   geometries_.erase(remove_id);
+  inactive_.erase(remove_id);
 
   RemovePairsFor(remove_id, &filter_state_);
   RemovePairsFor(remove_id, &persistent_base_);
@@ -130,6 +159,14 @@ void CollisionFilter::RemoveGeometry(GeometryId remove_id) {
 
 bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
   if (id_A == id_B) return false;
+  /* Inactive geometries first: an inactive geometry collides with nothing,
+   including geometries registered after it was deactivated. This function runs
+   once per broadphase candidate pair, so the empty() guard keeps the common
+   (all-active) case at a single branch. */
+  if (!inactive_.empty() &&
+      (inactive_.contains(id_A) || inactive_.contains(id_B))) {
+    return false;
+  }
   const PairKey key(id_A, id_B);
   return !filter_state_.filtered.contains(key) &&
          !filter_state_.invariant.contains(key);
@@ -138,6 +175,9 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
 bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
   if (this == &other) return true;
   if (geometries_ != other.geometries_) return false;
+  if (inactive_ != other.inactive_) {
+    return false;
+  }
   /* Two filters are equal iff CanCollideWith() agrees on every pair. A pair is
    blocked iff it is in filtered OR invariant, so we check that every blocked
    pair in either filter is also blocked in the other. */
@@ -162,7 +202,7 @@ bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
 CollisionFilter CollisionFilter::MakeClearCopy() const {
   CollisionFilter copy;
   copy.geometries_ = geometries_;
-  /* filtered and invariant sets are intentionally left empty. */
+  /* filtered, invariant, and inactive_ are intentionally left empty. */
   return copy;
 }
 

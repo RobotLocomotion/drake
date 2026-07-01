@@ -2747,6 +2747,29 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 }
 
+// For CollisionFilterManager's (De)Activate() methods, GeometryState has the
+// responsibility of making sure that the ProximityEngine's activation change
+// callback is invoked. So, we'll make sure that the calling activation methods
+// on the CollisionFilterManager by the state has the downstream impact on the
+// state's proximity engine (the observable set of inactive geometries changes).
+// The correctness of the set and the handling of that set is tested in the
+// requisite components.
+TEST_F(GeometryStateTest, DeactivateReachesProximityEngine) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+
+  ASSERT_EQ(engine.num_inactive_dynamic(), 0);
+
+  geometry_state_.collision_filter_manager().Deactivate(
+      GeometrySet(geometries_[0]));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 1);
+  EXPECT_TRUE(engine.IsInactiveDynamic(geometries_[0]));
+
+  geometry_state_.collision_filter_manager().Activate(
+      GeometrySet(geometries_[0]));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 0);
+}
+
 // Tests two aspects of GeometryState collision filter behavior:
 //
 //   1. No collision filters are applied to a deformable geometry (it and the

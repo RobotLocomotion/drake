@@ -18,6 +18,9 @@ namespace internal {
  rely on the collision filter policy to determine if they should compute results
  for a given geometry pair. Filtered pairs do not contribute to the results.
 
+ In addition to pairwise filters, a geometry can be marked *inactive* via
+ SetActiveStatus(). See discussion in CollisionFilterManager.
+
  Geometries are identified by their geometry ids. The filter status of the
  geometry pair (g, h) can only be modified if both g and h have already been
  added to this filter system (via AddGeometry()). */
@@ -26,6 +29,29 @@ class CollisionFilter {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilter);
 
   CollisionFilter();
+
+  /* The net change to the inactive set (see the class documentation) produced
+   by a SetActiveStatus() call. Clients can adapt their internal state to the
+   changes to the inactive set to improve query performance (see
+   ProximityEngine).
+
+   Whether `deactivated` and `activated` are disjoint sets or what to do about
+   them is determined by the producer and consumer of the change. */
+  struct ActiveStatusChange {
+    /* Geometries that became inactive (were active before the operation). */
+    std::vector<GeometryId> deactivated;
+    /* Geometries that became active. */
+    std::vector<GeometryId> activated;
+    /* Reports if *both* lists are empty -- no change to the inactive set. */
+    bool empty() const { return deactivated.empty() && activated.empty(); }
+  };
+
+  /* The callback used to forward a net active-status change to the owner of the
+   inactive set (e.g., GeometryState binds this to ProximityEngine's broadphase
+   culling). SetActiveStatus() invokes it whenever it produces a non-empty
+   change. */
+  using ActiveStatusChangeCallback =
+      std::function<void(const ActiveStatusChange&)>;
 
   /* The callback function type for resolving a GeometrySet in a declaration
    into an explicitly enumerated set of GeometryIds. All ids in the resultant
@@ -91,30 +117,51 @@ class CollisionFilter {
    @returns true if a declaration is actually removed. */
   bool RemoveDeclaration(FilterId id);
 
+  /* Sets the active status of every geometry resolved from `geometry_set`.
+   When `active` is `false` the geometries are marked *inactive* (an inactive
+   geometry forms no candidate pair with any other geometry; see the class
+   documentation); when `active` is `true` they are marked active again. The
+   `extract_ids` callback converts the GeometrySet into an explicit set of
+   GeometryIds.
+
+   If the call produces a net change to the inactive set, `on_change` is invoked
+   with that change; otherwise `on_change` is not called. If `on_change` is
+   invoked, the change will be non-empty and the deactivated and activated lists
+   will be disjoint.
+
+   @throws std::exception if any GeometryId referenced by `geometry_set` has not
+                          previously been added to `this` filter system. */
+  void SetActiveStatus(const GeometrySet& geometry_set, bool active,
+                       const ExtractIds& extract_ids,
+                       const ActiveStatusChangeCallback& on_change);
+
   /* Flattens the history. The current configuration becomes the persistent
    base configuration and all transient history is removed. */
   void Flatten();
 
   /* Adds a geometry to the filter system. When added, it will not be part of
-   any filtered pairs.
+   any filtered pairs and it will be active.
    @pre `new_id` has not been previously added to this filter system. */
   void AddGeometry(GeometryId new_id);
 
   /* Removes a geometry from the filter system. All filtered collision pairs
-   including `remove_id` will be removed.
+   including `remove_id` will be removed, and the geometry is dropped from the
+   inactive set (if present). Removing a geometry never changes any *other*
+   geometry's active status.
    @pre `remove_id` is part of this filter system. */
   void RemoveGeometry(GeometryId remove_id);
 
   /* Reports true if the geometry pair (`id_A`, `id_B`) is considered to be
-   unfiltered.
+   unfiltered. A pair is filtered if either geometry is inactive (see
+   CollisionFilterDeclaration::Deactivate()) or if the pair itself is filtered.
    @pre `id_A` and `id_B` are both part of this filter system. */
   bool CanCollideWith(GeometryId id_A, GeometryId id_B) const;
 
   /* Reports if two collision filters are "equivalent" -- in that they are
-   defined over the same set of geometry ids and report the same pairs as being
-   filtered (or not). This says nothing about how the two filters are
-   articulated (e.g., different declarations of invariance, transient versus
-   permanent declarations, etc.). */
+   defined over the same set of geometry ids, have the same inactive set, and
+   report the same pairs as being filtered (or not). This says nothing about how
+   the two filters are articulated (e.g., different declarations of invariance,
+   transient versus permanent declarations, etc.). */
   bool IsEquivalent(const CollisionFilter& other) const;
 
   /* Reports if the given `id` has been added to this filter system. */
@@ -197,7 +244,8 @@ class CollisionFilter {
                                  FilterState* state);
 
   /* Removes all entries in `state->filtered` and `state->invariant` that
-   involve `id`. Called when a geometry is unregistered. */
+   involve `id`, and `id`'s entry in `state->inactive` (if any). Called
+   when a geometry is unregistered. */
   static void RemovePairsFor(GeometryId id, FilterState* state);
 
   /* Applies the given declaration (using the extract_ids callback) to `state`.
@@ -224,6 +272,12 @@ class CollisionFilter {
    add/remove is never part of a transient declaration, so this is owned
    directly by CollisionFilter. */
   std::unordered_set<GeometryId> geometries_;
+
+  /* The inactive set `Nₚ` (see the class documentation): membership is edited
+   by SetActiveStatus(). It is independent of the pairwise filter sets and of
+   the transient history -- its effect against the live geometry set lives
+   entirely in CanCollideWith()'s membership test. */
+  std::unordered_set<GeometryId> inactive_;
 
   /* The ordered list of active transient declarations. Each entry stores
    resolved statements (not a full NxN copy), so memory per entry is O(|A|+|B|)

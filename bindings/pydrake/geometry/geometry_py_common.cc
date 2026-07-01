@@ -81,6 +81,10 @@ void DefineCollisionFilterManager(py::module_ m) {
     constexpr auto& cls_doc = doc.CollisionFilterManager;
     class_<Class>(m, "CollisionFilterManager", cls_doc.doc)
         .def("Apply", &Class::Apply, py::arg("declaration"), cls_doc.Apply.doc)
+        .def("Deactivate", &Class::Deactivate, py::arg("geometry_set"),
+            cls_doc.Deactivate.doc)
+        .def("Activate", &Class::Activate, py::arg("geometry_set"),
+            cls_doc.Activate.doc)
         .def("ApplyTransient", &Class::ApplyTransient, py::arg("declaration"),
             cls_doc.ApplyTransient.doc)
         .def("RemoveDeclaration", &Class::RemoveDeclaration,
