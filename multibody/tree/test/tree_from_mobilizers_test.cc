@@ -631,7 +631,7 @@ class PendulumKinematicTests : public PendulumTests {
     // set the velocity kinematics cache entries to zero so that only tau_g(q)
     // gets computed (at least for this pendulum model that only includes
     // gravity and damping).
-    vc.InitializeToZero();
+    vc.SetToZero();
 
     // ======================================================================
     // Compute position kinematics.

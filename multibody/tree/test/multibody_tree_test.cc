@@ -1342,6 +1342,9 @@ class WeldMobilizerTest : public ::testing::Test {
     model->AddJoint(
         std::make_unique<WeldJoint<double>>("weld1", frame_F, frame_M, X_FM_));
 
+    // TODO(sherm1) Temp hack.
+    model->SetCombineWeldedBodies(true);
+
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
     system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));

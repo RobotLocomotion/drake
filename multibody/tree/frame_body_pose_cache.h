@@ -50,6 +50,12 @@ Mass properties
  - p_BoLcm_B: The position vector from mobilized body origin Bo to the
          center of mass of L, expressed in B. Indexed by LinkOrdinal.
 
+World composite precalculations
+-------------------------------
+Position kinematics for links fixed to World can be precalculated once the
+frame parameters are set. Those entries of the PositionKinematicsCache should
+be filled in whenever the FrameBodyPoseCache is recomputed.
+
 @tparam_default_scalar */
 template <typename T>
 class FrameBodyPoseCache {
@@ -177,6 +183,14 @@ class FrameBodyPoseCache {
     // This method is only called when parameters change.
     DRAKE_DEMAND(0 <= ordinal && ordinal < ssize(p_BoLcm_B_pool_));
     p_BoLcm_B_pool_[ordinal] = p_BoLcm_B;
+  }
+
+  // Add in the inertia contribution from link L, after shifting to Bo and
+  // re-expressing in B.
+  void AddToM_BBo_B(MobodIndex index, const SpatialInertia<T>& M_LBo_B) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= index && index < ssize(M_BBo_B_pool_));
+    M_BBo_B_pool_[index] += M_LBo_B;
   }
 
  private:

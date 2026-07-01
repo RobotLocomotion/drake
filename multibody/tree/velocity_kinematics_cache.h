@@ -49,35 +49,13 @@ class VelocityKinematicsCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache);
 
   // Constructs a velocity kinematics cache entry for the given
-  // SpanningForest.
-  // In Release builds specific entries are left uninitialized resulting in a
-  // zero cost operation. However, in Debug builds those entries are set to NaN
-  // so that operations using this uninitialized cache entry fail fast, easing
-  // bug detection.
-  explicit VelocityKinematicsCache(const SpanningForest& forest)
-      : num_mobods_(forest.num_mobods()), num_links_(forest.num_links()) {
-    Allocate();
-    DRAKE_ASSERT_VOID(InitializeToNaN());
-    // Sets defaults.
-    V_WB_pool_[world_mobod_index()].SetZero();   // World's velocity is zero.
-    V_WL_pool_[world_link_ordinal()].SetZero();  //           "
-    V_FM_pool_[world_mobod_index()].SetNaN();    // It must never be used.
-    V_PB_W_pool_[world_mobod_index()].SetNaN();  // It must never be used.
-  }
+  // SpanningForest and initializes everything to NaN except for the velocities
+  // of World and World-fixed Links which are known to be zero forever.
+  explicit VelocityKinematicsCache(const SpanningForest& forest);
 
-  // Initializes `this` %VelocityKinematicsCache as if all generalized
+  // Sets `this` VelocityKinematicsCache as if all generalized
   // velocities of the corresponding MultibodyTree model were zero.
-  void InitializeToZero() {
-    for (MobodIndex mobod_index(0); mobod_index < num_mobods_; ++mobod_index) {
-      V_WB_pool_[mobod_index].SetZero();
-      V_FM_pool_[mobod_index].SetZero();
-      V_PB_W_pool_[mobod_index].SetZero();
-    }
-    for (LinkOrdinal link_ordinal(0); link_ordinal < num_links_;
-         ++link_ordinal) {
-      V_WL_pool_[link_ordinal].SetZero();
-    }
-  }
+  void SetToZero();
 
   // Returns V_WB, body B's spatial velocity in the world frame W.
   // @param[in] mobod_index The unique index for the computational
@@ -134,27 +112,10 @@ class VelocityKinematicsCache {
   }
 
  private:
-  // Allocates resources for this velocity kinematics cache.
-  void Allocate() {
-    V_WB_pool_.resize(num_mobods_);
-    V_FM_pool_.resize(num_mobods_);
-    V_PB_W_pool_.resize(num_mobods_);
-    V_WL_pool_.resize(num_links_);
-  }
-
-  // Initializes all pools to have NaN values to ease bug detection when entries
-  // are accidentally left uninitialized.
-  void InitializeToNaN() {
-    for (MobodIndex mobod_index(0); mobod_index < num_mobods_; ++mobod_index) {
-      V_WB_pool_[mobod_index].SetNaN();
-      V_FM_pool_[mobod_index].SetNaN();
-      V_PB_W_pool_[mobod_index].SetNaN();
-    }
-    for (LinkOrdinal link_ordinal(0); link_ordinal < num_links_;
-         ++link_ordinal) {
-      V_WL_pool_[link_ordinal].SetNaN();
-    }
-  }
+  // Allocates resources for this velocity kinematics cache. Sets most
+  // quantities to NaN except for V_FM which is set to zero since mobilizers
+  // are entitled to assume that.
+  void Allocate();
 
   // Number of Mobods in the multibody forest, including the World mobod.
   int num_mobods_{0};

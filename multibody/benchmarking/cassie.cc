@@ -1,6 +1,7 @@
 #include <memory>
 
 #include <benchmark/benchmark.h>
+#include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
@@ -14,6 +15,8 @@
 namespace drake {
 namespace multibody {
 namespace {
+
+DEFINE_bool(composite, false, "Enable link-combining for welded bodies.");
 
 using math::RigidTransform;
 using math::RollPitchYaw;
@@ -119,16 +122,25 @@ class Cassie : public benchmark::Fixture {
   void DoSlowSystemJacobian(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
-    const int num_mobods = ssize(plant_->graph().forest().mobods());
+    const internal::SpanningForest& forest = plant_->graph().forest();
+    const int num_mobods = forest.num_mobods();
     MatrixX<double> Jv_V_WB_W(6 * num_mobods, plant_->num_velocities());
     for (auto _ : state) {
       InvalidateState();
       Jv_V_WB_W.setZero();
-      for (BodyIndex index{1}; index < plant_->num_bodies(); ++index) {
-        const Frame<double>& body_frame = plant_->get_body(index).body_frame();
-        auto J = Jv_V_WB_W.block(6 * index, 0, 6, plant_->num_velocities());
+      for (internal::MobodIndex mobod_index{1}; mobod_index < num_mobods;
+           ++mobod_index) {
+        const LinkOrdinal active_link_ordinal =
+            forest.mobods(mobod_index).active_link_ordinal();
+        const LinkIndex active_link_index =
+            forest.links(active_link_ordinal).index();
+        // The active link's link frame is also the Mobod's frame.
+        const Frame<double>& active_link_frame =
+            plant_->get_body(active_link_index).link_frame();
+        auto J =
+            Jv_V_WB_W.block(6 * mobod_index, 0, 6, plant_->num_velocities());
         plant_->CalcJacobianSpatialVelocity(
-            *context_, JacobianWrtVariable::kV, body_frame,
+            *context_, JacobianWrtVariable::kV, active_link_frame,
             Eigen::Vector3<double>::Zero(), plant_->world_frame(),
             plant_->world_frame(), &J);
       }
@@ -241,6 +253,7 @@ std::unique_ptr<MultibodyPlant<T>> Cassie<T>::MakePlant() {
   Parser parser(plant.get());
   const auto& model = "drake/multibody/benchmarking/cassie_v2.urdf";
   parser.AddModels(FindResourceOrThrow(model));
+  plant->SetCombineWeldedBodies(FLAGS_composite);
   plant->Finalize();
   if constexpr (std::is_same_v<T, double>) {
     return plant;
