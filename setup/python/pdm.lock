@@ -5,7 +5,7 @@
 groups = ["default", "test", "wheel"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:4f54f1d71bb6865744cab2e41975d6605bae54af65b5426191cd355059000557"
+content_hash = "sha256:507305e2457404a91a1870ff6ea848bdac74f181850a3df298bc9850b170aa7c"
 
 [[metadata.targets]]
 requires_python = ">=3.12"
@@ -2434,21 +2434,6 @@ dependencies = [
 files = [
     {file = "werkzeug-3.1.8-py3-none-any.whl", hash = "sha256:63a77fb8892bf28ebc3178683445222aa500e48ebad5ec77b0ad80f8726b1f50"},
     {file = "werkzeug-3.1.8.tar.gz", hash = "sha256:9bad61a4268dac112f1c5cd4630a56ede601b6ed420300677a869083d70a4c44"},
-]
-
-[[package]]
-name = "wheel"
-version = "0.47.0"
-requires_python = ">=3.9"
-summary = "Command line tool for manipulating wheel files"
-groups = ["wheel"]
-marker = "sys_platform == \"darwin\""
-dependencies = [
-    "packaging>=24.0",
-]
-files = [
-    {file = "wheel-0.47.0-py3-none-any.whl", hash = "sha256:212281cab4dff978f6cedd499cd893e1f620791ca6ff7107cf270781e587eced"},
-    {file = "wheel-0.47.0.tar.gz", hash = "sha256:cc72bd1009ba0cf63922e28f94d9d83b920aa2bb28f798a31d0691b02fa3c9b3"},
 ]
 
 [[package]]
