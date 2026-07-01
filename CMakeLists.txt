@@ -11,10 +11,41 @@
 # corresponding tests should also be updated.
 cmake_minimum_required(VERSION 3.20...4.3)
 
+# The build types that Drake's CMake build supports. This is the single source
+# of truth.
+set(SUPPORTED_BUILD_TYPES Release RelWithDebInfo Debug MinSizeRel)
+
+# Record which configuration-specific C compiler flags the user explicitly
+# provided before project() runs, so that we can tell them apart from the
+# compiler defaults that project() is about to seed below.
+set(_USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES)
+foreach(_config IN LISTS SUPPORTED_BUILD_TYPES)
+  string(TOUPPER "${_config}" _config_upper)
+  if(DEFINED CMAKE_C_FLAGS_${_config_upper})
+    list(APPEND _USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES ${_config_upper})
+  endif()
+endforeach()
+
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
   LANGUAGES C
 )
+
+# CMake build type flag transcriptions are handled in cmake/bazel.rc.in. CMake's
+# modules otherwise seed configuration-specific C flags which we'd forward to
+# Bazel, thus overriding its --compilation_mode; e.g., the default -O3 from
+# CMAKE_C_FLAGS_RELEASE would be inconsistent with CXX at -O2 from
+# --compilation_mode=opt. Clear CMake's defaults in favor of the transcriptions
+# there. Any flags the user specified via CMAKE_C_FLAGS_<config> are preserved
+# (and still propagated to Bazel).
+foreach(_config IN LISTS SUPPORTED_BUILD_TYPES)
+  string(TOUPPER "${_config}" _config_upper)
+  if(NOT _config_upper IN_LIST _USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES)
+    set(CMAKE_C_FLAGS_${_config_upper} "" CACHE STRING
+      "Flags used by the C compiler during ${_config} builds." FORCE
+    )
+  endif()
+endforeach()
 
 # The primary build system for Drake is Bazel (https://bazel.build/). For CMake,
 # our objective is to accept configuration options using their standard spelling
@@ -137,7 +168,7 @@ get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTI_CONFIG)
   message(FATAL_ERROR "Drake does not support multi-config generators")
 endif()
-set(SUPPORTED_BUILD_TYPES Release RelWithDebInfo Debug MinSizeRel)
+
 string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
   "${SUPPORTED_BUILD_TYPES}"
 )
@@ -169,11 +200,26 @@ endif()
 # corresponding comment in bazel.rc.in above the
 # `build @BAZEL_USER_COMPILE_FLAGS@` line for more details.
 set(BAZEL_USER_COMPILE_FLAGS)
-separate_arguments(_user_c_flags UNIX_COMMAND
-  "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UPPER}}"
+
+# Collect the tokenized flags from each named CMAKE_*_FLAGS variable that is set
+# and non-empty. We must guard on emptiness because the CMAKE_CXX_FLAGS*
+# variables are not initialized (Drake's project() enables only C, not CXX);
+# referencing them unconditionally would trip -Wuninitialized.
+function(_collect_user_flags _out_var)
+  set(_result)
+  foreach(_flag_var IN LISTS ARGN)
+    if(${_flag_var})
+      separate_arguments(_tokens UNIX_COMMAND "${${_flag_var}}")
+      list(APPEND _result ${_tokens})
+    endif()
+  endforeach()
+  set(${_out_var} ${_result} PARENT_SCOPE)
+endfunction()
+_collect_user_flags(_user_c_flags
+  CMAKE_C_FLAGS CMAKE_C_FLAGS_${BUILD_TYPE_UPPER}
 )
-separate_arguments(_user_cxx_flags UNIX_COMMAND
-  "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE_UPPER}}"
+_collect_user_flags(_user_cxx_flags
+  CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_${BUILD_TYPE_UPPER}
 )
 # Entries in the .bazelrc file are tokenized according to the same rules as the
 # Bourne shell. See https://bazel.build/run/bazelrc#bazelrc-syntax-semantics
