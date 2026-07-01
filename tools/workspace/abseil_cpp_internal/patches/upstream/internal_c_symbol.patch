@@ -1,0 +1,35 @@
+[abseil-cpp] Fix AbslInternalGetFileMappingHint ...
+
+Cherry-picking https://github.com/abseil/abseil-cpp/pull/2098.
+
+--- absl/debugging/internal/symbolize.h
++++ absl/debugging/internal/symbolize.h
+@@ -156,8 +156,8 @@ ABSL_NAMESPACE_END
+ extern "C"
+ #endif  // __cplusplus
+ 
+-    bool
+-    AbslInternalGetFileMappingHint(const void** start, const void** end,
+-                                   uint64_t* offset, const char** filename);
++    bool ABSL_INTERNAL_C_SYMBOL(AbslInternalGetFileMappingHint)(
++        const void** start, const void** end, uint64_t* offset,
++        const char** filename);
+ 
+ #endif  // ABSL_DEBUGGING_INTERNAL_SYMBOLIZE_H_
+
+--- absl/debugging/symbolize_elf.inc
++++ absl/debugging/symbolize_elf.inc
+@@ -1697,10 +1697,9 @@ bool Symbolize(const void *pc, char *out, int out_size) {
+ ABSL_NAMESPACE_END
+ }  // namespace absl
+ 
+-extern "C" bool AbslInternalGetFileMappingHint(const void **start,
+-                                               const void **end,
+-                                               uint64_t *offset,
+-                                               const char **filename) {
++extern "C" bool ABSL_INTERNAL_C_SYMBOL(AbslInternalGetFileMappingHint)(
++    const void **start, const void **end, uint64_t *offset,
++    const char **filename) {
+   return absl::debugging_internal::GetFileMappingHint(start, end, offset,
+                                                       filename);
+ }
