@@ -1714,19 +1714,21 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     frame_body_poses->SetX_BF(frame->index(), X_BL * X_LF);
   }
 
-  // For every mobilized body, precalculate its body-frame spatial inertia
-  // M_BBo_B by shifting and accumulating the spatial inertia M_LLo_L of each
-  // of the links it mobilizes (we call those the mobod's "follower links").
-  // For a non-composite mobod there is only one follower link; for a composite
-  // there are multiple links welded together.
+  // Pass 4 (over all mobods): For every mobod, precalculate its body-frame
+  // spatial inertia M_BBo_B by shifting and accumulating the spatial inertia
+  // M_LLo_L of each of its "follower" links. For a non-composite mobod there is
+  // only one follower link. For a composite, multiple follower links are welded
+  // together as a rigid unit.
   // We also calculate and save p_BoLcm_B, the offset from mobod origin Bo to
   // each of its follower links' centers of mass, expressed in B.
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
-    if (mobod.is_world()) continue;
-
-    // Zero out the Mobod's mass properties. We'll build these up by
-    // accumulating contributions from all follower links.
-    frame_body_poses->SetM_BBo_B(mobod.index(), SpatialInertia<T>::Zero());
+    // Initialize each non-world Mobod's mass properties to zero and then
+    // accumulate mass contributions from all of its follower links.
+    // Note: The world mobod's spatial inertia is intentionally left as NaN.
+    const bool is_world_mobod = mobod.is_world();
+    if (!is_world_mobod) {
+      frame_body_poses->SetM_BBo_B(mobod.index(), SpatialInertia<T>::Zero());
+    }
 
     // Accumulate the spatial inertia from each link following this mobod.
     for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
@@ -1736,21 +1738,26 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
           link.CalcSpatialInertiaInBodyFrame(context);
       frame_body_poses->SetM_LLo_L(link_ordinal, M_LLo_L);
 
+      // Set p_BoLcm_B and accumulate M_LLo_L into M_BBo_B (unless B is world).
       const Vector3<T>& p_LoLcm_L = M_LLo_L.get_com();
       if (!frame_body_poses->is_X_BL_identity(link_ordinal)) {
         const RigidTransform<T>& X_BL =
             frame_body_poses->get_X_BL(link_ordinal);
         const math::RotationMatrix<T>& R_BL = X_BL.rotation();
         const Vector3<T>& p_BoLo_B = X_BL.translation();
-        const SpatialInertia<T> M_LLo_B = M_LLo_L.ReExpress(R_BL);
-        const SpatialInertia<T> M_LBo_B = M_LLo_B.Shift(-p_BoLo_B);
-        frame_body_poses->AddToM_BBo_B(mobod.index(), M_LBo_B);
         const Vector3<T> p_BoLcm_B = X_BL * p_LoLcm_L;
         frame_body_poses->Set_p_BoLcm_B(link_ordinal, p_BoLcm_B);
+        if (!is_world_mobod) {
+          const SpatialInertia<T> M_LLo_B = M_LLo_L.ReExpress(R_BL);
+          const SpatialInertia<T> M_LBo_B = M_LLo_B.Shift(-p_BoLo_B);
+          frame_body_poses->AddToM_BBo_B(mobod.index(), M_LBo_B);
+        }
       } else {
-        // X_BL is identity.
-        frame_body_poses->AddToM_BBo_B(mobod.index(), M_LLo_L);
+        // X_BL is identity, so p_BoLcm_B = p_LoLcm_L and M_LBo_B = M_LLo_L.
         frame_body_poses->Set_p_BoLcm_B(link_ordinal, p_LoLcm_L);
+        if (!is_world_mobod) {
+          frame_body_poses->AddToM_BBo_B(mobod.index(), M_LLo_L);
+        }
       }
     }
   }
@@ -2549,9 +2556,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
 
   // Add each body's spatial inertia in the world frame W to this system
   // S's spatial inertia in W about Wo (the origin of W), expressed in W.
-  // TODO(Mitiguy) Create SpatialInertia<T>::Zero() and use it below.
-  SpatialInertia<T> M_SWo_W(0., Vector3<T>::Zero(),
-                            UnitInertia<T>::TriaxiallySymmetric(0));
+  SpatialInertia<T> M_SWo_W = SpatialInertia<T>::Zero();
 
   for (BodyIndex body_index : body_indexes) {
     if (body_index == world_index()) continue;  // World inertia does not add.

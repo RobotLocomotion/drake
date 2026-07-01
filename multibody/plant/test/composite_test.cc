@@ -124,10 +124,14 @@ TestModel MakeModel(bool combine_welded_bodies) {
   // Sanity check: Some information in the SpanningForest should be the same,
   // whether or not the welded links are combined.
   const internal::SpanningForest& forest = tree.forest();
+  const internal::SpanningForest::Mobod& mobod_0 =
+      forest.mobods(internal::MobodIndex(0));
   const internal::SpanningForest::Mobod& mobod_1 =
       forest.mobods(internal::MobodIndex(1));
-  EXPECT_EQ(mobod_1.active_link_ordinal(), LinkOrdinal(1));
+  EXPECT_TRUE(mobod_0.is_world());      // World is mobod(0) and LinkOrdinal(0).
   EXPECT_TRUE(mobod_1.is_base_body());  // Connects to World via revolute joint.
+  EXPECT_EQ(mobod_0.active_link_ordinal(), LinkOrdinal(0));
+  EXPECT_EQ(mobod_1.active_link_ordinal(), LinkOrdinal(1));
 
   // If the welded links are combined, verify that the composite mobilized body
   // has the proper follower link ordinals (the active link ordinal which
@@ -175,6 +179,15 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
   const TestModel explicit_model = MakeModel(false /* no combining */);
   const TestModel composite_model = MakeModel(true /* combine welds */);
 
+  const double m = 1.0, a = 0.1;  // mass m and side-length a of solid cubes.
+  const Frame<double>& world_frame = explicit_model.plant->world_frame();
+  const RigidBody<double>* explicit_links[] = {
+      explicit_model.link1, explicit_model.link2, explicit_model.link3,
+      explicit_model.link4};
+  const RigidBody<double>* composite_links[] = {
+      composite_model.link1, composite_model.link2, composite_model.link3,
+      composite_model.link4};
+
   // The mass matrix is configuration-independent for this model (see above),
   // but we check at several angles to guard against future changes.
   const std::vector<double> angles = {0.0, M_PI / 6, M_PI / 4, -M_PI / 3};
@@ -182,89 +195,52 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
     SetState(explicit_model, angle, 0.0);
     SetState(composite_model, angle, 0.0);
 
-    // Verify Link123's spatial inertia not depend on combined welded links
-    const Frame<double>& world_frame = explicit_model.plant->world_frame();
+    // Verify Link123's spatial inertia not depend on combined welded links.
+    // Note: Due to Bug 1 above, the following test used to fail (now fixed)
     SpatialInertia<double> M_EWo_W = explicit_model.plant->CalcSpatialInertia(
         *explicit_model.context, world_frame,
         {explicit_model.link1->index(), explicit_model.link2->index(),
          explicit_model.link3->index()});
-
-    // TODO(Mitiguy) This next tests should be EXPECT_TRUE, hence a bug in 
-    // MultibodyPlant::CalcSpatialInertia(), maybe something like poses 
-    // using MoBod index rather linkIndex or cache not updated or ...         
     SpatialInertia<double> M_CWo_W = composite_model.plant->CalcSpatialInertia(
         *composite_model.context, world_frame,
         {composite_model.link1->index(), composite_model.link2->index(),
-         composite_model.link3->index()});        
-    EXPECT_FALSE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+         composite_model.link3->index()});
+    EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
                                 MatrixCompareType::relative))
-        << "Spatial inertia mismatch at angle = " << angle;
+        << "Link123 spatial inertia mismatch at angle = " << angle;
 
-    // TODO(Mitiguy) The next three tests show that there is a bug in
-    // MultibodyPlant::CalcSpatialInertia() that incorrectly associates the
-    // Link123 composite spatial inertia with a single link (Link 1 or 2 or 3).
-    M_CWo_W = composite_model.plant->CalcSpatialInertia(
-        *composite_model.context, world_frame,
-        {composite_model.link1->index()});
-    EXPECT_FALSE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
-                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
-                                 MatrixCompareType::relative))
-        << "Spatial inertia mismatch at angle = " << angle;
+    // Tests that uncovered old bugs in MultibodyPlant::CalcSpatialInertia().
+    // Bug 1: When CalcSpatialInertia() was called with composite_model on a
+    // single link (Link 1 or 2 or 3), the returned spatial inertia was for the
+    // entire Link123 composite mobod.
+    // Bug 2: When CalcSpatialInertia() was called with composite_model on link4
+    // (which is welded to world), an exception was thrown (debug mode) or NaN
+    // were returned (release mode).
+    for (int i = 0; i < 3; ++i) {
+      const RigidBody<double>* explicit_linki = explicit_links[i];
+      const RigidBody<double>* composite_linki = composite_links[i];
+      M_EWo_W = explicit_model.plant->CalcSpatialInertia(
+          *explicit_model.context, world_frame, {explicit_linki->index()});
+      M_CWo_W = composite_model.plant->CalcSpatialInertia(
+          *composite_model.context, world_frame, {composite_linki->index()});
+      EXPECT_TRUE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
+                                  M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                  MatrixCompareType::relative))
+          << "Spatial inertia mismatch: link" << i + 1
+          << " at angle = " << angle;
 
-    // TODO(Mitiguy) This test and the previous and next test should NOT pass.
-    M_CWo_W = composite_model.plant->CalcSpatialInertia(
-        *composite_model.context, world_frame,
-        {composite_model.link2->index()});
-    EXPECT_FALSE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
-                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
-                                 MatrixCompareType::relative))
-        << "Spatial inertia mismatch at angle = " << angle;
-
-    // TODO(Mitiguy) This test and the previous two test should NOT pass.
-    M_CWo_W = composite_model.plant->CalcSpatialInertia(
-        *composite_model.context, world_frame,
-        {composite_model.link3->index()});
-    EXPECT_FALSE(CompareMatrices(M_EWo_W.CopyToFullMatrix6(),
-                                 M_CWo_W.CopyToFullMatrix6(), kTolerance,
-                                 MatrixCompareType::relative))
-        << "Spatial inertia mismatch at angle = " << angle;
-
-    // Calculate Link4's spatial inertia about Wo (world origin) expressed in W.
-    const double m = 1.0, a = 0.1;  // Cube's mass (kg) and side-length (meter).
-    const Vector3<double> p_WoL4o_W(4.0, 0.0, 0.0);
-    SpatialInertia<double> M_L4Wo_W_expected =
-        SpatialInertia<double>::SolidCubeWithMass(m, a).Shift(-p_WoL4o_W);
-
-    // Ensure the spatial inertia for Link 4 is correct in the explicit model.
-    SpatialInertia<double> M_L4Wo_W = explicit_model.plant->CalcSpatialInertia(
-        *explicit_model.context, world_frame, {explicit_model.link4->index()});
-    EXPECT_TRUE(CompareMatrices(M_L4Wo_W.CopyToFullMatrix6(),
-                                M_L4Wo_W_expected.CopyToFullMatrix6(),
-                                kTolerance, MatrixCompareType::relative))
-        << "Spatial inertia mismatch for Link4 at angle = " << angle;
-
-    // Ensure the spatial inertia for Link 4 is correct in the composite model.
-    // TODO(Mitiguy) There is a bug in MultibodyPlant::CalcSpatialInertia() when
-    // composite mobilized bodies are used. The spatial inertia for the World
-    // body (which is nan) replaces that of Link 4 (which is welded to world).
-    // TODO(Mitiguy) Remove dead code after we are sure the bug is fixed.    
-    if (!kDrakeAssertIsArmed) { 
-      M_L4Wo_W = composite_model.plant->CalcSpatialInertia(
-          *composite_model.context, world_frame,
-          {composite_model.link4->index()});
-      // TODO(Mitiguy) This test should be EXPECT_TRUE not EXPECT_FALSE.
-      EXPECT_TRUE(CompareMatrices(M_L4Wo_W.CopyToFullMatrix6(),
-                                  M_L4Wo_W_expected.CopyToFullMatrix6(),
-                                  kTolerance, MatrixCompareType::relative))
-          << "Spatial inertia mismatch for Link4 at angle = " << angle;
-    } else {
-      // TODO(Mitiguy) Fix as an exception should not be thrown here.
-      DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-          composite_model.plant->CalcSpatialInertia(
-              *composite_model.context, world_frame,
-              {composite_model.link4->index()}),
-          "[\\s\\S]*did not pass the test CouldBePhysicallyValid[\\s\\S]*");
+      // Due to special case of link4 being welded to world, compare link4's
+      // spatial inertia to its expected value.
+      if (i == 3) {
+        const Vector3<double> p_WoL4o_W(4.0, 0.0, 0.0);
+        SpatialInertia<double> M_L4Wo_W_expected =
+            SpatialInertia<double>::SolidCubeWithMass(m, a).Shift(-p_WoL4o_W);
+        EXPECT_TRUE(CompareMatrices(M_L4Wo_W_expected.CopyToFullMatrix6(),
+                                    M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                    MatrixCompareType::relative))
+            << "Inaccurate link4 spatial inertia at angle = " << angle;
+      }
     }
 
     // Ensure the mass matrix does not depend on welded links being combined.
