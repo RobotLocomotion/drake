@@ -88,7 +88,7 @@ TestModel MakeModel(bool combine_welded_bodies) {
   m.link3 = &m.plant->AddRigidBody("Link3", M);
   m.link4 = &m.plant->AddRigidBody("Link4", M);
 
-  // Revolute joint (z-axis): World to Link1.
+  // Revolute joint (z-axis): World to Link1, with Link1 frame at world frame.
   m.revolute = &m.plant->AddJoint<RevoluteJoint>(
       "revolute", m.plant->world_body(), RigidTransformd{}, *m.link1,
       RigidTransformd{}, Vector3<double>::UnitZ());
@@ -99,7 +99,7 @@ TestModel MakeModel(bool combine_welded_bodies) {
                                RigidTransformd{}, RigidTransformd{});
 
   // Weld Link3 to Link2, with Link3's joint frame offset +1 m in y from Link2.
-  // Using y (not x) avoids a collinear layout that could mask transform bugs.
+  // Using y (not x) avoids a linear layout that could mask transform bugs.
   const RigidTransformd X_2to3(Vector3<double>(0.0, 1.0, 0.0));
   m.plant->AddJoint<WeldJoint>("weld23", *m.link2, X_2to3, *m.link3,
                                RigidTransformd{}, RigidTransformd{});
@@ -112,14 +112,16 @@ TestModel MakeModel(bool combine_welded_bodies) {
   m.context = m.plant->CreateDefaultContext();
 
   // Sanity check: Both models should have the same number of bodies (links),
-  // joints, and number of states, but they should differ in the number of
-  // mobilized bodies.
+  // joints, and number of states (albeit different number of mobilized bodies).
   EXPECT_EQ(m.plant->num_bodies(), 5);      // World + 4 links.
   EXPECT_EQ(m.plant->num_joints(), 4);      // 1 revolute + 3 welds.
   EXPECT_EQ(m.plant->num_positions(), 1);   // 1 revolute angle.
   EXPECT_EQ(m.plant->num_velocities(), 1);  // 1 revolute angular rate.
   const internal::MultibodyTree<double>& tree = GetInternalTree(*m.plant);
   EXPECT_EQ(tree.num_mobods(), combine_welded_bodies ? 2 : 5);
+  EXPECT_EQ(tree.num_mobilizers(), combine_welded_bodies ? 2 : 5);
+  // Note: num_mobilizers() == num_mobods() because the World body gets a dummy
+  // weld mobilizer at index 0 to keep mobilizer/body-node indexing identical.
 
   // Sanity check: Some information in the SpanningForest should be the same,
   // whether or not the welded links are combined.
@@ -133,12 +135,19 @@ TestModel MakeModel(bool combine_welded_bodies) {
   EXPECT_EQ(mobod_0.active_link_ordinal(), LinkOrdinal(0));
   EXPECT_EQ(mobod_1.active_link_ordinal(), LinkOrdinal(1));
 
-  // If the welded links are combined, verify that the composite mobilized body
-  // has the proper follower link ordinals (the active link ordinal which
-  // corresponds to the mobilized body and the two other links welded to it).
+  // Ensure Mobods (mobilized bodies) have the proper follower link ordinals.
+  // Each Mobod should have an active link ordinal. If welded links have 
+  // been combined, then there are additional follower link ordinals.
   if (combine_welded_bodies) {
+    EXPECT_EQ(mobod_0.follower_link_ordinals(),
+              (std::vector{LinkOrdinal(0), LinkOrdinal(4)}));
     EXPECT_EQ(mobod_1.follower_link_ordinals(),
               (std::vector{LinkOrdinal(1), LinkOrdinal(2), LinkOrdinal(3)}));
+  } else {
+    EXPECT_EQ(mobod_0.follower_link_ordinals(),
+              (std::vector{LinkOrdinal(0)}));
+    EXPECT_EQ(mobod_1.follower_link_ordinals(),
+              (std::vector{LinkOrdinal(1)}));
   }
   return m;
 }
@@ -150,26 +159,27 @@ void SetState(const TestModel& m, double angle_rad, double angular_vel) {
 }
 
 /* Ensure the composite mobilized body's combined spatial inertia for Link123
-(links 1, 2, 3) is computed correctly. The 1x1 mass matrix for this 1-DOF model
-directly depends on the spatial inertia of Link123, so we also verify:
+(links 1, 2, 3) is computed correctly. The 1x1 mass matrix for this 1-DOF
+model directly depends on the spatial inertia of Link123, so we also verify:
   (a) The mass matrix is identical between the explicit-weld and composite
       models at several configurations.
   (b) The mass matrix matches the analytically computed value.
 
 Analytical derivation
 ---------------------
-The model has a single revolute joint (z-axis at World origin) with three welded
-links, each a 1 kg solid cube of side 0.1 m. Their body-frame origins p₁, p₂, p₃
-are coincident with their centers of mass and located (in Link1's frame):
-  Link1: p₁ = (0, 0, 0)   — at the joint
-  Link2: p₂ = (1, 0, 0)   in Link1's frame
-  Link3: p₃ = (1, 1, 0)   in Link1's frame (1 m in x then 1 m in Link2's y)
+The model has a single revolute joint (z-axis at World origin) with three
+welded links, each a 1 kg solid cube of side 0.1 m. Their body-frame origins
+p₁, p₂, p₃ are coincident with their centers of mass and located (in Link1's
+frame): Link1: p₁ = (0, 0, 0)   — at the joint Link2: p₂ = (1, 0, 0)   in
+Link1's frame Link3: p₃ = (1, 1, 0)   in Link1's frame (1 m in x then 1 m in
+Link2's y)
 
 For a solid cube of mass m and side a, its moment of inertia about any axis
 through its COM is m*a²/6. The parallel axis theorem calculates each cube's
-moment of inertia about the revolute's z-axis via: Iᵢ = m*a²/6 + m*(dᵢ)², where
-dᵢ (i=1,2,3) is the distance between each cube's COM and the revolute's z-axis.
-Iᵢ is independent of joint angle because the composite is welded together.
+moment of inertia about the revolute's z-axis via: Iᵢ = m*a²/6 + m*(dᵢ)²,
+where dᵢ (i=1,2,3) is the distance between each cube's COM and the revolute's
+z-axis. Iᵢ is independent of joint angle because the composite is welded
+together.
 
   Link1: I₁ = 1*(0.1)²/6 + 1*0²    = 1/600 + 0   (d² = 0)
   Link2: I₂ = 1*(0.1)²/6 + 1*1²    = 1/600 + 1   (d² = 1)
@@ -212,11 +222,10 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
 
     // Tests that uncovered old bugs in MultibodyPlant::CalcSpatialInertia().
     // Bug 1: When CalcSpatialInertia() was called with composite_model on a
-    // single link (Link 1 or 2 or 3), the returned spatial inertia was for the
-    // entire Link123 composite mobod.
-    // Bug 2: When CalcSpatialInertia() was called with composite_model on link4
-    // (which is welded to world), an exception was thrown (debug mode) or NaN
-    // were returned (release mode).
+    // single link (Link 1 or 2 or 3), the returned spatial inertia was for
+    // the entire Link123 composite mobod. Bug 2: When CalcSpatialInertia()
+    // was called with composite_model on link4 (which is welded to world), an
+    // exception was thrown (debug mode) or NaN were returned (release mode).
     for (int i = 0; i < 3; ++i) {
       const RigidBody<double>* explicit_linki = explicit_links[i];
       const RigidBody<double>* composite_linki = composite_links[i];
@@ -266,20 +275,21 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
 properties by exercising every code path (including reverse welds):
 - Pass 1: non-identity frame poses X_LF, where link frame L and frame F are
           both rigidly attached to the same body (so X_LF is constant). When a
-          weld joint is NOT reversed, F is the inboard frame on the parent body,
-          whereas for a reversed weld, F is the inboard frame on the child body.
-- Pass 2: poses X_BL, where mobod (mobilized body) frame B and link frame L are
-          both rigidly attached to the same body (so X_BL is constant). If L is
-          the composite body's "active" link, frame B is frame L and X_BL is
-          identity. In general, X_BL is non-identity for each "follower" link L
-          welded into the composite body B.
+          weld joint is NOT reversed, F is the inboard frame on the parent
+body, whereas for a reversed weld, F is the inboard frame on the child body.
+- Pass 2: poses X_BL, where mobod (mobilized body) frame B and link frame L
+are both rigidly attached to the same body (so X_BL is constant). If L is the
+composite body's "active" link, frame B is frame L and X_BL is identity. In
+general, X_BL is non-identity for each "follower" link L welded into the
+composite body B.
 - Pass 3: mass property accumulation with both shifting and re-expressing.
 
 The strategy is to build two versions of the same physical system -- one with
 composites enabled and one without -- then verify that the mass matrix and
 gravity generalized forces agree. The mass matrix depends on M_BBo_B (the
-composite spatial inertia computed in Pass 3), while gravity forces additionally
-depend on p_BoLcm_B (each follower link's center of mass offset from Bo).
+composite spatial inertia computed in Pass 3), while gravity forces
+additionally depend on p_BoLcm_B (each follower link's center of mass offset
+from Bo).
 
 Topology:
                              LinkC
@@ -304,16 +314,17 @@ GTEST_TEST(CompositeTest, CalcFrameBodyPosesAllPaths) {
   const RigidTransformd X_JpJc_AB;  // Identity transform.
 
   // Reversed weld between parent=LinkC → child=LinkB (but LinkB is inboard).
-  // "Reversed" means linkB is the inboard link and LinkC is the outboard link.
-  // Weld joint parent frame Jp is offset from LinkC's frame C by (0, 0, +0.4).
-  // Weld joint child frame Jc is offset from LinkB's frame B by (0.6, 0, 0).
-  // X_JpJc = translation(0.1, 0.2, 0.3) -- frames Jp and Jc are not coincident.
+  // "Reversed" means linkB is the inboard link and LinkC is the outboard
+  // link. Weld joint parent frame Jp is offset from LinkC's frame C by (0, 0,
+  // +0.4). Weld joint child frame Jc is offset from LinkB's frame B by (0.6,
+  // 0, 0). X_JpJc = translation(0.1, 0.2, 0.3) -- frames Jp and Jc are not
+  // coincident.
   const RigidTransformd X_CJp(Vector3<double>(0.0, 0.0, 0.4));
   const RigidTransformd X_BJc2(Vector3<double>(0.6, 0.0, 0.0));
   const RigidTransformd X_JpJc_CB(Vector3<double>(0.1, 0.2, 0.3));
 
-  // For robust testing, each link has a distinct spatial inertia with non-zero
-  // products of inertia and non-zero center of mass offsets.
+  // For robust testing, each link has a distinct spatial inertia with
+  // non-zero products of inertia and non-zero center of mass offsets.
   const SpatialInertia<double> M_AAo_A =
       SpatialInertia<double>::MakeFromCentralInertia(
           2.0, Vector3<double>(0.1, -0.05, 0.02),
@@ -373,7 +384,8 @@ GTEST_TEST(CompositeTest, CalcFrameBodyPosesAllPaths) {
   EXPECT_EQ(plant_nc->num_positions(), plant_c->num_positions());
   EXPECT_EQ(plant_nc->num_velocities(), plant_c->num_velocities());
   ASSERT_EQ(tree_nc.num_mobods(), 4);  // World + LinkA + LinkB + LinkC.
-  ASSERT_EQ(tree_c.num_mobods(), 2);  // World + composite body (links A, B, C).
+  ASSERT_EQ(tree_c.num_mobods(),
+            2);  // World + composite body (links A, B, C).
 
   const auto& rev_nc = plant_nc->GetJointByName<RevoluteJoint>("revolute");
   const auto& rev_c = plant_c->GetJointByName<RevoluteJoint>("revolute");
@@ -382,9 +394,10 @@ GTEST_TEST(CompositeTest, CalcFrameBodyPosesAllPaths) {
     rev_nc.set_angle(context_nc.get(), angle);
     rev_c.set_angle(context_c.get(), angle);
 
-    // The mass matrix (1×1) should agree between the two models. This directly
-    // validates that CalcFrameBodyPoses produced the correct composite body
-    // inertia (M_BBo_B), since the mass matrix is computed from it.
+    // The mass matrix (1×1) should agree between the two models. This
+    // directly validates that CalcFrameBodyPoses produced the correct
+    // composite body inertia (M_BBo_B), since the mass matrix is computed
+    // from it.
     MatrixX<double> mass_nc(1, 1), mass_c(1, 1);
     plant_nc->CalcMassMatrix(*context_nc, &mass_nc);
     plant_c->CalcMassMatrix(*context_c, &mass_c);
