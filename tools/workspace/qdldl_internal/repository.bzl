@@ -11,8 +11,8 @@ def qdldl_internal_repository(
         drake/tools/workspace/qdldl_internal/README.md.
         """,
         upgrade_type = "release",
-        commit = "v0.1.8",
-        sha256 = "ecf113fd6ad8714f16289eb4d5f4d8b27842b6775b978c39def5913f983f6daa",  # noqa
+        commit = "v0.1.9",
+        sha256 = "7d1285b2db15cf2730dc83b3d16ed28412f558591108cca4f28d4438bf72ceed",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
