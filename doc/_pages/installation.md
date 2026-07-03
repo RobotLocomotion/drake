@@ -55,7 +55,7 @@ Drake's pre-compiled binaries:
 | Ubuntu 24.04 LTS (Noble Numbat)     | GCC 13                     | C++23 |
 | Ubuntu 26.04 LTS (Resolute Raccoon) | GCC 15                     | C++23 |
 | macOS Sequoia (15)                  | Apple LLVM 17 (Xcode 26.3) | C++23 |
-| macOS Tahoe (26)                    | Apple LLVM 21 (Xcode 26.5) | C++23 |
+| macOS Tahoe (26)                    | Apple LLVM 21 (Xcode 26.6) | C++23 |
 
 Any other configuration not listed here will lead to undefined behavior
 (as a violation of the C++ One-Definition Rule).
