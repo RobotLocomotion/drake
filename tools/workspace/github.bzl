@@ -23,8 +23,8 @@ def github_archive(
         mirrors = None,
         upgrade_advice = "",
         **kwargs):
-    """A macro to be called in the WORKSPACE that adds an external from GitHub
-    using a workspace rule.
+    """A macro to be called in the MODULE.bazel that adds an external from
+    GitHub using a workspace rule.
 
     This rule downloads the source code. To download attachments instead, see
     github_release_attachments().
@@ -245,26 +245,11 @@ def setup_github_repository(repository_ctx):
     if any([getattr(repository_ctx.attr, a, None) for a in patch_triggers]):
         patch(repository_ctx)
 
-    # We re-implement Bazel's workspace_and_buildfile utility, so that options
-    # we don't care about (e.g., build_file_content) do not have to be declared
-    # as attrs on our all of our own repository rules.
-    #
-    # Unlike workspace_and_buildfile, we create WORKSPACE.bazel and BUILD.bazel
-    # (rather than WORKSPACE and BUILD) because when the "*.bazel" flavor is
-    # present, it always takes precedence.
-    files_to_be_created = ["WORKSPACE.bazel"]
+    # We create BUILD.bazel (rather than BUILD) because when the "*.bazel"
+    # flavor is present, it always takes precedence.
     if repository_ctx.attr.build_file:
-        files_to_be_created.append("BUILD.bazel")
-    for name in files_to_be_created:
-        if repository_ctx.path(name).exists:
-            repository_ctx.execute(["/bin/mv", name, name + ".ignored"])
-    repository_ctx.file(
-        "WORKSPACE.bazel",
-        "workspace(name = \"{name}\")\n".format(
-            name = repository_ctx.name,
-        ),
-    )
-    if repository_ctx.attr.build_file:
+        if repository_ctx.path("BUILD.bazel").exists:
+            repository_ctx.execute(["/bin/mv", "BUILD.bazel", "BUILD.ignored"])
         repository_ctx.symlink(repository_ctx.attr.build_file, "BUILD.bazel")
     return struct(error = None)
 
