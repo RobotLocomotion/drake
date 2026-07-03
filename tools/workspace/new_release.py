@@ -765,9 +765,9 @@ def main():
     if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
         os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
-    if not os.path.exists("WORKSPACE"):
+    if not os.path.exists("MODULE.bazel"):
         parser.error(
-            "Couldn't find WORKSPACE; this script must be run"
+            "Couldn't find MODULE.bazel; this script must be run"
             " from the root of your Drake checkout."
         )
 

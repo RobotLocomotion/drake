@@ -51,8 +51,7 @@ rust_library(
             ".tmp_git_root/**/*",
             "BUILD",
             "BUILD.bazel",
-            "WORKSPACE",
-            "WORKSPACE.bazel",
+            "MODULE.bazel",
         ],
     ),
     crate_features = [
