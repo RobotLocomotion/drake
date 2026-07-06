@@ -15,7 +15,7 @@ namespace pydrake {
 // cannot return unique_ptr, so we need to wrap the call to match signatures.
 // The argument is the Python callback; the return value is the C++ callback.
 std::function<std::unique_ptr<AbstractValue>()>
-MakeCppCompatibleAllocateCallback(py::function allocate);
+MakeCppCompatibleAllocateCallback(py::callable allocate);
 
 // For parity with `allocate`, we also provide a wrapper for `calc`. It doesn't
 // do any special tricks (our nominal WrapCallbacks() technique could've handled

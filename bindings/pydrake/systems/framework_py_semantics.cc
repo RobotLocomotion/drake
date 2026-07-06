@@ -263,7 +263,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = ValueProducer;
     constexpr auto& cls_doc = doc.ValueProducer;
     class_<Class>(m, "ValueProducer", cls_doc.doc)
-        .def(py::init([](py::function allocate,
+        .def(py::init([](py::callable allocate,
                           std::function<void(py::object, py::object)> calc) {
           return Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),
               MakeCppCompatibleCalcCallback(std::move(calc)));
