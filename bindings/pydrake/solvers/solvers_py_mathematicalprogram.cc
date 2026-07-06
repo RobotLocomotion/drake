@@ -71,6 +71,12 @@ using symbolic::Polynomial;
 using symbolic::Variable;
 using symbolic::Variables;
 
+#ifdef PYDRAKE_USE_PYBIND11
+using py_callable = py::function;
+#else   // PYDRAKE_USE_NANOBIND
+using py_callable = py::callable;
+#endif  // PYDRAKE_USE_PYBIND11
+
 namespace {
 enum class ArrayShapeType { Scalar, Vector };
 
@@ -105,13 +111,13 @@ void CheckReturnedArrayType(py::str cls_name, py::array y) {
 
 // Wraps user function to provide better user-friendliness.
 template <typename T, typename Func>
-Func WrapUserFunc(py::str cls_name, py::object func, int num_vars,
+Func WrapUserFunc(py::str cls_name, py_callable func, int num_vars,
     int num_outputs, ArrayShapeType output_shape) {
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11
   // TODO(eric.cousineau): It would be nicer to write this in Python.
   // TODO(eric.cousineau): Consider using `py::detail::make_caster<>`. However,
   // this may mean the argument is converted twice.
-  auto wrapped = [=](py::object x) {
+  py::cpp_function wrapped = [=](py::array x) {
     // Check input.
     // WARNING: If the input is badly sized, we will only reach this error in
     // Release mode. In debug mode, an assertion error will be triggered.
@@ -145,7 +151,7 @@ class PyFunctionCost : public Cost {
   // Note that we do not allow Python implementations of Cost to be declared as
   // thread safe.
   PyFunctionCost(
-      int num_vars, const py::object& func, const std::string& description)
+      int num_vars, const py_callable& func, const std::string& description)
       : Cost(num_vars, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
@@ -171,7 +177,7 @@ class PyFunctionCost : public Cost {
 
  private:
   template <typename T, typename Func>
-  Func Wrap(py::object func) {
+  Func Wrap(py_callable func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
         num_outputs(), ArrayShapeType::Scalar);
   }
@@ -190,7 +196,7 @@ class PyFunctionConstraint : public Constraint {
 
   // Note that we do not allow Python implementations of Constraint to be
   // declared as thread safe.
-  PyFunctionConstraint(int num_vars, const py::object& func,
+  PyFunctionConstraint(int num_vars, const py_callable& func,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
       : Constraint(lb.size(), num_vars, lb, ub, description),
@@ -220,7 +226,7 @@ class PyFunctionConstraint : public Constraint {
 
  private:
   template <typename T, typename Func>
-  Func Wrap(py::object func) {
+  Func Wrap(py_callable func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
         num_vars(), num_outputs(), ArrayShapeType::Vector);
   }
@@ -636,7 +642,7 @@ void BindMathematicalProgram(py::module_ m) {
           doc.MathematicalProgram.AddVisualizationCallback.doc)
       .def(
           "AddCost",
-          [](MathematicalProgram* self, py::object func,
+          [](MathematicalProgram* self, py_callable func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
             return self->AddCost(std::make_shared<PyFunctionCost>(
@@ -787,7 +793,7 @@ void BindMathematicalProgram(py::module_ m) {
           doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args)
       .def(
           "AddConstraint",
-          [](MathematicalProgram* self, py::object func,
+          [](MathematicalProgram* self, py_callable func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
@@ -1593,7 +1599,7 @@ void BindPyFunctionCost(py::module_ m) {
       std::shared_ptr<PyFunctionCost>
 #endif
       >(m, "PyFunctionCost", "Cost with its evaluator as a Python function")
-      .def(py::init<int, const py::object&, const std::string&>(),
+      .def(py::init<int, const py_callable&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
           "`num_vars` variables.");
@@ -1607,7 +1613,7 @@ void BindPyFunctionConstraint(py::module_ m) {
 #endif
       >(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
-      .def(py::init<int, const py::object&, const Eigen::VectorXd&,
+      .def(py::init<int, const py_callable&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("lb"), py::arg("ub"),
           py::arg("description") = "",
