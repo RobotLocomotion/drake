@@ -136,7 +136,7 @@ TestModel MakeModel(bool combine_welded_bodies) {
   EXPECT_EQ(mobod_1.active_link_ordinal(), LinkOrdinal(1));
 
   // Ensure Mobods (mobilized bodies) have the proper follower link ordinals.
-  // Each Mobod should have an active link ordinal. If welded links have 
+  // Each Mobod should have an active link ordinal. If welded links have
   // been combined, then there are additional follower link ordinals.
   if (combine_welded_bodies) {
     EXPECT_EQ(mobod_0.follower_link_ordinals(),
@@ -144,10 +144,8 @@ TestModel MakeModel(bool combine_welded_bodies) {
     EXPECT_EQ(mobod_1.follower_link_ordinals(),
               (std::vector{LinkOrdinal(1), LinkOrdinal(2), LinkOrdinal(3)}));
   } else {
-    EXPECT_EQ(mobod_0.follower_link_ordinals(),
-              (std::vector{LinkOrdinal(0)}));
-    EXPECT_EQ(mobod_1.follower_link_ordinals(),
-              (std::vector{LinkOrdinal(1)}));
+    EXPECT_EQ(mobod_0.follower_link_ordinals(), (std::vector{LinkOrdinal(0)}));
+    EXPECT_EQ(mobod_1.follower_link_ordinals(), (std::vector{LinkOrdinal(1)}));
   }
   return m;
 }
