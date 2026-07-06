@@ -128,6 +128,13 @@ See https://github.com/RobotLocomotion/drake/issues/21572.
  private:
      template <typename T>
      T string_op() const {
+@@ -2272,4 +2272,6 @@
+ };
+ 
++using callable = function;
++
+ class staticmethod : public object {
+ public:
 @@ -2549,6 +2549,11 @@
  }
  
