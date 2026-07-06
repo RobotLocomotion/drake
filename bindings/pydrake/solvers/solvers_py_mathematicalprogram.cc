@@ -125,7 +125,6 @@ Func WrapUserFunc(py::str cls_name, py::object func, int num_vars,
     CheckArrayShape(py::str("{}: Return value").format(cls_name), y,
         output_shape, num_outputs);
     CheckReturnedArrayType<T>(cls_name, y);
-    py::object y = func(x);
     return y;
   };
   return py::cast<Func>(wrapped);
