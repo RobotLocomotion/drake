@@ -46,6 +46,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "cenic_integrator_test",
+    shard_count = 2,
     deps = [
         ":cenic_integrator",
         "//common/test_utilities:eigen_matrix_compare",

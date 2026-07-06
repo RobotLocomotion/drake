@@ -591,7 +591,7 @@ MODULE_SETTINGS = {
         ],
     },
 
-    # Third, we'll configure dependencies that come from Drake's WORKSPACE.
+    # Third, we'll configure dependencies that come from Drake's MODULE.bazel.
     "VTK::fmt": {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_VTK_fmt=1",
@@ -608,7 +608,7 @@ MODULE_SETTINGS = {
             "ThirdParty/jpeg/vtkjpeg/**",
         ],
         "deps_extra": [
-            "@libjpeg_turbo_internal//:jpeg",
+            "@libjpeg",
         ],
     },
     "VTK::nlohmannjson": {

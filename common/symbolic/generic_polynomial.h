@@ -6,15 +6,11 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/symbolic/chebyshev_basis_element.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/monomial_basis_element.h"
 #include "drake/common/symbolic/polynomial_basis_element.h"
-
-// Remove with deprecation 2026-07-01.
-#include <ostream>
 
 namespace drake {
 namespace symbolic {
@@ -507,14 +503,6 @@ GenericPolynomialEnable<BasisElement> pow(
 
 template <typename BasisElement>
 std::string to_string(const GenericPolynomial<BasisElement>& p);
-
-template <typename BasisElement>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& os, const GenericPolynomial<BasisElement>& p);
 
 extern template class GenericPolynomial<MonomialBasisElement>;
 extern template class GenericPolynomial<ChebyshevBasisElement>;

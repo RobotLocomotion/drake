@@ -1265,10 +1265,6 @@ string to_string(const Polynomial& p) {
   }
   return result;
 }
-
-ostream& operator<<(ostream& os, const Polynomial& p) {
-  return os << fmt::to_string(p);
-}
 }  // namespace symbolic
 }  // namespace drake
 

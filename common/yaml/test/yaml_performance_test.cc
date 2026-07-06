@@ -16,15 +16,6 @@
 
 // Add ADL Serialize method to drake::AutoDiffXd. For ADL to work, we need to
 // place the function in the correct namespace.
-#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
-namespace Eigen {
-template <typename Archive>
-void Serialize(Archive* a, Eigen::AutoDiffScalar<Eigen::VectorXd>* x) {
-  a->Visit(drake::MakeNameValue("value", &(x->value())));
-  a->Visit(drake::MakeNameValue("derivatives", &(x->derivatives())));
-}
-}  // namespace Eigen
-#else
 namespace drake {
 namespace ad {
 template <typename Archive>
@@ -36,7 +27,6 @@ void Serialize(Archive* a, drake::ad::AutoDiff* x) {
 }
 }  // namespace ad
 }  // namespace drake
-#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 
 namespace drake {
 namespace yaml {

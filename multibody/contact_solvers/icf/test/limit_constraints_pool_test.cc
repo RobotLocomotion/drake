@@ -204,14 +204,13 @@ GTEST_TEST(LimitConstraintsPool, Reduce) {
                                   full_pool.qu()[k](indices)));
       EXPECT_TRUE(CompareMatrices(reduced_pool.q0()[reduced_constraint_cursor],
                                   full_pool.q0()[k](indices)));
+      EXPECT_TRUE(CompareMatrices(reduced_pool.gl0()[reduced_constraint_cursor],
+                                  full_pool.gl0()[k](indices)));
+      EXPECT_TRUE(CompareMatrices(reduced_pool.gu0()[reduced_constraint_cursor],
+                                  full_pool.gu0()[k](indices)));
       EXPECT_TRUE(
-          CompareMatrices(reduced_pool.gl_hat()[reduced_constraint_cursor],
-                          full_pool.gl_hat()[k](indices)));
-      EXPECT_TRUE(
-          CompareMatrices(reduced_pool.gu_hat()[reduced_constraint_cursor],
-                          full_pool.gu_hat()[k](indices)));
-      EXPECT_TRUE(CompareMatrices(reduced_pool.R()[reduced_constraint_cursor],
-                                  full_pool.R()[k](indices)));
+          CompareMatrices(reduced_pool.R_fragment()[reduced_constraint_cursor],
+                          full_pool.R_fragment()[k](indices)));
 
       ++reduced_constraint_cursor;
     }

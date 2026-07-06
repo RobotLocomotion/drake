@@ -182,16 +182,6 @@ TEST_F(IdentifierTests, PutInSet) {
   EXPECT_TRUE(ids.contains(a1));
 }
 
-// Tests the streaming behavior. Remove with 2026-07-01 deprecation removal.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(IdentifierTests, StreamOperator) {
-  stringstream ss;
-  ss << a2_;
-  EXPECT_EQ(ss.str(), "2");
-}
-#pragma GCC diagnostic pop
-
 TEST_F(IdentifierTests, FmtFormatterProducesExpectedString) {
   EXPECT_EQ(fmt::to_string(a2_), "2");
 }

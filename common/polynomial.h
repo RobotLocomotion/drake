@@ -16,7 +16,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/symbolic/expression.h"
 
@@ -468,51 +467,6 @@ Polynomial<T> pow(const Polynomial<T>& base,
   } else {
     return pow_half * pow_half;  // Even exponent case.
   }
-}
-
-template <typename T>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& os, const typename Polynomial<T>::Monomial& m) {
-  return os << fmt::to_string(m);
-}
-
-template <typename T>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& os, const Polynomial<T>& poly) {
-  return os << fmt::to_string(poly);
-}
-
-template <typename T, int Rows, int Cols>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Wrap Eigen objects M with fmt_eigen() to format Eigen data into fmt "
-    "strings e.g., fmt::to_string(fmt_eigen(M)), "
-    "fmt::format(\"M = {}\", fmt_eigen(M)). You'll need to "
-    "#include \"drake/common/fmt_eigen.h\" to access that function. "
-    "Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& os,
-           const Eigen::Matrix<Polynomial<T>, Rows, Cols>& poly_mat) {
-  for (int i = 0; i < poly_mat.rows(); i++) {
-    os << "[ ";
-    for (int j = 0; j < poly_mat.cols(); j++) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      os << poly_mat(i, j);
-#pragma GCC diagnostic pop
-      if (j < (poly_mat.cols() - 1)) os << " , ";
-    }
-    os << " ]" << std::endl;
-  }
-  return os;
 }
 
 typedef Polynomial<double> Polynomiald;

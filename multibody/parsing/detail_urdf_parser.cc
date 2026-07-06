@@ -587,6 +587,18 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     }
   };
 
+  // Helps avoid making extra, redundant frames via the X_PF argument of
+  // MultibodyPlant::AddJoint. If P and [F] are coincident, we won't create a
+  // new frame for [F], but use frame P directly. We indicate that by passing a
+  // nullopt.
+  auto elide_identity_frame =
+      [](const RigidTransformd& X_PF) -> std::optional<RigidTransformd> {
+    if (X_PF.IsExactlyIdentity()) {
+      return std::nullopt;
+    }
+    return X_PF;
+  };
+
   auto plant = w_.plant;
   std::optional<JointIndex> index{};
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
@@ -596,11 +608,11 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // Frame M is Frame B. Frame F and Frame M are coincident at the zero state
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
-    index =
-        plant
-            ->AddJoint<RevoluteJoint>(name, *parent_body, X_PF, *child_body,
-                                      std::nullopt, axis, lower, upper, damping)
-            .index();
+    index = plant
+                ->AddJoint<RevoluteJoint>(
+                    name, *parent_body, elide_identity_frame(X_PF), *child_body,
+                    std::nullopt, axis, lower, upper, damping)
+                .index();
     Joint<double>& joint = plant->get_mutable_joint(*index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
     joint.set_acceleration_limits(Vector1d(-acceleration),
@@ -611,7 +623,8 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<WeldJoint>(name, *parent_body, X_PF, *child_body,
+                ->AddJoint<WeldJoint>(name, *parent_body,
+                                      elide_identity_frame(X_PF), *child_body,
                                       std::nullopt, RigidTransformd::Identity())
                 .index();
   } else if (type.compare("prismatic") == 0) {
@@ -622,9 +635,9 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<PrismaticJoint>(name, *parent_body, X_PF,
-                                           *child_body, std::nullopt, axis,
-                                           lower, upper, damping)
+                ->AddJoint<PrismaticJoint>(
+                    name, *parent_body, elide_identity_frame(X_PF), *child_body,
+                    std::nullopt, axis, lower, upper, damping)
                 .index();
     Joint<double>& joint = plant->get_mutable_joint(*index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
@@ -643,8 +656,9 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<BallRpyJoint>(name, *parent_body, X_PF, *child_body,
-                                         std::nullopt, damping)
+                ->AddJoint<BallRpyJoint>(name, *parent_body,
+                                         elide_identity_frame(X_PF),
+                                         *child_body, std::nullopt, damping)
                 .index();
   } else if (type.compare("planar") == 0) {
     // Permit both the standard 'joint' and custom 'drake:joint' spellings
@@ -674,7 +688,8 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     const RigidTransformd X_PM = X_PB * X_BM;
     const RigidTransformd& X_PF = X_PM;
     index = plant
-                ->AddJoint<PlanarJoint>(name, *parent_body, X_PF, *child_body,
+                ->AddJoint<PlanarJoint>(name, *parent_body,
+                                        elide_identity_frame(X_PF), *child_body,
                                         X_BM, damping_vec)
                 .index();
   } else if (type.compare("screw") == 0) {
@@ -686,9 +701,9 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<ScrewJoint>(name, *parent_body, X_PF, *child_body,
-                                       std::nullopt, axis, screw_thread_pitch,
-                                       damping)
+                ->AddJoint<ScrewJoint>(
+                    name, *parent_body, elide_identity_frame(X_PF), *child_body,
+                    std::nullopt, axis, screw_thread_pitch, damping)
                 .index();
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
@@ -698,7 +713,8 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<UniversalJoint>(name, *parent_body, X_PF,
+                ->AddJoint<UniversalJoint>(name, *parent_body,
+                                           elide_identity_frame(X_PF),
                                            *child_body, std::nullopt, damping)
                 .index();
   } else if (type.compare("curvilinear") == 0) {
@@ -734,11 +750,11 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
         breaks, turning_rates, initial_tangent, plane_normal, Vector3d::Zero(),
         is_periodic);
     const RigidTransformd& X_PF = X_PB;
-    index =
-        plant
-            ->AddJoint<CurvilinearJoint>(name, *parent_body, X_PF, *child_body,
-                                         std::nullopt, trajectory, damping)
-            .index();
+    index = plant
+                ->AddJoint<CurvilinearJoint>(
+                    name, *parent_body, elide_identity_frame(X_PF), *child_body,
+                    std::nullopt, trajectory, damping)
+                .index();
   } else {
     Error(*node,
           fmt::format("Joint '{}' has unrecognized type: '{}'", name, type));

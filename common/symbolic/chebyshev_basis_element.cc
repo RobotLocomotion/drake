@@ -252,9 +252,5 @@ std::string to_string(const ChebyshevBasisElement& m) {
   }
   return result;
 }
-
-std::ostream& operator<<(std::ostream& out, const ChebyshevBasisElement& m) {
-  return out << fmt::to_string(m);
-}
 }  // namespace symbolic
 }  // namespace drake

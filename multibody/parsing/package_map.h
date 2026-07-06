@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/name_value.h"
 
@@ -247,12 +246,6 @@ class PackageMap final {
   class Impl;
   std::unique_ptr<Impl> impl_;
 };
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& out, const PackageMap& package_map);
 
 namespace internal {
 

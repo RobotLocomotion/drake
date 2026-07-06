@@ -239,10 +239,6 @@ Formula operator!(const Variable& v) {
   return !Formula(v);
 }
 
-ostream& operator<<(ostream& os, const Formula& f) {
-  return os << f.to_string();
-}
-
 Formula operator==(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 == 0  =>  True
   const Expression diff{e1 - e2};

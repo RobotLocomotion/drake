@@ -585,19 +585,6 @@ std::string to_string(const SpatialInertia<T>& M) {
   return result;
 }
 
-// TODO(2026-07-01): delete `operator<<` instantiation and the `#pragma`s.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// clang-format off
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (static_cast<std::ostream& (*)(std::ostream&, const SpatialInertia<T>&)>(
-        &operator<< ),  // clang-format would remove space lint requires
-    static_cast<std::string(*)(const SpatialInertia<T>&)>(
-            &to_string)
-));
-// clang-format on
-#pragma GCC diagnostic pop
-
 }  // namespace multibody
 }  // namespace drake
 

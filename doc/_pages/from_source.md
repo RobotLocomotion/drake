@@ -40,7 +40,7 @@ officially supports when building from source:
 | Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64-v3         | 3.14       | 9.1   | 4.2   | GCC 15 (default) or Clang 21 |
 |                                     | x86-64, arm64 ⁽⁴⁾ | 3.14       | 9.1   | 4.2   | GCC 15                       |
 | macOS Sequoia (15)                  | arm64             | 3.14       | 9.1   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
-| macOS Tahoe (26)                    | arm64             | 3.14       | 9.1   | 4.3   | Apple LLVM 21 (Xcode 26.5)   |
+| macOS Tahoe (26)                    | arm64             | 3.14       | 9.1   | 4.3   | Apple LLVM 21 (Xcode 26.6)   |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -239,13 +239,6 @@ Adjusting closed-source (commercial) software dependencies:
   using a hard-coded and access-controlled download of SNOPT.
   * This option is only valid for MIT- or TRI-affiliated Drake developers.
   * This option is mutally exclusive with `WITH_SNOPT`.
-
-Adjusting features:
-
-* `DRAKE_USE_EIGEN_LEGACY_AUTODIFF` (default `OFF`).
-  When `ON`, Drake uses `<unsupported/Eigen/AutoDiff>` for its autodiff support.
-  When `OFF`, Drake uses a custom re-implementation. Using `ON` is deprecated
-  and will be removed from Drake on or after 2026-07-01.
 
 Adjusting installation methods (advanced):
 

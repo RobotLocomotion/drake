@@ -9,10 +9,6 @@ namespace perception {
 
 namespace pc_flags {
 
-std::ostream& operator<<(std::ostream& os, const Fields& fields) {
-  return os << fmt::to_string(fields);
-}
-
 std::string to_string(const Fields& fields) {
   DRAKE_DEMAND(internal::kMaxBitInUse == kRGBs);
   std::vector<std::string> values;

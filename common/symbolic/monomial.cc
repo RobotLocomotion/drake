@@ -298,10 +298,6 @@ string Monomial::to_string() const {
   return result;
 }
 
-ostream& operator<<(ostream& out, const Monomial& m) {
-  return out << fmt::to_string(m);
-}
-
 Monomial operator*(Monomial m1, const Monomial& m2) {
   m1 *= m2;
   return m1;

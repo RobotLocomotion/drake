@@ -8,13 +8,9 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/expression.h"
-
-// Remove with deprecation 2026-07-01.
-#include <ostream>
 
 // Some of our Eigen template specializations live in polynomial.h, so we
 // must only have been included from that file.  This helps prevent us from
@@ -148,12 +144,6 @@ class Monomial {
   int total_degree_{0};
   std::map<Variable, int> powers_;
 };
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& out, const Monomial& m);
 
 /** Returns a multiplication of two monomials, `m1` and `m2`. */
 Monomial operator*(Monomial m1, const Monomial& m2);

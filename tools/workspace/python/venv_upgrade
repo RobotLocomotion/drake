@@ -11,6 +11,8 @@
 # The --reuse option may be given to apply changes to pyproject.toml while
 # attempting to preserve existing version pins.
 #
+# The --commit option may be given to automatically commit the changes.
+#
 # This script should also be run periodically to update pinned Python packages
 # to the latest available versions.
 
@@ -74,6 +76,10 @@ readonly workspace="$(pwd)/tools/workspace/python"
 
 # Ensure venv exists.
 bazel fetch @python//:all --force
+if [ ! -f "${venv_pdm}/bin/pdm" ]; then
+    echo "PDM not found; please run this script on a supported platform." >&2
+    exit 1
+fi
 
 # Create a temporary project used to pin PDM itself.
 readonly project_pdm="$(mktemp -d)"

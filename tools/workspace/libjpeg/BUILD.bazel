@@ -1,0 +1,38 @@
+load("@drake//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
+load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+# ---- Logic for choosing which libjpeg to use. ---
+
+# For now, the only supported value is --@drake//tools/flags:libjpeg_repo=source
+# to compile libjpeg from source.
+
+alias(
+    name = "libjpeg",
+    actual = ":module_libjpeg_static_hidden",
+    visibility = ["//visibility:public"],
+)
+
+cc_static_hidden_library(
+    name = "module_libjpeg_static_hidden",
+    deps = ["@module_libjpeg//:jpeg"],
+)
+
+# ---- Logic for installing jpeg-related files. ---
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/libjpeg",
+    files = ["@module_libjpeg//:LICENSE.md"],
+    allowed_externals = ["@module_libjpeg//:LICENSE.md"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()

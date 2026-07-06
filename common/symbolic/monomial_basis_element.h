@@ -7,7 +7,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/chebyshev_basis_element.h"
@@ -185,12 +184,6 @@ class MonomialBasisElement : public PolynomialBasisElement {
 };
 
 std::string to_string(const MonomialBasisElement& m);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m);
 
 /** Returns a multiplication of two monomials, @p m1 and @p m2.
  * @note that we return a map from the monomial product to its coefficient. This

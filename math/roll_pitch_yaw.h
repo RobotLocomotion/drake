@@ -9,7 +9,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
@@ -561,17 +560,6 @@ class RollPitchYaw {
   // 7 of the 52 bits in max_error's mantissa, which we deem acceptable.
   static constexpr double kGimbalLockToleranceCosPitchAngle = 0.008;
 };
-
-/// Stream insertion operator to write an instance of RollPitchYaw into a
-/// `std::ostream`. Especially useful for debugging.
-/// @relates RollPitchYaw.
-template <typename T>
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream&
-operator<<(std::ostream& out, const RollPitchYaw<T>& rpy);
 
 /// Represents a RollPitchYaw object as a string. Especially useful for
 /// debugging.
