@@ -271,28 +271,6 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             py::arg("wxyz"))
         .def(
             "set_wxyz",
-            [](Class* self, const Vector4<T>& wxyz) {
-              Class update;
-              update.w() = wxyz(0);
-              update.vec() = wxyz.tail(3);
-              CheckQuaternion(update);
-              *self = update;
-            },
-            py::arg("wxyz"))
-        .def(
-            "set_wxyz",
-            [](Class* self, py::list wxyz) {
-              DRAKE_THROW_UNLESS(wxyz.size() == 4);
-              Class update;
-              update.w() = py::cast<T>(wxyz[0]);
-              update.vec() = Vector3<T>{py::cast<T>(wxyz[1]),
-                  py::cast<T>(wxyz[2]), py::cast<T>(wxyz[3])};
-              CheckQuaternion(update);
-              *self = update;
-            },
-            py::arg("wxyz"))
-        .def(
-            "set_wxyz",
             [](Class* self, T w, T x, T y, T z) {
               Class update(w, x, y, z);
               CheckQuaternion(update);
