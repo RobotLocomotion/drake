@@ -530,7 +530,7 @@ MODULE_SETTINGS = {
         ],
         "srcs_glob_exclude": [
             # Avoid the dependency on freetype.
-            "**/vtkBatchedLabeledDataMapper.h",
+            "**/vtkBatchedLabeledDataMapper*",
             "**/vtkFastLabeledDataMapper*",
             # This is configure-time setup code, not library code.
             "**/vtkProbe*",
