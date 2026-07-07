@@ -42,6 +42,7 @@ using trajectories::Trajectory;
 // fields as would be typical), so we must bind the attributes manually.
 template <typename PyClass>
 void BindPiecewisePolynomialSerialize(PyClass* cls) {
+  using Class = trajectories::PiecewisePolynomial<double>;
   // The C++ types of the serialized fields.
   using Breaks = std::vector<double>;
   using Polynomials = std::vector<MatrixX<Eigen::VectorXd>>;
@@ -85,7 +86,6 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // to getattr (and setattr) on "breaks" and "polynomials". However, we don't
   // want to expose those properties to users so we'll respell the name to add a
   // leading underscore, and bind the properties using the private name.
-  using Class = trajectories::PiecewisePolynomial<double>;
   cls->def("__getattr__", [](Class& self, py::str name) -> py::object {
     py::object self_py = py::cast(self, py_rvp::reference);
     const std::string_view name_cxx(name.c_str());
