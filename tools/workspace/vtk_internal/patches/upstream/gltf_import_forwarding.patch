@@ -1,0 +1,43 @@
+There has been quite the tug of war in VTK w.r.t. using a forwarder between
+vtkGLTFDocumentLoader and vtkGLTFImporter. The history is as follows:
+
+ - Originally, the loader had forwarded its events to the importer.
+ - in de1602836934 (MR#12033) (2025-03-30) it was removed as part of a bug fix.
+ - In 55ef1381 (2025-09-10) it was restored, having been flagged as an
+   accidental removal.
+ - In 571196de4efff (2026-05-29) it was reverted referencing MR#12033.
+ - In 2d35cc4aaf230 (2026-06-23) it was restored again (possibly mistakenly).
+
+Drake, however, depends on loader events being forwarded to the importer (where
+Drake has a registered observer).
+
+I broached this topic in VTK MR#12033 (see the link):
+
+https://gitlab.kitware.com/vtk/vtk/-/merge_requests/12033#note_1827292
+
+In that discussion, the conclusion was that adding the forwarder was defective.
+
+However, in https://gitlab.kitware.com/vtk/vtk/-/merge_requests/13432, there
+is a proposal to *guard* the forwarder (the importer must have an observer for
+the loader's events to be forwarded). This is sufficient for Drake's needs. If
+that MR gets merged, this patch can simply be removed.
+
+--- IO/Import/vtkGLTFImporter.cxx
++++ IO/Import/vtkGLTFImporter.cxx
+@@ -514,8 +514,14 @@ int vtkGLTFImporter::ImportBegin()
+   vtkNew<vtkEventForwarderCommand> forwarder;
+   forwarder->SetTarget(this);
+   this->Loader->AddObserver(vtkCommand::ProgressEvent, forwarder);
+-  this->Loader->AddObserver(vtkCommand::WarningEvent, forwarder);
+-  this->Loader->AddObserver(vtkCommand::ErrorEvent, forwarder);
++  if (this->HasObserver(vtkCommand::WarningEvent))
++  {
++    this->Loader->AddObserver(vtkCommand::WarningEvent, forwarder);
++  }
++  if (this->HasObserver(vtkCommand::ErrorEvent))
++  {
++    this->Loader->AddObserver(vtkCommand::ErrorEvent, forwarder);
++  }
+
+   // Check extension
+   std::vector<char> glbBuffer;
