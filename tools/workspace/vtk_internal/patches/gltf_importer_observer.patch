@@ -1,10 +1,12 @@
-There has been quite the tug of war in VTK w.r.t. this forwarder.
+There has been quite the tug of war in VTK w.r.t. using a forwarder between
+vtkGLTFDocumentLoader and vtkGLTFImporter. The history is as follows:
 
  - Originally, the loader had forwarded its events to the importer.
  - in de1602836934 (MR#12033) (2025-03-30) it was removed as part of a bug fix.
  - In 55ef1381 (2025-09-10) it was restored, having been flagged as an
    accidental removal.
  - In 571196de4efff (2026-05-29) it was reverted referencing MR#12033.
+ - In 2d35cc4aaf230 (2026-06-23) it was restored again (possibly mistakenly).
 
 Drake, however, depends on loader events being forwarded to the importer (where
 Drake has a registered observer).
@@ -22,78 +24,213 @@ Characterization of the problem:
     simply evaporated.
   - This is why forwarding was considered "defective".
 
-Proposed solution:
+Proposed solution (not documented in the linked VTK MR above):
 
-  - When an observer is present, InvokeEvent() returns a bool indicating whether
-    the event was handled.
-  - Previously, the result was ignored. This change checks the result and
-    falls back to printing to the output window if it wasn't handled.
-  - This should robustly serve both use cases.
+  - The mechanism relying on the existence of an observer needs to know if there
+    is *ultimately* an observer (and not just a forwarder to a dead end).
+  - So, vtkCommand can report its forwarding target (defaulting to null).
+  - vtkEventForwarderCommand reports its actual target.
+  - vtkObject gets a new API: HasEffectiveObserver() which can recursively chase
+    the forwarding chain to determine if there is an effective observer.
+  - Error/warning handler only relies on InvokeEvent() if there's an *effective*
+    observer.
 
 Conclusion:
 
-  - The proposed solution was rejected because it can affect behavior globally.
-    This is why this patch is not marked for upstreaming.
-  - For Drake's need, the bare minimum is to restore the forwarder in the glTF
-    importer (done below).
-  - The implementation of the proposed solution (to vtkOutputWindow.cxx) isn't
-    strictly necessary for Drake's expected glTF parsing behavior. However,
-    we'll leave the changes here because they generally improve VTK's behavior
-    for Drake -- adding observers to arbitrary VTK objects will work as Drake
-    expects; no warning/errors will silently disappear based on whether an
-    observer is present or not.
+  - This solution has not been proposed to VTK. Perhaps it can be upstreamed.
 
+Vaguely changes to vtkGLTFDocumentLoader.cxx:
+
+  - If VTK encounters a glTF extension it doesn't support, it warns that the
+    extension will be ignored.
+  - However, if it encounters an *image* with an unexpected mime type, it
+    dispatches a warning.
+  - We simply disable the warning in this patch as an approximation of the
+    correct solution.
+  - Justification:
+    - Generally, we expect the unsupported mime type to be related to an
+      unsupported glTF extension. A warning for that has already been
+      dispatched and now we are "ignoring" the result as noted in that warning.
+    - It won't fail silently -- if an image is used but couldn't be loaded, an
+      error will be dispatched. If it isn't used, ignoring it is harmless.
+    - Even if the unsupported image mime type is unrelated to an unsupported
+      extension, we still get the used/unused behavior as described above.
+    - Drake *attempts* to silence warnings due to KHR_texture_basisu (see
+      RenderEngineVtkParams::gltf_extensions). However, it operates purely on
+      warnings about the glTF extensions and cannot easily be extended to handle
+      these redundant per-image warnings.
+  - Counter argument:
+    - The most proper thing to do is to distinguish between the two cases and
+      provide warnings for unsupported mime types that *aren't* related to
+      unsupported extensions.
+
+
+--- Common/Core/vtkCommand.h
++++ Common/Core/vtkCommand.h
+@@ -422,6 +422,16 @@ public:
+    */
+   static bool EventHasData(unsigned long event);
+
++  /**
++   * If this command simply forwards events to another object (rather than
++   * handling them itself), return that object; otherwise return nullptr
++   * (the default). This lets callers reason about whether an event will
++   * ultimately reach a genuine handler when it passes through a chain of
++   * forwarding commands. See vtkObject::HasEffectiveObserver() and
++   * vtkEventForwarderCommand.
++   */
++  virtual vtkObject* GetEventForwardTarget() { return nullptr; }
++
+   /**
+    * Set/Get the abort flag. If this is set to true no further
+    * commands are executed.
+--- Common/Core/vtkEventForwarderCommand.h
++++ Common/Core/vtkEventForwarderCommand.h
+@@ -42,6 +42,13 @@ public:
+   virtual void SetTarget(vtkObject* obj) { this->Target = obj; }
+   virtual void* GetTarget() { return this->Target; }
+
++  /**
++   * This command forwards every event to its target, so the target is the
++   * object that will (transitively) handle the event. See
++   * vtkObject::HasEffectiveObserver().
++   */
++  vtkObject* GetEventForwardTarget() override { return this->Target; }
++
+ protected:
+   vtkObject* Target;
+
+--- Common/Core/vtkObject.cxx
++++ Common/Core/vtkObject.cxx
+@@ -151,6 +151,7 @@ public:
+   unsigned long GetTag(vtkCommand*);
+   vtkTypeBool HasObserver(unsigned long event);
+   vtkTypeBool HasObserver(unsigned long event, vtkCommand* cmd);
++  bool HasEffectiveObserver(unsigned long event, std::set<vtkObject*>& visited);
+
+   void GrabFocus(vtkCommand* c1, vtkCommand* c2)
+   {
+@@ -522,6 +523,34 @@ vtkTypeBool vtkSubjectHelper::HasObserver(unsigned long event, vtkCommand* cmd)
+   return 0;
+ }
+
++//------------------------------------------------------------------------------
++bool vtkSubjectHelper::HasEffectiveObserver(unsigned long event, std::set<vtkObject*>& visited)
++{
++  for (auto& [key, obs] : this->Observers)
++  {
++    if (obs.Event != event && obs.Event != vtkCommand::AnyEvent)
++    {
++      continue;
++    }
++    vtkObject* target = obs.Command->GetEventForwardTarget();
++    if (!target)
++    {
++      // A command that handles the event itself, so the event is effectively
++      // observed.
++      return true;
++    }
++    // A forwarding command: the event is only effectively observed if the
++    // target (transitively) has an effective observer of its own. The visited
++    // set guards against cycles among forwarders.
++    if (visited.insert(target).second && target->SubjectHelper &&
++      target->SubjectHelper->HasEffectiveObserver(event, visited))
++    {
++      return true;
++    }
++  }
++  return false;
++}
++
+ //------------------------------------------------------------------------------
+ vtkTypeBool vtkSubjectHelper::InvokeEvent(unsigned long event, void* callData, vtkObject* self)
+ {
+@@ -861,6 +890,24 @@ vtkTypeBool vtkObject::HasObserver(unsigned long event, vtkCommand* cmd)
+   return 0;
+ }
+
++//------------------------------------------------------------------------------
++vtkTypeBool vtkObject::HasEffectiveObserver(unsigned long event)
++{
++  if (this->SubjectHelper)
++  {
++    std::set<vtkObject*> visited;
++    visited.insert(this);
++    return this->SubjectHelper->HasEffectiveObserver(event, visited) ? 1 : 0;
++  }
++  return 0;
++}
++
++//------------------------------------------------------------------------------
++vtkTypeBool vtkObject::HasEffectiveObserver(const char* event)
++{
++  return this->HasEffectiveObserver(vtkCommand::GetEventIdFromString(event));
++}
++
+ //------------------------------------------------------------------------------
+ vtkTypeBool vtkObject::HasObserver(const char* event, vtkCommand* cmd)
+ {
+--- Common/Core/vtkObject.h
++++ Common/Core/vtkObject.h
+@@ -148,6 +148,20 @@ public:
+   vtkTypeBool HasObserver(unsigned long event);
+   vtkTypeBool HasObserver(const char* event);
+
++  ///@{
++  /**
++   * Return whether this object has an observer for the given event that will
++   * ultimately handle it. This differs from HasObserver() in that it follows
++   * forwarding commands (see vtkCommand::GetEventForwardTarget(), e.g.
++   * vtkEventForwarderCommand): an observer that merely forwards the event to
++   * another object is only considered effective if that object (transitively)
++   * has an effective observer of its own. Cycles among forwarders are handled
++   * safely.
++   */
++  vtkTypeBool HasEffectiveObserver(unsigned long event);
++  vtkTypeBool HasEffectiveObserver(const char* event);
++  ///@}
++
+   ///@{
+   /**
+    * Overloads to AddObserver that allow developers to add class member
+@@ -410,6 +424,7 @@ private:
+     unsigned long event, vtkClassMemberCallbackBase* callable, float priority);
+   // Friend to access AddTemplatedObserver().
+   friend class vtkObjectCommandInternal;
++  friend class vtkSubjectHelper;
+   ///@}
+ };
 
 --- Common/Core/vtkOutputWindow.cxx
 +++ Common/Core/vtkOutputWindow.cxx
-@@ -107,15 +107,20 @@ void vtkOutputWindowDisplayErrorText(
+@@ -107,7 +107,7 @@ void vtkOutputWindowDisplayErrorText(
  {
    std::ostringstream vtkmsg;
    vtkmsg << "ERROR: In " << fname << ", line " << lineno << "\n" << message << "\n\n";
-+  vtkTypeBool dispatched = false;
-   if (sourceObj && sourceObj->HasObserver(vtkCommand::ErrorEvent))
+-  if (sourceObj && sourceObj->HasObserver(vtkCommand::ErrorEvent))
++  if (sourceObj && sourceObj->HasEffectiveObserver(vtkCommand::ErrorEvent))
    {
--    sourceObj->InvokeEvent(vtkCommand::ErrorEvent, const_cast<char*>(vtkmsg.str().c_str()));
-+    dispatched = sourceObj->InvokeEvent(vtkCommand::ErrorEvent,
-+                                        const_cast<char*>(vtkmsg.str().c_str()));
+     sourceObj->InvokeEvent(vtkCommand::ErrorEvent, const_cast<char*>(vtkmsg.str().c_str()));
    }
--  else if (auto win = vtkOutputWindow::GetInstance())
-+  if (!dispatched)
-   {
--    vtkLogger::Log(vtkLogger::VERBOSITY_ERROR, fname, lineno, message);
--    vtkOutputWindowPrivateAccessor helper_raii(win);
--    win->DisplayErrorText(vtkmsg.str().c_str());
-+    if (auto win = vtkOutputWindow::GetInstance())
-+    {
-+      vtkLogger::Log(vtkLogger::VERBOSITY_ERROR, fname, lineno, message);
-+      vtkOutputWindowPrivateAccessor helper_raii(win);
-+      win->DisplayErrorText(vtkmsg.str().c_str());
-+    }
-   }
- }
-
-@@ -124,15 +129,20 @@ void vtkOutputWindowDisplayWarningText(
+@@ -124,7 +124,7 @@ void vtkOutputWindowDisplayWarningText(
  {
    std::ostringstream vtkmsg;
    vtkmsg << "Warning: In " << fname << ", line " << lineno << "\n" << message << "\n\n";
-+  vtkTypeBool dispatched = false;
-   if (sourceObj && sourceObj->HasObserver(vtkCommand::WarningEvent))
+-  if (sourceObj && sourceObj->HasObserver(vtkCommand::WarningEvent))
++  if (sourceObj && sourceObj->HasEffectiveObserver(vtkCommand::WarningEvent))
    {
--    sourceObj->InvokeEvent(vtkCommand::WarningEvent, const_cast<char*>(vtkmsg.str().c_str()));
-+    dispatched = sourceObj->InvokeEvent(vtkCommand::WarningEvent,
-+                                        const_cast<char*>(vtkmsg.str().c_str()));
+     sourceObj->InvokeEvent(vtkCommand::WarningEvent, const_cast<char*>(vtkmsg.str().c_str()));
    }
--  else if (auto win = vtkOutputWindow::GetInstance())
-+  if (!dispatched)
-   {
--    vtkLogger::Log(vtkLogger::VERBOSITY_WARNING, fname, lineno, message);
--    vtkOutputWindowPrivateAccessor helper_raii(win);
-+    if (auto win = vtkOutputWindow::GetInstance())
-+    {
-+      vtkLogger::Log(vtkLogger::VERBOSITY_WARNING, fname, lineno, message);
-+      vtkOutputWindowPrivateAccessor helper_raii(win);
-     win->DisplayWarningText(vtkmsg.str().c_str());
-+    }
-   }
- }
 
+
+--- IO/Geometry/vtkGLTFDocumentLoader.cxx
++++ IO/Geometry/vtkGLTFDocumentLoader.cxx
+@@ -913,8 +913,6 @@ bool vtkGLTFDocumentLoader::LoadImageData()
+         // scene, an error will occur later when we attempt to render it. However, if it is not
+         // used, there is no reason to fail the entire loading process just because we cannot read
+         // an unused image.
+-        vtkWarningMacro("No reader found for image with mime type '"
+-          << image.MimeType << "' and uri '" << image.Uri << "'. Image will be set to null.");
+         image.ImageData = nullptr;
+         continue;
+       }
