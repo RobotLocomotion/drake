@@ -3,8 +3,6 @@
 See also systems/test/test_util_py.cc for the bindings used in the tests.
 """
 
-import gc
-import pprint
 import sys
 import unittest
 
