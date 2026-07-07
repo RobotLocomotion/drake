@@ -239,9 +239,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
-    BuildTreeFromReference(other.anchored_tree_, object_map, &anchored_tree_);
     BuildTreeFromReference(other.inactive_dynamic_tree_, object_map,
                            &inactive_dynamic_tree_);
+    BuildTreeFromReference(other.anchored_tree_, object_map, &anchored_tree_);
 
     collision_filter_ = other.collision_filter_;
     inactive_dynamic_geometries_ = other.inactive_dynamic_geometries_;
@@ -276,9 +276,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(dynamic_tree_, object_map, &engine->dynamic_tree_);
-    BuildTreeFromReference(anchored_tree_, object_map, &engine->anchored_tree_);
     BuildTreeFromReference(inactive_dynamic_tree_, object_map,
                            &engine->inactive_dynamic_tree_);
+    BuildTreeFromReference(anchored_tree_, object_map, &engine->anchored_tree_);
 
     engine->hydroelastic_geometries_ = this->hydroelastic_geometries_;
     engine->geometries_for_deformable_contact_ =
@@ -1401,7 +1401,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //    and inactive.
   //    - The inactive partition is *explicitly* enumerated in
   //      inactive_dynamic_geometries_.
-  //    - The active partition is _implicitly* defined as the keys in
+  //    - The active partition is _implicitly_ defined as the keys in
   //      dynamic_objects_ that don't appear in inactive_dynamic_geometries_.
   //  - All active dynamic geometries' collision objects are registered in
   //    dynamic_tree_.
@@ -1417,7 +1417,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   std::unordered_set<GeometryId> inactive_dynamic_geometries_;
 
   // The BVH of all active dynamic geometries.
-  // TODO(SeanCurtis-TRI): Ultimately, this should probably be a cache entry.
   FclDynamicAABBTreeCollisionManager dynamic_tree_;
 
   // The BVH of all inactive dynamic geometries.
