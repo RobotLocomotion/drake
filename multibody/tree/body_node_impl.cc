@@ -113,12 +113,6 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
       break;
   }
 
-#if 0
-  // TODO(sherm1) Calculate X_WL for composites. Currently we don't make
-  //  composites so X_WL = X_WB if L is the link on B.
-  pc->SetX_WL(mobilizer_->mobod().active_link_ordinal(), X_WB);
-#endif
-
   // Set X_WL for the active (most-inboard) link of this mobod. Its link frame
   // L coincides with the mobod frame B (X_BL = Identity), so X_WL = X_WB.
   const SpanningForest::Mobod& mobod = mobilizer_->mobod();

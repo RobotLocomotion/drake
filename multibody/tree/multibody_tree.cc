@@ -1405,11 +1405,27 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
     const systems::Context<T>& context, PositionKinematicsCache<T>* pc) const {
   DRAKE_DEMAND(pc != nullptr);
 
+  // Ensure parameter-dependent quantities are up to date.
   const FrameBodyPoseCache<T>& frame_body_pose_cache =
       EvalFrameBodyPoses(context);
 
+  // Update parameter-dependent quantities in the position cache if they are
+  // not up to date with respect to the FrameBodyPoseCache in the context
+  // (which we just updated). PositionKinematicsCache needs the
+  // FrameBodyPoseCache serial number to make that determination.
+  const systems::CacheEntryValue& fbpc_value =
+      tree_system_->frame_body_poses_cache_entry().get_cache_entry_value(
+          context);
+  const int64_t fbpc_serial_number = fbpc_value.serial_number();
+  pc->PrecomputeWorldCompositeIfNeeded(forest(), frame_body_pose_cache,
+                                       fbpc_serial_number);
+
   const Eigen::VectorBlock<const VectorX<T>> q_block = get_positions(context);
   const T* q = q_block.data();
+
+  // The world composite link poses X_WL are independent of q and are set once
+  // the link pose parameters are known (i.e. when the FrameBodyPoseCache is
+  // filled in.) So we can skip the World mobod here.
 
   // With the kinematics information across mobilizers and the kinematics
   // information for each body, we are now in position to perform a base-to-tip

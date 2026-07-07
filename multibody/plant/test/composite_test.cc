@@ -224,7 +224,7 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
     // the entire Link123 composite mobod. Bug 2: When CalcSpatialInertia()
     // was called with composite_model on link4 (which is welded to world), an
     // exception was thrown (debug mode) or NaN were returned (release mode).
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 4; ++i) {
       const RigidBody<double>* explicit_linki = explicit_links[i];
       const RigidBody<double>* composite_linki = composite_links[i];
       M_EWo_W = explicit_model.plant->CalcSpatialInertia(
