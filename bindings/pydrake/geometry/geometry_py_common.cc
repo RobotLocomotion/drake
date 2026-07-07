@@ -386,10 +386,10 @@ void DefineMeshSource(py::module_ m) {
           py::dict result;
           if (self.is_path()) {
             result["path"] = self.path();
-            return result;
+          } else {
+            DRAKE_DEMAND(self.is_in_memory());
+            result["mesh"] = self.in_memory();
           }
-          DRAKE_DEMAND(self.is_in_memory());
-          result["mesh"] = self.in_memory();
           return result;
         },
         [ctor](Class* self, const py::dict& kwargs) {
