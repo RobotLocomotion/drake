@@ -12,10 +12,14 @@ cd $(dirname $(python3 -c 'import os; print(os.path.realpath("'"$0"'"))'))
 # custom to Drake, and handled separately below.
 bazel run :crate -- --repin=all
 
+# Patch a rules_rust regression (bazelbuild/rules_rust#4132) that erroneously
+# omits the repository name from the all_crate_deps label output.
+perl -pi -e 's#Label\("(?!//tools)#Label("\@crate#g' lock/details/crates.bzl
+
 # Fix the upgrade advice comments in the generated BUILD files.
 old_tool="bazel run @@//tools/workspace/crate_universe:crate"
 new_tool="tools/workspace/crate_universe/upgrade.sh"
-perl -pi -e "s#${old_tool}#${new_tool}#g;" lock/details/*
+perl -pi -e "s#${old_tool}#${new_tool}#g;" $(find lock/details -name '*.b*z*l')
 
 # Regenerate the Drake-specific metadata (the list of repository names).
 echo "REPO_NAMES = [" > lock/repo_names.bzl
