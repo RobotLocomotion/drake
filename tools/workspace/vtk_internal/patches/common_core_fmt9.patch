@@ -25,8 +25,8 @@ Reasoning for not upstreaming this patch: Drake-specific build compatibility.
 +inline auto format_to_n(OutputIt out, size_t n, std::string_view fmt, T&&... args) -> format_to_n_result<OutputIt> {
 +  return fmt::format_to_n(out, n, fmt::runtime(fmt), std::forward<T>(args)...);
 +}
-+template <typename OutputIt, typename Char, typename... T>
-+inline auto format_to_n(OutputIt out, size_t n, const fmt::basic_runtime<Char>& fmt, T&&... args) -> format_to_n_result<OutputIt> {
++template <typename OutputIt, typename... T>
++inline auto format_to_n(OutputIt out, size_t n, decltype(fmt::runtime("")) fmt, T&&... args) -> format_to_n_result<OutputIt> {
 +  return fmt::format_to_n(out, n, fmt, std::forward<T>(args)...);
 +}
 +
