@@ -214,9 +214,13 @@ drake_py_library(
 drake_cc_library(
     name = "builder_life_support_pybind",
     hdrs = ["builder_life_support_pybind.h"],
+    srcs = ["builder_life_support_pybind.cc"],
     declare_installed_headers = False,
     visibility = ["//bindings/pydrake:__subpackages__"],
-    deps = [],
+    deps = [
+        "//bindings/pydrake:pydrake_pybind",
+        "//systems/framework:diagram_builder",
+    ],
 )
 
 drake_cc_library(

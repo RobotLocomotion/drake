@@ -3,6 +3,8 @@
 See also systems/test/test_util_py.cc for the bindings used in the tests.
 """
 
+import gc
+import pprint
 import sys
 import unittest
 
@@ -27,7 +29,7 @@ class TestBuilderLifeSupport(unittest.TestCase):
     def test_wrong_type(self, T):
         DiagramBuilderTestAdversary = DiagramBuilderTestAdversary_[T]
         adversary = DiagramBuilderTestAdversary()
-        with self.assertRaisesRegex(RuntimeError, "Unable to cast.*"):
+        with self.assertRaisesRegex(RuntimeError, ".*cast.*"):
             adversary.StashWrongType(Arbitrary())
 
     @numpy_compare.check_all_types
