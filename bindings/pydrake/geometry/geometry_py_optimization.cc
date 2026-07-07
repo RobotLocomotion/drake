@@ -1467,12 +1467,10 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
         .def("BinarySearch", &Class::BinarySearch,
             py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
             py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("MakeIsGeometrySeparableProgram",
             &Class::MakeIsGeometrySeparableProgram, py::arg("geometry_pair"),
             py::arg("C"), py::arg("d"),
             cls_doc.MakeIsGeometrySeparableProgram.doc)
-#endif  // XXX porting
         .def("SolveSeparationCertificateProgram",
             &Class::SolveSeparationCertificateProgram,
             py::arg("certificate_program"), py::arg("options"),
