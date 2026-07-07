@@ -11,7 +11,7 @@ def robin_map_repository(
         sha256 = "7930dbf9634acfc02686d87f615c0f4f33135948130b8922331c16d90a03250c",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/global.patch",
+            ":patches/upstream/pr95.patch",
         ],
         mirrors = mirrors,
     )
