@@ -193,9 +193,11 @@ void InitLowLevelModules(py::module_ m) {
     DefPickle(
         &cls,
         [](const Class& self) {
-          return py::dict(py::arg("contents") = self.contents(),
-              py::arg("extension") = self.extension(),
-              py::arg("filename_hint") = self.filename_hint());
+          py::dict result;
+          result["contents"] = self.contents();
+          result["extension"] = self.extension();
+          result["filename_hint"] = self.filename_hint();
+          return result;
         },
         [ctor](Class* self, const py::dict& kwargs) {
           new (self) Class(py::cast<Class>(ctor(**kwargs)));
