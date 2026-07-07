@@ -177,9 +177,7 @@ void DefineDrakeVisualizerParams(py::module_ m) {
         m, "DrakeVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
-#endif  // XXX porting
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
@@ -550,9 +548,7 @@ void DefineMeshcatVisualizerParams(py::module_ m) {
         m, "MeshcatVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
-#endif  // XXX porting
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }

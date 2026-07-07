@@ -174,8 +174,14 @@ class DefAttributesArchive {
     } else if constexpr (is_eigen_type<T>::value) {
       // TODO(jwnimmer-tri) Perhaps we can use numpy.typing here some day?
       return py::module_::import_("numpy").attr("ndarray");
+    } else if constexpr (std::is_enum_v<T>) {
+#ifdef PYDRAKE_USE_PYBIND11
+      return py::type::of<T>();
+#else  // PYDRAKE_USE_NANOBIND
+      return py::borrow(py::type<T>());
+#endif
     } else {
-      // Anything that remains should be a registered C++ type.
+      // Anything that remains should be a registered C++ class type.
       constexpr bool is_registered_type = is_generic_caster_v<T>;
       if constexpr (is_registered_type) {
 #ifdef PYDRAKE_USE_PYBIND11

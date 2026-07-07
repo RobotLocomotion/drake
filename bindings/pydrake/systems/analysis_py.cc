@@ -64,9 +64,7 @@ PYDRAKE_MODULE(analysis, m) {
     class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     DefAttributesUsingSerialize(&cls, cls_doc);
-#endif  // XXX porting
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
