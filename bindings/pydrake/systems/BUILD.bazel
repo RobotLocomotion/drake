@@ -218,8 +218,8 @@ drake_cc_library(
     declare_installed_headers = False,
     visibility = ["//bindings/pydrake:__subpackages__"],
     deps = [
+        "//:drake_shared_library",
         "//bindings/pydrake:pydrake_pybind",
-        "//systems/framework:diagram_builder",
     ],
 )
 
