@@ -283,6 +283,21 @@ class Simulator {
   // not *actually* shared. The simulator will modify it at will.
   static std::unique_ptr<Simulator<T>> MakeWithSharedContext(
       const System<T>& system, std::shared_ptr<Context<T>> context);
+
+  // (Internal use only) Emplaces a Simulator which accepts a context via
+  // shared pointer.
+  //
+  // The `self` parameter should point to uninitialized storage of at least
+  // sizeof(Simulator<T>) bytes. It is the calling code's responsibility to
+  // eventually destroy the Simulator<T> instance, using (for example)
+  // std::destroy_at.
+  //
+  // The shared pointer signature is useful for implementing pydrake memory
+  // management, because it permits supplying a custom deleter. The context is
+  // not *actually* shared. The simulator will modify it at will.
+  static void EmplaceWithSharedContext(Simulator<T>* self,
+                                       const System<T>& system,
+                                       std::shared_ptr<Context<T>> context);
 #endif
 
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.

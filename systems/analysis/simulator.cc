@@ -30,6 +30,13 @@ std::unique_ptr<Simulator<T>> Simulator<T>::MakeWithSharedContext(
 }
 
 template <typename T>
+void Simulator<T>::EmplaceWithSharedContext(
+    Simulator<T>* self, const System<T>& system,
+    std::shared_ptr<Context<T>> context) {
+  new (self) Simulator(&system, nullptr, std::move(context), false);
+}
+
+template <typename T>
 Simulator<T>::Simulator(const System<T>* system,
                         std::unique_ptr<const System<T>> owned_system,
                         std::shared_ptr<Context<T>> context,
