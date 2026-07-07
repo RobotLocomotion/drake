@@ -189,8 +189,8 @@ def vtk_internal_repository(
         local_repository_override = None,
         repository = "Kitware/VTK",
         upgrade_type = "commit",
-        commit = "45f8cc6b6a4b14439ee3bab2025fa3ebeb20bfc0",
-        sha256 = "a160dea5f99042521364f57a69d5ec85ff6e5ed58528a2925fc080a75b6fa3aa",  # noqa
+        commit = "8ea03bd303deb62fcfbdd8cc76b9a47b1a28f94a",
+        sha256 = "e2a93770ae9a794a845966b15795e3b314d3ee43c0d3f27e3912e6bc65d5a004",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -200,9 +200,6 @@ def vtk_internal_repository(
             # - Patch file names should begin with the name of the module being
             #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
             # - Use alphabetical order within a directory when listing patches.
-            ":patches/upstream/gltf_export_with_object_names.patch",
-            ":patches/upstream/ignore_unsupported_image_types.patch",
-            ":patches/upstream/skybox_disables_lighting.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
