@@ -1247,7 +1247,7 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
     py::gil_scoped_acquire gil;
-    py::function override = py::get_override(
+    py::callable override = py::get_override(
         static_cast<const ForceDensityField<T>*>(this), "DoEvaluateAt");
     if (!override) {
       throw std::logic_error(
@@ -1269,7 +1269,7 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
 
   std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
     py::gil_scoped_acquire gil;
-    py::function override = py::get_override(
+    py::callable override = py::get_override(
         static_cast<const ForceDensityField<T>*>(this), "DoClone");
     if (!override) {
       throw std::logic_error(

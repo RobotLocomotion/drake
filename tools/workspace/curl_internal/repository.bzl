@@ -11,8 +11,8 @@ def curl_internal_repository(
         update cmakedefines.bzl to match the new upstream definitions.
         """,
         upgrade_type = "release",
-        commit = "curl-8_20_0",
-        sha256 = "738fe8ae973a6f171b4e7cf7146edd19894e19f09cd45a3b673ebdba3549a435",  # noqa
+        commit = "curl-8_21_0",
+        sha256 = "ec753aa6f408a3ca9f0d6d5f7a77417aecd1544db13c03ae5d443612bf367364",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/schemes.patch",

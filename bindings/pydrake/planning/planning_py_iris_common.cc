@@ -141,7 +141,7 @@ void CheckReturnedArrayType(py::str cls_name, py::array y) {
 // Wraps user function to provide better user-friendliness.
 template <typename T, typename Func>
 Func WrapParameterizationFunc(
-    py::str cls_name, py::function func, int num_vars) {
+    py::str cls_name, py::callable func, int num_vars) {
   py::cpp_function wrapped = [=](py::array x) {
     // Check input.
     // WARNING: If the input is badly sized, we will only reach this error in
@@ -184,7 +184,7 @@ is the input dimension.
       m, "IrisParameterizationFunction", cls_doc.doc);
   iris_parameterization_function  // BR
       .def(py::init<>(), cls_doc.ctor.doc_0args)
-      .def(py::init([](const py::function& parameterization,
+      .def(py::init([](const py::callable& parameterization,
                         int parameterization_dimension) {
         return IrisParameterizationFunction(
             WrapParameterizationFunc<double,

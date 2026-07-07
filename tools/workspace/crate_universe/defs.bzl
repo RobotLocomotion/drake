@@ -1,5 +1,5 @@
 load(
-    "//tools/workspace/crate_universe/lock/details:defs.bzl",
+    "//tools/workspace/crate_universe/lock/details:crates.bzl",
     _all_crate_deps = "all_crate_deps",
 )
 

@@ -244,6 +244,8 @@ def setup_github_repository(repository_ctx):
     patch_triggers = ["patches", "patch_cmds"]
     if any([getattr(repository_ctx.attr, a, None) for a in patch_triggers]):
         patch(repository_ctx)
+        for patch_label in getattr(repository_ctx.attr, "patches", []):
+            repository_ctx.watch(patch_label)
 
     # We create BUILD.bazel (rather than BUILD) because when the "*.bazel"
     # flavor is present, it always takes precedence.

@@ -13,7 +13,6 @@ libclang-20-dev
 libclang-rt-20-dev
 libomp-20-dev
 llvm-20
-mold
 node-uglify
 patchutils
 python3-boto3

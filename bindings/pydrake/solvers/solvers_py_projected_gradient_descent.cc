@@ -53,7 +53,7 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
 
     pgd_cls.def(
         "SetCustomProjectionFunction",
-        [](Class& self, py::function python_projection_function) {
+        [](Class& self, py::callable python_projection_function) {
           auto cpp_projection_function = [python_projection_function](
                                              const Eigen::VectorXd& in,
                                              Eigen::VectorXd* out) {
