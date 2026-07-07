@@ -207,7 +207,7 @@ def vtk_internal_repository(
             ":patches/common_core_version.patch",
             ":patches/common_datamodel_no_pegtl.patch",
             ":patches/common_executionmodel_disable_static_destructors.patch",
-            ":patches/gltf_parsing_unsupported_image_type_warning_suppression.patch",  # noqa
+            ":patches/io_geometry_no_mime_type_warning.patch",
             ":patches/io_image_formats.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
