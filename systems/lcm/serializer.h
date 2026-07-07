@@ -30,6 +30,17 @@ class SerializerInterface {
    */
   virtual std::unique_ptr<AbstractValue> CreateDefaultValue() const = 0;
 
+#ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use only) Creates a value-initialized (zeroed) instance of the
+   * message object.  The result can be used as the output object filled in by
+   * Deserialize. The default implementation just calls CreateDefaultValue().
+   *
+   * This shared_ptr signature is useful for Python bindings. C++ derived
+   * classes need not implement it.
+   */
+  virtual std::shared_ptr<AbstractValue> CreateDefaultValueShared() const;
+#endif
+
   /**
    * Translates LCM message bytes into a drake::AbstractValue object.
    */
