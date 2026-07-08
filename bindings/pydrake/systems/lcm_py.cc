@@ -48,21 +48,29 @@ class PySerializerInterface : public SerializerInterface {
   // interface below.
 
   std::unique_ptr<AbstractValue> CreateDefaultValue() const final {
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     // Our required unique_ptr return type cannot be directly fulfilled by a
     // Python override, so we only ask the Python override for a py::object and
     // then just Clone it to obtain the necessary C++ signature. Because the
     // PYDRAKE_OVERRIDE_PURE macro embeds a `return ...;` statement, we must
     // wrap it in lambda so that we can post-process the return value.
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-    // c++<=>py type conversion issues.
     py::object default_value = [this]() -> py::object {
       PYDRAKE_OVERRIDE_PURE(
           py::object, SerializerInterface, CreateDefaultValue);
     }();
     DRAKE_THROW_UNLESS(!default_value.is_none());
     return py::cast<const AbstractValue*>(default_value)->Clone();
+#else   // XXX porting
+    // Similar to above, we use a compromise return type from the Python
+    // override. In this case, it is shared_ptr. We still satisfy the enclosing
+    // unique_ptr requirement via Clone().
+    auto default_value = [this]() -> std::shared_ptr<AbstractValue> {
+      PYDRAKE_OVERRIDE_PURE_NAME(
+          _, _, "CreateDefaultValue", CreateDefaultValueShared);
+    }();
+    DRAKE_THROW_UNLESS(default_value != nullptr);
+    return default_value->Clone();
 #endif  // XXX porting
-    return {};
   }
 
   void Deserialize(const void* message_bytes, int message_length,
