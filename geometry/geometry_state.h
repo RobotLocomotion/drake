@@ -629,7 +629,7 @@ class GeometryState {
           return this->CollectIds(set, Role::kProximity, scope);
         },
         /* Reflect changes to the filter's inactive set into the engine's
-         broadphase, where inactive dynamic geometries are culled . Like the
+         broadphase, where inactive dynamic geometries are culled. Like the
          filter pointer above, the captured engine is a view into this
          %GeometryState's data. */
         [engine = geometry_engine_.get_mutable()](
