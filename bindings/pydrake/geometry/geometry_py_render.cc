@@ -84,31 +84,29 @@ class PyRenderEngine : public RenderEngine {
         "it needs to be updated to call using shared_ptr instead.");
   }
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-  // Need to unwind a bunch of smart pointer issues.
   std::shared_ptr<RenderEngine> DoCloneShared() const override {
     py::gil_scoped_acquire guard;
+    const RenderEngine* const base = this;
+    py::object self = py::cast(base);
     // RenderEngine subclasses in Python must implement cloning by defining
     // either a __deepcopy__ (preferred) or DoClone (legacy) method. We'll try
     // DoClone first so it has priority, but if it doesn't exist we'll fall back
     // to __deepcopy__ and just let the "no such method deepcopy" error message
-    // propagate if both were missing. Because the PYBIND11_OVERLOAD_INT macro
-    // embeds a conditional `return ...;` statement, we must wrap it in lambda
-    // so that we can post-process the return value in case it does return.
-    auto make_python_deepcopy = [&]() -> py::object {
-      PYBIND11_OVERLOAD_INT(py::object, Base, "DoClone");
+    // propagate if both were missing.
+    py::object result;
+    if (py::hasattr(self, "DoClone")) {
+      result = self.attr("DoClone")();
+    } else {
       auto deepcopy = py::module_::import_("copy").attr("deepcopy");
-      py::object copied = deepcopy(this);
-      if (copied.is_none()) {
-        throw pybind11::type_error(fmt::format(
-            "{}.__deepcopy__ returned None", NiceTypeName::Get(*this)));
-      }
-      return copied;
-    };
-    py::object result = make_python_deepcopy();
+      result = deepcopy(self);
+    }
+    if (result.is_none()) {
+      throw py::type_error(
+          fmt::format("{}.__deepcopy__ returned None", NiceTypeName::Get(*this))
+              .c_str());
+    }
     return make_shared_ptr_from_py_object<RenderEngine>(result);
   }
-#endif  // XXX porting
 
   void DoRenderColorImage(ColorRenderCamera const& camera,
       ImageRgba8U* color_image_out) const override {
