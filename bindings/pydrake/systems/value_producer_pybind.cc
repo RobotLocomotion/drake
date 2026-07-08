@@ -6,7 +6,6 @@
 namespace drake {
 namespace pydrake {
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
 std::function<std::unique_ptr<AbstractValue>()>
 MakeCppCompatibleAllocateCallback(py::callable allocate) {
   return [allocate = std::move(allocate)]() -> std::unique_ptr<AbstractValue> {
@@ -32,7 +31,11 @@ MakeCppCompatibleAllocateCallback(py::callable allocate) {
                       "pydrake.common.value.Value[...] or"
                       "pydrake.common.value.AbstractValue object, not {}",
               py::cast<std::string>(py::repr(allocate)),
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
               py::cast<std::string>(py::str(py::type::handle_of(result_py)))));
+#else  // XXX porting
+              py::cast<std::string>(py::repr(py::type_name(result_py)))));
+#endif  // XXX porting
     }
 
     // Our signature requires returning a unique_ptr; the only way we can do
@@ -40,7 +43,6 @@ MakeCppCompatibleAllocateCallback(py::callable allocate) {
     return result_cpp->Clone();
   };
 }
-#endif  // XXX porting
 
 std::function<void(const systems::ContextBase&, AbstractValue*)>
 MakeCppCompatibleCalcCallback(
