@@ -123,13 +123,21 @@ done
 # Check for changes to the pdm lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
-# Upgrade the mypy lockfile.
+# Upgrade the mypy lock file.
 readonly mypy_requirements="./setup/python/mypy/requirements.txt"
 bazel run //setup/python/mypy:lock.update
 files_to_commit+=( "$(git diff --name-only HEAD -- "${mypy_requirements}")" )
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then
+    # If any of the lock files didn't have changes, omit the empty entries
+    # from our files list.
+    for i in "${!files_to_commit[@]}"; do
+        if [[ -z "${files_to_commit[i]}" ]]; then
+            unset "files_to_commit[i]"
+        fi
+    done
+
     if [ ${#files_to_commit[@]} == 0 ]; then
         set +x
         echo
