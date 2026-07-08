@@ -770,6 +770,29 @@ Note: The above is for the C++ documentation. For Python, use
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_calc_prerequisites_of_calc)
+#else   // XXX porting
+        .def(
+            "DeclareAbstractOutputPort",
+            // XXX Why can't we specify PyLeafSystem* for self here???
+            [](LeafSystem<T>* base, const std::string& name, py::callable alloc,
+                std::function<void(py::object, py::object)> calc,
+                const std::set<DependencyTicket>& prerequisites_of_calc)
+            -> const OutputPort<T>& {
+              auto* self = dynamic_cast<PyLeafSystem*>(base);
+              DRAKE_DEMAND(self != nullptr);
+              return self->DeclareAbstractOutputPort(name,
+                  MakeCppCompatibleAllocateCallback(std::move(alloc)),
+                  MakeCppCompatibleCalcCallback(std::move(calc)),
+                  prerequisites_of_calc);
+            },
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("alloc"), py::arg("calc"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
+            doc.LeafSystem.DeclareAbstractOutputPort
+                .doc_4args_name_alloc_calc_prerequisites_of_calc)
 #endif  // XXX porting
         .def(
             "DeclareVectorInputPort",
