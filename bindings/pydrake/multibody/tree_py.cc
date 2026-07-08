@@ -1246,9 +1246,9 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
   explicit PyForceDensityField(ForceDensityType density_type)
       : ForceDensityFieldPublic<T>(density_type) {}
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     py::gil_scoped_acquire gil;
     py::callable override = py::get_override(
         static_cast<const ForceDensityField<T>*>(this), "DoEvaluateAt");
@@ -1268,9 +1268,14 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
           "be converted to Vector3<T>. Got " +
           py::cast<std::string>(py::str(result_obj)) + ".");
     }
+#else   // XXX porting
+    unused(context, p_WQ);
+    throw std::runtime_error("PyForceDensityField not implemented in nanobind");
+#endif  // XXX porting
   }
 
   std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
+#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     py::gil_scoped_acquire gil;
     py::callable override = py::get_override(
         static_cast<const ForceDensityField<T>*>(this), "DoClone");
@@ -1301,8 +1306,10 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
           "your class, e.g., `return MyForceDensityField(...)`.");
     }
     return std::make_unique<DelegatedForceDensityField<T>>(std::move(cloned));
-  }
+#else   // XXX porting
+    throw std::runtime_error("PyForceDensityField not implemented in nanobind");
 #endif  // XXX porting
+  }
 
   void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
     PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
@@ -1325,12 +1332,10 @@ void DefineForceDensityField(py::module_ m, T) {
         std::shared_ptr<ForceDensityField<T>>
 #endif
         >(m, "ForceDensityField", param, cls_doc.doc);
-    cls                      // BR
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+    cls  // BR
         .def(py::init<ForceDensityType>(),
             py::arg("density_type") = ForceDensityType::kPerCurrentVolume,
             cls_doc.ctor.doc)
-#endif  // XXX porting
         .def("has_parent_system", &ForceDensityField<T>::has_parent_system,
             cls_doc.has_parent_system.doc)
         .def("parent_system_or_throw",
