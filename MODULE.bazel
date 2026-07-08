@@ -141,7 +141,7 @@ use_repo(
     "eigen",
     "fmt",
     "nanobind",
-    "robin_map",
+    "robin_map",  # XXX porting Probably bury this in "internal"?
     "spdlog",
     #
     # Aliases for C++ dependencies that are used by our implementation.

@@ -7,6 +7,9 @@ licenses(["notice"])  # BSD-3-Clause
 
 package(default_visibility = ["//visibility:public"])
 
+# XXX porting The BCR module for this has a better build rule.  We should
+# probably mimic what it does (or just use it directly).
+
 cc_library(
     name = "nanobind",
     srcs = glob(

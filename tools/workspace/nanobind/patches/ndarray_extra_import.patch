@@ -4,6 +4,12 @@ In theory, this could be upstreamed, but acceptance is doubtful. For a
 pertinent discussion, see:
 https://github.com/wjakob/nanobind/discussions/327.
 
+XXX porting Instead of hooking nanobind to call into our type-caster of last
+resort, we could simply not include nanobind/eigen/dense.h and instead write our
+own type_caster that behaves the way we want it to.  That would be better
+long-term, but I'm undecided about whether we do it before or after introducing
+nanobind support to our master branch.
+
 diff --git include/nanobind/nb_lib.h include/nanobind/nb_lib.h
 index 8fd35a1..732f513 100644
 --- include/nanobind/nb_lib.h
