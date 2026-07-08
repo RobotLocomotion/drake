@@ -6,8 +6,8 @@ namespace lcm {
 
 SerializerInterface::~SerializerInterface() {}
 
-std::shared_ptr<AbstractValue>
-SerializerInterface::CreateDefaultValueShared() const {
+std::shared_ptr<AbstractValue> SerializerInterface::CreateDefaultValueShared()
+    const {
   return CreateDefaultValue();
 }
 
