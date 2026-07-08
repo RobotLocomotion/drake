@@ -1390,7 +1390,6 @@ void DefineSystemScalarConverter(PyClass* cls) {
       using system_scalar_converter_internal::AddPydrakeConverterFunction;
       // N.B. The "_AddConstructor" method is called by scalar_conversion.py
       // to register a constructor, similar to MaybeAddConstructor in C++.
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
       using ConverterFunction = std::function<System<T>*(const System<U>&)>;
       AddTemplateMethod(
           converter, "_AddConstructor",
@@ -1421,7 +1420,6 @@ void DefineSystemScalarConverter(PyClass* cls) {
                     }});
           },
           GetPyParam<T, U>());
-#endif  // XXX porting
     };
     // N.B. When changing the pairs of supported types below, ensure that these
     // reflect the stanzas for the advanced constructor of
