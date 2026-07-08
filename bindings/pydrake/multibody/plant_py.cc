@@ -1677,7 +1677,7 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = ContactModel;
     constexpr auto& cls_doc = doc.ContactModel;
-    py::enum_<Class>(m, "ContactModel", cls_doc.doc)
+    py::enum_<Class>(m, "ContactModel", py::is_arithmetic(), cls_doc.doc)
         .value("kHydroelastic", Class::kHydroelastic, cls_doc.kHydroelastic.doc)
         .value("kPoint", Class::kPoint, cls_doc.kPoint.doc)
         .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
