@@ -24,6 +24,11 @@ namespace internal {
 template <typename T>
 class IcfModel;
 
+// TODO(#23741): Consider sorting patches by body pair, to improve locality of
+// access of Jacobians.
+// TODO(#23742): Consider moving to a single flat index for patches and pairs,
+// as a step toward parallelization.
+
 /* A pool of contact constraints organized by patches. Each patch involves two
 bodies A and B, with one or more contact pairs per patch. We can think of each
 patch as corresponding to a physical "contact surface" between the two bodies.
