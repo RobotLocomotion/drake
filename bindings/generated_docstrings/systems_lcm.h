@@ -738,6 +738,11 @@ Serializer for a message-specific concrete subclass.)""";
 R"""(Creates a value-initialized (zeroed) instance of the message object.
 The result can be used as the output object filled in by Deserialize.)""";
           } CreateDefaultValue;
+          // Symbol: drake::systems::lcm::SerializerInterface::CreateDefaultValueShared
+          struct /* CreateDefaultValueShared */ {
+            // Source: drake/systems/lcm/serializer.h
+            const char* doc = R"""()""";
+          } CreateDefaultValueShared;
           // Symbol: drake::systems::lcm::SerializerInterface::Deserialize
           struct /* Deserialize */ {
             // Source: drake/systems/lcm/serializer.h

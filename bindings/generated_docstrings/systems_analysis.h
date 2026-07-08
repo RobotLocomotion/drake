@@ -4340,6 +4340,11 @@ See also:
     Initialize(), AdvancePendingEvents(), SimulatorStatus,
     set_monitor())""";
         } AdvanceTo;
+        // Symbol: drake::systems::Simulator::EmplaceWithSharedContext
+        struct /* EmplaceWithSharedContext */ {
+          // Source: drake/systems/analysis/simulator.h
+          const char* doc = R"""()""";
+        } EmplaceWithSharedContext;
         // Symbol: drake::systems::Simulator::GetCurrentWitnessTimeIsolation
         struct /* GetCurrentWitnessTimeIsolation */ {
           // Source: drake/systems/analysis/simulator.h
