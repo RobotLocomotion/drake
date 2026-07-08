@@ -300,7 +300,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // Note: there is no invocation of tree.update() here. This is because
   // update() is only necessary when geometry *poses* change. The act of adding
   // or removing objects from the tree does *not* invalidate the tree. What
-  // matters is that the objects being inserted have up-to-date AABBs.
+  // matters is that the objects being inserted have up-to-date AABBs. Rather
+  // than "dirtying" the inactive tree, we choose to maintain it in a consistent
+  // state. The cost of registerObject() is far more expensive than
+  // computeAABB(), so it's a reasonable trade off.
   //
   // We rely on UpdateWorldPoses() to always update the object's poses and then
   // can freely call computeAABB() as necessary to guarantee up-to-date-ness.
