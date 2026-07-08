@@ -1564,7 +1564,7 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
     const Link<T>& link = get_link(link_index);
     // When composite bodies are enabled, ensure "follower links" that are
     // welded to the World body are skipped because the world body's spatial
-    // inertia is initialized to nan (do not add or ReExpressInPlace to nan).
+    // inertia is initialized to NaN (do not add or ReExpressInPlace to NaN).
     if (link.mobod_index() == world_mobod_index()) continue;
     const RigidTransform<T>& X_WB = pc.get_X_WB(link.mobod_index());
 

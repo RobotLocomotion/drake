@@ -165,12 +165,14 @@ model directly depends on the spatial inertia of Link123, so we also verify:
 
 Analytical derivation
 ---------------------
-The model has a single revolute joint (z-axis at World origin) with three
-welded links, each a 1 kg solid cube of side 0.1 m. Their body-frame origins
-p₁, p₂, p₃ are coincident with their centers of mass and located (in Link1's
-frame): Link1: p₁ = (0, 0, 0)   — at the joint Link2: p₂ = (1, 0, 0)   in
-Link1's frame Link3: p₃ = (1, 1, 0)   in Link1's frame (1 m in x then 1 m in
-Link2's y)
+The model has 4 links, Linki (i=1,2,3,4), each a 1 kg solid cube of side 0.1 m.
+Links 1,2,3 are welded together and are connected to World via a revolute joint
+(z-axis at World origin). Link4 is welded directly to World. The link body-frame
+origins are coincident with their associated centers of mass, located with:
+  Link1 origin from World origin: p₁ = (0, 0, 0) expressed in World.
+  Link2 origin from Link1 origin: p₂ = (1, 0, 0) expressed in Link1.
+  Link3 origin from Link1 origin: p₃ = (1, 1, 0) expressed in Link1.
+  Link4 origin from World origin: p₄ = (4, 0, 0) expressed in World.
 
 For a solid cube of mass m and side a, its moment of inertia about any axis
 through its COM is m*a²/6. The parallel axis theorem calculates each cube's
@@ -203,8 +205,8 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
     SetState(explicit_model, angle, 0.0);
     SetState(composite_model, angle, 0.0);
 
-    // Verify Link123's spatial inertia not depend on combined welded links.
-    // Note: Due to Bug 1 above, the following test used to fail (now fixed)
+    // Verify Link123's summed spatial inertia does not depend on whether they
+    // are a composite body.
     SpatialInertia<double> M_EWo_W = explicit_model.plant->CalcSpatialInertia(
         *explicit_model.context, world_frame,
         {explicit_model.link1->index(), explicit_model.link2->index(),
@@ -218,12 +220,8 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
                                 MatrixCompareType::relative))
         << "Link123 spatial inertia mismatch at angle = " << angle;
 
-    // Tests that uncovered old bugs in MultibodyPlant::CalcSpatialInertia().
-    // Bug 1: When CalcSpatialInertia() was called with composite_model on a
-    // single link (Link 1 or 2 or 3), the returned spatial inertia was for
-    // the entire Link123 composite mobod. Bug 2: When CalcSpatialInertia()
-    // was called with composite_model on link4 (which is welded to world), an
-    // exception was thrown (debug mode) or NaN were returned (release mode).
+    // Ensure that individual link spatial inertias are reported correctly
+    // regardless of whether they were fused.
     for (int i = 0; i < 4; ++i) {
       const RigidBody<double>* explicit_linki = explicit_links[i];
       const RigidBody<double>* composite_linki = composite_links[i];
@@ -237,8 +235,8 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
           << "Spatial inertia mismatch: link" << i + 1
           << " at angle = " << angle;
 
-      // Due to special case of link4 being welded to world, compare link4's
-      // spatial inertia to its expected value.
+      // Since link4 is welded to world, special-case calculations are used. For
+      // this special case, also compare link4 results to an analytical value.
       if (i == 3) {
         const Vector3<double> p_WoL4o_W(4.0, 0.0, 0.0);
         SpatialInertia<double> M_L4Wo_W_expected =
@@ -272,14 +270,14 @@ GTEST_TEST(CompositeTest, CompositeSpatialInertia) {
 /* Tests that CalcFrameBodyPoses() computes the correct composite mass
 properties by exercising every code path (including reverse welds):
 - Pass 1: non-identity frame poses X_LF, where link frame L and frame F are
-          both rigidly attached to the same body (so X_LF is constant). When a
-          weld joint is NOT reversed, F is the inboard frame on the parent
-body, whereas for a reversed weld, F is the inboard frame on the child body.
+  both rigidly attached to the same body (so X_LF is constant). When a
+  weld joint is NOT reversed, F is the inboard frame on the parent body, whereas
+  for a reversed weld, F is the inboard frame on the child body.
 - Pass 2: poses X_BL, where mobod (mobilized body) frame B and link frame L
-are both rigidly attached to the same body (so X_BL is constant). If L is the
-composite body's "active" link, frame B is frame L and X_BL is identity. In
-general, X_BL is non-identity for each "follower" link L welded into the
-composite body B.
+  are both rigidly attached to the same body (so X_BL is constant). If L is the
+  composite body's "active" link, frame B is frame L and X_BL is identity. In
+  general, X_BL is non-identity for each "follower" link L welded into the
+  composite body B.
 - Pass 3: mass property accumulation with both shifting and re-expressing.
 
 The strategy is to build two versions of the same physical system -- one with
