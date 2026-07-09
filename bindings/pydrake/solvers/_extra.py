@@ -15,6 +15,7 @@ def _wrap_user_evaluator_func(
     output_dim: int,
     expected_type: type,
 ):
+    """The implementation of the C++ helper `WrapUserEvaluatorFunc`."""
     assert output_dim in {0, 1}
     if output_dim == 0:
         assert num_outputs == 1
@@ -51,20 +52,16 @@ def _wrap_user_evaluator_func(
             return y
 
         # For constraints, the return value should be a vector of the expected
-        # type (either an np.ndarray or convertable to it).
+        # type (either an np.ndarray or convertible to it).
         if y is None:
             raise TypeError(f"{cls_name} returned None")
-        y_is_array = False
         try:
             y = _np.asarray(y)
-            y_is_array = True
-        except Exception:
-            pass
-        if not y_is_array:
+        except Exception as e:
             raise TypeError(
                 f"When {cls_name} is called with an array of type "
                 f"{expected_type.__name__} the return value must be an array "
-                f"of the same type, not a {type(y).__name__} ({y!r})."
+                f"of the same type (numpy conversion error: {e})."
             )
 
         # Validate the shape.

@@ -1146,20 +1146,23 @@ class TestMathematicalProgram(unittest.TestCase):
         # TODO(eric.cousineau): It would be nice to not need a
         # MathematicalProgram to test these.
 
-        def user_constraint_bad_shape(x):
-            # WARNING: This should return a vector, not a scalar!
-            return x[0]
+        # The bad constraint returns this value.
+        bad_return = None
+
+        def user_constraint_bad(x):
+            return bad_return
 
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(1, "x")
-        binding_bad_shape = prog.AddConstraint(
-            user_constraint_bad_shape, lb=[0.0], ub=[2.0], vars=x
+        binding_bad = prog.AddConstraint(
+            user_constraint_bad, lb=[0.0], ub=[2.0], vars=x
         )
 
         for T in SCALAR_TYPES:
             array_T = np.vectorize(T)
             x0 = array_T([0.0])
             x0_bad = array_T([0.0, 1.0])
+
             # Bad input (before function is called).
             if kDrakeAssertIsArmed:
                 # See note in `_wrap_user_evaluator_func`.
@@ -1174,11 +1177,22 @@ class TestMathematicalProgram(unittest.TestCase):
                     "Got .size = 2 instead."
                 )
             with self.assertRaises(input_error_cls) as cm:
-                binding_bad_shape.evaluator().Eval(x0_bad)
+                binding_bad.evaluator().Eval(x0_bad)
             self.assertIn(input_error_expected, str(cm.exception))
-            # Bad output.
+
+            # Bad result: Want vector, not None!
+            bad_return = None
+            with self.assertRaises(TypeError) as cm:
+                binding_bad.evaluator().Eval(x0)
+            self.assertEqual(
+                str(cm.exception),
+                "PyFunctionConstraint returned None",
+            )
+
+            # Bad result: Want vector, not scalar!
+            bad_return = x0[0]
             with self.assertRaises(ValueError) as cm:
-                binding_bad_shape.evaluator().Eval(x0)
+                binding_bad.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
                 "PyFunctionConstraint return value must be array of "
@@ -1186,18 +1200,20 @@ class TestMathematicalProgram(unittest.TestCase):
                 "Got .ndim = 0 and .size = 1 instead.",
             )
 
-            # Bad output dtype.
-            U = self.get_different_scalar_type(T)
-
-            def user_constraint_bad_dtype(x):
-                # WARNING: This should return the same dtype as x!
-                return [U(0.0)]
-
-            binding_bad_dtype = prog.AddConstraint(
-                user_constraint_bad_dtype, lb=[0.0], ub=[2.0], vars=x
-            )
+            # Bad result: Inhomogeneous list sizes (np.asarray raises).
+            bad_return = [[1.0, 2.0], [3.0]]
             with self.assertRaises(TypeError) as cm:
-                binding_bad_dtype.evaluator().Eval(x0)
+                binding_bad.evaluator().Eval(x0)
+            self.assertIn(
+                "numpy conversion error",
+                str(cm.exception),
+            )
+
+            # Bad result: Wrong output dtype!
+            U = self.get_different_scalar_type(T)
+            bad_return = [U(0.0)]
+            with self.assertRaises(TypeError) as cm:
+                binding_bad.evaluator().Eval(x0)
             self.assertIn(
                 f"When PyFunctionConstraint is called with an array of type "
                 f"{T.__name__} the return value must be the same type, not ",
