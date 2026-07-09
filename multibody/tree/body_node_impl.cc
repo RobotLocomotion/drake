@@ -118,11 +118,11 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
   const SpanningForest::Mobod& mobod = mobilizer_->mobod();
   pc->SetX_WL(mobod.active_link_ordinal(), X_WB);
 
-  // For composite mobods, also set X_WL for each follower (non-active) link Lₒ.
-  // Because Lₒ is rigidly offset from B by X_BLₒ (pre-computed in
+  // For fused mobods, also set X_WL for each follower (non-active)
+  // link Lₒ. Because Lₒ is rigidly offset from B by X_BLₒ (pre-computed in
   // frame_body_pose_cache during CalcFrameBodyPoses), its world pose is simply:
   //   X_WLₒ = X_WB * X_BLₒ
-  if (mobod.is_composite()) {
+  if (mobod.is_fused()) {
     const auto& followers = mobod.follower_link_ordinals();
     // followers[0] is the active link (already handled above); start at 1.
     for (int i = 1; i < ssize(followers); ++i) {

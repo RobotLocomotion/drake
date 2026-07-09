@@ -1759,13 +1759,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] model_instance (optional) the index of the model instance to
   ///   which `joint_type` is to be applied.
   /// @throws std::exception if called after Finalize().
-  /// @see GetBaseBodyJointType(), SetCombineWeldedBodies(), Finalize()
+  /// @see GetBaseBodyJointType(), SetFuseWeldedBodies(), Finalize()
   void SetBaseBodyJointType(
       BaseBodyJointType joint_type,
       std::optional<ModelInstanceIndex> model_instance = {});
 
   /// (Internal use only for now) Controls whether welded-together RigidBody
-  /// (Link) elements are to be combined into a single composite mobilized
+  /// (Link) elements are to be fused into a single mobilized
   /// body in the generated model. If so, those Weld joints will not be modeled
   /// (i.e. will have no corresponding mobilizer) in the post-Finalize()
   /// model and there will be fewer mobilized bodies and modeled joints in the
@@ -1781,16 +1781,16 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// The default global setting for Drake is _not_ to combine welded RigidBody
   /// elements.
   ///
-  /// @param[in] combine Whether to combine welded-together bodies. This only
+  /// @param[in] fuse Whether to fuse welded-together bodies. This only
   ///   affects a particular model instance if the `model_instance` argument is
   ///   also provided, otherwise it sets the global value.
   /// @param[in] model_instance (optional) if present, specifies a particular
-  ///   model instance to which the `combine` argument applies.
+  ///   model instance to which the `fuse` argument applies.
   ///
   /// @throws std::exception if called after Finalize().
-  /// @see GetCombineWeldedBodies(), SetBaseBodyJointType(), Finalize()
-  void SetCombineWeldedBodies(
-      bool combine, std::optional<ModelInstanceIndex> model_instance = {});
+  /// @see GetFuseWeldedBodies(), SetBaseBodyJointType(), Finalize()
+  void SetFuseWeldedBodies(
+      bool fuse, std::optional<ModelInstanceIndex> model_instance = {});
 
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
@@ -1800,20 +1800,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// This can be called any time -- pre-finalize it returns the joint type
   /// that will be used by Finalize(); post-finalize it returns the joint type
   /// that _was_ used if there were any base bodies in need of a joint.
-  /// @see SetBaseBodyJointType(), GetCombineWeldedBodies(), Finalize()
+  /// @see SetBaseBodyJointType(), GetFuseWeldedBodies(), Finalize()
   BaseBodyJointType GetBaseBodyJointType(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
   /// (Internal use only for now) Returns the global or a model_instance setting
-  /// for whether or not to combine welded RigidBody (Link) elements.
+  /// for whether or not to fuse welded RigidBody (Link) elements.
   ///
   /// @note This function can be called pre-Finalize() or post-Finalize().
   ///
   /// @param[in] model_instance (optional). If this argument is missing or
   ///   not recognized, returns the global setting. Otherwise returns the
   ///   setting for this specific model_instance.
-  /// @see SetCombineWeldedBodies(), GetBaseBodyJointType(), Finalize()
-  bool GetCombineWeldedBodies(
+  /// @see SetFuseWeldedBodies(), GetBaseBodyJointType(), Finalize()
+  bool GetFuseWeldedBodies(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
   /// This method must be called after all elements in the model (joints,
