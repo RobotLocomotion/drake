@@ -80,7 +80,13 @@ void DoScalarDependentDefinitions(py::module_ m) {
       .def(py::init<VectorX<T>>(), py::arg("data"),
           doc.BasicVector.ctor.doc_1args_vec)
       .def(
-          py::init<int>(), py::arg("size"), doc.BasicVector.ctor.doc_1args_size)
+          "__init__",
+          [](BasicVector<T>* self, int size) {
+            // N.B. We can't use the simple py::init<int> sugar here, because
+            // nanobind calls the std::initializer_list overload in that case.
+            new (self) BasicVector<T>(size);
+          },
+          py::arg("size"), doc.BasicVector.ctor.doc_1args_size)
       .def(
           "set_value",
           [](BasicVector<T>* self, const Eigen::Ref<const VectorX<T>>& value) {
