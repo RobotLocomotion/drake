@@ -20,8 +20,8 @@ def _resolve_array_type(x):
         return None
 
 
-def _check_returned_array_type(cls_name, y, expected_type):
-    # Used by CheckReturnedArrayType in C++.
+def _check_returned_array_type(*, cls_name, y, expected_type):
+    y = _np.asarray(y)
     if y.size == 0:
         return
     actual_type = _resolve_array_type(y)
@@ -37,3 +37,46 @@ def _check_returned_array_type(cls_name, y, expected_type):
             f"When {cls_name} is called with an array of type {expected_name} "
             f"the return value must be the same type, not {actual_name}."
         )
+
+
+def _check_array_shape(*, var_name, var, dim, size):
+    try:
+        var = _np.asarray(var)
+        valid = True
+    except Exception:
+        valid = False
+    if valid:
+        if dim == 0:
+            valid = var.ndim == 0
+        else:
+            valid = var.ndim == 1 or var.ndim == 2
+    if valid:
+        valid = var.size == size
+    if not valid:
+        ndim_hint = "0 (scalar)" if (dim == 0) else "1 or 2 (vector)"
+        raise RuntimeError(
+            f"{var_name} must be of .ndim = {ndim_hint} and .size = {size}. "
+            f"Got .ndim = {var.ndim} and .size = {var.size} instead."
+        )
+
+
+def _wrap_user_func(
+    cls_name, func, num_vars, num_outputs, output_dim, expected_type
+):
+    def _wrapped(x):
+        _check_array_shape(
+            var_name=f"{cls_name}: Input", var=x, dim=1, size=num_vars
+        )
+        y = func(x)
+        _check_array_shape(
+            var_name=f"{cls_name}: Return value",
+            var=y,
+            dim=output_dim,
+            size=num_outputs,
+        )
+        _check_returned_array_type(
+            cls_name=cls_name, y=y, expected_type=expected_type
+        )
+        return y
+
+    return _wrapped

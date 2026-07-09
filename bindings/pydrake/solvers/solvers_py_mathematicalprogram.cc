@@ -72,67 +72,15 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 namespace {
-enum class ArrayShapeType { Scalar, Vector };
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-// Checks array shape, provides user-friendly message if it fails.
-void CheckArrayShape(
-    py::str var_name, py::array x, ArrayShapeType shape, int size) {
-  bool ndim_is_good{};
-  py::str ndim_hint;
-  if (shape == ArrayShapeType::Scalar) {
-    ndim_is_good = (x.ndim() == 0);
-    ndim_hint = py::str("0 (scalar)");
-  } else {
-    ndim_is_good = (x.ndim() == 1 || x.ndim() == 2);
-    ndim_hint = py::str("1 or 2 (vector)");
-  }
-  if (!ndim_is_good || x.size() != size) {
-    throw std::runtime_error(py::cast<std::string>(
-        py::str("{} must be of .ndim = {} and .size = {}. "
-                "Got .ndim = {} and .size = {} instead.")
-            .format(var_name, ndim_hint, size, x.ndim(), x.size())));
-  }
-}
-
-// Checks array type, provides user-friendly message if it fails.
-template <typename T>
-void CheckReturnedArrayType(py::str cls_name, py::array y) {
-  py::module_ m = py::module_::import_("pydrake.solvers._extra");
-  m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
-}
-#endif  // XXX porting
-
-// Wraps user function to provide better user-friendliness.
+// Wraps user cost or constraint evaluation function to provide better error
+// messages when the input or output are incorrectly typed or sized.
 template <typename T, typename Func>
 Func WrapUserFunc(py::str cls_name, py::callable func, int num_vars,
-    int num_outputs, ArrayShapeType output_shape) {
-#ifdef PYDRAKE_USE_PYBIND11
-  // TODO(eric.cousineau): It would be nicer to write this in Python.
-  // TODO(eric.cousineau): Consider using `py::detail::make_caster<>`. However,
-  // this may mean the argument is converted twice.
-  py::cpp_function wrapped = [=](py::array x) {
-    // Check input.
-    // WARNING: If the input is badly sized, we will only reach this error in
-    // Release mode. In debug mode, an assertion error will be triggered.
-    CheckArrayShape(py::str("{}: Input").format(cls_name), x,
-        ArrayShapeType::Vector, num_vars);
-    // N.B. We use `py::object` instead of `py::array` for the return type
-    /// because for dtype=object, you cannot implicitly cast `np.array(T())`
-    // (numpy scalar) to `T` (object), at least for AutoDiffXd.
-    py::object y = func(x);
-    // Check output.
-    CheckArrayShape(py::str("{}: Return value").format(cls_name), y,
-        output_shape, num_outputs);
-    CheckReturnedArrayType<T>(cls_name, y);
-    return y;
-  };
-  return py::cast<Func>(wrapped);
-#else   // PYDRAKE_USE_NANOBIND
-  // XXX porting Add back size/type error checking.
-  unused(cls_name, num_vars, num_outputs, output_shape);
-  return py::cast<Func>(func);
-#endif  // PYDRAKE_USE_PYBIND11
+    int num_outputs, int output_dim) {
+  py::module_ m = py::module_::import_("pydrake.solvers._extra");
+  return py::cast<Func>(m.attr("_wrap_user_func")(
+      cls_name, func, num_vars, num_outputs, output_dim, GetPyParam<T>()[0]));
 }
 
 // TODO(eric.cousineau): Make a Python virtual base, and implement this in
@@ -173,7 +121,7 @@ class PyFunctionCost : public Cost {
   template <typename T, typename Func>
   Func Wrap(py::callable func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
-        num_outputs(), ArrayShapeType::Scalar);
+        num_outputs(), /* output_dim = */ 0);
   }
 
   const DoubleFunc double_func_;
@@ -222,7 +170,7 @@ class PyFunctionConstraint : public Constraint {
   template <typename T, typename Func>
   Func Wrap(py::callable func) {
     return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
-        num_vars(), num_outputs(), ArrayShapeType::Vector);
+        num_vars(), num_outputs(), /* output_dim = */ 1);
   }
 
   const DoubleFunc double_func_;
