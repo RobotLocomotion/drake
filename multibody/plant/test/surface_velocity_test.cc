@@ -282,9 +282,11 @@ TEST_F(SurfaceVelocityTest, SurfaceVelocityPosedInWorld) {
 //
 // For kGroundSpeed == kBoxSpeed the direction is (1,-1,0)/√2.
 //
-// The suite first verifies this for continuous point and hydroelastic contact
-// models. The contact force check tests the reporter; the displacement check
-// tests the dynamics independently.
+// The suite verifies this for point and hydroelastic contact models in both
+// continuous and discrete time stepping, plus a deformable-sphere variant that
+// exercises the deformable contact path (5 configurations total). The contact
+// force check (one step) tests the reporter; the displacement check (long
+// integration) tests the dynamics independently.
 
 struct OrthogonalContactTestConfig {
   std::string description;
@@ -492,13 +494,26 @@ INSTANTIATE_TEST_SUITE_P(
       continuous_point.time_step = 0.0;
       continuous_point.contact_model = "point";
 
+      MultibodyPlantConfig discrete_point;
+      discrete_point.time_step = 1e-3;
+      discrete_point.contact_model = "point";
+      discrete_point.discrete_contact_approximation = "sap";
+
       MultibodyPlantConfig continuous_hydro;
       continuous_hydro.time_step = 0.0;
       continuous_hydro.contact_model = "hydroelastic_with_fallback";
 
+      MultibodyPlantConfig discrete_hydro;
+      discrete_hydro.time_step = 1e-3;
+      discrete_hydro.contact_model = "hydroelastic_with_fallback";
+      discrete_hydro.discrete_contact_approximation = "sap";
+
       return std::vector<OrthogonalContactTestConfig>{
           {"continuous_point", continuous_point},
+          {"discrete_point_sap", discrete_point},
           {"continuous_hydro", continuous_hydro},
+          {"discrete_hydro_sap", discrete_hydro},
+          {"discrete_deformable_sap", discrete_hydro, true},
       };
     }()),
     [](const testing::TestParamInfo<OrthogonalContactTestConfig>& param_info) {
