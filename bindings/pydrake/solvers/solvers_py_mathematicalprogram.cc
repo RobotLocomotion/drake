@@ -76,10 +76,10 @@ namespace {
 // Wraps user cost or constraint evaluation function to provide better error
 // messages when the input or output are incorrectly typed or sized.
 template <typename T, typename Func>
-Func WrapUserFunc(py::str cls_name, py::callable func, int num_vars,
+Func WrapUserEvaluatorFunc(py::str cls_name, py::callable func, int num_vars,
     int num_outputs, int output_dim) {
   py::module_ m = py::module_::import_("pydrake.solvers._extra");
-  return py::cast<Func>(m.attr("_wrap_user_func")(
+  return py::cast<Func>(m.attr("_wrap_user_evaluator_func")(
       cls_name, func, num_vars, num_outputs, output_dim, GetPyParam<T>()[0]));
 }
 
@@ -120,8 +120,8 @@ class PyFunctionCost : public Cost {
  private:
   template <typename T, typename Func>
   Func Wrap(py::callable func) {
-    return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
-        num_outputs(), /* output_dim = */ 0);
+    return WrapUserEvaluatorFunc<T, Func>(py::str("PyFunctionCost"), func,
+        num_vars(), num_outputs(), /* output_dim = */ 0);
   }
 
   const DoubleFunc double_func_;
@@ -169,7 +169,7 @@ class PyFunctionConstraint : public Constraint {
  private:
   template <typename T, typename Func>
   Func Wrap(py::callable func) {
-    return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
+    return WrapUserEvaluatorFunc<T, Func>(py::str("PyFunctionConstraint"), func,
         num_vars(), num_outputs(), /* output_dim = */ 1);
   }
 

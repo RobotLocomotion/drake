@@ -39,41 +39,79 @@ def _check_returned_array_type(*, cls_name, y, expected_type):
         )
 
 
-def _check_array_shape(*, var_name, var, dim, size):
-    try:
-        var = _np.asarray(var)
-        valid = True
-    except Exception:
-        valid = False
-    if valid:
-        if dim == 0:
-            valid = var.ndim == 0
-        else:
-            valid = var.ndim == 1 or var.ndim == 2
-    if valid:
-        valid = var.size == size
-    if not valid:
-        ndim_hint = "0 (scalar)" if (dim == 0) else "1 or 2 (vector)"
-        raise RuntimeError(
-            f"{var_name} must be of .ndim = {ndim_hint} and .size = {size}. "
-            f"Got .ndim = {var.ndim} and .size = {var.size} instead."
-        )
-
-
-def _wrap_user_func(
-    cls_name, func, num_vars, num_outputs, output_dim, expected_type
+def _wrap_user_evaluator_func(
+    cls_name: str,
+    user_evaluator_func,
+    num_vars: int,
+    num_outputs: int,
+    output_dim: int,
+    expected_type: type,
 ):
+    assert output_dim in {0, 1}
+    if output_dim == 0:
+        assert num_outputs == 1
+
     def _wrapped(x):
-        _check_array_shape(
-            var_name=f"{cls_name}: Input", var=x, dim=1, size=num_vars
+        # This assertion is guaranteed by the C++ signature that calls us.
+        assert x.ndim == 1
+
+        # Check that the user passed the correct number of variables to the
+        # evaluator. When called from MathematicalProgram this is guaranteed,
+        # but direct calls to the evaluator might still have a mismatch.
+        #
+        # N.B. The C++ Eval code that calls us (via DoEval) in will (in Debug
+        # builds) assertion-check the size, so this Python check is only
+        # reachable in Release builds.
+        if x.size != num_vars:
+            raise ValueError(
+                f"{cls_name} input must have .size = {num_vars}. "
+                f"Got .size = {x.size} instead."
+            )
+
+        # Call the user's evaluator.
+        y = user_evaluator_func(x)
+
+        # For costs, the return value should be a scalar of the expected type.
+        if output_dim == 0:
+            actual_type = type(y)
+            type_match = (actual_type == expected_type) or (
+                (expected_type is float)
+                and (actual_type in {_np.float32, _np.float64})
+            )
+            if not type_match:
+                raise TypeError(
+                    f"When {cls_name} is called with an array of type "
+                    f"{expected_type.__name__} the return value must be a "
+                    "scalar (not array) of the same type, not a "
+                    f"{type(y).__name__} ({y!r})."
+                )
+            return y
+
+        # For constraints, the return value should be a vector of the expected
+        # type (either an np.ndarray or convertable to it).
+        if y is None:
+            raise TypeError(f"{cls_name} returned None")
+        y_is_array = False
+        try:
+            y = _np.asarray(y)
+            y_is_array = True
+        except Exception:
+            pass
+        if not y_is_array:
+            raise TypeError(
+                f"When {cls_name} is called with an array of type "
+                f"{expected_type.__name__} the return value must be an array "
+                f"of the same type, not a {type(y).__name__} ({y!r})."
+            )
+        valid = (y.size == num_outputs) and (
+            y.ndim == 1 or (y.ndim == 2 and 1 in y.shape)
         )
-        y = func(x)
-        _check_array_shape(
-            var_name=f"{cls_name}: Return value",
-            var=y,
-            dim=output_dim,
-            size=num_outputs,
-        )
+        if not valid:
+            raise ValueError(
+                f"{cls_name} return value must be array of "
+                f".ndim = 1 or 2 (vector) and .size = {num_outputs}. "
+                f"Got .ndim = {y.ndim} and .size = {y.size} instead."
+            )
         _check_returned_array_type(
             cls_name=cls_name, y=y, expected_type=expected_type
         )
