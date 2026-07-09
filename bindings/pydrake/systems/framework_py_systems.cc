@@ -777,7 +777,7 @@ Note: The above is for the C++ documentation. For Python, use
             [](LeafSystem<T>* base, const std::string& name, py::callable alloc,
                 std::function<void(py::object, py::object)> calc,
                 const std::set<DependencyTicket>& prerequisites_of_calc)
-            -> const OutputPort<T>& {
+                -> const OutputPort<T>& {
               auto* self = dynamic_cast<PyLeafSystem*>(base);
               DRAKE_DEMAND(self != nullptr);
               return self->DeclareAbstractOutputPort(name,

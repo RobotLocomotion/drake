@@ -33,7 +33,7 @@ MakeCppCompatibleAllocateCallback(py::callable allocate) {
               py::cast<std::string>(py::repr(allocate)),
 #ifdef PYDRAKE_USE_PYBIND11  // XXX porting
               py::cast<std::string>(py::str(py::type::handle_of(result_py)))));
-#else  // XXX porting
+#else   // XXX porting
               py::cast<std::string>(py::repr(py::type_name(result_py)))));
 #endif  // XXX porting
     }
