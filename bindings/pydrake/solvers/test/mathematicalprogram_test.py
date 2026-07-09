@@ -1102,7 +1102,7 @@ class TestMathematicalProgram(unittest.TestCase):
             x0_bad = array_T([0.0, 1.0])
             # Bad input (before function is called).
             if kDrakeAssertIsArmed:
-                # See note in `WrapUserEvaluatorFunc`.
+                # See note in `_wrap_user_evaluator_func`.
                 input_error_cls = SystemExit
                 input_error_expected = (
                     "x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic"
@@ -1162,7 +1162,7 @@ class TestMathematicalProgram(unittest.TestCase):
             x0_bad = array_T([0.0, 1.0])
             # Bad input (before function is called).
             if kDrakeAssertIsArmed:
-                # See note in `WrapUserEvaluatorFunc`.
+                # See note in `_wrap_user_evaluator_func`.
                 input_error_cls = SystemExit
                 input_error_expected = (
                     "x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic"
