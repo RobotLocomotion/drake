@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -74,6 +75,17 @@ class HydroelasticTractionCalculator {
     // define C to be the centroid of the contact surface, and measure and
     // express this point in the world frame.
     const Vector3<T> p_WC;
+
+    // Optional surface-velocity spin axis for bodies A and B, expressed in each
+    // body's own frame; nullopt when the body has no surface velocity. This is
+    // NOT the surface velocity -- it is the (unit) surface-velocity axis scaled
+    // by the surface speed. The surface velocity at a contact point with
+    // outward normal nhat (pointing out of the body) is defined as:
+    //     v_ss = speed_axis x nhat.
+    // This can be applied on a per-face basis to compute the surface velocity
+    // of each face.
+    std::optional<Eigen::Vector3<double>> speed_axis_A;
+    std::optional<Eigen::Vector3<double>> speed_axis_B;
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator);
