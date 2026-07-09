@@ -250,6 +250,10 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             overload_cast_explicit<int, ModelInstanceIndex>(
                 &Class::num_actuated_dofs),
             py::arg("model_instance"), cls_doc.num_actuated_dofs.doc_1args);
+    // Plant-owned state variables - miscellaneous continuous state.
+    cls  // BR
+        .def("num_misc_continuous_states", &Class::num_misc_continuous_states,
+            cls_doc.num_misc_continuous_states.doc);
     // Construction.
     cls  // BR
         .def("SetUseSampledOutputPorts", &Class::SetUseSampledOutputPorts,
@@ -1193,7 +1197,17 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 ModelInstanceIndex>(
                 &Class::get_generalized_contact_forces_output_port),
             py_rvp::reference_internal, py::arg("model_instance"),
-            cls_doc.get_generalized_contact_forces_output_port.doc);
+            cls_doc.get_generalized_contact_forces_output_port.doc)
+        .def("get_surface_speeds_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&>(
+                &Class::get_surface_speeds_input_port),
+            py_rvp::reference_internal,
+            cls_doc.get_surface_speeds_input_port.doc)
+        .def("get_surface_displacements_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_surface_displacements_output_port),
+            py_rvp::reference_internal,
+            cls_doc.get_surface_displacements_output_port.doc);
     // Property accessors.
     cls  // BR
         .def("world_body", &Class::world_body, py_rvp::reference_internal,
@@ -1402,7 +1416,12 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 bool>(&Class::GetActuatorNames),
             py::arg("model_instance"),
             py::arg("add_model_instance_prefix") = false,
-            cls_doc.GetActuatorNames.doc_2args);
+            cls_doc.GetActuatorNames.doc_2args)
+        .def("SetSurfaceVelocityAxis", &Class::SetSurfaceVelocityAxis,
+            py::arg("body"), py::arg("axis_B"),
+            cls_doc.SetSurfaceVelocityAxis.doc)
+        .def("GetSurfaceVelocityAxis", &Class::GetSurfaceVelocityAxis,
+            py::arg("body"), cls_doc.GetSurfaceVelocityAxis.doc);
   }
 
   {

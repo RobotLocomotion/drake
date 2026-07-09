@@ -1306,4 +1306,15 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "surface_velocity_test",
+    deps = [
+        ":plant",
+        "//common:value",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis:simulator",
+        "//systems/framework:bus_value",
+    ],
+)
+
 add_lint_tests()

@@ -198,6 +198,29 @@ const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
   return plant.GetFrameByName("__model__", model_instance);
 }
 
+TEST_F(SdfParserTest, SurfaceVelocityAxis) {
+  AddModelsFromSdfString(R"""(
+    <sdf version='1.12' xmlns:drake='https://drake.mit.edu'>
+      <model name='velocity_test'>
+        <link name='has_velocity'>
+          <drake:surface_velocity_axis>
+            0 2 0
+          </drake:surface_velocity_axis>
+        </link>
+        <link name='no_velocity'/>
+      </model>
+    </sdf>)""");
+
+  const auto& has_velocity = plant_.GetBodyByName("has_velocity");
+  const std::optional<Vector3d> axis_B =
+      plant_.GetSurfaceVelocityAxis(has_velocity);
+  ASSERT_TRUE(axis_B.has_value());
+  EXPECT_TRUE(CompareMatrices(*axis_B, Vector3d(0, 1, 0)));
+
+  const auto& no_velocity = plant_.GetBodyByName("no_velocity");
+  EXPECT_EQ(plant_.GetSurfaceVelocityAxis(no_velocity), std::nullopt);
+}
+
 // Verifies that the SDF loader can leverage a specified package map.
 TEST_F(SdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
