@@ -1524,18 +1524,26 @@ for every column of ``prog_var_vals``. )""")
               double>(&MathematicalProgram::CheckSatisfiedAtInitialGuess),
           py::arg("bindings"), py::arg("tol") = 1e-6,
           doc.MathematicalProgram.CheckSatisfiedAtInitialGuess.doc_vector)
-      .def("indeterminates", &MathematicalProgram::indeterminates,
+      .def(
+          "indeterminates",
           // dtype = object arrays must be copied, and cannot be referenced.
-          py_rvp::copy, doc.MathematicalProgram.indeterminates.doc)
+          [](const MathematicalProgram& self) -> VectorX<Variable> {
+            return self.indeterminates();
+          },
+          doc.MathematicalProgram.indeterminates.doc)
       .def("indeterminate", &MathematicalProgram::indeterminate, py::arg("i"),
           doc.MathematicalProgram.indeterminate.doc)
       .def("required_capabilities", &MathematicalProgram::required_capabilities,
           doc.MathematicalProgram.required_capabilities.doc)
       .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
           doc.MathematicalProgram.indeterminates_index.doc)
-      .def("decision_variables", &MathematicalProgram::decision_variables,
+      .def(
+          "decision_variables",
           // dtype = object arrays must be copied, and cannot be referenced.
-          py_rvp::copy, doc.MathematicalProgram.decision_variables.doc)
+          [](const MathematicalProgram& self) -> VectorX<Variable> {
+            return self.decision_variables();
+          },
+          doc.MathematicalProgram.decision_variables.doc)
       .def("decision_variable", &MathematicalProgram::decision_variable,
           py::arg("i"), doc.MathematicalProgram.decision_variable.doc)
       .def("decision_variable_index",
