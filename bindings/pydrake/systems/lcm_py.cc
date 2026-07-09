@@ -83,7 +83,9 @@ class PySerializerInterface : public SerializerInterface {
     PYDRAKE_OVERRIDE_PURE(
         void, SerializerInterface, Deserialize, buffer, abstract_value);
 #else
-    unused(abstract_value);
+    // change of signature issues.
+    PYDRAKE_OVERRIDE_PURE_NAME(
+        _, _, "Deserialize", DeserializeBuffer, buffer, abstract_value);
 #endif  // XXX porting
   }
 
@@ -103,7 +105,14 @@ class PySerializerInterface : public SerializerInterface {
     std::copy(
         result.c_str(), result.c_str() + result.size(), message_bytes->data());
 #else
-    unused(abstract_value, message_bytes);
+    auto wrapped = [&]() -> py::bytes {
+      PYDRAKE_OVERRIDE_PURE_NAME(
+          _, _, "Serialize", SerializeBuffer<py::bytes>, &abstract_value);
+    };
+    py::bytes result = wrapped();
+    message_bytes->resize(result.size());
+    std::copy(
+        result.c_str(), result.c_str() + result.size(), message_bytes->data());
 #endif  // XXX porting
   }
 };
