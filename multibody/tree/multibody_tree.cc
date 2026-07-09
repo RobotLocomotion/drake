@@ -1696,7 +1696,9 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
             frame_body_poses->get_X_LF(frame_Jo.index());
 
         // Get X_JᵢJₒ to form X_BLₒ = X_BLᵢ * X_LᵢJᵢ * X_JᵢJₒ * (X_LₒJₒ)⁻¹
-        const math::RigidTransformd& X_JpJc = weld_joint.X_FM();
+        const math::RigidTransform<double>& X_JpJc = weld_joint.X_FM();
+        // Since a weld joint's X_FM() is constant, it returns a rigid transform
+        // of type double (not type T). Hence it needs to be typecast to <T>.
         const RigidTransform<T> X_JiJo =
             (is_reversed ? X_JpJc.inverse() : X_JpJc).cast<T>();
         const RigidTransform<T> X_BLo =
@@ -2657,10 +2659,10 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     throw std::logic_error(message);
   }
 
-  // For a system S with center of mass Scm, Scm's translational velocity in
-  // the world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ)  / mₛ, where mₛ =
-  // ∑ mᵢ, mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bᵢcm's velocity in world
-  // frame W (Bᵢcm is the center of mass of the iᵗʰ body).
+  // For a system S with center of mass Scm, Scm's translational velocity in the
+  // world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where mₛ = ∑ mᵢ,
+  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bᵢcm's velocity in world frame W
+  // (Bᵢcm is the center of mass of the iᵗʰ body).
   return sum_mi_vi / total_mass;
 }
 
@@ -2668,9 +2670,8 @@ template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
-  // Reminder: MultibodyTree always declares a world body and 2 model
-  // instances "world" and "default" so num_model_instances() should always be
-  // >= 2.
+  // Reminder: MultibodyTree always declares a world body and 2 model instances
+  // "world" and "default" so num_model_instances() should always be >= 2.
   if (num_links() <= 1) {
     std::string message = fmt::format(
         "{}(): This MultibodyPlant only contains "
@@ -2682,9 +2683,9 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   T total_mass = 0;
   Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
-  // Sum over all the bodies that are in model_instances except for the 0th
-  // body (which is the world body), and count each body's contribution only
-  // once. Reminder: Although it is not possible for a body to belong to
+  // Sum over all bodies that are in model_instances except for the 0ᵗʰ body
+  // (which is the world body), and count each body's contribution only once.
+  // Reminder: Although it is not possible for a body to belong to
   // multiple model instances [as RigidBody::model_instance() returns a body's
   // unique model instance], it is possible for the same model instance to be
   // added multiple times to std::vector<ModelInstanceIndex>&
@@ -2843,9 +2844,8 @@ template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
     const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const {
   // Assemble a list of ModelInstanceIndex.
-  // Skip model_instance_index(0) which always contains the "world" body --
-  // the spatial momentum of the world body measured in the world is always
-  // zero.
+  // Skip model_instance_index(0) which always contains the "world" body. The
+  // spatial momentum of the world body measured in the world is always zero.
   std::vector<ModelInstanceIndex> model_instances;
   for (ModelInstanceIndex model_instance_index(1);
        model_instance_index < num_model_instances(); ++model_instance_index)

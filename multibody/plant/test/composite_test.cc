@@ -283,9 +283,8 @@ properties by exercising every code path (including reverse welds):
 The strategy is to build two versions of the same physical system -- one with
 composites enabled and one without -- then verify that the mass matrix and
 gravity generalized forces agree. The mass matrix depends on M_BBo_B (the
-composite spatial inertia computed in Pass 3), while gravity forces
-additionally depend on p_BoLcm_B (each follower link's center of mass offset
-from Bo).
+composite spatial inertia computed in Pass 3), while gravity forces also
+depend on p_BoLcm_B (each follower link's center of mass offset from Bo).
 
 Topology:
                              LinkC

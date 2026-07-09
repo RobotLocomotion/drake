@@ -42,7 +42,7 @@ template <typename T>
 bool MultibodyForces<T>::CheckHasRightSizeForModel(
     const internal::MultibodyTree<T>& model) const {
   return model.num_velocities() == num_velocities() &&
-         model.num_mobods() == num_bodies();
+         model.num_mobods() == num_mobods();
 }
 
 template <typename T>
