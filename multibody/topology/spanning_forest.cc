@@ -67,7 +67,7 @@ The algorithm has three phases:
     numerics, but we can't allow massless terminal bodies unless they are welded
     to a massful body. Welded-together Links form a WeldedLinksAssembly object
     which will be modeled by one or more Mobods which may be a mix of
-    single-link and composite Mobods.
+    single-link and fused-link Mobods.
   2 Reorder the forest nodes (mobilized bodies) depth first for optimal
     computation. Each tree will consist only of consecutively-numbered nodes.
   3 Assign joint coordinates q and velocities v sequentially according
@@ -82,7 +82,7 @@ The algorithm has three phases:
 
 ForestBuildingOptions (global or per-model instance) determine
   - whether we produce a Mobod for _each_ Link in a WeldedLinksAssembly or
-    should produce a minimal number of Mobods by creating composite Mobods (as
+    should produce a minimal number of Mobods by creating fused Mobods (as
     permitted by options on individual weld joints), and
   - what kind of Joint we use to mobilize unconnected root Links: 0 dof fixed,
     6 dof roll-pitch-yaw floating, or 6 dof quaternion floating.
@@ -120,7 +120,7 @@ numbering here for clarification.
       E.1 Extend each tree one level at a time.
       E.2 Process all level 1 (base) Links directly jointed to World.
       E.3 Then process all level 2 Links jointed to level 1 Links, etc.
-      E.4 WeldedLinksAssemblies are (optionally) modeled using composite Mobods
+      E.4 WeldedLinksAssemblies are (optionally) modeled using fused Mobods
           where permitted (one level per Mobod).
       E.5 If we encounter a Link that has already been processed there is a
           loop. Split the Link into primary and shadow Links, and allocate
@@ -435,7 +435,7 @@ void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
                                                  unjointed_link);
     const JointOrdinal next_joint_ordinal =
         graph().index_to_ordinal(next_joint_index);
-    if (should_merge_parent_and_child(joints(next_joint_ordinal))) {
+    if (should_fuse_parent_and_child(joints(next_joint_ordinal))) {
       JoinExistingMobod(&data_.mobods[0], unjointed_link, next_joint_ordinal);
     } else {
       AddNewMobod(unjointed_link, next_joint_ordinal, world_mobod().index(),
@@ -563,7 +563,7 @@ void SpanningForest::ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
       const JointOrdinal j_level_ordinal =
           graph().index_to_ordinal(j_level_index);
       const Joint& j_level = joints(j_level_ordinal);
-      DRAKE_DEMAND(!should_merge_parent_and_child(j_level));
+      DRAKE_DEMAND(!should_fuse_parent_and_child(j_level));
 
       /* The inboard link returned here is guaranteed to be in the forest
       already; in particular it follows the indicated inboard_mobod. The
@@ -690,7 +690,7 @@ void SpanningForest::FindNextLevelJoints(MobodIndex inboard_mobod_index,
     const Joint& j_in = joint_by_index(j_in_index);
     if (j_in.has_been_processed()) continue;
 
-    if (!should_merge_parent_and_child(j_in)) {
+    if (!should_fuse_parent_and_child(j_in)) {
       J_level->push_back(j_in.index());
       continue;
     }
@@ -1004,7 +1004,7 @@ void SpanningForest::GrowAssemblyMobod(
     would have already been in the forest. Hence all its non-merge joints
     are open (unprocessed). */
     DRAKE_DEMAND(!joint.has_been_processed());
-    if (!should_merge_parent_and_child(joint)) {
+    if (!should_fuse_parent_and_child(joint)) {
       open_joint_indexes->push_back(joint_index);
       continue;  // On to the next Joint.
     }

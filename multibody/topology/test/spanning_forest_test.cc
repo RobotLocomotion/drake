@@ -863,11 +863,10 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
 
   graph.ResetForestBuildingOptions();  // Restore default options.
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   graph.SetForestBuildingOptions(
-      static_model_instance,
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
-          ForestBuildingOptions::kStatic);
+      static_model_instance, ForestBuildingOptions::kFuseWeldedLinksAssemblies |
+                                 ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
 
@@ -955,16 +954,15 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   graph.ChangeJointFlags(joint_10_11_index, JointFlags::kDefault);
   graph.ResetForestBuildingOptions();  // Back to defaults.
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   // Caution: we must specify all the forest building options we want for
   // a model instance; it won't inherit any of the global ones if set.
   graph.SetForestBuildingOptions(
-      model_instance, ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
+      model_instance, ForestBuildingOptions::kFuseWeldedLinksAssemblies |
                           ForestBuildingOptions::kUseFixedBase);
   graph.SetForestBuildingOptions(
-      static_model_instance,
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
-          ForestBuildingOptions::kStatic);
+      static_model_instance, ForestBuildingOptions::kFuseWeldedLinksAssemblies |
+                                 ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
 
@@ -1333,7 +1331,7 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
 
   // Now optimize WeldedLinkAssemblies so they get a single Mobod.
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
 
@@ -1842,7 +1840,7 @@ GTEST_TEST(SpanningForest, WorldAssemblyComesFirst) {
 
   // Remodel making single Mobods for WeldedLinksAssemblies (optimizing).
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
   EXPECT_EQ(ssize(forest.mobods()), 3);  // Because we're merging.
@@ -2128,7 +2126,7 @@ GTEST_TEST(SpanningForest, LoopWithAssemblies) {
   EXPECT_TRUE(graph.BuildForest());
 
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
   EXPECT_NO_THROW(forest.SanityCheckForest());
@@ -2225,7 +2223,7 @@ GTEST_TEST(SpanningForest, MasslessOptimizedAssemblies) {
   LinkJointGraph graph;
   const SpanningForest& forest = graph.forest();
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   graph.RegisterJointType("revolute", 1, 1);
   const ModelInstanceIndex model_instance(19);
 
@@ -2418,30 +2416,25 @@ GTEST_TEST(SpanningForest, CheckMergingPolicy) {
   // Only I5 should determine whether we merge {1} and {2}. Set the merge
   // flag on everything else and verify it makes no difference.
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(1),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ModelInstanceIndex(1), ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(2),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ModelInstanceIndex(2), ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(4),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ModelInstanceIndex(4), ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_EQ(ssize(forest.mobods()), 4);
 
   // If I5 says merge, we should have one fewer Mobod.
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(5),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ModelInstanceIndex(5), ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_EQ(ssize(forest.mobods()), 3);
 
   // We're still getting a Mobod for the static link {3}. Let's merge that
   // with World now.
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(3),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
-          ForestBuildingOptions::kStatic);
+      ModelInstanceIndex(3), ForestBuildingOptions::kFuseWeldedLinksAssemblies |
+                                 ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_EQ(ssize(forest.mobods()), 2);
 
