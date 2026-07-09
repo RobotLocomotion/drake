@@ -473,8 +473,7 @@ GTEST_TEST(MultibodyTreeSystem, MiscContinuousState) {
 class ZOnlyContinuousStateSystem final : public MultibodyTreeSystem<double> {
  public:
   explicit ZOnlyContinuousStateSystem(int num_z)
-      : MultibodyTreeSystem<double>(/* is_discrete= */ false),
-        num_z_(num_z) {
+      : MultibodyTreeSystem<double>(/* is_discrete= */ false), num_z_(num_z) {
     DeclareMiscContinuousState(num_z);
   }
 
@@ -524,9 +523,9 @@ class ConstructorZOnlyContinuousStateSystem final
     : public MultibodyTreeSystem<double> {
  public:
   explicit ConstructorZOnlyContinuousStateSystem(int num_z)
-      : MultibodyTreeSystem<double>(
-            systems::SystemScalarConverter{}, /* tree= */ nullptr,
-            /* is_discrete= */ false, num_z),
+      : MultibodyTreeSystem<double>(systems::SystemScalarConverter{},
+                                    /* tree= */ nullptr,
+                                    /* is_discrete= */ false, num_z),
         num_z_(num_z) {}
 
   using MultibodyTreeSystem<double>::Finalize;
@@ -543,8 +542,7 @@ class ConstructorZOnlyContinuousStateSystem final
   int num_z_{};
 };
 
-GTEST_TEST(MultibodyTreeSystem,
-           ConstructorZOnlyContinuousStateDerivatives) {
+GTEST_TEST(MultibodyTreeSystem, ConstructorZOnlyContinuousStateDerivatives) {
   ConstructorZOnlyContinuousStateSystem system(2);
   system.Finalize();
 

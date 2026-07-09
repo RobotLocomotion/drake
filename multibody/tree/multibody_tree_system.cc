@@ -162,7 +162,8 @@ int MultibodyTreeSystem<T>::DeclareMiscContinuousState(
     int num_state_variables) {
   if (already_finalized_) {
     throw std::logic_error(
-        "DeclareMiscContinuousState(): calls after Finalize() are not allowed.");
+        "DeclareMiscContinuousState(): calls after Finalize() are not "
+        "allowed.");
   }
   DRAKE_THROW_UNLESS(num_state_variables >= 0);
   if (is_discrete_ && num_state_variables > 0) {
