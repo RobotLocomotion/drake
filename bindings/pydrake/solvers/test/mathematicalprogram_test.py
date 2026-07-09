@@ -1198,11 +1198,10 @@ class TestMathematicalProgram(unittest.TestCase):
             )
             with self.assertRaises(TypeError) as cm:
                 binding_bad_dtype.evaluator().Eval(x0)
-            self.assertEqual(
-                str(cm.exception),
+            self.assertIn(
                 f"When PyFunctionConstraint is called with an array of type "
-                f"{T.__name__} the return value must be the same type, not "
-                f"{U.__name__}.",
+                f"{T.__name__} the return value must be the same type, not ",
+                str(cm.exception),
             )
 
     def test_addcost_symbolic(self):

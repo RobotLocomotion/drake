@@ -1,42 +1,10 @@
 import numpy as _np
 
 
-def _resolve_array_type(x):
-    # Resolves the scalar type for a given array.
-    assert isinstance(x, _np.ndarray), type(x)
-    assert x.size != 0
-    if x.dtype != object:
-        if x.dtype == float or x.dtype == int:
-            return float
-        else:
-            return x.dtype.type
-    else:
-        # Search array for any non-builtin and non-numpy types.
-        for xi in x.flat:
-            t = type(xi)
-            if t.__module__ not in ("builtins", "numpy"):
-                return t
-        # Unable to infer type.
-        return None
-
-
-def _check_returned_array_type(*, cls_name, y, expected_type):
-    y = _np.asarray(y)
-    if y.size == 0:
-        return
-    actual_type = _resolve_array_type(y)
-    expected_name = expected_type.__name__
-    if actual_type is None:
-        raise TypeError(
-            f"When {cls_name} is called with an array of type {expected_name} "
-            f"the return value must be the same type."
-        )
-    if actual_type is not expected_type:
-        actual_name = actual_type.__name__
-        raise TypeError(
-            f"When {cls_name} is called with an array of type {expected_name} "
-            f"the return value must be the same type, not {actual_name}."
-        )
+def _scalar_types_match(actual_type, expected_type):
+    return (actual_type is expected_type) or (
+        (expected_type is float) and (actual_type in (_np.float32, _np.float64))
+    )
 
 
 def _wrap_user_evaluator_func(
@@ -73,12 +41,7 @@ def _wrap_user_evaluator_func(
 
         # For costs, the return value should be a scalar of the expected type.
         if output_dim == 0:
-            actual_type = type(y)
-            type_match = (actual_type == expected_type) or (
-                (expected_type is float)
-                and (actual_type in {_np.float32, _np.float64})
-            )
-            if not type_match:
+            if not _scalar_types_match(type(y), expected_type):
                 raise TypeError(
                     f"When {cls_name} is called with an array of type "
                     f"{expected_type.__name__} the return value must be a "
@@ -103,6 +66,8 @@ def _wrap_user_evaluator_func(
                 f"{expected_type.__name__} the return value must be an array "
                 f"of the same type, not a {type(y).__name__} ({y!r})."
             )
+
+        # Validate the shape.
         valid = (y.size == num_outputs) and (
             y.ndim == 1 or (y.ndim == 2 and 1 in y.shape)
         )
@@ -112,9 +77,32 @@ def _wrap_user_evaluator_func(
                 f".ndim = 1 or 2 (vector) and .size = {num_outputs}. "
                 f"Got .ndim = {y.ndim} and .size = {y.size} instead."
             )
-        _check_returned_array_type(
-            cls_name=cls_name, y=y, expected_type=expected_type
-        )
+        if num_outputs == 0:
+            return y
+
+        # Validate the dtype.
+        if y.dtype != object:
+            if y.dtype is float or y.dtype is int:
+                actual_type = float
+            else:
+                actual_type = y.dtype.type
+        else:
+            # Search array for any non-builtin and non-numpy types.
+            for yi in y.flat:
+                t = type(yi)
+                if t.__module__ not in ("builtins", "numpy"):
+                    actual_type = t
+                    break
+            else:
+                # Unable to infer type.
+                actual_type = type(None)
+        if not _scalar_types_match(actual_type, expected_type):
+            raise TypeError(
+                f"When {cls_name} is called with an array of type "
+                f"{expected_type.__name__} the return value must be the same "
+                f"type, not {actual_type.__name__}."
+            )
+
         return y
 
     return _wrapped
