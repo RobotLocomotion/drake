@@ -52,7 +52,7 @@ PYDRAKE_MODULE(rational, m) {
             cls_doc.plant.doc)
         .def(
             "s",
-	    // dtype = object arrays must be copied, and cannot be referenced.
+            // dtype = object arrays must be copied, and cannot be referenced.
             [](const Class& self) -> VectorX<symbolic::Variable> {
               return self.s();
             },
