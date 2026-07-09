@@ -627,6 +627,15 @@ class GeometryState {
         &geometry_engine_->collision_filter(),
         [this](const GeometrySet& set, CollisionFilterScope scope) {
           return this->CollectIds(set, Role::kProximity, scope);
+        },
+        /* Reflect changes to the filter's inactive set into the engine's
+         broadphase, where inactive dynamic geometries are culled. Like the
+         filter pointer above, the captured engine is a view into this
+         %GeometryState's data. */
+        [engine = geometry_engine_.get_mutable()](
+            const internal::CollisionFilter::ActiveStatusChange&
+                active_status_change) {
+          engine->ApplyActiveStatusChange(active_status_change);
         });
   }
 

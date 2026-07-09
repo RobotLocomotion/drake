@@ -14,6 +14,9 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
+// TODO(#23770): Consider using a slab allocator to achieve more memory
+// locality in the implementation(s).
+
 /* Contiguous storage for a pool of fixed-size Eigen objects.
 
 This is essentially a wrapper around std::vector<EigenType>, where EigenType is

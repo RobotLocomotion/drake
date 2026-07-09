@@ -113,9 +113,25 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
       break;
   }
 
-  // TODO(sherm1) Calculate X_WL for composites. Currently we don't make
-  //  composites so X_WL = X_WB if L is the link on B.
-  pc->SetX_WL(mobilizer_->mobod().active_link_ordinal(), X_WB);
+  // Set X_WL for the active (most-inboard) link of this mobod. Its link frame
+  // L coincides with the mobod frame B (X_BL = Identity), so X_WL = X_WB.
+  const SpanningForest::Mobod& mobod = mobilizer_->mobod();
+  pc->SetX_WL(mobod.active_link_ordinal(), X_WB);
+
+  // For composite mobods, also set X_WL for each follower (non-active) link Lₒ.
+  // Because Lₒ is rigidly offset from B by X_BLₒ (pre-computed in
+  // frame_body_pose_cache during CalcFrameBodyPoses), its world pose is simply:
+  //   X_WLₒ = X_WB * X_BLₒ
+  if (mobod.is_composite()) {
+    const auto& followers = mobod.follower_link_ordinals();
+    // followers[0] is the active link (already handled above); start at 1.
+    for (int i = 1; i < ssize(followers); ++i) {
+      const LinkOrdinal follower_ordinal = followers[i];
+      const math::RigidTransform<T>& X_BL =
+          frame_body_pose_cache.get_X_BL(follower_ordinal);
+      pc->SetX_WL(follower_ordinal, X_WB * X_BL);
+    }
+  }
 
   // Compute shift vector p_PoBo_W from the parent origin to the body origin.
   const Vector3<T>& p_PoBo_P = X_PB.translation();
