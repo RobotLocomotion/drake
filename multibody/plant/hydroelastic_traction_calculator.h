@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -74,6 +75,15 @@ class HydroelasticTractionCalculator {
     // define C to be the centroid of the contact surface, and measure and
     // express this point in the world frame.
     const Vector3<T> p_WC;
+
+    // Optional surface velocity for bodies A and B. When set, motion of the
+    // body *surface* contributes to the slip velocity at each contact quad
+    // point.
+    //
+    // The magnitude of the velocities are in m/s and the velocities are
+    // expressed in their respective body frames.
+    std::optional<Eigen::Vector3<double>> v_A_ss;
+    std::optional<Eigen::Vector3<double>> v_B_ss;
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator);
