@@ -459,7 +459,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "composite_test",
+    name = "fused_welds_test",
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",

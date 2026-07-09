@@ -18,7 +18,7 @@ namespace internal {
 user input and also those added during forest building as Shadow links created
 when we cut a user link in order to break a kinematic loop. Links may be
 modeled individually (each with its own Mobod) or can be combined with other
-mutually-welded links in a WeldedLinksAssembly onto a composite Mobod. */
+mutually-welded links in a WeldedLinksAssembly onto a fused Mobod. */
 class LinkJointGraph::Link {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link);
@@ -108,12 +108,12 @@ class LinkJointGraph::Link {
   const std::vector<LinkIndex>& shadow_links() const { return shadow_links_; }
 
   /* Returns the index of the mobilized body (Mobod) that mobilizes this %Link.
-  If this %Link is part of a WeldedLinksAssembly, the returned Mobod may be
-  a composite of some or all of the links in the assembly (including this one
-  of course). If you ask this Mobod what Joint it represents, it will report the
-  Joint that was used to mobilize that composite; that won't necessarily be a
-  Joint connected to this %Link. See inboard_joint_index() to find the Joint
-  that connected this %Link to its WeldedLinksAssembly. */
+  If this %Link is part of a WeldedLinksAssembly, the returned Mobod may be a
+  fused mobod (containing some or all of the links in the assembly -- including
+  this one of course). If you ask this Mobod what Joint it represents, it will
+  report the Joint that was used to mobilize that fused mobod; that won't
+  necessarily be a Joint connected to this %Link. See inboard_joint_index() to
+  find the Joint that connected this %Link to its WeldedLinksAssembly. */
   MobodIndex mobod_index() const { return mobod_; }
 
   /* Returns the Joint that was used to associate this %Link with its
