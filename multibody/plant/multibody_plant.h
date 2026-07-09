@@ -6122,6 +6122,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // MultibodyPlant cache entries. These are initialized at Finalize().
   struct CacheIndices {
     systems::CacheIndex geometry_contact_data;
+    systems::CacheIndex speed_scaled_surface_velocity_axes;
     systems::CacheIndex joint_locking;
     systems::CacheIndex actuation_input_without_effort_limit;
     systems::CacheIndex actuation_input_with_effort_limit;
@@ -6658,6 +6659,24 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       internal::HydroelasticContactForcesContinuousCacheData<T>* output) const
     requires scalar_predicate<T>::is_bool;
 
+  // Eval version of CalcHydroelasticContactForces().
+  const internal::HydroelasticContactForcesContinuousCacheData<T>&
+  EvalHydroelasticContactForcesContinuous(
+      const systems::Context<T>& context) const
+    requires scalar_predicate<T>::is_bool;
+
+  // Helper method to compute a scaled surface-velocity axis for *every* body.
+  // The values will be the zero vector if the body has no registered surface
+  // velocity, the body's bus signal is missing from the input port, or the
+  // port is not connected.
+  void CalcSpeedScaledSurfaceVelocityAxes(
+      const systems::Context<T>& context,
+      std::vector<Eigen::Vector3d>* output) const;
+
+  // Eval version of CalcSpeedScaledSurfaceVelocityAxes().
+  const std::vector<Eigen::Vector3d>& EvalSpeedScaledSurfaceVelocityAxes(
+      const systems::Context<T>& context) const;
+
   // Computes the surface velocity at any point on a body B with the given
   // surface normal.
   // Returns zero if `body_index` indicates a body with no registered surface
@@ -6671,12 +6690,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   Vector3<T> ComputeSurfaceVelocity(BodyIndex body_index,
                                     const systems::Context<T>& context,
                                     const Vector3<T>& n_W) const;
-
-  // Eval version of CalcHydroelasticContactForces().
-  const internal::HydroelasticContactForcesContinuousCacheData<T>&
-  EvalHydroelasticContactForcesContinuous(
-      const systems::Context<T>& context) const
-    requires scalar_predicate<T>::is_bool;
 
   // Helper method to apply penalty forces that enforce joint limits.
   // At each joint with joint limits this penalty method applies a force law of

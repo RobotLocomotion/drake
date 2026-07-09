@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -74,6 +76,12 @@ class HydroelasticTractionCalculator {
     // define C to be the centroid of the contact surface, and measure and
     // express this point in the world frame.
     const Vector3<T> p_WC;
+
+    // Functions that compute the speed axis for bodies A and B given the
+    // outward normal `nhat` at a contact point. A null function implies that
+    // there is no surface velocity.
+    std::function<Vector3<T>(const Vector3<T>& nhat)> calc_speed_axis_for_A;
+    std::function<Vector3<T>(const Vector3<T>& nhat)> calc_speed_axis_for_B;
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator);
@@ -112,7 +120,8 @@ class HydroelasticTractionCalculator {
    to equivalent spatial forces applied at the center of the body frames of
    the two interacting bodies. The body frames, A and B, are those to which
    `surface.M_id()` and `surface.N_id()` are affixed, respectively.
-   @param data Relevant kinematic data.
+   @param data Relevant kinematic data -- not all fields are used. Just those
+          necessary for the shift operation.
    @param F_Ac_W the spatial force computed by the hydroelastic model that acts
           on the body (A) attached to geometry M in `data`'s ContactSurface.
           This spatial force is applied at the centroid (point c) of the contact

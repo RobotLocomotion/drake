@@ -2409,19 +2409,34 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     // Contact point C.
     const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
 
+    // Get poses for bodies in contact.
+    const RigidTransform<T>& X_WA = pc.get_X_WB(bodyA_mobod_index);
+    const RigidTransform<T>& X_WB = pc.get_X_WB(bodyB_mobod_index);
+
     // Contact point position on body A.
-    const Vector3<T>& p_WAo = pc.get_X_WB(bodyA_mobod_index).translation();
-    const Vector3<T>& p_CoAo_W = p_WAo - p_WC;
+    const Vector3<T>& p_WAo = X_WA.translation();
+    const Vector3<T> p_CoAo_W = p_WAo - p_WC;
 
     // Contact point position on body B.
-    const Vector3<T>& p_WBo = pc.get_X_WB(bodyB_mobod_index).translation();
-    const Vector3<T>& p_CoBo_W = p_WBo - p_WC;
+    const Vector3<T>& p_WBo = X_WB.translation();
+    const Vector3<T> p_CoBo_W = p_WBo - p_WC;
 
-    // Separation velocity, > 0  if objects separate.
+    // Get surface velocities on bodies A and B (in the *body* frame) at the
+    // contact point.
+    const Vector3<T> v_A_ss =
+        ComputeSurfaceVelocity(bodyA_index, context, -pair.nhat_BA_W);
+    const Vector3<T> v_B_ss =
+        ComputeSurfaceVelocity(bodyB_index, context, pair.nhat_BA_W);
+
+    // Velocity of contact points in the world is a combination of body and
+    // surface velocities.
     const Vector3<T> v_WAc =
-        vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational();
+        vc.get_V_WB(bodyA_mobod_index).Shift(-p_CoAo_W).translational() +
+        X_WA.rotation() * v_A_ss;
     const Vector3<T> v_WBc =
-        vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational();
+        vc.get_V_WB(bodyB_mobod_index).Shift(-p_CoBo_W).translational() +
+        X_WB.rotation() * v_B_ss;
+    // Separation velocity > 0 ==> objects separate.
     const Vector3<T> v_AcBc_W = v_WBc - v_WAc;
 
     // if xdot = vn > 0 ==> they are getting closer.
@@ -2624,6 +2639,22 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
     typename internal::HydroelasticTractionCalculator<T>::Data data(
         X_WA, X_WB, V_WA, V_WB, &surface);
 
+    // Enable the calculator to compute surface-velocity for each body as
+    // required. calc_speed_axis_for_[A|B] initialize to nullptr in the data
+    // constructor.
+    if (GetSurfaceVelocityAxis(bodyA) != std::nullopt) {
+      data.calc_speed_axis_for_A =
+          [this, &context, index = bodyA_index](const Vector3<T>& nhat) {
+            return this->ComputeSurfaceVelocity(index, context, nhat);
+          };
+    }
+    if (GetSurfaceVelocityAxis(bodyB) != std::nullopt) {
+      data.calc_speed_axis_for_B =
+          [this, &context, index = bodyB_index](const Vector3<T>& nhat) {
+            return this->ComputeSurfaceVelocity(index, context, nhat);
+          };
+    }
+
     // Combined Hunt & Crossley dissipation.
     const hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine;
     const double dissipation = hydroelastics_engine.CalcCombinedDissipation(
@@ -2653,39 +2684,6 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
 }
 
 template <typename T>
-Vector3<T> MultibodyPlant<T>::ComputeSurfaceVelocity(
-    BodyIndex body_index, const systems::Context<T>& context,
-    const Vector3<T>& n_W) const {
-  auto it = surface_velocity_bodies_.find(body_index);
-  if (it == surface_velocity_bodies_.end()) {
-    return Vector3<T>::Zero();
-  }
-
-  const internal::SurfaceVelocityEntry& entry = it->second;
-  // Read speed from the bus port. Default to zero if unconnected or absent.
-  double speed = 0.0;
-  const auto& port = get_surface_speeds_input_port();
-  if (port.HasValue(context)) {
-    const auto& bus = port.template Eval<systems::BusValue>(context);
-    const AbstractValue* v = bus.Find(entry.scoped_name);
-    if (v != nullptr) {
-      speed = v->get_value<double>();
-    }
-  }
-  if (speed == 0.0) return Vector3<T>::Zero();
-
-  // Read axis from the map (body frame B).
-  const Eigen::Vector3d& a_ss_B = entry.axis;
-
-  // Convert contact normal from world frame to body frame B.
-  // Not normalizing the cross product is intentional: parallel vectors
-  // produce zero velocity organically.
-  const RigidTransform<T>& X_WB = get_body(body_index).EvalPoseInWorld(context);
-  const Vector3<T> n_B = X_WB.rotation().inverse() * n_W;
-  return T(speed) * a_ss_B.template cast<T>().cross(n_B);
-}
-
-template <typename T>
 const internal::HydroelasticContactForcesContinuousCacheData<T>&
 MultibodyPlant<T>::EvalHydroelasticContactForcesContinuous(
     const systems::Context<T>& context) const
@@ -2697,6 +2695,48 @@ MultibodyPlant<T>::EvalHydroelasticContactForcesContinuous(
       ->get_cache_entry(cache_indices_.hydroelastic_contact_forces_continuous)
       .template Eval<internal::HydroelasticContactForcesContinuousCacheData<T>>(
           context);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcSpeedScaledSurfaceVelocityAxes(
+    const systems::Context<T>& context,
+    std::vector<Eigen::Vector3d>* output) const {
+  output->assign(num_bodies(), Eigen::Vector3d::Zero());
+  const auto& port = get_surface_speeds_input_port();
+
+  if (!port.HasValue(context)) return;
+
+  const systems::BusValue& bus = port.template Eval<systems::BusValue>(context);
+
+  for (const auto& [body_index, entry] : surface_velocity_bodies_) {
+    const AbstractValue* value = bus.Find(entry.scoped_name);
+    if (value == nullptr) continue;
+    const double speed = value->get_value<double>();
+    output->at(body_index) = speed * entry.axis;
+  }
+}
+
+template <typename T>
+const std::vector<Eigen::Vector3d>&
+MultibodyPlant<T>::EvalSpeedScaledSurfaceVelocityAxes(
+    const systems::Context<T>& context) const {
+  return this
+      ->get_cache_entry(cache_indices_.speed_scaled_surface_velocity_axes)
+      .template Eval<std::vector<Eigen::Vector3d>>(context);
+}
+
+template <typename T>
+Vector3<T> MultibodyPlant<T>::ComputeSurfaceVelocity(
+    BodyIndex body_index, const systems::Context<T>& context,
+    const Vector3<T>& n_W) const {
+  const auto& speed_scaled_axes = EvalSpeedScaledSurfaceVelocityAxes(context);
+
+  // Convert contact normal from world frame to body frame B.
+  // Not normalizing the cross product is intentional: parallel vectors
+  // produce zero velocity organically.
+  const RigidTransform<T>& X_WB = get_body(body_index).EvalPoseInWorld(context);
+  const Vector3<T> n_B = X_WB.rotation().inverse() * n_W;
+  return speed_scaled_axes.at(body_index).template cast<T>().cross(n_B);
 }
 
 template <typename T>
@@ -3883,6 +3923,15 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indices_.geometry_contact_data =
       geometry_contact_data_cache_entry.cache_index();
 
+  const auto& speed_scaled_surface_velocity_axes_cache_entry =
+      this->DeclareCacheEntry(
+          "SpeedScaledSurfaceVelocityAxes",
+          std::vector<Eigen::Vector3d>(num_bodies(), Eigen::Vector3d::Zero()),
+          &MultibodyPlant::CalcSpeedScaledSurfaceVelocityAxes,
+          {get_surface_speeds_input_port().ticket()});
+  cache_indices_.speed_scaled_surface_velocity_axes =
+      speed_scaled_surface_velocity_axes_cache_entry.cache_index();
+
   // Cache entry for HydroelasticContactForcesContinuous.
   const bool use_hydroelastic =
       contact_model_ == ContactModel::kHydroelastic ||
@@ -3896,9 +3945,11 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
                   this->num_bodies()),
               &MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous,
               // Compliant contact forces due to hydroelastics with Hunt &
-              // Crossley are function of the kinematic variables q & v only.
+              // Crossley are function of the kinematic variables q & v and
+              // surface speeds (as a bias applied indirectly to v).
               {state_ticket, this->all_parameters_ticket(),
-               get_geometry_query_input_port().ticket()});
+               get_geometry_query_input_port().ticket(),
+               speed_scaled_surface_velocity_axes_cache_entry.ticket()});
       cache_indices_.hydroelastic_contact_forces_continuous =
           hydroelastic_contact_forces_continuous_cache_entry.cache_index();
     }
@@ -3911,7 +3962,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             std::string("ContactResultsPointPairContinuous"),
             &MultibodyPlant<T>::CalcContactResultsPointPairContinuous,
             {state_ticket, this->all_parameters_ticket(),
-             get_geometry_query_input_port().ticket()});
+             get_geometry_query_input_port().ticket(),
+             speed_scaled_surface_velocity_axes_cache_entry.ticket()});
     cache_indices_.contact_results_point_pair_continuous =
         contact_results_point_pair_continuous_cache_entry.cache_index();
   }
