@@ -1389,8 +1389,14 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
   std::optional<LinkInfo> link_info;
 
   const std::set<std::string> supported_link_elements{
-      "drake:visual", "collision", "gravity", "inertial",
-      "kinematic",    "pose",      "visual"};
+      "drake:surface_velocity_axis",
+      "drake:visual",
+      "collision",
+      "gravity",
+      "inertial",
+      "kinematic",
+      "pose",
+      "visual"};
 
   sdf::ElementPtr link_element = link.Element();
 
@@ -1493,6 +1499,14 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
       }
     }
   }
+
+  // Parse link-level surface velocity axis (if present) and register.
+  if (link_element->HasElement("drake:surface_velocity_axis")) {
+    const Vector3d axis_L = ToVector3(
+        link_element->Get<gz::math::Vector3d>("drake:surface_velocity_axis"));
+    plant->SetSurfaceVelocityAxis(body, axis_L);
+  }
+
   return link_info;
 }
 

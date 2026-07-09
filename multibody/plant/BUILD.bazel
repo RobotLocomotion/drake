@@ -166,6 +166,7 @@ drake_cc_library(
         ":contact_properties",
         ":desired_state_input",
         ":hydroelastic_traction_calculator",
+        "@abseil_cpp_internal//absl/base",
     ],
 )
 
@@ -1303,6 +1304,17 @@ drake_cc_googletest(
         ":compliant_contact_manager_tester",
         ":plant",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "surface_velocity_test",
+    deps = [
+        ":plant",
+        "//common:value",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis:simulator",
+        "//systems/framework:bus_value",
     ],
 )
 
