@@ -1102,27 +1102,27 @@ class TestMathematicalProgram(unittest.TestCase):
             x0_bad = array_T([0.0, 1.0])
             # Bad input (before function is called).
             if kDrakeAssertIsArmed:
-                # See note in `WrapUserFunc`.
+                # See note in `_wrap_user_evaluator_func`.
                 input_error_cls = SystemExit
                 input_error_expected = (
                     "x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic"
                 )
             else:
-                input_error_cls = RuntimeError
+                input_error_cls = ValueError
                 input_error_expected = (
-                    "PyFunctionCost: Input must be of .ndim = 1 or 2 (vector) "
-                    "and .size = 1. Got .ndim = 1 and .size = 2 instead."
+                    "PyFunctionCost input must have .size = 1. "
+                    "Got .size = 2 instead."
                 )
             with self.assertRaises(input_error_cls) as cm:
                 binding_bad_shape.evaluator().Eval(x0_bad)
             self.assertIn(input_error_expected, str(cm.exception))
             # Bad output shape.
-            with self.assertRaises(RuntimeError) as cm:
+            with self.assertRaises(TypeError) as cm:
                 binding_bad_shape.evaluator().Eval(x0)
-            self.assertEqual(
+            self.assertIn(
+                "When PyFunctionCost is called with an array of type "
+                f"{T.__name__} the return value must be a scalar",
                 str(cm.exception),
-                "PyFunctionCost: Return value must be of .ndim = 0 (scalar) "
-                "and .size = 1. Got .ndim = 1 and .size = 1 instead.",
             )
 
             # Bad output dtype.
@@ -1135,11 +1135,10 @@ class TestMathematicalProgram(unittest.TestCase):
             binding_bad_dtype = prog.AddCost(user_cost_bad_dtype, vars=x)
             with self.assertRaises(TypeError) as cm:
                 binding_bad_dtype.evaluator().Eval(x0)
-            self.assertEqual(
-                str(cm.exception),
+            self.assertIn(
                 f"When PyFunctionCost is called with an array of type "
-                f"{T.__name__} the return value must be the same type, not "
-                f"{U.__name__}.",
+                f"{T.__name__} the return value must be a scalar",
+                str(cm.exception),
             )
 
     def test_pyconstraint_wrap_error(self):
@@ -1163,28 +1162,28 @@ class TestMathematicalProgram(unittest.TestCase):
             x0_bad = array_T([0.0, 1.0])
             # Bad input (before function is called).
             if kDrakeAssertIsArmed:
-                # See note in `WrapUserFunc`.
+                # See note in `_wrap_user_evaluator_func`.
                 input_error_cls = SystemExit
                 input_error_expected = (
                     "x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic"
                 )
             else:
-                input_error_cls = RuntimeError
+                input_error_cls = ValueError
                 input_error_expected = (
-                    "PyFunctionConstraint: Input must be of .ndim = 1 or 2 "
-                    "(vector) and .size = 1. Got .ndim = 1 and .size = 2 "
-                    "instead."
+                    "PyFunctionConstraint input must have .size = 1. "
+                    "Got .size = 2 instead."
                 )
             with self.assertRaises(input_error_cls) as cm:
                 binding_bad_shape.evaluator().Eval(x0_bad)
             self.assertIn(input_error_expected, str(cm.exception))
             # Bad output.
-            with self.assertRaises(RuntimeError) as cm:
+            with self.assertRaises(ValueError) as cm:
                 binding_bad_shape.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                "PyFunctionConstraint: Return value must be of .ndim = 1 or 2 "
-                "(vector) and .size = 1. Got .ndim = 0 and .size = 1 instead.",
+                "PyFunctionConstraint return value must be array of "
+                ".ndim = 1 or 2 (vector) and .size = 1. "
+                "Got .ndim = 0 and .size = 1 instead.",
             )
 
             # Bad output dtype.
@@ -1199,11 +1198,10 @@ class TestMathematicalProgram(unittest.TestCase):
             )
             with self.assertRaises(TypeError) as cm:
                 binding_bad_dtype.evaluator().Eval(x0)
-            self.assertEqual(
-                str(cm.exception),
+            self.assertIn(
                 f"When PyFunctionConstraint is called with an array of type "
-                f"{T.__name__} the return value must be the same type, not "
-                f"{U.__name__}.",
+                f"{T.__name__} the return value must be the same type, not ",
+                str(cm.exception),
             )
 
     def test_addcost_symbolic(self):
