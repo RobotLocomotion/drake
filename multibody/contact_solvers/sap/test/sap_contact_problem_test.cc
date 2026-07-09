@@ -46,21 +46,35 @@ class TestConstraint final : public SapConstraint<T> {
  public:
   // Constructor for a constraint on a single clique.
   // No objects are registered.
-  TestConstraint(int num_constraint_equations, int clique, int clique_nv)
+  TestConstraint(int num_constraint_equations, int clique, int clique_nv,
+                 VectorX<T> bias = {})
       : SapConstraint<T>(
             {clique, MatrixX<T>::Ones(num_constraint_equations, clique_nv)},
-            {}) {}
+            {}),
+        bias_(std::move(bias)) {
+    if (bias_.size() == 0) {
+      bias_ = VectorX<T>::Zero(num_constraint_equations);
+    }
+    DRAKE_DEMAND(bias_.size() == num_constraint_equations);
+  }
 
   // Constructor for a constraint between two cliques.
   // Registers objects with index first_clique and second_clique, for testing.
   TestConstraint(int num_constraint_equations, int first_clique,
-                 int first_clique_nv, int second_clique, int second_clique_nv)
+                 int first_clique_nv, int second_clique, int second_clique_nv,
+                 VectorX<T> bias = {})
       : SapConstraint<T>(
             {first_clique,
              MatrixX<T>::Ones(num_constraint_equations, first_clique_nv),
              second_clique,
              MatrixX<T>::Ones(num_constraint_equations, second_clique_nv)},
-            {}) {}
+            {}),
+        bias_(std::move(bias)) {
+    if (bias_.size() == 0) {
+      bias_ = VectorX<T>::Zero(num_constraint_equations);
+    }
+    DRAKE_DEMAND(bias_.size() == num_constraint_equations);
+  }
 
   // N.B no-op overloads to allow us compile this testing constraint. These
   // methods are only tested for specific derived classes, not in this file.
@@ -109,6 +123,10 @@ class TestConstraint final : public SapConstraint<T> {
         this->num_velocities(0), this->second_clique(),
         this->num_velocities(1));
   }
+
+  VectorX<T> DoCalcBiasVelocity() const final { return bias_; }
+
+  VectorX<T> bias_;
 };
 
 // Test construction of an empty problem.
@@ -591,6 +609,36 @@ GTEST_TEST(ContactProblem, ExpandContactSolverResults) {
   }
 
   EXPECT_TRUE(CompareMatrices(results.gamma, gamma_expected));
+  EXPECT_TRUE(CompareMatrices(results.vc, vc_expected));
+}
+
+GTEST_TEST(ContactProblem, ExpandContactSolverResultsWithBiasVelocity) {
+  const double time_step = 0.01;
+  const std::vector<MatrixXd> A{S22};
+  const VectorXd v_star = (VectorXd(2) << 1.0, 2.0).finished();
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+
+  const VectorX<double> v_bias =
+      (VectorX<double>(3) << 0.25, -0.5, 0.75).finished();
+  problem.AddConstraint(std::make_unique<TestConstraint<double>>(
+      3, 0, 2, VectorX<double>(v_bias)));
+
+  // Lock all dofs, so the reduced problem has no participating constraint
+  // equations. Expanding the empty result still reports vc = J⋅v* + v_b for
+  // the original problem.
+  ReducedMapping mapping;
+  std::unique_ptr<SapContactProblem<double>> reduced_problem =
+      problem.MakeReduced({0, 1}, {{0, 1}}, &mapping);
+  EXPECT_EQ(reduced_problem->num_constraint_equations(), 0);
+
+  SapSolverResults<double> reduced_results;
+  reduced_results.Resize(0, 0);
+
+  SapSolverResults<double> results;
+  problem.ExpandContactSolverResults(mapping, reduced_results, &results);
+
+  const VectorX<double> vc_expected =
+      VectorX<double>::Constant(3, 3.0) + v_bias;
   EXPECT_TRUE(CompareMatrices(results.vc, vc_expected));
 }
 
