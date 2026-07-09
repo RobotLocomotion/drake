@@ -153,6 +153,32 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, PortIndexOrdering) {
   CompareMultibodyPlantPortIndices(plant, plant_u);
 }
 
+// This test verifies that scalar conversion preserves the miscellaneous
+// continuous state used to integrate surface displacements.
+TYPED_TEST_P(MultibodyPlantDefaultScalarsTest,
+             SurfaceVelocityMiscContinuousState) {
+  using U = TypeParam;
+
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& belt =
+      plant.AddRigidBody("belt", SpatialInertia<double>::MakeUnitary());
+  plant.SetSurfaceVelocityAxis(belt, Vector3<double>::UnitX());
+  plant.Finalize();
+
+  auto context = plant.CreateDefaultContext();
+  EXPECT_EQ(context->get_continuous_state().get_misc_continuous_state().size(),
+            1);
+
+  std::unique_ptr<MultibodyPlant<U>> plant_u =
+      System<double>::ToScalarType<U>(plant);
+  const RigidBody<U>& belt_u = plant_u->GetBodyByName("belt");
+  EXPECT_TRUE(plant_u->GetSurfaceVelocityAxis(belt_u).has_value());
+
+  auto context_u = plant_u->CreateDefaultContext();
+  EXPECT_EQ(
+      context_u->get_continuous_state().get_misc_continuous_state().size(), 1);
+}
+
 // Verifies that we can AddMultibodyPlantSceneGraph, without any conversion.
 TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, DirectlyAdded) {
   using U = TypeParam;
@@ -165,7 +191,7 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, DirectlyAdded) {
 
 REGISTER_TYPED_TEST_SUITE_P(MultibodyPlantDefaultScalarsTest,
                             RevoluteJointAndSpring, PortIndexOrdering,
-                            DirectlyAdded);
+                            SurfaceVelocityMiscContinuousState, DirectlyAdded);
 
 using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, MultibodyPlantDefaultScalarsTest,
