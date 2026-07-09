@@ -229,6 +229,8 @@ class SapHuntCrossleyConstraint final : public SapConstraint<T> {
   // @param vn Normal component of the contact velocity.
   T CalcDiscreteHuntCrossleyImpulseGradient(const T& dt, const T& vn) const;
 
+  VectorX<T> DoCalcBiasVelocity() const final { return configuration_.v_b; }
+
   Parameters parameters_;
   ContactConfiguration<T> configuration_;
 };

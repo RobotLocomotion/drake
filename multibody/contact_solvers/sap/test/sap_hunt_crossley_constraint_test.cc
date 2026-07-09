@@ -129,6 +129,27 @@ GTEST_TEST(SapHuntCrossleyConstraint, TwoCliquesConstraint) {
   EXPECT_EQ(c.configuration(), configuration);
 }
 
+GTEST_TEST(SapHuntCrossleyConstraint, BiasVelocity) {
+  const int clique = 12;
+  ContactConfiguration<double> configuration = MakeArbitraryConfiguration();
+  configuration.v_b = Vector3d(0.25, -0.5, 0.75);
+  SapConstraintJacobian<double> J(clique, J32);
+  const SapHuntCrossleyConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapHuntCrossleyConstraint<double> c(configuration, std::move(J), parameters);
+
+  EXPECT_TRUE(CompareMatrices(c.bias_velocity(), configuration.v_b));
+
+  std::unique_ptr<AbstractValue> abstract_data =
+      c.MakeData(0.01, Vector3d::Constant(3.0));
+  const Vector3d vc(-0.4, 0.5, -0.6);
+  c.CalcData(vc, abstract_data.get());
+
+  const auto& data =
+      abstract_data->get_value<SapHuntCrossleyConstraintData<double>>();
+  EXPECT_TRUE(CompareMatrices(data.vc, vc + configuration.v_b));
+}
+
 // Unit test the addition of SAP's regularization, controlled by parameter
 // SapHuntCrossleyConstraint::Parameters::sigma.
 GTEST_TEST(SapHuntCrossleyConstraint, SapRegularization) {

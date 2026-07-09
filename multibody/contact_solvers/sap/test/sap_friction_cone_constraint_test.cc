@@ -206,6 +206,27 @@ GTEST_TEST(SapFrictionConeConstraint, CalcRegularization) {
                               MatrixCompareType::relative));
 }
 
+GTEST_TEST(SapFrictionConeConstraint, BiasVelocity) {
+  const int clique = 12;
+  SapConstraintJacobian<double> J(clique, J32);
+  ContactConfiguration<double> configuration = MakeArbitraryConfiguration();
+  configuration.v_b = Vector3d(0.25, -0.5, 0.75);
+  const SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
+
+  EXPECT_TRUE(CompareMatrices(c.bias_velocity(), configuration.v_b));
+
+  std::unique_ptr<AbstractValue> abstract_data =
+      c.MakeData(0.01, Vector3d::Constant(3.0));
+  const Vector3d vc(-0.4, 0.5, -0.6);
+  c.CalcData(vc, abstract_data.get());
+
+  const auto& data =
+      abstract_data->get_value<SapFrictionConeConstraintData<double>>();
+  EXPECT_TRUE(CompareMatrices(data.vc(), vc + configuration.v_b));
+}
+
 constexpr double kTolerance = 1.0e-8;
 
 // This method solves the projection in the norm defined by R:
