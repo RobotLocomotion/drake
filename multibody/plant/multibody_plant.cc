@@ -1423,9 +1423,9 @@ void MultibodyPlant<T>::SetBaseBodyJointType(
 }
 
 template <typename T>
-void MultibodyPlant<T>::SetCombineWeldedBodies(
-    bool combine, std::optional<ModelInstanceIndex> model_instance) {
-  mutable_tree().SetCombineWeldedBodies(combine, model_instance);
+void MultibodyPlant<T>::SetFuseWeldedLinks(
+    bool fuse, std::optional<ModelInstanceIndex> model_instance) {
+  mutable_tree().SetFuseWeldedLinks(fuse, model_instance);
 }
 
 template <typename T>
@@ -1435,9 +1435,9 @@ BaseBodyJointType MultibodyPlant<T>::GetBaseBodyJointType(
 }
 
 template <typename T>
-bool MultibodyPlant<T>::GetCombineWeldedBodies(
+bool MultibodyPlant<T>::GetFuseWeldedLinks(
     std::optional<ModelInstanceIndex> model_instance) const {
-  return internal_tree().GetCombineWeldedBodies(model_instance);
+  return internal_tree().GetFuseWeldedLinks(model_instance);
 }
 
 template <typename T>

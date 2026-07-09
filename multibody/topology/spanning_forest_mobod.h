@@ -19,7 +19,7 @@ namespace internal {
 A %Mobod models one or more Links and a single Joint. Those Links are said to
 "follow" this mobod. If there is more than one follower it is because the links
 are welded together (by unmodeled weld joints); in that case this is a
-"composite mobod". The modeled joint is the one that connects this mobod to its
+"fused mobod". The modeled joint is the one that connects this mobod to its
 inboard mobod. We call that joint the mobod's "active joint", and that joint's
 link that follows this mobod the "active link". (The active link may be either
 the parent or child link of the active joint, depending on how the forest was
@@ -88,9 +88,9 @@ class SpanningForest::Mobod {
   }
 
   /* Returns the ordinal of the Link mobilized by this %Mobod. If this is a
-  composite %Mobod (representing a collection of welded-together links), this is
-  the most-inboard ("active") link of that composite, the one with the modeled
-  Joint whose mobilizer connects the composite %Mobod to its inboard %Mobod.
+  fused %Mobod (representing a collection of welded-together links), this is
+  the most-inboard ("active") link of that mobod, the one with the modeled
+  Joint whose mobilizer connects the fused %Mobod to its inboard %Mobod.
   @see follower_link_ordinals(), joint() */
   LinkOrdinal active_link_ordinal() const {
     return follower_link_ordinals()[0];
@@ -101,7 +101,7 @@ class SpanningForest::Mobod {
   bool has_massful_follower_link() const { return has_massful_follower_link_; }
 
   /* Returns all the Links that are mobilized by this %Mobod. If this is a
-  composite %Mobod, the first link returned is the most-inboard ("active") link
+  fused %Mobod, the first link returned is the most-inboard ("active") link
   as returned by active_link_ordinal(). There is always at least one link.
   @see active_link_ordinal() */
   const std::vector<LinkOrdinal>& follower_link_ordinals() const {
@@ -110,7 +110,7 @@ class SpanningForest::Mobod {
   }
 
   /* Returns true if there is more than one link following this Mobod. */
-  bool is_composite() const { return ssize(follower_link_ordinals_) > 1; }
+  bool is_fused() const { return ssize(follower_link_ordinals_) > 1; }
 
   /* Returns true if the given Link is one of the followers of this %Mobod. */
   bool HasFollower(LinkOrdinal link_ordinal) const {
@@ -121,8 +121,8 @@ class SpanningForest::Mobod {
   }
 
   /* Returns the ordinal of the Joint represented by this %Mobod. If this
-  is a composite %Mobod (with internal, unmodeled weld joints), the joint
-  returned here is the modeled joint whose mobilizer connects the composite
+  is a fused %Mobod (with internal, unmodeled weld joints), the joint
+  returned here is the modeled joint whose mobilizer connects the fused
   %Mobod to its inboard %Mobod in the forest. The returned ordinal is invalid
   only if this is the World %Mobod. */
   JointOrdinal active_joint_ordinal() const { return joint_ordinal_; }
@@ -226,8 +226,8 @@ class SpanningForest::Mobod {
   // Set to true if _any_ follower link has mass.
   bool has_massful_follower_link_{false};
 
-  // The Joint modeled by this mobod's mobilizer. If this is a composite mobod,
-  // this is the active joint that connects the composite mobod to its inboard
+  // The Joint modeled by this mobod's mobilizer. If this is a fused mobod,
+  // this is the active joint that connects the fused mobod to its inboard
   // mobod.
   JointOrdinal joint_ordinal_;
 
