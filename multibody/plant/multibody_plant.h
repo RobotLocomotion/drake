@@ -6122,6 +6122,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // MultibodyPlant cache entries. These are initialized at Finalize().
   struct CacheIndices {
     systems::CacheIndex geometry_contact_data;
+    systems::CacheIndex speed_scaled_surface_velocity_axes;
     systems::CacheIndex joint_locking;
     systems::CacheIndex actuation_input_without_effort_limit;
     systems::CacheIndex actuation_input_with_effort_limit;
@@ -6658,25 +6659,58 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       internal::HydroelasticContactForcesContinuousCacheData<T>* output) const
     requires scalar_predicate<T>::is_bool;
 
-  // Computes the surface velocity at any point on a body B with the given
-  // surface normal.
-  // Returns zero if `body_index` indicates a body with no registered surface
-  // velocity, if the "surface_speeds" port is unconnected, or if the body's
-  // signal is absent.
-  //
-  // @param body_index  Index of the body B owning the surface.
-  // @param context     The plant's context (used to read port and parameter).
-  // @param n_W         Contact normal expressed in the world frame.
-  // @retval v_B_ss     Surface velocity expressed in the body frame B.
-  Vector3<T> ComputeSurfaceVelocity(BodyIndex body_index,
-                                    const systems::Context<T>& context,
-                                    const Vector3<T>& n_W) const;
-
   // Eval version of CalcHydroelasticContactForces().
   const internal::HydroelasticContactForcesContinuousCacheData<T>&
   EvalHydroelasticContactForcesContinuous(
       const systems::Context<T>& context) const
     requires scalar_predicate<T>::is_bool;
+
+  // Helper method to compute a scaled surface-velocity axis for *every* body.
+  // The values will be the zero vector if the body has no registered surface
+  // velocity, the body's bus signal is missing from the input port, or the
+  // port is not connected.
+  void CalcSpeedScaledSurfaceVelocityAxes(
+      const systems::Context<T>& context,
+      std::vector<Eigen::Vector3d>* output) const;
+
+  // Eval version of CalcSpeedScaledSurfaceVelocityAxes().
+  const std::vector<Eigen::Vector3d>& EvalSpeedScaledSurfaceVelocityAxes(
+      const systems::Context<T>& context) const;
+
+  // Reports if contact between the indicated body pair could be affected by
+  // surface velocity (at least one of them must have a registered surface
+  // velocity).
+  bool HasSurfaceVelocityBias(BodyIndex bodyA, BodyIndex bodyB) const {
+    return surface_velocity_bodies_.contains(bodyA) ||
+           surface_velocity_bodies_.contains(bodyB);
+  }
+
+  // Determines if there is a velocity bias attributable to surface velocity
+  // and adds it to the velocity of the contact point on B relative to the
+  // coincident contact point on A, expressed in the world frame:
+  //
+  //   v_AcBc_W += v_ss_B_W - v_ss_A_W.
+  //
+  // A body's contribution will be zero if it doesn't have a registered surface
+  // velocity axis, or if its input bus signal is missing, or if there is no
+  // connected input port. The contributions from A and B are independent; a
+  // missing signal for one does not suppress the other's contribution. Signals
+  // for bodies other than A and B have no effect.
+  //
+  // Safe to call if neither body has a registered surface velocity; no
+  // significant work will be done.
+  //
+  // @param context        The current context.
+  // @param bodyA_index    The index of body A.
+  // @param bodyB_index    The index of body B.
+  // @param nhat_BA_W      Contact normal pointing *out* of B and *into* A.
+  // @param[out] v_AcBc_W  The velocity of Bc relative to Ac, expressed in W,
+  //                       to which a bias *may* be added.
+  // @pre v_AcBc_W is not nullptr.
+  void AddSurfaceVelocityBias(const systems::Context<T>& context,
+                              BodyIndex bodyA_index, BodyIndex bodyB_index,
+                              const Vector3<T>& nhat_BA_W,
+                              Vector3<T>* v_AcBc_W) const;
 
   // Helper method to apply penalty forces that enforce joint limits.
   // At each joint with joint limits this penalty method applies a force law of
