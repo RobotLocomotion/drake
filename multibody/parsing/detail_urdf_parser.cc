@@ -258,6 +258,29 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
           std::move(*geometry_instance->mutable_proximity_properties()));
     }
   }
+
+  // Parse link-level surface velocity axis (if present) and register.
+  const XMLElement* sv_node =
+      node->FirstChildElement("drake:surface_velocity_axis");
+  if (sv_node != nullptr) {
+    if (body_pointer == &w_.plant->world_body()) {
+      Warning(*node,
+              "A URDF file declared the \"world\" link and then"
+              " attempted to assign surface velocity (via the "
+              "<drake:surface_velocity_axis> tag). Only geometries, "
+              "<collision> and <visual>, can be assigned to the world link. "
+              "The <drake:surface_velocity_axis> tag is being ignored.");
+    } else {
+      Eigen::Vector3d axis_B;
+      if (!ParseVectorAttribute(sv_node, "axis", &axis_B)) {
+        Error(*sv_node,
+              "Failed to parse 'axis' attribute of "
+              "<drake:surface_velocity_axis>; ignoring.");
+      } else {
+        w_.plant->SetSurfaceVelocityAxis(*body_pointer, axis_B);
+      }
+    }
+  }
 }
 
 void UrdfParser::ParseCollisionFilterGroup(XMLElement* node) {

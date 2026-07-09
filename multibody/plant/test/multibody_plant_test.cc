@@ -190,6 +190,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_positions(), 3);
   EXPECT_EQ(plant->num_velocities(), 3);
   EXPECT_EQ(plant->num_multibody_states(), 6);
+  EXPECT_EQ(plant->num_misc_continuous_states(), 0);
 
   // Acrobot is in the default model instance.
   EXPECT_EQ(plant->num_actuators(default_model_instance()), 1);
@@ -2282,6 +2283,8 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
       // Green group.
       {"geometry_pose", false},
       {"deformable_body_configuration", false},
+      // Miscellaneous.
+      {"surface_displacements", false},
   };
 
   // Split the manifest into (non-)feedthrough sets, while also substituting and
@@ -3132,6 +3135,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   ASSERT_EQ(link3_num_visuals, 0);
 
   // Scalar convert the plant and verify invariants.
+  ASSERT_TRUE(plant.is_finalized());
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff =
       systems::System<double>::ToAutoDiffXd(plant);
   EXPECT_TRUE(plant_autodiff->geometry_source_is_registered());
