@@ -99,13 +99,14 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
             .c_str());
   });
   cls->def("__setattr__", [](Class& self, py::str name, py::object value) {
+    py::object self_py = py::cast(self, py_rvp::reference);
     const std::string_view name_cxx(name.c_str());
     if (name_cxx == "breaks") {
       name = py::str("_breaks");
     } else if (name_cxx == "polynomials") {
       name = py::str("_polynomials");
     }
-    py::eval("object.__setattr__", py::globals())(self, name, value);
+    py::eval("object.__setattr__", py::globals())(self_py, name, value);
   });
   // Define a private property for "_breaks". Setting the breaks resets all of
   // the polynomials; this is fine because deserialization matches __fields__
@@ -138,13 +139,7 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // that we biject to C++'s convention of vector-of-matrix-of-coeffs storage.
   cls->def_prop_rw(
       "_polynomials",
-      [](const Class& self)
-#ifdef PYDRAKE_USE_PYBIND11
-          -> py::array_t<double>
-#else
-          -> py::ndarray<double, py::ndim<4>>
-#endif
-      {
+      [](const Class& self) {
         Archive archive;
         const_cast<Class&>(self).Serialize(&archive);
         const Polynomials& polynomials = archive.polynomials;
@@ -171,40 +166,54 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
         const std::initializer_list<size_t> shape{static_cast<size_t>(num_poly),
             static_cast<size_t>(num_rows), static_cast<size_t>(num_cols),
             static_cast<size_t>(num_coeffs)};
-        return py::ndarray<double, py::ndim<4>>(buffer.data(), shape);
+        return py::ndarray<double, py::ndim<4>, py::numpy>(buffer.data(), shape)
+            .cast();
 #endif
       },
       [](Class& self,
 #ifdef PYDRAKE_USE_PYBIND11
           const py::array_t<double>& polynomials
-#else
-          const py::ndarray<double, py::ndim<4>>& polynomials
+#else  // PYDRAKE_USE_NANOBIND
+          std::variant<py::ndarray<double, py::shape<0>>,
+              py::ndarray<double, py::ndim<4>, py::numpy>>
+              polynomials_union
 #endif
       ) {
         Polynomials cxx_poly;
-        if (polynomials.size() > 0) {
-          DRAKE_THROW_UNLESS(polynomials.ndim() == 4);
-          const int num_poly = polynomials.shape(0);
-          const int num_rows = polynomials.shape(1);
-          const int num_cols = polynomials.shape(2);
-          const int num_coeffs = polynomials.shape(3);
-          cxx_poly.resize(num_poly);
-          for (int i = 0; i < num_poly; ++i) {
-            cxx_poly[i].resize(num_rows, num_cols);
-            for (int j = 0; j < num_rows; ++j) {
-              for (int k = 0; k < num_cols; ++k) {
-                cxx_poly[i](j, k).resize(num_coeffs);
-                for (int c = 0; c < num_coeffs; ++c) {
+#ifdef PYDRAKE_USE_NANOBIND
+        std::visit(
+            [&cxx_poly](auto&& polynomials) {
+              if constexpr (std::is_same_v<std::decay_t<decltype(polynomials)>,
+                                py::ndarray<double, py::ndim<4>, py::numpy>>) {
+#endif  //  PYDRAKE_USE_NANOBIND
+                if (polynomials.size() > 0) {
+                  DRAKE_THROW_UNLESS(polynomials.ndim() == 4);
+                  const int num_poly = polynomials.shape(0);
+                  const int num_rows = polynomials.shape(1);
+                  const int num_cols = polynomials.shape(2);
+                  const int num_coeffs = polynomials.shape(3);
+                  cxx_poly.resize(num_poly);
+                  for (int i = 0; i < num_poly; ++i) {
+                    cxx_poly[i].resize(num_rows, num_cols);
+                    for (int j = 0; j < num_rows; ++j) {
+                      for (int k = 0; k < num_cols; ++k) {
+                        cxx_poly[i](j, k).resize(num_coeffs);
+                        for (int c = 0; c < num_coeffs; ++c) {
 #ifdef PYDRAKE_USE_PYBIND11
-                  cxx_poly[i](j, k)(c) = polynomials.at(i, j, k, c);
+                          cxx_poly[i](j, k)(c) = polynomials.at(i, j, k, c);
 #else
                   cxx_poly[i](j, k)(c) = polynomials(i, j, k, c);
 #endif
+                        }
+                      }
+                    }
+                  }
                 }
+#ifdef PYDRAKE_USE_NANOBIND
               }
-            }
-          }
-        }
+            },
+            polynomials_union);
+#endif  //  PYDRAKE_USE_NANOBIND
         Archive archive{
             .set_polynomials = true, .polynomials = std::move(cxx_poly)};
         self.Serialize(&archive);
@@ -283,8 +292,9 @@ struct Impl {
       py::gil_scoped_acquire guard;
       // Trajectory subclasses in Python must implement cloning by defining
       // a __deepcopy__ method.
+      const Trajectory<T>* const base = this;
       auto deepcopy = py::module_::import_("copy").attr("deepcopy");
-      return WrapPyTrajectory(deepcopy(this));
+      return WrapPyTrajectory(deepcopy(base));
     }
 
     MatrixX<T> do_value(const T& t) const final {
@@ -303,21 +313,12 @@ struct Impl {
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
         int derivative_order) const final {
       py::gil_scoped_acquire guard;
-#ifdef PYDRAKE_USE_PYBIND11
-      // XXX porting -- change of signature issues with macro
-      // Because the PYDRAKE_OVERRIDE_PURE macro embeds a `return ...;`
-      // statement, we must wrap it in lambda so that we can post-process the
+      // We can't use PYDRAKE_OVERRIDE_PURE because we need to post-process the
       // return value.
-      auto make_python_derivative = [&]() -> py::object {
-        PYDRAKE_OVERRIDE_PURE(
-            py::object, Trajectory<T>, DoMakeDerivative, derivative_order);
-      };
-      return WrapPyTrajectory(make_python_derivative());
-#else
-      // XXX porting
-      unused(derivative_order);
-      return {};
-#endif
+      const Trajectory<T>* const base = this;
+      py::object self = py::cast(base);
+      py::object result = self.attr("DoMakeDerivative")(derivative_order);
+      return WrapPyTrajectory(result);
     }
 
     T do_start_time() const final {
