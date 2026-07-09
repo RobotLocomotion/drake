@@ -107,57 +107,6 @@ void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
       cls_doc.prog_with_additional_constraints.doc);
 }
 
-// Largely based on code from solvers_py_mathematicalprogram.cc.
-// TODO(cohnt): Refactor for better code reuse.
-enum class ArrayShapeType { Scalar, Vector };
-
-// Checks array shape, provides user-friendly message if it fails.
-void CheckArrayShape(
-    py::str var_name, py::array x, ArrayShapeType shape, int size) {
-  bool ndim_is_good{};
-  py::str ndim_hint;
-  if (shape == ArrayShapeType::Scalar) {
-    ndim_is_good = (x.ndim() == 0);
-    ndim_hint = py::str("0 (scalar)");
-  } else {
-    ndim_is_good = (x.ndim() == 1 || x.ndim() == 2);
-    ndim_hint = py::str("1 or 2 (vector)");
-  }
-  if (!ndim_is_good || x.size() != size) {
-    throw std::runtime_error(py::cast<std::string>(
-        py::str("{} must be of .ndim = {} and .size = {}. "
-                "Got .ndim = {} and .size = {} instead.")
-            .format(var_name, ndim_hint, size, x.ndim(), x.size())));
-  }
-}
-
-// Checks array type, provides user-friendly message if it fails.
-template <typename T>
-void CheckReturnedArrayType(py::str cls_name, py::array y) {
-  py::module_ m = py::module_::import_("pydrake.solvers._extra");
-  m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
-}
-
-// Wraps user function to provide better user-friendliness.
-template <typename T, typename Func>
-Func WrapParameterizationFunc(
-    py::str cls_name, py::callable func, int num_vars) {
-  py::cpp_function wrapped = [=](py::array x) {
-    // Check input.
-    // WARNING: If the input is badly sized, we will only reach this error in
-    // Release mode. In debug mode, an assertion error will be triggered.
-    CheckArrayShape(py::str("{}: Input").format(cls_name), x,
-        ArrayShapeType::Vector, num_vars);
-    // N.B. We use `py::object` instead of `py::array` for the return type
-    /// because for dtype=object, you cannot implicitly cast `np.array(T())`
-    // (numpy scalar) to `T` (object), at least for AutoDiffXd.
-    py::object y = func(x);
-    CheckReturnedArrayType<T>(cls_name, y);
-    return y;
-  };
-  return py::cast<Func>(wrapped);
-}
-
 void DefinePlanningIrisParameterizationFunction(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
@@ -187,14 +136,12 @@ is the input dimension.
       .def(py::init([](const py::callable& parameterization,
                         int parameterization_dimension) {
         return IrisParameterizationFunction(
-            WrapParameterizationFunc<double,
+            py::cast<
                 IrisParameterizationFunction::ParameterizationFunctionDouble>(
-                py::str("IrisParameterizationFunction"), parameterization,
-                parameterization_dimension),
-            WrapParameterizationFunc<AutoDiffXd,
+                parameterization),
+            py::cast<
                 IrisParameterizationFunction::ParameterizationFunctionAutodiff>(
-                py::str("IrisParameterizationFunction"), parameterization,
-                parameterization_dimension),
+                parameterization),
             /* parameterization_is_threadsafe = */ false,
             parameterization_dimension);
       }),
