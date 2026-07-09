@@ -319,10 +319,15 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   @param[in] tree Already-complete MultibodyTree if supplied. If nullptr, an
       empty MultibodyTree is allocated internally.
   @param[in] is_discrete Whether to use discrete state variables for tree
-      kinematics. Otherwise uses continuous state variables q and v. */
+      kinematics. Otherwise uses continuous state variables q and v.
+  @param[in] num_misc_continuous_states The number of miscellaneous *continuous*
+      states to allocate.
+  @pre num_misc_continuous_states >= 0.
+  @pre is_discrete == false or num_misc_continuous_states == 0. */
   MultibodyTreeSystem(systems::SystemScalarConverter converter,
                       std::unique_ptr<MultibodyTree<T>> tree,
-                      bool is_discrete = false);
+                      bool is_discrete = false,
+                      int num_misc_continuous_states = 0);
 
   template <typename U>
   friend const MultibodyTree<U>& GetInternalTree(const MultibodyTreeSystem<U>&);
@@ -340,6 +345,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   construction, and declare any needed Context resources for the tree. You must
   call this before performing any computation. Throws if already finalized. */
   void Finalize();
+
+  /* Increments the number of miscellaneous ("z") continuous state variables to
+  be declared by Finalize(), in addition to the tree's q and v states. This
+  must be called pre-Finalize() and only for continuous systems. Returns the
+  starting index of the newly declared state within the misc continuous state
+  group. */
+  int DeclareMiscContinuousState(int num_state_variables);
 
   /* Derived class (likely MultibodyPlant) must implement this if it has
   forces to apply other than those applied internally by elements of the
@@ -360,6 +372,14 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     throw std::logic_error(
         "DoCalcForwardDynamicsDiscrete(): invoked but not implemented.");
   }
+
+  /* Called from DoCalcTimeDerivatives() to compute derivatives for the misc
+  ("z") continuous states. The default implementation throws for a non-empty
+  `zdot`. Derived classes must provide the behavior for the non-emtpy `zdot`.
+  This will only be invoked if there are a non-zero number of z-values.  */
+  virtual void DoCalcMiscDerivatives(const systems::Context<T>& context,
+                                     systems::VectorBase<T>* zdot) const;
+
   //@}
 
   // Override of LeafSystem::SetDefaultParameters. For all parameters declared
@@ -372,6 +392,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // a DoLeafSetDefaultState().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
+
+  /* Returns the size of the continuous miscellaneous state vector z for this
+  model. */
+  int num_misc_continuous_states() const { return num_misc_continuous_states_; }
 
  private:
   // This is only meaningful in continuous mode.
@@ -580,7 +604,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // already been finalized.
   MultibodyTreeSystem(systems::SystemScalarConverter converter,
                       bool null_tree_is_ok,
-                      std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete);
+                      std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete,
+                      int num_misc_continuous_states);
 
   const bool is_discrete_;
 
@@ -591,6 +616,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
+
+  // The number of miscellaneous continuous state variables declared at
+  // Finalize(), in addition to the tree's q and v states.
+  int num_misc_continuous_states_{0};
 };
 
 /* Access internal tree outside of MultibodyTreeSystem. */
