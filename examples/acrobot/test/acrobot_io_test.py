@@ -29,7 +29,7 @@ tape_period: 0.05
         scenario = load_scenario(filename=self.example)
         expected = ", ".join(
             [
-                "{'controller_params': [5, 50, 5, '1e3']",
+                "{'controller_params': [5, 50, 5, 1000.0]",
                 "'initial_state': [1.2, 0, 0, 0]",
                 "'t_final': 30.0",
                 "'tape_period': 0.05}",
