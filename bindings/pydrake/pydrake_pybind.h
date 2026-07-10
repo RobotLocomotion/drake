@@ -42,6 +42,7 @@
 #include "nanobind/stl/array.h"
 #include "nanobind/stl/filesystem.h"
 #include "nanobind/stl/function.h"
+#include "nanobind/stl/list.h"
 #include "nanobind/stl/map.h"
 #include "nanobind/stl/optional.h"
 #include "nanobind/stl/pair.h"
