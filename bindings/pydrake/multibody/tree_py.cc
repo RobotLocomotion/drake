@@ -1260,67 +1260,20 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
 
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     py::gil_scoped_acquire gil;
-    py::callable override = py::get_override(
-        static_cast<const ForceDensityField<T>*>(this), "DoEvaluateAt");
-    if (!override) {
-      throw std::logic_error(
-          "Python class derived from ForceDensityField<T> must implement "
-          "DoEvaluateAt().");
-    }
-    // Call Python-side DoEvaluateAt.
-    py::object result_obj =
-        override(py::cast(context, py_rvp::reference), py::cast(p_WQ));
-    try {
-      return py::cast<Vector3<T>>(result_obj);
-    } catch (const py::cast_error& e) {
-      throw std::logic_error(
-          "DoEvaluateAt() must return a 3-element list or NumPy array that can "
-          "be converted to Vector3<T>. Got " +
-          py::cast<std::string>(py::str(result_obj)) + ".");
-    }
-#else   // XXX porting
-    unused(context, p_WQ);
-    throw std::runtime_error("PyForceDensityField not implemented in nanobind");
-#endif  // XXX porting
+    const ForceDensityField<T>* const self = this;
+    py::object result = py::cast(self).attr("DoEvaluateAt")(&context, p_WQ);
+    return py::cast<Vector3<T>>(result);
   }
 
   std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     py::gil_scoped_acquire gil;
-    py::callable override = py::get_override(
-        static_cast<const ForceDensityField<T>*>(this), "DoClone");
-    if (!override) {
-      throw std::logic_error(
-          "Python class derived from ForceDensityField<T> must implement "
-          "DoClone().");
-    }
-    // Call Python-side DoClone.
-    py::object result_obj = override();
-    std::shared_ptr<ForceDensityField<T>> cloned;
-    try {
-      cloned = py::cast<std::shared_ptr<ForceDensityField<T>>>(result_obj);
-    } catch (const py::cast_error& e) {
-      throw std::logic_error(
-          "DoClone() must return a `ForceDensityField<T>`. Got " +
-          py::cast<std::string>(py::str(result_obj.type())) +
-          " Make sure your DoClone() returns a new instance of the same "
-          "Python class, e.g., `return MyForceDensityField(...)`.");
-    }
-    if (cloned.get() == nullptr) {
-      throw std::logic_error(
-          "DoClone() must not return None. Did you forget to return a new "
-          "instance of your class, e.g., `return MyForceDensityField(...)`.");
-    } else if (cloned.get() == this) {
-      throw std::logic_error(
-          "DoClone() must return a clone, not itself. Return a new instance of "
-          "your class, e.g., `return MyForceDensityField(...)`.");
-    }
+    const ForceDensityField<T>* const self = this;
+    py::object result = py::cast(self).attr("DoClone")();
+    std::shared_ptr<ForceDensityField<T>> cloned =
+        py::cast<std::shared_ptr<ForceDensityField<T>>>(result);
+    DRAKE_THROW_UNLESS(cloned != nullptr);
     return std::make_unique<DelegatedForceDensityField<T>>(std::move(cloned));
-#else   // XXX porting
-    throw std::runtime_error("PyForceDensityField not implemented in nanobind");
-#endif  // XXX porting
   }
 
   void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
