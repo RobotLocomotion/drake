@@ -9,7 +9,6 @@ from python.runfiles import Create as CreateRunfiles
 from pydrake.common import (
     FindResourceOrThrow,
     MemoryFile,
-    _binder,
 )
 from pydrake.geometry import (
     Box,
@@ -29,7 +28,6 @@ from pydrake.systems.planar_scenegraph_visualizer import (
 
 
 class TestPlanarSceneGraphVisualizer(unittest.TestCase):
-    @unittest.skipIf(_binder == "nanobind", "interpreter aborts")  # XXX porting
     def test_cart_pole(self):
         """Cart-Pole with simple geometry."""
         file_name = FindResourceOrThrow(
