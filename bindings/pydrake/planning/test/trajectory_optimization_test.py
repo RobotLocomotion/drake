@@ -287,12 +287,12 @@ class TestTrajectoryOptimization(unittest.TestCase):
                 duration=2.0,
             )
 
-            b2 = np.zeros((2, 1))
+            b2 = np.zeros((2,))
             con = mp.LinearConstraint(np.eye(2), lb=b2, ub=b2)
             trajopt.AddPathPositionConstraint(con, 0)
             spies.append(weakref.finalize(con, lambda: None))
 
-            b4 = np.zeros((4, 1))
+            b4 = np.zeros((4,))
             con = mp.LinearConstraint(np.eye(4), lb=b4, ub=b4)
             trajopt.AddVelocityConstraintAtNormalizedTime(con, 0)
             spies.append(weakref.finalize(con, lambda: None))
@@ -323,13 +323,13 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertEqual(len(trajopt.qdot()), 2)
         self.assertEqual(len(trajopt.qddot()), 2)
 
-        b = np.zeros((2, 1))
+        b = np.zeros((2,))
         trajopt.AddPathPositionConstraint(lb=b, ub=b, s=0)
         con = mp.LinearConstraint(np.eye(2), lb=b, ub=b)
         trajopt.AddPathPositionConstraint(con, 0)
         trajopt.AddPathVelocityConstraint(lb=b, ub=b, s=0)
         velocity_constraint = mp.LinearConstraint(
-            np.eye(4), lb=np.zeros((4, 1)), ub=np.zeros((4, 1))
+            np.eye(4), lb=np.zeros((4,)), ub=np.zeros((4,))
         )
         velocity_binding = mp.Binding[mp.LinearConstraint](
             mp.LinearConstraint(np.eye(2), lb=np.zeros(2), ub=np.zeros(2)),
@@ -667,7 +667,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
             np.array([[5.0, 5.0, 4.4, 4.4], [2.8, 5.0, 5.0, 2.8]]),
         ]
 
-        max_vel = np.ones((2, 1))
+        max_vel = np.ones((2,))
 
         # We add a path length cost to the entire graph.
         # This can be called ahead of time or after adding the regions.
@@ -900,8 +900,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
         # In the follwoing, we test adding the bindings for nonlinear
         # constraints.
-        max_acceleration = np.ones((2, 1))
-        max_jerk = 7.5 * np.ones((2, 1))
+        max_acceleration = np.ones((2,))
+        max_jerk = 7.5 * np.ones((2,))
 
         # Add global acceleration bounds.
         gcs.AddNonlinearDerivativeBounds(
