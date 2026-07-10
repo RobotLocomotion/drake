@@ -9,6 +9,7 @@ from math import pi
 import unittest
 import weakref
 
+from pydrake.common import _binder
 from pydrake.math import RigidTransform
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.sensors import (
@@ -33,13 +34,13 @@ class TestRenderEngineSubclass(unittest.TestCase):
                 pass
 
             def DoRegisterVisual(self, id, shape, properties, X_WG):
-                pass
+                return False
 
             def DoUpdateVisualPose(self, id, X_WG):
                 pass
 
             def DoRemoveGeometry(self, id):
-                pass
+                return False
 
             def __deepcopy__(self, memo):
                 return type(self)()
@@ -55,13 +56,13 @@ class TestRenderEngineSubclass(unittest.TestCase):
                 raise RuntimeError("Minimal engine uses the name API")
 
             def DoRegisterNamedVisual(self, id, shape, properties, X_WG, name):
-                pass
+                return False
 
             def DoUpdateVisualPose(self, id, X_WG):
                 pass
 
             def DoRemoveGeometry(self, id):
-                pass
+                return False
 
             def __deepcopy__(self, memo):
                 return type(self)()
@@ -108,11 +109,16 @@ class TestRenderEngineSubclass(unittest.TestCase):
             name="ignored",
         )
 
+        if _binder == "nanobind":
+            pure_virtual_error_regex = ".+trampoline.+lookup failed!"
+        else:
+            pure_virtual_error_regex = ".+pure virtual function.+"
+
         color_only = ColorOnlyEngine()
         color_only.RenderColorImage(color_cam, color_image)
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             color_only.RenderDepthImage(depth_cam, depth_image)
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             color_only.RenderLabelImage(color_cam, label_image)
         self.assertIsInstance(color_only.Clone(), ColorOnlyEngine)
         # Passing a name won't tickle the throw in DoRegisterVisual().
@@ -126,17 +132,17 @@ class TestRenderEngineSubclass(unittest.TestCase):
         )
 
         depth_only = DepthOnlyEngine()
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             depth_only.RenderColorImage(color_cam, color_image)
         depth_only.RenderDepthImage(depth_cam, depth_image)
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             depth_only.RenderLabelImage(color_cam, label_image)
         self.assertIsInstance(depth_only.Clone(), DepthOnlyEngine)
 
         label_only = LabelOnlyEngine()
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             label_only.RenderColorImage(color_cam, color_image)
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             label_only.RenderDepthImage(depth_cam, depth_image)
         label_only.RenderLabelImage(color_cam, label_image)
         self.assertIsInstance(label_only.Clone(), LabelOnlyEngine)
