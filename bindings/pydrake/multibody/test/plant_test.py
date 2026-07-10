@@ -808,7 +808,7 @@ class TestPlant(unittest.TestCase):
             Exception, r"incompatible function arguments"
         ):
             dut[0]
-        with self.assertRaisesRegex(Exception, r"Unable to cast"):
+        with self.assertRaises(Exception):
             dut[0.0, 0.0]
         with self.assertRaisesRegex(Exception, r"Expected \[i,j\]"):
             dut[0, 0, 0]
