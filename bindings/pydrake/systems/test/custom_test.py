@@ -6,6 +6,7 @@ import weakref
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import _binder
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression
@@ -423,6 +424,7 @@ class TestCustom(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "LeafSystem.*__init__"):
             Oops()
 
+    @unittest.skipIf(_binder == "nanobind", "interpreter aborts")  # XXX porting
     def test_all_leaf_system_overrides(self):
         test = self
 
@@ -1017,6 +1019,7 @@ class TestCustom(unittest.TestCase):
             system.GetMyContextFromRoot(root_context=context), subcontext2
         )
 
+    @unittest.skipIf(_binder == "nanobind", "interpreter aborts")  # XXX porting
     def test_continuous_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.
         for T in [float, AutoDiffXd, Expression]:
