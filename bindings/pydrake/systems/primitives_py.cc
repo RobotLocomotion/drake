@@ -603,11 +603,10 @@ PYDRAKE_MODULE(primitives, m) {
             doc.VectorLog.sample_times.doc)
         .def(
             "data",
-            [](const VectorLog<T>* self) {
-              // Reference.
-              return CopyIfNotPodType(self->data());
-            },
-            return_value_policy_for_scalar_type<T>(), doc.VectorLog.data.doc)
+            // Nanobind can't cast the Block return type even for T=double, so
+            // we always just copy the return value.
+            [](const VectorLog<T>* self) -> MatrixX<T> { return self->data(); },
+            doc.VectorLog.data.doc)
         .def("Clear", &VectorLog<T>::Clear, doc.VectorLog.Clear.doc)
         .def("Reserve", &VectorLog<T>::Reserve, doc.VectorLog.Reserve.doc)
         .def("AddData", &VectorLog<T>::AddData, py::arg("time"),
