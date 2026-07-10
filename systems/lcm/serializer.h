@@ -12,57 +12,63 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-/**
- * %SerializerInterface translates between LCM message bytes and
- * drake::AbstractValue objects that contain LCM messages, e.g., a
- * Value<lcmt_drake_signal>.  All `const` methods are threadsafe.
- * See Serializer for a message-specific concrete subclass.
- */
+/** %SerializerInterface translates between LCM message bytes and
+drake::AbstractValue objects that contain LCM messages, e.g., a
+Value<lcmt_drake_signal>.  All `const` methods are threadsafe.  See Serializer
+for a message-specific concrete subclass. */
 class SerializerInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SerializerInterface);
 
   virtual ~SerializerInterface();
 
-  /**
-   * Creates a value-initialized (zeroed) instance of the message object.
-   * The result can be used as the output object filled in by Deserialize.
-   */
+  /** Creates a value-initialized (zeroed) instance of the message object.
+  The result can be used as the output object filled in by Deserialize. */
   virtual std::unique_ptr<AbstractValue> CreateDefaultValue() const = 0;
 
-#ifndef DRAKE_DOXYGEN_CXX
-  /* (Internal use only) Creates a value-initialized (zeroed) instance of the
-   * message object.  The result can be used as the output object filled in by
-   * Deserialize. The default implementation just calls CreateDefaultValue().
-   *
-   * This shared_ptr signature is useful for Python bindings. C++ derived
-   * classes need not implement it.
-   */
-  virtual std::shared_ptr<AbstractValue> CreateDefaultValueShared() const;
-#endif
-
-  /**
-   * Translates LCM message bytes into a drake::AbstractValue object.
-   */
+  /** Translates LCM message bytes into a drake::AbstractValue object. */
   virtual void Deserialize(const void* message_bytes, int message_length,
                            AbstractValue* abstract_value) const = 0;
 
-  /**
-   * Translates a drake::AbstractValue object into LCM message bytes.
-   */
+  /** Translates a drake::AbstractValue object into LCM message bytes. */
   virtual void Serialize(const AbstractValue& abstract_value,
                          std::vector<uint8_t>* message_bytes) const = 0;
+
+#ifndef DRAKE_DOXYGEN_CXX
+  /* The signatures below are useful for Python bindings. C++ derived classes
+  can ignore them. */
+
+  /* (Internal use only) Creates a value-initialized (zeroed) instance of the
+  message object.  The result can be used as the output object filled in by
+  Deserialize. The default implementation just calls CreateDefaultValue(). */
+  virtual std::shared_ptr<AbstractValue> CreateDefaultValueShared() const;
+
+  /* (Internal use only) Translates LCM message bytes into a
+  drake::AbstractValue object. The implementation just calls Deserialize(). */
+  template <typename Buffer>
+  void DeserializeBuffer(const Buffer& buffer,
+                         AbstractValue* abstract_value) const {
+    Deserialize(buffer.data(), buffer.size(), abstract_value);
+  }
+
+  /* (Internal use only) Translates a drake::AbstractValue object into LCM
+  message bytes. The implementation just calls Serialize(). */
+  template <typename Buffer>
+  Buffer SerializeBuffer(const AbstractValue* abstract_value) const {
+    std::vector<uint8_t> bytes;
+    Serialize(*abstract_value, &bytes);
+    return Buffer(bytes.data(), bytes.size());
+  }
+#endif
 
  protected:
   SerializerInterface() = default;
 };
 
-/**
- * %Serializer is specific to a single LcmMessage type, and translates between
- * LCM message bytes and drake::Value<LcmMessage> objects.
- *
- * @tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal.
- */
+/** %Serializer is specific to a single LcmMessage type, and translates between
+LCM message bytes and drake::Value<LcmMessage> objects.
+
+@tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal. */
 template <typename LcmMessage>
 class Serializer : public SerializerInterface {
  public:
