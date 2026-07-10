@@ -384,12 +384,12 @@ struct Impl {
     using Base::Base;
 #endif
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     // something something ToEigenRef().
     void DoCalcVectorOutput(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* output) const override {
+#ifdef PYDRAKE_USE_PYBIND11
       // WARNING: Mutating `output` will not work when T is AutoDiffXd,
       // Expression, etc. See
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
@@ -400,7 +400,19 @@ struct Impl {
           // than pointer to ensure conceptual clarity. pybind11 `type_caster`
           // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
           &context, input, state, ToEigenRef(output));
-      // If the macro did not return, use default functionality.
+#else   // PYDRAKE_USE_NANOBIND
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorOutput")) {
+          self.attr("DoCalcVectorOutput")(
+              &context, input, state, ToEigenRef(output));
+          return;
+        }
+      }
+#endif  // PYDRAKE_USE_PYBIND11
+      // If not overloaded, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, output);
     }
 
@@ -408,12 +420,25 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
+#ifdef PYDRAKE_USE_PYBIND11
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
       PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
           "DoCalcVectorTimeDerivatives", &context, input, state,
           ToEigenRef(derivatives));
-      // If the macro did not return, use default functionality.
+#else   // PYDRAKE_USE_NANOBIND
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorTimeDerivatives")) {
+          self.attr("DoCalcVectorTimeDerivatives")(
+              &context, input, state, ToEigenRef(derivatives));
+          return;
+        }
+      }
+#endif  // PYDRAKE_USE_PYBIND11
+      // If not overloaded, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, derivatives);
     }
 
@@ -421,16 +446,28 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
+#ifdef PYDRAKE_USE_PYBIND11
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
       PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
           "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
           ToEigenRef(next_state));
-      // If the macro did not return, use default functionality.
+#else   // PYDRAKE_USE_NANOBIND
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorDiscreteVariableUpdates")) {
+          self.attr("DoCalcVectorDiscreteVariableUpdates")(
+              &context, input, state, ToEigenRef(next_state));
+          return;
+        }
+      }
+#endif  // PYDRAKE_USE_PYBIND11
+      // If not overloaded, use default functionality.
       Base::DoCalcVectorDiscreteVariableUpdates(
           context, input, state, next_state);
     }
-#endif  // XXX porting
   };
 
   class PySystemVisitor : public SystemVisitor<T> {
