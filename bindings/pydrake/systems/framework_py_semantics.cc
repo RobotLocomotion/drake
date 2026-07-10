@@ -263,14 +263,15 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = ValueProducer;
     constexpr auto& cls_doc = doc.ValueProducer;
     class_<Class>(m, "ValueProducer", cls_doc.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-        .def(py::init([](py::callable allocate,
-                          std::function<void(py::object, py::object)> calc) {
-          return Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),
-              MakeCppCompatibleCalcCallback(std::move(calc)));
-        }),
+        .def(
+            "__init__",
+            [](Class* self, py::callable allocate,
+                std::function<void(py::object, py::object)> calc) {
+              new (self)
+                  Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),
+                      MakeCppCompatibleCalcCallback(std::move(calc)));
+            },
             py::arg("allocate"), py::arg("calc"), cls_doc.ctor.doc_overload_5d)
-#endif  // XXX porting
         .def_static("NoopCalc", &Class::NoopCalc, cls_doc.NoopCalc.doc);
   }
 
