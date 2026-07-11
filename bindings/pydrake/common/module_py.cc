@@ -48,12 +48,11 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
   auto py_type_info = py::detail::get_type_info(ptr.info);
   return py::detail::get_object_handle(ptr.raw, py_type_info);
 #else
-  // XXX porting: check ref counts.
   bool is_new{false};
   auto result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
       py_rvp::reference, nullptr, &is_new);
   DRAKE_DEMAND(!is_new);
-  return py::handle(result);
+  return py::steal(result);
 #endif
 }
 
