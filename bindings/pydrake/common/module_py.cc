@@ -41,25 +41,28 @@ void trigger_an_assertion_failure() {
   DRAKE_DEMAND(false);
 }
 
-#ifdef PYDRAKE_USE_PYBIND11
 // Resolves to a Python handle given a type erased pointer. If the instance or
 // lowest-level RTTI type are unregistered, returns an empty handle.
 py::handle ResolvePyObject(const type_erased_ptr& ptr) {
+#ifdef PYDRAKE_USE_PYBIND11
   auto py_type_info = py::detail::get_type_info(ptr.info);
   return py::detail::get_object_handle(ptr.raw, py_type_info);
-}
+#else
+  // XXX porting: check ref counts.
+  bool is_new{false};
+  auto result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
+      py_rvp::reference, nullptr, &is_new);
+  DRAKE_DEMAND(!is_new);
+  return py::handle(result);
 #endif
+}
 
 // Override for SetNiceTypeNamePtrOverride, to ensure that instances that are
 // registered (along with their types) can use their Python class's name.
-//
-// XXX(nice-type-name) porting: cannot easily detect a registered instance given
-// only a type_erased_ptr. nb::find<T>() requires compile-time T.
 std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
   DRAKE_DEMAND(ptr.raw != nullptr);
   const std::string cc_name = NiceTypeName::Get(ptr.info);
   if (cc_name.find("pydrake::") != std::string::npos) {
-#ifdef PYDRAKE_USE_PYBIND11
     py::handle obj = ResolvePyObject(ptr);
     if (obj) {
       py::handle cls = obj.type();
@@ -68,16 +71,6 @@ std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
           py::str("{}.{}").format(cls.attr("__module__"),
               internal::PrettyClassName(cls, use_qualname)));
     }
-#else   // PYDRAKE_USE_NANOBIND
-    auto py_type_info = py::detail::nb_type_lookup(&ptr.info);
-    if (py_type_info) {
-      py::handle cls = py::handle(py_type_info);
-      const bool use_qualname = true;
-      return py::cast<std::string>(
-          py::str("{}.{}").format(cls.attr("__module__"),
-              internal::PrettyClassName(cls, use_qualname)));
-    }
-#endif  // PYDRAKE_USE_PYBIND11
   }
   return cc_name;
 }
