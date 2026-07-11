@@ -187,7 +187,6 @@ class TestAnalysis(unittest.TestCase):
             derivatives, A @ states + B @ inputs
         )
 
-    @unittest.skipIf(_binder == "nanobind", "interpreter aborts")  # XXX porting
     @numpy_compare.check_nonsymbolic_types
     def test_integrator_api(self, T):
         system = FirstOrderLowPassFilter_[T](time_constant=1.0, size=1)
