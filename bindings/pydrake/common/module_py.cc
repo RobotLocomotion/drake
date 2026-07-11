@@ -53,8 +53,8 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
 // Override for SetNiceTypeNamePtrOverride, to ensure that instances that are
 // registered (along with their types) can use their Python class's name.
 //
-// XXX porting: cannot easily detect a registered instance given only a
-// type_erased_ptr. nb::find<T>() requires compile-time T.
+// XXX(nice-type-name) porting: cannot easily detect a registered instance given
+// only a type_erased_ptr. nb::find<T>() requires compile-time T.
 std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
   DRAKE_DEMAND(ptr.raw != nullptr);
   const std::string cc_name = NiceTypeName::Get(ptr.info);
