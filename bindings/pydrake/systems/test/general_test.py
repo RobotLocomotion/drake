@@ -422,7 +422,7 @@ class TestGeneral(unittest.TestCase):
         x = cast(np.array([1.23, 4.56]))
         discrete_values.set_value(1, x)
         numpy_compare.assert_equal(discrete_values.get_value(index=1), x)
-        if T is float:
+        if T is float or _binder == "nanobind":
             numpy_compare.assert_equal(
                 discrete_values.get_mutable_value(index=1), x
             )
