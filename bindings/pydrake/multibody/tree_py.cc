@@ -680,13 +680,16 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("SetQuaternion", &Class::SetQuaternion, py::arg("context"),
-            py::arg("q_FM"), cls_doc.SetQuaternion.doc)
+            py::arg("q_FM"), py_rvp::reference_internal,
+            cls_doc.SetQuaternion.doc)
         .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R"), cls_doc.SetOrientation.doc)
+            py::arg("R"), py_rvp::reference_internal,
+            cls_doc.SetOrientation.doc)
         .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.SetTranslation.doc)
+            py::arg("p_FM"), py_rvp::reference_internal,
+            cls_doc.SetTranslation.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
-            cls_doc.SetPose.doc)
+            py_rvp::reference_internal, cls_doc.SetPose.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
             py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
@@ -796,15 +799,17 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             py::arg("angles"), py_rvp::reference_internal,
             cls_doc.set_angles.doc)
         .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R_FM"), cls_doc.SetOrientation.doc)
+            py::arg("R_FM"), py_rvp::reference_internal,
+            cls_doc.SetOrientation.doc)
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.SetTranslation.doc)
+            py::arg("p_FM"), py_rvp::reference_internal,
+            cls_doc.SetTranslation.doc)
         .def(
             "GetPose", &Class::GetPose, py::arg("context"), cls_doc.GetPose.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
-            cls_doc.SetPose.doc)
+            py_rvp::reference_internal, cls_doc.SetPose.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
