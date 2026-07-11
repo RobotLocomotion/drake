@@ -188,7 +188,7 @@ void DefineMeshcatParams(py::module_ m) {
     using Class = MeshcatParams;
     constexpr auto& cls_doc = doc.MeshcatParams;
     class_<Class
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
         ,
         std::shared_ptr<Class>
 #endif
@@ -216,7 +216,7 @@ void DefineMeshcat(py::module_ m) {
     using Class = Meshcat;
     constexpr auto& cls_doc = doc.Meshcat;
     class_<Class
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
         ,
         std::shared_ptr<Class>
 #endif

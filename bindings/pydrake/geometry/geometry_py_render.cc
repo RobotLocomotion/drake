@@ -304,7 +304,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = RenderEngine;
     const auto& cls_doc = doc.RenderEngine;
     class_<Class, PyRenderEngine
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
         ,
         std::shared_ptr<Class>
 #endif

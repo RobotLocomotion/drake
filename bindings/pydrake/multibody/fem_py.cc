@@ -97,7 +97,7 @@ void DefineForceDensityFieldBase(py::module_ m, T) {
     using Class = drake::multibody::ForceDensityFieldBase<T>;
     constexpr auto& cls_doc = doc_multibody.ForceDensityFieldBase;
     auto cls = DefineTemplateClassWithDefault<Class
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
         ,
         std::shared_ptr<Class>
 #endif

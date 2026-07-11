@@ -168,7 +168,7 @@ PYDRAKE_MODULE(lcm, m) {
     using Class = SerializerInterface;
     constexpr auto& cls_doc = doc.SerializerInterface;
     class_<Class, PySerializerInterface
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
         ,
         std::shared_ptr<Class>
 #endif

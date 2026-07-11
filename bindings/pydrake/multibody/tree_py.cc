@@ -1292,7 +1292,7 @@ void DefineForceDensityField(py::module_ m, T) {
     constexpr auto& cls_doc = doc.ForceDensityField;
     auto cls = DefineTemplateClassWithDefault<ForceDensityField<T>,
         PyForceDensityField<T>, ForceDensityFieldBase<T>
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
         ,
         std::shared_ptr<ForceDensityField<T>>
 #endif
@@ -1325,7 +1325,7 @@ void DefineForceDensityField(py::module_ m, T) {
     constexpr auto& cls_doc = doc.GravityForceField;
     auto cls = DefineTemplateClassWithDefault<GravityForceField<T>,
         ForceDensityField<T>
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
         ,
         std::shared_ptr<GravityForceField<T>>
 #endif

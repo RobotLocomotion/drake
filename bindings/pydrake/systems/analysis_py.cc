@@ -141,7 +141,7 @@ PYDRAKE_MODULE(analysis, m) {
   auto bind_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
-#ifdef PYDRAKE_USE_NANOBIND  // XXX porting
+#ifdef PYDRAKE_USE_NANOBIND  // XXX(eigen) porting
     constexpr bool bind_batch_autodiff = std::is_same_v<T, double>;
 #else
     constexpr bool bind_batch_autodiff = true;
@@ -586,7 +586,7 @@ Parameter ``interruptible``:
     using Class = RegionOfAttractionOptions;
     constexpr auto& cls_doc = doc.analysis.RegionOfAttractionOptions;
     class_<Class
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
         ,
         std::shared_ptr<Class>
 #endif
