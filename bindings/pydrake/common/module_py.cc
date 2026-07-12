@@ -51,7 +51,10 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
   bool is_new{false};
   auto result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
       py_rvp::reference, nullptr, &is_new);
-  DRAKE_DEMAND(!is_new);
+  if (is_new) {
+    py::object delete_me = py::steal(result);
+    return py::handle();
+  }
   return py::steal(result);
 #endif
 }
