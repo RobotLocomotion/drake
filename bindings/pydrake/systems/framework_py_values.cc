@@ -174,7 +174,7 @@ void DefineBusValue(py::module_ m) {
           [](py::object self, py::str key) -> py::object {
             py::object result = self.attr("Find")(key);
             if (result.is_none()) {
-              throw py::key_error(py::cast<std::string>(key));
+              throw py::key_error(key.c_str());
             }
             return result;
           },

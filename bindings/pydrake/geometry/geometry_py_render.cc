@@ -96,8 +96,9 @@ class PyRenderEngine : public RenderEngine {
       auto deepcopy = py::module_::import_("copy").attr("deepcopy");
       py::object copied = deepcopy(this);
       if (copied.is_none()) {
-        throw pybind11::type_error(fmt::format(
-            "{}.__deepcopy__ returned None", NiceTypeName::Get(*this)));
+        throw py::type_error(fmt::format(
+            "{}.__deepcopy__ returned None", NiceTypeName::Get(*this))
+                .c_str());
       }
       return copied;
     };

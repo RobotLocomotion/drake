@@ -95,7 +95,8 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
       return self_py.attr("_polynomials");
     }
     throw py::attribute_error(
-        fmt::format("PiecewisePolynomial has no attribute '{}'", name_cxx));
+        fmt::format("PiecewisePolynomial has no attribute '{}'", name_cxx)
+            .c_str());
   });
   cls->def("__setattr__", [](Class& self, py::str name, py::object value) {
     const std::string_view name_cxx(name.c_str());
