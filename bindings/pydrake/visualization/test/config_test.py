@@ -48,6 +48,14 @@ class TestConfig(unittest.TestCase):
             builder=builder,
         )
 
+    def test_apply_visualization_config_plain(self):
+        """Exercises ApplyVisualizationConfig with minimal arguments."""
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant.Finalize()
+        config = mut.VisualizationConfig()
+        mut.ApplyVisualizationConfig(config=config, builder=builder)
+
     def test_add_default_visualization(self):
         """Exercises AddDefaultVisualization."""
         builder = DiagramBuilder()
@@ -55,3 +63,10 @@ class TestConfig(unittest.TestCase):
         plant.Finalize()
         meshcat = Meshcat()
         mut.AddDefaultVisualization(builder=builder, meshcat=meshcat)
+
+    def test_add_default_visualization_plain(self):
+        """Exercises AddDefaultVisualization with an implicit meshcat."""
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant.Finalize()
+        mut.AddDefaultVisualization(builder=builder)

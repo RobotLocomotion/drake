@@ -249,6 +249,9 @@ class TestAnalysis(unittest.TestCase):
 
         integrator.Reset()
 
+        # Clearing the context is allowed.
+        integrator.reset_context(context=None)
+
     def test_symbolic_integrators(self):
         x = Variable("x")
         sys = SymbolicVectorSystem_[Expression](state=[x], dynamics=[-x + x**3])
@@ -350,6 +353,9 @@ class TestAnalysis(unittest.TestCase):
         self.assertEqual(simulator.get_num_unrestricted_updates(), 0)
 
         self.assertIs(simulator.get_system(), system)
+
+        # Clearing the context is allowed.
+        simulator.reset_context(context=None)
 
     def test_simulator_default_context_no_cpp_leak(self):
         """Regression test for #23924"""

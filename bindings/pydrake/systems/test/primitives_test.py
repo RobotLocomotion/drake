@@ -983,6 +983,9 @@ class TestGeneral(unittest.TestCase):
         del dut
         self.assertListEqual(readback, [1, 2, 3])
 
+        # Allow None without crashing.
+        SharedPointerSystem(value_to_hold=None)
+
     def test_shared_pointer_system_builder(self):
         builder = DiagramBuilder()
         self.assertListEqual(
@@ -997,6 +1000,12 @@ class TestGeneral(unittest.TestCase):
         self.assertListEqual(readback, [1, 2, 3])
         del diagram
         self.assertListEqual(readback, [1, 2, 3])
+
+        # Allow None without crashing.
+        SharedPointerSystem.AddToBuilder(
+            builder=DiagramBuilder(),
+            value_to_hold=None,
+        )
 
     def test_sine(self):
         # Test scalar output.
