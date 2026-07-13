@@ -912,6 +912,9 @@ class TestSymbolicExpression(unittest.TestCase):
         (x + y + uni + gau + exp).Evaluate(env, g)
         (x + y + uni + gau + exp).Evaluate(env=env, generator=g)
 
+        # Checks passing nullptr as the generator (and no environment).
+        sym.Expression().Evaluate(None)
+
     def test_evaluate_partial(self):
         env = {x: 3.0, y: 4.0}
         partial_evaluated = (x + y + z).EvaluatePartial(env)
@@ -1733,8 +1736,12 @@ class TestSymbolicPolynomial(unittest.TestCase):
         m = np.array([[3, 4]])
         evaluated1 = sym.Evaluate(m)
         evaluated2 = sym.Evaluate(m=m)
+        evaluated3 = sym.Evaluate(m=m, env={})
+        evaluated4 = sym.Evaluate(m=m, generator=None)
         self.assertTrue(np.array_equal(evaluated1, m))
         self.assertTrue(np.array_equal(evaluated2, m))
+        self.assertTrue(np.array_equal(evaluated3, m))
+        self.assertTrue(np.array_equal(evaluated4, m))
 
     def test_matrix_evaluate_with_env(self):
         m = np.array([[x + y, x * y]])
@@ -1742,8 +1749,10 @@ class TestSymbolicPolynomial(unittest.TestCase):
         expected = np.array([[m[0, 0].Evaluate(env), m[0, 1].Evaluate(env)]])
         evaluated1 = sym.Evaluate(m, env)
         evaluated2 = sym.Evaluate(m=m, env=env)
+        evaluated3 = sym.Evaluate(m=m, env=env, generator=None)
         self.assertTrue(np.array_equal(evaluated1, expected))
         self.assertTrue(np.array_equal(evaluated2, expected))
+        self.assertTrue(np.array_equal(evaluated3, expected))
 
     def test_matrix_evaluate_with_random_generator(self):
         u = sym.Variable("uni", sym.Variable.Type.RANDOM_UNIFORM)
