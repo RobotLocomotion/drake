@@ -58,7 +58,7 @@ bool check_handle(size_t n, handle p,
   // Among the reasons the following check may fail is that one of the
   // participating py::class_ types does not declare
   // py::dynamic_attr().
-  if (!PyType_IS_GC(Py_TYPE(p.ptr()))) {
+  if (!PyType_IS_GC(Py_TYPE(p.ptr())) || !hasattr(p, "__dict__")) {
     throw std::runtime_error(not_gc_message_function(n));
   }
   return true;

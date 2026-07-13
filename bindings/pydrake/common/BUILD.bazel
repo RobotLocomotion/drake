@@ -246,7 +246,6 @@ drake_cc_library(
     srcs = ["ref_cycle_pybind.cc"],
     hdrs = ["ref_cycle_pybind.h"],
     declare_installed_headers = 0,
-    tags = ["manual"],  # XXX porting
     visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake:pydrake_pybind",
@@ -524,8 +523,6 @@ drake_py_unittest(
     ],
 )
 
-# XXX porting
-True or \
 drake_pybind_library(
     name = "ref_cycle_test_util_py",
     testonly = True,
@@ -535,8 +532,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
 )
 
-# XXX porting
-True or \
 drake_py_unittest(
     name = "ref_cycle_test",
     deps = [
