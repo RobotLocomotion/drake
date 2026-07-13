@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <type_traits>
+#include <typeindex>
+#include <unordered_map>
 #include <utility>
 
 #ifdef PYDRAKE_USE_PYBIND11
@@ -61,6 +63,7 @@
 
 #include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/never_destroyed.h"
 
 // XXX porting shim-fest
 namespace nanobind {
@@ -123,12 +126,45 @@ using py_rvp = py::rv_policy;
 #ifdef PYDRAKE_USE_PYBIND11
 using py::class_;
 #else   // PYDRAKE_USE_NANOBIND
+namespace internal {
+// XXX need locking?
+class AliasRegistry {
+ public:
+  static void AddAlias(
+      const ::std::type_info& alias_type, const ::std::type_info& bound_type) {
+    (*TheMap())[std::type_index(alias_type)] = &bound_type;
+  }
+
+  static const std::type_info* Unalias(const std::type_info* query) {
+    auto& unalias = *TheMap();
+    auto it = unalias.find(std::type_index(*query));
+    if (it == unalias.end()) {
+      return query;
+    }
+    return it->second;
+  }
+
+ private:
+  using UnaliasMap = std::unordered_map<std::type_index, const std::type_info*>;
+  static UnaliasMap* TheMap() {
+    static never_destroyed<UnaliasMap> unalias_;
+    return &unalias_.access();
+  }
+};
+}  // namespace internal
+
 template <typename T, typename... Ts>
 class DRAKE_NO_EXPORT class_ : public py::class_<T, Ts...> {
  public:
+  using Base = py::class_<T, Ts...>;
   explicit class_(auto&&... args)
       : py::class_<T, Ts...>(std::forward<decltype(args)>(args)...,
-            py::is_weak_referenceable()) {}
+            py::is_weak_referenceable()) {
+    if constexpr (!std::is_same_v<T, typename Base::Alias>) {
+      internal::AliasRegistry::AddAlias(
+          typeid(typename Base::Alias), typeid(T));
+    }
+  }
 };
 #endif  // PYDRAKE_USE_PYBIND11
 

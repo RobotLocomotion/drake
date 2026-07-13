@@ -98,9 +98,9 @@ class TestScalarConversion(unittest.TestCase):
         for T in SystemScalarConverter.SupportedScalars:
             system_T = Example_[T](0)
             # XXX(nice-type-name) porting
-            # self.assertEqual(
-            #     system_T.GetSystemType(), f"{__name__}.Example_[{T.__name__}]"
-            # )
+            self.assertEqual(
+                system_T.GetSystemType(), f"{__name__}.Example_[{T.__name__}]"
+            )
 
         # Test private properties (do NOT use these in your code!).
         self.assertTupleEqual(

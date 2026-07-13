@@ -49,8 +49,15 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
   return py::detail::get_object_handle(ptr.raw, py_type_info);
 #else
   bool is_new{false};
-  auto result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
-      py_rvp::reference, nullptr, &is_new);
+  PyObject* result{};
+  auto bound_type = internal::AliasRegistry::Unalias(&ptr.info);
+  if (ptr.info_dynamic) {
+    result = py::detail::nb_type_put_p(bound_type, ptr.info_dynamic,
+        const_cast<void*>(ptr.raw), py_rvp::reference, nullptr, &is_new);
+  } else {
+    result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
+        py_rvp::reference, nullptr, &is_new);
+  }
   if (is_new) {
     py::object delete_me = py::steal(result);
     return py::handle();
