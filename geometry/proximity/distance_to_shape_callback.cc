@@ -126,6 +126,11 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
                                 SignedDistancePair<T>* result) {
   DRAKE_DEMAND(result != nullptr);
 
+  if (use_gjk_plus_plus) {
+    ComputeGjkPlusPlus(a, X_WA, b, X_WB, request, result);
+    return;
+  }
+
   if (RequiresFallback(a, b)) {
     CalcDistanceFallback<T>(a, X_WA, b, X_WB, request, result);
     return;

@@ -1,4 +1,5 @@
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/proximity/distance_gjk_plus_plus.h"
 
 #include <algorithm>
 #include <array>
