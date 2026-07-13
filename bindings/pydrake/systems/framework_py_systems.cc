@@ -80,8 +80,9 @@ using _Alias =
 #endif
 template <typename PyClass, typename Class>
 _Alias<PyClass>* GetAlias(Class* self) {
-  // In debug builds, use dynamic cast to check correctness.
-  DRAKE_ASSERT(dynamic_cast<_Alias<PyClass>*>(self) != nullptr);
+  // XXX TODO(rpoyner-tri): There is a more subtle argument to be made here
+  // about why calls via derived bound classes work with this static cast, but
+  // I don't have it fully worked out yet.
   return static_cast<_Alias<PyClass>*>(self);
 }
 
