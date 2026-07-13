@@ -329,23 +329,7 @@ PYDRAKE_MODULE(analysis, m) {
 
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
-    cls                      // BR
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-        .def(py::init([](const System<T>& system, py::object py_context) {
-          py_context = ArrangeSimulatorInitContextOwnership(system, py_context);
-          return Simulator<T>::MakeWithSharedContext(
-              system, make_shared_ptr_from_py_object<Context<T>>(py_context));
-        }),
-            py::arg("system"), py::arg("context") = py::none(),
-            // Keep alive, reference: `self` keeps `system` alive.
-            py::keep_alive<1, 2>(),
-            []() {
-              std::string new_doc = doc.Simulator.ctor.doc;
-              new_doc += kSimulatorInitExtraDoc;
-              return new_doc;
-            }()
-                .c_str())
-#else   // XXX porting
+    cls  // BR
         .def(
             "__init__",
             [](Simulator<T>* self, const System<T>& system,
@@ -364,7 +348,6 @@ PYDRAKE_MODULE(analysis, m) {
               return new_doc;
             }()
                 .c_str())
-#endif  // XXX porting
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc,
             py::arg("params") = InitializeParams{})
