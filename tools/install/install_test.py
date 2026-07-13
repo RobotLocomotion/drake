@@ -38,6 +38,23 @@ class InstallTest(unittest.TestCase):
                 del env[key]
         env["PYTHONPATH"] = ":".join(sys.path)
 
+        # Allow `import install_test_helper` in the child process.
+        for item in sys.path:
+            if item.endswith("/_main/tools/install"):
+                old_path = env.get("PYTHONPATH", None)
+                if old_path is not None:
+                    new_path = old_path + ":" + item
+                else:
+                    new_path = item
+                env["PYTHONPATH"] = new_path
+
+        # Allow `import numpy` (& etc.) in the child process.
+        for item in sys.path:
+            if "/site-packages/" in item:
+                old_path = env.get("PYTHONPATH", None)
+                new_path = old_path + ":" + item
+                env["PYTHONPATH"] = new_path
+
         # Execute the test_command.
         print(f"+ {test_command}", file=sys.stderr)
         subprocess.check_call(

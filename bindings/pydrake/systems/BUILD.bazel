@@ -209,6 +209,9 @@ drake_py_library(
     srcs = ["drawing.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [":module_py"],
+    requirements = [
+        "pydot",
+    ],
 )
 
 drake_cc_library(
@@ -295,6 +298,9 @@ drake_py_library(
         "//bindings/pydrake:lcm_py",
         "@rules_python//python/runfiles",
     ],
+    requirements = [
+        "matplotlib",
+    ],
 )
 
 drake_py_library(
@@ -307,6 +313,9 @@ drake_py_library(
         ":module_py",
         ":primitives_py",
         "//bindings/pydrake:trajectories_py",
+    ],
+    requirements = [
+        "matplotlib",
     ],
 )
 
@@ -385,6 +394,9 @@ drake_py_binary(
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/visualization",
+    ],
+    requirements = [
+        "matplotlib",
     ],
     add_test_rule = True,
     test_rule_timeout = "moderate",

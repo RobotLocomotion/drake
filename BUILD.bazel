@@ -180,6 +180,9 @@ install_test(
         ":install",
         _INSTALL_TEST_COMMANDS,
     ],
+    requirements = [
+        "numpy",
+    ],
 )
 
 add_lint_tests(

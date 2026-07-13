@@ -19,6 +19,9 @@ drake_py_library(
     ],
     # N.B. We don't use get_pybind_package_info; we aren't part of pydrake.
     imports = ["."],
+    requirements = [
+        "numpy",
+    ],
 )
 
 drake_py_unittest(

@@ -1,3 +1,4 @@
+load("@pip//:requirements.bzl", "requirement")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
@@ -13,6 +14,11 @@ py_library(
     srcs = ["jupyter_bazel.py"],
     imports = ["."],
     visibility = ["//visibility:public"],
+    deps = [
+        requirement("jupyter-core"),
+        requirement("nbconvert"),
+        requirement("nbformat"),
+    ],
 )
 
 # Note that we do NOT use drake_py_library here, so that this program is a

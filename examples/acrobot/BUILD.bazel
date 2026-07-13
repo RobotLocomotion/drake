@@ -139,6 +139,9 @@ drake_cc_library(
 drake_py_library(
     name = "metrics",
     srcs = ["metrics.py"],
+    requirements = [
+        "numpy",
+    ],
 )
 
 drake_cc_library(

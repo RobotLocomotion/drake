@@ -26,6 +26,7 @@ def pybind_py_library(
         cc_binary_rule = cc_binary,
         py_srcs = [],
         py_deps = [],
+        py_requirements = [],
         py_imports = [],
         py_data = [],
         py_library_rule = py_library,
@@ -46,6 +47,8 @@ def pybind_py_library(
         Python sources.
     @param py_deps (optional)
         Python dependencies.
+    @param py_requirements (optional)
+        Python pip dependencies.
     @param py_imports (optional)
         Additional Python import directories.
     @param py_data (optional)
@@ -81,6 +84,7 @@ def pybind_py_library(
         data = [cc_so_target] + py_data,
         srcs = py_srcs,
         deps = py_deps,
+        requirements = py_requirements,
         imports = py_imports,
         **kwargs
     )
@@ -131,6 +135,7 @@ def drake_pybind_library(
         package_info = None,
         py_srcs = [],
         py_deps = [],
+        py_requirements = [],
         py_imports = [],
         py_data = [],
         add_install = True,
@@ -182,6 +187,7 @@ def drake_pybind_library(
         cc_binary_rule = drake_cc_binary,
         py_srcs = py_srcs,
         py_deps = py_deps,
+        py_requirements = py_requirements,
         py_imports = package_info.py_imports + py_imports,
         py_data = py_data,
         py_library_rule = drake_py_library,

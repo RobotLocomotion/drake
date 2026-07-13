@@ -139,4 +139,5 @@ def _wrapper_main():
 
 
 if __name__ == "__main__":
-    sys.exit(_wrapper_main())
+    # XXX
+    sys.exit(_actual_main())

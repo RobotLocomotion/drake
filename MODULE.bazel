@@ -91,7 +91,10 @@ PYTHON_VERSIONS = [
 ]
 
 [
-    python.toolchain(python_version = python_version)
+    python.toolchain(
+        configure_coverage_tool = False,
+        python_version = python_version,
+    )
     for python_version in PYTHON_VERSIONS
 ]
 
@@ -109,14 +112,37 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 [
     pip.parse(
-        hub_name = "drake_mypy",
+        hub_name = "pip",
         python_version = python_version,
-        requirements_lock = "//setup:python/mypy/requirements.txt",
+        requirements_lock = "//setup:python/requirements.txt",
     )
     for python_version in PYTHON_VERSIONS
 ]
 
-use_repo(pip, "drake_mypy")
+[
+    pip.override(
+        file = "mypy-1.19.1-{abi}-{abi}-{platform}.whl".format(
+            abi = abi,
+            platform = platform,
+        ),
+        patch_strip = 0,
+        patches = [
+            "//tools/workspace/mypy_internal:patches/upstream/reject_double_colon.patch",  # noqa
+            "//tools/workspace/mypy_internal:patches/timeout.patch",
+        ],
+    )
+    for abi in [
+        "cp3{minor}".format(minor = x[2:])
+        for x in PYTHON_VERSIONS
+    ]
+    for platform in [
+        "macosx_11_0_arm64",
+        "manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64",
+        "manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64",
+    ]
+]
+
+use_repo(pip, "pip")
 
 # Load dependencies which are "public", i.e., made available to downstream
 # projects.

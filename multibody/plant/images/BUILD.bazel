@@ -15,11 +15,19 @@ filegroup(
 drake_py_binary(
     name = "ideal_stiction",
     srcs = ["ideal_stiction.py"],
+    requirements = [
+        "matplotlib",
+        "numpy",
+    ],
 )
 
 drake_py_binary(
     name = "stiction",
     srcs = ["stiction.py"],
+    requirements = [
+        "matplotlib",
+        "numpy",
+    ],
 )
 
 drake_py_unittest(

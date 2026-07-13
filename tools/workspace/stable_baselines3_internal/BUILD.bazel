@@ -4,6 +4,9 @@ load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 drake_py_unittest(
     name = "stable_baselines3_internal_test",
     deps = ["@stable_baselines3_internal//:stable_baselines3"],
+    requirements = [
+        "numpy",
+    ],
 )
 
 add_lint_tests()

@@ -420,6 +420,9 @@ drake_py_unittest(
     deps = [
         ":eigen_pybind_test_util_py",
     ],
+    requirements = [
+        "numpy",
+    ],
 )
 
 generate_pybind_documentation_header(

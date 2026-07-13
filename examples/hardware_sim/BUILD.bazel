@@ -93,6 +93,9 @@ drake_py_library(
     deps = [
         "@rules_python//python/runfiles",
     ],
+    requirements = [
+        "PyYAML",
+    ],
 )
 
 drake_py_unittest(
