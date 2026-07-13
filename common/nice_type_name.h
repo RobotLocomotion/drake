@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -70,7 +71,11 @@ class NiceTypeName {
   differ. */
   template <typename T>
   static std::string Get(const T& thing) {
-    return GetWithPossibleOverride(&thing, typeid(thing));
+    const std::type_info* info_dynamic{nullptr};
+    if constexpr (std::is_polymorphic_v<T>) {
+      info_dynamic = &typeid(thing);
+    }
+    return GetWithPossibleOverride(&thing, typeid(thing), info_dynamic);
   }
 
   /** Returns the nicely demangled and canonicalized type name of `info`. This
@@ -108,8 +113,9 @@ class NiceTypeName {
   // No instances of this class should be created.
   NiceTypeName() = delete;
 
-  static std::string GetWithPossibleOverride(const void* ptr,
-                                             const std::type_info& info);
+  static std::string GetWithPossibleOverride(
+      const void* ptr, const std::type_info& info,
+      const std::type_info* info_dynamic);
 };
 
 }  // namespace drake
