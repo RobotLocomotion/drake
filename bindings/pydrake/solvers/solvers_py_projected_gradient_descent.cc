@@ -26,7 +26,7 @@ void DefineSolversProjectedGradientDescent(py::module_ m) {
             cls_doc.SetCustomGradientFunction.doc)
         .def("SetProjectionSolverInterface",
             &Class::SetProjectionSolverInterface,
-            py::arg("projection_solver_interface"),
+            py::arg("projection_solver_interface").none(),
             cls_doc.SetProjectionSolverInterface.doc)
         .def_static("ConvergenceTolOptionName",
             &Class::ConvergenceTolOptionName,
