@@ -178,7 +178,7 @@ class TestGeneral(unittest.TestCase):
         # Just make sure linear system is spelled correctly.
         A = np.identity(2)
         B = np.array([[0], [1]])
-        f0 = np.array([0, 0])
+        f0 = np.array([[0], [0]])
         C = np.array([[0, 1]])
         D = [1]
         y0 = [0]
@@ -249,7 +249,7 @@ class TestGeneral(unittest.TestCase):
 
         new_A = np.array([[1, 2], [3, 4]])
         new_B = np.array([[5], [6]])
-        new_f0 = np.array([7, 8])
+        new_f0 = np.array([[7], [8]])
         new_C = np.array([[9, 10]])
         new_D = np.array([[11]])
         new_y0 = np.array([12])
@@ -1080,7 +1080,7 @@ class TestGeneral(unittest.TestCase):
         for D in [D00, D10]:
             dut = SparseMatrixGain_[T](D=D)
             context = dut.CreateDefaultContext()
-            u = np.ones((D.shape[1],))
+            u = np.ones((D.shape[1], 1))
             dut.get_input_port().FixValue(context, u)
             y = dut.get_output_port().Eval(context)
             self.assertEqual(y.size, D.shape[0])

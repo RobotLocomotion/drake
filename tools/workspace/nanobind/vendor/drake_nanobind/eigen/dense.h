@@ -126,11 +126,17 @@ template <int want_ndim>
 object convert_to_numpy(handle src) {
     auto numpy = module_::import_("numpy");
     object result = numpy.attr("asarray")(src);  // XXX check for exception
+    const int ndim = cast<int>(result.attr("ndim"));
     if constexpr (want_ndim == 2) {
-        const int ndim = cast<int>(result.attr("ndim"));
         if (ndim == 1) {
             // Promote from 1d array to 2d array (as column vector).
             result = result.attr("reshape")(-1, 1);
+        }
+    } else {
+        static_assert(want_ndim == 1);
+        if (ndim == 2) {
+            // Demote from 2d array to 1d array.
+            result = result.attr("squeeze")();
         }
     }
     return result;

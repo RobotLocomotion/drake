@@ -942,8 +942,8 @@ class TestTrajectories(unittest.TestCase):
         ppose = PiecewisePose.MakeCubicLinearWithEndLinearVelocity(
             times=t,
             poses=[X, X, X],
-            start_vel=np.zeros((3,)),
-            end_vel=np.zeros((3,)),
+            start_vel=np.zeros((3, 1)),
+            end_vel=np.zeros((3, 1)),
         )
         self.assertEqual(ppose.get_number_of_segments(), 2)
         # Ensure we can copy.
