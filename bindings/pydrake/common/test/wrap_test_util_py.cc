@@ -94,6 +94,14 @@ struct type_caster<drake::pydrake::TypeConversionExample>
 namespace drake {
 namespace pydrake {
 PYDRAKE_MODULE(wrap_test_util, m) {
+  // XXX porting: Repeat the export of _binder from module_py.cc here because
+  // the wrap_pybind unit test can't import pydrake.common.
+#ifdef PYDRAKE_USE_PYBIND11
+  m.attr("_binder") = "pybind11";
+#else
+  m.attr("_binder") = "nanobind";
+#endif
+
   class_<MyValue>(m, "MyValue")
       .def(py::init<double>(), py::arg("value"))
       .def_rw("value", &MyValue::value, py_rvp::reference_internal);
@@ -122,8 +130,8 @@ PYDRAKE_MODULE(wrap_test_util, m) {
       .def(py::init());
 
   // Using WrapCallbacks() -> Good.
-  m.def(
-      "FunctionNeedsWrapCallbacks", WrapCallbacks(&FunctionNeedsWrapCallbacks));
+  m.def("FunctionNeedsWrapCallbacks",
+      WrapCallbacks(&FunctionNeedsWrapCallbacks), py::arg("callback").none());
   // No use of WrapCallbacks() -> Bad.
   m.def("FunctionNeedsWrapCallbacks_Bad", &FunctionNeedsWrapCallbacks);
 }
