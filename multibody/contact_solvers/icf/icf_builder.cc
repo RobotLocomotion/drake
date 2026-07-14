@@ -15,6 +15,7 @@
 #include "drake/multibody/topology/graph.h"
 
 using drake::multibody::CalcContactFrictionFromSurfaceProperties;
+using drake::multibody::internal::BallConstraintSpec;
 using drake::multibody::internal::CouplerConstraintSpec;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
 using drake::multibody::internal::GetCombinedPointContactStiffness;
@@ -236,6 +237,10 @@ void IcfBuilder<T>::UpdateModel(
   AllocateWeldConstraints(model);
   SetWeldConstraints(context, model);
 
+  // Ball constraints
+  AllocateBallConstraints(model);
+  SetBallConstraints(context, model);
+
   // Limit constraints
   AllocateLimitConstraints(model);
   SetLimitConstraints(context, model);
@@ -300,15 +305,14 @@ void IcfBuilder<T>::ValidatePlant() {
 
   // Revisit this condition as constraints are implemented. See issues #23759,
   // #23760, #23762, #23763.
-  if (plant_.num_constraints() - plant_.num_coupler_constraints() -
-          plant_.num_weld_constraints() >
+  if (plant_.num_constraints() - plant_.num_ball_constraints() -
+          plant_.num_coupler_constraints() - plant_.num_weld_constraints() >
       0) {
     throw std::logic_error(fmt::format(
         "The CENIC integrator does not yet support some constraints, but "
         "they are present in the given MultibodyPlant: {} distance "
-        "constraint(s), {} ball constraint(s), {} tendon constraint(s)",
-        plant_.num_distance_constraints(), plant_.num_ball_constraints(),
-        plant_.num_tendon_constraints()));
+        "constraint(s), {} tendon constraint(s)",
+        plant_.num_distance_constraints(), plant_.num_tendon_constraints()));
   }
 }
 
@@ -504,6 +508,79 @@ void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
 
     welds.Set(index, pool_bodyA.index(), pool_bodyB.index(), p_AP_W, p_BQ_W,
               p_PoQo_W, a_PQ_W);
+    ++index;
+  }
+}
+
+template <typename T>
+void IcfBuilder<T>::AllocateBallConstraints(IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  const std::map<MultibodyConstraintId, BallConstraintSpec>& specs_map =
+      plant_.get_ball_constraint_specs();
+  BallConstraintsPool<T>& ball_constraints = model->ball_constraints_pool();
+  ball_constraints.Resize(specs_map.size());
+}
+
+template <typename T>
+void IcfBuilder<T>::SetBallConstraints(const systems::Context<T>& context,
+                                       IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  using drake::math::RigidTransform;
+
+  const std::map<MultibodyConstraintId, BallConstraintSpec>& specs_map =
+      plant_.get_ball_constraint_specs();
+
+  BallConstraintsPool<T>& ball_constraints = model->ball_constraints_pool();
+
+  int index = 0;
+  for (const auto& [id, spec] : specs_map) {
+    // p_BQ is optional pre-Finalize; on a finalized plant it must be set.
+    DRAKE_DEMAND(spec.p_BQ.has_value());
+
+    const RigidBody<T>& body_A = plant_.get_body(spec.body_A);
+    const RigidBody<T>& body_B = plant_.get_body(spec.body_B);
+
+    // By convention in the ICF ball constraint pool, body B must not be
+    // anchored. If body A is anchored, that's fine.
+    const bool A_anchored = plant_.IsAnchored(body_A);
+    const bool B_anchored = plant_.IsAnchored(body_B);
+
+    // TODO(sherm1): Move this exception up to the plant level so
+    //  that it fails as fast as possible. Currently, the earliest this can
+    //  happen is in MbP::Finalize() after the topology has been finalized.
+    if (A_anchored && B_anchored) {
+      const std::string msg = fmt::format(
+          "Creating a ball constraint between bodies '{}' and '{}' where "
+          "both are welded to the world is not allowed.",
+          body_A.name(), body_B.name());
+      throw std::logic_error(msg);
+    }
+
+    // If B is anchored but A is not, swap roles so that the "B" body in the
+    // pool is always the dynamic one.
+    const RigidBody<T>& pool_bodyA = B_anchored ? body_B : body_A;
+    const RigidBody<T>& pool_bodyB = B_anchored ? body_A : body_B;
+    const Vector3<double>& p_AP_spec =
+        B_anchored ? spec.p_BQ.value() : spec.p_AP;
+    const Vector3<double>& p_BQ_spec =
+        B_anchored ? spec.p_AP : spec.p_BQ.value();
+
+    const RigidTransform<T>& X_WA = pool_bodyA.EvalPoseInWorld(context);
+    const RigidTransform<T>& X_WB = pool_bodyB.EvalPoseInWorld(context);
+
+    // Constraint point positions in world.
+    const Vector3<T> p_WP = X_WA * p_AP_spec.template cast<T>();
+    const Vector3<T> p_WQ = X_WB * p_BQ_spec.template cast<T>();
+
+    // Positions of P in A and Q in B, expressed in world.
+    const Vector3<T> p_AP_W = X_WA.rotation() * p_AP_spec.template cast<T>();
+    const Vector3<T> p_BQ_W = X_WB.rotation() * p_BQ_spec.template cast<T>();
+
+    // Relative translation p_PQ in world.
+    const Vector3<T> p_PQ_W = p_WQ - p_WP;
+
+    ball_constraints.Set(index, pool_bodyA.index(), pool_bodyB.index(), p_AP_W,
+                         p_BQ_W, p_PQ_W);
     ++index;
   }
 }

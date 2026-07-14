@@ -321,21 +321,67 @@ GTEST_TEST(IcfBuilder, RetryStep) {
   }
 }
 
-GTEST_TEST(IcfBuilder, BallConstraintUnsupported) {
+GTEST_TEST(IcfBuilder, BallConstraint) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
-  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
-
-  plant.AddBallConstraint(plant.get_body(BodyIndex(0)), Vector3d::Zero(),
-                          plant.get_body(BodyIndex(1)));
-
+  Parser(&plant, "Pendulum1").AddModelsFromString(kRobotXml, "xml");
+  Parser(&plant, "Pendulum2").AddModelsFromString(kRobotXml, "xml");
+  plant.AddBallConstraint(plant.get_body(BodyIndex(1)), Vector3d::Zero(),
+                          plant.get_body(BodyIndex(2)), Vector3d::Zero());
   plant.Finalize();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(&plant),
-                              ".*not.*support.*1 ball constraint.*");
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  EXPECT_EQ(model.num_cliques(), 2);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  ASSERT_EQ(model.num_ball_constraints(), 1);
+
+  // Check the ball constraint produced.
+  const auto& pool = model.ball_constraints_pool();
+  EXPECT_EQ(pool.num_constraints(), 1);
+  EXPECT_EQ(pool.body_pairs()[0].first, 1);
+  EXPECT_EQ(pool.body_pairs()[0].second, 2);
+}
+
+GTEST_TEST(IcfBuilder, NoBallBetweenAnchoredBodies) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  const auto M_B = SpatialInertia<double>::MakeUnitary();
+
+  plant.AddRigidBody("free_body", M_B);  // Need something that can move.
+  const RigidBody<double>& body1 = plant.AddRigidBody("body1", M_B);
+  const RigidBody<double>& body2 = plant.AddRigidBody("body2", M_B);
+  plant.AddJoint<WeldJoint>("weld1", plant.world_body(), RigidTransformd(),
+                            body1, RigidTransformd(), RigidTransformd());
+  plant.AddJoint<WeldJoint>("weld2", plant.world_body(), RigidTransformd(),
+                            body2, RigidTransformd(), RigidTransformd());
+  plant.AddBallConstraint(body1, Vector3d::Zero(), body2, Vector3d::Zero());
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> icf_builder(&plant);
+  IcfModel<double> model;
+  DRAKE_EXPECT_THROWS_MESSAGE(icf_builder.UpdateModel(plant_context, time_step,
+                                                      nullptr, nullptr, &model),
+                              ".*ball constraint.*body1.*body2.*both are "
+                              "welded to the world.*not allowed.*");
 }
 
 GTEST_TEST(IcfBuilder, DistanceConstraintUnsupported) {
