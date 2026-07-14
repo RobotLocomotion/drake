@@ -258,6 +258,20 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(parser.plant(), plant)
         self.assertEqual(parser.scene_graph(), scene_graph)
 
+        # Again, but leaving out the plant and scene_graph from the Parser
+        # constructor; they should be retrieved from inside the builder.
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step=0.0)
+        parser = Parser(
+            builder=builder,
+            plant=None,
+            scene_graph=None,
+            model_name_prefix="prefix",
+        )
+        self.assertEqual(parser.builder(), builder)
+        self.assertEqual(parser.plant(), plant)
+        self.assertEqual(parser.scene_graph(), scene_graph)
+
     def test_model_instance_info(self):
         """Checks that ModelInstanceInfo bindings exist."""
         ModelInstanceInfo.model_name

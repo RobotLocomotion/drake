@@ -222,7 +222,7 @@ PYDRAKE_MODULE(analysis, m) {
               py::keep_alive<0, 1>(), cls_doc.get_mutable_context.doc)
           .def("reset_context",
               py::overload_cast<Context<T>*>(&Class::reset_context),
-              py::arg("context"),
+              py::arg("context") = nullptr,
               // Keep alive, reference: `context` keeps `self` alive.
               py::keep_alive<2, 1>(), cls_doc.reset_context.doc);
     }
@@ -537,7 +537,7 @@ Parameter ``interruptible``:
               num_samples, generator, /* parallelism = */ Parallelism::None());
         },
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
-        py::arg("num_samples"), py::arg("generator"),
+        py::arg("num_samples"), py::arg("generator") = nullptr,
         doc.analysis.MonteCarloSimulation.doc);
   }
 

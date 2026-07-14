@@ -33,6 +33,7 @@ class TestProjectedGradientDescentSolver(unittest.TestCase):
 
         # Test that we can specify a projection solver interface.
         projection_solver = ClarabelSolver()
+        solver.SetProjectionSolverInterface(None)
         solver.SetProjectionSolverInterface(
             projection_solver_interface=projection_solver
         )
