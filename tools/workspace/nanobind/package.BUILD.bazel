@@ -21,7 +21,6 @@ cc_library(
     name = "hdrs",
     hdrs = glob([
         "include/nanobind/*.h",
-        "include/nanobind/eigen/*.h",
         "include/nanobind/intrusive/*.h",
         "include/nanobind/stl/*.h",
         "include/nanobind/stl/detail/*.h",

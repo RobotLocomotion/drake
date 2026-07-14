@@ -34,8 +34,6 @@
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #pragma GCC diagnostic ignored "-Wnarrowing"
 #endif  // __clang__
-#include "nanobind/eigen/dense.h"
-#include "nanobind/eigen/sparse.h"
 #include "nanobind/eval.h"
 #include "nanobind/make_iterator.h"
 #include "nanobind/nanobind.h"
@@ -59,6 +57,9 @@
 #include "nanobind/stl/variant.h"
 #include "nanobind/stl/vector.h"
 #include "nanobind/trampoline.h"
+
+#include "drake_nanobind/eigen/dense.h"
+#include "drake_nanobind/eigen/sparse.h"
 #pragma GCC diagnostic pop
 
 #include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
@@ -71,24 +72,6 @@ namespace detail {
 
 template <typename T>
 using is_pyobject = std::is_base_of<api_tag, std::remove_reference_t<T>>;
-
-/** Add list-to-array implicit casting. */
-template <typename... Args>
-NB_INLINE ndarray_handle* ndarray_extra_import(PyObject* o,
-    const ndarray_config* config, bool convert, cleanup_list* cleanup,
-    ndarray_config_t<int, Args...>*) noexcept {
-  if (!convert) {
-    return {};
-  }
-  auto numpy = module_::import_("numpy");
-  auto array = numpy.attr("asarray")(handle(o));  // XXX check for exception
-  const int ndim = cast<int>(array.attr("ndim"));
-  if ((ndim == 1) && (config->ndim == 2)) {
-    // Promote from 1d array to 2d array (as column vector).
-    array = array.attr("reshape")(-1, 1);
-  }
-  return ndarray_import(array.ptr(), config, /* convert = */ true, cleanup);
-}
 
 }  // namespace detail
 }  // namespace nanobind

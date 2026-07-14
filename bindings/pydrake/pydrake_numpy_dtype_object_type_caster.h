@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nanobind/eigen/dense.h"
+#include "drake_nanobind/eigen/dense.h"
 
 #ifndef PYDRAKE_USE_NANOBIND
 #error "Should only be used when the binder is nanobind!"

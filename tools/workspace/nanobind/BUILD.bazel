@@ -1,4 +1,7 @@
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
 
 # This alias provides a single point of control for defining which nanobind
 # library our tools/skylark/pybind.bzl macro should use.
@@ -11,6 +14,23 @@ alias(
 config_setting(
     name = "enabled",
     flag_values = {"//tools/flags:python_binder": "nanobind"},
+)
+
+# XXX(build) porting add diff_test to sync these with upstream.
+
+cc_library(
+    name = "nanobind_eigen",
+    hdrs = [
+        "drake_nanobind/eigen/dense.h",
+        "drake_nanobind/eigen/sparse.h",
+    ],
+    strip_include_prefix = ".",
+    tags = ["nolint"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":nanobind",
+        "@eigen",
+    ],
 )
 
 add_lint_tests()
