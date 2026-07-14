@@ -42,6 +42,7 @@ drake_cc_package_library(
         ":deformable_field_intersection",
         ":deformable_mesh_intersection",
         ":detect_zero_simplex",
+        ":distance_gjk_plus_plus",
         ":field_intersection",
         ":hydroelastic_internal",
         ":inflate_mesh",
@@ -335,6 +336,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "distance_gjk_plus_plus",
+    srcs = ["distance_gjk_plus_plus.cc"],
+    hdrs = ["distance_gjk_plus_plus.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//geometry/query_results:signed_distance_pair",
+        "//math:geometric_transform",
+        "@fcl_internal//:fcl",
+    ],
+)
+
+drake_cc_library(
     name = "distance_to_shape_callback",
     srcs = ["distance_to_shape_callback.cc"],
     hdrs = ["distance_to_shape_callback.h"],
@@ -344,6 +361,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter",
+        ":distance_gjk_plus_plus",
         ":distance_to_point_callback",
         ":distance_to_shape_touching",
         ":proximity_utilities",
