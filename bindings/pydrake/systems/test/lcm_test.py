@@ -213,7 +213,7 @@ class TestSystemsLcm(unittest.TestCase):
                     break
                 lcm.HandleSubscriptions(0)
             self.assertEqual(value.get_value().utime, old_message_count + 1)
-        # Omitting the message= output shouldn't crash.
+        # Omitting the message= output argument shouldn't crash.
         sub.WaitForMessage(old_message_count=3, timeout=1e-6)
 
     def _fix_and_publish(self, dut, value):
