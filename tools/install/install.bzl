@@ -56,7 +56,9 @@ def _python_version(ctx):
     """Returns a string a containing the major.minor version number of the
     current Python toolchain."""
     py_cc_toolchain = ctx.toolchains[_PY_CC_TOOLCHAIN_TYPE].py_cc_toolchain
-    return py_cc_toolchain.python_version
+    version = py_cc_toolchain.python_version
+    major_minor = version.split(".")[:2]
+    return ".".join(major_minor)
 
 #------------------------------------------------------------------------------
 def _output_path(ctx, input_file, strip_prefix = [], ignore_errors = False):
