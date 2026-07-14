@@ -7,8 +7,8 @@ def nanobind_repository(
         name = name,
         repository = "wjakob/nanobind",
         upgrade_type = "release",
-        commit = "v2.12.0",
-        sha256 = "01f1f0cd0398743c18f33d07ae36ad410bd7f4a1e90683b508504de897d6e629",  # noqa
+        commit = "v2.13.0",
+        sha256 = "cb25a582ccade4b6067bc73c78b84ad9dbd0bbe0e537320711d18015ccafc4ef",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/ndarray_extra_import.patch",
