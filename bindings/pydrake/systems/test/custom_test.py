@@ -425,7 +425,6 @@ class TestCustom(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "LeafSystem.*__init__"):
             Oops()
 
-    @unittest.skipIf(_binder == "nanobind", "interpreter aborts")  # XXX porting
     def test_all_leaf_system_overrides(self):
         test = self
 
@@ -1059,11 +1058,9 @@ class TestCustom(unittest.TestCase):
                     context.get_continuous_state_vector().size(), 6
                 )
                 self.assertEqual(system.AllocateTimeDerivatives().size(), 6)
-                # XXX porting -- interpreter aborts with non-copyable context?
-                # Probably from the DoCalcTimeDerivatives binding overloading.
-                # self.assertEqual(
-                #     system.EvalTimeDerivatives(context=context).size(), 6
-                # )
+                self.assertEqual(
+                    system.EvalTimeDerivatives(context=context).size(), 6
+                )
 
                 # The constructors for ContinuousState(state: VectorBase, ...)
                 # used when diagrams are in play receives special treatment in

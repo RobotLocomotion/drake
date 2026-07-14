@@ -293,23 +293,19 @@ struct Impl {
 
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
-#ifdef PYDRAKE_USE_PYBIND11
-      // Yuck! We have to dig in and use internals :(
-      // We must ensure that pybind only sees pointers, since this method may
-      // be called from C++, and pybind will not have seen these objects yet.
-      // @see https://github.com/pybind/pybind11/issues/1241
-      // TODO(eric.cousineau): Figure out how to supply different behavior,
-      // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(
-          void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
-      // If the macro did not return, use default functionality.
+      // PYBIND11 macros have issues with a reference argument.
+      // NB macros have issues with reference argument, and with NVI Python
+      // overrides not really being supported.
+      py::gil_scoped_acquire guard;
+      const LeafSystem<T>* base = this;
+      py::object self = py::cast(base);
+      if (py::hasattr(self, "DoCalcTimeDerivatives")) {
+        (self.attr("DoCalcTimeDerivatives"))(&context, derivatives);
+        return;
+      }
       Base::DoCalcTimeDerivatives(context, derivatives);
-#else   // PYDRAKE_USE_NANOBIND
-      NB_OVERRIDE(DoCalcTimeDerivatives, context, derivatives);
-#endif  // PYDRAKE_USE_PYBIND11
     }
 
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     // This actually changes the signature of DoGetWitnessFunction,
     // expecting the python overload to return a list of witnesses (instead
     // of taking in an empty pointer to std::vector<>.
@@ -317,13 +313,16 @@ struct Impl {
     // trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
+      using Witnesses = std::vector<const WitnessFunction<T>*>;
       py::gil_scoped_acquire guard;
-      auto wrapped =
-          [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
-        PYBIND11_OVERLOAD_INT(
-            std::optional<std::vector<const WitnessFunction<T>*>>,
-            LeafSystem<T>, "DoGetWitnessFunctions", &context);
-        std::vector<const WitnessFunction<T>*> result;
+      auto wrapped = [&]() -> std::optional<Witnesses> {
+        const LeafSystem<T>* base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoGetWitnessFunctions")) {
+          return py::cast<std::optional<Witnesses>>(
+              (self.attr("DoGetWitnessFunctions"))(&context));
+        }
+        Witnesses result;
         // If the macro did not return, use default functionality.
         Base::DoGetWitnessFunctions(context, &result);
         return {result};
@@ -337,7 +336,6 @@ struct Impl {
       }
       *witnesses = std::move(*result);
     }
-#endif  // XXX porting
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
@@ -576,12 +574,10 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
         .def("CalcImplicitTimeDerivativesResidual",
             &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
             py::arg("proposed_derivatives"), py::arg("residual"),
             doc.System.CalcImplicitTimeDerivativesResidual.doc)
-#endif  // XXX porting
         .def(
             "CalcImplicitTimeDerivativesResidual",
             [](const System<T>* self, const Context<T>& context,
@@ -1164,7 +1160,6 @@ Note: The above is for the C++ documentation. For Python, use
             py::overload_cast<int>(&LeafSystemPublic::DeclareDiscreteState),
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_num_state_variables)
-        .def("DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
         // Abstract state.
         .def("DeclareAbstractState",
             py::overload_cast<const AbstractValue&>(
