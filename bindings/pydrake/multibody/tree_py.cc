@@ -518,14 +518,15 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("set_random_angles_distribution",
             &Class::set_random_angles_distribution, py::arg("angles"),
             cls_doc.set_random_angles_distribution.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("get_default_angles", &Class::get_default_angles,
             cls_doc.get_default_angles.doc)
@@ -552,23 +553,26 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("p_FoMo_F"), cls_doc.set_translation.doc)
+            py::arg("p_FoMo_F"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_rotation", &Class::get_rotation, py::arg("context"),
             cls_doc.get_rotation.doc)
         .def("set_rotation", &Class::set_rotation, py::arg("context"),
-            py::arg("theta"), cls_doc.set_rotation.doc)
+            py::arg("theta"), py_rvp::reference_internal,
+            cls_doc.set_rotation.doc)
         .def("set_pose", &Class::set_pose, py::arg("context"),
-            py::arg("p_FoMo_F"), py::arg("theta"), cls_doc.set_pose.doc)
+            py::arg("p_FoMo_F"), py::arg("theta"), py_rvp::reference_internal,
+            cls_doc.set_pose.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FoMo_F"),
+            py::arg("context"), py::arg("v_FoMo_F"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
             py::arg("context"), py::arg("theta_dot"),
-            cls_doc.set_angular_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_angular_velocity.doc)
         .def("get_default_translation", &Class::get_default_translation,
             cls_doc.get_default_translation.doc)
         .def("set_default_translation", &Class::set_default_translation,
@@ -623,12 +627,13 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("translation"), cls_doc.set_translation.doc)
+            py::arg("translation"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_translation_rate", &Class::get_translation_rate,
             py::arg("context"), cls_doc.get_translation_rate.doc)
         .def("set_translation_rate", &Class::set_translation_rate,
             py::arg("context"), py::arg("translation_dot"),
-            cls_doc.set_translation_rate.doc)
+            py_rvp::reference_internal, cls_doc.set_translation_rate.doc)
         .def("get_default_translation", &Class::get_default_translation,
             cls_doc.get_default_translation.doc)
         .def("set_default_translation", &Class::set_default_translation,
@@ -672,18 +677,21 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("SetQuaternion", &Class::SetQuaternion, py::arg("context"),
-            py::arg("q_FM"), cls_doc.SetQuaternion.doc)
+            py::arg("q_FM"), py_rvp::reference_internal,
+            cls_doc.SetQuaternion.doc)
         .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R"), cls_doc.SetOrientation.doc)
+            py::arg("R"), py_rvp::reference_internal,
+            cls_doc.SetOrientation.doc)
         .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.SetTranslation.doc)
+            py::arg("p_FM"), py_rvp::reference_internal,
+            cls_doc.SetTranslation.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
-            cls_doc.SetPose.doc)
+            py_rvp::reference_internal, cls_doc.SetPose.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FM"),
+            py::arg("context"), py::arg("v_FM"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("set_random_translation_distribution",
             &Class::set_random_translation_distribution, py::arg("translation"),
@@ -744,14 +752,15 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_angle", &Class::get_angle, py::arg("context"),
             cls_doc.get_angle.doc)
         .def("set_angle", &Class::set_angle, py::arg("context"),
-            py::arg("angle"), cls_doc.set_angle.doc)
+            py::arg("angle"), py_rvp::reference_internal, cls_doc.set_angle.doc)
         .def("set_random_angle_distribution",
             &Class::set_random_angle_distribution, py::arg("angle"),
             cls_doc.set_random_angle_distribution.doc)
         .def("get_angular_rate", &Class::get_angular_rate, py::arg("context"),
             cls_doc.get_angular_rate.doc)
         .def("set_angular_rate", &Class::set_angular_rate, py::arg("context"),
-            py::arg("angle"), cls_doc.set_angular_rate.doc)
+            py::arg("angle"), py_rvp::reference_internal,
+            cls_doc.set_angular_rate.doc)
         .def("get_default_angle", &Class::get_default_angle,
             cls_doc.get_default_angle.doc)
         .def("set_default_angle", &Class::set_default_angle, py::arg("angle"),
@@ -784,26 +793,29 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R_FM"), cls_doc.SetOrientation.doc)
+            py::arg("R_FM"), py_rvp::reference_internal,
+            cls_doc.SetOrientation.doc)
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.SetTranslation.doc)
+            py::arg("p_FM"), py_rvp::reference_internal,
+            cls_doc.SetTranslation.doc)
         .def(
             "GetPose", &Class::GetPose, py::arg("context"), cls_doc.GetPose.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
-            cls_doc.SetPose.doc)
+            py_rvp::reference_internal, cls_doc.SetPose.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FM"),
+            py::arg("context"), py::arg("v_FM"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("set_random_angles_distribution",
             &Class::set_random_angles_distribution, py::arg("angles"),
@@ -854,19 +866,20 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("translation"), cls_doc.set_translation.doc)
+            py::arg("translation"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
             py::arg("context"), py::arg("translation_dot"),
-            cls_doc.set_translational_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_translational_velocity.doc)
         .def("get_rotation", &Class::get_rotation, py::arg("context"),
             cls_doc.get_rotation.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
             py::arg("context"), py::arg("theta_dot"),
-            cls_doc.set_angular_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_angular_velocity.doc)
         .def("set_random_pose_distribution",
             &Class::set_random_pose_distribution, py::arg("theta"),
             cls_doc.set_random_pose_distribution.doc)
@@ -894,11 +907,13 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("get_angular_rates", &Class::get_angular_rates, py::arg("context"),
             cls_doc.get_angular_rates.doc)
         .def("set_angular_rates", &Class::set_angular_rates, py::arg("context"),
-            py::arg("theta_dot"), cls_doc.set_angular_rates.doc)
+            py::arg("theta_dot"), py_rvp::reference_internal,
+            cls_doc.set_angular_rates.doc)
         .def("get_default_angles", &Class::get_default_angles,
             cls_doc.get_default_angles.doc)
         .def("set_default_angles", &Class::set_default_angles,
