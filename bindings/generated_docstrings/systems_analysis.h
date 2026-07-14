@@ -4450,11 +4450,6 @@ Returns ``status``:
 See also:
     AdvanceTo(), AdvancePendingEvents(), SimulatorStatus)""";
         } Initialize;
-        // Symbol: drake::systems::Simulator::MakeWithSharedContext
-        struct /* MakeWithSharedContext */ {
-          // Source: drake/systems/analysis/simulator.h
-          const char* doc = R"""()""";
-        } MakeWithSharedContext;
         // Symbol: drake::systems::Simulator::ResetStatistics
         struct /* ResetStatistics */ {
           // Source: drake/systems/analysis/simulator.h
