@@ -27,6 +27,12 @@ build:linux --linkopt=-Wl,--threads=2
 # end-user default in drake/CMakeLists.txt.
 build:linux --config=openmp
 
+# Developer debug builds probably want separate debug symbols downloaded to
+# enable debugging sessions. This would increase bandwidth usage, except that
+# most local builds use disk cache. Therefore this should never be enabled in
+# CI.
+build:debug --remote_download_outputs=all
+
 ### Lint. ###
 # Run the tests for code style compliance, but not any functional (unit) tests.
 build:lint --build_tests_only
