@@ -1,4 +1,10 @@
-load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
+load("@drake//tools/skylark:drake_cc.bzl", "cc_nolink_library")
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "cc_whole_archive_library",
+)
+load("//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
@@ -7,7 +13,7 @@ package(default_visibility = ["//visibility:private"])
 # library our tools/skylark/pybind.bzl macro should use.
 alias(
     name = "nanobind",
-    actual = "@nanobind",
+    actual = ":shared_library",
     visibility = ["//visibility:public"],
 )
 
@@ -30,6 +36,56 @@ cc_library(
     deps = [
         ":nanobind",
         "@eigen",
+    ],
+)
+
+# We'll build nanobind as a shared library so that we have only one copy of its
+# static singletons, and to reduce code bloat.
+cc_whole_archive_library(
+    name = "whole_archive",
+    deps = ["@module_nanobind//:nanobind"],
+)
+
+config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+cc_binary(
+    name = "libdrake_nanobind.so",
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_nanobind.so"],
+        "//conditions:default": [],
+    }),
+    linkshared = True,
+    deps = [":whole_archive"],
+)
+
+cc_nolink_library(
+    name = "hdrs",
+    deps = ["@module_nanobind//:nanobind"],
+)
+
+cc_library(
+    name = "shared_library",
+    srcs = [":libdrake_nanobind.so"],
+    deps = [":hdrs"],
+)
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/nanobind",
+    # XXX(build) Add back once we're up to nanobind 2.13.0.
+    # files = ["@module_nanobind//:LICENSE"],
+    # allowed_externals = ["@module_nanobind//:LICENSE"],
+)
+
+install(
+    name = "install",
+    visibility = ["//bindings/pydrake:__pkg__"],
+    deps = [
+        ":install_license",
+        "//tools/workspace/robin_map:install",
     ],
 )
 

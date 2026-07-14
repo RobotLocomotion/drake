@@ -36,7 +36,6 @@ load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menagerie_internal_repository")  # noqa
-load("//tools/workspace/nanobind:repository.bzl", "nanobind_repository")
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
 load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
@@ -154,7 +153,6 @@ def _drake_dep_repositories_impl(module_ctx):
     gurobi_repository(name = "gurobi")
     meshcat_repository(name = "meshcat", mirrors = mirrors)
     mosek_repository(name = "mosek", mirrors = mirrors)
-    nanobind_repository(name = "nanobind", mirrors = mirrors)
     pybind11_repository(name = "pybind11", mirrors = mirrors)
     python_repository(name = "python")
     snopt_repository(name = "snopt")
@@ -166,6 +164,7 @@ def _drake_dep_repositories_impl(module_ctx):
         "glib",
         "lapack",
         "libjpeg",
+        "nanobind",
         "opencl",
         "spdlog",
         "zlib",
