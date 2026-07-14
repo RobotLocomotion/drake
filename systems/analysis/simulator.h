@@ -275,15 +275,6 @@ class Simulator {
                      std::unique_ptr<Context<T>> context = nullptr);
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // (Internal use only) Makes a Simulator which accepts a context via shared
-  // pointer.
-  //
-  // The shared pointer signature is useful for implementing pydrake memory
-  // management, because it permits supplying a custom deleter. The context is
-  // not *actually* shared. The simulator will modify it at will.
-  static std::unique_ptr<Simulator<T>> MakeWithSharedContext(
-      const System<T>& system, std::shared_ptr<Context<T>> context);
-
   // (Internal use only) Emplaces a Simulator which accepts a context via
   // shared pointer.
   //

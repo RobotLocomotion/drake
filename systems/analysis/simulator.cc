@@ -22,14 +22,6 @@ Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
     : Simulator(nullptr, std::move(owned_system), std::move(context), true) {}
 
 template <typename T>
-std::unique_ptr<Simulator<T>> Simulator<T>::MakeWithSharedContext(
-    const System<T>& system, std::shared_ptr<Context<T>> context) {
-  // This slightly odd spelling allows access to the private constructor.
-  return std::unique_ptr<Simulator<T>>(
-      new Simulator(&system, nullptr, std::move(context), false));
-}
-
-template <typename T>
 void Simulator<T>::EmplaceWithSharedContext(
     Simulator<T>* self, const System<T>& system,
     std::shared_ptr<Context<T>> context) {
