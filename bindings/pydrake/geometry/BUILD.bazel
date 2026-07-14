@@ -199,6 +199,9 @@ drake_py_unittest(
         "//bindings/pydrake/systems:lcm_py",
         "//bindings/pydrake/systems:test_util_py",
     ],
+    requirements = [
+        "u-msgpack-python",
+    ],
 )
 
 add_lint_tests_pydrake()

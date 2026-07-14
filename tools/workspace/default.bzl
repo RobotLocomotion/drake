@@ -72,7 +72,6 @@ load("//tools/workspace/usockets_internal:repository.bzl", "usockets_internal_re
 load("//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
 load("//tools/workspace/voxelized_geometry_tools_internal:repository.bzl", "voxelized_geometry_tools_internal_repository")  # noqa
 load("//tools/workspace/vtk_internal:repository.bzl", "vtk_internal_repository")
-load("//tools/workspace/xmlrunner_py_internal:repository.bzl", "xmlrunner_py_internal_repository")  # noqa
 load("//tools/workspace/yaml_cpp_internal:repository.bzl", "yaml_cpp_internal_repository")  # noqa
 
 def _add_internal_repositories():
@@ -144,7 +143,6 @@ def _add_internal_repositories():
     uwebsockets_internal_repository(name = "uwebsockets_internal", mirrors = mirrors)  # noqa
     voxelized_geometry_tools_internal_repository(name = "voxelized_geometry_tools_internal", mirrors = mirrors)  # noqa
     vtk_internal_repository(name = "vtk_internal", mirrors = mirrors)
-    xmlrunner_py_internal_repository(name = "xmlrunner_py_internal", mirrors = mirrors)  # noqa
     yaml_cpp_internal_repository(name = "yaml_cpp_internal", mirrors = mirrors)
 
 def _drake_dep_repositories_impl(module_ctx):

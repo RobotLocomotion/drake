@@ -125,6 +125,11 @@
     "drake_jupyter_py_binary.test_rule_opt_out_conditions": 108,
     "drake_jupyter_py_binary.test_rule_rendering": 109,
 
+    "drake_py_binary.requirements": 5,
+    "drake_py_library.requirements": 5,
+    "drake_py_test.requirements": 5,
+    "drake_py_unittest.requirements": 5,
+
     "git_repository.remote": 300,
     "git_repository.commit": 310,
 

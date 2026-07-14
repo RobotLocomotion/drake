@@ -1,0 +1,20 @@
+Pillow
+PyYAML
+auditwheel; sys_platform == 'linux'
+build
+delocate; sys_platform == 'darwin'
+flask
+ipywidgets
+jupyter-core
+matplotlib
+mypy
+notebook
+numpy < 2
+opencv-python
+psutil
+pydot
+six
+u-msgpack-python
+unittest-xml-reporting
+websockets
+wheel; sys_platform == 'darwin'

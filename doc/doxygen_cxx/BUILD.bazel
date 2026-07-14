@@ -23,6 +23,9 @@ drake_py_library(
         "//doc/pydrake:__pkg__",
         "//tools/workspace/mkdoc_internal:__pkg__",
     ],
+    requirements = [
+        "PyYAML",
+    ],
 )
 
 drake_py_unittest(

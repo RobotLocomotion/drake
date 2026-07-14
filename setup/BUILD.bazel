@@ -1,3 +1,4 @@
+load("@rules_python//python/uv:lock.bzl", "lock")
 load("//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_unittest")
@@ -8,8 +9,6 @@ package(default_visibility = ["//visibility:private"])
 # projects.
 PREREQUISITES_DATA = glob([
     "**/Brewfile*",
-    "**/*.lock",
-    "**/*.toml",
     "**/*.txt",
 ])
 
@@ -64,6 +63,20 @@ drake_py_unittest(
     deps = [
         ":install_prereqs",
         "@rules_python//python/runfiles",
+    ],
+)
+
+lock(
+    name = "python/requirements_lock",
+    srcs = ["python/requirements.in"],
+    out = "python/requirements.txt",
+    args = [
+        "--upgrade",
+        "--universal",
+        "--exclude-newer=1 week",
+        # This is our minimum supported version.
+        # When changing this, see drake/tools/workspace/python/README.md.
+        "--python-version=3.12",
     ],
 )
 

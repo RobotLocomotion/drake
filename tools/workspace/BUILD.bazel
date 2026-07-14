@@ -72,7 +72,6 @@ filegroup(
         "@uwebsockets_internal//:drake_repository_metadata.json",
         "@voxelized_geometry_tools_internal//:drake_repository_metadata.json",
         "@vtk_internal//:drake_repository_metadata.json",
-        "@xmlrunner_py_internal//:drake_repository_metadata.json",
         "@yaml_cpp_internal//:drake_repository_metadata.json",
     ],
 )

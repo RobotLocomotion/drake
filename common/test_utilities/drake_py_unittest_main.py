@@ -14,6 +14,10 @@ import trace
 import unittest
 import warnings
 
+print("YYY")
+for x in sys.path:
+    print("XXX", x)
+
 import xmlrunner
 
 try:

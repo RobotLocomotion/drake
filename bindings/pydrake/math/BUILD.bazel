@@ -76,6 +76,9 @@ drake_py_binary(
     deps = [
         "//bindings/pydrake:module_py",
     ],
+    requirements = [
+        "matplotlib",
+    ],
     add_test_rule = True,
 )
 
