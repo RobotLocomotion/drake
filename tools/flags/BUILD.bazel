@@ -388,6 +388,19 @@ bool_flag(
 )
 
 # -----------------------------------------------------------------------------
+# Configuration for Drake features.
+
+# When set to 'pybind11', uses pybind11 to provide pydrake bindings.
+# TODO(jwnimmer-tri) Add support for 'nanobind'.
+string_flag(
+    name = "python_binder",
+    build_setting_default = "pybind11",
+    values = [
+        "pybind11",
+    ],
+)
+
+# -----------------------------------------------------------------------------
 # Configuration for Drake's CMake install.
 #
 # The Bazel spelling of these flags should be consisered "internal use only".
