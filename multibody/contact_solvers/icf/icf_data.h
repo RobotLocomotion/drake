@@ -3,6 +3,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/icf/ball_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
@@ -48,7 +49,7 @@ class IcfData {
   struct Scratch {
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
-                int num_couplers, int num_welds,
+                int num_ball_constraints, int num_couplers, int num_welds,
                 std::span<const int> gain_sizes,
                 std::span<const int> limit_sizes,
                 std::span<const int> patch_sizes);
@@ -76,6 +77,7 @@ class IcfData {
     EigenPool<VectorX<T>> Gw_limit;
 
     // Scratch data pools for CalcCostAlongLine.
+    BallConstraintsDataPool<T> ball_constraints_data;
     CouplerConstraintsDataPool<T> coupler_constraints_data;
     GainConstraintsDataPool<T> gain_constraints_data;
     LimitConstraintsDataPool<T> limit_constraints_data;
@@ -108,6 +110,7 @@ class IcfData {
   @param num_bodies Total number of bodies in the model.
   @param num_velocities Total number of generalized velocities.
   @param max_clique_size Maximum number of velocities in any clique.
+  @param num_ball_constraints Number of ball constraints.
   @param num_couplers Number of coupler constraints.
   @param num_welds Number of weld constraints.
   @param gain_sizes Number of velocities for each gain constraint.
@@ -118,8 +121,8 @@ class IcfData {
   //  constraint types. Consider switching to a parameter struct which would
   //  let us use named fields at the call sites.
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
-              int num_couplers, int num_welds, std::span<const int> gain_sizes,
-              std::span<const int> limit_sizes,
+              int num_ball_constraints, int num_couplers, int num_welds,
+              std::span<const int> gain_sizes, std::span<const int> limit_sizes,
               std::span<const int> patch_sizes);
 
   /* Returns the number of generalized velocities in the system. */
@@ -158,6 +161,14 @@ class IcfData {
   /* Returns the total gradient ∇ℓ(v). Size is num_velocities(). */
   const VectorX<T>& gradient() const { return gradient_; }
   VectorX<T>& mutable_gradient() { return gradient_; }
+
+  /* Returns the data pool for ball constraints. */
+  const BallConstraintsDataPool<T>& ball_constraints_data() const {
+    return ball_constraints_data_;
+  }
+  BallConstraintsDataPool<T>& mutable_ball_constraints_data() {
+    return ball_constraints_data_;
+  }
 
   /* Returns the data pool for coupler constraints. */
   const CouplerConstraintsDataPool<T>& coupler_constraints_data() const {
@@ -212,6 +223,7 @@ class IcfData {
   VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
 
   // Type-specific constraint pools.
+  BallConstraintsDataPool<T> ball_constraints_data_;
   CouplerConstraintsDataPool<T> coupler_constraints_data_;
   GainConstraintsDataPool<T> gain_constraints_data_;
   LimitConstraintsDataPool<T> limit_constraints_data_;

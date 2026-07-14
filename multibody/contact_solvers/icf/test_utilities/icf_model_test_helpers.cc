@@ -375,8 +375,32 @@ void AddWeldConstraints(IcfModel<T>* model) {
   }
 }
 
+template <typename T>
+void AddBallConstraints(IcfModel<T>* model) {
+  DRAKE_DEMAND(model != nullptr);
+
+  BallConstraintsPool<T>& ball_constraints = model->ball_constraints_pool();
+  ball_constraints.Resize(2);
+
+  // Ball 0: world (body 0, anchored) to body 1.
+  {
+    const Vector3<T> p_AP_W(0.1, 0.0, 0.0);
+    const Vector3<T> p_BQ_W(0.0, 0.0, 0.0);
+    const Vector3<T> p_PoQo_W(0.05, 0.0, 0.0);
+    ball_constraints.Set(0, /*bodyA=*/0, /*bodyB=*/1, p_AP_W, p_BQ_W, p_PoQo_W);
+  }
+
+  // Ball 1: body 2 to body 3 (cross-clique in multi-clique case).
+  {
+    const Vector3<T> p_AP_W(0.1, 0.2, 0.3);
+    const Vector3<T> p_BQ_W(0.0, 0.1, 0.0);
+    const Vector3<T> p_PoQo_W(0.02, -0.01, 0.03);
+    ball_constraints.Set(1, /*bodyA=*/2, /*bodyB=*/3, p_AP_W, p_BQ_W, p_PoQo_W);
+  }
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeUnconstrainedModel<T>, &MakeModelReducible<T>,
+    (&MakeUnconstrainedModel<T>, &MakeModelReducible<T>, &AddBallConstraints<T>,
      &AddCouplerConstraint<T>, &AddGainConstraints<T>, &AddLimitConstraints<T>,
      &AddPatchConstraints<T>, &AddWeldConstraints<T>));
 

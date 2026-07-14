@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/ball_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
@@ -162,9 +163,19 @@ class IcfModel {
 
   /* Returns the total number of constraints of any type in the problem. */
   int num_constraints() const {
-    return num_coupler_constraints() + num_gain_constraints() +
-           num_limit_constraints() + num_patch_constraints() +
-           num_weld_constraints();
+    return num_ball_constraints() + num_coupler_constraints() +
+           num_gain_constraints() + num_limit_constraints() +
+           num_patch_constraints() + num_weld_constraints();
+  }
+
+  /* Provides const access to the pool of all ball constraints. */
+  const BallConstraintsPool<T>& ball_constraints_pool() const {
+    return ball_constraints_pool_;
+  }
+
+  /* Provides mutable access to the pool of all ball constraints. */
+  BallConstraintsPool<T>& ball_constraints_pool() {
+    return ball_constraints_pool_;
   }
 
   /* Provides const access to the pool of all coupler constraints. */
@@ -217,6 +228,10 @@ class IcfModel {
   /* Provides mutable access to the pool of all weld constraints. */
   WeldConstraintsPool<T>& weld_constraints_pool() {
     return weld_constraints_pool_;
+  }
+
+  int num_ball_constraints() const {
+    return ball_constraints_pool_.num_constraints();
   }
 
   int num_coupler_constraints() const {
@@ -493,6 +508,7 @@ class IcfModel {
       sparsity_pattern_;
 
   // Fixed set of constraints.
+  BallConstraintsPool<T> ball_constraints_pool_;
   CouplerConstraintsPool<T> coupler_constraints_pool_;
   GainConstraintsPool<T> gain_constraints_pool_;
   LimitConstraintsPool<T> limit_constraints_pool_;

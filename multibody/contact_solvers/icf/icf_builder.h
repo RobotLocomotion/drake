@@ -123,6 +123,14 @@ class IcfBuilder {
   void SetWeldConstraints(const systems::Context<T>& context,
                           IcfModel<T>* model) const;
 
+  /* Resizes the model to accommodate ball constraints. */
+  void AllocateBallConstraints(IcfModel<T>* model) const;
+
+  /* Sets ball constraints in the model.
+  @pre AllocateBallConstraints() has already been called. */
+  void SetBallConstraints(const systems::Context<T>& context,
+                          IcfModel<T>* model) const;
+
   /* Resizes the model to accommodate limit constraints. */
   void AllocateLimitConstraints(IcfModel<T>* model) const;
 
