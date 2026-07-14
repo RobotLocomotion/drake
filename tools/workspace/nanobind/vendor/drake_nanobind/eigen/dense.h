@@ -23,11 +23,6 @@ using DStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
 template <typename T> using DRef = Eigen::Ref<T, 0, DStride>;
 template <typename T> using DMap = Eigen::Map<T, 0, DStride>;
 
-/// Variants with a fixed unit inner stride
-using DStride1 = Eigen::Stride<Eigen::Dynamic, 1>;
-template <typename T> using DRef1 = Eigen::Ref<T, 0, DStride1>;
-template <typename T> using DMap1 = Eigen::Map<T, 0, DStride1>;
-
 NAMESPACE_BEGIN(detail)
 
 /// Determine the number of dimensions of the given Eigen type
@@ -169,10 +164,9 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
 
         const NDArrayConst &array = caster.value;
         if constexpr (ndim_v<T> == 1)
-            value.resize((Eigen::Index) array.shape(0));
+            value.resize(array.shape(0));
         else
-            value.resize((Eigen::Index) array.shape(0),
-                         (Eigen::Index) array.shape(1));
+            value.resize(array.shape(0), array.shape(1));
 
         // The layout is contiguous & compatible thanks to array_for_eigen_t<T>
         memcpy(value.data(), array.data(), array.size() * sizeof(Scalar));
@@ -194,11 +188,11 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
         int64_t strides[ndim_v<T>];
 
         if constexpr (ndim_v<T> == 1) {
-            shape[0] = (size_t) v.size();
+            shape[0] = v.size();
             strides[0] = v.innerStride();
         } else {
-            shape[0] = (size_t) v.rows();
-            shape[1] = (size_t) v.cols();
+            shape[0] = v.rows();
+            shape[1] = v.cols();
             strides[0] = v.rowStride();
             strides[1] = v.colStride();
         }
@@ -218,10 +212,7 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
             owner = capsule(temp, [](void *p) noexcept { delete (T *) p; });
             ptr = temp->data();
             policy = rv_policy::reference;
-        } else if (policy == rv_policy::reference_internal) {
-            // reference_internal needs a self pointer; give up if unavailable
-            if (!cleanup || !cleanup->self())
-                return handle();
+        } else if (policy == rv_policy::reference_internal && cleanup->self()) {
             owner = borrow(cleanup->self());
             policy = rv_policy::reference;
         }
@@ -321,11 +312,11 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
         int64_t strides[ndim_v<T>];
 
         if constexpr (ndim_v<T> == 1) {
-            shape[0] = (size_t) v.size();
+            shape[0] = v.size();
             strides[0] = v.innerStride();
         } else {
-            shape[0] = (size_t) v.rows();
-            shape[1] = (size_t) v.cols();
+            shape[0] = v.rows();
+            shape[1] = v.cols();
             strides[0] = v.rowStride();
             strides[1] = v.colStride();
         }
@@ -347,7 +338,7 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
                 outer;
 
         if constexpr (ndim_v<T> == 1)
-            outer = (int64_t) caster.value.shape(0);
+            outer = caster.value.shape(0);
         else
             outer = caster.value.stride(1);
 
@@ -363,11 +354,8 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
         // This also includes when shape=(0,0), when numpy reports the stride to be zero.
         // This creates an incompatibility with Eigen compile-time vectors, which expect
         // runtime and compile-time strides to be identical (e.g. for Eigen::VectorXi, equal to 1).
-        // For dynamic strides (IS == Eigen::Dynamic), substitute a unit inner stride
-        if constexpr (ndim_v<T> == 1) {
-            if (caster.value.shape(0) == 0)
-                inner = IS == Eigen::Dynamic ? 1 : IS;
-        }
+        if (ndim_v<T> == 1 && caster.value.shape(0) == 0)
+            inner = IS;
 
         if constexpr (OS == 0)
             outer = 0;
@@ -383,10 +371,9 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
     operator Map() {
         NDArray &t = caster.value;
         if constexpr (ndim_v<T> == 1)
-            return Map(t.data(), (Eigen::Index) t.shape(0), strides());
+            return Map(t.data(), t.shape(0), strides());
         else
-            return Map(t.data(), (Eigen::Index) t.shape(0),
-                       (Eigen::Index) t.shape(1), strides());
+            return Map(t.data(), t.shape(0), t.shape(1), strides());
     }
 };
 
@@ -496,11 +483,11 @@ struct type_caster<Eigen::Ref<T, Options, StrideType>,
         int64_t strides[ndim_v<T>];
 
         if constexpr (ndim_v<T> == 1) {
-            shape[0] = (size_t) v.size();
+            shape[0] = v.size();
             strides[0] = v.innerStride();
         } else {
-            shape[0] = (size_t) v.rows();
-            shape[1] = (size_t) v.cols();
+            shape[0] = v.rows();
+            shape[1] = v.cols();
             strides[0] = v.rowStride();
             strides[1] = v.colStride();
         }

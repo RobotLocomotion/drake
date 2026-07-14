@@ -22,23 +22,6 @@ config_setting(
     flag_values = {"//tools/flags:python_binder": "nanobind"},
 )
 
-# XXX(build) porting add diff_test to sync these with upstream.
-
-cc_library(
-    name = "nanobind_eigen",
-    hdrs = [
-        "drake_nanobind/eigen/dense.h",
-        "drake_nanobind/eigen/sparse.h",
-    ],
-    strip_include_prefix = ".",
-    tags = ["nolint"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":nanobind",
-        "@eigen",
-    ],
-)
-
 # We'll build nanobind as a shared library so that we have only one copy of its
 # static singletons, and to reduce code bloat.
 cc_whole_archive_library(
@@ -76,6 +59,7 @@ install_files(
     name = "install_license",
     dest = "share/doc/nanobind",
     # XXX(build) Add back once we're up to nanobind 2.13.0.
+    # (Also add a diff_test on the vendored license.)
     # files = ["@module_nanobind//:LICENSE"],
     # allowed_externals = ["@module_nanobind//:LICENSE"],
 )
