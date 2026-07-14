@@ -279,8 +279,8 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   // Obtains the label image rendered from a specific object pose. This is
   // slower than it has to be because it does per-pixel processing on the CPU.
   // TODO(SeanCurtis-TRI): Figure out how to do all of this directly on the GPU.
-  void GetLabelImage(drake::systems::sensors::ImageLabel16I* label_image_out,
-                     const RenderTarget& target) const;
+  void GetLabelImage(
+      drake::systems::sensors::ImageLabel16I* label_image_out) const;
 
   // Acquires the render target for the given camera. "Acquiring" the render
   // target guarantees that the target will be ready for receiving OpenGL
