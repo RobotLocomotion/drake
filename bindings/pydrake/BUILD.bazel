@@ -525,7 +525,7 @@ install(
         # workspace install, so that it gets installed if and only if we're
         # installing pydrake. (Users can opt-out of Python installation.)
         "//tools/workspace/nanobind:enabled": [
-            "//tools/workspace/nanobind:install",
+            "@nanobind//:install",
         ],
         "//conditions:default": [
             "@pybind11//:install",

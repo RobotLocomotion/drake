@@ -61,27 +61,3 @@ nanobind support to our master branch.
      }
  
      static handle from_cpp(const ndarray<Args...> &tensor, rv_policy policy,
-
---- BUILD.bazel
-+++ BUILD.bazel
-@@ -79,7 +79,7 @@ cc_library(
-     visibility = ["//visibility:public"],
-     deps = [
-         ":nanobind",
--        "@eigen",
-+        "@drake//tools/workspace/eigen",
-     ],
- )
- 
-
---- MODULE.bazel
-+++ MODULE.bazel
-@@ -5,6 +5,8 @@ module(
-     compatibility_level = 1,
- )
- 
-+bazel_dep(name = "drake")
-+
- bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
- bazel_dep(name = "platforms", version = "0.0.10")
- bazel_dep(name = "robin-map", version = "1.4.1")
