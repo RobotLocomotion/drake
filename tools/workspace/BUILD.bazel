@@ -56,7 +56,6 @@ filegroup(
         "@pybind11//:drake_repository_metadata.json",
         "@qdldl_internal//:drake_repository_metadata.json",
         "@qhull_internal//:drake_repository_metadata.json",
-        "@robin_map//:drake_repository_metadata.json",
         "@ros_xacro_internal//:drake_repository_metadata.json",
         "@scs_internal//:drake_repository_metadata.json",
         "@sdformat_internal//:drake_repository_metadata.json",
@@ -202,7 +201,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "poisson_disk_sampling_internal",
     # N.B. The @pybind11//:install is handled by //bindings/pydrake:install.
     "qhull_internal",
-    # N.B. The @robin_map//:install is handled by @nanobind//:install.
     "sdformat_internal",
     "spral_internal",
     "stduuid_internal",
@@ -224,6 +222,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lapack",
     "libjpeg",
     "opencl",
+    # N.B. The robin_map install is handled by @nanobind//:install.
     "spdlog",
     "zlib",
 ]] + select({

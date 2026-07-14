@@ -55,7 +55,6 @@ load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
-load("//tools/workspace/robin_map:repository.bzl", "robin_map_repository")  # noqa
 load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
 load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
@@ -158,7 +157,6 @@ def _drake_dep_repositories_impl(module_ctx):
     nanobind_repository(name = "nanobind", mirrors = mirrors)
     pybind11_repository(name = "pybind11", mirrors = mirrors)
     python_repository(name = "python")
-    robin_map_repository(name = "robin_map", mirrors = mirrors)
     snopt_repository(name = "snopt")
 
     ALIAS_REPOSITORIES = [

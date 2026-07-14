@@ -43,7 +43,7 @@ cc_library(
         exclude = ["src/nb_combined.cpp"],
     ),
     implementation_deps = [
-        "@robin_map",
+        "@robin-map",
     ],
     strip_include_prefix = "include",
     deps = [
@@ -89,7 +89,7 @@ install(
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
     deps = [
-        "@robin_map//:install",
+        "@drake//tools/workspace/robin_map:install",
     ],
 )
 
