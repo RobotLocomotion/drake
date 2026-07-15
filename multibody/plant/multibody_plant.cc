@@ -397,12 +397,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     weld_constraints_specs_ = other.weld_constraints_specs_;
     tendon_constraints_specs_ = other.tendon_constraints_specs_;
 
-    for (const auto& [body_index, entry] : other.surface_velocity_bodies_) {
-      surface_velocity_bodies_.emplace(
-          body_index, SurfaceVelocityEntry{entry.scoped_name, entry.axis});
-    }
-    surface_displacement_continuous_state_start_ =
-        other.surface_displacement_continuous_state_start_;
+    surface_velocity_bodies_ = other.surface_velocity_bodies_;
 
     adjacent_bodies_collision_filters_ =
         other.adjacent_bodies_collision_filters_;
@@ -846,6 +841,7 @@ template <typename T>
 void MultibodyPlant<T>::SetSurfaceVelocityAxis(
     const RigidBody<T>& body, std::optional<Eigen::Vector3d> axis_in_B) {
   DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(&body == &get_body(body.index()));
   if (!axis_in_B.has_value()) {
     surface_velocity_bodies_.erase(body.index());
     return;
@@ -855,8 +851,9 @@ void MultibodyPlant<T>::SetSurfaceVelocityAxis(
   Eigen::Vector3d axis = axis_in_B->normalized();
   DRAKE_THROW_UNLESS(body.index() != world_index());
   DRAKE_THROW_UNLESS(std::abs(1.0 - axis.norm()) < 1e-14);
+  // Defer caching the scoped name until Finalize().
   surface_velocity_bodies_.insert_or_assign(
-      body.index(), SurfaceVelocityEntry{body.scoped_name().to_string(), axis});
+      body.index(), internal::SurfaceVelocityEntry{.axis = axis});
 }
 
 template <typename T>
@@ -905,7 +902,7 @@ std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
 template <typename T>
 int MultibodyPlant<T>::num_misc_continuous_states() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return CalcNumRequiredMiscContinuousStates();
+  return internal::MultibodyTreeSystem<T>::num_misc_continuous_states();
 }
 
 template <typename T>
@@ -977,38 +974,6 @@ int MultibodyPlant<T>::num_collision_geometries() const {
     }
   }
   return result;
-}
-
-template <typename T>
-Vector3<T> MultibodyPlant<T>::ComputeSurfaceVelocity(
-    BodyIndex body_index, const systems::Context<T>& context,
-    const Vector3<T>& n_W) const {
-  auto it = surface_velocity_bodies_.find(body_index);
-  if (it == surface_velocity_bodies_.end()) {
-    return Vector3<T>::Zero();
-  }
-
-  // Read speed from the bus port. Default to zero if unconnected or absent.
-  double speed = 0.0;
-  const auto& port = get_surface_speeds_input_port();
-  if (port.HasValue(context)) {
-    const auto& bus = port.template Eval<systems::BusValue>(context);
-    const AbstractValue* v = bus.Find(it->second.scoped_name);
-    if (v != nullptr) {
-      speed = v->get_value<double>();
-    }
-  }
-  if (speed == 0.0) return Vector3<T>::Zero();
-
-  // Read axis from the map (body frame B).
-  const Eigen::Vector3d& a_ss_B = it->second.axis;
-
-  // Convert contact normal from world frame to body frame B.
-  // Not normalizing the cross product is intentional: parallel vectors
-  // produce zero velocity organically.
-  const RigidTransform<T>& X_WB = get_body(body_index).EvalPoseInWorld(context);
-  const Vector3<T> n_B = X_WB.rotation().inverse() * n_W;
-  return T(speed) * a_ss_B.template cast<T>().cross(n_B);
 }
 
 template <typename T>
@@ -1527,30 +1492,12 @@ template <typename T>
 void MultibodyPlant<T>::DeclareMiscContinuousStates() {
   DRAKE_DEMAND(!is_discrete());
 
-  surface_displacement_continuous_state_start_ =
-      this->DeclareMiscContinuousState(ssize(surface_velocity_bodies_));
+  this->DeclareMiscContinuousState(CalcNumRequiredMiscContinuousStates());
 
   // As MultibodyPlant adds other miscellaneous continuous states, they should
-  // be added here.
-}
-
-template <typename T>
-void MultibodyPlant<T>::SetDefaultMiscState(systems::State<T>* state) const {
-  if (!is_discrete()) {
-    // Note: internal_tree() does not know about the plant's misc continuous
-    // state; we have to explicitly zero it out here.
-    state->get_mutable_continuous_state()
-        .get_mutable_misc_continuous_state()
-        .SetZero();
-  } else if (!surface_velocity_bodies_.empty()) {
-    // Likewise, the base LeafSystem::SetDefaultState() (which would reset
-    // abstract state to its declared model value) is bypassed here, so the
-    // discrete surface displacement accumulation must be reset explicitly.
-    auto& displacements =
-        state->template get_mutable_abstract_state<std::vector<double>>(
-            surface_displacement_abstract_state_index_);
-    displacements.assign(displacements.size(), 0.0);
-  }
+  // be added here. We will also need to start tracking the different semantics
+  // across the various z values. Currently, they're all assumed to be surface
+  // displacements.
 }
 
 template <typename T>
@@ -1574,6 +1521,10 @@ void MultibodyPlant<T>::Finalize() {
     if (manager) {
       SetDiscreteUpdateManager(std::move(manager));
     }
+  }
+  // Capture final scoped names for bodies with surface velocity.
+  for (auto& [body_index, entry] : surface_velocity_bodies_) {
+    entry.scoped_name = get_body(body_index).scoped_name().to_string();
   }
 }
 
@@ -2463,8 +2414,6 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const Vector3<T>& p_WCa = pair.p_WCa;
     const Vector3<T>& p_WCb = pair.p_WCb;
 
-    // TODO(SeanCurtis-TRI): In discrete mode, the position of the contact point
-    // is a weighted average of the two witness points; they should match.
     // Contact point C.
     const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
 
@@ -2492,16 +2441,16 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const auto [k, d] = internal::CombinePointContactParameters(kA, kB, dA, dB);
     const T fn_AC = k * x * (1.0 + d * vn);
 
-    if (fn_AC > 0) {
-      // Acquire friction coefficients and combine them.
-      const CoulombFriction<double>& geometryA_friction =
-          GetCoulombFriction(geometryA_id, inspector);
-      const CoulombFriction<double>& geometryB_friction =
-          GetCoulombFriction(geometryB_id, inspector);
-      const CoulombFriction<double> combined_friction =
-          CalcContactFrictionFromSurfaceProperties(geometryA_friction,
-                                                   geometryB_friction);
+    // Acquire friction coefficients and combine them.
+    const CoulombFriction<double>& geometryA_friction =
+        GetCoulombFriction(geometryA_id, inspector);
+    const CoulombFriction<double>& geometryB_friction =
+        GetCoulombFriction(geometryB_id, inspector);
+    const CoulombFriction<double> combined_friction =
+        CalcContactFrictionFromSurfaceProperties(geometryA_friction,
+                                                 geometryB_friction);
 
+    if (fn_AC > 0) {
       // Normal force on body A, at C, expressed in W.
       const Vector3<T> fn_AC_W = fn_AC * nhat_BA_W;
 
@@ -2709,6 +2658,39 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
     // Add the information for contact reporting.
     F_Ac_W_array.push_back(F_Ac_W);
   }
+}
+
+template <typename T>
+Vector3<T> MultibodyPlant<T>::ComputeSurfaceVelocity(
+    BodyIndex body_index, const systems::Context<T>& context,
+    const Vector3<T>& n_W) const {
+  auto it = surface_velocity_bodies_.find(body_index);
+  if (it == surface_velocity_bodies_.end()) {
+    return Vector3<T>::Zero();
+  }
+
+  const internal::SurfaceVelocityEntry& entry = it->second;
+  // Read speed from the bus port. Default to zero if unconnected or absent.
+  double speed = 0.0;
+  const auto& port = get_surface_speeds_input_port();
+  if (port.HasValue(context)) {
+    const auto& bus = port.template Eval<systems::BusValue>(context);
+    const AbstractValue* v = bus.Find(entry.scoped_name);
+    if (v != nullptr) {
+      speed = v->get_value<double>();
+    }
+  }
+  if (speed == 0.0) return Vector3<T>::Zero();
+
+  // Read axis from the map (body frame B).
+  const Eigen::Vector3d& a_ss_B = entry.axis;
+
+  // Convert contact normal from world frame to body frame B.
+  // Not normalizing the cross product is intentional: parallel vectors
+  // produce zero velocity organically.
+  const RigidTransform<T>& X_WB = get_body(body_index).EvalPoseInWorld(context);
+  const Vector3<T> n_B = X_WB.rotation().inverse() * n_W;
+  return T(speed) * a_ss_B.template cast<T>().cross(n_B);
 }
 
 template <typename T>
@@ -3639,7 +3621,7 @@ void MultibodyPlant<T>::DeclareInputPorts() {
             .get_index();
   }
 
-  // Input "surface_speeds": one BusValue signal per registered body.
+  // Input "surface_speeds".
   input_port_indices_.surface_speeds =
       this->DeclareAbstractInputPort("surface_speeds",
                                      Value<systems::BusValue>{})
@@ -3649,17 +3631,20 @@ void MultibodyPlant<T>::DeclareInputPorts() {
 template <typename T>
 void MultibodyPlant<T>::DoCalcMiscDerivatives(
     const systems::Context<T>& context, systems::VectorBase<T>* zdot) const {
-  if (CalcNumRequiredMiscContinuousStates() == 0) return;
-
-  zdot->SetZero();
-  const auto& port = this->get_input_port(input_port_indices_.surface_speeds);
-  if (!port.HasValue(context)) return;
+  const auto& port = get_surface_speeds_input_port();
+  if (!port.HasValue(context)) {
+    zdot->SetZero();
+    return;
+  }
 
   const auto& bus = port.template Eval<systems::BusValue>(context);
-  int i = surface_displacement_continuous_state_start_;
+  // If we add new z-values, we can no longer assume that the surface
+  // displacements start at 0.
+  int i = -1;
   for (const auto& [_, entry] : surface_velocity_bodies_) {
     const AbstractValue* v = bus.Find(entry.scoped_name);
-    zdot->SetAtIndex(i++, v != nullptr ? v->get_value<double>() : T(0));
+    const double speed = v != nullptr ? v->get_value<double>() : 0.0;
+    zdot->SetAtIndex(++i, speed);
   }
 }
 
@@ -3669,11 +3654,11 @@ systems::EventStatus MultibodyPlant<T>::CalcSurfaceDisplacementUpdate(
   auto& displacements =
       state->template get_mutable_abstract_state<std::vector<double>>(
           surface_displacement_abstract_state_index_);
-  // Initialize from the current context (not accumulated from next_state).
+  // Initialize from the current context (not accumulated from state).
   displacements = context.template get_abstract_state<std::vector<double>>(
       surface_displacement_abstract_state_index_);
 
-  const auto& port = this->get_input_port(input_port_indices_.surface_speeds);
+  const auto& port = get_surface_speeds_input_port();
   if (!port.HasValue(context)) return systems::EventStatus::Succeeded();
   const auto& bus = port.template Eval<systems::BusValue>(context);
   int i = 0;
@@ -3714,6 +3699,8 @@ void MultibodyPlant<T>::DeclareStateUpdate() {
               std::vector<double>(surface_velocity_bodies_.size(), 0.0)));
       this->DeclarePeriodicUnrestrictedUpdateEvent(
           time_step_, 0.0, &MultibodyPlant<T>::CalcSurfaceDisplacementUpdate);
+      // We don't provide a force update because arbitrary invocations will
+      // simply advance the displacements without time advancing.
     }
   }
 }
@@ -3842,6 +3829,30 @@ void MultibodyPlant<T>::DeclareOutputPorts() {
         {state_ticket, this->all_input_ports_ticket(),
          this->all_parameters_ticket()},
         i);
+  }
+
+  // Output "surface_displacements": cumulative surface displacement per body.
+  {
+    systems::BusValue model_bus;
+    for (const auto& [_, entry] : surface_velocity_bodies_) {
+      model_bus.Set(entry.scoped_name, Value<double>(0.0));
+    }
+    DependencyTicket prereq = this->nothing_ticket();
+    if (is_discrete()) {
+      if (!surface_velocity_bodies_.empty()) {
+        // The abstract state is only declared if there are a non-zero number of
+        // bodies with surface velocities.
+        prereq = this->abstract_state_ticket(
+            surface_displacement_abstract_state_index_);
+      }
+    } else {
+      prereq = this->z_ticket();
+    }
+    output_port_indices_.surface_displacements =
+        this->DeclareAbstractOutputPort(
+                "surface_displacements", model_bus,
+                &MultibodyPlant<T>::CalcSurfaceDisplacementOutput, {prereq})
+            .get_index();
   }
 }
 
@@ -4040,16 +4051,18 @@ void MultibodyPlant<T>::CalcSurfaceDisplacementOutput(
     const auto& values =
         context.template get_abstract_state<std::vector<double>>(
             surface_displacement_abstract_state_index_);
-    int i = 0;
+    int i = -1;
     for (const auto& [_, entry] : surface_velocity_bodies_) {
-      output->Set(entry.scoped_name, Value<double>(values[i++]));
+      output->Set(entry.scoped_name, Value<double>(values[++i]));
     }
   } else {
     const auto& z = context.get_continuous_state().get_misc_continuous_state();
-    int i = surface_displacement_continuous_state_start_;
+    // When we add new z-values, we can no longer assume that the surface
+    // displacements start at 0.
+    int i = -1;
     for (const auto& [_, entry] : surface_velocity_bodies_) {
       output->Set(entry.scoped_name,
-                  Value<double>(ExtractDoubleOrThrow(z.GetAtIndex(i++))));
+                  Value<double>(ExtractDoubleOrThrow(z.GetAtIndex(++i))));
     }
   }
 }
@@ -4251,22 +4264,6 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
               {this->configuration_ticket()})
           .get_index();
   physical_models_->DeclareSceneGraphPorts();
-
-  // Output "surface_displacements": cumulative surface displacement per body.
-  {
-    const DependencyTicket disp_ticket =
-        is_discrete() ? this->xa_ticket() : this->z_ticket();
-    systems::BusValue model_bus;
-    for (const auto& [unused, entry] : surface_velocity_bodies_) {
-      model_bus.Set(entry.scoped_name, Value<double>(0.0));
-    }
-    output_port_indices_.surface_displacements =
-        this->DeclareAbstractOutputPort(
-                "surface_displacements", model_bus,
-                &MultibodyPlant<T>::CalcSurfaceDisplacementOutput,
-                {disp_ticket})
-            .get_index();
-  }
 }
 
 template <typename T>

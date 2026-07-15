@@ -1502,9 +1502,9 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
 
   // Parse link-level surface velocity axis (if present) and register.
   if (link_element->HasElement("drake:surface_velocity_axis")) {
-    const Vector3d a = ToVector3(
+    const Vector3d axis_B = ToVector3(
         link_element->Get<gz::math::Vector3d>("drake:surface_velocity_axis"));
-    plant->SetSurfaceVelocityAxis(body, a);
+    plant->SetSurfaceVelocityAxis(body, axis_B);
   }
 
   return link_info;

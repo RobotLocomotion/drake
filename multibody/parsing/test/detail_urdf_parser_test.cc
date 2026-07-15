@@ -160,6 +160,10 @@ TEST_F(UrdfParserTest, ModelRenameWithColons) {
 TEST_F(UrdfParserTest, SurfaceVelocityAxis) {
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='belt_model' xmlns:drake='https://drake.mit.edu'>
+      <link name='world'>
+        <!-- This should dispatch a warning. -->
+        <drake:surface_velocity_axis axis='0 0 3'/>
+      </link>
       <link name='has_velocity'>
         <drake:surface_velocity_axis axis='0 0 3'/>
       </link>
@@ -167,6 +171,9 @@ TEST_F(UrdfParserTest, SurfaceVelocityAxis) {
     </robot>)""",
                                    ""),
             std::nullopt);
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(".*<drake:surface_velocity_axis> tag is being ignored.*"));
 
   const auto& has_velocity = plant_.GetBodyByName("has_velocity");
   const std::optional<Vector3d> axis_B =

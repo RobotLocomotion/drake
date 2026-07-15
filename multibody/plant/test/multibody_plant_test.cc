@@ -2283,7 +2283,7 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
       // Green group.
       {"geometry_pose", false},
       {"deformable_body_configuration", false},
-      // Surface velocity group.
+      // Miscellaneous.
       {"surface_displacements", false},
   };
 

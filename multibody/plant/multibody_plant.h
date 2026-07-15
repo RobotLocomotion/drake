@@ -130,6 +130,11 @@ class MultibodyPlantIcfAttorney;
 template <typename>
 class MultibodyPlantModelAttorney;
 
+struct SurfaceVelocityEntry {
+  std::string scoped_name;  // Empty until Finalize() is called.
+  Eigen::Vector3d axis;     // unit-length, expressed in body frame B.
+};
+
 }  // namespace internal
 
 // TODO(amcastro-tri): Add a section on contact models in
@@ -1199,17 +1204,17 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns a constant reference to the `"surface_speeds"` input port, which
   /// carries a systems::BusValue whose signals set the surface speed for each
   /// body registered via SetSurfaceVelocityAxis(). Each signal's name is the
-  /// fully qualified body name and its value is a finite `double` speed in m/s.
-  /// If the port is not connected, or a body's signal is absent, that body's
+  /// scoped body name and its value is a finite `double` speed in m/s. If
+  /// the port is not connected, or a body's signal is absent, that body's
   /// speed is treated as zero.
   /// @pre Finalize() was already called on `this` plant.
   const systems::InputPort<T>& get_surface_speeds_input_port() const;
 
   /// Returns the `"surface_displacements"` output port, which carries a
   /// systems::BusValue whose signals report the cumulative surface displacement
-  /// (in metres) for each body registered via SetSurfaceVelocityAxis(). Each
-  /// signal's name is the fully-qualified body name. The displacement is
-  /// initialized to zero and integrated from the `"surface_speeds"` input port.
+  /// (in meters) for each body registered via SetSurfaceVelocityAxis(). Each
+  /// signal's name is the scoped body name. The displacement is initialized to
+  /// zero and integrated from the `"surface_speeds"` input port.
   /// @pre Finalize() was already called on `this` plant.
   const systems::OutputPort<T>& get_surface_displacement_output_port() const;
 
@@ -2327,11 +2332,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///    velocities, you must model them as separate bodies with separate
   ///    surface velocity registrations, but they can be connected by weld
   ///    joints to function as a single rigid body.
-  ///  - **No random distribution for surface displacement.** The integrated
-  ///    surface displacement always initializes to zero in the context. This
-  ///    value isn't properly a physical quantity; it primarily supports
-  ///    surface velocity visualization, there is no real value in initializing
-  ///    it to any other value.
+  ///  - No random distribution for surface displacement. This is largely
+  ///    bookkeeping for visualization; there would be no value to initialize
+  ///    it to a non-zero value.
   /// @{
 
   /// Sets the surface-velocity axis for `body` to `axis_B`, expressed in the
@@ -2353,7 +2356,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the surface-velocity axis for `body` expressed in the body frame
   /// B, or `std::nullopt` if `body` has not been registered. Works both
-  /// before and after Finalize().
+  /// before and after Finalize(). The returned vector is not necessarily the
+  /// same as was passed to SetSurfaceVelocityAxis(); we store the normalized
+  /// version of that vector.
   std::optional<Eigen::Vector3d> GetSurfaceVelocityAxis(
       const RigidBody<T>& body) const;
 
@@ -3246,8 +3251,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
-    internal_tree().SetDefaultState(context, state);
-    SetDefaultMiscState(state);
+    internal::MultibodyTreeSystem<T>::SetDefaultState(context, state);
     deformable_model().SetDefaultState(context, state);
   }
 
@@ -3264,11 +3268,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
+    internal::MultibodyTreeSystem<T>::SetRandomState(context, state, generator);
+    // TODO(SeanCurtis-TRI): This should be handled by MultibodyTreeSystem.
     internal_tree().SetRandomState(context, state, generator);
-    // The MultibodyPlant-owned miscellaneous state is documented as not being
-    // randomized -- with no distribution, it defaults to the default state
-    // value.
-    SetDefaultMiscState(state);
   }
 
   /// Returns a list of string names corresponding to each element of the
@@ -6033,18 +6035,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().graph();
   }
 
-  // Computes the surface velocity for the body identified by `body_index`.
-  // Returns zero if `body_index` has no registered surface velocity, if the
-  // "surface_speeds" port is unconnected, or if the body's signal is absent.
-  //
-  // @param body_index  Index of the body owning the surface.
-  // @param context     The plant's context (used to read port and parameter).
-  // @param n_W         Contact normal expressed in the world frame.
-  // @retval v_B_ss     Surface velocity expressed in the body frame B.
-  Vector3<T> ComputeSurfaceVelocity(BodyIndex body_index,
-                                    const systems::Context<T>& context,
-                                    const Vector3<T>& n_W) const;
-
   /// @} <!-- Introspection -->
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -6112,6 +6102,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     };
     std::vector<Instance> instance;
     systems::OutputPortIndex geometry_pose;  // Declared in ctor, not Finalize.
+    // Declared in ctor, not Finalize.
     systems::OutputPortIndex surface_displacements;
     // N.B. The deformable_body_configuration port is owned by DeformableModel,
     // so is not tracked here.
@@ -6559,13 +6550,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // and records the offsets for each feature that owns a slice of z.
   void DeclareMiscContinuousStates();
 
-  // Sets the MultibodyPlant-owned miscellaneous state to its default value.
-  // This covers both the continuous and discrete representations. Because
-  // MultibodyPlant overrides SetDefaultState(), it does not benefit directly
-  // from LeafSystem::SetDefaultState() that would ordinarily handle writing
-  // default values.
-  void SetDefaultMiscState(systems::State<T>* state) const;
-
   // Periodic unrestricted update handler for surface displacement (discrete).
   systems::EventStatus CalcSurfaceDisplacementUpdate(
       const systems::Context<T>& context, systems::State<T>* state) const;
@@ -6667,6 +6651,18 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       internal::HydroelasticContactForcesContinuousCacheData<T>* output) const
     requires scalar_predicate<T>::is_bool;
+
+  // Computes the surface velocity for the body identified by `body_index`.
+  // Returns zero if `body_index` has no registered surface velocity, if the
+  // "surface_speeds" port is unconnected, or if the body's signal is absent.
+  //
+  // @param body_index  Index of the body owning the surface.
+  // @param context     The plant's context (used to read port and parameter).
+  // @param n_W         Contact normal expressed in the world frame.
+  // @retval v_B_ss     Surface velocity expressed in the body frame B.
+  Vector3<T> ComputeSurfaceVelocity(BodyIndex body_index,
+                                    const systems::Context<T>& context,
+                                    const Vector3<T>& n_W) const;
 
   // Eval version of CalcHydroelasticContactForces().
   const internal::HydroelasticContactForcesContinuousCacheData<T>&
@@ -6913,19 +6909,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   std::map<MultibodyConstraintId, internal::TendonConstraintSpec>
       tendon_constraints_specs_;
 
-  struct SurfaceVelocityEntry {
-    std::string scoped_name;
-    Eigen::Vector3d axis;  // unit-length, expressed in body frame B
-  };
   // Per-body surface-velocity data. Keyed by BodyIndex for O(lg N) lookup;
   // iteration order (ascending BodyIndex) defines displacement state indices.
   // Frozen at Finalize().
-  std::map<BodyIndex, SurfaceVelocityEntry> surface_velocity_bodies_;
-
-  // Starting index within the continuous z state for surface displacement
-  // integration (continuous mode only). Only valid when
-  // surface_velocity_bodies_ is non-empty.
-  int surface_displacement_continuous_state_start_{};
+  std::map<BodyIndex, internal::SurfaceVelocityEntry> surface_velocity_bodies_;
 
   // Abstract state index for surface displacement accumulation (discrete mode
   // only). Only valid when surface_velocity_bodies_ is non-empty.

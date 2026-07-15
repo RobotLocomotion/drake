@@ -1,5 +1,6 @@
 #include <memory>
-#include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -11,6 +12,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/bus_value.h"
 
 namespace drake {
@@ -24,6 +26,15 @@ class MultibodyPlantTester {
       const MultibodyPlant<double>& plant, BodyIndex body_index,
       const systems::Context<double>& context, const Eigen::Vector3d& n_W) {
     return plant.ComputeSurfaceVelocity(body_index, context, n_W);
+  }
+
+  // Invokes the (private) periodic displacement-update handler directly. This
+  // lets tests exercise the accumulation math independent of how (or whether)
+  // the event that would normally trigger it is scheduled.
+  static systems::EventStatus CallSurfaceDisplacementUpdate(
+      const MultibodyPlant<double>& plant,
+      const systems::Context<double>& context, systems::State<double>* state) {
+    return plant.CalcSurfaceDisplacementUpdate(context, state);
   }
 
   // Sets every surface-displacement value to `value`, dispatching on the
@@ -52,6 +63,29 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+
+// Reads a body's cumulative surface displacement via the (mode-agnostic)
+// "surface_displacements" output port.
+double SurfaceDisplacement(const MultibodyPlant<double>& plant,
+                           const systems::Context<double>& context,
+                           const RigidBody<double>& body) {
+  const auto& output =
+      plant.get_surface_displacement_output_port().Eval<systems::BusValue>(
+          context);
+  const AbstractValue* value = output.Find(body.scoped_name().to_string());
+  DRAKE_DEMAND(value != nullptr);
+  return value->get_value<double>();
+}
+
+// Fixes a constant `speed` signal for `body` on the "surface_speeds" input
+// port (leaving any unlisted body's signal absent from the bus).
+void FixSurfaceSpeed(const MultibodyPlant<double>& plant,
+                     systems::Context<double>* context,
+                     const RigidBody<double>& body, double speed) {
+  systems::BusValue bus;
+  bus.Set(body.scoped_name().to_string(), Value<double>(speed));
+  plant.get_surface_speeds_input_port().FixValue(context, bus);
+}
 
 GTEST_TEST(MultibodyPlantTest, SetSurfaceVelocityAxisErrors) {
   MultibodyPlant<double> plant(0.0);
@@ -239,6 +273,111 @@ GTEST_TEST(MultibodyPlantTest, ContinuousSurfaceDisplacementResets) {
 // Discrete plant: displacement (abstract accumulation state) resets to zero.
 GTEST_TEST(MultibodyPlantTest, DiscreteSurfaceDisplacementResets) {
   CheckSurfaceDisplacementResets(0.01);
+}
+
+// Update of surface displacement for discrete plants. We're testing:
+//
+//   1. Each invocation accumulates one time_step.
+//   2. The accumulation is on top of the value in the *context* and not in the
+//      mutable state passed in.
+//   3. Bodies with no signal on the surface_speeds bus do not accumulate.
+//   4. Using a simulator to advance time one time step triggers accumulation.
+//
+GTEST_TEST(MultibodyPlantTest, DiscreteSurfaceDisplacementAccumulates) {
+  const double time_step = 0.01;
+  MultibodyPlant<double> plant(time_step);
+  auto add_body_with_surface_velocity =
+      [&](const std::string& name) -> const RigidBody<double>& {
+    const RigidBody<double>& body =
+        plant.AddRigidBody(name, SpatialInertia<double>::MakeUnitary());
+    plant.SetSurfaceVelocityAxis(body, Vector3d(1, 0, 0));
+    return body;
+  };
+  const RigidBody<double>& belt = add_body_with_surface_velocity("belt");
+  const RigidBody<double>& roller = add_body_with_surface_velocity("roller");
+
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  const double speed = 2.0;
+  FixSurfaceSpeed(plant, context.get(), belt, speed);
+
+  // Prime the context's displacement to a known non-zero baseline.
+  const double baseline = 10.0;
+  MultibodyPlantTester::SetAllSurfaceDisplacements(plant, context.get(),
+                                                   baseline);
+  // The scratch state carries a bogus value; the handler must ignore it.
+  auto scratch = context->Clone();
+  MultibodyPlantTester::SetAllSurfaceDisplacements(plant, scratch.get(), 999.0);
+  // context's state is different from scratch's. The reported displacements
+  // will reflect the value in context and not in scratch's state.
+  MultibodyPlantTester::CallSurfaceDisplacementUpdate(
+      plant, *context, &scratch->get_mutable_state());
+  EXPECT_NEAR(SurfaceDisplacement(plant, *scratch, belt),
+              baseline + speed * time_step, 1e-14);
+  EXPECT_NEAR(SurfaceDisplacement(plant, *scratch, roller), baseline, 1e-14);
+
+  for (int k = 1; k <= 5; ++k) {
+    SCOPED_TRACE(fmt::format("after {} update(s)", k));
+    MultibodyPlantTester::CallSurfaceDisplacementUpdate(
+        plant, *context, &context->get_mutable_state());
+    EXPECT_NEAR(SurfaceDisplacement(plant, *context, belt),
+                baseline + k * speed * time_step, 1e-14);
+    EXPECT_NEAR(SurfaceDisplacement(plant, *context, roller), baseline, 1e-14);
+  }
+
+  // Reset context.
+  context->SetTime(0.0);
+  MultibodyPlantTester::SetAllSurfaceDisplacements(plant, context.get(),
+                                                   baseline);
+  systems::Simulator<double> simulator(plant, std::move(context));
+  const double t_final = time_step * 5;
+  simulator.AdvanceTo(t_final);
+
+  // Over [0, t_final] with a period of time_step, the event integrates the
+  // constant speed to speed*t_final.
+  EXPECT_NEAR(SurfaceDisplacement(plant, simulator.get_context(), belt),
+              baseline + speed * t_final, 1e-12);
+}
+
+// Update of surface displacement for continuous plants. We're testing:
+//
+//   1. Derivatives of surface displacement are exactly the surface speed.
+//   2. Derivative for signal missing from input bus is zero.
+//   3. As continuous state, the integral is simply speed * time.
+GTEST_TEST(MultibodyPlantTest, ContinuousSurfaceDisplacementIntegrates) {
+  MultibodyPlant<double> plant(0.0);  // continuous
+
+  auto add_body_with_surface_velocity =
+      [&](const std::string& name) -> const RigidBody<double>& {
+    const RigidBody<double>& body =
+        plant.AddRigidBody(name, SpatialInertia<double>::MakeUnitary());
+    plant.SetSurfaceVelocityAxis(body, Vector3d(1, 0, 0));
+    return body;
+  };
+  const RigidBody<double>& belt = add_body_with_surface_velocity("belt");
+  const RigidBody<double>& roller = add_body_with_surface_velocity("roller");
+
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  const double speed = 2.0;
+  FixSurfaceSpeed(plant, context.get(), belt, speed);
+
+  // The time derivative of the displacement is exactly the surface speed.
+  const systems::ContinuousState<double>& derivatives =
+      plant.EvalTimeDerivatives(*context);
+  ASSERT_EQ(derivatives.get_misc_continuous_state().size(), 2);
+  EXPECT_EQ(derivatives.get_misc_continuous_state().GetAtIndex(0), speed);
+  EXPECT_EQ(derivatives.get_misc_continuous_state().GetAtIndex(1), 0.0);
+
+  // Integrating over time accumulates speed * t.
+  systems::Simulator<double> simulator(plant, std::move(context));
+  const double t_final = 0.5;
+  simulator.AdvanceTo(t_final);
+  EXPECT_NEAR(SurfaceDisplacement(plant, simulator.get_context(), belt),
+              speed * t_final, 1e-9);
+  EXPECT_EQ(SurfaceDisplacement(plant, simulator.get_context(), roller), 0.0);
 }
 
 // Confirm that the surface velocity follows the body pose in the world; put the
