@@ -6,6 +6,18 @@ namespace systems {
 template <typename T>
 SystemVisitor<T>::~SystemVisitor() = default;
 
+template <typename T>
+void SystemVisitor<T>::VisitSystemPointer(const System<T>* system) {
+  DRAKE_DEMAND(system != nullptr);
+  VisitSystem(*system);
+}
+
+template <typename T>
+void SystemVisitor<T>::VisitDiagramPointer(const Diagram<T>* diagram) {
+  DRAKE_DEMAND(diagram != nullptr);
+  VisitDiagram(*diagram);
+}
+
 }  // namespace systems
 }  // namespace drake
 

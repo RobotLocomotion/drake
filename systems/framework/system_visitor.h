@@ -48,6 +48,17 @@ class SystemVisitor {
   Diagram<T>. */
   virtual void VisitDiagram(const Diagram<T>& diagram) = 0;
 
+#ifndef DRAKE_DOXYGEN_CXX
+  /* The signatures below are useful for Python bindings. C++ derived classes
+  can ignore them. */
+
+  /* (Internal use only) Pointer-accepting variant of VisitSystem. */
+  void VisitSystemPointer(const System<T>* system);
+
+  /* (Internal use only) Pointer-accepting variant of VisitDiagram. */
+  void VisitDiagramPointer(const Diagram<T>* diagram);
+#endif
+
  protected:
   SystemVisitor() = default;
 };
