@@ -74,4 +74,16 @@ _PATCHED_HEADER_NAMES = [
     for basename in _PATCHED_HEADER_NAMES
 ]
 
+diff_test(
+    name = "nanobind_eigen_license_diff_test",
+    failure_message = (
+        "To fix, run this command:\n" +
+        "  cp bazel-drake/external/nanobind+/LICENSE " +
+        "tools/workspace/nanobind/vendor/drake_nanobind/eigen/LICENSE"
+    ),
+    file1 = "drake_nanobind/eigen/LICENSE",
+    file2 = "@module_nanobind//:LICENSE",
+    tags = ["lint"],
+)
+
 add_lint_tests()

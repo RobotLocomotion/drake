@@ -58,8 +58,11 @@ template <typename T> struct type_caster<T, enable_if_t<is_eigen_sparse_matrix_v
             object matrix_type =
                 module_::import_("scipy.sparse")
                     .attr(RowMajor ? "csr_matrix" : "csc_matrix");
-            if (!obj.type().is(matrix_type))
+            if (!obj.type().is(matrix_type)) {
+                if (!(flags & (uint8_t) cast_flags::convert))
+                    return false;
                 obj = matrix_type(obj);
+            }
 
             if (!cast<bool>(obj.attr("has_sorted_indices")))
                 obj.attr("sort_indices")();
@@ -89,7 +92,7 @@ template <typename T> struct type_caster<T, enable_if_t<is_eigen_sparse_matrix_v
                               indices_caster.value.data(),
                               data_caster.value.data());
             return true;
-        } catch (const python_error &) {
+        } catch (const std::exception &) {
             return false;
         }
     }
@@ -134,7 +137,10 @@ template <typename T> struct type_caster<T, enable_if_t<is_eigen_sparse_matrix_v
         T *src = std::addressof(const_cast<T &>(v));
         object owner;
         if (policy == rv_policy::move) {
-            src = new T(std::move(v));
+            // Eigen sparse matrices lack a move constructor; copy-constructing
+            // from a matrix flagged as an rvalue performs a cheap pointer swap.
+            const_cast<T &>(v).markAsRValue();
+            src = new T(v);
             owner = capsule(src, [](void *p) noexcept { delete (T *) p; });
         }
 
@@ -184,7 +190,7 @@ struct type_caster<Eigen::Map<T>, enable_if_t<is_eigen_sparse_matrix_v<T>>> {
     Index rows, cols, nnz;
 
     bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
-        flags = ~(uint8_t) cast_flags::convert;
+        flags &= ~(uint8_t) cast_flags::convert;
 
         try {
             object matrix_type =
@@ -215,7 +221,7 @@ struct type_caster<Eigen::Map<T>, enable_if_t<is_eigen_sparse_matrix_v<T>>> {
             rows = cast<Index>(shape_o[0]);
             cols = cast<Index>(shape_o[1]);
             nnz = cast<Index>(src.attr("nnz"));
-        } catch (const python_error &) {
+        } catch (const std::exception &) {
             return false;
         }
 

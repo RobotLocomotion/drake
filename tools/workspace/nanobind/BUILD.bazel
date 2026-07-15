@@ -58,10 +58,8 @@ cc_library(
 install_files(
     name = "install_license",
     dest = "share/doc/nanobind",
-    # XXX(build) Add back once we're up to nanobind 2.13.0.
-    # (Also add a diff_test on the vendored license.)
-    # files = ["@module_nanobind//:LICENSE"],
-    # allowed_externals = ["@module_nanobind//:LICENSE"],
+    files = ["@module_nanobind//:LICENSE"],
+    allowed_externals = ["@module_nanobind//:LICENSE"],
 )
 
 install(
