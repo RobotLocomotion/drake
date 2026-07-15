@@ -141,31 +141,24 @@ PYDRAKE_MODULE(analysis, m) {
   auto bind_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
-#ifdef PYDRAKE_USE_NANOBIND  // XXX(eigen) porting
-    constexpr bool bind_batch_autodiff = std::is_same_v<T, double>;
-#else
-    constexpr bool bind_batch_autodiff = true;
-#endif
-    if constexpr (bind_batch_autodiff) {
-      m.def("BatchEvalUniquePeriodicDiscreteUpdate",
-          &BatchEvalUniquePeriodicDiscreteUpdate<T>, py::arg("system"),
-          py::arg("context"), py::arg("times"), py::arg("states"),
-          py::arg("inputs"), py::arg("num_time_steps") = 1,
-          py::arg("input_port_index") =
-              InputPortSelection::kUseFirstInputIfItExists,
-          py::arg("parallelize") = Parallelism::Max(),
-          py::call_guard<py::gil_scoped_release>(),
-          doc.BatchEvalUniquePeriodicDiscreteUpdate.doc);
+    m.def("BatchEvalUniquePeriodicDiscreteUpdate",
+        &BatchEvalUniquePeriodicDiscreteUpdate<T>, py::arg("system"),
+        py::arg("context"), py::arg("times"), py::arg("states"),
+        py::arg("inputs"), py::arg("num_time_steps") = 1,
+        py::arg("input_port_index") =
+            InputPortSelection::kUseFirstInputIfItExists,
+        py::arg("parallelize") = Parallelism::Max(),
+        py::call_guard<py::gil_scoped_release>(),
+        doc.BatchEvalUniquePeriodicDiscreteUpdate.doc);
 
-      m.def("BatchEvalTimeDerivatives", &BatchEvalTimeDerivatives<T>,
-          py::arg("system"), py::arg("context"), py::arg("times"),
-          py::arg("states"), py::arg("inputs"),
-          py::arg("input_port_index") =
-              InputPortSelection::kUseFirstInputIfItExists,
-          py::arg("parallelize") = Parallelism::Max(),
-          py::call_guard<py::gil_scoped_release>(),
-          doc.BatchEvalTimeDerivatives.doc);
-    }
+    m.def("BatchEvalTimeDerivatives", &BatchEvalTimeDerivatives<T>,
+        py::arg("system"), py::arg("context"), py::arg("times"),
+        py::arg("states"), py::arg("inputs"),
+        py::arg("input_port_index") =
+            InputPortSelection::kUseFirstInputIfItExists,
+        py::arg("parallelize") = Parallelism::Max(),
+        py::call_guard<py::gil_scoped_release>(),
+        doc.BatchEvalTimeDerivatives.doc);
 
     {
       using Class = IntegratorBase<T>;

@@ -380,22 +380,25 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
       : public pydrake_numpy_dtype_object_type_caster<                         \
             Eigen::Matrix<typename PlainObjectType::Scalar,                    \
                 PlainObjectType::RowsAtCompileTime,                            \
-                PlainObjectType::ColsAtCompileTime, 0,                         \
+                PlainObjectType::ColsAtCompileTime,                            \
+                (PlainObjectType::RowsAtCompileTime == 1 &&                    \
+                    PlainObjectType::ColsAtCompileTime != 1)                   \
+                    ? Eigen::RowMajor                                          \
+                    : 0,                                                       \
                 PlainObjectType::MaxRowsAtCompileTime,                         \
                 PlainObjectType::MaxColsAtCompileTime>> {                      \
-    template <typename T>                                                      \
-    using Cast = Eigen::Matrix<typename PlainObjectType::Scalar,               \
+    using _matrix = Eigen::Matrix<typename PlainObjectType::Scalar,            \
         PlainObjectType::RowsAtCompileTime,                                    \
-        PlainObjectType::ColsAtCompileTime, 0,                                 \
+        PlainObjectType::ColsAtCompileTime,                                    \
+        (PlainObjectType::RowsAtCompileTime == 1 &&                            \
+            PlainObjectType::ColsAtCompileTime != 1)                           \
+            ? Eigen::RowMajor                                                  \
+            : 0,                                                               \
         PlainObjectType::MaxRowsAtCompileTime,                                 \
         PlainObjectType::MaxColsAtCompileTime>;                                \
-    explicit operator Eigen::Matrix<typename PlainObjectType::Scalar,          \
-        PlainObjectType::RowsAtCompileTime,                                    \
-        PlainObjectType::ColsAtCompileTime, 0,                                 \
-        PlainObjectType::MaxRowsAtCompileTime,                                 \
-        PlainObjectType::MaxColsAtCompileTime>() const {                       \
-      return this->value;                                                      \
-    }                                                                          \
+    template <typename T>                                                      \
+    using Cast = _matrix;                                                      \
+    explicit operator _matrix() const { return this->value; }                  \
   };                                                                           \
   } /* namespace detail */                                                     \
   } /* namespace nanobind */

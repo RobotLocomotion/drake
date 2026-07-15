@@ -6,7 +6,7 @@ import weakref
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import Parallelism, _binder
+from pydrake.common import Parallelism
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.math import isnan
 from pydrake.symbolic import Expression, Variable
@@ -148,7 +148,6 @@ class TestAnalysis(unittest.TestCase):
         RungeKutta3Integrator(system=system)
         RungeKutta3Integrator(system=system, context=context)
 
-    @unittest.skipIf(_binder == "nanobind", "XXX(eigen) porting")
     @numpy_compare.check_nonsymbolic_types
     def test_batch_eval(self, T):
         A = np.matrix("[0.1, 0.2; 0.3, 0.4]")
