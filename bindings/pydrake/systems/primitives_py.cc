@@ -338,8 +338,11 @@ PYDRAKE_MODULE(primitives, m) {
         .def(py::init<const BasicVector<T>&>(), py::arg("model_vector"),
             doc.Multiplexer.ctor.doc_1args_model_vector);
 
-    DefineTemplateClassWithDefault<MultilayerPerceptron<T>, LeafSystem<T>>(m,
-        "MultilayerPerceptron", GetPyParam<T>(), doc.MultilayerPerceptron.doc)
+    auto multilayer_perceptron_cls =
+        DefineTemplateClassWithDefault<MultilayerPerceptron<T>, LeafSystem<T>>(
+            m, "MultilayerPerceptron", GetPyParam<T>(),
+            doc.MultilayerPerceptron.doc);
+    multilayer_perceptron_cls  // BR
         .def(py::init<const std::vector<int>&, PerceptronActivationType>(),
             py::arg("layers"),
             py::arg("activation_type") = PerceptronActivationType::kTanh,
@@ -413,32 +416,38 @@ PYDRAKE_MODULE(primitives, m) {
                 &MultilayerPerceptron<T>::GetBiases),
             py::arg("params"), py::arg("layer"),
             py::keep_alive<0, 2>() /* return keeps params alive */,
-            py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_vector)
-        .def("SetWeights",
-            py::overload_cast<EigenPtr<VectorX<T>>, int,
-                const Eigen::Ref<const MatrixX<T>>&>(
-                &MultilayerPerceptron<T>::SetWeights, py::const_),
-            py::arg("params"), py::arg("layer"), py::arg("W"),
-            doc.MultilayerPerceptron.SetWeights.doc_vector)
-        .def("SetBiases",
-            py::overload_cast<EigenPtr<VectorX<T>>, int,
-                const Eigen::Ref<const VectorX<T>>&>(
-                &MultilayerPerceptron<T>::SetBiases, py::const_),
-            py::arg("params"), py::arg("layer"), py::arg("b"),
-            doc.MultilayerPerceptron.SetBiases.doc_vector)
-        .def("Backpropagation",
-            WrapCallbacks(&MultilayerPerceptron<T>::Backpropagation),
-            py::arg("context"), py::arg("X"), py::arg("loss"),
-            py::arg("dloss_dparams"),
-            doc.MultilayerPerceptron.Backpropagation.doc)
-        .def("BackpropagationMeanSquaredError",
-            &MultilayerPerceptron<T>::BackpropagationMeanSquaredError,
-            py::arg("context"), py::arg("X"), py::arg("Y_desired"),
-            py::arg("dloss_dparams"),
-            doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc)
-        .def("BatchOutput", &MultilayerPerceptron<T>::BatchOutput,
-            py::arg("context"), py::arg("X"), py::arg("Y"),
-            py::arg("dYdX") = nullptr, doc.MultilayerPerceptron.BatchOutput.doc)
+            py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_vector);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      multilayer_perceptron_cls  // BR
+          .def("SetWeights",
+              py::overload_cast<EigenPtr<VectorX<T>>, int,
+                  const Eigen::Ref<const MatrixX<T>>&>(
+                  &MultilayerPerceptron<T>::SetWeights, py::const_),
+              py::arg("params"), py::arg("layer"), py::arg("W"),
+              doc.MultilayerPerceptron.SetWeights.doc_vector)
+          .def("SetBiases",
+              py::overload_cast<EigenPtr<VectorX<T>>, int,
+                  const Eigen::Ref<const VectorX<T>>&>(
+                  &MultilayerPerceptron<T>::SetBiases, py::const_),
+              py::arg("params"), py::arg("layer"), py::arg("b"),
+              doc.MultilayerPerceptron.SetBiases.doc_vector)
+          .def("Backpropagation",
+              WrapCallbacks(&MultilayerPerceptron<T>::Backpropagation),
+              py::arg("context"), py::arg("X"), py::arg("loss"),
+              py::arg("dloss_dparams"),
+              doc.MultilayerPerceptron.Backpropagation.doc)
+          .def("BackpropagationMeanSquaredError",
+              &MultilayerPerceptron<T>::BackpropagationMeanSquaredError,
+              py::arg("context"), py::arg("X"), py::arg("Y_desired"),
+              py::arg("dloss_dparams"),
+              doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc)
+          .def("BatchOutput", &MultilayerPerceptron<T>::BatchOutput,
+              py::arg("context"), py::arg("X"), py::arg("Y"),
+              py::arg("dYdX") = nullptr,
+              doc.MultilayerPerceptron.BatchOutput.doc);
+    }
+    multilayer_perceptron_cls  // BR
         .def(
             "BatchOutput",
             [](const MultilayerPerceptron<T>* self, const Context<T>& context,

@@ -955,10 +955,15 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             [](const Class& self, const VectorX<T>& u) -> VectorX<T> {
               return self.get_actuation_vector(u);
             },
-            py::arg("u"), cls_doc.get_actuation_vector.doc)
-        .def("set_actuation_vector", &Class::set_actuation_vector,
-            py::arg("u_actuator"), py::arg("u"),
-            cls_doc.set_actuation_vector.doc)
+            py::arg("u"), cls_doc.get_actuation_vector.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("set_actuation_vector", &Class::set_actuation_vector,
+              py::arg("u_actuator"), py::arg("u"),
+              cls_doc.set_actuation_vector.doc);
+    }
+    cls  // BR
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
         .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc)
