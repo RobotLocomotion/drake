@@ -338,8 +338,11 @@ PYDRAKE_MODULE(primitives, m) {
         .def(py::init<const BasicVector<T>&>(), py::arg("model_vector"),
             doc.Multiplexer.ctor.doc_1args_model_vector);
 
-    DefineTemplateClassWithDefault<MultilayerPerceptron<T>, LeafSystem<T>>(m,
-        "MultilayerPerceptron", GetPyParam<T>(), doc.MultilayerPerceptron.doc)
+    auto mlp =
+        DefineTemplateClassWithDefault<MultilayerPerceptron<T>, LeafSystem<T>>(
+            m, "MultilayerPerceptron", GetPyParam<T>(),
+            doc.MultilayerPerceptron.doc);
+    mlp  // BR
         .def(py::init<const std::vector<int>&, PerceptronActivationType>(),
             py::arg("layers"),
             py::arg("activation_type") = PerceptronActivationType::kTanh,
@@ -436,9 +439,6 @@ PYDRAKE_MODULE(primitives, m) {
             py::arg("context"), py::arg("X"), py::arg("Y_desired"),
             py::arg("dloss_dparams"),
             doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc)
-        .def("BatchOutput", &MultilayerPerceptron<T>::BatchOutput,
-            py::arg("context"), py::arg("X"), py::arg("Y"),
-            py::arg("dYdX") = nullptr, doc.MultilayerPerceptron.BatchOutput.doc)
         .def(
             "BatchOutput",
             [](const MultilayerPerceptron<T>* self, const Context<T>& context,
@@ -452,6 +452,15 @@ PYDRAKE_MODULE(primitives, m) {
             "See BatchOutput(context, X, Y) for a version that can avoid "
             "dynamic memory allocations of Y (e.g. if this is used inside an "
             "optimization loop).");
+    if constexpr (std::is_same_v<T, double>) {
+      // XXX porting This is really difficult for dtype=object. We should
+      // probably just deprecate it.
+      mlp  // BR
+          .def("BatchOutput", &MultilayerPerceptron<T>::BatchOutput,
+              py::arg("context"), py::arg("X"), py::arg("Y"),
+              py::arg("dYdX") = nullptr,
+              doc.MultilayerPerceptron.BatchOutput.doc);
+    }
 
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)
