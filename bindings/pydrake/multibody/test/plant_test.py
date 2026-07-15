@@ -807,9 +807,13 @@ class TestPlant(unittest.TestCase):
             Exception, r"incompatible function arguments"
         ):
             dut[0]
-        with self.assertRaisesRegex(Exception, r"Unable to cast"):
+        with self.assertRaisesRegex(
+            Exception, r"incompatible function arguments"
+        ):
             dut[0.0, 0.0]
-        with self.assertRaisesRegex(Exception, r"Expected \[i,j\]"):
+        with self.assertRaisesRegex(
+            Exception, r"incompatible function arguments"
+        ):
             dut[0, 0, 0]
         self.assertIsInstance(dut.CopyToFullMatrix3(), np.ndarray)
         dut.IsNearlyEqualTo(other=dut, precision=0.0)
