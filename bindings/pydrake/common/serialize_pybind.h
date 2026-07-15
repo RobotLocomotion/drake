@@ -93,7 +93,7 @@ class DefAttributesArchive {
     // Add the binding.
     if constexpr (is_optional<T>::value) {
       ppy_class_->def_prop_rw(
-          name, getter, setter, doc, py::rv_policy::reference_internal
+          name, getter, setter, doc, py_rvp::reference_internal
 #ifdef PYDRAKE_USE_NANOBIND
           ,
           py::for_setter(py::arg("arg").none())
