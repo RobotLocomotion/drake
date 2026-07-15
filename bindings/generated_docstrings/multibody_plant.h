@@ -5011,7 +5011,7 @@ be used by Finalize(); post-finalize it returns the joint type that
 *was* used if there were any base bodies in need of a joint.
 
 See also:
-    SetBaseBodyJointType(), GetCombineWeldedBodies(), Finalize())""";
+    SetBaseBodyJointType(), GetFuseWeldedLinks(), Finalize())""";
         } GetBaseBodyJointType;
         // Symbol: drake::multibody::MultibodyPlant::GetBodiesKinematicallyAffectedBy
         struct /* GetBodiesKinematicallyAffectedBy */ {
@@ -5168,25 +5168,6 @@ Note:
 See also:
     RegisterCollisionGeometry(), Finalize())""";
         } GetCollisionGeometriesForBody;
-        // Symbol: drake::multibody::MultibodyPlant::GetCombineWeldedBodies
-        struct /* GetCombineWeldedBodies */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc =
-R"""((Internal use only for now) Returns the global or a model_instance
-setting for whether or not to combine welded RigidBody (Link)
-elements.
-
-Note:
-    This function can be called pre-Finalize() or post-Finalize().
-
-Parameter ``model_instance``:
-    (optional). If this argument is missing or not recognized, returns
-    the global setting. Otherwise returns the setting for this
-    specific model_instance.
-
-See also:
-    SetCombineWeldedBodies(), GetBaseBodyJointType(), Finalize())""";
-        } GetCombineWeldedBodies;
         // Symbol: drake::multibody::MultibodyPlant::GetConstraintActiveStatus
         struct /* GetConstraintActiveStatus */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -5412,6 +5393,24 @@ Raises:
 Raises:
     RuntimeError if ``body`` is not a free body.)""";
         } GetFreeBodyPose;
+        // Symbol: drake::multibody::MultibodyPlant::GetFuseWeldedLinks
+        struct /* GetFuseWeldedLinks */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Returns the global or a model_instance
+setting for whether or not to fuse welded Link (RigidBody) elements.
+
+Note:
+    This function can be called pre-Finalize() or post-Finalize().
+
+Parameter ``model_instance``:
+    (optional). If this argument is missing or not recognized, returns
+    the global setting. Otherwise returns the setting for this
+    specific model_instance.
+
+See also:
+    SetFuseWeldedLinks(), GetBaseBodyJointType(), Finalize())""";
+        } GetFuseWeldedLinks;
         // Symbol: drake::multibody::MultibodyPlant::GetJointActuatorByName
         struct /* GetJointActuatorByName */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6660,45 +6659,8 @@ Raises:
     RuntimeError if called after Finalize().
 
 See also:
-    GetBaseBodyJointType(), SetCombineWeldedBodies(), Finalize())""";
+    GetBaseBodyJointType(), SetFuseWeldedLinks(), Finalize())""";
         } SetBaseBodyJointType;
-        // Symbol: drake::multibody::MultibodyPlant::SetCombineWeldedBodies
-        struct /* SetCombineWeldedBodies */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc =
-R"""((Internal use only for now) Controls whether welded-together RigidBody
-(Link) elements are to be combined into a single composite mobilized
-body in the generated model. If so, those Weld joints will not be
-modeled (i.e. will have no corresponding mobilizer) in the
-post-Finalize() model and there will be fewer mobilized bodies and
-modeled joints in the generated model than in the user's specification
-of links and joints. Results for the original RigidBody (Link)
-elements can still be obtained by name or BodyIndex, but no results
-(in particular, no reaction forces) are available for the unmodeled
-Weld joints.
-
-You can set this flag globally or on a per-model instance basis. If
-there is a setting for a joint's model instance then that setting is
-used; otherwise, the global setting is used.
-
-The default global setting for Drake is *not* to combine welded
-RigidBody elements.
-
-Parameter ``combine``:
-    Whether to combine welded-together bodies. This only affects a
-    particular model instance if the ``model_instance`` argument is
-    also provided, otherwise it sets the global value.
-
-Parameter ``model_instance``:
-    (optional) if present, specifies a particular model instance to
-    which the ``combine`` argument applies.
-
-Raises:
-    RuntimeError if called after Finalize().
-
-See also:
-    GetCombineWeldedBodies(), SetBaseBodyJointType(), Finalize())""";
-        } SetCombineWeldedBodies;
         // Symbol: drake::multibody::MultibodyPlant::SetConstraintActiveStatus
         struct /* SetConstraintActiveStatus */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -7089,6 +7051,48 @@ given ``state`` rather than directly to the Context.
 Precondition:
     ``state`` comes from this MultibodyPlant.)""";
         } SetFreeBodySpatialVelocity;
+        // Symbol: drake::multibody::MultibodyPlant::SetFuseWeldedLinks
+        struct /* SetFuseWeldedLinks */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Controls whether Link (RigidBody) elements
+that are welded to each other are to be fused onto a single mobilized
+body (a "fused mobod") in the generated model. If so, those weld
+joints will not be modeled (i.e. will have no corresponding mobilizer)
+in the post-Finalize() model; there will be fewer mobilized bodies and
+modeled joints in the generated model than in the user's specification
+of links and joints. Regardless of whether ``fuse`` is true or false,
+results for calculations (e.g., positions & velocities) involving
+individual links can still be obtained by name or LinkIndex
+(BodyIndex). However, no results (e.g., no reaction forces) are
+available for fused weld joints on a mobod.
+
+The ``fuse`` flag can be set globally or on a per-model instance
+basis. If SetFuseWeldedLinks() is called with a model instance then
+that setting is used for elements in that model instance; otherwise,
+the global setting is used.
+
+You will be able to override this setting for individual weld joints,
+for example to model a force/torque sensor (not available yet).
+
+The default global setting for Drake is *not* to combine welded
+RigidBody elements.
+
+Parameter ``fuse``:
+    Whether to fuse welded-together bodies. This only affects a
+    particular model instance if the ``model_instance`` argument is
+    also provided, otherwise it sets the global value.
+
+Parameter ``model_instance``:
+    (optional) if present, specifies a particular model instance to
+    which the ``fuse`` argument applies.
+
+Raises:
+    RuntimeError if called after Finalize().
+
+See also:
+    GetFuseWeldedLinks(), SetBaseBodyJointType(), Finalize())""";
+        } SetFuseWeldedLinks;
         // Symbol: drake::multibody::MultibodyPlant::SetPositions
         struct /* SetPositions */ {
           // Source: drake/multibody/plant/multibody_plant.h

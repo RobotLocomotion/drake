@@ -35,12 +35,12 @@ Terminology notes:
  - The LinkIndex we use here is just an alias for MultibodyPlant's BodyIndex;
    they may be used interchangeably.
  - The spanning forest we generate uses "mobilized bodies" (Mobods). A single
-   Mobod may model a single Link or a composite formed of multiple Links that
-   are welded together. Conversely, a single Link may be split to create
-   multiple Mobods (to break cycles in the graph). As there is not necessarily
-   a one-to-one mapping, we're careful in this topology code not to use the term
-   "body" when we mean "link". If we say "body" at all it is in the context of
-   "mobilized body" or Mobod.
+   Mobod may model a single Link or a fused set of multiple Links that are
+   interconnected by weld joints. Conversely, a single Link may be split to
+   create multiple Mobods (to break cycles in the graph). As there is not
+   necessarily a one-to-one mapping, we're careful in this topology code not
+   to use the term "body" when we mean "link". If we say "body" at all it is
+   in the context of "mobilized body" or Mobod.
  - Because Links and Joints may be removed from an existing graph, there may be
    gaps in the sequence of LinkIndex and JointIndex values. However, any
    remaining Links and Joints are stored consecutively, indexed by LinkOrdinal
@@ -89,10 +89,10 @@ correspondence between elements of the graph and the forest:
     which will be included in the forest and added as an ephemeral element to
     the graph.
   - An assembly (links welded together) may be represented using fewer Mobods
-    than links so many Links may follow one Mobod.
+    than links so many Links may follow one "fused" Mobod.
   - Building the forest may require additional Joints to mobilize free bodies or
     immobilize static bodies. Each Joint maps to at most one Mobod; a weld joint
-    whose parent and child Links follow the same composite Mobod will not be
+    whose parent and child Links follow the same fused Mobod will not be
     modeled.
   - We never delete any of the user's Links or Joints; we may add new ones
     during forest building (the ephemeral elements mentioned above) but those
@@ -110,13 +110,15 @@ class LinkJointGraph {
     std::string name;
     int nq{-1};
     int nv{-1};
-    bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
+    bool has_quaternion{false};  // If so, the first 4 qs are w[xyz].
   };
 
   /* A WeldedLinksAssembly is a set of Links and Weld Joints where the links
   are interconnected by paths comprised of one or more of those welds. Thus
   the whole assembly will move as a single rigid object. An assembly is
-  massless only if _all_ its constituent links are massless. */
+  massless only if _all_ its constituent links are massless. Note that these
+  links will not necessarily be fused (modeled together with a single mobod);
+  that's an option. */
   class WeldedLinksAssembly {
    public:
     const std::vector<LinkIndex>& links() const { return links_; }
@@ -386,7 +388,8 @@ class LinkJointGraph {
 
   /* Returns a reference to the vector of Link objects, contiguous and ordered
   by ordinal (not by LinkIndex). World is always the first entry and is always
-  present. `ssize(links())` is the number of Links currently in this graph. */
+  present. `ssize(links())` is the number of Links currently in this graph,
+  including both user and ephemeral links. */
   [[nodiscard]] const std::vector<Link>& links() const { return data_.links; }
 
   /* Returns the number of Links currently in this graph, including World and
@@ -410,7 +413,7 @@ class LinkJointGraph {
 
   /* Returns a reference to the vector of Joint objects, contiguous and ordered
   by ordinal (not by JointIndex). `ssize(joints())` is the number of Joints
-  currently in this graph. */
+  currently in this graph, including both user and ephemeral joints. */
   [[nodiscard]] const std::vector<Joint>& joints() const {
     return data_.joints;
   }
@@ -433,7 +436,7 @@ class LinkJointGraph {
       JointIndex joint_index) const;
 
   /* Returns a reference to the vector of LoopConstraint objects. These are
-  always "ephemeral" (added during forest-building) so this will return empty
+  always ephemeral (added during forest-building) so this will return empty
   if there is no valid forest. See the class comment for more information. */
   [[nodiscard]] const std::vector<LoopConstraint>& loop_constraints() const {
     return data_.loop_constraints;
@@ -444,20 +447,20 @@ class LinkJointGraph {
   [[nodiscard]] inline const LoopConstraint& loop_constraints(
       LoopConstraintIndex constraint_index) const;
 
-  /* Links with this ordinal or higher are "ephemeral" (added during
+  /* Links with this ordinal or higher are ephemeral (added during
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_links() const { return data_.num_user_links; }
 
-  /* Joints with this ordinal or higher are "ephemeral" (added during
+  /* Joints with this ordinal or higher are ephemeral (added during
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_joints() const { return data_.num_user_joints; }
 
   /* After the SpanningForest has been built, returns the index of the mobilized
-  body (Mobod) followed by this Link. If the Link is part of an optimized
-  WeldedLinksAssembly, the Mobod may be a composite body modeling other links
-  in addition to the given one. If the given Link was split into a primary and
-  shadows, this is the mobilized body followed by the primary. If there is no
-  valid forest, the returned index will be invalid. */
+  body (Mobod) followed by this Link. If the Link is part of a fused
+  WeldedLinksAssembly, the Mobod may be a fused (composite) body modeling other
+  links in addition to the given one. If the given Link was split into a
+  primary and shadows, this is the mobilized body followed by the primary. If
+  there is no valid forest, the returned index will be invalid. */
   [[nodiscard]] MobodIndex link_to_mobod(LinkIndex index) const;
 
   /* After the SpanningForest has been built, returns the graph's maximal
@@ -467,37 +470,37 @@ class LinkJointGraph {
   and will move as a single rigid body.
 
   The list of links in a WeldedLinksAssembly is ordered to facilitate
-  post-processing computations for links that follow composite Mobods. The first
-  Link entry is always the _active link_, whose non-weld inboard Joint moves the
-  whole assembly. (By convention, we consider World to be the active link for
-  the welded-to-World WeldedLinksAssembly.) The remaining links are ordered such
-  that kinematics of all links within a composite can be determined by
-  processing the links in the listed order, starting with the known kinematics
-  of the active link (in general, the most-inboard link of any composite Mobod).
-  See the note below for more detail.
+  post-processing computations for links that follow fused Mobods.
+  The first Link entry is always the _active link_, whose non-weld inboard
+  Joint moves the whole assembly. (By convention, we consider World to be the
+  active link for the welded-to-World WeldedLinksAssembly.) The remaining
+  links are ordered such that kinematics of all links within a fused mobod can
+  be determined by processing the links in the listed order, starting with
+  the known kinematics of the active link (in general, the most-inboard link
+  of any fused Mobod). See the note below for more detail.
 
   Modeling options affect how an assembly is modeled in the SpanningForest:
-  (1) If assembly optimization is disabled, then each link is modeled by
-      its own single-link Mobod with a Weld mobilizer, in the same manner as
-      is done for non-assembly links. Loops are cut by splitting links as
-      necessary. Reaction forces will be calculated for all the joints.
-  (2) If assembly optimization is enabled and no weld joint is marked for
+  (1) If fusing is disabled, then each link is modeled by its own single-link
+      Mobod with a Weld mobilizer, in the same manner as is done for
+      non-assembly links. Loops are cut by splitting links as necessary.
+      Reaction forces will be calculated for all the joints.
+  (2) If fusing is enabled and no weld joint is marked for
       special treatment, then the entire assembly is modeled with one
-      composite Mobod and its weld joints are not modeled at all. No loop
+      fused Mobod and its weld joints are not modeled at all. No loop
       splitting occurs; weld joints that close a loop are simply added to
       the assembly and left unmodeled. No reaction forces are calculated.
   (3) If any link's weld joint has been marked "must be modeled" then that link
       begins a new Mobod with a Weld mobilizer modeling the joint. In this case
       the assembly is modeled by several Mobods, which can be a mix of
-      single-link and composite Mobods. Loop splitting occurs when a _modeled_
+      single-link and fused-link Mobods. Loop splitting occurs when a _modeled_
       weld closes a loop, but not when an _unmodeled_ one does. Reaction
       forces are calculated for the modeled joints only.
 
   Most multibody algorithms have complexity proportional to the number of
-  Mobods, so optimized assemblies can result in considerable speedups. The
+  Mobods, so fused assemblies can result in considerable speedups. The
   tradeoff is that joints that are not modeled will not have reaction forces
   calculated. By marking some welds "must be modeled" you can get those
-  reactions and still obtain most of the advantage of optimized assemblies.
+  reactions and still obtain most of the advantage of fused assemblies.
 
   The 0th WeldedLinksAssembly is always present (if there is a valid
   SpanningForest) and its first entry is World (Link 0), even if nothing else is
@@ -514,22 +517,22 @@ class LinkJointGraph {
 
   @note (Advanced) To be precise about the order in which the links appear,
   consider a typical weld joint jᵢ interior to a WeldedLinksAssembly with active
-  link A that has been modeled with a single composite Mobod. Joint jᵢ connects
+  link A that has been modeled with just one fused Mobod. Joint jᵢ connects
   parent link pᵢ to child link cᵢ. Whichever of those links is topologically
   closer to A (typically, but not necessarily, pᵢ) will appear in the list
   before, but not necessarily adjacent to, the more-distal link. In case of a
   tie (only possible if the welds form a topological loop interior to the
-  assembly) the ordering of the two links is arbitrary. That ordering
-  permits intra-assembly kinematics (i.e., X_ALᵢ for the iᵗʰ link following a
-  composite Mobod) to be efficiently calculated by traversing the links in
-  order. (Precalculating those transforms allows for efficient post-processing
-  to get link kinematics from the calculated composite Mobod kinematics.)
-  Although we don't expect to report reaction forces for unmodeled joints for
-  a composite Mobod, this ordering can also facilitate computing those forces
-  for testing or other internal purposes: When there are no loops, it is
-  possible to post-process in reverse order to calculate reaction forces for
-  unmodeled joints interior to a composite body. Processed that way, each link
-  will have only one unknown reaction force at the time it is encountered. */
+  assembly) the ordering of the two links is arbitrary. That ordering permits
+  intra-assembly kinematics (i.e., X_ALᵢ for the iᵗʰ link following a fused
+  Mobod) to be efficiently calculated by traversing the links in order.
+  (Precalculating those transforms allows for efficient post-processing to get
+  link kinematics from the calculated fused Mobod kinematics.) Although we don't
+  report reaction forces for fused weld joints (i.e. weld joints internal to a
+  fused Mobod), this ordering can also facilitate computing those forces for
+  testing or other internal purposes: When there are no loops, it is possible to
+  post-process in reverse order to calculate reaction forces for unmodeled
+  joints interior to a fused mobod. Processed that way, each link will have only
+  one unknown reaction force at the time it is encountered. */
   [[nodiscard]] const std::vector<WeldedLinksAssembly>&
   welded_links_assemblies() const {
     return data_.welded_links_assemblies;
@@ -590,22 +593,22 @@ class LinkJointGraph {
   /* After the SpanningForest is built, returns the sequence of links from World
   to the given Link L in the forest. This is done by finding the path of Mobods
   leading to L's Mobod and reporting the sequence of links following those
-  Mobods. However, if any of those are composite Mobods (because of optimized
-  welded link assemblies) we report only the most-inboard link of each Mobod so
-  that there is only one link returned for each level in Link L's tree. World is
-  always the most-inboard link for its assembly so will always be the first
-  entry in the result. However, if L follows a composite Mobod, the final entry
-  will be L's Mobod's most-inboard link, which might not be L. Cost is O(ℓ)
-  where ℓ is Link L's level in the SpanningForest.
+  Mobods. However, if any of those are fused Mobods (because the option to
+  fuse welded link assemblies was chosen) we report only the active (most
+  inboard) link of each Mobod so that there is only one link returned for
+  each level in Link L's tree. World is always the active link for its assembly
+  so will always be the first entry in the result. However, if L follows a fused
+  Mobod, the final entry will be L's Mobod's active link, which might not be
+  L. Cost is O(ℓ) where ℓ is Link L's level in the SpanningForest.
   @throws std::exception if the SpanningForest hasn't been built yet.
   @see welded_link_assemblies(), SpanningForest::FindPathFromWorld() */
   std::vector<LinkIndex> FindPathFromWorld(LinkIndex link_index) const;
 
   /* After the SpanningForest is built, finds the first Link common to the paths
   towards World from each of two links in the forest. In case the ancestor is
-  on a composite Mobod (due to the ancestor being part of a WeldedLinksAssembly
-  that was optimized), the returned link will be that Mobod's most-inboard link,
-  not necessarily the link that would be the common ancestor if every link had
+  on a fused Mobod (due to the ancestor being part of a WeldedLinksAssembly
+  that was fused), the returned link will be that Mobod's active link, not
+  necessarily the link that would be the common ancestor if every link had
   its own Mobod.
 
   Returns World immediately if the links are on different trees of the forest.
@@ -631,10 +634,11 @@ class LinkJointGraph {
   /* After the SpanningForest is built, this method can be called to return a
   partitioning of the LinkJointGraph into subgraphs such that (a) every link is
   in one and only one subgraph, and (b) two links are in the same subgraph iff
-  there is a path between them which consists only of Weld joints. Each subgraph
-  of welded links is represented as a set of link indexes (using LinkIndex). By
-  definition, these subgraphs will be disconnected by any non-Weld joint between
-  two Links. A few notes:
+  there is a path between them which consists only of Weld joints (that is,
+  they are in the same assembly). Each subgraph of welded links is
+  represented as a set of link indexes (using LinkIndex). By definition,
+  these subgraphs will be disconnected by any non-Weld joint between two
+  Links. A few notes:
     - The maximum number of returned subgraphs equals the number of links in
       the graph. This corresponds to a graph with no Weld joints.
     - The World link is included in a set of welded links, and this set is
@@ -864,7 +868,7 @@ class LinkJointGraph {
   }
 
   // Notes that we didn't model this Joint in the forest because it is just a
-  // weld within an existing composite Mobod. We expect that the joint has
+  // weld within an existing fused Mobod. We expect that the joint has
   // already been added to the assembly; we just need to note that we decided
   // not to model it.
   void NoteUnmodeledJointInWeldedLinksAssembly(
@@ -900,7 +904,7 @@ class LinkJointGraph {
 
     std::vector<JointTraits> joint_traits;
 
-    // The first entry in links is the World Link with LinkIndex(0) and name
+    // The first entry in links is the World Link with LinkOrdinal(0) and name
     // world_link().name(). Ephemeral "as-built" links and joints are placed
     // at the end of these lists, following the user-supplied ones.
     // Access these lists by _ordinal_ rather than _index_.
@@ -950,7 +954,7 @@ class LinkJointGraph {
     // The 0th assembly always exists and contains World (listed first) and any
     // links welded (recursively) to World. Other assemblies are only
     // present if there are at least two Links welded together. The first Link
-    // in an assembly is the active Link.
+    // in a fused assembly is the active Link.
     std::vector<WeldedLinksAssembly> welded_links_assemblies;
 
     bool forest_is_valid{false};  // set false whenever changes are made
