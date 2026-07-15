@@ -16,7 +16,7 @@ MakeCppCompatibleAllocateCallback(py::callable allocate) {
     if (result_py.is_none()) {
       throw std::runtime_error(
           fmt::format("The allocate callback function {} must return a "
-                      "pydrake.common.value.Value[...] or"
+                      "pydrake.common.value.Value[...] or "
                       "pydrake.common.value.AbstractValue object, not None",
               py::cast<std::string>(py::repr(allocate))));
     }
@@ -26,16 +26,17 @@ MakeCppCompatibleAllocateCallback(py::callable allocate) {
     try {
       result_cpp = py::cast<const AbstractValue*>(result_py);
     } catch (const py::cast_error& e) {
+#ifdef PYDRAKE_USE_PYBIND11
+      py::str type_name = py::str(py::type::handle_of(result_py));
+#else
+      py::str type_name = py::inst_name(result_py);
+#endif
       throw std::runtime_error(
           fmt::format("The allocate callback function {} must return a "
-                      "pydrake.common.value.Value[...] or"
+                      "pydrake.common.value.Value[...] or "
                       "pydrake.common.value.AbstractValue object, not {}",
               py::cast<std::string>(py::repr(allocate)),
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-              py::cast<std::string>(py::str(py::type::handle_of(result_py)))));
-#else   // XXX porting
-              py::cast<std::string>(py::repr(py::inst_name(result_py)))));
-#endif  // XXX porting
+              py::cast<std::string>(type_name)));
     }
 
     // Our signature requires returning a unique_ptr; the only way we can do
