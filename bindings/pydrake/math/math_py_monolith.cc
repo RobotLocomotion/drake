@@ -204,8 +204,18 @@ void DefineRotationMatrix(py::module_ m, class_<PyClass<T>>& cls) {
             cls_doc.InvertAndCompose.doc)
         .def("transpose", &Class::transpose, cls_doc.transpose.doc)
         .def("matrix", &Class::matrix, cls_doc.matrix.doc)
-        .def("row", &Class::row, py::arg("index"), cls_doc.row.doc)
-        .def("col", &Class::col, py::arg("index"), cls_doc.col.doc)
+        .def(
+            "row",
+            [](const Class& self, int index) -> Vector3<T> {
+              return self.row(index);
+            },
+            py::arg("index"), cls_doc.row.doc)
+        .def(
+            "col",
+            [](const Class& self, int index) -> Vector3<T> {
+              return self.col(index);
+            },
+            py::arg("index"), cls_doc.col.doc)
         .def(
             "multiply",
             [](const Class& self, const Class& other) { return self * other; },
