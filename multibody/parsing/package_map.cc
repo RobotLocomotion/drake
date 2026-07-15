@@ -989,9 +989,5 @@ std::string PackageMap::to_string() const {
   return result;
 }
 
-std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
-  return out << fmt::to_string(package_map);
-}
-
 }  // namespace multibody
 }  // namespace drake

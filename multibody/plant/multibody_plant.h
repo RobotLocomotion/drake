@@ -1759,10 +1759,43 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] model_instance (optional) the index of the model instance to
   ///   which `joint_type` is to be applied.
   /// @throws std::exception if called after Finalize().
-  /// @see GetBaseBodyJointType(), Finalize()
+  /// @see GetBaseBodyJointType(), SetFuseWeldedLinks(), Finalize()
   void SetBaseBodyJointType(
       BaseBodyJointType joint_type,
       std::optional<ModelInstanceIndex> model_instance = {});
+
+  /// (Internal use only for now) Controls whether Link (RigidBody) elements
+  /// that are welded to each other are to be fused onto a single mobilized body
+  /// (a "fused mobod") in the generated model. If so, those weld joints will
+  /// not be modeled (i.e. will have no corresponding mobilizer) in the
+  /// post-Finalize() model; there will be fewer mobilized bodies and modeled
+  /// joints in the generated model than in the user's specification of links
+  /// and joints. Regardless of whether `fuse` is true or false, results for
+  /// calculations (e.g., positions & velocities) involving individual links can
+  /// still be obtained by name or LinkIndex (BodyIndex). However, no results
+  /// (e.g., no reaction forces) are available for fused weld joints on a mobod.
+  ///
+  /// The `fuse` flag can be set globally or on a per-model instance basis.
+  /// If SetFuseWeldedLinks() is called with a model instance then that
+  /// setting is used for elements in that model instance; otherwise, the
+  /// global setting is used.
+  ///
+  /// You will be able to override this setting for individual weld joints,
+  /// for example to model a force/torque sensor (not available yet).
+  ///
+  /// The default global setting for Drake is _not_ to combine welded RigidBody
+  /// elements.
+  ///
+  /// @param[in] fuse Whether to fuse welded-together bodies. This only
+  ///   affects a particular model instance if the `model_instance` argument is
+  ///   also provided, otherwise it sets the global value.
+  /// @param[in] model_instance (optional) if present, specifies a particular
+  ///   model instance to which the `fuse` argument applies.
+  ///
+  /// @throws std::exception if called after Finalize().
+  /// @see GetFuseWeldedLinks(), SetBaseBodyJointType(), Finalize()
+  void SetFuseWeldedLinks(
+      bool fuse, std::optional<ModelInstanceIndex> model_instance = {});
 
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
@@ -1772,8 +1805,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// This can be called any time -- pre-finalize it returns the joint type
   /// that will be used by Finalize(); post-finalize it returns the joint type
   /// that _was_ used if there were any base bodies in need of a joint.
-  /// @see SetBaseBodyJointType(), Finalize()
+  /// @see SetBaseBodyJointType(), GetFuseWeldedLinks(), Finalize()
   BaseBodyJointType GetBaseBodyJointType(
+      std::optional<ModelInstanceIndex> model_instance = {}) const;
+
+  /// (Internal use only for now) Returns the global or a model_instance setting
+  /// for whether or not to fuse welded Link (RigidBody) elements.
+  ///
+  /// @note This function can be called pre-Finalize() or post-Finalize().
+  ///
+  /// @param[in] model_instance (optional). If this argument is missing or
+  ///   not recognized, returns the global setting. Otherwise returns the
+  ///   setting for this specific model_instance.
+  /// @see SetFuseWeldedLinks(), GetBaseBodyJointType(), Finalize()
+  bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
   /// This method must be called after all elements in the model (joints,
@@ -4142,12 +4187,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// where `M(q)` is the model's mass matrix (including rigid body mass
   /// properties and @ref reflected_inertia "reflected inertias"), `C(q, v)v` is
   /// the bias term for Coriolis and gyroscopic effects and `tau_app` consists
-  /// of a vector applied generalized forces. The last term is a summation over
-  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
-  /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
-  /// velocity Jacobian in W with respect to generalized velocities v).
-  /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
+  /// of a vector of applied generalized forces. The last term is a summation
+  /// over all bodies in the model where `Fapp_Bo_W` is an applied spatial
+  /// force on body B at `Bo` which gets projected into the space of
+  /// generalized forces with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB`
+  /// is B's spatial velocity Jacobian in W with respect to generalized
+  /// velocities v). Note: B's spatial velocity in W can be written as `V_WB
+  /// = Jv_V_WB * v`.
   ///
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it

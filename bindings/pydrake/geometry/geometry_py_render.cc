@@ -96,8 +96,9 @@ class PyRenderEngine : public RenderEngine {
       auto deepcopy = py::module_::import_("copy").attr("deepcopy");
       py::object copied = deepcopy(this);
       if (copied.is_none()) {
-        throw pybind11::type_error(fmt::format(
-            "{}.__deepcopy__ returned None", NiceTypeName::Get(*this)));
+        throw py::type_error(fmt::format(
+            "{}.__deepcopy__ returned None", NiceTypeName::Get(*this))
+                .c_str());
       }
       return copied;
     };
@@ -357,20 +358,20 @@ void DoScalarIndependentDefinitions(py::module_ m) {
             static_cast<void (*)(CameraInfo const&,
                 Image<PixelType::kRgba8U> const*, char const*)>(
                 &PyRenderEngine::ThrowIfInvalid<Image<PixelType::kRgba8U>>),
-            py::arg("intrinsics"), py::arg("image"), py::arg("image_type"),
-            cls_doc.ThrowIfInvalid.doc)
+            py::arg("intrinsics"), py::arg("image").none(),
+            py::arg("image_type"), cls_doc.ThrowIfInvalid.doc)
         .def_static("ThrowIfInvalid",
             static_cast<void (*)(CameraInfo const&,
                 Image<PixelType::kDepth32F> const*, char const*)>(
                 &PyRenderEngine::ThrowIfInvalid<Image<PixelType::kDepth32F>>),
-            py::arg("intrinsics"), py::arg("image"), py::arg("image_type"),
-            cls_doc.ThrowIfInvalid.doc)
+            py::arg("intrinsics"), py::arg("image").none(),
+            py::arg("image_type"), cls_doc.ThrowIfInvalid.doc)
         .def_static("ThrowIfInvalid",
             static_cast<void (*)(CameraInfo const&,
                 Image<PixelType::kLabel16I> const*, char const*)>(
                 &PyRenderEngine::ThrowIfInvalid<Image<PixelType::kLabel16I>>),
-            py::arg("intrinsics"), py::arg("image"), py::arg("image_type"),
-            cls_doc.ThrowIfInvalid.doc);
+            py::arg("intrinsics"), py::arg("image").none(),
+            py::arg("image_type"), cls_doc.ThrowIfInvalid.doc);
     // Note that we do not bind MakeRgbFromLabel nor MakeLabelFromRgb, because
     // crossing the C++ <=> Python boundary one pixel at a time would be
     // extraordinarily inefficient.

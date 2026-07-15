@@ -23,21 +23,25 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(
     std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete)
     : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
                           false,  // Null tree is not allowed here.
-                          std::move(tree), is_discrete) {}
+                          std::move(tree), is_discrete,
+                          0 /* num_misc_continuous_states */) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(bool is_discrete)
     : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
                           true,  // Null tree is OK.
-                          nullptr, is_discrete) {}
+                          nullptr, is_discrete,
+                          0 /* num_misc_continuous_states */) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(
     systems::SystemScalarConverter converter,
-    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete)
+    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete,
+    int num_misc_continuous_states)
     : MultibodyTreeSystem(std::move(converter),
                           true,  // Null tree is OK.
-                          std::move(tree), is_discrete) {}
+                          std::move(tree), is_discrete,
+                          num_misc_continuous_states) {}
 
 template <typename T>
 template <typename U>
@@ -45,14 +49,21 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(const MultibodyTreeSystem<U>& other)
     : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
                           false,  // Null tree isn't allowed (or possible).
                           other.internal_tree().template CloneToScalar<T>(),
-                          other.is_discrete()) {}
+                          other.is_discrete(),
+                          other.num_misc_continuous_states_) {}
 
 // This is the one true constructor.
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(
     systems::SystemScalarConverter converter, bool null_tree_is_ok,
-    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete)
+    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete,
+    int num_misc_continuous_states)
     : LeafSystem<T>(std::move(converter)), is_discrete_(is_discrete) {
+  DRAKE_THROW_UNLESS(num_misc_continuous_states >= 0);
+  DRAKE_THROW_UNLESS(!is_discrete_ || num_misc_continuous_states == 0);
+
+  num_misc_continuous_states_ = num_misc_continuous_states;
+
   if (tree == nullptr) {
     if (!null_tree_is_ok) {
       throw std::logic_error(
@@ -68,6 +79,15 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(
   tree_ = std::move(tree);
   tree_->set_tree_system(this);
   Finalize();
+}
+
+template <typename T>
+void MultibodyTreeSystem<T>::DoCalcMiscDerivatives(
+    const systems::Context<T>&, systems::VectorBase<T>*) const {
+  throw std::logic_error(
+      "MultibodyTreeSystem::DoCalcMiscDerivatives(): derived class must "
+      "override this method to compute derivatives for the misc continuous "
+      "state.");
 }
 
 template <typename T>
@@ -135,6 +155,25 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() {
 }
 
 template <typename T>
+int MultibodyTreeSystem<T>::DeclareMiscContinuousState(
+    int num_state_variables) {
+  if (already_finalized_) {
+    throw std::logic_error(
+        "DeclareMiscContinuousState(): calls after Finalize() are not "
+        "allowed.");
+  }
+  DRAKE_THROW_UNLESS(num_state_variables >= 0);
+  if (is_discrete_ && num_state_variables > 0) {
+    throw std::logic_error(
+        "DeclareMiscContinuousState(): cannot declare continuous state for a "
+        "discrete MultibodyTreeSystem.");
+  }
+  const int result = num_misc_continuous_states_;
+  num_misc_continuous_states_ += num_state_variables;
+  return result;
+}
+
+template <typename T>
 void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
   // Mobilizers.
   for (MobodIndex mobilizer_index(0); mobilizer_index < tree_->num_mobilizers();
@@ -191,9 +230,11 @@ void MultibodyTreeSystem<T>::Finalize() {
     tree_->set_discrete_state_index(
         this->DeclareDiscreteState(tree_->num_states()));
   } else {
-    this->DeclareContinuousState(BasicVector<T>(tree_->num_states()),
-                                 tree_->num_positions(),
-                                 tree_->num_velocities(), 0 /* num_z */);
+    const int num_z = num_misc_continuous_states_;
+    BasicVector<T> model_continuous_state(tree_->num_states() + num_z);
+    model_continuous_state.get_mutable_value().tail(num_z).setZero();
+    this->DeclareContinuousState(model_continuous_state, tree_->num_positions(),
+                                 tree_->num_velocities(), num_z);
   }
 
   // Declare cache entries dependent only on parameters.
@@ -376,26 +417,28 @@ template <typename T>
 void MultibodyTreeSystem<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  // No derivatives to compute if state is discrete.
+  // No derivatives to compute if state is discrete or there are no derivatives.
   if (is_discrete()) return;
-  // No derivatives to compute if state is empty. (Will segfault otherwise.)
-  // TODO(amcastro-tri): When nv = 0 we should not declare state or cache
-  // entries at all and the system framework will never call this.
-  if (internal_tree().num_states() == 0) return;
+  if (derivatives->size() == 0) return;
 
   const VectorX<T>& x = dynamic_cast<const systems::BasicVector<T>&>(
                             context.get_continuous_state_vector())
                             .value();
-  const auto v = x.bottomRows(internal_tree().num_velocities());
+  const int nq = internal_tree().num_positions();
+  const int nv = internal_tree().num_velocities();
+  const auto v = x.segment(nq, nv);
 
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
 
   // TODO(sherm1) Heap allocation here. Get rid of it.
-  VectorX<T> xdot(internal_tree().num_states());
-  VectorX<T> qdot(internal_tree().num_positions());
+  VectorX<T> qdot(nq);
   internal_tree().MapVelocityToQDot(context, v, &qdot);
-  xdot << qdot, vdot;
-  derivatives->SetFromVector(xdot);
+  derivatives->get_mutable_generalized_position().SetFromVector(qdot);
+  derivatives->get_mutable_generalized_velocity().SetFromVector(vdot);
+  if (num_misc_continuous_states_ > 0) {
+    DoCalcMiscDerivatives(context,
+                          &derivatives->get_mutable_misc_continuous_state());
+  }
 }
 
 template <typename T>
@@ -461,23 +504,27 @@ void MultibodyTreeSystem<T>::DoCalcImplicitTimeDerivativesResidual(
   // Compute forces applied by the derived class (likely MultibodyPlant).
   AddInForcesContinuous(context, &forces);
 
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
-  const VectorX<T>& qvdot_proposed =
+  const VectorX<T>& xdot_proposed =
       dynamic_cast<const systems::BasicVector<T>&>(
           proposed_derivatives.get_vector())
           .value();
-  DRAKE_ASSERT(qvdot_proposed.size() == nq + nv);
+  const int nz = num_misc_continuous_states_;
+  DRAKE_DEMAND(xdot_proposed.size() == nq + nv + nz);
 
   auto qdot_residual = residual->head(nq);
   // N(q)⋅v
   internal_tree().MapVelocityToQDot(
       context, internal_tree().get_velocities(context), &qdot_residual);
   // q̇_proposed - N(q)⋅v
-  qdot_residual = qvdot_proposed.head(nq) - qdot_residual;
+  qdot_residual = xdot_proposed.head(nq) - qdot_residual;
   // InverseDynamics(context, v_proposed)
-  residual->tail(nv) = internal_tree().CalcInverseDynamics(
-      context, qvdot_proposed.tail(nv), forces);
+  residual->segment(nq, nv) = internal_tree().CalcInverseDynamics(
+      context, xdot_proposed.segment(nq, nv), forces);
+
+  if (num_misc_continuous_states_ == 0) return;
+  BasicVector<T> zdot_residual(nz);
+  DoCalcMiscDerivatives(context, &zdot_residual);
+  residual->tail(nz) = xdot_proposed.tail(nz) - zdot_residual.get_value();
 }
 
 template <typename T>

@@ -32,6 +32,9 @@ struct CenicDiagramStructure {
 };
 }  // namespace internal
 
+// TODO(#23767): Consider applying SIMD optimizations to integrator hot spots,
+// under benchmarking and profiling guidance.
+
 /** Convex Error-controlled Numerical Integration for Contact (CENIC) is a
 specialized error-controlled implicit integrator for contact-rich robotics
 simulations [Kurtz and Castro, 2025].

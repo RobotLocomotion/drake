@@ -98,15 +98,14 @@ GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
 
   // Repeat for Modeling Options.
   const auto use_fixed_base = ForestBuildingOptions::kUseFixedBase;
-  const auto combine_links =
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies;
+  const auto combine_links = ForestBuildingOptions::kFuseWeldedLinksAssemblies;
   auto forest_building_options = use_fixed_base | combine_links;
   static_assert(
       std::is_same_v<decltype(forest_building_options), ForestBuildingOptions>);
   EXPECT_EQ(forest_building_options & use_fixed_base,
             ForestBuildingOptions::kUseFixedBase);
   EXPECT_EQ(forest_building_options & combine_links,
-            ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+            ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_FALSE(static_cast<bool>(forest_building_options &
                                  ForestBuildingOptions::kUseRpyFloatingJoints));
   EXPECT_EQ(
@@ -130,7 +129,7 @@ GTEST_TEST(LinkJointGraph, SpecifyForestBuildingOptions) {
 
   const ForestBuildingOptions default_options = ForestBuildingOptions::kDefault;
   const ForestBuildingOptions two_options =
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies |
       ForestBuildingOptions::kUseRpyFloatingJoints;
 
   // If we haven't said anything, global and all ModelInstance options are

@@ -729,7 +729,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
         .def(
             "DeclareAbstractOutputPort",
-            [](PyLeafSystem* self, const std::string& name, py::function alloc,
+            [](PyLeafSystem* self, const std::string& name, py::callable alloc,
                 std::function<void(py::object, py::object)> calc,
                 const std::set<DependencyTicket>& prerequisites_of_calc)
                 -> const OutputPort<T>& {
@@ -1367,7 +1367,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
       AddTemplateMethod(
           converter, "_AddConstructor",
           [](SystemScalarConverter* self,
-              py::function python_converter_function) {
+              py::callable python_converter_function) {
             AddPydrakeConverterFunction(self,
                 ConverterFunction{
                     [python_converter_function](const System<U>& system_u_cpp) {

@@ -13,9 +13,6 @@
 #include <utility>
 #include <vector>
 
-// Remove with deprecation 2026-07-01.
-#include <ostream>
-
 #include <fmt/format.h>
 
 #include "drake/common/eigen_types.h"
@@ -2360,10 +2357,6 @@ bool MathematicalProgram::CheckBinding(const Binding<C>& binding) const {
   // retrofitting `description`), ensure that they have unique names.
   CheckIsDecisionVariable(binding.variables());
   return (binding.evaluator()->num_outputs() > 0);
-}
-
-std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
-  return os << prog.to_string();
 }
 
 }  // namespace solvers

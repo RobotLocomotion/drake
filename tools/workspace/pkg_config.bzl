@@ -30,8 +30,8 @@ def _maybe_setup_pkg_config_repository(repository_ctx):
 
     This flavor of this rule is intended to be called by other repository_rule
     implementation functions.  The pkg_config_repository flavor of this rule is
-    intended to be called directly from the WORKSPACE file, or from a macro
-    that was called by the WORKSPACE file.
+    intended to be called directly from the MODULE.bazel file, or from a macro
+    that was called by the MODULE.bazel file.
     """
 
     # First locate pkg-config.
@@ -362,24 +362,9 @@ def pkg_config_repository(**kwargs):
     results of invoking pkg-config.
 
     The pkg_config_repository flavor of this rule is intended to be called
-    directly from the WORKSPACE file, or from a macro that was called by the
-    WORKSPACE file.  The setup_pkg_config_repository flavor of this rule is
+    directly from the MODULE.bazel file, or from a macro that was called by the
+    MODULE.bazel file.  The setup_pkg_config_repository flavor of this rule is
     intended to be called by other repository_rule implementation functions.
-
-    Example:
-        WORKSPACE:
-            load("@drake//tools/workspace:pkg_config.bzl", "pkg_config_repository")  # noqa
-            pkg_config_repository(
-                name = "foo",
-                modname = "foo-2.0",
-            )
-
-        BUILD:
-            cc_library(
-                name = "foobar",
-                deps = ["@foo"],
-                srcs = ["bar.cc"],
-            )
 
     Args:
         name: A unique name for this rule.

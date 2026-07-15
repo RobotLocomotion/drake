@@ -49,3 +49,12 @@ class TestMonteCarlo(unittest.TestCase):
             self.assertIsNot(
                 result[0].generator_snapshot, result[i].generator_snapshot
             )
+
+        # The generator is allowed to be None.
+        MonteCarloSimulation(
+            make_simulator=make_simulator,
+            output=calc_output,
+            final_time=1.0,
+            num_samples=1,
+            generator=None,
+        )

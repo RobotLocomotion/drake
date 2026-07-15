@@ -741,7 +741,7 @@ std::vector<LinkIndex> LinkJointGraph::FindPathFromWorld(
   std::vector<LinkIndex> path(mobod->level() + 1);
   while (mobod->inboard_mobod().is_valid()) {
     const Link& link = links(mobod->active_link_ordinal());
-    path[mobod->level()] = link.index();  // Active Link if optimized assembly.
+    path[mobod->level()] = link.index();  // Active Link if fused assembly.
     mobod = &forest().mobods(mobod->inboard_mobod());
   }
   DRAKE_DEMAND(mobod->is_world());

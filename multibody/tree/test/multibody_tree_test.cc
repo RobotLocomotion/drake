@@ -28,6 +28,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/system_scalar_converter.h"
 
 namespace drake {
 namespace multibody {
@@ -346,6 +347,198 @@ GTEST_TEST(MultibodyTreeSystem, CatchBadBehavior) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MultibodyTreeSystem<double>(std::move(model)),
       ".*MultibodyTreeSystem().*MultibodyTree was null.*");
+}
+
+// Testing miscellaneous continuous state APIs.
+
+// A *bad* plant that introduces miscellaneous continuous state but does not
+// implement DoCalcMiscDerivatives(). For a non-empty z state, we should throw
+// when trying to compute derivatives. We use this to test:
+//
+//   1. That the DeclareMiscContinousState() API returns the expected index.
+//   2. Declared misc state appears in the continuous state vector.
+//   3. Calculating time derivatives for non-empty z state throws as part of the
+//      *default* implementation.
+//   4. Calculating time derivatives for _empty_ z state, is a no-op.
+class BadMiscContinuousStateSystem : public MultibodyTreeSystem<double> {
+ public:
+  BadMiscContinuousStateSystem(int first_num_z, int second_num_z,
+                               bool is_discrete)
+      : MultibodyTreeSystem<double>(is_discrete),
+        num_z_(first_num_z + second_num_z) {
+    // Note: there are no qs and no vs; but we should nevertheless be attempting
+    // to compute derivatives for the zs.
+    first_z_start_ = DeclareMiscContinuousState(first_num_z);
+    second_z_start_ = DeclareMiscContinuousState(second_num_z);
+  }
+
+  int first_z_start() const { return first_z_start_; }
+  int second_z_start() const { return second_z_start_; }
+  int num_z() const { return num_z_; }
+
+  using MultibodyTreeSystem<double>::DeclareMiscContinuousState;
+  using MultibodyTreeSystem<double>::Finalize;
+  using MultibodyTreeSystem<double>::num_misc_continuous_states;
+
+ private:
+  int first_z_start_{};
+  int second_z_start_{};
+  int num_z_{};
+};
+
+// Patch the _bad_ system to be a _good_ system -- provide the missing override
+// for DoCalcMiscDerivatives() allows derivative calculations to succeed.
+class GoodMiscContinuousStateSystem final
+    : public BadMiscContinuousStateSystem {
+ public:
+  GoodMiscContinuousStateSystem(int num_z, bool is_discrete)
+      : BadMiscContinuousStateSystem(num_z, 0, is_discrete) {}
+
+ private:
+  void DoCalcMiscDerivatives(const systems::Context<double>&,
+                             systems::VectorBase<double>* zdot) const final {
+    DRAKE_DEMAND(zdot->size() == num_z());
+    for (int i = 0; i < num_z(); ++i) {
+      zdot->SetAtIndex(i, 10.0 + i);
+    }
+  }
+};
+
+GTEST_TEST(MultibodyTreeSystem, MiscContinuousState) {
+  // With z-values, failure to override DoCalcMiscDerivatives() should throw.
+  BadMiscContinuousStateSystem bad_continuous_system(2, 3,
+                                                     /* is_discrete= */ false);
+  bad_continuous_system.Finalize();
+  EXPECT_EQ(bad_continuous_system.num_misc_continuous_states(), 5);
+
+  // DeclareMiscContinuousState() returns the starting index of the newly
+  // declared z-state group.
+  EXPECT_EQ(bad_continuous_system.first_z_start(), 0);
+  EXPECT_EQ(bad_continuous_system.second_z_start(), 2);
+
+  // We have all of the expected continuous state.
+  auto bad_context = bad_continuous_system.CreateDefaultContext();
+  const ContinuousState<double>& xc = bad_context->get_continuous_state();
+  EXPECT_EQ(xc.get_generalized_position().size(), 0);
+  EXPECT_EQ(xc.get_generalized_velocity().size(), 0);
+  ASSERT_EQ(xc.get_misc_continuous_state().size(), 5);
+
+  // Because BadMiscContinuousStateSystem did not override
+  // DoCalcMiscDerivatives(), the base class should throw.
+  auto bad_derivatives = bad_continuous_system.AllocateTimeDerivatives();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bad_continuous_system.CalcTimeDerivatives(*bad_context,
+                                                bad_derivatives.get()),
+      ".*DoCalcMiscDerivatives.*must.*override.*misc continuous state.*");
+
+  // A system with non-empty z *and* a DoCalcMiscDerivatives() override produces
+  // derivatives.
+  GoodMiscContinuousStateSystem good_system(3, /* is_discrete= */ false);
+  good_system.Finalize();
+  EXPECT_EQ(good_system.num_misc_continuous_states(), 3);
+  auto good_context = good_system.CreateDefaultContext();
+  auto good_derivatives = good_system.AllocateTimeDerivatives();
+  good_system.CalcTimeDerivatives(*good_context, good_derivatives.get());
+  ASSERT_EQ(good_derivatives->get_misc_continuous_state().size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(good_derivatives->get_misc_continuous_state().GetAtIndex(i),
+              10.0 + i);
+  }
+
+  // Can't declare on a finalized system.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      good_system.DeclareMiscContinuousState(1),
+      ".*DeclareMiscContinuousState.*after Finalize.*not allowed.*");
+
+  // A system with no misc continuous state should not throw when calculating
+  // time derivatives.
+  BadMiscContinuousStateSystem no_z_system(0, 0, /* is_discrete */ false);
+  no_z_system.Finalize();
+  auto no_z_context = no_z_system.CreateDefaultContext();
+  auto no_z_derivatives = no_z_system.AllocateTimeDerivatives();
+  DRAKE_EXPECT_NO_THROW(
+      no_z_system.CalcTimeDerivatives(*no_z_context, no_z_derivatives.get()));
+
+  // A _discrete_ system cannot declare misc _continuous_ state.
+  GoodMiscContinuousStateSystem discrete_system(0, /* is_discrete= */ true);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      discrete_system.DeclareMiscContinuousState(1),
+      ".*DeclareMiscContinuousState.*continuous state.*discrete.*");
+
+  // Computing derivative residuals.
+  // A bad system with an empty z does nothing.
+  Eigen::VectorXd no_z_residual(0);
+  EXPECT_NO_THROW(no_z_system.CalcImplicitTimeDerivativesResidual(
+      *no_z_context, *no_z_derivatives, &no_z_residual));
+
+  // A bad system with a non-empty z should throw.
+  Eigen::VectorXd bad_residual(5);
+  EXPECT_THROW(bad_continuous_system.CalcImplicitTimeDerivativesResidual(
+                   *bad_context, *bad_derivatives, &bad_residual),
+               std::logic_error);
+
+  // A good system with a non-empty z should produce expected residuals.
+  // These are the derivatives computed up above.
+  const Eigen::VectorXd actual_derivatives =
+      good_derivatives->get_misc_continuous_state().CopyToVector();
+
+  Eigen::VectorXd proposed_derivatives(3);
+  proposed_derivatives << 7, 8, 9;
+  good_derivatives->get_mutable_misc_continuous_state().SetFromVector(
+      proposed_derivatives);
+  Eigen::VectorXd good_residual(3);
+  good_system.CalcImplicitTimeDerivativesResidual(
+      *good_context, *good_derivatives, &good_residual);
+
+  const Eigen::VectorXd expected_residual =
+      proposed_derivatives - actual_derivatives;
+  EXPECT_TRUE(CompareMatrices(good_residual, expected_residual, 1e-14));
+}
+
+// Tests the MultibodyTreeSystem constructor that passes a null tree (so that
+// the system builds its own multibody *tree*), but a non-zero misc continuous
+// state size. The constructed tree still gets the requested number of z-values.
+class NullTreeWithZSystem final : public MultibodyTreeSystem<double> {
+ public:
+  explicit NullTreeWithZSystem(int num_z)
+      : MultibodyTreeSystem<double>(systems::SystemScalarConverter{},
+                                    /* tree= */ nullptr,
+                                    /* is_discrete= */ false, num_z),
+        num_z_(num_z) {}
+
+  using MultibodyTreeSystem<double>::Finalize;
+
+ private:
+  void DoCalcMiscDerivatives(const systems::Context<double>&,
+                             systems::VectorBase<double>* zdot) const override {
+    DRAKE_DEMAND(zdot->size() == num_z_);
+    for (int i = 0; i < num_z_; ++i) {
+      zdot->SetAtIndex(i, 20.0 + i);
+    }
+  }
+
+  int num_z_{};
+};
+
+GTEST_TEST(MultibodyTreeSystem, NullTreeWithZSystem) {
+  NullTreeWithZSystem system(2);
+  system.Finalize();
+
+  auto context = system.CreateDefaultContext();
+  const ContinuousState<double>& xc = context->get_continuous_state();
+  EXPECT_EQ(xc.get_generalized_position().size(), 0);
+  EXPECT_EQ(xc.get_generalized_velocity().size(), 0);
+  EXPECT_EQ(xc.get_misc_continuous_state().size(), 2);
+
+  auto derivatives = system.AllocateTimeDerivatives();
+  DRAKE_EXPECT_NO_THROW(
+      system.CalcTimeDerivatives(*context, derivatives.get()));
+
+  EXPECT_EQ(derivatives->get_generalized_position().size(), 0);
+  EXPECT_EQ(derivatives->get_generalized_velocity().size(), 0);
+  ASSERT_EQ(derivatives->get_misc_continuous_state().size(), 2);
+  EXPECT_EQ(derivatives->get_misc_continuous_state().GetAtIndex(0), 20.0);
+  EXPECT_EQ(derivatives->get_misc_continuous_state().GetAtIndex(1), 21.0);
 }
 
 GTEST_TEST(MultibodyTree, BackwardsCompatibility) {

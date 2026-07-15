@@ -160,6 +160,28 @@ class TestGeometryVisualizers(unittest.TestCase):
         load_subscriber.clear()
         draw_subscriber.clear()
 
+    @numpy_compare.check_nonsymbolic_types
+    def test_drake_visualizer_internal_lcm(self, T):
+        """Use lcm=None during construction."""
+        builder = DiagramBuilder_[T]()
+        scene_graph = builder.AddSystem(mut.SceneGraph_[T]())
+
+        # Add the visualizer by hand.
+        by_hand = builder.AddSystem(mut.DrakeVisualizer_[T](lcm=None))
+        builder.Connect(
+            scene_graph.get_query_output_port(),
+            by_hand.query_object_input_port(),
+        )
+
+        # Add the visualizer with the AddToBuilder sugar.
+        mut.DrakeVisualizer_[T].AddToBuilder(
+            builder=builder,
+            scene_graph=scene_graph,
+            lcm=None,
+        )
+
+        builder.Build()
+
     def test_meshcat_params(self):
         prop_a = mut.MeshcatParams.PropertyTuple(
             path="a",

@@ -98,7 +98,8 @@ struct type_caster_wrapped {
       // example.
       static constexpr auto original_name = Wrapper::original_name;
       throw py::cast_error(
-          std::string("Can only pass ") + original_name.text + " by value.");
+          fmt::format("Can only pass {} by value.", original_name.text)
+              .c_str());
     }
     return WrappedTypeCaster::cast(
         Wrapper::wrap(std::forward<TType>(src)), policy, parent);

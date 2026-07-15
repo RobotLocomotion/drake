@@ -72,59 +72,15 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 namespace {
-enum class ArrayShapeType { Scalar, Vector };
 
-// Checks array shape, provides user-friendly message if it fails.
-void CheckArrayShape(
-    py::str var_name, py::array x, ArrayShapeType shape, int size) {
-  bool ndim_is_good{};
-  py::str ndim_hint;
-  if (shape == ArrayShapeType::Scalar) {
-    ndim_is_good = (x.ndim() == 0);
-    ndim_hint = py::str("0 (scalar)");
-  } else {
-    ndim_is_good = (x.ndim() == 1 || x.ndim() == 2);
-    ndim_hint = py::str("1 or 2 (vector)");
-  }
-  if (!ndim_is_good || x.size() != size) {
-    throw std::runtime_error(py::cast<std::string>(
-        py::str("{} must be of .ndim = {} and .size = {}. "
-                "Got .ndim = {} and .size = {} instead.")
-            .format(var_name, ndim_hint, size, x.ndim(), x.size())));
-  }
-}
-
-// Checks array type, provides user-friendly message if it fails.
-template <typename T>
-void CheckReturnedArrayType(py::str cls_name, py::array y) {
-  py::module_ m = py::module_::import_("pydrake.solvers._extra");
-  m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
-}
-
-// Wraps user function to provide better user-friendliness.
+// Wraps user cost or constraint evaluation function to provide better error
+// messages when the input or output are incorrectly typed or sized.
 template <typename T, typename Func>
-Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
-    int num_outputs, ArrayShapeType output_shape) {
-  // TODO(eric.cousineau): It would be nicer to write this in Python.
-  // TODO(eric.cousineau): Consider using `py::detail::make_caster<>`. However,
-  // this may mean the argument is converted twice.
-  py::cpp_function wrapped = [=](py::array x) {
-    // Check input.
-    // WARNING: If the input is badly sized, we will only reach this error in
-    // Release mode. In debug mode, an assertion error will be triggered.
-    CheckArrayShape(py::str("{}: Input").format(cls_name), x,
-        ArrayShapeType::Vector, num_vars);
-    // N.B. We use `py::object` instead of `py::array` for the return type
-    /// because for dtype=object, you cannot implicitly cast `np.array(T())`
-    // (numpy scalar) to `T` (object), at least for AutoDiffXd.
-    py::object y = func(x);
-    // Check output.
-    CheckArrayShape(py::str("{}: Return value").format(cls_name), y,
-        output_shape, num_outputs);
-    CheckReturnedArrayType<T>(cls_name, y);
-    return y;
-  };
-  return py::cast<Func>(wrapped);
+Func WrapUserEvaluatorFunc(py::str cls_name, py::callable func, int num_vars,
+    int num_outputs, int output_dim) {
+  py::module_ m = py::module_::import_("pydrake.solvers._extra");
+  return py::cast<Func>(m.attr("_wrap_user_evaluator_func")(
+      cls_name, func, num_vars, num_outputs, output_dim, GetPyParam<T>()[0]));
 }
 
 // TODO(eric.cousineau): Make a Python virtual base, and implement this in
@@ -137,7 +93,7 @@ class PyFunctionCost : public Cost {
   // Note that we do not allow Python implementations of Cost to be declared as
   // thread safe.
   PyFunctionCost(
-      int num_vars, const py::function& func, const std::string& description)
+      int num_vars, const py::callable& func, const std::string& description)
       : Cost(num_vars, description),
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
@@ -163,9 +119,9 @@ class PyFunctionCost : public Cost {
 
  private:
   template <typename T, typename Func>
-  Func Wrap(py::function func) {
-    return WrapUserFunc<T, Func>(py::str("PyFunctionCost"), func, num_vars(),
-        num_outputs(), ArrayShapeType::Scalar);
+  Func Wrap(py::callable func) {
+    return WrapUserEvaluatorFunc<T, Func>(py::str("PyFunctionCost"), func,
+        num_vars(), num_outputs(), /* output_dim = */ 0);
   }
 
   const DoubleFunc double_func_;
@@ -182,7 +138,7 @@ class PyFunctionConstraint : public Constraint {
 
   // Note that we do not allow Python implementations of Constraint to be
   // declared as thread safe.
-  PyFunctionConstraint(int num_vars, const py::function& func,
+  PyFunctionConstraint(int num_vars, const py::callable& func,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
       : Constraint(lb.size(), num_vars, lb, ub, description),
@@ -212,9 +168,9 @@ class PyFunctionConstraint : public Constraint {
 
  private:
   template <typename T, typename Func>
-  Func Wrap(py::function func) {
-    return WrapUserFunc<T, Func>(py::str("PyFunctionConstraint"), func,
-        num_vars(), num_outputs(), ArrayShapeType::Vector);
+  Func Wrap(py::callable func) {
+    return WrapUserEvaluatorFunc<T, Func>(py::str("PyFunctionConstraint"), func,
+        num_vars(), num_outputs(), /* output_dim = */ 1);
   }
 
   const DoubleFunc double_func_;
@@ -625,7 +581,7 @@ void BindMathematicalProgram(py::module_ m) {
           doc.MathematicalProgram.AddVisualizationCallback.doc)
       .def(
           "AddCost",
-          [](MathematicalProgram* self, py::function func,
+          [](MathematicalProgram* self, py::callable func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
             return self->AddCost(std::make_shared<PyFunctionCost>(
@@ -776,7 +732,7 @@ void BindMathematicalProgram(py::module_ m) {
           doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args)
       .def(
           "AddConstraint",
-          [](MathematicalProgram* self, py::function func,
+          [](MathematicalProgram* self, py::callable func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
@@ -1578,7 +1534,7 @@ void BindSolutionResult(py::module_ m) {
 void BindPyFunctionCost(py::module_ m) {
   class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
       m, "PyFunctionCost", "Cost with its evaluator as a Python function")
-      .def(py::init<int, const py::function&, const std::string&>(),
+      .def(py::init<int, const py::callable&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
           "`num_vars` variables.");
@@ -1588,7 +1544,7 @@ void BindPyFunctionConstraint(py::module_ m) {
   class_<PyFunctionConstraint, Constraint,
       std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
-      .def(py::init<int, const py::function&, const Eigen::VectorXd&,
+      .def(py::init<int, const py::callable&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("lb"), py::arg("ub"),
           py::arg("description") = "",

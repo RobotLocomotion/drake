@@ -1,6 +1,7 @@
 #pragma once
 
 #include <initializer_list>
+#include <type_traits>
 #include <unordered_set>
 #include <vector>
 
@@ -116,6 +117,8 @@ class GeometrySet {
   explicit GeometrySet(FrameId frame_id) { frame_ids_.insert(frame_id); }
 
   template <typename Container>
+    requires(std::is_same_v<typename Container::value_type, FrameId> ||
+             std::is_same_v<typename Container::value_type, GeometryId>)
   explicit GeometrySet(const Container& ids) {
     Add(ids);
   }
@@ -123,6 +126,7 @@ class GeometrySet {
   // NOTE: initializer lists cannot be inferred by ADL, so they must be
   // explicitly enumerated.
   template <typename Id>
+    requires(std::is_same_v<Id, FrameId> || std::is_same_v<Id, GeometryId>)
   explicit GeometrySet(std::initializer_list<Id> id_list) {
     Add(id_list);
   }
@@ -147,10 +151,9 @@ class GeometrySet {
     Add(frame_ids);
   }
 
-  template <typename ContainerG, typename ContainerF,
-            typename = typename std::enable_if_t<
-                std::is_same_v<typename ContainerG::value_type, GeometryId> &&
-                std::is_same_v<typename ContainerF::value_type, FrameId>>>
+  template <typename ContainerG, typename ContainerF>
+    requires(std::is_same_v<typename ContainerG::value_type, GeometryId> &&
+             std::is_same_v<typename ContainerF::value_type, FrameId>)
   GeometrySet(const ContainerG& geometry_ids, const ContainerF& frame_ids) {
     Add(geometry_ids, frame_ids);
   }
@@ -202,16 +205,14 @@ class GeometrySet {
   void Add(FrameId frame_id) { frame_ids_.insert(frame_id); }
 
   template <typename Container>
-  typename std::enable_if_t<
-      std::is_same_v<typename Container::value_type, GeometryId>>
-  Add(const Container& geometry_ids) {
+    requires(std::is_same_v<typename Container::value_type, GeometryId>)
+  void Add(const Container& geometry_ids) {
     geometry_ids_.insert(geometry_ids.begin(), geometry_ids.end());
   }
 
   template <typename Container>
-  typename std::enable_if_t<
-      std::is_same_v<typename Container::value_type, FrameId>>
-  Add(const Container& frame_ids) {
+    requires(std::is_same_v<typename Container::value_type, FrameId>)
+  void Add(const Container& frame_ids) {
     frame_ids_.insert(frame_ids.begin(), frame_ids.end());
   }
 
@@ -224,28 +225,25 @@ class GeometrySet {
   }
 
   template <typename ContainerG, typename ContainerF>
-  typename std::enable_if_t<
-      std::is_same_v<typename ContainerG::value_type, GeometryId> &&
-      std::is_same_v<typename ContainerF::value_type, FrameId>>
-  Add(const ContainerG& geometry_ids, const ContainerF& frame_ids) {
+    requires(std::is_same_v<typename ContainerG::value_type, GeometryId> &&
+             std::is_same_v<typename ContainerF::value_type, FrameId>)
+  void Add(const ContainerG& geometry_ids, const ContainerF& frame_ids) {
     Add(geometry_ids);
     Add(frame_ids);
   }
 
   template <typename ContainerF>
-  typename std::enable_if_t<
-      std::is_same_v<typename ContainerF::value_type, FrameId>>
-  Add(std::initializer_list<GeometryId> geometry_ids,
-      const ContainerF& frame_ids) {
+    requires(std::is_same_v<typename ContainerF::value_type, FrameId>)
+  void Add(std::initializer_list<GeometryId> geometry_ids,
+           const ContainerF& frame_ids) {
     Add(geometry_ids);
     Add(frame_ids);
   }
 
   template <typename ContainerG>
-  typename std::enable_if_t<
-      std::is_same_v<typename ContainerG::value_type, GeometryId>>
-  Add(const ContainerG& geometry_ids,
-      std::initializer_list<FrameId> frame_ids) {
+    requires(std::is_same_v<typename ContainerG::value_type, GeometryId>)
+  void Add(const ContainerG& geometry_ids,
+           std::initializer_list<FrameId> frame_ids) {
     Add(geometry_ids);
     Add(frame_ids);
   }

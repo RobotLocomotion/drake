@@ -14,7 +14,7 @@ Reasoning for not upstreaming this patch: Drake-specific build compatibility.
 
  /**
   * Given a format and a set of numbers/variables convert it to a string within out.
-@@ -236,7 +238,15 @@ using fmt::format_to_n_result;
+@@ -236,7 +238,19 @@ using fmt::format_to_n_result;
   * @remark `format_to_n` does not append a terminating null character.
   * @note The standard library provides this function as of C++20, but we support up to C++17.
   */
@@ -24,6 +24,10 @@ Reasoning for not upstreaming this patch: Drake-specific build compatibility.
 +template <typename OutputIt, typename... T>
 +inline auto format_to_n(OutputIt out, size_t n, std::string_view fmt, T&&... args) -> format_to_n_result<OutputIt> {
 +  return fmt::format_to_n(out, n, fmt::runtime(fmt), std::forward<T>(args)...);
++}
++template <typename OutputIt, typename... T>
++inline auto format_to_n(OutputIt out, size_t n, decltype(fmt::runtime("")) fmt, T&&... args) -> format_to_n_result<OutputIt> {
++  return fmt::format_to_n(out, n, fmt, std::forward<T>(args)...);
 +}
 +
 +#endif

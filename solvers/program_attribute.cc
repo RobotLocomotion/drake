@@ -4,9 +4,6 @@
 #include <deque>
 #include <vector>
 
-// TODO(2026-07-01): Remove sstream header when `operator<<` is removed.
-#include <sstream>
-
 namespace drake {
 namespace solvers {
 
@@ -102,10 +99,6 @@ std::string to_string(const ProgramAttribute& attr) {
   DRAKE_UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& os, const ProgramAttribute& attr) {
-  return os << fmt::to_string(attr);
-}
-
 std::string to_string(const ProgramAttributes& attrs) {
   std::deque<ProgramAttribute> sorted(attrs.begin(), attrs.end());
   std::ranges::sort(sorted.begin(), sorted.end());
@@ -121,10 +114,6 @@ std::string to_string(const ProgramAttributes& attrs) {
   }
   result.append("}");
   return result;
-}
-
-std::ostream& operator<<(std::ostream& os, const ProgramAttributes& attrs) {
-  return os << fmt::to_string(attrs);
 }
 
 std::string to_string(const ProgramType& program_type) {
@@ -159,10 +148,6 @@ std::string to_string(const ProgramType& program_type) {
       return "uncategorized mathematical programming type";
   }
   DRAKE_UNREACHABLE();
-}
-
-std::ostream& operator<<(std::ostream& os, const ProgramType& program_type) {
-  return os << fmt::to_string(program_type);
 }
 
 }  // namespace solvers

@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
@@ -162,14 +161,6 @@ class MixedIntegerRotationConstraintGenerator {
 };
 
 std::string to_string(
-    const MixedIntegerRotationConstraintGenerator::Approach& type);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(
-    std::ostream& os,
     const MixedIntegerRotationConstraintGenerator::Approach& type);
 
 /**

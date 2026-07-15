@@ -33,8 +33,8 @@ study the original LinkJointGraph and update it to reflect:
   - which Links are welded together into WeldedLinksAssemblies.
 
 Welded-together Links have no relative motion so should be excluded from mutual
-collision computations and can (optionally) be optimized by modeling with one
-or more composite Mobods.
+collision computations and can (optionally) be optimized by modeling them with
+one or more _fused_ Mobods.
 
 Problem statement
 
@@ -74,7 +74,7 @@ And these additional properties are highly desirable:
   - The maximum branch length is minimized when breaking cycles.
   - Input parent->child edge directions are preserved as inboard->outboard
     directions when possible without increasing the maximum branch length.
-  - Welded-together links are combined onto one composite Mobod (optionally).
+  - Welded-together links are combined onto one fused Mobod (optionally).
 
 Discussion
 
@@ -87,7 +87,7 @@ even though inboard->outboard ordering may differ from parent->child, even if
 there are no loops. We distinguish "moving" (or "articulated") Joints from
 "weld" (0 dof) Joints; every moving Joint is modeled by a mobilizer, but welds
 may be eliminated by creating WeldedLinksAssemblies that can be modeled with
-composite Mobods.
+fused Mobods.
 
 Every Link is associated with a single Mobod in the SpanningForest. Multiple
 Links (contained in a WeldedLinksAssembly) may be represented by a single Mobod.
@@ -125,7 +125,7 @@ Things we get for free (O(1)) here as a side effect of building the forest:
   - find out which Mobod(s) represents a given Link
   - find out which Mobod (if any) represents a given Joint (welds internal
       to WeldedLinksAssemblies may be unmodeled)
-  - find all the Links that follow a particular Mobod (can be composite
+  - find all the Links that follow a particular Mobod (can be fused
       Mobods for Links in WeldedLinksAssemblies)
   - find out what (ephemeral) Links, Joints, and LoopConstraints appear in
       the forest but not the source Graph.
@@ -310,14 +310,14 @@ class SpanningForest {
 
   /* Returns precalculated groups of mobilized bodies that are mutually
   interconnected by Weld mobilizers so have no relative degrees of freedom. Note
-  that if you have chosen the modeling option to optimize welded-together Links
-  into single composite bodies, then each WeldedLinksAssembly gets only a single
+  that if you have chosen the modeling option to fuse welded-together Links onto
+  fused mobods, then each WeldedLinksAssembly gets only a single
   Mobod and hence there won't be any WeldedMobods groups here (except for World,
   see below). On the other hand, if some of the joints in a WeldedLinksAssembly
   have been designated "must be modeled", the assembly will be split over
   several Mobods connected by a weld mobilizer; in that case there will be a
-  corresponding WeldedMobods group. Use mobod_to_links() to find all the Links
-  following a single Mobod.
+  corresponding WeldedMobods group. Use mobod_to_link_ordinals() to find
+  all the Links following a single Mobod.
 
   The always-present World WeldedMobods group comes first and contains World,
   mobilized bodies representing Links marked "Static", and bodies (if any)
@@ -329,7 +329,7 @@ class SpanningForest {
   are in no particular order.
 
   Except for World, Mobods not welded to any other Mobods do not appear here.
-  @see mobod_to_links() */
+  @see mobod_to_link_ordinals() */
   const std::vector<std::vector<MobodIndex>>& welded_mobods() const {
     return data_.welded_mobods;
   }
@@ -355,15 +355,15 @@ class SpanningForest {
   }
 
   /* Returns the Link that is represented by the given Mobod, or the active
-  link if given a composite mobod. This could be one of the Links from the
+  link if given a fused mobod. This could be one of the Links from the
   original graph or an added shadow Link. An active link is the one whose
   mobilizer is used to move the whole mobod. Cost is O(1) and very fast.
   @pre mobod_index is in range */
   inline LinkOrdinal mobod_to_active_link_ordinal(MobodIndex mobod_index) const;
 
   /* Returns all the Links mobilized by this Mobod. The active link returned
-  by mobod_to_active_link() comes first, then any other links in the same
-  composite mobod. O(1), very fast.
+  by mobod_to_active_link_ordinal() comes first, then any other links in the
+  same fused mobod. O(1), very fast.
   @pre mobod_index is in range  */
   inline const std::vector<LinkOrdinal>& mobod_to_link_ordinals(
       MobodIndex mobod_index) const;
@@ -525,7 +525,7 @@ class SpanningForest {
   // "open" joints, each of which has one end already following the given
   // inboard Mobod. Returns a list of joints that represent the "next level" in
   // the forest outboard of the given Mobod. For any joint that isn't going to
-  // be an unmodeled internal joint in an optimized WeldedLinksAssembly, that
+  // be an unmodeled internal joint in a fused WeldedLinksAssembly, that
   // joint goes directly on the "next level" list. Otherwise, we have to extend
   // the assembly and find all the open joints where one end is part of the
   // assembly; those are the "next level".
@@ -576,7 +576,8 @@ class SpanningForest {
   // forward or reversed Mobilizer of the Joint's type. Then we add a Weld
   // Constraint to attach the shadow to its primary. Some details:
   //  - if one link is massless, split the other one
-  //  - if both are massless we have an invalid forest
+  //  - if both are massless we have an invalid forest (can't be used for
+  //    dynamics)
   //  - either or both Links may be part of a WeldedLinksAssembly; it is the
   //    mass properties of the whole assembly that determines masslessness.
   void HandleLoopClosure(JointOrdinal loop_joint_ordinal);
@@ -624,16 +625,16 @@ class SpanningForest {
     return *data_.graph;
   }
 
-  // Returns true if this model instance requests optimization (link merging) of
+  // Returns true if this model instance requests fusing (link merging) of
   // WeldedLinksAssemblies, either explicitly or via inheritance from the global
   // settings.
-  bool should_merge_welded_links_assemblies(ModelInstanceIndex index) const {
-    return static_cast<bool>(
-        options(index) & ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+  bool should_fuse_welded_links_assemblies(ModelInstanceIndex index) const {
+    return static_cast<bool>(options(index) &
+                             ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   }
 
-  // This implements our policy for when to optimize WeldedLinksAssemblies by
-  // merging their constituent Links onto a single Mobod. We're given a Joint
+  // This implements our policy for when to fuse WeldedLinksAssemblies by
+  // merging their constituent Links onto one fused Mobod. We're given a Joint
   // connecting parent and child Links and need to decide whether the parent and
   // child will follow a single Mobod or two different Mobods. If we decide to
   // merge them, the Joint won't be modeled at all since it will be interior to
@@ -641,27 +642,27 @@ class SpanningForest {
   //
   // To return true (merge), the following must all be true:
   //   - The joint must be a weld, and
-  //   - the joint's model instance must request optimizing assemblies, and
+  //   - the joint's model instance must request fusing assemblies, and
   //   - the joint has _not_ demanded that it be separately modeled.
-  bool should_merge_parent_and_child(const Joint& joint) const {
+  bool should_fuse_parent_and_child(const Joint& joint) const {
     return joint.is_weld() && !joint.must_be_modeled() &&
-           should_merge_welded_links_assemblies(joint.model_instance());
+           should_fuse_welded_links_assemblies(joint.model_instance());
   }
 
   // Adds the follower Link to the WeldedLinksAssembly that inboard_mobod is
-  // mobilizing and notes that the Joint is internal to that WeldedLinksAssembly
+  // mobilizing and notes that the Joint is internal to that fused assembly
   // so is not modeled. Will create the WeldedLinksAssembly if there was only
   // one Link mobilized before.
   const Mobod& JoinExistingMobod(Mobod* inboard_mobod,
                                  LinkOrdinal follower_link_ordinal,
                                  JointOrdinal weld_joint_ordinal);
 
-  // We're given an existing Mobod and a to-be-merged weld joint where that
+  // We're given an existing Mobod and a to-be-fused weld joint where that
   // joint's inboard link is already following the Mobod. Greedily extend this
-  // Mobod recursively to merge all links that are merge-welded to the inboard
-  // link. As we encounter non-merge joints attached to this assembly we append
-  // them to `open_joint_indexes` for processing next. Those constitute the
-  // "next level" outboard of this optimized WeldedLinksAssembly.
+  // Mobod recursively to fuse all links that are fuse-welded to the inboard
+  // link. As we encounter non-fusable joints attached to this assembly we
+  // append them to `open_joint_indexes` for processing next. Those constitute
+  // the "next level" outboard of this fused WeldedLinksAssembly.
   void GrowAssemblyMobod(Mobod* inboard_mobod, LinkIndex outboard_link_index,
                          JointOrdinal weld_joint_ordinal,
                          std::vector<JointIndex>* open_joint_indexes,
@@ -696,7 +697,7 @@ class SpanningForest {
 
     // Welded Mobod groups. These are disjoint sets of Mobods that have no
     // relative motion due to _separately modeled_ weld Joints (and _not_ due to
-    // weld constraints). (If we are optimizing WeldedLinksAssemblies, there
+    // weld constraints). (If we are fusing WeldedLinksAssemblies, there
     // won't be any Mobods welded together because we'll make all
     // welded-together Links follow a single Mobod.) The World Mobod group is
     // always present and comes first even if nothing is welded to it. Other

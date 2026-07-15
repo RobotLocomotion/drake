@@ -1,0 +1,15 @@
+# -*- bazel -*-
+
+# This file is included by drake/MODULE.bazel and drake/cmake/MODULE.bazel.in.
+#
+# It contains patches to modules that should be applied while building Drake no
+# matter if the user's project uses CMake or Bazel. (Patches to dev_dependency
+# modules should not be listed here.)
+
+single_version_override(
+    module_name = "eigen",
+    patch_strip = 1,
+    patches = [
+        "//:tools/workspace/eigen/patches/upstream/cherry-picks.patch",
+    ],
+)

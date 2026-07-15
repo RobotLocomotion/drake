@@ -81,6 +81,10 @@ void DefineCollisionFilterManager(py::module_ m) {
     constexpr auto& cls_doc = doc.CollisionFilterManager;
     class_<Class>(m, "CollisionFilterManager", cls_doc.doc)
         .def("Apply", &Class::Apply, py::arg("declaration"), cls_doc.Apply.doc)
+        .def("Deactivate", &Class::Deactivate, py::arg("geometry_set"),
+            cls_doc.Deactivate.doc)
+        .def("Activate", &Class::Activate, py::arg("geometry_set"),
+            cls_doc.Activate.doc)
         .def("ApplyTransient", &Class::ApplyTransient, py::arg("declaration"),
             cls_doc.ApplyTransient.doc)
         .def("RemoveDeclaration", &Class::RemoveDeclaration,
@@ -317,8 +321,10 @@ void DefineInMemoryMesh(py::module_ m) {
     DefPickle(
         &cls,
         [](const Class& self) {
-          return py::dict(py::arg("mesh_file") = self.mesh_file,
-              py::arg("supporting_files") = self.supporting_files);
+          py::dict result;
+          result["mesh_file"] = self.mesh_file;
+          result["supporting_files"] = self.supporting_files;
+          return result;
         },
         [ctor](Class* self, const py::dict& kwargs) {
           new (self) Class(py::cast<Class>(ctor(**kwargs)));
@@ -381,11 +387,14 @@ void DefineMeshSource(py::module_ m) {
     DefPickle(
         &cls,
         [](const Class& self) {
+          py::dict result;
           if (self.is_path()) {
-            return py::dict(py::arg("path") = self.path());
+            result["path"] = self.path();
+          } else {
+            DRAKE_DEMAND(self.is_in_memory());
+            result["mesh"] = self.in_memory();
           }
-          DRAKE_DEMAND(self.is_in_memory());
-          return py::dict(py::arg("mesh") = self.in_memory());
+          return result;
         },
         [ctor](Class* self, const py::dict& kwargs) {
           new (self) Class(py::cast<Class>(ctor(**kwargs)));

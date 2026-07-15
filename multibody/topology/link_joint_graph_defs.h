@@ -50,8 +50,7 @@ enum class ForestBuildingOptions : uint32_t {
   kStatic = 1 << 0,                ///< Weld all links to World.
   kUseFixedBase = 1 << 1,          ///< Use welds rather than floating joints.
   kUseRpyFloatingJoints = 1 << 2,  ///< For floating, use RPY not quaternion.
-  kOptimizeWeldedLinksAssemblies =
-      1 << 3  ///< Make a single Mobod for welded Links.
+  kFuseWeldedLinksAssemblies = 1 << 3  ///< Use just one Mobod for welded Links.
 };
 
 // These overloads make the above enums behave like bitmasks for the operations

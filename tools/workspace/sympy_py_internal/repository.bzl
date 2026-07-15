@@ -11,8 +11,8 @@ def sympy_py_internal_repository(
         # of this cohort should be updated at the same time.
         upgrade_advice = """
         When upgrading, check https://github.com/sympy/sympy/issues/29231 (or
-        any release notes related to this issue, etc.) to see if
-        mpmath_py_internal should also be upgraded and its commit_pin removed.
+        any release notes related to this issue, etc.) for a compatible upgrade
+        with mpmath_py_internal.
         """,
         upgrade_type = "release",
         commit = "1.14.0",

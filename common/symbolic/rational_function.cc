@@ -41,10 +41,6 @@ Formula RationalFunction::operator!=(const RationalFunction& f) const {
   return !(*this == f);
 }
 
-std::ostream& operator<<(std::ostream& os, const RationalFunction& f) {
-  return os << fmt::to_string(f);
-}
-
 std::string to_string(const RationalFunction& f) {
   return fmt::format("({}) / ({})", f.numerator(), f.denominator());
 }

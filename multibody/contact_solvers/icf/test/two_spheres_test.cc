@@ -133,8 +133,7 @@ TEST_P(TwoSpheres, MakeData) {
 
   // Update problem. There should be no allocations for the same problem size.
   {
-    // TODO(amcastro-tri): Fix this function to not allocate. You'll need a
-    // pre-allocated workspace for this function.
+    // TODO(#23912): Consider reducing heap traffic, to improve performance.
     drake::test::LimitMalloc guard({
         .max_num_allocations = 352,
         .min_num_allocations = 0,

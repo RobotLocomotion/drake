@@ -3,7 +3,6 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -177,12 +176,6 @@ auto AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_lambda)
 enum class IntervalBinning { kLogarithmic, kLinear };
 
 std::string to_string(IntervalBinning interval_binning);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning);
 
 /**
  * Add constraints to the optimization program, such that the bilinear product
