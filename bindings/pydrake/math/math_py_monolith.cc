@@ -206,12 +206,18 @@ void DefineRotationMatrix(py::module_ m, class_<PyClass<T>>& cls) {
         .def("matrix", &Class::matrix, cls_doc.matrix.doc)
         .def(
             "row",
+            // The `row` method returns an Eigen::Block, but passing that view
+            // back into Python is too difficult, especially for dtype=object,
+            // so we'll write out a lambda that copies it.
             [](const Class& self, int index) -> Vector3<T> {
               return self.row(index);
             },
             py::arg("index"), cls_doc.row.doc)
         .def(
             "col",
+            // The `col` method returns an Eigen::Block, but passing that view
+            // back into Python is too difficult, especially for dtype=object,
+            // so we'll write out a lambda that copies it.
             [](const Class& self, int index) -> Vector3<T> {
               return self.col(index);
             },
