@@ -65,16 +65,6 @@
 #include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/never_destroyed.h"
-
-// XXX porting shim-fest
-namespace nanobind {
-namespace detail {
-
-template <typename T>
-using is_pyobject = std::is_base_of<api_tag, std::remove_reference_t<T>>;
-
-}  // namespace detail
-}  // namespace nanobind
 #endif  // PYDRAKE_USE_NANOBIND
 
 namespace drake {
@@ -150,6 +140,17 @@ class DRAKE_NO_EXPORT class_ : public py::class_<T, Ts...> {
   }
 };
 #endif  // PYDRAKE_USE_PYBIND11
+
+namespace internal {
+#ifdef PYDRAKE_USE_PYBIND11
+template <typename T>
+using is_pyobject = py::detail::is_pyobject<T>;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T>
+using is_pyobject =
+    std::is_base_of<py::detail::api_tag, std::remove_reference_t<T>>;
+#endif  // PYDRAKE_USE_PYBIND11
+}  // namespace internal
 
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
