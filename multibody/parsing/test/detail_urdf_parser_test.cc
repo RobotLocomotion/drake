@@ -2424,9 +2424,14 @@ TEST_F(DistanceConstraintTest, AllParameters) {
   EXPECT_EQ(parameters.damping(), 9);
 }
 
-TEST_F(DistanceConstraintTest, MissingBody) {
+TEST_F(DistanceConstraintTest, MissingBodyA) {
   ProvokeError(Field::kBodyA, "",
                ".*Unable to find the <drake:distance_constraint_body_A> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingBodyB) {
+  ProvokeError(Field::kBodyB, "",
+               ".*Unable to find the <drake:distance_constraint_body_B> tag");
 }
 
 TEST_F(DistanceConstraintTest, MissingPoint) {
@@ -2434,9 +2439,22 @@ TEST_F(DistanceConstraintTest, MissingPoint) {
                ".*Unable to find the <drake:distance_constraint_p_AP> tag");
 }
 
+TEST_F(DistanceConstraintTest, MissingPointValueAttribute) {
+  ProvokeError(Field::kPointAP, R"(<drake:distance_constraint_p_AP/>)",
+               ".*Unable to read the 'value' attribute for the "
+               "<drake:distance_constraint_p_AP> tag");
+}
+
 TEST_F(DistanceConstraintTest, MissingDistance) {
   ProvokeError(Field::kDistance, "",
                ".*Unable to find the <drake:distance_constraint_distance> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingDistanceValueAttribute) {
+  ProvokeError(Field::kDistance,
+               R"(<drake:distance_constraint_distance not_value="7"/>)",
+               ".*Unable to read the 'value' attribute for the "
+               "<drake:distance_constraint_distance> tag");
 }
 
 TEST_F(DistanceConstraintTest, MissingStiffness) {
@@ -2455,6 +2473,13 @@ TEST_F(DistanceConstraintTest, InvalidBody) {
       Field::kBodyA, R"(<drake:distance_constraint_body_A name="INVALID"/>)",
       ".*Body: INVALID specified for <drake:distance_constraint_body_A> does "
       "not exist in the model.");
+}
+
+TEST_F(DistanceConstraintTest, InvalidBodyNameAttribute) {
+  ProvokeError(Field::kBodyA,
+               R"(<drake:distance_constraint_body_A not_name="A"/>)",
+               ".*Unable to read the 'name' attribute for the "
+               "<drake:distance_constraint_body_A> tag");
 }
 
 TEST_F(DistanceConstraintTest, NonpositiveDistance) {

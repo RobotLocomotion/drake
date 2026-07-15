@@ -475,8 +475,7 @@ drake::multibody::MultibodyPlant::AddDistanceConstraint(). Distance
 constraints require a discrete MultibodyPlant configured to use the SAP
 solver.
 
-@subsection tag_drake_distance_constraint_body_A
-drake:distance_constraint_body_A
+@subsection tag_drake_distance_constraint_body_A drake:distance_constraint_body_A
 
 - SDFormat path:
 `//model/drake:distance_constraint/drake:distance_constraint_body_A`
@@ -511,8 +510,7 @@ passed to drake::multibody::MultibodyPlant::AddDistanceConstraint() as the
 @see @ref tag_drake_distance_constraint,
 drake::multibody::MultibodyPlant::AddDistanceConstraint()
 
-@subsection tag_drake_distance_constraint_body_B
-drake:distance_constraint_body_B
+@subsection tag_drake_distance_constraint_body_B drake:distance_constraint_body_B
 
 - SDFormat path:
 `//model/drake:distance_constraint/drake:distance_constraint_body_B`
@@ -547,8 +545,7 @@ passed to drake::multibody::MultibodyPlant::AddDistanceConstraint() as the
 @see @ref tag_drake_distance_constraint,
 drake::multibody::MultibodyPlant::AddDistanceConstraint()
 
-@subsection tag_drake_distance_constraint_distance
-drake:distance_constraint_distance
+@subsection tag_drake_distance_constraint_distance drake:distance_constraint_distance
 
 - SDFormat path:
 `//model/drake:distance_constraint/drake:distance_constraint_distance`
@@ -565,8 +562,7 @@ parameter.
 @see @ref tag_drake_distance_constraint,
 drake::multibody::MultibodyPlant::AddDistanceConstraint()
 
-@subsection tag_drake_distance_constraint_stiffness
-drake:distance_constraint_stiffness
+@subsection tag_drake_distance_constraint_stiffness drake:distance_constraint_stiffness
 
 - SDFormat path:
 `//model/drake:distance_constraint/drake:distance_constraint_stiffness`
@@ -583,8 +579,7 @@ parameter.
 @see @ref tag_drake_distance_constraint,
 drake::multibody::MultibodyPlant::AddDistanceConstraint()
 
-@subsection tag_drake_distance_constraint_damping
-drake:distance_constraint_damping
+@subsection tag_drake_distance_constraint_damping drake:distance_constraint_damping
 
 - SDFormat path:
 `//model/drake:distance_constraint/drake:distance_constraint_damping`
