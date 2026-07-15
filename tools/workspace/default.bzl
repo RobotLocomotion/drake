@@ -164,7 +164,6 @@ def _drake_dep_repositories_impl(module_ctx):
         "glib",
         "lapack",
         "libjpeg",
-        "nanobind",
         "opencl",
         "spdlog",
         "zlib",
