@@ -48,7 +48,7 @@ class PySerializerInterface : public SerializerInterface {
   // interface below.
 
   std::unique_ptr<AbstractValue> CreateDefaultValue() const final {
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
+#ifdef PYDRAKE_USE_PYBIND11
     // Our required unique_ptr return type cannot be directly fulfilled by a
     // Python override, so we only ask the Python override for a py::object and
     // then just Clone it to obtain the necessary C++ signature. Because the
@@ -60,17 +60,17 @@ class PySerializerInterface : public SerializerInterface {
     }();
     DRAKE_THROW_UNLESS(!default_value.is_none());
     return py::cast<const AbstractValue*>(default_value)->Clone();
-#else   // XXX porting
+#else   // PYDRAKE_USE_NANOBIND
     // Similar to above, we use a compromise return type from the Python
     // override. In this case, it is shared_ptr. We still satisfy the enclosing
     // unique_ptr requirement via Clone().
     auto default_value = [this]() -> std::shared_ptr<AbstractValue> {
-      PYDRAKE_OVERRIDE_PURE_NAME(
-          _, _, "CreateDefaultValue", CreateDefaultValueShared);
+      PYDRAKE_OVERRIDE_PURE_NAME(std::shared_ptr<AbstractValue>,
+          SerializerInterface, "CreateDefaultValue", CreateDefaultValueShared);
     }();
     DRAKE_THROW_UNLESS(default_value != nullptr);
     return default_value->Clone();
-#endif  // XXX porting
+#endif  // PYDRAKE_USE_PYBIND11
   }
 
   void Deserialize(const void* message_bytes, int message_length,
@@ -78,42 +78,22 @@ class PySerializerInterface : public SerializerInterface {
     py::gil_scoped_acquire guard;
     py::bytes buffer(
         reinterpret_cast<const char*>(message_bytes), message_length);
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
     // change of signature issues.
-    PYDRAKE_OVERRIDE_PURE(
-        void, SerializerInterface, Deserialize, buffer, abstract_value);
-#else
-    // change of signature issues.
-    PYDRAKE_OVERRIDE_PURE_NAME(
-        _, _, "Deserialize", DeserializeBuffer, buffer, abstract_value);
-#endif  // XXX porting
+    PYDRAKE_OVERRIDE_PURE_NAME(void, SerializerInterface, "Deserialize",
+        DeserializeBuffer, buffer, abstract_value);
   }
 
   void Serialize(const AbstractValue& abstract_value,
       std::vector<uint8_t>* message_bytes) const override {
     py::gil_scoped_acquire guard;
-#ifdef PYDRAKE_USE_PYBIND11  // XXX porting
-    // change of signature issues with override macro.
     auto wrapped = [&]() -> py::bytes {
-      // N.B. We must pass `abstract_value` as a pointer to prevent `pybind11`
-      // from copying it.
-      PYDRAKE_OVERRIDE_PURE(
-          py::bytes, SerializerInterface, Serialize, &abstract_value);
+      PYDRAKE_OVERRIDE_PURE_NAME(py::bytes, SerializerInterface, "Serialize",
+          SerializeBuffer<py::bytes>, &abstract_value);
     };
     py::bytes result = wrapped();
     message_bytes->resize(result.size());
     std::copy(
         result.c_str(), result.c_str() + result.size(), message_bytes->data());
-#else
-    auto wrapped = [&]() -> py::bytes {
-      PYDRAKE_OVERRIDE_PURE_NAME(
-          _, _, "Serialize", SerializeBuffer<py::bytes>, &abstract_value);
-    };
-    py::bytes result = wrapped();
-    message_bytes->resize(result.size());
-    std::copy(
-        result.c_str(), result.c_str() + result.size(), message_bytes->data());
-#endif  // XXX porting
   }
 };
 
