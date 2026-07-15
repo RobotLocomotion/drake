@@ -2,7 +2,7 @@ TBD
 
 --- include/nanobind/eigen/dense.h
 +++ include/nanobind/eigen/dense.h
-@@ -125,6 +125,22 @@
+@@ -125,6 +125,28 @@
      is_eigen_v<T> && !is_eigen_plain_v<T> && !is_eigen_sparse_v<T> &&
      !std::is_base_of_v<Eigen::MapBase<T, Eigen::ReadOnlyAccessors>, T>;
  
@@ -12,11 +12,17 @@ TBD
 +object convert_to_numpy(handle src) {
 +    auto numpy = module_::import_("numpy");
 +    object result = numpy.attr("asarray")(src);  // XXX check for exception
++    const int ndim = cast<int>(result.attr("ndim"));
 +    if constexpr (want_ndim == 2) {
-+        const int ndim = cast<int>(result.attr("ndim"));
 +        if (ndim == 1) {
 +            // Promote from 1d array to 2d array (as column vector).
 +            result = result.attr("reshape")(-1, 1);
++        }
++    } else {
++        static_assert(want_ndim == 1);
++        if (ndim == 2) {
++            // Demote from 2d array to 1d array.
++            result = result.attr("squeeze")();
 +        }
 +    }
 +    return result;
