@@ -109,13 +109,12 @@ class TestRenderEngineSubclass(unittest.TestCase):
             name="ignored",
         )
 
+        color_only = ColorOnlyEngine()
+        color_only.RenderColorImage(color_cam, color_image)
         if _binder == "nanobind":
             pure_virtual_error_regex = ".+trampoline.+lookup failed!"
         else:
             pure_virtual_error_regex = ".+pure virtual function.+"
-
-        color_only = ColorOnlyEngine()
-        color_only.RenderColorImage(color_cam, color_image)
         with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             color_only.RenderDepthImage(depth_cam, depth_image)
         with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
