@@ -1,4 +1,9 @@
-TBD
+Allow Eigen::Matrix const-ref arguments to accept lists
+
+Traditionally, Drake accepts lists for ndim==1 arrays and
+list-of-lists for ndim==2 arrays. Until nanobind implements
+https://github.com/wjakob/nanobind/discussions/327, we need
+to fork its Eigen type_caster to allow this.
 
 --- include/nanobind/eigen/dense.h
 +++ include/nanobind/eigen/dense.h
