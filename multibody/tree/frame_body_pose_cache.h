@@ -50,6 +50,12 @@ Mass properties
  - p_BoLcm_B: The position vector from mobilized body origin Bo to the
          center of mass of L, expressed in B. Indexed by LinkOrdinal.
 
+World composite precalculations
+-------------------------------
+Position kinematics for links fixed to World can be precalculated once the
+frame parameters are set. Those entries of the PositionKinematicsCache should
+be filled in whenever the FrameBodyPoseCache is recomputed.
+
 @tparam_default_scalar */
 template <typename T>
 class FrameBodyPoseCache {
