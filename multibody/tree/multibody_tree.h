@@ -960,6 +960,14 @@ class MultibodyTree {
     return forest().mobods(index);
   }
 
+  [[nodiscard]] const Link<T>& get_active_link(MobodIndex index) const {
+    const SpanningForest::Mobod& mobod = get_mobod(index);
+    const LinkOrdinal active_link_ordinal = mobod.active_link_ordinal();
+    const LinkIndex active_link_index =
+        forest().links(active_link_ordinal).index();
+    return get_link(active_link_index);
+  }
+
   // See MultibodyPlant API.
   void SetBaseBodyJointType(
       BaseBodyJointType joint_type,
