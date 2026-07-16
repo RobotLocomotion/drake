@@ -1,0 +1,10 @@
+No-op patch to placate the build system
+
+This is a placeholder in case we need to patch the dense caster in the
+future.
+
+--- include/nanobind/eigen/dense.h
++++ include/nanobind/eigen/dense.h
+@@ -1,1 +1,1 @@
+-/*
++/*

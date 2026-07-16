@@ -1,0 +1,17 @@
+load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/robin_map",
+    files = ["@module_robin_map//:LICENSE"],
+    allowed_externals = ["@module_robin_map//:LICENSE"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace/nanobind:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()
