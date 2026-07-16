@@ -101,17 +101,19 @@ void DoScalarDependentDefinitions(py::module_ m) {
           py_rvp::reference_internal, doc.BasicVector.get_value.doc)
       // TODO(eric.cousineau): Remove this once `get_value` is changed, or
       // reference semantics are changed for custom dtypes.
-      .def("_get_value_copy",
-          [](const BasicVector<T>* self) -> VectorX<T> {
-            return self->get_value();
-          })
-      .def(
-          "get_mutable_value",
-          [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
-            return self->get_mutable_value();
-          },
-          py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc);
-
+      .def("_get_value_copy", [](const BasicVector<T>* self) -> VectorX<T> {
+        return self->get_value();
+      });
+  if constexpr (std::is_same_v<T, double>) {
+    // Mutable Eigen::Ref return value doesn't work with dtype=object.
+    basic_vector  // BR
+        .def(
+            "get_mutable_value",
+            [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
+              return self->get_mutable_value();
+            },
+            py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc);
+  }
   DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
       m, "Supervector", GetPyParam<T>(), doc.Supervector.doc);
 

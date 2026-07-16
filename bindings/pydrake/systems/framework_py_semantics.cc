@@ -1260,15 +1260,19 @@ void DefineDiscreteValues(py::module_ m) {
             return self->get_value(index);
           },
           return_value_policy_for_scalar_type<T>(), py::arg("index") = 0,
-          doc.DiscreteValues.get_value.doc_1args)
-      .def(
-          "get_mutable_value",
-          [](Class* self, int index) -> Eigen::Ref<VectorX<T>> {
-            return self->get_mutable_value(index);
-          },
-          // N.B. We explicitly want a failure when T != double due to #8116.
-          py_rvp::reference_internal, py::arg("index") = 0,
-          doc.DiscreteValues.get_mutable_value.doc_1args)
+          doc.DiscreteValues.get_value.doc_1args);
+  if constexpr (std::is_same_v<T, double>) {
+    // Mutable Eigen::Ref return value doesn't work with dtype=object.
+    discrete_values  // BR
+        .def(
+            "get_mutable_value",
+            [](Class* self, int index) -> Eigen::Ref<VectorX<T>> {
+              return self->get_mutable_value(index);
+            },
+            py_rvp::reference_internal, py::arg("index") = 0,
+            doc.DiscreteValues.get_mutable_value.doc_1args);
+  }
+  discrete_values  // BR
       .def(
           "SetFrom",
           [](Class* self, const DiscreteValues<double>& other) {
