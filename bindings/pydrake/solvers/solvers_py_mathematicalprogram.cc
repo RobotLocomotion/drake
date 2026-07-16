@@ -1474,6 +1474,7 @@ for every column of ``prog_var_vals``. )""")
           doc.MathematicalProgram.CheckSatisfiedAtInitialGuess.doc_vector)
       .def(
           "indeterminates",
+          // XXX(eigen) See if we can teach our caster about py_rvp::copy.
           // dtype = object arrays must be copied, and cannot be referenced.
           [](const MathematicalProgram& self) -> VectorX<Variable> {
             return self.indeterminates();
@@ -1487,6 +1488,7 @@ for every column of ``prog_var_vals``. )""")
           doc.MathematicalProgram.indeterminates_index.doc)
       .def(
           "decision_variables",
+          // XXX(eigen) See if we can teach our caster about py_rvp::copy.
           // dtype = object arrays must be copied, and cannot be referenced.
           [](const MathematicalProgram& self) -> VectorX<Variable> {
             return self.decision_variables();

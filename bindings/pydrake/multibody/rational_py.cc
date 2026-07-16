@@ -52,6 +52,7 @@ PYDRAKE_MODULE(rational, m) {
             cls_doc.plant.doc)
         .def(
             "s",
+            // XXX(eigen) See if we can teach our caster about py_rvp::copy.
             // dtype = object arrays must be copied, and cannot be referenced.
             [](const Class& self) -> VectorX<symbolic::Variable> {
               return self.s();
