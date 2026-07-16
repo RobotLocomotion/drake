@@ -41,7 +41,7 @@ class SerializerInterface {
   /* (Internal use only) Creates a value-initialized (zeroed) instance of the
   message object.  The result can be used as the output object filled in by
   Deserialize. The default implementation just calls CreateDefaultValue(). */
-  virtual std::shared_ptr<AbstractValue> CreateDefaultValueShared() const;
+  std::shared_ptr<AbstractValue> CreateDefaultValueShared() const;
 
   /* (Internal use only) Translates LCM message bytes into a
   drake::AbstractValue object. The implementation just calls Deserialize(). */

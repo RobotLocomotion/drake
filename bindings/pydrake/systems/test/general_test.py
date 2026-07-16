@@ -1077,7 +1077,6 @@ class TestGeneral(unittest.TestCase):
     def test_module_constants(self):
         self.assertEqual(repr(kUseDefaultName), "kUseDefaultName")
 
-    @unittest.skipIf(_binder == "nanobind", "interpreter aborts")  # XXX porting
     def test_system_visitor(self):
         builder = DiagramBuilder()
         builder.AddNamedSystem("adder1", Adder(2, 2))

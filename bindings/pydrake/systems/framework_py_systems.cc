@@ -487,11 +487,13 @@ struct Impl {
     NB_TRAMPOLINE(SystemVisitor<T>, 100);
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
-      PYDRAKE_OVERRIDE_PURE(void, SystemVisitor<T>, VisitSystem, system);
+      PYDRAKE_OVERRIDE_PURE_NAME(
+          void, SystemVisitor<T>, "VisitSystem", VisitSystemPointer, &system);
     };
 
     void VisitDiagram(const Diagram<T>& diagram) override {
-      PYDRAKE_OVERRIDE_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
+      PYDRAKE_OVERRIDE_PURE_NAME(void, SystemVisitor<T>, "VisitDiagram",
+          VisitDiagramPointer, &diagram);
     }
   };
 
