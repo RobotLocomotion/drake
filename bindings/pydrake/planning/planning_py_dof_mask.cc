@@ -26,8 +26,8 @@ void DefinePlanningDofMask(py::module_ m) {
         .def(
             "__init__",
             // N.B. We can't use the simple py::init<int, bool> sugar here,
-            // because nanobind calls the std::initializer_list overload in that
-            // case (converting the `int` to a bool).
+            // because nanobind calls the std::initializer_list overload in
+            // that case (converting the `int` to a `bool`).
             [](Class* self, int size, bool value) {
               new (self) Class(size, value);
             },
