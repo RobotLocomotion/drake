@@ -272,6 +272,14 @@ Here is the full list of custom elements:
 - @ref tag_drake_damping
 - @ref tag_drake_declare_convex
 - @ref tag_drake_deformable_properties
+- @ref tag_drake_distance_constraint
+- @ref tag_drake_distance_constraint_body_A
+- @ref tag_drake_distance_constraint_p_AP
+- @ref tag_drake_distance_constraint_body_B
+- @ref tag_drake_distance_constraint_p_BQ
+- @ref tag_drake_distance_constraint_distance
+- @ref tag_drake_distance_constraint_stiffness
+- @ref tag_drake_distance_constraint_damping
 - @ref tag_drake_diffuse_map
 - @ref tag_drake_ellipsoid
 - @ref tag_drake_gear_ratio
@@ -447,6 +455,147 @@ the `p_BQ` parameter.
 
 @see @ref tag_drake_ball_constraint,
 drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_distance_constraint drake:distance_constraint
+
+- SDFormat path: `//model/drake:distance_constraint`
+- URDF path: `/robot/drake:distance_constraint`
+- Syntax: Required nested elements
+  @ref tag_drake_distance_constraint_body_A,
+  @ref tag_drake_distance_constraint_p_AP,
+  @ref tag_drake_distance_constraint_body_B,
+  @ref tag_drake_distance_constraint_p_BQ,
+  @ref tag_drake_distance_constraint_distance,
+  @ref tag_drake_distance_constraint_stiffness, and
+  @ref tag_drake_distance_constraint_damping
+
+@subsubsection tag_drake_distance_constraint_semantics Semantics
+
+The element adds a distance constraint to the model via
+drake::multibody::MultibodyPlant::AddDistanceConstraint(). Distance
+constraints require a discrete MultibodyPlant configured to use the SAP
+solver.
+
+@subsection tag_drake_distance_constraint_body_A drake:distance_constraint_body_A
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_body_A`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_body_A/@name`
+- Syntax: String.
+
+@subsubsection tag_drake_distance_constraint_body_A_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that
+will be passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `body_A`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_p_AP drake:distance_constraint_p_AP
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_p_AP`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_p_AP/@value`
+- Syntax: Three floating point values.
+
+@subsubsection tag_drake_distance_constraint_p_AP_semantics Semantics
+
+The three floating point values (units of meters) are formed into a vector and
+passed to drake::multibody::MultibodyPlant::AddDistanceConstraint() as the
+`p_AP` parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_body_B drake:distance_constraint_body_B
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_body_B`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_body_B/@name`
+- Syntax: String.
+
+@subsubsection tag_drake_distance_constraint_body_B_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that
+will be passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `body_B`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_p_BQ drake:distance_constraint_p_BQ
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_p_BQ`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_p_BQ/@value`
+- Syntax: Three floating point values.
+
+@subsubsection tag_drake_distance_constraint_p_BQ_semantics Semantics
+
+The three floating point values (units of meters) are formed into a vector and
+passed to drake::multibody::MultibodyPlant::AddDistanceConstraint() as the
+`p_BQ` parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_distance drake:distance_constraint_distance
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_distance`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_distance/@value`
+- Syntax: A strictly positive floating point value.
+
+@subsubsection tag_drake_distance_constraint_distance_semantics Semantics
+
+The floating point value (units of meters) is passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `distance`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_stiffness drake:distance_constraint_stiffness
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_stiffness`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_stiffness/@value`
+- Syntax: A strictly positive floating point value.
+
+@subsubsection tag_drake_distance_constraint_stiffness_semantics Semantics
+
+The floating point value (units of N/m) is passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `stiffness`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_damping drake:distance_constraint_damping
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_damping`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_damping/@value`
+- Syntax: A non-negative floating point value.
+
+@subsubsection tag_drake_distance_constraint_damping_semantics Semantics
+
+The floating point value (units of N⋅s/m) is passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `damping`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
 
 @subsection tag_drake_tendon_constraint drake:tendon_constraint
 

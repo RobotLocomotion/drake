@@ -85,6 +85,7 @@ class UrdfParser {
   void ParseBushing(XMLElement* node);
   void ParseLinearSpringDamper(XMLElement* node);
   void ParseBallConstraint(XMLElement* node);
+  void ParseDistanceConstraint(XMLElement* node);
   void ParseTendonConstraint(XMLElement* node);
   void ParseFrame(XMLElement* node);
   void ParseTransmission(const JointEffortLimits& joint_effort_limits,
@@ -1269,6 +1270,89 @@ void UrdfParser::ParseBallConstraint(XMLElement* node) {
   internal::ParseBallConstraint(read_vector, read_body, w_.plant);
 }
 
+void UrdfParser::ParseDistanceConstraint(XMLElement* node) {
+  auto read_vector = [node, this](const char* element_name) -> Eigen::Vector3d {
+    const XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node != nullptr) {
+      Eigen::Vector3d value;
+      if (ParseVectorAttribute(value_node, "value", &value)) {
+        return value;
+      }
+      Error(*node, fmt::format("Unable to read the 'value' attribute for the"
+                               " <{}> tag",
+                               element_name));
+      return Eigen::Vector3d::Zero();
+    }
+    Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+    return Eigen::Vector3d::Zero();
+  };
+
+  auto read_body =
+      [node, this](const char* element_name) -> const RigidBody<double>* {
+    XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node == nullptr) {
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return {};
+    }
+
+    std::string body_name;
+    auto* plant = w_.plant;
+    if (!ParseStringAttribute(value_node, "name", &body_name)) {
+      Error(*value_node,
+            fmt::format("Unable to read the 'name' attribute for the <{}> tag",
+                        element_name));
+      return {};
+    }
+    if (!plant->HasBodyNamed(body_name, model_instance_)) {
+      Error(*value_node,
+            fmt::format("Body: {} specified for <{}> does not exist in the "
+                        "model.",
+                        body_name, element_name));
+      return {};
+    }
+    return &plant->GetBodyByName(body_name, model_instance_);
+  };
+
+  auto read_double = [node,
+                      this](const char* element_name) -> std::optional<double> {
+    const XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node == nullptr) {
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return {};
+    }
+
+    double value{};
+    if (!ParseScalarAttribute(value_node, "value", &value)) {
+      Error(*node,
+            fmt::format("Unable to read the 'value' attribute for the <{}> tag",
+                        element_name));
+      return {};
+    }
+    const std::string element_name_string(element_name);
+    if ((element_name_string == "drake:distance_constraint_distance" ||
+         element_name_string == "drake:distance_constraint_stiffness") &&
+        value <= 0) {
+      Error(*value_node,
+            fmt::format("The 'value' attribute for the <{}> tag must be "
+                        "strictly positive.",
+                        element_name));
+      return {};
+    }
+    if (element_name_string == "drake:distance_constraint_damping" &&
+        value < 0) {
+      Error(*value_node,
+            fmt::format("The 'value' attribute for the <{}> tag must be "
+                        "non-negative.",
+                        element_name));
+      return {};
+    }
+    return value;
+  };
+
+  internal::ParseDistanceConstraint(read_vector, read_body, read_double,
+                                    w_.plant);
+}
+
 void UrdfParser::ParseTendonConstraint(XMLElement* node) {
   auto read_double = [node,
                       this](const char* element_name) -> std::optional<double> {
@@ -1448,6 +1532,15 @@ std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
        ball_constraint_node =
            ball_constraint_node->NextSiblingElement("drake:ball_constraint")) {
     ParseBallConstraint(ball_constraint_node);
+  }
+
+  // Parses the model's custom Drake distance constraint tags.
+  for (XMLElement* distance_constraint_node =
+           node->FirstChildElement("drake:distance_constraint");
+       distance_constraint_node;
+       distance_constraint_node = distance_constraint_node->NextSiblingElement(
+           "drake:distance_constraint")) {
+    ParseDistanceConstraint(distance_constraint_node);
   }
 
   // Parses the model's custom Drake tendon constraint tags.

@@ -365,17 +365,22 @@ PYDRAKE_MODULE(primitives, m) {
         .def("GetParameters", &MultilayerPerceptron<T>::GetParameters,
             py::arg("context"),
             py::keep_alive<0, 2>() /* return keeps context alive */,
-            py_rvp::reference, doc.MultilayerPerceptron.GetParameters.doc)
-        .def(
-            "GetMutableParameters",
-            [](const MultilayerPerceptron<T>* self,
-                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-              return self->GetMutableParameters(context);
-            },
-            py_rvp::reference, py::arg("context"),
-            // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(),
-            doc.MultilayerPerceptron.GetMutableParameters.doc)
+            py_rvp::reference, doc.MultilayerPerceptron.GetParameters.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable Eigen::Ref return value doesn't work with dtype=object.
+      multilayer_perceptron_cls  // BR
+          .def(
+              "GetMutableParameters",
+              [](const MultilayerPerceptron<T>* self,
+                  Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+                return self->GetMutableParameters(context);
+              },
+              py_rvp::reference, py::arg("context"),
+              // Keep alive, ownership: `return` keeps `context` alive.
+              py::keep_alive<0, 2>(),
+              doc.MultilayerPerceptron.GetMutableParameters.doc);
+    }
+    multilayer_perceptron_cls  // BR
         .def("SetParameters", &MultilayerPerceptron<T>::SetParameters,
             py::arg("context"), py::arg("params"),
             doc.MultilayerPerceptron.SetParameters.doc)

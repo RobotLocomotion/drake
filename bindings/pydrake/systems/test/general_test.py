@@ -427,7 +427,7 @@ class TestGeneral(unittest.TestCase):
                 discrete_values.get_mutable_value(index=1), x
             )
         else:
-            with self.assertRaises(RuntimeError):
+            with self.assertRaises(AttributeError):
                 discrete_values.get_mutable_value(index=1)
 
         discrete_values = DiscreteValues(datum=BasicVector(np.arange(3)))
