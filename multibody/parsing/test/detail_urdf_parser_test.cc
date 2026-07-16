@@ -2349,6 +2349,160 @@ TEST_F(BallConstraintTest, InvalidBody) {
       " exist in the model.");
 }
 
+class DistanceConstraintTest : public UrdfParserTest {
+ public:
+  enum class Field {
+    kNone = -1,
+    kBodyA,
+    kPointAP,
+    kBodyB,
+    kPointBQ,
+    kDistance,
+    kStiffness,
+    kDamping,
+  };
+
+  DistanceConstraintTest() {
+    plant_.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kLagged);
+  }
+
+  std::string MakeModel(Field field = Field::kNone,
+                        const std::string& replacement = std::string{}) const {
+    std::vector<std::string> child_elements{
+        R"(<drake:distance_constraint_body_A name="A"/>)",
+        R"(<drake:distance_constraint_p_AP value="1 2 3"/>)",
+        R"(<drake:distance_constraint_body_B name="B"/>)",
+        R"(<drake:distance_constraint_p_BQ value="4 5 6"/>)",
+        R"(<drake:distance_constraint_distance value="7"/>)",
+        R"(<drake:distance_constraint_stiffness value="8"/>)",
+        R"(<drake:distance_constraint_damping value="9"/>)",
+    };
+    if (field != Field::kNone) {
+      child_elements.at(static_cast<int>(field)) = replacement;
+    }
+    std::string constraint_contents;
+    for (const std::string& child_element : child_elements) {
+      constraint_contents += child_element;
+    }
+    return fmt::format(kTestString, constraint_contents);
+  }
+
+  void ProvokeError(Field field, const std::string& replacement,
+                    const std::string& error_pattern) {
+    EXPECT_NE(AddModelFromUrdfString(MakeModel(field, replacement), ""),
+              std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
+  }
+
+ protected:
+  static constexpr const char* kTestString = R"""(
+    <robot name="distance_constraint_test">
+      <link name="A"/>
+      <link name="B"/>
+      <drake:distance_constraint>
+        {}
+      </drake:distance_constraint>
+    </robot>)""";
+};
+
+TEST_F(DistanceConstraintTest, AllParameters) {
+  EXPECT_NE(AddModelFromUrdfString(MakeModel(), ""), std::nullopt);
+
+  EXPECT_EQ(plant_.num_distance_constraints(), 1);
+  const auto& distance_constraints =
+      plant_.GetDefaultDistanceConstraintParams();
+  ASSERT_EQ(ssize(distance_constraints), 1);
+  const DistanceConstraintParams& parameters =
+      distance_constraints.begin()->second;
+  EXPECT_EQ(parameters.bodyA(), plant_.GetBodyByName("A").index());
+  EXPECT_EQ(parameters.p_AP(), Vector3d(1, 2, 3));
+  EXPECT_EQ(parameters.bodyB(), plant_.GetBodyByName("B").index());
+  EXPECT_EQ(parameters.p_BQ(), Vector3d(4, 5, 6));
+  EXPECT_EQ(parameters.distance(), 7);
+  EXPECT_EQ(parameters.stiffness(), 8);
+  EXPECT_EQ(parameters.damping(), 9);
+}
+
+TEST_F(DistanceConstraintTest, MissingBodyA) {
+  ProvokeError(Field::kBodyA, "",
+               ".*Unable to find the <drake:distance_constraint_body_A> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingBodyB) {
+  ProvokeError(Field::kBodyB, "",
+               ".*Unable to find the <drake:distance_constraint_body_B> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingPoint) {
+  ProvokeError(Field::kPointAP, "",
+               ".*Unable to find the <drake:distance_constraint_p_AP> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingPointValueAttribute) {
+  ProvokeError(Field::kPointAP, R"(<drake:distance_constraint_p_AP/>)",
+               ".*Unable to read the 'value' attribute for the "
+               "<drake:distance_constraint_p_AP> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingDistance) {
+  ProvokeError(Field::kDistance, "",
+               ".*Unable to find the <drake:distance_constraint_distance> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingDistanceValueAttribute) {
+  ProvokeError(Field::kDistance,
+               R"(<drake:distance_constraint_distance not_value="7"/>)",
+               ".*Unable to read the 'value' attribute for the "
+               "<drake:distance_constraint_distance> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingStiffness) {
+  ProvokeError(
+      Field::kStiffness, "",
+      ".*Unable to find the <drake:distance_constraint_stiffness> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingDamping) {
+  ProvokeError(Field::kDamping, "",
+               ".*Unable to find the <drake:distance_constraint_damping> tag");
+}
+
+TEST_F(DistanceConstraintTest, InvalidBody) {
+  ProvokeError(
+      Field::kBodyA, R"(<drake:distance_constraint_body_A name="INVALID"/>)",
+      ".*Body: INVALID specified for <drake:distance_constraint_body_A> does "
+      "not exist in the model.");
+}
+
+TEST_F(DistanceConstraintTest, InvalidBodyNameAttribute) {
+  ProvokeError(Field::kBodyA,
+               R"(<drake:distance_constraint_body_A not_name="A"/>)",
+               ".*Unable to read the 'name' attribute for the "
+               "<drake:distance_constraint_body_A> tag");
+}
+
+TEST_F(DistanceConstraintTest, NonpositiveDistance) {
+  ProvokeError(
+      Field::kDistance, R"(<drake:distance_constraint_distance value="0"/>)",
+      ".*The 'value' attribute for the "
+      "<drake:distance_constraint_distance> tag must be strictly positive.");
+}
+
+TEST_F(DistanceConstraintTest, NonpositiveStiffness) {
+  ProvokeError(
+      Field::kStiffness, R"(<drake:distance_constraint_stiffness value="0"/>)",
+      ".*The 'value' attribute for the "
+      "<drake:distance_constraint_stiffness> tag must be strictly positive.");
+}
+
+TEST_F(DistanceConstraintTest, NegativeDamping) {
+  ProvokeError(Field::kDamping,
+               R"(<drake:distance_constraint_damping value="-1"/>)",
+               ".*The 'value' attribute for the "
+               "<drake:distance_constraint_damping> tag must be non-negative.");
+}
+
 class TendonConstraintTest : public UrdfParserTest {
  public:
   void VerifyParameters(

@@ -1923,6 +1923,58 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
   return ParseBallConstraint(read_vector, read_body, plant);
 }
 
+std::optional<MultibodyConstraintId> AddDistanceConstraintFromSpecification(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+  const std::set<std::string> supported_elements{
+      "drake:distance_constraint_body_A",
+      "drake:distance_constraint_p_AP",
+      "drake:distance_constraint_body_B",
+      "drake:distance_constraint_p_BQ",
+      "drake:distance_constraint_distance",
+      "drake:distance_constraint_stiffness",
+      "drake:distance_constraint_damping",
+  };
+  CheckSupportedElements(diagnostic, node, supported_elements);
+
+  auto read_vector = [&diagnostic,
+                      node](const char* element_name) -> Eigen::Vector3d {
+    return ParseVector3(diagnostic, node, element_name);
+  };
+
+  auto read_body = [&diagnostic, node, model_instance, plant](
+                       const char* element_name) -> const RigidBody<double>* {
+    return ParseBody(diagnostic, node, model_instance, plant, element_name);
+  };
+
+  auto read_double = [&diagnostic,
+                      node](const char* element_name) -> std::optional<double> {
+    auto validator = [&diagnostic, node, element_name](double result) {
+      const std::string element_name_string(element_name);
+      if ((element_name_string == "drake:distance_constraint_distance" ||
+           element_name_string == "drake:distance_constraint_stiffness") &&
+          result <= 0) {
+        diagnostic.Error(
+            node, fmt::format("<{}>: The <{}> child tag must be strictly "
+                              "positive.",
+                              node->GetName(), element_name));
+        return false;
+      }
+      if (element_name_string == "drake:distance_constraint_damping" &&
+          result < 0) {
+        diagnostic.Error(
+            node, fmt::format("<{}>: The <{}> child tag must be non-negative.",
+                              node->GetName(), element_name));
+        return false;
+      }
+      return true;
+    };
+    return ParseDouble(diagnostic, node, element_name, validator);
+  };
+
+  return ParseDistanceConstraint(read_vector, read_body, read_double, plant);
+}
+
 const LinearSpringDamper<double>* AddLinearSpringDamperFromSpecification(
     const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
     ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
@@ -2260,6 +2312,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
       "drake:linear_bushing_rpy",
       "drake:linear_spring_damper",
       "drake:ball_constraint",
+      "drake:distance_constraint",
       "drake:tendon_constraint",
       "drake:collision_filter_group",
       "frame",
@@ -2431,6 +2484,17 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
                               "drake:ball_constraint")) {
       AddBallConstraintFromSpecification(diagnostic, constraint_node,
                                          model_instance, plant);
+    }
+  }
+
+  drake::log()->trace("sdf_parser: Add DistanceConstraint");
+  if (model.Element()->HasElement("drake:distance_constraint")) {
+    for (sdf::ElementPtr constraint_node =
+             model.Element()->GetElement("drake:distance_constraint");
+         constraint_node; constraint_node = constraint_node->GetNextElement(
+                              "drake:distance_constraint")) {
+      AddDistanceConstraintFromSpecification(diagnostic, constraint_node,
+                                             model_instance, plant);
     }
   }
 
