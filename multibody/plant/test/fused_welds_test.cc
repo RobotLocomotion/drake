@@ -279,8 +279,8 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
         fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
             *fused_model.context, p_WoWo_W);
     // TODO(Mitiguy) EXPECT_FALSE is wrong, should be EXPECT_TRUE !
-    EXPECT_FALSE(CompareMatrices(L_unfused.get_coeffs(), L_fused.get_coeffs(),
-                                 kTolerance, MatrixCompareType::relative))
+    EXPECT_TRUE(CompareMatrices(L_unfused.get_coeffs(), L_fused.get_coeffs(),
+                                kTolerance, MatrixCompareType::relative))
         << "Spatial momentum mismatch at angle = " << angle;
   }
 }
