@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import RandomGenerator, _binder
+from pydrake.common import RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import AbstractValue, Value
 from pydrake.examples import PendulumPlant, RimlessWheel
@@ -422,7 +422,7 @@ class TestGeneral(unittest.TestCase):
         x = cast(np.array([1.23, 4.56]))
         discrete_values.set_value(1, x)
         numpy_compare.assert_equal(discrete_values.get_value(index=1), x)
-        if T is float or _binder == "nanobind":
+        if T is float:
             numpy_compare.assert_equal(
                 discrete_values.get_mutable_value(index=1), x
             )
