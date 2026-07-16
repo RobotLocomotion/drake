@@ -60,3 +60,17 @@ class csc_matrix:
         for row, col, value in self._triplets:
             result[row, col] = value
         return result
+
+    @property
+    def has_sorted_indices(self):
+        ind_starts = self.indptr
+        ind_ends = list(self.indptr[1:]) + [-1]
+        for ind_start, ind_end in zip(ind_starts, ind_ends):
+            values = self.indices[ind_start:ind_end]
+            is_sorted = all([a < b for a, b in zip(values, values[1:])])
+            if not is_sorted:
+                return False
+        return True
+
+    def __dlpack__(self, *args, **kwargs):
+        return self.todense.__dlpack__(*args, **kwargs)

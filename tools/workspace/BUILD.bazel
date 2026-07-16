@@ -219,7 +219,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "highway_internal",
     "lapack",
     "libjpeg",
+    # N.B. The nanobind install is handled by //bindings/pydrake:install.
     "opencl",
+    # N.B. The robin_map install is handled by the nanobind install.
     "spdlog",
     "zlib",
 ]] + select({

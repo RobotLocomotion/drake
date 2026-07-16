@@ -13,8 +13,9 @@ version on macOS), the following files need attention:
 - `drake/setup/install_prereqs` in the `"Darwin"` branch call to `python3.##`,
 - `drake/setup/python/mypy/BUILD.bazel` near `--python-version`,
 - `drake/setup/python/pyproject.toml` near `requires-python`,
-- `drake/tools/wheel/image/setup.py` near `python_requires`,
+- `drake/tools/wheel/image/setup.py` near `python_requires` and `py_limited_api`,
 - `drake/tools/wheel/wheel_builder/linux.py` near `targets`,
 - `drake/tools/wheel/wheel_builder/macos.py` near `targets`,
+- `drake/tools/workspace/nanobind/defs.bzl` near `LIMITED_API_DEFINES`.
 - `drake/tools/workspace/python/repository.bzl` near `macos_interpreter_path`,
 - `drake/tools/workspace/python/venv_upgrade` near `python_versions`.
