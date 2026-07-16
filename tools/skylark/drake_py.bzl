@@ -1,3 +1,4 @@
+load("@with_cfg.bzl", "with_cfg")
 load(
     "//tools/skylark:kwargs.bzl",
     "amend",
@@ -9,6 +10,12 @@ load(
     "incorporate_test_weight_heuristics",
 )
 load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
+
+# py_test_with_alt_binder tests ... XXX
+_builder = with_cfg(py_test)
+_builder.set(Label("//tools/flags:python_binder"), "nanobind")
+_builder.resettable(Label("//tools/skylark:py_test_with_alt_binder_original_settings"))
+py_test_with_alt_binder, python_binder_reset = _builder.build()
 
 def drake_py_library(
         name,
@@ -300,6 +307,18 @@ def drake_py_test(
         srcs_version = "PY3",
         **kwargs
     )
+    if False:  # XXX(build) prototype of multi-binder test rules.
+        py_test_with_alt_binder(
+            name = "nb/" + name,
+            main = kwargs.pop("main", None) or "{}.py".format(name),
+            size = size,
+            srcs = srcs,
+            deps = deps,
+            target_compatible_with = target_compatible_with,
+            python_version = "PY3",
+            srcs_version = "PY3",
+            **kwargs
+        )
 
 def py_test_isolated(
         name,

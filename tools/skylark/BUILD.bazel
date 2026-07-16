@@ -1,3 +1,4 @@
+load("@with_cfg.bzl", "original_settings")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 
@@ -11,6 +12,10 @@ config_setting(
 config_setting(
     name = "osx",
     constraint_values = ["@platforms//os:osx"],
+)
+
+original_settings(
+    name = "py_test_with_alt_binder_original_settings",
 )
 
 drake_py_binary(
