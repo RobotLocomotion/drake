@@ -1442,7 +1442,7 @@ bool MultibodyPlant<T>::GetFuseWeldedLinks(
 
 template <typename T>
 void MultibodyPlant<T>::Finalize() {
-  // After finalizing the base class, tree is read-only.
+  // After finalizing the base class, the tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
 
   if (geometry_source_is_registered()) {
