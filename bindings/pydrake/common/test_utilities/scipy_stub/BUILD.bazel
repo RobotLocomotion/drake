@@ -5,7 +5,7 @@ load(
     "drake_py_unittest",
 )
 
-package(default_visibility = ["//bindings/pydrake:__subpackages__"])
+package(default_visibility = ["//bindings:__subpackages__"])
 
 # A minimal of implementation scipy.sparse that's barely functional enough
 # to support unit testing the Drake APIs that return Eigen::Sparse matrices.
