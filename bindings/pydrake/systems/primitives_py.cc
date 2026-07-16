@@ -612,10 +612,19 @@ PYDRAKE_MODULE(primitives, m) {
             doc.VectorLog.sample_times.doc)
         .def(
             "data",
-            // Nanobind can't cast the Block return type even for T=double, so
-            // we always just copy the return value.
-            [](const VectorLog<T>* self) -> MatrixX<T> { return self->data(); },
-            doc.VectorLog.data.doc)
+            [](const VectorLog<T>* self) {
+              // Our implementation here is the same as CopyIfNotPodType, but
+              // nanobind (as of 2.13) can't cast the Eigen::Block return type
+              // so we also need to convert the Block to a Map.
+              if constexpr (std::is_same_v<T, double>) {
+                const auto& block = self->data();
+                return Eigen::Map<const MatrixXd>(
+                    block.data(), block.rows(), block.cols());
+              } else {
+                return MatrixX<T>(self->data());
+              }
+            },
+            return_value_policy_for_scalar_type<T>(), doc.VectorLog.data.doc)
         .def("Clear", &VectorLog<T>::Clear, doc.VectorLog.Clear.doc)
         .def("Reserve", &VectorLog<T>::Reserve, doc.VectorLog.Reserve.doc)
         .def("AddData", &VectorLog<T>::AddData, py::arg("time"),
