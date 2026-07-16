@@ -1036,8 +1036,9 @@ class Joint : public MultibodyElement<T> {
   template <typename ToScalar>
   internal::Mobilizer<ToScalar>* FindMobilizerToScalarClone(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
-    internal::Mobilizer<ToScalar>* mobilizer_clone =
-        &tree_clone->get_mutable_variant(*mobilizer_);
+    internal::Mobilizer<ToScalar>* const mobilizer_clone =
+        mobilizer_ == nullptr ? nullptr
+                              : &tree_clone->get_mutable_variant(*mobilizer_);
     return mobilizer_clone;
   }
 

@@ -5023,9 +5023,9 @@ to choose torque stiffness and damping constants" for more details.)""";
         // Source: drake/multibody/tree/linear_spring_damper.h
         const char* doc =
 R"""(This ForceElement models a spring-damper attached between two points
-on two different bodies (links). Given a point P on a body A and a
-point Q on a body B with positions p_AP and p_BQ, respectively, this
-spring-damper applies equal and opposite forces on bodies A and B
+on two different links (bodies). Given a point P on a link A and a
+point Q on a link B with positions p_AP and p_BQ, respectively, this
+spring-damper applies equal and opposite forces on links A and B
 according to:
 
 
@@ -5047,7 +5047,7 @@ its rate of change, ``r̂ = (p_WQ - p_WP) / ℓ`` is the normalized
 vector from P to Q, ℓ₀ is the free length of the spring and k and c
 are the stiffness and damping of the spring-damper, respectively. This
 ForceElement is meant to model finite free length springs attached
-between two points. In this typical arrangement springs are usually
+between two points. In the typical arrangement springs are usually
 pre-loaded, meaning they apply a non-zero spring force in the static
 configuration of the system. Thus, neither the free length ℓ₀ nor the
 current length ℓ of the spring can ever be zero. The length of the
@@ -5056,7 +5056,7 @@ and therefore this element throws a RuntimeError exception in that
 case. Note that:
 
 - The applied force is always along the line connecting points P and
-Q. - Damping always dissipates energy. - Forces on bodies A and B are
+Q. - Damping always dissipates energy. - Forces on links A and B are
 equal and opposite according to Newton's third law.)""";
         // Symbol: drake::multibody::LinearSpringDamper::CalcConservativePower
         struct /* CalcConservativePower */ {
@@ -5092,11 +5092,11 @@ equal and opposite according to Newton's third law.)""";
         struct /* ctor */ {
           // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc =
-R"""(Constructor for a spring-damper between a point P on ``bodyA`` and a
-point Q on ``bodyB``. Point P is defined by its position ``p_AP`` as
-measured and expressed in the body frame A and similarly, point Q is
-defined by its position p_BQ as measured and expressed in body frame
-B. The remaining parameters define:
+R"""(Constructor for a spring-damper between a point P on link ``bodyA``
+and a point Q on link ``bodyB``. Point P is defined by its position
+``p_AP`` as measured and expressed in the link frame A and similarly,
+point Q is defined by its position p_BQ as measured and expressed in
+link frame B. The remaining parameters define:
 
 Parameter ``free_length``:
     The free length of the spring ℓ₀, in meters, at which the spring
@@ -7051,6 +7051,11 @@ its parent body in the multibody tree by its Mobilizer (also called a
 permissible motion can be added using Constraint objects to remove
 more degrees of freedom.
 
+Note:
+    This object corresponds to a "link" in urdf/sdf terminology. We
+    may combine welded-together links into a composite rigid body
+    internally.
+
 - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
                    (3rd Edition), Addison-Wesley, 2001.)""";
         // Symbol: drake::multibody::RigidBody::AddInForce
@@ -7381,7 +7386,8 @@ Raises:
         struct /* body_frame */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Compatibility) A synonym for link_frame().)""";
+R"""(Returns a const reference to the associated RigidBodyFrame
+(LinkFrame). This is a synonym for link_frame().)""";
         } body_frame;
         // Symbol: drake::multibody::RigidBody::default_com
         struct /* default_com */ {
@@ -7542,14 +7548,14 @@ Returns ``alpha_WB_W``:
         struct /* get_angular_velocity_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract this body's angular velocity in world, expressed in
+R"""((Advanced) Extract this link's angular velocity in world, expressed in
 world.
 
 Parameter ``vc``:
     velocity kinematics cache.
 
-Returns ``w_WB_W``:
-    rigid body B's angular velocity in world W, expressed in W.)""";
+Returns ``w_WL_W``:
+    link L's angular velocity in world W, expressed in W.)""";
         } get_angular_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::get_mass
         struct /* get_mass */ {
@@ -7586,35 +7592,35 @@ body's origin, expressed in world.
 Parameter ``pc``:
     position kinematics cache.
 
-Returns ``p_WoBo_W``:
-    position vector from Wo (world origin) to Bo (this body's origin)
+Returns ``p_WoLo_W``:
+    position vector from Wo (world origin) to Lo (this link's origin)
     expressed in W (world).)""";
         } get_origin_position_in_world;
         // Symbol: drake::multibody::RigidBody::get_origin_velocity_in_world
         struct /* get_origin_velocity_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract the velocity of this body's origin in world,
+R"""((Advanced) Extract the velocity of this link's origin in world,
 expressed in world.
 
 Parameter ``vc``:
     velocity kinematics cache.
 
-Returns ``v_WBo_W``:
-    velocity of Bo (body origin) in world W, expressed in W.)""";
+Returns ``v_WLo_W``:
+    velocity of Lo (link frame origin) in world W, expressed in W.)""";
         } get_origin_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::get_pose_in_world
         struct /* get_pose_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract this body's pose in world (from the position
+R"""((Advanced) Extract this link's pose in world (from the position
 kinematics).
 
 Parameter ``pc``:
     position kinematics cache.
 
-Returns ``X_WB``:
-    pose of rigid body B in world frame W.)""";
+Returns ``X_WL``:
+    pose of this Link (%RigidBody) L in world frame W.)""";
         } get_pose_in_world;
         // Symbol: drake::multibody::RigidBody::get_rotation_matrix_in_world
         struct /* get_rotation_matrix_in_world */ {
@@ -7626,8 +7632,9 @@ body's frame.
 Parameter ``pc``:
     position kinematics cache.
 
-Returns ``R_WB``:
-    rotation matrix relating rigid body B in world frame W.)""";
+Returns ``R_WL``:
+    rotation matrix giving the orientation of this Link L in the world
+    frame W.)""";
         } get_rotation_matrix_in_world;
         // Symbol: drake::multibody::RigidBody::get_spatial_acceleration_in_world
         struct /* get_spatial_acceleration_in_world */ {
@@ -7647,15 +7654,15 @@ Returns ``A_WB_W``:
         struct /* get_spatial_velocity_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Returns V_WB, this RigidBody B's SpatialVelocity in the
-world frame W.
+R"""((Advanced) Returns V_WL, this Link (%RigidBody) L's SpatialVelocity in
+the world frame W.
 
 Parameter ``vc``:
     velocity kinematics cache.
 
-Returns ``V_WB_W``:
-    this rigid body B's spatial velocity in the world frame W,
-    expressed in W (for point Bo, the body frame's origin).)""";
+Returns ``V_WL_W``:
+    this link L's spatial velocity in the world frame W, expressed in
+    W (for point Lo, the link frame's origin).)""";
         } get_spatial_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::has_quaternion_dofs
         struct /* has_quaternion_dofs */ {
@@ -7683,7 +7690,7 @@ See also:
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) Returns ``True`` if this body is a *floating base body*,
-meaning it had no explicit joint to a parent body so is mobilized by
+meaning it had no explicit joint to a parent body and is mobilized by
 an automatically-added (ephemeral) floating (6 dof) joint to World.
 
 Note:
@@ -7714,16 +7721,16 @@ Returns:
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns a const reference to the associated LinkFrame
-(RigidBodyFrame).)""";
+(RigidBodyFrame). This is a synonym for body_frame().)""";
         } link_frame;
         // Symbol: drake::multibody::RigidBody::mobod_index
         struct /* mobod_index */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Returns the index of the mobilized body ("mobod") in the
-computational directed forest structure of the owning MultibodyTree to
-which this RigidBody belongs. This serves as the BodyNode index and
-the index into all associated quantities.)""";
+R"""((Advanced) Returns the index of the mobilized body ("mobod") that is
+followed by this RigidBody (Link). This serves as the BodyNode index
+and the index into all associated quantities. More than one link may
+follow the same mobod.)""";
         } mobod_index;
         // Symbol: drake::multibody::RigidBody::name
         struct /* name */ {
@@ -7756,8 +7763,8 @@ Raises:
       struct /* RigidBodyFrame */ {
         // Source: drake/multibody/tree/rigid_body.h
         const char* doc =
-R"""(A RigidBodyFrame is a material Frame that serves as the unique
-reference frame for a RigidBody.
+R"""(A RigidBodyFrame (aka LinkFrame) is a material Frame that serves as
+the unique reference frame for a RigidBody (aka Link).
 
 Each RigidBody B has a unique body frame for which we use the same
 symbol B (with meaning clear from context). We represent a body frame
