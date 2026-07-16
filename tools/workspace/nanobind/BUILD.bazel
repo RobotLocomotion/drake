@@ -60,7 +60,11 @@ cc_library(
     name = "shared_library",
     srcs = [":libdrake_nanobind.so"],
     defines = LIMITED_API_DEFINES,
-    deps = [":hdrs"],
+    deps = [
+        ":hdrs",
+        "@drake//tools/workspace/python:cc_headers",
+        "@drake//tools/workspace/python:cc_libs",
+    ],
 )
 
 install_files(

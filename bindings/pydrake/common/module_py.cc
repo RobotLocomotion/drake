@@ -145,8 +145,10 @@ void InitLowLevelModules(py::module_ m) {
 
 #ifdef PYDRAKE_USE_PYBIND11
   m.attr("_binder") = "pybind11";
-#else
+#elif PYDRAKE_USE_NANOBIND
   m.attr("_binder") = "nanobind";
+#else
+#error "Unknown binder!"
 #endif
 
   {

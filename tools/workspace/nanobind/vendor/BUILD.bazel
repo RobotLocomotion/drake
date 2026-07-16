@@ -6,7 +6,9 @@ load(":defs.bzl", "extract_nanobind_header")
 package(default_visibility = ["//visibility:private"])
 
 # Drake uses a patched verison of nanobind's Eigen type casters, by checking the
-# modified headers into our source tree.
+# modified headers into our source tree. Beyond just patching, this also allows
+# us to `deps = ...` on our specific choice of Eigen, instead of using the BCR
+# Eigen like is hard-coded into the @module_nanobind//:nanobind_eigen library.
 
 cc_library(
     name = "nanobind_eigen",

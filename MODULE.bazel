@@ -75,9 +75,9 @@ bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
 # Add non-replaceable C++ module dependencies that are used by Drake's
 # implementation.
 
+bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
 bazel_dep(name = "nanobind", version = "2.13.0", repo_name = "module_nanobind")
 bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
-bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
 
 # Add additional modules we use at build-time (not runtime dependencies).
 

@@ -63,8 +63,6 @@ drake_cc_library(
     ],
     declare_installed_headers = 0,
     defines = select({
-        # XXX porting These defines need to be provided to CMake users
-        # downstream, somehow.
         "//tools/workspace/nanobind:enabled": [
             "PYDRAKE_USE_NANOBIND",
         ],
