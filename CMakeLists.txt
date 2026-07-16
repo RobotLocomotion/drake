@@ -734,6 +734,10 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
+set(DRAKE_PYTHON_BINDER "pybind11" CACHE STRING "Binding library to use for pydrake." )
+set_property(CACHE DRAKE_PYTHON_BINDER PROPERTY STRINGS "pybind11" "nanobind")
+string(APPEND BAZEL_CONFIG " --@drake//tools/flags:python_binder=${DRAKE_PYTHON_BINDER}")
+
 if(BUILD_TYPE_UPPER STREQUAL DEBUG)
   string(APPEND BAZEL_CONFIG " --config=Debug")
 elseif(BUILD_TYPE_UPPER STREQUAL MINSIZEREL)

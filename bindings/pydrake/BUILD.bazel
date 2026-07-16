@@ -59,8 +59,18 @@ drake_cc_library(
     name = "pydrake_pybind",
     hdrs = ["pydrake_pybind.h"],
     declare_installed_headers = 0,
+    defines = select({
+        "//tools/workspace/nanobind:enabled": [
+            "PYDRAKE_USE_NANOBIND",
+        ],
+        "//conditions:default": [
+            "PYDRAKE_USE_PYBIND11",
+        ],
+    }),
     visibility = ["//visibility:public"],
     deps = [
+        # TODO(#21572) Using pybind11 unconditionally here is wrong, but is
+        # easier for now until all/most binding code has been ported.
         "@drake//tools/workspace/pybind11",
     ],
 )
@@ -500,9 +510,17 @@ install(
         "//bindings/pydrake/autodiffutils:install",
         "//bindings/pydrake/math:install",
         "//bindings/pydrake/symbolic:install",
-        # Install the pybind11 headers if and only if we're installing pydrake.
-        "@pybind11//:install",
-    ],
+    ] + select({
+        # Install the binder library as part of the pydrake install, not the
+        # workspace install, so that it gets installed if and only if we're
+        # installing pydrake. (Users can opt-out of Python installation.)
+        "//tools/workspace/nanobind:enabled": [
+            "//tools/workspace/nanobind:install",
+        ],
+        "//conditions:default": [
+            "@pybind11//:install",
+        ],
+    }),
 )
 
 add_lint_tests_pydrake()
