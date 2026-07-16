@@ -137,11 +137,9 @@ PYDRAKE_MODULE(lcm, m) {
     constexpr auto& cls_doc = doc.SerializerInterface;
     class_<Class, PySerializerInterface, std::shared_ptr<Class>> cls(
         m, "SerializerInterface");
-    cls  // BR
-         // Adding a constructor permits implementing this interface in Python.
-        .def(py::init(
-                 []() { return std::make_unique<PySerializerInterface>(); }),
-            cls_doc.ctor.doc);
+    cls
+        // Adding a constructor permits implementing this interface in Python.
+        .def(py::init<>(), cls_doc.ctor.doc);
     // The following bindings are present to allow Python to call C++
     // implementations of this interface. Python implementations of the
     // interface will call the trampoline implementation methods above.

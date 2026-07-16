@@ -235,7 +235,9 @@ void BindSolverInterface(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
-      .def(py::init([]() { return std::make_unique<PySolverInterface>(); }),
+      .def(
+          "__init__",
+          [](SolverInterface* self) { new (self) PySolverInterface(); },
           doc.SolverInterface.ctor.doc)
       // The following bindings are present to allow Python to call C++
       // implementations of this interface.
