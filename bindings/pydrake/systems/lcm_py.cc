@@ -139,8 +139,8 @@ PYDRAKE_MODULE(lcm, m) {
         m, "SerializerInterface");
     cls  // BR
          // Adding a constructor permits implementing this interface in Python.
-        .def(py::init(
-                 []() { return std::make_unique<PySerializerInterface>(); }),
+        .def(
+            "__init__", [](Class* self) { new (self) PySerializerInterface(); },
             cls_doc.ctor.doc);
     // The following bindings are present to allow Python to call C++
     // implementations of this interface. Python implementations of the

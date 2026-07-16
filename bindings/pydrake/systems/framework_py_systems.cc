@@ -1161,13 +1161,9 @@ Note: The above is for the C++ documentation. For Python, use
           LeafSystem<T>>(
           m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc);
       cls  // BR
-          .def(py::init([](int input_size, int output_size,
-                            std::optional<bool> direct_feedthrough) {
-            return new PyVectorSystem(
-                input_size, output_size, direct_feedthrough);
-          }),
-              py::arg("input_size"), py::arg("output_size"),
-              py::arg("direct_feedthrough"), doc.VectorSystem.ctor.doc_3args);
+          .def(py::init<int, int, std::optional<bool>>(), py::arg("input_size"),
+              py::arg("output_size"), py::arg("direct_feedthrough"),
+              doc.VectorSystem.ctor.doc_3args);
     }
   }
 

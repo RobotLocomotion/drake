@@ -133,18 +133,19 @@ is the input dimension.
       m, "IrisParameterizationFunction", cls_doc.doc);
   iris_parameterization_function  // BR
       .def(py::init<>(), cls_doc.ctor.doc_0args)
-      .def(py::init([](const py::callable& parameterization,
-                        int parameterization_dimension) {
-        return IrisParameterizationFunction(
-            py::cast<
-                IrisParameterizationFunction::ParameterizationFunctionDouble>(
-                parameterization),
-            py::cast<
-                IrisParameterizationFunction::ParameterizationFunctionAutodiff>(
-                parameterization),
-            /* parameterization_is_threadsafe = */ false,
-            parameterization_dimension);
-      }),
+      .def(
+          "__init__",
+          [](IrisParameterizationFunction* self,
+              const py::callable& parameterization,
+              int parameterization_dimension) {
+            new (self) IrisParameterizationFunction(
+                py::cast<IrisParameterizationFunction::
+                        ParameterizationFunctionDouble>(parameterization),
+                py::cast<IrisParameterizationFunction::
+                        ParameterizationFunctionAutodiff>(parameterization),
+                /* parameterization_is_threadsafe = */ false,
+                parameterization_dimension);
+          },
           py::arg("parameterization"), py::arg("dimension"),
           parameterization_function_docstring.c_str())
       .def(py::init<const Eigen::VectorX<symbolic::Expression>&,
