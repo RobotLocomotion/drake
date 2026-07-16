@@ -48,6 +48,7 @@ ARG DRAKE_GIT_SHA
 
 ENV DRAKE_VERSION=${DRAKE_VERSION}
 ENV DRAKE_GIT_SHA=${DRAKE_GIT_SHA}
+ENV DRAKE_PYTHON_BINDER=${DRAKE_PYTHON_BINDER}
 ENV SNOPT_PATH=/tmp/drake-wheel-build/snopt/snopt.tar.gz
 
 RUN --mount=type=cache,target=/var/cache/bazel \

@@ -54,8 +54,13 @@ def wheel_name(python_version, wheel_version, wheel_platform):
     Determines the complete name of the Drake wheel, given various individual
     bits such as the Drake version, Python version, and Python wheel platform.
     """
-    vm = f"cp{python_version}"
-    return f"drake-{wheel_version}-{vm}-{vm}-{wheel_platform}.whl"
+    if python_version.endswith("nb"):
+        cpNN = f"cp{python_version[:-2]}"
+        abi = "abi3"
+    else:
+        cpNN = f"cp{python_version}"
+        abi = cpNN
+    return f"drake-{wheel_version}-{cpNN}-{abi}-{wheel_platform}.whl"
 
 
 def _check_version(version):

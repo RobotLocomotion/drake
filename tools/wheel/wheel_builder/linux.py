@@ -19,7 +19,15 @@ from .common import (
     wheel_name,
     wheelhouse,
 )
-from .linux_types import BUILD, TEST, Platform, PythonManager, Role, Target
+from .linux_types import (
+    BUILD,
+    TEST,
+    Platform,
+    PythonBinder,
+    PythonManager,
+    Role,
+    Target,
+)
 
 # Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
 _files_to_remove = []
@@ -49,6 +57,20 @@ targets = {
     "x86_64": (
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            python_binder=PythonBinder.NANOBIND,
+            test_platforms=(
+                Platform("amazonlinux", "2023", "AL2023"),
+                Platform("ubuntu", "24.04", "noble"),
+                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
+                # TODO(jwnimmer-tri) We should test this same abi3 wheel on all
+                # newer Python versions (so 3.13, 3.14, etc.).
+            ),
+            python_version_tuple=(3, 12, 8),
+            python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
+        ),
+        Target(
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
@@ -59,6 +81,7 @@ targets = {
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
@@ -69,6 +92,7 @@ targets = {
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
@@ -81,6 +105,7 @@ targets = {
     "aarch64": (
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
@@ -91,6 +116,7 @@ targets = {
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
@@ -101,6 +127,7 @@ targets = {
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
@@ -253,10 +280,11 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
     python_manager = target.platform(role, test_index).python_manager
     python_version = target.python_version
 
-    if role == BUILD and target.python_sha is not None:
+    if role == BUILD:
         python_args = [
             "--build-arg", f"PYTHON=build:{target.python_version_full}",
             "--build-arg", f"PYTHON_SHA={target.python_sha}",
+            "--build-arg", f"DRAKE_PYTHON_BINDER={target.python_binder}",
         ]  # fmt: skip
     else:
         python_args = [
@@ -457,7 +485,7 @@ def add_selection_arguments(parser):
         default=",".join(sorted(set([t.python_tag for t in targets]))),
         help=(
             "python version(s) to build; separate with ','"
-            " (default: %(default)s)",
+            " (default: %(default)s)"
         ),
     )
 

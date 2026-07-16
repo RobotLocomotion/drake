@@ -5,6 +5,13 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+class PythonBinder(Enum):
+    _value_: str
+
+    PYBIND11 = "pybind11"
+    NANOBIND = "nanobind"
+
+
 class PythonManager(Enum):
     _value_: str
 
@@ -28,9 +35,10 @@ class Platform:
 @dataclass
 class Target:
     build_platform: Platform
+    python_binder: PythonBinder
     test_platforms: tuple[Platform]
     python_version_tuple: tuple[int]
-    python_sha: str = None
+    python_sha: str
 
     def __post_init__(self):
         assert isinstance(self.test_platforms, tuple)
@@ -38,6 +46,8 @@ class Target:
         self.python_version_full = ".".join(pv_parts)
         self.python_version = ".".join(pv_parts[:2])
         self.python_tag = "".join(pv_parts[:2])
+        if self.python_binder == PythonBinder.NANOBIND:
+            self.python_tag += "nb"
 
     def platform(self, role: Role, test_index: int | None = None) -> Platform:
         """Returns the Platform for the given `role`. For the test role, the
