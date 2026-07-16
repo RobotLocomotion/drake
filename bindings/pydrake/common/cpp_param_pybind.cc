@@ -2,8 +2,6 @@
 
 #ifdef PYDRAKE_USE_PYBIND11
 #include "pybind11/eval.h"
-#else  // PYDRAKE_USE_NANOBIND
-#include "nanobind/eval.h"
 #endif
 
 namespace drake {

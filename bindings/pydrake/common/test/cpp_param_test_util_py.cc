@@ -6,7 +6,9 @@
 
 #include <string>
 
+#ifdef PYDRAKE_USE_PYBIND11
 #include "pybind11/eval.h"
+#endif
 
 #include "drake/common/drake_assert.h"
 

@@ -7,7 +7,9 @@
 #include <utility>
 #include <vector>
 
+#ifdef PYDRAKE_USE_PYBIND11
 #include "pybind11/eval.h"
+#endif
 
 #include "drake/bindings/generated_docstrings/systems_framework.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"

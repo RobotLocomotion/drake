@@ -1,6 +1,8 @@
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 
+#ifdef PYDRAKE_USE_PYBIND11
 #include "pybind11/eval.h"
+#endif
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
