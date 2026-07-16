@@ -24,12 +24,20 @@
 namespace drake {
 namespace multibody {
 
-// Forward declaration for RigidBodyFrame<T>.
+// Forward declaration for RigidBodyFrame to use.
 template <typename T>
 class RigidBody;
 
-/// A %RigidBodyFrame is a material Frame that serves as the unique reference
-/// frame for a RigidBody.
+/// Link is a synonym for the misnamed RigidBody class; prefer Link in
+/// internal code. When we combine welded-together links there are multiple
+/// links fixed to a single rigid body (in the physics sense; what we call
+/// a "mobilized body" or mobod). Saying that there is more than one
+/// RigidBody on a rigid body is too confusing!
+template <typename T>
+using Link = RigidBody<T>;
+
+/// A %RigidBodyFrame (aka LinkFrame) is a material Frame that serves as the
+/// unique reference frame for a RigidBody (aka Link).
 ///
 /// Each %RigidBody B has a unique body frame for which we use the same symbol
 /// B (with meaning clear from context). We represent a body frame by a
@@ -138,7 +146,8 @@ class RigidBodyFrame final : public Frame<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 };
 
-/// LinkFrame is a synonym for RigidBodyFrame and should be preferred.
+/// LinkFrame is a synonym for RigidBodyFrame. Prefer Link and LinkFrame in
+/// internal code.
 template <typename T>
 using LinkFrame = RigidBodyFrame<T>;
 
@@ -148,17 +157,14 @@ using LinkFrame = RigidBodyFrame<T>;
 namespace internal {
 template <typename T>
 // Attorney-Client idiom to grant MultibodyTree access to a selected set of
-// private methods in RigidBody. RigidBodyAttorney serves as a "proxy" to the
-// RigidBody class but only providing an interface to a selected subset of
+// private methods in RigidBody (Link). LinkAttorney serves as a "proxy" to the
+// RigidBody class but only provides an interface to a selected subset of
 // methods that should be accessible to MultibodyTree. These methods are related
 // to the construction and finalize stage of the multibody system.
-class RigidBodyAttorney {
+class LinkAttorney {
  private:
   // MultibodyTree keeps a list of mutable pointers to each of the link frames
   // in the system and therefore it needs mutable access.
-  // Notice this method is private and therefore users do not have access to it
-  // even in the rare event they'd attempt to peek into the "internal::"
-  // namespace.
   static LinkFrame<T>& get_mutable_link_frame(Link<T>* link) {
     return link->get_mutable_link_frame();
   }
@@ -188,10 +194,14 @@ class RigidBodyAttorney {
 /// freedom obey the Newton-Euler equations of motion. However, within a
 /// MultibodyTree, a %RigidBody is *not* free in space; instead, it is assigned
 /// a limited number of degrees of freedom (0-6) with respect to its parent
-/// body in the multibody tree by its Mobilizer (also called a
-/// "tree joint" or "inboard joint"). Additional constraints on permissible
-/// motion can be added using Constraint objects to remove more degrees of
-/// freedom.
+/// body in the multibody tree by its Mobilizer (also called a "tree joint"
+/// or "inboard joint"). Additional constraints on permissible motion can be
+/// added using Constraint objects to remove more degrees of freedom.
+///
+/// @note This object corresponds to a "link" in urdf/sdformat terminology. We
+/// may combine welded-together links into a composite rigid body internally.
+/// We provide aliases Link/LinkIndex for RigidBody/BodyIndex to allow either
+/// terminology to be used.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.
@@ -202,7 +212,7 @@ class RigidBody : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody);
 
-  /// Constructs a %RigidBody named `body_name` with the given default
+  /// Constructs a %RigidBody (%Link) named `body_name` with the given default
   /// SpatialInertia.
   ///
   /// @param[in] body_name
@@ -216,7 +226,7 @@ class RigidBody : public MultibodyElement<T> {
       const std::string& body_name,
       const SpatialInertia<double>& M_BBo_B = SpatialInertia<double>::Zero());
 
-  /// Constructs a %RigidBody named `body_name` with the given default
+  /// Constructs a %RigidBody (%Link) named `body_name` with the given default
   /// SpatialInertia.
   ///
   /// @param[in] body_name
@@ -237,63 +247,48 @@ class RigidBody : public MultibodyElement<T> {
   /// Returns this element's unique index.
   LinkIndex index() const { return this->template index_impl<LinkIndex>(); }
 
-  /// (Internal use only) Returns this Link's (RigidBody's) unique ordinal.
-  /// Currently identical to the index but will differ when we permit removal of
+  /// (Internal use only) Returns this Link's unique ordinal. Currently
+  /// identical to the index but will differ when we permit removal of
   /// Links as we do for Joints.
   LinkOrdinal ordinal() const {
     return this->template ordinal_impl<LinkOrdinal>();
   }
 
-  /// Gets the `name` associated with this rigid body. The name will never be
-  /// empty.
+  /// Gets the `name` associated with this %RigidBody (%Link). The name will
+  /// never be empty.
   const std::string& name() const { return name_; }
 
-  /// Returns scoped name of this body. Neither of the two pieces of the name
-  /// will be empty (the scope name and the element name).
+  /// Returns scoped name of this %RigidBody (%Link). Neither of the two
+  /// pieces of the name will be empty (the scope name and the element name).
   /// @throws std::exception if this element is not associated with a
   ///   MultibodyPlant.
   ScopedName scoped_name() const;
 
   /// Returns a const reference to the associated LinkFrame (RigidBodyFrame).
+  /// link_frame() is synonymous with body_frame().
+  /// @note "link" is the terminology used in urdf/sdformat.
   const LinkFrame<T>& link_frame() const { return link_frame_; }
 
-  /// (Compatibility) A synonym for link_frame().
-  const LinkFrame<T>& body_frame() const { return link_frame(); }
+  /// Returns a const reference to the associated RigidBodyFrame (LinkFrame).
+  /// body_frame() is synonymous with link_frame().
+  /// @note "link" is the terminology used in urdf/sdformat.
+  const RigidBodyFrame<T>& body_frame() const { return link_frame(); }
 
-  /// For a floating base %RigidBody, lock its inboard joint. Its generalized
-  /// velocities will be 0 until it is unlocked.
+  // TODO(rpoyner-tri): consider extending the design to allow locking on
+  //  non-floating bodies.
+
+  /// For a floating base %RigidBody (%Link), lock its inboard joint. Its
+  /// generalized velocities will be 0 until it is unlocked.
   /// @throws std::exception if this body is not a floating base body.
-  void Lock(systems::Context<T>* context) const {
-    ThrowIfNotFinalized(__func__);
-    // TODO(rpoyner-tri): consider extending the design to allow locking on
-    //  non-floating bodies.
-    if (!is_floating_base_body()) {
-      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
-      throw std::logic_error(fmt::format(
-          "Attempted to call Lock() on non-floating-base rigid body {}",
-          name()));
-    }
-    mobilizer().Lock(context);
-  }
+  void Lock(systems::Context<T>* context) const;
 
-  /// For a floating base %RigidBody, unlock its inboard joint.
+  /// For a floating base %RigidBody (%Link), unlock its inboard joint.
   /// @throws std::exception if this body is not a floating base body.
-  void Unlock(systems::Context<T>* context) const {
-    ThrowIfNotFinalized(__func__);
-    // TODO(rpoyner-tri): consider extending the design to allow locking on
-    //  non-floating bodies.
-    if (!is_floating_base_body()) {
-      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
-      throw std::logic_error(fmt::format(
-          "Attempted to call Unlock() on non-floating-base rigid body {}",
-          name()));
-    }
-    mobilizer().Unlock(context);
-  }
+  void Unlock(systems::Context<T>* context) const;
 
-  /// Determines whether this %RigidBody is currently locked to its inboard
-  /// (parent) %RigidBody. This is not limited to floating base bodies but
-  /// generally Joint::is_locked() is preferable otherwise.
+  /// Determines whether this %RigidBody (%Link) is currently locked to its
+  /// inboard (parent) %RigidBody. This is not limited to floating base
+  /// bodies but generally Joint::is_locked() is preferable otherwise.
   /// @returns true if the body is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
     ThrowIfNotFinalized(__func__);
@@ -301,15 +296,16 @@ class RigidBody : public MultibodyElement<T> {
     return mobilizer().is_locked(context);
   }
 
-  /// (Advanced) Returns the index of the mobilized body ("mobod") in the
-  /// computational directed forest structure of the owning MultibodyTree to
-  /// which this %RigidBody belongs. This serves as the BodyNode index and the
-  /// index into all associated quantities.
+  /// (Internal use only) Returns the index of the mobilized body ("mobod") that
+  /// this Link follows. This index serves as the BodyNode index and the
+  /// index into all associated quantities. More than one link may follow the
+  /// same mobod.
   internal::MobodIndex mobod_index() const { return mobilizer().index(); }
 
-  /// (Advanced) Returns `true` if this body is a _floating base body_, meaning
-  /// it had no explicit joint to a parent body so is mobilized by an
-  /// automatically-added (ephemeral) floating (6 dof) joint to World.
+  /// (Advanced) Returns `true` if this %RigidBody (%Link) is a _floating base
+  /// body_, meaning it had no explicit joint to a parent body and is
+  /// mobilized by an automatically-added (ephemeral) floating (6 dof) joint
+  /// to World.
   ///
   /// @note A floating base body is not necessarily modeled with a quaternion
   /// mobilizer, see has_quaternion_dofs(). Alternative options include a
@@ -323,11 +319,11 @@ class RigidBody : public MultibodyElement<T> {
     return is_floating_base_body_;
   }
 
-  /// (Advanced) If `true`, this body's generalized position coordinates q
-  /// include a quaternion, which occupies the first four elements of q. Note
-  /// that this does not imply that the body is floating base body since it may
-  /// have fewer than 6 dofs or its inboard body could be something other than
-  /// World.
+  /// (Advanced) If `true`, this %RigidBody's (Link's) generalized position
+  /// coordinates q include a quaternion, which occupies the first four
+  /// elements of q. Note that this does not imply that the body is a floating
+  /// base body since it may have fewer than 6 dofs or its inboard body could
+  /// be something other than World.
   /// @throws std::exception if called pre-finalize
   /// @see is_floating_base_body(), MultibodyPlant::Finalize()
   bool has_quaternion_dofs() const {
@@ -336,13 +332,13 @@ class RigidBody : public MultibodyElement<T> {
   }
 
   /// (Advanced) For floating base bodies (see is_floating_base_body()),
-  /// returns the index of this %RigidBody's first generalized position in the
-  /// vector q of generalized position coordinates for a MultibodyPlant model.
-  /// Positions q for this %RigidBody are then contiguous starting at this
-  /// index. When a floating %RigidBody is modeled with quaternion coordinates
-  /// (see has_quaternion_dofs()), the four consecutive entries in the state
-  /// starting at this index correspond to the quaternion that parametrizes this
-  /// %RigidBody's orientation.
+  /// returns the index of this %RigidBody's (Link's) first generalized
+  /// position in the vector q of generalized position coordinates for a
+  /// MultibodyPlant model. Positions q for this %RigidBody are then
+  /// contiguous starting at this index. When a floating %RigidBody is
+  /// modeled with quaternion coordinates (see has_quaternion_dofs()), the
+  /// four consecutive entries in the state starting at this index correspond
+  /// to the quaternion that parametrizes this %RigidBody's orientation.
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
   /// @see is_floating_base_body(), has_quaternion_dofs()
@@ -354,9 +350,10 @@ class RigidBody : public MultibodyElement<T> {
   }
 
   /// (Advanced) For floating base bodies (see is_floating_base_body()),
-  /// returns the index of this %RigidBody's first generalized velocity in the
-  /// vector v of generalized velocities for a MultibodyPlant model. Velocities
-  /// v for this %RigidBody are then contiguous starting at this index.
+  /// returns the index of this %RigidBody's (Link's) first generalized
+  /// velocity in the vector v of generalized velocities for a MultibodyPlant
+  /// model. Velocities v for this %RigidBody are then contiguous starting at
+  /// this index.
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
   /// @see is_floating_base_body(), MultibodyPlant::Finalize()
@@ -398,57 +395,59 @@ class RigidBody : public MultibodyElement<T> {
     return mobilizer().velocity_suffix(velocity_index_in_body);
   }
 
-  /// Returns this %RigidBody's default mass, which is initially supplied at
-  /// construction when specifying this body's SpatialInertia.
-  /// @note In general, a rigid body's mass can be a constant property stored in
-  /// this rigid body's %SpatialInertia or a parameter that is stored in a
+  /// Returns this %RigidBody's (Link's) default mass, which is initially
+  /// supplied at construction when specifying this body's SpatialInertia.
+  /// @note In general, a body's mass can be a constant property stored in
+  /// this body's %SpatialInertia or a parameter that is stored in a
   /// Context. The default constant mass value is used to initialize the mass
   /// parameter in the Context.
   double default_mass() const { return default_spatial_inertia_.get_mass(); }
 
-  /// Returns the default value of this %RigidBody's center of mass as measured
-  /// and expressed in its body frame. This value is initially supplied at
-  /// construction when specifying this body's SpatialInertia.
-  /// @retval p_BoBcm_B The position of this rigid body B's center of mass `Bcm`
+  /// Returns the default value of this %RigidBody's (Link's) center of mass as
+  /// measured and expressed in its body frame. This value is initially
+  /// supplied at construction when specifying this body's SpatialInertia.
+  /// @retval p_BoBcm_B The position of this body B's center of mass `Bcm`
   /// measured from Bo (B's frame origin) and expressed in B (body B's frame).
   const Vector3<double>& default_com() const {
     return default_spatial_inertia_.get_com();
   }
 
-  /// Returns the default value of this body B's unit inertia about Bo (body B's
-  /// origin), expressed in B (this body's body frame). This value is initially
-  /// supplied at construction when specifying this body's SpatialInertia.
+  /// Returns the default value of this %RigidBody (%Link) B's unit inertia about
+  /// Bo (body B's origin), expressed in B (this body's body frame). This
+  /// value is initially supplied at construction when specifying this body's
+  /// SpatialInertia.
   /// @retval G_BBo_B rigid body B's unit inertia about Bo, expressed in B.
   const UnitInertia<double>& default_unit_inertia() const {
     return default_spatial_inertia_.get_unit_inertia();
   }
 
-  /// Gets the default value of this body B's rotational inertia about Bo
-  /// (B's origin), expressed in B (this body's body frame). This value is
-  /// calculated from the SpatialInertia supplied at construction of this body.
+  /// Gets the default value of this %RigidBody (%Link) B's rotational inertia
+  /// about Bo (B's origin), expressed in B (this body's body frame). This
+  /// value is calculated from the SpatialInertia supplied at construction of
+  /// this body.
   /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
   RotationalInertia<double> default_rotational_inertia() const {
     return default_spatial_inertia_.CalcRotationalInertia();
   }
 
-  /// Gets the default value of this body B's SpatialInertia about Bo
-  /// (B's origin) and expressed in B (this body's frame).
+  /// Gets the default value of this %RigidBody (%Link) B's SpatialInertia about
+  /// Bo (B's origin) and expressed in B (this body's frame).
   /// @retval M_BBo_B body B's spatial inertia about Bo, expressed in B.
   const SpatialInertia<double>& default_spatial_inertia() const {
     return default_spatial_inertia_;
   }
 
-  /// Gets this body's mass from the given context.
+  /// Gets this %RigidBody's (Link's) mass from the given context.
   /// @param[in] context contains the state of the multibody system.
-  /// @pre the context makes sense for use by this RigidBody.
+  /// @pre the context makes sense for use by this %RigidBody.
   const T& get_mass(const systems::Context<T>& context) const {
     const systems::BasicVector<T>& spatial_inertia_parameter =
         context.get_numeric_parameter(spatial_inertia_parameter_index_);
     return internal::parameter_conversion::GetMass(spatial_inertia_parameter);
   }
 
-  /// Returns the pose `X_WB` of this %RigidBody B in the world frame W as a
-  /// function of the state of the model stored in `context`.
+  /// Returns the pose `X_WB` of this %RigidBody (%Link) B in the world frame W
+  /// as a function of the state of the model stored in `context`.
   const math::RigidTransform<T>& EvalPoseInWorld(
       const systems::Context<T>& context) const {
     ThrowIfNotFinalized(__func__);
@@ -456,7 +455,8 @@ class RigidBody : public MultibodyElement<T> {
     return this->get_parent_tree().EvalLinkPoseInWorld(context, *this);
   }
 
-  /// Evaluates V_WB, this body B's SpatialVelocity in the world frame W.
+  /// Evaluates V_WB, this %RigidBody (%Link) B's SpatialVelocity in the world
+  /// frame W.
   /// @param[in] context Contains the state of the model.
   /// @retval V_WB_W this body B's spatial velocity in the world frame W,
   /// expressed in W (for point Bo, the body frame's origin).
@@ -468,7 +468,8 @@ class RigidBody : public MultibodyElement<T> {
                                                                   *this);
   }
 
-  /// Evaluates A_WB, this body B's SpatialAcceleration in the world frame W.
+  /// Evaluates A_WB, this %RigidBody (%Link) B's SpatialAcceleration in the
+  /// world frame W.
   /// @param[in] context Contains the state of the model.
   /// @retval A_WB_W this body B's spatial acceleration in the world frame W,
   /// expressed in W (for point Bo, the body's origin).
@@ -483,8 +484,8 @@ class RigidBody : public MultibodyElement<T> {
                                                                       *this);
   }
 
-  /// Gets the SpatialForce on this %RigidBody B from `forces` as F_BBo_W:
-  /// applied at body B's origin Bo and expressed in world frame W.
+  /// Gets the SpatialForce on this %RigidBody (%Link) B from `forces` as
+  /// F_BBo_W: applied at body B's origin Bo and expressed in world frame W.
   const SpatialForce<T>& GetForceInWorld(
       const systems::Context<T>&, const MultibodyForces<T>& forces) const {
     ThrowIfNotFinalized(__func__);
@@ -494,8 +495,8 @@ class RigidBody : public MultibodyElement<T> {
     return forces.body_forces()[mobod_index()];
   }
 
-  /// Adds the SpatialForce on this %RigidBody B, applied at body B's origin Bo
-  /// and expressed in the world frame W into `forces`.
+  /// Adds the SpatialForce on this %RigidBody (%Link) B, applied at body B's
+  /// origin Bo and expressed in the world frame W into `forces`.
   void AddInForceInWorld(const systems::Context<T>&,
                          const SpatialForce<T>& F_Bo_W,
                          MultibodyForces<T>* forces) const {
@@ -507,7 +508,7 @@ class RigidBody : public MultibodyElement<T> {
     forces->mutable_body_forces()[mobod_index()] += F_Bo_W;
   }
 
-  /// Adds the SpatialForce on this %RigidBody B, applied at point P and
+  /// Adds the SpatialForce on this %RigidBody (%Link) B, applied at point P and
   /// expressed in a frame E into `forces`.
   /// @param[in] context
   ///   The context containing the current state of the model.
@@ -526,9 +527,10 @@ class RigidBody : public MultibodyElement<T> {
                   const SpatialForce<T>& F_Bp_E, const Frame<T>& frame_E,
                   MultibodyForces<T>* forces) const;
 
-  /// Gets this body's center of mass position from the given context.
+  /// Gets this %RigidBody's (Link's) center of mass position from the given
+  /// context.
   /// @param[in] context contains the state of the multibody system.
-  /// @returns p_BoBcm_B position vector from Bo (this rigid body B's origin)
+  /// @returns p_BoBcm_B position vector from Bo (this body B's origin)
   /// to Bcm (B's center of mass), expressed in B.
   /// @pre the context makes sense for use by this %RigidBody.
   Vector3<T> CalcCenterOfMassInBodyFrame(
@@ -539,16 +541,18 @@ class RigidBody : public MultibodyElement<T> {
         spatial_inertia_parameter);
   }
 
-  /// Calculates Bcm's translational velocity in the world frame W.
+  /// Calculates %RigidBody (%Link) B's center of mass Bcm's translational
+  /// velocity in the world frame W.
   /// @param[in] context The context contains the state of the model.
-  /// @retval v_WBcm_W The translational velocity of Bcm (this rigid body's
+  /// @retval v_WBcm_W The translational velocity of Bcm (this body's
   /// center of mass) in the world frame W, expressed in W.
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const;
 
-  /// Calculates Bcm's translational acceleration in the world frame W.
+  /// Calculates %RigidBody (%Link) B's center of mass Bcm's translational
+  /// acceleration in the world frame W.
   /// @param[in] context The context contains the state of the model.
-  /// @retval a_WBcm_W The translational acceleration of Bcm (this rigid body's
+  /// @retval a_WBcm_W The translational acceleration of Bcm (this body's
   /// center of mass) in the world frame W, expressed in W.
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
@@ -556,7 +560,8 @@ class RigidBody : public MultibodyElement<T> {
   Vector3<T> CalcCenterOfMassTranslationalAccelerationInWorld(
       const systems::Context<T>& context) const;
 
-  /// Gets this body's spatial inertia about its origin from the given context.
+  /// Gets this %RigidBody's (Link's) spatial inertia about its origin from the
+  /// given context.
   /// @param[in] context contains the state of the multibody system.
   /// @returns M_BBo_B spatial inertia of this rigid body B about Bo (B's
   /// origin), expressed in B. M_BBo_B contains properties related to B's mass,
@@ -573,9 +578,9 @@ class RigidBody : public MultibodyElement<T> {
         spatial_inertia_parameter);
   }
 
-  /// For this %RigidBody B, sets its mass stored in @p context to @p mass.
+  /// For this %RigidBody (%Link) B, sets its mass stored in `context` to `mass`.
   /// @param[out] context contains the state of the multibody system.
-  /// @param[in] mass mass of this rigid body B.
+  /// @param[in] mass mass of this body B.
   /// @note This function changes this body B's mass and appropriately scales
   /// I_BBo_B (B's rotational inertia about Bo, expressed in B).
   /// @pre the context makes sense for use by this RigidBody.
@@ -589,8 +594,8 @@ class RigidBody : public MultibodyElement<T> {
         internal::parameter_conversion::SpatialInertiaIndex::k_mass, mass);
   }
 
-  /// (Advanced) Sets this body's center of mass position while preserving its
-  /// inertia about its body origin.
+  /// (Advanced) Sets this %RigidBody (%Link) B's center of mass position while
+  /// preserving its inertia about its _body origin_.
   /// @param[in, out] context contains the state of the multibody system. It is
   /// modified to store the updated com (center of mass position).
   /// @param[in] com position vector from Bo (this body B's origin) to Bcm
@@ -608,8 +613,8 @@ class RigidBody : public MultibodyElement<T> {
     SetCenterOfMassInBodyFrameNoModifyInertia(context, com);
   }
 
-  /// Sets this body's center of mass position while preserving its inertia
-  /// about its center of mass.
+  /// Sets this %RigidBody (%Link) B's center of mass position while preserving
+  /// its inertia about its _center of mass_.
   /// @param[in, out] context contains the state of the multibody system. It is
   /// modified to store the updated center_of_mass_position and the updated
   /// G_BBo_B (this body B's unit inertia about B's origin Bo, expressed in B).
@@ -626,8 +631,8 @@ class RigidBody : public MultibodyElement<T> {
       systems::Context<T>* context,
       const Vector3<T>& center_of_mass_position) const;
 
-  /// For this %RigidBody B, sets its SpatialInertia that is stored in
-  /// @p context to @p M_Bo_B.
+  /// For this %RigidBody (%Link) B, sets its SpatialInertia that is stored in
+  /// `context` to `M_Bo_B`.
   /// @param[out] context contains the state of the multibody system.
   /// @param[in] M_Bo_B spatial inertia of this rigid body B about Bo (B's
   /// origin), expressed in B. M_Bo_B contains properties related to B's mass,
@@ -645,110 +650,112 @@ class RigidBody : public MultibodyElement<T> {
         internal::parameter_conversion::ToBasicVector(M_Bo_B));
   }
 
-  /// @name Methods to access position kinematics quantities.
-  /// The input PositionKinematicsCache to these methods must be in sync with
-  /// context.  These method's APIs will be deprecated when caching arrives.
+  /// @name Internal methods to access position kinematics quantities.
+  /// (Internal use only) The input PositionKinematicsCache to these methods
+  /// must be in sync with context.
   ///@{
 
-  /// (Advanced) Extract this body's pose in world (from the position
+  /// (Internal use only) Extract this link's pose in world (from the position
   /// kinematics).
   /// @param[in] pc position kinematics cache.
-  /// @retval X_WB pose of rigid body B in world frame W.
+  /// @retval X_WL pose of this Link L in world frame W.
   const math::RigidTransform<T>& get_pose_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
-    return pc.get_X_WB(this->mobod_index());
+    return pc.get_X_WL(this->ordinal());
   }
 
-  /// (Advanced) Extract the RotationMatrix relating the world frame to this
-  /// body's frame.
+  /// (Internal use only) Extract the RotationMatrix relating the world frame to
+  /// this link's frame.
   /// @param[in] pc position kinematics cache.
-  /// @retval R_WB rotation matrix relating rigid body B in world frame W.
+  /// @retval R_WL rotation matrix relating world frame W and Link L.
   const math::RotationMatrix<T> get_rotation_matrix_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
     return get_pose_in_world(pc).rotation();
   }
 
-  /// (Advanced) Extract the position vector from world origin to this body's
-  /// origin, expressed in world.
+  /// (Internal use only) Extract the position vector from world origin to this
+  /// link's origin, expressed in world.
   /// @param[in] pc position kinematics cache.
-  /// @retval p_WoBo_W position vector from Wo (world origin) to
-  ///         Bo (this body's origin) expressed in W (world).
+  /// @retval p_WoLo_W position vector from Wo (world origin) to
+  ///         Lo (this link's origin) expressed in W (world).
   const Vector3<T> get_origin_position_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
     return get_pose_in_world(pc).translation();
   }
   ///@}
 
-  /// @name Methods to access velocity kinematics quantities.
-  /// The input VelocityKinematicsCache to these methods must be in sync with
-  /// context.  These method's APIs will be deprecated when caching arrives.
+  /// @name Internal methods to access velocity kinematics quantities.
+  /// (Internal use only) The input VelocityKinematicsCache to these methods
+  /// must be in sync with context.
   ///@{
 
-  /// (Advanced) Returns V_WB, this %RigidBody B's SpatialVelocity in
+  /// (Internal use only) Returns V_WL, this link L's SpatialVelocity in
   /// the world frame W.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval V_WB_W this rigid body B's spatial velocity in the world
-  /// frame W, expressed in W (for point Bo, the body frame's origin).
+  /// @retval V_WL_W this link L's spatial velocity in the world
+  /// frame W, expressed in W (for point Lo, the link frame's origin).
   const SpatialVelocity<T>& get_spatial_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
-    return vc.get_V_WB(this->mobod_index());
+    return vc.get_V_WL(this->ordinal());
   }
 
-  /// (Advanced) Extract this body's angular velocity in world, expressed in
-  /// world.
+  /// (Internal use only) Extract this link's angular velocity in world,
+  /// expressed in world.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval w_WB_W rigid body B's angular velocity in world W, expressed in W.
+  /// @retval w_WL_W link L's angular velocity in world W, expressed in W.
   const Vector3<T>& get_angular_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
     return get_spatial_velocity_in_world(vc).rotational();
   }
 
-  /// (Advanced) Extract the velocity of this body's origin in world, expressed
-  /// in world.
+  /// (Internal use only) Extract the velocity of this link's origin in world,
+  /// expressed in world.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval v_WBo_W velocity of Bo (body origin) in world W, expressed in W.
+  /// @retval v_WLo_W velocity of Lo (link origin) in world W, expressed in W.
   const Vector3<T>& get_origin_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
     return get_spatial_velocity_in_world(vc).translational();
   }
   ///@}
 
-  /// @name Methods to access acceleration kinematics quantities.
-  /// The input AccelerationKinematicsCache to these methods must be in sync
-  /// with context.  These method APIs will be deprecated when caching arrives.
+  /// @name Internal methods to access acceleration kinematics quantities.
+  /// (Internal use only) The input AccelerationKinematicsCache to these
+  /// methods must be in sync with context.
   ///@{
 
-  /// (Advanced) Returns A_WB, this %RigidBody B's SpatialAcceleration in
-  /// the world frame W.
+  // TODO(sherm1) Convert these to Link acceleration from Mobod.
+
+  /// (Internal use only) Returns A_WL, this link L's SpatialAcceleration
+  /// in the world frame W.
   /// @param[in] ac acceleration kinematics cache.
-  /// @retval A_WB_W this rigid body B's spatial acceleration in the world
-  /// frame W, expressed in W (for point Bo, the body frame's origin).
+  /// @retval A_WL_W this link L's spatial acceleration in the world
+  /// frame W, expressed in W (for point Lo, the link frame's origin).
   const SpatialAcceleration<T>& get_spatial_acceleration_in_world(
       const internal::AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(this->mobod_index());
   }
 
-  /// (Advanced) Extract this body's angular acceleration in world, expressed
-  /// in world.
+  /// (Internal use only) Extract this link L's angular acceleration in world,
+  /// expressed in world.
   /// @param[in] ac velocity kinematics cache.
-  /// @retval alpha_WB_W B's angular acceleration in world W, expressed in W.
+  /// @retval alpha_WL_W L's angular acceleration in world W, expressed in W.
   const Vector3<T>& get_angular_acceleration_in_world(
       const internal::AccelerationKinematicsCache<T>& ac) const {
     return get_spatial_acceleration_in_world(ac).rotational();
   }
 
-  /// (Advanced) Extract acceleration of this body's origin in world, expressed
-  /// in world.
+  /// (Internal use only) Extract acceleration of this link L's origin in
+  /// world, expressed in world.
   /// @param[in] ac acceleration kinematics cache.
-  /// @retval a_WBo_W acceleration of body origin Bo in world W, expressed in W.
+  /// @retval a_WLo_W acceleration of link origin Lo in world W, expressed in W.
   const Vector3<T>& get_origin_acceleration_in_world(
       const internal::AccelerationKinematicsCache<T>& ac) const {
     return get_spatial_acceleration_in_world(ac).translational();
   }
   ///@}
 
-  /// (Advanced) This method is mostly intended to be called by
-  /// MultibodyTree::CloneToScalar(). Most users should not call this clone
+  /// (Internal use only) This method is intended to be called by
+  /// MultibodyTree::CloneToScalar(). Users should not call this clone
   /// method directly but rather clone the entire parent MultibodyTree if
   /// needed.
   /// @sa MultibodyTree::CloneToScalar()
@@ -759,61 +766,23 @@ class RigidBody : public MultibodyElement<T> {
   }
 
  private:
-  // Only friends of RigidBodyAttorney (i.e. MultibodyTree) have access to a
+  // Only friends of LinkAttorney (i.e. MultibodyTree) have access to a
   // selected set of private RigidBody methods.
-  friend class internal::RigidBodyAttorney<T>;
+  friend class internal::LinkAttorney<T>;
 
   // Called near the end of Finalize().
-  void DoSetTopology() final {
-    DRAKE_DEMAND(mobilizer_ == nullptr);
-    const internal::MultibodyTree<T>& tree = this->get_parent_tree();
-    const internal::SpanningForest& forest = tree.forest();
-    const internal::LinkJointGraph::Link& link = forest.link_by_index(index());
-    mobilizer_ = &tree.get_mobilizer(link.mobod_index());
-
-    // Is this RigidBody the active link on its Mobod?
-    const bool is_active_link =
-        link.ordinal() ==
-        forest.mobods(link.mobod_index()).active_link_ordinal();
-    is_floating_base_body_ =
-        is_active_link && mobilizer_->is_floating_base_mobilizer();
-  }
+  void DoSetTopology() final;
 
   // Implementation for MultibodyElement::DoDeclareParameters().
-  void DoDeclareParameters(
-      internal::MultibodyTreeSystem<T>* tree_system) final {
-    // Sets model values to dummy values to indicate that the model values are
-    // not used. This class stores the the default values of the parameters.
-    // 10 numeric values are used to store mass, center of mass, moments and
-    // products of inertia packed into one basic vector.
-    spatial_inertia_parameter_index_ =
-        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(10));
-  }
+  void DoDeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) final;
 
   // Implementation for MultibodyElement::DoSetDefaultParameters().
-  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
-    // Set the default spatial inertia.
-    systems::BasicVector<T>& spatial_inertia_parameter =
-        parameters->get_mutable_numeric_parameter(
-            spatial_inertia_parameter_index_);
-    spatial_inertia_parameter.SetFrom(
-        internal::parameter_conversion::ToBasicVector<T>(
-            default_spatial_inertia_.template cast<T>()));
-  }
+  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final;
 
   // Helper method for throwing an exception within public methods that should
   // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
-  void ThrowIfNotFinalized(const char* source_method) const {
-    DRAKE_THROW_UNLESS(this->has_parent_tree());
-    if (!this->get_parent_tree().is_finalized()) {
-      // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
-      throw std::runtime_error(
-          "From '" + std::string(source_method) +
-          "'. The model to which this rigid body belongs must be finalized. "
-          "See MultibodyPlant::Finalize().");
-    }
-  }
+  void ThrowIfNotFinalized(const char* source_method) const;
 
   // For this RigidBody B, set its center of mass position stored in context
   // to center_of_mass_position, but does not modify other inertia properties.
@@ -854,8 +823,7 @@ class RigidBody : public MultibodyElement<T> {
                                                  default_spatial_inertia_);
   }
 
-  // MultibodyTree has access to the mutable LinkFrame through
-  // RigidBodyAttorney.
+  // MultibodyTree has access to the mutable LinkFrame through LinkAttorney.
   LinkFrame<T>& get_mutable_link_frame() { return link_frame_; }
 
   const internal::Mobilizer<T>& mobilizer() const {
@@ -863,23 +831,22 @@ class RigidBody : public MultibodyElement<T> {
     return *mobilizer_;
   }
 
-  // A string identifying this link in its model.
-  // Within a MultibodyPlant model instance this string is guaranteed to be
-  // unique by MultibodyPlant's API.
+  // A string identifying this link in its model. Within a MultibodyPlant model
+  // instance this string is guaranteed to be unique by MultibodyPlant's API.
   const std::string name_;
 
-  // This link's LinkFrame (a.k.a. RigidBodyFrame).
+  // This link's LinkFrame (aka RigidBodyFrame).
   LinkFrame<T> link_frame_;
 
-  // Spatial inertia about the body frame origin Bo, expressed in B.
+  // Spatial inertia about the link frame origin Lo, expressed in L.
   SpatialInertia<double> default_spatial_inertia_;
 
-  // System parameter index for this body's SpatialInertia stored in a context.
+  // System parameter index for this link's SpatialInertia stored in a context.
   systems::NumericParameterIndex spatial_inertia_parameter_index_;
 
   // Below here, members are set at Finalize() via SetTopology().
 
-  // The mobilizer of the Mobod that this body follows.
+  // The mobilizer of the Mobod that this link follows.
   const internal::Mobilizer<T>* mobilizer_{};
 
   // True if the mobilizer is a floating base mobilizer and this link is the
@@ -887,15 +854,8 @@ class RigidBody : public MultibodyElement<T> {
   bool is_floating_base_body_{false};
 };
 
-/// Link is a synonym for the mis-named RigidBody class and should be
-/// preferred. When we combine welded-together links there will be multiple
-/// links fixed to a single rigid body (in the physics sense). Saying that
-/// there is more than one RigidBody on a rigid body is too confusing!
-template <typename T>
-using Link = RigidBody<T>;
-
-/// (Compatibility) Prefer Link to Body, however this dispreferred alias
-/// is available to permit older code to continue working.
+/// (Compatibility) Use Link or RigidBody instead of Body. An alias is
+/// provided here to permit older code to continue working.
 template <typename T>
 using Body = RigidBody<T>;
 
