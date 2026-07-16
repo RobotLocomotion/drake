@@ -578,10 +578,10 @@ const Link<T>& MultibodyTree<T>::AddLinkImpl(std::unique_ptr<Link<T>> link) {
 
   link->set_parent_tree(this, link_index);
   // MultibodyTree can access selected private methods in RigidBody through its
-  // RigidBodyAttorney.
+  // LinkAttorney.
   // - Register link frame.
   Frame<T>* link_frame =
-      &internal::RigidBodyAttorney<T>::get_mutable_link_frame(link.get());
+      &internal::LinkAttorney<T>::get_mutable_link_frame(link.get());
   const FrameIndex link_frame_index(num_frames());
   link_frame->set_parent_tree(this, link_frame_index);
   DRAKE_DEMAND(link_frame->name() == link->name());
@@ -889,7 +889,7 @@ void MultibodyTree<T>::FinalizeInternals() {
   for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
-    if (RigidBodyAttorney<T>::is_floating_base_body_pre_finalize(body)) {
+    if (LinkAttorney<T>::is_floating_base_body_pre_finalize(body)) {
       DRAKE_DEMAND(joint.is_ephemeral());
       const auto [quaternion, translation] =
           GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
@@ -1523,7 +1523,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // If the model has zero dofs we simply set all spatial velocities to zero and
   // return since there is no work to be done.
   if (num_velocities() == 0) {
-    vc->InitializeToZero();
+    vc->SetToZero();
     return;
   }
 
@@ -1757,10 +1757,10 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
         const RigidTransform<T>& X_BL =
             frame_body_poses->get_X_BL(link_ordinal);
         const math::RotationMatrix<T>& R_BL = X_BL.rotation();
-        const Vector3<T>& p_BoLo_B = X_BL.translation();
         const Vector3<T> p_BoLcm_B = X_BL * p_LoLcm_L;
-        frame_body_poses->Set_p_BoLcm_B(link_ordinal, p_BoLcm_B);
+        frame_body_poses->Set_p_BoLcm_B(link.ordinal(), p_BoLcm_B);
         if (!is_world_mobod) {
+          const Vector3<T>& p_BoLo_B = X_BL.translation();
           const SpatialInertia<T> M_LLo_B = M_LLo_L.ReExpress(R_BL);
           const SpatialInertia<T> M_LBo_B = M_LLo_B.Shift(-p_BoLo_B);
           frame_body_poses->AddToM_BBo_B(mobod.index(), M_LBo_B);
@@ -4525,10 +4525,10 @@ RigidBody<T>* MultibodyTree<T>::CloneBodyAndAdd(
   auto body_clone = body.CloneToScalar(*this);
   body_clone->set_parent_tree(this, body_index);
   body_clone->set_model_instance(body.model_instance());
-  // MultibodyTree can access selected private methods in RigidBody through
-  // its RigidBodyAttorney.
+  // MultibodyTree can access selected private methods in RigidBody through its
+  // LinkAttorney.
   Frame<T>* body_frame_clone =
-      &internal::RigidBodyAttorney<T>::get_mutable_link_frame(body_clone.get());
+      &internal::LinkAttorney<T>::get_mutable_link_frame(body_clone.get());
   body_frame_clone->set_parent_tree(this, body_frame_index);
   body_frame_clone->set_model_instance(body.model_instance());
 
