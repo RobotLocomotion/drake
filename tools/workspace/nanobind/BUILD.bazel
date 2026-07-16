@@ -63,10 +63,16 @@ install_files(
 )
 
 install(
+    name = "install_shared_library",
+    targets = [":libdrake_nanobind.so"],
+)
+
+install(
     name = "install",
     visibility = ["//bindings/pydrake:__pkg__"],
     deps = [
         ":install_license",
+        ":install_shared_library",
         "//tools/workspace/robin_map:install",
     ],
 )
