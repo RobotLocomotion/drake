@@ -541,31 +541,45 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             cls_doc.SetFreeBodySpatialVelocity.doc_3args)
         .def("GetActuationFromArray", &Class::GetActuationFromArray,
             py::arg("model_instance"), py::arg("u"),
-            cls_doc.GetActuationFromArray.doc)
-        .def("SetActuationInArray", &Class::SetActuationInArray,
-            py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
-            cls_doc.SetActuationInArray.doc)
+            cls_doc.GetActuationFromArray.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetActuationInArray", &Class::SetActuationInArray,
+              py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
+              cls_doc.SetActuationInArray.doc);
+    }
+    cls  // BR
         .def("GetPositionsFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetPositionsFromArray),
             py::arg("model_instance"), py::arg("q"),
-            cls_doc.GetPositionsFromArray.doc_2args)
-        .def("SetPositionsInArray", &Class::SetPositionsInArray,
-            py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
-            cls_doc.SetPositionsInArray.doc)
+            cls_doc.GetPositionsFromArray.doc_2args);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetPositionsInArray", &Class::SetPositionsInArray,
+              py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
+              cls_doc.SetPositionsInArray.doc);
+    }
+    cls  // BR
         .def("GetVelocitiesFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetVelocitiesFromArray),
             py::arg("model_instance"), py::arg("v"),
-            cls_doc.GetVelocitiesFromArray.doc_2args)
-        .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
-            py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
-            cls_doc.SetVelocitiesInArray.doc)
-        // TODO(eric.cousineau): Ensure all of these return either references,
-        // or copies, consistently. At present, `GetX(context)` returns a
-        // reference, while `GetX(context, model_instance)` returns a copy.
+            cls_doc.GetVelocitiesFromArray.doc_2args);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
+              py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
+              cls_doc.SetVelocitiesInArray.doc);
+    }
+    cls  // TODO(eric.cousineau): Ensure all of these return either references,
+         // or copies, consistently. At present, `GetX(context)` returns a
+         // reference, while `GetX(context, model_instance)` returns a copy.
         .def(
             "GetPositions",
             [](const Class* self, const Context<T>& context) {
