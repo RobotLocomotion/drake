@@ -2843,7 +2843,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
 template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
     const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const {
-  // Efficienctly evaluate all mobods' spatial inertias, velocities, and poses.
+  // Efficiently evaluate all mobods' spatial inertias, velocities, and poses.
   const std::vector<SpatialInertia<T>>& M_Bi_W =
       EvalSpatialInertiaInWorldCache(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -2855,19 +2855,15 @@ SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
     if (mobod.is_world()) continue;  // No contribution from the world.
 
-    // Form each mobod B's spatial momentum in W about Bo, expressed in W.
+    // Form each mobod B's spatial momentum in W about Bo, expressed in W, then
+    // shift L_WBBo_W from "about Bo" to "about Wo" and accumulate the sum.
     const MobodIndex mobod_index = mobod.index();
     const SpatialInertia<T>& M_BBo_W = M_Bi_W[mobod_index];
     const SpatialVelocity<T>& V_WBo_W = vc.get_V_WB(mobod_index);
-    SpatialMomentum<T> L_WBBo_W = M_BBo_W * V_WBo_W;
-
-    // Shift L_WBBo_W from "about Bo" to "about Wo" and accumulate the sum.
     const RigidTransform<T>& X_WB = pc.get_X_WB(mobod_index);
     const Vector3<T>& p_WoBo_W = X_WB.translation();
-    // After ShiftInPlace, L_WBBo_W is no longer "about Bo", instead L_WBBo_W
-    // is now L_WBWo_W (B's spatial momentum in W "about Wo", expressed in W).
-    L_WBBo_W.ShiftInPlace(-p_WoBo_W);  // After this, L_WBBo_W is now L_WBWo_W.
-    L_WSWo_W += L_WBBo_W;              // Actually is L_WSWo_W += L_WBWo_W.
+    const SpatialMomentum<T> L_WBWo_W = (M_BBo_W * V_WBo_W).Shift(-p_WoBo_W);
+    L_WSWo_W += L_WBWo_W;
   }
 
   // Shift system S's spatial momentum from "about Wo" to "about point P".
@@ -2914,9 +2910,8 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
-  // Accumulate each body's spatial momentum in the world frame W to this
-  // system S's spatial momentum in W about Wo (the origin of W), expressed in
-  // W.
+  // Accumulate each body's spatial momentum in world W to this system S's
+  // spatial momentum in W about Wo (the origin of W), expressed in W.
   SpatialMomentum<T> L_WS_W = SpatialMomentum<T>::Zero();
 
   // Add contributions from each link Bi.
