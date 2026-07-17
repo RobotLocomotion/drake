@@ -70,7 +70,7 @@ def pybind_py_library(
         copts = cc_copts + EXTRA_PYBIND_COPTS,
         # Always link to the binding library.
         deps = select({
-            "//tools/workspace/nanobind:enabled": [
+            "@drake//tools/workspace/nanobind:enabled": [
                 "@drake//tools/workspace/nanobind",
             ],
             "//conditions:default": [
