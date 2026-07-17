@@ -1,6 +1,6 @@
 /* Tests that mass properties are identical whether welded-together links are
 modeled with unfused weld joints or whether links that are welded together
-are fused into a mobilized body (fused Mobod). The test builds two identical
+are fused onto a mobilized body (fused Mobod). The test builds two identical
 models that differ only in whether SetFuseWeldedLinks() is enabled. */
 
 #include <limits>
@@ -158,15 +158,16 @@ void SetState(const TestModel& m, double angle_rad, double angular_vel) {
 }
 
 /* Verify that the spatial inertia for fused mobod Link123 (with links 1, 2, 3)
-matches the sum of spatial inertias for unfused links 1, 2, 3. Next, ensure
-spatial inertia for each of the follower links in a fused mobod are computed
-correctly. Lastly, the 1x1 mass matrix for this 1-DOF model directly depends on
-the spatial inertia of Link123, so we also verify:
-  (a) The mass matrix is identical between the fused and unfused weld models at
-      several configurations.
+matches the sum of spatial inertias for unfused links 1, 2, 3 at several poses.
+Next, ensure spatial inertia for each of the follower links in a fused mobod are
+computed correctly. Lastly, the 1x1 mass matrix for this 1-DOF model directly
+depends on the spatial inertia of Link123, so we also verify:
+  (a) The mass matrix is identical between the fused and unfused weld models.
   (b) The mass matrix matches the analytically computed value.
 
-Analytical derivation
+Similarly, verify spatial momentum calculations.
+
+Analytical derivation for spatial inertia.
 ---------------------
 The model has 4 links, Linki (i=1,2,3,4), each a 1 kg solid cube of side 0.1 m.
 Links 1,2,3 are welded together and are connected to World via a revolute joint
@@ -181,8 +182,7 @@ For a solid cube of mass m and side a, its moment of inertia about any axis
 through its COM is m*a²/6. The parallel axis theorem calculates each cube's
 moment of inertia about the revolute's z-axis via: Iᵢ = m*a²/6 + m*(dᵢ)²,
 where dᵢ (i=1,2,3) is the distance between each cube's COM and the revolute's
-z-axis. Iᵢ is independent of joint angle because the links are welded
-together.
+z-axis. Iᵢ is independent of joint angle because the links are welded together.
 
   Link1: I₁ = 1*(0.1)²/6 + 1*0²    = 1/600 + 0   (d² = 0)
   Link2: I₂ = 1*(0.1)²/6 + 1*1²    = 1/600 + 1   (d² = 1)
@@ -201,15 +201,15 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
       fused_model.link1, fused_model.link2, fused_model.link3,
       fused_model.link4};
 
-  // The mass matrix is configuration-independent for this model (see above),
-  // but we check at several angles to guard against future changes.
+  // Note: The mass matrix is configuration-independent for this model (see
+  // above), but we check at several angles to guard against future changes.
+  // Note: Use a non-zero angular velocity so spatial momentum is non-trivial.
   const std::vector<double> angles = {0.0, M_PI / 6, M_PI / 4, -M_PI / 3};
   for (double angle : angles) {
-    SetState(unfused_model, angle, 0.0);
-    SetState(fused_model, angle, 0.0);
+    SetState(unfused_model, angle, 2.0 /* rad/s */);
+    SetState(fused_model, angle, 2.0 /* rad/s */);
 
-    // Verify Link123's summed spatial inertia does not depend on whether they
-    // are on a fused mobod.
+    // Verify Link123's summed spatial inertia does not depend on fused links.
     SpatialInertia<double> M_UWo_W = unfused_model.plant->CalcSpatialInertia(
         *unfused_model.context, world_frame,
         {unfused_model.link1->index(), unfused_model.link2->index(),
@@ -223,8 +223,29 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
                                 MatrixCompareType::relative))
         << "Link123 spatial inertia mismatch at angle = " << angle;
 
-    // Ensure that individual link spatial inertias are reported correctly
-    // regardless of whether they were fused.
+    // Verify Link123's summed spatial momentum does not depend on fused links.
+    const Vector3<double> p_WoP_W(1.1, -2.3, 4.2);
+    SpatialMomentum<double> L_WUP_W =
+        unfused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
+            *unfused_model.context,
+            {unfused_model.link1->model_instance(),
+             unfused_model.link2->model_instance(),
+             unfused_model.link3->model_instance()},
+            p_WoP_W);
+    SpatialMomentum<double> L_WCP_W =
+        fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
+            *fused_model.context,
+            {fused_model.link1->model_instance(),
+             fused_model.link2->model_instance(),
+             fused_model.link3->model_instance()},
+            p_WoP_W);
+    // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
+    EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WCP_W.get_coeffs(),
+                                 kTolerance, MatrixCompareType::relative))
+        << "Link123 spatial momentum mismatch at angle = " << angle;
+
+    // Ensure that individual link spatial inertias and spatial momentum are
+    // accurately calculated, regardless of whether they were fused.
     for (int i = 0; i < 4; ++i) {
       const RigidBody<double>* unfused_linki = unfused_links[i];
       const RigidBody<double>* fused_linki = fused_links[i];
@@ -238,6 +259,17 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
           << "Spatial inertia mismatch: link" << i + 1
           << " at angle = " << angle;
 
+      // Verify individual link's spatial momentum do not depend on fused links.
+      L_WUP_W = unfused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
+          *unfused_model.context, {unfused_linki->model_instance()}, p_WoP_W);
+      L_WCP_W = fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
+          *fused_model.context, {fused_linki->model_instance()}, p_WoP_W);
+      // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
+      EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WCP_W.get_coeffs(),
+                                   kTolerance, MatrixCompareType::relative))
+          << "Spatial momentum mismatch: link" << i + 1
+          << " at angle = " << angle;
+
       // Since link4 is welded to world, special-case calculations are used. For
       // this special case, also compare link4 results to an analytical value.
       if (i == 3) {
@@ -248,6 +280,13 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
                                     M_CWo_W.CopyToFullMatrix6(), kTolerance,
                                     MatrixCompareType::relative))
             << "Inaccurate link4 spatial inertia at angle = " << angle;
+
+        // Link4's spatial momentum should always be zero (welded to ground).
+        // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
+        EXPECT_FALSE(CompareMatrices(L_WCP_W.get_coeffs(),
+                                     Vector6<double>::Zero(), kTolerance,
+                                     MatrixCompareType::relative))
+            << "Inaccurate link 4 spatial momentum at angle = " << angle;
       }
     }
 
@@ -268,20 +307,20 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
         << "Mass matrix analytical mismatch at angle = " << angle;
 
     // Ensure spatial momentum does not depend on fused welded links.
-    // Use a non-zero angular velocity so that the momentum is non-trivial.
-    SetState(unfused_model, angle, 2.0 /* rad/s */);
-    SetState(fused_model, angle, 2.0 /* rad/s */);
-    const Vector3<double> p_WoWo_W = Vector3<double>::Zero();
+    // Also, use an "about-point" P which is not coincident with Wo.
     const SpatialMomentum<double> L_unfused =
         unfused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
-            *unfused_model.context, p_WoWo_W);
+            *unfused_model.context, p_WoP_W);
+
+    // Test the function for the entire system's spatial momentum in world.
     const SpatialMomentum<double> L_fused =
         fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
-            *fused_model.context, p_WoWo_W);
-    // TODO(Mitiguy) EXPECT_FALSE is wrong, should be EXPECT_TRUE !
+            *fused_model.context, p_WoP_W);
     EXPECT_TRUE(CompareMatrices(L_unfused.get_coeffs(), L_fused.get_coeffs(),
                                 kTolerance, MatrixCompareType::relative))
         << "Spatial momentum mismatch at angle = " << angle;
+
+    // Test the function for a single link's spatial momentum in world.
   }
 }
 
