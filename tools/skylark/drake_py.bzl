@@ -1,3 +1,4 @@
+load("//tools/flags/internal:multi_config.bzl", "py_test_with_alt_binder")
 load(
     "//tools/skylark:kwargs.bzl",
     "amend",
@@ -126,6 +127,7 @@ def drake_py_test(
         opt_in_condition = None,
         opt_out_conditions = None,
         rendering = False,
+        test_alt_binder = "auto",
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -153,6 +155,9 @@ def drake_py_test(
         See drake/tools/skylark/README.md for details.
 
     @param rendering (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
+    @param test_alt_binder (optional, default is True)
         See drake/tools/skylark/README.md for details.
 
     By default, sets test size to "small" to indicate a unit test. Adds the tag
@@ -194,6 +199,26 @@ def drake_py_test(
         srcs_version = "PY3",
         **kwargs
     )
+    if test_alt_binder not in (True, False, "auto"):
+        fail("test_alt_binder must be set to True, False, or \"auto\"")
+    if test_alt_binder == "auto":
+        package_name = native.package_name()
+        test_alt_binder = any([
+            package_name.startswith(x)
+            for x in ["bindings/pydrake", "examples"]
+        ])
+    if test_alt_binder:
+        py_test_with_alt_binder(
+            name = "alt_binder/" + name,
+            main = kwargs.pop("main", None) or "{}.py".format(name),
+            size = size,
+            srcs = srcs,
+            deps = deps,
+            target_compatible_with = target_compatible_with,
+            python_version = "PY3",
+            srcs_version = "PY3",
+            **kwargs
+        )
 
 def py_linter_test(
         name,

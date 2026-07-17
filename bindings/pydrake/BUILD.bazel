@@ -389,6 +389,7 @@ drake_py_unittest(
         "//:.clang-format",
     ],
     tags = ["lint"],
+    test_alt_binder = False,
 )
 
 drake_py_unittest(

@@ -450,6 +450,7 @@ drake_py_test(
         ":test/example_stochastic_scenario.yaml",
     ],
     main = "test/spong_sim_main_test.py",
+    test_alt_binder = False,
     deps = [
         ":acrobot_io",
         "//bindings/pydrake",

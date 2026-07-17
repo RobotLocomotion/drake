@@ -395,7 +395,7 @@ bool_flag(
 # (Support for 'nanobind' is currently experimental / unstable.)
 string_flag(
     name = "python_binder",
-    build_setting_default = "nanobind",
+    build_setting_default = "pybind11",
     values = [
         "pybind11",
         "nanobind",
