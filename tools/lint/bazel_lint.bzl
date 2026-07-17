@@ -1,4 +1,4 @@
-load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("//tools/skylark:drake_py.bzl", "py_linter_test")
 
 #------------------------------------------------------------------------------
 # Internal helper; set up test given name and list of files. Will do nothing
@@ -7,7 +7,7 @@ def _bazel_lint(name, files):
     if files:
         locations = ["$(locations %s)" % f for f in files]
 
-        py_test_isolated(
+        py_linter_test(
             name = name + "_buildifier",
             size = "small",
             srcs = ["@drake//tools/lint:buildifier"],

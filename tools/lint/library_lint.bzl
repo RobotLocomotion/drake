@@ -1,4 +1,4 @@
-load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("//tools/skylark:drake_py.bzl", "py_linter_test")
 
 # Keep this constant in sync with library_lint_reporter.py.
 _TAG_EXCLUDE_FROM_PACKAGE = "exclude_from_package"
@@ -80,7 +80,7 @@ def library_lint(
             reporter_args += ["--extra", item]
 
     # Report all of the library_lint results.
-    py_test_isolated(
+    py_linter_test(
         name = "library_lint",
         size = "small",
         srcs = ["@drake//tools/lint:library_lint_reporter"],
