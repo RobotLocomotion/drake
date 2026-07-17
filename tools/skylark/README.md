@@ -106,5 +106,5 @@ to its default value, and once with the flag set to its alternative value.
 When False, the test is run just once, with the //tools/flags:python_binder set
 to its default value.
 
-When "auto", uses True in bindings/pydrake/... and examples/... and False
-everywhere else.
+When "auto", uses True in //bindings/pydrake/..., //tutorials/..., and
+//examples/... and False everywhere else.
