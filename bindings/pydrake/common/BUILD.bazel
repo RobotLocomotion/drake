@@ -101,9 +101,13 @@ drake_pybind_library(
         "cpp_template.py",
         "deprecation.py",
         "jupyter.py",
-        "pybind11_version.py",
         "yaml.py",
-    ],
+    ] + select({
+        "//tools/workspace/nanobind:enabled": [],
+        "//conditions:default": [
+            "pybind11_version.py",
+        ],
+    }),
     visibility = [
         "//bindings/pydrake:__pkg__",
     ],
@@ -518,6 +522,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "pybind11_version_test",
+    opt_out_conditions = ["//tools/workspace/nanobind:enabled"],
     deps = [
         ":common",
     ],
