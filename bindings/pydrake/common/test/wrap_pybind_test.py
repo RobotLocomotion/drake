@@ -6,12 +6,12 @@ from pydrake.common.test.wrap_test_util import (
     FunctionNeedsWrapCallbacks,
     FunctionNeedsWrapCallbacks_Bad,
     MakeTypeConversionExample,
-    MakeTypeConversionExampleBadRvp,
+    MakeTypeConversionExampleRefRvp,
     MyContainerRawPtr,
     MyContainerUniquePtr,
     MyValue,
     NotCopyable,
-    _binder,  # XXX porting
+    _binder,
 )
 
 
@@ -57,13 +57,9 @@ class TestWrapPybind(unittest.TestCase):
         self.assertEqual(value, "hello")
         self.assertTrue(CheckTypeConversionExample(obj=value))
 
-    @unittest.skipIf(_binder == "nanobind", "nanobind raises nothing")
-    def test_type_caster_wrapped_bad_policy(self):
-        with self.assertRaises(RuntimeError) as cm:
-            MakeTypeConversionExampleBadRvp()
-        self.assertEqual(
-            str(cm.exception), "Can only pass TypeConversionExample by value."
-        )
+    def test_type_caster_wrapped_ref_policy(self):
+        result = MakeTypeConversionExampleRefRvp()
+        self.assertEqual(result, "hello")
 
     @unittest.skipIf(_binder == "nanobind", "nanobind aborts instead of raises")
     def test_wrap_callbacks_lack_detected(self):

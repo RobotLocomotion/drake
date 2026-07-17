@@ -36,10 +36,8 @@ struct TypeConversionExample {
 // Wrapper for TypeConversionExample.
 struct wrapper_type_conversion_example {
   using Type = TypeConversionExample;
-#ifdef PYDRAKE_USE_PYBIND11
   static constexpr auto original_name =
       py::detail::const_name("TypeConversionExample");
-#endif
   using WrappedType = std::string;
   static constexpr auto wrapped_name = py::detail::const_name("str");
 
@@ -94,12 +92,14 @@ struct type_caster<drake::pydrake::TypeConversionExample>
 namespace drake {
 namespace pydrake {
 PYDRAKE_MODULE(wrap_test_util, m) {
-  // XXX porting: Repeat the export of _binder from module_py.cc here because
+  // Repeat the export of _binder from module_py.cc here because
   // the wrap_pybind unit test can't import pydrake.common.
 #ifdef PYDRAKE_USE_PYBIND11
   m.attr("_binder") = "pybind11";
-#else
+#elif PYDRAKE_USE_NANOBIND
   m.attr("_binder") = "nanobind";
+#else
+#error "Unknown binder!"
 #endif
 
   class_<MyValue>(m, "MyValue")
@@ -121,7 +121,7 @@ PYDRAKE_MODULE(wrap_test_util, m) {
       &MyContainerUniquePtr::copyable_member, "MyContainerUniquePtr doc");
 
   m.def("MakeTypeConversionExample", &MakeTypeConversionExample);
-  m.def("MakeTypeConversionExampleBadRvp", &MakeTypeConversionExample,
+  m.def("MakeTypeConversionExampleRefRvp", &MakeTypeConversionExample,
       py_rvp::reference);
   m.def("CheckTypeConversionExample", &CheckTypeConversionExample,
       py::arg("obj"));
