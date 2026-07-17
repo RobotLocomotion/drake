@@ -214,12 +214,12 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
         *unfused_model.context, world_frame,
         {unfused_model.link1->index(), unfused_model.link2->index(),
          unfused_model.link3->index()});
-    SpatialInertia<double> M_CWo_W = fused_model.plant->CalcSpatialInertia(
+    SpatialInertia<double> M_FWo_W = fused_model.plant->CalcSpatialInertia(
         *fused_model.context, world_frame,
         {fused_model.link1->index(), fused_model.link2->index(),
          fused_model.link3->index()});
     EXPECT_TRUE(CompareMatrices(M_UWo_W.CopyToFullMatrix6(),
-                                M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                M_FWo_W.CopyToFullMatrix6(), kTolerance,
                                 MatrixCompareType::relative))
         << "Link123 spatial inertia mismatch at angle = " << angle;
 
@@ -232,7 +232,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
              unfused_model.link2->model_instance(),
              unfused_model.link3->model_instance()},
             p_WoP_W);
-    SpatialMomentum<double> L_WCP_W =
+    SpatialMomentum<double> L_WFP_W =
         fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
             *fused_model.context,
             {fused_model.link1->model_instance(),
@@ -240,7 +240,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
              fused_model.link3->model_instance()},
             p_WoP_W);
     // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
-    EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WCP_W.get_coeffs(),
+    EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
                                  kTolerance, MatrixCompareType::relative))
         << "Link123 spatial momentum mismatch at angle = " << angle;
 
@@ -251,21 +251,21 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
       const RigidBody<double>* fused_linki = fused_links[i];
       M_UWo_W = unfused_model.plant->CalcSpatialInertia(
           *unfused_model.context, world_frame, {unfused_linki->index()});
-      M_CWo_W = fused_model.plant->CalcSpatialInertia(
+      M_FWo_W = fused_model.plant->CalcSpatialInertia(
           *fused_model.context, world_frame, {fused_linki->index()});
       EXPECT_TRUE(CompareMatrices(M_UWo_W.CopyToFullMatrix6(),
-                                  M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                  M_FWo_W.CopyToFullMatrix6(), kTolerance,
                                   MatrixCompareType::relative))
           << "Spatial inertia mismatch: link" << i + 1
           << " at angle = " << angle;
 
-      // Verify individual link's spatial momentum do not depend on fused links.
+      // Verify individual links' spatial momentum do not depend on fused links.
       L_WUP_W = unfused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
           *unfused_model.context, {unfused_linki->model_instance()}, p_WoP_W);
-      L_WCP_W = fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
+      L_WFP_W = fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
           *fused_model.context, {fused_linki->model_instance()}, p_WoP_W);
       // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
-      EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WCP_W.get_coeffs(),
+      EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
                                    kTolerance, MatrixCompareType::relative))
           << "Spatial momentum mismatch: link" << i + 1
           << " at angle = " << angle;
@@ -277,13 +277,13 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
         SpatialInertia<double> M_L4Wo_W_expected =
             SpatialInertia<double>::SolidCubeWithMass(m, a).Shift(-p_WoL4o_W);
         EXPECT_TRUE(CompareMatrices(M_L4Wo_W_expected.CopyToFullMatrix6(),
-                                    M_CWo_W.CopyToFullMatrix6(), kTolerance,
+                                    M_FWo_W.CopyToFullMatrix6(), kTolerance,
                                     MatrixCompareType::relative))
             << "Inaccurate link4 spatial inertia at angle = " << angle;
 
         // Link4's spatial momentum should always be zero (welded to ground).
         // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
-        EXPECT_FALSE(CompareMatrices(L_WCP_W.get_coeffs(),
+        EXPECT_FALSE(CompareMatrices(L_WFP_W.get_coeffs(),
                                      Vector6<double>::Zero(), kTolerance,
                                      MatrixCompareType::relative))
             << "Inaccurate link 4 spatial momentum at angle = " << angle;
