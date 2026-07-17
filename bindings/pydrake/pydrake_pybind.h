@@ -63,8 +63,6 @@
 #pragma GCC diagnostic pop
 
 #include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
-#include "drake/common/drake_export.h"
-#include "drake/common/never_destroyed.h"
 #endif  // PYDRAKE_USE_NANOBIND
 
 namespace drake {
@@ -120,14 +118,16 @@ class AliasRegistry {
  private:
   using UnaliasMap = std::unordered_map<std::type_index, const std::type_info*>;
   static UnaliasMap* TheMap() {
-    static never_destroyed<UnaliasMap> unalias_;
-    return &unalias_.access();
+    // Purposefully never destroyed.
+    static UnaliasMap* singleton = new UnaliasMap;
+    return singleton;
   }
 };
 }  // namespace internal
 
 template <typename T, typename... Ts>
-class DRAKE_NO_EXPORT class_ : public py::class_<T, Ts...> {
+class __attribute__((visibility("hidden"))) class_
+    : public py::class_<T, Ts...> {
  public:
   using Base = py::class_<T, Ts...>;
   explicit class_(auto&&... args)
@@ -284,7 +284,8 @@ auto ParamInit() {
 }
 #else   // PYDRAKE_USE_NANOBIND
 template <typename CppClass>
-struct DRAKE_NO_EXPORT ParamInit : py::def_visitor<ParamInit<CppClass>> {
+struct __attribute__((visibility("hidden"))) ParamInit
+    : py::def_visitor<ParamInit<CppClass>> {
   template <typename PyClass, typename... Extra>
   void execute(PyClass& cl, const Extra&...) {
     cl.def("__init__", [](CppClass* self, py::kwargs kwargs) {

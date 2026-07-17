@@ -71,9 +71,7 @@ drake_cc_library(
         ],
     }),
     visibility = ["//visibility:public"],
-    deps = [
-        "//common:drake_export",
-    ] + select({
+    deps = select({
         "//tools/workspace/nanobind:enabled": [
             "@drake//tools/workspace/nanobind",
             "@drake//tools/workspace/nanobind/vendor:nanobind_eigen",
