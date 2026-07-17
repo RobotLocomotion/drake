@@ -72,7 +72,6 @@ install(
 drake_py_binary(
     name = "math_example",
     srcs = ["math_example.py"],
-    isolate = True,
     deps = [
         "//bindings/pydrake:module_py",
     ],

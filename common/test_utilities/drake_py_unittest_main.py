@@ -79,11 +79,11 @@ def main():
     main_py = sys.argv[0]
 
     # Parse the test case name out of the runfiles directory name.
-    match = re.search("^(.*bin/(.*?/)?(py/)?([^/]*_test).runfiles/)", main_py)
+    match = re.search("^(.*bin/(.*?/)?([^/]*_test).runfiles/)", main_py)
     if not match:
         print(f"error: no test name match in {main_py}")
         sys.exit(1)
-    runfiles, test_package, _, test_name, = match.groups()
+    runfiles, test_package, test_name, = match.groups()
     test_basename = test_name + ".py"
 
     # Find the test's source file.
