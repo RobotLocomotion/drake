@@ -1,4 +1,4 @@
-load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("//tools/skylark:drake_py.bzl", "py_linter_test")
 
 # From https://bazel.build/reference/be/c-cpp#cc_library.srcs.
 # Keep this list in sync with clang_format_lint.py.
@@ -74,7 +74,7 @@ def _add_linter_rules(
             cpplint_data.append(item)
 
     # Google cpplint.
-    py_test_isolated(
+    py_linter_test(
         name = name + "_cpplint",
         srcs = ["@cpplint_internal//:cpplint"],
         data = cpplint_data + source_labels,
@@ -85,7 +85,7 @@ def _add_linter_rules(
     )
 
     # Additional Drake lint.
-    py_test_isolated(
+    py_linter_test(
         name = name + "_drakelint",
         srcs = ["@drake//tools/lint:drakelint"],
         data = data + source_labels,
@@ -96,7 +96,7 @@ def _add_linter_rules(
     )
 
     # Idempotence during clang-format.
-    py_test_isolated(
+    py_linter_test(
         name = name + "_clang_format_lint",
         srcs = ["@drake//tools/lint:clang_format_lint"],
         data = data + source_labels,
