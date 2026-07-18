@@ -42,35 +42,6 @@ void ThrowIfPythonHasPendingSignals() {
 #endif
   }
 }
-
-const char kSimulatorInitExtraDoc[] = R"""(
-
-(Python only) The Simulator's Context, whether provided as a constructor
-argument or allocated internally, will have a lifetime managed by Python
-reference counting. Note, however, that the simulator logically "owns" the
-context; it will modify the context in most of its methods. Therefore, sharing
-a Context object among Simulators will likely lead to incorrect results.
-)""";
-
-template <typename T>
-py::object ArrangeSimulatorInitContextOwnership(
-    const systems::System<T>& system, py::object py_context) {
-  // Handle the two cases for context ownership explicitly:
-  // 1. If py_context is None, create a new context and take ownership.
-  // 2. If py_context is provided, use the existing Python wrapper
-  //    directly (it already owns the C++ object).
-  if (py_context.is_none()) {
-    std::unique_ptr<systems::Context<T>> context_ptr =
-        system.CreateDefaultContext();
-    // Use take_ownership because we just created this context and need
-    // Python to own it. The unique_ptr is released, leaving the raw
-    // pointer with no owner until take_ownership establishes Python
-    // ownership.
-    py_context = py::cast(context_ptr.release(), py_rvp::take_ownership);
-  }
-  return py_context;
-}
-
 }  // namespace
 
 PYDRAKE_MODULE(analysis, m) {
@@ -327,8 +298,21 @@ PYDRAKE_MODULE(analysis, m) {
             "__init__",
             [](Simulator<T>* self, const System<T>& system,
                 py::object py_context) {
-              py_context =
-                  ArrangeSimulatorInitContextOwnership(system, py_context);
+              // Handle the two cases for context ownership explicitly:
+              // 1. If py_context is None, create a new context and take
+              //    ownership.
+              // 2. If py_context is provided, use the existing Python wrapper
+              //    directly (it already owns the C++ object).
+              if (py_context.is_none()) {
+                std::unique_ptr<Context<T>> context_ptr =
+                    system.CreateDefaultContext();
+                // Use take_ownership because we just created this context and
+                // need Python to own it. The unique_ptr is released, leaving
+                // the raw pointer with no owner until take_ownership
+                // establishes Python ownership.
+                py_context =
+                    py::cast(context_ptr.release(), py_rvp::take_ownership);
+              }
               Simulator<T>::EmplaceWithSharedContext(self, system,
                   make_shared_ptr_from_py_object<Context<T>>(py_context));
             },
@@ -337,7 +321,14 @@ PYDRAKE_MODULE(analysis, m) {
             py::keep_alive<1, 2>(),
             []() {
               std::string new_doc = doc.Simulator.ctor.doc;
-              new_doc += kSimulatorInitExtraDoc;
+              new_doc += R"""(
+
+(Python only) The Simulator's Context, whether provided as a constructor
+argument or allocated internally, will have a lifetime managed by Python
+reference counting. Note, however, that the simulator logically "owns" the
+context; it will modify the context in most of its methods. Therefore, sharing
+a Context object among Simulators will likely lead to incorrect results.
+)""";
               return new_doc;
             }()
                 .c_str())
