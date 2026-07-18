@@ -23,6 +23,8 @@ using Eigen::VectorXd;
 using math::RigidTransformd;
 using systems::Context;
 
+const double kInf = std::numeric_limits<double>::infinity();
+
 bool SnoptSolverUnavailable() {
   return !(solvers::SnoptSolver::is_available() &&
            solvers::SnoptSolver::is_enabled());
@@ -31,24 +33,27 @@ bool SnoptSolverUnavailable() {
 class AddMultibodyPlantConstraintsTest : public ::testing::Test {
  public:
   void SetUp() override {
-    plant_->set_discrete_contact_approximation(
-        DiscreteContactApproximation::kSap);
-    plant_->SetUseSampledOutputPorts(false);
+    ConstructPlant(plant_, &body_A_, &body_B_, &world_A_, &A_B_);
+  }
 
-    body_A_ = &plant_->AddRigidBody(
+  void ConstructPlant(std::shared_ptr<MultibodyPlant<double>> plant,
+                      const RigidBody<double>** body_A,
+                      const RigidBody<double>** body_B,
+                      const RevoluteJoint<double>** world_A,
+                      const RevoluteJoint<double>** A_B) {
+    plant->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
+    plant->SetUseSampledOutputPorts(false);
+
+    *body_A = &plant->AddRigidBody(
         "body_A", SpatialInertia<double>::SolidBoxWithMass(1, 1, 1, 1));
-    body_B_ = &plant_->AddRigidBody(
+    *body_B = &plant->AddRigidBody(
         "body_B", SpatialInertia<double>::SolidBoxWithMass(1, 1, 1, 1));
-    world_A_ = &plant_->AddJoint<RevoluteJoint>(
-        "world_A", plant_->world_body(), RigidTransformd(Vector3d(-1, 0, 0)),
-        *body_A_, RigidTransformd(), Vector3d::UnitZ());
-    // Add and then immediately remove a joint so that the joint indices do not
-    // correspond to the position indices.
-    plant_->RemoveJoint(plant_->AddJoint<RevoluteJoint>(
-        "temp", *body_A_, RigidTransformd(Vector3d(1, 0, 0)), *body_B_,
-        RigidTransformd(), Vector3d::UnitZ()));
-    A_B_ = &plant_->AddJoint<RevoluteJoint>(
-        "A_B", *body_A_, RigidTransformd(Vector3d(1, 0, 0)), *body_B_,
+    *world_A = &plant->AddJoint<RevoluteJoint>(
+        "world_A", plant->world_body(), RigidTransformd(Vector3d(-1, 0, 0)),
+        **body_A, RigidTransformd(), Vector3d::UnitZ());
+    *A_B = &plant->AddJoint<RevoluteJoint>(
+        "A_B", **body_A, RigidTransformd(Vector3d(1, 0, 0)), **body_B,
         RigidTransformd(), Vector3d::UnitZ());
   }
 
@@ -105,10 +110,44 @@ TEST_F(AddMultibodyPlantConstraintsTest, CouplerConstraint) {
   EXPECT_NO_THROW(AddMultibodyPlantConstraints(plant_, q, &prog));
 }
 
-TEST_F(AddMultibodyPlantConstraintsTest, DistanceConstraint) {
+TEST_F(AddMultibodyPlantConstraintsTest, DistanceConstraintInfiniteStiffness) {
   plant_->AddDistanceConstraint(*body_A_, Vector3d(0.0, 1.0, 0.0), *body_B_,
                                 Vector3d(0.0, 1.0, 0.0), 1.5);
   CheckConstraints();
+}
+
+TEST_F(AddMultibodyPlantConstraintsTest, DistanceConstraintFiniteStiffness) {
+  plant_->AddDistanceConstraint(*body_A_, Vector3d(0.0, 1.0, 0.0), *body_B_,
+                                Vector3d(0.0, 1.0, 0.0), 1.5,
+                                /*stiffness = */ kInf);
+  auto add_constraints =
+      [](std::shared_ptr<MultibodyPlant<double>> plant) -> int {
+    plant->Finalize();
+    auto context = plant->CreateDefaultContext();
+    solvers::MathematicalProgram prog;
+    auto q = prog.NewContinuousVariables(plant->num_positions());
+    auto constraints =
+        AddMultibodyPlantConstraints(plant, q, &prog, context.get());
+    return std::ssize(constraints);
+  };
+  int num_constraints_with_infinite_stiffness = add_constraints(plant_);
+  // Now construct a new plant, with the same distance constraint, but with a
+  // finite stiffness.
+  int num_constraints_with_finite_stiffness = 0;
+  {
+    std::shared_ptr<MultibodyPlant<double>> plant_with_finite_stiffness =
+        std::make_shared<MultibodyPlant<double>>(0.1);
+    const RigidBody<double>* body_A;
+    const RigidBody<double>* body_B;
+    const RevoluteJoint<double>* world_A;
+    const RevoluteJoint<double>* A_B;
+    ConstructPlant(plant_with_finite_stiffness, &body_A, &body_B, &world_A,
+                   &A_B);
+    num_constraints_with_finite_stiffness =
+        add_constraints(plant_with_finite_stiffness);
+  }
+  EXPECT_LT(num_constraints_with_finite_stiffness,
+            num_constraints_with_infinite_stiffness);
 }
 
 TEST_F(AddMultibodyPlantConstraintsTest, BallConstraint) {
