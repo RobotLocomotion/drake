@@ -153,6 +153,11 @@ std::vector<Binding<Constraint>> AddMultibodyPlantConstraints(
   if (plant_context != nullptr) {
     for (const auto& [id, params] :
          plant_ref.GetDistanceConstraintParams(*plant_context)) {
+      // We only add the distance constraint if the stiffness is infinite (hence
+      // a hard constraint).
+      if (std::isfinite(params.stiffness())) {
+        continue;
+      }
       // d(q) == d₀.
       bindings
           .emplace_back(prog->AddConstraint(

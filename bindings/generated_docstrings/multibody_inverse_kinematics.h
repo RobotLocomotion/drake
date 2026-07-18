@@ -58,8 +58,11 @@ constraints for any locked joints (via Joint∷Lock()). Note that you
 must pass a valid ``plant_context`` to use joint locking.
 
 Adds constraints for coupler, distance, ball, and weld constraints.
-The distance constraint is implemented here as a hard kinematic
-constraint (i.e., d(q) == d₀), instead of a soft "spring" force.
+For a distance constraint with infinite stiffness, it is implemented
+here as a hard kinematic constraint (i.e., d(q) == d₀), instead of a
+soft "spring" force; if the distance constraint has a finite
+stiffness, then no kinematic constraint is imposed based on the
+distance constraint.
 
 See also:
     AddUnitQuaternionConstraintOnPlant() for the unit quaternion
