@@ -53,6 +53,7 @@ cc_binary(
 
 cc_nolink_library(
     name = "hdrs",
+    visibility = ["//tools/workspace/nanobind/vendor:__pkg__"],
     deps = ["@module_nanobind//:nanobind"],
 )
 
@@ -62,6 +63,7 @@ cc_library(
     defines = LIMITED_API_DEFINES,
     deps = [
         ":hdrs",
+        "//tools/workspace/nanobind/vendor:nanobind_eigen",
         "@drake//tools/workspace/python:cc_headers",
         "@drake//tools/workspace/python:cc_libs",
     ],

@@ -74,7 +74,6 @@ drake_cc_library(
     deps = select({
         "//tools/workspace/nanobind:enabled": [
             "@drake//tools/workspace/nanobind",
-            "@drake//tools/workspace/nanobind/vendor:nanobind_eigen",
         ],
         "//conditions:default": [
             "@drake//tools/workspace/pybind11",

@@ -18,9 +18,9 @@ cc_library(
     ],
     strip_include_prefix = ".",
     tags = ["nolint"],
-    visibility = ["//visibility:public"],
+    visibility = ["//tools/workspace/nanobind:__pkg__"],
     deps = [
-        "//tools/workspace/nanobind",
+        "//tools/workspace/nanobind:hdrs",
         "@eigen",
     ],
 )
