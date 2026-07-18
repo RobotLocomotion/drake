@@ -1,0 +1,26 @@
+load("@drake//tools/skylark:cc.bzl", "cc_binary")
+load("@drake//tools/skylark:py.bzl", "py_test")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# This is a smoke test on a nanobind binding, as a sanity check of the build.
+
+cc_binary(
+    name = "sample_module.so",
+    srcs = ["sample_module.cc"],
+    linkshared = True,
+    linkstatic = True,
+    deps = [
+        "//tools/workspace/nanobind",
+    ],
+)
+
+py_test(
+    name = "sample_module_test",
+    srcs = ["sample_module_test.py"],
+    data = [":sample_module.so"],
+    imports = ["."],
+    main = "sample_module_test.py",
+    deps = ["//bindings/pydrake/common/test_utilities/scipy_stub"],
+)
+
+add_lint_tests()
