@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
@@ -22,6 +23,8 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using math::RigidTransformd;
 using systems::Context;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 bool SnoptSolverUnavailable() {
   return !(solvers::SnoptSolver::is_available() &&
@@ -42,11 +45,6 @@ class AddMultibodyPlantConstraintsTest : public ::testing::Test {
     world_A_ = &plant_->AddJoint<RevoluteJoint>(
         "world_A", plant_->world_body(), RigidTransformd(Vector3d(-1, 0, 0)),
         *body_A_, RigidTransformd(), Vector3d::UnitZ());
-    // Add and then immediately remove a joint so that the joint indices do not
-    // correspond to the position indices.
-    plant_->RemoveJoint(plant_->AddJoint<RevoluteJoint>(
-        "temp", *body_A_, RigidTransformd(Vector3d(1, 0, 0)), *body_B_,
-        RigidTransformd(), Vector3d::UnitZ()));
     A_B_ = &plant_->AddJoint<RevoluteJoint>(
         "A_B", *body_A_, RigidTransformd(Vector3d(1, 0, 0)), *body_B_,
         RigidTransformd(), Vector3d::UnitZ());
@@ -105,10 +103,34 @@ TEST_F(AddMultibodyPlantConstraintsTest, CouplerConstraint) {
   EXPECT_NO_THROW(AddMultibodyPlantConstraints(plant_, q, &prog));
 }
 
-TEST_F(AddMultibodyPlantConstraintsTest, DistanceConstraint) {
+TEST_F(AddMultibodyPlantConstraintsTest, DistanceConstraintInfiniteStiffness) {
   plant_->AddDistanceConstraint(*body_A_, Vector3d(0.0, 1.0, 0.0), *body_B_,
                                 Vector3d(0.0, 1.0, 0.0), 1.5);
   CheckConstraints();
+}
+
+TEST_F(AddMultibodyPlantConstraintsTest, DistanceConstraintFiniteStiffness) {
+  const Eigen::Vector3d p_AP(0.0, 1.0, 0.0);
+  const Eigen::Vector3d p_BQ(0.0, 1.0, 0.0);
+  const double distance = 1.5;
+
+  plant_->AddDistanceConstraint(*body_A_, p_AP, *body_B_, p_BQ, distance,
+                                /*stiffness = */ 100);
+  plant_->Finalize();
+  plant_context_ = plant_->CreateDefaultContext();
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(plant_->num_positions());
+  auto constraints =
+      AddMultibodyPlantConstraints(plant_, q, &prog, plant_context_.get());
+  // Add a constraint that the distance between A and B is not `distance`. The
+  // IK should be feasible.
+  prog.AddConstraint(
+      std::make_shared<PointToPointDistanceConstraint>(
+          plant_.get(), body_A_->body_frame(), p_AP, body_B_->body_frame(),
+          p_BQ, distance + 0.1, kInf, plant_context_.get()),
+      q);
+  auto result = solvers::Solve(prog);
+  EXPECT_TRUE(result.is_success());
 }
 
 TEST_F(AddMultibodyPlantConstraintsTest, BallConstraint) {
