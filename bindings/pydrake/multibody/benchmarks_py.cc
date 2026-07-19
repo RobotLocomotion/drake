@@ -1,7 +1,3 @@
-#ifdef PYDRAKE_USE_PYBIND11
-#include "pybind11/eval.h"
-#endif
-
 #include "drake/bindings/generated_docstrings/multibody_benchmarks_acrobot.h"
 #include "drake/bindings/generated_docstrings/multibody_benchmarks_mass_damper_spring.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"

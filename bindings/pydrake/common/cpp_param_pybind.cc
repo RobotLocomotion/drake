@@ -1,9 +1,5 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 
-#ifdef PYDRAKE_USE_PYBIND11
-#include "pybind11/eval.h"
-#endif
-
 namespace drake {
 namespace pydrake {
 

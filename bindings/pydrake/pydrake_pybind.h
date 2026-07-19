@@ -6,15 +6,15 @@
 #include <unordered_map>
 #include <utility>
 
+// Here we include a lot of the pybind11 (or nanobind) API, to ensure that all
+// code in pydrake sees the same definitions ("One Definition Rule") for
+// template types intended for specialization. Any headers with `type_caster<>`
+// specializations must be included here (e.g., eigen.h, functional.h, numpy.h,
+// stl.h) as well as ADL headers (e.g., operators.h). Headers that are unused by
+// pydrake (e.g., complex.h) are omitted.
 #ifdef PYDRAKE_USE_PYBIND11
-// Here we include a lot of the pybind11 API, to ensure that all code in pydrake
-// sees the same definitions ("One Definition Rule") for template types intended
-// for specialization. Any pybind11 headers with `type_caster<>` specializations
-// must be included here (e.g., eigen.h, functional.h, numpy.h, stl.h) as well
-// as ADL headers (e.g., operators.h). Headers that are unused by pydrake
-// (e.g., complex.h) are omitted, as are headers that do not specialize anything
-// (e.g., eval.h).
 #include "pybind11/eigen.h"
+#include "pybind11/eval.h"
 #include "pybind11/functional.h"
 #include "pybind11/numpy.h"
 #include "pybind11/operators.h"

@@ -5,10 +5,6 @@
 #include <string>
 #include <vector>
 
-#ifdef PYDRAKE_USE_PYBIND11
-#include "pybind11/eval.h"
-#endif
-
 #include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/generated_docstrings/systems_lcm.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
