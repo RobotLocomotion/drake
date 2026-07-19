@@ -283,9 +283,6 @@ struct Impl {
    public:
     NB_TRAMPOLINE(LeafSystemBase, 100);
     using Base = LeafSystemBase;
-#ifdef PYDRAKE_USE_PYBIND11
-    using Base::Base;
-#endif
 
     // Trampoline virtual methods.
 
@@ -390,9 +387,6 @@ struct Impl {
    public:
     NB_TRAMPOLINE(VectorSystemPublic, 100);
     using Base = VectorSystemPublic;
-#ifdef PYDRAKE_USE_PYBIND11
-    using Base::Base;
-#endif
 
     // something something ToEigenRef().
     void DoCalcVectorOutput(const Context<T>& context,

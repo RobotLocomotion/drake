@@ -437,14 +437,16 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
   PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 #endif  // PYDRAKE_USE_PYBIND11
 
-// This alias helps ease Drake's transition to nanobind.
+// These aliases help ease Drake's transition to nanobind.
 #ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_MODULE PYBIND11_MODULE
 #define PYDRAKE_BINDER_NAMESPACE pybind11
 #define PYDRAKE_OVERRIDE PYBIND11_OVERRIDE
 #define PYDRAKE_OVERRIDE_PURE PYBIND11_OVERRIDE_PURE
 #define PYDRAKE_OVERRIDE_PURE_NAME PYBIND11_OVERRIDE_PURE_NAME
-#define NB_TRAMPOLINE(...)
+#define NB_TRAMPOLINE(base, size) \
+  using NBBase = base;            \
+  using NBBase::NBBase
 #else  // PYDRAKE_USE_NANOBIND
 #define PYDRAKE_MODULE NB_MODULE
 #define PYDRAKE_BINDER_NAMESPACE nanobind
