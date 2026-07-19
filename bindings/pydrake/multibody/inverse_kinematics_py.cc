@@ -191,12 +191,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = AngleBetweenVectorsConstraint;
     constexpr auto& cls_doc = doc.AngleBetweenVectorsConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "AngleBetweenVectorsConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "AngleBetweenVectorsConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, double, double,
@@ -225,12 +221,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = AngleBetweenVectorsCost;
     constexpr auto& cls_doc = doc.AngleBetweenVectorsCost;
-    class_<Class, solvers::Cost
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "AngleBetweenVectorsCost", cls_doc.doc)
+    class_<Class, solvers::Cost, std::shared_ptr<Class>>(
+        m, "AngleBetweenVectorsCost", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, double,
@@ -259,12 +251,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PointToPointDistanceConstraint;
     constexpr auto& cls_doc = doc.PointToPointDistanceConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "PointToPointDistanceConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "PointToPointDistanceConstraint", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>* const,
                  const multibody::Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
@@ -295,12 +283,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PointToLineDistanceConstraint;
     constexpr auto& cls_doc = doc.PointToLineDistanceConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "PointToLineDistanceConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "PointToLineDistanceConstraint", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>* const,
                  const multibody::Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
@@ -335,12 +319,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PolyhedronConstraint;
     constexpr auto& cls_doc = doc.PolyhedronConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "PolyhedronConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "PolyhedronConstraint", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>* const,
                  const multibody::Frame<double>&,
                  const multibody::Frame<double>&,
@@ -373,12 +353,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = DistanceConstraint;
     constexpr auto& cls_doc = doc.DistanceConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "DistanceConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "DistanceConstraint", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>* const,
                  SortedPair<geometry::GeometryId>, systems::Context<double>*,
                  double, double>(),
@@ -404,12 +380,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = GazeTargetConstraint;
     constexpr auto& cls_doc = doc.GazeTargetConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "GazeTargetConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "GazeTargetConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
@@ -441,12 +413,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = MinimumDistanceLowerBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceLowerBoundConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >
+    class_<Class, Constraint, std::shared_ptr<Class>>
         minimum_distance_lower_bound_constraint(
             m, "MinimumDistanceLowerBoundConstraint", cls_doc.doc);
 
@@ -536,12 +503,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = MinimumDistanceUpperBoundConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceUpperBoundConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >
+    class_<Class, Constraint, std::shared_ptr<Class>>
         minimum_distance_upper_bound_constraint(
             m, "MinimumDistanceUpperBoundConstraint", cls_doc.doc);
 
@@ -629,12 +591,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PositionConstraint;
     constexpr auto& cls_doc = doc.PositionConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "PositionConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "PositionConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
@@ -696,12 +654,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = PositionCost;
     constexpr auto& cls_doc = doc.PositionCost;
-    class_<Class, solvers::Cost
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "PositionCost", cls_doc.doc)
+    class_<Class, solvers::Cost, std::shared_ptr<Class>>(
+        m, "PositionCost", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&, const Frame<double>&,
                  const Eigen::Ref<const Eigen::Vector3d>&,
@@ -733,12 +687,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = ComPositionConstraint;
     constexpr auto& cls_doc = doc.ComPositionConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "ComPositionConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "ComPositionConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*,
                  const std::optional<std::vector<ModelInstanceIndex>>&,
                  const Frame<double>&, systems::Context<double>*>(),
@@ -762,12 +712,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = ComInPolyhedronConstraint;
     constexpr auto& cls_doc = doc.ComInPolyhedronConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "ComInPolyhedronConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "ComInPolyhedronConstraint", cls_doc.doc)
         .def(
             py::init<const MultibodyPlant<double>*,
                 std::optional<std::vector<ModelInstanceIndex>>,
@@ -801,12 +747,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = OrientationConstraint;
     constexpr auto& cls_doc = doc.OrientationConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "OrientationConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "OrientationConstraint", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>* const, const Frame<double>&,
                  const math::RotationMatrix<double>&, const Frame<double>&,
                  const math::RotationMatrix<double>&, double,
@@ -834,12 +776,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = OrientationCost;
     constexpr auto& cls_doc = doc.OrientationCost;
-    class_<Class, solvers::Cost
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "OrientationCost", cls_doc.doc)
+    class_<Class, solvers::Cost, std::shared_ptr<Class>>(
+        m, "OrientationCost", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>*, const Frame<double>&,
                  const math::RotationMatrix<double>&, const Frame<double>&,
                  const math::RotationMatrix<double>&, double,
@@ -867,12 +805,8 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
   {
     using Class = UnitQuaternionConstraint;
     constexpr auto& cls_doc = doc.UnitQuaternionConstraint;
-    class_<Class, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-        ,
-        std::shared_ptr<Class>
-#endif
-        >(m, "UnitQuaternionConstraint", cls_doc.doc)
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "UnitQuaternionConstraint", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc);
     m.def("AddUnitQuaternionConstraintOnPlant",
         &AddUnitQuaternionConstraintOnPlant<double>, py::arg("plant"),

@@ -551,13 +551,8 @@ Parameter ``interruptible``:
   {
     using Class = RegionOfAttractionOptions;
     constexpr auto& cls_doc = doc.analysis.RegionOfAttractionOptions;
-    class_<Class
-#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
-        ,
-        std::shared_ptr<Class>
-#endif
-        >
-        cls(m, "RegionOfAttractionOptions", cls_doc.doc);
+    class_<Class, std::shared_ptr<Class>> cls(
+        m, "RegionOfAttractionOptions", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         // TODO(jeremy.nimmer): replace the def_rw with

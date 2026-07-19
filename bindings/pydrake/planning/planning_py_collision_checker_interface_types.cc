@@ -49,13 +49,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = CollisionCheckerContext;
     constexpr auto& cls_doc = doc.CollisionCheckerContext;
-    class_<Class
-#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
-        ,
-        std::shared_ptr<Class>
-#endif
-        >
-        cls(m, "CollisionCheckerContext", cls_doc.doc);
+    class_<Class, std::shared_ptr<Class>> cls(
+        m, "CollisionCheckerContext", cls_doc.doc);
     cls  // BR
         .def(py::init<const RobotDiagram<double>*>(), py::arg("model"),
             // Keep alive, reference: `self` keeps `model` alive.
@@ -74,13 +69,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = DistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.DistanceAndInterpolationProvider;
-    class_<Class
-#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
-        ,
-        std::shared_ptr<Class>
-#endif
-        >
-        cls(m, "DistanceAndInterpolationProvider", cls_doc.doc);
+    class_<Class, std::shared_ptr<Class>> cls(
+        m, "DistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def("ComputeConfigurationDistance",
             &Class::ComputeConfigurationDistance,
@@ -93,13 +83,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = LinearDistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.LinearDistanceAndInterpolationProvider;
-    class_<Class, DistanceAndInterpolationProvider
-#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
-        ,
-        std::shared_ptr<Class>
-#endif
-        >
-        cls(m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
+    class_<Class, DistanceAndInterpolationProvider, std::shared_ptr<Class>> cls(
+        m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def(py::init<const drake::multibody::MultibodyPlant<double>&>(),
             py::arg("plant"), cls_doc.ctor.doc_1args_plant)

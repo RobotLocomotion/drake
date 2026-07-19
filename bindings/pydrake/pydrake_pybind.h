@@ -123,15 +123,41 @@ class AliasRegistry {
     return singleton;
   }
 };
+
+// We use partial template specialiation of a traits-like type to drop the
+// shared_ptr holder type annotation on py::class_ declarations. Only pybind11
+// uses holder types in the class_ template argument list.
+template <typename T, typename... Ts>
+struct PyClassRemoveSharedPtrHolderAnnotation {
+  using type = py::class_<T, Ts...>;
+};
+template <typename T, typename Holder, typename... Ts>
+struct PyClassRemoveSharedPtrHolderAnnotation<T, Holder, Ts...> {
+  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T>>,
+      py::class_<T, Ts...>, py::class_<T, Holder, Ts...>>;
+};
+template <typename T, typename Base, typename Holder, typename... Ts>
+struct PyClassRemoveSharedPtrHolderAnnotation<T, Base, Holder, Ts...> {
+  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T>>,
+      py::class_<T, Base, Ts...>, py::class_<T, Base, Holder, Ts...>>;
+};
+template <typename T, typename Base1, typename Base2, typename Holder,
+    typename... Ts>
+struct PyClassRemoveSharedPtrHolderAnnotation<T, Base1, Base2, Holder, Ts...> {
+  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T>>,
+      py::class_<T, Base1, Base2, Ts...>,
+      py::class_<T, Base1, Base2, Holder, Ts...>>;
+};
+
 }  // namespace internal
 
 template <typename T, typename... Ts>
 class __attribute__((visibility("hidden"))) class_
-    : public py::class_<T, Ts...> {
+    : public internal::PyClassRemoveSharedPtrHolderAnnotation<T, Ts...>::type {
  public:
-  using Base = py::class_<T, Ts...>;
+  using Base = internal::PyClassRemoveSharedPtrHolderAnnotation<T, Ts...>::type;
   explicit class_(auto&&... args)
-      : py::class_<T, Ts...>(std::forward<decltype(args)>(args)...,
+      : Base(std::forward<decltype(args)>(args)...,
             py::is_weak_referenceable()) {
     if constexpr (!std::is_same_v<T, typename Base::Alias>) {
       internal::AliasRegistry::AddAlias(

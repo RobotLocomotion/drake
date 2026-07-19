@@ -1299,12 +1299,9 @@ void DefineForceDensityField(py::module_ m, T) {
   {
     constexpr auto& cls_doc = doc.ForceDensityField;
     auto cls = DefineTemplateClassWithDefault<ForceDensityField<T>,
-        PyForceDensityField<T>, ForceDensityFieldBase<T>
-#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
-        ,
-        std::shared_ptr<ForceDensityField<T>>
-#endif
-        >(m, "ForceDensityField", param, cls_doc.doc);
+        PyForceDensityField<T>, ForceDensityFieldBase<T>,
+        std::shared_ptr<ForceDensityField<T>>>(
+        m, "ForceDensityField", param, cls_doc.doc);
     cls  // BR
         .def(py::init<ForceDensityType>(),
             py::arg("density_type") = ForceDensityType::kPerCurrentVolume,
@@ -1332,12 +1329,8 @@ void DefineForceDensityField(py::module_ m, T) {
   {
     constexpr auto& cls_doc = doc.GravityForceField;
     auto cls = DefineTemplateClassWithDefault<GravityForceField<T>,
-        ForceDensityField<T>
-#ifdef PYDRAKE_USE_PYBIND11  // XXX(holder) porting
-        ,
-        std::shared_ptr<GravityForceField<T>>
-#endif
-        >(m, "GravityForceField", param, cls_doc.doc);
+        ForceDensityField<T>, std::shared_ptr<GravityForceField<T>>>(
+        m, "GravityForceField", param, cls_doc.doc);
     cls  // BR
         .def(py::init<const Vector3<T>&, const T&>(), py::arg("gravity_vector"),
             py::arg("mass_density"), cls_doc.ctor.doc);

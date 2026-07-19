@@ -1545,12 +1545,8 @@ void BindSolutionResult(py::module_ m) {
 }
 
 void BindPyFunctionCost(py::module_ m) {
-  class_<PyFunctionCost, Cost
-#ifdef PYDRAKE_USE_PYBIND11
-      ,
-      std::shared_ptr<PyFunctionCost>
-#endif
-      >(m, "PyFunctionCost", "Cost with its evaluator as a Python function")
+  class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
+      m, "PyFunctionCost", "Cost with its evaluator as a Python function")
       .def(py::init<int, const py::callable&, const std::string&>(),
           py::arg("num_vars"), py::arg("func"), py::arg("description") = "",
           "Constructs a cost for a python function `func`, applied to "
@@ -1558,12 +1554,8 @@ void BindPyFunctionCost(py::module_ m) {
 }
 
 void BindPyFunctionConstraint(py::module_ m) {
-  class_<PyFunctionConstraint, Constraint
-#ifdef PYDRAKE_USE_PYBIND11
-      ,
-      std::shared_ptr<PyFunctionConstraint>
-#endif
-      >(m, "PyFunctionConstraint",
+  class_<PyFunctionConstraint, Constraint,
+      std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
       .def(py::init<int, const py::callable&, const Eigen::VectorXd&,
                const Eigen::VectorXd&, const std::string&>(),
