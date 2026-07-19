@@ -71,11 +71,8 @@ class NiceTypeName {
   differ. */
   template <typename T>
   static std::string Get(const T& thing) {
-    const std::type_info* info_dynamic{nullptr};
-    if constexpr (std::is_polymorphic_v<T>) {
-      info_dynamic = &typeid(thing);
-    }
-    return GetWithPossibleOverride(&thing, typeid(thing), info_dynamic);
+    constexpr bool is_polymorphic = std::is_polymorphic_v<T>;
+    return GetWithPossibleOverride(&thing, typeid(thing), is_polymorphic);
   }
 
   /** Returns the nicely demangled and canonicalized type name of `info`. This
@@ -115,7 +112,7 @@ class NiceTypeName {
 
   static std::string GetWithPossibleOverride(
       const void* ptr, const std::type_info& info,
-      const std::type_info* info_dynamic);
+      bool is_polymorphic);
 };
 
 }  // namespace drake

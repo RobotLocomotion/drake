@@ -17,9 +17,7 @@ namespace internal {
 struct type_erased_ptr {
   const void* raw{};
   const std::type_info& info;
-  // If the pointer's type is polymorphic, `info_dynamic` points to the dynamic
-  // type. Otherwise, it is a nullptr.
-  const std::type_info* info_dynamic;
+  bool is_polymorphic{};
 };
 
 // Callback for overriding an object's nice type name.
