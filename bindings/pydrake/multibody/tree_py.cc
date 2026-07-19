@@ -141,7 +141,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Enum = JacobianWrtVariable;
     constexpr auto& enum_doc = doc.JacobianWrtVariable;
-    py::enum_<Enum> enum_py(m, "JacobianWrtVariable", enum_doc.doc);
+    enum_<Enum> enum_py(m, "JacobianWrtVariable", enum_doc.doc);
     enum_py  // BR
         .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
         .value("kV", Enum::kV, enum_doc.kV.doc);

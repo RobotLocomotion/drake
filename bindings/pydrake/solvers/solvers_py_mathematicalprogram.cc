@@ -435,7 +435,7 @@ void BindMathematicalProgram(py::module_ m) {
   prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc);
   DefClone(&prog_cls);
 
-  py::enum_<MathematicalProgram::NonnegativePolynomial>(prog_cls,
+  enum_<MathematicalProgram::NonnegativePolynomial>(prog_cls,
       "NonnegativePolynomial",
       doc.MathematicalProgram.NonnegativePolynomial.doc)
       .value("kSos", MathematicalProgram::NonnegativePolynomial::kSos,
@@ -1510,7 +1510,7 @@ for every column of ``prog_var_vals``. )""")
 
 void BindSolutionResult(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::enum_<SolutionResult> solution_result_enum(
+  enum_<SolutionResult> solution_result_enum(
       m, "SolutionResult", doc.SolutionResult.doc);
   solution_result_enum
       .value("kSolutionFound", SolutionResult::kSolutionFound,

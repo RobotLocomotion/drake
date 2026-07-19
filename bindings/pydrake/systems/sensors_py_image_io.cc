@@ -22,7 +22,7 @@ void DefineSensorsImageIo(py::module_ m) {
   constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   {
-    py::enum_<ImageFileFormat>(m, "ImageFileFormat")
+    enum_<ImageFileFormat>(m, "ImageFileFormat")
         .value("kJpeg", ImageFileFormat::kJpeg)
         .value("kPng", ImageFileFormat::kPng)
         .value("kTiff", ImageFileFormat::kTiff);

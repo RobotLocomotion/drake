@@ -58,7 +58,7 @@ void DefineSymbolicMonolith(py::module_ m) {
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   class_<Variable> var_cls(m, "Variable", doc_expr.Variable.doc);
   constexpr auto& var_doc = doc_expr.Variable;
-  py::enum_<Variable::Type>(var_cls, "Type")
+  enum_<Variable::Type>(var_cls, "Type")
       .value(
           "CONTINUOUS", Variable::Type::CONTINUOUS, var_doc.Type.CONTINUOUS.doc)
       .value("INTEGER", Variable::Type::INTEGER, var_doc.Type.INTEGER.doc)
@@ -321,7 +321,7 @@ void DefineSymbolicMonolith(py::module_ m) {
 
   {
     constexpr auto& cls_doc = doc_expr.ExpressionKind;
-    py::enum_<ExpressionKind>(m, "ExpressionKind", cls_doc.doc)
+    enum_<ExpressionKind>(m, "ExpressionKind", cls_doc.doc)
         .value("Constant", ExpressionKind::Constant, cls_doc.Constant.doc)
         .value("Var", ExpressionKind::Var, cls_doc.Var.doc)
         .value("Add", ExpressionKind::Add, cls_doc.Add.doc)
@@ -562,7 +562,7 @@ void DefineSymbolicMonolith(py::module_ m) {
   {
     using Enum = SinCosSubstitutionType;
     constexpr auto& enum_doc = doc.SinCosSubstitutionType;
-    py::enum_<Enum> enum_py(m, "SinCosSubstitutionType", enum_doc.doc);
+    enum_<Enum> enum_py(m, "SinCosSubstitutionType", enum_doc.doc);
     enum_py  // BR
         .value("kAngle", Enum::kAngle, enum_doc.kAngle.doc)
         .value("kHalfAnglePreferSin", Enum::kHalfAnglePreferSin,
@@ -604,7 +604,7 @@ void DefineSymbolicMonolith(py::module_ m) {
 
   {
     constexpr auto& cls_doc = doc_expr.FormulaKind;
-    py::enum_<FormulaKind>(m, "FormulaKind", cls_doc.doc)
+    enum_<FormulaKind>(m, "FormulaKind", cls_doc.doc)
         // `True` and `False` are reserved keywords as of Python3.
         .value("False_", FormulaKind::False, cls_doc.False.doc)
         .value("True_", FormulaKind::True, cls_doc.True.doc)

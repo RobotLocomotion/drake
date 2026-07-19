@@ -48,7 +48,7 @@ void DefineCollisionFilterScope(py::module_ m) {
   {
     using Class = CollisionFilterScope;
     constexpr auto& cls_doc = doc.CollisionFilterScope;
-    py::enum_<Class>(m, "CollisionFilterScope", cls_doc.doc)
+    enum_<Class>(m, "CollisionFilterScope", cls_doc.doc)
         .value("kAll", Class::kAll, cls_doc.kAll.doc)
         .value("kOmitDeformable", Class::kOmitDeformable,
             cls_doc.kOmitDeformable.doc);
@@ -457,7 +457,7 @@ void DefineRgba(py::module_ m) {
 void DefineRole(py::module_ m) {
   {
     constexpr auto& cls_doc = doc.Role;
-    py::enum_<Role>(m, "Role", py::is_arithmetic(), cls_doc.doc)
+    enum_<Role>(m, "Role", cls_doc.doc)
         .value("kUnassigned", Role::kUnassigned, cls_doc.kUnassigned.doc)
         .value("kProximity", Role::kProximity, cls_doc.kProximity.doc)
         .value("kIllustration", Role::kIllustration, cls_doc.kIllustration.doc)
@@ -469,7 +469,7 @@ void DefineRoleAssign(py::module_ m) {
   {
     constexpr auto& cls_doc = doc.RoleAssign;
     using Class = RoleAssign;
-    py::enum_<Class>(m, "RoleAssign", cls_doc.doc)
+    enum_<Class>(m, "RoleAssign", cls_doc.doc)
         .value("kNew", Class::kNew, cls_doc.kNew.doc)
         .value("kReplace", Class::kReplace, cls_doc.kReplace.doc);
   }

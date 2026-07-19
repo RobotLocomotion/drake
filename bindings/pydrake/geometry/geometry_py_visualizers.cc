@@ -214,7 +214,7 @@ void DefineMeshcat(py::module_ m) {
 
     // Meshcat::SideOfFaceToRender enumeration
     constexpr auto& side_doc = doc.Meshcat.SideOfFaceToRender;
-    py::enum_<Meshcat::SideOfFaceToRender>(
+    enum_<Meshcat::SideOfFaceToRender>(
         meshcat, "SideOfFaceToRender", side_doc.doc)
         .value("kFrontSide", Meshcat::SideOfFaceToRender::kFrontSide,
             side_doc.kFrontSide.doc)
@@ -475,7 +475,7 @@ void DefineMeshcatAnimation(py::module_ m) {
 
     // MeshcatAnimation::LoopMode enumeration
     constexpr auto& loop_doc = doc.MeshcatAnimation.LoopMode;
-    py::enum_<MeshcatAnimation::LoopMode>(cls, "LoopMode", loop_doc.doc)
+    enum_<MeshcatAnimation::LoopMode>(cls, "LoopMode", loop_doc.doc)
         .value("kLoopOnce", MeshcatAnimation::LoopMode::kLoopOnce,
             loop_doc.kLoopOnce.doc)
         .value("kLoopRepeat", MeshcatAnimation::LoopMode::kLoopRepeat,

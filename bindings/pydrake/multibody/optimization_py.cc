@@ -167,7 +167,7 @@ PYDRAKE_MODULE(optimization, m) {
   {
     using Class = ToppraDiscretization;
     constexpr auto& cls_doc = doc.ToppraDiscretization;
-    py::enum_<Class>(m, "ToppraDiscretization", cls_doc.doc)
+    enum_<Class>(m, "ToppraDiscretization", cls_doc.doc)
         .value("kCollocation", Class::kCollocation, cls_doc.kCollocation.doc)
         .value("kInterpolation", Class::kInterpolation,
             cls_doc.kInterpolation.doc);

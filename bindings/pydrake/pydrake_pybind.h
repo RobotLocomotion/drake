@@ -46,6 +46,17 @@ using py_rvp = py::rv_policy;
 // This alias helps ease Drake's transition to nanobind.
 using py::class_;
 
+/// A drake-specific wrapper for py::enum_ that adds is_arithmetic by default.
+/// This matches normal C++ semantics of being able to use the enum as an int.
+template <typename T>
+class __attribute__((visibility("hidden"))) enum_ : public py::enum_<T> {
+ public:
+  template <typename... Extra>
+  enum_(py::handle scope, const char* name, const Extra&... extra)
+      : py::enum_<T>(scope, name, py::is_arithmetic(),
+            std::forward<decltype(extra)>(extra)...) {}
+};
+
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
 // the compiler.

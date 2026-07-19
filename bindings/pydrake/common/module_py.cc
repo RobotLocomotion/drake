@@ -264,13 +264,13 @@ void InitLowLevelModules(py::module_ m) {
 
   ExecuteExtraPythonCode(m, true);
 
-  py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
+  enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
       .value("kAbsolute", drake::ToleranceType::kAbsolute,
           doc.ToleranceType.kAbsolute.doc)
       .value("kRelative", drake::ToleranceType::kRelative,
           doc.ToleranceType.kRelative.doc);
 
-  py::enum_<drake::RandomDistribution>(
+  enum_<drake::RandomDistribution>(
       m, "RandomDistribution", doc.RandomDistribution.doc)
       .value("kUniform", drake::RandomDistribution::kUniform,
           doc.RandomDistribution.kUniform.doc)

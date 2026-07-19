@@ -19,7 +19,7 @@ void DefineSolversOptions(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
   {
-    py::enum_<CommonSolverOption>(
+    enum_<CommonSolverOption>(
         m, "CommonSolverOption", doc.CommonSolverOption.doc)
         .value("kPrintFileName", CommonSolverOption::kPrintFileName,
             doc.CommonSolverOption.kPrintFileName.doc)

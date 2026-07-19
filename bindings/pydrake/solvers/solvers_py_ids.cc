@@ -32,7 +32,7 @@ void DefineSolversIds(py::module_ m) {
           },
           py::is_operator());
 
-  py::enum_<SolverType> solver_type(m, "SolverType", doc.SolverType.doc);
+  enum_<SolverType> solver_type(m, "SolverType", doc.SolverType.doc);
   solver_type  // BR
       .value("kClp", SolverType::kClp, doc.SolverType.kClp.doc)
       .value("kCsdp", SolverType::kCsdp, doc.SolverType.kCsdp.doc)

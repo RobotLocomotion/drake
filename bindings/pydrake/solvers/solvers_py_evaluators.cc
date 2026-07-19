@@ -300,7 +300,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       lorentz_cone_cls(
           m, "LorentzConeConstraint", doc.LorentzConeConstraint.doc);
 
-  py::enum_<LorentzConeConstraint::EvalType>(
+  enum_<LorentzConeConstraint::EvalType>(
       lorentz_cone_cls, "EvalType", doc.LorentzConeConstraint.EvalType.doc)
       .value("kConvex", LorentzConeConstraint::EvalType::kConvex,
           doc.LorentzConeConstraint.EvalType.kConvex.doc)
@@ -382,7 +382,7 @@ void BindEvaluatorsAndBindings(py::module_ m) {
       quadratic_constraint_cls(
           m, "QuadraticConstraint", doc.QuadraticConstraint.doc);
 
-  py::enum_<QuadraticConstraint::HessianType>(quadratic_constraint_cls,
+  enum_<QuadraticConstraint::HessianType>(quadratic_constraint_cls,
       "HessianType", doc.QuadraticConstraint.HessianType.doc)
       .value("kPositiveSemidefinite",
           QuadraticConstraint::HessianType::kPositiveSemidefinite,

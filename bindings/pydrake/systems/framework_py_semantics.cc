@@ -81,15 +81,15 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   }
   m.attr("kUseDefaultName") = kUseDefaultName;
 
-  py::enum_<PortDataType>(m, "PortDataType")
+  enum_<PortDataType>(m, "PortDataType")
       .value("kVectorValued", kVectorValued)
       .value("kAbstractValued", kAbstractValued);
 
-  py::enum_<InputPortSelection>(m, "InputPortSelection")
+  enum_<InputPortSelection>(m, "InputPortSelection")
       .value("kNoInput", InputPortSelection::kNoInput)
       .value("kUseFirstInputIfItExists",
           InputPortSelection::kUseFirstInputIfItExists);
-  py::enum_<OutputPortSelection>(m, "OutputPortSelection")
+  enum_<OutputPortSelection>(m, "OutputPortSelection")
       .value("kNoOutput", OutputPortSelection::kNoOutput)
       .value("kUseFirstOutputIfItExists",
           OutputPortSelection::kUseFirstOutputIfItExists);
@@ -138,7 +138,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = TriggerType;
     constexpr auto& cls_doc = doc.TriggerType;
-    py::enum_<TriggerType>(m, "TriggerType", cls_doc.doc)
+    enum_<TriggerType>(m, "TriggerType", cls_doc.doc)
         .value("kUnknown", Class::kUnknown, cls_doc.kUnknown.doc)
         .value("kInitialization", Class::kInitialization,
             cls_doc.kInitialization.doc)
@@ -149,7 +149,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
         .value("kWitness", Class::kWitness, cls_doc.kWitness.doc);
   }
 
-  py::enum_<WitnessFunctionDirection>(
+  enum_<WitnessFunctionDirection>(
       m, "WitnessFunctionDirection", doc.WitnessFunctionDirection.doc)
       .value("kNone", WitnessFunctionDirection::kNone,
           doc.WitnessFunctionDirection.kNone.doc)
@@ -180,7 +180,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
 
     using Enum = Class::Severity;
     constexpr auto& enum_doc = cls_doc.Severity;
-    py::enum_<Enum>(cls, "Severity", enum_doc.doc)
+    enum_<Enum>(cls, "Severity", enum_doc.doc)
         .value("kDidNothing", Enum::kDidNothing, enum_doc.kDidNothing.doc)
         .value("kSucceeded", Enum::kSucceeded, enum_doc.kSucceeded.doc)
         .value("kReachedTermination", Enum::kReachedTermination,

@@ -36,7 +36,7 @@ void DefineManipulationKukaIiwa(py::module_ m) {
   {
     using Class = IiwaControlMode;
     constexpr auto& cls_doc = doc.IiwaControlMode;
-    py::enum_<Class>(m, "IiwaControlMode", cls_doc.doc)
+    enum_<Class>(m, "IiwaControlMode", cls_doc.doc)
         .value("kPositionOnly", Class::kPositionOnly, cls_doc.kPositionOnly.doc)
         .value("kTorqueOnly", Class::kTorqueOnly, cls_doc.kTorqueOnly.doc)
         .value("kPositionAndTorque", Class::kPositionAndTorque,

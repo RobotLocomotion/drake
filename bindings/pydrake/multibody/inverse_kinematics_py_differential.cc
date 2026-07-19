@@ -32,7 +32,7 @@ void DefineDifferentialIkLegacy(py::module_ m) {
 
   py::module_::import_("pydrake.systems.framework");
 
-  py::enum_<DifferentialInverseKinematicsStatus>(m,
+  enum_<DifferentialInverseKinematicsStatus>(m,
       "DifferentialInverseKinematicsStatus",
       doc.DifferentialInverseKinematicsStatus.doc)
       .value("kSolutionFound",

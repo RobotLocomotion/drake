@@ -11,7 +11,7 @@ void DefineProgramAttribute(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::enum_<ProgramAttribute>(m, "ProgramAttribute", doc.ProgramAttribute.doc)
+  enum_<ProgramAttribute>(m, "ProgramAttribute", doc.ProgramAttribute.doc)
       .value("kGenericCost", ProgramAttribute::kGenericCost,
           doc.ProgramAttribute.kGenericCost.doc)
       .value("kGenericConstraint", ProgramAttribute::kGenericConstraint,
@@ -48,7 +48,7 @@ void DefineProgramAttribute(py::module_ m) {
       .value("kCallback", ProgramAttribute::kCallback,
           doc.ProgramAttribute.kCallback.doc);
 
-  py::enum_<ProgramType>(m, "ProgramType", doc.ProgramType.doc)
+  enum_<ProgramType>(m, "ProgramType", doc.ProgramType.doc)
       .value("kLP", ProgramType::kLP, doc.ProgramType.kLP.doc)
       .value("kQP", ProgramType::kQP, doc.ProgramType.kQP.doc)
       .value("kSOCP", ProgramType::kSOCP, doc.ProgramType.kSOCP.doc)

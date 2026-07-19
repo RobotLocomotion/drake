@@ -83,7 +83,7 @@ PYDRAKE_MODULE(controllers, m) {
     {
       using Nested = Class::InverseDynamicsMode;
       constexpr auto& nested_doc = cls_doc.InverseDynamicsMode;
-      py::enum_<Nested>(cls, "InverseDynamicsMode")
+      enum_<Nested>(cls, "InverseDynamicsMode")
           .value("kInverseDynamics", Nested::kInverseDynamics, nested_doc.doc)
           .value("kGravityCompensation", Nested::kGravityCompensation,
               nested_doc.kGravityCompensation.doc)

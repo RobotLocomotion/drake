@@ -30,7 +30,7 @@ void DefineSolversMixedIntegerRotationConstraint(py::module_ m) {
 
     using Enum = Class::Approach;
     constexpr auto& enum_doc = cls_doc.Approach;
-    py::enum_<Class::Approach>(cls, "Approach", enum_doc.doc)
+    enum_<Class::Approach>(cls, "Approach", enum_doc.doc)
         .value("kBoxSphereIntersection", Enum::kBoxSphereIntersection,
             enum_doc.kBoxSphereIntersection.doc)
         .value("kBilinearMcCormick", Enum::kBilinearMcCormick,

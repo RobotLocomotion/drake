@@ -22,7 +22,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = MaterialModel;
     constexpr auto& cls_doc = doc.MaterialModel;
-    py::enum_<Class>(m, "MaterialModel", cls_doc.doc)
+    enum_<Class>(m, "MaterialModel", cls_doc.doc)
         .value("kLinearCorotated", Class::kLinearCorotated,
             cls_doc.kLinearCorotated.doc)
         .value("kCorotated", Class::kCorotated, cls_doc.kCorotated.doc)
@@ -33,7 +33,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = drake::multibody::ForceDensityType;
     constexpr auto& cls_doc = doc_multibody.ForceDensityType;
-    py::enum_<Class>(m, "ForceDensityType", cls_doc.doc)
+    enum_<Class>(m, "ForceDensityType", cls_doc.doc)
         .value("kPerCurrentVolume", Class::kPerCurrentVolume,
             cls_doc.kPerCurrentVolume.doc)
         .value("kPerReferenceVolume", Class::kPerReferenceVolume,

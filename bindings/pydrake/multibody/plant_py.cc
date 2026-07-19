@@ -1691,7 +1691,7 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = ContactModel;
     constexpr auto& cls_doc = doc.ContactModel;
-    py::enum_<Class>(m, "ContactModel", cls_doc.doc)
+    enum_<Class>(m, "ContactModel", cls_doc.doc)
         .value("kHydroelastic", Class::kHydroelastic, cls_doc.kHydroelastic.doc)
         .value("kPoint", Class::kPoint, cls_doc.kPoint.doc)
         .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
@@ -1711,7 +1711,7 @@ PYDRAKE_MODULE(plant, m) {
     // uses below slightly confusing on first glance.
     using Class = DiscreteContactSolver;
     constexpr auto& cls_doc = doc.DiscreteContactSolver;
-    py::enum_<Class> cls(m, "DiscreteContactSolver", cls_doc.doc_deprecated);
+    enum_<Class> cls(m, "DiscreteContactSolver", cls_doc.doc_deprecated);
     // Remove on 2026-09-01 per TAMSI deprecation.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -1727,8 +1727,7 @@ PYDRAKE_MODULE(plant, m) {
     // uses below slightly confusing on first glance.
     using Class = DiscreteContactApproximation;
     constexpr auto& cls_doc = doc.DiscreteContactApproximation;
-    py::enum_<Class> cls(
-        m, "DiscreteContactApproximation", cls_doc.doc_deprecated);
+    enum_<Class> cls(m, "DiscreteContactApproximation", cls_doc.doc_deprecated);
     // Remove on 2026-09-01 per TAMSI deprecation.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -1746,7 +1745,7 @@ PYDRAKE_MODULE(plant, m) {
     using Class = BaseBodyJointType;
     constexpr auto& tree_doc = pydrake_doc_multibody_tree.drake.multibody;
     constexpr auto& cls_doc = tree_doc.BaseBodyJointType;
-    py::enum_<Class> cls(m, "BaseBodyJointType", cls_doc.doc);
+    enum_<Class> cls(m, "BaseBodyJointType", cls_doc.doc);
     cls.value("kQuaternionFloatingJoint", Class::kQuaternionFloatingJoint,
            cls_doc.kQuaternionFloatingJoint.doc)
         .value("kRpyFloatingJoint", Class::kRpyFloatingJoint,

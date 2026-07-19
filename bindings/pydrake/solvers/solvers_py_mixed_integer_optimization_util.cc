@@ -39,7 +39,7 @@ void DefineSolversMixedIntegerOptimizationUtil(py::module_ m) {
       doc.AddLogarithmicSos1Constraint.doc_2args);
 
   {
-    py::enum_<IntervalBinning>(m, "IntervalBinning", doc.IntervalBinning.doc)
+    enum_<IntervalBinning>(m, "IntervalBinning", doc.IntervalBinning.doc)
         .value("kLogarithmic", IntervalBinning::kLogarithmic)
         .value("kLinear", IntervalBinning::kLinear);
   }

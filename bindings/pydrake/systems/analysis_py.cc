@@ -72,7 +72,7 @@ PYDRAKE_MODULE(analysis, m) {
 
     using Enum = Class::ReturnReason;
     constexpr auto& enum_doc = cls_doc.ReturnReason;
-    py::enum_<Class::ReturnReason>(cls, "ReturnReason", enum_doc.doc)
+    enum_<Class::ReturnReason>(cls, "ReturnReason", enum_doc.doc)
         .value("kReachedBoundaryTime", Enum::kReachedBoundaryTime,
             enum_doc.kReachedBoundaryTime.doc)
         .value("kReachedTerminationCondition",

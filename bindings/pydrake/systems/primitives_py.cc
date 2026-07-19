@@ -64,7 +64,7 @@ PYDRAKE_MODULE(primitives, m) {
   py::module_::import_("pydrake.systems.framework");
   py::module_::import_("pydrake.trajectories");
 
-  py::enum_<PerceptronActivationType>(
+  enum_<PerceptronActivationType>(
       m, "PerceptronActivationType", doc.PerceptronActivationType.doc)
       .value("kIdentity", PerceptronActivationType::kIdentity,
           doc.PerceptronActivationType.kIdentity.doc)

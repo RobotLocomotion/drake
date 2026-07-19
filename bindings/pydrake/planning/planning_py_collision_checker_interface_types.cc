@@ -169,7 +169,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = RobotCollisionType;
     constexpr auto& cls_doc = doc.RobotCollisionType;
-    py::enum_<Class> cls(m, "RobotCollisionType", cls_doc.doc);
+    enum_<Class> cls(m, "RobotCollisionType", cls_doc.doc);
     cls  // BR
         .value("kNoCollision", Class::kNoCollision, cls_doc.kNoCollision.doc)
         .value("kEnvironmentCollision", Class::kEnvironmentCollision,

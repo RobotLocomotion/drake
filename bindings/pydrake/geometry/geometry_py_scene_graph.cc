@@ -43,7 +43,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = HydroelasticContactRepresentation;
     constexpr auto& cls_doc =
         doc_query_results.HydroelasticContactRepresentation;
-    py::enum_<Class>(m, "HydroelasticContactRepresentation", cls_doc.doc)
+    enum_<Class>(m, "HydroelasticContactRepresentation", cls_doc.doc)
         .value("kTriangle", Class::kTriangle, cls_doc.kTriangle.doc)
         .value("kPolygon", Class::kPolygon, cls_doc.kPolygon.doc);
   }

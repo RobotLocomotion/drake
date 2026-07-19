@@ -57,7 +57,7 @@ constexpr auto& doc =
 
 // Definitions for cspace_separating_plane.h.
 void DefineCspaceSeparatingPlane(py::module_ m) {
-  py::enum_<SeparatingPlaneOrder>(
+  enum_<SeparatingPlaneOrder>(
       m, "SeparatingPlaneOrder", doc.SeparatingPlaneOrder.doc)
       .value("kAffine", SeparatingPlaneOrder::kAffine,
           doc.SeparatingPlaneOrder.kAffine.doc);
@@ -828,7 +828,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
 
     // Transcription
     constexpr auto& enum_doc = doc.GraphOfConvexSets.Transcription;
-    py::enum_<GraphOfConvexSets::Transcription> enum_py(
+    enum_<GraphOfConvexSets::Transcription> enum_py(
         graph_of_convex_sets, "Transcription", enum_doc.doc);
     enum_py  // BR
         .value(
@@ -1186,12 +1186,11 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
 // Definitions for c_iris_collision_geometry.h.
 void DefineCIrisCollisionGeometry(py::module_ m) {
   {
-    py::enum_<PlaneSide>(m, "PlaneSide", doc.PlaneSide.doc)
+    enum_<PlaneSide>(m, "PlaneSide", doc.PlaneSide.doc)
         .value("kPositive", PlaneSide::kPositive)
         .value("kNegative", PlaneSide::kNegative);
 
-    py::enum_<CIrisGeometryType>(
-        m, "CIrisGeometryType", doc.CIrisGeometryType.doc)
+    enum_<CIrisGeometryType>(m, "CIrisGeometryType", doc.CIrisGeometryType.doc)
         .value("kPolytope", CIrisGeometryType::kPolytope,
             doc.CIrisGeometryType.kPolytope.doc)
         .value("kSphere", CIrisGeometryType::kSphere,
@@ -1361,7 +1360,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
             &Class::FindSeparationCertificateGivenPolytopeOptions::
                 ignore_redundant_C);
 
-    py::enum_<Class::EllipsoidMarginCost>(cspace_free_polytope_cls,
+    enum_<Class::EllipsoidMarginCost>(cspace_free_polytope_cls,
         "EllipsoidMarginCost", cls_doc.EllipsoidMarginCost.doc)
         .value("kSum", Class::EllipsoidMarginCost::kSum)
         .value("kGeometricMean", Class::EllipsoidMarginCost::kGeometricMean);

@@ -23,7 +23,7 @@ void DefineSensorsImage(py::module_ m) {
   // functions as `__str__` in Python. The `enum.Enum` class already provides a
   // `__str__` that looks more Pythonic than our C++ `to_string`.
 
-  py::enum_<PixelFormat>(m, "PixelFormat")
+  enum_<PixelFormat>(m, "PixelFormat")
       .value("kRgb", PixelFormat::kRgb)
       .value("kBgr", PixelFormat::kBgr)
       .value("kRgba", PixelFormat::kRgba)
@@ -32,7 +32,7 @@ void DefineSensorsImage(py::module_ m) {
       .value("kDepth", PixelFormat::kDepth)
       .value("kLabel", PixelFormat::kLabel);
 
-  py::enum_<PixelScalar>(m, "PixelScalar")
+  enum_<PixelScalar>(m, "PixelScalar")
       .value("k8U", PixelScalar::k8U)
       .value("k16I", PixelScalar::k16I)
       .value("k16U", PixelScalar::k16U)
@@ -40,7 +40,7 @@ void DefineSensorsImage(py::module_ m) {
 
   {
     // Expose image types and their traits.
-    py::enum_<PixelType> pixel_type(m, "PixelType");
+    enum_<PixelType> pixel_type(m, "PixelType");
 
     // This uses the `type_visit` pattern for looping. See `type_pack_test.cc`
     // for more information on the pattern.
