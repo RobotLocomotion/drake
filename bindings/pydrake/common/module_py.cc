@@ -49,8 +49,8 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
   bool is_new{false};
   PyObject* result{};
   auto bound_type = internal::AliasRegistry::Unalias(&ptr.info);
-  if (ptr.info_dynamic) {
-    result = py::detail::nb_type_put_p(bound_type, ptr.info_dynamic,
+  if (ptr.is_polymorphic) {
+    result = py::detail::nb_type_put_p(bound_type, &ptr.info,
         const_cast<void*>(ptr.raw), py_rvp::reference, nullptr, &is_new);
   } else {
     result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
