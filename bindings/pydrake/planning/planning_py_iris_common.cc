@@ -117,7 +117,7 @@ void DefinePlanningIrisParameterizationFunction(py::module_ m) {
 
   const std::string parameterization_function_docstring = R"(
 Constructor for when the user provides a callable function to be used as the
-parameterization. ``parameterization`` is the function itself and ``dimension``
+parameterization. ``parameterization`` is the function itself and ``dimension`` 
 is the input dimension.
 
 .. note:: In order to use IrisNp2, the user-provided parameterization function
