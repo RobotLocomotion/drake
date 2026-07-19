@@ -6,8 +6,6 @@
 #include <string>
 #include <utility>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"

@@ -1,8 +1,6 @@
 #include <memory>
 #include <string>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/common.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/submodules_py.h"

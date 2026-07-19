@@ -7,8 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/systems_framework.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"

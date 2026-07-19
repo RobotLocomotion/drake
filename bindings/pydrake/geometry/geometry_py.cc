@@ -1,7 +1,5 @@
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
 namespace drake {

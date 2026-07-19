@@ -5,8 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/common_trajectories.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"

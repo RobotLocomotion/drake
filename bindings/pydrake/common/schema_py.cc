@@ -2,8 +2,6 @@
 #include <string>
 #include <vector>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/common_schema.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"

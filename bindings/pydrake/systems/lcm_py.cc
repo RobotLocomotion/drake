@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/generated_docstrings/systems_lcm.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
