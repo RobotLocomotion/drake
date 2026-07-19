@@ -83,8 +83,9 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   {
     using Class = LinearDistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.LinearDistanceAndInterpolationProvider;
-    class_<Class, DistanceAndInterpolationProvider, std::shared_ptr<Class>> cls(
-        m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
+    class_<Class, DistanceAndInterpolationProvider,
+        std::shared_ptr<LinearDistanceAndInterpolationProvider>>
+        cls(m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def(py::init<const drake::multibody::MultibodyPlant<double>&>(),
             py::arg("plant"), cls_doc.ctor.doc_1args_plant)
