@@ -208,13 +208,27 @@ def drake_py_test(
             for x in ["bindings/pydrake", "examples", "tutorials"]
         ])
     if test_alt_binder:
+        alt_target_compatible_with, _ = combine_conditions(
+            name = name,
+            opt_in_condition = opt_in_condition,
+            opt_out_conditions = (opt_out_conditions or []) + [
+                # Sanitizers and memcheck use `test_lang_filters` to opt-out of
+                # py_tests, but for some reason that filter doesn't work on the
+                # alt_binder tests, so we need to skip them explicitly.
+                "//tools:using_sanitizer",
+                "//tools/valgrind:enabled",
+                # Python coverage tests are allowed in `test_lang_filters`, but
+                # we actually only want coverage of the primary binder.
+                "//tools/kcov:enabled",
+            ],
+        )
         py_test_with_alt_binder(
             name = "alt_binder/" + name,
             main = kwargs.pop("main", None) or "{}.py".format(name),
             size = size,
             srcs = srcs,
             deps = deps,
-            target_compatible_with = target_compatible_with,
+            target_compatible_with = alt_target_compatible_with,
             python_version = "PY3",
             srcs_version = "PY3",
             **kwargs
