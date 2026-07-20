@@ -227,6 +227,7 @@ void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   // Per-pair data.
   p_BC_W_.Resize(num_pairs, 3, 1);
   normal_W_.Resize(num_pairs, 3, 1);
+  v_b_W_.Resize(num_pairs, 3, 1);
   stiffness_.resize(num_pairs);
   fe0_.resize(num_pairs);
   fn0_.resize(num_pairs);
@@ -270,7 +271,8 @@ void PatchConstraintsPool<T>::SetPair(const int patch_index,
                                       const int pair_index,
                                       const Vector3<T>& p_BoC_W,
                                       const Vector3<T>& normal_W, const T& fe0,
-                                      const T& stiffness) {
+                                      const T& stiffness,
+                                      const Vector3<T>& v_b_W) {
   using std::max;
   DRAKE_ASSERT(0 <= patch_index && patch_index < num_patches());
   DRAKE_ASSERT(0 <= pair_index && pair_index < num_pairs_[patch_index]);
@@ -278,6 +280,7 @@ void PatchConstraintsPool<T>::SetPair(const int patch_index,
 
   p_BC_W_[i] = p_BoC_W;
   normal_W_[i] = normal_W;
+  v_b_W_[i] = v_b_W;
   fe0_[i] = fe0;
   stiffness_[i] = stiffness;
 
@@ -298,6 +301,13 @@ void PatchConstraintsPool<T>::SetPair(const int patch_index,
     const auto v_WA = V_WA.template tail<3>();
     v_AcBc_W -= (v_WA + w_WA.cross(p_AC_W));
   }
+
+  // Include the surface-velocity bias so the lagged normal impulse and friction
+  // coefficient below reflect the physical contact velocity v_AcBc_W = J⋅v +
+  // v_b_W. The bias applies even when body A is anchored (num_cliques == 1),
+  // e.g. an anchored conveyor belt, since v_b_W already accounts for both
+  // bodies' surface velocities.
+  v_AcBc_W += v_b_W;
 
   // N.B. the normal impulse is n₀ = (δt⋅fₑ₀))₊(1−dvₙ₀)₊, where (·)₊ = max(0,·).
   // However, model.time_step() may change between when the constraint is set
@@ -589,9 +599,12 @@ void PatchConstraintsPool<T>::ReduceInto(
       if (need_flip) {
         reduced_pool->p_BC_W_.Add(3, 1) = p_AB_W_[k] + p_BC_W_[from];
         reduced_pool->normal_W_.Add(3, 1) = -normal_W_[from];
+        // v_b_W = v_B_ss - v_A_ss flips sign when bodies A and B are swapped.
+        reduced_pool->v_b_W_.Add(3, 1) = -v_b_W_[from];
       } else {
         reduced_pool->p_BC_W_.Add(3, 1) = p_BC_W_[from];
         reduced_pool->normal_W_.Add(3, 1) = normal_W_[from];
+        reduced_pool->v_b_W_.Add(3, 1) = v_b_W_[from];
       }
       reduced_pool->stiffness_.push_back(stiffness_[from]);
       reduced_pool->fe0_.push_back(fe0_[from]);
@@ -719,6 +732,10 @@ void PatchConstraintsPool<T>::CalcContactVelocities(
         const auto v_WA = V_WA.template tail<3>();
         v_AcBc_W -= (v_WA + w_WA.cross(p_AC_W));
       }
+
+      // Surface-velocity bias: v_AcBc_W = J⋅v + v_b_W. Applied for any number
+      // of cliques (an anchored body A can still carry a surface velocity).
+      v_AcBc_W += v_b_W_[pk];
     }
   }
 }

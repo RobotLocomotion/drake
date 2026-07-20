@@ -793,11 +793,15 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
     const Vector3<T> nhat_AB_W = sorted.bodyB == bodyN ? -nhat_NM_W : nhat_NM_W;
     const T fn0 = k * point_pair.depth;
 
+    // Surface-velocity bias at the contact point.
+    const Vector3<T> v_b_W = CalcSurfaceVelocityBias(context, *sorted.bodyA,
+                                                     *sorted.bodyB, nhat_AB_W);
+
     // For point contact we add single-pair patches.
     patches.SetPatch(point_pair_index, sorted.bodyA->index(),
                      sorted.bodyB->index(), d, mu.static_friction(),
                      mu.dynamic_friction(), p_AB_W);
-    patches.SetPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k);
+    patches.SetPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k, v_b_W);
   }
 }
 
@@ -887,9 +891,24 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
       // ensure that the problem is always convex.
       const T k = max(Ae * g, 0.0);
 
-      patches.SetPair(patch_index, face, p_BoC_W, nhat_AB_W, fn0, k);
+      // Surface-velocity bias at this face's contact point, world frame.
+      // Computed per face because each face's normal can differ.
+      const Vector3<T> v_b_W = CalcSurfaceVelocityBias(
+          context, *sorted.bodyA, *sorted.bodyB, nhat_AB_W);
+
+      patches.SetPair(patch_index, face, p_BoC_W, nhat_AB_W, fn0, k, v_b_W);
     }
   }
+}
+
+template <typename T>
+Vector3<T> IcfBuilder<T>::CalcSurfaceVelocityBias(
+    const systems::Context<T>& context, const RigidBody<T>& bodyA,
+    const RigidBody<T>& bodyB, const Vector3<T>& nhat_AB_W) const {
+  Vector3<T> v_b_W = Vector3<T>::Zero();
+  MultibodyPlantIcfAttorney<T>::AddSurfaceVelocityBias(
+      plant_, context, bodyA.index(), bodyB.index(), -nhat_AB_W, &v_b_W);
+  return v_b_W;
 }
 
 template <typename T>
