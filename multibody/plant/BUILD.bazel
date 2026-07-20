@@ -1314,6 +1314,7 @@ drake_cc_googletest(
         ":plant",
         "//common:value",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/cenic:cenic_integrator",
         "//systems/analysis:simulator",
         "//systems/framework:bus_value",
     ],

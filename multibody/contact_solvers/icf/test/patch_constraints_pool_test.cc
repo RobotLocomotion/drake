@@ -6,11 +6,13 @@
 #include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/test_utilities/icf_model_test_helpers.h"
 
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -19,6 +21,19 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 namespace {
+
+/* Re-supplies every pair in `pool` with its existing geometry plus the given
+per-pair surface-velocity bias (indexed by patch_pair_index). */
+void InjectSurfaceVelocityBias(PatchConstraintsPool<double>* pool,
+                               const std::vector<Vector3d>& biases) {
+  for (int p = 0; p < pool->num_patches(); ++p) {
+    for (int k = 0; k < pool->num_pairs(p); ++k) {
+      const int pk = pool->patch_pair_index(p, k);
+      pool->SetPair(p, k, pool->p_BC_W()[pk], pool->normal_W()[pk],
+                    pool->fe0()[pk], pool->stiffness()[pk], biases.at(pk));
+    }
+  }
+}
 
 /* Checks that model.CalcData does not incur any heap allocations for a model
 with contact constraints. */
@@ -192,6 +207,127 @@ GTEST_TEST(PatchConstraintsPool, Reduce) {
   std::vector<int> all_locked(model.num_velocities());
   std::iota(all_locked.begin(), all_locked.end(), 0);
   check_reduced(all_locked);
+}
+
+/* The live per-pair contact velocity computed by CalcData() must be the
+relative velocity J⋅v plus the surface-velocity bias v_b. We verify this across
+all three patch topologies exercised by AddPatchConstraints() (floating body A,
+floating body B, and an anchored body A). */
+GTEST_TEST(PatchConstraintsPool, CalcDataWithSurfaceVelocityBias) {
+  // Reference model, with zero bias.
+  IcfModel<double> model_ref;
+  MakeUnconstrainedModel(&model_ref);
+  AddPatchConstraints(&model_ref);
+
+  // Biased model: identical, but with a distinct bias injected per pair.
+  IcfModel<double> model_bias;
+  MakeUnconstrainedModel(&model_bias);
+  AddPatchConstraints(&model_bias);
+  const std::vector<Vector3d> biases = {Vector3d(0.1, 0.2, 0.3),
+                                        Vector3d(-0.4, 0.5, -0.6),
+                                        Vector3d(0.7, -0.8, 0.9)};
+  InjectSurfaceVelocityBias(&model_bias.patch_constraints_pool(), biases);
+
+  const int nv = model_ref.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
+
+  IcfData<double> data_ref;
+  model_ref.ResizeData(&data_ref);
+  model_ref.CalcData(v, &data_ref);
+
+  IcfData<double> data_bias;
+  model_bias.ResizeData(&data_bias);
+  model_bias.CalcData(v, &data_bias);
+
+  const auto& v_ref = data_ref.patch_constraints_data().v_AcBc_W_pool();
+  const auto& v_bias = data_bias.patch_constraints_data().v_AcBc_W_pool();
+  const auto& pool = model_bias.patch_constraints_pool();
+  ASSERT_EQ(pool.total_num_pairs(), ssize(biases));
+  for (int pk = 0; pk < pool.total_num_pairs(); ++pk) {
+    SCOPED_TRACE(fmt::format("pair {}", pk));
+    EXPECT_TRUE(CompareMatrices(v_bias[pk], v_ref[pk] + biases[pk], 1e-13));
+  }
+}
+
+/* The lagged, previous-step normal force fn0 is computed in SetPair() from the
+previous-step contact velocity, which must include the surface-velocity bias.
+We verify this by contrasting a strongly separating vs. strongly approaching
+normal bias on the same pair: a separating bias over-damps the Hunt & Crossley
+model (fn0 clamped to zero), while an approaching bias yields fn0 > 0. This is
+robust to the (unknown) baseline contact velocity of the test fixture. */
+GTEST_TEST(PatchConstraintsPool, LaggedQuantitiesWithSurfaceVelocityBias) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddPatchConstraints(&model);
+  auto& pool = model.patch_constraints_pool();
+
+  // Patch 1 is the anchored (world) + dynamic-body patch, with normal +ŷ. Its
+  // fe0 = 1.5 > 0, so fn0 is driven purely by the Hunt & Crossley damping term.
+  const int pk = pool.patch_pair_index(1, 0);
+  std::vector<Vector3d> biases(pool.total_num_pairs(), Vector3d::Zero());
+
+  // Strongly separating (+ŷ) bias: bodies move apart, damping → 0, fn0 = 0.
+  biases[pk] = Vector3d(0.0, 100.0, 0.0);
+  InjectSurfaceVelocityBias(&pool, biases);
+  const double fn0_separating = pool.fn0()[pk];
+
+  // Strongly approaching (−ŷ) bias: the damping term stays positive, fn0 > 0.
+  biases[pk] = Vector3d(0.0, -100.0, 0.0);
+  InjectSurfaceVelocityBias(&pool, biases);
+  const double fn0_approaching = pool.fn0()[pk];
+
+  EXPECT_EQ(fn0_separating, 0.0);
+  EXPECT_GT(fn0_approaching, 0.0);
+}
+
+/* ReduceInto() must carry the per-pair surface-velocity bias through to the
+reduced pool, negating it whenever the body pair is flipped (since
+v_b = v_B_ss - v_A_ss changes sign when A and B are swapped). */
+GTEST_TEST(PatchConstraintsPool, ReduceWithSurfaceVelocity) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddPatchConstraints(&model);
+  const std::vector<Vector3d> biases = {Vector3d(0.1, 0.2, 0.3),
+                                        Vector3d(-0.4, 0.5, -0.6),
+                                        Vector3d(0.7, -0.8, 0.9)};
+  InjectSurfaceVelocityBias(&model.patch_constraints_pool(), biases);
+
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+
+  auto check_reduced = [&](const std::vector<int>& locked_dofs) {
+    SCOPED_TRACE(fmt::format("locked_dofs [{}]", fmt::join(locked_dofs, ", ")));
+    MakeModelReducible(&model, locked_dofs);
+    model.ReduceInto(&reduced_model, &mapping);
+
+    const auto& full_pool = model.patch_constraints_pool();
+    const auto& reduced_pool = reduced_model.patch_constraints_pool();
+
+    int r_k{0};
+    for (int k = 0; k < full_pool.num_constraints(); ++k) {
+      const auto& [b, a] = full_pool.bodies()[k];
+      const int clique_b = model.params().body_to_clique[b];
+      const int clique_a = model.params().body_to_clique[a];
+      const bool have_b = mapping.clique_subsequence.participates(clique_b);
+      const bool have_a =
+          clique_a >= 0 && mapping.clique_subsequence.participates(clique_a);
+      if (!(have_a || have_b)) continue;
+      const bool is_flipped = have_a && !have_b;
+      for (int q = 0; q < full_pool.num_pairs(k); ++q) {
+        const int p = full_pool.patch_pair_index(k, q);
+        const int r_p = reduced_pool.patch_pair_index(r_k, q);
+        const Vector3d expected =
+            is_flipped ? Vector3d(-full_pool.v_b_W()[p]) : full_pool.v_b_W()[p];
+        EXPECT_TRUE(CompareMatrices(reduced_pool.v_b_W()[r_p], expected, 0.0));
+      }
+      ++r_k;
+    }
+  };
+
+  check_reduced({});                  // Copy (no reduction).
+  check_reduced({0, 1, 2, 3, 4, 5});  // Lock clique 0.
+  // Lock clique 1; body 1 becomes anchored, flipping patch 0 (A=2, B=1).
+  check_reduced({6, 7, 8, 9, 10, 11});
 }
 
 }  // namespace
