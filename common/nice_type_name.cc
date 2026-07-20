@@ -120,11 +120,12 @@ string NiceTypeName::RemoveNamespaces(const string& canonical) {
 }
 
 std::string NiceTypeName::GetWithPossibleOverride(const void* ptr,
-                                                  const std::type_info& info) {
+                                                  const std::type_info& info,
+                                                  bool is_polymorphic) {
   internal::NiceTypeNamePtrOverride ptr_override =
       internal::GetNiceTypeNamePtrOverride();
   if (ptr_override) {
-    return ptr_override(internal::type_erased_ptr{ptr, info});
+    return ptr_override(internal::type_erased_ptr{ptr, info, is_polymorphic});
   } else {
     return Get(info);
   }

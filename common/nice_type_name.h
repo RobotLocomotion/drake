@@ -70,7 +70,8 @@ class NiceTypeName {
   differ. */
   template <typename T>
   static std::string Get(const T& thing) {
-    return GetWithPossibleOverride(&thing, typeid(thing));
+    constexpr bool is_polymorphic = std::is_polymorphic_v<T>;
+    return GetWithPossibleOverride(&thing, typeid(thing), is_polymorphic);
   }
 
   /** Returns the nicely demangled and canonicalized type name of `info`. This
@@ -109,7 +110,8 @@ class NiceTypeName {
   NiceTypeName() = delete;
 
   static std::string GetWithPossibleOverride(const void* ptr,
-                                             const std::type_info& info);
+                                             const std::type_info& info,
+                                             bool is_polymorphic);
 };
 
 }  // namespace drake
