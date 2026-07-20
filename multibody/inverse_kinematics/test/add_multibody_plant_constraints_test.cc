@@ -82,6 +82,27 @@ class AddMultibodyPlantConstraintsTest : public ::testing::Test {
 
     prog.SetInitialGuessForAllVariables(qn);
     EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
+
+    // Except for coupler constraints (and unit quaterion constraints),
+    // AddMultibodyPlantConstraints requires a non-null plant_context.
+    // Verify that a null plant_context throws if and only if the plant
+    // has constraints that require a context.
+    const int num_context_required_constraints =
+        plant_->num_constraints() - plant_->num_coupler_constraints();
+    solvers::MathematicalProgram no_context_prog;
+    auto no_context_q =
+        no_context_prog.NewContinuousVariables(plant_->num_positions());
+    auto add_constraints_no_context = [&]() {
+      return AddMultibodyPlantConstraints(plant_, no_context_q,
+                                          &no_context_prog,
+                                          /* plant_context = */ nullptr);
+    };
+    if (num_context_required_constraints > 0) {
+      EXPECT_THROW(add_constraints_no_context(), std::exception);
+    } else {
+      auto no_context_constraints = add_constraints_no_context();
+      EXPECT_EQ(no_context_constraints.size(), expected_num_constraints);
+    }
   }
 
  protected:
