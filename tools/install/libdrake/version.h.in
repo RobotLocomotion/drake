@@ -1,0 +1,50 @@
+#pragma once
+
+// This header is generated from version.h.in; do not edit it by hand.
+//
+// It exposes Drake's version as preprocessor macros, derived from the same
+// version stamp that populates drake-config.cmake (see
+// drake/tools/install/libdrake). For an unstamped build (e.g. a plain
+// `bazel build`), the version string is "unknown" and all numeric components
+// are 0.
+
+/** Drake's full version string, e.g. "1.51.1", or "unknown" for an unstamped
+build. */
+#define DRAKE_VERSION_STR "@DRAKE_VERSION@"
+
+/** The major, minor, patch, and tweak version components. For a stable
+release such as "1.51.1", these are 1, 51, 1, and 0. When the version string
+is "0.0.<yyyymmdd>[.<hhmmss>]" (a nightly, snapshot, or local CMake build),
+MAJOR and MINOR are 0, PATCH is the build date yyyymmdd, and TWEAK is the
+build time (or 0). When the version is "unknown" (an unstamped build such as a
+plain `bazel build`), all four are 0. */
+#define DRAKE_VERSION_MAJOR @DRAKE_VERSION_MAJOR@
+#define DRAKE_VERSION_MINOR @DRAKE_VERSION_MINOR@
+#define DRAKE_VERSION_PATCH @DRAKE_VERSION_PATCH@
+#define DRAKE_VERSION_TWEAK @DRAKE_VERSION_TWEAK@
+
+/** Evaluates to true iff this build of Drake is at least as new as the given
+release. It handles both stable releases and nightly/snapshot builds:
+
+- For a stable release (e.g. "1.51.1"), it is true iff the version is greater
+  than or equal to (major, minor, patch); the yyyymmdd argument is ignored.
+- For a nightly or snapshot build (whose version is "0.0.<yyyymmdd>[...]"), it
+  is true iff the build date is greater than or equal to the given yyyymmdd.
+
+The yyyymmdd argument is the nightly date that corresponds to the stable
+(major, minor, patch) release. Intended for use in preprocessor conditionals:
+
+  #if DRAKE_VERSION_AT_LEAST(1, 51, 1, 20260311)
+  // ... use a newer Drake API ...
+  #endif
+
+For an unstamped build where the version is unknown (all components 0), this
+evaluates to false. */
+#define DRAKE_VERSION_AT_LEAST(major, minor, patch, yyyymmdd) \
+  ((DRAKE_VERSION_MAJOR == 0 && DRAKE_VERSION_MINOR == 0)     \
+       ? (DRAKE_VERSION_PATCH >= (yyyymmdd))                  \
+       : (DRAKE_VERSION_MAJOR > (major) ||                    \
+          (DRAKE_VERSION_MAJOR == (major) &&                  \
+           (DRAKE_VERSION_MINOR > (minor) ||                  \
+            (DRAKE_VERSION_MINOR == (minor) &&                \
+             DRAKE_VERSION_PATCH >= (patch))))))
