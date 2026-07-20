@@ -17,6 +17,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/cenic/cenic_integrator.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -597,6 +598,7 @@ struct OrthogonalContactTestConfig {
   std::string description;
   MultibodyPlantConfig plant_config;
   bool use_deformable{false};
+  bool use_cenic{false};
 };
 
 // Formatter for OrthogonalContactTestConfig so that if a test fails, we get
@@ -607,7 +609,8 @@ void PrintTo(const OrthogonalContactTestConfig& config, std::ostream* os) {
       << ", contact_model: " << plant_config.contact_model
       << ", discrete_contact_approximation: "
       << plant_config.discrete_contact_approximation
-      << ", use_deformable: " << config.use_deformable << " }";
+      << ", use_deformable: " << config.use_deformable
+      << ", use_cenic: " << config.use_cenic << " }";
 }
 
 class OrthogonalSurfaceVelocityTest
@@ -621,6 +624,7 @@ class OrthogonalSurfaceVelocityTest
   static constexpr double kMu = 1.0;
   static constexpr double kGroundSpeed = 1.0;  // m/s
   static constexpr double kBoxSpeed = 1.0;     // m/s
+  static constexpr double kCenicTimeStep = 1e-3;
 
   void SetUp() override {
     const auto& config = GetParam().plant_config;
@@ -695,6 +699,11 @@ class OrthogonalSurfaceVelocityTest
       bus.Set(box_->scoped_name().to_string(), Value<double>(kBoxSpeed));
     }
     plant_->get_surface_speeds_input_port().FixValue(&plant_context, bus);
+    if (GetParam().use_cenic) {
+      auto& integrator = sim_->reset_integrator<CenicIntegrator<double>>();
+      integrator.set_fixed_step_mode(true);
+      integrator.set_maximum_step_size(kCenicTimeStep);
+    }
     sim_->Initialize();
   }
 
@@ -787,8 +796,13 @@ class OrthogonalSurfaceVelocityTest
 TEST_P(OrthogonalSurfaceVelocityTest, ContactForceTangentialDirection) {
   const double time_step = GetParam().plant_config.time_step;
   // Discrete: advance one step to populate DiscreteStepMemory.
-  // Continuous: contact results are available on demand at t = 0.
-  if (time_step > 0.0) sim_->AdvanceTo(time_step);
+  // CENIC: advance one step to exercise its ICF solve.
+  // Other continuous: contact results are available on demand at t = 0.
+  if (time_step > 0.0) {
+    sim_->AdvanceTo(time_step);
+  } else if (GetParam().use_cenic) {
+    sim_->AdvanceTo(kCenicTimeStep);
+  }
   const Vector3d f = ContactForceOnContactingBody(
       plant_->GetMyContextFromRoot(sim_->get_context()));
 
@@ -863,6 +877,10 @@ INSTANTIATE_TEST_SUITE_P(
           // terrifyingly slow.
           {"continuous_point", continuous_point},
           {"continuous_hydro", continuous_hydro},
+          {"continuous_point_cenic", continuous_point,
+           /* use_deformable = */ false, /* use_cenic = */ true},
+          {"continuous_hydro_cenic", continuous_hydro,
+           /* use_deformable = */ false, /* use_cenic = */ true},
           {"discrete_point_sap", discrete_point_sap},
           {"discrete_hydro_sap", discrete_hydro_sap},
           {"discrete_deformable_sap", discrete_hydro_sap,
