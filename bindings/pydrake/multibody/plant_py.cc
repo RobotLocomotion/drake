@@ -1691,17 +1691,15 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = ContactModel;
     constexpr auto& cls_doc = doc.ContactModel;
-    py::enum_<Class>(m, "ContactModel", cls_doc.doc)
+    py::enum_<Class> cls(m, "ContactModel", cls_doc.doc);
+    cls  // BR
         .value("kHydroelastic", Class::kHydroelastic, cls_doc.kHydroelastic.doc)
         .value("kPoint", Class::kPoint, cls_doc.kPoint.doc)
         .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
-            cls_doc.kHydroelasticWithFallback.doc)
-        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
-        .value("kHydroelasticsOnly", Class::kHydroelasticsOnly,
-            cls_doc.kHydroelasticsOnly.doc)
-        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
-        .value("kPointContactOnly", Class::kPointContactOnly,
-            cls_doc.kPointContactOnly.doc);
+            cls_doc.kHydroelasticWithFallback.doc);
+    // Legacy aliases. TODO(jwnimmer-tri) Deprecate these constants.
+    cls.attr("kHydroelasticsOnly") = cls.attr("kHydroelastic");
+    cls.attr("kPointContactOnly") = cls.attr("kPoint");
   }
 
   {
