@@ -36,6 +36,7 @@ def drake_py_binary(
         test_rule_timeout = None,
         test_rule_flaky = False,
         test_rule_rendering = False,
+        test_rule_test_alt_binder = "auto",
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
     """
@@ -74,6 +75,7 @@ def drake_py_binary(
                 "//tools/kcov:enabled",
             ],
             rendering = test_rule_rendering,
+            test_alt_binder = test_rule_test_alt_binder,
             tags = (test_rule_tags or []) + ["nolint"],
             # The added test rule isn't going to `import unittest`, but test
             # dependencies such as numpy(!!) do so unconditionally.  We should

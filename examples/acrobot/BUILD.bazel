@@ -225,6 +225,7 @@ drake_py_binary(
         "--ensemble_size=3",
         "--num_evaluations=3",
     ],
+    test_rule_test_alt_binder = False,
 )
 
 drake_cc_binary(
