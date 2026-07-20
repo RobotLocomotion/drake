@@ -12,6 +12,10 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
 
         cc_content_drake = """
             #include <drake/common/symbolic/expression.h>
+            #include <drake/version.h>
+            // Confirm the installed drake/version.h is includable and that its
+            // macros are usable in a constant expression.
+            static_assert(DRAKE_VERSION_AT_LEAST(0, 0, 0, 0));
             int main() {
               drake::symbolic::Environment environment;
               return 0;
