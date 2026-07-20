@@ -50,14 +50,7 @@ PYDRAKE_MODULE(rational, m) {
             cls_doc.ConvertMultilinearPolynomialToRationalFunction.doc)
         .def("plant", &Class::plant, py_rvp::reference_internal,
             cls_doc.plant.doc)
-        .def(
-            "s",
-            // XXX(eigen) See if we can teach our caster about py_rvp::copy.
-            // dtype = object arrays must be copied, and cannot be referenced.
-            [](const Class& self) -> VectorX<symbolic::Variable> {
-              return self.s();
-            },
-            cls_doc.s.doc)
+        .def("s", &Class::s, py_rvp::copy, cls_doc.s.doc)
         .def(
             "ComputeSValue",
             [](const Class& self, const Eigen::VectorXd& q_val,

@@ -389,6 +389,7 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 
 /// Allow numpy arrays of with dtype=object containing `Type` objects to convert
 /// to and from Eigen matrices of `Type`.
+// XXX(eigen) porting The Ref and Map should disallow mutable matrices.
 #ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 #else  // PYDRAKE_USE_NANOBIND
@@ -423,6 +424,30 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
             : 0,                                                               \
         PlainObjectType::MaxRowsAtCompileTime,                                 \
         PlainObjectType::MaxColsAtCompileTime>;                                \
+    template <typename T>                                                      \
+    using Cast = _matrix;                                                      \
+    explicit operator _matrix() const { return this->value; }                  \
+  };                                                                           \
+  template <typename MatrixType, int MapOptions, typename StrideType>          \
+  struct type_caster<Eigen::Map<MatrixType, MapOptions, StrideType>,           \
+      enable_if_t<std::is_same_v<                                              \
+          std::remove_cv_t<typename MatrixType::Scalar>, Type>>>               \
+      : public pydrake_numpy_dtype_object_type_caster<                         \
+            Eigen::Matrix<typename MatrixType::Scalar,                         \
+                MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime,  \
+                (MatrixType::RowsAtCompileTime == 1 &&                         \
+                    MatrixType::ColsAtCompileTime != 1)                        \
+                    ? Eigen::RowMajor                                          \
+                    : 0,                                                       \
+                MatrixType::MaxRowsAtCompileTime,                              \
+                MatrixType::MaxColsAtCompileTime>> {                           \
+    using _matrix = Eigen::Matrix<typename MatrixType::Scalar,                 \
+        MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime,          \
+        (MatrixType::RowsAtCompileTime == 1 &&                                 \
+            MatrixType::ColsAtCompileTime != 1)                                \
+            ? Eigen::RowMajor                                                  \
+            : 0,                                                               \
+        MatrixType::MaxRowsAtCompileTime, MatrixType::MaxColsAtCompileTime>;   \
     template <typename T>                                                      \
     using Cast = _matrix;                                                      \
     explicit operator _matrix() const { return this->value; }                  \
