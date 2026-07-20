@@ -227,6 +227,47 @@ install(
     data_dest = "lib/python@PYTHON_VERSION@/site-packages/drake.dist-info",
 )
 
+# Generate drake/version_values.h (the concrete values consumed by the
+# hand-written drake/version.h) from the version stamp.
+cmake_configure_file(
+    name = "version_values_header",
+    src = "version_values.h.in",
+    out = "version_values.h",
+    atonly = True,
+    cmakelists = [
+        ":stamp_version.cmake",
+    ],
+)
+
+# Expose drake/version.h.
+drake_cc_library(
+    name = "version",
+    hdrs = [
+        "version.h",
+        ":version_values.h",
+    ],
+    strip_include_prefix = "/tools/install/libdrake",
+    # Downstream code should depend on the //:version alias, not this target.
+    visibility = ["//:__pkg__"],
+)
+
+# version.h is a documented public header; expose it to the C++ API doc build.
+# (The generated values header is internal and not documented.)
+exports_files(
+    ["version.h"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
+# Install both headers to include/drake/.
+install(
+    name = "install_version_header",
+    hdrs = [
+        "version.h",
+        ":version_values.h",
+    ],
+    hdr_dest = "include/drake",
+)
+
 # Verify that extra include paths are not leaking into our interface deps.
 cc_check_allowed_headers(
     name = "allowed_headers_lint",
@@ -342,6 +383,7 @@ install(
         ":install_cmake_config",
         ":install_libdrake",
         ":install_site_packages_metadata",
+        ":install_version_header",
     ],
 )
 
@@ -379,6 +421,7 @@ cc_library(
     visibility = ["//:__pkg__"],
     deps = [
         ":drake_headers",
+        ":version",
     ],
 )
 
@@ -421,6 +464,11 @@ drake_cc_test(
     # Using `drake_shared_library` can cause timeouts in debug mode.
     timeout = "moderate",
     deps = [":drake_shared_library"],
+)
+
+drake_cc_googletest(
+    name = "version_test",
+    deps = [":version"],
 )
 
 drake_cc_googletest(

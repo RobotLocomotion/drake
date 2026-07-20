@@ -43,6 +43,14 @@ alias(
     visibility = ["//visibility:public"],
 )
 
+# Provides the drake/version.h version macros (DRAKE_VERSION_STRING and
+# DRAKE_VERSION_AT_LEAST) for downstream C++ code.
+alias(
+    name = "version",
+    actual = "//tools/install/libdrake:version",
+    visibility = ["//visibility:public"],
+)
+
 # A manually-curated collection of most model files in Drake, so that we can
 # easily provide access to them for tools like //tools:model_visualizer.
 filegroup(

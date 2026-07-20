@@ -1,0 +1,13 @@
+#pragma once
+
+// This header is generated from version_values.h.in; do not edit it by hand.
+//
+// It defines the concrete Drake version values (from the same version stamp
+// that populates drake-config.cmake) that drake/version.h consumes. These
+// macros are for Drake's internal use only; downstream code should instead use
+// the macros in drake/version.h.
+
+#define DRAKE_VERSION_INTERNAL_STRING "@DRAKE_VERSION@"
+#define DRAKE_VERSION_INTERNAL_MAJOR @DRAKE_VERSION_MAJOR@
+#define DRAKE_VERSION_INTERNAL_MINOR @DRAKE_VERSION_MINOR@
+#define DRAKE_VERSION_INTERNAL_PATCH @DRAKE_VERSION_PATCH@
