@@ -227,6 +227,32 @@ install(
     data_dest = "lib/python@PYTHON_VERSION@/site-packages/drake.dist-info",
 )
 
+# Generate drake/version.h from the same version stamp.
+cmake_configure_file(
+    name = "version_header",
+    src = "version.h.in",
+    out = "version.h",
+    atonly = True,
+    cmakelists = [
+        ":stamp_version.cmake",
+    ],
+)
+
+# Expose the generated header as `#include "drake/version.h"`.
+drake_cc_library(
+    name = "version",
+    hdrs = [":version.h"],
+    strip_include_prefix = "/tools/install/libdrake",
+    visibility = ["//visibility:public"],
+)
+
+# Install the generated header to include/drake/version.h.
+install(
+    name = "install_version_header",
+    hdrs = [":version.h"],
+    hdr_dest = "include/drake",
+)
+
 # Verify that extra include paths are not leaking into our interface deps.
 cc_check_allowed_headers(
     name = "allowed_headers_lint",
@@ -342,6 +368,7 @@ install(
         ":install_cmake_config",
         ":install_libdrake",
         ":install_site_packages_metadata",
+        ":install_version_header",
     ],
 )
 
@@ -379,6 +406,7 @@ cc_library(
     visibility = ["//:__pkg__"],
     deps = [
         ":drake_headers",
+        ":version",
     ],
 )
 
@@ -421,6 +449,11 @@ drake_cc_test(
     # Using `drake_shared_library` can cause timeouts in debug mode.
     timeout = "moderate",
     deps = [":drake_shared_library"],
+)
+
+drake_cc_googletest(
+    name = "version_test",
+    deps = [":version"],
 )
 
 drake_cc_googletest(
