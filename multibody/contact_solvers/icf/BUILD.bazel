@@ -291,8 +291,13 @@ drake_cc_googletest(
     name = "icf_builder_test",
     deps = [
         ":icf_builder",
+        "//common:value",
         "//common/test_utilities",
+        "//geometry:proximity_properties",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
         "//multibody/parsing",
+        "//systems/framework:bus_value",
     ],
 )
 
@@ -356,6 +361,7 @@ drake_cc_googletest(
     deps = [
         ":icf_data",
         ":icf_model",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
