@@ -128,15 +128,9 @@ class PyRenderEngine : public RenderEngine {
     PYBIND11_OVERLOAD(std::string, Base, DoGetParameterYaml);
   }
 
-  void SetDefaultLightPosition(Vector3d const& X_DL) override {
-    PYBIND11_OVERLOAD(void, Base, SetDefaultLightPosition, X_DL);
-  }
-
-  // Expose these protected methods (which are either virtual methods with
-  // default implementations, or helper functions) so that Python
-  // implementations can access them.
+  // Expose this protected helper function so that Python implementations can
+  // access it.
   using Base::GetRenderLabelOrThrow;
-  using Base::SetDefaultLightPosition;
 
   template <typename ImageType>
   static void ThrowIfInvalid(const systems::sensors::CameraInfo& intrinsics,
@@ -350,10 +344,6 @@ void DoScalarIndependentDefinitions(py::module_ m) {
             static_cast<RenderLabel (Class::*)(PerceptionProperties const&)
                     const>(&PyRenderEngine::GetRenderLabelOrThrow),
             py::arg("properties"), cls_doc.GetRenderLabelOrThrow.doc)
-        .def("SetDefaultLightPosition",
-            static_cast<void (Class::*)(Vector3d const&)>(
-                &PyRenderEngine::SetDefaultLightPosition),
-            py::arg("X_DL"), cls_doc.SetDefaultLightPosition.doc)
         .def_static("ThrowIfInvalid",
             static_cast<void (*)(CameraInfo const&,
                 Image<PixelType::kRgba8U> const*, char const*)>(

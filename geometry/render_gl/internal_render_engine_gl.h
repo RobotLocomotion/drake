@@ -326,8 +326,6 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   ShaderProgramData GetShaderProgram(const PerceptionProperties& properties,
                                      RenderType render_type) const;
 
-  void SetDefaultLightPosition(const Vector3<double>& p_DL) override;
-
   const std::vector<render::LightParameter>& active_lights() const {
     if (active_lights_ == nullptr) {
       active_lights_ = parameters_.lights.size() > 0 ? &parameters_.lights
