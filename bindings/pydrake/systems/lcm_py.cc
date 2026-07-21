@@ -43,13 +43,13 @@ class SerializerInterfaceBuffered : public SerializerInterface {
 
   // This signature passes binary message data as py::bytes.
   void DeserializeBuffer(
-      const py::bytes& buffer, AbstractValue* abstract_value) const {
+      const py::bytes&, AbstractValue*) const {
     throw std::logic_error(
         "tried to call pure virtual function SerializerInterface::Deserialize");
   }
 
   // This signature returns binary message data as py::bytes.
-  py::bytes SerializeBuffer(const AbstractValue* abstract_value) const {
+  py::bytes SerializeBuffer(const AbstractValue*) const {
     throw std::logic_error(
         "tried to call pure virtual function SerializerInterface::Serialize");
   }
