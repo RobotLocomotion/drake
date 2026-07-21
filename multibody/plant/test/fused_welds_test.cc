@@ -206,7 +206,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
   // Note: Use a non-zero angular velocity so spatial momentum is non-trivial.
   const std::vector<double> angles = {0.0, M_PI / 6, M_PI / 4, -M_PI / 3};
   for (double angle : angles) {
-    SCOPED_TRACE(::testing::Message() << "angle = " << angle);
+    SCOPED_TRACE(fmt::format("angle = {}", angle));
     SetState(unfused_model, angle, 2.0 /* rad/s */);
     SetState(fused_model, angle, 2.0 /* rad/s */);
 
@@ -440,7 +440,7 @@ GTEST_TEST(FusedTest, CalcFrameBodyPosesAllPaths) {
   const auto& rev_f = plant_f->GetJointByName<RevoluteJoint>("revolute");
 
   for (const double angle : {M_PI / 5, -M_PI / 3}) {
-    SCOPED_TRACE(::testing::Message() << "angle = " << angle);
+    SCOPED_TRACE(fmt::format("angle = {}", angle));
     rev_nf.set_angle(context_nf.get(), angle);
     rev_f.set_angle(context_f.get(), angle);
 
