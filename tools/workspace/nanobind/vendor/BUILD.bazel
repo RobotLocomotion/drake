@@ -6,7 +6,7 @@ load(":defs.bzl", "extract_nanobind_header")
 
 package(default_visibility = ["//visibility:private"])
 
-# Drake uses a patched verison of nanobind's Eigen type casters, by checking the
+# Drake uses a patched version of nanobind's Eigen type casters, by checking the
 # modified headers into our source tree. Beyond just patching, this also allows
 # us to `deps = ...` on our specific choice of Eigen, instead of using the BCR
 # Eigen like is hard-coded into the @module_nanobind//:nanobind_eigen library.
@@ -76,11 +76,27 @@ sh_binary(
 [
     diff_test(
         name = "nanobind_eigen_{basename}_diff_test".format(basename = basename),
-        failure_message = (
-            "To fix, run this command:\n" +
-            "  cp bazel-bin/tools/workspace/nanobind/vendor/gen/{basename}.h " +
-            "tools/workspace/nanobind/vendor/drake_nanobind/eigen/{basename}.h"
-        ).format(basename = basename),
+        failure_message = "\n\n" + "\n".join([
+            "To fix, you have two choices:",
+            "",
+            "(1) If you upgraded nanobind and want to change Drake's vendored" +
+            " file to match, then run this command:",
+            "",
+            "  cp bazel-bin/{vendor_dir}/gen/{basename}.h" +
+            " {vendor_dir}/drake_nanobind/eigen/{basename}.h",
+            "",
+            "(2) If you edited the vendored file with more bug fixes and" +
+            " want to regenerate a new patch, then run this command (and then" +
+            " fix/rework the comment text):",
+            "",
+            "  diff -u" +
+            " bazel-drake/external/nanobind+/include/nanobind/eigen/{basename}.h" +
+            " {vendor_dir}/drake_nanobind/eigen/dense.h" +
+            " > {vendor_dir}/patches/dense.patch",
+        ]).format(
+            basename = basename,
+            vendor_dir = "tools/workspace/nanobind/vendor",
+        ),
         file1 = "drake_nanobind/eigen/{basename}.h".format(basename = basename),
         file2 = ":gen/{basename}.h".format(basename = basename),
         tags = ["lint"],
