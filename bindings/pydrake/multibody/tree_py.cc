@@ -1229,17 +1229,21 @@ class ForceDensityFieldPublic : public ForceDensityField<T> {
         plant, name, model_vector);
   }
 
+  using ForceDensityField<T>::DoDeclareCacheEntries;
+  using ForceDensityField<T>::DoDeclareInputPorts;
+
  protected:
   explicit ForceDensityFieldPublic(ForceDensityType density_type)
       : ForceDensityField<T>(density_type) {}
 };
 
 template <typename T>
-class DelegatedForceDensityField final : public ForceDensityField<T> {
+class DelegatedForceDensityField final : public ForceDensityFieldPublic<T> {
  public:
   explicit DelegatedForceDensityField(
       std::shared_ptr<ForceDensityField<T>> impl)
-      : ForceDensityField<T>(impl->density_type()), impl_(std::move(impl)) {
+      : ForceDensityFieldPublic<T>(impl->density_type()),
+        impl_(std::move(impl)) {
     DRAKE_THROW_UNLESS(impl_ != nullptr);
   }
 
@@ -1251,6 +1255,18 @@ class DelegatedForceDensityField final : public ForceDensityField<T> {
 
   std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const final {
     return impl_->Clone();
+  }
+
+  void DoDeclareCacheEntries(MultibodyPlant<T>* plant) final {
+    // We need a static_cast to get around protected access.
+    auto* impl = static_cast<ForceDensityFieldPublic<T>*>(impl_.get());
+    impl->DoDeclareCacheEntries(plant);
+  }
+
+  void DoDeclareInputPorts(MultibodyPlant<T>* plant) final {
+    // We need a static_cast to get around protected access.
+    auto* impl = static_cast<ForceDensityFieldPublic<T>*>(impl_.get());
+    impl->DoDeclareInputPorts(plant);
   }
 
   std::shared_ptr<ForceDensityField<T>> impl_;
