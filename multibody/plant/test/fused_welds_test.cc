@@ -221,8 +221,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
          fused_model.link3->index()});
     EXPECT_TRUE(CompareMatrices(M_UWo_W.CopyToFullMatrix6(),
                                 M_FWo_W.CopyToFullMatrix6(), kTolerance,
-                                MatrixCompareType::relative))
-        << "Link123 spatial inertia mismatch";
+                                MatrixCompareType::relative));
 
     // Verify Link123's summed spatial momentum does not depend on fused links.
     const Vector3<double> p_WoP_W(1.1, -2.3, 4.2);
@@ -242,8 +241,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
             p_WoP_W);
     // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
     EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
-                                 kTolerance, MatrixCompareType::relative))
-        << "Link123 spatial momentum mismatch";
+                                 kTolerance, MatrixCompareType::relative));
 
     // Ensure that individual link spatial inertias and spatial momentum are
     // accurately calculated, regardless of whether they were fused.
@@ -256,8 +254,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
           *fused_model.context, world_frame, {fused_linki->index()});
       EXPECT_TRUE(CompareMatrices(M_UWo_W.CopyToFullMatrix6(),
                                   M_FWo_W.CopyToFullMatrix6(), kTolerance,
-                                  MatrixCompareType::relative))
-          << "Spatial inertia mismatch: link" << i + 1;
+                                  MatrixCompareType::relative));
 
       // Verify individual links' spatial momentum do not depend on fused links.
       L_WUP_W = unfused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
@@ -266,8 +263,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
           *fused_model.context, {fused_linki->model_instance()}, p_WoP_W);
       // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
       EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
-                                   kTolerance, MatrixCompareType::relative))
-          << "Spatial momentum mismatch: link" << i + 1;
+                                   kTolerance, MatrixCompareType::relative));
 
       // Since link4 is welded to world, special-case calculations are used. For
       // this special case, also compare link4 results to an analytical value.
@@ -277,15 +273,13 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
             SpatialInertia<double>::SolidCubeWithMass(m, a).Shift(-p_WoL4o_W);
         EXPECT_TRUE(CompareMatrices(M_L4Wo_W_expected.CopyToFullMatrix6(),
                                     M_FWo_W.CopyToFullMatrix6(), kTolerance,
-                                    MatrixCompareType::relative))
-            << "Inaccurate link4 spatial inertia";
+                                    MatrixCompareType::relative));
 
         // Link4's spatial momentum should always be zero (welded to ground).
         // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
         EXPECT_FALSE(CompareMatrices(L_WFP_W.get_coeffs(),
                                      Vector6<double>::Zero(), kTolerance,
-                                     MatrixCompareType::relative))
-            << "Inaccurate link 4 spatial momentum";
+                                     MatrixCompareType::relative));
       }
     }
 
@@ -294,16 +288,14 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
     unfused_model.plant->CalcMassMatrix(*unfused_model.context, &M_unfused);
     fused_model.plant->CalcMassMatrix(*fused_model.context, &M_fused);
     EXPECT_TRUE(CompareMatrices(M_unfused, M_fused, kTolerance,
-                                MatrixCompareType::relative))
-        << "Mass matrix mismatch";
+                                MatrixCompareType::relative));
 
     // Ensure the mass matrix matches the analytical value.
     const double Izz = m * a * a / 6.0;  // Izz of one cube about its COM.
     const double M_expected = (Izz + m * 0.0) +  // Link1: d² = 0
                               (Izz + m * 1.0) +  // Link2: d² = 1² = 1
                               (Izz + m * 2.0);   // Link3: d² = √2² = 2
-    EXPECT_NEAR(M_fused(0, 0), M_expected, kTolerance)
-        << "Mass matrix analytical mismatch";
+    EXPECT_NEAR(M_fused(0, 0), M_expected, kTolerance);
 
     // Ensure spatial momentum does not depend on fused welded links.
     // Also, use an "about-point" P which is not coincident with Wo.
@@ -316,8 +308,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
         fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
             *fused_model.context, p_WoP_W);
     EXPECT_TRUE(CompareMatrices(L_unfused.get_coeffs(), L_fused.get_coeffs(),
-                                kTolerance, MatrixCompareType::relative))
-        << "Entire system spatial momentum mismatch";
+                                kTolerance, MatrixCompareType::relative));
   }
 }
 
@@ -451,8 +442,7 @@ GTEST_TEST(FusedTest, CalcFrameBodyPosesAllPaths) {
     plant_nf->CalcMassMatrix(*context_nf, &mass_nf);
     plant_f->CalcMassMatrix(*context_f, &mass_f);
     EXPECT_TRUE(CompareMatrices(mass_nf, mass_f, kTolerance,
-                                MatrixCompareType::relative))
-        << "Mass matrix mismatch";
+                                MatrixCompareType::relative));
 
     // Gravity generalized forces should agree (exercises AccumulateGravity
     // which depends on p_BoLcm_B computed in CalcFrameBodyPoses).
@@ -461,8 +451,7 @@ GTEST_TEST(FusedTest, CalcFrameBodyPosesAllPaths) {
     const VectorX<double> tau_g_f =
         plant_f->CalcGravityGeneralizedForces(*context_f);
     EXPECT_TRUE(CompareMatrices(tau_g_nf, tau_g_f, kTolerance,
-                                MatrixCompareType::relative))
-        << "Gravity generalized forces mismatch";
+                                MatrixCompareType::relative));
   }
 }
 
