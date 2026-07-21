@@ -118,9 +118,16 @@ class AliasRegistry {
  private:
   using UnaliasMap = std::unordered_map<std::type_index, const std::type_info*>;
   static UnaliasMap* TheMap() {
-    // Purposefully never destroyed.
-    static UnaliasMap* singleton = new UnaliasMap;
-    return singleton;
+    py::module_ m = py::module_::import_("pydrake.common.alias_registry");
+    py::capsule py_map = m.attr("_unalias_map");
+    UnaliasMap* cpp_map{};
+    if (py_map.is_none()) {
+      // Purposefully never destroyed; no cleanup routine is provided.
+      py_map = py::capsule(new UnaliasMap);
+      m.attr("_unalias_map") = py_map;
+    }
+    cpp_map = static_cast<UnaliasMap*>(py_map.data());
+    return cpp_map;
   }
 };
 
