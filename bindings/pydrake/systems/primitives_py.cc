@@ -550,7 +550,7 @@ PYDRAKE_MODULE(primitives, m) {
                   std::make_unique<py::object>(std::move(value_to_hold));
               new (self) SharedPointerSystem<T>(std::move(wrapped));
             },
-            py::arg("value_to_hold"), doc.SharedPointerSystem.ctor.doc)
+            py::arg("value_to_hold").none(), doc.SharedPointerSystem.ctor.doc)
         .def_static(
             "AddToBuilder",
             [](DiagramBuilder<T>* builder, py::object value_to_hold) {
@@ -559,7 +559,7 @@ PYDRAKE_MODULE(primitives, m) {
               return SharedPointerSystem<T>::AddToBuilder(
                   builder, std::move(wrapped));
             },
-            py::arg("builder"), py::arg("value_to_hold"),
+            py::arg("builder"), py::arg("value_to_hold").none(),
             doc.SharedPointerSystem.AddToBuilder.doc)
         .def(
             "get",

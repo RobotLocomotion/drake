@@ -400,7 +400,7 @@ Parameter ``interruptible``:
               self->reset_context_from_shared(
                   make_shared_ptr_from_py_object<Context<T>>(py_context));
             },
-            py::arg("context"), doc.Simulator.reset_context.doc)
+            py::arg("context").none(), doc.Simulator.reset_context.doc)
         .def("set_target_realtime_rate",
             &Simulator<T>::set_target_realtime_rate, py::arg("realtime_rate"),
             doc.Simulator.set_target_realtime_rate.doc)

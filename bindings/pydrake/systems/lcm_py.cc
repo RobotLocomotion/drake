@@ -201,7 +201,7 @@ PYDRAKE_MODULE(lcm, m) {
         .def(py::init<const std::string&,
                  std::shared_ptr<const SerializerInterface>,
                  LcmInterfaceSystem*, double, double>(),
-            py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("channel"), py::arg("serializer"), py::arg("lcm").none(),
             py::arg("publish_period") = 0.0, py::arg("publish_offset") = 0.0,
             // Keep alive, reference: `self` keeps `lcm` alive.
             py::keep_alive<1, 4>(), cls_doc.ctor.doc_5args)
