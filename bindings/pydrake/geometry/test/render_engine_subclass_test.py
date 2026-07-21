@@ -142,6 +142,12 @@ class TestRenderEngineSubclass(unittest.TestCase):
         label_only.RenderLabelImage(color_cam, label_image)
         self.assertIsInstance(label_only.Clone(), LabelOnlyEngine)
 
+        # Overriding DoGetParameterYaml is not required; when absent, a default
+        # implementation will be used. (The render_test.py already checks that
+        # overriding DoGetParameterYaml works correctly.)
+        for engine in [legacy_engine, color_only, depth_only, label_only]:
+            self.assertIn("Unknown", engine.GetParameterYaml())
+
     def test_legacy_DoClone(self):
         """Sanity checks that DoClone (without __deepcopy__) is sufficient."""
 
