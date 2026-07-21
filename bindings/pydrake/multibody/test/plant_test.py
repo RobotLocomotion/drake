@@ -4352,7 +4352,7 @@ class TestPlant(unittest.TestCase):
         copy.deepcopy(dut)
 
     @numpy_compare.check_all_types
-    def test_force_density_field(self, T):
+    def test_force_density_field_no_parent(self, T):
         class DummyField(ForceDensityField_[T]):
             def __init__(self, scale):
                 super().__init__()
@@ -4364,7 +4364,7 @@ class TestPlant(unittest.TestCase):
             def DoClone(self):
                 return DummyField(self._scale)
 
-        plant = MultibodyPlant_[T](time_step=0.0)
+        plant = MultibodyPlant_[T](time_step=0.01)
         plant.Finalize()
         context = plant.CreateDefaultContext()
 
@@ -4383,4 +4383,56 @@ class TestPlant(unittest.TestCase):
         )
         numpy_compare.assert_float_equal(
             copy.deepcopy(dut).EvaluateAt(context, p_WQ), value
+        )
+
+    def test_force_density_field_with_parent(self):
+        # Deformables do not support AutoDiffXd currently.
+        T = float
+
+        class MinimalDummyField(ForceDensityField_[T]):
+            def __init__(self):
+                super().__init__()
+
+            def DoClone(self):
+                return MinimalDummyField()
+
+        class InstrumentedDummyField(ForceDensityField_[T]):
+            def __init__(self):
+                super().__init__()
+                self.counters = dict()
+
+            def DoClone(self):
+                result = InstrumentedDummyField()
+                result.counters = self.counters
+                return result
+
+            def DoDeclareCacheEntries(self, plant):
+                key = "DoDeclareCacheEntries"
+                self.counters[key] = self.counters.get(key, 0) + 1
+
+            def DoDeclareInputPorts(self, plant):
+                key = "DoDeclareInputPorts"
+                self.counters[key] = self.counters.get(key, 0) + 1
+
+        dut1 = MinimalDummyField()
+        dut2 = InstrumentedDummyField()
+        counters = dut2.counters
+
+        # Test non-pure virtual method overrides like DoDeclareCacheEntries and
+        # DoDeclareInputPorts, which are triggered when finalizing a plant.
+        # With dut1, we show that they are OK to leave unimplemented.
+        # With dut2, we show that they are called when necessary.
+        builder = DiagramBuilder_[T]()
+        plant, _ = AddMultibodyPlantSceneGraph(builder, 0.01)
+        deformable_model = plant.mutable_deformable_model()
+        deformable_model.AddExternalForce(dut1)
+        deformable_model.AddExternalForce(dut2)
+        self.assertDictEqual(counters, dict())
+        plant.Finalize()
+        self.assertDictEqual(
+            counters,
+            dict(
+                DoDeclareCacheEntries=1,
+                DoDeclareInputPorts=1,
+            ),
         )
