@@ -11927,11 +11927,6 @@ Note:
 R"""(This method will be called by System<T>∷accept() if the System *is* a
 Diagram<T>.)""";
         } VisitDiagram;
-        // Symbol: drake::systems::SystemVisitor::VisitDiagramPointer
-        struct /* VisitDiagramPointer */ {
-          // Source: drake/systems/framework/system_visitor.h
-          const char* doc = R"""()""";
-        } VisitDiagramPointer;
         // Symbol: drake::systems::SystemVisitor::VisitSystem
         struct /* VisitSystem */ {
           // Source: drake/systems/framework/system_visitor.h
@@ -11939,11 +11934,6 @@ Diagram<T>.)""";
 R"""(This method will be called by System<T>∷accept() if the System *is
 not* a Diagram<T>.)""";
         } VisitSystem;
-        // Symbol: drake::systems::SystemVisitor::VisitSystemPointer
-        struct /* VisitSystemPointer */ {
-          // Source: drake/systems/framework/system_visitor.h
-          const char* doc = R"""()""";
-        } VisitSystemPointer;
       } SystemVisitor;
       // Symbol: drake::systems::TriggerType
       struct /* TriggerType */ {
