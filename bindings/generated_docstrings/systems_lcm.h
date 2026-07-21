@@ -738,33 +738,18 @@ Serializer for a message-specific concrete subclass.)""";
 R"""(Creates a value-initialized (zeroed) instance of the message object.
 The result can be used as the output object filled in by Deserialize.)""";
           } CreateDefaultValue;
-          // Symbol: drake::systems::lcm::SerializerInterface::CreateDefaultValueShared
-          struct /* CreateDefaultValueShared */ {
-            // Source: drake/systems/lcm/serializer.h
-            const char* doc = R"""()""";
-          } CreateDefaultValueShared;
           // Symbol: drake::systems::lcm::SerializerInterface::Deserialize
           struct /* Deserialize */ {
             // Source: drake/systems/lcm/serializer.h
             const char* doc =
 R"""(Translates LCM message bytes into a drake∷AbstractValue object.)""";
           } Deserialize;
-          // Symbol: drake::systems::lcm::SerializerInterface::DeserializeBuffer
-          struct /* DeserializeBuffer */ {
-            // Source: drake/systems/lcm/serializer.h
-            const char* doc = R"""()""";
-          } DeserializeBuffer;
           // Symbol: drake::systems::lcm::SerializerInterface::Serialize
           struct /* Serialize */ {
             // Source: drake/systems/lcm/serializer.h
             const char* doc =
 R"""(Translates a drake∷AbstractValue object into LCM message bytes.)""";
           } Serialize;
-          // Symbol: drake::systems::lcm::SerializerInterface::SerializeBuffer
-          struct /* SerializeBuffer */ {
-            // Source: drake/systems/lcm/serializer.h
-            const char* doc = R"""()""";
-          } SerializeBuffer;
           // Symbol: drake::systems::lcm::SerializerInterface::SerializerInterface
           struct /* ctor */ {
             // Source: drake/systems/lcm/serializer.h
