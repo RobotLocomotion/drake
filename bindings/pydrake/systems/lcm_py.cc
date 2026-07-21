@@ -30,12 +30,37 @@ using systems::lcm::SerializerInterface;
 
 namespace {
 
+// Base class for trampoline class that gives nicer method signatures for
+// Python overrides.
+class SerializerInterfaceBuffered : public SerializerInterface {
+ public:
+  // This signature avoids ownership transfer complaints from nanobind.
+  std::shared_ptr<AbstractValue> CreateDefaultValueShared() const {
+    throw std::logic_error(
+        "tried to call pure virtual function "
+        "SerializerInterface::CreateDefaultValue");
+  }
+
+  // This signature passes binary message data as py::bytes.
+  void DeserializeBuffer(
+      const py::bytes& buffer, AbstractValue* abstract_value) const {
+    throw std::logic_error(
+        "tried to call pure virtual function SerializerInterface::Deserialize");
+  }
+
+  // This signature returns binary message data as py::bytes.
+  py::bytes SerializeBuffer(const AbstractValue* abstract_value) const {
+    throw std::logic_error(
+        "tried to call pure virtual function SerializerInterface::Serialize");
+  }
+};
+
 // pybind11 trampoline class to permit overriding virtual functions in
 // Python.
-class PySerializerInterface : public SerializerInterface {
+class PySerializerInterface : public SerializerInterfaceBuffered {
  public:
-  NB_TRAMPOLINE(SerializerInterface, 100);
-  using Base = SerializerInterface;
+  NB_TRAMPOLINE(SerializerInterfaceBuffered, 100);
+  using Base = SerializerInterfaceBuffered;
 
   PySerializerInterface() : Base() {}
 
@@ -86,7 +111,7 @@ class PySerializerInterface : public SerializerInterface {
     py::gil_scoped_acquire guard;
     auto wrapped = [&]() -> py::bytes {
       PYDRAKE_OVERRIDE_PURE_NAME(py::bytes, SerializerInterface, "Serialize",
-          SerializeBuffer<py::bytes>, &abstract_value);
+          SerializeBuffer, &abstract_value);
     };
     py::bytes result = wrapped();
     message_bytes->resize(result.size());

@@ -6,11 +6,6 @@ namespace lcm {
 
 SerializerInterface::~SerializerInterface() {}
 
-std::shared_ptr<AbstractValue> SerializerInterface::CreateDefaultValueShared()
-    const {
-  return CreateDefaultValue();
-}
-
 }  // namespace lcm
 }  // namespace systems
 }  // namespace drake

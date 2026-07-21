@@ -34,33 +34,6 @@ class SerializerInterface {
   virtual void Serialize(const AbstractValue& abstract_value,
                          std::vector<uint8_t>* message_bytes) const = 0;
 
-#ifndef DRAKE_DOXYGEN_CXX
-  /* The signatures below are useful for Python bindings. C++ derived classes
-  can ignore them. */
-
-  /* (Internal use only) Creates a value-initialized (zeroed) instance of the
-  message object.  The result can be used as the output object filled in by
-  Deserialize. The default implementation just calls CreateDefaultValue(). */
-  std::shared_ptr<AbstractValue> CreateDefaultValueShared() const;
-
-  /* (Internal use only) Translates LCM message bytes into a
-  drake::AbstractValue object. The implementation just calls Deserialize(). */
-  template <typename Buffer>
-  void DeserializeBuffer(const Buffer& buffer,
-                         AbstractValue* abstract_value) const {
-    Deserialize(buffer.data(), buffer.size(), abstract_value);
-  }
-
-  /* (Internal use only) Translates a drake::AbstractValue object into LCM
-  message bytes. The implementation just calls Serialize(). */
-  template <typename Buffer>
-  Buffer SerializeBuffer(const AbstractValue* abstract_value) const {
-    std::vector<uint8_t> bytes;
-    Serialize(*abstract_value, &bytes);
-    return Buffer(bytes.data(), bytes.size());
-  }
-#endif
-
  protected:
   SerializerInterface() = default;
 };
