@@ -1,0 +1,94 @@
+load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
+load("@drake//tools/skylark:drake_cc.bzl", "cc_nolink_library")
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "cc_whole_archive_library",
+)
+load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(":defs.bzl", "LIMITED_API_DEFINES", "cc_library_with_limited_api")
+
+package(default_visibility = ["//visibility:private"])
+
+# This alias provides a single point of control for defining which nanobind
+# library our tools/skylark/pybind.bzl macro should use.
+alias(
+    name = "nanobind",
+    actual = ":shared_library",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "enabled",
+    flag_values = {"//tools/flags:python_binder": "nanobind"},
+)
+
+# We'll build nanobind as a shared library (named `:shared_library` here)
+# so that we have only one copy of its static singletons, and to reduce code
+# bloat. The compiled library will use Python's limited API (stable ABI).
+cc_library_with_limited_api(
+    name = "nanobind_with_limited_api",
+    deps = ["@module_nanobind//:nanobind"],
+)
+
+cc_whole_archive_library(
+    name = "nanobind_whole_archive",
+    deps = [":nanobind_with_limited_api"],
+)
+
+config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+cc_binary(
+    name = "libdrake_nanobind.so",
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_nanobind.so"],
+        "//conditions:default": [],
+    }),
+    linkshared = True,
+    deps = [":nanobind_whole_archive"],
+)
+
+cc_nolink_library(
+    name = "hdrs",
+    visibility = ["//tools/workspace/nanobind/vendor:__pkg__"],
+    deps = ["@module_nanobind//:nanobind"],
+)
+
+cc_library(
+    name = "shared_library",
+    srcs = [":libdrake_nanobind.so"],
+    defines = LIMITED_API_DEFINES,
+    deps = [
+        ":hdrs",
+        "//tools/workspace/nanobind/vendor:nanobind_eigen",
+        "@drake//tools/workspace/python:cc_headers",
+        "@drake//tools/workspace/python:cc_libs",
+    ],
+)
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/nanobind",
+    files = ["@module_nanobind//:LICENSE"],
+    allowed_externals = ["@module_nanobind//:LICENSE"],
+)
+
+install(
+    name = "install_shared_library",
+    targets = [":libdrake_nanobind.so"],
+)
+
+install(
+    name = "install",
+    visibility = ["//bindings/pydrake:__pkg__"],
+    deps = [
+        ":install_license",
+        ":install_shared_library",
+        "//tools/workspace/robin_map:install",
+    ],
+)
+
+add_lint_tests()

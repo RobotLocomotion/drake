@@ -260,3 +260,6 @@ class TestCommon(unittest.TestCase):
             ),
             unregistered_derived_type_cc_name,
         )
+
+    def test_binder_(self):
+        self.assertIn(mut._binder, {"pybind11", "nanobind"})

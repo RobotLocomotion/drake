@@ -1,0 +1,103 @@
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:sh.bzl", "sh_binary")
+load(":defs.bzl", "extract_nanobind_header")
+
+package(default_visibility = ["//visibility:private"])
+
+# Drake uses a patched verison of nanobind's Eigen type casters, by checking the
+# modified headers into our source tree. Beyond just patching, this also allows
+# us to `deps = ...` on our specific choice of Eigen, instead of using the BCR
+# Eigen like is hard-coded into the @module_nanobind//:nanobind_eigen library.
+
+cc_library(
+    name = "nanobind_eigen",
+    hdrs = [
+        "drake_nanobind/eigen/dense.h",
+        "drake_nanobind/eigen/sparse.h",
+    ],
+    strip_include_prefix = ".",
+    tags = ["nolint"],
+    visibility = ["//tools/workspace/nanobind:__pkg__"],
+    deps = [
+        "//tools/workspace/nanobind:hdrs",
+        "@eigen",
+    ],
+)
+
+# Add regression tests that the headers are up to date.
+
+_PATCHED_HEADER_NAMES = [
+    "dense",
+    "sparse",
+]
+
+sh_binary(
+    name = "generate_patched_file",
+    srcs = ["generate_patched_file.sh"],
+)
+
+[
+    extract_nanobind_header(
+        name = "upstream_{basename}".format(basename = basename),
+        testonly = True,
+        header = "nanobind/eigen/{basename}.h".format(basename = basename),
+        tags = ["manual"],  # Only build when the test needs it.
+        deps = ["@module_nanobind//:nanobind_eigen"],
+    )
+    for basename in _PATCHED_HEADER_NAMES
+]
+
+[
+    genrule(
+        name = "upstream_{basename}_patched".format(basename = basename),
+        testonly = True,
+        srcs = [
+            ":upstream_{basename}".format(basename = basename),
+            "patches/{basename}.patch".format(basename = basename),
+        ],
+        outs = ["gen/{basename}.h".format(basename = basename)],
+        cmd = " ".join([
+            "$(location :generate_patched_file)",
+            # Input source file.
+            "$(location :upstream_{basename})".format(basename = basename),
+            # Input patch file.
+            "$(location patches/{basename}.patch)".format(basename = basename),
+            # Output file.
+            "$@",
+        ]),
+        tags = ["manual"],  # Only build when the test needs it.
+        tools = [":generate_patched_file"],
+    )
+    for basename in _PATCHED_HEADER_NAMES
+]
+
+[
+    diff_test(
+        name = "nanobind_eigen_{basename}_diff_test".format(basename = basename),
+        failure_message = (
+            "To fix, run this command:\n" +
+            "  cp bazel-bin/tools/workspace/nanobind/vendor/gen/{basename}.h " +
+            "tools/workspace/nanobind/vendor/drake_nanobind/eigen/{basename}.h"
+        ).format(basename = basename),
+        file1 = "drake_nanobind/eigen/{basename}.h".format(basename = basename),
+        file2 = ":gen/{basename}.h".format(basename = basename),
+        tags = ["lint"],
+    )
+    for basename in _PATCHED_HEADER_NAMES
+]
+
+diff_test(
+    name = "nanobind_eigen_license_diff_test",
+    failure_message = (
+        "To fix, run this command:\n" +
+        "  cp bazel-drake/external/nanobind+/LICENSE " +
+        "tools/workspace/nanobind/vendor/drake_nanobind/eigen/LICENSE"
+    ),
+    file1 = "drake_nanobind/eigen/LICENSE",
+    file2 = "@module_nanobind//:LICENSE",
+    tags = ["lint"],
+)
+
+add_lint_tests()

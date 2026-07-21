@@ -16,5 +16,6 @@ version on macOS), the following files need attention:
 - `drake/tools/wheel/image/setup.py` near `python_requires`,
 - `drake/tools/wheel/wheel_builder/linux.py` near `targets`,
 - `drake/tools/wheel/wheel_builder/macos.py` near `targets`,
+- `drake/tools/workspace/nanobind/defs.bzl` near `LIMITED_API_DEFINES`.
 - `drake/tools/workspace/python/repository.bzl` near `macos_interpreter_path`,
 - `drake/tools/workspace/python/venv_upgrade` near `python_versions`.
