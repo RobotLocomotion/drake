@@ -271,8 +271,8 @@ class TestCustom(unittest.TestCase):
     def test_diagram_graphviz_minimal(self):
         """GetGraphvizString still works even without overriding
         DoGetGraphvizFragment."""
-        system = CustomDiagramMinimal()
-        graph = system.GetGraphvizString()
+        diagram = CustomDiagramMinimal()
+        graph = diagram.GetGraphvizString()
         self.assertIn("digraph", graph)
 
     def test_leaf_system_well_known_tickets(self):
