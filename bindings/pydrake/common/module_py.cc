@@ -23,6 +23,7 @@
 #include "drake/common/sha256.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace pydrake {
@@ -41,6 +42,9 @@ void trigger_an_assertion_failure() {
 // Resolves to a Python handle given a type erased pointer. If the instance or
 // lowest-level RTTI type are unregistered, returns an empty handle.
 py::handle ResolvePyObject(const type_erased_ptr& ptr) {
+  // TODO(#21572) Use is_polymorphic for nanobind (or remove it from the struct,
+  // if we change our mind and end up not needing it).
+  unused(ptr.is_polymorphic);
   auto py_type_info = py::detail::get_type_info(ptr.info);
   return py::detail::get_object_handle(ptr.raw, py_type_info);
 }

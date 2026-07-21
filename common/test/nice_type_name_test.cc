@@ -33,9 +33,10 @@ class Base {
 };
 class Derived : public Base {};
 
-// Type to have its NiceTypeName be overridden via
+// Types to have their NiceTypeName be overridden via
 // `SetNiceTypeNamePtrOverride`.
 class OverrideName {};
+class OverrideNameDerived : public Base {};
 
 // Test the Identifier pattern.
 using AId = Identifier<class ATag>;
@@ -222,16 +223,29 @@ GTEST_TEST(NiceTypeNameTest, Override) {
       [](const internal::type_erased_ptr& ptr) -> std::string {
         EXPECT_NE(ptr.raw, nullptr);
         if (ptr.info == typeid(OverrideName)) {
+          EXPECT_FALSE(ptr.is_polymorphic);
           return "example_override";
+        } else if (ptr.info == typeid(OverrideNameDerived)) {
+          EXPECT_TRUE(ptr.is_polymorphic);
+          return "example_override_derived";
         } else {
           return NiceTypeName::Get(ptr.info);
         }
       });
 
+  EXPECT_EQ(NiceTypeName::Get<std::string>(), "std::string");
+
   EXPECT_EQ(NiceTypeName::Get<OverrideName>(),
             "drake::(anonymous)::OverrideName");
   const OverrideName obj;
   EXPECT_EQ(NiceTypeName::Get(obj), "example_override");
+
+  const OverrideNameDerived obj_derived;
+  const Base& obj_base = obj_derived;
+  EXPECT_EQ(NiceTypeName::Get<OverrideNameDerived>(),
+            "drake::(anonymous)::OverrideNameDerived");
+  EXPECT_EQ(NiceTypeName::Get(obj_derived), "example_override_derived");
+  EXPECT_EQ(NiceTypeName::Get(obj_base), "example_override_derived");
 }
 
 }  // namespace
