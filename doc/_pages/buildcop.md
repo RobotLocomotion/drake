@@ -274,6 +274,9 @@ After you identify one, create a rollback by clicking "Revert" in the
 GitHub UI. Use the [template message](/buildcop.html#revert-template) to communicate
 with the author, and proceed as specified in that message.
 
+In general, if a test is known to be flaky, avoid re-running builds when that
+test failure was the only issue.
+
 ## Restarting Mac Nightly Builds
 
 Occasionally there will be flaky tests or timeouts in the Mac nightly builds.
@@ -308,15 +311,12 @@ any code change. For example, download errors from GitHub, `apt`, etc. are
 somewhat common.
 
 Infrastructure flakes will be red in Jenkins. If you believe you are looking at
-an infrastructure flake, run the build manually at `HEAD`. If it passes, you are
-definitely looking at an infrastructure flake, and no further action is
-required. If you believe the rate of a particular infrastructure flake has
-increased, alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`.
+an infrastructure flake, run the build manually at `HEAD`; if it passes, you
+are definitely looking at an infrastructure flake. If the build failed early
+on, you can try restarting it to see if infrastructure has been restored.
 
-Note that "slow read" warnings during Bazel builds are due to the relative
-slowness of the remote storage used by the CI infrastructure when compared to
-storage connected to the local bus on a local developer workstation build and
-can be safely ignored.
+If you believe the rate of a particular infrastructure flake has increased,
+alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`.
 
 If you see "All nodes of label <label> are offline", this should disappear
 eventually and the build should run, once Jenkins gets a node booted up.
@@ -331,6 +331,9 @@ will turn red and stay red.
 Attempt to figure out what infrastructure collapsed. If it's under our control,
 alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`. If it's under a
 vendor's control, spread the news and simply wait it out.
+
+You can try to periodically restart any failed builds to check if things are
+back online. When infrastructure has been restored, restart all the red builds.
 
 ## Drake External Examples
 
