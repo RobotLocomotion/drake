@@ -2843,7 +2843,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalAccelerationInWorld(
 template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
     const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const {
-  // Efficiently evaluate all mobods' spatial inertias, velocities, and poses.
+  // Efficiently evaluate all mobods' spatial inertias, poses, and velocities.
   const std::vector<SpatialInertia<T>>& M_Bi_W =
       EvalSpatialInertiaInWorldCache(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -2903,8 +2903,7 @@ template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     const systems::Context<T>& context,
     const std::vector<LinkIndex>& link_indexes) const {
-  // For efficiency, evaluate all bodies' spatial inertia, velocities, and
-  // pose.
+  // Efficiently evaluate all mobods' spatial inertias, poses, and velocities.
   const std::vector<SpatialInertia<T>>& M_Bi_W =
       EvalSpatialInertiaInWorldCache(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
