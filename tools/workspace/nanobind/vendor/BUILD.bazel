@@ -1,6 +1,7 @@
 load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:sh.bzl", "sh_binary")
 load(":defs.bzl", "extract_nanobind_header")
 
 package(default_visibility = ["//visibility:private"])
@@ -32,6 +33,11 @@ _PATCHED_HEADER_NAMES = [
     "sparse",
 ]
 
+sh_binary(
+    name = "generate_patched_file",
+    srcs = ["generate_patched_file.sh"],
+)
+
 [
     extract_nanobind_header(
         name = "upstream_{basename}".format(basename = basename),
@@ -52,11 +58,17 @@ _PATCHED_HEADER_NAMES = [
             "patches/{basename}.patch".format(basename = basename),
         ],
         outs = ["gen/{basename}.h".format(basename = basename)],
-        cmd = (
-            "cp $(location :upstream_{basename}) $@ && " +
-            "patch --silent -p0 $@ < $(location patches/{basename}.patch)"
-        ).format(basename = basename),
+        cmd = " ".join([
+            "$(location :generate_patched_file)",
+            # Input source file.
+            "$(location :upstream_{basename})".format(basename = basename),
+            # Input patch file.
+            "$(location patches/{basename}.patch)".format(basename = basename),
+            # Output file.
+            "$@",
+        ]),
         tags = ["manual"],  # Only build when the test needs it.
+        tools = [":generate_patched_file"],
     )
     for basename in _PATCHED_HEADER_NAMES
 ]

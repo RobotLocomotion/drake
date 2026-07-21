@@ -188,8 +188,6 @@ void RenderEngine::DoRenderLabelImage(const ColorRenderCamera&,
                   NiceTypeName::Get(*this)));
 }
 
-void RenderEngine::SetDefaultLightPosition(const Vector3<double>&) {}
-
 std::string RenderEngine::DoGetParameterYaml() const {
   return "UnknownRenderEngine: {}";
 }

@@ -815,8 +815,8 @@ GTEST_TEST(SimulatorTest, SecondConstructor) {
   EXPECT_EQ(simulator.get_context().get_time(), 3.0);
 }
 
-// Tests the internal use (for Python) in-place construction factory method
-// that takes the context via shared pointer.
+// Tests in-place construction factory method that takes the context via shared
+// pointer. (This method is internal use only for Python.)
 GTEST_TEST(SimulatorTest, SharedContextEmplacementFactoryMethod) {
   // Create the spring-mass system and context.
   analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);

@@ -2063,8 +2063,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if `distance` is not strictly positive.
-  /// @throws std::exception if `stiffness` is not positive or zero.
-  /// @throws std::exception if `damping` is not positive or zero.
+  /// @throws std::exception if `stiffness` is not strictly positive.
+  /// @throws std::exception if `damping` is not positive nor zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=

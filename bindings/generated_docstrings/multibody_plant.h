@@ -1524,7 +1524,7 @@ Raises:
     RuntimeError if ``stiffness`` is not strictly positive.
 
 Raises:
-    RuntimeError if ``damping`` is not positive or zero.)""";
+    RuntimeError if ``damping`` is not positive nor zero.)""";
         } ctor;
         // Symbol: drake::multibody::DistanceConstraintParams::bodyA
         struct /* bodyA */ {
@@ -2680,10 +2680,10 @@ Raises:
     RuntimeError if ``distance`` is not strictly positive.
 
 Raises:
-    RuntimeError if ``stiffness`` is not positive or zero.
+    RuntimeError if ``stiffness`` is not strictly positive.
 
 Raises:
-    RuntimeError if ``damping`` is not positive or zero.
+    RuntimeError if ``damping`` is not positive nor zero.
 
 Raises:
     RuntimeError if the MultibodyPlant has already been finalized.

@@ -3,7 +3,10 @@ Allow use of nanobind/eigen/sparse.h without nanobind/eigen/dense.h
 This allows projects to use the sparse caster while writing their own
 dense caster.
 
-https://github.com/wjakob/nanobind/pull/1389
+https://github.com/wjakob/nanobind/pull/1389 has been merged upstream,
+so we can drop this patch once we upgrade to nanobind > 2.13. Note that
+this `sparse.patch` file must always exist, but we can replace the patch
+content with a no-op edit instead.
 
 --- include/nanobind/eigen/sparse.h
 +++ include/nanobind/eigen/sparse.h
