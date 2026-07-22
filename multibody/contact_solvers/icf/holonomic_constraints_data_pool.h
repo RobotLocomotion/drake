@@ -50,11 +50,14 @@ class HolonomicConstraintsDataPool {
 };
 
 /* Named data pools for the concrete holonomic constraints. Each is just the
-generic pool at the constraint's equation count (weld: 6, ball: 3). */
+generic pool at the constraint's equation count (weld: 6, ball: 3,
+distance: 1). */
 template <typename T>
 using WeldConstraintsDataPool = HolonomicConstraintsDataPool<T, 6>;
 template <typename T>
 using BallConstraintsDataPool = HolonomicConstraintsDataPool<T, 3>;
+template <typename T>
+using DistanceConstraintsDataPool = HolonomicConstraintsDataPool<T, 1>;
 
 }  // namespace internal
 }  // namespace icf

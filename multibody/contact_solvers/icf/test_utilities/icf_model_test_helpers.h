@@ -69,6 +69,13 @@ one between the world (body 0) and body 1, and one between body 2 and body 3
 template <typename T>
 void AddBallConstraints(IcfModel<T>* model);
 
+/* Adds distance constraints to the given model. Two distance constraints are
+added: a rigid one between the world (body 0) and body 1, and a compliant
+(finite stiffness/damping) one between body 2 and body 3 (cross-clique in the
+multi-clique case). */
+template <typename T>
+void AddDistanceConstraints(IcfModel<T>* model);
+
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers

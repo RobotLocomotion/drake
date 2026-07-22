@@ -118,6 +118,7 @@ scalars and/or sharing the allocation across multiple pools.
 - Matrix6<T>
 - Matrix6X<T>
 - MatrixX<T>
+- Vector1<T>
 - Vector3<T>
 - Vector6<T>
 - VectorX<T>

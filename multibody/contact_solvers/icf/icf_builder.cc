@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/extract_double.h"
 #include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rotation_matrix.h"
@@ -15,6 +16,7 @@
 #include "drake/multibody/topology/graph.h"
 
 using drake::multibody::CalcContactFrictionFromSurfaceProperties;
+using drake::multibody::DistanceConstraintParams;
 using drake::multibody::internal::BallConstraintSpec;
 using drake::multibody::internal::CouplerConstraintSpec;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
@@ -241,6 +243,10 @@ void IcfBuilder<T>::UpdateModel(
   AllocateBallConstraints(model);
   SetBallConstraints(context, model);
 
+  // Distance constraints
+  AllocateDistanceConstraints(model);
+  SetDistanceConstraints(context, model);
+
   // Limit constraints
   AllocateLimitConstraints(model);
   SetLimitConstraints(context, model);
@@ -306,13 +312,14 @@ void IcfBuilder<T>::ValidatePlant() {
   // Revisit this condition as constraints are implemented. See issues #23759,
   // #23760, #23762, #23763.
   if (plant_.num_constraints() - plant_.num_ball_constraints() -
-          plant_.num_coupler_constraints() - plant_.num_weld_constraints() >
+          plant_.num_coupler_constraints() - plant_.num_distance_constraints() -
+          plant_.num_weld_constraints() >
       0) {
     throw std::logic_error(fmt::format(
         "The CENIC integrator does not yet support some constraints, but "
-        "they are present in the given MultibodyPlant: {} distance "
-        "constraint(s), {} tendon constraint(s)",
-        plant_.num_distance_constraints(), plant_.num_tendon_constraints()));
+        "they are present in the given MultibodyPlant: {} tendon "
+        "constraint(s)",
+        plant_.num_tendon_constraints()));
   }
 }
 
@@ -581,6 +588,97 @@ void IcfBuilder<T>::SetBallConstraints(const systems::Context<T>& context,
 
     ball_constraints.Set(index, pool_bodyA.index(), pool_bodyB.index(), p_AP_W,
                          p_BQ_W, p_PQ_W);
+    ++index;
+  }
+}
+
+template <typename T>
+void IcfBuilder<T>::AllocateDistanceConstraints(IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  DistanceConstraintsPool<T>& distance_constraints =
+      model->distance_constraints_pool();
+  distance_constraints.Resize(plant_.num_distance_constraints());
+}
+
+template <typename T>
+void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
+                                           IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  using drake::math::RigidTransform;
+
+  // Distance constraint parameters are context-dependent (runtime-mutable),
+  // unlike ball/weld specs; read the current values from the context.
+  const std::map<MultibodyConstraintId, DistanceConstraintParams>& params_map =
+      plant_.GetDistanceConstraintParams(context);
+
+  DistanceConstraintsPool<T>& distance_constraints =
+      model->distance_constraints_pool();
+
+  int index = 0;
+  for (const auto& [id, params] : params_map) {
+    const RigidBody<T>& body_A = plant_.get_body(params.bodyA());
+    const RigidBody<T>& body_B = plant_.get_body(params.bodyB());
+
+    // By convention in the ICF distance constraint pool, body B must not be
+    // anchored. If body A is anchored, that's fine.
+    const bool A_anchored = plant_.IsAnchored(body_A);
+    const bool B_anchored = plant_.IsAnchored(body_B);
+
+    // TODO(sherm1): Move this exception up to the plant level so
+    //  that it fails as fast as possible. Currently, the earliest this can
+    //  happen is in MbP::Finalize() after the topology has been finalized.
+    if (A_anchored && B_anchored) {
+      const std::string msg = fmt::format(
+          "Creating a distance constraint between bodies '{}' and '{}' where "
+          "both are welded to the world is not allowed.",
+          body_A.name(), body_B.name());
+      throw std::logic_error(msg);
+    }
+
+    // If B is anchored but A is not, swap roles so that the "B" body in the
+    // pool is always the dynamic one.
+    const RigidBody<T>& pool_bodyA = B_anchored ? body_B : body_A;
+    const RigidBody<T>& pool_bodyB = B_anchored ? body_A : body_B;
+    const Vector3<double>& p_AP_spec =
+        B_anchored ? params.p_BQ() : params.p_AP();
+    const Vector3<double>& p_BQ_spec =
+        B_anchored ? params.p_AP() : params.p_BQ();
+
+    const RigidTransform<T>& X_WA = pool_bodyA.EvalPoseInWorld(context);
+    const RigidTransform<T>& X_WB = pool_bodyB.EvalPoseInWorld(context);
+
+    // Constraint point positions in world.
+    const Vector3<T> p_WP = X_WA * p_AP_spec.template cast<T>();
+    const Vector3<T> p_WQ = X_WB * p_BQ_spec.template cast<T>();
+
+    // Positions of P in A and Q in B, expressed in world.
+    const Vector3<T> p_AP_W = X_WA.rotation() * p_AP_spec.template cast<T>();
+    const Vector3<T> p_BQ_W = X_WB.rotation() * p_BQ_spec.template cast<T>();
+
+    // Current distance d₀ and unit direction p̂ from P to Q. Guard against a
+    // nonphysically small distance (the constraint is singular there; use a
+    // ball constraint for coincident points), mirroring SapDistanceConstraint.
+    const Vector3<T> p_PQ_W = p_WQ - p_WP;
+    const T d0 = p_PQ_W.norm();
+    const double length = params.distance();  // The free length ℓ.
+    constexpr double kMinimumDistance = 1.0e-7;
+    constexpr double kRelativeDistance = 1.0e-2;
+    if (ExtractDoubleOrThrow(d0) <
+        kMinimumDistance + kRelativeDistance * length) {
+      throw std::logic_error(fmt::format(
+          "The distance between the two points of a distance constraint "
+          "between bodies '{}' and '{}' is {}, which is nonphysically small "
+          "compared to the constraint's free length, {}.",
+          body_A.name(), body_B.name(), ExtractDoubleOrThrow(d0), length));
+    }
+    const Vector3<T> p_hat_W = p_PQ_W / d0;
+
+    // Constraint function g₀ = d₀ − ℓ.
+    const T g0 = d0 - length;
+
+    distance_constraints.Set(index, pool_bodyA.index(), pool_bodyB.index(),
+                             p_AP_W, p_BQ_W, p_hat_W, g0, T(params.stiffness()),
+                             T(params.damping()));
     ++index;
   }
 }

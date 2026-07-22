@@ -7,6 +7,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/extract_double.h"
 #include "drake/multibody/contact_solvers/icf/ball_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/distance_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
@@ -354,6 +355,10 @@ template class HolonomicConstraintsPool<AutoDiffXd, 6,
 template class HolonomicConstraintsPool<double, 3, BallConstraintsPool<double>>;
 template class HolonomicConstraintsPool<AutoDiffXd, 3,
                                         BallConstraintsPool<AutoDiffXd>>;
+template class HolonomicConstraintsPool<double, 1,
+                                        DistanceConstraintsPool<double>>;
+template class HolonomicConstraintsPool<AutoDiffXd, 1,
+                                        DistanceConstraintsPool<AutoDiffXd>>;
 
 }  // namespace internal
 }  // namespace icf
