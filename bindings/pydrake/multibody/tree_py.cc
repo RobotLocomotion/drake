@@ -1278,12 +1278,15 @@ class DelegatedForceDensityField final : public ForceDensityFieldPublic<T> {
 template <typename T>
 class PyForceDensityField : public ForceDensityFieldPublic<T> {
  public:
-  NB_TRAMPOLINE(ForceDensityFieldPublic<T>, 100);
+  NB_TRAMPOLINE(ForceDensityFieldPublic<T>, 3);
+
   explicit PyForceDensityField(ForceDensityType density_type)
       : ForceDensityFieldPublic<T>(density_type) {}
 
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
+    // We can't use PYDRAKE_OVERRIDE_PURE because we need to pass the context by
+    // pointer.
     py::gil_scoped_acquire gil;
     const ForceDensityField<T>* const self = this;
     py::object result = py::cast(self).attr("DoEvaluateAt")(&context, p_WQ);
@@ -1293,11 +1296,12 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
   std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
     py::gil_scoped_acquire gil;
     const ForceDensityField<T>* const self = this;
-    py::object result = py::cast(self).attr("DoClone")();
-    std::shared_ptr<ForceDensityField<T>> cloned =
-        py::cast<std::shared_ptr<ForceDensityField<T>>>(result);
-    DRAKE_THROW_UNLESS(cloned != nullptr);
-    return std::make_unique<DelegatedForceDensityField<T>>(std::move(cloned));
+    py::object result_py = py::cast(self).attr("DoClone")();
+    auto result_cxx =
+        py::cast<std::shared_ptr<ForceDensityField<T>>>(result_py);
+    DRAKE_THROW_UNLESS(result_cxx != nullptr);
+    return std::make_unique<DelegatedForceDensityField<T>>(
+        std::move(result_cxx));
   }
 
   void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
