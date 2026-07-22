@@ -48,8 +48,9 @@ Vector6<T> ShiftSpatialImpulse(const Vector6<T>& Gamma_B,
 
 /* CRTP base class implementing the shared machinery for a pool of holonomic
 constraints between pairs of bodies, A and B. Weld, ball, and distance
-constraints are all holonomic: each has a convex cost ℓ(vc) = ½(v̂ − vc)ᵀ⋅R⁻¹⋅(v̂
-− vc), where vc ∈ ℝᴺ is the constraint velocity, v̂ a bias velocity from the
+constraints are all holonomic; each has a convex cost:
+    ℓ(vc) = ½(v̂ − vc)ᵀ⋅R⁻¹⋅(v̂ − vc),
+where vc ∈ ℝᴺ is the constraint velocity, v̂ a bias velocity from the
 constraint function g₀, and R a (near-rigid or compliant) regularization. The
 impulse is γ = R⁻¹⋅(v̂ − vc), applied to body B and -γ to body A.
 
@@ -57,21 +58,10 @@ This base owns all the constraint-agnostic machinery: the regularization R, the
 bias v̂, the cost, gradient, block Hessian, the sparsity pattern, and model
 reduction.
 
-Each concrete pool supplies the following through the CRTP. The signatures are
-checked by IsHolonomicConstraintsDerived (declared below).
-
-Numeric hooks:
-  - CalcConstraintVelocity() → vc, the constraint velocity (ℝᴺ).
-  - CalcSpatialImpulses()    → (Γ_Bo, Γ_Ao), the impulse at Bo and Ao resulting
-                               from the generalized impulse γ.
-  - CalcHessianBlocks()      → The body-space Hessian blocks
-                               G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X) with G = R⁻¹.
-
-Bookkeeping hooks:
-  - GetDataPool()       → the derived's typed data pool within an IcfData.
-  - ResizeGeometry()    → (re)sizes the derived's own geometry storage.
-  - ReduceGeometryInto()→ copies one constraint's geometry into a reduced pool.
-  - kFlipNegatesG0      → a static constexpr trait function (see below).
+Each concrete pool supplies a set of CRTP "hooks" providing the
+structure-specific kinematics. They are declared and documented as deleted
+member functions in the "CRTP hooks" section of this class (each concrete pool
+shadows them with a real implementation).
 
 @tparam_nonsymbolic_scalar
 @tparam N The number of constraint equations.
@@ -85,6 +75,60 @@ class HolonomicConstraintsPool {
 
   using ConstraintVector = Eigen::Matrix<T, N, 1>;
   using DataPool = HolonomicConstraintsDataPool<T, N>;
+
+  /* CRTP hooks. Each concrete pool provides the per-constraint hooks below,
+  which this base invokes on the derived pool (see derived()). They are declared
+  here as deleted member functions so their shared contract is documented in a
+  single place; each concrete pool shadows them with a real implementation. */
+
+  /* Computes the constraint velocity vc ∈ ℝᴺ of the k-th constraint from the
+  body spatial velocities.
+  @param k The index of the constraint within the pool.
+  @param V_WB The spatial velocity of body B, expressed in the world frame.
+  @param V_WA The spatial velocity of body A, expressed in the world frame, or
+              null when body A is anchored.
+  @returns The constraint velocity vc ∈ ℝᴺ. */
+  ConstraintVector CalcConstraintVelocity(
+      int k, const Vector6<T>& V_WB, const Vector6<T>* V_WA) const = delete;
+
+  /* Computes the spatial impulses at the body origins produced by the
+  generalized impulse `gamma` of the k-th constraint.
+  @param k The index of the constraint within the pool.
+  @param gamma The generalized impulse of the k-th constraint.
+  @param[out] Gamma_Bo The spatial impulse on body B at its origin Bo.
+  @param[out] Gamma_Ao The spatial impulse on body A at its origin Ao, or null
+                       when body A is anchored. */
+  void CalcSpatialImpulses(int k, const ConstraintVector& gamma,
+                           Vector6<T>* Gamma_Bo,
+                           Vector6<T>* Gamma_Ao) const = delete;
+
+  /* Computes the body-space Hessian blocks G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X) of the k-th
+  constraint, with the constraint-space Hessian G = R⁻¹.
+  @param k The index of the constraint within the pool.
+  @param R_inv The inverse regularization R⁻¹ of the k-th constraint.
+  @param[out] G_Bp The Hessian block for body B.
+  @param[out] G_Ap The Hessian block for body A.
+  @param[out] G_cross The Hessian block for the A/B cross term.
+  @note G_Ap and G_cross are either both non-null (body A dynamic) or both null
+  (body A anchored). */
+  void CalcHessianBlocks(int k, const T& R_inv, Matrix6<T>* G_Bp,
+                         Matrix6<T>* G_Ap, Matrix6<T>* G_cross) const = delete;
+
+  /* Returns the derived pool's typed data pool stored within `data`.
+  @param data The IcfData holding this pool's per-constraint data. */
+  const DataPool& GetDataPool(const IcfData<T>& data) const = delete;
+
+  /* (Re)sizes the derived pool's own geometry storage to hold the given number
+  of constraints.
+  @param num_constraints The number of constraints to store. */
+  void ResizeGeometry(int num_constraints) = delete;
+
+  /* Copies the k-th constraint's geometry into `reduced`, flipping the roles of
+  bodies A and B when `flip` is true.
+  @param reduced The reduced pool receiving the constraint's geometry.
+  @param k The index of the constraint within this pool.
+  @param flip Whether to flip the roles of bodies A and B. */
+  void ReduceGeometryInto(Derived* reduced, int k, bool flip) const = delete;
 
   /* Whether the constraint function g₀ negates when a reduced-model constraint
   flips A/B (see ReduceInto). This is true when g₀ is a "relative" quantity that
@@ -194,63 +238,6 @@ class HolonomicConstraintsPool {
   Derived& mutable_derived() { return *static_cast<Derived*>(this); }
   const Derived& derived() const { return *static_cast<const Derived*>(this); }
 };
-
-/* Provides documentation and type-signature checking for the per-constraint
-"hooks" a concrete pool must supply to HolonomicConstraintsPool through the
-CRTP.
-
-Clients invoke the concept on the conforming pool after its definition is
-complete:
-
-@code
-static_assert(IsHolonomicConstraintsDerived<WeldConstraintsPool>);
-@endcode
-*/
-template <template <typename> typename Pool>
-concept IsHolonomicConstraintsDerived =
-    []() consteval {
-      static_assert(
-          requires {
-            { Pool<double>::FlipNegatesG0() } -> std::convertible_to<bool>;
-          },
-          "A class derived from HolonomicConstraintsPool must define "
-          "static constexpr bool FlipNegatesG0()");
-      return true;
-    }() &&
-    requires(Pool<double> pool, Pool<double>* reduced,
-             const IcfData<double>& data, const Vector6<double>& V_WB,
-             const Vector6<double>* V_WA,
-             typename Pool<double>::ConstraintVector gamma, double R_inv,
-             Vector6<double>* spatial_impulse, Matrix6<double>* hessian_block,
-             int k, bool flip) {
-      /* Computes vc ∈ ℝᴺ, the constraint velocity of constraint k. V_WA is null
-      when body A is anchored. */
-      {
-        pool.CalcConstraintVelocity(k, V_WB, V_WA)
-      } -> std::same_as<typename Pool<double>::ConstraintVector>;
-
-      /* Shifts the constraint impulse γ of constraint k to the body origins,
-      writing Γ_Bo on B and (when non-null) Γ_Ao on A. */
-      pool.CalcSpatialImpulses(k, gamma, spatial_impulse, spatial_impulse);
-
-      /* Builds the body-space Hessian blocks G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X) of
-      constraint k. The A and cross blocks are written only when non-null (A
-      dynamic). */
-      pool.CalcHessianBlocks(k, R_inv, hessian_block, hessian_block,
-                             hessian_block);
-
-      /* Returns this pool's typed data pool within `data`. */
-      {
-        pool.GetDataPool(data)
-      } -> std::same_as<const typename Pool<double>::DataPool&>;
-
-      /* (Re)sizes the derived's own geometry storage. */
-      pool.ResizeGeometry(k);
-
-      /* Copies constraint k's geometry into `reduced`, flipping A/B if `flip`.
-       */
-      pool.ReduceGeometryInto(reduced, k, flip);
-    };
 
 }  // namespace internal
 }  // namespace icf

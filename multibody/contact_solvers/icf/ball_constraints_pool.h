@@ -111,7 +111,6 @@ class BallConstraintsPool
   EigenPool<Vector3<T>> p_BQ_W_;  // Position of Q in B, expressed in W.
 };
 static_assert(IsAbstractConstraintsPool<BallConstraintsPool>);
-static_assert(IsHolonomicConstraintsDerived<BallConstraintsPool>);
 
 }  // namespace internal
 }  // namespace icf

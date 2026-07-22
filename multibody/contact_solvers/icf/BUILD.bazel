@@ -183,6 +183,7 @@ drake_cc_library(
     srcs = [
         "ball_constraints_pool.cc",
         "coupler_constraints_pool.cc",
+        "distance_constraints_pool.cc",
         "gain_constraints_pool.cc",
         "holonomic_constraints_pool.cc",
         "icf_model.cc",
@@ -194,6 +195,7 @@ drake_cc_library(
         "abstract_constraints_pool.h",
         "ball_constraints_pool.h",
         "coupler_constraints_pool.h",
+        "distance_constraints_pool.h",
         "gain_constraints_pool.h",
         "holonomic_constraints_pool.h",
         "icf_model.h",
@@ -252,6 +254,31 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "coupler_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "distance_constraint_init_and_sim_test",
+    deps = [
+        "//multibody/cenic:cenic_integrator",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:multibody_plant_config_functions",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "distance_constraints_pool_test",
     deps = [
         ":icf_data",
         ":icf_model",
