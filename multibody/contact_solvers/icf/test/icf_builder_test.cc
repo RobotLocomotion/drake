@@ -384,21 +384,47 @@ GTEST_TEST(IcfBuilder, NoBallBetweenAnchoredBodies) {
                               "welded to the world.*not allowed.*");
 }
 
-GTEST_TEST(IcfBuilder, DistanceConstraintUnsupported) {
+GTEST_TEST(IcfBuilder, DistanceConstraint) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
-  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
-
-  plant.AddDistanceConstraint(plant.get_body(BodyIndex(0)), Vector3d::Zero(),
-                              plant.get_body(BodyIndex(1)), Vector3d::Zero(),
-                              0.01);
+  Parser(&plant, "Pendulum1").AddModelsFromString(kRobotXml, "xml");
+  Parser(&plant, "Pendulum2").AddModelsFromString(kRobotXml, "xml");
+  // A rigid (default, infinite-stiffness) distance constraint and a compliant
+  // (finite stiffness/damping) one, between body 1 and body 2. The attachment
+  // points are offset so the two constrained points are not coincident.
+  plant.AddDistanceConstraint(plant.get_body(BodyIndex(1)),
+                              Vector3d(0.5, 0.0, 0.0),
+                              plant.get_body(BodyIndex(2)), Vector3d::Zero(),
+                              /*distance=*/0.1);
+  plant.AddDistanceConstraint(
+      plant.get_body(BodyIndex(1)), Vector3d(0.0, 0.5, 0.0),
+      plant.get_body(BodyIndex(2)), Vector3d::Zero(), /*distance=*/0.1,
+      /*stiffness=*/1000.0, /*damping=*/5.0);
   plant.Finalize();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(&plant),
-                              ".*not.*support.*1 distance constraint\\(s\\).*");
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  EXPECT_EQ(model.num_cliques(), 2);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  ASSERT_EQ(model.num_distance_constraints(), 2);
+
+  // Check the distance constraints produced. Both connect body 1 to body 2.
+  const auto& pool = model.distance_constraints_pool();
+  EXPECT_EQ(pool.num_constraints(), 2);
+  for (int k = 0; k < 2; ++k) {
+    EXPECT_EQ(pool.body_pairs()[k].first, 1);
+    EXPECT_EQ(pool.body_pairs()[k].second, 2);
+  }
 }
 
 GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
