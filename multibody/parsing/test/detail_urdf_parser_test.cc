@@ -157,6 +157,34 @@ TEST_F(UrdfParserTest, ModelRenameWithColons) {
   EXPECT_EQ(plant_.GetModelInstanceName(*index), "left::robot");
 }
 
+TEST_F(UrdfParserTest, SurfaceVelocityAxis) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='belt_model' xmlns:drake='https://drake.mit.edu'>
+      <link name='world'>
+        <!-- This should dispatch a warning. -->
+        <drake:surface_velocity_axis axis='0 0 3'/>
+      </link>
+      <link name='has_velocity'>
+        <drake:surface_velocity_axis axis='0 0 3'/>
+      </link>
+      <link name='no_velocity'/>
+    </robot>)""",
+                                   ""),
+            std::nullopt);
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(".*<drake:surface_velocity_axis> tag is being ignored.*"));
+
+  const auto& has_velocity = plant_.GetBodyByName("has_velocity");
+  const std::optional<Vector3d> axis_B =
+      plant_.GetSurfaceVelocityAxis(has_velocity);
+  ASSERT_TRUE(axis_B.has_value());
+  EXPECT_TRUE(CompareMatrices(*axis_B, Vector3d(0, 0, 1)));
+
+  const auto& no_velocity = plant_.GetBodyByName("no_velocity");
+  EXPECT_EQ(plant_.GetSurfaceVelocityAxis(no_velocity), std::nullopt);
+}
+
 TEST_F(UrdfParserTest, ObsoleteLoopJoint) {
   EXPECT_NE(AddModelFromUrdfString("<robot name='a'><loop_joint/></robot>", ""),
             std::nullopt);

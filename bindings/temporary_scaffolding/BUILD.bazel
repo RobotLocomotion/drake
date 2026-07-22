@@ -1,26 +1,33 @@
-load("@drake//tools/skylark:cc.bzl", "cc_binary")
-load("@drake//tools/skylark:py.bzl", "py_test")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_test")
+load("@drake//tools/skylark:pybind.bzl", "pybind_py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-# This is a smoke test on a nanobind binding, as a sanity check of the build.
+# This is a smoke test on a sample binding, as a sanity check of the build
+# and testing of a module that supports both pybind11 and nanobind.
 
-cc_binary(
-    name = "sample_module.so",
-    srcs = ["sample_module.cc"],
-    linkshared = True,
-    linkstatic = True,
-    deps = [
-        "//tools/workspace/nanobind",
-    ],
+pybind_py_library(
+    name = "sample_module",
+    cc_copts = select({
+        "//tools/workspace/nanobind:enabled": [
+            "-DDRAKE_USE_NANOBIND",
+        ],
+        "//conditions:default": [
+            "-DDRAKE_USE_PYBIND11",
+        ],
+    }),
+    cc_srcs = ["sample_module.cc"],
 )
 
-py_test(
+drake_py_test(
     name = "sample_module_test",
     srcs = ["sample_module_test.py"],
-    data = [":sample_module.so"],
     imports = ["."],
     main = "sample_module_test.py",
-    deps = ["//bindings/pydrake/common/test_utilities/scipy_stub"],
+    test_alt_binder = True,
+    deps = [
+        ":sample_module",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
+    ],
 )
 
 add_lint_tests()

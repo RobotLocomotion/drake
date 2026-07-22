@@ -782,6 +782,8 @@ def drake_cc_binary(
         **kwargs
     )
 
+    # Reject misuse of cc_binary for a drake_cc_googletest (but we can only
+    # perform the check if the deps are iterable, i.e., not a `select()`).
     if type(deps) in (type([]), type(())):
         if "@googletest//:gtest_main" in deps:
             fail("Use drake_cc_googletest to declare %s as a test" % name)

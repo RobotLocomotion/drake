@@ -5,10 +5,10 @@ load("@with_cfg.bzl", "with_cfg")
 #
 # py_test_with_alt_binder is equivalent to py_test except that it forces its
 # dependencies to be built with --@drake//tools/flags:python_binder=nanobind.
-# This allows us to run the a test under the non-default binder setting as part
+# This allows us to run the test under the non-default binder setting as part
 # of the same `bazel test` command as tests with the default binder setting.
 #
-# python_binder_reset is like an alias() rule except that the clears the
+# python_binder_reset is like an alias() rule except that it clears the
 # non-default flag setting. This is useful to mark dependencies that should
 # not be rebuilt under the non-default binder setting (e.g., libdrake).
 

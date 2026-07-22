@@ -474,6 +474,10 @@ class TestPlant(unittest.TestCase):
             plant.num_actuated_dofs(model_instance=model_instance),
             benchmark.num_actuated_dofs(),
         )
+        self.assertEqual(
+            plant.num_misc_continuous_states(),
+            benchmark.num_misc_continuous_states(),
+        )
         self.assertTrue(plant.is_finalized())
         self.assertTrue(plant.HasBodyNamed(name="Link1"))
         self.assertTrue(
@@ -1849,6 +1853,24 @@ class TestPlant(unittest.TestCase):
             )
         # TODO(eric.cousineau): Merge `check_applied_force_input_ports` into
         # this test.
+
+    @numpy_compare.check_all_types
+    def test_surface_velocity(self, T):
+        plant = MultibodyPlant_[T](0.0)
+        body = plant.AddRigidBody("body")
+
+        # Confirm configuration of surface velocity axis.
+        axis_B = np.array([1.0, 0.0, 0.0])
+        plant.SetSurfaceVelocityAxis(body=body, axis_B=axis_B)
+        numpy_compare.assert_float_equal(
+            plant.GetSurfaceVelocityAxis(body=body), axis_B
+        )
+
+        plant.Finalize()
+
+        # Make sure ports are available.
+        self.assertIsNotNone(plant.get_surface_speeds_input_port())
+        self.assertIsNotNone(plant.get_surface_displacements_output_port())
 
     @numpy_compare.check_all_types
     def test_externally_applied_spatial_force(self, T):

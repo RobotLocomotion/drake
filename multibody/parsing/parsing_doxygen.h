@@ -323,6 +323,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_rotor_inertia
 - @ref tag_drake_screw_thread_pitch
 - @ref tag_drake_stiffness_damping
+- @ref tag_drake_surface_velocity_axis
 - @ref tag_drake_tendon_constraint
 - @ref tag_drake_tendon_constraint_joint
 - @ref tag_drake_tendon_constraint_offset
@@ -1687,6 +1688,17 @@ corresponding to a right-handed thread.
 - SDFormat path: `//model/link/drake:deformable_properties/drake:stiffness_damping`
 - URDF path: n/a
 - Syntax: Non-negative floating point value.
+
+@subsection tag_drake_surface_velocity_axis drake:surface_velocity_axis
+
+- SDFormat path: `//model/link/drake:surface_velocity_axis`
+- URDF path: `//robot/link/drake:surface_velocity_axis`
+- Syntax: Three space-separated floating point values.
+
+@subsubsection tag_drake_surface_velocity_axis_semantics Semantics
+
+If present, this element defines the surface velocity axis for the associated
+link. See @ref mbp_surface_velocity "Surface Velocity" for details.
 
 @subsubsection tag_drake_stiffness_damping_semantics Semantics
 

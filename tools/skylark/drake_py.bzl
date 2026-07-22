@@ -159,7 +159,7 @@ def drake_py_test(
     @param rendering (optional, default is False)
         See drake/tools/skylark/README.md for details.
 
-    @param test_alt_binder (optional, default is True)
+    @param test_alt_binder (optional, default is "auto")
         See drake/tools/skylark/README.md for details.
 
     By default, sets test size to "small" to indicate a unit test. Adds the tag
@@ -211,7 +211,7 @@ def drake_py_test(
         ])
     if test_alt_binder:
         alt_target_compatible_with, _ = combine_conditions(
-            name = name,
+            name = "alt_binder/" + name,
             opt_in_condition = opt_in_condition,
             opt_out_conditions = (opt_out_conditions or []) + [
                 # Sanitizers and memcheck use `test_lang_filters` to opt-out of
