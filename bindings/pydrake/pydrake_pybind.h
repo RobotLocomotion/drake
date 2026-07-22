@@ -396,72 +396,11 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 
 /// Allow numpy arrays of with dtype=object containing `Type` objects to convert
 /// to and from Eigen matrices of `Type`.
-// XXX(eigen) porting The Ref and Map should disallow mutable matrices.
 #ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
-#else  // PYDRAKE_USE_NANOBIND
-#define PYDRAKE_NUMPY_OBJECT_DTYPE(Type)                                       \
-  namespace nanobind {                                                         \
-  namespace detail {                                                           \
-  template <typename T>                                                        \
-  struct type_caster<T,                                                        \
-      enable_if_t<is_pydrake_numpy_dtype_object_castable<T> &&                 \
-                  std::is_same_v<std::remove_cv_t<typename T::Scalar>, Type>>> \
-      : public pydrake_numpy_dtype_object_type_caster<T> {};                   \
-  template <typename PlainObjectType, int Options, typename StrideType>        \
-  struct type_caster<Eigen::Ref<PlainObjectType, Options, StrideType>,         \
-      enable_if_t<std::is_same_v<                                              \
-          std::remove_cv_t<typename PlainObjectType::Scalar>, Type>>>          \
-      : public pydrake_numpy_dtype_object_type_caster<                         \
-            Eigen::Matrix<typename PlainObjectType::Scalar,                    \
-                PlainObjectType::RowsAtCompileTime,                            \
-                PlainObjectType::ColsAtCompileTime,                            \
-                (PlainObjectType::RowsAtCompileTime == 1 &&                    \
-                    PlainObjectType::ColsAtCompileTime != 1)                   \
-                    ? Eigen::RowMajor                                          \
-                    : 0,                                                       \
-                PlainObjectType::MaxRowsAtCompileTime,                         \
-                PlainObjectType::MaxColsAtCompileTime>> {                      \
-    using _matrix = Eigen::Matrix<typename PlainObjectType::Scalar,            \
-        PlainObjectType::RowsAtCompileTime,                                    \
-        PlainObjectType::ColsAtCompileTime,                                    \
-        (PlainObjectType::RowsAtCompileTime == 1 &&                            \
-            PlainObjectType::ColsAtCompileTime != 1)                           \
-            ? Eigen::RowMajor                                                  \
-            : 0,                                                               \
-        PlainObjectType::MaxRowsAtCompileTime,                                 \
-        PlainObjectType::MaxColsAtCompileTime>;                                \
-    template <typename T>                                                      \
-    using Cast = _matrix;                                                      \
-    explicit operator _matrix() const { return this->value; }                  \
-  };                                                                           \
-  template <typename MatrixType, int MapOptions, typename StrideType>          \
-  struct type_caster<Eigen::Map<MatrixType, MapOptions, StrideType>,           \
-      enable_if_t<std::is_same_v<                                              \
-          std::remove_cv_t<typename MatrixType::Scalar>, Type>>>               \
-      : public pydrake_numpy_dtype_object_type_caster<                         \
-            Eigen::Matrix<typename MatrixType::Scalar,                         \
-                MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime,  \
-                (MatrixType::RowsAtCompileTime == 1 &&                         \
-                    MatrixType::ColsAtCompileTime != 1)                        \
-                    ? Eigen::RowMajor                                          \
-                    : 0,                                                       \
-                MatrixType::MaxRowsAtCompileTime,                              \
-                MatrixType::MaxColsAtCompileTime>> {                           \
-    using _matrix = Eigen::Matrix<typename MatrixType::Scalar,                 \
-        MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime,          \
-        (MatrixType::RowsAtCompileTime == 1 &&                                 \
-            MatrixType::ColsAtCompileTime != 1)                                \
-            ? Eigen::RowMajor                                                  \
-            : 0,                                                               \
-        MatrixType::MaxRowsAtCompileTime, MatrixType::MaxColsAtCompileTime>;   \
-    template <typename T>                                                      \
-    using Cast = _matrix;                                                      \
-    explicit operator _matrix() const { return this->value; }                  \
-  };                                                                           \
-  } /* namespace detail */                                                     \
-  } /* namespace nanobind */
 #endif  // PYDRAKE_USE_PYBIND11
+// N.B. For PYDRAKE_USE_NANOBIND the pydrake_numpy_dtype_object_type_caster.h
+// has already defined the PYDRAKE_NUMPY_OBJECT_DTYPE macro.
 
 #ifdef PYDRAKE_USE_PYBIND11
 // Legacy synonym for PYDRAKE_NUMPY_OBJECT_DTYPE. Don't use this in new code.
