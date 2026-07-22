@@ -139,20 +139,20 @@ struct PyClassRemoveSharedPtrHolderAnnotation {
 };
 template <typename T, typename Holder, typename... Ts>
 struct PyClassRemoveSharedPtrHolderAnnotation<T, Holder, Ts...> {
-  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T>>,
-      py::class_<T, Ts...>, py::class_<T, Holder, Ts...>>;
+  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T> >,
+      py::class_<T, Ts...>, py::class_<T, Holder, Ts...> >;
 };
 template <typename T, typename Base, typename Holder, typename... Ts>
 struct PyClassRemoveSharedPtrHolderAnnotation<T, Base, Holder, Ts...> {
-  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T>>,
-      py::class_<T, Base, Ts...>, py::class_<T, Base, Holder, Ts...>>;
+  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T> >,
+      py::class_<T, Base, Ts...>, py::class_<T, Base, Holder, Ts...> >;
 };
 template <typename T, typename Base1, typename Base2, typename Holder,
     typename... Ts>
 struct PyClassRemoveSharedPtrHolderAnnotation<T, Base1, Base2, Holder, Ts...> {
-  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T>>,
+  using type = std::conditional_t<std::is_same_v<Holder, std::shared_ptr<T> >,
       py::class_<T, Base1, Base2, Ts...>,
-      py::class_<T, Base1, Base2, Holder, Ts...>>;
+      py::class_<T, Base1, Base2, Holder, Ts...> >;
 };
 
 }  // namespace internal
@@ -180,7 +180,7 @@ using is_pyobject = py::detail::is_pyobject<T>;
 #else   // PYDRAKE_USE_NANOBIND
 template <typename T>
 using is_pyobject =
-    std::is_base_of<py::detail::api_tag, std::remove_reference_t<T>>;
+    std::is_base_of<py::detail::api_tag, std::remove_reference_t<T> >;
 #endif  // PYDRAKE_USE_PYBIND11
 }  // namespace internal
 
@@ -317,7 +317,7 @@ auto ParamInit() {
 #else   // PYDRAKE_USE_NANOBIND
 template <typename CppClass>
 struct __attribute__((visibility("hidden"))) ParamInit
-    : py::def_visitor<ParamInit<CppClass>> {
+    : py::def_visitor<ParamInit<CppClass> > {
   template <typename PyClass, typename... Extra>
   void execute(PyClass& cl, const Extra&...) {
     cl.def("__init__", [](CppClass* self, py::kwargs kwargs) {
