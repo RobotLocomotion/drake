@@ -13,10 +13,10 @@ drake_cc_package_library(
     name = "icf",
     visibility = ["//visibility:public"],
     deps = [
-        ":ball_constraints_data_pool",
         ":coupler_constraints_data_pool",
         ":eigen_pool",
         ":gain_constraints_data_pool",
+        ":holonomic_constraints_data_pool",
         ":icf_builder",
         ":icf_data",
         ":icf_external_systems_linearizer",
@@ -28,7 +28,6 @@ drake_cc_package_library(
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
         ":reduced_mapping",
-        ":weld_constraints_data_pool",
     ],
 )
 
@@ -43,9 +42,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "ball_constraints_data_pool",
-    srcs = ["ball_constraints_data_pool.cc"],
-    hdrs = ["ball_constraints_data_pool.h"],
+    name = "holonomic_constraints_data_pool",
+    hdrs = ["holonomic_constraints_data_pool.h"],
     deps = [
         "//common:default_scalars",
         "//common:essential",
@@ -96,16 +94,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "weld_constraints_data_pool",
-    srcs = ["weld_constraints_data_pool.cc"],
-    hdrs = ["weld_constraints_data_pool.h"],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "icf_search_direction_data",
     hdrs = ["icf_search_direction_data.h"],
     deps = [
@@ -120,13 +108,12 @@ drake_cc_library(
     srcs = ["icf_data.cc"],
     hdrs = ["icf_data.h"],
     deps = [
-        ":ball_constraints_data_pool",
         ":coupler_constraints_data_pool",
         ":eigen_pool",
         ":gain_constraints_data_pool",
+        ":holonomic_constraints_data_pool",
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
-        ":weld_constraints_data_pool",
         "//common:essential",
     ],
 )
@@ -205,20 +192,20 @@ drake_cc_library(
         "ball_constraints_pool.h",
         "coupler_constraints_pool.h",
         "gain_constraints_pool.h",
+        "holonomic_constraints_pool.h",
         "icf_model.h",
         "limit_constraints_pool.h",
         "patch_constraints_pool.h",
         "weld_constraints_pool.h",
     ],
     deps = [
-        ":ball_constraints_data_pool",
         ":coupler_constraints_data_pool",
         ":eigen_pool",
+        ":holonomic_constraints_data_pool",
         ":icf_data",
         ":icf_search_direction_data",
         ":limit_constraints_data_pool",
         ":reduced_mapping",
-        ":weld_constraints_data_pool",
         "//common:default_scalars",
         "//common:essential",
         "//math:geometric_transform",
