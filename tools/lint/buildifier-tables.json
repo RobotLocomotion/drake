@@ -112,6 +112,7 @@
     "drake_py_binary.test_rule_opt_in_condition": 108,
     "drake_py_binary.test_rule_opt_out_conditions": 108,
     "drake_py_binary.test_rule_rendering": 109,
+    "drake_py_binary.test_rule_test_alt_binder": 110,
 
     "drake_jupyter_py_binary.add_test_rule": 100,
     "drake_jupyter_py_binary.test_rule_args": 101,

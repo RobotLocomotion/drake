@@ -1,0 +1,10 @@
+load("@with_cfg.bzl", "original_settings")
+
+package(
+    default_visibility = ["//visibility:private"],
+)
+
+# This is an implementation detail of python_binder_reset in :multi_config.bzl.
+original_settings(
+    name = "py_test_with_alt_binder_original_settings",
+)

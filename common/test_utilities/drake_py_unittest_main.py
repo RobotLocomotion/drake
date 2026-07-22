@@ -79,11 +79,13 @@ def main():
     main_py = sys.argv[0]
 
     # Parse the test case name out of the runfiles directory name.
-    match = re.search("^(.*bin/(.*?/)?([^/]*_test).runfiles/)", main_py)
+    # TODO(jwnimmer-tri) The (alt_binder...) group is used by test_alt_binder.
+    # Remove it when the test_alt_binder option is removed.
+    match = re.search("^(.*bin/(.*?/)?(alt_binder/[^/]*/)?([^/]*_test).runfiles/)", main_py)
     if not match:
         print(f"error: no test name match in {main_py}")
         sys.exit(1)
-    runfiles, test_package, test_name, = match.groups()
+    runfiles, test_package, _, test_name, = match.groups()
     test_basename = test_name + ".py"
 
     # Find the test's source file.

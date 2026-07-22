@@ -241,6 +241,7 @@ drake_py_test(
     args = _NOTEBOOKS,
     data = [":notebooks"],
     tags = ["lint"],
+    test_alt_binder = False,
     deps = [
         "@rules_python//python/runfiles",
     ],
