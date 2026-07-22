@@ -225,6 +225,7 @@ drake_py_binary(
         "--ensemble_size=3",
         "--num_evaluations=3",
     ],
+    test_rule_test_alt_binder = False,
 )
 
 drake_cc_binary(
@@ -450,6 +451,7 @@ drake_py_test(
         ":test/example_stochastic_scenario.yaml",
     ],
     main = "test/spong_sim_main_test.py",
+    test_alt_binder = False,
     deps = [
         ":acrobot_io",
         "//bindings/pydrake",

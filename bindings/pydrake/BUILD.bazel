@@ -68,11 +68,14 @@ drake_cc_library(
         ],
     }),
     visibility = ["//visibility:public"],
-    deps = [
-        # TODO(#21572) Using pybind11 unconditionally here is wrong, but is
-        # easier for now until all/most binding code has been ported.
-        "@drake//tools/workspace/pybind11",
-    ],
+    deps = select({
+        "//tools/workspace/nanobind:enabled": [
+            "@drake//tools/workspace/nanobind",
+        ],
+        "//conditions:default": [
+            "@drake//tools/workspace/pybind11",
+        ],
+    }),
 )
 
 drake_cc_library(
@@ -380,6 +383,7 @@ drake_py_unittest(
         "//:.clang-format",
     ],
     tags = ["lint"],
+    test_alt_binder = False,
 )
 
 drake_py_unittest(

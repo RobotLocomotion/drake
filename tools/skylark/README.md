@@ -94,3 +94,17 @@ Can either be True or False (defaults to False).
 When True, marks the test as needing graphics rendering capability, which
 suppresses test configurations (e.g., LSan) that are incompatible with graphics
 drivers' software stack.
+
+**test_alt_binder**
+
+Can be either True, False, or "auto" (defaults to "auto").
+Relevant for Python tests only.
+
+When True, the test is run twice: once with the //tools/flags:python_binder set
+to its default value, and once with the flag set to its alternative value.
+
+When False, the test is run just once, with the //tools/flags:python_binder set
+to its default value.
+
+TODO(#21572) Eventually "auto" should imply True in //bindings/pydrake/...,
+//tutorials/..., and //examples/... and False everywhere else.
