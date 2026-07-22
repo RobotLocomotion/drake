@@ -258,8 +258,7 @@ void DefClone(PyClass* ppy_class) {
 ///
 /// The set_state functor should take `(Class* self, Pickled pickled)` and
 /// placement-new construct the object into `self` based on `pickled`, with no
-/// return value. (The use of placement new is in anticipation of a nanobind
-/// port of this helper function.)
+/// return value.
 template <typename PyClass, typename GetState, typename SetState>
 void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
   PyClass& py_class = *ppy_class;
