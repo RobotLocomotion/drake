@@ -1,7 +1,6 @@
-#include "nanobind/nanobind.h"
-
 #include "drake_nanobind/eigen/dense.h"
 #include "drake_nanobind/eigen/sparse.h"
+#include "nanobind/nanobind.h"
 
 namespace py = nanobind;
 

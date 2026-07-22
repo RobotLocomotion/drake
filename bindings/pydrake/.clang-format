@@ -38,7 +38,7 @@ IncludeCategories:
   - Regex:    '^<'
     Priority: 40
   # Your project's h files.
-  - Regex:    '^"drake'
+  - Regex:    '^"drake/'
     Priority: 50
   # Other libraries' h files (with quotes).
   - Regex:    '^"'

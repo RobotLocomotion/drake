@@ -34,6 +34,8 @@
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #pragma GCC diagnostic ignored "-Wnarrowing"
 #endif  // __clang__
+#include "drake_nanobind/eigen/dense.h"
+#include "drake_nanobind/eigen/sparse.h"
 #include "nanobind/eval.h"
 #include "nanobind/make_iterator.h"
 #include "nanobind/nanobind.h"
@@ -57,9 +59,6 @@
 #include "nanobind/stl/variant.h"
 #include "nanobind/stl/vector.h"
 #include "nanobind/trampoline.h"
-
-#include "drake_nanobind/eigen/dense.h"
-#include "drake_nanobind/eigen/sparse.h"
 #pragma GCC diagnostic pop
 
 #include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
