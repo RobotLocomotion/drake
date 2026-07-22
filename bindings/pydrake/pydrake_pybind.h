@@ -419,7 +419,29 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 #else  // PYDRAKE_USE_NANOBIND
 #define PYDRAKE_MODULE NB_MODULE
 #define PYDRAKE_BINDER_NAMESPACE nanobind
-#define PYDRAKE_OVERRIDE(unused1, unused2, ...) NB_OVERRIDE(__VA_ARGS__)
+#define PYDRAKE_OVERRIDE(unused1, unused2, func, ...)                         \
+  do {                                                                        \
+    try {                                                                     \
+      NB_OVERRIDE(func, __VA_ARGS__);                                         \
+    } catch (const py::builtin_exception& e) {                                \
+      /* In case the method was not overridden, nanobind might erroneously */ \
+      /* throw instead of using the base class implementation. This will */   \
+      /* happen when the C++ base class method isn't bound in pydrake. */     \
+      /* We'll check for that exact failure mode and handle it here. */       \
+      if (e.type() == py::exception_type::runtime_error) {                    \
+        const std::string_view what = e.what();                               \
+        if (what.starts_with("nanobind::detail::get_trampoline('") &&         \
+            what.ends_with("'): lookup failed!")) {                           \
+          { /* Flush the failure from PyObject_GetAttr. */                    \
+            py::gil_scoped_acquire guard;                                     \
+            PyErr_Clear();                                                    \
+          }                                                                   \
+          return NBBase::func(__VA_ARGS__);                                   \
+        }                                                                     \
+      }                                                                       \
+      throw;                                                                  \
+    }                                                                         \
+  } while (0)
 #define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) \
   NB_OVERRIDE_PURE(__VA_ARGS__)
 #define PYDRAKE_OVERRIDE_PURE_NAME(unused1, unused2, ...) \

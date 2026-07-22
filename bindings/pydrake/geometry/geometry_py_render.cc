@@ -135,15 +135,7 @@ class PyRenderEngine : public RenderEngine {
   }
 
   std::string DoGetParameterYaml() const override {
-    {
-      py::gil_scoped_acquire guard;
-      const RenderEngine* const base = this;
-      py::object self = py::cast(base);
-      if (py::hasattr(self, "DoGetParameterYaml")) {
-        return py::cast<std::string>(self.attr("DoGetParameterYaml")());
-      }
-    }
-    return Base::DoGetParameterYaml();
+    PYDRAKE_OVERRIDE(std::string, Base, DoGetParameterYaml);
   }
 
   // Expose this protected helper function so that Python implementations can
