@@ -71,10 +71,10 @@ namespace drake {
 /// "Python Bindings" technical notes.
 ///
 /// Drake developers should prefer any aliases defined here over their full
-/// spellings in `pybind11`.
+/// spellings in `pybind11` or `nanobind`.
 ///
-/// `namespace py` is a shorthand alias to `pybind11` for consistency. (This
-/// symbol cannot be exposed directly in Doxygen.)
+/// `namespace py` is a shorthand alias for consistency. (This symbol cannot be
+/// exposed directly in Doxygen.)
 ///
 /// @note Downstream users should avoid `using namespace drake::pydrake`, as
 /// this may create ambiguous aliases (especially for GCC). Instead, consider
