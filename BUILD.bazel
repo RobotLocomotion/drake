@@ -1,6 +1,7 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
+load("//tools/flags/internal:multi_config.bzl", "python_binder_reset")
 load("//tools/install:install.bzl", "install", "install_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_library")
@@ -37,10 +38,13 @@ drake_py_library(
 
 # Expose shared library for (a) installed binaries, (b) Drake Python bindings,
 # and (c) downstream C++ libraries which will also provide Python bindings.
-alias(
+# We use 'python_binder_reset' so that our multi-config test suite (which runs
+# tests using both pybind11 and nanobind) doesn't recompile libdrake for both
+# configs -- it resets the binder flag to its default value for this target.
+python_binder_reset(
     name = "drake_shared_library",
-    actual = "//tools/install/libdrake:drake_shared_library",
     visibility = ["//visibility:public"],
+    exports = "//tools/install/libdrake:drake_shared_library",
 )
 
 # A manually-curated collection of most model files in Drake, so that we can

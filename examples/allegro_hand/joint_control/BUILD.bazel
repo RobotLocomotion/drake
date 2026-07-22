@@ -64,6 +64,7 @@ drake_py_unittest(
         ":run_twisting_mug",
     ],
     flaky = True,
+    test_alt_binder = False,
     deps = [
         "@rules_python//python/runfiles",
     ],

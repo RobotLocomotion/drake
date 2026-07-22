@@ -69,11 +69,14 @@ def pybind_py_library(
         linkstatic = 1,
         copts = cc_copts + EXTRA_PYBIND_COPTS,
         # Always link to the binding library.
-        # TODO(#21572) Using pybind11 unconditionally here is wrong, but is
-        # easier for now until all/most binding code has been ported.
-        deps = [
-            "@drake//tools/workspace/pybind11",
-        ] + cc_deps,
+        deps = select({
+            "@drake//tools/workspace/nanobind:enabled": [
+                "@drake//tools/workspace/nanobind",
+            ],
+            "//conditions:default": [
+                "@drake//tools/workspace/pybind11",
+            ],
+        }) + cc_deps,
         **kwargs
     )
 

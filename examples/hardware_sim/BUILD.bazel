@@ -105,6 +105,7 @@ drake_py_unittest(
         ":demo_cc",
     ],
     shard_count = 4,
+    test_alt_binder = False,
     deps = [
         ":hardware_sim_test_common",
     ],
