@@ -1,15 +1,12 @@
 #pragma once
 
-#include <vector>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/holonomic_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
-#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
-#include "drake/multibody/contact_solvers/icf/weld_constraints_data_pool.h"
 
 namespace drake {
 namespace multibody {
@@ -50,31 +47,16 @@ belong to different cliques.
 
 @tparam_nonsymbolic_scalar */
 template <typename T>
-class WeldConstraintsPool {
+class WeldConstraintsPool
+    : public HolonomicConstraintsPool<T, 6, WeldConstraintsPool<T>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldConstraintsPool);
 
+  static constexpr bool FlipNegatesG0() { return true; }
+
   /* Constructs an empty pool. */
-  explicit WeldConstraintsPool(const IcfModel<T>* parent_model);
-
-  ~WeldConstraintsPool();
-
-  /* @see IsAbstractConstraintsPool. */
-  const IcfModel<T>& model() const { return *model_; }
-  int num_constraints() const { return ssize(body_pairs_); }
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-  void AccumulateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
-          hessian) const;
-  void ReduceInto(const ReducedMapping& mapping,
-                  WeldConstraintsPool<T>* reduced_pool) const;
-
-  /* Resizes the constraints pool to store the given number of weld constraints.
-
-  @warning After resizing, constraints may hold invalid data until Set() is
-  called for each constraint index in [0, num_constraints()). */
-  void Resize(int num_constraints);
+  explicit WeldConstraintsPool(const IcfModel<T>* parent_model)
+      : HolonomicConstraintsPool<T, 6, WeldConstraintsPool<T>>(parent_model) {}
 
   /* Sets the k-th weld constraint.
 
@@ -94,84 +76,33 @@ class WeldConstraintsPool {
            const Vector3<T>& p_BQ_W, const Vector3<T>& p_PoQo_W,
            const Vector3<T>& a_PQ_W);
 
-  /* Computes the sparsity pattern for the pool. Clique i is connected to
-  clique j > i iff sparsity[i] contains j. */
-  void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
-
-  /* Precomputes the iteration-invariant Hessian blocks for every weld
-  constraint. Because the weld cost ℓ(vc) = ½(v̂ − vc)ᵀR⁻¹(v̂ − vc) is
-  purely quadratic in the constraint velocity, its Hessian ∂²ℓ/∂v² depends
-  only on the regularization R and the (constant) constraint Jacobians. This
-  method must be called after all Set() calls and before AccumulateHessian()
-  is used. */
-  void PrecomputeHessianBlocks();
-
-  /* Computes problem data as a function of the body spatial velocities V_WB for
-  the full IcfModel. */
-  void CalcData(const EigenPool<Vector6<T>>& V_WB,
-                WeldConstraintsDataPool<T>* weld_data) const;
-
-  /* Computes the first and second derivatives of the constraint cost
-  ℓ̃(α) = ℓ(v + α⋅w).
-
-  @param weld_data Constraint data computed at v + α⋅w.
-  @param U_WB Body spatial velocities when generalized velocities equal w.
-         I.e., U_WB = J_WB⋅w.
-  @param[out] dcost the first derivative dℓ̃/dα on output.
-  @param[out] d2cost the second derivative d²ℓ̃/dα² on output. */
-  void CalcCostAlongLine(const WeldConstraintsDataPool<T>& weld_data,
-                         const EigenPool<Vector6<T>>& U_WB, T* dcost,
-                         T* d2cost) const;
+  /* Hooks required by HolonomicConstraintsPool (CRTP). */
+  Vector6<T> CalcConstraintVelocity(int k, const Vector6<T>& V_WB,
+                                    const Vector6<T>* V_WA) const;
+  void CalcSpatialImpulses(int k, const Vector6<T>& gamma, Vector6<T>* Gamma_Bo,
+                           Vector6<T>* Gamma_Ao) const;
+  void CalcHessianBlocks(int k, const T& R_inv, Matrix6<T>* G_Bp,
+                         Matrix6<T>* G_Ap, Matrix6<T>* G_cross) const;
+  const WeldConstraintsDataPool<T>& GetDataPool(const IcfData<T>& data) const {
+    return data.weld_constraints_data();
+  }
+  void ResizeGeometry(int num_constraints);
+  void ReduceGeometryInto(WeldConstraintsPool<T>* reduced, int k,
+                          bool flip) const;
 
   /* Testing only access. */
-  const std::vector<std::pair<int, int>>& body_pairs() const {
-    return body_pairs_;
-  }
   const EigenPool<Vector3<T>>& p_AP_W() const { return p_AP_W_; }
   const EigenPool<Vector3<T>>& p_BQ_W() const { return p_BQ_W_; }
   const EigenPool<Vector3<T>>& p_PoQo_W() const { return p_PoQo_W_; }
-  const EigenPool<Vector6<T>>& g0() const { return g0_; }
-  const EigenPool<Vector6<T>>& R() const { return R_; }
-  int hessian_blocks_size() const { return ssize(hessian_blocks_); }
 
  private:
-  const IcfModel<T>* const model_;  // The parent model.
-
-  // Body pairs involved in each weld constraint, (bodyA, bodyB).
-  // bodyB is always dynamic (not anchored).
-  std::vector<std::pair<int, int>> body_pairs_;
-
   // Per-constraint data, all indexed by constraint index k.
   EigenPool<Vector3<T>> p_AP_W_;    // Position of P in A, expressed in W.
   EigenPool<Vector3<T>> p_BQ_W_;    // Position of Q in B, expressed in W.
   EigenPool<Vector3<T>> p_PoQo_W_;  // Relative translation, expressed in W.
-
-  EigenPool<Vector6<T>> g0_;  // Constraint function at start of step.
-
-  // Near-rigid regularization per constraint.
-  // R depends on the current time step δt and is computed in
-  // PrecomputeHessianBlocks(), which must be called whenever δt changes.
-  // R is a diagonal 6×6 regularization matrix: R = diag(Rᵣ, Rₜ).
-  EigenPool<Vector6<T>> R_;  // The diagonal regularization matrix.
-
-  // TODO(sherm1) Consider whether this should be using EigenPools to
-  //  reduce memory use.
-  // Precomputed Hessian blocks for each weld constraint, populated by
-  // PrecomputeHessianBlocks(). These are iteration-invariant because the weld
-  // cost Hessian depends only on R and the constant constraint Jacobians.
-  struct HessianBlock {
-    int c_b{-1};         // Clique index for body B (always valid).
-    int c_a{-1};         // Clique index for body A (-1 if anchored).
-    MatrixX<T> H_BB;     // Diagonal block for body B's clique.
-    MatrixX<T> H_AA;     // Diagonal block for body A's clique (if dynamic).
-    MatrixX<T> H_cross;  // Off-diagonal (or same-clique cross) block.
-    int cross_row{-1};   // Block row index for the cross term.
-    int cross_col{-1};   // Block column index for the cross term.
-    bool a_is_dynamic{false};  // True when body A is not anchored.
-  };
-  std::vector<HessianBlock> hessian_blocks_;
 };
 static_assert(IsAbstractConstraintsPool<WeldConstraintsPool>);
+static_assert(IsHolonomicConstraintsDerived<WeldConstraintsPool>);
 
 }  // namespace internal
 }  // namespace icf
