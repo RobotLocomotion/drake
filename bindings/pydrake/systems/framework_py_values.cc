@@ -175,7 +175,7 @@ void DefineBusValue(py::module_ m) {
           [](const Class& self) {
             return py::make_key_iterator(
 #ifdef PYDRAKE_USE_NANOBIND
-                py::type<Class>(), "BusValue",
+                py::type<Class>(), "key_iterator",
 #endif
                 self.begin(), self.end());
           },
