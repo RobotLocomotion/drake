@@ -20,6 +20,7 @@ using multibody::internal::SelectRowsCols;
 template <typename T>
 IcfModel<T>::IcfModel()
     : params_{std::make_unique<IcfParameters<T>>()},
+      ball_constraints_pool_(this),
       coupler_constraints_pool_(this),
       gain_constraints_pool_(this),
       limit_constraints_pool_(this),
@@ -97,6 +98,7 @@ Eigen::VectorBlock<VectorX<T>> IcfModel<T>::mutable_clique_segment(
 template <typename T>
 void IcfModel<T>::ResizeData(IcfData<T>* data) const {
   data->Resize(num_bodies_, num_velocities_, max_clique_size_,
+               ball_constraints_pool_.num_constraints(),
                coupler_constraints_pool_.num_constraints(),
                weld_constraints_pool_.num_constraints(),
                gain_constraints_pool_.constraint_sizes(),
@@ -117,6 +119,7 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   CalcBodySpatialVelocities(v, &V_WB);
 
   // Compute constraint data.
+  ball_constraints_pool_.CalcData(V_WB, &data->mutable_ball_constraints_data());
   coupler_constraints_pool_.CalcData(v,
                                      &data->mutable_coupler_constraints_data());
   gain_constraints_pool_.CalcData(v, &data->mutable_gain_constraints_data());
@@ -127,6 +130,7 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
 
   // Accumulate gradient contributions from constraints.
   VectorX<T>& gradient = data->mutable_gradient();
+  ball_constraints_pool_.AccumulateGradient(*data, &gradient);
   coupler_constraints_pool_.AccumulateGradient(*data, &gradient);
   gain_constraints_pool_.AccumulateGradient(*data, &gradient);
   limit_constraints_pool_.AccumulateGradient(*data, &gradient);
@@ -134,7 +138,7 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   weld_constraints_pool_.AccumulateGradient(*data, &gradient);
 
   // Accumulate cost contributions from constraints.
-  data->set_cost(data->momentum_cost() +
+  data->set_cost(data->momentum_cost() + data->ball_constraints_data().cost() +
                  data->coupler_constraints_data().cost() +
                  data->gain_constraints_data().cost() +
                  data->limit_constraints_data().cost() +
@@ -164,6 +168,7 @@ void IcfModel<T>::UpdateHessian(
   }
 
   // Add constraints' contributions.
+  ball_constraints_pool_.AccumulateHessian(data, hessian);
   coupler_constraints_pool_.AccumulateHessian(data, hessian);
   gain_constraints_pool_.AccumulateHessian(data, hessian);
   limit_constraints_pool_.AccumulateHessian(data, hessian);
@@ -277,6 +282,24 @@ T IcfModel<T>::CalcCostAlongLine(
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
+  // Add ball constraints contributions:
+  {
+    T constraint_dcost, constraint_d2cost;
+
+    EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
+    // N.B. V_WB_alpha was already computed above for patch constraints.
+
+    ball_constraints_pool_.CalcData(V_WB_alpha,
+                                    &data.scratch().ball_constraints_data);
+    ball_constraints_pool_.CalcCostAlongLine(
+        data.scratch().ball_constraints_data, search_direction.U,
+        &constraint_dcost, &constraint_d2cost);
+
+    cost += data.scratch().ball_constraints_data.cost();
+    *dcost_dalpha += constraint_dcost;
+    *d2cost_dalpha2 += constraint_d2cost;
+  }
+
   // Add weld constraints contributions:
   {
     T constraint_dcost, constraint_d2cost;
@@ -318,11 +341,13 @@ void IcfModel<T>::SetSparsityPattern() {
   }
 
   // Build off-diagonal entries in the sparsity pattern.
+  ball_constraints_pool_.CalcSparsityPattern(&sparsity);
   patch_constraints_pool_.CalcSparsityPattern(&sparsity);
   weld_constraints_pool_.CalcSparsityPattern(&sparsity);
 
-  // Precompute the iteration-invariant weld Hessian blocks now that all
-  // constraint data and model parameters are finalized.
+  // Precompute the iteration-invariant ball and weld Hessian blocks now that
+  // all constraint data and model parameters are finalized.
+  ball_constraints_pool_.PrecomputeHessianBlocks();
   weld_constraints_pool_.PrecomputeHessianBlocks();
 
   // TODO(#23912): This line allocates.
@@ -351,9 +376,10 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
 
   params_->time_step = time_step;
 
-  // Weld constraint regularization R depends on the time step.
+  // Ball and weld constraint regularization R depends on the time step.
   // Recompute Hessian blocks whenever dt changes so
   // AccumulateHessian() uses up-to-date values.
+  ball_constraints_pool_.PrecomputeHessianBlocks();
   weld_constraints_pool_.PrecomputeHessianBlocks();
 }
 
@@ -452,6 +478,8 @@ void IcfModel<T>::ReduceInto(IcfModel<T>* reduced_model,
   reduced_model->ResetParameters(std::move(reduced_params));
 
   // Reduce the constraints.
+  ball_constraints_pool().ReduceInto(*mapping,
+                                     &reduced_model->ball_constraints_pool());
   coupler_constraints_pool().ReduceInto(
       *mapping, &reduced_model->coupler_constraints_pool());
   gain_constraints_pool().ReduceInto(*mapping,
