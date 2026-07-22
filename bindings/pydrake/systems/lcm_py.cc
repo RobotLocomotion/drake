@@ -30,36 +30,12 @@ using systems::lcm::SerializerInterface;
 
 namespace {
 
-// Base class for trampoline class that gives nicer method signatures for
-// Python overrides.
-class SerializerInterfaceBuffered : public SerializerInterface {
- public:
-  // This signature avoids ownership transfer complaints from nanobind.
-  std::shared_ptr<AbstractValue> CreateDefaultValueShared() const {
-    throw std::logic_error(
-        "tried to call pure virtual function "
-        "SerializerInterface::CreateDefaultValue");
-  }
-
-  // This signature passes binary message data as py::bytes.
-  void DeserializeBuffer(const py::bytes&, AbstractValue*) const {
-    throw std::logic_error(
-        "tried to call pure virtual function SerializerInterface::Deserialize");
-  }
-
-  // This signature returns binary message data as py::bytes.
-  py::bytes SerializeBuffer(const AbstractValue*) const {
-    throw std::logic_error(
-        "tried to call pure virtual function SerializerInterface::Serialize");
-  }
-};
-
 // pybind11 trampoline class to permit overriding virtual functions in
 // Python.
-class PySerializerInterface : public SerializerInterfaceBuffered {
+class PySerializerInterface : public SerializerInterface {
  public:
-  NB_TRAMPOLINE(SerializerInterfaceBuffered, 100);
-  using Base = SerializerInterfaceBuffered;
+  NB_TRAMPOLINE(SerializerInterface, 100);
+  using Base = SerializerInterface;
 
   PySerializerInterface() : Base() {}
 
@@ -70,49 +46,36 @@ class PySerializerInterface : public SerializerInterfaceBuffered {
   // interface below.
 
   std::unique_ptr<AbstractValue> CreateDefaultValue() const final {
-#ifdef PYDRAKE_USE_PYBIND11
     // Our required unique_ptr return type cannot be directly fulfilled by a
-    // Python override, so we only ask the Python override for a py::object and
-    // then just Clone it to obtain the necessary C++ signature. Because the
-    // PYDRAKE_OVERRIDE_PURE macro embeds a `return ...;` statement, we must
-    // wrap it in lambda so that we can post-process the return value.
-    py::object default_value = [this]() -> py::object {
-      PYDRAKE_OVERRIDE_PURE(
-          py::object, SerializerInterface, CreateDefaultValue);
-    }();
-    DRAKE_THROW_UNLESS(!default_value.is_none());
-    return py::cast<const AbstractValue*>(default_value)->Clone();
-#else   // PYDRAKE_USE_NANOBIND
-    // Similar to above, we use a compromise return type from the Python
-    // override. In this case, it is shared_ptr. We still satisfy the enclosing
-    // unique_ptr requirement via Clone().
-    auto default_value = [this]() -> std::shared_ptr<AbstractValue> {
-      PYDRAKE_OVERRIDE_PURE_NAME(std::shared_ptr<AbstractValue>,
-          SerializerInterface, "CreateDefaultValue", CreateDefaultValueShared);
-    }();
-    DRAKE_THROW_UNLESS(default_value != nullptr);
-    return default_value->Clone();
-#endif  // PYDRAKE_USE_PYBIND11
+    // PYDRAKE_OVERRIDE_PURE, so we only ask the override for a py::object and
+    // then Clone it to obtain the necessary C++ signature.
+    py::gil_scoped_acquire guard;
+    const SerializerInterface* const self = this;
+    py::object result_py = py::cast(self).attr("CreateDefaultValue")();
+    const auto* result_cxx = py::cast<const AbstractValue*>(result_py);
+    DRAKE_THROW_UNLESS(result_cxx != nullptr);
+    return result_cxx->Clone();
   }
 
   void Deserialize(const void* message_bytes, int message_length,
       AbstractValue* abstract_value) const override {
+    // Passing {message_bytes, message_length} as a py::buffer means we can't
+    // use PYDRAKE_OVERRIDE_PURE; we'll need to write it out longhand.
     py::gil_scoped_acquire guard;
+    const SerializerInterface* const self = this;
     py::bytes buffer(
         reinterpret_cast<const char*>(message_bytes), message_length);
-    // change of signature issues.
-    PYDRAKE_OVERRIDE_PURE_NAME(void, SerializerInterface, "Deserialize",
-        DeserializeBuffer, buffer, abstract_value);
+    py::cast(self).attr("Deserialize")(buffer, abstract_value);
   }
 
   void Serialize(const AbstractValue& abstract_value,
       std::vector<uint8_t>* message_bytes) const override {
+    // Converting the returned py::buffer to message_bytes means we can't use
+    // PYDRAKE_OVERRIDE_PURE; we'll need to write it out longhand.
     py::gil_scoped_acquire guard;
-    auto wrapped = [&]() -> py::bytes {
-      PYDRAKE_OVERRIDE_PURE_NAME(py::bytes, SerializerInterface, "Serialize",
-          SerializeBuffer, &abstract_value);
-    };
-    py::bytes result = wrapped();
+    const SerializerInterface* const self = this;
+    // N.B. We must pass `abstract_value` as a pointer to prevent copying.
+    py::bytes result{py::cast(self).attr("Serialize")(&abstract_value)};
     message_bytes->resize(result.size());
     std::copy(
         result.c_str(), result.c_str() + result.size(), message_bytes->data());

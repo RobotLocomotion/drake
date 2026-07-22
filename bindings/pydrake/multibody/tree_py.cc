@@ -1301,29 +1301,11 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
   }
 
   void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
-    {
-      py::gil_scoped_acquire guard;
-      const ForceDensityField<T>* const base = this;
-      py::object self = py::cast(base);
-      if (py::hasattr(self, "DoDeclareCacheEntries")) {
-        self.attr("DoDeclareCacheEntries")(plant);
-        return;
-      }
-    }
-    return ForceDensityFieldPublic<T>::DoDeclareCacheEntries(plant);
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
   }
 
   void DoDeclareInputPorts(MultibodyPlant<T>* plant) override {
-    {
-      py::gil_scoped_acquire guard;
-      const ForceDensityField<T>* const base = this;
-      py::object self = py::cast(base);
-      if (py::hasattr(self, "DoDeclareInputPorts")) {
-        self.attr("DoDeclareInputPorts")(plant);
-        return;
-      }
-    }
-    return ForceDensityFieldPublic<T>::DoDeclareInputPorts(plant);
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
   }
 };
 

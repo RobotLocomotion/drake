@@ -14,7 +14,6 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
-#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
@@ -65,16 +64,8 @@ class PyRenderEngine : public RenderEngine {
   bool DoRegisterNamedVisual(GeometryId id, Shape const& shape,
       PerceptionProperties const& properties, RigidTransformd const& X_WG,
       std::string_view name) override {
-    {
-      py::gil_scoped_acquire guard;
-      const RenderEngine* const base = this;
-      py::object self = py::cast(base);
-      if (py::hasattr(self, "DoRegisterNamedVisual")) {
-        return py::cast<bool>(self.attr("DoRegisterNamedVisual")(
-            id, shape, properties, X_WG, name));
-      }
-    }
-    return Base::DoRegisterNamedVisual(id, shape, properties, X_WG, name);
+    PYDRAKE_OVERRIDE(
+        bool, Base, DoRegisterNamedVisual, id, shape, properties, X_WG, name);
   }
 
   void DoUpdateVisualPose(GeometryId id, RigidTransformd const& X_WG) override {
