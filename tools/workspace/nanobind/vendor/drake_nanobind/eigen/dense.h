@@ -125,6 +125,32 @@ template <typename T> constexpr bool is_eigen_xpr_v =
     is_eigen_v<T> && !is_eigen_plain_v<T> && !is_eigen_sparse_v<T> &&
     !std::is_base_of_v<Eigen::MapBase<T, Eigen::ReadOnlyAccessors>, T>;
 
+// Drake-specific helper: convert sequences (i.e., lists) to np.array.
+// See https://github.com/wjakob/nanobind/discussions/327.
+template <int want_ndim>
+object convert_to_numpy(handle src) {
+    try {
+        auto numpy = module_::import_("numpy");
+        object result = numpy.attr("asarray")(src);
+        const int ndim = cast<int>(result.attr("ndim"));
+        if constexpr (want_ndim == 2) {
+            if (ndim == 1) {
+                // Promote from 1d array to 2d array (as column vector).
+                result = result.attr("reshape")(-1, 1);
+            }
+        } else {
+            static_assert(want_ndim == 1);
+            if (ndim == 2) {
+                // Demote from 2d array to 1d array.
+                result = result.attr("squeeze")();
+            }
+        }
+        return result;
+    } catch (python_error&) {
+        return none();
+    }
+}
+
 template <typename T>
 struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
                                   is_ndarray_scalar_v<typename T::Scalar>>> {
@@ -138,7 +164,16 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
         // We're in any case making a copy, so non-writable inputs area also okay
         using NDArrayConst = array_for_eigen_t<T, const typename T::Scalar>;
         make_caster<NDArrayConst> caster;
-        if (!caster.from_python(src, flags & ~(uint8_t)cast_flags::accepts_none, cleanup))
+        bool success = caster.from_python(src, flags & ~(uint8_t)cast_flags::accepts_none, cleanup);
+        // Drake-specific change: allow sequences (i.e., lists) to convert.
+        if (!success && (flags & (uint8_t) cast_flags::convert) && cleanup) {
+            object np_array = convert_to_numpy<ndim_v<T>>(src);
+            success = caster.from_python(np_array, flags & ~(uint8_t)cast_flags::accepts_none, cleanup);
+            if (success) {
+                cleanup->append(np_array.release().ptr());
+            }
+        }
+        if (!success)
             return false;
 
         const NDArrayConst &array = caster.value;
@@ -449,6 +484,15 @@ struct type_caster<Eigen::Ref<T, Options, StrideType>,
 
             if (dcaster.from_python_(src, flags, cleanup))
                 return true;
+
+            // Drake-specific change: allow sequences (i.e., lists) to convert.
+            if ((flags & (uint8_t) cast_flags::convert) && cleanup) {
+                object np_array = convert_to_numpy<ndim_v<T>>(src);
+                if (dcaster.from_python_(np_array, flags, cleanup)) {
+                    cleanup->append(np_array.release().ptr());
+                    return true;
+                }
+            }
         }
 
         return false;
