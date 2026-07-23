@@ -1342,13 +1342,6 @@ RenderEngineVtk::RenderingPipeline& RenderEngineVtk::get_mutable_pipeline(
   return *pipelines_[image_type];
 }
 
-void RenderEngineVtk::SetDefaultLightPosition(const Vector3<double>&) {
-  log()->warn(
-      "RenderEngineVtk::SetDefaultLightPosition() no longer affects lighting. "
-      "Instead, configure the lights at construction via "
-      "RenderEngineVtkParams.");
-}
-
 void RenderEngineVtk::SetPbrMaterials() {
   if (!use_pbr_materials_) {
     use_pbr_materials_ = true;

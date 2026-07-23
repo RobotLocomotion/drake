@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "pybind11/eval.h"
-
 #include "drake/common/nice_type_name.h"
 
 using std::string;

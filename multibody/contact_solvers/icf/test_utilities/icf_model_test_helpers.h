@@ -63,6 +63,12 @@ one between the world (body 0) and body 1, and one between body 2 and body 3
 template <typename T>
 void AddWeldConstraints(IcfModel<T>* model);
 
+/* Adds ball constraints to the given model. Two ball constraints are added:
+one between the world (body 0) and body 1, and one between body 2 and body 3
+(cross-clique in the multi-clique case). */
+template <typename T>
+void AddBallConstraints(IcfModel<T>* model);
+
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers

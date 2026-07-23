@@ -1,4 +1,4 @@
-#include "pybind11/eval.h"
+#include <utility>
 
 #include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
@@ -71,13 +71,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             cls_doc.CalcMaximumPossibleMomentOfInertia.doc)
         .def(
             "__getitem__",
-            [](const Class& self, py::tuple key) -> T {
-              if (key.size() != 2) {
-                throw std::out_of_range("Expected [i,j] for __getitem__.");
-              }
-              const int i = py::cast<int>(key[0]);
-              const int j = py::cast<int>(key[1]);
-              return self(i, j);
+            [](const Class& self, std::pair<int, int> key) -> T {
+              return self(key.first, key.second);
             },
             cls_doc.operator_call.doc)
         .def("CopyToFullMatrix3", &Class::CopyToFullMatrix3,

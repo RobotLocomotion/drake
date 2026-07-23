@@ -159,6 +159,9 @@ GTEST_TEST(SolverOptionsTest, SetOptionError) {
       solver_options.SetOption(CommonSolverOption::kPrintToConsole, 2),
       ".*SetOption.*kPrintToConsole.*must be 0 or 1, not 2.");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.SetOption(CommonSolverOption::kPrintToConsole, 2.0),
+      ".*SetOption.*kPrintToConsole.*must be 0 or 1, not 2.0.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kMaxThreads, 2.1),
       ".*SetOption.*kMaxThreads.*must be an int > 0, not 2.1.");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -178,7 +181,8 @@ GTEST_TEST(SolverOptionsTest, Serialization) {
   dut.SetOption(id1, "some_int", 2);
   dut.SetOption(id2, "some_string", "foo");
   dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
-  dut.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  // We'll pass kPrintToConsole as a float to check it's cast back to an int.
+  dut.SetOption(CommonSolverOption::kPrintToConsole, 1.0);
   dut.SetOption(CommonSolverOption::kStandaloneReproductionFileName, "bar.py");
   dut.SetOption(CommonSolverOption::kMaxThreads, 2);
 

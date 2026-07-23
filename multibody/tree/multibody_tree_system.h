@@ -93,6 +93,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   bool is_discrete() const { return is_discrete_; }
 
+  /* Returns the size of the continuous miscellaneous state vector z for this
+  model. */
+  int num_misc_continuous_states() const { return num_misc_continuous_states_; }
+
   /* Returns a reference to the up-to-date FrameBodyPoseCache in the
   given Context, recalculating it first if necessary. */
   const FrameBodyPoseCache<T>& EvalFrameBodyPoses(
@@ -392,10 +396,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // a DoLeafSetDefaultState().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
-
-  /* Returns the size of the continuous miscellaneous state vector z for this
-  model. */
-  int num_misc_continuous_states() const { return num_misc_continuous_states_; }
 
  private:
   // This is only meaningful in continuous mode.

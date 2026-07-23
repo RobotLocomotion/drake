@@ -119,6 +119,15 @@ class TestValue(unittest.TestCase):
         value[1] = 6.0
         self.assertEqual(value[1], 6.0)
 
+    @numpy_compare.check_all_types
+    def test_basic_vector_mutable_view(self, T):
+        dut = BasicVector_[T](3)
+        if T is float:
+            self.assertEqual(dut.get_mutable_value().size, 3)
+        else:
+            with self.assertRaises(AttributeError):
+                dut.get_mutable_value()
+
     def assert_basic_vector_equal(self, a, b):
         self.assertIs(type(a), type(b))
         self.assertIsNot(a, b)

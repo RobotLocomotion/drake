@@ -7,8 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/systems_framework.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
@@ -241,23 +239,15 @@ struct Impl {
   template <typename LeafSystemBase = LeafSystemPublic>
   class PyLeafSystemBase : public LeafSystemBase {
    public:
+    NB_TRAMPOLINE(LeafSystemBase, 2);
     using Base = LeafSystemBase;
-    using Base::Base;
 
     // Trampoline virtual methods.
 
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
-      // Yuck! We have to dig in and use internals :(
-      // We must ensure that pybind only sees pointers, since this method may
-      // be called from C++, and pybind will not have seen these objects yet.
-      // @see https://github.com/pybind/pybind11/issues/1241
-      // TODO(eric.cousineau): Figure out how to supply different behavior,
-      // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(
-          void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
-      // If the macro did not return, use default functionality.
-      Base::DoCalcTimeDerivatives(context, derivatives);
+      PYDRAKE_OVERRIDE(void, LeafSystem<T>, DoCalcTimeDerivatives,
+          std::ref(context), derivatives);
     }
 
     // This actually changes the signature of DoGetWitnessFunction,
@@ -267,30 +257,32 @@ struct Impl {
     // trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
-      py::gil_scoped_acquire guard;
-      auto wrapped =
-          [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
-        PYBIND11_OVERLOAD_INT(
-            std::optional<std::vector<const WitnessFunction<T>*>>,
-            LeafSystem<T>, "DoGetWitnessFunctions", &context);
-        std::vector<const WitnessFunction<T>*> result;
-        // If the macro did not return, use default functionality.
-        Base::DoGetWitnessFunctions(context, &result);
-        return {result};
-      };
-      auto result = wrapped();
-      if (!result.has_value()) {
-        // Give a good error message in case the user forgot to return anything.
-        throw py::type_error(
-            "Overrides of DoGetWitnessFunctions() must return "
-            "List[WitnessFunction], not NoneType.");
+      {
+        py::gil_scoped_acquire guard;
+        const LeafSystem<T>* base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoGetWitnessFunctions")) {
+          auto result =
+              py::cast<std::optional<std::vector<const WitnessFunction<T>*>>>(
+                  (self.attr("DoGetWitnessFunctions"))(&context));
+          if (!result.has_value()) {
+            // Give a good error message in case the user forgot to return
+            // anything.
+            throw py::type_error(
+                "Overrides of DoGetWitnessFunctions() must return "
+                "List[WitnessFunction], not NoneType.");
+          }
+          *witnesses = std::move(*result);
+          return;
+        }
       }
-      *witnesses = std::move(*result);
+      // If not overridden, use default functionality.
+      return Base::DoGetWitnessFunctions(context, witnesses);
     }
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
+      PYDRAKE_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
           DoGetGraphvizFragment, params);
     }
   };
@@ -310,12 +302,12 @@ struct Impl {
   template <typename DiagramBase = DiagramPublic>
   class PyDiagramBase : public DiagramBase {
    public:
+    NB_TRAMPOLINE(DiagramBase, 1);
     using Base = DiagramBase;
-    using Base::Base;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
+      PYDRAKE_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
           DoGetGraphvizFragment, params);
     }
   };
@@ -341,24 +333,31 @@ struct Impl {
 
   class PyVectorSystem : public VectorSystemPublic {
    public:
+    NB_TRAMPOLINE(VectorSystemPublic, 0);
     using Base = VectorSystemPublic;
-    using Base::Base;
 
     void DoCalcVectorOutput(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* output) const override {
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `output` will not work when T is AutoDiffXd,
-      // Expression, etc. See
+      // Expression, etc. For pybind11 background, see
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
       // TODO(eric.cousineau): This will be resolved once dtype=custom is
       // resolved.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>, "DoCalcVectorOutput",
-          // N.B. Passing `Eigen::Map<>` derived classes by reference rather
-          // than pointer to ensure conceptual clarity. pybind11 `type_caster`
-          // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
-          &context, input, state, ToEigenRef(output));
-      // If the macro did not return, use default functionality.
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorOutput")) {
+          self.attr("DoCalcVectorOutput")(
+              &context, input, state, ToEigenRef(output));
+          return;
+        }
+      }
+      // If not overridden, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, output);
     }
 
@@ -366,12 +365,21 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "DoCalcVectorTimeDerivatives", &context, input, state,
-          ToEigenRef(derivatives));
-      // If the macro did not return, use default functionality.
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorTimeDerivatives")) {
+          self.attr("DoCalcVectorTimeDerivatives")(
+              &context, input, state, ToEigenRef(derivatives));
+          return;
+        }
+      }
+      // If not overridden, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, derivatives);
     }
 
@@ -379,12 +387,21 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
-          ToEigenRef(next_state));
-      // If the macro did not return, use default functionality.
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorDiscreteVariableUpdates")) {
+          self.attr("DoCalcVectorDiscreteVariableUpdates")(
+              &context, input, state, ToEigenRef(next_state));
+          return;
+        }
+      }
+      // If not overridden, use default functionality.
       Base::DoCalcVectorDiscreteVariableUpdates(
           context, input, state, next_state);
     }
@@ -392,13 +409,17 @@ struct Impl {
 
   class PySystemVisitor : public SystemVisitor<T> {
    public:
+    NB_TRAMPOLINE(SystemVisitor<T>, 2);
+
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
-      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitSystem, system);
+      PYDRAKE_OVERRIDE_PURE(
+          void, SystemVisitor<T>, VisitSystem, std::cref(system));
     };
 
     void VisitDiagram(const Diagram<T>& diagram) override {
-      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
+      PYDRAKE_OVERRIDE_PURE(
+          void, SystemVisitor<T>, VisitDiagram, std::cref(diagram));
     }
   };
 
@@ -480,11 +501,17 @@ struct Impl {
         // Calculations.
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
-            doc.System.CalcTimeDerivatives.doc)
-        .def("CalcImplicitTimeDerivativesResidual",
-            &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
-            py::arg("proposed_derivatives"), py::arg("residual"),
-            doc.System.CalcImplicitTimeDerivativesResidual.doc)
+            doc.System.CalcTimeDerivatives.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      system_cls  // BR
+          .def("CalcImplicitTimeDerivativesResidual",
+              &System<T>::CalcImplicitTimeDerivativesResidual,
+              py::arg("context"), py::arg("proposed_derivatives"),
+              py::arg("residual"),
+              doc.System.CalcImplicitTimeDerivativesResidual.doc);
+    }
+    system_cls  // BR
         .def(
             "CalcImplicitTimeDerivativesResidual",
             [](const System<T>* self, const Context<T>& context,
@@ -1049,7 +1076,6 @@ Note: The above is for the C++ documentation. For Python, use
             py::overload_cast<int>(&LeafSystemPublic::DeclareDiscreteState),
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_num_state_variables)
-        .def("DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
         // Abstract state.
         .def("DeclareAbstractState",
             py::overload_cast<const AbstractValue&>(
@@ -1155,13 +1181,9 @@ Note: The above is for the C++ documentation. For Python, use
           LeafSystem<T>>(
           m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc);
       cls  // BR
-          .def(py::init([](int input_size, int output_size,
-                            std::optional<bool> direct_feedthrough) {
-            return new PyVectorSystem(
-                input_size, output_size, direct_feedthrough);
-          }),
-              py::arg("input_size"), py::arg("output_size"),
-              py::arg("direct_feedthrough"), doc.VectorSystem.ctor.doc_3args);
+          .def(py::init<int, int, std::optional<bool>>(), py::arg("input_size"),
+              py::arg("output_size"), py::arg("direct_feedthrough"),
+              doc.VectorSystem.ctor.doc_3args);
     }
   }
 
@@ -1351,7 +1373,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
               return in;
             });
     // Bind templated instantiations.
-    auto converter_methods = [converter](auto pack) {
+    auto converter_methods = [&converter](auto pack) {
       constexpr auto& cls_doc =
           pydrake_doc_systems_framework.drake.systems.SystemScalarConverter;
       using Pack = decltype(pack);

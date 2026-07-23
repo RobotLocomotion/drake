@@ -209,6 +209,10 @@ Adjusting open-source dependencies:
   OpenMP-based parallelization. See documentation of
   [Environment Variables](/doxygen_cxx/group__environment__variables.html)
   for how to control the level of parallelism at runtime.
+* `DRAKE_PYTHON_BINDER` (default `pybind11`). Can be set to either `pybind11`
+  or `nanobind` to choose which binding library to use when compiling `pydrake`
+  bindings.
+  (Support for `nanobind` is currently experimental / unstable.)
 
 Adjusting closed-source (commercial) software dependencies:
 

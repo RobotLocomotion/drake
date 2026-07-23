@@ -263,11 +263,14 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     using Class = ValueProducer;
     constexpr auto& cls_doc = doc.ValueProducer;
     class_<Class>(m, "ValueProducer", cls_doc.doc)
-        .def(py::init([](py::callable allocate,
-                          std::function<void(py::object, py::object)> calc) {
-          return Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),
-              MakeCppCompatibleCalcCallback(std::move(calc)));
-        }),
+        .def(
+            "__init__",
+            [](Class* self, py::callable allocate,
+                std::function<void(py::object, py::object)> calc) {
+              new (self)
+                  Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),
+                      MakeCppCompatibleCalcCallback(std::move(calc)));
+            },
             py::arg("allocate"), py::arg("calc"), cls_doc.ctor.doc_overload_5d)
         .def_static("NoopCalc", &Class::NoopCalc, cls_doc.NoopCalc.doc);
   }
@@ -572,46 +575,53 @@ void DefineEventAndEventSubclasses(py::module_ m) {
     using SystemCallback = std::function<std::optional<EventStatus>(
         const System<T>&, const Context<T>&, const PublishEvent<T>&)>;
     cls  // BR
-        .def(py::init(WrapCallbacks([](const Callback& callback) {
-          return std::make_unique<PublishEvent<T>>(
-              [callback](const System<T>&, const Context<T>& context,
-                  const PublishEvent<T>& event) {
-                return callback(context, event)
-                    .value_or(EventStatus::Succeeded());
-              });
-        })),
+        .def("__init__",
+            WrapCallbacks([](PublishEvent<T>* self, const Callback& callback) {
+              new (self) PublishEvent<T>(
+                  [callback](const System<T>&, const Context<T>& context,
+                      const PublishEvent<T>& event) {
+                    return callback(context, event)
+                        .value_or(EventStatus::Succeeded());
+                  });
+            }),
             py::arg("callback"),
             "Constructs a PublishEvent with the given callback function.")
-        .def(py::init(WrapCallbacks([](const SystemCallback& system_callback) {
-          return std::make_unique<PublishEvent<T>>(
-              [system_callback](const System<T>& system,
-                  const Context<T>& context, const PublishEvent<T>& event) {
-                return system_callback(system, context, event)
-                    .value_or(EventStatus::Succeeded());
-              });
-        })),
+        .def("__init__",
+            WrapCallbacks([](PublishEvent<T>* self,
+                              const SystemCallback& system_callback) {
+              new (self) PublishEvent<T>(
+                  [system_callback](const System<T>& system,
+                      const Context<T>& context, const PublishEvent<T>& event) {
+                    return system_callback(system, context, event)
+                        .value_or(EventStatus::Succeeded());
+                  });
+            }),
             py::arg("system_callback"),
             "Constructs a PublishEvent with the given callback function.")
-        .def(py::init(WrapCallbacks(
-                 [](const TriggerType& trigger_type, const Callback& callback) {
-                   return std::make_unique<PublishEvent<T>>(trigger_type,
-                       [callback](const System<T>&, const Context<T>& context,
-                           const PublishEvent<T>& event) {
-                         return callback(context, event)
-                             .value_or(EventStatus::Succeeded());
-                       });
-                 })),
+        .def("__init__",
+            WrapCallbacks(
+                [](PublishEvent<T>* self, const TriggerType& trigger_type,
+                    const Callback& callback) {
+                  new (self) PublishEvent<T>(trigger_type,
+                      [callback](const System<T>&, const Context<T>& context,
+                          const PublishEvent<T>& event) {
+                        return callback(context, event)
+                            .value_or(EventStatus::Succeeded());
+                      });
+                }),
             py::arg("trigger_type"), py::arg("callback"),
             "Users should not be calling these")
-        .def(py::init(WrapCallbacks([](const TriggerType& trigger_type,
-                                        const SystemCallback& system_callback) {
-          return std::make_unique<PublishEvent<T>>(trigger_type,
-              [system_callback](const System<T>& system,
-                  const Context<T>& context, const PublishEvent<T>& event) {
-                return system_callback(system, context, event)
-                    .value_or(EventStatus::Succeeded());
-              });
-        })),
+        .def("__init__",
+            WrapCallbacks([](PublishEvent<T>* self,
+                              const TriggerType& trigger_type,
+                              const SystemCallback& system_callback) {
+              new (self) PublishEvent<T>(trigger_type,
+                  [system_callback](const System<T>& system,
+                      const Context<T>& context, const PublishEvent<T>& event) {
+                    return system_callback(system, context, event)
+                        .value_or(EventStatus::Succeeded());
+                  });
+            }),
             py::arg("trigger_type"), py::arg("system_callback"),
             "Users should not be calling these");
   }
@@ -635,26 +645,32 @@ void DefineEventAndEventSubclasses(py::module_ m) {
         std::function<std::optional<EventStatus>(const System<T>&,
             const Context<T>&, const UnrestrictedUpdateEvent<T>&, State<T>*)>;
     cls  // BR
-        .def(py::init(WrapCallbacks([](const Callback& callback) {
-          return std::make_unique<UnrestrictedUpdateEvent<T>>(
-              [callback](const System<T>&, const Context<T>& context,
-                  const UnrestrictedUpdateEvent<T>& event, State<T>* state) {
-                return callback(context, event, state)
-                    .value_or(EventStatus::Succeeded());
-              });
-        })),
+        .def("__init__",
+            WrapCallbacks(
+                [](UnrestrictedUpdateEvent<T>* self, const Callback& callback) {
+                  new (self) UnrestrictedUpdateEvent<T>(
+                      [callback](const System<T>&, const Context<T>& context,
+                          const UnrestrictedUpdateEvent<T>& event,
+                          State<T>* state) {
+                        return callback(context, event, state)
+                            .value_or(EventStatus::Succeeded());
+                      });
+                }),
             py::arg("callback"),
             "Constructs an UnrestrictedUpdateEvent with the given callback "
             "function.")
-        .def(py::init(WrapCallbacks([](const SystemCallback& system_callback) {
-          return std::make_unique<UnrestrictedUpdateEvent<T>>(
-              [system_callback](const System<T>& system,
-                  const Context<T>& context,
-                  const UnrestrictedUpdateEvent<T>& event, State<T>* state) {
-                return system_callback(system, context, event, state)
-                    .value_or(EventStatus::Succeeded());
-              });
-        })),
+        .def("__init__",
+            WrapCallbacks([](UnrestrictedUpdateEvent<T>* self,
+                              const SystemCallback& system_callback) {
+              new (self) UnrestrictedUpdateEvent<T>(
+                  [system_callback](const System<T>& system,
+                      const Context<T>& context,
+                      const UnrestrictedUpdateEvent<T>& event,
+                      State<T>* state) {
+                    return system_callback(system, context, event, state)
+                        .value_or(EventStatus::Succeeded());
+                  });
+            }),
             py::arg("system_callback"),
             "Constructs an UnrestrictedUpdateEvent with the given callback "
             "function.");
@@ -1260,15 +1276,19 @@ void DefineDiscreteValues(py::module_ m) {
             return self->get_value(index);
           },
           return_value_policy_for_scalar_type<T>(), py::arg("index") = 0,
-          doc.DiscreteValues.get_value.doc_1args)
-      .def(
-          "get_mutable_value",
-          [](Class* self, int index) -> Eigen::Ref<VectorX<T>> {
-            return self->get_mutable_value(index);
-          },
-          // N.B. We explicitly want a failure when T != double due to #8116.
-          py_rvp::reference_internal, py::arg("index") = 0,
-          doc.DiscreteValues.get_mutable_value.doc_1args)
+          doc.DiscreteValues.get_value.doc_1args);
+  if constexpr (std::is_same_v<T, double>) {
+    // Mutable Eigen::Ref return value doesn't work with dtype=object.
+    discrete_values  // BR
+        .def(
+            "get_mutable_value",
+            [](Class* self, int index) -> Eigen::Ref<VectorX<T>> {
+              return self->get_mutable_value(index);
+            },
+            py_rvp::reference_internal, py::arg("index") = 0,
+            doc.DiscreteValues.get_mutable_value.doc_1args);
+  }
+  discrete_values  // BR
       .def(
           "SetFrom",
           [](Class* self, const DiscreteValues<double>& other) {

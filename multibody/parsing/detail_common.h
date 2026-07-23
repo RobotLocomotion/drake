@@ -239,6 +239,45 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
     const std::function<const RigidBody<double>*(const char*)>& read_body,
     MultibodyPlant<double>* plant);
 
+// Adds a distance constraint to `plant` from a reading interface in a
+// URDF/SDFormat agnostic manner. This function leaves the responsibility of
+// handling errors or missing values to the individual parsers. Through this,
+// the API to specify the distance_constraint tag in both SDFormat and URDF can
+// be controlled/modified in a single function.
+//
+// __SDFormat__:
+//
+// <drake:distance_constraint>
+//   <drake:distance_constraint_body_A>body_A</drake:distance_constraint_body_A>
+//   <drake:distance_constraint_p_AP>0 0 0</drake:distance_constraint_p_AP>
+//   <drake:distance_constraint_body_B>body_B</drake:distance_constraint_body_B>
+//   <drake:distance_constraint_p_BQ>0 0 0</drake:distance_constraint_p_BQ>
+//   <drake:distance_constraint_distance>1.0</drake:distance_constraint_distance>
+//   <drake:distance_constraint_stiffness>1.0</drake:distance_constraint_stiffness>
+//   <drake:distance_constraint_damping>1.0</drake:distance_constraint_damping>
+// </drake:distance_constraint>
+//
+// __URDF__:
+//
+// <drake:distance_constraint>
+//   <drake:distance_constraint_body_A name="body_A"/>
+//   <drake:distance_constraint_p_AP value="0 0 0"/>
+//   <drake:distance_constraint_body_B name="body_B"/>
+//   <drake:distance_constraint_p_BQ value="0 0 0"/>
+//   <drake:distance_constraint_distance value="1.0"/>
+//   <drake:distance_constraint_stiffness value="1.0"/>
+//   <drake:distance_constraint_damping value="1.0"/>
+// </drake:distance_constraint>
+//
+// Each of the various @p read_* functors may (at its option) emit diagnostic
+// errors or warnings but should not throw. ParseDistanceConstraint() may return
+// nullopt at its option.
+std::optional<MultibodyConstraintId> ParseDistanceConstraint(
+    const std::function<Eigen::Vector3d(const char*)>& read_vector,
+    const std::function<const RigidBody<double>*(const char*)>& read_body,
+    const std::function<std::optional<double>(const char*)>& read_double,
+    MultibodyPlant<double>* plant);
+
 // Adds a tendon constraint to `plant` from a reading interface in a
 // URDF/SDFormat agnostic manner. This function validates that the specified
 // joints exist in the model, but otherwise does no semantic parsing and leaves

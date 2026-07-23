@@ -1,4 +1,4 @@
-load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("//tools/skylark:drake_py.bzl", "py_linter_test")
 load("//tools/skylark:sh.bzl", "sh_test")
 
 # Internal helper.
@@ -34,7 +34,7 @@ def _python_lint(
     if disallow_executable:
         drakelint_args += ["--disallow_executable"]
     drakelint_args += locations
-    py_test_isolated(
+    py_linter_test(
         name = name_prefix + "_drakelint",
         size = "small",
         srcs = ["@drake//tools/lint:drakelint"],

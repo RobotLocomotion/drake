@@ -2450,13 +2450,6 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
   return *data;
 }
 
-void RenderEngineGl::SetDefaultLightPosition(const Vector3<double>& p_DL) {
-  DRAKE_DEMAND(fallback_lights_.size() == 1);
-  // This is a stopgap solution until we can completely eliminate this method.
-  // p_DC = (0, 0, 1). position = p_CL, so P_CL = p_DL - p_DC.
-  fallback_lights_[0].position = p_DL - Vector3<double>{0, 0, 1};
-}
-
 void RenderEngineGl::ConfigureLights() {
   // Set the lights *once* for all color shaders. Currently, lighting can only
   // be figured upon construction.

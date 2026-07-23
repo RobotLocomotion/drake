@@ -150,9 +150,15 @@ std::vector<Binding<Constraint>> AddMultibodyPlantConstraints(
                         spec.joint0_index, spec.joint1_index));
   }
 
-  if (plant_context != nullptr) {
+  if (plant_ref.num_distance_constraints() > 0) {
+    DRAKE_THROW_UNLESS(plant_context != nullptr);
     for (const auto& [id, params] :
          plant_ref.GetDistanceConstraintParams(*plant_context)) {
+      // We only add the distance constraint if the stiffness is infinite (hence
+      // a hard constraint).
+      if (std::isfinite(params.stiffness())) {
+        continue;
+      }
       // d(q) == d₀.
       bindings
           .emplace_back(prog->AddConstraint(

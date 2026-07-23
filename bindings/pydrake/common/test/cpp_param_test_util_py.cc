@@ -6,8 +6,6 @@
 
 #include <string>
 
-#include "pybind11/eval.h"
-
 #include "drake/common/drake_assert.h"
 
 using std::string;

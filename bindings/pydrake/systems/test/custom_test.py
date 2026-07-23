@@ -192,6 +192,14 @@ class CustomDiagram(Diagram):
         return super().DoGetGraphvizFragment(params)
 
 
+class CustomDiagramMinimal(Diagram):
+    def __init__(self):
+        Diagram.__init__(self)
+        builder = DiagramBuilder()
+        builder.AddSystem(Adder(0, 0))
+        builder.BuildInto(self)
+
+
 class TestCustom(unittest.TestCase):
     def _create_adder_system(self):
         system = CustomAdder(2, 3)
@@ -258,6 +266,13 @@ class TestCustom(unittest.TestCase):
         system = CustomDiagram(2, 3)
         graph = system.GetGraphvizString()
         self.assertIn("meaning_of_life=42", graph)
+
+    def test_diagram_graphviz_minimal(self):
+        """GetGraphvizString still works even without overriding
+        DoGetGraphvizFragment."""
+        diagram = CustomDiagramMinimal()
+        graph = diagram.GetGraphvizString()
+        self.assertIn("digraph", graph)
 
     def test_leaf_system_well_known_tickets(self):
         for func in [
@@ -812,6 +827,10 @@ class TestCustom(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "NoneType"):
             simulator.AdvanceTo(0.1)
         self.assertTrue(system.called_witness)
+
+        # Test that GetGraphvizString still works even without overriding
+        # TrivialSystem.DoGetGraphvizFragment.
+        self.assertIn("digraph", system.GetGraphvizString())
 
     def test_event_handler_returns_none(self):
         """Checks that a Python event handler callback function is allowed to

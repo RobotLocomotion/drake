@@ -389,7 +389,7 @@ void DefineSymbolicMonolith(py::module_ m) {
           [](const Expression& self, RandomGenerator* generator) {
             return self.Evaluate(generator);
           },
-          py::arg("generator"), doc_expression.Evaluate.doc_1args)
+          py::arg("generator").none(), doc_expression.Evaluate.doc_1args)
       .def(
           "EvaluatePartial",
           [](const Expression& self, const Environment::map& env) {

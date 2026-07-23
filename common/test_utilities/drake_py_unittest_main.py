@@ -79,7 +79,9 @@ def main():
     main_py = sys.argv[0]
 
     # Parse the test case name out of the runfiles directory name.
-    match = re.search("^(.*bin/(.*?/)?(py/)?([^/]*_test).runfiles/)", main_py)
+    # TODO(jwnimmer-tri) The (alt_binder...) group is used by test_alt_binder.
+    # Remove it when the test_alt_binder option is removed.
+    match = re.search("^(.*bin/(.*?/)?(alt_binder/[^/]*/)?([^/]*_test).runfiles/)", main_py)
     if not match:
         print(f"error: no test name match in {main_py}")
         sys.exit(1)
@@ -87,20 +89,12 @@ def main():
     test_basename = test_name + ".py"
 
     # Find the test's source file.
-    runfiles_test_filenames = [
-        # With bzlmod disabled.
-        runfiles + "drake/" + test_package + "test/" + test_basename,
-        # With bzlmod enabled.
-        runfiles + "_main/" + test_package + "test/" + test_basename,
-    ]
-    runfiles_test_filename = None
-    for x in runfiles_test_filenames:
-        if os.path.exists(x):
-            runfiles_test_filename = x
-            break
-    if runfiles_test_filename is None:
-        raise RuntimeError("Could not find {} at any of {}".format(
-            test_basename, runfiles_test_filenames))
+    runfiles_test_filename = (
+        runfiles + "_main/" + test_package + "test/" + test_basename
+    )
+    if not os.path.exists(runfiles_test_filename):
+        raise RuntimeError("Could not find {} at {}".format(
+            test_basename, runfiles_test_filename))
 
     # Check the test's source code for a (misleading) __main__.
     realpath_test_filename = os.path.realpath(runfiles_test_filename)

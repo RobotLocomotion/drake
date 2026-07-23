@@ -1,8 +1,6 @@
 #include <memory>
 #include <string>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/common.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/autodiffutils/autodiffutils_py.h"
@@ -25,6 +23,7 @@
 #include "drake/common/sha256.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace pydrake {
@@ -43,6 +42,9 @@ void trigger_an_assertion_failure() {
 // Resolves to a Python handle given a type erased pointer. If the instance or
 // lowest-level RTTI type are unregistered, returns an empty handle.
 py::handle ResolvePyObject(const type_erased_ptr& ptr) {
+  // TODO(#21572) Use is_polymorphic for nanobind (or remove it from the struct,
+  // if we change our mind and end up not needing it).
+  unused(ptr.is_polymorphic);
   auto py_type_info = py::detail::get_type_info(ptr.info);
   return py::detail::get_object_handle(ptr.raw, py_type_info);
 }
@@ -119,6 +121,14 @@ void InitLowLevelModules(py::module_ m) {
 
   internal::MaybeRedirectPythonLogging();
   m.def("_use_native_cpp_logging", &internal::UseNativeCppLogging);
+
+#ifdef PYDRAKE_USE_PYBIND11
+  m.attr("_binder") = "pybind11";
+#elif PYDRAKE_USE_NANOBIND
+  m.attr("_binder") = "nanobind";
+#else
+#error "Unknown binder!"
+#endif
 
   {
     using Class = Parallelism;

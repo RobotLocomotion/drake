@@ -859,21 +859,6 @@ Raises:
     the given input image doesn't match the size declared in
     ``camera``.)""";
           } RenderLabelImage;
-          // Symbol: drake::geometry::render::RenderEngine::SetDefaultLightPosition
-          struct /* SetDefaultLightPosition */ {
-            // Source: drake/geometry/render/render_engine.h
-            const char* doc =
-R"""(Provides access to the light for manual configuration since it's
-currently bound to the camera position. This is a temporary measure to
-facilitate benchmarking and create visible shadows, and should not be
-used publicly.
-
-Parameter ``X_DL``:
-    The pose of the light in a frame D that is attached to the camera
-    position. In this frame D, the camera is located at (0, 0, 1),
-    looking towards (0, 0, 0) at a distance of 1, with up being (0, 1,
-    0).)""";
-          } SetDefaultLightPosition;
           // Symbol: drake::geometry::render::RenderEngine::ThrowIfInvalid
           struct /* ThrowIfInvalid */ {
             // Source: drake/geometry/render/render_engine.h

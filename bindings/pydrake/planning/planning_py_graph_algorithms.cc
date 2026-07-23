@@ -22,12 +22,14 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   {
     class PyMaxCliqueSolverBase : public MaxCliqueSolverBase {
      public:
+      NB_TRAMPOLINE(MaxCliqueSolverBase, 1);
+
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMaxClique is made public to enable
       // Python implementations to override it.
       VectorX<bool> DoSolveMaxClique(
           const Eigen::SparseMatrix<bool>& adjacency_matrix) const override {
-        PYBIND11_OVERRIDE_PURE(VectorX<bool>, MaxCliqueSolverBase,
+        PYDRAKE_OVERRIDE_PURE(VectorX<bool>, MaxCliqueSolverBase,
             DoSolveMaxClique, adjacency_matrix);
       }
     };
@@ -65,13 +67,15 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   {
     class PyMinCliqueCoverSolverBase : public MinCliqueCoverSolverBase {
      public:
+      NB_TRAMPOLINE(MinCliqueCoverSolverBase, 1);
+
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMinCliqueCover is made public to
       // enable Python implementations to override it.
       std::vector<std::set<int>> DoSolveMinCliqueCover(
           const Eigen::SparseMatrix<bool>& adjacency_matrix,
           bool partition) override {
-        PYBIND11_OVERRIDE_PURE(std::vector<std::set<int>>,
+        PYDRAKE_OVERRIDE_PURE(std::vector<std::set<int>>,
             MinCliqueCoverSolverBase, DoSolveMinCliqueCover, adjacency_matrix,
             partition);
       }

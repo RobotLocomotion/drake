@@ -84,8 +84,6 @@ drake_py_unittest(
     ],
     # TODO(eric.cousineau): Find the source of sporadic CI failures.
     flaky = 1,
-    # We wish to access neighboring files.
-    isolate = 0,
 )
 
 drake_cc_googletest(

@@ -55,12 +55,12 @@ bazel_dep(name = "eigen", version = "5.0.1.bcr.1", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.2.0", repo_name = "module_fmt")
 bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # noqa
 
-# Add C++ module dependencies that are NOT used by Drake's public API, but are
-# used by Drake's implementation. Builds have the option to opt-out of these
-# dependencies by providing a replacement:
+# Add replaceable C++ module dependencies that are NOT used by Drake's public
+# API, but are used by Drake's implementation. Builds have the option to opt-out
+# of these dependencies by providing a replacement:
 #
 # For our CMake builds from source, the "WITH_USER_..." CMake options find a
-# user-supplied library are converted into a module override.
+# user-supplied library and are converted into a module override.
 #
 # For wheel builds, the module flavor is always used.
 #
@@ -70,8 +70,14 @@ bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # n
 # is used by default.
 
 bazel_dep(name = "glib", version = "2.82.2.bcr.8", repo_name = "module_glib")
-bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
 bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
+
+# Add non-replaceable C++ module dependencies that are used by Drake's
+# implementation.
+
+bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
+bazel_dep(name = "nanobind", version = "2.13.0", repo_name = "module_nanobind")
+bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
 
 # Add additional modules we use at build-time (not runtime dependencies).
 

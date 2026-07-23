@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/lcm.h"
 #include "drake/bindings/generated_docstrings/systems_lcm.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -36,6 +34,7 @@ namespace {
 // Python.
 class PySerializerInterface : public SerializerInterface {
  public:
+  NB_TRAMPOLINE(SerializerInterface, 0);
   using Base = SerializerInterface;
 
   PySerializerInterface() : Base() {}
@@ -48,37 +47,35 @@ class PySerializerInterface : public SerializerInterface {
 
   std::unique_ptr<AbstractValue> CreateDefaultValue() const final {
     // Our required unique_ptr return type cannot be directly fulfilled by a
-    // Python override, so we only ask the Python override for a py::object and
-    // then just Clone it to obtain the necessary C++ signature. Because the
-    // PYBIND11_OVERLOAD_PURE macro embeds a `return ...;` statement, we must
-    // wrap it in lambda so that we can post-process the return value.
-    py::object default_value = [this]() -> py::object {
-      PYBIND11_OVERLOAD_PURE(
-          py::object, SerializerInterface, CreateDefaultValue);
-    }();
-    DRAKE_THROW_UNLESS(!default_value.is_none());
-    return py::cast<const AbstractValue*>(default_value)->Clone();
+    // PYDRAKE_OVERRIDE_PURE, so we only ask the override for a py::object and
+    // then Clone it to obtain the necessary C++ signature.
+    py::gil_scoped_acquire guard;
+    const SerializerInterface* const self = this;
+    py::object result_py = py::cast(self).attr("CreateDefaultValue")();
+    const auto* result_cxx = py::cast<const AbstractValue*>(result_py);
+    DRAKE_THROW_UNLESS(result_cxx != nullptr);
+    return result_cxx->Clone();
   }
 
   void Deserialize(const void* message_bytes, int message_length,
       AbstractValue* abstract_value) const override {
+    // Passing {message_bytes, message_length} as a py::buffer means we can't
+    // use PYDRAKE_OVERRIDE_PURE; we'll need to write it out longhand.
     py::gil_scoped_acquire guard;
+    const SerializerInterface* const self = this;
     py::bytes buffer(
         reinterpret_cast<const char*>(message_bytes), message_length);
-    PYBIND11_OVERLOAD_PURE(
-        void, SerializerInterface, Deserialize, buffer, abstract_value);
+    py::cast(self).attr("Deserialize")(buffer, abstract_value);
   }
 
   void Serialize(const AbstractValue& abstract_value,
       std::vector<uint8_t>* message_bytes) const override {
+    // Converting the returned py::buffer to message_bytes means we can't use
+    // PYDRAKE_OVERRIDE_PURE; we'll need to write it out longhand.
     py::gil_scoped_acquire guard;
-    auto wrapped = [&]() -> py::bytes {
-      // N.B. We must pass `abstract_value` as a pointer to prevent `pybind11`
-      // from copying it.
-      PYBIND11_OVERLOAD_PURE(
-          py::bytes, SerializerInterface, Serialize, &abstract_value);
-    };
-    py::bytes result = wrapped();
+    const SerializerInterface* const self = this;
+    // N.B. We must pass `abstract_value` as a pointer to prevent copying.
+    py::bytes result{py::cast(self).attr("Serialize")(&abstract_value)};
     message_bytes->resize(result.size());
     std::copy(
         result.c_str(), result.c_str() + result.size(), message_bytes->data());
@@ -137,11 +134,9 @@ PYDRAKE_MODULE(lcm, m) {
     constexpr auto& cls_doc = doc.SerializerInterface;
     class_<Class, PySerializerInterface, std::shared_ptr<Class>> cls(
         m, "SerializerInterface");
-    cls  // BR
-         // Adding a constructor permits implementing this interface in Python.
-        .def(py::init(
-                 []() { return std::make_unique<PySerializerInterface>(); }),
-            cls_doc.ctor.doc);
+    cls
+        // Adding a constructor permits implementing this interface in Python.
+        .def(py::init<>(), cls_doc.ctor.doc);
     // The following bindings are present to allow Python to call C++
     // implementations of this interface. Python implementations of the
     // interface will call the trampoline implementation methods above.
@@ -205,7 +200,7 @@ PYDRAKE_MODULE(lcm, m) {
         .def(py::init<const std::string&,
                  std::shared_ptr<const SerializerInterface>,
                  LcmInterfaceSystem*, double, double>(),
-            py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("channel"), py::arg("serializer"), py::arg("lcm").none(),
             py::arg("publish_period") = 0.0, py::arg("publish_offset") = 0.0,
             // Keep alive, reference: `self` keeps `lcm` alive.
             py::keep_alive<1, 4>(), cls_doc.ctor.doc_5args)

@@ -66,11 +66,13 @@ auto RegisterBinding(py::handle* scope) {
   class_<B> binding_cls(*scope, pyname.c_str());
   AddTemplateClass(*scope, "Binding", binding_cls, GetPyParam<C>());
   binding_cls  // BR
-      .def(py::init([](C* c, const VectorXDecisionVariable& v) {
-        // Maintain python wrapper to avoid hazards like #20131.
-        py::object c_py = py::cast(c);
-        return Binding(make_shared_ptr_from_py_object<C>(c_py), v);
-      }),
+      .def(
+          "__init__",
+          [](B* self, C* c, const VectorXDecisionVariable& v) {
+            // Maintain python wrapper to avoid hazards like #20131.
+            py::object c_py = py::cast(c);
+            new (self) Binding(make_shared_ptr_from_py_object<C>(c_py), v);
+          },
           py::arg("c"), py::arg("v"), cls_doc.ctor.doc)
       .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
       .def("variables", &B::variables, cls_doc.variables.doc)
@@ -101,14 +103,14 @@ void DefBindingCastConstructor(PyClass* cls) {
   static_assert(std::is_same_v<Binding<C>, typename PyClass::Type>,
       "Bound type must be Binding<C>");
   (*cls)  // BR
-      .def(py::init([](py::object binding) {
+      .def("__init__", [](Binding<C>* self, py::object binding) {
         // Define a type-erased downcast to mirror the implicit
         // "downcast-ability" of Binding<> types.
-        return std::make_unique<Binding<C>>(
+        new (self) Binding<C>(
             // Maintain python wrapper to avoid hazards like #20131.
             make_shared_ptr_from_py_object<C>(binding.attr("evaluator")()),
             py::cast<VectorXDecisionVariable>(binding.attr("variables")()));
-      }));
+      });
 }
 
 class StubEvaluatorBase : public EvaluatorBase {

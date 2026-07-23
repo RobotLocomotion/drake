@@ -18,6 +18,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/text_logging.h"
@@ -814,9 +815,9 @@ GTEST_TEST(SimulatorTest, SecondConstructor) {
   EXPECT_EQ(simulator.get_context().get_time(), 3.0);
 }
 
-// Tests the internal use (for Python) factory method that takes the context via
-// shared pointer.
-GTEST_TEST(SimulatorTest, SharedContextFactoryMethod) {
+// Tests in-place construction factory method that takes the context via shared
+// pointer. (This method is internal use only for Python.)
+GTEST_TEST(SimulatorTest, SharedContextEmplacementFactoryMethod) {
   // Create the spring-mass system and context.
   analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
   auto context = spring_mass.CreateDefaultContext();
@@ -825,9 +826,15 @@ GTEST_TEST(SimulatorTest, SharedContextFactoryMethod) {
   context->SetTime(7.0);
   std::shared_ptr<Context<double>> shared_context(std::move(context));
 
-  // Construct the simulator with the created context.
-  auto simulator = Simulator<double>::MakeWithSharedContext(
-      spring_mass, std::move(shared_context));
+  // Construct the simulator via placement new with the created context.
+  std::array<char, sizeof(Simulator<double>)> storage;
+  Simulator<double>* simulator =
+      reinterpret_cast<Simulator<double>*>(storage.data());
+  ScopeExit guard([&]() {
+    std::destroy_at(simulator);
+  });
+  Simulator<double>::EmplaceWithSharedContext(simulator, spring_mass,
+                                              std::move(shared_context));
 
   // Verify that context values are equivalent.
   EXPECT_EQ(simulator->get_context().get_time(), 7.0);

@@ -54,7 +54,7 @@ class DistanceConstraintParams {
    @throws std::exception if bodies A and B are the same body.
    @throws std::exception if `distance` is not strictly positive.
    @throws std::exception if `stiffness` is not strictly positive.
-   @throws std::exception if `damping` is not positive or zero. */
+   @throws std::exception if `damping` is not positive nor zero. */
   DistanceConstraintParams(BodyIndex bodyA, const Vector3<double>& p_AP,
                            BodyIndex bodyB, const Vector3<double>& p_BQ,
                            double distance, double stiffness, double damping);
