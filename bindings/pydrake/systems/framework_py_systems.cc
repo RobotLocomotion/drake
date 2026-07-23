@@ -288,17 +288,8 @@ struct Impl {
 
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
-      // PYBIND11 macros have issues with a reference argument.
-      // NB macros have issues with reference argument, and with NVI Python
-      // overrides not really being supported.
-      py::gil_scoped_acquire guard;
-      const LeafSystem<T>* base = this;
-      py::object self = py::cast(base);
-      if (py::hasattr(self, "DoCalcTimeDerivatives")) {
-        (self.attr("DoCalcTimeDerivatives"))(&context, derivatives);
-        return;
-      }
-      Base::DoCalcTimeDerivatives(context, derivatives);
+      PYDRAKE_OVERRIDE(void, LeafSystem<T>, DoCalcTimeDerivatives,
+          std::ref(context), derivatives);
     }
 
     // This actually changes the signature of DoGetWitnessFunction,
@@ -308,28 +299,27 @@ struct Impl {
     // trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
-      using Witnesses = std::vector<const WitnessFunction<T>*>;
-      py::gil_scoped_acquire guard;
-      auto wrapped = [&]() -> std::optional<Witnesses> {
+      {
+        py::gil_scoped_acquire guard;
         const LeafSystem<T>* base = this;
         py::object self = py::cast(base);
         if (py::hasattr(self, "DoGetWitnessFunctions")) {
-          return py::cast<std::optional<Witnesses>>(
-              (self.attr("DoGetWitnessFunctions"))(&context));
+          auto result =
+              py::cast<std::optional<std::vector<const WitnessFunction<T>*>>>(
+                  (self.attr("DoGetWitnessFunctions"))(&context));
+          if (!result.has_value()) {
+            // Give a good error message in case the user forgot to return
+            // anything.
+            throw py::type_error(
+                "Overrides of DoGetWitnessFunctions() must return "
+                "List[WitnessFunction], not NoneType.");
+          }
+          *witnesses = std::move(*result);
+          return;
         }
-        Witnesses result;
-        // If the macro did not return, use default functionality.
-        Base::DoGetWitnessFunctions(context, &result);
-        return {result};
-      };
-      auto result = wrapped();
-      if (!result.has_value()) {
-        // Give a good error message in case the user forgot to return anything.
-        throw py::type_error(
-            "Overrides of DoGetWitnessFunctions() must return "
-            "List[WitnessFunction], not NoneType.");
       }
-      *witnesses = std::move(*result);
+      // If not overridden, use default functionality.
+      return Base::DoGetWitnessFunctions(context, witnesses);
     }
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
@@ -393,18 +383,11 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* output) const override {
-#ifdef PYDRAKE_USE_PYBIND11
       // WARNING: Mutating `output` will not work when T is AutoDiffXd,
-      // Expression, etc. See
+      // Expression, etc. For pybind11 background, see
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
       // TODO(eric.cousineau): This will be resolved once dtype=custom is
       // resolved.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>, "DoCalcVectorOutput",
-          // N.B. Passing `Eigen::Map<>` derived classes by reference rather
-          // than pointer to ensure conceptual clarity. pybind11 `type_caster`
-          // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
-          &context, input, state, ToEigenRef(output));
-#else   // PYDRAKE_USE_NANOBIND
       {
         py::gil_scoped_acquire guard;
         const VectorSystem<T>* const base = this;
@@ -415,8 +398,7 @@ struct Impl {
           return;
         }
       }
-#endif  // PYDRAKE_USE_PYBIND11
-      // If not overloaded, use default functionality.
+      // If not overridden, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, output);
     }
 
@@ -424,13 +406,8 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
-#ifdef PYDRAKE_USE_PYBIND11
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "DoCalcVectorTimeDerivatives", &context, input, state,
-          ToEigenRef(derivatives));
-#else   // PYDRAKE_USE_NANOBIND
       {
         py::gil_scoped_acquire guard;
         const VectorSystem<T>* const base = this;
@@ -441,8 +418,7 @@ struct Impl {
           return;
         }
       }
-#endif  // PYDRAKE_USE_PYBIND11
-      // If not overloaded, use default functionality.
+      // If not overridden, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, derivatives);
     }
 
@@ -450,13 +426,8 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
-#ifdef PYDRAKE_USE_PYBIND11
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
-          ToEigenRef(next_state));
-#else   // PYDRAKE_USE_NANOBIND
       {
         py::gil_scoped_acquire guard;
         const VectorSystem<T>* const base = this;
@@ -467,8 +438,7 @@ struct Impl {
           return;
         }
       }
-#endif  // PYDRAKE_USE_PYBIND11
-      // If not overloaded, use default functionality.
+      // If not overridden, use default functionality.
       Base::DoCalcVectorDiscreteVariableUpdates(
           context, input, state, next_state);
     }
