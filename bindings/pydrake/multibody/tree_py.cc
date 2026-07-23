@@ -1285,15 +1285,14 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
 
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
-    // We can't use PYDRAKE_OVERRIDE_PURE because we need to pass the context by
-    // pointer.
-    py::gil_scoped_acquire gil;
-    const ForceDensityField<T>* const self = this;
-    py::object result = py::cast(self).attr("DoEvaluateAt")(&context, p_WQ);
-    return py::cast<Vector3<T>>(result);
+    PYDRAKE_OVERRIDE_PURE(Vector3<T>, ForceDensityField<T>, DoEvaluateAt,
+        std::cref(context), p_WQ);
   }
 
   std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
+    // Our required unique_ptr return type cannot be directly fulfilled by a
+    // PYDRAKE_OVERRIDE_PURE; we need to ask the override for a shared_ptr and
+    // then wrap it in a decorator to obtain the necessary C++ signature.
     py::gil_scoped_acquire gil;
     const ForceDensityField<T>* const self = this;
     py::object result_py = py::cast(self).attr("DoClone")();

@@ -474,34 +474,19 @@ struct Impl {
     }
   };
 
-  class SystemVisitorWithPointerOverloads : public SystemVisitor<T> {
+  class PySystemVisitor : public SystemVisitor<T> {
    public:
-    /* (Internal use only) Pointer-accepting variant of VisitSystem. */
-    void VisitSystemPointer(const System<T>* system) {
-      DRAKE_THROW_UNLESS(system != nullptr);
-      VisitSystem(*system);
-    }
-
-    /* (Internal use only) Pointer-accepting variant of VisitDiagram. */
-    void VisitDiagramPointer(const Diagram<T>* diagram) {
-      DRAKE_THROW_UNLESS(diagram != nullptr);
-      VisitDiagram(*diagram);
-    }
-  };
-
-  class PySystemVisitor : public SystemVisitorWithPointerOverloads {
-   public:
-    NB_TRAMPOLINE(SystemVisitorWithPointerOverloads, 2);
+    NB_TRAMPOLINE(SystemVisitor<T>, 2);
 
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
-      PYDRAKE_OVERRIDE_PURE_NAME(
-          void, SystemVisitor<T>, "VisitSystem", VisitSystemPointer, &system);
+      PYDRAKE_OVERRIDE_PURE(
+          void, SystemVisitor<T>, VisitSystem, std::cref(system));
     };
 
     void VisitDiagram(const Diagram<T>& diagram) override {
-      PYDRAKE_OVERRIDE_PURE_NAME(void, SystemVisitor<T>, "VisitDiagram",
-          VisitDiagramPointer, &diagram);
+      PYDRAKE_OVERRIDE_PURE(
+          void, SystemVisitor<T>, VisitDiagram, std::cref(diagram));
     }
   };
 

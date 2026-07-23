@@ -62,6 +62,7 @@
 #pragma GCC diagnostic pop
 
 #include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
+#include "drake/bindings/pydrake/reference_wrapper_pybind.h"
 #endif  // PYDRAKE_USE_NANOBIND
 
 namespace drake {
