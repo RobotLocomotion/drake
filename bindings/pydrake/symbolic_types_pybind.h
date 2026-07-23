@@ -64,7 +64,8 @@ struct type_caster<drake::symbolic::Variable::Id> {
 #ifdef PYDRAKE_USE_PYBIND11
   bool load(handle src, bool /* convert */)
 #else  // PYDRAKE_USE_NANOBIND
-  bool from_python(handle src, uint8_t, cleanup_list*) noexcept
+  bool from_python(
+      handle src, uint8_t /* flags */, cleanup_list* /* cleanup */) noexcept
 #endif
   {
     if (!src) {
@@ -98,8 +99,8 @@ struct type_caster<drake::symbolic::Variable::Id> {
   static handle cast(drake::symbolic::Variable::Id src, rv_policy /* policy */,
       handle /* parent */)
 #else  // PYDRAKE_USE_NANOBIND
-  static handle from_cpp(const drake::symbolic::Variable::Id& src, rv_policy,
-      cleanup_list*) noexcept
+  static handle from_cpp(const drake::symbolic::Variable::Id& src,
+      rv_policy /* policy */, cleanup_list* /* cleanup */) noexcept
 #endif
   {
     const py::int_ hi_py{Attorney::hi(src)};
