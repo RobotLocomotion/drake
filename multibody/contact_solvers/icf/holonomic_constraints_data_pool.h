@@ -28,10 +28,10 @@ class HolonomicConstraintsDataPool {
   using ConstraintVector = Eigen::Matrix<T, N, 1>;
 
   HolonomicConstraintsDataPool() = default;
-  ~HolonomicConstraintsDataPool() = default;
+  ~HolonomicConstraintsDataPool();
 
   /* Resizes the pool, allocating memory only as necessary. */
-  void Resize(int num_constraints) { gamma_pool_.resize(num_constraints); }
+  void Resize(int num_constraints);
 
   /* Returns the number of constraints this data is for. */
   int num_constraints() const { return ssize(gamma_pool_); }

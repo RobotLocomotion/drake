@@ -43,8 +43,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "holonomic_constraints_data_pool",
+    srcs = ["holonomic_constraints_data_pool.cc"],
     hdrs = ["holonomic_constraints_data_pool.h"],
     deps = [
+        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -182,6 +184,7 @@ drake_cc_library(
         "ball_constraints_pool.cc",
         "coupler_constraints_pool.cc",
         "gain_constraints_pool.cc",
+        "holonomic_constraints_pool.cc",
         "icf_model.cc",
         "limit_constraints_pool.cc",
         "patch_constraints_pool.cc",

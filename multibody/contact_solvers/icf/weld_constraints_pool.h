@@ -100,6 +100,7 @@ class WeldConstraintsPool
   EigenPool<Vector3<T>> p_PoQo_W_;  // Relative translation, expressed in W.
 };
 static_assert(IsAbstractConstraintsPool<WeldConstraintsPool>);
+static_assert(IsHolonomicConstraintsDerived<WeldConstraintsPool>);
 
 }  // namespace internal
 }  // namespace icf
