@@ -44,12 +44,18 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   const std::vector<int> gain_sizes = {3, 2};
   const std::vector<int> limit_sizes = {5, 4, 3};
   const std::vector<int> patch_sizes = {8, 6, 4, 2};
+  const int num_islands = 3;
 
   data.Resize(num_bodies, num_velocities, max_clique_size, num_ball_constraints,
-              num_couplers, num_welds, gain_sizes, limit_sizes, patch_sizes);
+              num_couplers, num_welds, gain_sizes, limit_sizes, patch_sizes,
+              num_islands);
 
   // Main data elements
   EXPECT_EQ(data.num_velocities(), num_velocities);
+  EXPECT_EQ(data.num_islands(), num_islands);
+  // Per-island scratch is sized to the full problem.
+  EXPECT_EQ(data.scratch(0).V_WB_alpha.size(), num_bodies);
+  EXPECT_EQ(data.scratch(num_islands - 1).U_AbB_W.size(), 4);
   EXPECT_EQ(data.v().size(), num_velocities);
   EXPECT_EQ(data.V_WB().size(), num_bodies);
   EXPECT_EQ(data.Av().size(), num_velocities);
@@ -102,9 +108,11 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
   const std::vector<int> gain_sizes = {3};
   const std::vector<int> limit_sizes = {4};
   const std::vector<int> patch_sizes = {5};
+  const int num_islands = 2;
 
   data.Resize(num_bodies, num_velocities, max_clique_size, num_ball_constraints,
-              num_couplers, num_welds, gain_sizes, limit_sizes, patch_sizes);
+              num_couplers, num_welds, gain_sizes, limit_sizes, patch_sizes,
+              num_islands);
 
   // Clearing pools changes size but shouldn't change capacity.
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
@@ -118,7 +126,7 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
     drake::test::LimitMalloc guard;
     data.Resize(num_bodies, num_velocities, max_clique_size,
                 num_ball_constraints, num_couplers, num_welds, gain_sizes,
-                limit_sizes, patch_sizes);
+                limit_sizes, patch_sizes, num_islands);
     data.set_v(v);
   }
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);

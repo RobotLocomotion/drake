@@ -31,6 +31,7 @@ CouplerConstraintsPool<T>::~CouplerConstraintsPool() = default;
 
 template <typename T>
 void CouplerConstraintsPool<T>::Resize(const int num_constraints) {
+  ResizeAllConstraints(num_constraints);
   constraint_to_clique_.resize(num_constraints);
   dofs_.resize(num_constraints);
   gear_ratio_.resize(num_constraints);
@@ -81,6 +82,14 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
 template <typename T>
 void CouplerConstraintsPool<T>::CalcData(
     const VectorX<T>& v, CouplerConstraintsDataPool<T>* coupler_data) const {
+  DRAKE_ASSERT(ssize(all_constraints_) == num_constraints());
+  coupler_data->mutable_cost() = CalcData(v, all_constraints_, coupler_data);
+}
+
+template <typename T>
+T CouplerConstraintsPool<T>::CalcData(
+    const VectorX<T>& v, std::span<const int> constraints,
+    CouplerConstraintsDataPool<T>* coupler_data) const {
   DRAKE_ASSERT(coupler_data != nullptr);
 
   const T& dt = model().time_step();
@@ -91,7 +100,7 @@ void CouplerConstraintsPool<T>::CalcData(
   const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
   T& cost = coupler_data->mutable_cost();
   cost = 0;
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = constraint_to_clique_[k];
     auto vk = model().clique_segment(c, v);
     const int i = dofs_[k].first;
@@ -113,17 +122,26 @@ void CouplerConstraintsPool<T>::CalcData(
     coupler_data->mutable_gamma(k) = gamma;
     cost += 0.5 * (v_hat - vc) * gamma;
   }
+  return cost;
 }
 
 template <typename T>
 void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                    VectorX<T>* gradient) const {
+  DRAKE_ASSERT(ssize(all_constraints_) == num_constraints());
+  AccumulateGradient(data, all_constraints_, gradient);
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::AccumulateGradient(
+    const IcfData<T>& data, std::span<const int> constraints,
+    VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
 
   const CouplerConstraintsDataPool<T>& coupler_data =
       data.coupler_constraints_data();
 
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = constraint_to_clique_[k];
     auto gradient_c = model().mutable_clique_segment(c, gradient);
     const int i = dofs_[k].first;
@@ -192,9 +210,64 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
+void CouplerConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>& data, std::span<const int> constraints,
+    std::span<const int> clique_to_block, int island,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
+  const T& dt = model().time_step();
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
+  for (int k : constraints) {
+    const int c = constraint_to_clique_[k];
+    const int block = clique_to_block[c];
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+    // Compute the full regularization:
+    //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
+    // R_fragment_[k] only stores the non-time-step-dependent part:
+    //  R_fragment_[k] = β²·w / (4π²)
+    const T R = R_fragment_[k] * R_time_step_factor;
+
+    EigenPool<MatrixX<T>>& H_cc_pool = data.scratch(island).H_cc_pool;
+    H_cc_pool.Resize(1, model().clique_size(c), model().clique_size(c));
+    typename EigenPool<MatrixX<T>>::MatrixView Hc = H_cc_pool[0];
+    Hc.setZero();
+
+    // On-diagonal entries, if the relevant dof exists.
+    if (have(i)) {
+      Hc(i, i) += 1.0 / R;
+    }
+    if (have(j)) {
+      Hc(j, j) += rho * rho / R;
+    }
+    // Off-diagonal entries, if both dofs exist.
+    if (have(i) && have(j)) {
+      Hc(i, j) -= rho / R;
+      Hc(j, i) -= rho / R;
+    }
+
+    hessian->AddToBlock(block, block, Hc);
+  }
+}
+
+template <typename T>
 void CouplerConstraintsPool<T>::CalcCostAlongLine(
     const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
     T* dcost, T* d2cost) const {
+  DRAKE_ASSERT(ssize(all_constraints_) == num_constraints());
+  CalcCostAlongLine(coupler_data, w, all_constraints_, dcost, d2cost);
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::CalcCostAlongLine(
+    const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
+    std::span<const int> constraints, T* dcost, T* d2cost) const {
   DRAKE_ASSERT(dcost != nullptr);
   DRAKE_ASSERT(d2cost != nullptr);
   *dcost = 0.0;
@@ -205,7 +278,7 @@ void CouplerConstraintsPool<T>::CalcCostAlongLine(
   const T taud = kBeta * dt_eff / M_PI;
   // Pre-compute a portion of the regularization formula; see below.
   const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int c = constraint_to_clique_[k];
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
@@ -264,6 +337,13 @@ void CouplerConstraintsPool<T>::ReduceInto(
     reduced_pool->g0_.push_back(g0_[k]);
     reduced_pool->R_fragment_.push_back(R_fragment_[k]);
   }
+  reduced_pool->ResizeAllConstraints(reduced_pool->num_constraints());
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::ResizeAllConstraints(int num_constraints) {
+  all_constraints_.resize(num_constraints);
+  std::iota(all_constraints_.begin(), all_constraints_.end(), 0);
 }
 
 }  // namespace internal

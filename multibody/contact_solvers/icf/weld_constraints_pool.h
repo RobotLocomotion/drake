@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -63,12 +64,27 @@ class WeldConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return ssize(body_pairs_); }
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
   void AccumulateHessian(
       const IcfData<T>& data,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> constraints,
+      std::span<const int> clique_to_block, int island,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   WeldConstraintsPool<T>* reduced_pool) const;
+
+  /* @see HasSpatialVelocityCalcData. */
+  void CalcData(const EigenPool<Vector6<T>>& V_WB,
+                WeldConstraintsDataPool<T>* ball_data) const;
+  T CalcData(const EigenPool<Vector6<T>>& V_WB,
+             std::span<const int> constraints,
+             WeldConstraintsDataPool<T>* ball_data) const;
 
   /* Resizes the constraints pool to store the given number of weld constraints.
 
@@ -106,11 +122,6 @@ class WeldConstraintsPool {
   is used. */
   void PrecomputeHessianBlocks();
 
-  /* Computes problem data as a function of the body spatial velocities V_WB for
-  the full IcfModel. */
-  void CalcData(const EigenPool<Vector6<T>>& V_WB,
-                WeldConstraintsDataPool<T>* weld_data) const;
-
   /* Computes the first and second derivatives of the constraint cost
   ℓ̃(α) = ℓ(v + α⋅w).
 
@@ -121,6 +132,12 @@ class WeldConstraintsPool {
   @param[out] d2cost the second derivative d²ℓ̃/dα² on output. */
   void CalcCostAlongLine(const WeldConstraintsDataPool<T>& weld_data,
                          const EigenPool<Vector6<T>>& U_WB, T* dcost,
+                         T* d2cost) const;
+
+  /* Island-filtered overload: derivatives for only the listed constraints. */
+  void CalcCostAlongLine(const WeldConstraintsDataPool<T>& weld_data,
+                         const EigenPool<Vector6<T>>& U_WB,
+                         std::span<const int> constraints, T* dcost,
                          T* d2cost) const;
 
   /* Testing only access. */
@@ -135,7 +152,14 @@ class WeldConstraintsPool {
   int hessian_blocks_size() const { return ssize(hessian_blocks_); }
 
  private:
+  void ResizeAllConstraints(int num_constraints);
+
   const IcfModel<T>* const model_;  // The parent model.
+
+  // Identity list {0, ..., num_constraints()-1}, used to drive the full-problem
+  // (non-islanded) code paths through the island-filtered helpers. Rebuilt in
+  // Resize().
+  std::vector<int> all_constraints_;
 
   // Body pairs involved in each weld constraint, (bodyA, bodyB).
   // bodyB is always dynamic (not anchored).
@@ -172,6 +196,8 @@ class WeldConstraintsPool {
   std::vector<HessianBlock> hessian_blocks_;
 };
 static_assert(IsAbstractConstraintsPool<WeldConstraintsPool>);
+static_assert(
+    HasSpatialVelocityCalcData<WeldConstraintsPool, WeldConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf

@@ -823,6 +823,27 @@ INSTANTIATE_TEST_SUITE_P(
                          std::get<2>(x.param));
     });
 
+constexpr char kThreeBallsMjcf[] = R"""(
+  <?xml version="1.0"?>
+  <mujoco model="three_balls">
+    <worldbody>
+      <geom name="floor" type="box" pos="0 0 -0.1" size="50 50 0.1"/>
+      <body name="ball1" pos="-5 0 0.1">
+        <joint type="free"/>
+        <geom type="sphere" size="0.1"/>
+      </body>
+      <body name="ball2" pos="0 0 0.1">
+        <joint type="free"/>
+        <geom type="sphere" size="0.1"/>
+      </body>
+      <body name="ball3" pos="5 0 0.1">
+        <joint type="free"/>
+        <geom type="sphere" size="0.1"/>
+      </body>
+    </worldbody>
+  </mujoco>
+  )""";
+
 }  // namespace
 }  // namespace cenic
 }  // namespace multibody
