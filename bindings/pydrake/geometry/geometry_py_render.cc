@@ -46,33 +46,35 @@ namespace {
 
 class PyRenderEngine : public RenderEngine {
  public:
+  NB_TRAMPOLINE(RenderEngine, 9);
   using Base = RenderEngine;
+
   PyRenderEngine() : Base() {}
 
   void UpdateViewpoint(RigidTransformd const& X_WR) override {
-    PYBIND11_OVERLOAD_PURE(void, Base, UpdateViewpoint, X_WR);
+    PYDRAKE_OVERRIDE_PURE(void, Base, UpdateViewpoint, X_WR);
   }
 
   bool DoRegisterVisual(GeometryId id, Shape const& shape,
       PerceptionProperties const& properties,
       RigidTransformd const& X_WG) override {
-    PYBIND11_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         bool, Base, DoRegisterVisual, id, shape, properties, X_WG);
   }
 
   bool DoRegisterNamedVisual(GeometryId id, Shape const& shape,
       PerceptionProperties const& properties, RigidTransformd const& X_WG,
       std::string_view name) override {
-    PYBIND11_OVERLOAD(
+    PYDRAKE_OVERRIDE(
         bool, Base, DoRegisterNamedVisual, id, shape, properties, X_WG, name);
   }
 
   void DoUpdateVisualPose(GeometryId id, RigidTransformd const& X_WG) override {
-    PYBIND11_OVERLOAD_PURE(void, Base, DoUpdateVisualPose, id, X_WG);
+    PYDRAKE_OVERRIDE_PURE(void, Base, DoUpdateVisualPose, id, X_WG);
   }
 
   bool DoRemoveGeometry(GeometryId id) override {
-    PYBIND11_OVERLOAD_PURE(bool, Base, DoRemoveGeometry, id);
+    PYDRAKE_OVERRIDE_PURE(bool, Base, DoRemoveGeometry, id);
   }
 
   std::unique_ptr<RenderEngine> DoClone() const override {
@@ -84,48 +86,48 @@ class PyRenderEngine : public RenderEngine {
 
   std::shared_ptr<RenderEngine> DoCloneShared() const override {
     py::gil_scoped_acquire guard;
+    const RenderEngine* const base = this;
+    py::object self = py::cast(base);
     // RenderEngine subclasses in Python must implement cloning by defining
     // either a __deepcopy__ (preferred) or DoClone (legacy) method. We'll try
     // DoClone first so it has priority, but if it doesn't exist we'll fall back
     // to __deepcopy__ and just let the "no such method deepcopy" error message
-    // propagate if both were missing. Because the PYBIND11_OVERLOAD_INT macro
-    // embeds a conditional `return ...;` statement, we must wrap it in lambda
-    // so that we can post-process the return value in case it does return.
-    auto make_python_deepcopy = [&]() -> py::object {
-      PYBIND11_OVERLOAD_INT(py::object, Base, "DoClone");
+    // propagate if both were missing.
+    py::object result;
+    if (py::hasattr(self, "DoClone")) {
+      result = self.attr("DoClone")();
+    } else {
       auto deepcopy = py::module_::import_("copy").attr("deepcopy");
-      py::object copied = deepcopy(this);
-      if (copied.is_none()) {
-        throw py::type_error(fmt::format(
-            "{}.__deepcopy__ returned None", NiceTypeName::Get(*this))
-                .c_str());
-      }
-      return copied;
-    };
-    py::object result = make_python_deepcopy();
+      result = deepcopy(self);
+    }
+    if (result.is_none()) {
+      throw py::type_error(
+          fmt::format("{}.__deepcopy__ returned None", NiceTypeName::Get(*this))
+              .c_str());
+    }
     return make_shared_ptr_from_py_object<RenderEngine>(result);
   }
 
   void DoRenderColorImage(ColorRenderCamera const& camera,
       ImageRgba8U* color_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         void, Base, DoRenderColorImage, camera, color_image_out);
   }
 
   void DoRenderDepthImage(DepthRenderCamera const& camera,
       ImageDepth32F* depth_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         void, Base, DoRenderDepthImage, camera, depth_image_out);
   }
 
   void DoRenderLabelImage(ColorRenderCamera const& camera,
       ImageLabel16I* label_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         void, Base, DoRenderLabelImage, camera, label_image_out);
   }
 
   std::string DoGetParameterYaml() const override {
-    PYBIND11_OVERLOAD(std::string, Base, DoGetParameterYaml);
+    PYDRAKE_OVERRIDE(std::string, Base, DoGetParameterYaml);
   }
 
   // Expose this protected helper function so that Python implementations can
