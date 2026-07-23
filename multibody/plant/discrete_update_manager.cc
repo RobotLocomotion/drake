@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 
 #include <limits>
+#include <unordered_map>
 #include <utility>
 
 #include "drake/multibody/plant/contact_properties.h"
@@ -830,11 +831,45 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
   const Eigen::VectorBlock<const VectorX<T>> v = plant().GetVelocities(context);
   const Frame<T>& frame_W = plant().world_frame();
 
-  // Scratch workspace variables.
+  // Scratch workspace variables. For each face, Jv_WAc_W and Jv_WBc_W hold the
+  // translational velocity Jacobians of the points Ac and Bc of bodies A and B
+  // coincident with the face's centroid C, restricted to the generalized
+  // velocities of A's and B's trees, in their leftmost columns.
   const int nv = plant().num_velocities();
   Matrix3X<T> Jv_WAc_W(3, nv);
   Matrix3X<T> Jv_WBc_W(3, nv);
-  Matrix3X<T> Jv_AcBc_W(3, nv);
+
+  // A body B's velocity Jacobians are zero outside of the generalized
+  // velocities of B's tree, and those of a point Bc fixed on B follow from B's
+  // spatial velocity Jacobian at its origin Bo,
+  // J_V_WBo_W = [Jw_WB_W; Jv_WBo_W], by a rigid shift (column by column):
+  //   Jv_WBc_W = Jv_WBo_W + Jw_WB_W × p_BoC_W.
+  // So rather than computing two dense 3 x nv Jacobians at every face (each an
+  // O(nv) computation), we compute J_V_WBo_W once per body and, per face, shift
+  // only the columns of the body's tree.
+  std::unordered_map<BodyIndex, Matrix6X<T>> J_V_WBo_W_cache;
+  auto EvalBodySpatialVelocityJacobian =
+      [&](const RigidBody<T>& body) -> const Matrix6X<T>& {
+    auto [it, inserted] = J_V_WBo_W_cache.try_emplace(body.index());
+    if (inserted) {
+      it->second.resize(6, nv);
+      internal_tree().CalcJacobianSpatialVelocity(
+          context, JacobianWrtVariable::kV, body.body_frame(),
+          Vector3<T>::Zero(), frame_W, frame_W, &it->second);
+    }
+    return it->second;
+  };
+  // Writes Jv_WBc_W for the columns of B's tree, [v_start, v_start + tree_nv),
+  // into the leftmost tree_nv columns of `Jv_WBc_W_tree`.
+  auto ShiftJacobianToPoint = [](const Matrix6X<T>& J_V_WBo_W, int v_start,
+                                 int tree_nv, const Vector3<T>& p_BoC_W,
+                                 Matrix3X<T>* Jv_WBc_W_tree) {
+    for (int j = 0; j < tree_nv; ++j) {
+      const auto Jw_WB_W = J_V_WBo_W.template block<3, 1>(0, v_start + j);
+      const auto Jv_WBo_W = J_V_WBo_W.template block<3, 1>(3, v_start + j);
+      Jv_WBc_W_tree->col(j) = Jv_WBo_W + Jw_WB_W.cross(p_BoC_W);
+    }
+  };
 
   const int num_surfaces = surfaces.size();
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
@@ -891,6 +926,23 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
     const RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
 
+    // The generalized velocities [v_start, v_start + nv) of A's and B's trees.
+    // The range is empty for a body that isn't in a tree (e.g., World) or
+    // whose tree has no dofs, since such a body contributes nothing to the
+    // contact Jacobian.
+    const int v_start_A =
+        treeA_has_dofs ? forest.trees(tree_A_index).v_start() : 0;
+    const int nv_A = treeA_has_dofs ? forest.trees(tree_A_index).nv() : 0;
+    const int v_start_B =
+        treeB_has_dofs ? forest.trees(tree_B_index).v_start() : 0;
+    const int nv_B = treeB_has_dofs ? forest.trees(tree_B_index).nv() : 0;
+    const Matrix6X<T>* J_V_WAo_W =
+        treeA_has_dofs ? &EvalBodySpatialVelocityJacobian(body_A) : nullptr;
+    const Matrix6X<T>* J_V_WBo_W =
+        treeB_has_dofs ? &EvalBodySpatialVelocityJacobian(body_B) : nullptr;
+    const bool same_tree =
+        treeA_has_dofs && treeB_has_dofs && tree_A_index == tree_B_index;
+
     for (int face = 0; face < s.num_faces(); ++face) {
       const T& Ae = s.area(face);  // Face element area.
 
@@ -942,17 +994,24 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         // is measured and expressed in W).
         const Vector3<T>& p_WC = s.centroid(face);
 
+        // Contact point position relative to each body.
+        const Vector3<T> p_AC_W = p_WC - X_WA.translation();
+        const Vector3<T> p_BC_W = p_WC - X_WB.translation();
+
         // Since v_AcBc_W = v_WBc - v_WAc the relative velocity Jacobian
         // will be:
         //   J_AcBc_W = Jv_WBc_W - Jv_WAc_W.
         // That is the relative velocity at C is v_AcBc_W = J_AcBc_W * v.
-        internal_tree().CalcJacobianTranslationalVelocity(
-            context, JacobianWrtVariable::kV, body_A.body_frame(), frame_W,
-            p_WC, frame_W, frame_W, &Jv_WAc_W);
-        internal_tree().CalcJacobianTranslationalVelocity(
-            context, JacobianWrtVariable::kV, body_B.body_frame(), frame_W,
-            p_WC, frame_W, frame_W, &Jv_WBc_W);
-        Jv_AcBc_W = Jv_WBc_W - Jv_WAc_W;
+        // J_AcBc_W is zero outside of the columns of A's and B's trees, so we
+        // only compute those columns.
+        if (treeA_has_dofs) {
+          ShiftJacobianToPoint(*J_V_WAo_W, v_start_A, nv_A, p_AC_W, &Jv_WAc_W);
+        }
+        if (treeB_has_dofs) {
+          ShiftJacobianToPoint(*J_V_WBo_W, v_start_B, nv_B, p_BC_W, &Jv_WBc_W);
+        }
+        const auto Jv_WAc_W_tree = Jv_WAc_W.leftCols(nv_A);
+        const auto Jv_WBc_W_tree = Jv_WBc_W.leftCols(nv_B);
 
         // Define a contact frame C at the contact point such that the
         // z-axis Cz equals nhat_AB_W. The tangent vectors are arbitrary,
@@ -971,7 +1030,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
         // Contact velocity stored in the current context (previous time
         // step).
-        const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;
+        const Vector3<T> v_AcBc_W = Jv_WBc_W_tree * v.segment(v_start_B, nv_B) -
+                                    Jv_WAc_W_tree * v.segment(v_start_A, nv_A);
         const Vector3<T> v_AcBc_C = R_WC.transpose() * v_AcBc_W;
         const T vn0 = v_AcBc_C(2);
 
@@ -980,24 +1040,25 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             jacobian_blocks;
         jacobian_blocks.reserve(2);
 
-        // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
-        if (treeA_has_dofs) {
-          const SpanningForest::Tree& tree_A = forest.trees(tree_A_index);
-          Matrix3X<T> J = R_WC.matrix().transpose() *
-                          Jv_AcBc_W.middleCols(tree_A.v_start(), tree_A.nv());
+        if (same_tree) {
+          // A and B share a single block of contact Jacobian Jv_W_AcBc_C.
+          MatrixX<T> J =
+              R_WC.matrix().transpose() * (Jv_WBc_W_tree - Jv_WAc_W_tree);
           jacobian_blocks.emplace_back(tree_A_index,
                                        MatrixBlock<T>(std::move(J)));
-        }
-
-        // Tree B contribution to contact Jacobian Jv_W_AcBc_C.
-        // This contribution must be added only if B is different from A.
-        if ((treeB_has_dofs && !treeA_has_dofs) ||
-            (treeB_has_dofs && tree_B_index != tree_A_index)) {
-          const SpanningForest::Tree& tree_B = forest.trees(tree_B_index);
-          Matrix3X<T> J = R_WC.matrix().transpose() *
-                          Jv_AcBc_W.middleCols(tree_B.v_start(), tree_B.nv());
-          jacobian_blocks.emplace_back(tree_B_index,
-                                       MatrixBlock<T>(std::move(J)));
+        } else {
+          // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
+          if (treeA_has_dofs) {
+            MatrixX<T> J = -R_WC.matrix().transpose() * Jv_WAc_W_tree;
+            jacobian_blocks.emplace_back(tree_A_index,
+                                         MatrixBlock<T>(std::move(J)));
+          }
+          // Tree B contribution to contact Jacobian Jv_W_AcBc_C.
+          if (treeB_has_dofs) {
+            MatrixX<T> J = R_WC.matrix().transpose() * Jv_WBc_W_tree;
+            jacobian_blocks.emplace_back(tree_B_index,
+                                         MatrixBlock<T>(std::move(J)));
+          }
         }
 
         // For a triangle, its centroid has the fixed barycentric
@@ -1025,12 +1086,6 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
         // phi < 0 when in penetration.
         const T phi0 = -p0 / g;
-
-        // Contact point position relative to each body.
-        const Vector3<T>& p_WA = X_WA.translation();
-        const Vector3<T> p_AC_W = p_WC - p_WA;
-        const Vector3<T>& p_WB = X_WB.translation();
-        const Vector3<T> p_BC_W = p_WC - p_WB;
 
         DiscreteContactPair<T> contact_pair{
             .jacobian = std::move(jacobian_blocks),
