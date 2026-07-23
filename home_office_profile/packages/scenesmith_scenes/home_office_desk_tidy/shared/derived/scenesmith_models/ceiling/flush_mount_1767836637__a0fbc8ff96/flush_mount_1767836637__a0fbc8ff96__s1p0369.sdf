@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="flush_mount">
+    <link name="base_link">
+      <inertial>
+        <mass>1.200000</mass>
+        <pose>-0.0001534612 2.17749e-05 -0.056114954 0 0 0</pose>
+        <inertia>
+          <ixx>2.384701e-02</ixx>
+          <iyy>2.552156e-02</iyy>
+          <izz>4.707864e-02</izz>
+          <ixy>3.893148e-06</ixy>
+          <ixz>-1.248902e-05</ixz>
+          <iyz>1.454425e-05</iyz>
+        </inertia>
+      </inertial>
+      <collision name="collision_generated_000">
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.350</mu>
+              <mu2>0.350</mu2>
+            </ode>
+          </friction>
+        </surface>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/ceiling/flush_mount_1767836637__a0fbc8ff96/assets/generated_collision/piece_000.obj</uri>
+            <drake:declare_convex />
+            <scale>1.03690000 1.03690000 1.03690000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
