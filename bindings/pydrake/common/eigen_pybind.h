@@ -79,6 +79,7 @@ namespace detail {
 
 /**
 Provides `type_caster`s for drake::EigenPtr.
+Uses `type_caster<Eigen::Ref>` internally to avoid code duplication.
 */
 #ifdef PYDRAKE_USE_PYBIND11
 template <typename T>

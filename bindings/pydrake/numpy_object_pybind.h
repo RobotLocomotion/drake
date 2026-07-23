@@ -6,6 +6,11 @@
 #error "Should only be used when the binder is nanobind!"
 #endif
 
+/* This file provides the PYDRAKE_NUMPY_OBJECT_DTYPE macro, which defines
+type_caster<> specializations between C++ Eigen matrices and Python numpy arrays
+where the numpy dtype=object, i.e., the Eigen::Scalar type is not a primitive
+type. */
+
 namespace nanobind {
 namespace detail {
 
@@ -13,6 +18,7 @@ template <typename T>
 constexpr bool is_pydrake_numpy_dtype_object_castable =
     is_eigen_plain_v<T> || is_eigen_xpr_v<T>;
 
+/* Base class for PYDRAKE_NUMPY_OBJECT_DTYPE casters. */
 template <typename T>
 struct pydrake_numpy_dtype_object_type_caster {
   using Scalar = typename T::Scalar;
@@ -24,6 +30,7 @@ struct pydrake_numpy_dtype_object_type_caster {
   NB_TYPE_CASTER(
       T, const_name("numpy.ndarray[") +
              concat_maybe(const_name("dtype=") + PlainScalarCaster::Name,
+                 // TODO(jwnimmer-tri) Can/should we add these here?
                  // Config::Shape::name,
                  // Config::Order::name,
                  dtype_const_name<Scalar>::name) +
@@ -97,7 +104,6 @@ struct pydrake_numpy_dtype_object_type_caster {
         }
       }
     } catch (const cast_error&) {
-      // XXX cleanup?
       return false;
     }
 
@@ -141,7 +147,7 @@ struct pydrake_numpy_dtype_object_type_caster {
 }  // namespace detail
 }  // namespace nanobind
 
-// XXX(eigen) porting The Ref and Map should disallow mutable matrices.
+// TODO(#24749) The Ref and Map casters should disallow mutable matrices.
 #define PYDRAKE_NUMPY_OBJECT_DTYPE(Type)                                       \
   namespace nanobind {                                                         \
   namespace detail {                                                           \
