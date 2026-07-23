@@ -24,7 +24,9 @@ def main():
     _check(dut.copy_dense_vec_ref(arr3), arr3)
     _check(dut.copy_dense_vec_ref(prim3), arr3)
 
-    # Dense 2-d matrix accepts 1-d vectors, understood as column vectors.
+    # Dense 2-d matrix accepts the same 1-d vectors as in the prior paragraph
+    # (prim3 and arr3). The Eigen::Matrix ends up receiving the 1-d vector as a
+    # 2-d column vector, as indicated by the return type being shaped as arr31.
     prim31 = [[1.0], [2.0], [3.0]]
     arr31 = np.array(prim31)
     _check(dut.copy_dense_mat(arr3), arr31)

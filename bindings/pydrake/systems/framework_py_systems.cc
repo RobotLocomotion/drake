@@ -383,7 +383,7 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* output) const override {
-      // We can't use PYDRAKE_OVERIDE here because of the ToEigenRef.
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
       //
       // WARNING: Mutating `output` will not work when T is AutoDiffXd,
       // Expression, etc. For pybind11 background, see
@@ -408,7 +408,7 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
-      // We can't use PYDRAKE_OVERIDE here because of the ToEigenRef.
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
       //
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
@@ -430,7 +430,7 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
-      // We can't use PYDRAKE_OVERIDE here because of the ToEigenRef.
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
       //
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
