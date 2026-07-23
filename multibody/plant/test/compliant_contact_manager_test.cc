@@ -24,6 +24,7 @@
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/multibody/plant/test/spheres_stack.h"
 #include "drake/multibody/plant/test_utilities/rigid_body_on_compliant_ground.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;
@@ -386,6 +387,146 @@ TEST_F(SpheresStackTest, CalcDiscreteContactPairs) {
                                   MatrixCompareType::relative));
     }
   }
+}
+
+// Verifies the hydroelastic contact Jacobians, their tree blocks, and the
+// contact velocities against Jacobians computed directly at each contact point,
+// for contact between two bodies of the same tree, between bodies of two
+// different trees, and between a body and the world.
+GTEST_TEST(CompliantContactManagerTest, HydroelasticContactJacobians) {
+  systems::DiagramBuilder<double> builder;
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = 0.01;
+  plant_config.contact_model = "hydroelastic_with_fallback";
+  auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
+
+  ProximityProperties compliant;
+  geometry::AddContactMaterial({}, {}, CoulombFriction<double>(0.5, 0.5),
+                               &compliant);
+  geometry::AddCompliantHydroelasticProperties(0.05 /* resolution hint */,
+                                               1.0e5 /* modulus */, &compliant);
+  ProximityProperties rigid;
+  geometry::AddContactMaterial({}, {}, CoulombFriction<double>(0.5, 0.5),
+                               &rigid);
+  geometry::AddRigidHydroelasticProperties(0.05 /* resolution hint */, &rigid);
+
+  const double kRadius = 0.1;
+  const auto M_BBo_B =
+      SpatialInertia<double>::SolidSphereWithMass(1.0 /* mass */, kRadius);
+  auto add_sphere = [&](const RigidBody<double>& body, const Vector3d& p_BS) {
+    plant.RegisterCollisionGeometry(body, RigidTransformd(p_BS),
+                                    Sphere(kRadius), body.name(), compliant);
+  };
+
+  // A chain whose first and third links, which aren't adjacent and therefore
+  // aren't filtered, are in contact: contact within a single tree.
+  const RigidBody<double>& link1 = plant.AddRigidBody("link1", M_BBo_B);
+  const RigidBody<double>& link2 = plant.AddRigidBody("link2", M_BBo_B);
+  const RigidBody<double>& link3 = plant.AddRigidBody("link3", M_BBo_B);
+  const auto& joint1 =
+      plant.AddJoint<RevoluteJoint>("joint1", plant.world_body(), std::nullopt,
+                                    link1, std::nullopt, Vector3d::UnitZ());
+  const auto& joint2 = plant.AddJoint<RevoluteJoint>(
+      "joint2", link1, RigidTransformd(Vector3d(0.3, 0, 0)), link2,
+      std::nullopt, Vector3d::UnitX());
+  const auto& joint3 = plant.AddJoint<RevoluteJoint>(
+      "joint3", link2, RigidTransformd(Vector3d(0, 0.3, 0)), link3,
+      std::nullopt, Vector3d::UnitY());
+  add_sphere(link1, Vector3d(0, 0.25, 0));
+  add_sphere(link3, Vector3d(-0.2, 0, 0));
+
+  // Two free bodies in contact with each other (contact between two trees),
+  // the first of which is also in contact with a box anchored to the world.
+  const RigidBody<double>& free1 = plant.AddRigidBody("free1", M_BBo_B);
+  const RigidBody<double>& free2 = plant.AddRigidBody("free2", M_BBo_B);
+  add_sphere(free1, Vector3d(0.05, 0, 0));
+  add_sphere(free2, Vector3d(0.05, 0, 0));
+  plant.RegisterCollisionGeometry(plant.world_body(),
+                                  RigidTransformd(Vector3d(2.0, 0, -0.18)),
+                                  geometry::Box(0.4, 0.4, 0.2), "box", rigid);
+
+  plant.Finalize();
+  auto owned_manager = std::make_unique<CompliantContactManager<double>>();
+  const CompliantContactManager<double>& manager = *owned_manager;
+  plant.SetDiscreteUpdateManager(std::move(owned_manager));
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  Context<double>& context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+
+  // Arbitrary configuration in which the contacts above exist, and arbitrary
+  // velocities.
+  joint1.set_angle(&context, 0.1);
+  joint2.set_angle(&context, 0.2);
+  joint3.set_angle(&context, -0.1);
+  plant.SetFreeBodyPose(&context, free1,
+                        RigidTransformd(RotationMatrixd::MakeZRotation(0.3) *
+                                            RotationMatrixd::MakeYRotation(0.2),
+                                        Vector3d(1.95, 0, 0)));
+  plant.SetFreeBodyPose(&context, free2,
+                        RigidTransformd(Vector3d(2.0, 0, 0.15)));
+  const int nv = plant.num_velocities();
+  plant.SetVelocities(&context, VectorXd::LinSpaced(nv, -1.0, 2.0));
+  const VectorXd v = plant.GetVelocities(context);
+
+  const DiscreteContactData<DiscreteContactPair<double>>& pairs =
+      manager.EvalDiscreteContactPairs(context);
+  const MatrixXd J_AcBc_C =
+      CompliantContactManagerTester::CalcDenseJacobianMatrixInContactFrame(
+          manager, pairs);
+
+  const Frame<double>& frame_W = plant.world_frame();
+  const double kTolerance = 16 * kEps;
+  int num_same_tree = 0;
+  int num_two_trees = 0;
+  int num_with_world = 0;
+  MatrixXd Jv_WAc_W(3, nv);
+  MatrixXd Jv_WBc_W(3, nv);
+  for (int i = 0; i < pairs.size(); ++i) {
+    const DiscreteContactPair<double>& pair = pairs[i];
+    ASSERT_TRUE(pair.surface_index.has_value());
+    const RigidBody<double>& body_A = plant.get_body(BodyIndex(pair.object_A));
+    const RigidBody<double>& body_B = plant.get_body(BodyIndex(pair.object_B));
+
+    const RigidTransformd& X_WA = plant.EvalBodyPoseInWorld(context, body_A);
+    const RigidTransformd& X_WB = plant.EvalBodyPoseInWorld(context, body_B);
+    plant.CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_A.body_frame(),
+        X_WA.inverse() * pair.p_WC, frame_W, frame_W, &Jv_WAc_W);
+    plant.CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_B.body_frame(),
+        X_WB.inverse() * pair.p_WC, frame_W, frame_W, &Jv_WBc_W);
+    const MatrixXd J_AcBc_C_expected =
+        pair.R_WC.matrix().transpose() * (Jv_WBc_W - Jv_WAc_W);
+    EXPECT_TRUE(CompareMatrices(J_AcBc_C.middleRows<3>(3 * i),
+                                J_AcBc_C_expected, kTolerance));
+    EXPECT_NEAR(pair.vn0, J_AcBc_C_expected.row(2).dot(v), kTolerance);
+
+    EXPECT_TRUE(CompareMatrices(pair.p_ApC_W, pair.p_WC - X_WA.translation(),
+                                kTolerance));
+    EXPECT_TRUE(CompareMatrices(pair.p_BqC_W, pair.p_WC - X_WB.translation(),
+                                kTolerance));
+
+    // Contact within a tree, and contact with the world, have a single
+    // Jacobian block; contact between two trees has one block per tree.
+    const bool with_world =
+        body_A.index() == world_index() || body_B.index() == world_index();
+    const bool same_tree = (&body_A == &link1 || &body_A == &link3) &&
+                           (&body_B == &link1 || &body_B == &link3);
+    if (with_world) {
+      EXPECT_EQ(pair.jacobian.size(), 1u);
+      ++num_with_world;
+    } else if (same_tree) {
+      EXPECT_EQ(pair.jacobian.size(), 1u);
+      ++num_same_tree;
+    } else {
+      EXPECT_EQ(pair.jacobian.size(), 2u);
+      ++num_two_trees;
+    }
+  }
+  EXPECT_GT(num_same_tree, 0);
+  EXPECT_GT(num_two_trees, 0);
+  EXPECT_GT(num_with_world, 0);
 }
 
 // Unit test to verify discrete contact pairs computed by the manager for
