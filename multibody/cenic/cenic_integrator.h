@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/parallelism.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 #include "drake/multibody/contact_solvers/icf/icf_external_systems_linearizer.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
@@ -146,6 +147,17 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void SetSolverParameters(
       const contact_solvers::icf::IcfSolverParameters& parameters);
 
+  /** Returns the parallelism the convex solver uses to solve independent
+  constraint islands. */
+  Parallelism get_parallelism() const { return parallelism_; }
+
+  /** Sets the parallelism the convex solver uses to solve independent
+  constraint islands. The default is Parallelism::None() (serial). Results are
+  independent of the number of threads used. Parallelism only helps when a
+  scene decomposes into multiple independent islands (e.g., several objects in
+  contact that are not coupled to one another). */
+  void set_parallelism(Parallelism parallelism) { parallelism_ = parallelism; }
+
   bool supports_error_estimation() const final;
 
   int get_error_estimate_order() const final;
@@ -247,6 +259,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   contact_solvers::icf::internal::ReducedMapping mapping_;
   /* Data used with any/all of the above models. */
   contact_solvers::icf::internal::IcfData<T> data_;
+
+  /* Parallelism for the convex solver's per-island solves. Defaults to serial
+  so behavior is unchanged unless the user opts in via set_parallelism(). */
+  Parallelism parallelism_{Parallelism::None()};
 
   /* Track whether solves are initialized at the same time as a previous
   rejected step, to enable model (e.g., constraints, geometry) reuse. */

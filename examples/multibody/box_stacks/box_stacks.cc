@@ -3,7 +3,8 @@ A demonstration of the CenicIntegrator on a scene that decomposes into several
 independent constraint "islands". The scene is a grid of well-separated piles of
 randomly-oriented objects (boxes or spheres): the objects within a pile are in
 contact (forming one island), while the piles are far enough apart that they
-never interact. CENIC can solve the islands independently.
+never interact. CENIC can solve the islands independently and, optionally, in
+parallel (see --num_threads).
 
 The example exposes the main CENIC knobs along with a discrete-MultibodyPlant
 baseline:
@@ -24,6 +25,7 @@ simulation time, at the end. */
 
 #include <gflags/gflags.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/common/random.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/proximity_properties.h"
@@ -69,8 +71,8 @@ DEFINE_double(
     "Discrete period of the MultibodyPlant [s]. 0 (the default) uses a "
     "continuous plant integrated by CENIC/ICF; a value > 0 uses a discrete "
     "plant with its built-in contact solver as a baseline, in which case the "
-    "CENIC-specific flags (--fixed_step, --accuracy, --max_step_size) are "
-    "ignored.");
+    "CENIC-specific flags (--fixed_step, --accuracy, --max_step_size, "
+    "--num_threads) are ignored.");
 
 DEFINE_bool(spheres, false, "If true, simulate spheres instead of boxes.");
 
@@ -118,6 +120,12 @@ DEFINE_double(stack_spacing, 2.0,
               "Distance between neighboring stacks in the grid [m]. Must be "
               "large enough that stacks remain independent (non-touching).");
 
+DEFINE_int32(
+    num_threads, 1,
+    "CENIC only: number of threads used to solve constraint islands in "
+    "parallel. 1 (the default) is serial; 0 uses the maximum available "
+    "(Parallelism::Max()). Results are independent of this value.");
+
 DEFINE_bool(print_solver_stats, false,
             "CENIC only: print the convex solver's per-iteration statistics "
             "(cost, gradient, step size, etc.) via drake::log()->info during "
@@ -126,8 +134,10 @@ DEFINE_bool(print_solver_stats, false,
 DEFINE_bool(
     use_islands, true,
     "CENIC only: if true (the default), decompose the contact problem into "
-    "independent constraint islands solved separately. If false, solve the "
-    "full problem across all cliques at once -- the pre-island baseline.");
+    "independent constraint islands solved separately (and, with "
+    "--num_threads, in parallel). If false, solve the full problem across all "
+    "cliques at once -- the pre-island baseline; --num_threads is then "
+    "ignored.");
 
 DEFINE_bool(
     meshcat, false,
@@ -258,7 +268,7 @@ int do_main() {
   Simulator<double> simulator(*diagram);
   if (use_cenic) {
     // Continuous plant: integrate with CENIC and its (optional) per-island
-    // solver.
+    // parallel solver.
     auto& integrator = simulator.reset_integrator<CenicIntegrator<double>>();
     integrator.set_maximum_step_size(FLAGS_max_step_size);
     if (FLAGS_fixed_step) {
@@ -266,16 +276,21 @@ int do_main() {
     } else {
       integrator.set_target_accuracy(FLAGS_accuracy);
     }
+    const Parallelism parallelism = (FLAGS_num_threads == 0)
+                                        ? Parallelism::Max()
+                                        : Parallelism(FLAGS_num_threads);
+    integrator.set_parallelism(parallelism);
     auto solver_params = integrator.get_solver_parameters();
     solver_params.print_solver_stats = FLAGS_print_solver_stats;
     solver_params.use_islands = FLAGS_use_islands;
     integrator.SetSolverParameters(solver_params);
-    fmt::print(
-        "Integrator: CENIC, {}; islands {}.\n",
-        FLAGS_fixed_step
-            ? fmt::format("fixed step ({} s)", FLAGS_max_step_size)
-            : fmt::format("error control (accuracy {})", FLAGS_accuracy),
-        FLAGS_use_islands ? "on" : "off (full solve across all cliques)");
+    fmt::print("Integrator: CENIC, {}; islands {}.\n",
+               FLAGS_fixed_step
+                   ? fmt::format("fixed step ({} s)", FLAGS_max_step_size)
+                   : fmt::format("error control (accuracy {})", FLAGS_accuracy),
+               FLAGS_use_islands ? fmt::format("on ({} solver threads)",
+                                               parallelism.num_threads())
+                                 : "off (full solve across all cliques)");
   } else {
     // Discrete plant: the Simulator advances it with the plant's built-in
     // contact solver. This is the discrete-time baseline.
@@ -358,9 +373,10 @@ int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "Simulates a grid of independent stacks of boxes or spheres with Drake's "
       "CENIC integrator (or a discrete-MultibodyPlant baseline), demonstrating "
-      "optional per-island solving. See the flags for Meshcat "
+      "optional per-island parallelism. See the flags for Meshcat "
       "visualization, point vs. hydroelastic contact, fixed-step vs. "
-      "error-controlled integration, and accuracy.");
+      "error-controlled integration, accuracy, and the number of solver "
+      "threads.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::box_stacks::do_main();
 }

@@ -10,7 +10,7 @@ import time
 
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
+from pydrake.common import FindResourceOrThrow, Parallelism
 from pydrake.common.yaml import yaml_dump, yaml_load_file
 from pydrake.geometry import StartMeshcat
 
@@ -41,6 +41,14 @@ from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--visualize", type=int, default=1)
 arg_parser.add_argument("--log_times", type=int, default=0)
+arg_parser.add_argument(
+    "--num_threads",
+    type=int,
+    default=1,
+    help="Number of threads used to solve constraint islands in parallel. "
+    "1 (the default) is serial; 0 uses the maximum available. Only has an "
+    "effect with --use_islands enabled.",
+)
 arg_parser.add_argument("--use_islands", type=int, default=1)
 args = arg_parser.parse_args()
 
@@ -343,6 +351,16 @@ params = integrator.get_solver_parameters()
 params.print_solver_stats = False
 params.use_islands = args.use_islands
 integrator.SetSolverParameters(params)
+
+# Optionally solve independent constraint islands in parallel. 0 requests the
+# maximum available; any other value sets an explicit thread count. Results are
+# independent of the number of threads.
+parallelism = (
+    Parallelism.Max()
+    if args.num_threads == 0
+    else Parallelism(args.num_threads)
+)
+integrator.set_parallelism(parallelism)
 
 if args.visualize:
     # Force a publish (and thus a recording frame) once per integration step,

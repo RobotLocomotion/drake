@@ -14,6 +14,7 @@ drake_cc_binary(
     name = "box_stacks",
     srcs = ["box_stacks.cc"],
     deps = [
+        "//common:parallelism",
         "//common:random",
         "//geometry:meshcat",
         "//geometry:proximity_properties",

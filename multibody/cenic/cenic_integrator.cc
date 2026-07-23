@@ -450,14 +450,15 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
       const std::vector<int>& indices =
           mapping_.velocity_subsequence.inverse_permutation();
       data_.set_v(v_guess(indices));
-      solved = solver_.SolveWithGuess(reduced_model_, tolerance, &data_);
+      solved = solver_.SolveWithGuess(reduced_model_, tolerance, &data_,
+                                      parallelism_);
       if (solved) {
         data_.set_v(ExpandRows(data_.v(), model.num_velocities(), indices));
       }
     } else {
       model.ResizeData(&data_);
       data_.set_v(v_guess);
-      solved = solver_.SolveWithGuess(model, tolerance, &data_);
+      solved = solver_.SolveWithGuess(model, tolerance, &data_, parallelism_);
     }
   } else {
     throw std::runtime_error(

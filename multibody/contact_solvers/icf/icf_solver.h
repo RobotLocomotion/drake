@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/parallelism.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
@@ -129,11 +130,15 @@ class IcfSolver {
                    the class documentation for convergence criteria details.
   @param[in, out] data The ICF data structure to be updated with the solution.
                        To begin, stores the initial guess for velocities v.
+  @param parallelism The number of threads to use when solving islands. The
+                     default (None) solves islands serially. Results are
+                     independent of the number of threads.
 
   @return true if and only if the optimizer converged to tolerance ε.
   @pre The model and data must compatible, e.g., via model.ResizeData(&data). */
   bool SolveWithGuess(const IcfModel<double>& model, const double tolerance,
-                      IcfData<double>* data);
+                      IcfData<double>* data,
+                      Parallelism parallelism = Parallelism::None());
 
   /* Returns solver statistics from the most recent solve. */
   const IcfSolverStats& stats() const { return stats_; }

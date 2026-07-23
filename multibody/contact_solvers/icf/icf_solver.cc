@@ -109,7 +109,8 @@ void IcfSolverStats::Reserve(int max_iterations) {
 IcfSolver::~IcfSolver() = default;
 
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
-                               const double tolerance, IcfData<double>* data) {
+                               const double tolerance, IcfData<double>* data,
+                               Parallelism parallelism) {
   DRAKE_ASSERT(data != nullptr);
   DRAKE_ASSERT(tolerance > 0);
   DRAKE_ASSERT(model.num_velocities() >= 0);
@@ -138,8 +139,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   stats_.Clear();
 
   // If islands are disabled, solve the full problem across all cliques as a
-  // single optimization, ignoring the partition. This reproduces the solver's
-  // behavior prior to constraint islands.
+  // single optimization, ignoring the partition and `parallelism`. This
+  // reproduces the solver's behavior prior to constraint islands.
   if (!parameters_.use_islands) {
     const bool converged =
         SolveFull(model, tolerance, data, island_states_[0].get());
@@ -155,11 +156,37 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   // Solve each island as an independent convex subproblem, optionally in
   // parallel. Each island owns its IslandSolverState and writes only disjoint
   // regions of `data`, decision_variables_, and search_direction_, so the
-  // per-island solves do not interfere.
+  // per-island solves do not interfere. The default Parallelism::None() runs
+  // one thread, recovering the serial path exactly.
+  //
+  // Exceptions cannot propagate out of an OpenMP region, so we capture the
+  // first one per island and rethrow it after the loop. Stats are aggregated
+  // serially afterward, so results are deterministic regardless of scheduling.
+  // Clamp the thread count to the number of islands: there is no parallel work
+  // to spread beyond one thread per island, and clamping to 1 for a single
+  // island avoids OpenMP overhead on the common serial path.
+  [[maybe_unused]] const int num_threads =
+      std::min(parallelism.num_threads(), std::max(num_islands, 1));
+  std::exception_ptr eptr;
+
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(num_threads) schedule(dynamic)
+#endif
   for (int island = 0; island < num_islands; ++island) {
-    IslandSolverState& state = *island_states_[island];
-    state.converged = SolveIsland(model, island, tolerance, data, &state);
+    try {
+      IslandSolverState& state = *island_states_[island];
+      state.converged = SolveIsland(model, island, tolerance, data, &state);
+    } catch (...) {
+#if defined(_OPENMP)
+#pragma omp critical
+#endif
+      {
+        if (eptr == nullptr) eptr = std::current_exception();
+      }
+    }
   }
+
+  if (eptr != nullptr) std::rethrow_exception(eptr);
 
   // Aggregate stats in island order (independent of thread scheduling): total
   // iterations are the max over islands, factorizations sum, the per-iteration

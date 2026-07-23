@@ -144,10 +144,11 @@ generally much faster.)""";
               // Source: drake/multibody/contact_solvers/icf/icf_solver_parameters.h
               const char* doc =
 R"""(Whether to decompose the problem into independent constraint islands
-(connected components of the clique graph) and solve them separately.
-When false, the full problem across all cliques is solved as a single
-Newton optimization, matching the solver's behavior prior to the
-introduction of constraint islands.)""";
+(connected components of the clique graph) and solve them separately,
+which also enables optional parallelism over islands. When false, the
+full problem across all cliques is solved as a single Newton
+optimization, matching the solver's behavior prior to the introduction
+of constraint islands.)""";
             } use_islands;
             auto Serialize__fields() const {
               return std::array{
