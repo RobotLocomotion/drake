@@ -961,10 +961,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const auto& [id0, id1] = candidates[k];
       auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);
       if (ContactSurfaceFailed(result)) {
-        auto penetration = penetration_as_point_pair::MaybeMakePointPair(
-            GetFclPtr(id0), GetFclPtr(id1), point_data);
-        if (penetration.has_value()) {
-          point_pair_maybes[k] = penetration;
+        // Cheap conservative culling: for a rigid-rigid pair whose fcl
+        // narrowphase shapes are exactly bounded by their hydroelastic
+        // surface meshes, a single OBB-OBB test on the meshes' bounding
+        // volumes can prove the pair disjoint far more cheaply than running
+        // GJK. Broadphase AABBs are world-aligned and therefore loose for
+        // oriented geometry; in cluttered scenes the vast majority of
+        // rigid-rigid candidates are rejected here.
+        if (result != hydroelastic::ContactSurfaceResult::kRigidRigid ||
+            !RigidRigidProvablyDisjoint(id0, id1, X_WGs)) {
+          auto penetration = penetration_as_point_pair::MaybeMakePointPair(
+              GetFclPtr(id0), GetFclPtr(id1), point_data);
+          if (penetration.has_value()) {
+            point_pair_maybes[k] = penetration;
+          }
         }
       } else if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
@@ -974,6 +984,40 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_ASSERT(IsSortedByOrder(*surfaces));
     CullFlatten(&point_pair_maybes, point_pairs);
     DRAKE_ASSERT(IsSortedByOrder(*point_pairs));
+  }
+
+  /* Reports whether the rigid-rigid candidate pair (id0, id1) is provably
+   disjoint via an OBB-OBB test on their hydroelastic surface meshes'
+   bounding volumes.
+
+   The test is only conservative when each geometry's narrowphase shape is
+   contained in its hydroelastic surface mesh's bounding volume. That holds
+   for fcl boxes and convexes (the surface mesh's vertices bound the exact
+   shape), but *not* for tessellated round primitives (sphere, cylinder,
+   ellipsoid, capsule) whose tessellation under-approximates the true
+   surface; those (and half spaces) report `false` (i.e., "cannot prove
+   disjoint").
+
+   @pre Both ids have HydroelasticType::kRigid representations. */
+  bool RigidRigidProvablyDisjoint(
+      GeometryId id0, GeometryId id1,
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+    auto is_exactly_bounded = [this](GeometryId id) {
+      const fcl::NODE_TYPE node_type =
+          GetFclPtr(id)->collisionGeometry()->getNodeType();
+      return node_type == fcl::GEOM_BOX || node_type == fcl::GEOM_CONVEX;
+    };
+    if (!is_exactly_bounded(id0) || !is_exactly_bounded(id1)) return false;
+    const hydroelastic::RigidGeometry& rigid0 =
+        hydroelastic_geometries_.rigid_geometry(id0);
+    const hydroelastic::RigidGeometry& rigid1 =
+        hydroelastic_geometries_.rigid_geometry(id1);
+    if (rigid0.is_half_space() || rigid1.is_half_space()) return false;
+    const math::RigidTransformd X_WG0 = convert_to_double(X_WGs.at(id0));
+    const math::RigidTransformd X_WG1 = convert_to_double(X_WGs.at(id1));
+    const math::RigidTransformd X_G0G1 = X_WG0.InvertAndCompose(X_WG1);
+    return !Obb::HasOverlap(rigid0.bvh().root_node().bv(),
+                            rigid1.bvh().root_node().bv(), X_G0G1);
   }
 
   void ComputeDeformableContact(
