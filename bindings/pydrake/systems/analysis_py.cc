@@ -214,9 +214,8 @@ PYDRAKE_MODULE(analysis, m) {
           // N.B. While `context` is not directly owned by this system, we
           // would still like our accessors to keep it alive (e.g. a user calls
           // `simulator.get_integrator().get_context()`.
-          .def("get_context", &Class::get_context,
-              // Keep alive, transitive: `return` keeps `self` alive.
-              py::keep_alive<0, 1>(), cls_doc.get_context.doc)
+          .def("get_context", &Class::get_context, py_rvp::reference_internal,
+              cls_doc.get_context.doc)
           .def("get_mutable_context", &Class::get_mutable_context,
               // Keep alive, transitive: `return` keeps `self` alive.
               py::keep_alive<0, 1>(), cls_doc.get_mutable_context.doc)
