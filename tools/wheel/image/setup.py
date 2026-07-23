@@ -26,9 +26,13 @@ python_required = [
     'Mosek==11.1.2 ; python_version < "3.15" and platform_machine != "aarch64"',
 ]
 
-options = {
-    "bdist_wheel": {"py_limited_api": "cp312"},
-} if "nb" in DRAKE_VERSION else {}
+options = (
+    {
+        "bdist_wheel": {"py_limited_api": "cp312"},
+    }
+    if "nb" in DRAKE_VERSION
+    else {}
+)
 
 
 def find_data_files(*patterns):
