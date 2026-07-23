@@ -297,12 +297,12 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
     ] + python_args  # fmt: skip
 
 
-def _build_image(target, identifier, options):
+def _build_image(target, identifier, version, options):
     """
     Runs the build for a target and (optionally) extract the wheel.
     """
     args = [
-        "--build-arg", f"DRAKE_VERSION={options.version}",
+        "--build-arg", f"DRAKE_VERSION={version}",
         "--build-arg", f"DRAKE_GIT_SHA={_git_sha(resource_root)}",
     ] + _target_args(target, BUILD)  # fmt: skip
     if not options.keep_containers:
@@ -343,14 +343,14 @@ def _build_image(target, identifier, options):
             _docker("rm", container_name)
 
 
-def _test_wheel(target, identifier, options):
+def _test_wheel(target, identifier, version, options):
     """
     Runs the test script for the wheel matching the specified target.
     """
     glibc = glibc_versions[target.platform(BUILD).alias]
     wheel = wheel_name(
         python_version=target.python_tag,
-        wheel_version=options.version,
+        wheel_version=version,
         wheel_platform=f"manylinux_{glibc}_{ARCH}",
     )
 
@@ -444,10 +444,16 @@ def build(options):
 
     # Build the requested wheels.
     for t in targets_to_build:
-        _build_image(t, identifier, options)
+        # Mark the local version component for nanobind.
+        if t.python_binder == PythonBinder.NANOBIND:
+            version = f"{options.version}+nb"
+        else:
+            version = options.version
+
+        _build_image(t, identifier, version, options)
 
         if options.test:
-            _test_wheel(t, identifier, options)
+            _test_wheel(t, identifier, version, options)
 
 
 def add_build_arguments(parser):
