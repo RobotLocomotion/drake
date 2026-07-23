@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="plywood_offcut_plank">
+    <link name="base_link">
+      <inertial>
+        <mass>3.500000</mass>
+        <pose>-4.77723e-05 -1.24154e-05 0.0024193836 0 0 0</pose>
+        <inertia>
+          <ixx>3.533134e-04</ixx>
+          <iyy>1.333172e-03</iyy>
+          <izz>1.673802e-03</izz>
+          <ixy>-3.050663e-07</ixy>
+          <ixz>-5.657250e-07</ixz>
+          <iyz>-3.273075e-08</iyz>
+        </inertia>
+      </inertial>
+      <collision name="body">
+        <pose>-3.9587279e-06 -1.5980195e-05 0.0023995671 -2.474851 1.5702118 0.66765766</pose>
+        <geometry>
+          <box>
+            <size>0.00478083 0.03462544 0.06750035</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>8856665.49295</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.00239041</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
