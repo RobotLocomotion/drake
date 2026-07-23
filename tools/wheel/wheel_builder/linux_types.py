@@ -8,8 +8,8 @@ from enum import Enum
 class PythonBinder(Enum):
     _value_: str
 
-    PYBIND11 = "pybind11"
     NANOBIND = "nanobind"
+    PYBIND11 = "pybind11"
 
 
 class PythonManager(Enum):

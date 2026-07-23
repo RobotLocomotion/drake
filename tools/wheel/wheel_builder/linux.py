@@ -284,7 +284,7 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
         python_args = [
             "--build-arg", f"PYTHON=build:{target.python_version_full}",
             "--build-arg", f"PYTHON_SHA={target.python_sha}",
-            "--build-arg", f"DRAKE_PYTHON_BINDER={target.python_binder}",
+            "--build-arg", f"DRAKE_PYTHON_BINDER={target.python_binder.value}",
         ]  # fmt: skip
     else:
         python_args = [
