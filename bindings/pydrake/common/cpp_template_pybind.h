@@ -23,7 +23,6 @@ inline py::object GetOrInitTemplate(  // BR
     py::tuple args = py::tuple(), py::dict kwargs = py::dict()) {
   const char module_name[] = "pydrake.common.cpp_template";
   py::handle m = py::module_::import_(module_name);
-  py::gil_scoped_acquire guard;
   return m.attr("get_or_init")(
       scope, name, m.attr(template_cls_name.c_str()), *args, **kwargs);
 }
