@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -29,17 +31,17 @@ class VariableIdPythonAttorney {
   VariableIdPythonAttorney() = delete;
   static uint64_t hi(const Variable::Id& id) { return id.hi_; }
   static uint64_t lo(const Variable::Id& id) { return id.lo_; }
-  static Variable::Id Construct(uint64_t hi, uint64_t lo) {
+  static std::optional<Variable::Id> TryConstruct(uint64_t hi, uint64_t lo) {
     // We need to maintain Id's invariant that the low byte of hi_ is the
     // Variable::Type, by rejecting out-of-bounds types.
     const uint8_t var_type = static_cast<uint8_t>(hi);
     if (var_type > static_cast<uint8_t>(Variable::Type::RANDOM_EXPONENTIAL)) {
-      throw std::domain_error("Ill-formed Variable::Id");
+      return std::nullopt;
     }
     Variable::Id result;
     result.hi_ = hi;
     result.lo_ = lo;
-    return result;
+    return {result};
   }
 };
 }  // namespace symbolic
@@ -80,17 +82,15 @@ struct type_caster<drake::symbolic::Variable::Id> {
     const py::object lo_py = concat & py::int_(~uint64_t{});
     const uint64_t hi = py::cast<uint64_t>(hi_py);
     const uint64_t lo = py::cast<uint64_t>(lo_py);
-    // N.B. "value" is a magic variable declared by pybind11 where we're
-    // supposed to put the loaded result.
-#if 1  // XXX This should never really fail, but it does!
-    const uint8_t var_type = static_cast<uint8_t>(hi);
-    if (var_type > static_cast<uint8_t>(
-                       drake::symbolic::Variable::Type::RANDOM_EXPONENTIAL)) {
+    std::optional<drake::symbolic::Variable::Id> maybe_result =
+        Attorney::TryConstruct(hi, lo);
+    if (!maybe_result.has_value()) {
       return false;
     }
-#endif
-    value = Attorney::Construct(hi, lo);
 
+    // N.B. "value" is a magic variable declared by pybind11 where we're
+    // supposed to put the loaded result.
+    value = *maybe_result;
     return true;
   }
 
