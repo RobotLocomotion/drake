@@ -246,7 +246,7 @@ def _tagname(
     Iff the role is the TEST role, then the test_index must be provided.
     """
     platform = target.platform(role, test_index).alias
-    return f"{tag_base}:{tag_prefix}-{platform}-py{target.python_tag}"
+    return f"{tag_base}:{tag_prefix}-{platform}-py{target.python_tag}-{target.python_binder.value}"
 
 
 def _build_stage(target, args, tag_prefix, stage=None):
