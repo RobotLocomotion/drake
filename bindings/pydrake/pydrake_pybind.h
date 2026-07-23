@@ -413,7 +413,6 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 #define PYDRAKE_BINDER_NAMESPACE pybind11
 #define PYDRAKE_OVERRIDE PYBIND11_OVERRIDE
 #define PYDRAKE_OVERRIDE_PURE PYBIND11_OVERRIDE_PURE
-#define PYDRAKE_OVERRIDE_PURE_NAME PYBIND11_OVERRIDE_PURE_NAME
 #define NB_TRAMPOLINE(base, size) \
   using NBBase = base;            \
   using NBBase::NBBase
@@ -445,6 +444,4 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
   } while (0)
 #define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) \
   NB_OVERRIDE_PURE(__VA_ARGS__)
-#define PYDRAKE_OVERRIDE_PURE_NAME(unused1, unused2, ...) \
-  NB_OVERRIDE_PURE_NAME(__VA_ARGS__)
 #endif
