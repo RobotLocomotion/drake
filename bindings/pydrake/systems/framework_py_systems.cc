@@ -281,7 +281,7 @@ struct Impl {
   template <typename LeafSystemBase = LeafSystemPublic>
   class PyLeafSystemBase : public LeafSystemBase {
    public:
-    NB_TRAMPOLINE(LeafSystemBase, 100);
+    NB_TRAMPOLINE(LeafSystemBase, 2);
     using Base = LeafSystemBase;
 
     // Trampoline virtual methods.
@@ -344,7 +344,7 @@ struct Impl {
   template <typename DiagramBase = DiagramPublic>
   class PyDiagramBase : public DiagramBase {
    public:
-    NB_TRAMPOLINE(DiagramBase, 100);
+    NB_TRAMPOLINE(DiagramBase, 1);
     using Base = DiagramBase;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
@@ -375,7 +375,7 @@ struct Impl {
 
   class PyVectorSystem : public VectorSystemPublic {
    public:
-    NB_TRAMPOLINE(VectorSystemPublic, 100);
+    NB_TRAMPOLINE(VectorSystemPublic, 0);
     using Base = VectorSystemPublic;
 
     // something something ToEigenRef().
@@ -383,6 +383,8 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* output) const override {
+      // We can't use PYDRAKE_OVERIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `output` will not work when T is AutoDiffXd,
       // Expression, etc. For pybind11 background, see
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
@@ -406,6 +408,8 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
+      // We can't use PYDRAKE_OVERIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
       {
@@ -426,6 +430,8 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
+      // We can't use PYDRAKE_OVERIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
       {

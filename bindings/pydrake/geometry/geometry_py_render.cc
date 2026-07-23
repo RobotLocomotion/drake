@@ -48,6 +48,7 @@ class PyRenderEngine : public RenderEngine {
  public:
   NB_TRAMPOLINE(RenderEngine, 9);
   using Base = RenderEngine;
+
   PyRenderEngine() : Base() {}
 
   void UpdateViewpoint(RigidTransformd const& X_WR) override {

@@ -288,11 +288,11 @@ struct Impl {
 
     std::unique_ptr<Trajectory<T>> DoClone() const final {
       py::gil_scoped_acquire guard;
+      const Trajectory<T>* const self = this;
       // Trajectory subclasses in Python must implement cloning by defining
       // a __deepcopy__ method.
-      const Trajectory<T>* const base = this;
       auto deepcopy = py::module_::import_("copy").attr("deepcopy");
-      return WrapPyTrajectory(deepcopy(base));
+      return WrapPyTrajectory(deepcopy(self));
     }
 
     MatrixX<T> do_value(const T& t) const final {
@@ -311,11 +311,11 @@ struct Impl {
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
         int derivative_order) const final {
       py::gil_scoped_acquire guard;
+      const Trajectory<T>* const self = this;
       // We can't use PYDRAKE_OVERRIDE_PURE because we need to post-process the
       // return value.
-      const Trajectory<T>* const base = this;
-      py::object self = py::cast(base);
-      py::object result = self.attr("DoMakeDerivative")(derivative_order);
+      py::object result =
+          py::cast(self).attr("DoMakeDerivative")(derivative_order);
       return WrapPyTrajectory(result);
     }
 

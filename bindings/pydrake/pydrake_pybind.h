@@ -413,7 +413,12 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 #define PYDRAKE_BINDER_NAMESPACE pybind11
 #define PYDRAKE_OVERRIDE PYBIND11_OVERRIDE
 #define PYDRAKE_OVERRIDE_PURE PYBIND11_OVERRIDE_PURE
+// This is an implementation of nanobind's NB_TRAMPOLINE macro for pybind11.
+// https://nanobind.readthedocs.io/en/latest/classes.html#overriding-virtual-functions-in-python
+// In particular, `size` should match how many PYDRAKE_OVERRIDE{,_PURE} are used
+// within the class.
 #define NB_TRAMPOLINE(base, size) \
+  static_assert(size >= 0);       \
   using NBBase = base;            \
   using NBBase::NBBase
 #else  // PYDRAKE_USE_NANOBIND
