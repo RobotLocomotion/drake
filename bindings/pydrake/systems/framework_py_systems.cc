@@ -1053,7 +1053,6 @@ Note: The above is for the C++ documentation. For Python, use
             py::overload_cast<int>(&LeafSystemPublic::DeclareDiscreteState),
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_num_state_variables)
-        .def("DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
         // Abstract state.
         .def("DeclareAbstractState",
             py::overload_cast<const AbstractValue&>(
