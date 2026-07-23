@@ -587,6 +587,7 @@ GTEST_TEST(DistanceConstraintsPool, Reduce) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddDistanceConstraints(&model);
+  model.SetSparsityPattern();
 
   IcfData<double> data;
   model.ResizeData(&data);

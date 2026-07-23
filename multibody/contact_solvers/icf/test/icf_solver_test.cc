@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
+#include "drake/multibody/contact_solvers/icf/test_utilities/icf_model_test_helpers.h"
 
 namespace drake {
 namespace multibody {
@@ -22,8 +23,14 @@ using Eigen::VectorXd;
 
 constexpr double kConvergenceTolerance = 1e-8;
 
-class IcfSolverTest : public ::testing::Test {
+class IcfSolverBaseTest : public ::testing::Test {
  protected:
+  explicit IcfSolverBaseTest(bool use_islands) {
+    auto params = solver_.get_parameters();
+    params.use_islands = use_islands;
+    solver_.SetParameters(params);
+  }
+
   void SetUp() override {
     // Create a simple model with two cliques.
     const int nv = 12;
@@ -81,9 +88,20 @@ class IcfSolverTest : public ::testing::Test {
   IcfData<double> data_;
 };
 
+class IcfSolverTest : public IcfSolverBaseTest {
+ protected:
+  IcfSolverTest() : IcfSolverBaseTest(/* use_islands = */ false) {}
+};
+
+class IcfSolverParamTest : public IcfSolverBaseTest,
+                           public ::testing::WithParamInterface<bool> {
+ protected:
+  IcfSolverParamTest() : IcfSolverBaseTest(/* use_islands = */ GetParam()) {}
+};
+
 /* For an unconstrained problem, the solver should converge in a single
 iteration with no linesearch required. */
-TEST_F(IcfSolverTest, UnconstrainedProblem) {
+TEST_P(IcfSolverParamTest, UnconstrainedProblem) {
   // Remove patch constraints to recover an unconstrained problem.
   const std::vector<int> empty;
   model_.patch_constraints_pool().Resize(empty);
@@ -99,7 +117,7 @@ TEST_F(IcfSolverTest, UnconstrainedProblem) {
 }
 
 /* Solves a typical problem with patch constraints.*/
-TEST_F(IcfSolverTest, Convergence) {
+TEST_P(IcfSolverParamTest, Convergence) {
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats& stats = solver_.stats();
 
@@ -125,7 +143,7 @@ TEST_F(IcfSolverTest, Convergence) {
 }
 
 /* Verifies that dense and sparse algebra produce the same result. */
-TEST_F(IcfSolverTest, DenseVsSparseAlgebra) {
+TEST_P(IcfSolverParamTest, DenseVsSparseAlgebra) {
   const VectorXd v_guess = data_.v();
 
   // Solve with sparse algebra.
@@ -154,7 +172,7 @@ TEST_F(IcfSolverTest, DenseVsSparseAlgebra) {
 }
 
 /* Verifies that Hessian reuse performs as expected. */
-TEST_F(IcfSolverTest, HessianReuse) {
+TEST_P(IcfSolverParamTest, HessianReuse) {
   const VectorXd v_guess = data_.v();
   IcfSolverParameters solver_params = solver_.get_parameters();
 
@@ -190,7 +208,7 @@ TEST_F(IcfSolverTest, HessianReuse) {
 
 /* Verifies that no iterations are performed if the initial guess solves the
 problem to the requested tolerance. */
-TEST_F(IcfSolverTest, EarlyExit) {
+TEST_P(IcfSolverParamTest, EarlyExit) {
   // Solve the problem once, writing the solution to data_.
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   EXPECT_GT(solver_.stats().num_iterations, 5);
@@ -202,7 +220,7 @@ TEST_F(IcfSolverTest, EarlyExit) {
 }
 
 /* Verifies that the solver runs properly with printouts enabled. */
-TEST_F(IcfSolverTest, PrintStatsSmokeTest) {
+TEST_P(IcfSolverParamTest, PrintStatsSmokeTest) {
   IcfSolverParameters solver_params = solver_.get_parameters();
   solver_params.print_solver_stats = true;
   solver_.SetParameters(solver_params);
@@ -211,7 +229,7 @@ TEST_F(IcfSolverTest, PrintStatsSmokeTest) {
 
 /* Checks that the solver works with several reasonable linesearch step size
 limits. */
-TEST_F(IcfSolverTest, LinesearchStepSizeLimits) {
+TEST_P(IcfSolverParamTest, LinesearchStepSizeLimits) {
   const VectorXd v_guess = data_.v();
   IcfSolverParameters solver_params = solver_.get_parameters();
 
@@ -226,7 +244,7 @@ TEST_F(IcfSolverTest, LinesearchStepSizeLimits) {
 }
 
 /* Checks that we can converge to different tolerances. */
-TEST_F(IcfSolverTest, ConvergenceTolerances) {
+TEST_P(IcfSolverParamTest, ConvergenceTolerances) {
   const VectorXd v_guess = data_.v();
 
   // Solve with a very loose tolerance.
@@ -242,7 +260,7 @@ TEST_F(IcfSolverTest, ConvergenceTolerances) {
 }
 
 /* Verify that the solver returns false if it fails to converge. */
-TEST_F(IcfSolverTest, ConvergenceFailure) {
+TEST_P(IcfSolverParamTest, ConvergenceFailure) {
   IcfSolverParameters solver_params = solver_.get_parameters();
   solver_params.max_iterations = 2;  // Too low for this problem.
   solver_.SetParameters(solver_params);
@@ -251,7 +269,7 @@ TEST_F(IcfSolverTest, ConvergenceFailure) {
 
 /* Checks that the solver matches the analytical solution for a simple
 unconstrained problem. */
-TEST_F(IcfSolverTest, AnalyticalSolution) {
+TEST_P(IcfSolverParamTest, AnalyticalSolution) {
   // Solve a simple problem with a clear analytical solution.
   const std::vector<int> empty;
   model_.patch_constraints_pool().Resize(empty);
@@ -270,6 +288,49 @@ TEST_F(IcfSolverTest, AnalyticalSolution) {
   const VectorXd analytical_solution = v0 - A.ldlt().solve(h * k0);
 
   EXPECT_TRUE(CompareMatrices(solution, analytical_solution,
+                              kConvergenceTolerance,
+                              MatrixCompareType::relative));
+}
+
+INSTANTIATE_TEST_SUITE_P(FlipIslands, IcfSolverParamTest, ::testing::Bool());
+
+/* With islands disabled (use_islands = false), the solver optimizes the full
+problem across all cliques as a single Newton solve. On a multi-island problem
+it must still reach the same minimizer as the island-decomposed solve. */
+GTEST_TEST(IcfSolver, NoIslandsMatchesIslands) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+  ASSERT_GT(model.partition().num_islands(), 1);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  const int nv = model.num_velocities();
+  const VectorXd v_guess = VectorXd::LinSpaced(nv, -0.5, 0.7);
+
+  // Island-decomposed solve (the default).
+  IcfSolver island_solver;
+  data.set_v(v_guess);
+  EXPECT_TRUE(
+      island_solver.SolveWithGuess(model, kConvergenceTolerance, &data));
+  const VectorXd island_solution = data.v();
+
+  // Full solve with islands disabled.
+  IcfSolver full_solver;
+  IcfSolverParameters params = full_solver.get_parameters();
+  params.use_islands = false;
+  full_solver.SetParameters(params);
+  data.set_v(v_guess);
+  EXPECT_TRUE(full_solver.SolveWithGuess(model, kConvergenceTolerance, &data));
+  const VectorXd full_solution = data.v();
+  EXPECT_GE(full_solver.stats().num_iterations, 1);
+
+  // Both reach the same minimizer, up to the convergence tolerance.
+  EXPECT_TRUE(CompareMatrices(full_solution, island_solution,
                               kConvergenceTolerance,
                               MatrixCompareType::relative));
 }

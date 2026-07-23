@@ -66,8 +66,8 @@ convex subproblem that can be solved on its own. This class identifies those
 subproblems.
 
 Islands are numbered by the smallest clique index they contain, so the
-numbering is deterministic across runs (and independent of thread scheduling).
-All storage is grow-only across calls to Compute(). */
+numbering is deterministic across runs. All storage is grow-only across calls to
+Compute(). */
 class IcfPartition {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IcfPartition);

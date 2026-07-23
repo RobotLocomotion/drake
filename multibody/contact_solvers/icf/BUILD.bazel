@@ -217,6 +217,7 @@ drake_cc_library(
     deps = [
         ":eigen_pool",
         ":icf_data",
+        ":icf_partition",
         ":icf_search_direction_data",
         ":reduced_mapping",
         "//common:default_scalars",
@@ -379,6 +380,7 @@ drake_cc_googletest(
         ":icf_model",
         ":icf_solver",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
 )
 
