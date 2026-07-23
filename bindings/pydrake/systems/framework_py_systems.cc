@@ -1373,7 +1373,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
               return in;
             });
     // Bind templated instantiations.
-    auto converter_methods = [converter](auto pack) {
+    auto converter_methods = [&converter](auto pack) {
       constexpr auto& cls_doc =
           pydrake_doc_systems_framework.drake.systems.SystemScalarConverter;
       using Pack = decltype(pack);

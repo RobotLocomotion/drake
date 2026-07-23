@@ -82,12 +82,14 @@ void BindMultibodyElementMixin(PyClass* pcls) {
       .def("index", &Class::index)
       .def("model_instance", &Class::model_instance)
       .def("is_ephemeral", &Class::is_ephemeral)
-      .def("GetParentPlant",
+      .def(
+          "GetParentPlant",
           [](const Class& self) -> const multibody::MultibodyPlant<T>& {
             return self.GetParentPlant();
-          })
+          },
+          py_rvp::reference_internal)
       .def("__repr__", [](const Class& self) {
-        py::str cls_name = internal::PrettyClassName(py::cast(&self).type());
+        py::str cls_name(internal::PrettyClassName(py::cast(&self).type()));
         const int index = self.index();
         const int model_instance = self.model_instance();
         if constexpr (has_name_func<Class>::value) {
