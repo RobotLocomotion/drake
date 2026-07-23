@@ -85,18 +85,8 @@ class DefAttributesArchive {
     }
 
     // Add the binding.
-#ifdef PYDRAKE_USE_NANOBIND
-    constexpr bool is_optional = requires {
-      []<typename U>(const std::optional<U>&) {}(std::declval<T>());
-    };
-#endif
     ppy_class_->def_prop_rw(
-        name, getter, setter, doc, py_rvp::reference_internal
-#ifdef PYDRAKE_USE_NANOBIND
-        ,
-        py::for_setter(py::arg("arg").none(is_optional))
-#endif
-    );
+        name, getter, setter, doc, py_rvp::reference_internal);
 
     // Remember the field's name and type for later use by Finished().
     auto field = py::module_::import_("types").attr("SimpleNamespace")();
