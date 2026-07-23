@@ -168,8 +168,7 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
     return false;
   }
   const PairKey key(id_A, id_B);
-  return !filter_state_.filtered.contains(key) &&
-         !filter_state_.invariant.contains(key);
+  return !filter_state_.blocked.contains(key);
 }
 
 bool CollisionFilter::IsEquivalent(const CollisionFilter& other) const {
@@ -221,6 +220,7 @@ void CollisionFilter::AddPairsBetween(const std::vector<GeometryId>& set_A,
       } else {
         state->filtered.insert(key);
       }
+      state->blocked.insert(key);
     }
   }
 }
@@ -232,7 +232,11 @@ void CollisionFilter::RemovePairsBetween(const std::vector<GeometryId>& set_A,
     for (GeometryId id_B : set_B) {
       if (id_A == id_B) continue;
       const PairKey key(id_A, id_B);
-      state->filtered.erase(key);
+      if (state->filtered.erase(key) > 0) {
+        /* filtered and invariant are disjoint, so removal from filtered means
+         the pair is no longer blocked. */
+        state->blocked.erase(key);
+      }
     }
   }
 }
@@ -243,6 +247,7 @@ void CollisionFilter::RemovePairsFor(GeometryId id, FilterState* state) {
   };
   std::erase_if(state->filtered, pair_has_id);
   std::erase_if(state->invariant, pair_has_id);
+  std::erase_if(state->blocked, pair_has_id);
 }
 
 void CollisionFilter::ApplyStatement(const ResolvedStatement& statement,
