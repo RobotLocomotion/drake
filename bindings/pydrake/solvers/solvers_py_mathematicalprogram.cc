@@ -187,6 +187,7 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
 // pybind11 trampoline class to permit overriding virtual functions in Python.
 class PySolverInterface : public solvers::SolverInterface {
  public:
+  NB_TRAMPOLINE(solvers::SolverInterface, 6);
   using Base = solvers::SolverInterface;
 
   PySolverInterface() : Base() {}
@@ -198,35 +199,35 @@ class PySolverInterface : public solvers::SolverInterface {
   // interface below.
 
   bool available() const override {
-    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, available);
+    PYDRAKE_OVERRIDE_PURE(bool, solvers::SolverInterface, available);
   }
 
   bool enabled() const override {
-    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, enabled);
+    PYDRAKE_OVERRIDE_PURE(bool, solvers::SolverInterface, enabled);
   }
 
   void Solve(const solvers::MathematicalProgram& prog,
       const std::optional<Eigen::VectorXd>& initial_guess,
       const std::optional<solvers::SolverOptions>& solver_options,
       solvers::MathematicalProgramResult* result) const override {
-    PYBIND11_OVERLOAD_PURE(void, solvers::SolverInterface, Solve, prog,
+    PYDRAKE_OVERRIDE_PURE(void, solvers::SolverInterface, Solve, prog,
         initial_guess, solver_options, result);
   }
 
   solvers::SolverId solver_id() const override {
-    PYBIND11_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         solvers::SolverId, solvers::SolverInterface, solver_id);
   }
 
   bool AreProgramAttributesSatisfied(
       const solvers::MathematicalProgram& prog) const override {
-    PYBIND11_OVERLOAD_PURE(
+    PYDRAKE_OVERRIDE_PURE(
         bool, solvers::SolverInterface, AreProgramAttributesSatisfied, prog);
   }
 
   std::string ExplainUnsatisfiedProgramAttributes(
       const MathematicalProgram& prog) const override {
-    PYBIND11_OVERLOAD_PURE(std::string, solvers::SolverInterface,
+    PYDRAKE_OVERRIDE_PURE(std::string, solvers::SolverInterface,
         ExplainUnsatisfiedProgramAttributes, prog);
   }
 };
