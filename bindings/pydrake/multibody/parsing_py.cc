@@ -124,7 +124,7 @@ PYDRAKE_MODULE(parsing, m) {
             cls_doc.ctor.doc_2args_plant_model_name_prefix)
         .def(py::init<systems::DiagramBuilder<double>*, MultibodyPlant<double>*,
                  geometry::SceneGraph<double>*, std::string_view>(),
-            py::arg("builder"), py::arg("plant") = nullptr,
+            py::arg("builder").none(), py::arg("plant") = nullptr,
             py::arg("scene_graph") = nullptr, py::arg("model_name_prefix") = "",
             cls_doc.ctor.doc_4args_builder_plant_scene_graph_model_name_prefix)
         .def("builder", &Class::builder, py_rvp::reference, cls_doc.builder.doc)
