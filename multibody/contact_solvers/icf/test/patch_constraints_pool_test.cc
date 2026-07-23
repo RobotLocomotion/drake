@@ -74,6 +74,7 @@ GTEST_TEST(PatchConstraintsPool, Reduce) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddPatchConstraints(&model);
+  model.SetSparsityPattern();
   model.patch_constraints_pool().set_stiction_tolerance(1.1e-4);
 
   IcfData<double> data;
