@@ -17,5 +17,7 @@ class TestSerializeImportFailure(unittest.TestCase):
             self.assertIn("an import is missing", message)
             self.assertIn("drake::pydrake::test::Foo", message)
         else:
-            # XXX porting This error message is no good.
+            # TODO(#21572) Either port DRAKE_PYBIND11_CHECK_SIGNATURE_INFECTION
+            # or something like it to nanobind, or add custom code to provide a
+            # better message for this case.
             self.assertIn("error while initializing the extension", message)
