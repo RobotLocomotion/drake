@@ -1,0 +1,196 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="coffee_cup">
+    <link name="base_link">
+      <inertial>
+        <mass>0.050000</mass>
+        <pose>0.0002115582 7.91121e-05 0.060054973 0 0 0</pose>
+        <inertia>
+          <ixx>5.062462e-05</ixx>
+          <iyy>5.043256e-05</iyy>
+          <izz>2.749534e-05</izz>
+          <ixy>1.571382e-08</ixy>
+          <ixz>-4.465162e-07</ixz>
+          <iyz>-1.428434e-07</iyz>
+        </inertia>
+      </inertial>
+      <collision name="part_0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_4.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_5.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_6.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_7.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_8.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/coffee_cup/assets/coffee_cup_cf_9.obj</uri>
+            <drake:declare_convex />
+            <scale>0.88890000 0.88890000 0.88890000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="foot">
+        <pose>-2.9739373e-05 2.042784e-06 0.0063357323 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.02804832</radius>
+            <length>0.01267146</length>
+          </cylinder>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>7127609.69996</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.00633573</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.35</drake:mu_dynamic>
+          <drake:mu_static>0.35</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
