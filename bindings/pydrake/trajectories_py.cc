@@ -227,8 +227,8 @@ struct Impl {
 
   class PyTrajectory : public TrajectoryPublic {
    public:
+    NB_TRAMPOLINE(TrajectoryPublic, 7);
     using Base = TrajectoryPublic;
-    using Base::Base;
 
     // Utility function that takes a Python object which is-a Trajectory and
     // wraps it in a unique_ptr that manages object lifetime when returned back
@@ -256,52 +256,51 @@ struct Impl {
 
     std::unique_ptr<Trajectory<T>> DoClone() const final {
       py::gil_scoped_acquire guard;
+      const Trajectory<T>* const self = this;
       // Trajectory subclasses in Python must implement cloning by defining
       // a __deepcopy__ method.
       auto deepcopy = py::module_::import_("copy").attr("deepcopy");
-      return WrapPyTrajectory(deepcopy(this));
+      return WrapPyTrajectory(deepcopy(self));
     }
 
     MatrixX<T> do_value(const T& t) const final {
-      PYBIND11_OVERRIDE_PURE(MatrixX<T>, Trajectory<T>, do_value, t);
+      PYDRAKE_OVERRIDE_PURE(MatrixX<T>, Trajectory<T>, do_value, t);
     }
 
     bool do_has_derivative() const final {
-      PYBIND11_OVERRIDE_PURE(bool, Trajectory<T>, do_has_derivative);
+      PYDRAKE_OVERRIDE_PURE(bool, Trajectory<T>, do_has_derivative);
     }
 
     MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final {
-      PYBIND11_OVERRIDE_PURE(
+      PYDRAKE_OVERRIDE_PURE(
           MatrixX<T>, Trajectory<T>, DoEvalDerivative, t, derivative_order);
     }
 
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
         int derivative_order) const final {
       py::gil_scoped_acquire guard;
-      // Because the PYBIND11_OVERRIDE_PURE macro embeds a `return ...;`
-      // statement, we must wrap it in lambda so that we can post-process the
+      const Trajectory<T>* const self = this;
+      // We can't use PYDRAKE_OVERRIDE_PURE because we need to post-process the
       // return value.
-      auto make_python_derivative = [&]() -> py::object {
-        PYBIND11_OVERRIDE_PURE(
-            py::object, Trajectory<T>, DoMakeDerivative, derivative_order);
-      };
-      return WrapPyTrajectory(make_python_derivative());
+      py::object result =
+          py::cast(self).attr("DoMakeDerivative")(derivative_order);
+      return WrapPyTrajectory(result);
     }
 
     T do_start_time() const final {
-      PYBIND11_OVERRIDE_PURE(T, Trajectory<T>, do_start_time);
+      PYDRAKE_OVERRIDE_PURE(T, Trajectory<T>, do_start_time);
     }
 
     T do_end_time() const final {
-      PYBIND11_OVERRIDE_PURE(T, Trajectory<T>, do_end_time);
+      PYDRAKE_OVERRIDE_PURE(T, Trajectory<T>, do_end_time);
     }
 
     Eigen::Index do_rows() const final {
-      PYBIND11_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_rows);
+      PYDRAKE_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_rows);
     }
 
     Eigen::Index do_cols() const final {
-      PYBIND11_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_cols);
+      PYDRAKE_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_cols);
     }
   };
 

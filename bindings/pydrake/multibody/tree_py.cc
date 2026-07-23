@@ -1275,71 +1275,37 @@ class DelegatedForceDensityField final : public ForceDensityFieldPublic<T> {
 template <typename T>
 class PyForceDensityField : public ForceDensityFieldPublic<T> {
  public:
+  NB_TRAMPOLINE(ForceDensityFieldPublic<T>, 3);
+
   explicit PyForceDensityField(ForceDensityType density_type)
       : ForceDensityFieldPublic<T>(density_type) {}
 
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
-    py::gil_scoped_acquire gil;
-    py::callable override = py::get_override(
-        static_cast<const ForceDensityField<T>*>(this), "DoEvaluateAt");
-    if (!override) {
-      throw std::logic_error(
-          "Python class derived from ForceDensityField<T> must implement "
-          "DoEvaluateAt().");
-    }
-    // Call Python-side DoEvaluateAt.
-    py::object result_obj =
-        override(py::cast(context, py_rvp::reference), py::cast(p_WQ));
-    try {
-      return py::cast<Vector3<T>>(result_obj);
-    } catch (const py::cast_error& e) {
-      throw std::logic_error(
-          "DoEvaluateAt() must return a 3-element list or NumPy array that can "
-          "be converted to Vector3<T>. Got " +
-          py::cast<std::string>(py::str(result_obj)) + ".");
-    }
+    PYDRAKE_OVERRIDE_PURE(Vector3<T>, ForceDensityField<T>, DoEvaluateAt,
+        std::cref(context), p_WQ);
   }
 
   std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
+    // Our required unique_ptr return type cannot be directly fulfilled by a
+    // PYDRAKE_OVERRIDE_PURE; we need to ask the override for a shared_ptr and
+    // then wrap it in a decorator to obtain the necessary C++ signature.
     py::gil_scoped_acquire gil;
-    py::callable override = py::get_override(
-        static_cast<const ForceDensityField<T>*>(this), "DoClone");
-    if (!override) {
-      throw std::logic_error(
-          "Python class derived from ForceDensityField<T> must implement "
-          "DoClone().");
-    }
-    // Call Python-side DoClone.
-    py::object result_obj = override();
-    std::shared_ptr<ForceDensityField<T>> cloned;
-    try {
-      cloned = py::cast<std::shared_ptr<ForceDensityField<T>>>(result_obj);
-    } catch (const py::cast_error& e) {
-      throw std::logic_error(
-          "DoClone() must return a `ForceDensityField<T>`. Got " +
-          py::cast<std::string>(py::str(result_obj.type())) +
-          " Make sure your DoClone() returns a new instance of the same "
-          "Python class, e.g., `return MyForceDensityField(...)`.");
-    }
-    if (cloned.get() == nullptr) {
-      throw std::logic_error(
-          "DoClone() must not return None. Did you forget to return a new "
-          "instance of your class, e.g., `return MyForceDensityField(...)`.");
-    } else if (cloned.get() == this) {
-      throw std::logic_error(
-          "DoClone() must return a clone, not itself. Return a new instance of "
-          "your class, e.g., `return MyForceDensityField(...)`.");
-    }
-    return std::make_unique<DelegatedForceDensityField<T>>(std::move(cloned));
+    const ForceDensityField<T>* const self = this;
+    py::object result_py = py::cast(self).attr("DoClone")();
+    auto result_cxx =
+        py::cast<std::shared_ptr<ForceDensityField<T>>>(result_py);
+    DRAKE_THROW_UNLESS(result_cxx != nullptr);
+    return std::make_unique<DelegatedForceDensityField<T>>(
+        std::move(result_cxx));
   }
 
   void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
-    PYBIND11_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
   }
 
   void DoDeclareInputPorts(MultibodyPlant<T>* plant) override {
-    PYBIND11_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
   }
 };
 
