@@ -29,7 +29,8 @@ struct pydrake_numpy_dtype_object_type_caster {
                  dtype_const_name<Scalar>::name) +
              const_name("]"))
 
-  bool from_python(handle src, uint8_t flags, cleanup_list* /* cleanup */) {
+  bool from_python(
+      handle src, uint8_t flags, cleanup_list* /* cleanup */) noexcept {
     auto numpy = module_::import_("numpy");
 
     if (src.is_none()) {
@@ -103,8 +104,8 @@ struct pydrake_numpy_dtype_object_type_caster {
     return true;
   }
 
-  static handle from_cpp(
-      const T& src, rv_policy /* policy */, cleanup_list* /* cleanup */) {
+  static handle from_cpp(const T& src, rv_policy /* policy */,
+      cleanup_list* /* cleanup */) noexcept {
     auto numpy = module_::import_("numpy");
 
     // Construct an empty numpy.ndarray with the desired shape.
