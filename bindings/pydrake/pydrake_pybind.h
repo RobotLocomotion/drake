@@ -61,7 +61,7 @@
 #include "nanobind/trampoline.h"
 #pragma GCC diagnostic pop
 
-#include "drake/bindings/pydrake/pydrake_numpy_dtype_object_type_caster.h"
+#include "drake/bindings/pydrake/numpy_object_pybind.h"
 #include "drake/bindings/pydrake/reference_wrapper_pybind.h"
 #endif  // PYDRAKE_USE_NANOBIND
 
@@ -398,8 +398,8 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 #ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
 #endif  // PYDRAKE_USE_PYBIND11
-// N.B. For PYDRAKE_USE_NANOBIND the pydrake_numpy_dtype_object_type_caster.h
-// has already defined the PYDRAKE_NUMPY_OBJECT_DTYPE macro.
+// N.B. For PYDRAKE_USE_NANOBIND the numpy_object_pybind.h has already defined
+// the PYDRAKE_NUMPY_OBJECT_DTYPE macro.
 
 #ifdef PYDRAKE_USE_PYBIND11
 // Legacy synonym for PYDRAKE_NUMPY_OBJECT_DTYPE. Don't use this in new code.

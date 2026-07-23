@@ -58,7 +58,7 @@ drake_py_library(
 drake_cc_library(
     name = "pydrake_pybind",
     hdrs = [
-        "pydrake_numpy_dtype_object_type_caster.h",
+        "numpy_object_pybind.h",
         "pydrake_pybind.h",
         "reference_wrapper_pybind.h",
     ],
