@@ -97,14 +97,13 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
             .c_str());
   });
   cls->def("__setattr__", [](Class& self, py::str name, py::object value) {
-    py::object self_py = py::cast(self, py_rvp::reference);
     const std::string_view name_cxx(name.c_str());
     if (name_cxx == "breaks") {
       name = py::str("_breaks");
     } else if (name_cxx == "polynomials") {
       name = py::str("_polynomials");
     }
-    py::eval("object.__setattr__", py::globals())(self_py, name, value);
+    py::eval("object.__setattr__", py::globals())(&self, name, value);
   });
   // Define a private property for "_breaks". Setting the breaks resets all of
   // the polynomials; this is fine because deserialization matches __fields__
