@@ -3,13 +3,12 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/icf/ball_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
-#include "drake/multibody/contact_solvers/icf/weld_constraints_data_pool.h"
 
 namespace drake {
 namespace multibody {
