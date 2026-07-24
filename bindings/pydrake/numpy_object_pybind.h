@@ -26,13 +26,16 @@ struct pydrake_numpy_dtype_object_type_caster {
   using PlainScalarCaster = make_caster<PlainScalar>;
   static constexpr bool kCompileTime1D =
       (T::RowsAtCompileTime == 1 || T::ColsAtCompileTime == 1);
+  static constexpr int kCompileTime1DShape =
+      (T::RowsAtCompileTime == 1)   ? T::ColsAtCompileTime
+      : (T::ColsAtCompileTime == 1) ? T::RowsAtCompileTime
+                                    : Eigen::Dynamic;
 
   NB_TYPE_CASTER(
       T, const_name("numpy.ndarray[") +
              concat_maybe(const_name("dtype=") + PlainScalarCaster::Name,
-                 // TODO(jwnimmer-tri) Can/should we add these here?
-                 // Config::Shape::name,
-                 // Config::Order::name,
+                 const_name<kCompileTime1D>(shape<kCompileTime1DShape>::name,
+                     shape<T::RowsAtCompileTime, T::ColsAtCompileTime>::name),
                  dtype_const_name<Scalar>::name) +
              const_name("]"))
 
