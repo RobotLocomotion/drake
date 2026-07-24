@@ -74,19 +74,14 @@ inline py::object WrapToMatchInputShape(py::handle func) {
 }  // namespace pydrake
 }  // namespace drake
 
-namespace pybind11 {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 
 /**
-Provides pybind11 `type_caster`s for drake::EigenPtr.
-
+Provides `type_caster`s for drake::EigenPtr.
 Uses `type_caster<Eigen::Ref>` internally to avoid code duplication.
-See http://pybind11.readthedocs.io/en/stable/advanced/cast/custom.html for
-more details on custom type casters.
-
-TODO(eric.cousineau): Place all logic inside of `drake` namespace once our
-pybind11 fork includes PYBIND11_TYPE_CASTER macro w/ fully qualified symbols.
 */
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename T>
 struct type_caster<drake::EigenPtr<T>> {
   using PtrType = drake::EigenPtr<T>;
@@ -126,6 +121,12 @@ struct type_caster<drake::EigenPtr<T>> {
  private:
   InnerCaster inner_caster;
 };
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T>
+struct type_caster<drake::EigenPtr<T>> {
+  // TODO(#21572) Implement me.
+};
+#endif  // PYDRAKE_USE_PYBIND11
 
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace PYDRAKE_BINDER_NAMESPACE
