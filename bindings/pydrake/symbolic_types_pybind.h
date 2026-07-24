@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -29,61 +31,83 @@ class VariableIdPythonAttorney {
   VariableIdPythonAttorney() = delete;
   static uint64_t hi(const Variable::Id& id) { return id.hi_; }
   static uint64_t lo(const Variable::Id& id) { return id.lo_; }
-  static Variable::Id Construct(uint64_t hi, uint64_t lo) {
+  static std::optional<Variable::Id> TryConstruct(uint64_t hi, uint64_t lo) {
     // We need to maintain Id's invariant that the low byte of hi_ is the
     // Variable::Type, by rejecting out-of-bounds types.
     const uint8_t var_type = static_cast<uint8_t>(hi);
     if (var_type > static_cast<uint8_t>(Variable::Type::RANDOM_EXPONENTIAL)) {
-      throw std::domain_error("Ill-formed Variable::Id");
+      return std::nullopt;
     }
     Variable::Id result;
     result.hi_ = hi;
     result.lo_ = lo;
-    return result;
+    return {result};
   }
 };
 }  // namespace symbolic
 }  // namespace drake
 
-namespace pybind11 {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
+namespace py = PYDRAKE_BINDER_NAMESPACE;
 template <>
 struct type_caster<drake::symbolic::Variable::Id> {
  public:
   using Attorney = drake::symbolic::VariableIdPythonAttorney;
 
+#ifdef PYDRAKE_USE_PYBIND11
   PYBIND11_TYPE_CASTER(drake::symbolic::Variable::Id, _("int"));
+#else  // PYDRAKE_USE_NANOBIND
+  NB_TYPE_CASTER(drake::symbolic::Variable::Id, const_name("int"));
+#endif
 
-  bool load(handle src, bool /* convert */) {
+#ifdef PYDRAKE_USE_PYBIND11
+  bool load(handle src, bool /* convert */)
+#else  // PYDRAKE_USE_NANOBIND
+  bool from_python(
+      handle src, uint8_t /* flags */, cleanup_list* /* cleanup */) noexcept
+#endif
+  {
     if (!src) {
       return false;
     }
 
-    pybind11::int_ concat;
+    py::int_ concat;
     try {
-      concat = pybind11::cast<pybind11::int_>(src);
+      concat = py::cast<py::int_>(src);
     } catch (...) {
       return false;
     }
 
-    const pybind11::object hi_py = concat >> pybind11::int_(64);
-    const pybind11::object lo_py = concat & pybind11::int_(~uint64_t{});
-    const uint64_t hi = pybind11::cast<uint64_t>(hi_py);
-    const uint64_t lo = pybind11::cast<uint64_t>(lo_py);
+    const py::object hi_py = concat >> py::int_(64);
+    const py::object lo_py = concat & py::int_(~uint64_t{});
+    const uint64_t hi = py::cast<uint64_t>(hi_py);
+    const uint64_t lo = py::cast<uint64_t>(lo_py);
+    std::optional<drake::symbolic::Variable::Id> maybe_result =
+        Attorney::TryConstruct(hi, lo);
+    if (!maybe_result.has_value()) {
+      return false;
+    }
+
     // N.B. "value" is a magic variable declared by pybind11 where we're
     // supposed to put the loaded result.
-    value = Attorney::Construct(hi, lo);
-
+    value = *maybe_result;
     return true;
   }
 
+#ifdef PYDRAKE_USE_PYBIND11
   static handle cast(drake::symbolic::Variable::Id src, rv_policy /* policy */,
-      handle /* parent */) {
-    const pybind11::int_ hi_py{Attorney::hi(src)};
-    const pybind11::int_ lo_py{Attorney::lo(src)};
-    pybind11::object concat = (hi_py << pybind11::int_(64)) + lo_py;
+      handle /* parent */)
+#else  // PYDRAKE_USE_NANOBIND
+  static handle from_cpp(const drake::symbolic::Variable::Id& src,
+      rv_policy /* policy */, cleanup_list* /* cleanup */) noexcept
+#endif
+  {
+    const py::int_ hi_py{Attorney::hi(src)};
+    const py::int_ lo_py{Attorney::lo(src)};
+    py::object concat = (hi_py << py::int_(64)) + lo_py;
     return concat.release();
   }
 };
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace PYDRAKE_BINDER_NAMESPACE

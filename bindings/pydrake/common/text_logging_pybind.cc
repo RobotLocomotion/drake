@@ -63,7 +63,7 @@ class pylogging_sink final
     }
 
     // NOLINTNEXTLINE(build/namespaces_literals) This is how pybind11 wants it.
-    using namespace pybind11::literals;
+    using namespace PYDRAKE_BINDER_NAMESPACE::literals;
 
     // Construct the LogRecord.
     // https://docs.python.org/3/library/logging.html#logrecord-objects

@@ -1,14 +1,16 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 
-// Here we include a lot of the pybind11 API, to ensure that all code in pydrake
-// sees the same definitions ("One Definition Rule") for template types intended
-// for specialization. Any pybind11 headers with `type_caster<>` specializations
-// must be included here (e.g., eigen.h, functional.h, numpy.h, stl.h) as well
-// as ADL headers (e.g., operators.h). Headers that are unused by pydrake
-// (e.g., complex.h) are omitted.
+// Here we include a lot of the pybind11 (or nanobind) API, to ensure that all
+// code in pydrake sees the same definitions ("One Definition Rule") for
+// template types intended for specialization. Any headers with `type_caster<>`
+// specializations must be included here (e.g., eigen.h, functional.h, numpy.h,
+// stl.h) as well as ADL headers (e.g., operators.h). Headers that are unused by
+// pydrake (e.g., complex.h) are omitted.
+#ifdef PYDRAKE_USE_PYBIND11
 #include "pybind11/eigen.h"
 #include "pybind11/eval.h"
 #include "pybind11/functional.h"
@@ -18,6 +20,47 @@
 #include "pybind11/stl.h"
 #include "pybind11/stl/filesystem.h"
 #include "pybind11/typing.h"
+#endif  // PYDRAKE_USE_PYBIND11
+
+#ifdef PYDRAKE_USE_NANOBIND
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wattributes"
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wc++11-narrowing"
+#else
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#pragma GCC diagnostic ignored "-Wnarrowing"
+#endif  // __clang__
+#include "drake_nanobind/eigen/dense.h"
+#include "drake_nanobind/eigen/sparse.h"
+#include "nanobind/eval.h"
+#include "nanobind/make_iterator.h"
+#include "nanobind/nanobind.h"
+#include "nanobind/ndarray.h"
+#include "nanobind/operators.h"
+#include "nanobind/stl/array.h"
+#include "nanobind/stl/filesystem.h"
+#include "nanobind/stl/function.h"
+#include "nanobind/stl/list.h"
+#include "nanobind/stl/map.h"
+#include "nanobind/stl/optional.h"
+#include "nanobind/stl/pair.h"
+#include "nanobind/stl/set.h"
+#include "nanobind/stl/shared_ptr.h"
+#include "nanobind/stl/string.h"
+#include "nanobind/stl/string_view.h"
+#include "nanobind/stl/tuple.h"
+#include "nanobind/stl/unique_ptr.h"
+#include "nanobind/stl/unordered_map.h"
+#include "nanobind/stl/unordered_set.h"
+#include "nanobind/stl/variant.h"
+#include "nanobind/stl/vector.h"
+#include "nanobind/trampoline.h"
+#pragma GCC diagnostic pop
+
+#include "drake/bindings/pydrake/numpy_object_pybind.h"
+#endif  // PYDRAKE_USE_NANOBIND
 
 namespace drake {
 
@@ -25,10 +68,10 @@ namespace drake {
 /// "Python Bindings" technical notes.
 ///
 /// Drake developers should prefer any aliases defined here over their full
-/// spellings in `pybind11`.
+/// spellings in `pybind11` or `nanobind`.
 ///
-/// `namespace py` is a shorthand alias to `pybind11` for consistency. (This
-/// symbol cannot be exposed directly in Doxygen.)
+/// `namespace py` is a shorthand alias to either `pybind11` or `nanobind`, for
+/// consistency. (This symbol cannot be exposed directly in Doxygen.)
 ///
 /// @note Downstream users should avoid `using namespace drake::pydrake`, as
 /// this may create ambiguous aliases (especially for GCC). Instead, consider
@@ -37,14 +80,41 @@ namespace pydrake {
 
 // Note: Doxygen apparently doesn't process comments for namespace aliases. If
 // you put Doxygen comments here they will apply instead to py_rvp.
+#ifdef PYDRAKE_USE_PYBIND11
 namespace py = pybind11;
+#else  // PYDRAKE_USE_NANOBIND
+namespace py = nanobind;
+#endif
 
 /// Shortened alias for py::rv_policy. For more information, see
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
 using py_rvp = py::rv_policy;
 
 // This alias helps ease Drake's transition to nanobind.
+#ifdef PYDRAKE_USE_PYBIND11
 using py::class_;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T, typename... Ts>
+class __attribute__((visibility("hidden"))) class_
+    : public py::class_<T, Ts...> {
+ public:
+  using Base = py::class_<T, Ts...>;
+  explicit class_(auto&&... args)
+      : Base(std::forward<decltype(args)>(args)...,
+            py::is_weak_referenceable()) {}
+};
+#endif  // PYDRAKE_USE_PYBIND11
+
+namespace internal {
+#ifdef PYDRAKE_USE_PYBIND11
+template <typename T>
+using is_pyobject = py::detail::is_pyobject<T>;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T>
+using is_pyobject =
+    std::is_base_of<py::detail::api_tag, std::remove_reference_t<T> >;
+#endif  // PYDRAKE_USE_PYBIND11
+}  // namespace internal
 
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
@@ -120,12 +190,14 @@ void DefClone(PyClass* ppy_class) {
 ///
 /// The set_state functor should take `(Class* self, Pickled pickled)` and
 /// placement-new construct the object into `self` based on `pickled`, with no
-/// return value. (The use of placement new is in anticipation of a nanobind
-/// port of this helper function.)
+/// return value.
 template <typename PyClass, typename GetState, typename SetState>
 void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
   PyClass& py_class = *ppy_class;
-
+#ifdef PYDRAKE_USE_NANOBIND
+  py_class.def("__getstate__", std::forward<GetState>(get_state));
+  py_class.def("__setstate__", std::forward<SetState>(set_state));
+#else   // PYDRAKE_USE_PYBIND11
   using Class = typename PyClass::Type;
   using Pickled = std::invoke_result_t<GetState, const Class&>;
 
@@ -143,6 +215,7 @@ void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
 
   py_class.def(py::pickle(
       std::forward<GetState>(get_state), std::move(set_state_with_return)));
+#endif  // PYDRAKE_USE_NANOBIND
 }
 
 /// Returns a constructor for creating an instance of Class and initializing
@@ -157,6 +230,7 @@ void DefPickle(PyClass* ppy_class, GetState&& get_state, SetState&& set_state) {
 /// @endcode
 ///
 /// @tparam Class The C++ class. Must have a default constructor.
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename Class>
 auto ParamInit() {
   return py::init([](py::kwargs kwargs) {
@@ -171,6 +245,26 @@ auto ParamInit() {
     return obj;
   });
 }
+#else   // PYDRAKE_USE_NANOBIND
+template <typename CppClass>
+struct __attribute__((visibility("hidden"))) ParamInit
+    : py::def_visitor<ParamInit<CppClass> > {
+  template <typename PyClass, typename... Extra>
+  void execute(PyClass& cl, const Extra&...) {
+    cl.def("__init__", [](CppClass* self, py::kwargs kwargs) {
+      new (self) CppClass();
+      py::object py_obj = py::cast(self, py_rvp::reference);
+
+      // Nanobind wouldn't have known the c++ instance is ready yet, but we
+      // have to mark it ready to allow all of the setattr machinery to work
+      // before init returns.
+      py::inst_mark_ready(py_obj);
+
+      py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    });
+  }
+};
+#endif  // PYDRAKE_USE_PYBIND11
 
 /// Executes Python code to introduce additional symbols for a given module.
 /// For a module with local name `{name}` and use_subdir=False, the code
@@ -232,17 +326,33 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 
 /// Allow numpy arrays of with dtype=object containing `Type` objects to convert
 /// to and from Eigen matrices of `Type`.
+#ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_NUMPY_OBJECT_DTYPE(Type) PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#endif  // PYDRAKE_USE_PYBIND11
+// N.B. For PYDRAKE_USE_NANOBIND the numpy_object_pybind.h has already defined
+// the PYDRAKE_NUMPY_OBJECT_DTYPE macro.
 
+#ifdef PYDRAKE_USE_PYBIND11
 // Legacy synonym for PYDRAKE_NUMPY_OBJECT_DTYPE. Don't use this in new code.
 #define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
   PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#endif  // PYDRAKE_USE_PYBIND11
 
 // These aliases help ease Drake's transition to nanobind.
+#ifdef PYDRAKE_USE_PYBIND11
 #define PYDRAKE_MODULE PYBIND11_MODULE
+#define PYDRAKE_BINDER_NAMESPACE pybind11
 #define PYDRAKE_OVERRIDE PYBIND11_OVERRIDE
 #define PYDRAKE_OVERRIDE_PURE PYBIND11_OVERRIDE_PURE
+#else  // PYDRAKE_USE_NANOBIND
+#define PYDRAKE_MODULE NB_MODULE
+#define PYDRAKE_BINDER_NAMESPACE nanobind
+#define PYDRAKE_OVERRIDE(unused1, unused2, ...) NB_OVERRIDE(__VA_ARGS__)
+#define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) \
+  NB_OVERRIDE_PURE(__VA_ARGS__)
+#endif
 
+#ifdef PYDRAKE_USE_PYBIND11
 // This is an implementation of nanobind's NB_TRAMPOLINE macro for pybind11.
 // https://nanobind.readthedocs.io/en/latest/classes.html#overriding-virtual-functions-in-python
 // In particular, `size` should match how many PYDRAKE_OVERRIDE{,_PURE} are used
@@ -251,3 +361,4 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
   static_assert(size >= 0);       \
   using NBBase = base;            \
   using NBBase::NBBase
+#endif  // PYDRAKE_USE_PYBIND11
