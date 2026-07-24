@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from pydrake.common import pretty_class_name
+from pydrake.common import _binder, pretty_class_name
 from pydrake.common.cpp_param import List
 from pydrake.common.test.value_test_util import (
     CustomType,
@@ -85,6 +85,9 @@ class TestValue(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.assert_equal_but_not_aliased(a, {"x": -10})
 
+    @unittest.skipIf(
+        _binder == "nanobind", "TODO(#21572) Implement Value[object]."
+    )
     def test_abstract_value_py_object(self):
         # The Value constructor operates by taking a reference, not by copying.
         initial_dict = {"x": 10}
@@ -149,6 +152,9 @@ class TestValue(unittest.TestCase):
         self.assertIsInstance(value, Value[float])
         value = AbstractValue.Make(MoveOnlyType(10))
         self.assertIsInstance(value, Value[MoveOnlyType])
+        if _binder == "nanobind":
+            # TODO(#21572) Implement Value[object].
+            return
         value = AbstractValue.Make({"x": 10})
         self.assertIsInstance(value, Value[object])
         # N.B. Empty lists cannot have their type inferred, so the type will
@@ -179,7 +185,9 @@ class TestValue(unittest.TestCase):
 
     def test_value_registration(self):
         # Existence check.
-        Value[object]
+        if _binder != "nanobind":
+            # TODO(#21572) Implement Value[object].
+            Value[object]
         Value[str]
         Value[bool]
 
@@ -187,4 +195,6 @@ class TestValue(unittest.TestCase):
         self.assertIsInstance(Value("foo"), Value[str])
         self.assertIsInstance(Value(True), Value[bool])
         self.assertIsInstance(Value(1.0), Value[float])
-        self.assertIsInstance(Value(object()), Value[object])
+        if _binder != "nanobind":
+            # TODO(#21572) Implement Value[object].
+            self.assertIsInstance(Value(object()), Value[object])
