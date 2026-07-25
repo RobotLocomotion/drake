@@ -14,6 +14,7 @@ def sdformat_internal_repository(
         build_file = ":package.BUILD.bazel",
         sha256 = "4fac898700afb2953af5f8ac6b0221e4d9bc1e460aac6d4b7a5c3699c456126c",  # noqa
         patches = [
+            ":patches/upstream/never_destroyed.patch",
             ":patches/upstream/no_density_not_a_problem.patch",
             ":patches/upstream/support_drake_visual.patch",
             ":patches/console.patch",
