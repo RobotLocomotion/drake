@@ -4,6 +4,7 @@ load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
+load("@drake_lief//:requirements.bzl", lief_requirement = "requirement")
 load(
     "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
     "cc_whole_archive_library",
@@ -433,14 +434,14 @@ drake_cc_googletest(
 
 drake_py_unittest(
     name = "exported_symbols_test",
-    # For simplicity, we only test on Ubuntu. Hopefully, macOS is similar.
+    # For developer simplicity, we only test on Ubuntu x86_64. Hopefully, other
+    # platforms are similar.
     opt_in_condition = "//tools/skylark:linux",
     opt_out_conditions = [
+        "@platforms//cpu:aarch64",
         # Debug builds have a lot more symbols (no dead code elimination) so are
         # too much work to tidy up.
         "//tools:unoptimized",
-        # The objdump disassembly is hard-coded for x86_64.
-        "@platforms//cpu:aarch64",
     ],
     data = [
         ":libdrake.so",
@@ -448,6 +449,7 @@ drake_py_unittest(
     ],
     deps = [
         "@rules_python//python/runfiles",
+        lief_requirement("lief"),
     ],
 )
 
