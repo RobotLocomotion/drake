@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 #define DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 #include "drake/common/symbolic/expression/formula_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
@@ -114,12 +115,12 @@ string Formula::to_string() const {
 }
 
 Formula Formula::True() {
-  static Formula tt{make_shared<const FormulaTrue>()};
-  return tt;
+  static never_destroyed<Formula> tt{make_shared<const FormulaTrue>()};
+  return tt.access();
 }
 Formula Formula::False() {
-  static Formula ff{make_shared<const FormulaFalse>()};
-  return ff;
+  static never_destroyed<Formula> ff{make_shared<const FormulaFalse>()};
+  return ff.access();
 }
 
 Formula forall(const Variables& vars, const Formula& f) {
