@@ -1,0 +1,56 @@
+Remove static destructors (run upon program exit) for local variables.
+
+--- tiny_gltf.h
++++ tiny_gltf.h
+@@ -334,19 +334,19 @@
+ 
+   // Lookup value from an array
+   const Value &Get(size_t idx) const {
+-    static Value null_value;
++    static Value* null_value = new Value;
+     assert(IsArray());
+     return (idx < array_value_.size())
+                ? array_value_[idx]
+-               : null_value;
++               : *null_value;
+   }
+ 
+   // Lookup value from a key-value pair
+   const Value &Get(const std::string &key) const {
+-    static Value null_value;
++    static Value* null_value = new Value;
+     assert(IsObject());
+     Object::const_iterator it = object_value_.find(key);
+-    return (it != object_value_.end()) ? it->second : null_value;
++    return (it != object_value_.end()) ? it->second : *null_value;
+   }
+ 
+   size_t ArrayLen() const {
+
+--- tinygltf_json.h
++++ tinygltf_json.h
+@@ -1276,12 +1276,12 @@
+      * CAUTION: the static is shared across calls; modifications through this
+      * reference persist (same caveat as the OOM fallback).  Callers should
+      * treat a null-key or OOM insert as a no-op. */
+-    static tinygltf_json null_fallback;
+-    if (!key) return null_fallback;
++    static tinygltf_json* null_fallback = new tinygltf_json;
++    if (!key) return *null_fallback;
+     if (type_ != CJ_OBJECT) make_object_();
+     tinygltf_json_member *m = find_member_(key);
+     if (m) return m->val;
+-    if (!obj_reserve_()) return null_fallback;
++    if (!obj_reserve_()) return *null_fallback;
+     tinygltf_json_member *nm = &obj_data_[obj_size_];
+     new (nm) tinygltf_json_member();
+     size_t klen = strlen(key);
+@@ -1291,7 +1291,7 @@
+          * placement-new'd member and do not bump obj_size_, keeping the
+          * object in a consistent state. */
+         nm->~tinygltf_json_member();
+-        return null_fallback;
++        return *null_fallback;
+     }
+     memcpy(nm->key, key, klen + 1);
+     nm->key_len = klen;
