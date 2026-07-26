@@ -1,0 +1,39 @@
+Remove static destructors (run upon program exit) for local variables.
+
+--- src/parser.cc
++++ src/parser.cc
+@@ -1750,14 +1750,12 @@
+           // NOTE: sdf::init is an expensive call. For performance reason,
+           // a new sdf pointer is created here by cloning a fresh sdf template
+           // pointer instead of calling init every iteration.
+-          // SDFPtr includeSDF(new SDF);
+-          // init(includeSDF, _config);
+-          static SDFPtr includeSDFTemplate;
+-          if (!includeSDFTemplate)
+-          {
+-            includeSDFTemplate.reset(new SDF);
+-            init(includeSDFTemplate, _config);
+-          }
++          // This template is purposefully never deleted ala gz::utils::NeverDestroyed.
++          static SDF* includeSDFTemplate = [&_config]() {
++            SDFPtr temp(new SDF, [](SDF*) { /* The deleter is a no-op. */ });
++            init(temp, _config);
++            return temp.get();
++          }();
+           SDFPtr includeSDF(new SDF);
+           includeSDF->SetRoot(includeSDFTemplate->Root()->Clone());
+ 
+
+--- src/SDF.cc
++++ src/SDF.cc
+@@ -583,8 +583,8 @@
+   }
+ 
+   // An empty SDF string is returned if a query into the embeddedSdf map fails.
+-  static const std::string emptySdfString;
+-  return emptySdfString;
++  static const gz::utils::NeverDestroyed<std::string> emptySdfString;
++  return emptySdfString.Access();
+ }
+ }
+ }
