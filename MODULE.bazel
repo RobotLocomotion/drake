@@ -124,6 +124,17 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 use_repo(pip, "drake_mypy")
 
+[
+    pip.parse(
+        hub_name = "drake_lief",
+        python_version = python_version,
+        requirements_lock = "//setup:python/lief/requirements.txt",
+    )
+    for python_version in PYTHON_VERSIONS
+]
+
+use_repo(pip, "drake_lief")
+
 # Load dependencies which are "public", i.e., made available to downstream
 # projects.
 #
