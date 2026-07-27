@@ -52,6 +52,7 @@ filegroup(
         "//systems:doxygen_input",
         "//systems/framework:doxygen_input",
         "//tools/install/libdrake:libdrake_headers",
+        "//tools/install/libdrake:version.h",
         "//tutorials:doxygen_input",
     ],
 )
