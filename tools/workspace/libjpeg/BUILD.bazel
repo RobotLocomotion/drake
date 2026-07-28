@@ -4,23 +4,11 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 
-# ---- Logic for choosing which libjpeg to use. ---
-
-# For now, the only supported value is --@drake//tools/flags:libjpeg_repo=source
-# to compile libjpeg from source.
-
-alias(
-    name = "libjpeg",
-    actual = ":module_libjpeg_static_hidden",
-    visibility = ["//visibility:public"],
-)
-
 cc_static_hidden_library(
-    name = "module_libjpeg_static_hidden",
+    name = "libjpeg",
+    visibility = ["//visibility:public"],
     deps = ["@module_libjpeg//:jpeg"],
 )
-
-# ---- Logic for installing jpeg-related files. ---
 
 install_files(
     name = "install_license",

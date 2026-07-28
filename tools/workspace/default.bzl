@@ -163,9 +163,11 @@ def _drake_dep_repositories_impl(module_ctx):
         "fmt",
         "glib",
         "lapack",
-        "libjpeg",
         "opencl",
         "spdlog",
+        # TODO(jwnimmer-tri) Deprecate these. They are (or should be)
+        # non-configurable, so don't need a module extension.
+        "libjpeg",
         "zlib",
     ]
     for name in ALIAS_REPOSITORIES:
