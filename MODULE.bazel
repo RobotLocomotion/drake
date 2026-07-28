@@ -23,7 +23,7 @@ bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.71.2")  # When upgrading, locally test that crate vendoring still works via `tools/workspace/crate_universe/upgrade.sh && bazel test //tools/install/libdrake/...`.
 bazel_dep(name = "rules_shell", version = "0.8.0")
-bazel_dep(name = "with_cfg.bzl", version = "0.14.6")
+bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 
 # Configure the C++ toolchain.
 
@@ -258,7 +258,7 @@ llvm(
 
 bazel_dep(
     name = "ruff_prebuilt",
-    version = "0.15.19.1",
+    version = "0.16.0.1",
     dev_dependency = True,
     repo_name = "ruff",
 )

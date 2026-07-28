@@ -71,11 +71,14 @@ def _parse_stamp(stamp_file):
 # Write version information to CMake cache-style script.
 def _write_version_info(out, version_full, version_parts):
     if version_full is None:
+        # The full version is reported as "unknown", but the numeric components
+        # are reported as 0 so that they remain usable as integers, e.g. in the
+        # DRAKE_VERSION_* preprocessor macros in drake/version.h.
         out.write('set(DRAKE_VERSION "unknown")\n')
-        out.write('set(DRAKE_VERSION_MAJOR "unknown")\n')
-        out.write('set(DRAKE_VERSION_MINOR "unknown")\n')
-        out.write('set(DRAKE_VERSION_PATCH "unknown")\n')
-        out.write('set(DRAKE_VERSION_TWEAK "unknown")\n')
+        out.write('set(DRAKE_VERSION_MAJOR "0")\n')
+        out.write('set(DRAKE_VERSION_MINOR "0")\n')
+        out.write('set(DRAKE_VERSION_PATCH "0")\n')
+        out.write('set(DRAKE_VERSION_TWEAK "0")\n')
     else:
         out.write(f'set(DRAKE_VERSION "{version_full}")\n')
         out.write(f'set(DRAKE_VERSION_MAJOR "{version_parts[0]}")\n')
