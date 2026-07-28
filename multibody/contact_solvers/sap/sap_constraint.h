@@ -291,6 +291,14 @@ class SapConstraint {
       const math::internal::PartialPermutation& clique_permutation,
       const std::vector<std::vector<int>>& per_clique_known_dofs) const;
 
+  /* Returns the constant velocity bias v_b such that the physical constraint
+   velocity is vc_phys = J⋅v + v_b.  Most constraints have zero bias and do
+   not override DoCalcBiasVelocity(). Constraints that model contact with a
+   moving surface (e.g. a conveyor belt) can return a non-zero value.
+   The bias is expressed in the constraint frame C.
+   @post The returned vector has size num_constraint_equations(). */
+  VectorX<T> bias_velocity() const { return DoCalcBiasVelocity(); }
+
  protected:
   /* Protected copy construction is enabled for sub-classes to use in their
    implementation of DoClone(). */
@@ -326,6 +334,12 @@ class SapConstraint {
                                            SpatialForce<T>*) const = 0;
   virtual std::unique_ptr<SapConstraint<T>> DoClone() const = 0;
   virtual std::unique_ptr<SapConstraint<double>> DoToDouble() const = 0;
+  /* Default implementation returns zero bias. Constraints that include a bias
+   (e.g., friction constraint on a moving surface, such as a conveyor belt)
+   should override this. */
+  virtual VectorX<T> DoCalcBiasVelocity() const {
+    return VectorX<T>::Zero(num_constraint_equations());
+  }
   // @}
 
  private:

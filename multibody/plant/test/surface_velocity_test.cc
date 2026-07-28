@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -90,7 +91,9 @@ using geometry::AddContactMaterial;
 using geometry::AddRigidHydroelasticProperties;
 using geometry::Box;
 using geometry::GeometryId;
+using geometry::GeometryInstance;
 using geometry::ProximityProperties;
+using geometry::Sphere;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 
@@ -586,10 +589,14 @@ TEST_F(SurfaceDisplacementTest, ContinuousIntegration) {
 //
 // We'll test for a force in that direction and verify that a force applied
 // in that direction leads to motion in the same direction.
+//
+// The suite verifies these invariants across a number of solver variants
+// including continuous, various discrete solvers, and deformable.
 
 struct OrthogonalContactTestConfig {
   std::string description;
   MultibodyPlantConfig plant_config;
+  bool use_deformable{false};
 };
 
 // Formatter for OrthogonalContactTestConfig so that if a test fails, we get
@@ -599,7 +606,8 @@ void PrintTo(const OrthogonalContactTestConfig& config, std::ostream* os) {
   *os << "{ time_step: " << plant_config.time_step
       << ", contact_model: " << plant_config.contact_model
       << ", discrete_contact_approximation: "
-      << plant_config.discrete_contact_approximation << " }";
+      << plant_config.discrete_contact_approximation
+      << ", use_deformable: " << config.use_deformable << " }";
 }
 
 class OrthogonalSurfaceVelocityTest
@@ -643,17 +651,30 @@ class OrthogonalSurfaceVelocityTest
                                       Box(10.0, 10.0, 1.0), "ground", rigid);
     plant_->SetSurfaceVelocityAxis(*ground_, Vector3d(1, 0, 0));
 
-    // Box: free floating, 0.2 m cube.
-    // axis_ss_B = (0,-1,0) → world surface velocity = kBoxSpeed * Wy.
-    // (Box is body B; contact pairs pass −Ẑ to B, so the cross product
-    // flips sign.)
-    box_ = &plant_->AddRigidBody(
-        "box", SpatialInertia<double>::SolidBoxWithMass(
-                   1.0, 2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize));
-    plant_->RegisterCollisionGeometry(
-        *box_, RigidTransformd::Identity(),
-        Box(2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize), "box", compliant);
-    plant_->SetSurfaceVelocityAxis(*box_, Vector3d(0, -1, 0));
+    if (!GetParam().use_deformable) {
+      // Box: free floating, 0.2 m cube.
+      // axis_ss_B = (0,-1,0) → world surface velocity = kBoxSpeed * (+Y).
+      // (Box is body B; contact pairs pass −Ẑ to B, so the cross product
+      // flips.)
+      box_ = &plant_->AddRigidBody(
+          "box", SpatialInertia<double>::SolidBoxWithMass(
+                     1.0, 2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize));
+      plant_->RegisterCollisionGeometry(
+          *box_, RigidTransformd::Identity(),
+          Box(2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize), "box", compliant);
+      plant_->SetSurfaceVelocityAxis(*box_, Vector3d(0, -1, 0));
+    } else {
+      // Deformable sphere: no surface velocity; contacts the ground belt only.
+      auto sphere_instance = std::make_unique<GeometryInstance>(
+          RigidTransformd(Vector3d(0, 0, kHalfSize - kPenetration)),
+          std::make_unique<Sphere>(kHalfSize), "deformable_sphere");
+      ProximityProperties deformable_props(material);
+      sphere_instance->set_proximity_properties(std::move(deformable_props));
+      fem::DeformableBodyConfig<double> body_config;
+      deformable_id_ =
+          plant_->mutable_deformable_model().RegisterDeformableBody(
+              std::move(sphere_instance), body_config, kHalfSize);
+    }
 
     plant_->Finalize();
     auto diagram = builder.Build();
@@ -662,18 +683,23 @@ class OrthogonalSurfaceVelocityTest
         plant_->GetMyMutableContextFromRoot(&sim_->get_mutable_context());
 
     // Place box rotated kTheta around Z with bottom face at z = -kPenetration.
-    plant_->SetFloatingBaseBodyPoseInWorldFrame(
-        &plant_context, *box_,
-        RigidTransformd(Rz_90, Vector3d(0, 0, kHalfSize - kPenetration)));
+    if (!GetParam().use_deformable) {
+      plant_->SetFloatingBaseBodyPoseInWorldFrame(
+          &plant_context, *box_,
+          RigidTransformd(Rz_90, Vector3d(0, 0, kHalfSize - kPenetration)));
+    }
 
     systems::BusValue bus;
     bus.Set(ground_->scoped_name().to_string(), Value<double>(kGroundSpeed));
-    bus.Set(box_->scoped_name().to_string(), Value<double>(kBoxSpeed));
+    if (!GetParam().use_deformable) {
+      bus.Set(box_->scoped_name().to_string(), Value<double>(kBoxSpeed));
+    }
     plant_->get_surface_speeds_input_port().FixValue(&plant_context, bus);
     sim_->Initialize();
   }
 
-  // Returns the total contact force on the contacting body from ContactResults.
+  // Returns the total contact force on the contacting body (rigid box or
+  // deformable sphere) from ContactResults.
   Vector3d ContactForceOnContactingBody(
       const systems::Context<double>& plant_context) const {
     const auto& results =
@@ -690,33 +716,41 @@ class OrthogonalSurfaceVelocityTest
     int active_forces = 0;
     Vector3d f_Box = Vector3d::Zero();
 
-    // Point contacts: contact_force() is the force on body B.
-    for (int i = 0; i < results.num_point_pair_contacts(); ++i) {
-      const auto& info = results.point_pair_contact_info(i);
-      if (info.bodyB_index() == box_->index()) {
-        f_Box += info.contact_force();
-        ++active_forces;
-      } else if (info.bodyA_index() == box_->index()) {
-        f_Box -= info.contact_force();
-        ++active_forces;
+    if (box_ != nullptr) {
+      // Point contacts: contact_force() is the force on body B.
+      for (int i = 0; i < results.num_point_pair_contacts(); ++i) {
+        const auto& info = results.point_pair_contact_info(i);
+        if (info.bodyB_index() == box_->index()) {
+          f_Box += info.contact_force();
+          ++active_forces;
+        } else if (info.bodyA_index() == box_->index()) {
+          f_Box -= info.contact_force();
+          ++active_forces;
+        }
       }
-    }
 
-    // Hydroelastic contacts: F_Ac_W() is the force on body A (id_M geometry).
-    // If the box is body A in the contact results, we apply the force,
-    // otherwise, we reverse the force.
-    const auto& box_geom_ids = plant_->GetCollisionGeometriesForBody(*box_);
-    for (int i = 0; i < results.num_hydroelastic_contacts(); ++i) {
-      const auto& hydro_info = results.hydroelastic_contact_info(i);
-      const GeometryId id_M = hydro_info.contact_surface().id_M();
-      const bool box_is_body_A =
-          std::find(box_geom_ids.begin(), box_geom_ids.end(), id_M) !=
-          box_geom_ids.end();
-      if (box_is_body_A) {
-        f_Box += hydro_info.F_Ac_W().translational();
-        ++active_forces;
-      } else {
-        f_Box -= hydro_info.F_Ac_W().translational();
+      // Hydroelastic contacts: F_Ac_W() is the force on body A (id_M geometry).
+      // If the box is body A in the contact results, we apply the force,
+      // otherwise, we reverse the force.
+      const auto& box_geom_ids = plant_->GetCollisionGeometriesForBody(*box_);
+      for (int i = 0; i < results.num_hydroelastic_contacts(); ++i) {
+        const auto& hydro_info = results.hydroelastic_contact_info(i);
+        const GeometryId id_m = hydro_info.contact_surface().id_M();
+        const bool box_is_body_m =
+            std::find(box_geom_ids.begin(), box_geom_ids.end(), id_m) !=
+            box_geom_ids.end();
+        if (box_is_body_m) {
+          f_Box += hydro_info.F_Ac_W().translational();
+          ++active_forces;
+        } else {
+          f_Box -= hydro_info.F_Ac_W().translational();
+          ++active_forces;
+        }
+      }
+    } else {
+      // Deformable contacts: F_Ac_W() is the force on the deformable body A.
+      for (int i = 0; i < results.num_deformable_contacts(); ++i) {
+        f_Box += results.deformable_contact_info(i).F_Ac_W().translational();
         ++active_forces;
       }
     }
@@ -726,15 +760,22 @@ class OrthogonalSurfaceVelocityTest
     return f_Box;
   }
 
-  // Returns the position of the box.
-  Vector3d BoxPositionInWorld(
+  // Returns the position of the "free" body -- the box or deformable sphere.
+  Vector3d FreeBodyPositionInWorld(
       const systems::Context<double>& plant_context) const {
-    return plant_->EvalBodyPoseInWorld(plant_context, *box_).translation();
+    if (box_ != nullptr) {
+      return plant_->EvalBodyPoseInWorld(plant_context, *box_).translation();
+    }
+    return plant_->deformable_model()
+        .GetPositions(plant_context, deformable_id_.value())
+        .rowwise()
+        .mean();
   }
 
   MultibodyPlant<double>* plant_{nullptr};
   const RigidBody<double>* ground_{nullptr};
   const RigidBody<double>* box_{nullptr};
+  std::optional<DeformableBodyId> deformable_id_;
   std::unique_ptr<systems::Simulator<double>> sim_;
 };
 
@@ -744,14 +785,22 @@ class OrthogonalSurfaceVelocityTest
 // surface. With kGroundSpeed == kBoxSpeed the two components are equal in
 // magnitude.
 TEST_P(OrthogonalSurfaceVelocityTest, ContactForceTangentialDirection) {
+  const double time_step = GetParam().plant_config.time_step;
+  // Discrete: advance one step to populate DiscreteStepMemory.
+  // Continuous: contact results are available on demand at t = 0.
+  if (time_step > 0.0) sim_->AdvanceTo(time_step);
   const Vector3d f = ContactForceOnContactingBody(
       plant_->GetMyContextFromRoot(sim_->get_context()));
 
   EXPECT_GT(f.z(), 0.0);  // Normal force pushes in +Wz.
-  EXPECT_GT(f.x(), 0.0);  // Conveyor friction pushes in +Wx.
-  EXPECT_LT(f.y(), 0.0);  // Conveyor friction pushes in -Wy.
-  // Equal speeds → equal-magnitude tangential components, within 10%.
-  EXPECT_NEAR(f.x(), -f.y(), 0.1 * f.x());
+  EXPECT_GT(f.x(), 0.0);  // Friction from conveyor velocity pushes in +Wx.
+  if (!GetParam().use_deformable) {
+    // Note: the deformable sphere has no surface velocity. So, we skip the
+    // tests that depend on the free body having surface velocity.
+    EXPECT_LT(f.y(), 0.0);  // Friction from box velocity pushes in -Wy.
+    // Equal speeds → equal-magnitude tangential components, within 10%.
+    EXPECT_NEAR(f.x(), -f.y(), 0.1 * f.x());
+  }
 }
 
 // Confirms the effect of the surface velocity on continuous dynamics.
@@ -762,13 +811,15 @@ TEST_P(OrthogonalSurfaceVelocityTest, BoxDisplacementDirection) {
   // Continuous simulation is *very* slow; don't advance too far.
   sim_->AdvanceTo(0.1);
   const auto& final_context = plant_->GetMyContextFromRoot(sim_->get_context());
-  const Vector3d p_WBody = BoxPositionInWorld(final_context);
+  const Vector3d p_WBody = FreeBodyPositionInWorld(final_context);
 
   constexpr double kMinDisplacement = 0.01;  // 1 cm
   EXPECT_GT(p_WBody.x(), kMinDisplacement)
-      << "body should have moved in +Wx due to ground belt";
-  EXPECT_LT(p_WBody.y(), -kMinDisplacement)
-      << "box should have moved in -Wy due to box surface velocity";
+      << "body should have moved in +Wx due to ground surface velocity";
+  if (!GetParam().use_deformable) {
+    EXPECT_LT(p_WBody.y(), -kMinDisplacement)
+        << "box should have moved in -Wy due to box surface velocity";
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -781,6 +832,30 @@ INSTANTIATE_TEST_SUITE_P(
       continuous_hydro.time_step = 0.0;
       continuous_hydro.contact_model = "hydroelastic_with_fallback";
 
+      // Note: we don't bother with "similar" or "lagged" because the SAP
+      // constraints are shared among them.
+      MultibodyPlantConfig discrete_point_sap;
+      discrete_point_sap.time_step = 1e-3;
+      discrete_point_sap.contact_model = "point";
+      discrete_point_sap.discrete_contact_approximation = "sap";
+
+      MultibodyPlantConfig discrete_hydro_sap;
+      discrete_hydro_sap.time_step = 1e-3;
+      discrete_hydro_sap.contact_model = "hydroelastic_with_fallback";
+      discrete_hydro_sap.discrete_contact_approximation = "sap";
+
+      // Note: we don't bother with "similar" because "lagged" provides the
+      // coverage on Sap's Hunt-Crossley constraint.
+      MultibodyPlantConfig discrete_point_lagged;
+      discrete_point_lagged.time_step = 1e-3;
+      discrete_point_lagged.contact_model = "point";
+      discrete_point_lagged.discrete_contact_approximation = "lagged";
+
+      MultibodyPlantConfig discrete_hydro_lagged;
+      discrete_hydro_lagged.time_step = 1e-3;
+      discrete_hydro_lagged.contact_model = "hydroelastic_with_fallback";
+      discrete_hydro_lagged.discrete_contact_approximation = "lagged";
+
       return std::vector<OrthogonalContactTestConfig>{
           // Keep continuous_point and continuous_hydro next to each other in
           // this list so that the sharding will make sure they end up in
@@ -788,6 +863,12 @@ INSTANTIATE_TEST_SUITE_P(
           // terrifyingly slow.
           {"continuous_point", continuous_point},
           {"continuous_hydro", continuous_hydro},
+          {"discrete_point_sap", discrete_point_sap},
+          {"discrete_hydro_sap", discrete_hydro_sap},
+          {"discrete_deformable_sap", discrete_hydro_sap,
+           /* use_deformable = */ true},
+          {"discrete_point_lagged", discrete_point_lagged},
+          {"discrete_hydro_lagged", discrete_hydro_lagged},
       };
     }()),
     [](const testing::TestParamInfo<OrthogonalContactTestConfig>& param_info) {

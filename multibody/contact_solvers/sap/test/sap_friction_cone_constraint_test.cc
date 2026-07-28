@@ -61,7 +61,11 @@ ContactConfiguration<T> MakeArbitraryConfiguration() {
                                  .phi = -2.5e-3,
                                  .vn = kInf,
                                  .fe = kInf,
-                                 .R_WC = RotationMatrix<T>::Identity()};
+                                 .R_WC = RotationMatrix<T>::Identity(),
+                                 // We're leaving this as zero here to preserve
+                                 // the majority of tests. We'll set it
+                                 // explicitly when we need to test cloning.
+                                 .v_b = Vector3<T>(0.0, 0.0, 0.0)};
 }
 
 template <typename T = double>
@@ -204,6 +208,27 @@ GTEST_TEST(SapFrictionConeConstraint, CalcRegularization) {
   EXPECT_TRUE(CompareMatrices(R, R_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
+}
+
+GTEST_TEST(SapFrictionConeConstraint, BiasVelocity) {
+  const int clique = 12;
+  SapConstraintJacobian<double> J(clique, J32);
+  ContactConfiguration<double> configuration = MakeArbitraryConfiguration();
+  configuration.v_b = Vector3d(0.25, -0.5, 0.75);
+  const SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
+
+  ASSERT_TRUE(CompareMatrices(c.bias_velocity(), configuration.v_b));
+
+  std::unique_ptr<AbstractValue> abstract_data =
+      c.MakeData(0.01, Vector3d::Constant(3.0));
+  const Vector3d vc(-0.4, 0.5, -0.6);
+  c.CalcData(vc, abstract_data.get());
+
+  const auto& data =
+      abstract_data->get_value<SapFrictionConeConstraintData<double>>();
+  EXPECT_TRUE(CompareMatrices(data.vc(), vc + configuration.v_b));
 }
 
 constexpr double kTolerance = 1.0e-8;
@@ -395,8 +420,11 @@ GTEST_TEST(SapFrictionConeConstraint, RegionIII) {
 GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraintClone) {
   const int clique = 12;
   SapConstraintJacobian<double> J(clique, J32);
-  const ContactConfiguration<double> configuration =
-      MakeArbitraryConfiguration();
+  ContactConfiguration<double> configuration = MakeArbitraryConfiguration();
+  // Note: we're using *this* test to make sure the bias velocity survives
+  // cloning. This is omitted from the other cloning tests.
+  const Vector3d velocity_bias(0.25, -0.5, 0.75);
+  configuration.v_b = velocity_bias;
   const SapFrictionConeConstraint<double>::Parameters parameters =
       MakeArbitraryParameters();
   SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
@@ -409,9 +437,11 @@ GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraintClone) {
   ExpectEqual(c, *clone);
 
   // Test ToDouble.
+  auto configuration_ad = MakeArbitraryConfiguration<AutoDiffXd>();
+  // The matching bias values to confirm inclusion in cloning.
+  configuration_ad.v_b = velocity_bias.cast<AutoDiffXd>();
   SapFrictionConeConstraint<AutoDiffXd> c_ad(
-      MakeArbitraryConfiguration<AutoDiffXd>(),
-      SapConstraintJacobian<AutoDiffXd>(clique, J32),
+      configuration_ad, SapConstraintJacobian<AutoDiffXd>(clique, J32),
       MakeArbitraryParameters<AutoDiffXd>());
   auto clone_from_ad =
       dynamic_pointer_cast<SapFrictionConeConstraint<double>>(c_ad.ToDouble());
