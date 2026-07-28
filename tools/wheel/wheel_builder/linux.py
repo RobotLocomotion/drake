@@ -103,6 +103,7 @@ targets = {
         ),
     ),
     "aarch64": (
+        # TODO(jwnimmer-tri) We should add a nanobind (abi3) target here.
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
             python_binder=PythonBinder.PYBIND11,
@@ -246,7 +247,9 @@ def _tagname(
     Iff the role is the TEST role, then the test_index must be provided.
     """
     platform = target.platform(role, test_index).alias
-    return f"{tag_base}:{tag_prefix}-{platform}-py{target.python_tag}-{target.python_binder.value}"
+    python_tag = target.python_tag
+    python_binder = target.python_binder.value
+    return f"{tag_base}:{tag_prefix}-{platform}-py{python_tag}-{python_binder}"
 
 
 def _build_stage(target, args, tag_prefix, stage=None):
