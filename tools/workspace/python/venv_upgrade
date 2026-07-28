@@ -8,6 +8,9 @@
 # - Users can make edits to drake/setup/python/mypy/requirements.in, and then
 #   run this script to compile it to drake/setup/python/mypy/requirements.txt.
 #
+# - Users can make edits to drake/setup/python/lief/requirements.in, and then
+#   run this script to compile it to drake/setup/python/lief/requirements.txt.
+#
 # The --reuse option may be given to apply changes to pyproject.toml while
 # attempting to preserve existing version pins.
 #
@@ -127,6 +130,11 @@ files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 readonly mypy_requirements="./setup/python/mypy/requirements.txt"
 bazel run //setup/python/mypy:lock.update
 files_to_commit+=( "$(git diff --name-only HEAD -- "${mypy_requirements}")" )
+
+# Upgrade the lief lock file.
+readonly lief_requirements="./setup/python/lief/requirements.txt"
+bazel run //setup/python/lief:lock.update
+files_to_commit+=( "$(git diff --name-only HEAD -- "${lief_requirements}")" )
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then
