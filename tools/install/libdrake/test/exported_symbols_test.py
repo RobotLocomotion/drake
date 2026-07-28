@@ -96,9 +96,6 @@ LIBDRAKE = "tools/install/libdrake/libdrake.so"
 
 def _is_known_bad_ctor_or_dtor(*, filename, function_name):
     is_snake_case = filename == filename.lower()
-    if "drake_vendor::YAML" in function_name:
-        # TODO(#24446) Fix YAML's static regexes to be never_destroyed.
-        return True
     if filename.startswith("vtk") and not is_snake_case:
         # TODO(#24447) Fix VTK to remove globals.
         return True
