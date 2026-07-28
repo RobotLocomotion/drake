@@ -8,8 +8,8 @@ from enum import Enum
 class PythonBinder(Enum):
     _value_: str
 
-    PYBIND11 = "pybind11"
     NANOBIND = "nanobind"
+    PYBIND11 = "pybind11"
 
 
 class PythonManager(Enum):
@@ -46,8 +46,6 @@ class Target:
         self.python_version_full = ".".join(pv_parts)
         self.python_version = ".".join(pv_parts[:2])
         self.python_tag = "".join(pv_parts[:2])
-        if self.python_binder == PythonBinder.NANOBIND:
-            self.python_tag += "nb"
 
     def platform(self, role: Role, test_index: int | None = None) -> Platform:
         """Returns the Platform for the given `role`. For the test role, the
