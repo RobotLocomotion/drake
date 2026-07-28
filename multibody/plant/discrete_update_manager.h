@@ -237,6 +237,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const GeometryContactData<T>& EvalGeometryContactData(
       const systems::Context<T>& context) const;
 
+  void AddSurfaceVelocityBias(const systems::Context<T>& context,
+                              BodyIndex bodyA_index, BodyIndex bodyB_index,
+                              const Vector3<T>& nhat_BA_W,
+                              Vector3<T>* v_AcBc_W) const;
+
   double default_contact_stiffness() const;
   double default_contact_dissipation() const;
 

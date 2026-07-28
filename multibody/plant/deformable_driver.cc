@@ -571,6 +571,21 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       /* The normal (scalar) component of the contact velocity in the contact
        frame. */
       const T v_AcBc_Cz = nhat_AB_W.dot(v_WBc - v_WAc);
+      /* Surface velocity bias in the contact frame. Body A is always
+       deformable, so it carries no surface velocity. For deformable-vs-rigid
+       contact, use the world body as a non-contributing surrogate for
+       deformable A and add rigid body B's contribution. surface.nhats_W()[i]
+       points out of B (from B toward A), matching AddSurfaceVelocityBias()'s
+       normal convention. */
+      Vector3<T> v_b = Vector3<T>::Zero();
+      if (!is_deformable_vs_deformable) {
+        const BodyIndex rigid_body_B_index(body_index_B);
+        Vector3<T> v_b_W = Vector3<T>::Zero();
+        manager_->AddSurfaceVelocityBias(
+            context, manager_->plant().world_body().index(), rigid_body_B_index,
+            surface.nhats_W()[i], &v_b_W);
+        v_b = R_WC.transpose() * v_b_W;
+      }
       DiscreteContactPair<T> contact_pair{
           .jacobian = std::move(jacobian_blocks),
           .id_A = id_A,
@@ -584,6 +599,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
           .nhat_BA_W = nhat_BA_W,
           .phi0 = phi0,
           .vn0 = v_AcBc_Cz,
+          .v_b = v_b,
           .fn0 = fn0,
           .stiffness = k,
           .damping = d,
