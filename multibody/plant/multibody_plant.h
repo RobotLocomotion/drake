@@ -113,6 +113,9 @@ struct ContactByPenaltyMethodParameters {
 // Forward declarations for desired_state_input.h.
 template <typename>
 struct DesiredStateInput;
+// Forward declarations for continuous_contact_force_reporter.h.
+template <typename>
+class ContinuousContactForceReporter;
 // Forward declarations for discrete_update_manager.h.
 template <typename>
 class DiscreteUpdateManager;
@@ -2851,6 +2854,26 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDiscreteUpdateManager(
       std::unique_ptr<internal::DiscreteUpdateManager<T>> manager);
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // Sets the reporter used to compute the reaction_forces and contact_results
+  // output ports for a continuous plant that is integrated with a
+  // discrete/convex contact model (e.g. ICF via CenicIntegrator), instead of
+  // the plant's compliant continuous contact model. See
+  // internal::ContinuousContactForceReporter and (for the ICF case)
+  // AddIcfContinuousForceReporting() in multibody/cenic. Passing nullptr clears
+  // it, restoring compliant-model reporting.
+  //
+  // Because a reporter's concrete implementation may live in a target that
+  // depends on the full MultibodyPlant (as ICF does), this is an injection
+  // point rather than something the plant constructs itself. The reporter is
+  // queried purely as a function of the Context.
+  //
+  // @pre this MultibodyPlant is continuous (time_step == 0).
+  // @throws std::exception if called pre-finalize.
+  void SetContinuousContactForceReporter(
+      std::unique_ptr<internal::ContinuousContactForceReporter<T>> reporter);
+#endif
 
 #ifndef DRAKE_DOXYGEN_CXX
   // (For testing only) Adds a DummyPhysicalModel to this plant and returns the
@@ -6981,6 +7004,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // TODO(amcastro-tri): migrate the entirety of computations related to contact
   // resolution into a default contact manager.
   std::unique_ptr<internal::DiscreteUpdateManager<T>> discrete_update_manager_;
+
+  // Optional reporter that routes the reaction_forces and contact_results
+  // output ports of a continuous plant through a discrete/convex contact model
+  // (e.g. ICF via CenicIntegrator) instead of the compliant continuous contact
+  // model. Null unless injected via SetContinuousContactForceReporter(); only
+  // meaningful for a continuous-time plant.
+  std::unique_ptr<internal::ContinuousContactForceReporter<T>>
+      continuous_force_reporter_;
 
   // (Experimental) The collection of all physical models owned by
   // this MultibodyPlant.

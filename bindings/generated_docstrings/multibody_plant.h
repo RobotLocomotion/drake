@@ -18,6 +18,7 @@
 // #include "drake/multibody/plant/contact_jacobians.h"
 // #include "drake/multibody/plant/contact_results.h"
 // #include "drake/multibody/plant/contact_results_to_lcm.h"
+// #include "drake/multibody/plant/continuous_contact_force_reporter.h"
 // #include "drake/multibody/plant/coulomb_friction.h"
 // #include "drake/multibody/plant/deformable_contact_info.h"
 // #include "drake/multibody/plant/deformable_driver.h"
@@ -6674,6 +6675,11 @@ Raises:
     RuntimeError if ``id`` does not belong to any multibody constraint
     in ``context``.)""";
         } SetConstraintActiveStatus;
+        // Symbol: drake::multibody::MultibodyPlant::SetContinuousContactForceReporter
+        struct /* SetContinuousContactForceReporter */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc = R"""()""";
+        } SetContinuousContactForceReporter;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultFloatingBaseBodyPose
         struct /* SetDefaultFloatingBaseBodyPose */ {
           // Source: drake/multibody/plant/multibody_plant.h
