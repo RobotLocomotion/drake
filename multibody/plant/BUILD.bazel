@@ -83,6 +83,7 @@ drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
         "compliant_contact_manager.cc",
+        "continuous_contact_force_reporter.cc",
         "deformable_driver.cc",
         "deformable_model.cc",
         "discrete_step_memory.cc",
@@ -100,6 +101,7 @@ drake_cc_library(
     ],
     hdrs = [
         "compliant_contact_manager.h",
+        "continuous_contact_force_reporter.h",
         "deformable_driver.h",
         "deformable_model.h",
         "discrete_step_memory.h",

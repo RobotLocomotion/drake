@@ -24,6 +24,7 @@
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
+#include "drake/multibody/plant/continuous_contact_force_reporter.h"
 #include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
@@ -33,6 +34,7 @@
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 #include "drake/multibody/topology/graph.h"
+#include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/prismatic_spring.h"
@@ -1833,6 +1835,17 @@ void MultibodyPlant<T>::SetDiscreteUpdateManager(
   manager->SetOwningMultibodyPlant(this);
   discrete_update_manager_ = std::move(manager);
   RemoveUnsupportedScalars(*discrete_update_manager_);
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetContinuousContactForceReporter(
+    std::unique_ptr<internal::ContinuousContactForceReporter<T>> reporter) {
+  // Like the concrete reporter's constructor, this really needs a finalized
+  // plant (the reporter builds its contact model from MBP's topology), so we
+  // demand finalization here as well.
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(!is_discrete());
+  continuous_force_reporter_ = std::move(reporter);
 }
 
 template <typename T>
@@ -4452,6 +4465,13 @@ void MultibodyPlant<T>::CalcReactionForces(
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_reaction_forces_output_port());
 
+  // A continuous plant that is being integrated with a discrete/convex contact
+  // model (e.g. ICF via CenicIntegrator) reports through an injected reporter
+  // instead of the compliant continuous contact model. See
+  // SetContinuousContactForceReporter().
+  const bool use_reporter =
+      !is_discrete() && continuous_force_reporter_ != nullptr;
+
   // Compute the multibody forces applied during the computation of forward
   // dynamics, consistent with the value of vdot obtained below.
   MultibodyForces<T> applied_forces(*this);
@@ -4460,6 +4480,8 @@ void MultibodyPlant<T>::CalcReactionForces(
   if (is_discrete()) {
     applied_forces =
         discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
+  } else if (use_reporter) {
+    continuous_force_reporter_->CalcAppliedForces(context, &applied_forces);
   } else {
     CalcNonContactForcesContinuous(context, &applied_forces);
     CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
@@ -4473,7 +4495,25 @@ void MultibodyPlant<T>::CalcReactionForces(
   // TODO(amcastro-tri): Consider having a
   //  DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
   //  this computation consistently with its discrete update.
-  const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
+  //
+  // vdot must be consistent with `applied_forces`. For the reporter case,
+  // EvalForwardDynamics() would use the plant's (compliant) contact model,
+  // which is inconsistent with the reporter's forces, so we compute vdot from
+  // `applied_forces` directly via the articulated body algorithm.
+  VectorX<T> vdot_from_reporter;
+  if (use_reporter) {
+    internal::ArticulatedBodyForceCache<T> aba_force_cache(
+        internal_tree().forest());
+    internal_tree().CalcArticulatedBodyForceCache(context, applied_forces,
+                                                  &aba_force_cache);
+    internal::AccelerationKinematicsCache<T> ac(internal_tree().forest());
+    internal_tree().CalcArticulatedBodyAccelerations(context, aba_force_cache,
+                                                     &ac);
+    vdot_from_reporter = ac.get_vdot();
+  }
+  const VectorX<T>& vdot = use_reporter
+                               ? vdot_from_reporter
+                               : this->EvalForwardDynamics(context).get_vdot();
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
   VectorX<T> tau_id(num_velocities());

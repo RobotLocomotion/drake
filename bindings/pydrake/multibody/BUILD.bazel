@@ -443,6 +443,8 @@ drake_py_unittest(
     name = "cenic_test",
     deps = [
         ":cenic_py",
+        ":parsing_py",
+        ":plant_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/planning",
     ],

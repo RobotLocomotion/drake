@@ -19,8 +19,14 @@ class IcfExternalSystemsLinearizer;
 
 namespace internal {
 
+// Forward declaration for friendship, below. Defined in
+// //multibody/cenic:continuous_icf_force_manager.
+template <typename T>
+class ContinuousIcfForceManager;
+
 /* This class is used to grant access to a selected collection of
-MultibodyPlant's private methods to //multibody/contact_solvers/icf.
+MultibodyPlant's private methods to //multibody/contact_solvers/icf and to the
+ICF-based continuous force reporter.
 
 @tparam_default_scalar */
 template <typename T>
@@ -30,6 +36,27 @@ class MultibodyPlantIcfAttorney {
 
   friend class contact_solvers::icf::internal::IcfBuilder<T>;
   friend class contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>;
+  friend class ContinuousIcfForceManager<T>;
+
+  // Returns the plant's cached geometry contact data (point pairs and contact
+  // surfaces) at the state stored in `context`. Sourcing the ICF contact set
+  // from this position-keyed cache lets the ICF builder share a single
+  // SceneGraph query with the plant's own contact path and across integration
+  // sub-steps at the same configuration.
+  static const GeometryContactData<T>& EvalGeometryContactData(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalGeometryContactData(context);
+  }
+
+  // Assembles the plant's non-contact continuous forces (gravity, force
+  // elements, joint damping, actuation and other input-port forces) at the
+  // state stored in `context`. Continuous plants carry no joint-limit penalty
+  // forces, so this omits them (ICF treats limits as constraints instead).
+  static void CalcNonContactForcesContinuous(const MultibodyPlant<T>& plant,
+                                             const systems::Context<T>& context,
+                                             MultibodyForces<T>* forces) {
+    plant.CalcNonContactForcesContinuous(context, forces);
+  }
 
   static void AddAppliedExternalGeneralizedForces(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context,
