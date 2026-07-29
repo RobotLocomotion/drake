@@ -69,6 +69,12 @@ int do_main() {
 
   // Opt in to automatic modeling of closed topologies. Without this, Finalize()
   // below would throw because of the loop in the model file.
+  // CENIC does not integrate the plant's own contact model, so ask for sampled
+  // output ports to make the plant report the forces of CENIC's solve.
+  if (FLAGS_time_step == 0.0 && FLAGS_simulator_integration_scheme == "cenic") {
+    four_bar.SetUseSampledOutputPorts(true);
+  }
+
   four_bar.SetEnableLoopTopology(true);
 
   Parser(&builder).AddModelsFromUrl(
