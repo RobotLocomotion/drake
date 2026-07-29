@@ -165,9 +165,7 @@ use_repo(
     "blas",
     "glib",
     "lapack",
-    "libjpeg",
     "opencl",
-    "zlib",
     #
     # First-party dependencies (i.e., drake-maintained).
     #
@@ -192,6 +190,10 @@ use_repo(
     # deprecating it until we have nanobind ready.
     #
     "pybind11",
+    # TODO(jwnimmer-tri) Deprecate these. They are (or should be)
+    # non-configurable, so don't need a module extension.
+    "libjpeg",
+    "zlib",
 )
 
 # Load Java dependencies.
