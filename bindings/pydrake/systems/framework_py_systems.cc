@@ -378,7 +378,6 @@ struct Impl {
     NB_TRAMPOLINE(VectorSystemPublic, 0);
     using Base = VectorSystemPublic;
 
-    // something something ToEigenRef().
     void DoCalcVectorOutput(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
