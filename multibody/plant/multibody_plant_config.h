@@ -37,7 +37,12 @@ struct MultibodyPlantConfig {
   double time_step{0.001};
 
   /// Configures the MultibodyPlant::SetUseSampledOutputPorts().
-  /// When set to Unchanged, the MultibodyPlant setting remains unchanged.
+  /// When set to Unchanged, the MultibodyPlant setting remains unchanged
+  /// (sampled for a discrete-time plant, live for a continuous-time plant).
+  /// For a continuous-time plant, `true` is only useful with an integrator
+  /// that records samples (e.g., CenicIntegrator, which reports the forces of
+  /// its own solve); the dynamics output ports of such a plant throw if no
+  /// integrator has recorded a sample.
   std::variant<bool, schema::Unchanged> use_sampled_output_ports{
       schema::Unchanged{}};
 

@@ -672,6 +672,10 @@ GTEST_TEST(IcfBuilder, RetryStep) {
     std::vector<int> is_actuation(pool.num_constraints(), 0);
     if (actuation_feedback != nullptr) {
       is_actuation[pool.num_constraints() - 1] = 1;
+      // The (only) actuation constraint is where the builder says it starts.
+      EXPECT_EQ(IcfBuilder<double>::ActuationGainConstraintsStart(
+                    model, external_feedback != nullptr),
+                pool.num_constraints() - 1);
     }
     for (int k = 0; k < pool.num_constraints(); ++k) {
       SCOPED_TRACE(fmt::format("index {}", k));
@@ -1052,6 +1056,43 @@ GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
                               ".*not.*support.*1 tendon constraint\\(s\\).*");
 }
 
+GTEST_TEST(IcfBuilder, SharedJointActuatorsUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+
+  // The shoulder's lone actuator is fine; the elbow's pair is not.
+  plant.AddJointActuator("shoulder", plant.GetJointByName("joint1"));
+  plant.AddJointActuator("elbow", plant.GetJointByName("joint2"));
+  plant.AddJointActuator("elbow_assist", plant.GetJointByName("joint2"));
+
+  // Shared actuators are only a problem when reporting sampled outputs.
+  plant.SetUseSampledOutputPorts(true);
+  plant.Finalize();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IcfBuilder<double>(&plant),
+      ".*not support more than one actuator on a joint.*'joint2'.*'elbow'.*"
+      "'elbow_assist'.*AddCouplerConstraint.*");
+}
+
+GTEST_TEST(IcfBuilder, SharedJointActuatorsAllowedWithoutSampledPorts) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+  plant.AddJointActuator("elbow", plant.GetJointByName("joint2"));
+  plant.AddJointActuator("elbow_assist", plant.GetJointByName("joint2"));
+  plant.Finalize();
+
+  EXPECT_NO_THROW(IcfBuilder<double> builder(&plant));
+}
+
 GTEST_TEST(IcfBuilder, DeformableUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
   // TODO(#23768): MultibodyPlant (specifically, DeformableModel) does not yet
@@ -1119,6 +1160,86 @@ GTEST_TEST(IcfBuilder, JointLockingSupport) {
     ASSERT_EQ(model.num_cliques(), 1);
     EXPECT_EQ(r.per_clique_unlocked_dofs[0], expected_unlocked_dofs);
   }
+}
+
+/* Verifies that IcfBuilder gets its contact set from MultibodyPlant's cached
+geometry contact data, rather than making its own SceneGraph query: it must (1)
+reuse the cached data rather than recompute it when nothing has changed, and (2)
+see the same contacts as the plant, including the plant's filtering of contacts
+that involve only locked bodies. Two spheres rest on, and overlap each other
+above, an anchored ground. */
+GTEST_TEST(IcfBuilder, GeometryContactDataComesFromPlantCache) {
+  constexpr double kRadius = 0.1;
+  systems::DiagramBuilder<double> diagram_builder;
+  auto [plant, scene_graph] =
+      AddMultibodyPlantSceneGraph(&diagram_builder, 0.0);
+  plant.set_contact_model(ContactModel::kPoint);
+
+  geometry::ProximityProperties material;
+  geometry::AddContactMaterial(0.0, 1e5, CoulombFriction<double>(1.0, 1.0),
+                               &material);
+
+  const RigidBody<double>& ground =
+      plant.AddRigidBody("ground", SpatialInertia<double>::MakeUnitary());
+  plant.WeldFrames(plant.world_frame(), ground.body_frame());
+  plant.RegisterCollisionGeometry(ground, RigidTransformd(Vector3d(0, 0, -0.5)),
+                                  geometry::Box(10.0, 10.0, 1.0), "ground",
+                                  material);
+  const RigidBody<double>& ball_a = plant.AddRigidBody(
+      "ball_a", SpatialInertia<double>::SolidSphereWithMass(1.0, kRadius));
+  const RigidBody<double>& ball_b = plant.AddRigidBody(
+      "ball_b", SpatialInertia<double>::SolidSphereWithMass(1.0, kRadius));
+  for (const RigidBody<double>* ball : {&ball_a, &ball_b}) {
+    plant.RegisterCollisionGeometry(*ball, RigidTransformd::Identity(),
+                                    geometry::Sphere(kRadius), ball->name(),
+                                    material);
+  }
+  plant.Finalize();
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  plant.SetFloatingBaseBodyPoseInWorldFrame(
+      &plant_context, ball_a,
+      RigidTransformd(Vector3d(0.0, 0.0, kRadius - 1e-3)));
+  plant.SetFloatingBaseBodyPoseInWorldFrame(
+      &plant_context, ball_b,
+      RigidTransformd(Vector3d(1.9 * kRadius, 0.0, kRadius - 1e-3)));
+
+  IcfBuilder<double> dut(&plant);
+  IcfModel<double> model;
+  const double time_step = 0.01;  // For UpdateModel().
+
+  // Contacts: a-ground, b-ground, and a-b.
+  dut.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  EXPECT_EQ(dut.geometry_contact_data().get().point_pairs.size(), 3);
+  EXPECT_EQ(model.patch_constraints_pool().num_patches(), 3);
+
+  // A second update at the same configuration reuses the plant's cached data
+  // (the very same storage) instead of querying SceneGraph again.
+  const auto first = dut.geometry_contact_data().Share();
+  dut.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  EXPECT_EQ(dut.geometry_contact_data().Share(), first);
+
+  // Changing the configuration invalidates the cache, so the data is new.
+  plant.SetFloatingBaseBodyPoseInWorldFrame(
+      &plant_context, ball_b,
+      RigidTransformd(Vector3d(1.8 * kRadius, 0.0, kRadius - 1e-3)));
+  dut.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  EXPECT_NE(dut.geometry_contact_data().Share(), first);
+  EXPECT_EQ(dut.geometry_contact_data().get().point_pairs.size(), 3);
+
+  // Locking ball a leaves it with no dofs, so the plant drops its contact with
+  // the (anchored) ground. IcfBuilder must see the same filtered contact set.
+  plant.GetJointByName(ball_a.name()).Lock(&plant_context);
+  dut.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  EXPECT_EQ(dut.geometry_contact_data().get().point_pairs.size(), 2);
+  EXPECT_EQ(model.patch_constraints_pool().num_patches(), 2);
+  const auto& contact_results =
+      plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+          plant_context);
+  EXPECT_EQ(contact_results.num_point_pair_contacts(),
+            ssize(dut.geometry_contact_data().get().point_pairs));
 }
 
 GTEST_TEST(IcfBuilder, IslandConfig) {
