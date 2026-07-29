@@ -13,13 +13,14 @@
 #endif
 
 // #include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
-// #include "drake/multibody/contact_solvers/icf/ball_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/ball_constraints_pool.h"
 // #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
 // #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 // #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
+// #include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
+// #include "drake/multibody/contact_solvers/icf/holonomic_constraints_pool.h"
 // #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 // #include "drake/multibody/contact_solvers/icf/icf_data.h"
 // #include "drake/multibody/contact_solvers/icf/icf_external_systems_linearizer.h"
@@ -33,7 +34,6 @@
 // #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
 // #include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
-// #include "drake/multibody/contact_solvers/icf/weld_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
 // Symbol: pydrake_doc_multibody_contact_solvers_icf

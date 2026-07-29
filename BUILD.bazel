@@ -47,6 +47,15 @@ python_binder_reset(
     exports = "//tools/install/libdrake:drake_shared_library",
 )
 
+# Provides drake/version.h for downstream C++ code. The :drake_shared_library
+# target already offers this header; this target should be used by downstream
+# code that doesn't use the shared library.
+alias(
+    name = "version_hdrs",
+    actual = "//tools/install/libdrake:version_hdrs",
+    visibility = ["//visibility:public"],
+)
+
 # A manually-curated collection of most model files in Drake, so that we can
 # easily provide access to them for tools like //tools:model_visualizer.
 filegroup(

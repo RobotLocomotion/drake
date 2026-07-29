@@ -1,15 +1,12 @@
 #pragma once
 
-#include <vector>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/abstract_constraints_pool.h"
-#include "drake/multibody/contact_solvers/icf/ball_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/holonomic_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
-#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -60,31 +57,16 @@ two bodies belong to different cliques.
 
 @tparam_nonsymbolic_scalar */
 template <typename T>
-class BallConstraintsPool {
+class BallConstraintsPool
+    : public HolonomicConstraintsPool<T, 3, BallConstraintsPool<T>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallConstraintsPool);
 
+  static constexpr bool FlipNegatesG0() { return true; }
+
   /* Constructs an empty pool. */
-  explicit BallConstraintsPool(const IcfModel<T>* parent_model);
-
-  ~BallConstraintsPool();
-
-  /* @see IsAbstractConstraintsPool. */
-  const IcfModel<T>& model() const { return *model_; }
-  int num_constraints() const { return ssize(body_pairs_); }
-  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
-  void AccumulateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
-          hessian) const;
-  void ReduceInto(const ReducedMapping& mapping,
-                  BallConstraintsPool<T>* reduced_pool) const;
-
-  /* Resizes the constraints pool to store the given number of ball constraints.
-
-  @warning After resizing, constraints may hold invalid data until Set() is
-  called for each constraint index in [0, num_constraints()). */
-  void Resize(int num_constraints);
+  explicit BallConstraintsPool(const IcfModel<T>* parent_model)
+      : HolonomicConstraintsPool<T, 3, BallConstraintsPool<T>>(parent_model) {}
 
   /* Sets the k-th ball constraint.
 
@@ -102,82 +84,34 @@ class BallConstraintsPool {
   void Set(int index, int bodyA, int bodyB, const Vector3<T>& p_AP_W,
            const Vector3<T>& p_BQ_W, const Vector3<T>& p_PQ_W);
 
-  /* Computes the sparsity pattern for the pool. Clique i is connected to
-  clique j > i iff sparsity[i] contains j. */
-  void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
-
-  /* Precomputes the iteration-invariant Hessian blocks for every ball
-  constraint. Because the ball cost ℓ(vc) = ½(v̂ − vc)ᵀR⁻¹(v̂ − vc) is
-  purely quadratic in the constraint velocity, its Hessian ∂²ℓ/∂v² depends
-  only on the regularization R and the (constant) constraint Jacobians. This
-  method must be called after all Set() calls and before AccumulateHessian()
-  is used. */
-  void PrecomputeHessianBlocks();
-
-  /* Computes problem data as a function of the body spatial velocities V_WB for
-  the full IcfModel. */
-  void CalcData(const EigenPool<Vector6<T>>& V_WB,
-                BallConstraintsDataPool<T>* ball_data) const;
-
-  /* Computes the first and second derivatives of the constraint cost
-  ℓ̃(α) = ℓ(v + α⋅w).
-
-  @param ball_data Constraint data computed at v + α⋅w.
-  @param U_WB Body spatial velocities when generalized velocities equal w.
-         I.e., U_WB = J_WB⋅w.
-  @param[out] dcost the first derivative dℓ̃/dα on output.
-  @param[out] d2cost the second derivative d²ℓ̃/dα² on output. */
-  void CalcCostAlongLine(const BallConstraintsDataPool<T>& ball_data,
-                         const EigenPool<Vector6<T>>& U_WB, T* dcost,
-                         T* d2cost) const;
+  /* Hooks required by HolonomicConstraintsPool. */
+  Vector3<T> CalcConstraintVelocity(int k, const Vector6<T>& V_WB,
+                                    const Vector6<T>* V_WA) const;
+  void CalcSpatialImpulses(int k, const Vector3<T>& gamma, Vector6<T>* Gamma_Bo,
+                           Vector6<T>* Gamma_Ao) const;
+  void CalcHessianBlocks(int k, const T& R_inv, Matrix6<T>* G_Bp,
+                         Matrix6<T>* G_Ap, Matrix6<T>* G_cross) const;
+  const BallConstraintsDataPool<T>& GetDataPool(const IcfData<T>& data) const {
+    return data.ball_constraints_data();
+  }
+  void ResizeGeometry(int num_constraints);
+  void ReduceGeometryInto(BallConstraintsPool<T>* reduced, int k,
+                          bool flip) const;
 
   /* Testing only access. */
-  const std::vector<std::pair<int, int>>& body_pairs() const {
-    return body_pairs_;
-  }
   const EigenPool<Vector3<T>>& p_AP_W() const { return p_AP_W_; }
   const EigenPool<Vector3<T>>& p_BQ_W() const { return p_BQ_W_; }
-  const EigenPool<Vector3<T>>& p_PQ_W() const { return p_PQ_W_; }
-  const EigenPool<Vector3<T>>& g0() const { return p_PQ_W_; }
-  const EigenPool<Vector3<T>>& R() const { return R_; }
-  int hessian_blocks_size() const { return ssize(hessian_blocks_); }
+  // Relative translation, which for a ball is also the constraint function
+  // g₀ = p_PQ_W (stored by the base).
+  const EigenPool<Vector3<T>>& p_PQ_W() const { return this->g0(); }
 
  private:
-  const IcfModel<T>* const model_;  // The parent model.
-
-  // Body pairs involved in each ball constraint, (bodyA, bodyB).
-  // bodyB is always dynamic (not anchored).
-  std::vector<std::pair<int, int>> body_pairs_;
-
   // Per-constraint data, all indexed by constraint index k.
   EigenPool<Vector3<T>> p_AP_W_;  // Position of P in A, expressed in W.
   EigenPool<Vector3<T>> p_BQ_W_;  // Position of Q in B, expressed in W.
-  // Relative translation, expressed in W. For a ball constraint this is also
-  // the constraint function at the start of the step, g₀ = p_PQ_W.
-  EigenPool<Vector3<T>> p_PQ_W_;
-
-  // Near-rigid regularization per constraint.
-  // R depends on the current time step δt and is computed in
-  // PrecomputeHessianBlocks(), which must be called whenever δt changes.
-  // R is a diagonal 3×3 regularization matrix.
-  EigenPool<Vector3<T>> R_;  // The diagonal regularization matrix.
-
-  // Precomputed Hessian blocks for each ball constraint, populated by
-  // PrecomputeHessianBlocks(). These are iteration-invariant because the ball
-  // cost Hessian depends only on R and the constant constraint Jacobians.
-  struct HessianBlock {
-    int c_B{-1};         // Clique index for body B (always valid).
-    int c_A{-1};         // Clique index for body A (-1 if anchored).
-    MatrixX<T> H_BB;     // Diagonal block for body B's clique.
-    MatrixX<T> H_AA;     // Diagonal block for body A's clique (if dynamic).
-    MatrixX<T> H_cross;  // Off-diagonal (or same-clique cross) block.
-    int cross_row{-1};   // Block row index for the cross term.
-    int cross_col{-1};   // Block column index for the cross term.
-    bool A_is_dynamic{false};  // True when body A is not anchored.
-  };
-  std::vector<HessianBlock> hessian_blocks_;
 };
 static_assert(IsAbstractConstraintsPool<BallConstraintsPool>);
+static_assert(IsHolonomicConstraintsDerived<BallConstraintsPool>);
 
 }  // namespace internal
 }  // namespace icf
