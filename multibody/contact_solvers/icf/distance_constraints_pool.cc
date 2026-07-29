@@ -27,18 +27,19 @@ void DistanceConstraintsPool<T>::Set(int index, int bodyA, int bodyB,
 template <typename T>
 Vector1<T> DistanceConstraintsPool<T>::CalcConstraintVelocity(
     int k, const Vector6<T>& V_WB, const Vector6<T>* V_WA) const {
-  // vc = ḋ = p̂ᵀ⋅(v_W_Bq − v_W_Ap), the rate of change of distance.
+  // With d = ‖p_WBq − p_WAp‖ the distance between P and Q, the constraint
+  // velocity is vc = ḋ = p̂ᵀ⋅(v_WBq − v_WAp), the rate of change of distance.
   const Vector3<T>& p_hat_W = p_hat_W_[k];
   const Vector3<T>& w_WB = V_WB.template head<3>();
   const Vector3<T>& v_WBo = V_WB.template tail<3>();
-  const Vector3<T> v_W_Bq = v_WBo + w_WB.cross(p_BQ_W_[k]);
+  const Vector3<T> v_WBq = v_WBo + w_WB.cross(p_BQ_W_[k]);
 
-  T vc = p_hat_W.dot(v_W_Bq);
+  T vc = p_hat_W.dot(v_WBq);
   if (V_WA != nullptr) {
     const Vector3<T>& w_WA = V_WA->template head<3>();
     const Vector3<T>& v_WAo = V_WA->template tail<3>();
-    const Vector3<T> v_W_Ap = v_WAo + w_WA.cross(p_AP_W_[k]);
-    vc -= p_hat_W.dot(v_W_Ap);
+    const Vector3<T> v_WAp = v_WAo + w_WA.cross(p_AP_W_[k]);
+    vc -= p_hat_W.dot(v_WAp);
   }
   return Vector1<T>(vc);
 }
@@ -50,13 +51,13 @@ void DistanceConstraintsPool<T>::CalcSpatialImpulses(
   // The scalar impulse γ acts as γ⋅p̂ along the line PQ, applied
   // at Q on B and −γ⋅p̂ at P on A. Shift each to the body origin.
   const Vector3<T>& p_hat_W = p_hat_W_[k];
-  const Vector3<T> f_B = gamma(0) * p_hat_W;
+  const Vector3<T> j_B = gamma(0) * p_hat_W;  // Impulse on B at Q, along p̂.
   const Vector6<T> spatial_gamma_Bq =
-      (Vector6<T>() << Vector3<T>::Zero(), f_B).finished();
+      (Vector6<T>() << Vector3<T>::Zero(), j_B).finished();
   *Gamma_Bo = ShiftSpatialImpulse<T>(spatial_gamma_Bq, p_BQ_W_[k]);
   if (Gamma_Ao != nullptr) {
     const Vector6<T> minus_spatial_gamma_Ap =
-        (Vector6<T>() << Vector3<T>::Zero(), Vector3<T>(-f_B)).finished();
+        (Vector6<T>() << Vector3<T>::Zero(), Vector3<T>(-j_B)).finished();
     *Gamma_Ao = ShiftSpatialImpulse<T>(minus_spatial_gamma_Ap, p_AP_W_[k]);
   }
 }

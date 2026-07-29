@@ -655,23 +655,22 @@ void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
     const Vector3<T> p_AP_W = X_WA.rotation() * p_AP_spec.template cast<T>();
     const Vector3<T> p_BQ_W = X_WB.rotation() * p_BQ_spec.template cast<T>();
 
-    // Current distance d₀ and unit direction p̂ from P to Q. Guard against a
-    // nonphysically small distance (the constraint is singular there; use a
-    // ball constraint for coincident points), mirroring SapDistanceConstraint.
+    // Current distance d₀ = ‖p_WQ − p_WP‖ and unit direction p̂ from P to Q.
     const Vector3<T> p_PQ_W = p_WQ - p_WP;
     const T d0 = p_PQ_W.norm();
-    const double length = params.distance();  // The free length ℓ.
-    constexpr double kMinimumDistance = 1.0e-7;
-    constexpr double kRelativeDistance = 1.0e-2;
-    if (ExtractDoubleOrThrow(d0) <
-        kMinimumDistance + kRelativeDistance * length) {
-      throw std::logic_error(fmt::format(
-          "The distance between the two points of a distance constraint "
-          "between bodies '{}' and '{}' is {}, which is nonphysically small "
-          "compared to the constraint's free length, {}.",
-          body_A.name(), body_B.name(), ExtractDoubleOrThrow(d0), length));
-    }
-    const Vector3<T> p_hat_W = p_PQ_W / d0;
+    const double length = params.distance();  // The free length ℓ > 0.
+
+    // When P and Q are (nearly) coincident, p̂ is undefined. The free length ℓ
+    // is strictly positive (enforced by DistanceConstraintParams), so there
+    // g₀ = d₀ − ℓ < 0 and the constraint pushes the points apart; any unit
+    // vector serves to seed the direction for the first step, after which
+    // d₀ > 0 makes p̂ well defined. This lets CENIC resolve an initial
+    // condition with coincident points rather than rejecting it. The threshold
+    // is purely a divide-by-zero guard for the normalization below.
+    constexpr double kMinimumDistance = 1.0e-14;
+    const Vector3<T> p_hat_W = ExtractDoubleOrThrow(d0) < kMinimumDistance
+                                   ? Vector3<T>(Vector3<T>::UnitX())
+                                   : Vector3<T>(p_PQ_W / d0);
 
     // Constraint function g₀ = d₀ − ℓ.
     const T g0 = d0 - length;

@@ -58,7 +58,7 @@ GTEST_TEST(DistanceConstraintsPool, LimitMallocOnCalcData) {
   }
 }
 
-/* Checks that pool.ReduceInto does not incur any heap allocations on a
+/* Checks that pool.ReduceInto() does not incur any heap allocations on a
 problem with distance constraints. */
 GTEST_TEST(DistanceConstraintsPool, LimitMallocOnReduceInto) {
   IcfModel<double> model;
@@ -82,8 +82,8 @@ GTEST_TEST(DistanceConstraintsPool, LimitMallocOnReduceInto) {
 }
 
 /* Verifies that distance constraints produce correct data. Uses a rigid and a
-compliant constraint (see AddDistanceConstraints), exercising both R branches.
-*/
+compliant constraint (see AddDistanceConstraints), exercising both the
+near-rigid and compliant regularization (R) branches. */
 GTEST_TEST(DistanceConstraintsPool, Data) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);

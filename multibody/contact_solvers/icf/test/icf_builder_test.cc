@@ -427,6 +427,45 @@ GTEST_TEST(IcfBuilder, DistanceConstraint) {
   }
 }
 
+// A distance constraint whose two attachment points start coincident (d₀ = 0)
+// must still assemble: the constraint direction p̂ is undefined there, so
+// IcfBuilder seeds it with an arbitrary unit vector for the first step (after
+// which d₀ > 0 makes p̂ well defined). Bodies 1 and 2 share an origin in the
+// default configuration, so points at each body's origin map to the same world
+// location, giving d₀ = 0.
+GTEST_TEST(IcfBuilder, DistanceConstraintCoincidentPoints) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum1").AddModelsFromString(kRobotXml, "xml");
+  Parser(&plant, "Pendulum2").AddModelsFromString(kRobotXml, "xml");
+  const double kFreeLength = 0.1;
+  plant.AddDistanceConstraint(plant.get_body(BodyIndex(1)), Vector3d::Zero(),
+                              plant.get_body(BodyIndex(2)), Vector3d::Zero(),
+                              kFreeLength);
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  // Assembly must not throw despite the coincident (singular) configuration.
+  EXPECT_NO_THROW(
+      builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model));
+  ASSERT_EQ(model.num_distance_constraints(), 1);
+
+  // The seeded direction is a valid unit vector, and g₀ = d₀ − ℓ = −ℓ (d₀ = 0).
+  const auto& pool = model.distance_constraints_pool();
+  EXPECT_NEAR(pool.p_hat_W()[0].norm(), 1.0, 1e-14);
+  EXPECT_NEAR(pool.g0()[0](0), -kFreeLength, 1e-14);
+}
+
 GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};

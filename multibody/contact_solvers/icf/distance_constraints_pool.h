@@ -27,7 +27,7 @@ Euclidean distance d between a point P on A and a point Q on B to a free length
 Adapted from the SAP distance constraint (see sap_distance_constraint.h),
 this is a compliant (spring-damper) constraint: with p̂ the unit vector from P
 to Q, stiffness k and damping c, the scalar impulse is
-  γ = −k⋅(d − ℓ) − c⋅ḋ ∈ ℝ
+     γ = δt⋅(−k⋅(d−ℓ) − c⋅ḋ) ∈ ℝ
 applied as γ⋅p̂ on B at Q and −γ⋅p̂ on A at P.
 
 Unlike other holonomic constraints (e.g. weld, ball), the distance constraint
