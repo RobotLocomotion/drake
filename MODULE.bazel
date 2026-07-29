@@ -115,18 +115,13 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 [
     pip.parse(
-        hub_name = "drake_{hub}".format(hub = hub),
+        hub_name = "drake_mypy",
         python_version = python_version,
-        requirements_lock = "//setup:python/{hub}/requirements.txt".format(hub = hub),
+        requirements_lock = "//setup:python/mypy/requirements.txt",
     )
     for python_version in PYTHON_VERSIONS
-    for hub in [
-        "lief",
-        "mypy",
-    ]
 ]
 
-use_repo(pip, "drake_lief")
 use_repo(pip, "drake_mypy")
 
 [
