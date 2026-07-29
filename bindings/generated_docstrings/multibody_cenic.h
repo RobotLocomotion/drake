@@ -13,6 +13,7 @@
 #endif
 
 // #include "drake/multibody/cenic/cenic_integrator.h"
+// #include "drake/multibody/cenic/continuous_icf_force_manager.h"
 // #include "drake/multibody/cenic/make_cenic_integrator.h"
 
 // Symbol: pydrake_doc_multibody_cenic
@@ -21,6 +22,31 @@ constexpr struct /* pydrake_doc_multibody_cenic */ {
   struct /* drake */ {
     // Symbol: drake::multibody
     struct /* multibody */ {
+      // Symbol: drake::multibody::AddIcfContinuousForceReporting
+      struct /* AddIcfContinuousForceReporting */ {
+        // Source: drake/multibody/cenic/continuous_icf_force_manager.h
+        const char* doc =
+R"""(Configures ``plant`` so that its ``reaction_forces`` and
+``contact_results`` output ports report values consistent with the
+Irrotational Contact Fields (ICF) convex contact model — the model
+that CenicIntegrator uses to integrate the plant — rather than the
+plant's compliant point/hydroelastic continuous contact model.
+
+Without this call, a continuous MultibodyPlant reports contact and
+reaction forces from its compliant contact model, which is
+inconsistent with the trajectory produced by CenicIntegrator. Call
+this once, after ``plant`` is finalized, when you intend to integrate
+``plant`` with CenicIntegrator and want its force-reporting ports to
+reflect the simulated (ICF) dynamics.
+
+The reported forces are evaluated as a pure function of the plant
+Context, so the ports remain well-defined independent of the
+integrator's internal state.
+
+Raises:
+    RuntimeError if ``plant`` is not finalized or is not a
+    continuous-time (time_step == 0) plant.)""";
+      } AddIcfContinuousForceReporting;
       // Symbol: drake::multibody::CenicIntegrator
       struct /* CenicIntegrator */ {
         // Source: drake/multibody/cenic/cenic_integrator.h
