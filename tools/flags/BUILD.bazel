@@ -146,9 +146,16 @@ string_flag(
 
 # The :private_runtime_repo_default configures what happens when a specific
 # :foobar_repo flag is set to "default". When "external" is selected, the
-# dependency is provided outisde of Bazel (e.g., via pkg-config or other OS-
+# dependency is provided outside of Bazel (e.g., via pkg-config or other OS-
 # specific logic). When "internal" is selected, the dependency is provided with
 # Bazel mechanisms (e.g., "bazel_dep", module extension, etc.).
+#
+# Note that only a limited number of private runtime dependencies have :foo_repo
+# flags that are responsive to this default. Most private dependencies will be
+# unconditionally built from source. Only libraries that are closely associated
+# with the operating system or hardware environment offer these flags, e.g.,
+# BLAS / LAPACK / OpenCL. (We also offer a flag for glib because its copyleft
+# license sometimes requires special handling.)
 string_flag(
     name = "private_runtime_repo_default",
     build_setting_default = "internal",
@@ -196,19 +203,6 @@ string_flag(
     ],
 )
 
-# The :libjpeg_repo flag configures where Drake obtains @libjpeg from.
-# The public dependency alias is `@drake//tools/workspace/libjpeg` or use the
-# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
-string_flag(
-    name = "libjpeg_repo",
-    build_setting_default = "source",
-    values = [
-        # For now, the only supported value is "source", to compile jpeg from
-        # source.
-        "source",
-    ],
-)
-
 # The :lapack_repo flag configures where Drake obtains @lapack from.
 # The public dependency alias is `@drake//tools/workspace/lapack` or use the
 # drake_dep_repositories() module extension at //tools/workspace:default.bzl.
@@ -246,9 +240,9 @@ string_flag(
     ],
 )
 
-# TODO(jwnimmer-tri) There is an "libx11" module in BCR, but I haven't been able
-# to get it to work yet, so for the moment we don't offer it as a module option.
-
+# TODO(jwnimmer-tri) Deprecate this flag. We cannot reasonably force Drake's
+# choice of zlib down into all BCR modules that will eventually need it.
+#
 # The :zlib_repo flag configures where Drake obtains @zlib from.
 # The public dependency alias is `@drake//tools/workspace/zlib` or use the
 # drake_dep_repositories() module extension at //tools/workspace:default.bzl.
