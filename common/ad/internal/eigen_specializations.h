@@ -58,6 +58,30 @@ struct ScalarBinaryOpTraits<double, drake::ad::AutoDiff, BinOp> {
   using ReturnType = drake::ad::AutoDiff;
 };
 
+// Eigen's triangular solvers (the back end of LLT, LDLT, and LU solves with a
+// vector right-hand side) skip the divide-and-propagate step for any component
+// where is_identically_zero() returns true. The default implementation of that
+// check uses operator==, which for AutoDiff compares only the value and
+// ignores the derivatives. A component whose value happens to be exactly zero
+// but whose derivatives are nonzero (e.g., velocities when linearizing about a
+// fixed point) would therefore have its derivatives silently dropped; see
+// drake#17037. This specialization makes the check derivative-aware, mirroring
+// the specialization Eigen ships for its own AutoDiffScalar. Note that Eigen
+// 3.4.x does not provide this customization point, so builds against a system
+// Eigen 3.4.x remain subject to drake#17037 and should use
+// drake::math::LinearSolver instead of calling Eigen's factorizations directly
+// on AutoDiff matrices.
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+namespace internal {
+template <>
+struct is_identically_zero_impl<drake::ad::AutoDiff> {
+  static bool run(const drake::ad::AutoDiff& s) {
+    return s.value() == 0.0 && (s.derivatives().array() == 0.0).all();
+  }
+};
+}  // namespace internal
+#endif
+
 }  // namespace Eigen
 
 #endif  // DRAKE_DOXYGEN_CXX
