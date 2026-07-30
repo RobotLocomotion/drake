@@ -816,6 +816,43 @@ TEST_F(PrismaticToppraTest, InfiniteTimeStepError) {
   EXPECT_FALSE(result);
 }
 
+TEST_F(IiwaToppraTest, ConstraintRelaxationTest) {
+  // We construct a trajectory with a tiny velocity but massive acceleration,
+  // causing the linear constraints on path acceleration `u` to have very tight
+  // bounds. This replicates the scenario where the forward pass fails due to
+  // primal feasibility tolerance gaps inherited from the backward pass.
+  std::vector<Eigen::Matrix<Polynomial<double>, Eigen::Dynamic, Eigen::Dynamic>>
+      segments(1);
+  Eigen::Matrix<Polynomial<double>, 7, 1> poly_mat;
+  poly_mat(0, 0) = Polynomial<double>(Eigen::Vector3d(0, -999.99, 500.0));
+  poly_mat(1, 0) = Polynomial<double>(Eigen::Vector3d(0, -1000.01, 500.0));
+  for (int i = 2; i < 7; ++i) {
+    poly_mat(i, 0) = Polynomial<double>(Eigen::Vector3d::Zero());
+  }
+  segments[0] = poly_mat;
+  std::vector<double> breaks = {0.0, 2.0};
+  PiecewisePolynomial<double> path(segments, breaks);
+
+  Eigen::VectorXd gridpoints(3);
+  gridpoints << 0.0, 1.0, 2.0;
+
+  Toppra toppra(path, *iiwa_plant_, gridpoints);
+  toppra.AddJointAccelerationLimit(Eigen::VectorXd::Constant(7, -10),
+                                   Eigen::VectorXd::Constant(7, 10));
+
+  // The forward pass LP should fail due to numerical overlap if the bounds are
+  // artificially tightened (simulating the numerical noise from complex or
+  // numerically-challenging trajectories).
+  toppra.set_constraint_relaxation(-1e-8);
+  auto result = toppra.SolvePathParameterization();
+  EXPECT_FALSE(result.has_value());
+
+  // But with a sufficiently large positive tolerance, it should succeed!
+  toppra.set_constraint_relaxation(1e-2);
+  result = toppra.SolvePathParameterization();
+  EXPECT_TRUE(result.has_value());
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

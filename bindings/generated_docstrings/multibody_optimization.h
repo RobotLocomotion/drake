@@ -1062,6 +1062,25 @@ Note:
     ensure the reachable set calculated in the backward pass is always
     bounded.)""";
         } ctor;
+        // Symbol: drake::multibody::Toppra::constraint_relaxation
+        struct /* constraint_relaxation */ {
+          // Source: drake/multibody/optimization/toppra.h
+          const char* doc =
+R"""(Returns the problem relaxation tolerance used in the forward pass.)""";
+        } constraint_relaxation;
+        // Symbol: drake::multibody::Toppra::set_constraint_relaxation
+        struct /* set_constraint_relaxation */ {
+          // Source: drake/multibody/optimization/toppra.h
+          const char* doc =
+R"""(Sets the tolerance used to slightly relax the forward pass linear
+constraints. This is a problem tolerance, not a solver tolerance,
+meaning it slightly relaxes the physical problem bounds. This is
+useful for numerically difficult trajectories where the backward pass
+solver finds a solution on the boundary of the feasible set, causing
+the forward pass to fail due to solver precision limits. A typical
+value is ``1e-4`` or ``1e-5``. If 0.0, no relaxation is applied. The
+default is 0.0 (no relaxation).)""";
+        } set_constraint_relaxation;
       } Toppra;
       // Symbol: drake::multibody::ToppraDiscretization
       struct /* ToppraDiscretization */ {
