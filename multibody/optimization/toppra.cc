@@ -579,18 +579,30 @@ Toppra::ComputeForwardPass(double s_dot_0,
         Vector1d(2 * delta), Vector1d(K(0, knot + 1) - xstar(knot)),
         Vector1d(K(1, knot + 1) - xstar(knot)));
     for (auto& [constraint, coefficients] : forward_lin_constraint_) {
-      constraint.evaluator()->UpdateCoefficients(
-          coefficients.coeffs.col(2 * knot + 1),
-          coefficients.lb.col(knot) -
-              xstar(knot) * coefficients.coeffs.col(2 * knot),
-          coefficients.ub.col(knot) -
-              xstar(knot) * coefficients.coeffs.col(2 * knot));
+      auto lb_val = coefficients.lb.col(knot) -
+                    xstar(knot) * coefficients.coeffs.col(2 * knot);
+      auto ub_val = coefficients.ub.col(knot) -
+                    xstar(knot) * coefficients.coeffs.col(2 * knot);
+      if (constraint_relaxation_ == 0.0) {
+        constraint.evaluator()->UpdateCoefficients(
+            coefficients.coeffs.col(2 * knot + 1), lb_val, ub_val);
+      } else {
+        constraint.evaluator()->UpdateCoefficients(
+            coefficients.coeffs.col(2 * knot + 1),
+            lb_val - Eigen::VectorXd::Constant(lb_val.rows(),
+                                               constraint_relaxation_),
+            ub_val + Eigen::VectorXd::Constant(ub_val.rows(),
+                                               constraint_relaxation_));
+      }
     }
     solvers::MathematicalProgramResult result;
     solver.Solve(*forward_prog_, {}, {}, &result);
     if (!result.is_success()) {
       drake::log()->error(
-          "Toppra failed to find the maximum path acceleration at knot {}/{}.",
+          "Toppra failed to find the maximum path acceleration at knot {}/{}. "
+          "This failure may be caused by a numerically-challenging trajectory. "
+          "Consider slightly relaxing the constraints with "
+          "`Toppra::set_constraint_relaxation()`.",
           knot, N);
       return std::nullopt;
     } else {

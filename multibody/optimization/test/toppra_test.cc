@@ -1,5 +1,6 @@
 #include "drake/multibody/optimization/toppra.h"
 
+#include <limits>
 #include <memory>
 #include <tuple>
 #include <utility>
@@ -814,6 +815,56 @@ TEST_F(PrismaticToppraTest, InfiniteTimeStepError) {
   ASSERT_NO_THROW(toppra->SolvePathParameterization());
   auto result = toppra->SolvePathParameterization(0, 0);
   EXPECT_FALSE(result);
+}
+
+TEST_F(IiwaToppraTest, ConstraintRelaxationTest) {
+  // We construct a trajectory with a tiny velocity but massive acceleration,
+  // causing the linear constraints on path acceleration `u` to have very tight
+  // bounds. This replicates the scenario where the forward pass fails due to
+  // primal feasibility tolerance gaps inherited from the backward pass.
+  std::vector<Eigen::Matrix<Polynomial<double>, Eigen::Dynamic, Eigen::Dynamic>>
+      segments(1);
+  Eigen::Matrix<Polynomial<double>, 7, 1> poly_mat;
+  poly_mat(0, 0) = Polynomial<double>(Eigen::Vector3d(0, -999.99, 500.0));
+  poly_mat(1, 0) = Polynomial<double>(Eigen::Vector3d(0, -1000.01, 500.0));
+  for (int i = 2; i < 7; ++i) {
+    poly_mat(i, 0) = Polynomial<double>(Eigen::Vector3d::Zero());
+  }
+  segments[0] = poly_mat;
+  std::vector<double> breaks = {0.0, 2.0};
+  PiecewisePolynomial<double> path(segments, breaks);
+
+  Eigen::VectorXd gridpoints(3);
+  gridpoints << 0.0, 1.0, 2.0;
+
+  Toppra toppra(path, *iiwa_plant_, gridpoints);
+  toppra.AddJointAccelerationLimit(Eigen::VectorXd::Constant(7, -10),
+                                   Eigen::VectorXd::Constant(7, 10));
+  // Negative relaxation is not allowed.
+  DRAKE_EXPECT_THROWS_MESSAGE(toppra.set_constraint_relaxation(-1e-8),
+                              ".*relaxation >= 0.0.*");
+
+  // Infinite/NaN relaxation is not allowed.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      toppra.set_constraint_relaxation(std::numeric_limits<double>::infinity()),
+      ".*std::isfinite\\(relaxation\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(toppra.set_constraint_relaxation(
+                                  std::numeric_limits<double>::quiet_NaN()),
+                              ".*std::isfinite\\(relaxation\\).*");
+
+  // The forward pass LP should fail if the bounds are not relaxed because the
+  // target end velocity (0.101) is at the boundary of controllability, where
+  // numerical integration drift makes it infeasible to reach exactly under the
+  // original joint acceleration limits.
+  toppra.set_constraint_relaxation(0.0);
+  auto result_zero = toppra.SolvePathParameterization(0.0, 0.101);
+  EXPECT_FALSE(result_zero.has_value());
+
+  // But with a sufficiently large positive constraint relaxation, it should
+  // succeed!
+  toppra.set_constraint_relaxation(1e-2);
+  auto result_relaxed = toppra.SolvePathParameterization(0.0, 0.101);
+  EXPECT_TRUE(result_relaxed.has_value());
 }
 
 }  // namespace
