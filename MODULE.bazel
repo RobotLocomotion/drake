@@ -217,7 +217,7 @@ bazel_dep(
 )
 bazel_dep(
     name = "gflags",
-    version = "2.2.2.bcr.1",
+    version = "2.3.1",
     dev_dependency = True,
 )
 
