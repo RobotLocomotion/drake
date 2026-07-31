@@ -1,36 +1,8 @@
-load(
-    "@rules_rust//crate_universe:defs.bzl",
-    "crate",
-    "crates_vendor",
-    "render_config",
-)
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 
 exports_files(glob(["lock/**"]))
-
-# This is a maintainer-only tool for Drake Developers to manage our Rust
-# dependencies. See README.md for instructions on how to run `upgrade.sh`.
-crates_vendor(
-    name = "crate",
-    annotations = {
-        "clarabel": [crate.annotation(
-            patches = [
-                "@drake//tools/workspace/crate_universe:patches/clarabel_blas.patch",  # noqa
-            ],
-        )],
-    },
-    cargo_lockfile = ":lock/Cargo.toml.lock",
-    manifests = [
-        "@clarabel_cpp_internal//:rust_wrapper/Cargo.toml",
-    ],
-    mode = "remote",
-    render_config = render_config(
-        generate_rules_license_metadata = True,
-    ),
-    tags = ["manual"],
-    vendor_path = "lock/details",
-)
 
 install(
     name = "install",
@@ -38,4 +10,17 @@ install(
     deps = ["@crate_licenses//:install"],
 )
 
-add_lint_tests()
+drake_py_binary(
+    name = "upgrade",
+    srcs = ["upgrade.py"],
+    data = ["@rules_rust//tools/upstream_wrapper:cargo"],
+    env = {
+        "DRAKE_CARGO_RLOCATIONPATH": "$(rlocationpath @rules_rust//tools/upstream_wrapper:cargo)",
+    },
+    deps = ["@rules_python//python/runfiles"],
+)
+
+add_lint_tests(
+    python_lint_exclude = [":upgrade.py"],
+    python_lint_extra_srcs = ["upgrade.py"],
+)

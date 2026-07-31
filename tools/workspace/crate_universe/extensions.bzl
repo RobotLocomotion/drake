@@ -1,8 +1,3 @@
-load(
-    "//tools/workspace/crate_universe/lock/details:crates.bzl",
-    "crate_repositories",
-)
-
 def _crate_licenses_repository_impl(repo_ctx):
     my_dir = "@drake//tools/workspace/crate_universe"
     repo_ctx.symlink(
@@ -20,11 +15,8 @@ crate_licenses_repository = repository_rule(
 
 def _impl(module_ctx):
     crate_licenses_repository(name = "crate_licenses")
-    root_module_direct_deps = ["crate_licenses"]
-    direct_deps = crate_repositories()
-    root_module_direct_deps.extend([repo.repo for repo in direct_deps])
     return module_ctx.extension_metadata(
-        root_module_direct_deps = root_module_direct_deps,
+        root_module_direct_deps = ["crate_licenses"],
         root_module_direct_dev_deps = [],
     )
 
