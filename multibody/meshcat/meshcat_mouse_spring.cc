@@ -5,7 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
+#include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 
@@ -14,51 +15,30 @@ namespace multibody {
 namespace meshcat {
 
 using Eigen::Vector3d;
+using geometry::FrameId;
 using geometry::Meshcat;
+using geometry::SceneGraph;
+using geometry::SceneGraphInspector;
 using math::RigidTransform;
 using systems::Context;
 using systems::DiagramBuilder;
 
-namespace {
-
-// Replicates MultibodyPlant's body-frame naming (see GetScopedName in
-// multibody_plant.cc) and converts the "::" model-instance separators into "/"
-// the same way MeshcatVisualizer does, so the result matches the body's path in
-// the Meshcat scene tree.
-std::string BodyFramePathSegment(const MultibodyPlant<double>& plant,
-                                 const RigidBody<double>& body) {
-  std::string name;
-  const ModelInstanceIndex model_instance = body.model_instance();
-  if (model_instance != world_model_instance() &&
-      model_instance != default_model_instance()) {
-    name = plant.GetModelInstanceName(model_instance) + "::" + body.name();
-  } else {
-    name = body.name();
-  }
-  // MultibodyPlant declares frames with SceneGraph using "::";
-  // MeshcatVisualizer replaces those with "/" to expose the full tree.
-  for (size_t pos = 0; (pos = name.find("::", pos)) != std::string::npos;) {
-    name.replace(pos, 2, "/");
-    pos += 1;
-  }
-  return name;
-}
-
-}  // namespace
-
 MeshcatMouseSpring::MeshcatMouseSpring(std::shared_ptr<Meshcat> meshcat,
                                        const MultibodyPlant<double>* plant,
+                                       const SceneGraph<double>& scene_graph,
                                        double stiffness)
     : systems::LeafSystem<double>(),
       meshcat_(std::move(meshcat)),
-      plant_(plant),
+      plant_(DRAKE_DEREF(plant)),
       stiffness_(stiffness) {
   DRAKE_THROW_UNLESS(meshcat_ != nullptr);
-  DRAKE_THROW_UNLESS(plant_ != nullptr);
-  DRAKE_THROW_UNLESS(plant_->is_finalized());
+  // N.B. Unlike geometry::meshcat::MeshcatVisualizer, we don't need to track
+  // geometry changes because bodies cannot be changed after plant finalization.
+  DRAKE_THROW_UNLESS(plant_.is_finalized());
+  DRAKE_THROW_UNLESS(plant_.geometry_source_is_registered());
   DRAKE_THROW_UNLESS(stiffness_ >= 0.0);
 
-  BuildPathToBodyMap(*plant_);
+  BuildPathToBodyMap(scene_graph);
 
   body_poses_input_port_ =
       this->DeclareAbstractInputPort(
@@ -69,117 +49,165 @@ MeshcatMouseSpring::MeshcatMouseSpring(std::shared_ptr<Meshcat> meshcat,
               "body_spatial_velocities",
               Value<std::vector<SpatialVelocity<double>>>())
           .get_index();
-  spatial_forces_output_port_ =
+  applied_spatial_force_output_port_ =
       this->DeclareAbstractOutputPort(
-              "spatial_forces",
+              "applied_spatial_force",
               std::vector<ExternallyAppliedSpatialForce<double>>{},
-              &MeshcatMouseSpring::CalcSpatialForces)
+              &MeshcatMouseSpring::CalcAppliedSpatialForce)
           .get_index();
 }
 
 MeshcatMouseSpring::~MeshcatMouseSpring() = default;
 
 void MeshcatMouseSpring::BuildPathToBodyMap(
-    const MultibodyPlant<double>& plant) {
-  for (BodyIndex index(0); index < plant.num_bodies(); ++index) {
-    if (index == plant.world_body().index()) continue;
-    const RigidBody<double>& body = plant.get_body(index);
-    // MeshcatVisualizer publishes each body's geometry under a node named by
-    // the body's scoped frame name (with "::" replaced by "/"), e.g.
-    // "/drake/<prefix>/my_model/my_body/<geometry>". We key on just the scoped
-    // name ("my_model/my_body") and match it within the dragged path below.
-    path_to_body_[BodyFramePathSegment(plant, body)] = index;
+    const SceneGraph<double>& scene_graph) {
+  const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
+  for (const FrameId frame_id : inspector.GetAllFrameIds()) {
+    if (frame_id == inspector.world_frame_id()) continue;
+    const RigidBody<double>* body = plant_.GetBodyFromFrameId(frame_id);
+    if (body == nullptr) continue;  // Not a body frame of this plant.
+    // MeshcatVisualizer publishes each frame's geometry under a node named by
+    // the frame's name with "::" model-instance separators replaced by "/",
+    // e.g. "/drake/<prefix>/my_model/my_body/<geometry>". We read that frame
+    // name straight from SceneGraph (rather than reconstructing it from the
+    // plant) and key on it ("my_model/my_body"), matching it within the dragged
+    // path below.
+    std::string path = inspector.GetName(frame_id);
+    for (size_t pos = 0; (pos = path.find("::", pos)) != std::string::npos;) {
+      path.replace(pos, 2, "/");
+      pos += 1;  // Start searching after the newly inserted `/`.
+    }
+    path_to_body_[std::move(path)] = body->index();
   }
 }
 
-void MeshcatMouseSpring::CalcSpatialForces(
-    const Context<double>& context,
-    std::vector<ExternallyAppliedSpatialForce<double>>* forces) const {
-  forces->clear();
-  const std::optional<Meshcat::ObjectDrag> drag = meshcat_->GetObjectDrag();
+std::vector<ExternallyAppliedSpatialForce<double>>
+MeshcatMouseSpring::CalcAppliedSpatialForceFromDrag(
+    const std::optional<Meshcat::VirtualSpringKinematics>& drag,
+    const std::vector<RigidTransform<double>>& X_WB_all,
+    const std::vector<SpatialVelocity<double>>& V_WB_all) const {
   if (!drag.has_value()) {
-    return;
+    return {};
   }
 
-  // Find the body whose scoped frame name appears as a run of path segments
-  // in the dragged object's Meshcat path. The path looks like
-  // "/drake/<vis_prefix>/.../<model>/<body>/<geometry>...", so we look for
-  // the scoped name ("<model>/<body>") bounded by '/' on both sides. Matching
-  // this way is independent of which visualization layer (illustration,
-  // proximity, inertia, ...) was clicked. Among matches we keep the longest
-  // (most specific) scoped name.
-  BodyIndex body_index;
+  const std::optional<BodyIndex> maybe_body_index =
+      internal::FindBodyForPath(path_to_body_, drag->path);
+  if (!maybe_body_index.has_value()) {
+    // The dragged object doesn't belong to a movable body of this plant.
+    return {};
+  }
+  const BodyIndex body_index = *maybe_body_index;
+
+  const RigidTransform<double>& X_WB = X_WB_all[body_index];
+  const SpatialVelocity<double>& V_WB = V_WB_all[body_index];
+
+  // The attachment point Bq (a point fixed to body B) and the cursor target T,
+  // in world.
+  const Vector3d& p_WBq = drag->body_point_in_world;
+  const Vector3d& p_WT = drag->target_point_in_world;
+
+  // The attachment point expressed in the body frame, where the force is
+  // applied.
+  const Vector3d p_BoBq_B = X_WB.inverse() * p_WBq;
+
+  // The world velocity of the attachment point, for damping.
+  const Vector3d p_BoBq_W = p_WBq - X_WB.translation();
+  const Vector3d v_WBq = V_WB.Shift(p_BoBq_W).translational();
+
+  // Mass-scaled spring + damper force: scaling by the body's mass makes the
+  // translational response frequency (sqrt(stiffness)) and damping ratio
+  // independent of mass. Note that we're using default_mass() because getting
+  // access to the current parameterized mass is more trouble than it's worth.
+  // TODO(vincekurtz): consider using composite mass instead of body mass.
+  const double mass = plant_.get_body(body_index).default_mass();
+  const Vector3d f_W =
+      mass * stiffness_ * (p_WT - p_WBq) - mass * std::sqrt(stiffness_) * v_WBq;
+
+  ExternallyAppliedSpatialForce<double> force;
+  force.body_index = body_index;
+  force.p_BoBq_B = p_BoBq_B;
+  force.F_Bq_W = SpatialForce<double>(Vector3d::Zero(), f_W);
+  return {force};
+}
+
+void MeshcatMouseSpring::CalcAppliedSpatialForce(
+    const Context<double>& context,
+    std::vector<ExternallyAppliedSpatialForce<double>>* forces) const {
+  *forces = CalcAppliedSpatialForceFromDrag(
+      meshcat_->GetVirtualSpringKinematics(),
+      get_body_poses_input_port().Eval<std::vector<RigidTransform<double>>>(
+          context),
+      get_body_spatial_velocities_input_port()
+          .Eval<std::vector<SpatialVelocity<double>>>(context));
+}
+
+MeshcatMouseSpring& MeshcatMouseSpring::AddToBuilder(
+    DiagramBuilder<double>* builder, const MultibodyPlant<double>* plant,
+    const SceneGraph<double>& scene_graph, std::shared_ptr<Meshcat> meshcat,
+    double stiffness) {
+  DRAKE_THROW_UNLESS(builder != nullptr);
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  auto& spring = *builder->AddSystem<MeshcatMouseSpring>(
+      std::move(meshcat), plant, scene_graph, stiffness);
+  spring.set_name("meshcat_mouse_spring");
+  builder->Connect(plant->get_body_poses_output_port(),
+                   spring.get_body_poses_input_port());
+  builder->Connect(plant->get_body_spatial_velocities_output_port(),
+                   spring.get_body_spatial_velocities_input_port());
+  builder->Connect(spring.get_applied_spatial_force_output_port(),
+                   plant->get_applied_spatial_force_input_port());
+  return spring;
+}
+
+namespace internal {
+
+std::optional<BodyIndex> FindBodyForPath(
+    const std::map<std::string, BodyIndex>& path_to_body,
+    const std::string& path) {
+  // Identify the body associated with `path`.
+  //
+  //  1) Search for the stored body path segment in `path`. It must appear
+  //     prefixed by `/` (so "foo" doesn't match "some_foo"), and either be
+  //     suffixed by '/' or be at the end of the path string.
+  //     - We do a left search to find the portion of the path that is closest
+  //       to the root of meshcat's scene hierarchy.
+  //  2) Because not all path segments consist of "model/body" (i.e., those
+  //     bodies in the default model and world model instances), we need to make
+  //     sure "body" doesn't match "m1/body", "m2/body", etc. As both "body"
+  //     and "m1/body" would match "drake/foo/m1/body", we prefer the *longest*
+  //     matching path segment (the pre- and post `/` delimiters prevent us from
+  //     catching false matches based on common substrings).
+  //
+  // Note: we don't have to worry about multiple matches (e.g., matching body
+  // path segment "m/b" to the path "drake/foo/m/b/and/m/b") because we are
+  // only interested in Meshcat paths that correspond to MultibodyPlant links.
+  // Those are generally defined in SceneGraph as a flat list of bodies and,
+  // therefore, appear in Meshcat without nesting. Anything nested in that
+  // manner came from an alternative, and therefore ignorable, source.
+  //
+  // This search allows us to identify the body whether the user drags on the
+  // illustration or proximity geometry -- as long as the geometry is ultimately
+  // a child of an identifiable body.
+  std::optional<BodyIndex> body_index;
   size_t best_len = 0;
-  const std::string& drag_path = drag->path;
-  for (const auto& [segment, index] : path_to_body_) {
+  for (const auto& [segment, index] : path_to_body) {
+    // A shorter-or-equal segment can't beat the current best match.
     if (segment.size() <= best_len) continue;
     const std::string needle = "/" + segment;
-    for (size_t pos = drag_path.find(needle); pos != std::string::npos;
-         pos = drag_path.find(needle, pos + 1)) {
+    for (size_t pos = path.find(needle); pos != std::string::npos;
+         pos = path.find(needle, pos + 1)) {
       const size_t after = pos + needle.size();
-      if (after == drag_path.size() || drag_path[after] == '/') {
+      if (after == path.size() || path[after] == '/') {
         best_len = segment.size();
         body_index = index;
         break;
       }
     }
   }
-  if (!body_index.is_valid()) {
-    // The dragged object doesn't belong to a movable body of this plant.
-    return;
-  }
-
-  const auto& X_WB_all =
-      get_body_poses_input_port().Eval<std::vector<RigidTransform<double>>>(
-          context);
-  const auto& V_WB_all =
-      get_body_spatial_velocities_input_port()
-          .Eval<std::vector<SpatialVelocity<double>>>(context);
-  const RigidTransform<double>& X_WB = X_WB_all[body_index];
-  const SpatialVelocity<double>& V_WB = V_WB_all[body_index];
-
-  // The attachment point A (anchor) and the cursor target T, in world.
-  const Vector3d& p_WA = drag->anchor_in_world;
-  const Vector3d& p_WT = drag->target_in_world;
-
-  // The anchor expressed in the body frame, where the force is applied.
-  const Vector3d p_BoBq_B = X_WB.inverse() * p_WA;
-
-  // The world velocity of the attachment point, for damping.
-  const Vector3d p_BoA_W = p_WA - X_WB.translation();
-  const Vector3d v_WA = V_WB.Shift(p_BoA_W).translational();
-
-  // Mass-scaled spring + damper force: scaling by the body's mass makes the
-  // translational response frequency (sqrt(stiffness)) and damping ratio
-  // independent of mass.
-  // TODO(vincekurtz): consider using composite mass instead of body mass.
-  const double mass = plant_->get_body(body_index).default_mass();
-  const Vector3d f_W =
-      mass * stiffness_ * (p_WT - p_WA) - mass * std::sqrt(stiffness_) * v_WA;
-
-  ExternallyAppliedSpatialForce<double> force;
-  force.body_index = body_index;
-  force.p_BoBq_B = p_BoBq_B;
-  force.F_Bq_W = SpatialForce<double>(Vector3d::Zero(), f_W);
-  forces->push_back(force);
+  return body_index;
 }
 
-MeshcatMouseSpring& MeshcatMouseSpring::AddToBuilder(
-    DiagramBuilder<double>* builder, const MultibodyPlant<double>* plant,
-    std::shared_ptr<Meshcat> meshcat, double stiffness) {
-  DRAKE_THROW_UNLESS(builder != nullptr);
-  DRAKE_THROW_UNLESS(plant != nullptr);
-  auto& spring = *builder->AddSystem<MeshcatMouseSpring>(std::move(meshcat),
-                                                         plant, stiffness);
-  spring.set_name("meshcat_mouse_spring");
-  builder->Connect(plant->get_body_poses_output_port(),
-                   spring.get_body_poses_input_port());
-  builder->Connect(plant->get_body_spatial_velocities_output_port(),
-                   spring.get_body_spatial_velocities_input_port());
-  builder->Connect(spring.get_spatial_forces_output_port(),
-                   plant->get_applied_spatial_force_input_port());
-  return spring;
-}
+}  // namespace internal
 
 }  // namespace meshcat
 }  // namespace multibody

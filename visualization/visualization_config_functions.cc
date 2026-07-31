@@ -93,7 +93,7 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
             "plant's applied-spatial-force input port is already connected, so "
             "interactive mouse dragging will not be enabled.");
       } else {
-        MeshcatMouseSpring::AddToBuilder(builder, &plant, meshcat,
+        MeshcatMouseSpring::AddToBuilder(builder, &plant, *scene_graph, meshcat,
                                          *config.mouse_interaction_stiffness);
       }
     }

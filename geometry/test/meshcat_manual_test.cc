@@ -727,7 +727,7 @@ Ignore those for now; we'll need to circle back and fix them later.
 
     MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat);
     multibody::meshcat::MeshcatMouseSpring::AddToBuilder(
-        &builder, &plant, meshcat, /* stiffness */ 100.0);
+        &builder, &plant, scene_graph, meshcat, /* stiffness */ 100.0);
 
     auto diagram = builder.Build();
     auto context = diagram->CreateDefaultContext();

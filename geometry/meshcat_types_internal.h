@@ -633,15 +633,12 @@ struct Gamepad {
 //     • Fields
 //       - type = "mouse_drag"
 //       - name = the Meshcat path of the object being dragged.
-//       - drag_anchor = the world position (Drake z-up frame) of the point on
-//                       the object where the drag began (3 values).
-//       - drag_target = the world position (Drake z-up frame) of the cursor's
-//                       drag target (3 values).
+//       - drag_anchor = the world-frame attachment point (3 values)
+//       - drag_target = the world-frame cursor target (3 values)
 //     • Semantics
-//       - If drag_anchor and drag_target each contain exactly 3 values, the
-//         drag is treated as active. Otherwise (e.g., on mouse release), the
-//         drag is cleared.
-//       - See Drake's meshcat.html for the source of the message.
+//       - If drag_anchor and drag_target each have 3 values, the drag state is
+//         updated; an empty payload ends the drag.
+//       - See Meshcat::GetVirtualSpringKinematics().
 struct UserInterfaceEvent {
   std::string type;
   std::string name;
