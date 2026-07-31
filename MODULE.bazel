@@ -15,23 +15,92 @@ module(
 bazel_dep(name = "apple_support", version = "2.8.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "bazel_features", version = "1.51.0")
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
+bazel_dep(name = "llvm", version = "0.8.9")
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_cc", version = "0.2.22")
 bazel_dep(name = "rules_java", version = "9.7.0")
 bazel_dep(name = "rules_jvm_external", version = "7.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rust", version = "0.71.2")  # When upgrading, locally test that crate vendoring still works via `tools/workspace/crate_universe/upgrade.sh && bazel test //tools/install/libdrake/...`.
+bazel_dep(name = "rules_rs", version = "0.0.101")
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 
+# Configure the Rust toolchain.
+
+rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
+rules_rust.patch(
+    patches = [
+        "//tools/workspace/crate_universe:patches/upstream/rules_rust_stable_fission.patch",
+    ],
+    strip = 1,
+)
+use_repo(rules_rust, "rules_rust")
+
+rust_toolchains = use_extension(
+    "@rules_rs//rs/toolchains:module_extension.bzl",
+    "toolchains",
+)
+rust_toolchains.toolchain(
+    edition = "2021",
+    version = "1.96.0",
+)
+use_repo(rust_toolchains, "default_rust_toolchains")
+
+register_toolchains("@default_rust_toolchains//:all")
+
 # Configure the C++ toolchain.
+
+osx = use_extension("@llvm//extensions:osx.bzl", "osx")
+osx.frameworks(
+    names = [
+        "Accelerate",
+        "AppKit",
+        "ApplicationServices",
+        "CFNetwork",
+        "Carbon",
+        "CloudKit",
+        "Cocoa",
+        "ColorSync",
+        "CoreData",
+        "CoreFoundation",
+        "CoreGraphics",
+        "CoreImage",
+        "CoreLocation",
+        "CoreServices",
+        "CoreText",
+        "CoreVideo",
+        "DiskArbitration",
+        "FontServices",
+        "Foundation",
+        "IOKit",
+        "IOSurface",
+        "ImageIO",
+        "Kernel",
+        "Metal",
+        "OSLog",
+        "OpenCL",
+        "OpenGL",
+        "PrintCore",
+        "QuartzCore",
+        "Security",
+        "Symbols",
+        "SystemConfiguration",
+        "_LocationEssentials",
+    ],
+)
+osx.libraries(names = ["libz"])
 
 cc_configure = use_extension(
     "@rules_cc//cc:extensions.bzl",
     "cc_configure_extension",
 )
-use_repo(cc_configure, "local_config_cc")
+use_repo(cc_configure, "local_config_cc", "local_config_cc_toolchains")
+
+register_toolchains(
+    "@llvm//toolchain:all",
+    dev_dependency = True,
+)
 
 # Add C++ dependencies that are part of our public API.
 #
@@ -256,20 +325,6 @@ single_version_override(
 )
 
 bazel_dep(
-    name = "toolchains_llvm",
-    version = "1.8.0",
-    dev_dependency = True,
-)
-
-llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
-
-llvm(
-    name = "llvm",
-    dev_dependency = True,
-    llvm_versions = {"": "21.1.8"},
-)
-
-bazel_dep(
     name = "ruff_prebuilt",
     version = "0.16.0.1",
     dev_dependency = True,
@@ -385,14 +440,26 @@ crate_universe = use_extension(
     "//tools/workspace/crate_universe:extensions.bzl",
     "crate_universe",
 )
-use_repo(
-    crate_universe,
-    "crate",
-    "crate__cfg-if-1.0.4",
-    "crate__clarabel-0.11.1",
-    "crate__paste-1.0.15",
-    "crate_licenses",
+use_repo(crate_universe, "crate_licenses")
+
+crate = use_extension("@rules_rs//rs:extensions.bzl", "crate")
+crate.from_cargo(
+    cargo_lock = "//tools/workspace/crate_universe:lock/Cargo.lock",
+    cargo_toml = "//tools/workspace/crate_universe:lock/Cargo.toml",
+    platform_triples = [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+    ],
 )
+crate.annotation(
+    crate = "clarabel",
+    patches = [
+        "//tools/workspace/crate_universe:patches/clarabel_blas.patch",
+    ],
+)
+use_repo(crate, "crates")
 
 # Incorporate Drake-specific patches to modules. The list of patches lives in a
 # separate file so that our cmake/MODULE.bazel.in can also include it.

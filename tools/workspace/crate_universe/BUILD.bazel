@@ -1,36 +1,7 @@
-load(
-    "@rules_rust//crate_universe:defs.bzl",
-    "crate",
-    "crates_vendor",
-    "render_config",
-)
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(glob(["lock/**"]))
-
-# This is a maintainer-only tool for Drake Developers to manage our Rust
-# dependencies. See README.md for instructions on how to run `upgrade.sh`.
-crates_vendor(
-    name = "crate",
-    annotations = {
-        "clarabel": [crate.annotation(
-            patches = [
-                "@drake//tools/workspace/crate_universe:patches/clarabel_blas.patch",  # noqa
-            ],
-        )],
-    },
-    cargo_lockfile = ":lock/Cargo.toml.lock",
-    manifests = [
-        "@clarabel_cpp_internal//:rust_wrapper/Cargo.toml",
-    ],
-    mode = "remote",
-    render_config = render_config(
-        generate_rules_license_metadata = True,
-    ),
-    tags = ["manual"],
-    vendor_path = "lock/details",
-)
 
 install(
     name = "install",

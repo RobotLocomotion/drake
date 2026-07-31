@@ -23,6 +23,9 @@ build --@drake//tools/cc_toolchain:error_severity=error
 # to overload the system.
 build:linux --linkopt=-Wl,--threads=2
 
+# Preserve Drake's configured Linux C++ toolchain ahead of LLVM toolchains.
+build:linux --extra_toolchains=@local_config_cc_toolchains//:all
+
 # Developer builds on Linux should have OpenMP enabled by default, to match the
 # end-user default in drake/CMakeLists.txt.
 build:linux --config=openmp

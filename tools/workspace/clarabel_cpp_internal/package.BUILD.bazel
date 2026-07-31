@@ -5,7 +5,7 @@ load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/skylark:cc_hidden.bzl", "cc_wrap_static_archive_hidden")
 load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 load("@drake//tools/workspace/crate_universe:defs.bzl", "all_crate_deps")
-load("@rules_rust//rust:defs.bzl", "rust_static_library")
+load("@rules_rs//rs:rust_static_library.bzl", "rust_static_library")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -45,7 +45,6 @@ rust_static_library(
     ),
     crate_features = ["sdp"],
     edition = "2021",
-    proc_macro_deps = all_crate_deps(proc_macro = True),
     deps = all_crate_deps(),
 )
 
@@ -54,18 +53,35 @@ cc_wrap_static_archive_hidden(
     static_archive_name = "clarabel_cpp_rust_wrapper",
 )
 
-# Combine the public headers with the object code.
+# Combine the public headers with the object code. On macOS, avoid -force_load
+# because the Rust archive and @llvm both contain compiler-rt.
 cc_library(
     name = "clarabel_cpp",
+    additional_linker_inputs = select({
+        "@drake//tools/cc_toolchain:apple": [
+            ":_clarabel_cpp_rust_wrapper_hidden_osx.a",
+        ],
+        "//conditions:default": [],
+    }),
+    linkopts = select({
+        "@drake//tools/cc_toolchain:apple": [
+            "$(location :_clarabel_cpp_rust_wrapper_hidden_osx.a)",
+        ],
+        "//conditions:default": [],
+    }),
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
-        ":clarabel_cpp_rust_wrapper_hidden",
         ":hdrs",
         "@blas",
         "@eigen",
         "@lapack",
-    ],
+    ] + select({
+        "@drake//tools/cc_toolchain:apple": [],
+        "//conditions:default": [
+            ":clarabel_cpp_rust_wrapper_hidden",
+        ],
+    }),
 )
 
 install(

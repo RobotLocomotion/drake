@@ -192,8 +192,8 @@ struct GeometryPairContactWrenchEvaluatorBinding {
   GeometryPairContactWrenchEvaluatorBinding(
       std::vector<int> lambda_indices_in_all_lambda_in,
       std::shared_ptr<ContactWrenchEvaluator> contact_wrench_evaluator_in)
-      : lambda_indices_in_all_lambda{std::move(
-            lambda_indices_in_all_lambda_in)},
+      : lambda_indices_in_all_lambda{
+            std::move(lambda_indices_in_all_lambda_in)},
         contact_wrench_evaluator{std::move(contact_wrench_evaluator_in)} {
     DRAKE_DEMAND(static_cast<int>(lambda_indices_in_all_lambda.size()) ==
                  contact_wrench_evaluator->num_lambda());

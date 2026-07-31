@@ -25,6 +25,11 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
+config_setting(
+    name = "force_pic",
+    values = {"force_pic": "true"},
+)
+
 # Necessary for @drake//tools/workspace/vtk_internal:data_to_header_test.
 exports_files(
     [
@@ -37,7 +42,10 @@ exports_files(
 # to improve the error messages in case of a mis-configured build.
 cc_library(
     name = "_on_macos_you_must_not_have_forcepic_in_your_bazelrc_file_see_drake_issue_20217",  # noqa
-    features = ["-supports_pic"],
+    features = select({
+        ":force_pic": ["-supports_pic"],
+        "//conditions:default": [],
+    }),
     linkstatic = True,
     tags = ["manual"],
 )

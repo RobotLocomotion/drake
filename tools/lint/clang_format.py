@@ -1,7 +1,6 @@
 """Drake's wrapper for the clang-format binary."""
 
 import os
-from pathlib import Path
 import sys
 
 from python import runfiles
@@ -9,8 +8,8 @@ from python import runfiles
 
 def get_clang_format_path():
     manifest = runfiles.Create()
-    path = Path(manifest.Rlocation("llvm/bin/clang-format"))
-    if not path.is_file():
+    path = next(manifest.root().glob("llvm*/bin/clang-format"), None)
+    if path is None or not path.is_file():
         raise RuntimeError(f"Could not find required clang-format at {path}")
     return path
 

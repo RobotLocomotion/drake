@@ -1,0 +1,17 @@
+[rules_rust] Disable split DWARF for stable Rust toolchains
+
+The -Zsplit-dwarf-out-dir compiler option requires nightly Rust. Disable
+per_object_debug_info for stable Rust actions while retaining split DWARF
+for C++ actions.
+
+--- a/rust/private/rustc.bzl
++++ b/rust/private/rustc.bzl
+@@ -1853,6 +1853,8 @@ def rustc_compile_action(
+     if crate_info.type in ["bin", "cdylib"] and dep_info.transitive_noncrates.to_list():
+         # One or more of the transitive deps is a cc_library / cc_import
+         extra_unsupported_features = []
++    if rust_toolchain.channel != "nightly":
++        extra_unsupported_features.append("per_object_debug_info")
+     cc_toolchain, feature_configuration = find_cc_toolchain(
+         ctx,
+         extra_unsupported_features,

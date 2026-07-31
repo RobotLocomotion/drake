@@ -7,23 +7,29 @@
 set -eu -o pipefail
 cd $(dirname $(python3 -c 'import os; print(os.path.realpath("'"$0"'"))'))
 
-# Ask @rules_rust to upgrade our lockfile and vendored BUILD rules; this bumps
-# everything under the `lock` subdirectory except for `repo_names.bzl` which is
-# custom to Drake, and handled separately below.
-bazel run :crate -- --repin=all
+# Update the Cargo lockfile using the Rust toolchain configured in MODULE.bazel.
+bazel run @rules_rust//tools/upstream_wrapper:cargo -- \
+    update --manifest-path lock/Cargo.toml
 
-# Patch a rules_rust regression (bazelbuild/rules_rust#4132) that erroneously
-# omits the repository name from the all_crate_deps label output.
-perl -pi -e 's#Label\("(?!//tools)#Label("\@crate#g' lock/details/crates.bzl
+# Regenerate the crate names used for license installation.
+python3 - lock/Cargo.lock lock/repo_names.bzl <<'PY'
+import json
+import pathlib
+import sys
+import tomllib
 
-# Fix the upgrade advice comments in the generated BUILD files.
-old_tool="bazel run @@//tools/workspace/crate_universe:crate"
-new_tool="tools/workspace/crate_universe/upgrade.sh"
-perl -pi -e "s#${old_tool}#${new_tool}#g;" $(find lock/details -name '*.b*z*l')
-
-# Regenerate the Drake-specific metadata (the list of repository names).
-echo "REPO_NAMES = [" > lock/repo_names.bzl
-(cd lock/details && ls BUILD.*-*.bazel) | sort |
-    sed -e 's#^BUILD\.#    "crate__#; s#\.bazel$#",#g;' \
-    >> lock/repo_names.bzl
-echo "]" >> lock/repo_names.bzl
+lockfile = pathlib.Path(sys.argv[1])
+output = pathlib.Path(sys.argv[2])
+packages = tomllib.loads(lockfile.read_text())['package']
+names = sorted(
+    ('crate__{}-{}'.format(package['name'], package['version']))
+    .replace('+', '-')
+    for package in packages
+    if package.get('source')
+)
+output.write_text(
+    'REPO_NAMES = [\n' +
+    ''.join('    {},\n'.format(json.dumps(name)) for name in names) +
+    ']\n'
+)
+PY
