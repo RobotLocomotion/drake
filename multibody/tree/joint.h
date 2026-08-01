@@ -774,7 +774,8 @@ class Joint : public MultibodyElement<T> {
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
-    joint_clone->mobilizer_ = FindMobilizerToScalarClone<ToScalar>(tree_clone);
+    DRAKE_DEMAND(mobilizer_ != nullptr);
+    joint_clone->mobilizer_ = &tree_clone->get_mutable_variant(*mobilizer_);
     return joint_clone;
   }
 
@@ -1030,16 +1031,6 @@ class Joint : public MultibodyElement<T> {
   virtual std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
       const internal::SpanningForest::Mobod& mobod,
       internal::MultibodyTree<T>* tree) const = 0;
-
-  // Helper method to be called within Joint::CloneToScalar() to locate the
-  // cloned Mobilizer corresponding to this Joint's Mobilizer.
-  template <typename ToScalar>
-  internal::Mobilizer<ToScalar>* FindMobilizerToScalarClone(
-      internal::MultibodyTree<ToScalar>* tree_clone) const {
-    internal::Mobilizer<ToScalar>* mobilizer_clone =
-        &tree_clone->get_mutable_variant(*mobilizer_);
-    return mobilizer_clone;
-  }
 
   // Implementation for MultibodyElement::DoDeclareParameters().
   void DoDeclareParameters(

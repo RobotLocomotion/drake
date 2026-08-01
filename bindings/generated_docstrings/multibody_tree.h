@@ -7051,14 +7051,20 @@ its parent body in the multibody tree by its Mobilizer (also called a
 permissible motion can be added using Constraint objects to remove
 more degrees of freedom.
 
+Note:
+    This object corresponds to a "link" in urdf/sdformat terminology.
+    We may combine welded-together links into a composite rigid body
+    internally. We provide aliases Link/LinkIndex for
+    RigidBody/BodyIndex to allow either terminology to be used.
+
 - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
                    (3rd Edition), Addison-Wesley, 2001.)""";
         // Symbol: drake::multibody::RigidBody::AddInForce
         struct /* AddInForce */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Adds the SpatialForce on this RigidBody B, applied at point P and
-expressed in a frame E into ``forces``.
+R"""(Adds the SpatialForce on this RigidBody (%Link) B, applied at point P
+and expressed in a frame E into ``forces``.
 
 Parameter ``context``:
     The context containing the current state of the model.
@@ -7085,21 +7091,22 @@ Raises:
         struct /* AddInForceInWorld */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Adds the SpatialForce on this RigidBody B, applied at body B's origin
-Bo and expressed in the world frame W into ``forces``.)""";
+R"""(Adds the SpatialForce on this RigidBody (%Link) B, applied at body B's
+origin Bo and expressed in the world frame W into ``forces``.)""";
         } AddInForceInWorld;
         // Symbol: drake::multibody::RigidBody::CalcCenterOfMassInBodyFrame
         struct /* CalcCenterOfMassInBodyFrame */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Gets this body's center of mass position from the given context.
+R"""(Gets this RigidBody's (%Link's) center of mass position from the given
+context.
 
 Parameter ``context``:
     contains the state of the multibody system.
 
 Returns:
-    p_BoBcm_B position vector from Bo (this rigid body B's origin) to
-    Bcm (B's center of mass), expressed in B.
+    p_BoBcm_B position vector from Bo (this body B's origin) to Bcm
+    (B's center of mass), expressed in B.
 
 Precondition:
     the context makes sense for use by this RigidBody.)""";
@@ -7108,14 +7115,15 @@ Precondition:
         struct /* CalcCenterOfMassTranslationalAccelerationInWorld */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Calculates Bcm's translational acceleration in the world frame W.
+R"""(Calculates RigidBody (%Link) B's center of mass Bcm's translational
+acceleration in the world frame W.
 
 Parameter ``context``:
     The context contains the state of the model.
 
 Returns ``a_WBcm_W``:
-    The translational acceleration of Bcm (this rigid body's center of
-    mass) in the world frame W, expressed in W.
+    The translational acceleration of Bcm (this body's center of mass)
+    in the world frame W, expressed in W.
 
 Note:
     When cached values are out of sync with the state stored in
@@ -7127,21 +7135,22 @@ Note:
         struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Calculates Bcm's translational velocity in the world frame W.
+R"""(Calculates RigidBody (%Link) B's center of mass Bcm's translational
+velocity in the world frame W.
 
 Parameter ``context``:
     The context contains the state of the model.
 
 Returns ``v_WBcm_W``:
-    The translational velocity of Bcm (this rigid body's center of
-    mass) in the world frame W, expressed in W.)""";
+    The translational velocity of Bcm (this body's center of mass) in
+    the world frame W, expressed in W.)""";
         } CalcCenterOfMassTranslationalVelocityInWorld;
         // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrame
         struct /* CalcSpatialInertiaInBodyFrame */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Gets this body's spatial inertia about its origin from the given
-context.
+R"""(Gets this RigidBody's (%Link's) spatial inertia about its origin from
+the given context.
 
 Parameter ``context``:
     contains the state of the multibody system.
@@ -7159,10 +7168,9 @@ Precondition:
         struct /* CloneToScalar */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) This method is mostly intended to be called by
-MultibodyTree∷CloneToScalar(). Most users should not call this clone
-method directly but rather clone the entire parent MultibodyTree if
-needed.
+R"""((Internal use only) This method is intended to be called by
+MultibodyTree∷CloneToScalar(). Users should not call this clone method
+directly but rather clone the entire parent MultibodyTree if needed.
 
 See also:
     MultibodyTree∷CloneToScalar())""";
@@ -7171,15 +7179,15 @@ See also:
         struct /* EvalPoseInWorld */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Returns the pose ``X_WB`` of this RigidBody B in the world frame W as
-a function of the state of the model stored in ``context``.)""";
+R"""(Returns the pose ``X_WB`` of this RigidBody (%Link) B in the world
+frame W as a function of the state of the model stored in ``context``.)""";
         } EvalPoseInWorld;
         // Symbol: drake::multibody::RigidBody::EvalSpatialAccelerationInWorld
         struct /* EvalSpatialAccelerationInWorld */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Evaluates A_WB, this body B's SpatialAcceleration in the world frame
-W.
+R"""(Evaluates A_WB, this RigidBody (%Link) B's SpatialAcceleration in the
+world frame W.
 
 Parameter ``context``:
     Contains the state of the model.
@@ -7198,7 +7206,8 @@ Note:
         struct /* EvalSpatialVelocityInWorld */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Evaluates V_WB, this body B's SpatialVelocity in the world frame W.
+R"""(Evaluates V_WB, this RigidBody (%Link) B's SpatialVelocity in the
+world frame W.
 
 Parameter ``context``:
     Contains the state of the model.
@@ -7211,15 +7220,15 @@ Returns ``V_WB_W``:
         struct /* GetForceInWorld */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Gets the SpatialForce on this RigidBody B from ``forces`` as F_BBo_W:
-applied at body B's origin Bo and expressed in world frame W.)""";
+R"""(Gets the SpatialForce on this RigidBody (%Link) B from ``forces`` as
+F_BBo_W: applied at body B's origin Bo and expressed in world frame W.)""";
         } GetForceInWorld;
         // Symbol: drake::multibody::RigidBody::Lock
         struct /* Lock */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(For a floating base RigidBody, lock its inboard joint. Its generalized
-velocities will be 0 until it is unlocked.
+R"""(For a floating base RigidBody (%Link), lock its inboard joint. Its
+generalized velocities will be 0 until it is unlocked.
 
 Raises:
     RuntimeError if this body is not a floating base body.)""";
@@ -7228,8 +7237,8 @@ Raises:
         struct /* ctor */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc_2args =
-R"""(Constructs a RigidBody named ``body_name`` with the given default
-SpatialInertia.
+R"""(Constructs a RigidBody (%Link) named ``body_name`` with the given
+default SpatialInertia.
 
 Parameter ``body_name``:
     A name associated with this body.
@@ -7244,8 +7253,8 @@ Note:
     used for spatial inertia quantities.)""";
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc_3args =
-R"""(Constructs a RigidBody named ``body_name`` with the given default
-SpatialInertia.
+R"""(Constructs a RigidBody (%Link) named ``body_name`` with the given
+default SpatialInertia.
 
 Parameter ``body_name``:
     A name associated with this body.
@@ -7266,8 +7275,8 @@ Note:
         struct /* SetCenterOfMassInBodyFrame */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Sets this body's center of mass position while preserving
-its inertia about its body origin.
+R"""((Advanced) Sets this RigidBody (%Link) B's center of mass position
+while preserving its inertia about its *body origin*.
 
 Parameter ``out``:
     ] context contains the state of the multibody system. It is
@@ -7297,8 +7306,8 @@ Warning:
         struct /* SetCenterOfMassInBodyFrameAndPreserveCentralInertia */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Sets this body's center of mass position while preserving its inertia
-about its center of mass.
+R"""(Sets this RigidBody (%Link) B's center of mass position while
+preserving its inertia about its *center of mass*.
 
 Parameter ``out``:
     ] context contains the state of the multibody system. It is
@@ -7328,13 +7337,14 @@ Raises:
         struct /* SetMass */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(For this RigidBody B, sets its mass stored in ``context`` to ``mass``.
+R"""(For this RigidBody (%Link) B, sets its mass stored in ``context`` to
+``mass``.
 
 Parameter ``context``:
     contains the state of the multibody system.
 
 Parameter ``mass``:
-    mass of this rigid body B.
+    mass of this body B.
 
 Note:
     This function changes this body B's mass and appropriately scales
@@ -7350,8 +7360,8 @@ Raises:
         struct /* SetSpatialInertiaInBodyFrame */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(For this RigidBody B, sets its SpatialInertia that is stored in
-``context`` to ``M_Bo_B``.
+R"""(For this RigidBody (%Link) B, sets its SpatialInertia that is stored
+in ``context`` to ``M_Bo_B``.
 
 Parameter ``context``:
     contains the state of the multibody system.
@@ -7372,7 +7382,7 @@ Raises:
         struct /* Unlock */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(For a floating base RigidBody, unlock its inboard joint.
+R"""(For a floating base RigidBody (%Link), unlock its inboard joint.
 
 Raises:
     RuntimeError if this body is not a floating base body.)""";
@@ -7381,42 +7391,45 @@ Raises:
         struct /* body_frame */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Compatibility) A synonym for link_frame().)""";
+R"""(Returns a const reference to the associated RigidBodyFrame
+(LinkFrame). body_frame() is synonymous with link_frame().
+
+Note:
+    "link" is the terminology used in urdf/sdformat.)""";
         } body_frame;
         // Symbol: drake::multibody::RigidBody::default_com
         struct /* default_com */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Returns the default value of this RigidBody's center of mass as
-measured and expressed in its body frame. This value is initially
+R"""(Returns the default value of this RigidBody's (%Link's) center of mass
+as measured and expressed in its body frame. This value is initially
 supplied at construction when specifying this body's SpatialInertia.
 
 Returns ``p_BoBcm_B``:
-    The position of this rigid body B's center of mass ``Bcm``
-    measured from Bo (B's frame origin) and expressed in B (body B's
-    frame).)""";
+    The position of this body B's center of mass ``Bcm`` measured from
+    Bo (B's frame origin) and expressed in B (body B's frame).)""";
         } default_com;
         // Symbol: drake::multibody::RigidBody::default_mass
         struct /* default_mass */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Returns this RigidBody's default mass, which is initially supplied at
-construction when specifying this body's SpatialInertia.
+R"""(Returns this RigidBody's (%Link's) default mass, which is initially
+supplied at construction when specifying this body's SpatialInertia.
 
 Note:
-    In general, a rigid body's mass can be a constant property stored
-    in this rigid body's SpatialInertia or a parameter that is stored
-    in a Context. The default constant mass value is used to
-    initialize the mass parameter in the Context.)""";
+    In general, a body's mass can be a constant property stored in
+    this body's SpatialInertia or a parameter that is stored in a
+    Context. The default constant mass value is used to initialize the
+    mass parameter in the Context.)""";
         } default_mass;
         // Symbol: drake::multibody::RigidBody::default_rotational_inertia
         struct /* default_rotational_inertia */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Gets the default value of this body B's rotational inertia about Bo
-(B's origin), expressed in B (this body's body frame). This value is
-calculated from the SpatialInertia supplied at construction of this
-body.
+R"""(Gets the default value of this RigidBody (%Link) B's rotational
+inertia about Bo (B's origin), expressed in B (this body's body
+frame). This value is calculated from the SpatialInertia supplied at
+construction of this body.
 
 Returns ``I_BBo_B``:
     body B's rotational inertia about Bo, expressed in B.)""";
@@ -7425,8 +7438,8 @@ Returns ``I_BBo_B``:
         struct /* default_spatial_inertia */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Gets the default value of this body B's SpatialInertia about Bo (B's
-origin) and expressed in B (this body's frame).
+R"""(Gets the default value of this RigidBody (%Link) B's SpatialInertia
+about Bo (B's origin) and expressed in B (this body's frame).
 
 Returns ``M_BBo_B``:
     body B's spatial inertia about Bo, expressed in B.)""";
@@ -7435,10 +7448,10 @@ Returns ``M_BBo_B``:
         struct /* default_unit_inertia */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Returns the default value of this body B's unit inertia about Bo (body
-B's origin), expressed in B (this body's body frame). This value is
-initially supplied at construction when specifying this body's
-SpatialInertia.
+R"""(Returns the default value of this RigidBody (%Link) B's unit inertia
+about Bo (body B's origin), expressed in B (this body's body frame).
+This value is initially supplied at construction when specifying this
+body's SpatialInertia.
 
 Returns ``G_BBo_B``:
     rigid body B's unit inertia about Bo, expressed in B.)""";
@@ -7469,13 +7482,14 @@ See also:
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) For floating base bodies (see is_floating_base_body()),
-returns the index of this RigidBody's first generalized position in
-the vector q of generalized position coordinates for a MultibodyPlant
-model. Positions q for this RigidBody are then contiguous starting at
-this index. When a floating RigidBody is modeled with quaternion
-coordinates (see has_quaternion_dofs()), the four consecutive entries
-in the state starting at this index correspond to the quaternion that
-parametrizes this RigidBody's orientation.
+returns the index of this RigidBody's (%Link's) first generalized
+position in the vector q of generalized position coordinates for a
+MultibodyPlant model. Positions q for this RigidBody are then
+contiguous starting at this index. When a floating RigidBody is
+modeled with quaternion coordinates (see has_quaternion_dofs()), the
+four consecutive entries in the state starting at this index
+correspond to the quaternion that parametrizes this RigidBody's
+orientation.
 
 Raises:
     RuntimeError if called pre-finalize
@@ -7494,10 +7508,10 @@ See also:
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) For floating base bodies (see is_floating_base_body()),
-returns the index of this RigidBody's first generalized velocity in
-the vector v of generalized velocities for a MultibodyPlant model.
-Velocities v for this RigidBody are then contiguous starting at this
-index.
+returns the index of this RigidBody's (%Link's) first generalized
+velocity in the vector v of generalized velocities for a
+MultibodyPlant model. Velocities v for this RigidBody are then
+contiguous starting at this index.
 
 Raises:
     RuntimeError if called pre-finalize
@@ -7529,33 +7543,33 @@ See also:
         struct /* get_angular_acceleration_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract this body's angular acceleration in world,
-expressed in world.
+R"""((Internal use only) Extract this link L's angular acceleration in
+world, expressed in world.
 
 Parameter ``ac``:
     velocity kinematics cache.
 
-Returns ``alpha_WB_W``:
-    B's angular acceleration in world W, expressed in W.)""";
+Returns ``alpha_WL_W``:
+    L's angular acceleration in world W, expressed in W.)""";
         } get_angular_acceleration_in_world;
         // Symbol: drake::multibody::RigidBody::get_angular_velocity_in_world
         struct /* get_angular_velocity_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract this body's angular velocity in world, expressed in
-world.
+R"""((Internal use only) Extract this link's angular velocity in world,
+expressed in world.
 
 Parameter ``vc``:
     velocity kinematics cache.
 
-Returns ``w_WB_W``:
-    rigid body B's angular velocity in world W, expressed in W.)""";
+Returns ``w_WL_W``:
+    link L's angular velocity in world W, expressed in W.)""";
         } get_angular_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::get_mass
         struct /* get_mass */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Gets this body's mass from the given context.
+R"""(Gets this RigidBody's (%Link's) mass from the given context.
 
 Parameter ``context``:
     contains the state of the multibody system.
@@ -7567,105 +7581,105 @@ Precondition:
         struct /* get_origin_acceleration_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract acceleration of this body's origin in world,
-expressed in world.
+R"""((Internal use only) Extract acceleration of this link L's origin in
+world, expressed in world.
 
 Parameter ``ac``:
     acceleration kinematics cache.
 
-Returns ``a_WBo_W``:
-    acceleration of body origin Bo in world W, expressed in W.)""";
+Returns ``a_WLo_W``:
+    acceleration of link origin Lo in world W, expressed in W.)""";
         } get_origin_acceleration_in_world;
         // Symbol: drake::multibody::RigidBody::get_origin_position_in_world
         struct /* get_origin_position_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract the position vector from world origin to this
-body's origin, expressed in world.
+R"""((Internal use only) Extract the position vector from world origin to
+this link's origin, expressed in world.
 
 Parameter ``pc``:
     position kinematics cache.
 
-Returns ``p_WoBo_W``:
-    position vector from Wo (world origin) to Bo (this body's origin)
+Returns ``p_WoLo_W``:
+    position vector from Wo (world origin) to Lo (this link's origin)
     expressed in W (world).)""";
         } get_origin_position_in_world;
         // Symbol: drake::multibody::RigidBody::get_origin_velocity_in_world
         struct /* get_origin_velocity_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract the velocity of this body's origin in world,
-expressed in world.
+R"""((Internal use only) Extract the velocity of this link's origin in
+world, expressed in world.
 
 Parameter ``vc``:
     velocity kinematics cache.
 
-Returns ``v_WBo_W``:
-    velocity of Bo (body origin) in world W, expressed in W.)""";
+Returns ``v_WLo_W``:
+    velocity of Lo (link origin) in world W, expressed in W.)""";
         } get_origin_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::get_pose_in_world
         struct /* get_pose_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract this body's pose in world (from the position
-kinematics).
+R"""((Internal use only) Extract this link's pose in world (from the
+position kinematics).
 
 Parameter ``pc``:
     position kinematics cache.
 
-Returns ``X_WB``:
-    pose of rigid body B in world frame W.)""";
+Returns ``X_WL``:
+    pose of this Link L in world frame W.)""";
         } get_pose_in_world;
         // Symbol: drake::multibody::RigidBody::get_rotation_matrix_in_world
         struct /* get_rotation_matrix_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Extract the RotationMatrix relating the world frame to this
-body's frame.
+R"""((Internal use only) Extract the RotationMatrix relating the world
+frame to this link's frame.
 
 Parameter ``pc``:
     position kinematics cache.
 
-Returns ``R_WB``:
-    rotation matrix relating rigid body B in world frame W.)""";
+Returns ``R_WL``:
+    rotation matrix relating world frame W and Link L.)""";
         } get_rotation_matrix_in_world;
         // Symbol: drake::multibody::RigidBody::get_spatial_acceleration_in_world
         struct /* get_spatial_acceleration_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Returns A_WB, this RigidBody B's SpatialAcceleration in the
-world frame W.
+R"""((Internal use only) Returns A_WL, this link L's SpatialAcceleration in
+the world frame W.
 
 Parameter ``ac``:
     acceleration kinematics cache.
 
-Returns ``A_WB_W``:
-    this rigid body B's spatial acceleration in the world frame W,
-    expressed in W (for point Bo, the body frame's origin).)""";
+Returns ``A_WL_W``:
+    this link L's spatial acceleration in the world frame W, expressed
+    in W (for point Lo, the link frame's origin).)""";
         } get_spatial_acceleration_in_world;
         // Symbol: drake::multibody::RigidBody::get_spatial_velocity_in_world
         struct /* get_spatial_velocity_in_world */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Returns V_WB, this RigidBody B's SpatialVelocity in the
+R"""((Internal use only) Returns V_WL, this link L's SpatialVelocity in the
 world frame W.
 
 Parameter ``vc``:
     velocity kinematics cache.
 
-Returns ``V_WB_W``:
-    this rigid body B's spatial velocity in the world frame W,
-    expressed in W (for point Bo, the body frame's origin).)""";
+Returns ``V_WL_W``:
+    this link L's spatial velocity in the world frame W, expressed in
+    W (for point Lo, the link frame's origin).)""";
         } get_spatial_velocity_in_world;
         // Symbol: drake::multibody::RigidBody::has_quaternion_dofs
         struct /* has_quaternion_dofs */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) If ``True``, this body's generalized position coordinates q
-include a quaternion, which occupies the first four elements of q.
-Note that this does not imply that the body is floating base body
-since it may have fewer than 6 dofs or its inboard body could be
-something other than World.
+R"""((Advanced) If ``True``, this RigidBody's (%Link's) generalized
+position coordinates q include a quaternion, which occupies the first
+four elements of q. Note that this does not imply that the body is a
+floating base body since it may have fewer than 6 dofs or its inboard
+body could be something other than World.
 
 Raises:
     RuntimeError if called pre-finalize
@@ -7682,9 +7696,10 @@ See also:
         struct /* is_floating_base_body */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Returns ``True`` if this body is a *floating base body*,
-meaning it had no explicit joint to a parent body so is mobilized by
-an automatically-added (ephemeral) floating (6 dof) joint to World.
+R"""((Advanced) Returns ``True`` if this RigidBody (%Link) is a *floating
+base body*, meaning it had no explicit joint to a parent body and is
+mobilized by an automatically-added (ephemeral) floating (6 dof) joint
+to World.
 
 Note:
     A floating base body is not necessarily modeled with a quaternion
@@ -7702,9 +7717,9 @@ See also:
         struct /* is_locked */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Determines whether this RigidBody is currently locked to its inboard
-(parent) RigidBody. This is not limited to floating base bodies but
-generally Joint∷is_locked() is preferable otherwise.
+R"""(Determines whether this RigidBody (%Link) is currently locked to its
+inboard (parent) RigidBody. This is not limited to floating base
+bodies but generally Joint∷is_locked() is preferable otherwise.
 
 Returns:
     true if the body is locked, false otherwise.)""";
@@ -7714,38 +7729,42 @@ Returns:
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""(Returns a const reference to the associated LinkFrame
-(RigidBodyFrame).)""";
+(RigidBodyFrame). link_frame() is synonymous with body_frame().
+
+Note:
+    "link" is the terminology used in urdf/sdformat.)""";
         } link_frame;
         // Symbol: drake::multibody::RigidBody::mobod_index
         struct /* mobod_index */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Advanced) Returns the index of the mobilized body ("mobod") in the
-computational directed forest structure of the owning MultibodyTree to
-which this RigidBody belongs. This serves as the BodyNode index and
-the index into all associated quantities.)""";
+R"""((Internal use only) Returns the index of the mobilized body ("mobod")
+that this Link follows. This index serves as the BodyNode index and
+the index into all associated quantities. More than one link may
+follow the same mobod.)""";
         } mobod_index;
         // Symbol: drake::multibody::RigidBody::name
         struct /* name */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Gets the ``name`` associated with this rigid body. The name will never
-be empty.)""";
+R"""(Gets the ``name`` associated with this RigidBody (%Link). The name
+will never be empty.)""";
         } name;
         // Symbol: drake::multibody::RigidBody::ordinal
         struct /* ordinal */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""((Internal use only) Returns this Link's (RigidBody's) unique ordinal.
-Currently identical to the index but will differ when we permit
-removal of Links as we do for Joints.)""";
+R"""((Internal use only) Returns this Link's unique ordinal. Currently
+identical to the index but will differ when we permit removal of Links
+as we do for Joints.)""";
         } ordinal;
         // Symbol: drake::multibody::RigidBody::scoped_name
         struct /* scoped_name */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Returns scoped name of this body. Neither of the two pieces of the
-name will be empty (the scope name and the element name).
+R"""(Returns scoped name of this RigidBody (%Link). Neither of the two
+pieces of the name will be empty (the scope name and the element
+name).
 
 Raises:
     RuntimeError if this element is not associated with a
@@ -7756,8 +7775,8 @@ Raises:
       struct /* RigidBodyFrame */ {
         // Source: drake/multibody/tree/rigid_body.h
         const char* doc =
-R"""(A RigidBodyFrame is a material Frame that serves as the unique
-reference frame for a RigidBody.
+R"""(A RigidBodyFrame (aka LinkFrame) is a material Frame that serves as
+the unique reference frame for a RigidBody (aka Link).
 
 Each RigidBody B has a unique body frame for which we use the same
 symbol B (with meaning clear from context). We represent a body frame

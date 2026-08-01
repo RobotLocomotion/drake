@@ -40,6 +40,10 @@ Results are indexed by MobodIndex unless otherwise specified:
  - p_PoBo_W:
          Position of mobod B's origin Bo measured in its parent (inboard) mobod
          P, expressed in world frame W.
+ - p_BoLo_W:
+         Position of link L's origin Lo measured from its mobod B's origin Bo,
+         expressed in the world frame W. Indexed by LinkOrdinal. Zero for the
+         active link L₀ (since B=L₀).
  - X_FM: Pose of mobilizer's outboard frame M measured and expressed in
          its inboard frame F.
 
@@ -91,6 +95,20 @@ class PositionKinematicsCache {
   void SetX_WL(LinkOrdinal ordinal, const math::RigidTransform<T>& X_WL) {
     DRAKE_DEMAND(0 <= ordinal && ordinal < num_links_);
     X_WL_pool_[ordinal] = X_WL;
+  }
+
+  // Returns X_BL.translation() re-expressed in the world frame W.
+  // @param[in] ordinal The LinkOrdinal for the link L.
+  // @returns p_BoLo_W, the position of link L's origin Lo measured from its
+  //          mobod B's origin Bo, expressed in the world frame W.
+  const Vector3<T>& get_p_BoLo_W(LinkOrdinal ordinal) const {
+    DRAKE_ASSERT(0 <= ordinal && ordinal < num_links_);
+    return p_BoLo_W_pool_[ordinal];
+  }
+
+  void Set_p_BoLo_W(LinkOrdinal ordinal, const Vector3<T>& p_BoLo_W) {
+    DRAKE_DEMAND(0 <= ordinal && ordinal < num_links_);
+    p_BoLo_W_pool_[ordinal] = p_BoLo_W;
   }
 
   // Returns a const reference to the rotation matrix `R_WB` that relates the
@@ -177,17 +195,6 @@ class PositionKinematicsCache {
       const SpanningForest& forest,
       const FrameBodyPoseCache<T>& frame_body_pose_cache);
 
-  // Helper method to initialize poses to garbage values including NaNs.
-  // This allow us to quickly verify some of the values stored in the pools are
-  // never used (however we store them anyway to simplify the indexing).
-  static RigidTransform<T> NaNPose() {
-    // Note: RotationMatrix will throw in Debug builds if values are NaN. For
-    // our purposes, it is enough that the translation has NaN values.
-    return RigidTransform<T>(
-        math::RotationMatrix<T>::Identity(),
-        Vector3<T>::Constant(std::numeric_limits<double>::quiet_NaN()));
-  }
-
   // Number of Mobods in the multibody forest, including the World mobod.
   int num_mobods_{0};
 
@@ -207,8 +214,9 @@ class PositionKinematicsCache {
   std::vector<RigidTransform<T>> X_FM_pool_;
   std::vector<Vector3<T>> p_PoBo_W_pool_;
 
-  // This pool is indexed by LinkOrdinal.
+  // These pools are indexed by LinkOrdinal.
   std::vector<RigidTransform<T>> X_WL_pool_;
+  std::vector<Vector3<T>> p_BoLo_W_pool_;
 };
 
 }  // namespace internal
