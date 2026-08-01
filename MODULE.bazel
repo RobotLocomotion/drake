@@ -266,7 +266,7 @@ llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
 llvm(
     name = "llvm",
     dev_dependency = True,
-    llvm_versions = {"": "21.1.8"},
+    llvm_versions = {"": "22.1.7"},
 )
 
 bazel_dep(

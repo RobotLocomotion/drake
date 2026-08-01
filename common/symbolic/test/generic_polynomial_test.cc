@@ -72,10 +72,10 @@ class SymbolicGenericPolynomialTest : public ::testing::Test {
       5 * x_,
       -3 * x_,
       y_,
-      x_* y_,
-      2 * x_* x_,
-      2 * x_* x_,
-      6 * x_* y_,
+      x_ * y_,
+      2 * x_ * x_,
+      2 * x_ * x_,
+      6 * x_ * y_,
       3 * x_ * x_ * y_ + 4 * pow(y_, 3) * z_ + 2,
       y_ * (3 * x_ * x_ + 4 * y_ * y_ * z_) + 2,
       6 * pow(x_, 3) * pow(y_, 2),
@@ -86,14 +86,14 @@ class SymbolicGenericPolynomialTest : public ::testing::Test {
       (x_ * x_ + 4 * x_ * y_ + 4 * y_ * y_) * (x_ - 2 * y_),
       pow(x_ + y_ + 1, 4),
       pow(x_ + y_ + 1, 3),
-      1 + x_* x_ + 2 * (y_ - 0.5 * x_ * x_ - 0.5),
-      Expression(5.0) / 2.0,     // constant / constant
-      x_ / 3.0,                  // var / constant
-      pow(x_, 2) / 2,            // pow / constant
-      pow(x_* y_ / 3.0, 2) / 2,  // pow / constant
-      (x_ + y_) / 2.0,           // sum / constant
-      (x_ * y_ * z_ * 3) / 2.0,  // product / constant
-      (x_* y_ / -5.0) / 2.0,     // div / constant
+      1 + x_ * x_ + 2 * (y_ - 0.5 * x_ * x_ - 0.5),
+      Expression(5.0) / 2.0,      // constant / constant
+      x_ / 3.0,                   // var / constant
+      pow(x_, 2) / 2,             // pow / constant
+      pow(x_ * y_ / 3.0, 2) / 2,  // pow / constant
+      (x_ + y_) / 2.0,            // sum / constant
+      (x_ * y_ * z_ * 3) / 2.0,   // product / constant
+      (x_ * y_ / -5.0) / 2.0,     // div / constant
   };
 };
 
