@@ -8,6 +8,7 @@ import umsgpack
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import (
+    LightParameter,
     Meshcat,
     RenderEngineGlParams,
     RenderEngineVtkParams,
@@ -121,3 +122,30 @@ class TestModelVisualizerCamera(unittest.TestCase):
             "gl" in mut.ModelVisualizer._SUPPORTED_RGBD_RENDERERS,
             kHasRenderEngineGl,
         )
+
+    def test_configure_lights(self):
+        # TODO: Resolve this vis a vis VTK and GL.
+        light = LightParameter(
+            type="directional",
+            frame="world",
+            direction=[-1.0, 0.0, -1.0],
+            intensity=2.0,
+        )
+        dut = mut.ModelVisualizer(
+            show_rgbd_sensor="vtk",
+            rgbd_lights=[light],
+            rgbd_cast_shadows=True,
+            rgbd_shadow_map_size=512,
+        )
+        vtk_params = dut._make_rgbd_sensor_config().renderer_class
+        self.assertIsInstance(vtk_params, RenderEngineVtkParams)
+        self.assertTrue(vtk_params.cast_shadows)
+        self.assertEqual(vtk_params.shadow_map_size, 512)
+        self.assertEqual(len(vtk_params.lights), 1)
+        self.assertEqual(vtk_params.lights[0].intensity, 2.0)
+        numpy_compare.assert_allclose(
+            vtk_params.lights[0].direction, [-1.0, 0.0, -1.0]
+        )
+
+        with self.assertRaisesRegex(ValueError, "shadow_map_size"):
+            mut.ModelVisualizer(rgbd_shadow_map_size=0)
