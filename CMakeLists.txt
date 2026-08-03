@@ -9,7 +9,7 @@
 # similar to what governs our minimum Bazel version (see MODULE.bazel).
 # When changing this, tools/install/libdrake/drake-config.cmake.in and its
 # corresponding tests should also be updated.
-cmake_minimum_required(VERSION 3.20...4.3)
+cmake_minimum_required(VERSION 3.20...4.4)
 
 # The build types that Drake's CMake build supports. This is the single source
 # of truth.
