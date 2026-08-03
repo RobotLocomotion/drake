@@ -12,6 +12,7 @@
 #include <fmt/ranges.h>
 
 #include "drake/common/hash.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -635,11 +636,11 @@ void SystemBase::WarnPortDeprecation(bool is_input, int port_index) const {
   hash_append(hash, is_input);
   hash_append(hash, port->get_name());
   const size_t key = size_t{hash};
-  static std::mutex g_mutex;
-  static std::unordered_set<size_t> g_warned_hash;
+  static never_destroyed<std::mutex> g_mutex;
+  static never_destroyed<std::unordered_set<size_t>> g_warned_hash;
   {
-    std::lock_guard lock(g_mutex);
-    const bool inserted = g_warned_hash.insert(key).second;
+    std::lock_guard lock(g_mutex.access());
+    const bool inserted = g_warned_hash.access().insert(key).second;
     if (!inserted) {
       // The key was already in the map, which means that we've already
       // warned about this port name on this particular system subclass.

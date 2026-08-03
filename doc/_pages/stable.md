@@ -126,9 +126,8 @@ dependency.
 
 We may add new dependencies without prior notice. All of our dependencies will
 either be installed via the host system via our `install_prereqs` scripts,
-and/or downloaded at build-time via our `add_default_...` macros (when not
-using `bzlmod`) or our `MODULE.bazel` file (when using bzlmod), and/or
-specified via packaging metadata in the case of `apt` or `pip`.
+and/or downloaded at build-time via our `MODULE.bazel` file, and/or
+specified via packaging metadata in the case of our `apt` or `pip` binaries.
 
 ## LCM messages
 

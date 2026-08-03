@@ -12,13 +12,13 @@ module(
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "2.6.1")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "bazel_features", version = "1.50.0")
-bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "apple_support", version = "2.8.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "bazel_features", version = "1.51.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "platforms", version = "1.1.0")
-bazel_dep(name = "rules_cc", version = "0.2.20")
-bazel_dep(name = "rules_java", version = "9.6.1")
-bazel_dep(name = "rules_jvm_external", version = "7.0")
+bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_java", version = "9.7.0")
+bazel_dep(name = "rules_jvm_external", version = "7.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.71.2")  # When upgrading, locally test that crate vendoring still works via `tools/workspace/crate_universe/upgrade.sh && bazel test //tools/install/libdrake/...`.
@@ -51,7 +51,7 @@ use_repo(cc_configure, "local_config_cc")
 # For first-party Bazel builds (by Drake Developers), the pkgconfig flavor is
 # used by default but can be changed using the Bazel flags.
 
-bazel_dep(name = "eigen", version = "5.0.1.bcr.1", repo_name = "module_eigen")
+bazel_dep(name = "eigen", version = "5.0.1.bcr.2", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.2.0", repo_name = "module_fmt")
 bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # noqa
 
@@ -69,7 +69,7 @@ bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # n
 # For first-party Bazel builds (by Drake Developers), the non-module flavor
 # is used by default.
 
-bazel_dep(name = "glib", version = "2.82.2.bcr.8", repo_name = "module_glib")
+bazel_dep(name = "glib", version = "2.82.2.bcr.9", repo_name = "module_glib")
 bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
 
 # Add non-replaceable C++ module dependencies that are used by Drake's
@@ -124,6 +124,17 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 use_repo(pip, "drake_mypy")
 
+[
+    pip.parse(
+        hub_name = "drake_lief",
+        python_version = python_version,
+        requirements_lock = "//setup:python/lief/requirements.txt",
+    )
+    for python_version in PYTHON_VERSIONS
+]
+
+use_repo(pip, "drake_lief")
+
 # Load dependencies which are "public", i.e., made available to downstream
 # projects.
 #
@@ -154,9 +165,7 @@ use_repo(
     "blas",
     "glib",
     "lapack",
-    "libjpeg",
     "opencl",
-    "zlib",
     #
     # First-party dependencies (i.e., drake-maintained).
     #
@@ -181,6 +190,10 @@ use_repo(
     # deprecating it until we have nanobind ready.
     #
     "pybind11",
+    # TODO(jwnimmer-tri) Deprecate these. They are (or should be)
+    # non-configurable, so don't need a module extension.
+    "libjpeg",
+    "zlib",
 )
 
 # Load Java dependencies.
@@ -204,7 +217,7 @@ bazel_dep(
 )
 bazel_dep(
     name = "gflags",
-    version = "2.2.2.bcr.1",
+    version = "2.3.1",
     dev_dependency = True,
 )
 

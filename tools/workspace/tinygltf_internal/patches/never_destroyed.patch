@@ -1,0 +1,44 @@
+Remove static destructors (run upon program exit) for local variables
+
+This patch should be upstreamed, but upstream has disabled pull
+requests, so *shrug*.
+
+--- tiny_gltf.h
++++ tiny_gltf.h
+@@ -334,19 +334,15 @@ class Value {
+ 
+   // Lookup value from an array
+   const Value &Get(size_t idx) const {
+-    static Value null_value;
+     assert(IsArray());
+-    return (idx < array_value_.size())
+-               ? array_value_[idx]
+-               : null_value;
++    return (idx < array_value_.size()) ? array_value_[idx] : Null();
+   }
+ 
+   // Lookup value from a key-value pair
+   const Value &Get(const std::string &key) const {
+-    static Value null_value;
+     assert(IsObject());
+     Object::const_iterator it = object_value_.find(key);
+-    return (it != object_value_.end()) ? it->second : null_value;
++    return (it != object_value_.end()) ? it->second : Null();
+   }
+ 
+   size_t ArrayLen() const {
+@@ -379,6 +375,14 @@ class Value {
+   bool operator==(const tinygltf::Value &other) const;
+ 
+  protected:
++  static const Value &Null() {
++    // We use placement-new (with no delete) so that the destructor does not run
++    // at program exit, avoiding the Static Destruction Order Fiasco.
++    alignas(Value) static char storage[sizeof(Value)];
++    static const Value *null_singleton = new (storage) Value();
++    return *null_singleton;
++  }
++
+   int type_ = NULL_TYPE;
+ 
+   int int_value_ = 0;
