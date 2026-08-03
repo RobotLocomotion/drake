@@ -38,10 +38,13 @@ class PyObjectValue : public drake::Value<Object> {
 // Add instantiations of primitive types on an as-needed basis; please be
 // conservative.
 void AddPrimitiveValueInstantiations(py::module_ m) {
-  AddValueInstantiation<std::string>(m);            // Value[str]
-  AddValueInstantiation<bool>(m);                   // Value[bool]
-  AddValueInstantiation<double>(m);                 // Value[float]
+  AddValueInstantiation<std::string>(m);  // Value[str]
+  AddValueInstantiation<bool>(m);         // Value[bool]
+  AddValueInstantiation<double>(m);       // Value[float]
+#ifdef PYDRAKE_USE_PYBIND11
+  // TODO(#21572) Implement me.
   AddValueInstantiation<Object, PyObjectValue>(m);  // Value[object]
+#endif
 }
 
 }  // namespace
