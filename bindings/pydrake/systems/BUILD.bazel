@@ -523,6 +523,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "output_port_gc_test",
+    deps = [
+        ":framework_py",
+    ],
+)
+
+drake_py_unittest(
     name = "perception_test",
     deps = [
         ":analysis_py",
