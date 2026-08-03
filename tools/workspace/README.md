@@ -21,7 +21,7 @@ module extension to incorporate the external. Either way, our `MODULE.bazel`
 file lists every external that we directly use; refer to its comments for more
 details.
 
-Drake also offers configuration flags to govern the externals, e.g., to:
+Drake also offers configuration flags to govern some externals, e.g., to:
 - select where (groups of) externals come from, or
 - opt-in to (or opt-out) of a specific external.
 Refer to the documentation in `tools/flags/BUILD.bazel` for details. Note that
@@ -40,6 +40,9 @@ drake_dep_repositories = use_extension(
 )
 use_repo(drake_dep_repositories, "eigen")
 ```
+
+Drake also offers an alias when the external is a Bazel Central Registry module
+but we customize its build flags using transitions.
 
 ## CMake interface
 
@@ -360,10 +363,11 @@ software's license is acceptable to use within Drake.
 
 When adding a new external, decide whether it will be covered by our
 [Stability Guidelines](https://drake.mit.edu/stable.html). Broadly speaking,
-dependencies that come from the host operating system can be covered as
-stable, but dependencies that we compile from source code should be internal.
-If the new dependency should be in internal, name it like "foo_internal" (not
-just "foo") throughout all of the below.
+dependencies that come from the host operating system or the Bazel Central
+Registry can be covered as stable, but dependencies that we compile from source
+code using our own package.BUILD.bazel files should be internal. If the new
+dependency should be in internal, name it like "foo_internal" (not just "foo")
+throughout all of the below.
 
 When the software is available in the
 [Bazel Central Registry](https://registry.bazel.build/), we generally prefer to
