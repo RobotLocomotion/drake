@@ -23,12 +23,12 @@ cmake_configure_files(
     outs = _CONFIG_HDRS,
     defines = [
         # From configure.ac.
-        "LIBTIFF_VERSION=4.6.0",
+        "LIBTIFF_VERSION=4.7.2",
         "LIBTIFF_MAJOR_VERSION=4",
-        "LIBTIFF_MINOR_VERSION=6",
-        "LIBTIFF_MICRO_VERSION=0",
+        "LIBTIFF_MINOR_VERSION=7",
+        "LIBTIFF_MICRO_VERSION=2",
         # From RELEASE-DATE.
-        "LIBTIFF_RELEASE_DATE=20230908",
+        "LIBTIFF_RELEASE_DATE=20260627",
         # Opt-in to compression algorithms that we do want. These are the
         # built-in algorithms (i.e., no external dependencies) that are
         # plausible to use on Drake's depth camera images (which are the

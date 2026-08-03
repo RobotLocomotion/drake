@@ -13,8 +13,8 @@ def libtiff_internal_repository(
         date; be sure to update those to match the new commit.
         """,
         upgrade_type = "tag",
-        commit = "v4.7.1",
-        sha256 = "a3faec056a490c62b8749847317521204f8c4d9933cce834e691a74524ec38fe",  # noqa
+        commit = "v4.7.2",
+        sha256 = "dd030ae5d6483033bd88d840fc97e36adc3022b844d9d896a3b5a50f2d660d6f",  # noqa
         build_file = ":package.BUILD.bazel",
         patch_cmds = [
             # On a macOS case-insensitive filesystem, this conflicts with
