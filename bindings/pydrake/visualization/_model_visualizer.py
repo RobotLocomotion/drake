@@ -90,6 +90,9 @@ class ModelVisualizer:
         meshcat=None,
         environment_map: Path = Path(),
         no_lights: bool = False,
+        rgbd_lights: list[LightParameter] | None = None,
+        rgbd_cast_shadows: bool = False,
+        rgbd_shadow_map_size: int = 1024,
         compliance_type: str = "undefined",
     ):
         """Initializes a ModelVisualizer.
@@ -114,6 +117,10 @@ class ModelVisualizer:
           no_lights: optionally disable the lights in the render engine and
              meshcat. This is useful when using an environment map to assess
              the effect of the map.
+          rgbd_lights: optional lights for the RgbdSensor render engine. When
+             omitted, the render engine's default lighting is used.
+          rgbd_cast_shadows: whether capable RgbdSensor lights cast shadows.
+          rgbd_shadow_map_size: the width and height of each shadow map.
           compliance_type: Overrides the DefaultProximityProperties setting
              with same name. Can be set to either "rigid" or "compliant" for
              hydroelastic contact, or "undefined" to use point contact.
@@ -166,6 +173,11 @@ class ModelVisualizer:
         self._meshcat = meshcat
         self._environment_map = environment_map
         self._no_lights = no_lights
+        if rgbd_shadow_map_size <= 0:
+            raise ValueError("rgbd_shadow_map_size must be positive")
+        self._rgbd_lights = copy.deepcopy(rgbd_lights)
+        self._rgbd_cast_shadows = rgbd_cast_shadows
+        self._rgbd_shadow_map_size = rgbd_shadow_map_size
         self._compliance_type = compliance_type
 
         # This is the list of loaded models, to enable the Reload button.
@@ -243,6 +255,8 @@ class ModelVisualizer:
             "browser_new",
             "pyplot",
             "environment_map",
+            "rgbd_cast_shadows",
+            "rgbd_shadow_map_size",
             "compliance_type",
         ]:
             value = getattr(prototype, f"_{name}")
@@ -286,30 +300,38 @@ class ModelVisualizer:
             # We can only disable *all* lights by creating a light with zero
             # intensity.
             lights = [LightParameter(intensity=0)]
+        elif self._rgbd_lights is not None:
+            # Otherwise use the provided lights.
+            lights = copy.deepcopy(self._rgbd_lights)
 
+        # Any parameters unique to the engine choice get set here. Common
+        # parameters are set below.
         if self._show_rgbd_sensor == "gl":
-            # Note: RenderEngineGL doesn't have full feature parity with
-            # RenderEngineVtk. So, RenderEngineGl does not do the
-            # initialization necessary for RenderEngineVtk.
-            camera_config.renderer_class = RenderEngineGlParams(lights=lights)
-            return camera_config
-
-        vtk_params = RenderEngineVtkParams(
-            exposure=1,
-            lights=lights,
-        )
-        if self._environment_map.is_file():
-            vtk_params.environment_map = EnvironmentMap(
-                skybox=True,
-                texture=EquirectangularMap(path=str(self._environment_map)),
+            renderer = RenderEngineGlParams()
+        else:  # "vtk"
+            renderer = RenderEngineVtkParams(
+                exposure=1,
             )
-        if camera_config.show_rgb and sys.platform != "darwin":
-            # Note: GLX requires an X display (even if we're not showing the
-            # window). We don't always have an X display (e.g., unit tests), so
-            # we'll simply stay away from GLX unless we're showing the render
-            # window.
-            vtk_params.backend = "GLX"
-        camera_config.renderer_class = vtk_params
+            # TODO(SeanCurtis-TRI): When RenderEngineGl supports PBR, move
+            # these into the common configuration.
+            if self._environment_map.is_file():
+                renderer.environment_map = EnvironmentMap(
+                    skybox=True,
+                    texture=EquirectangularMap(path=str(self._environment_map)),
+                )
+            if camera_config.show_rgb and sys.platform != "darwin":
+                # Note: GLX requires an X display (even if we're not showing
+                # the window). We don't always have an X display (e.g., unit
+                # tests), so we'll simply stay away from GLX unless we're
+                # showing the render window.
+                renderer.backend = "GLX"
+
+        # Common properties.
+        renderer.lights = lights
+        renderer.cast_shadows = self._rgbd_cast_shadows
+        renderer.shadow_map_size = self._rgbd_shadow_map_size
+
+        camera_config.renderer_class = renderer
         return camera_config
 
     def parser(self):

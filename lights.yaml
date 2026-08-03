@@ -1,0 +1,41 @@
+lights:
+- type: directional
+  frame: world
+  direction: [1.0, 1.0, -1.0]
+  intensity: 0.2
+- type: directional
+  frame: world
+  direction: [1.0, -1.0, -1.0]
+  intensity: 0.2
+- type: spot
+  frame: world
+  position: [0.0, 0.0, 2.0]
+  direction: [0.0, 0.0, -1.0]
+  intensity: 0.2
+  cone_angle: 20
+- type: spot
+  frame: world
+  position: [-0.025, -0.025, 2.0]
+  direction: [0.0, 0.0, -1.0]
+  intensity: 0.2
+  cone_angle: 20
+- type: spot
+  frame: world
+  position: [0.025, -0.025, 2.0]
+  direction: [0.0, 0.0, -1.0]
+  intensity: 0.2
+  cone_angle: 20
+- type: spot
+  frame: world
+  position: [0.025, 0.025, 2.0]
+  direction: [0.0, 0.0, -1.0]
+  intensity: 0.2
+  cone_angle: 20
+- type: spot
+  frame: world
+  position: [0.025, 0.025, 2.0]
+  direction: [0.0, 0.0, -1.0]
+  intensity: 0.2
+  cone_angle: 20
+cast_shadows: true
+shadow_map_size: 512

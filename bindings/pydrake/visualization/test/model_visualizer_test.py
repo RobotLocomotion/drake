@@ -1,9 +1,11 @@
 import pydrake.visualization as mut  # ruff: isort: skip
 import pydrake.visualization._model_visualizer as mut_private  # ruff: isort: skip  # noqa
+import pydrake.visualization.model_visualizer as mut_cli  # ruff: isort: skip  # noqa
 
 import copy
 import inspect
 import subprocess
+import tempfile
 import textwrap
 import unittest
 
@@ -49,6 +51,32 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
                 if i % 2 == 1:
                     args.append("--compliance_type=compliant")
                 subprocess.check_call(args)
+
+    def test_rgbd_lighting_yaml(self):
+        lighting_yaml = textwrap.dedent("""
+            lights:
+            - type: directional
+              frame: world
+              direction: [0.0, 0.0, -1.0]
+              intensity: 2.0
+            - type: point
+              frame: camera
+              position: [1.0, 2.0, 3.0]
+            cast_shadows: true
+            shadow_map_size: 512
+        """)
+        with tempfile.NamedTemporaryFile(mode="w") as file:
+            file.write(lighting_yaml)
+            file.flush()
+            actual = mut_cli._load_rgbd_lighting(file.name)
+
+        self.assertEqual(len(actual.lights), 2)
+        self.assertEqual(actual.lights[0].type, "directional")
+        self.assertEqual(actual.lights[0].frame, "world")
+        self.assertEqual(actual.lights[0].intensity, 2.0)
+        self.assertEqual(actual.lights[1].type, "point")
+        self.assertTrue(actual.cast_shadows)
+        self.assertEqual(actual.shadow_map_size, 512)
 
     def test_model_with_invalid_dynamics(self):
         """
