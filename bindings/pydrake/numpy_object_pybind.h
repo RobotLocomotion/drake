@@ -135,10 +135,7 @@ struct pydrake_numpy_dtype_object_type_caster {
     } else {
       for (Eigen::Index i = 0; i < src.rows(); ++i) {
         for (Eigen::Index j = 0; j < src.cols(); ++j) {
-          list ij;
-          ij.append(i);
-          ij.append(j);
-          result[nanobind::tuple(ij)] = src(i, j);
+          result[nanobind::make_tuple(i, j)] = src(i, j);
         }
       }
     }
