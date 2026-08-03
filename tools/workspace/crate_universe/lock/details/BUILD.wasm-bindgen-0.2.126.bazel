@@ -156,7 +156,7 @@ cargo_build_script(
         allow_empty = True,
     ),
     aliases = {
-        "@crate__rustversion-1.0.22//:rustversion": "rustversion_compat",
+        "@crate__rustversion-1.0.23//:rustversion": "rustversion_compat",
     },
     compile_data = glob(
         include = ["**"],
@@ -195,7 +195,7 @@ cargo_build_script(
     ],
     pkg_name = "wasm-bindgen",
     proc_macro_deps = [
-        "@crate__rustversion-1.0.22//:rustversion",
+        "@crate__rustversion-1.0.23//:rustversion",
     ],
     rustc_env_files = [
         ":cargo_toml_env_vars",

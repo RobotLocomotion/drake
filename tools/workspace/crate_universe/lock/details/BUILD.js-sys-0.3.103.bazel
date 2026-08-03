@@ -138,7 +138,7 @@ rust_library(
     version = "0.3.103",
     deps = [
         "@crate__cfg-if-1.0.4//:cfg_if",
-        "@crate__futures-util-0.3.32//:futures_util",
+        "@crate__futures-util-0.3.33//:futures_util",
         "@crate__wasm-bindgen-0.2.126//:wasm_bindgen",
     ],
 )

@@ -132,6 +132,6 @@ rust_library(
     }),
     version = "0.5.1",
     deps = [
-        "@crate__serde-1.0.228//:serde",
+        "@crate__serde-1.0.229//:serde",
     ],
 )

@@ -137,6 +137,6 @@ rust_library(
     }),
     version = "0.11.0",
     deps = [
-        "@crate__either-1.16.0//:either",
+        "@crate__either-1.17.0//:either",
     ],
 )
