@@ -73,6 +73,8 @@ class ModelVisualizer:
         ("vtk", "gl") if kHasRenderEngineGl else ("vtk",)
     )
 
+    _SUPPORTED_RGBD_IMAGE_TYPES = ("color", "label")
+
     def __init__(
         self,
         *,
@@ -82,6 +84,7 @@ class ModelVisualizer:
         triad_opacity=0.9,
         publish_contacts=True,
         show_rgbd_sensor: bool | str = False,
+        sensor_image_type: str = "color",
         browser_new=False,
         pyplot=False,
         meshcat=None,
@@ -103,6 +106,10 @@ class ModelVisualizer:
              rgb image. ``True`` selects ``"vtk"``; ``False`` disables
              the sensor. At the moment, the image display uses a native window
              so will not work in a remote or cloud runtime environment.
+          sensor_image_type: the type of image to display in the preview window
+             provided when show_rgbd_sensor is defined. Must be one of "color"
+             or "label". Ignored if show_rgbd_sensor doesn't require a preview
+             window.
           environment_map: Meshcat environment map filename.
           no_lights: optionally disable the lights in the render engine and
              meshcat. This is useful when using an environment map to assess
@@ -145,6 +152,13 @@ class ModelVisualizer:
                 f"show_rgbd_sensor must be bool or one of: {choices}"
             )
         self._show_rgbd_sensor = show_rgbd_sensor
+        if show_rgbd_sensor:
+            if sensor_image_type not in self._SUPPORTED_RGBD_IMAGE_TYPES:
+                choices = ", ".join(
+                    repr(x) for x in self._SUPPORTED_RGBD_IMAGE_TYPES
+                )
+                raise ValueError(f"sensor_image_type must be one of: {choices}")
+        self._sensor_image_type = sensor_image_type
         self._browser_new = browser_new
         self._pyplot = pyplot
         self._meshcat = meshcat
@@ -223,6 +237,7 @@ class ModelVisualizer:
             "triad_opacity",
             "publish_contacts",
             "show_rgbd_sensor",
+            "sensor_image_type",
             "browser_new",
             "pyplot",
             "environment_map",
@@ -499,7 +514,8 @@ class ModelVisualizer:
             )
             # Export the preview camera image output port for later use.
             self._builder.builder().ExportOutput(
-                camera_sensor.GetOutputPort("color_image"), "preview_image"
+                camera_sensor.GetOutputPort(f"{self._sensor_image_type}_image"),
+                "preview_image",
             )
             # Disable LCM image transmission. It has a non-trivial cost, and
             # at the moment Meldis can't display LCM images anyway.

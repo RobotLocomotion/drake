@@ -46,9 +46,11 @@
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/overloaded.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/geometry/render/colorize_image.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_make_render_window.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
@@ -622,9 +624,24 @@ void RenderEngineVtk::DoRenderDepthImage(const DepthRenderCamera& camera,
 
 void RenderEngineVtk::DoRenderLabelImage(const ColorRenderCamera& camera,
                                          ImageLabel16I* label_image_out) const {
-  UpdateWindow(camera.core(), camera.show_window(),
-               *pipelines_[ImageType::kLabel], "Label Image");
-  PerformVtkUpdate(*pipelines_[ImageType::kLabel]);
+  const RenderingPipeline& pipeline = *pipelines_[ImageType::kLabel];
+  UpdateWindow(camera.core(), camera.show_window(), pipeline, "Label Image");
+
+  // When displaying the label image, leave the encoded label render in the
+  // back buffer. Once it has been decoded and colorized below, we'll replace
+  // the back buffer and expose only the human-readable image. EGL does not
+  // support show_window (UpdateWindow has already emitted its warning).
+  const bool show_window =
+      camera.show_window() && pipeline.backend != RenderEngineVtkBackend::kEgl;
+  if (show_window) {
+    pipeline.window->SwapBuffersOff();
+  }
+  ScopeExit restore_swap_buffers([&pipeline, show_window]() {
+    if (show_window) {
+      pipeline.window->SwapBuffersOn();
+    }
+  });
+  PerformVtkUpdate(pipeline);
 
   // TODO(SeanCurtis-TRI): This copies the image and *that's* a tragedy. It
   // would be much better to process the pixels directly. The solution is to
@@ -632,13 +649,36 @@ void RenderEngineVtk::DoRenderLabelImage(const ColorRenderCamera& camera,
   // See the implementation in vtkImageExport::Export() for details.
   const CameraInfo& intrinsics = camera.core().intrinsics();
   ImageRgba8U image(intrinsics.width(), intrinsics.height());
-  pipelines_[ImageType::kLabel]->exporter->Export(image.at(0, 0));
+  pipeline.exporter->Export(image.at(0, 0));
 
   for (int v = 0; v < intrinsics.height(); ++v) {
     for (int u = 0; u < intrinsics.width(); ++u) {
       label_image_out->at(u, v)[0] = RenderEngine::MakeLabelFromRgb(
           image.at(u, v)[0], image.at(u, v)[1], image.at(u, v)[2]);
     }
+  }
+
+  if (show_window) {
+    ImageRgba8U display_image(intrinsics.width(), intrinsics.height());
+    render::ColorizeLabelImage(*label_image_out, &display_image);
+
+    // Drake images are stored top row first; VTK's framebuffer pixel APIs
+    // expect bottom row first. Reverse the rows into a contiguous staging
+    // buffer before replacing the encoded label render.
+    const int row_size = display_image.width() * ImageRgba8U::kNumChannels;
+    std::vector<ImageRgba8U::T> bottom_up(display_image.size());
+    for (int v = 0; v < display_image.height(); ++v) {
+      const ImageRgba8U::T* source = display_image.at(0, v);
+      ImageRgba8U::T* destination =
+          bottom_up.data() + (display_image.height() - 1 - v) * row_size;
+      std::copy_n(source, row_size, destination);
+    }
+
+    pipeline.window->SetRGBACharPixelData(
+        0, 0, display_image.width() - 1, display_image.height() - 1,
+        bottom_up.data(), /*front=*/0, /*blend=*/0);
+    pipeline.window->SwapBuffersOn();
+    pipeline.window->Frame();
   }
 }
 

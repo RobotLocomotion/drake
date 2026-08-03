@@ -113,6 +113,18 @@ def _main():
         default=False,
         help=show_rgbd_renderer_help,
     )
+    assert defaults["sensor_image_type"] == "color"
+    render_image_types = _ModelVisualizer._SUPPORTED_RGBD_IMAGE_TYPES
+    args_parser.add_argument(
+        "--sensor_image_type",
+        choices=render_image_types,
+        default="color",
+        help="The type of image to display in the preview window provided "
+        "when --show_rgbd_sensor is defined. Must be one of: "
+        f"{', '.join(repr(x) for x in render_image_types)}. Ignored if "
+        "--show_rgbd_sensor doesn't require a preview window.",
+    )
+
     assert defaults["environment_map"] == Path()
     args_parser.add_argument(
         "--environment_map",
@@ -190,6 +202,7 @@ def _main():
     visualizer = _ModelVisualizer(
         visualize_frames=args.visualize_frames,
         show_rgbd_sensor=args.show_rgbd_sensor,
+        sensor_image_type=args.sensor_image_type,
         triad_length=args.triad_length,
         triad_radius=args.triad_radius,
         triad_opacity=args.triad_opacity,
