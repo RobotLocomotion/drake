@@ -70,7 +70,6 @@ bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # n
 # is used by default.
 
 bazel_dep(name = "glib", version = "2.82.2.bcr.9", repo_name = "module_glib")
-bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
 
 # Add non-replaceable C++ module dependencies that are used by Drake's
 # implementation.
@@ -78,6 +77,7 @@ bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
 bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
 bazel_dep(name = "nanobind", version = "2.13.0", repo_name = "module_nanobind")
 bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
+bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
 
 # Add additional modules we use at build-time (not runtime dependencies).
 
@@ -167,6 +167,12 @@ use_repo(
     "lapack",
     "opencl",
     #
+    # Aliases for C++ dependencies that are used by our implementation,
+    # but (unlike the prior group) these are not configurable.
+    #
+    "libjpeg",
+    "zlib",
+    #
     # First-party dependencies (i.e., drake-maintained).
     #
     "drake_models",
@@ -190,10 +196,6 @@ use_repo(
     # deprecating it until we have nanobind ready.
     #
     "pybind11",
-    # TODO(jwnimmer-tri) Deprecate these. They are (or should be)
-    # non-configurable, so don't need a module extension.
-    "libjpeg",
-    "zlib",
 )
 
 # Load Java dependencies.

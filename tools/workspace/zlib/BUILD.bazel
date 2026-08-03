@@ -21,20 +21,6 @@ cc_static_hidden_library(
 )
 
 config_setting(
-    name = "flag_zlib_repo_hardcoded",
-    flag_values = {
-        "//tools/flags:zlib_repo": "hardcoded",
-    },
-)
-
-config_setting(
-    name = "flag_zlib_repo_default",
-    flag_values = {
-        "//tools/flags:zlib_repo": "default",
-    },
-)
-
-config_setting(
     name = "flag_private_runtime_repo_default_external",
     flag_values = {
         "//tools/flags:private_runtime_repo_default": "external",
@@ -44,7 +30,7 @@ config_setting(
 selects.config_setting_group(
     name = "flag_zlib_repo_default_hardcoded",
     match_all = [
-        ":flag_zlib_repo_default",
+        "//tools/flags:flag_zlib_repo_default",
         ":flag_private_runtime_repo_default_external",
     ],
 )
@@ -52,7 +38,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "use_hardcoded",
     match_any = [
-        ":flag_zlib_repo_hardcoded",
+        "//tools/flags:flag_zlib_repo_hardcoded",
         ":flag_zlib_repo_default_hardcoded",
     ],
 )
