@@ -7,8 +7,8 @@ def suitesparse_internal_repository(
         name = name,
         repository = "DrTimothyAldenDavis/SuiteSparse",
         upgrade_type = "release",
-        commit = "v7.12.2",
-        sha256 = "679412daa5f69af96d6976595c1ac64f252287a56e98cc4a8155d09cc7fd69e8",  # noqa
+        commit = "v7.12.3.paru",
+        sha256 = "99450d2a026f1fc1371bb8267675db59640d1f72b8e1ef3a1dc2449dedd62c7c",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

@@ -11,8 +11,8 @@ def gz_math_internal_repository(
         repository = "gazebosim/gz-math",
         upgrade_type = "tag",
         tags_pattern = "^(gz)",
-        commit = "gz-math9_9.1.0",
-        sha256 = "d6d266a2a5094b977a3cfec4646efb2eede5fd36781a53faaa37ba416da5cdaf",  # noqa
+        commit = "gz-math9_9.2.0",
+        sha256 = "fed32da2ac16b96c45e87ceb03b0fae6cbc8a860c8341bd9a2549dffee1c1f59",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
