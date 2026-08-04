@@ -1,11 +1,11 @@
 import pydrake.visualization as mut  # ruff: isort: skip
 
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 import importlib
 import io
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import umsgpack
@@ -68,7 +68,7 @@ class TestModelVisualizerCamera(unittest.TestCase):
         # N.B. We don't need perception geometry in the scene -- we'll rely on
         # the RgbdSensor unit tests to check that cameras work as advertised.
         # Our only goal here is to achieve statement-level code coverage of the
-        # ModelVisualizer code when show_rgbd_sensor=True.
+        # ModelVisualizer code when show_rgbd_sensor is enabled.
         model = """<?xml version="1.0"?>
           <sdf version="1.9">
             <model name="sample">
@@ -76,7 +76,7 @@ class TestModelVisualizerCamera(unittest.TestCase):
             </model>
           </sdf>
         """
-        dut = mut.ModelVisualizer(meshcat=meshcat, show_rgbd_sensor=True)
+        dut = mut.ModelVisualizer(meshcat=meshcat, show_rgbd_sensor="vtk")
         dut.parser().AddModelsFromString(model, "sdf")
         dut.Run(loop_once=True)
 
@@ -103,13 +103,23 @@ class TestModelVisualizerCamera(unittest.TestCase):
         )
         self.assertIsInstance(preview_image, ImageRgba8U)
 
-    def test_rgbd_renderer_configuration(self):
+    def test_show_rgbd_sensor_configuration(self):
         """Checks that the preview camera gets the selected renderer."""
+
+        for value, expected in [
+            (None, None),
+            (False, None),
+            (True, "vtk"),
+            ("vtk", "vtk"),
+        ]:
+            with self.subTest(value=value):
+                dut = mut.ModelVisualizer(show_rgbd_sensor=value)
+                self.assertEqual(dut._show_rgbd_sensor, expected)
 
         # Note: we're specifically requesting show_rgbd_sensor, because
         # _make_rgbd_sensor_config() is only invoked for that setting.
         vtk_config = mut.ModelVisualizer(
-            show_rgbd_sensor=True, rgbd_renderer="vtk"
+            show_rgbd_sensor="vtk"
         )._make_rgbd_sensor_config()
         self.assertIsInstance(vtk_config.renderer_class, RenderEngineVtkParams)
 
@@ -121,42 +131,38 @@ class TestModelVisualizerCamera(unittest.TestCase):
             ("vtk", "gl"),
         ):
             gl_config = mut.ModelVisualizer(
-                show_rgbd_sensor=True, rgbd_renderer="gl"
+                show_rgbd_sensor="gl"
             )._make_rgbd_sensor_config()
         self.assertIsInstance(gl_config.renderer_class, RenderEngineGlParams)
 
-        with self.assertRaisesRegex(ValueError, "rgbd_renderer"):
-            mut.ModelVisualizer(rgbd_renderer="bad")
+        with self.assertRaisesRegex(ValueError, "show_rgbd_sensor"):
+            mut.ModelVisualizer(show_rgbd_sensor="bad")
 
-    def test_rgbd_renderer_availability_messaging(self):
+    def test_show_rgbd_sensor_availability_messaging(self):
         """Checks that RenderEngineGl is offered only when available."""
         self.addCleanup(importlib.reload, mut_private)
 
         with patch.object(mut_geometry, "kHasRenderEngineGl", True):
-            model_visualizer_cls = importlib.reload(
-                mut_private
-            ).ModelVisualizer
+            model_visualizer_cls = importlib.reload(mut_private).ModelVisualizer
             self.assertEqual(
                 model_visualizer_cls._supported_rgbd_renderers,
                 ("vtk", "gl"),
             )
-            dut = model_visualizer_cls(rgbd_renderer="gl")
+            dut = model_visualizer_cls(show_rgbd_sensor="gl")
             self.assertIsInstance(
                 dut._make_rgbd_renderer_class(show_window=False),
                 RenderEngineGlParams,
             )
 
         with patch.object(mut_geometry, "kHasRenderEngineGl", False):
-            model_visualizer_cls = importlib.reload(
-                mut_private
-            ).ModelVisualizer
+            model_visualizer_cls = importlib.reload(mut_private).ModelVisualizer
             self.assertEqual(
                 model_visualizer_cls._supported_rgbd_renderers, ("vtk",)
             )
             with self.assertRaisesRegex(ValueError, "kHasRenderEngineGl"):
-                model_visualizer_cls(rgbd_renderer="gl")
+                model_visualizer_cls(show_rgbd_sensor="gl")
 
-    def test_rgbd_renderer_cli_help(self):
+    def test_show_rgbd_sensor_cli_help(self):
         """Checks that CLI help lists only supported renderers."""
 
         self.addCleanup(importlib.reload, mut_private)
@@ -181,10 +187,123 @@ class TestModelVisualizerCamera(unittest.TestCase):
                 model_visualizer_cli._main()
             return stdout.getvalue()
 
+        with_gl_help = get_help(has_render_engine_gl=True)
         self.assertIn(
-            "--rgbd_renderer {vtk,gl}",
-            get_help(has_render_engine_gl=True),
+            "--show_rgbd_sensor [{BOOL,vtk,gl}]", with_gl_help
         )
+        self.assertIn("Supported renderers: vtk, gl.", with_gl_help)
         no_gl_help = get_help(has_render_engine_gl=False)
-        self.assertIn("--rgbd_renderer {vtk}", no_gl_help)
+        self.assertIn("--show_rgbd_sensor [{BOOL,vtk}]", no_gl_help)
+        self.assertIn("Supported renderers: vtk.", no_gl_help)
+        self.assertNotIn("--rgbd_renderer", no_gl_help)
         self.assertIn("kHasRenderEngineGl", no_gl_help)
+
+    def test_show_rgbd_sensor_cli_values(self):
+        """Checks the optional renderer value for --show_rgbd_sensor."""
+        model_visualizer_cls = Mock()
+        model_visualizer_cls._get_constructor_defaults.return_value = (
+            mut.ModelVisualizer._get_constructor_defaults()
+        )
+        model_visualizer_cls._supported_rgbd_renderers = ("vtk", "gl")
+
+        for argv, expected in [
+            ([], None),
+            (["--show_rgbd_sensor"], "vtk"),
+            *(
+                (["--show_rgbd_sensor", value], "vtk")
+                for value in ("y", "yes", "t", "true", "on", "1", "TRUE")
+            ),
+            *(
+                (["--show_rgbd_sensor", value], None)
+                for value in ("n", "no", "f", "false", "off", "0", "FALSE")
+            ),
+            (["--show_rgbd_sensor", "vtk"], "vtk"),
+            (["--show_rgbd_sensor", "gl"], "gl"),
+            (["--show_rgbd_sensor=gl"], "gl"),
+        ]:
+            with (
+                self.subTest(argv=argv),
+                patch.object(
+                    model_visualizer_cli,
+                    "_ModelVisualizer",
+                    model_visualizer_cls,
+                ),
+                patch.object(
+                    sys,
+                    "argv",
+                    ["model_visualizer", *argv, "model.sdf"],
+                ),
+            ):
+                model_visualizer_cli._main()
+            self.assertEqual(
+                model_visualizer_cls.call_args.kwargs["show_rgbd_sensor"],
+                expected,
+            )
+
+    def test_show_rgbd_sensor_cli_unsupported_renderer(self):
+        """Checks that an unavailable renderer is an option-value error."""
+        model_visualizer_cls = Mock()
+        model_visualizer_cls._get_constructor_defaults.return_value = (
+            mut.ModelVisualizer._get_constructor_defaults()
+        )
+        model_visualizer_cls._supported_rgbd_renderers = ("vtk",)
+        stderr = io.StringIO()
+        with (
+            patch.object(
+                model_visualizer_cli,
+                "_ModelVisualizer",
+                model_visualizer_cls,
+            ),
+            patch.object(
+                sys,
+                "argv",
+                [
+                    "model_visualizer",
+                    "--show_rgbd_sensor",
+                    "gl",
+                    "model.sdf",
+                ],
+            ),
+            redirect_stderr(stderr),
+            self.assertRaisesRegex(SystemExit, "2"),
+        ):
+            model_visualizer_cli._main()
+        self.assertIn(
+            "argument --show_rgbd_sensor: invalid value 'gl'; "
+            "must be a boolean or one of: vtk",
+            stderr.getvalue(),
+        )
+
+    def test_show_rgbd_sensor_cli_unknown_renderer(self):
+        """Checks that an unknown renderer is an option-value error."""
+        model_visualizer_cls = Mock()
+        model_visualizer_cls._get_constructor_defaults.return_value = (
+            mut.ModelVisualizer._get_constructor_defaults()
+        )
+        model_visualizer_cls._supported_rgbd_renderers = ("vtk", "gl")
+        stderr = io.StringIO()
+        with (
+            patch.object(
+                model_visualizer_cli,
+                "_ModelVisualizer",
+                model_visualizer_cls,
+            ),
+            patch.object(
+                sys,
+                "argv",
+                [
+                    "model_visualizer",
+                    "--show_rgbd_sensor",
+                    "bob",
+                    "model.sdf",
+                ],
+            ),
+            redirect_stderr(stderr),
+            self.assertRaisesRegex(SystemExit, "2"),
+        ):
+            model_visualizer_cli._main()
+        self.assertIn(
+            "argument --show_rgbd_sensor: invalid value 'bob'; "
+            "must be a boolean or one of: vtk, gl",
+            stderr.getvalue(),
+        )

@@ -38,12 +38,49 @@ import argparse
 import logging
 import os
 from pathlib import Path
+import sys
 import textwrap
 
 from pydrake.common import configure_logging as _configure_logging
 from pydrake.visualization._model_visualizer import (
     ModelVisualizer as _ModelVisualizer,
 )
+
+
+_TRUE_STRINGS = ("y", "yes", "t", "true", "on", "1")
+_FALSE_STRINGS = ("n", "no", "f", "false", "off", "0")
+_MODEL_FILE_SUFFIXES = (".urdf", ".sdf", ".xml", ".dmd.yaml", ".obj")
+
+
+def _parse_show_rgbd_sensor(value):
+    """Converts the command-line sensor option to its renderer or None."""
+    value = value.lower()
+    if value in _TRUE_STRINGS:
+        return "vtk"
+    if value in _FALSE_STRINGS:
+        return None
+    if value not in _ModelVisualizer._supported_rgbd_renderers:
+        raise argparse.ArgumentTypeError(
+            f"invalid value {value!r}; must be a boolean or one of: "
+            + ", ".join(_ModelVisualizer._supported_rgbd_renderers)
+        )
+    return value
+
+
+def _disambiguate_show_rgbd_sensor(argv):
+    """Prevents a bare option from consuming the following filename."""
+    result = []
+    for index, item in enumerate(argv):
+        if item == "--show_rgbd_sensor":
+            next_item = argv[index + 1] if index + 1 < len(argv) else None
+            next_is_filename_or_option = next_item is None or (
+                next_item.startswith("-")
+                or next_item.lower().endswith(_MODEL_FILE_SUFFIXES)
+            )
+            if next_is_filename_or_option:
+                item = "--show_rgbd_sensor=true"
+        result.append(item)
+    return result
 
 
 def _main():
@@ -95,29 +132,28 @@ def _main():
         action="store_true",
         help="Visualize the frames as triads for all links.",
     )
-    assert defaults["show_rgbd_sensor"] is False
-    args_parser.add_argument(
-        "--show_rgbd_sensor",
-        action="store_true",
-        help="Add and show an RgbdSensor. At the moment, the image display "
-        "uses a native window so will not work in a remote or cloud "
-        "runtime environment.",
-    )
-    # assert defaults["rgbd_renderer"] == "vtk"
+    assert defaults["show_rgbd_sensor"] is None
     rgbd_renderers = _ModelVisualizer._supported_rgbd_renderers
-    rgbd_renderer_help = (
-        "Render engine for --show_rgbd_sensor (default: %(default)s)."
+    show_rgbd_sensor_help = (
+        "Add and show an RgbdSensor. With no value, vtk is used. A boolean "
+        "value enables or disables the sensor, or a render engine can be "
+        "named explicitly. At the moment, the image display uses a native "
+        "window so will not work in a remote or cloud runtime environment. "
+        f"Supported renderers: {', '.join(rgbd_renderers)}."
     )
     if "gl" not in rgbd_renderers:
-        rgbd_renderer_help += (
+        show_rgbd_sensor_help += (
             " The 'gl' option is not available because "
             "pydrake.geometry.kHasRenderEngineGl is False."
         )
     args_parser.add_argument(
-        "--rgbd_renderer",
-        choices=rgbd_renderers,
-        default=defaults["rgbd_renderer"],
-        help=rgbd_renderer_help,
+        "--show_rgbd_sensor",
+        nargs="?",
+        const=True,
+        type=_parse_show_rgbd_sensor,
+        metavar="{BOOL," + ",".join(rgbd_renderers) + "}",
+        default=defaults["show_rgbd_sensor"],
+        help=show_rgbd_sensor_help,
     )
     assert defaults["environment_map"] == Path()
     args_parser.add_argument(
@@ -188,7 +224,9 @@ def _main():
         action="store_true",
         help="Run the evaluation loop once and then quit.",
     )
-    args = args_parser.parse_args()
+    args = args_parser.parse_args(
+        _disambiguate_show_rgbd_sensor(sys.argv[1:])
+    )
 
     if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
         os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
@@ -203,7 +241,6 @@ def _main():
         pyplot=args.pyplot,
         environment_map=args.environment_map,
         no_lights=args.no_lights,
-        rgbd_renderer=args.rgbd_renderer,
         compliance_type=args.compliance_type,
     )
     package_map = visualizer.package_map()

@@ -81,8 +81,7 @@ class ModelVisualizer:
         triad_radius=0.005,
         triad_opacity=0.9,
         publish_contacts=True,
-        show_rgbd_sensor=False,
-        rgbd_renderer: str = "vtk",
+        show_rgbd_sensor: bool | str | None = None,
         browser_new=False,
         pyplot=False,
         meshcat=None,
@@ -99,18 +98,16 @@ class ModelVisualizer:
           triad_radius: the radius of visualization triads.
           triad_opacity: the opacity of visualization triads.
           publish_contacts: a flag for VisualizationConfig.
-          show_rgbd_sensor: when True, adds an RgbdSensor to the scene and pops
-             up a local preview window of the rgb image. At the moment, the
-             image display uses a native window so will not work in a remote or
-             cloud runtime environment.
+          show_rgbd_sensor: when ``True``, ``"vtk"``, or ``"gl"``, adds an
+             RgbdSensor to the scene and pops up a local preview window of the
+             rgb image. ``True`` selects RenderEngineVtk; ``False`` or
+             ``None`` disables the sensor. At the moment, the image display
+             uses a native window so will not work in a remote or cloud
+             runtime environment.
           environment_map: Meshcat environment map filename.
           no_lights: optionally disable the lights in the render engine and
              meshcat. This is useful when using an environment map to assess
              the effect of the map.
-          rgbd_renderer: the render engine used by the optional RgbdSensor.
-             RenderEngineVtk ("vtk") is always available. RenderEngineGl
-             ("gl") is available when ``pydrake.geometry.kHasRenderEngineGl``
-             is True.
           compliance_type: Overrides the DefaultProximityProperties setting
              with same name. Can be set to either "rigid" or "compliant" for
              hydroelastic contact, or "undefined" to use point contact.
@@ -133,18 +130,24 @@ class ModelVisualizer:
         self._triad_radius = triad_radius
         self._triad_opacity = triad_opacity
         self._publish_contacts = publish_contacts
-        self._show_rgbd_sensor = show_rgbd_sensor
-        if rgbd_renderer not in self._supported_rgbd_renderers:
-            if rgbd_renderer == "gl":
+        if show_rgbd_sensor is True:
+            show_rgbd_sensor = "vtk"
+        elif show_rgbd_sensor is False:
+            show_rgbd_sensor = None
+        if (
+            show_rgbd_sensor is not None
+            and show_rgbd_sensor not in self._supported_rgbd_renderers
+        ):
+            if show_rgbd_sensor == "gl":
                 raise ValueError(
-                    "rgbd_renderer='gl' requires "
+                    "show_rgbd_sensor='gl' requires "
                     "pydrake.geometry.kHasRenderEngineGl to be True"
                 )
-            choices = ", ".join(
-                repr(x) for x in self._supported_rgbd_renderers
+            choices = ", ".join(repr(x) for x in self._supported_rgbd_renderers)
+            raise ValueError(
+                f"show_rgbd_sensor must be None or one of: {choices}"
             )
-            raise ValueError(f"rgbd_renderer must be one of: {choices}")
-        self._rgbd_renderer = rgbd_renderer
+        self._show_rgbd_sensor = show_rgbd_sensor
         self._browser_new = browser_new
         self._pyplot = pyplot
         self._meshcat = meshcat
@@ -211,8 +214,8 @@ class ModelVisualizer:
     def _get_constructor_defaults():
         """
         Returns a dict of the default values used in our constructor's named
-        keyword arguments (for any non-None values); this helps our companion
-        main() function share those same defaults.
+        keyword arguments; this helps our companion main() function share
+        those same defaults.
         """
         result = dict()
         prototype = ModelVisualizer()
@@ -226,11 +229,11 @@ class ModelVisualizer:
             "browser_new",
             "pyplot",
             "environment_map",
-            "rgbd_renderer",
             "compliance_type",
         ]:
             value = getattr(prototype, f"_{name}")
-            assert value is not None
+            if name != "show_rgbd_sensor":
+                assert value is not None
             result[name] = value
         return result
 
@@ -257,7 +260,7 @@ class ModelVisualizer:
             # intensity.
             lights = [LightParameter(intensity=0)]
 
-        if self._rgbd_renderer == "gl":
+        if self._show_rgbd_sensor == "gl":
             return RenderEngineGlParams(lights=lights)
 
         vtk_params = RenderEngineVtkParams(
@@ -280,7 +283,7 @@ class ModelVisualizer:
     def _make_rgbd_sensor_config(self):
         """Returns the configuration for the preview camera, assuming we want
         to display an interactive window."""
-        assert self._show_rgbd_sensor == True
+        assert self._show_rgbd_sensor in self._supported_rgbd_renderers
         camera_config = CameraConfig(width=1440, height=1080)
         camera_config.name = "preview"
         camera_config.X_PB.base_frame = "$rgbd_sensor_body"
@@ -300,7 +303,7 @@ class ModelVisualizer:
             # intensity.
             lights = [LightParameter(intensity=0)]
 
-        if self._rgbd_renderer == "gl":
+        if self._show_rgbd_sensor == "gl":
             camera_config.renderer_class = RenderEngineGlParams(lights=lights)
             return camera_config
 
