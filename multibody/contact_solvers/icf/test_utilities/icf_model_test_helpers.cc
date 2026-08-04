@@ -434,10 +434,10 @@ void AddDistanceConstraints(IcfModel<T>* model) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeUnconstrainedModel<T>, &MakeModelReducible<T>, &AddBallConstraints<T>,
-     &AddCouplerConstraint<T>, &AddDistanceConstraints<T>,
-     &AddGainConstraints<T>, &AddLimitConstraints<T>, &AddPatchConstraints<T>,
-     &AddWeldConstraints<T>));
+    (&MakeUnconstrainedModel<T>, &MakeModelReducible<T>,
+     &AddCouplerConstraint<T>, &AddGainConstraints<T>, &AddLimitConstraints<T>,
+     &AddPatchConstraints<T>, &AddWeldConstraints<T>, &AddBallConstraints<T>,
+     &AddDistanceConstraints<T>));
 
 }  // namespace internal
 }  // namespace icf

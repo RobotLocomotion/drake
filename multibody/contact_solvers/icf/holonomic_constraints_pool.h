@@ -57,21 +57,57 @@ This base owns all the constraint-agnostic machinery: the regularization R, the
 bias v̂, the cost, gradient, block Hessian, the sparsity pattern, and model
 reduction.
 
-Each concrete pool supplies the following through the CRTP. The signatures are
+Each concrete pool supplies the hooks below through the CRTP. The signatures are
 checked by IsHolonomicConstraintsDerived (declared below).
 
 Numeric hooks:
-  - CalcConstraintVelocity() → vc, the constraint velocity (ℝᴺ).
-  - CalcSpatialImpulses()    → (Γ_Bo, Γ_Ao), the impulse at Bo and Ao resulting
-                               from the generalized impulse γ.
-  - CalcHessianBlocks()      → The body-space Hessian blocks
-                               G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X) with G = R⁻¹.
+
+  Computes and returns the constraint velocity vc ∈ ℝᴺ of the k-th constraint,
+  given the world-frame spatial velocity V_WB of body B and V_WA of body
+  A. V_WA is null when body A is anchored.
+
+      ConstraintVector CalcConstraintVelocity(
+          int k, const Vector6<T>& V_WB, const Vector6<T>* V_WA) const;
+
+  Computes the spatial impulses produced by the k-th constraint's generalized
+  impulse gamma, writing the impulse on body B (at its origin Bo) to
+  Gamma_Bo and the impulse on body A (at its origin Ao) to Gamma_Ao.
+  Gamma_Ao is null when body A is anchored.
+
+      void CalcSpatialImpulses(
+          int k, const ConstraintVector& gamma, Vector6<T>* Gamma_Bo,
+          Vector6<T>* Gamma_Ao) const;
+
+  Computes the k-th constraint's body-space Hessian blocks
+  G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X), with the constraint-space Hessian G = R⁻¹ supplied
+  as R_inv. Writes the block for body B to  G_Bp, the block for body A to G_Ap,
+  and the A/B cross term to G_cross. G_Ap and G_cross are either both non-null
+  (body A dynamic) or both null (body A anchored).
+
+      void CalcHessianBlocks(
+          int k, const T& R_inv, Matrix6<T>* G_Bp, Matrix6<T>* G_Ap,
+          Matrix6<T>* G_cross) const;
 
 Bookkeeping hooks:
-  - GetDataPool()       → the derived's typed data pool within an IcfData.
-  - ResizeGeometry()    → (re)sizes the derived's own geometry storage.
-  - ReduceGeometryInto()→ copies one constraint's geometry into a reduced pool.
-  - kFlipNegatesG0      → a static constexpr trait function (see below).
+
+  Returns the derived pool's typed data pool stored within data.
+
+      const DataPool& GetDataPool(const IcfData<T>& data) const;
+
+  (Re)sizes the derived pool's own geometry storage to hold num_constraints
+  constraints.
+
+      void ResizeGeometry(int num_constraints);
+
+  Copies the k-th constraint's geometry into the reduced pool, flipping the
+  roles of bodies A and B iff flip is true.
+
+      void ReduceGeometryInto(Derived* reduced, int k, bool flip) const;
+
+  Returns whether the constraint function g₀ negates on an A/B flip during
+  model reduction (see FlipNegatesG0() below).
+
+        static constexpr bool FlipNegatesG0();
 
 @tparam_nonsymbolic_scalar
 @tparam N The number of constraint equations.
@@ -223,19 +259,18 @@ concept IsHolonomicConstraintsDerived =
              typename Pool<double>::ConstraintVector gamma, double R_inv,
              Vector6<double>* spatial_impulse, Matrix6<double>* hessian_block,
              int k, bool flip) {
-      /* Computes vc ∈ ℝᴺ, the constraint velocity of constraint k. V_WA is null
-      when body A is anchored. */
+      /* Computes vc ∈ ℝᴺ, the constraint velocity of constraint k. V_WA will be
+      null when body A is anchored. */
       {
         pool.CalcConstraintVelocity(k, V_WB, V_WA)
       } -> std::same_as<typename Pool<double>::ConstraintVector>;
 
-      /* Shifts the constraint impulse γ of constraint k to the body origins,
-      writing Γ_Bo on B and (when non-null) Γ_Ao on A. */
+      /* Shifts the constraint impulse γ of constraint k to the body origins.
+       */
       pool.CalcSpatialImpulses(k, gamma, spatial_impulse, spatial_impulse);
 
       /* Builds the body-space Hessian blocks G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X) of
-      constraint k. The A and cross blocks are written only when non-null (A
-      dynamic). */
+      constraint k. */
       pool.CalcHessianBlocks(k, R_inv, hessian_block, hessian_block,
                              hessian_block);
 

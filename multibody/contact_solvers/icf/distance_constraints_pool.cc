@@ -20,7 +20,6 @@ void DistanceConstraintsPool<T>::Set(int index, int bodyA, int bodyB,
   p_AP_W_[index] = p_AP_W;
   p_BQ_W_[index] = p_BQ_W;
   p_hat_W_[index] = p_hat_W;
-  // Constraint function g₀ = d₀ − ℓ ∈ ℝ.
   this->SetCommon(index, bodyA, bodyB, Vector1<T>(g0), stiffness, damping);
 }
 

@@ -466,6 +466,50 @@ GTEST_TEST(IcfBuilder, DistanceConstraintCoincidentPoints) {
   EXPECT_NEAR(pool.g0()[0](0), -kFreeLength, 1e-14);
 }
 
+// The pool requires body B to be dynamic. When a constraint's body B is
+// anchored (but A is not), the builder swaps the roles and the attachment
+// points so the pool's body B is the dynamic body.
+GTEST_TEST(IcfBuilder, DistanceConstraintAnchoredBodyB) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  const auto M = SpatialInertia<double>::MakeUnitary();
+  const RigidBody<double>& dynamic_body = plant.AddRigidBody("dynamic", M);
+  const RigidBody<double>& anchored_body = plant.AddRigidBody("anchored", M);
+  plant.AddJoint<WeldJoint>("weld", plant.world_body(), RigidTransformd(),
+                            anchored_body, RigidTransformd(),
+                            RigidTransformd());
+  // Pass the anchored body as B (second). The points are distinct so we can
+  // confirm they get swapped along with the bodies. Both bodies are at the
+  // world origin (identity pose), so the world-frame points are unrotated.
+  const Vector3d p_AP(0.1, 0.0, 0.0);
+  const Vector3d p_BQ(0.2, 0.0, 0.0);
+  plant.AddDistanceConstraint(dynamic_body, p_AP, anchored_body, p_BQ,
+                              /* distance= */ 0.1);
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  ASSERT_EQ(model.num_distance_constraints(), 1);
+
+  // Roles are swapped: the pool's body B is the dynamic body and body A is the
+  // anchored one, with the attachment points swapped to match.
+  const auto& pool = model.distance_constraints_pool();
+  EXPECT_EQ(pool.body_pairs()[0].first, anchored_body.index());
+  EXPECT_EQ(pool.body_pairs()[0].second, dynamic_body.index());
+  EXPECT_TRUE(CompareMatrices(pool.p_AP_W()[0], p_BQ));
+  EXPECT_TRUE(CompareMatrices(pool.p_BQ_W()[0], p_AP));
+}
+
 GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};

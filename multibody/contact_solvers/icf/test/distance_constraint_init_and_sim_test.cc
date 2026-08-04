@@ -77,9 +77,11 @@ constexpr double kFreeLength = 0.3;
 const Vector3d kPWorld(0.0, 0.0, 0.85);
 
 // Builds the diagram/plant with a distance constraint (rigid iff stiffness is
-// infinite), starts box2 with a large initial distance error, simulates with
-// CENIC, and returns the final distance ‖p_WQ − p_WP‖.
-double SimulateAndGetFinalDistance(double stiffness, double damping) {
+// infinite), places box2's origin at p_WB2_initial, simulates with CENIC, and
+// returns the final distance ‖p_WQ − p_WP‖.
+double SimulateAndGetFinalDistance(
+    double stiffness, double damping,
+    const Vector3d& p_WB2_initial = Vector3d(0.0, 0.0, 0.05)) {
   DiagramBuilder<double> builder;
 
   // Continuous-time plant is required for the CENIC integrator.
@@ -100,13 +102,13 @@ double SimulateAndGetFinalDistance(double stiffness, double damping) {
   plant.Finalize();
   auto diagram = builder.Build();
 
-  // Start box2 well below its constrained position: the constrained center is
-  // at distance ~kFreeLength below P (i.e. z ≈ 0.55). Start at z = 0.05, so the
-  // initial distance is 0.8 — a large error CENIC must resolve.
+  // Place box2's origin (point Q) at the requested initial position. The
+  // default (z = 0.05) is well below the constrained position (z ≈ 0.55), an
+  // initial distance of 0.8 — a large error CENIC must resolve.
   auto context = diagram->CreateDefaultContext();
   auto& plant_context = plant.GetMyMutableContextFromRoot(context.get());
-  plant.SetFloatingBaseBodyPoseInWorldFrame(
-      &plant_context, box2, RigidTransformd(Vector3d(0.0, 0.0, 0.05)));
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, box2,
+                                            RigidTransformd(p_WB2_initial));
 
   auto simulator =
       std::make_unique<Simulator<double>>(*diagram, std::move(context));
@@ -129,9 +131,8 @@ double SimulateAndGetFinalDistance(double stiffness, double damping) {
 // A rigid distance constraint should drive the distance to the free length.
 GTEST_TEST(DistanceConstraintSimulation, RigidLargeInitialError) {
   const double distance = SimulateAndGetFinalDistance(
-      /*stiffness=*/std::numeric_limits<double>::infinity(), /*damping=*/0.0);
-  // The near-rigid regularization allows a tiny stretch under gravity; 1e-3 is
-  // comfortably tight (< 1 mm) while robust to that residual compliance.
+      /* stiffness= */ std::numeric_limits<double>::infinity(),
+      /* damping= */ 0.0);
   EXPECT_NEAR(distance, kFreeLength, 1e-3);
 }
 
@@ -146,6 +147,17 @@ GTEST_TEST(DistanceConstraintSimulation, CompliantSpring) {
   const double distance = SimulateAndGetFinalDistance(kStiffness, kDamping);
   const double expected_distance = kFreeLength + kMass * kGravity / kStiffness;
   EXPECT_NEAR(distance, expected_distance, 1e-3);
+}
+
+// Even starting coincident (Q at P, so d₀ = 0 and the constraint direction is
+// initially undefined), the constraint must escape the singular configuration
+// and end up near the free length.
+GTEST_TEST(DistanceConstraintSimulation, RigidCoincidentInitialCondition) {
+  const double distance = SimulateAndGetFinalDistance(
+      /* stiffness= */ std::numeric_limits<double>::infinity(),
+      /* damping= */ 0.0,
+      /* p_WB2_initial= */ kPWorld);
+  EXPECT_NEAR(distance, kFreeLength, 1e-3);
 }
 
 }  // namespace
