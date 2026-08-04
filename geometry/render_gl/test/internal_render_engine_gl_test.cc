@@ -2520,6 +2520,67 @@ TEST_F(RenderEngineGlTest, ShowRenderLabel) {
   // TODO(SeanCurtis-TRI): Do the same for color labels when implemented.
 }
 
+// Confirms that when show_window=true, the window is displayed right side up.
+TEST_F(RenderEngineGlTest, ShowColorWindowIsRightSideUp) {
+  // A horizontal camera view of terrain produces an image whose top and
+  // bottom differ, making a vertical flip observable.
+  const RigidTransformd X_WR{
+      RotationMatrixd{AngleAxisd(-M_PI_2, Vector3d::UnitX())},
+      Vector3d(0, 0, 1)};
+  // Swap the camera-oriented light with a downward light so that the ground
+  // plane is fully illuminated (and not black).
+  RenderEngineGl engine(RenderEngineGlParams{
+      .default_clear_color = kBgColor,
+      .lights = {
+          {.type = "directional", .frame = "world", .direction = {0, 0, -1}}}});
+  engine.UpdateViewpoint(X_WR);
+  // Use a user-defined label for the terrain so the label window has
+  // non-background palette colors, making the orientation check non-trivial.
+  PerceptionProperties terrain_props;
+  terrain_props.AddProperty("label", "id", RenderLabel(1));
+  terrain_props.AddProperty("phong", "diffuse", kTerrainColor);
+  engine.RegisterVisual(GeometryId::get_new_id(), HalfSpace(), terrain_props,
+                        RigidTransformd::Identity(), false);
+
+  // By explicitly requesting the window to be shown, we're forcing the image
+  // to be blitted to the window -- that's when we can pull it back to see what
+  // was blitted.
+  const ColorRenderCamera camera(depth_camera_.core(), /* show_window= */ true);
+  ImageRgba8U image(kWidth, kHeight);
+  engine.RenderColorImage(camera, &image);
+
+  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+    const fs::path out_dir(dir);
+    systems::sensors::ImageIo{}.Save(image, out_dir / "right_side_up.png");
+  }
+
+  // Read the displayed front buffer. OpenGL reports its rows bottom-up, so a
+  // correctly presented window must equal the vertical flip of Drake's
+  // top-down image storage.
+  ImageRgba8U window(kWidth, kHeight);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+  glReadBuffer(GL_FRONT);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE,
+               window.at(0, 0));
+
+  int flipped_matches = 0;
+  int unflipped_matches = 0;
+  const int channel_count = kWidth * kHeight * 3;
+  for (int y = 0; y < kHeight; ++y) {
+    for (int x = 0; x < kWidth; ++x) {
+      for (int c = 0; c < 3; ++c) {
+        flipped_matches +=
+            window.at(x, y)[c] == image.at(x, kHeight - y - 1)[c];
+        unflipped_matches += window.at(x, y)[c] == image.at(x, y)[c];
+      }
+    }
+  }
+  EXPECT_GT(flipped_matches, channel_count * 0.99);
+  EXPECT_GT(flipped_matches, unflipped_matches);
+}
+
 // We need to confirm that two Convex shapes, referring to the same file name,
 // share the same underlying cached geometry.
 TEST_F(RenderEngineGlTest, ConvexGeometryReuse) {

@@ -103,6 +103,22 @@ def _main():
         "uses a native window so will not work in a remote or cloud "
         "runtime environment.",
     )
+    # assert defaults["rgbd_renderer"] == "vtk"
+    rgbd_renderers = _ModelVisualizer._supported_rgbd_renderers
+    rgbd_renderer_help = (
+        "Render engine for --show_rgbd_sensor (default: %(default)s)."
+    )
+    if "gl" not in rgbd_renderers:
+        rgbd_renderer_help += (
+            " The 'gl' option is not available because "
+            "pydrake.geometry.kHasRenderEngineGl is False."
+        )
+    args_parser.add_argument(
+        "--rgbd_renderer",
+        choices=rgbd_renderers,
+        default=defaults["rgbd_renderer"],
+        help=rgbd_renderer_help,
+    )
     assert defaults["environment_map"] == Path()
     args_parser.add_argument(
         "--environment_map",
@@ -187,6 +203,7 @@ def _main():
         pyplot=args.pyplot,
         environment_map=args.environment_map,
         no_lights=args.no_lights,
+        rgbd_renderer=args.rgbd_renderer,
         compliance_type=args.compliance_type,
     )
     package_map = visualizer.package_map()
