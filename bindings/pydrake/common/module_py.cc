@@ -42,11 +42,23 @@ void trigger_an_assertion_failure() {
 // Resolves to a Python handle given a type erased pointer. If the instance or
 // lowest-level RTTI type are unregistered, returns an empty handle.
 py::handle ResolvePyObject(const type_erased_ptr& ptr) {
+#ifdef PYDRAKE_USE_PYBIND11
+  auto py_type_info = py::detail::get_type_info(ptr.info);
+  return py::detail::get_object_handle(ptr.raw, py_type_info);
+#else
   // TODO(#21572) Use is_polymorphic for nanobind (or remove it from the struct,
   // if we change our mind and end up not needing it).
   unused(ptr.is_polymorphic);
-  auto py_type_info = py::detail::get_type_info(ptr.info);
-  return py::detail::get_object_handle(ptr.raw, py_type_info);
+  bool is_new{false};
+  PyObject* result{};
+  result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
+      py_rvp::reference, nullptr, &is_new);
+  if (is_new) {
+    py::object delete_me = py::steal(result);
+    return py::handle();
+  }
+  return py::steal(result);
+#endif
 }
 
 // Override for SetNiceTypeNamePtrOverride, to ensure that instances that are
@@ -71,7 +83,9 @@ namespace testing {
 // Registered type. Also a base class for UnregisteredDerivedType.
 class RegisteredType {
  public:
-  virtual ~RegisteredType() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RegisteredType);
+  RegisteredType() = default;
+  virtual ~RegisteredType() = default;
 };
 // Completely unregistered type.
 class UnregisteredType {};
@@ -244,7 +258,7 @@ void InitLowLevelModules(py::module_ m) {
       const std::string_view name_str(name.c_str());
       if (name_str == "contents" || name_str == "extension" ||
           name_str == "filename_hint") {
-        name = py::str(fmt::format("_{}", name_str));
+        name = py::str(fmt::format("_{}", name_str).c_str());
       }
       py::eval("object.__setattr__", py::globals())(self, name, value);
     });
@@ -256,8 +270,8 @@ void InitLowLevelModules(py::module_ m) {
           return py::bytes(contents.c_str(), contents.size());
         },
         [](Class& self, const py::bytes& contents) {
-          self = MemoryFile{
-              std::string{contents}, self.extension(), self.filename_hint()};
+          self = MemoryFile{std::string{contents.c_str(), contents.size()},
+              self.extension(), self.filename_hint()};
         });
     cls.def_prop_rw(
         "_extension", [](const Class& self) { return self.extension(); },
@@ -325,15 +339,21 @@ discussion), use e.g.
   // Admittedly, it's unusual for a python library like pydrake to raise
   // SystemExit, but for now its better than C++ ::abort() taking down the
   // whole interpreter with a worse diagnostic message.
-  py::register_exception_translator([](std::exception_ptr p) {
-    try {
-      if (p) {
-        std::rethrow_exception(p);
-      }
-    } catch (const drake::internal::assertion_error& e) {
-      PyErr_SetString(PyExc_SystemExit, e.what());
-    }
-  });
+  py::register_exception_translator(
+#ifdef PYDRAKE_USE_PYBIND11
+      [](std::exception_ptr p)
+#else  // PYDRAKE_USE_NANOBIND
+      [](const std::exception_ptr& p, void*)
+#endif
+      {
+        try {
+          if (p) {
+            std::rethrow_exception(p);
+          }
+        } catch (const drake::internal::assertion_error& e) {
+          PyErr_SetString(PyExc_SystemExit, e.what());
+        }
+      });
   // Convenient wrapper for querying FindResource(resource_path).
   m.def("FindResourceOrThrow", &FindResourceOrThrow,
       "Attempts to locate a Drake resource named by the given path string. "
@@ -357,7 +377,7 @@ discussion), use e.g.
       []() {
         py::object result;
         if (auto optional_result = MaybeGetDrakePath()) {
-          result = py::str(*optional_result);
+          result = py::str(optional_result->c_str());
         }
         return result;
       },
@@ -377,9 +397,10 @@ discussion), use e.g.
   // =========================================================================
 
   // Define `_testing` submodule.
-  py::module_ pydrake_top = py::eval("sys.modules['pydrake']", py::globals());
-  py::module_ pydrake_common =
-      py::eval("sys.modules['pydrake.common']", py::globals());
+  py::module_ pydrake_top =
+      py::cast<py::module_>(py::eval("sys.modules['pydrake']", py::globals()));
+  py::module_ pydrake_common = py::cast<py::module_>(
+      py::eval("sys.modules['pydrake.common']", py::globals()));
 
   py::module_ testing = pydrake_common.def_submodule("_testing");
   testing::def_testing(testing);
