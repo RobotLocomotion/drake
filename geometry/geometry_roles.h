@@ -1,18 +1,17 @@
 #pragma once
 
-#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/geometry/geometry_properties.h"
 
 namespace drake {
 namespace geometry {
 
 /** @addtogroup geometry_roles
-
+ @{
  Geometry roles help define how a real-world object is modeled in Drake.
 
  We model the physical presence of real-world objects with geometric
@@ -153,7 +152,9 @@ namespace geometry {
  isn't an error, but it does mean that property values would be copied and
  persisted without value.
 
- Next topic: @ref proximity_queries  */
+ Next topic: @ref proximity_queries
+ @}
+ */
 
 /** The set of properties for geometry used in a _proximity_ role.
 
@@ -224,8 +225,6 @@ enum class RoleAssign {
 
 std::string to_string(const Role& role);
 
-std::ostream& operator<<(std::ostream& out, const Role& role);
-
 //@}
 
 /** @name  Convenience functions
@@ -243,8 +242,4 @@ IllustrationProperties MakePhongIllustrationProperties(
 }  // namespace geometry
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::geometry::Role> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::geometry, Role, x, drake::geometry::to_string(x))

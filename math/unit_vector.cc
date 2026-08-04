@@ -32,7 +32,7 @@ Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
           " The measures must be finite and the vector must have a magnitude of"
           " at least {} to normalize. If you are confident that v's direction"
           " is meaningful, pass v.normalized() instead of v.",
-          function_name, fmt_eigen(DiscardGradient(v).transpose()),
+          function_name, fmt_eigen(DiscardGradient(v)),
           ExtractDoubleOrThrow(norm), kMinMagnitude));
     }
   }
@@ -71,7 +71,7 @@ void ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
           "{}(): The unit_vector argument {} is not a unit vector.\n"
           "|unit_vector| = {}\n"
           "||unit_vector| - 1| = {} is greater than {}.",
-          function_name, fmt_eigen(unit_vector.transpose()), norm, norm_diff,
+          function_name, fmt_eigen(unit_vector), norm, norm_diff,
           tolerance_unit_vector_norm));
     }
   } else {

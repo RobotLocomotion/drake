@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/examples_compass_gait.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/compass_gait/compass_gait.h"
@@ -10,20 +10,20 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineExamplesCompassGait(py::module m) {
+void DefineExamplesCompassGait(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::compass_gait;
-  constexpr auto& doc = pydrake_doc.drake.examples.compass_gait;
+  constexpr auto& doc =
+      pydrake_doc_examples_compass_gait.drake.examples.compass_gait;
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
   // conversion.
   using T = double;
 
-  py::class_<CompassGait<T>, LeafSystem<T>>(
-      m, "CompassGait", doc.CompassGait.doc)
+  class_<CompassGait<T>, LeafSystem<T>>(m, "CompassGait", doc.CompassGait.doc)
       .def(py::init<>(), doc.CompassGait.ctor.doc)
       .def("get_minimal_state_output_port",
           &CompassGait<T>::get_minimal_state_output_port,
@@ -34,7 +34,7 @@ void DefineExamplesCompassGait(py::module m) {
           py_rvp::reference_internal,
           doc.CompassGait.get_floating_base_state_output_port.doc);
 
-  py::class_<CompassGaitParams<T>, BasicVector<T>>(
+  class_<CompassGaitParams<T>, BasicVector<T>>(
       m, "CompassGaitParams", doc.CompassGaitParams.doc)
       .def(py::init<>(), doc.CompassGaitParams.ctor.doc)
       .def("mass_hip", &CompassGaitParams<T>::mass_hip,
@@ -63,7 +63,7 @@ void DefineExamplesCompassGait(py::module m) {
       .def("set_slope", &CompassGaitParams<T>::set_slope,
           doc.CompassGaitParams.set_slope.doc);
 
-  py::class_<CompassGaitContinuousState<T>, BasicVector<T>>(
+  class_<CompassGaitContinuousState<T>, BasicVector<T>>(
       m, "CompassGaitContinuousState", doc.CompassGaitContinuousState.doc)
       .def(py::init<>(), doc.CompassGaitContinuousState.ctor.doc)
       .def("stance", &CompassGaitContinuousState<T>::stance,
@@ -83,7 +83,7 @@ void DefineExamplesCompassGait(py::module m) {
       .def("set_swingdot", &CompassGaitContinuousState<T>::set_swingdot,
           doc.CompassGaitContinuousState.set_swingdot.doc);
 
-  py::class_<CompassGaitGeometry, LeafSystem<double>>(
+  class_<CompassGaitGeometry, LeafSystem<double>>(
       m, "CompassGaitGeometry", doc.CompassGaitGeometry.doc)
       .def_static("AddToBuilder",
           py::overload_cast<systems::DiagramBuilder<double>*,

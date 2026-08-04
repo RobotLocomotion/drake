@@ -125,14 +125,15 @@ Eigen::Vector4d AllegroHandMotionState::FingerGraspJointPosition(
   // medium size object, such as the mug. The final positions of the joints
   // are usually larger than the preset values, so that the fingers continuously
   // apply force on the object.
-  if (finger_index == 0)
+  if (finger_index == 0) {
     position << 1.396, 0.85, 0, 1.3;
-  else if (finger_index == 1)
+  } else if (finger_index == 1) {
     position << 0.08, 0.9, 0.75, 1.5;
-  else if (finger_index == 2)
+  } else if (finger_index == 2) {
     position << 0.1, 0.9, 0.75, 1.5;
-  else
+  } else {
     position << 0.12, 0.9, 0.75, 1.5;
+  }
   return position;
 }
 

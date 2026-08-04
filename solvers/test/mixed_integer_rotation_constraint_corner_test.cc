@@ -2,6 +2,9 @@
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 /* clang-format on */
 
+#include <tuple>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"

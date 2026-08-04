@@ -3,7 +3,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -13,6 +12,7 @@
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
+#include "drake/multibody/tree/block_system_jacobian_cache.h"
 #include "drake/multibody/tree/frame_body_pose_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
@@ -93,6 +93,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   bool is_discrete() const { return is_discrete_; }
 
+  /* Returns the size of the continuous miscellaneous state vector z for this
+  model. */
+  int num_misc_continuous_states() const { return num_misc_continuous_states_; }
+
   /* Returns a reference to the up-to-date FrameBodyPoseCache in the
   given Context, recalculating it first if necessary. */
   const FrameBodyPoseCache<T>& EvalFrameBodyPoses(
@@ -109,6 +113,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     this->ValidateContext(context);
     return position_kinematics_cache_entry()
         .template Eval<PositionKinematicsCache<T>>(context);
+  }
+
+  /* Returns a reference to the up-to-date BlockSystemJacobianCache in the
+  given Context, recalculating it first if necessary. Also if necessary, the
+  PositionKinematicsCache will be recalculated as well. */
+  const BlockSystemJacobianCache<T>& EvalBlockSystemJacobianCache(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return block_system_jacobian_cache_entry()
+        .template Eval<BlockSystemJacobianCache<T>>(context);
   }
 
   /* Returns a reference to the up-to-date VelocityKinematicsCache in the
@@ -171,7 +185,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
 
   /* Returns a reference to the up-to-date cache of composite-body inertias
-  in the given Context, recalculating it first if necessary. */
+  K_BBo_W in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
@@ -259,6 +273,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     return this->get_cache_entry(cache_indexes_.position_kinematics);
   }
 
+  /* Returns the cache entry that holds the system Jacobian. */
+  const systems::CacheEntry& block_system_jacobian_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.block_system_jacobian);
+  }
+
   /* Returns the cache entry that holds velocity kinematics results. */
   const systems::CacheEntry& velocity_kinematics_cache_entry() const {
     return this->get_cache_entry(cache_indexes_.velocity_kinematics);
@@ -304,10 +323,15 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   @param[in] tree Already-complete MultibodyTree if supplied. If nullptr, an
       empty MultibodyTree is allocated internally.
   @param[in] is_discrete Whether to use discrete state variables for tree
-      kinematics. Otherwise uses continuous state variables q and v. */
+      kinematics. Otherwise uses continuous state variables q and v.
+  @param[in] num_misc_continuous_states The number of miscellaneous *continuous*
+      states to allocate.
+  @pre num_misc_continuous_states >= 0.
+  @pre is_discrete == false or num_misc_continuous_states == 0. */
   MultibodyTreeSystem(systems::SystemScalarConverter converter,
                       std::unique_ptr<MultibodyTree<T>> tree,
-                      bool is_discrete = false);
+                      bool is_discrete = false,
+                      int num_misc_continuous_states = 0);
 
   template <typename U>
   friend const MultibodyTree<U>& GetInternalTree(const MultibodyTreeSystem<U>&);
@@ -325,6 +349,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   construction, and declare any needed Context resources for the tree. You must
   call this before performing any computation. Throws if already finalized. */
   void Finalize();
+
+  /* Increments the number of miscellaneous ("z") continuous state variables to
+  be declared by Finalize(), in addition to the tree's q and v states. This
+  must be called pre-Finalize() and only for continuous systems. Returns the
+  starting index of the newly declared state within the misc continuous state
+  group. */
+  int DeclareMiscContinuousState(int num_state_variables);
 
   /* Derived class (likely MultibodyPlant) must implement this if it has
   forces to apply other than those applied internally by elements of the
@@ -345,6 +376,14 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     throw std::logic_error(
         "DoCalcForwardDynamicsDiscrete(): invoked but not implemented.");
   }
+
+  /* Called from DoCalcTimeDerivatives() to compute derivatives for the misc
+  ("z") continuous states. The default implementation throws for a non-empty
+  `zdot`. Derived classes must provide the behavior for the non-emtpy `zdot`.
+  This will only be invoked if there are a non-zero number of z-values.  */
+  virtual void DoCalcMiscDerivatives(const systems::Context<T>& context,
+                                     systems::VectorBase<T>* zdot) const;
+
   //@}
 
   // Override of LeafSystem::SetDefaultParameters. For all parameters declared
@@ -404,6 +443,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     internal_tree().CalcPositionKinematicsCache(context, position_cache);
   }
 
+  void CalcBlockSystemJacobianCache(
+      const systems::Context<T>& context,
+      BlockSystemJacobianCache<T>* block_system_jacobian_cache) const {
+    internal_tree().CalcBlockSystemJacobianCache(context,
+                                                 block_system_jacobian_cache);
+  }
+
   void CalcSpatialInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* spatial_inertias) const {
@@ -427,9 +473,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* composite_body_inertias) const {
-    internal_tree().CalcCompositeBodyInertiasInWorld(context,
-                                                     composite_body_inertias);
+      std::vector<SpatialInertia<T>>* K_BBo_W_all) const {
+    internal_tree().CalcCompositeBodyInertiasInWorld(context, K_BBo_W_all);
   }
 
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
@@ -489,10 +534,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // we are in continuous or discrete mode.
   void CalcForwardDynamics(const systems::Context<T>& context,
                            AccelerationKinematicsCache<T>* ac) const {
-    if (is_discrete())
+    if (is_discrete()) {
       CalcForwardDynamicsDiscrete(context, ac);
-    else
+    } else {
       CalcForwardDynamicsContinuous(context, ac);
+    }
   }
 
   // When in continuous mode, this method is used to compute forward dynamics.
@@ -516,15 +562,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // This method is called during Finalize(). It tells each MultibodyElement
   // owned by `this` system to declare their system parameters on `this`.
-  // Returns the number of frame body pose slots we need to allocate in the
-  // frame body pose cache entry.
   // TODO(sherm1) This should return information needed for allocating
   //  parameter cache entries, such as which parameters affect which
   //  objects. For now we assume dependence on all parameters.
   //  Alternatively, consider restructuring this so that the parameter
   //  allocation and matching cache resources can be obtained at the
   //  same time by the element that needs them.
-  void DeclareMultibodyElementParameters(int* num_frame_body_pose_slots_needed);
+  void DeclareMultibodyElementParameters();
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -550,6 +594,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
+    systems::CacheIndex block_system_jacobian;
   };
 
   // This is the one real constructor. From the public API, a null tree is
@@ -559,7 +604,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // already been finalized.
   MultibodyTreeSystem(systems::SystemScalarConverter converter,
                       bool null_tree_is_ok,
-                      std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete);
+                      std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete,
+                      int num_misc_continuous_states);
 
   const bool is_discrete_;
 
@@ -570,6 +616,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
+
+  // The number of miscellaneous continuous state variables declared at
+  // Finalize(), in addition to the tree's q and v states.
+  int num_misc_continuous_states_{0};
 };
 
 /* Access internal tree outside of MultibodyTreeSystem. */
@@ -592,7 +642,7 @@ class ForceDensityField;
 
 namespace internal {
 
-// Attorney to give access to MultibodyElement and ForceDensityField to a
+// Attorney to give access to MultibodyElement and ForceDensityFieldBase to a
 // selection of protected methods for declaring/accessing/mutating
 // MultibodyTreeSystem parameters, cache entries, and input ports.
 template <typename T>
@@ -642,6 +692,12 @@ class MultibodyTreeSystemElementAttorney {
       const systems::BasicVector<T>& model_value) {
     DRAKE_DEMAND(tree_system != nullptr);
     return tree_system->DeclareVectorInputPort(std::move(name), model_value);
+  }
+
+  static systems::DiscreteStateIndex DeclareDiscreteState(
+      MultibodyTreeSystem<T>* tree_system, const VectorX<T>& model_value) {
+    DRAKE_DEMAND(tree_system != nullptr);
+    return tree_system->DeclareDiscreteState(model_value);
   }
 };
 }  // namespace internal

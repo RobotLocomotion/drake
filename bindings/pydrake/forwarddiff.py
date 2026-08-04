@@ -30,7 +30,8 @@ def gradient(function, x):
     # TODO(eric.cousineau): Consider restricting this in the future to only be
     # a scalar.
     assert y_ad.size == 1 and y_ad.ndim <= 1, (
-        "The output of `function` must be of a scalar or a vector of size 1")
+        "The output of `function` must be of a scalar or a vector of size 1"
+    )
     y_ad = y_ad.reshape(())  # To scalar.
     return y_ad.item().derivatives()
 
@@ -54,8 +55,11 @@ def jacobian(function, x):
     # vector, and replacing it with all zeros ensures np.vstack doesn't
     # throw an error when the shapes don't line up.
     return np.vstack(
-        [y.derivatives() if len(y.derivatives()) > 0 else np.zeros(x.size)
-            for y in y_ad.flat]).reshape(y_ad.shape + (-1,))
+        [
+            y.derivatives() if len(y.derivatives()) > 0 else np.zeros(x.size)
+            for y in y_ad.flat
+        ]
+    ).reshape(y_ad.shape + (-1,))
 
 
 # Method overloads:
@@ -63,6 +67,7 @@ def jacobian(function, x):
 # autodiff numbers. Rather, they exist just as a demonstration of *how*
 # to overload individual mathematical functions to work with both
 # AutoDiff and numeric inputs.
+
 
 def sin(x):
     if isinstance(x, AutoDiffXd):

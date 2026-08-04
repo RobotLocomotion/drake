@@ -19,11 +19,6 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
-load(
-    "//tools/skylark:test_tags.bzl",
-    "gurobi_test_tags",
-    "mosek_test_tags",
-)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -38,12 +33,11 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "solvers",
     cc_deps = [
+        "//bindings/generated_docstrings:solvers",
         "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:cpp_param_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:value_pybind",
@@ -76,6 +70,7 @@ drake_pybind_library(
         "solvers_py_program_attribute.cc",
         "solvers_py_snopt.cc",
         "solvers_py_unrevised_lemke.cc",
+        "solvers_py_projected_gradient_descent.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -134,13 +129,13 @@ drake_py_unittest(
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
 drake_py_unittest(
     name = "gurobi_solver_test",
-    tags = gurobi_test_tags(),
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":solvers",
     ],
@@ -168,7 +163,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "mosek_solver_test",
-    tags = mosek_test_tags(),
+    opt_in_condition = "//tools/workspace/mosek:enabled",
     deps = [
         ":solvers",
     ],
@@ -178,7 +173,7 @@ drake_py_unittest(
     name = "noscipy_test",
     deps = [
         ":solvers",
-        "//bindings/pydrake/common/test_utilities:scipy_none_py",
+        "//bindings/pydrake/common/test_utilities/scipy_none",
     ],
 )
 
@@ -219,7 +214,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "snopt_solver_test",
-    tags = ["snopt"],
+    opt_in_condition = "//tools/workspace/snopt:enabled",
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
@@ -236,12 +231,11 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "mathematicalprogram_test",
-    tags = gurobi_test_tags(gurobi_required = False),
     deps = [
         ":solvers",
         "//bindings/pydrake:forwarddiff_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -250,7 +244,7 @@ drake_py_unittest(
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -296,6 +290,14 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "program_attribute_test",
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "projected_gradient_descent_solver_test",
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities",

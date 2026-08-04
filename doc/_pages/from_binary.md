@@ -5,7 +5,7 @@ title: Installation via Direct Download
 # Binary Packages
 
 Drake publishes pre-compiled binaries as binary downloads (``*.tar.gz``)
-for all supported operating systems.  Refer to
+for supported operating systems.  Refer to
 [Supported Configurations](/installation.html#supported-configurations)
 for compatibility details.
 
@@ -20,29 +20,41 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
+<div class="note" markdown="1">
 Drake's binary releases do not support the Gurobi solver. To use
 Gurobi, you will need to build Drake from source following the instructions in
 [Source Installation](/from_source.html).
+</div>
 
 ## Stable Releases
 
-Binary packages of Drake for Ubuntu 22.04 (Jammy), Ubuntu 24.04 (Noble), and
-Mac are available to download as attachments from Drake's GitHub
+Binary packages of Drake for Ubuntu and Mac are available to download as
+attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.39.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.39.0):
+[v1.55.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.55.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.39.0/drake-v1.39.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.39.0/drake-v1.39.0-jammy.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.39.0/drake-v1.39.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.39.0/drake-v1.39.0-noble.tar.gz)
-* https://github.com/RobotLocomotion/drake/releases/download/v1.39.0/drake-v1.39.0-mac-arm64.tar.gz (for arm64)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-noble.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-noble-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-noble-arm64.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-amd64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-amd64.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-amd64v3.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-amd64v3.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-arm64.tar.gz)
+* https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-mac-arm64.tar.gz
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious
 software. For example:
 
 ```
-curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.39.0/drake-v1.39.0-mac-arm64.tar.gz
+curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-mac-arm64.tar.gz
+```
+
+Ubuntu users may choose to download an archive matched to their operating system
+and architecture via this command:
+
+```
+wget -O drake.tar.gz https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-$(. /etc/os-release && echo $VERSION_CODENAME)-$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .).tar.gz
 ```
 
 ### Use as a C++ library
@@ -51,6 +63,13 @@ For an example of using a Drake ``*.tar.gz`` image from a CMake project, refer
 to the
 [drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed)
 example.
+
+If not using the example, be sure to install the dependencies before proceeding
+by running the setup script inside the download:
+
+```bash
+drake/share/drake/setup/install_prereqs
+```
 
 ### Use as a Python library
 
@@ -80,8 +99,8 @@ source env/bin/activate
 Install dependencies within the environment:
 
 ```bash
-sudo env/share/drake/setup/install_prereqs
-````
+env/share/drake/setup/install_prereqs
+```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
@@ -98,7 +117,7 @@ Install dependencies within the environment:
 
 ```bash
 env/share/drake/setup/install_prereqs
-````
+```
 
 Activate the environment:
 
@@ -110,28 +129,30 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Binary packages of Drake for Ubuntu 22.04 (Jammy) and
-Mac are generated nightly and are available to download at:
+Binary packages are generated nightly and are available to download at:
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-arm64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64v3.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-arm64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz
 
-Older packages for specific dates are available by replacing ``latest`` with an
-8-digit date preceded by ``0.0.``, e.g., ``0.0.20240408`` for April 8th, 2024.
+Older packages for specific dates are available by replacing ``latest``
+with date YYYYMMDD preceded by ``0.0.``. For example,
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-jammy.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-noble.tar.gz)
-* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-mac-arm64.tar.gz
-
-Users of macOS must download using a command-line tool such as ``curl`` instead
-of using a web browser, to avoid hassles from Gatekeeper checks for malicious
-software. See the "Stable Releases" section above for a sample command line.
-
-Nightly archives are retained for 56 days from their date of creation.
-
-The installation instructions are identical to stable releases as shown above.
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble-arm64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64v3.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-arm64.tar.gz)
+* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-mac-arm64.tar.gz
 
 As with stable releases, users of macOS must download using a command-line tool
 such as ``curl`` instead of using a web browser, to avoid hassles from
 Gatekeeper checks for malicious software.
+See the "Stable Releases" section above for a sample command line.
+
+Nightly archives are retained for 56 days from their date of creation.
+
+The installation instructions are identical to stable releases as shown above.

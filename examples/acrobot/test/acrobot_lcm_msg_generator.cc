@@ -58,4 +58,6 @@ int DoMain() {
 }  // namespace examples
 }  // namespace drake
 
-int main() { return drake::examples::acrobot::DoMain(); }
+int main() {
+  return drake::examples::acrobot::DoMain();
+}

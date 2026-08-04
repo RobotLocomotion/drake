@@ -46,14 +46,14 @@ drake_py_library(
 drake_py_binary(
     name = "cart_pole_passive_simulation",
     srcs = ["cart_pole_passive_simulation.py"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "--target_realtime_rate=0",
-        "--simulation_time=0.1",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":cart_pole_passive_simulation_py",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--target_realtime_rate=0",
+        "--simulation_time=0.1",
     ],
 )
 
@@ -71,14 +71,14 @@ drake_py_library(
 drake_py_binary(
     name = "pendulum_lqr_monte_carlo_analysis",
     srcs = ["pendulum_lqr_monte_carlo_analysis.py"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "--num_samples=10",
-        "--torque_limit=2.0",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":pendulum_lqr_monte_carlo_analysis_py",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--num_samples=10",
+        "--torque_limit=2.0",
     ],
 )
 
@@ -97,11 +97,11 @@ drake_py_library(
 drake_py_binary(
     name = "run_planar_scenegraph_visualizer",
     srcs = ["run_planar_scenegraph_visualizer.py"],
-    add_test_rule = 1,
     visibility = ["//visibility:public"],
     deps = [
         ":run_planar_scenegraph_visualizer_py",
     ],
+    add_test_rule = True,
 )
 
 PY_LIBRARIES = [

@@ -55,6 +55,7 @@ _MOST_HDRS = [
     "include/gz/math/AdditivelySeparableScalarField3.hh",
     "include/gz/math/Angle.hh",
     "include/gz/math/AxisAlignedBox.hh",
+    "include/gz/math/AxisAlignedBoxHelpers.hh",
     "include/gz/math/Box.hh",
     "include/gz/math/Capsule.hh",
     "include/gz/math/Color.hh",
@@ -80,6 +81,7 @@ _MOST_HDRS = [
     "include/gz/math/Matrix6.hh",
     "include/gz/math/MecanumDriveOdometry.hh",
     "include/gz/math/MovingWindowFilter.hh",
+    "include/gz/math/OccupancyGrid.hh",
     "include/gz/math/OrientedBox.hh",
     "include/gz/math/PID.hh",
     "include/gz/math/PiecewiseScalarField3.hh",
@@ -108,6 +110,7 @@ _MOST_HDRS = [
     "include/gz/math/Vector3Stats.hh",
     "include/gz/math/Vector4.hh",
     "include/gz/math/VolumetricGridLookupField.hh",
+    "include/gz/math/detail/AxisAlignedBoxHelpers.hh",
     "include/gz/math/detail/AxisIndex.hh",
     "include/gz/math/detail/Box.hh",
     "include/gz/math/detail/Capsule.hh",
@@ -118,6 +121,7 @@ _MOST_HDRS = [
     "include/gz/math/detail/InterpolationPoint.hh",
     "include/gz/math/detail/Sphere.hh",
     "include/gz/math/detail/WellOrderedVector.hh",
+    "include/gz/math/detail/WetVolume.hh",
     "include/gz/math/graph/Edge.hh",
     "include/gz/math/graph/Graph.hh",
     "include/gz/math/graph/GraphAlgorithms.hh",
@@ -254,8 +258,9 @@ cc_library_vendored(
         for x in _HDRS
     ],
     copts = ["-w"],
-    linkstatic = True,
     includes = ["drake_hdr"],
+    isystem = True,
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         "@gz_utils_internal//:gz_utils",
@@ -267,3 +272,5 @@ install(
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

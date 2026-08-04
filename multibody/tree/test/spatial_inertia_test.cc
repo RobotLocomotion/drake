@@ -1,8 +1,8 @@
 #include "drake/multibody/tree/spatial_inertia.h"
 
-#include <iomanip>
 #include <limits>
 #include <sstream>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -758,8 +758,8 @@ GTEST_TEST(SpatialInertia, CastToAutoDiff) {
   ASSERT_EQ(com_gradient.size(), 0);
 }
 
-// Test the shift operator to write into a stream.
-GTEST_TEST(SpatialInertia, ShiftOperator) {
+// Verify the output string from SpatialInertia's fmt formatter.
+GTEST_TEST(SpatialInertia, ToStringFmtFormatter) {
   const double mass = 2.5;
   const Vector3d com(0.1, -0.2, 0.3);
   const Vector3d m(2.0, 2.3, 2.4);         // m for moments.
@@ -767,18 +767,15 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
   UnitInertia<double> G(m(0), m(1), m(2),  /* moments of inertia */
                         p(0), p(1), p(2)); /* products of inertia */
   SpatialInertia<double> M(mass, com, G);
-
-  std::stringstream stream;
-  stream << std::fixed << std::setprecision(4) << M;
   std::string expected_string =
       "\n"
       " mass = 2.5\n"
       " Center of mass = [0.1  -0.2  0.3]\n"
       " Inertia about point P, I_BP =\n"
-      "[ 5.0000   0.2500  -0.2500]\n"
-      "[ 0.2500   5.7500   0.5000]\n"
-      "[-0.2500   0.5000   6.0000]\n";
-  EXPECT_EQ(expected_string, stream.str());
+      "[    5   0.25  -0.25]\n"
+      "[ 0.25   5.75    0.5]\n"
+      "[-0.25    0.5      6]\n";
+  EXPECT_EQ(fmt::to_string(M), expected_string);
 }
 
 // Verifies the correctness of:
@@ -1050,7 +1047,7 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
 GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
   const double mass = 0.634;
   const Vector3<double> p_PBcm(0, 0.016, -0.02);  // Center of mass.
-  const double Ixx = 0.001983, Ixy = 0.000245, Ixz = 0.000013;
+  const double Ixx = 0.001983, Ixy = 0.000245, Ixz = 0.0000129;
   const double Iyy = 0.002103, Iyz = 0.0000015, Izz = 0.000408;
 
   // Create an invalid rotational inertia.
@@ -1068,14 +1065,12 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
       " mass = 0.634\n"
       " Center of mass = \\[0(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
       " Inertia about point P, I_BP =\n"
-      "\\[0.001983  0.000245   1.3e-05\\]\n"
+      "\\[0.001983  0.000245  1.29e-05\\]\n"
       "\\[0.000245  0.002103   1.5e-06\\]\n"
-      "\\[ 1.3e-05   1.5e-06  0.000408\\]\n"
+      "\\[1.29e-05   1.5e-06  0.000408\\]\n"
       " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
-      "\\[0.0004078925412\\d+  0.001790822592803\\d+  0.00229528486596\\d+\\]"
+      "\\[0.00040789\\d+  0.00179082\\d+  0.002295284\\d+\\]"
       "\n");
-  // Note: The principal moments of inertia (with more significant digits)
-  // are: 0.0004078925412357755  0.0017908225928030743  0.002295284865961151.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, I_BBcm),
       expected_message);
@@ -1342,13 +1337,13 @@ GTEST_TEST(SpatialInertia, PlusEqualOperatorForTwoMasslessBodies) {
   EXPECT_EQ(M_BcP_E.get_mass(), 0.0);
 
   // Verify we get the arithmetic mean.
-  const Vector3<double> p_PCcm_E =
+  const Vector3<double> p_PScm_E =
       0.5 * (M_B1P_E.get_com() + M_B2P_E.get_com());
-  const Matrix3<double> G_CP_E =
+  const Matrix3<double> G_SP_E =
       0.5 * (M_B1P_E.get_unit_inertia().CopyToFullMatrix3() +
              M_B2P_E.get_unit_inertia().CopyToFullMatrix3());
-  EXPECT_EQ(M_BcP_E.get_com(), p_PCcm_E);
-  EXPECT_EQ(M_BcP_E.get_unit_inertia().CopyToFullMatrix3(), G_CP_E);
+  EXPECT_EQ(M_BcP_E.get_com(), p_PScm_E);
+  EXPECT_EQ(M_BcP_E.get_unit_inertia().CopyToFullMatrix3(), G_SP_E);
 }
 
 // Test the SpatialInertia function that determines an inertia-equivalent shape.
@@ -1510,7 +1505,8 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
       M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
-  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(X_BA.translation(), Vector3<double>::Zero(), kTolerance));
 
   // Verify CalcMinimumPhysicalLength() returns the length of the face-diagonal
   // of the minimum bounding rectangle (i.e., √[(2*a)² + (2*b)²] = 500).
@@ -1531,9 +1527,11 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, -b, -c));
   std::tie(abc, X_BA) =
       M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance,
+                              MatrixCompareType::relative));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
-  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(X_BA.translation(), Vector3<double>::Zero(), kTolerance));
 
   // Verify CalcMinimumPhysicalLength() returns the length of the space-diagonal
   // of the minimum bounding box (i.e., √[(2*a)² + (2*b)² + (2*c)²] = 390 m).

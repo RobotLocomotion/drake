@@ -5,7 +5,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,7 +12,9 @@ drake_cc_package_library(
     name = "iris",
     visibility = ["//visibility:public"],
     deps = [
+        ":iris_common",
         ":iris_from_clique_cover",
+        ":iris_np2",
         ":iris_zo",
     ],
 )
@@ -30,8 +31,28 @@ drake_cc_library(
         "//planning:visibility_graph",
         "//planning/graph_algorithms:max_clique_solver_base",
         "//planning/graph_algorithms:max_clique_solver_via_greedy",
+        "//planning/iris:iris_np2",
+        "//planning/iris:iris_zo",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_common",
+    srcs = ["iris_common.cc"],
+    hdrs = ["iris_common.h"],
+    deps = [
+        "//common:name_value",
+        "//geometry:meshcat",
+        "//geometry/optimization:convex_set",
+        "//multibody/rational:rational_forward_kinematics",
+        "//planning:collision_checker",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
     implementation_deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
@@ -43,17 +64,32 @@ drake_cc_library(
     srcs = ["iris_zo.cc"],
     hdrs = ["iris_zo.h"],
     deps = [
-        "//common:parallelism",
-        "//common/symbolic:expression",
-        "//geometry:meshcat",
+        ":iris_common",
         "//geometry/optimization:convex_set",
-        "//multibody/rational:rational_forward_kinematics",
         "//planning:collision_checker",
+    ],
+    implementation_deps = [
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
+        "//solvers:gurobi_solver",
         "//solvers:mathematical_program",
         "//solvers:mosek_solver",
+        "//solvers:osqp_solver",
         "//solvers:solve",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_np2",
+    srcs = ["iris_np2.cc"],
+    hdrs = ["iris_np2.h"],
+    deps = [
+        ":iris_common",
+        "//geometry/optimization:convex_set",
+        "//geometry/optimization:iris_internal",
+        "//planning:scene_graph_collision_checker",
+        "//solvers",
     ],
     implementation_deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
@@ -62,6 +98,14 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "iris_from_clique_cover_test",
+    # IPOPT is exceptionally slow with IRIS so only test with snopt.
+    opt_in_condition = "//tools/workspace/snopt:enabled",
+    # Most of these tests take an exceptionally long time under instrumentation,
+    # resulting in timeouts, and so are excluded.
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/valgrind:enabled",
+    ],
     timeout = "moderate",
     data = [
         "//examples/pendulum:models",
@@ -70,15 +114,6 @@ drake_cc_googletest(
     # Running with multiple threads is an essential part of our test coverage.
     num_threads = 4,
     shard_count = 4,
-    # Most of these tests take an exceptionally long time under
-    # instrumentation, resulting in timeouts, and so are excluded.
-    # These test also can only be run with either mosek or gurobi enabled.
-    tags = [
-        "no_asan",
-        "no_memcheck",
-        # IPOPT is exceptionally slow with IRIS so only test with snopt.
-        "snopt",
-    ],
     deps = [
         ":iris_from_clique_cover",
         "//common/test_utilities:expect_throws_message",
@@ -94,19 +129,23 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_zo_test",
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/lsan:enabled",
+        # TODO(#22978) Re-enable this if possible.
+        "//tools/valgrind:enabled",
+    ],
     timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
     num_threads = 2,
     shard_count = 4,
-    tags = [
-        "no_asan",
-        "no_lsan",
-    ],
     deps = [
+        ":iris_test_utilities",
         ":iris_zo",
         "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
+        "//common/yaml",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/inverse_kinematics",
@@ -114,6 +153,44 @@ drake_cc_googletest(
         "//planning:robot_diagram_builder",
         "//planning:scene_graph_collision_checker",
         "//solvers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_np2_test",
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/lsan:enabled",
+        "//tools/valgrind:enabled",
+    ],
+    timeout = "moderate",
+    data = ["//multibody/parsing:test_models"],
+    num_threads = 2,
+    shard_count = 4,
+    deps = [
+        ":iris_np2",
+        ":iris_test_utilities",
+        "//common/symbolic:expression",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
+        "//solvers",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_test_utilities",
+    testonly = 1,
+    srcs = ["test/iris_test_utilities.cc"],
+    hdrs = ["test/iris_test_utilities.h"],
+    deps = [
+        "//common/test_utilities:maybe_pause_for_user",
+        "//geometry/optimization:convex_set",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/plant",
+        "//multibody/rational:rational_forward_kinematics",
+        "//planning:collision_checker",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
     ],
 )
 

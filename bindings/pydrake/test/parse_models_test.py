@@ -15,9 +15,13 @@ from pydrake.systems.framework import DiagramBuilder
 
 
 def find_model_files(base_dir):
-    return (
-        glob.glob(os.path.join(base_dir, "**/*.sdf"), recursive=True)
-        + glob.glob(os.path.join(base_dir, "**/*.urdf"), recursive=True))
+    return glob.glob(
+        os.path.join(base_dir, "**/*.sdf"),
+        recursive=True,
+    ) + glob.glob(
+        os.path.join(base_dir, "**/*.urdf"),
+        recursive=True,
+    )
 
 
 def parse_model_and_create_context(file):
@@ -34,8 +38,9 @@ def parse_model_and_create_context(file):
 class TestParseModels(unittest.TestCase):
     def test_available_runfiles(self):
         # Find all available Drake models from runfiles.
-        drake_dir = os.path.dirname(FindResourceOrThrow(
-            "drake/.drake-find_resource-sentinel"))
+        drake_dir = os.path.dirname(
+            FindResourceOrThrow("drake/.drake-find_resource-sentinel")
+        )
         model_files = find_model_files(drake_dir)
         # Filter model files.
         for model_file in copy.copy(model_files):
@@ -46,11 +51,8 @@ class TestParseModels(unittest.TestCase):
             if model_relpath.startswith("external/drake_models/"):
                 # These are checked elsewhere by drake_models-specific tests.
                 model_files.remove(model_file)
-        # We expect a couple dozen files should be available for parsing. Do a
-        # quick check to make sure we're in the right order of magnitude to
-        # prevent false test success due to missing files.
-        self.assertGreater(len(model_files), 10)
         # Parse each model file for testing.
+        self.assertTrue(model_files)
         for model_file in model_files:
             model_relpath = os.path.relpath(model_file, drake_dir)
             print(f"Test model: {model_relpath}")

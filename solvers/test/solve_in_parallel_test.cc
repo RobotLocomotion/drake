@@ -1,3 +1,6 @@
+#include <memory>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/solvers/choose_best_solver.h"
@@ -6,7 +9,6 @@
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
-#include "drake/solvers/ipopt_solver_internal.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/osqp_solver.h"
@@ -132,7 +134,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
       if (i < num_trials / 2) {
         // The first num_trials/2 programs should hit the iteration limit.
         // This code is defined in
-        // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+        // https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/statuscodes.html
         const int ITERATION_LIMIT = 7;
         EXPECT_EQ(solver_details.optimization_status, ITERATION_LIMIT);
         EXPECT_TRUE(std::isfinite(results.at(i).get_optimal_cost()));
@@ -140,7 +142,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
       } else {
         // The last num_trials/2 programs should solve to optimality.
         // This code is defined in
-        // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+        // https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/statuscodes.html
         const int OPTIMAL = 2;
         EXPECT_EQ(solver_details.optimization_status, OPTIMAL);
         EXPECT_TRUE(std::isfinite(results.at(i).get_optimal_cost()));
@@ -158,7 +160,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
       const auto solver_details =
           results.at(i).get_solver_details<GurobiSolver>();
       // This code is defined in
-      // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+      // https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/statuscodes.html
       const int ITERATION_LIMIT = 7;
       EXPECT_EQ(solver_details.optimization_status, ITERATION_LIMIT);
       EXPECT_TRUE(std::isfinite(results.at(i).get_optimal_cost()));
@@ -305,15 +307,6 @@ TEST_P(SolveInParallelIntegrationTest, Gurobi) {
 
 TEST_P(SolveInParallelIntegrationTest, Ipopt) {
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  // The MUMPS linear solver is known to not be threadsafe. We want to be sure
-  // that this does not cause SolveInParallel to crash. However, some platforms
-  // don't have MUMPS available, so we need to check before setting it.
-  for (const auto& linear_solver : internal::GetSupportedIpoptLinearSolvers()) {
-    if (linear_solver == "mumps") {
-      qp.prog()->SetSolverOption(IpoptSolver::id(), "linear_solver", "mumps");
-      break;
-    }
-  }
   for (const auto& result : Run(IpoptSolver::id(), *qp.prog())) {
     qp.CheckSolution(result);
   }

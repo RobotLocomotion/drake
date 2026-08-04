@@ -1,5 +1,7 @@
 #include "drake/geometry/meshcat_recording_internal.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 namespace drake {

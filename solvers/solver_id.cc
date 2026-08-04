@@ -36,10 +36,9 @@ bool operator!=(const SolverId& a, const SolverId& b) {
   return a.id_ != b.id_;
 }
 
-std::ostream& operator<<(std::ostream& os, const SolverId& self) {
+std::string to_string(const SolverId& self) {
   // N.B. The ID is _not_ exposed to callers.
-  os << self.name();
-  return os;
+  return self.name();
 }
 
 }  // namespace solvers

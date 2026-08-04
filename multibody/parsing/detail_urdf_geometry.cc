@@ -84,9 +84,8 @@ UrdfMaterial AddMaterialToMaterialMap(
     if (error) {
       auto mat_descrip = [](const UrdfMaterial& mat) {
         std::string rgb_string =
-            mat.rgba.has_value()
-                ? fmt::format("RGBA: {}", fmt_eigen(mat.rgba->transpose()))
-                : "RGBA: None";
+            mat.rgba.has_value() ? fmt::format("RGBA: {}", fmt_eigen(*mat.rgba))
+                                 : "RGBA: None";
         std::string map_string =
             mat.diffuse_map.has_value()
                 ? fmt::format("Diffuse map: {}", *(mat.diffuse_map))
@@ -299,22 +298,10 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
     return {};
   }
 
-  double scale = 1.0;
+  Vector3d scale(1, 1, 1);
   // Obtains the scale of the mesh if it exists.
   if (shape_node->Attribute("scale") != nullptr) {
-    Vector3d scale_vector;
-    ParseThreeVectorAttribute(shape_node, "scale", &scale_vector);
-    // geometry::Mesh only supports isotropic scaling and therefore we
-    // enforce it.
-    if (!(scale_vector(0) == scale_vector(1) &&
-          scale_vector(0) == scale_vector(2))) {
-      diagnostic.Error(*shape_node,
-                       "Drake meshes only support isotropic"
-                       " scaling. Therefore all three scaling factors must be"
-                       " exactly equal.");
-      return {};
-    }
-    scale = scale_vector(0);
+    ParseThreeVectorAttribute(shape_node, "scale", &scale);
   }
 
   // Rely on geometry::Shape to validate physical parameters.
@@ -453,31 +440,93 @@ std::optional<geometry::GeometryInstance> ParseVisual(
     return {};
   }
 
-  // The empty property set relies on downstream consumer default behavior.
-  geometry::IllustrationProperties properties;
+  // Check for drake:illustration_properties and drake:perception_properties
+  // tags.
+  const XMLElement* illustration_node =
+      node->FirstChildElement("drake:illustration_properties");
+  const XMLElement* perception_node =
+      node->FirstChildElement("drake:perception_properties");
 
+  // Default: both roles enabled if no tags present.
+  bool add_illustration = true;
+  bool add_perception = true;
+
+  // Parse illustration_properties enabled attribute.
+  if (illustration_node) {
+    std::string enabled;
+    if (ParseStringAttribute(illustration_node, "enabled", &enabled)) {
+      if (enabled == "true") {
+        add_illustration = true;
+      } else if (enabled == "false") {
+        add_illustration = false;
+      } else {
+        diagnostic.Error(
+            *illustration_node,
+            fmt::format(
+                "Invalid value '{}' for drake:illustration_properties enabled "
+                "attribute. Expected 'true' or 'false'.",
+                enabled));
+        return {};
+      }
+    }
+  }
+
+  // Parse perception_properties enabled attribute.
+  if (perception_node) {
+    std::string enabled;
+    if (ParseStringAttribute(perception_node, "enabled", &enabled)) {
+      if (enabled == "true") {
+        add_perception = true;
+      } else if (enabled == "false") {
+        add_perception = false;
+      } else {
+        diagnostic.Error(
+            *perception_node,
+            fmt::format(
+                "Invalid value '{}' for drake:perception_properties enabled "
+                "attribute. Expected 'true' or 'false'.",
+                enabled));
+        return {};
+      }
+    }
+  }
+
+  // If both roles are disabled, emit a warning and skip this visual entirely.
+  if (!add_illustration && !add_perception) {
+    diagnostic.Warning(
+        *node,
+        fmt::format(
+            "Visual geometry in link '{}' has both illustration and perception "
+            "properties disabled. This geometry will be ignored by Drake.",
+            parent_element_name));
+    return {};
+  }
+
+  // Create a temporary IllustrationProperties object to populate with material
+  // and other visual attributes, then copy to the appropriate role(s).
+  geometry::IllustrationProperties temp_properties;
+
+  // Parse material (color and texture).
   const XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
     UrdfMaterial material =
         ParseMaterial(diagnostic, material_node, false /* name required */,
                       package_map, root_dir, materials);
     if (material.rgba) {
-      properties = geometry::MakePhongIllustrationProperties(*(material.rgba));
+      temp_properties.AddProperty("phong", "diffuse", *(material.rgba));
     }
     if (material.diffuse_map) {
-      properties.AddProperty("phong", "diffuse_map", *(material.diffuse_map));
+      temp_properties.AddProperty("phong", "diffuse_map",
+                                  *(material.diffuse_map));
     }
   }
 
-  // TODO(SeanCurtis-TRI): Including this property in illustration properties is
-  //  a bit misleading; it isn't used by illustration, but we're not currently
-  //  parsing illustration and perception properties separately. So, we stash
-  //  them in the illustration properties relying on it to be ignored by
-  //  illustration consumers but copied over to the perception properties.
+  // Parse drake:accepting_renderer tags (for perception role only).
   const char* kAcceptingTag = "drake:accepting_renderer";
   const XMLElement* accepting_node = node->FirstChildElement(kAcceptingTag);
+  std::optional<std::set<std::string>> accepting_names;
   if (accepting_node) {
-    std::set<std::string> accepting_names;
+    accepting_names = std::set<std::string>();
     while (accepting_node) {
       std::string name;
       if (!ParseStringAttribute(accepting_node, "name", &name)) {
@@ -486,11 +535,10 @@ std::optional<geometry::GeometryInstance> ParseVisual(
             fmt::format("<{}> tag given without any name", kAcceptingTag));
         return {};
       }
-      accepting_names.insert(name);
+      accepting_names->insert(name);
       accepting_node = accepting_node->NextSiblingElement(kAcceptingTag);
     }
-    DRAKE_DEMAND(accepting_names.size() > 0);
-    properties.AddProperty("renderer", "accepting", std::move(accepting_names));
+    DRAKE_DEMAND(accepting_names->size() > 0);
   }
 
   std::optional<std::string> geometry_name =
@@ -500,9 +548,24 @@ std::optional<geometry::GeometryInstance> ParseVisual(
     return {};
   }
 
-  auto instance = geometry::GeometryInstance(T_element_to_link,
-                                             std::move(shape), *geometry_name);
-  instance.set_illustration_properties(properties);
+  // Create the geometry instance and set the appropriate properties.
+  geometry::GeometryInstance instance(T_element_to_link, std::move(shape),
+                                      *geometry_name);
+
+  if (add_illustration) {
+    instance.set_illustration_properties(temp_properties);
+  }
+
+  if (add_perception) {
+    geometry::PerceptionProperties perception_props(temp_properties);
+    // Add accepting_renderer only to perception properties.
+    if (accepting_names.has_value()) {
+      perception_props.AddProperty("renderer", "accepting",
+                                   std::move(*accepting_names));
+    }
+    instance.set_perception_properties(perception_props);
+  }
+
   return instance;
 }
 

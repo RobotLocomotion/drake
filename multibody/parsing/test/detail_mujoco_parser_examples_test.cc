@@ -1,3 +1,6 @@
+#include <string>
+#include <utility>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -95,21 +98,11 @@ constexpr std::string_view kItWorks{""};
 constexpr std::string_view kTooSlow =  // #22412
     "skip me";
 namespace KnownErrors {
-constexpr std::string_view kNonUniformScale =  // #22046
-    ".*non-uniform scale.*";
 constexpr std::string_view kSizeFromMesh =  // #22372
     ".*size of the shape from the mesh.*";
 constexpr std::string_view kStlMesh =  // #19408
     ".*[.][Ss][Tt][Ll].*";
 }  // namespace KnownErrors
-
-constexpr std::string_view DebugIsTooSlow(std::string_view non_debug_result) {
-  if constexpr (kDrakeAssertIsArmed) {
-    return kTooSlow;
-  } else {
-    return non_debug_result;
-  }
-}
 
 class MujocoMenagerieTest : public MujocoParserExamplesTest,
                             public testing::WithParamInterface<
@@ -142,8 +135,6 @@ TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
 // TODO(russt): Some of the tests are redundant (e.g. the scene models load the
 // main robot models.)
 const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
-    {"agility_cassie/cassie", KnownErrors::kNonUniformScale},
-    {"agility_cassie/scene", KnownErrors::kNonUniformScale},
     {"aloha/aloha", KnownErrors::kStlMesh},
     {"aloha/scene", KnownErrors::kStlMesh},
     {"anybotics_anymal_b/anymal_b", kItWorks},
@@ -160,17 +151,17 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"boston_dynamics_spot/scene_arm", kItWorks},
     {"boston_dynamics_spot/spot", kItWorks},
     {"boston_dynamics_spot/spot_arm", kItWorks},
-    {"flybody/fruitfly", DebugIsTooSlow(KnownErrors::kSizeFromMesh)},
-    {"flybody/scene", DebugIsTooSlow(KnownErrors::kSizeFromMesh)},
+    {"flybody/fruitfly", KnownErrors::kSizeFromMesh},
+    {"flybody/scene", KnownErrors::kSizeFromMesh},
     {"franka_emika_panda/hand", KnownErrors::kStlMesh},
     {"franka_emika_panda/mjx_panda", KnownErrors::kStlMesh},
     {"franka_emika_panda/mjx_scene", KnownErrors::kStlMesh},
     {"franka_emika_panda/mjx_single_cube", KnownErrors::kStlMesh},
-    {"franka_emika_panda/panda", DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"franka_emika_panda/panda_nohand", DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"franka_emika_panda/scene", DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"franka_fr3/fr3", DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"franka_fr3/scene", DebugIsTooSlow(KnownErrors::kStlMesh)},
+    {"franka_emika_panda/panda", KnownErrors::kStlMesh},
+    {"franka_emika_panda/panda_nohand", KnownErrors::kStlMesh},
+    {"franka_emika_panda/scene", KnownErrors::kStlMesh},
+    {"franka_fr3/fr3", KnownErrors::kStlMesh},
+    {"franka_fr3/scene", KnownErrors::kStlMesh},
     {"google_barkour_v0/barkour_v0", KnownErrors::kStlMesh},
     {"google_barkour_v0/barkour_v0_mjx", KnownErrors::kStlMesh},
     {"google_barkour_v0/scene", KnownErrors::kStlMesh},
@@ -183,10 +174,10 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"google_barkour_vb/scene_mjx", KnownErrors::kStlMesh},
     {"google_robot/robot", KnownErrors::kStlMesh},
     {"google_robot/scene", KnownErrors::kStlMesh},
-    {"hello_robot_stretch/scene", DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"hello_robot_stretch/stretch", DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"hello_robot_stretch_3/scene", DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"hello_robot_stretch_3/stretch", DebugIsTooSlow(KnownErrors::kStlMesh)},
+    {"hello_robot_stretch/scene", KnownErrors::kStlMesh},
+    {"hello_robot_stretch/stretch", KnownErrors::kStlMesh},
+    {"hello_robot_stretch_3/scene", KnownErrors::kStlMesh},
+    {"hello_robot_stretch_3/stretch", KnownErrors::kStlMesh},
     {"kinova_gen3/gen3", KnownErrors::kStlMesh},
     {"kinova_gen3/scene", KnownErrors::kStlMesh},
     {"kuka_iiwa_14/iiwa14", kItWorks},
@@ -226,9 +217,7 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"shadow_dexee/scene", KnownErrors::kStlMesh},
     {"shadow_dexee/shadow_dexee", KnownErrors::kStlMesh},
     {"shadow_hand/keyframes", kItWorks},
-    {"shadow_hand/left_hand", KnownErrors::kNonUniformScale},
     {"shadow_hand/right_hand", kItWorks},
-    {"shadow_hand/scene_left", KnownErrors::kNonUniformScale},
     {"shadow_hand/scene_right", kItWorks},
     {"skydio_x2/scene", kItWorks},
     {"skydio_x2/x2", kItWorks},

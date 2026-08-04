@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/common/overloaded.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
@@ -11,20 +11,20 @@ namespace internal {
 
 using systems::DiagramBuilder;
 
-void DefineSensorsCameraConfig(py::module m) {
+void DefineSensorsCameraConfig(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   {
     // To bind nested serializable structs without errors, we declare the outer
     // struct first, then bind its inner structs, then bind the outer struct.
     constexpr auto& config_cls_doc = doc.CameraConfig;
-    py::class_<CameraConfig> config_cls(m, "CameraConfig", config_cls_doc.doc);
+    class_<CameraConfig> config_cls(m, "CameraConfig", config_cls_doc.doc);
 
     // Inner struct.
     constexpr auto& fov_degrees_doc = doc.CameraConfig.FovDegrees;
-    py::class_<CameraConfig::FovDegrees> fov_class(
+    class_<CameraConfig::FovDegrees> fov_class(
         config_cls, "FovDegrees", fov_degrees_doc.doc);
     fov_class  // BR
         .def(ParamInit<CameraConfig::FovDegrees>())
@@ -38,7 +38,7 @@ void DefineSensorsCameraConfig(py::module m) {
 
     // Inner struct.
     constexpr auto& focal_doc = doc.CameraConfig.FocalLength;
-    py::class_<CameraConfig::FocalLength> focal_class(
+    class_<CameraConfig::FocalLength> focal_class(
         config_cls, "FocalLength", focal_doc.doc);
     focal_class  // BR
         .def(ParamInit<CameraConfig::FocalLength>())

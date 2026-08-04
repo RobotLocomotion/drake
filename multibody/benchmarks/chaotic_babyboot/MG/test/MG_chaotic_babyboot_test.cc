@@ -28,7 +28,7 @@ struct ChaoticBabybootData {
 //------------------------------------------------------------------------------
 // Compare an expected solution to an actual MotionGenesis simulation result.
 void CompareExpectedSolutionVsActualSolution(
-  const ChaoticBabybootData& babyboot_data_expected ) {
+    const ChaoticBabybootData& babyboot_data_expected) {
   // Simulate chaotic babyboot with MotionGenesis auto-generated code and
   // using its Runga-Kutta-Merson numerical integrator.
   MotionGenesis::MGChaoticBabyboot_::MGChaoticBabyboot MG_chaotic_babyboot;
@@ -111,12 +111,12 @@ void CompareExpectedSolutionVsActualSolution(
 //------------------------------------------------------------------------------
 GTEST_TEST(ChaoticBabyboot, ForwardDynamicsA) {
   ChaoticBabybootData babyboot_data_expected;
-  constexpr double degree_to_radian =  M_PI / 180;
-  babyboot_data_expected.qA =  -61.312983340691 * degree_to_radian;
+  constexpr double degree_to_radian = M_PI / 180;
+  babyboot_data_expected.qA = -61.312983340691 * degree_to_radian;
   // Result from simulation A: -61.312983517329;
   // Result from simulation B: -61.312983761859;
   // Result from MATLAB ode45: -61.3129818234;
-  babyboot_data_expected.qB =  -929.47789677244 * degree_to_radian;
+  babyboot_data_expected.qB = -929.47789677244 * degree_to_radian;
   // Result from simulation A: -929.47789818494;
   // Result from simulation B: -929.47789795831;
   // Result from MATLAB ode45: -929.477885053;
@@ -140,7 +140,6 @@ GTEST_TEST(ChaoticBabyboot, ForwardDynamicsA) {
 
   CompareExpectedSolutionVsActualSolution(babyboot_data_expected);
 }
-
 
 }  // namespace
 }  // namespace chaotic_babyboot

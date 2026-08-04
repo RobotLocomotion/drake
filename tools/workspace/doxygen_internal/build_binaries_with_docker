@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# This shell script and the accompanying Dockerfile are used by the project
+# maintainers to create the precompiled doxygen binaries that are downloaded
+# during the build. They are neither called during the build nor expected to be
+# called by most developers or users of the project.
+
+set -euxo pipefail
+
+rm -f doxygen-*-*-x86_64.tar.gz doxygen-*-x86_64.tar.gz.sha256
+
+docker build --build-arg UBUNTU_CODENAME=noble --tag doxygen-noble "${BASH_SOURCE%/*}"
+trap 'docker rmi doxygen-noble' EXIT
+docker run --detach --name doxygen-noble-build --tty doxygen-noble
+trap 'docker rm -f doxygen-noble-build && docker rmi doxygen-noble' EXIT
+docker cp doxygen-noble-build:$(docker exec doxygen-noble-build find /opt/doxygen/bin/ -maxdepth 1 -name 'doxygen-*-noble-x86_64.tar.gz') .
+
+shasum --algorithm 256 doxygen-*-noble-x86_64.tar.gz | tee doxygen-noble-x86_64.tar.gz.sha256

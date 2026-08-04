@@ -47,6 +47,33 @@ GTEST_TEST(MatrixTest, MatrixProduct) {
   EXPECT_TRUE(CompareMatrices(C(1, 0).derivatives(), 8 * xy_grad, tol));
 }
 
+GTEST_TEST(MatrixTest, OneDimensional) {
+  const AutoDiff x{0.4, Vector3d::LinSpaced(0.0, 2.0)};
+  const AutoDiff y{0.3, Vector3d::LinSpaced(-1.0, 1.0)};
+
+  Eigen::Matrix<AutoDiff, 1, 2> A;
+  A << x, y;
+  Eigen::Matrix<AutoDiff, 2, 1> B;
+  B << y, x;
+
+  // When the result of matrix multiplication is a 1x1 matrix at compile time,
+  // Eigen allows us to assign it to either a matrix or a scalar.
+  const Eigen::Matrix<AutoDiff, 1, 1> C1 = A * B;
+  const AutoDiff C2 = A * B;
+  EXPECT_EQ(C1[0].value(), C2.value());
+  EXPECT_EQ(C1[0].derivatives(), C2.derivatives());
+}
+
+GTEST_TEST(MatrixTest, ZeroDimensional) {
+  Eigen::Matrix<AutoDiff, 2, 0> A;
+  Eigen::Matrix<AutoDiff, 0, 1> B;
+  const Eigen::Matrix<AutoDiff, 2, 1> C = A * B;
+  for (int row = 0; row < 2; ++row) {
+    EXPECT_EQ(C[row].value(), 0.0);
+    EXPECT_EQ(C[row].derivatives().size(), 0);
+  }
+}
+
 }  // namespace
 }  // namespace ad
 }  // namespace drake

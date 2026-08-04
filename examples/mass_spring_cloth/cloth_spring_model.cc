@@ -157,8 +157,7 @@ void ClothSpringModel<T>::CopyDiscreteStateOut(
     const systems::Context<T>& context, systems::BasicVector<T>* output) const {
   const systems::BasicVector<T>& discrete_state_vector =
       context.get_discrete_state(0);
-  output->SetFromVector(
-      discrete_state_vector.value().head(3 * num_particles_));
+  output->SetFromVector(discrete_state_vector.value().head(3 * num_particles_));
 }
 
 template <typename T>

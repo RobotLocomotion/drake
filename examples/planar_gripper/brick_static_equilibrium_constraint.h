@@ -34,22 +34,22 @@ class BrickStaticEquilibriumNonlinearConstraint : public solvers::Constraint {
       systems::Context<double>* plant_mutable_context);
 
  private:
-  template<typename T>
-  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>> &x,
-                     VectorX<T> *y) const;
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                     VectorX<T>* y) const;
 
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd *y) const;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const;
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd *y) const;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const;
 
-  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>> &,
-              VectorX<symbolic::Expression> *) const;
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const;
 
   const GripperBrickHelper<double>& gripper_brick_system_;
   double brick_mass_;
   std::vector<std::pair<Finger, BrickFace>> finger_face_contacts_;
-  systems::Context<double> *plant_mutable_context_;
+  systems::Context<double>* plant_mutable_context_;
 };
 
 /**

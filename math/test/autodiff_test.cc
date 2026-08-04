@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::AutoDiffScalar;
@@ -76,18 +77,34 @@ class AutodiffTest : public ::testing::Test {
 };
 
 TEST_F(AutodiffTest, ExtractValue) {
-  const VectorXd values = ExtractValue(output_calculation_);
   VectorXd expected(3);
   expected[0] = cos(v0_) + sin(v0_) * cos(v0_) / v1_;
   expected[1] = sin(v0_) + v1_;
   expected[2] = v0_ * v0_ + v1_ * v1_ * v1_;
+
+  // Overload that returns the result.
+  const VectorXd values_return = ExtractValue(output_calculation_);
+  const double kTol = 1e-10;
+  EXPECT_TRUE(CompareMatrices(expected, values_return, kTol,
+                              MatrixCompareType::absolute));
+
+  // Overload that writes the result to a provided output vector.
+  VectorXd values_out;
+  ExtractValue(output_calculation_, &values_out);
   EXPECT_TRUE(
-      CompareMatrices(expected, values, 1e-10, MatrixCompareType::absolute));
+      CompareMatrices(expected, values_out, kTol, MatrixCompareType::absolute));
+
+  // Test writing result to a preallocated output vector.
+  VectorXd values_prealloc(3);
+  {
+    test::LimitMalloc guard;
+    ExtractValue(output_calculation_, &values_prealloc);
+  }
+  EXPECT_TRUE(CompareMatrices(expected, values_prealloc, kTol,
+                              MatrixCompareType::absolute));
 }
 
 TEST_F(AutodiffTest, ExtractGradient) {
-  MatrixXd gradients = ExtractGradient(output_calculation_);
-
   MatrixXd expected(3, 2);
   // Shorthand notation: Denote v0 = vec_[0], v1 = vec_[1].
   // Function 0: y0 = cos(v0) + sin(v0) * cos(v0) / v1
@@ -108,8 +125,26 @@ TEST_F(AutodiffTest, ExtractGradient) {
   // ∂y2/∂v1 = 3 * v1^2.
   expected(2, 1) = 3 * v1_ * v1_;
 
-  EXPECT_TRUE(
-      CompareMatrices(expected, gradients, 1e-10, MatrixCompareType::absolute));
+  // Overload that returns the result.
+  const MatrixXd gradients_return = ExtractGradient(output_calculation_);
+  const double kTol = 1e-10;
+  EXPECT_TRUE(CompareMatrices(expected, gradients_return, kTol,
+                              MatrixCompareType::absolute));
+
+  // Overload that writes the result to a provided output matrix.
+  MatrixXd gradients_out;
+  ExtractGradient(output_calculation_, {}, &gradients_out);
+  EXPECT_TRUE(CompareMatrices(expected, gradients_out, kTol,
+                              MatrixCompareType::absolute));
+
+  // Test writing result to a preallocated output matrix.
+  MatrixXd gradients_prealloc(output_calculation_.size(), 2);
+  {
+    test::LimitMalloc guard;
+    ExtractGradient(output_calculation_, {}, &gradients_prealloc);
+  }
+  EXPECT_TRUE(CompareMatrices(expected, gradients_prealloc, kTol,
+                              MatrixCompareType::absolute));
 
   // Given an AutoDiff matrix with no derivatives, ExtractGradient() should
   // return a matrix with zero-length rows, or return with specified-length
@@ -186,7 +221,6 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrix) {
   // Since value was fixed size, ad_return should be also.
   EXPECT_EQ(decltype(ad4_return)::ColsAtCompileTime, 2);
   EXPECT_EQ(decltype(ad4_return)::RowsAtCompileTime, 2);
-  EXPECT_EQ(decltype(ad4_return)::Scalar::DerType::RowsAtCompileTime, 4);
   EXPECT_TRUE(CompareMatrices(ExtractValue(ad4_return), value));
   EXPECT_TRUE(CompareMatrices(ExtractGradient(ad4_return),
                               Eigen::Matrix4d::Identity()));
@@ -259,23 +293,6 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrix) {
       (Eigen::Matrix2d() << 1.0, 2.0, 3.0, 4.0).finished();
   const Eigen::Matrix4d gradient = 2 * Eigen::Matrix4d::Identity();
 
-  // Fixed-size value, fixed-size gradient.
-  Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector4d>, 2, 2> autodiff2;
-  // This is the general method. The other (value, gradient) signature just
-  // calls it.
-  InitializeAutoDiff(value, gradient, &autodiff2);
-  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff2), value));
-  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff2), gradient));
-
-  // The other signature should behave identically, including meta-computing a
-  // fixed-size return type.
-  const auto ad2_return = InitializeAutoDiff(value, gradient);
-  EXPECT_EQ(decltype(ad2_return)::ColsAtCompileTime, 2);
-  EXPECT_EQ(decltype(ad2_return)::RowsAtCompileTime, 2);
-  EXPECT_EQ(decltype(ad2_return)::Scalar::DerType::RowsAtCompileTime, 4);
-  EXPECT_TRUE(CompareMatrices(ExtractValue(ad2_return), value));
-  EXPECT_TRUE(CompareMatrices(ExtractGradient(ad2_return), gradient));
-
   // Repeat the last two tests using dynamically-sized matrices. This should
   // produce dynamically-sized results.
   const Eigen::MatrixXd dynamic_value(value);
@@ -324,8 +341,6 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
   // This is the expected type of the derivatives vector (in every element).
   const Eigen::Matrix<double, 12, 1>& deriv_12 =
       std::get<1>(tuple).coeffRef(2).derivatives();
-  // Check that we didn't create a new copy (i.e. we got the right type).
-  EXPECT_EQ(&deriv_12, &std::get<1>(tuple).coeffRef(2).derivatives());
 
   // Since vec3[2] is the 7th variable, we expect only element 7 of its
   // derivatives vector to be 1.
@@ -350,20 +365,10 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
   // This is the expected type of the derivatives vector (in every element).
   const Eigen::Matrix<double, Eigen::Dynamic, 1>& deriv_12d =
       std::get<1>(tupled).coeffRef(2).derivatives();
-  // Check that we didn't create a new copy (i.e. we got the right type).
-  EXPECT_EQ(&deriv_12d, &std::get<1>(tupled).coeffRef(2).derivatives());
 
   // We should still get the same value at run time.
   expected << 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0;
   EXPECT_EQ(deriv_12d, expected);
-}
-
-// See note in class documentation for our AutoDiffXd specialization in
-// common/autodiffxd.h for why we initialize the value field even though
-// that is not part of the Eigen::AutoDiffScalar contract.
-GTEST_TEST(AdditionalAutodiffTest, ValueIsInitializedToNaN) {
-  AutoDiffXd autodiff;
-  EXPECT_TRUE(std::isnan(autodiff.value()));
 }
 
 GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {

@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/solvers/augmented_lagrangian.h"
@@ -8,15 +8,15 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversAugmentedLagrangian(py::module m) {
+void DefineSolversAugmentedLagrangian(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
-  constexpr auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
   {
     using Class = AugmentedLagrangianNonsmooth;
     constexpr auto& cls_doc = doc.AugmentedLagrangianNonsmooth;
-    py::class_<AugmentedLagrangianNonsmooth>(
+    class_<AugmentedLagrangianNonsmooth>(
         m, "AugmentedLagrangianNonsmooth", cls_doc.doc)
         .def(py::init<const MathematicalProgram*, bool>(), py::arg("prog"),
             py::arg("include_x_bounds"), cls_doc.ctor.doc)
@@ -59,7 +59,7 @@ void DefineSolversAugmentedLagrangian(py::module m) {
   {
     using Class = AugmentedLagrangianSmooth;
     constexpr auto& cls_doc = doc.AugmentedLagrangianSmooth;
-    py::class_<Class>(m, "AugmentedLagrangianSmooth", cls_doc.doc)
+    class_<Class>(m, "AugmentedLagrangianSmooth", cls_doc.doc)
         .def(py::init<const MathematicalProgram*, bool>(), py::arg("prog"),
             py::arg("include_x_bounds"), cls_doc.ctor.doc)
         .def(

@@ -24,14 +24,15 @@ namespace {
 
 namespace fs = std::filesystem;
 
-using nlohmann::json;
 using math::RigidTransformd;
+using nlohmann::json;
 
 GTEST_TEST(MeshcatInternalTest, GetMeshcatStaticResource) {
   // This matches the list of URLs in the API doc.
   const std::vector<const char*> urls{
-      "/",           "/favicon.ico",  "/index.html", "/meshcat.html",
-      "/meshcat.js", "/stats.min.js",
+      "/favicon.ico",
+      "/meshcat.html",
+      "/meshcat.js",
   };
   for (const auto& url : urls) {
     SCOPED_TRACE(fmt::format("url = {}", url));
@@ -82,7 +83,7 @@ GTEST_TEST(UnbundleGltfAssetsTest, DataUri) {
   EXPECT_EQ(assets.front()->sha256(), expected_sha256);
 
   // Make sure the new URI seems correct.
-  EXPECT_THAT(json::parse(gltf_contents)["buffers"][0]["uri"],
+  EXPECT_THAT(std::string{json::parse(gltf_contents)["buffers"][0]["uri"]},
               testing::EndsWith(expected_sha256.to_string()));
 }
 
@@ -126,7 +127,7 @@ GTEST_TEST(UnbundleGltfAssetsTest, InMemoryData) {
           source.in_memory().supporting_files.at("fully_textured_pyramid.bin"))
           .sha256();
   // File storage provides a version-based prefix to the sha.
-  EXPECT_THAT(gltf_json["buffers"][0]["uri"],
+  EXPECT_THAT(std::string{gltf_json["buffers"][0]["uri"]},
               testing::EndsWith(bin_sha.to_string()));
   EXPECT_NE(storage.Find(bin_sha), nullptr);
 
@@ -136,7 +137,7 @@ GTEST_TEST(UnbundleGltfAssetsTest, InMemoryData) {
       MemoryFile::Make(gltf_dir / "fully_textured_pyramid_emissive.png")
           .sha256();
   // We happen to know that the emissive texture is texture 0.
-  EXPECT_THAT(gltf_json["images"][0]["uri"],
+  EXPECT_THAT(std::string{gltf_json["images"][0]["uri"]},
               testing::EndsWith(png_sha.to_string()));
   EXPECT_NE(storage.Find(png_sha), nullptr);
 }
@@ -185,7 +186,7 @@ GTEST_TEST(UnbundleGltfAssetsTest, RelativeUri) {
   EXPECT_EQ(assets.front()->sha256(), expected_sha256);
 
   // Make sure the new URI seems correct.
-  EXPECT_THAT(json::parse(gltf_contents)["buffers"][0]["uri"],
+  EXPECT_THAT(std::string{json::parse(gltf_contents)["buffers"][0]["uri"]},
               testing::EndsWith(expected_sha256.to_string()));
 }
 
@@ -218,6 +219,7 @@ GTEST_TEST(TransformGeometryNameTest, SampledResults) {
   const RigidTransformd I = RigidTransformd::Identity();
 
   // Test pairs: (registered geometry name, expected transformed name).
+  // clang-format off
   std::vector<std::pair<std::string, std::string>> test_names{
       {"unchanged", "unchanged"},
       {"::prefixed", "/prefixed"},
@@ -227,6 +229,7 @@ GTEST_TEST(TransformGeometryNameTest, SampledResults) {
       {"empty::::slash", "empty//slash"},
       {"suffixed::", "suffixed/"},
       {"final_trio:::", "final_trio/:"}};
+  // clang-format on
   for (const auto& [name, transformed] : test_names) {
     const GeometryId id = scene_graph.RegisterAnchoredGeometry(
         s_id, std::make_unique<GeometryInstance>(I, Sphere(1.0), name));

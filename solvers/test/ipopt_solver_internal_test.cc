@@ -1,5 +1,7 @@
 #include "drake/solvers/ipopt_solver_internal.h"
 
+#include <vector>
+
 #include <IpIpoptApplication.hpp>
 #include <IpTNLP.hpp>
 #include <gtest/gtest.h>
@@ -269,24 +271,6 @@ GTEST_TEST(TestIpoptSolverNlp, NonlinearConstraintDuplicatedVariables) {
     // clang-format on
     EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
   }
-}
-
-#if defined(__APPLE__)
-constexpr bool kApple = true;
-#else
-constexpr bool kApple = false;
-#endif
-
-// This provides a cross-check of our build system choices for @ipopt.
-GTEST_TEST(TestIpoptSolver, SupportedLinearSolvers) {
-  const std::vector<std::string_view> actual = GetSupportedIpoptLinearSolvers();
-  std::vector<std::string_view> expected;
-  expected.emplace_back("spral");
-  if (!kApple) {
-    // Homebrew doesn't provide a usable MUMPS library for us to build against.
-    expected.emplace_back("mumps");
-  }
-  EXPECT_EQ(actual, expected);
 }
 
 }  // namespace internal

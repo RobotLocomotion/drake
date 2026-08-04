@@ -6,10 +6,10 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(autodiffutils_test_util, m) {
+PYDRAKE_MODULE(autodiffutils_test_util, m) {
   m.doc() = "Utilities for testing Eigen AutoDiff Scalars";
 
-  py::module::import("pydrake.autodiffutils");
+  py::module_::import_("pydrake.autodiffutils");
 
   // For testing implicit argument conversion.
   m.def("autodiff_scalar_pass_through",

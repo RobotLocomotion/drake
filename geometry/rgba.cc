@@ -33,9 +33,10 @@ void Rgba::set(const Eigen::Ref<const Eigen::VectorXd>& rgba) {
   value_ = new_value;
 }
 
-std::ostream& operator<<(std::ostream& out, const Rgba& c) {
-  out << fmt::format("({}, {}, {}, {})", c.r(), c.g(), c.b(), c.a());
-  return out;
+std::string Rgba::to_string() const {
+  return fmt::format("({}, {}, {}, {})", this->r(), this->g(), this->b(),
+                     this->a());
 }
+
 }  // namespace geometry
 }  // namespace drake

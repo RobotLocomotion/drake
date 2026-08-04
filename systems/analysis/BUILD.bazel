@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":batch_eval",
         ":bogacki_shampine3_integrator",
         ":dense_output",
+        ":discrete_time_approximation",
         ":explicit_euler_integrator",
         ":hermitian_dense_output",
         ":implicit_euler_integrator",
@@ -99,6 +100,9 @@ drake_cc_library(
         "//common:nice_type_name",
         "//systems/framework:leaf_system",
     ],
+    implementation_deps = [
+        "//multibody/cenic:make_cenic_integrator",
+    ],
 )
 
 drake_cc_library(
@@ -118,6 +122,19 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_approximation",
+    srcs = ["discrete_time_approximation.cc"],
+    hdrs = ["discrete_time_approximation.h"],
+    deps = [
+        ":simulator_config_functions",
+        "//common:nice_type_name",
+        "//systems/framework",
+        "//systems/primitives:affine_system",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -413,10 +430,13 @@ drake_cc_library(
     srcs = ["simulator_print_stats.cc"],
     hdrs = ["simulator_print_stats.h"],
     deps = [
+        ":simulator",
+    ],
+    implementation_deps = [
         ":implicit_integrator",
         ":integrator_base",
-        ":simulator",
         "@fmt",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -470,9 +490,20 @@ drake_cc_googletest(
         ":simulator_config_functions",
         "//common:nice_type_name",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//common/yaml",
         "//systems/framework:leaf_system",
         "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simulator_config_functions_cenic_test",
+    deps = [
+        ":simulator",
+        ":simulator_config_functions",
+        "//multibody/cenic",
+        "//planning:robot_diagram_builder",
     ],
 )
 
@@ -491,6 +522,7 @@ drake_cc_googletest(
         ":implicit_euler_integrator",
         ":runge_kutta3_integrator",
         ":simulator",
+        "//common:scope_exit",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:is_dynamic_castable",
         "//systems/analysis/test_utilities:controlled_spring_mass_system",
@@ -517,7 +549,7 @@ drake_cc_googletest(
     name = "simulator_denorm_test",
     # Valgrind core does not support the floating point register
     # instructions that this test uses.
-    tags = ["no_valgrind_tools"],
+    opt_out_conditions = ["//tools/valgrind:enabled"],
     deps = [
         ":simulator",
     ],
@@ -590,6 +622,25 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "discrete_time_approximation_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+    ],
+    deps = [
+        ":discrete_time_approximation",
+        ":simulator",
+        "//common:nice_type_name",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/primitives",
+    ],
+)
+
+drake_cc_googletest(
     name = "explicit_euler_integrator_test",
     timeout = "moderate",
     deps = [
@@ -601,13 +652,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
-    timeout = "moderate",
-    shard_count = 2,
     # Adding cache invalidation made this take too long with Valgrind.
     # See Drake issue #9261.
-    tags = [
-        "no_memcheck",
-    ],
+    opt_out_conditions = ["//tools/valgrind:enabled"],
+    timeout = "moderate",
+    shard_count = 2,
     deps = [
         ":implicit_euler_integrator",
         "//common/test_utilities:expect_throws_message",
@@ -621,6 +670,8 @@ drake_cc_googletest(
     name = "implicit_integrator_test",
     deps = [
         ":implicit_integrator",
+        ":simulator_config_functions",
+        "//common:pointer_cast",
         "//common/test_utilities:expect_no_throw",
         "//systems/analysis/test_utilities:spring_mass_system",
     ],
@@ -630,8 +681,11 @@ drake_cc_googletest(
     name = "integrator_base_test",
     deps = [
         ":integrator_base",
+        ":simulator_config_functions",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/analysis/test_utilities:spring_mass_system",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -703,10 +757,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "runge_kutta3_integrator_test",
-    # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "moderate",
-    # This test is prohibitively slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
+    # This test is prohibitively slow in debug builds.
+    opt_out_conditions = ["//tools:unoptimized"],
     deps = [
         ":runge_kutta3_integrator",
         "//common/test_utilities:eigen_matrix_compare",
@@ -718,10 +770,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "runge_kutta5_integrator_test",
-    # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "moderate",
-    # This test is prohibitively slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
+    # This test is prohibitively slow in debug builds.
+    opt_out_conditions = ["//tools:unoptimized"],
     deps = [
         ":runge_kutta5_integrator",
         "//common/test_utilities:eigen_matrix_compare",
@@ -808,4 +858,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

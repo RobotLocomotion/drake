@@ -1,5 +1,9 @@
 #include "drake/multibody/tree/rpy_floating_mobilizer.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -32,7 +36,7 @@ class RpyFloatingMobilizerTest : public MobilizerTester {
   void SetUp() override {
     mobilizer_ = &AddJointAndFinalize<RpyFloatingJoint, RpyFloatingMobilizer>(
         std::make_unique<RpyFloatingJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame()));
+            "joint0", tree().world_link().body_frame(), body_->body_frame()));
     mutable_mobilizer_ = const_cast<RpyFloatingMobilizer<double>*>(mobilizer_);
   }
 
@@ -124,6 +128,35 @@ TEST_F(RpyFloatingMobilizerTest, ZeroState) {
   mobilizer_->SetZeroState(*context_, &context_->get_mutable_state());
   EXPECT_TRUE(
       mobilizer_->CalcAcrossMobilizerTransform(*context_).IsExactlyIdentity());
+}
+
+TEST_F(RpyFloatingMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
+  const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
+  const Vector3d translation(1.0, 2.0, 3.0);
+  mobilizer_->SetAngles(context_.get(), rpy_value);
+  mobilizer_->SetTranslation(context_.get(), translation);
+  const double* q =
+      &context_
+           ->get_continuous_state_vector()[mobilizer_->position_start_in_q()];
+  RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
+
+  const RigidTransformd X_FM_expected(RollPitchYawd(rpy_value), translation);
+  EXPECT_TRUE(X_FM.IsNearlyEqualTo(X_FM_expected, kTol));
+
+  // Now check the fast inline methods.
+  RigidTransformd fast_X_FM = mobilizer_->calc_X_FM(q);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const Vector3d new_translation(1.5, 2.5, 3.5);
+  const Vector3d new_rpy_value(M_PI / 4, -M_PI / 4, M_PI / 7);
+  mobilizer_->SetAngles(context_.get(), new_rpy_value);
+  mobilizer_->SetTranslation(context_.get(), new_translation);
+  X_FM = mobilizer_->CalcAcrossMobilizerTransform(*context_);
+  mobilizer_->update_X_FM(q, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  TestApplyR_FM(X_FM, *mobilizer_);
+  TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
 }
 
 TEST_F(RpyFloatingMobilizerTest, SetGetPosePair) {

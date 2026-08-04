@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/simulator_status.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 namespace drake {

@@ -13,6 +13,7 @@ import sys
 import trace
 import unittest
 import warnings
+
 import xmlrunner
 
 try:
@@ -75,34 +76,25 @@ def _unittest_main(*, module, argv, testRunner):
 def main():
     # Obtain the full path for this test case; it looks a bit like this:
     # .../execroot/.../foo_test.runfiles/.../drake_py_unittest_main.py
-    # Also work around kcov#368 by consuming DRAKE_KCOV_LINK_PATH.
-    # TODO(rpoyner-tri): remove DRAKE_KCOV_LINK_PATH when newer kcov is ready.
-    main_py = os.environ.get('DRAKE_KCOV_LINK_PATH', sys.argv[0])
-    os.environ.pop('DRAKE_KCOV_LINK_PATH', None)
+    main_py = sys.argv[0]
 
     # Parse the test case name out of the runfiles directory name.
-    match = re.search("^(.*bin/(.*?/)?(py/)?([^/]*_test).runfiles/)", main_py)
+    # TODO(jwnimmer-tri) The (alt_binder...) group is used by test_alt_binder.
+    # Remove it when the test_alt_binder option is removed.
+    match = re.search("^(.*bin/(.*?/)?(alt_binder/[^/]*/)?([^/]*_test).runfiles/)", main_py)
     if not match:
-        print("error: no test name match in {}".format(main_py))
+        print(f"error: no test name match in {main_py}")
         sys.exit(1)
     runfiles, test_package, _, test_name, = match.groups()
     test_basename = test_name + ".py"
 
     # Find the test's source file.
-    runfiles_test_filenames = [
-        # With bzlmod disabled.
-        runfiles + "drake/" + test_package + "test/" + test_basename,
-        # With bzlmod enabled.
-        runfiles + "_main/" + test_package + "test/" + test_basename,
-    ]
-    runfiles_test_filename = None
-    for x in runfiles_test_filenames:
-        if os.path.exists(x):
-            runfiles_test_filename = x
-            break
-    if runfiles_test_filename is None:
-        raise RuntimeError("Could not find {} at any of {}".format(
-            test_basename, runfiles_test_filenames))
+    runfiles_test_filename = (
+        runfiles + "_main/" + test_package + "test/" + test_basename
+    )
+    if not os.path.exists(runfiles_test_filename):
+        raise RuntimeError("Could not find {} at {}".format(
+            test_basename, runfiles_test_filename))
 
     # Check the test's source code for a (misleading) __main__.
     realpath_test_filename = os.path.realpath(runfiles_test_filename)
@@ -230,16 +222,16 @@ def reexecute_if_unbuffered():
     ONLY use this at your entrypoint. Otherwise, you may have code be
     re-executed that will clutter your console."""
     import os
-    import shlex
     import sys
     if os.environ.get("PYTHONUNBUFFERED") in (None, ""):
         os.environ["PYTHONUNBUFFERED"] = "1"
         argv = list(sys.argv)
         if argv[0] != sys.executable:
             argv.insert(0, sys.executable)
-        cmd = " ".join([shlex.quote(arg) for arg in argv])
         sys.stdout.flush()
+        os.environ["PYTHONPATH"] = ":".join(sys.path)
         os.execv(argv[0], argv)
+    os.environ.pop("PYTHONPATH", None)
 
 
 def traced(func, ignoredirs=None):
@@ -247,7 +239,6 @@ def traced(func, ignoredirs=None):
      Python code outside of the system prefix."""
     import functools
     import sys
-    import trace
     if ignoredirs is None:
         ignoredirs = ["/usr", sys.prefix]
     tracer = trace.Trace(trace=1, count=0, ignoredirs=ignoredirs)

@@ -2,7 +2,7 @@
 confirm the semantics of deriving a RenderEngine implementation in python are
 flaky and are therefore being isolated (see issue #14720)."""
 
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 import gc
 from math import pi
@@ -13,83 +13,140 @@ from pydrake.math import RigidTransform
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.sensors import (
     CameraInfo,
-    ImageRgba8U,
     ImageDepth32F,
     ImageLabel16I,
+    ImageRgba8U,
 )
 
 
 class TestRenderEngineSubclass(unittest.TestCase):
-
     def test_unimplemented_rendering(self):
         """The RenderEngine API throws exceptions for derived implementations
         that don't override DoRender*Image. This test confirms that behavior
         propagates down to Python."""
-        class MinimalEngine(mut.RenderEngine):
-            """Minimal implementation of the RenderEngine virtual API"""
+
+        class LegacyEngine(mut.RenderEngine):
+            """Minimal implementation of the RenderEngine virtual API which
+            only implements DoRegisterVisual (no name)."""
+
             def UpdateViewpoint(self, X_WC):
                 pass
 
             def DoRegisterVisual(self, id, shape, properties, X_WG):
-                pass
+                return False
 
             def DoUpdateVisualPose(self, id, X_WG):
                 pass
 
             def DoRemoveGeometry(self, id):
+                return False
+
+            def __deepcopy__(self, memo):
+                return type(self)()
+
+        class MinimalEngine(mut.RenderEngine):
+            """(Almost) Minimal implementation of the RenderEngine virtual API.
+            This implements the named-visual API instead."""
+
+            def UpdateViewpoint(self, X_WC):
                 pass
+
+            def DoRegisterVisual(self, id, shape, properties, X_WG):
+                raise RuntimeError("Minimal engine uses the name API")
+
+            def DoRegisterNamedVisual(self, id, shape, properties, X_WG, name):
+                return False
+
+            def DoUpdateVisualPose(self, id, X_WG):
+                pass
+
+            def DoRemoveGeometry(self, id):
+                return False
 
             def __deepcopy__(self, memo):
                 return type(self)()
 
         class ColorOnlyEngine(MinimalEngine):
             """Rendering Depth and Label images should throw"""
+
             def DoRenderColorImage(self, camera, image_out):
                 pass
 
         class DepthOnlyEngine(MinimalEngine):
             """Rendering Color and Label images should throw"""
+
             def DoRenderDepthImage(self, camera, image_out):
                 pass
 
         class LabelOnlyEngine(MinimalEngine):
             """Rendering Color and Depth images should throw"""
+
             def DoRenderLabelImage(self, camera, image_out):
                 pass
 
         identity = RigidTransform()
         intrinsics = CameraInfo(10, 10, pi / 4)
-        core = mut.RenderCameraCore("n/a", intrinsics,
-                                    mut.ClippingRange(0.1, 10), identity)
+        core = mut.RenderCameraCore(
+            "n/a", intrinsics, mut.ClippingRange(0.1, 10), identity
+        )
         color_cam = mut.ColorRenderCamera(core, False)
         depth_cam = mut.DepthRenderCamera(core, mut.DepthRange(0.1, 9))
         color_image = ImageRgba8U(intrinsics.width(), intrinsics.height())
         depth_image = ImageDepth32F(intrinsics.width(), intrinsics.height())
         label_image = ImageLabel16I(intrinsics.width(), intrinsics.height())
 
+        legacy_engine = LegacyEngine()
+        props = mut.PerceptionProperties()
+        props.AddProperty("label", "id", mut.RenderLabel(1))
+        # Passing a name causes no problems.
+        legacy_engine.RegisterVisual(
+            id=mut.GeometryId.get_new_id(),
+            shape=mut.Sphere(1.0),
+            properties=props,
+            X_WG=RigidTransform.Identity(),
+            needs_updates=False,
+            name="ignored",
+        )
+
         color_only = ColorOnlyEngine()
         color_only.RenderColorImage(color_cam, color_image)
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        pure_virtual_error_regex = ".+pure virtual function.+"
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             color_only.RenderDepthImage(depth_cam, depth_image)
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             color_only.RenderLabelImage(color_cam, label_image)
         self.assertIsInstance(color_only.Clone(), ColorOnlyEngine)
+        # Passing a name won't tickle the throw in DoRegisterVisual().
+        color_only.RegisterVisual(
+            id=mut.GeometryId.get_new_id(),
+            shape=mut.Sphere(1.0),
+            properties=props,
+            X_WG=RigidTransform.Identity(),
+            needs_updates=False,
+            name="foo",
+        )
 
         depth_only = DepthOnlyEngine()
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             depth_only.RenderColorImage(color_cam, color_image)
         depth_only.RenderDepthImage(depth_cam, depth_image)
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             depth_only.RenderLabelImage(color_cam, label_image)
         self.assertIsInstance(depth_only.Clone(), DepthOnlyEngine)
 
         label_only = LabelOnlyEngine()
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             label_only.RenderColorImage(color_cam, color_image)
-        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+        with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             label_only.RenderDepthImage(depth_cam, depth_image)
         label_only.RenderLabelImage(color_cam, label_image)
         self.assertIsInstance(label_only.Clone(), LabelOnlyEngine)
+
+        # Overriding DoGetParameterYaml is not required; when absent, a default
+        # implementation will be used. (The render_test.py already checks that
+        # overriding DoGetParameterYaml works correctly.)
+        for engine in [legacy_engine, color_only, depth_only, label_only]:
+            self.assertIn("Unknown", engine.GetParameterYaml())
 
     def test_legacy_DoClone(self):
         """Sanity checks that DoClone (without __deepcopy__) is sufficient."""

@@ -2,6 +2,10 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 // clang-format: on
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -40,10 +44,10 @@ class PlanarJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add a joint between it and the world:
-    body_ = &model->AddRigidBody("Body", M_B);
+    body_ = &model->AddLink("Body", M_B);
 
     // Add a planar joint between the world and body1:
-    joint_ = &model->AddJoint<PlanarJoint>("Joint", model->world_body(),
+    joint_ = &model->AddJoint<PlanarJoint>("Joint", model->world_link(),
                                            std::nullopt, *body_, std::nullopt,
                                            Vector3d::Constant(kDamping));
     mutable_joint_ = dynamic_cast<PlanarJoint<double>*>(

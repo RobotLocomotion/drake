@@ -62,7 +62,7 @@ class MemoryFile final {
   /** Returns the checksum of `this` instance's `contents()`. */
   const Sha256& sha256() const { return sha256_.value().checksum; }
 
-  /** Returns the notional "filename" for this file`. */
+  /** Returns the notional "filename" for this `file`. */
   const std::string& filename_hint() const { return filename_hint_; }
 
   /** Returns a string representation. Note: the file contents will be limited

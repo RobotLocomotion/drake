@@ -1,4 +1,4 @@
-# This file governs the contents of libdrake.so.
+# This file governs the contents of libdrake.
 
 # Do not update this list by hand; instead, from the drake workspace run
 #
@@ -9,6 +9,7 @@
 # should commit the changes made by the refresh script.
 LIBDRAKE_COMPONENTS = [
     "//common",
+    "//common/ad",
     "//common/proto",
     "//common/schema",
     "//common/symbolic",
@@ -25,8 +26,6 @@ LIBDRAKE_COMPONENTS = [
     "//examples/compass_gait:compass_gait",  # unpackaged
     "//examples/compass_gait:compass_gait_geometry",  # unpackaged
     "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
-    "//examples/manipulation_station:manipulation_station",  # unpackaged
-    "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
     "//examples/pendulum:pendulum_geometry",  # unpackaged
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged
@@ -46,6 +45,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/render_gltf_client",
     "//geometry/render_vtk",
     "//lcm",
+    "//manipulation/franka_panda",
     "//manipulation/kinova_jaco",
     "//manipulation/kuka_iiwa",
     "//manipulation/schunk_wsg",
@@ -57,7 +57,9 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/kuka_iiwa_robot",
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
+    "//multibody/cenic",
     "//multibody/contact_solvers",
+    "//multibody/contact_solvers/icf",
     "//multibody/contact_solvers/sap",
     "//multibody/fem",
     "//multibody/hydroelastics",
@@ -74,6 +76,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/triangle_quadrature",
     "//perception",
     "//planning",
+    "//planning/experimental",
     "//planning/graph_algorithms",
     "//planning/iris",
     "//planning/locomotion",

@@ -7,7 +7,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include <ostream>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -23,7 +22,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/polynomial.h"
@@ -77,8 +75,8 @@ namespace internal {
  * Return un-initialized new variable names.
  */
 template <int Size>
-typename std::enable_if_t<Size >= 0, typename NewVariableNames<Size>::type>
-CreateNewVariableNames(int) {
+  requires(Size >= 0)
+typename NewVariableNames<Size>::type CreateNewVariableNames(int) {
   typename NewVariableNames<Size>::type names;
   return names;
 }
@@ -87,9 +85,8 @@ CreateNewVariableNames(int) {
  * Return un-initialized new variable names.
  */
 template <int Size>
-typename std::enable_if_t<Size == Eigen::Dynamic,
-                          typename NewVariableNames<Size>::type>
-CreateNewVariableNames(int size) {
+  requires(Size == Eigen::Dynamic)
+typename NewVariableNames<Size>::type CreateNewVariableNames(int size) {
   typename NewVariableNames<Eigen::Dynamic>::type names(size);
   return names;
 }
@@ -594,28 +591,29 @@ class MathematicalProgram {
    * @param type The returned polynomial p(x) can be either SOS, SDSOS or DSOS,
    * depending on @p type.
    */
-  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
-             MatrixXDecisionVariable>
-  NewEvenDegreeNonnegativePolynomial(const symbolic::Variables& indeterminates,
-                                     int degree, NonnegativePolynomial type);
+  auto NewEvenDegreeNonnegativePolynomial(
+      const symbolic::Variables& indeterminates, int degree,
+      NonnegativePolynomial type)
+      -> std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+                    MatrixXDecisionVariable>;
 
   /**
    * See @ref even_degree_nonnegative_polynomial for more details.
    * Variant that produces a SOS polynomial.
    */
-  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
-             MatrixXDecisionVariable>
-  NewEvenDegreeSosPolynomial(const symbolic::Variables& indeterminates,
-                             int degree);
+  auto NewEvenDegreeSosPolynomial(const symbolic::Variables& indeterminates,
+                                  int degree)
+      -> std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+                    MatrixXDecisionVariable>;
 
   /**
    * see @ref even_degree_nonnegative_polynomial for details.
    * Variant that produces an SDSOS polynomial.
    */
-  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
-             MatrixXDecisionVariable>
-  NewEvenDegreeSdsosPolynomial(const symbolic::Variables& indeterminates,
-                               int degree);
+  auto NewEvenDegreeSdsosPolynomial(const symbolic::Variables& indeterminates,
+                                    int degree)
+      -> std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+                    MatrixXDecisionVariable>;
 
   /**
    * see @ref even_degree_nonnegative_polynomial for details.
@@ -623,10 +621,10 @@ class MathematicalProgram {
    * Same as NewEvenDegreeSosPolynomial, except the returned polynomial is
    * diagonally dominant sum of squares (dsos).
    */
-  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
-             MatrixXDecisionVariable>
-  NewEvenDegreeDsosPolynomial(const symbolic::Variables& indeterminates,
-                              int degree);
+  auto NewEvenDegreeDsosPolynomial(const symbolic::Variables& indeterminates,
+                                   int degree)
+      -> std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+                    MatrixXDecisionVariable>;
   //@}
 
   /**
@@ -916,7 +914,7 @@ class MathematicalProgram {
   /**
    * Adds a generic cost to the optimization program.
    *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{1args_binding_cost}
    */
   Binding<Cost> AddCost(const Binding<Cost>& binding);
 
@@ -964,9 +962,8 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F>
-  typename std::enable_if_t<internal::is_cost_functor_candidate<F>::value,
-                            Binding<Cost>>
-  AddCost(F&& f, const VariableRefList& vars) {
+    requires(internal::is_cost_functor_candidate<F>::value)
+  Binding<Cost> AddCost(F&& f, const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
 
@@ -978,9 +975,9 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F>
-  typename std::enable_if_t<internal::is_cost_functor_candidate<F>::value,
-                            Binding<Cost>>
-  AddCost(F&& f, const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+    requires(internal::is_cost_functor_candidate<F>::value)
+  Binding<Cost> AddCost(F&& f,
+                        const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     auto c = MakeFunctionCost(std::forward<F>(f));
     return AddCost(c, vars);
   }
@@ -993,9 +990,8 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F, typename Vars>
-  typename std::enable_if_t<internal::assert_if_is_constraint<F>::value,
-                            Binding<Cost>>
-  AddCost(F&&, Vars&&) {
+    requires(internal::assert_if_is_constraint<F>::value)
+  Binding<Cost> AddCost(F&&, Vars&&) {
     throw std::runtime_error("This will assert at compile-time.");
   }
 
@@ -1181,7 +1177,7 @@ class MathematicalProgram {
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
    * @note Currently kL2NormCost is supported by SnoptSolver, IpoptSolver,
-   * GurobiSolver, MosekSolver, ClarabelSolver, and SCSSolver.
+   * NloptSolver, GurobiSolver, MosekSolver, ClarabelSolver, and SCSSolver.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
   Binding<L2NormCost> AddL2NormCost(
@@ -1225,12 +1221,27 @@ class MathematicalProgram {
    * variable (with variable name string as "slack"), `linear_cost` is the cost
    * on `s`, and `lorentz_cone_constraint` is the constraint s≥|Ax+b|₂
    */
-  std::tuple<symbolic::Variable, Binding<LinearCost>,
-             Binding<LorentzConeConstraint>>
-  AddL2NormCostUsingConicConstraint(
+  auto AddL2NormCostUsingConicConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+      const Eigen::Ref<const VectorXDecisionVariable>& vars)
+      -> std::tuple<symbolic::Variable, Binding<LinearCost>,
+                    Binding<LorentzConeConstraint>>;
+
+  /**
+   * Adds an L1 norm cost min |Ax+b|₁ as a linear cost min Σᵢsᵢ on the slack
+   * variables sᵢ, together with the constraints (for each i) sᵢ ≥ (|Ax+b|)ᵢ,
+   * which itself is written sᵢ ≥ (Ax+b)ᵢ and sᵢ ≥ -(Ax+b)ᵢ.
+   * @return (s, linear_cost, linear_constraint). `s` is the vector of slack
+   * variables, `linear_cost` is the cost on `s`, and `linear_constraint` is the
+   * constraint encoding s ≥ Ax+b and s ≥ -(Ax+b).
+   */
+  auto AddL1NormCostInEpigraphForm(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars)
+      -> std::tuple<VectorX<symbolic::Variable>, Binding<LinearCost>,
+                    Binding<LinearConstraint>>;
 
   /**
    * Adds a cost term in the polynomial form.
@@ -1287,10 +1298,10 @@ class MathematicalProgram {
    */
   // TODO(hongkai.dai): return the lower-triangular of Z as
   // VectorX<symbolic::Variable>.
-  std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
-             MatrixX<symbolic::Expression>>
-  AddMaximizeLogDeterminantCost(
-      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+  auto AddMaximizeLogDeterminantCost(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)
+      -> std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
+                    MatrixX<symbolic::Expression>>;
 
   /**
    * Impose the constraint log(det(X)) >= lower. See @ref log_determinant for
@@ -1305,10 +1316,10 @@ class MathematicalProgram {
    */
   // TODO(hongkai.dai): return the lower-triangular of Z as
   // VectorX<symbolic::Variable>.
-  std::tuple<Binding<LinearConstraint>, VectorX<symbolic::Variable>,
-             MatrixX<symbolic::Expression>>
-  AddLogDeterminantLowerBoundConstraint(
-      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X, double lower);
+  auto AddLogDeterminantLowerBoundConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X, double lower)
+      -> std::tuple<Binding<LinearConstraint>, VectorX<symbolic::Variable>,
+                    MatrixX<symbolic::Expression>>;
   //@}
 
   /**
@@ -1467,10 +1478,8 @@ class MathematicalProgram {
    * @tparam Derived Eigen::Matrix or Eigen::Array with Formula as the Scalar.
    */
   template <typename Derived>
-  typename std::enable_if_t<
-      is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-      Binding<Constraint>>
-  AddConstraint(const Eigen::DenseBase<Derived>& formulas) {
+    requires(is_eigen_scalar_same<Derived, symbolic::Formula>::value)
+  Binding<Constraint> AddConstraint(const Eigen::DenseBase<Derived>& formulas) {
     return AddConstraint(internal::ParseConstraint(formulas));
   }
 
@@ -1714,6 +1723,29 @@ class MathematicalProgram {
       const symbolic::Formula& f);
 
   /**
+   * Adds a linear equality constraint represented by an
+   * Eigen::Array<symbolic::Formula> to the program. A common use-case of this
+   * function is to add a linear constraint with the element-wise comparison
+   * between two Eigen matrices, using `A.array() == B.array()`. See the
+   * following example.
+   *
+   * @code
+   *   MathematicalProgram prog;
+   *   Eigen::Matrix<double, 2, 2> A;
+   *   auto x = prog.NewContinuousVariables(2, "x");
+   *   Eigen::Vector2d b;
+   *   ... // set up A and b
+   *   prog.AddLinearConstraint((A * x).array() == b.array());
+   * @endcode
+   *
+   * It throws an exception if AddLinearConstraint(const symbolic::Formula& f)
+   * throws an exception for f ∈ `formulas`.
+   * @tparam Derived An Eigen Array type of Formula. */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const Eigen::Array<symbolic::Formula, Eigen::Dynamic,
+                                          Eigen::Dynamic>>& formulas);
+
+  /**
    * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic
    * linear expression.
    * @throws std::exception if
@@ -1730,11 +1762,10 @@ class MathematicalProgram {
    * bound variables.
    */
   template <typename DerivedV, typename DerivedB>
-  typename std::enable_if_t<
-      is_eigen_vector_expression_double_pair<DerivedV, DerivedB>::value,
-      Binding<LinearEqualityConstraint>>
-  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& v,
-                              const Eigen::MatrixBase<DerivedB>& b) {
+    requires(is_eigen_vector_expression_double_pair<DerivedV, DerivedB>::value)
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::MatrixBase<DerivedV>& v,
+      const Eigen::MatrixBase<DerivedB>& b) {
     return AddConstraint(internal::ParseLinearEqualityConstraint(v, b));
   }
 
@@ -1760,12 +1791,11 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename DerivedV, typename DerivedB>
-  typename std::enable_if_t<
-      is_eigen_nonvector_expression_double_pair<DerivedV, DerivedB>::value,
-      Binding<LinearEqualityConstraint>>
-  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
-                              const Eigen::MatrixBase<DerivedB>& B,
-                              bool lower_triangle = false) {
+    requires(
+        is_eigen_nonvector_expression_double_pair<DerivedV, DerivedB>::value)
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::MatrixBase<DerivedV>& V,
+      const Eigen::MatrixBase<DerivedB>& B, bool lower_triangle = false) {
     return AddConstraint(
         internal::ParseLinearEqualityConstraint(V, B, lower_triangle));
   }
@@ -1975,12 +2005,10 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename Derived>
-  typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Variable> &&
-          Derived::ColsAtCompileTime == 1,
-      Binding<BoundingBoxConstraint>>
-  AddBoundingBoxConstraint(double lb, double ub,
-                           const Eigen::MatrixBase<Derived>& vars) {
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable> &&
+             Derived::ColsAtCompileTime == 1)
+  Binding<BoundingBoxConstraint> AddBoundingBoxConstraint(
+      double lb, double ub, const Eigen::MatrixBase<Derived>& vars) {
     const int kSize = Derived::RowsAtCompileTime;
     return AddBoundingBoxConstraint(
         Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
@@ -1997,12 +2025,10 @@ class MathematicalProgram {
    * @param vars The decision variables.
    */
   template <typename Derived>
-  typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Variable> &&
-          Derived::ColsAtCompileTime != 1,
-      Binding<BoundingBoxConstraint>>
-  AddBoundingBoxConstraint(double lb, double ub,
-                           const Eigen::MatrixBase<Derived>& vars) {
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable> &&
+             Derived::ColsAtCompileTime != 1)
+  Binding<BoundingBoxConstraint> AddBoundingBoxConstraint(
+      double lb, double ub, const Eigen::MatrixBase<Derived>& vars) {
     const int kSize =
         Derived::RowsAtCompileTime != Eigen::Dynamic &&
                 Derived::ColsAtCompileTime != Eigen::Dynamic
@@ -2027,7 +2053,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
@@ -2039,7 +2065,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2061,7 +2087,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2083,7 +2109,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/10.1/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    */
   Binding<QuadraticConstraint> AddQuadraticConstraint(
@@ -2510,7 +2536,7 @@ class MathematicalProgram {
    * cone. When solving the optimization problem using conic solvers (like
    * Mosek, Gurobi, SCS, etc), it is numerically preferable to impose the
    * convex quadratic constraint as rotated Lorentz cone constraint. See
-   * https://docs.mosek.com/latest/capi/prob-def-quadratic.html#a-recommendation
+   * https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation
    * @throw exception if this quadratic constraint is not convex (Q is not
    * positive semidefinite)
    * @param Q The Hessian of the quadratic constraint. Should be positive
@@ -3129,10 +3155,8 @@ class MathematicalProgram {
    * @throws std::exception if the pre condition is not satisfied.
    */
   template <typename Derived>
-  typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      MatrixLikewise<double, Derived>>
-  GetInitialGuess(
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
+  MatrixLikewise<double, Derived> GetInitialGuess(
       const Eigen::MatrixBase<Derived>& decision_variable_mat) const {
     MatrixLikewise<double, Derived> decision_variable_values(
         decision_variable_mat.rows(), decision_variable_mat.cols());
@@ -3262,33 +3286,6 @@ class MathematicalProgram {
    * Returns the solver options stored inside MathematicalProgram.
    */
   const SolverOptions& solver_options() const { return solver_options_; }
-
-  DRAKE_DEPRECATED("2025-09-01", "Use the solver_options() accessor, instead")
-  std::unordered_map<std::string, double> GetSolverOptionsDouble(
-      const SolverId& solver_id) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return solver_options_.GetOptionsDouble(solver_id);
-#pragma GCC diagnostic pop
-  }
-
-  DRAKE_DEPRECATED("2025-09-01", "Use the solver_options() accessor, instead")
-  std::unordered_map<std::string, int> GetSolverOptionsInt(
-      const SolverId& solver_id) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return solver_options_.GetOptionsInt(solver_id);
-#pragma GCC diagnostic pop
-  }
-
-  DRAKE_DEPRECATED("2025-09-01", "Use the solver_options() accessor, instead")
-  std::unordered_map<std::string, std::string> GetSolverOptionsStr(
-      const SolverId& solver_id) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return solver_options_.GetOptionsStr(solver_id);
-#pragma GCC diagnostic pop
-  }
 
   /**
    * Getter for all callbacks.
@@ -3468,10 +3465,10 @@ class MathematicalProgram {
    * @throws std::exception if the size of `prog_var_vals` is invalid.
    */
   template <typename C, typename DerivedX>
-  typename std::enable_if_t<is_eigen_vector<DerivedX>::value,
-                            VectorX<typename DerivedX::Scalar>>
-  EvalBinding(const Binding<C>& binding,
-              const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    requires(is_eigen_vector<DerivedX>::value)
+  VectorX<typename DerivedX::Scalar> EvalBinding(
+      const Binding<C>& binding,
+      const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
     using Scalar = typename DerivedX::Scalar;
     if (prog_var_vals.rows() != num_vars()) {
       std::ostringstream oss;
@@ -3499,10 +3496,10 @@ class MathematicalProgram {
    * @throws std::exception if the size of `prog_var_vals` is invalid.
    */
   template <typename C, typename DerivedX>
-  typename std::enable_if_t<is_eigen_vector<DerivedX>::value,
-                            VectorX<typename DerivedX::Scalar>>
-  EvalBindings(const std::vector<Binding<C>>& bindings,
-               const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    requires(is_eigen_vector<DerivedX>::value)
+  VectorX<typename DerivedX::Scalar> EvalBindings(
+      const std::vector<Binding<C>>& bindings,
+      const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
     // TODO(eric.cousineau): Minimize memory allocations when it becomes a
     // major performance bottleneck.
     using Scalar = typename DerivedX::Scalar;
@@ -3533,9 +3530,8 @@ class MathematicalProgram {
    * binding.variables()(i) in prog_var_vals.
    */
   template <typename C, typename DerivedX>
-  typename std::enable_if_t<is_eigen_vector<DerivedX>::value,
-                            VectorX<typename DerivedX::Scalar>>
-  GetBindingVariableValues(
+    requires(is_eigen_vector<DerivedX>::value)
+  VectorX<typename DerivedX::Scalar> GetBindingVariableValues(
       const Binding<C>& binding,
       const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
     DRAKE_DEMAND(prog_var_vals.rows() == num_vars());
@@ -3991,8 +3987,6 @@ class MathematicalProgram {
 
   std::unordered_map<int, double> var_scaling_map_{};
 };
-
-std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog);
 
 }  // namespace solvers
 }  // namespace drake

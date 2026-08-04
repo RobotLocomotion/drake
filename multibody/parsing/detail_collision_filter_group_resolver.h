@@ -72,8 +72,8 @@ class CollisionFilterGroupResolver {
   }
 
   // Adds a collision filter group. Locates bodies by name immediately, and
-  // emits errors for illegal names, empty groups, missing bodies, or duplicate
-  // group definition attempts.
+  // emits errors for illegal or ambiguous names, empty groups, missing bodies,
+  // or duplicate group definition attempts.
   //
   // @param diagnostic          The error-reporting channel.
   // @param group_name          The name of the group being defined.
@@ -134,6 +134,8 @@ class CollisionFilterGroupResolver {
 
   const RigidBody<double>* FindBody(std::string_view name,
                                     ModelInstanceIndex model_instance) const;
+  const DeformableBody<double>* FindDeformableBody(
+      std::string name, ModelInstanceIndex model_instance) const;
 
   MultibodyPlant<double>* const plant_;
 

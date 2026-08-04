@@ -1,6 +1,7 @@
 #include "drake/planning/graph_algorithms/max_clique_solver_via_greedy.h"
 
 #include <exception>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -38,14 +39,6 @@ void TestMaxCliqueViaGreedy(
 GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestConstructor) {
   // Test the default constructor.
   MaxCliqueSolverViaGreedy solver{};
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Deprecated 2025-05-01.
-  std::unique_ptr<MaxCliqueSolverBase> solver_clone = solver.Clone();
-#pragma GCC diagnostic pop
-  // Clone provides a deep copy.
-  EXPECT_NE(&solver, solver_clone.get());
 }
 
 GTEST_TEST(MaxCliqueSolverViaGreedyTest, CompleteGraph) {

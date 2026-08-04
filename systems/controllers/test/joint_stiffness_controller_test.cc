@@ -1,5 +1,9 @@
 #include "drake/systems/controllers/joint_stiffness_controller.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -73,12 +77,6 @@ GTEST_TEST(JointStiffnessControllerTest, SimpleDoublePendulum) {
       (kp.array() * (x_d.head<2>() - x.head<2>()).array() +
        kd.array() * (x_d.tail<2>() - x.tail<2>()).array())
           .matrix();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const VectorXd tau =
-      controller->get_output_port_generalized_force().Eval(controller_context);
-  EXPECT_TRUE(CompareMatrices(tau, tau_expected, 1e-14));
-#pragma GCC diagnostic pop
 
   const Matrix2d Binv =
       (Matrix2d() << 0, 1, 1, 0)

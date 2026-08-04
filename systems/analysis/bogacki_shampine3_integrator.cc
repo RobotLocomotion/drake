@@ -28,12 +28,14 @@ void BogackiShampine3Integrator<T>::DoInitialize() {
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
     // Verify that maximum step size has been set.
-    if (isnan(this->get_maximum_step_size()))
-      throw std::logic_error("Neither initial step size target nor maximum "
-                                 "step size has been set!");
+    if (isnan(this->get_maximum_step_size())) {
+      throw std::logic_error(
+          "Neither initial step size target nor maximum step size has been "
+          "set!");
+    }
 
-    this->request_initial_step_size_target(
-        this->get_maximum_step_size() * kMaxStepFraction);
+    this->request_initial_step_size_target(this->get_maximum_step_size() *
+                                           kMaxStepFraction);
   }
 
   // Sets the working accuracy to a good value.
@@ -42,10 +44,11 @@ void BogackiShampine3Integrator<T>::DoInitialize() {
   // If the user asks for accuracy that is looser than the loosest this
   // integrator can provide, use the integrator's loosest accuracy setting
   // instead.
-  if (working_accuracy > kLoosestAccuracy)
+  if (working_accuracy > kLoosestAccuracy) {
     working_accuracy = kLoosestAccuracy;
-  else if (isnan(working_accuracy))
+  } else if (isnan(working_accuracy)) {
     working_accuracy = kDefaultAccuracy;
+  }
   this->set_accuracy_in_use(working_accuracy);
 }
 
@@ -87,8 +90,8 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // will require manual out-of-date notifications.
   const double c2 = 1.0 / 2;
   const double a21 = 1.0 / 2;
-  VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
-      t0 + c2 * h);
+  VectorBase<T>& xc =
+      context.SetTimeAndGetMutableContinuousStateVector(t0 + c2 * h);
   xc.PlusEqScaled(a21 * h, k1);
 
   // Evaluate the derivative (denoted k2) at t₀ + c2 * h, xc₀ + a21 * h * k1.
@@ -116,7 +119,7 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   xc.PlusEqScaled({{a32 * h, k2}});
   derivs3_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
-  const VectorBase<T>& k3 =  derivs3_->get_vector();
+  const VectorBase<T>& k3 = derivs3_->get_vector();
 
   // Compute the propagated solution (we're able to do this because b1 = a41,
   // b2 = a42, b3 = a43, and b4 = 0).
@@ -161,11 +164,17 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // If the size of the system has changed, the error estimate will no longer
   // be sized correctly. Verify that the error estimate is the correct size.
   DRAKE_DEMAND(this->get_error_estimate()->size() == xc.size());
-  this->get_mutable_error_estimate()->SetFromVector(err_est_vec_->
-      CopyToVector().cwiseAbs());
+  this->get_mutable_error_estimate()->SetFromVector(
+      err_est_vec_->CopyToVector().cwiseAbs());
 
   // Bogacki-Shampine always succeeds in taking its desired step.
   return true;
+}
+
+template <class T>
+std::unique_ptr<IntegratorBase<T>> BogackiShampine3Integrator<T>::DoClone()
+    const {
+  return std::make_unique<BogackiShampine3Integrator>(this->get_system());
 }
 
 }  // namespace systems

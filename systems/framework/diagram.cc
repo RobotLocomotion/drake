@@ -33,6 +33,12 @@ std::vector<const systems::System<T>*> Diagram<T>::GetSystems() const {
 }
 
 template <typename T>
+const systems::System<T>& Diagram<T>::get_system(SubsystemIndex index) const {
+  DRAKE_DEMAND(index >= 0 && index < ssize(registered_systems_));
+  return *registered_systems_[index];
+}
+
+template <typename T>
 void Diagram<T>::Accept(SystemVisitor<T>* v) const {
   DRAKE_DEMAND(v != nullptr);
   v->VisitDiagram(*this);
@@ -1457,12 +1463,9 @@ Diagram<T>::ConvertScalarType() const {
 }
 
 template <typename T>
-std::map<PeriodicEventData, std::vector<const Event<T>*>,
-         PeriodicEventDataComparator>
+std::map<PeriodicEventData, std::vector<const Event<T>*>>
 Diagram<T>::DoMapPeriodicEventsByTiming(const Context<T>& context) const {
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
-      periodic_events_map;
+  std::map<PeriodicEventData, std::vector<const Event<T>*>> periodic_events_map;
 
   for (int i = 0; i < num_subsystems(); ++i) {
     const System<T>& sub_system = *registered_systems_[i];

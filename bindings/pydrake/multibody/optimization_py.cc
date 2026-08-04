@@ -1,8 +1,12 @@
+#include <memory>
+#include <set>
+#include <utility>
+
+#include "drake/bindings/generated_docstrings/multibody_optimization.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/optimization/centroidal_momentum_constraint.h"
 #include "drake/multibody/optimization/quaternion_integration_constraint.h"
@@ -14,22 +18,22 @@ namespace drake {
 namespace pydrake {
 
 namespace {
-PYBIND11_MODULE(optimization, m) {
+PYDRAKE_MODULE(optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_optimization.drake.multibody;
 
   m.doc() = "Optimization module for MultibodyPlant motion planning";
 
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.solvers");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.plant");
+  py::module_::import_("pydrake.solvers");
+  py::module_::import_("pydrake.trajectories");
 
   {
     using Class = CalcGridPointsOptions;
     constexpr auto& cls_doc = doc.CalcGridPointsOptions;
-    py::class_<Class> cls(m, "CalcGridPointsOptions", cls_doc.doc);
+    class_<Class> cls(m, "CalcGridPointsOptions", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -41,16 +45,11 @@ PYBIND11_MODULE(optimization, m) {
     using Class = CentroidalMomentumConstraint;
     constexpr auto& cls_doc = doc.CentroidalMomentumConstraint;
     using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, solvers::Constraint, Ptr>(
+    class_<Class, solvers::Constraint, Ptr>(
         m, "CentroidalMomentumConstraint", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          std::optional<std::vector<ModelInstanceIndex>>
-                              model_instances,
-                          systems::Context<AutoDiffXd>* plant_context,
-                          bool angular_only) {
-          return std::make_unique<Class>(
-              plant, model_instances, plant_context, angular_only);
-        }),
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 std::optional<std::vector<ModelInstanceIndex>>,
+                 systems::Context<AutoDiffXd>*, bool>(),
             py::arg("plant"), py::arg("model_instances"),
             py::arg("plant_context"), py::arg("angular_only"),
             // Keep alive, reference: `self` keeps `plant` alive.
@@ -63,7 +62,7 @@ PYBIND11_MODULE(optimization, m) {
     using Class = ContactWrenchFromForceInWorldFrameEvaluator;
     constexpr auto& cls_doc = doc.ContactWrenchFromForceInWorldFrameEvaluator;
     using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, solvers::EvaluatorBase, Ptr>(
+    class_<Class, solvers::EvaluatorBase, Ptr>(
         m, "ContactWrenchFromForceInWorldFrameEvaluator", cls_doc.doc)
         .def(py::init<const MultibodyPlant<AutoDiffXd>*,
                  systems::Context<AutoDiffXd>*,
@@ -73,15 +72,14 @@ PYBIND11_MODULE(optimization, m) {
   }
 
   {
-    py::class_<ContactWrench>(m, "ContactWrench", doc.ContactWrench.doc)
-        .def_readonly("bodyA_index", &ContactWrench::bodyA_index,
+    class_<ContactWrench>(m, "ContactWrench", doc.ContactWrench.doc)
+        .def_ro("bodyA_index", &ContactWrench::bodyA_index,
             doc.ContactWrench.bodyA_index.doc)
-        .def_readonly("bodyB_index", &ContactWrench::bodyB_index,
+        .def_ro("bodyB_index", &ContactWrench::bodyB_index,
             doc.ContactWrench.bodyB_index.doc)
-        .def_readonly(
+        .def_ro(
             "p_WCb_W", &ContactWrench::p_WCb_W, doc.ContactWrench.p_WCb_W.doc)
-        .def_readonly(
-            "F_Cb_W", &ContactWrench::F_Cb_W, doc.ContactWrench.F_Cb_W.doc);
+        .def_ro("F_Cb_W", &ContactWrench::F_Cb_W, doc.ContactWrench.F_Cb_W.doc);
     AddValueInstantiation<ContactWrench>(m);
   }
 
@@ -89,7 +87,7 @@ PYBIND11_MODULE(optimization, m) {
     using Class = QuaternionEulerIntegrationConstraint;
     constexpr auto& cls_doc = doc.QuaternionEulerIntegrationConstraint;
     using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, solvers::Constraint, Ptr>(
+    class_<Class, solvers::Constraint, Ptr>(
         m, "QuaternionEulerIntegrationConstraint", cls_doc.doc)
         .def(py::init<bool>(), py::arg("allow_quaternion_negation"),
             cls_doc.ctor.doc)
@@ -110,21 +108,15 @@ PYBIND11_MODULE(optimization, m) {
     using Class = SpatialVelocityConstraint;
     constexpr auto& cls_doc = doc.SpatialVelocityConstraint;
     using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, solvers::Constraint, Ptr> cls(
+    class_<Class, solvers::Constraint, Ptr> cls(
         m, "SpatialVelocityConstraint", cls_doc.doc);
-    cls.def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                         const Frame<AutoDiffXd>& frameA,
-                         const Eigen::Ref<const Eigen::Vector3d>& v_AC_lower,
-                         const Eigen::Ref<const Eigen::Vector3d>& v_AC_upper,
-                         const Frame<AutoDiffXd>& frameB,
-                         const Eigen::Ref<const Eigen::Vector3d>& p_BCo,
-                         systems::Context<AutoDiffXd>* plant_context,
-                         const std::optional<
-                             SpatialVelocityConstraint::AngularVelocityBounds>&
-                             w_AC_bounds) {
-      return std::make_unique<Class>(plant, frameA, v_AC_lower, v_AC_upper,
-          frameB, p_BCo, plant_context, w_AC_bounds);
-    }),
+    cls.def(
+        py::init<const MultibodyPlant<AutoDiffXd>*, const Frame<AutoDiffXd>&,
+            const Eigen::Ref<const Eigen::Vector3d>&,
+            const Eigen::Ref<const Eigen::Vector3d>&, const Frame<AutoDiffXd>&,
+            const Eigen::Ref<const Eigen::Vector3d>&,
+            systems::Context<AutoDiffXd>*,
+            const std::optional<Class::AngularVelocityBounds>&>(),
         py::arg("plant"), py::arg("frameA"), py::arg("v_AC_lower"),
         py::arg("v_AC_upper"), py::arg("frameB"), py::arg("p_BCo"),
         py::arg("plant_context"), py::arg("w_AC_bounds") = std::nullopt,
@@ -136,23 +128,22 @@ PYBIND11_MODULE(optimization, m) {
     using Avb = SpatialVelocityConstraint::AngularVelocityBounds;
     constexpr auto& avb_doc =
         doc.SpatialVelocityConstraint.AngularVelocityBounds;
-    py::class_<SpatialVelocityConstraint::AngularVelocityBounds>(
+    class_<SpatialVelocityConstraint::AngularVelocityBounds>(
         cls, "AngularVelocityBounds", avb_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def_readwrite("magnitude_lower", &Avb::magnitude_lower,
+        .def_rw("magnitude_lower", &Avb::magnitude_lower,
             avb_doc.magnitude_lower.doc)
-        .def_readwrite("magnitude_upper", &Avb::magnitude_upper,
+        .def_rw("magnitude_upper", &Avb::magnitude_upper,
             avb_doc.magnitude_upper.doc)
-        .def_readwrite("reference_direction", &Avb::reference_direction,
+        .def_rw("reference_direction", &Avb::reference_direction,
             avb_doc.reference_direction.doc)
-        .def_readwrite(
-            "theta_bound", &Avb::theta_bound, avb_doc.theta_bound.doc);
+        .def_rw("theta_bound", &Avb::theta_bound, avb_doc.theta_bound.doc);
   }
 
   {
     using Class = StaticEquilibriumProblem;
     constexpr auto& cls_doc = doc.StaticEquilibriumProblem;
-    py::class_<Class>(m, "StaticEquilibriumProblem", cls_doc.doc)
+    class_<Class>(m, "StaticEquilibriumProblem", cls_doc.doc)
         .def(py::init<const MultibodyPlant<AutoDiffXd>*,
                  systems::Context<AutoDiffXd>*,
                  const std::set<
@@ -185,7 +176,7 @@ PYBIND11_MODULE(optimization, m) {
   {
     using Class = Toppra;
     constexpr auto& cls_doc = doc.Toppra;
-    py::class_<Class>(m, "Toppra", cls_doc.doc)
+    class_<Class>(m, "Toppra", cls_doc.doc)
         .def(py::init<const Trajectory<double>&, const MultibodyPlant<double>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("path"), py::arg("plant"), py::arg("gridpoints"),

@@ -34,6 +34,18 @@ template <typename T>
 void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
                     EigenPtr<Matrix3<T>> S);
 
+/* Calculates a Singular Value Decomposition (SVD) of a 3-by-3 matrix
+ F=U⋅S⋅Vᵀ where U and V are rotation matrices and S = diag(σ₁, σ₂, σ₃) is a
+ diagonal matrix. Such SVD is not unique and we pick an arbitrary valid one.
+ See Appendix F of [Kim and Eberle, 2020] for details.
+ [Kim and Eberle, 2020] Kim, Theodore, and David Eberle. "Dynamic deformables:
+ implementation and production practicalities." Acm siggraph 2020 courses. 2020.
+ 1-182.
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
+template <typename T>
+void RotationSvd(const Matrix3<T>& F, EigenPtr<Matrix3<T>> U,
+                 EigenPtr<Matrix3<T>> V, EigenPtr<Vector3<T>> sigma);
+
 /* Computes the derivative of the rotation matrix from the polar decomposition
  (see PolarDecompose()) with respect to the original matrix.
  @param[in] R               The rotation matrix in the polar decomposition

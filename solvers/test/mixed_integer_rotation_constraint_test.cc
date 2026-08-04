@@ -1,6 +1,10 @@
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
+#include <memory>
 #include <random>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -122,10 +126,11 @@ class TestMixedIntegerRotationConstraint {
     // Requires 2 intervals per half axis to catch.
     if (num_intervals_per_half_axis_ == 1 &&
         approach_ == MixedIntegerRotationConstraintGenerator::Approach::
-                         kBoxSphereIntersection)
+                         kBoxSphereIntersection) {
       EXPECT_TRUE(IsFeasible(R_test));
-    else
+    } else {
       EXPECT_FALSE(IsFeasible(R_test));
+    }
 
     // Checks the det(R)=-1 case.
     // (only ruled out by the cross-product constraint).
@@ -150,10 +155,11 @@ class TestMixedIntegerRotationConstraint {
     EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
     if (num_intervals_per_half_axis_ == 1 &&
         approach_ == MixedIntegerRotationConstraintGenerator::Approach::
-                         kBoxSphereIntersection)
+                         kBoxSphereIntersection) {
       EXPECT_TRUE(IsFeasible(R_test));
-    else
+    } else {
       EXPECT_FALSE(IsFeasible(R_test));
+    }
   }
   virtual ~TestMixedIntegerRotationConstraint() = default;
 

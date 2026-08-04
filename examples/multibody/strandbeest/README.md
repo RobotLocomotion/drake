@@ -15,5 +15,5 @@ bazel run //examples/multibody/strandbeest:run_with_motor
 Run the example with the [SNOPT](https://drake.mit.edu/bazel.html#snopt) 
 solver for faster IK solves:
 ```
-bazel run --config snopt //examples/multibody/strandbeest:run_with_motor
+bazel run --@drake//tools/flags:with_snopt=True //examples/multibody/strandbeest:run_with_motor
 ```

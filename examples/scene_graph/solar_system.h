@@ -104,7 +104,7 @@ class SolarSystem : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolarSystem);
 
   explicit SolarSystem(geometry::SceneGraph<T>* scene_graph);
-  ~SolarSystem() override = default;
+  ~SolarSystem() override;
 
   using MyContext = systems::Context<T>;
   using MyContinuousState = systems::ContinuousState<T>;

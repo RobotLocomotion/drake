@@ -9,11 +9,7 @@ development.
 ## Install Dependencies
 
 The test server uses `flask(>=1.1)`, so be sure that you've run
-`setup/ubuntu/install_prereqs.sh` (or `setup/mac/install_prereqs.sh`) to install
-it before proceeding.
-
-**Note:** `flask` is a "test-only" requirement, so don't provide
-`--without-test-only` flag when running the `install_prereqs.sh` script.
+`setup/install_prereqs --developer` to install it before proceeding.
 
 ## Run the Client-Server Testing Suite
 There are three commands to run to launch the client, the server, and optionally

@@ -14,7 +14,7 @@ drake_cc_library(
     hdrs = ["allegro_common.h"],
     visibility = ["//examples/allegro_hand/joint_control:__pkg__"],
     deps = [
-        "//lcmtypes:allegro",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//multibody/plant",
     ],
 )
@@ -26,7 +26,7 @@ drake_cc_library(
     visibility = ["//examples/allegro_hand/joint_control:__pkg__"],
     deps = [
         ":allegro_common",
-        "//lcmtypes:allegro",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
     ],
 )

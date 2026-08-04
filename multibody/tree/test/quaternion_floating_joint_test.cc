@@ -1,8 +1,13 @@
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -44,11 +49,11 @@ class QuaternionFloatingJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add a joint between world and body:
-    body_ = &model->AddRigidBody("Body", M_B);
+    body_ = &model->AddLink("Body", M_B);
 
     // Add a quaternion floating joint between the world and body:
     joint_ = &model->AddJoint<QuaternionFloatingJoint>(
-        "Joint", model->world_body(), std::nullopt, *body_, std::nullopt,
+        "Joint", model->world_link(), std::nullopt, *body_, std::nullopt,
         kAngularDamping, kTranslationalDamping);
     mutable_joint_ = dynamic_cast<QuaternionFloatingJoint<double>*>(
         &model->get_mutable_joint(joint_->index()));
@@ -344,6 +349,25 @@ TEST_F(QuaternionFloatingJointTest, DefaultAngles) {
       mutable_joint_->set_default_positions(out_of_bounds_low_angles));
   EXPECT_NO_THROW(
       mutable_joint_->set_default_positions(out_of_bounds_high_angles));
+
+  // Try setting the joint with the wrong number of angles. Be somewhat picky
+  // about the resulting message.
+  const Vector3d bad_angles = Vector3d::Identity();
+  DRAKE_EXPECT_THROWS_MESSAGE(mutable_joint_->set_default_positions(bad_angles),
+                              ".*set_default_positions.*positions.*input.*3.*"
+                              "not.*DefaultModelInstance::Joint.*7.*");
+}
+
+GTEST_TEST(QuaternionFloatingJointNoTreeTest, DefaultAnglesErrorNoTree) {
+  RigidBody<double> a{"a"};
+  RigidBody<double> b{"b"};
+  QuaternionFloatingJoint<double> dut("dut", a.body_frame(), b.body_frame());
+  // Try setting the joint with the wrong number of angles, and no parent
+  // tree. Be somewhat picky about the resulting message.
+  const Vector3d bad_angles = Vector3d::Identity();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.set_default_positions(bad_angles),
+      ".*set_default_positions.*positions.*input.*3.*not.*'dut'.*7.*");
 }
 
 TEST_F(QuaternionFloatingJointTest, RandomState) {

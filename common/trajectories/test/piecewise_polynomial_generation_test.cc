@@ -3,6 +3,7 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 /* clang-format on */
 
+#include <algorithm>
 #include <random>
 #include <vector>
 

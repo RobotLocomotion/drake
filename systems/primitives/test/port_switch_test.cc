@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/port_switch.h"
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include <gtest/gtest.h>

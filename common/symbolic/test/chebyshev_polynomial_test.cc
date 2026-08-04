@@ -2,6 +2,9 @@
 
 #include <limits>
 #include <ostream>
+#include <set>
+#include <unordered_map>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -187,15 +190,10 @@ GTEST_TEST(ChebyshevPolynomialTest, UnorderedMapOfChebyshevPolynomial) {
   EXPECT_EQ(it0->second, 1);
 }
 
-GTEST_TEST(ChebyshevPolynomial, OperatorOut) {
+GTEST_TEST(ChebyshevPolynomial, ToStringFmtFormatter) {
   const Variable x("x");
-  std::ostringstream os1;
-  os1 << ChebyshevPolynomial(x, 0);
-  EXPECT_EQ(fmt::format("{}", os1.str()), "T0()");
-
-  std::ostringstream os2;
-  os2 << ChebyshevPolynomial(x, 2);
-  EXPECT_EQ(fmt::format("{}", os2.str()), "T2(x)");
+  EXPECT_EQ(fmt::to_string(ChebyshevPolynomial(x, 0)), "T0()");
+  EXPECT_EQ(fmt::to_string(ChebyshevPolynomial(x, 2)), "T2(x)");
 }
 
 GTEST_TEST(ChebyshevPolynomialTest, ChebyshevPolynomialLess) {

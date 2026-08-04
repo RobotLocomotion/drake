@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_driver.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 /// @file
@@ -37,38 +37,37 @@ namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
-/// Given a @p plant (and associated @p iiwa_instance) and a @p builder,
+/// Given a `plant` (and associated `iiwa_instance`) and a`builder`,
 /// installs in that builder the systems necessary to control and monitor an
-/// Iiwa described by @p controller_plant in that plant.
+/// Iiwa described by `controller_plant` in that plant.
 ///
-/// The installed plant will communicate over the LCM interface @p lcm.
+/// The installed plant will communicate over the LCM interface `lcm`.
 ///
 /// The installed plant will connect itself to the actuation input port and
 /// state output ports in `plant` corresponding to the Iiwa model.
 ///
-/// @p desired_iiwa_kp_gains is an optional argument to pass in gains
-/// corresponding to the Iiwa Dof (7) in the controller.  If no argument is
-/// passed, the gains derived from hardware will be used instead (hardcoded
-/// within the implementation of this function). These gains must be nullopt
-/// if @p control_mode does not include position control.
-///
-/// @p control_mode the control mode for the controller.
+/// The values in `driver_config` further specify Diagram behavior; see
+/// IiwaDriver for more details.
 ///
 /// Note: The Diagram will maintain an internal reference to `controller_plant`,
 /// so you must ensure that `controller_plant` has a longer lifetime than the
 /// Diagram.
+///
+/// The torque values in the published LCM status messages will follow the
+/// IIWA-specific LCM conventions outlined in manipulation/README.
 void BuildIiwaControl(
+    systems::DiagramBuilder<double>* builder, lcm::DrakeLcmInterface* lcm,
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,
-    const multibody::MultibodyPlant<double>& controller_plant,
-    lcm::DrakeLcmInterface* lcm, systems::DiagramBuilder<double>* builder,
-    double ext_joint_filter_tau = 0.01,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
+    const IiwaDriver& driver_config,
+    const multibody::MultibodyPlant<double>& controller_plant);
 
 /// The return type of BuildSimplifiedIiwaControl(). Depending on the
 /// `control_mode`, some of the input ports might be null. The output ports are
 /// never null.
+///
+/// These follow the general conventions for torque as outlined in
+/// manipulation/README.
 struct IiwaControlPorts {
   /// This will be non-null iff the control_mode denotes commanded positions.
   const systems::InputPort<double>* commanded_positions{};
@@ -87,13 +86,11 @@ struct IiwaControlPorts {
 /// InverseDynamicsController without adding LCM I/O systems.
 /// @sa BuildIiwaControl()
 IiwaControlPorts BuildSimplifiedIiwaControl(
+    systems::DiagramBuilder<double>* builder,
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,
-    const multibody::MultibodyPlant<double>& controller_plant,
-    systems::DiagramBuilder<double>* builder,
-    double ext_joint_filter_tau = 0.01,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
+    const IiwaDriver& driver_config,
+    const multibody::MultibodyPlant<double>& controller_plant);
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation

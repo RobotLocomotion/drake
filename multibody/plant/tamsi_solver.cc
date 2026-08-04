@@ -9,6 +9,8 @@
 #include "drake/common/extract_double.h"
 #include "drake/math/linear_solve.h"
 
+using drake::math::internal::PartialPivLU;
+
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -723,7 +725,7 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
     if (has_two_way_coupling()) {
       // LU Factorization of the Newton-Raphson Jacobian J. Only used for
       // two-way coupled problems with non-symmetric Jacobian.
-      const math::LinearSolver<Eigen::PartialPivLU, MatrixX<T>> J_lu(J);
+      const math::LinearSolver<PartialPivLU, MatrixX<T>> J_lu(J);
       Delta_v = J_lu.Solve(-residual);
     } else {
       // LDLT Factorization of the Newton-Raphson Jacobian J. Only used for

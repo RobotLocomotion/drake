@@ -108,35 +108,35 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
   /** Returns the value of the trajectory at @p t.
   @throws std::exception if t is not within tolerance of one of the sample
   times. */
-  MatrixX<T> value(const T& t) const final {
+  MatrixX<T> value(const T& t) const {
     // We shadowed the base class to add documentation, not to change logic.
     return Trajectory<T>::value(t);
   }
 
   /** Returns the number of rows in the MatrixX<T> returned by value().
   @pre num_times() > 0. */
-  Eigen::Index rows() const final {
+  Eigen::Index rows() const {
     // We shadowed the base class to add documentation, not to change logic.
     return Trajectory<T>::rows();
   }
 
   /** Returns the number of cols in the MatrixX<T> returned by value().
   @pre num_times() > 0. */
-  Eigen::Index cols() const final {
+  Eigen::Index cols() const {
     // We shadowed the base class to add documentation, not to change logic.
     return Trajectory<T>::cols();
   }
 
   /** Returns the minimum value of get_times().
   @pre num_times() > 0. */
-  T start_time() const final {
+  T start_time() const {
     // We shadowed the base class to add documentation, not to change logic.
     return Trajectory<T>::start_time();
   }
 
   /** Returns the maximum value of get_times().
   @pre num_times() > 0. */
-  T end_time() const final {
+  T end_time() const {
     // We shadowed the base class to add documentation, not to change logic.
     return Trajectory<T>::end_time();
   }

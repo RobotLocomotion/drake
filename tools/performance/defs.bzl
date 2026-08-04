@@ -11,11 +11,13 @@ def drake_cc_googlebench_binary(
         deps,
         data = None,
         add_test_rule,
-        test_size = "small",
-        test_timeout = None,
-        test_args = None,
-        test_display = False,
-        test_tags = None):
+        test_rule_size = "small",
+        test_rule_timeout = None,
+        test_rule_args = None,
+        test_rule_display = False,
+        test_rule_tags = None,
+        test_rule_opt_in_condition = None,
+        test_rule_rendering = False):
     """Declares a testonly binary that uses google benchmark.  Automatically
     adds appropriate deps and ensures it either has an automated smoke test
     (via 'add_test_rule = True'), or else explicitly opts-out ('= False').
@@ -24,7 +26,7 @@ def drake_cc_googlebench_binary(
         fail("Missing srcs")
     if add_test_rule == None:
         fail("Missing add_test_rule")
-    new_deps = (deps or []) + ["@googlebenchmark//:benchmark"]
+    new_deps = (deps or []) + ["@google_benchmark//:benchmark"]
 
     # We need this to be a cc_binary (not a cc_test) so that Bazel's flag
     # --trim_test_configuration will permit the py_experiment_binary target
@@ -48,16 +50,19 @@ def drake_cc_googlebench_binary(
             srcs = srcs,
             data = data,
             deps = new_deps,
-            size = test_size,
-            timeout = test_timeout,
-            display = test_display,
+            size = test_rule_size,
+            timeout = test_rule_timeout,
+            display = test_rule_display,
             args = [
-                # When running as a unit test, run each function only once to
-                # save time. (Once should be sufficient to prove the lack of
-                # runtime errors.)
-                "--benchmark_min_time=0s",
-            ] + (test_args or []),
-            tags = (test_tags or []) + ["nolint", "no_kcov"],
+                # Google benchmark has a flag designed to do the minimal work
+                # to confirm that the tests run: dry run. For tests, that's
+                # sufficient.
+                "--benchmark_dry_run",
+            ] + (test_rule_args or []),
+            tags = (test_rule_tags or []) + ["nolint"],
+            opt_in_condition = test_rule_opt_in_condition,
+            opt_out_conditions = ["//tools/kcov:enabled"],
+            rendering = test_rule_rendering,
         )
 
 def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):

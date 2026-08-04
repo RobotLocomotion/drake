@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/manipulation/kuka_iiwa/iiwa_constants.h"  // IiwaControlMode
+#include "drake/manipulation/kuka_iiwa/iiwa_driver.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
 
@@ -33,6 +33,7 @@ output_ports:
 - torque_commanded
 - torque_measured
 - torque_external
+- velocity_commanded (in kPositionOnly or kPositionAndTorque mode)
 @endsystem
 
 Ports shown in <b style="color:orange">orange</b> are intended to connect to the
@@ -45,13 +46,11 @@ class SimIiwaDriver : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimIiwaDriver);
 
-  /** Constructs a diagram with the given parameters. A reference to the
+  /** Constructs a diagram with the given `driver_config`. A reference to the
   `controller_plant` is retained by this system, so the `controller_plant`
   must outlive `this`. */
-  SimIiwaDriver(IiwaControlMode control_mode,
-                const multibody::MultibodyPlant<T>* controller_plant,
-                double ext_joint_filter_tau,
-                const std::optional<Eigen::VectorXd>& kp_gains);
+  SimIiwaDriver(const IiwaDriver& driver_config,
+                const multibody::MultibodyPlant<T>* controller_plant);
 
   /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
@@ -74,10 +73,8 @@ class SimIiwaDriver : public systems::Diagram<T> {
       systems::DiagramBuilder<double>* builder,
       const multibody::MultibodyPlant<double>& plant,
       const multibody::ModelInstanceIndex iiwa_instance,
-      const multibody::MultibodyPlant<double>& controller_plant,
-      double ext_joint_filter_tau,
-      const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-      IiwaControlMode control_mode);
+      const IiwaDriver& driver_config,
+      const multibody::MultibodyPlant<double>& controller_plant);
 };
 
 }  // namespace kuka_iiwa

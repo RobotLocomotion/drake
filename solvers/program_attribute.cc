@@ -2,10 +2,7 @@
 
 #include <algorithm>
 #include <deque>
-#include <sstream>
 #include <vector>
-
-#include <fmt/format.h>
 
 namespace drake {
 namespace solvers {
@@ -102,32 +99,21 @@ std::string to_string(const ProgramAttribute& attr) {
   DRAKE_UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& os, const ProgramAttribute& attr) {
-  os << to_string(attr);
-  return os;
-}
-
 std::string to_string(const ProgramAttributes& attrs) {
-  std::ostringstream result;
-  result << attrs;
-  return result.str();
-}
-
-std::ostream& operator<<(std::ostream& os, const ProgramAttributes& attrs) {
   std::deque<ProgramAttribute> sorted(attrs.begin(), attrs.end());
-  std::sort(sorted.begin(), sorted.end());
-  os << "{ProgramAttributes: ";
+  std::ranges::sort(sorted.begin(), sorted.end());
+  std::string result{"{ProgramAttributes: "};
   if (sorted.empty()) {
-    os << "empty";
+    result.append("empty");
   } else {
-    os << sorted.front();
+    result.append(fmt::to_string(sorted.front()));
     sorted.pop_front();
     for (const auto& attr : sorted) {
-      os << ", " << attr;
+      result.append(fmt::format(", {}", attr));
     }
   }
-  os << "}";
-  return os;
+  result.append("}");
+  return result;
 }
 
 std::string to_string(const ProgramType& program_type) {
@@ -162,11 +148,6 @@ std::string to_string(const ProgramType& program_type) {
       return "uncategorized mathematical programming type";
   }
   DRAKE_UNREACHABLE();
-}
-
-std::ostream& operator<<(std::ostream& os, const ProgramType& program_type) {
-  os << to_string(program_type);
-  return os;
 }
 
 }  // namespace solvers

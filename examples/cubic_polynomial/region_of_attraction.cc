@@ -8,7 +8,6 @@
 // example.
 
 #include <cmath>
-#include <iostream>
 
 #include <gflags/gflags.h>
 
@@ -20,9 +19,6 @@
 
 namespace drake {
 namespace {
-
-using std::cout;
-using std::endl;
 
 using symbolic::Expression;
 using symbolic::Polynomial;
@@ -72,8 +68,8 @@ void ComputeRegionOfAttraction() {
   // Define the Lyapunov function.
   const Expression V = x.dot(x);
 
-  const Expression Vdot = (Jacobian(Vector1<Expression>(V), xvar) *
-                         derivatives->CopyToVector())[0];
+  const Expression Vdot =
+      (Jacobian(Vector1<Expression>(V), xvar) * derivatives->CopyToVector())[0];
 
   // Maximize ρ s.t. V̇ ≥ 0 ∧ x ≠ 0 ⇒ V ≥ ρ,
   // implemented as (V(x) - ρ)x² - λ(x)V̇(x) is SOS;
@@ -87,8 +83,8 @@ void ComputeRegionOfAttraction() {
   const solvers::MathematicalProgramResult result = Solve(prog);
   DRAKE_DEMAND(result.is_success());
 
-  cout << "Verified that " << V << " < " << result.GetSolution(rho)
-       << " is in the region of attraction." << endl;
+  fmt::print("Verified that {} < {} is in the region of attraction.\n", V,
+             result.GetSolution(rho));
 
   // Check that ρ ≃ 1.0.
   DRAKE_DEMAND(std::abs(result.GetSolution(rho) - 1.0) < 1e-6);

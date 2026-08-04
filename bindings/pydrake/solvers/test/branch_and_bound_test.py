@@ -1,8 +1,6 @@
 import copy
 import unittest
 
-import numpy as np
-
 from pydrake.solvers import (
     MathematicalProgram,
     MixedIntegerBranchAndBound,
@@ -17,10 +15,12 @@ class TestMixedIntegerBranchAndBound(unittest.TestCase):
         x = prog.NewContinuousVariables(2)
         b = prog.NewBinaryVariables(2)
 
-        prog.AddLinearConstraint(b[0] + x[0] + 2 * x[1] == 2)
-        prog.AddLinearConstraint(x[0] - 3.1 * b[1] >= 1)
-        prog.AddLinearConstraint(b[1] + 1.2 * x[1] - b[0] <= 5)
-        prog.AddQuadraticCost(x[0] * x[0])
+        # fmt: off
+        prog.AddLinearConstraint(b[0] + x[0] + 2*x[1] == 2)
+        prog.AddLinearConstraint(x[0] - 3.1*b[1] >= 1)
+        prog.AddLinearConstraint(b[1] + 1.2*x[1] - b[0] <= 5)
+        prog.AddQuadraticCost(x[0]*x[0])
+        # fmt: on
 
         dut1 = MixedIntegerBranchAndBound(prog, OsqpSolver().solver_id())
         solution_result = dut1.Solve()
@@ -39,10 +39,12 @@ class TestMixedIntegerBranchAndBound(unittest.TestCase):
         self.assertAlmostEqual(dut1.GetSolution(x, 1)[0], 1.0)
         # For x₁ the optimal vs suboptimal ordering is not deterministic, so we
         # need to allow for either order.
-        x1_solutions = sorted([
-            dut1.GetSolution(x[1], 0),
-            dut1.GetSolution(x[1], 1),
-        ])
+        x1_solutions = sorted(
+            [
+                dut1.GetSolution(x[1], 0),
+                dut1.GetSolution(x[1], 1),
+            ]
+        )
         self.assertAlmostEqual(x1_solutions[0], 0.0)
         self.assertAlmostEqual(x1_solutions[1], 0.5)
 
@@ -54,5 +56,6 @@ class TestMixedIntegerBranchAndBound(unittest.TestCase):
         copy.copy(options)
 
         dut2 = MixedIntegerBranchAndBound(
-            prog=prog, solver_id=OsqpSolver().solver_id(), options=options)
+            prog=prog, solver_id=OsqpSolver().solver_id(), options=options
+        )
         solution_result = dut2.Solve()

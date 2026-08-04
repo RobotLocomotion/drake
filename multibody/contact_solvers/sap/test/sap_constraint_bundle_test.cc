@@ -1,6 +1,9 @@
 #include "drake/multibody/contact_solvers/sap/sap_constraint_bundle.h"
 
+#include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -8,9 +11,11 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
+using drake::math::internal::PartialPermutation;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
@@ -87,6 +92,14 @@ class TestConstraint final : public SapConstraint<T> {
  private:
   TestConstraint(const TestConstraint&) = default;
 
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                       EigenPtr<VectorX<T>>) const final {
+    throw std::runtime_error("DoAccumulateGeneralizedImpulses stubbed");
+  }
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                   SpatialForce<T>*) const final {
+    throw std::runtime_error("DoAccumulateSpatialImpulses stubbed");
+  }
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<TestConstraint<T>>(new TestConstraint<T>(*this));
   }

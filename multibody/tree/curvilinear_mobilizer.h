@@ -13,10 +13,7 @@
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
-
-using drake::trajectories::PiecewiseConstantCurvatureTrajectory;
 
 namespace drake {
 namespace multibody {
@@ -89,7 +86,8 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
   CurvilinearMobilizer(
       const SpanningForest::Mobod& mobod, const Frame<T>& inboard_frame_F,
       const Frame<T>& outboard_frame_M,
-      const PiecewiseConstantCurvatureTrajectory<double>& curvilinear_path);
+      const trajectories::PiecewiseConstantCurvatureTrajectory<double>&
+          curvilinear_path);
 
   ~CurvilinearMobilizer() final;
 
@@ -136,6 +134,12 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
    @param q The distance traveled along the mobilizer's path in meters.
    @returns The across-mobilizer transform X_FM(q). */
   math::RigidTransform<T> calc_X_FM(const T* q) const;
+
+  /* We're not attempting to optimize the X_FM update. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
 
   /* Computes the across-mobilizer spatial velocity V_FM(q, v) as a function of
    the distance traveled and tangential velocity along the mobilizer's path.
@@ -202,20 +206,30 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 
-  void MapVelocityToQDot(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& v,
-                         EigenPtr<VectorX<T>> qdot) const override;
-
-  void MapQDotToVelocity(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& qdot,
-                         EigenPtr<VectorX<T>> v) const override;
-
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
+
+  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ = zero matrix.
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ = zero matrix.
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
+
+  // Maps v to qdot, which for this mobilizer is q̇ = v.
+  void DoMapVelocityToQDot(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& v,
+                           EigenPtr<VectorX<T>> qdot) const final;
+
+  // Maps qdot to v, which for this mobilizer is v = q̇.
+  void DoMapQDotToVelocity(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           EigenPtr<VectorX<T>> v) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
@@ -231,7 +245,7 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 
-  PiecewiseConstantCurvatureTrajectory<T> curvilinear_path_;
+  trajectories::PiecewiseConstantCurvatureTrajectory<T> curvilinear_path_;
 };
 
 }  // namespace internal

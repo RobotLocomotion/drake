@@ -10,6 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/math/convert_time_derivative.h"
 #include "drake/multibody/math/spatial_vector.h"
 #include "drake/multibody/math/spatial_velocity.h"
@@ -71,7 +72,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// Constructs a spatial acceleration A from an angular acceleration α (alpha)
   /// and a translational acceleration 𝐚.
   SpatialAcceleration(const Eigen::Ref<const Vector3<T>>& alpha,
-                      const Eigen::Ref<const Vector3<T>>& a) : Base(alpha, a) {}
+                      const Eigen::Ref<const Vector3<T>>& a)
+      : Base(alpha, a) {}
 
   /// Constructs a spatial acceleration A from an Eigen expression that
   /// represents a 6-element vector, i.e., a 3-element angular acceleration α
@@ -134,8 +136,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     const Vector3<T>& alpha_MB_E = this->rotational();
     // Calculate point Co's translational acceleration measured in M.
     Vector3<T>& a_MCo_E = this->translational();
-    a_MCo_E += (alpha_MB_E.cross(p_BoCo_E)
-            +   w_MB_E.cross(w_MB_E.cross(p_BoCo_E)));
+    a_MCo_E += (alpha_MB_E.cross(p_BoCo_E) +
+                w_MB_E.cross(w_MB_E.cross(p_BoCo_E)));  // 33 flops
   }
 
   /// Shifts a %SpatialAcceleration from a frame B to a frame C, where both
@@ -302,17 +304,17 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     // Use Shift() to calculate the coincident point acceleration, i.e.,
     // acceleration of the point of frame B coincident with Co as
     // a_MBo + α_MB x p_BoCo + ω_MB x (ω_MB x p_BoCo).
-    SpatialAcceleration<T> A_WB_E = this->Shift(p_PB_E, w_WP_E);
+    SpatialAcceleration<T> A_WB_E = this->Shift(p_PB_E, w_WP_E);  // 33 flops
     // Adds additional term in angular acceleration calculation, i.e.,
     // α_MC = α_MB + α_BC + ω_MB x ω_BC.
     const Vector3<T>& alpha_PB_E = A_PB_E.rotational();
-    A_WB_E.rotational() += (alpha_PB_E + w_WP_E.cross(w_PB_E));
+    A_WB_E.rotational() += (alpha_PB_E + w_WP_E.cross(w_PB_E));  // 15 flops
 
     // Adds Coriolis and translational acceleration of B in P.
     // a_MCo = ...  a_BCo + 2 ω_MB x v_BCo
     const Vector3<T>& a_PB_E = A_PB_E.translational();
-    A_WB_E.translational() += (a_PB_E + 2.0 * w_WP_E.cross(v_PB_E));
-    return A_WB_E;
+    A_WB_E.translational() += (a_PB_E + 2.0 * w_WP_E.cross(v_PB_E));  // 18
+    return A_WB_E;  // Total: 66 flops
   }
 };
 
@@ -352,3 +354,6 @@ inline SpatialAcceleration<T> operator-(const SpatialAcceleration<T>& A1_E,
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::SpatialAcceleration);
+
+DRAKE_FORMATTER_AS(typename T, drake::multibody, SpatialAcceleration<T>, x,
+                   drake::multibody::to_string(x))

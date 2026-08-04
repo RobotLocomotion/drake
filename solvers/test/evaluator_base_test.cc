@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -208,7 +209,7 @@ GTEST_TEST(EvaluatorBaseTest, SetGradientSparsityPattern) {
   const VectorXd lb = VectorXd::Constant(2, -1);
   const VectorXd ub = VectorXd::Constant(2, 1);
   SimpleEvaluator evaluator;
-  EXPECT_EQ(fmt::format("{}", evaluator),
+  EXPECT_EQ(fmt::to_string(evaluator),
             "SimpleEvaluator with 3 decision variables $(0) $(1) $(2)\n");
   // The gradient sparsity pattern should be unset at evaluator construction.
   EXPECT_FALSE(evaluator.gradient_sparsity_pattern().has_value());
@@ -282,7 +283,7 @@ class DynamicSizedEvaluator : public EvaluatorBase {
 
 GTEST_TEST(EvaluatorBaseTest, DynamicSizedEvaluatorTest) {
   DynamicSizedEvaluator evaluator{};
-  EXPECT_EQ(fmt::format("{}", evaluator),
+  EXPECT_EQ(fmt::to_string(evaluator),
             "DynamicSizedEvaluator with 1 decision variables "
             "dynamic_sized_variable\n");
 }

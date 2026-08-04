@@ -212,7 +212,11 @@ Hyperellipsoid Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
   std::optional<Eigen::MatrixXd> U;
   Eigen::VectorXd mean = points.rowwise().mean();
   {
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+    auto svd = (points.colwise() - mean).template bdcSvd<Eigen::ComputeThinU>();
+#else
     auto svd = (points.colwise() - mean).bdcSvd(Eigen::ComputeThinU);
+#endif
     // Eigen's SVD rank never returns zero, and their singular values are
     // returned in decreasing order.
     if (svd.singularValues()[0] < rank_tol) {

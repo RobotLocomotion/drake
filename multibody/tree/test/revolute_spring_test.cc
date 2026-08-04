@@ -1,5 +1,9 @@
 #include "drake/multibody/tree/revolute_spring.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -30,11 +34,11 @@ class SpringTester : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<MultibodyTree<double>>();
 
-    bodyA_ = &model->AddRigidBody("BodyA", SpatialInertia<double>::NaN());
-    bodyB_ = &model->AddRigidBody("BodyB", SpatialInertia<double>::NaN());
-    bodyC_ = &model->AddRigidBody("BodyC", SpatialInertia<double>::NaN());
+    bodyA_ = &model->AddLink("BodyA", SpatialInertia<double>::NaN());
+    bodyB_ = &model->AddLink("BodyB", SpatialInertia<double>::NaN());
+    bodyC_ = &model->AddLink("BodyC", SpatialInertia<double>::NaN());
 
-    model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_body(), {},
+    model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_link(), {},
                                *bodyA_, {},
                                math::RigidTransform<double>::Identity());
 
@@ -86,14 +90,32 @@ class SpringTester : public ::testing::Test {
   std::unique_ptr<MultibodyForces<double>> forces_;
 
   // Parameters of the case.
-  const double nominal_angle_ = 1.0;  // [m]
-  const double stiffness_ = 2.0;      // [N/m]
+  const double nominal_angle_ = 1.0;  // [rad]
+  const double stiffness_ = 2.0;      // [N⋅m/rad]
 };
 
 TEST_F(SpringTester, ConstructionAndAccessors) {
   EXPECT_EQ(spring_->joint().index(), joint_->index());
-  EXPECT_EQ(spring_->stiffness(), stiffness_);
-  EXPECT_EQ(spring_->nominal_angle(), nominal_angle_);
+  EXPECT_EQ(spring_->default_stiffness(), stiffness_);
+  EXPECT_EQ(spring_->default_nominal_angle(), nominal_angle_);
+}
+
+TEST_F(SpringTester, ContextDependentAccess) {
+  const double some_value = 5;
+  EXPECT_EQ(spring_->GetStiffness(*context_), stiffness_);
+  EXPECT_NO_THROW(spring_->SetStiffness(context_.get(), some_value));
+  EXPECT_EQ(spring_->GetStiffness(*context_), some_value);
+  // Expect to throw on invalid damping values.
+  EXPECT_THROW(spring_->SetStiffness(context_.get(), -1), std::exception);
+
+  EXPECT_EQ(spring_->GetNominalAngle(*context_), nominal_angle_);
+  EXPECT_NO_THROW(spring_->SetNominalAngle(context_.get(), some_value));
+  EXPECT_EQ(spring_->GetNominalAngle(*context_), some_value);
+
+  // Check if default value is reset correctly
+  context_ = system_->CreateDefaultContext();
+  EXPECT_EQ(spring_->GetStiffness(*context_), stiffness_);
+  EXPECT_EQ(spring_->GetNominalAngle(*context_), nominal_angle_);
 }
 
 // Verify the spring applies no forces when the separation equals the

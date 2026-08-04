@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

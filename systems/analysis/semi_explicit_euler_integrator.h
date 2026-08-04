@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
@@ -106,6 +107,8 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
 
  private:
   bool DoStep(const T& h) override;
+
+  std::unique_ptr<IntegratorBase<T>> DoClone() const override;
 
   // This is a pre-allocated temporary for use by integration
   BasicVector<T> qdot_;

@@ -23,18 +23,18 @@
 #include <fmt/ranges.h>
 #include <msgpack.hpp>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/network_policy.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
 #include "drake/geometry/meshcat_internal.h"
 #include "drake/geometry/meshcat_recording_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
+#include "drake/geometry/meshcat_zip_factory_internal.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/systems/analysis/realtime_rate_calculator.h"
 
@@ -54,6 +54,7 @@ namespace geometry {
 namespace {
 
 using internal::FileStorage;
+using internal::MeshcatZipFactory;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
@@ -264,6 +265,59 @@ int ToMeshcatColor(const Rgba& rgba) {
          static_cast<int>(255 * rgba.b());
 }
 
+// Creates the common material data for all cases. Assigns it into object and
+// returns a raw pointer to the material for further, local modification. The
+// material is actually owned by `object` upon return.
+internal::MaterialData* CreateCommonMaterialData(
+    const Rgba& rgba, std::string_view diffuse_map,
+    internal::UuidGenerator* uuid_generator, internal::LumpedObjectData* object,
+    FileStorage* file_storage = nullptr,
+    std::vector<std::shared_ptr<const MemoryFile>>* assets = nullptr) {
+  DRAKE_DEMAND(uuid_generator != nullptr);
+  DRAKE_DEMAND(object != nullptr);
+  DRAKE_DEMAND(diffuse_map.empty() || file_storage != nullptr);
+  DRAKE_DEMAND(diffuse_map.empty() || assets != nullptr);
+
+  auto material = std::make_unique<internal::MaterialData>();
+  material->uuid = uuid_generator->GenerateRandom();
+  material->type = "MeshPhongMaterial";
+  material->color = ToMeshcatColor(rgba);
+  // From meshcat-python: Three.js allows a material to have an opacity which is
+  // != 1, but to still be *non-transparent*, in which case the opacity only
+  // serves to desaturate the material's color. That's a pretty odd combination
+  // of things to want, so by default we just use the opacity value to decide
+  // whether to set transparent to True or False.
+  material->transparent = (rgba.a() != 1.0);
+  material->opacity = rgba.a();
+
+  if (!diffuse_map.empty()) {
+    std::optional<std::string> content = ReadFile(fs::path(diffuse_map));
+    if (content.has_value()) {
+      auto asset =
+          file_storage->Insert(std::move(*content), std::string(diffuse_map));
+      auto image = std::make_unique<internal::ImageData>();
+      image->uuid = uuid_generator->GenerateRandom();
+      image->url = FileStorage::GetCasUrl(*asset);
+      auto texture = std::make_unique<internal::TextureData>();
+      texture->uuid = uuid_generator->GenerateRandom();
+      texture->image = image->uuid;
+      texture->wrap = {internal::TextureData::RepeatWrapping,
+                       internal::TextureData::RepeatWrapping};
+      material->map = texture->uuid;
+      object->image = std::move(image);
+      object->texture = std::move(texture);
+      assets->push_back(std::move(asset));
+    } else {
+      drake::log()->warn(
+          "Meshcat: Failed to load diffuse_map texture \"{}\"; the "
+          "texture will be ignored.",
+          diffuse_map);
+    }
+  }
+  object->material = std::move(material);
+  return object->material.get();
+}
+
 // Sets the lumped object's geometry, material, and object type based on the
 // mesh data and its material properties.
 void SetLumpedObjectFromTriangleMesh(
@@ -281,18 +335,14 @@ void SetLumpedObjectFromTriangleMesh(
   geometry->faces = faces.cast<uint32_t>();
   object->geometry = std::move(geometry);
 
-  auto material = std::make_unique<internal::MaterialData>();
-  material->uuid = uuid_generator->GenerateRandom();
-  material->type = "MeshPhongMaterial";
-  material->color = ToMeshcatColor(rgba);
-  material->transparent = (rgba.a() != 1.0);
-  material->opacity = rgba.a();
+  // We don't currently assign any textures to meshes.
+  internal::MaterialData* material = CreateCommonMaterialData(
+      rgba, /* diffuse_map= */ "", uuid_generator, object);
   material->wireframe = wireframe;
   material->wireframeLineWidth = wireframe_line_width;
   material->vertexColors = false;
   material->side = side;
   material->flatShading = true;
-  object->material = std::move(material);
 
   internal::MeshData mesh;
   mesh.uuid = uuid_generator->GenerateRandom();
@@ -307,10 +357,12 @@ class MeshcatShapeReifier : public ShapeReifier {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
   MeshcatShapeReifier(internal::UuidGenerator* uuid_generator,
-                      FileStorage* file_storage, Rgba rgba)
+                      FileStorage* file_storage, Rgba rgba,
+                      std::string_view diffuse_map)
       : uuid_generator_(*uuid_generator),
         file_storage_(*file_storage),
-        rgba_(rgba) {
+        rgba_(rgba),
+        diffuse_map_(diffuse_map) {
     DRAKE_DEMAND(uuid_generator != nullptr);
     DRAKE_DEMAND(file_storage != nullptr);
   }
@@ -332,6 +384,14 @@ class MeshcatShapeReifier : public ShapeReifier {
     DRAKE_DEMAND(data != nullptr);
     auto& output = *static_cast<Output*>(data);
     auto& lumped = output.lumped;
+
+    if (!diffuse_map_.empty()) {
+      static logging::Warn one_time(
+          "Meshcat: diffuse_map is not currently supported for assignment on "
+          "Mesh shapes: '{}'",
+          diffuse_map_);
+      diffuse_map_ = "";
+    }
     // TODO(russt): Use file contents to generate the uuid, and avoid resending
     // meshes unless necessary.  Using the filename is tempting, but that leads
     // to problems when the file contents change on disk.
@@ -440,20 +500,20 @@ class MeshcatShapeReifier : public ShapeReifier {
             if (map_file_iter !=
                 mesh_source.in_memory().supporting_files.end()) {
               // Load it.
-              std::visit(
-                  overloaded{
-                      [&maybe_map_path](const fs::path& path) {
-                        // Note: paths to supporting files in an in-memory mesh
-                        // have no "base directory". The path must be
-                        // sufficiently well defined so that it can be read
-                        // directly.
-                        maybe_map_path = path;
-                      },
-                      [&map_data](const MemoryFile& file) {
-                        map_data = std::vector<uint8_t>(file.contents().begin(),
-                                                        file.contents().end());
-                      }},
-                  map_file_iter->second);
+              std::visit(overloaded{[&maybe_map_path](const fs::path& path) {
+                                      // Note: paths to supporting files in an
+                                      // in-memory mesh have no "base
+                                      // directory". The path must be
+                                      // sufficiently well defined so that it
+                                      // can be read directly.
+                                      maybe_map_path = path;
+                                    },
+                                    [&map_data](const MemoryFile& file) {
+                                      map_data = std::vector<uint8_t>(
+                                          file.contents().begin(),
+                                          file.contents().end());
+                                    }},
+                         map_file_iter->second);
             }
           } else {
             DRAKE_DEMAND(mesh_source.is_path());
@@ -548,15 +608,19 @@ class MeshcatShapeReifier : public ShapeReifier {
       lumped.object.emplace<internal::MeshData>();
     }
 
-    // Set the scale.
-    const double scale = mesh.scale();
+    // Set the scale. Note that if this were a general transform including a
+    // rotation we would have to _multiply_ the diagonal by the scale factors.
+    // In meshcat, rotation is applied to a different node, so we can safely
+    // treat the lumped_object's matrix as if it contained an identity rotation
+    // and safely directly _set_ the scale factors on the diagonal.
+    const Vector3<double>& scale = mesh.scale3();
     std::visit<void>(
         overloaded{[](std::monostate) {},
                    [scale](auto& lumped_object) {
                      Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
-                     matrix(0, 0) = scale;
-                     matrix(1, 1) = scale;
-                     matrix(2, 2) = scale;
+                     matrix(0, 0) = scale.x();
+                     matrix(1, 1) = scale.y();
+                     matrix(2, 2) = scale.z();
                    }},
         lumped.object);
   }
@@ -585,7 +649,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto geometry = std::make_unique<internal::CapsuleGeometryData>();
     geometry->uuid = uuid_generator_.GenerateRandom();
     geometry->radius = capsule.radius();
-    geometry->length = capsule.length();
+    geometry->height = capsule.length();
     lumped.geometry = std::move(geometry);
 
     // Meshcat cylinders have their long axis in y.
@@ -597,6 +661,13 @@ class MeshcatShapeReifier : public ShapeReifier {
   void ImplementGeometry(const Convex& mesh, void* data) override {
     DRAKE_DEMAND(data != nullptr);
     auto& output = *static_cast<Output*>(data);
+    if (!diffuse_map_.empty()) {
+      static logging::Warn one_time(
+          "Meshcat: diffuse_map cannot be assigned to Convex; convex hulls "
+          "have no texture coordinates. diffuse_map will be ignored: '{}'.",
+          diffuse_map_);
+      diffuse_map_ = "";
+    }
 
     const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
     const TriangleSurfaceMesh<double> tri_hull =
@@ -701,6 +772,7 @@ class MeshcatShapeReifier : public ShapeReifier {
   internal::UuidGenerator& uuid_generator_;
   FileStorage& file_storage_;
   Rgba rgba_;
+  std::string_view diffuse_map_;
 };
 
 // Meshcat inherits three.js's y-up world and it is applied to camera and
@@ -777,14 +849,13 @@ class Meshcat::Impl {
     // values) through to fmt to allow any fmt-specific exception to percolate.
     // Then, confirm that the user's pattern started with a valid protocol.
     const std::string url =
-        fmt::format(fmt_runtime(params.web_url_pattern),
+        fmt::format(fmt::runtime(params.web_url_pattern),
                     fmt::arg("host", "foo"), fmt::arg("port", 1));
     if (url.substr(0, 4) != "http") {
       throw std::logic_error("The web_url_pattern must be http:// or https://");
     }
 
-    // Fetch the index once to be sure that we preload the content.
-    DRAKE_DEMAND(internal::GetMeshcatStaticResource("/").has_value());
+    LoadStaticAssets();
 
     std::promise<std::tuple<int, bool>> app_promise;
     std::future<std::tuple<int, bool>> app_future = app_promise.get_future();
@@ -824,6 +895,28 @@ class Meshcat::Impl {
     websocket_thread_.join();
   }
 
+  // Loads the javascript into CAS. This also serves to cross-check that none of
+  // our static resources have gone missing.
+  void LoadStaticAssets() {
+    // Load the javascript into the CAS cache.
+    const std::optional<std::string_view> meshcat_js =
+        internal::GetMeshcatStaticResource("/meshcat.js");
+    DRAKE_DEMAND(meshcat_js.has_value());
+    meshcat_js_ = file_storage_.Insert(std::string{*meshcat_js}, "meshcat.js");
+
+    // Load meshcat.html and rewrite its script citation to use the CAS URL.
+    const std::optional<std::string_view> meshcat_html =
+        internal::GetMeshcatStaticResource("/meshcat.html");
+    DRAKE_DEMAND(meshcat_html.has_value());
+    meshcat_html_ = std::string{*meshcat_html};
+    const std::string_view old_link{"src=\"meshcat.js\""};
+    const size_t start = meshcat_html_.find(old_link);
+    DRAKE_DEMAND(start != std::string::npos);
+    meshcat_html_.replace(
+        start, old_link.size(),
+        fmt::format("src=\"{}\"", FileStorage::GetCasUrl(*meshcat_js_)));
+  }
+
   // Throws an exception if the websocket thread has died.
   // This function is a file-internal helper, not public in the PIMPL.
   //
@@ -853,7 +946,7 @@ class Meshcat::Impl {
     const std::string& host = params_.host;
     const bool is_localhost = host.empty() || host == "*";
     const std::string display_host = is_localhost ? "localhost" : host;
-    return fmt::format(fmt_runtime(params_.web_url_pattern),
+    return fmt::format(fmt::runtime(params_.web_url_pattern),
                        fmt::arg("host", display_host), fmt::arg("port", port_));
   }
 
@@ -977,7 +1070,8 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
+  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba,
+                 std::string_view diffuse_map = "") {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetObjectData data;
@@ -988,7 +1082,8 @@ class Meshcat::Impl {
     // them again for efficiency. We don't want to send meshes over the network
     // (which could be from the cloud to a local browser) more than necessary.
 
-    MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, rgba);
+    MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, rgba,
+                                diffuse_map);
     std::vector<std::shared_ptr<const MemoryFile>> assets;
     MeshcatShapeReifier::Output reifier_output{.lumped = data.object,
                                                .assets = assets};
@@ -1006,28 +1101,18 @@ class Meshcat::Impl {
 
       // Add a material if not already defined.
       if (data.object.material == nullptr) {
-        auto material = std::make_unique<internal::MaterialData>();
-        material->uuid = uuid_generator_.GenerateRandom();
-        material->type = "MeshPhongMaterial";
-        material->color = ToMeshcatColor(rgba);
+        internal::MaterialData* material =
+            CreateCommonMaterialData(rgba, diffuse_map, &uuid_generator_,
+                                     &data.object, &file_storage_, &assets);
         // TODO(russt): Most values are taken verbatim from meshcat-python.
         material->reflectivity = 0.5;
         material->side = SideOfFaceToRender::kDoubleSide;
-        // From meshcat-python: Three.js allows a material to have an opacity
-        // which is != 1, but to still be non - transparent, in which case the
-        // opacity only serves to desaturate the material's color. That's a
-        // pretty odd combination of things to want, so by default we just use
-        // the opacity value to decide whether to set transparent to True or
-        // False.
-        material->transparent = (rgba.a() != 1.0);
-        material->opacity = rgba.a();
         material->linewidth = 1.0;
         material->wireframe = false;
         material->wireframeLineWidth = 1.0;
 
         meshfile_object.uuid = uuid_generator_.GenerateRandom();
         meshfile_object.material = material->uuid;
-        data.object.material = std::move(material);
       }
     }
 
@@ -1355,8 +1440,8 @@ class Meshcat::Impl {
           "Cannot open '{}' when attempting to set property '{}' on '{}'",
           file_path.string(), property, path));
     }
-    std::shared_ptr<const MemoryFile> asset = file_storage_.Insert(
-        std::move(*content), file_path.string());
+    std::shared_ptr<const MemoryFile> asset =
+        file_storage_.Insert(std::move(*content), file_path.string());
 
     internal::SetPropertyData<std::string> data;
     data.path = FullPath(path);
@@ -1649,8 +1734,8 @@ class Meshcat::Impl {
 
   // This function is public via the PIMPL.
   double AddSlider(std::string name, double min, double max, double step,
-                 double value, std::string decrement_keycode,
-                 std::string increment_keycode) {
+                   double value, std::string decrement_keycode,
+                   std::string increment_keycode) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetSliderControl data;
@@ -1817,48 +1902,68 @@ class Meshcat::Impl {
   }
 
   // This function is for use by the websocket thread. The Meshcat::StaticHtml()
-  // outer function calls into here using appropriate deferred handling.
-  std::string CalcStandaloneHtml() const {
+  // and Meshcat::StaticZip() outer functions call into here using appropriate
+  // deferred handling.
+  std::string CalcStandaloneHtml(bool zip) const {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
-    std::string html{internal::GetMeshcatStaticResource("/").value()};
 
-    // Insert the javascript directly into the html.
-    std::vector<std::pair<std::string, std::string>> js_paths{
-        {" src=\"meshcat.js\"", "/meshcat.js"},
-        {" src=\"stats.min.js\"", "/stats.min.js"},
-    };
-    for (const auto& [src_link, url] : js_paths) {
-      const std::string_view url_data =
-          internal::GetMeshcatStaticResource(url).value();
+    // Bundle the js file.
+    // For zip, we'll link to the CAS URL.
+    // For non-zip, we insert the javascript into the html.
+    std::string html;
+    std::unique_ptr<MeshcatZipFactory> zip_factory;
+    if (zip) {
+      html = meshcat_html_;
+      zip_factory = std::make_unique<MeshcatZipFactory>();
+    } else {
+      html = internal::GetMeshcatStaticResource("/meshcat.html").value();
+      const std::string_view src_link{" src=\"meshcat.js\""};
       const size_t js_pos = html.find(src_link);
       DRAKE_DEMAND(js_pos != std::string::npos);
       html.erase(js_pos, src_link.size());
-      html.insert(js_pos + 1, url_data);
+      html.insert(js_pos + 1, meshcat_js_->contents());
     }
 
-    // Insert a JavaScript URL hook that knows how to serve the CAS database.
+    // Add the assets. For zip, we add the assets to the archive.
+    // For non-zip, we encode the assets into the html and insert a JavaScript
+    // URL hook that knows how to serve the CAS database.
     // (See FileStorage and GetCasUrl for details about CAS.)
-    std::string javascript("casAssets = {};\n");
-    std::vector<std::shared_ptr<const MemoryFile>> assets =
-        file_storage_.DumpEverything();
-    for (const auto& asset : assets) {
-      javascript += fmt::format("// {}\n", asset->filename_hint());
-      javascript += fmt::format(
-          "casAssets[\"{}\"] = "
-          "\"data:application/octet-binary;base64,{}\";\n",
-          FileStorage::GetCasUrl(*asset),
-          common_robotics_utilities::base64_helpers::Encode(
-              std::vector<uint8_t>(asset->contents().begin(),
-                                   asset->contents().end())));
-    }
-    javascript += R"""(
-        MeshCat.THREE.DefaultLoadingManager.setURLModifier(url => {
-            if (url in casAssets) {
-                return casAssets[url];
-            }
-            return url;
-        });
+    std::string javascript;
+    if (zip) {
+      std::vector<std::shared_ptr<const MemoryFile>> assets =
+          file_storage_.DumpEverything();
+      for (const auto& asset : assets) {
+        const std::string asset_url = FileStorage::GetCasUrl(*asset);
+        zip_factory->AddFile(asset_url, asset->contents());
+      }
+    } else {
+      javascript = "casAssets = {};\n";
+      std::vector<std::shared_ptr<const MemoryFile>> assets =
+          file_storage_.DumpEverything();
+      for (const auto& asset : assets) {
+        if (asset->sha256() == meshcat_js_->sha256()) {
+          // We already inserted this resource directly into the html above, so
+          // there's no need to dump it as part of the CAS.
+          continue;
+        }
+        javascript += fmt::format("// {}\n", asset->filename_hint());
+        javascript += fmt::format(
+            "casAssets[\"{}\"] = "
+            "\"data:application/octet-binary;base64,{}\";\n",
+            FileStorage::GetCasUrl(*asset),
+            common_robotics_utilities::base64_helpers::Encode(
+                std::vector<uint8_t>(asset->contents().begin(),
+                                     asset->contents().end())));
+      }
+      javascript += R"""(
+          MeshCat.THREE.DefaultLoadingManager.setURLModifier(url => {
+              if (url in casAssets) {
+                  return casAssets[url];
+              }
+              return url;
+          });
 )""";
+    }
 
     // Replace the javascript code in the original html file which connects via
     // websockets with the static javascript commands.
@@ -1873,17 +1978,34 @@ class Meshcat::Impl {
         "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
     html = std::regex_replace(html, block_re, javascript);
 
-    return html;
+    if (zip) {
+      zip_factory->AddFile("meshcat.html", std::move(html));
+      return zip_factory->Build();
+    } else {
+      return html;
+    }
   }
 
   // This function is public via the PIMPL.
-  std::string StaticHtml() {
+  std::string StaticHtml() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     std::promise<std::string> p;
     std::future<std::string> f = p.get_future();
     Defer([this, p = std::move(p)]() mutable {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      p.set_value(CalcStandaloneHtml());
+      p.set_value(CalcStandaloneHtml(/* zip = */ false));
+    });
+    return f.get();
+  }
+
+  // This function is public via the PIMPL.
+  std::string StaticZip() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    std::promise<std::string> p;
+    std::future<std::string> f = p.get_future();
+    Defer([this, p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      p.set_value(CalcStandaloneHtml(/* zip = */ true));
     });
     return f.get();
   }
@@ -2054,7 +2176,7 @@ class Meshcat::Impl {
       // until we know that the main thread is no longer adding more callbacks.
       // It signals that by setting mode_ to kFinshed.
       while (mode_.load() != kFinished) {
-        // TODO(jwnimmer-tri) Use atomic::wait instead, once we have C++20.
+        // TODO(jwnimmer-tri) Use atomic::wait instead.
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
       loop_ = nullptr;
@@ -2211,18 +2333,26 @@ class Meshcat::Impl {
                      uWS::HttpResponse<kSsl>* response) const {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
     drake::log()->debug("Meshcat: GET {}", url_path);
-    // Handle the magic download URL.
+    // Handle the magic download URLs.
     if (url_path == "/download") {
-      const std::string content = CalcStandaloneHtml();
+      const std::string content = CalcStandaloneHtml(/* zip = */ false);
       response->writeHeader("Content-Type", "text/html; charset=utf-8");
       response->writeHeader("Content-Disposition",
                             "attachment; filename=\"meshcat.html\"");
       response->end(content);
       return;
     }
+    if (url_path == "/download.zip") {
+      const std::string content = CalcStandaloneHtml(/* zip = */ true);
+      response->writeHeader("Content-Type", "application/x-zip");
+      response->writeHeader("Content-Disposition",
+                            "attachment; filename=\"meshcat.zip\"");
+      response->end(content);
+      return;
+    }
     // Handle content-addressable storage. This must align with GetCasUrl() in
     // FileStorage so if you change it be sure to change both places.
-    if (url_path.substr(0, 8) == "/cas-v1-") {
+    if (url_path.substr(0, 8) == "/cas-v1/") {
       const std::string_view suffix = url_path.substr(8);
       std::optional<Sha256> key = Sha256::Parse(suffix);
       if (!key.has_value()) {
@@ -2249,14 +2379,15 @@ class Meshcat::Impl {
       return;
     }
     // Handle static (i.e., compiled-in) files.
-    if (const std::optional<std::string_view> content =
-            internal::GetMeshcatStaticResource(url_path)) {
-      if (content->substr(0, 15) == "<!DOCTYPE html>") {
-        response->writeHeader("Content-Type", "text/html; charset=utf-8");
-      } else if (url_path.ends_with(".js")) {
-        response->writeHeader("Content-Type", "text/javascript; charset=utf-8");
-      }
-      response->end(*content);
+    if ((url_path == "/") || (url_path == "/index.html") ||
+        (url_path == "/meshcat.html")) {
+      response->writeHeader("Content-Type", "text/html; charset=utf-8");
+      response->writeHeader("Cache-Control", "no-cache");
+      response->end(meshcat_html_);
+      return;
+    }
+    if (url_path == "/favicon.ico") {
+      response->end(internal::GetMeshcatStaticResource(url_path).value());
       return;
     }
     // Unknown URL.
@@ -2429,6 +2560,8 @@ class Meshcat::Impl {
   uWS::App* app_{nullptr};
   us_listen_socket_t* listen_socket_{nullptr};
   std::set<WebSocket*> websockets_{};
+  std::shared_ptr<const MemoryFile> meshcat_js_;
+  std::string meshcat_html_;
 
   // This variable may be accessed from any thread, but should only be modified
   // in the websocket thread.
@@ -2568,8 +2701,8 @@ void Meshcat::Flush() const {
 }
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
-                        const Rgba& rgba) {
-  impl().SetObject(path, shape, rgba);
+                        const Rgba& rgba, std::string_view diffuse_map) {
+  impl().SetObject(path, shape, rgba, diffuse_map);
 }
 
 void Meshcat::SetObject(std::string_view path,
@@ -2804,8 +2937,8 @@ bool Meshcat::DeleteButton(std::string name, bool strict) {
 }
 
 double Meshcat::AddSlider(std::string name, double min, double max, double step,
-                        double value, std::string decrement_keycode,
-                        std::string increment_keycode) {
+                          double value, std::string decrement_keycode,
+                          std::string increment_keycode) {
   return impl().AddSlider(std::move(name), min, max, step, value,
                           std::move(decrement_keycode),
                           std::move(increment_keycode));
@@ -2835,8 +2968,12 @@ Meshcat::Gamepad Meshcat::GetGamepad() const {
   return impl().GetGamepad();
 }
 
-std::string Meshcat::StaticHtml() {
+std::string Meshcat::StaticHtml() const {
   return impl().StaticHtml();
+}
+
+std::string Meshcat::StaticZip() const {
+  return impl().StaticZip();
 }
 
 void Meshcat::StartRecording(double frames_per_second,

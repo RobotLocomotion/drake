@@ -9,8 +9,10 @@
 # We need to do it on a best-effort basis, because not all of our py_binary
 # rules use lcmtypes -- sometimes the lcmtypes will be absent from runfiles.
 try:
+    # fmt: off
     import drake.lcmtypes
     __path__.append(list(drake.lcmtypes.__path__)[0] + "/drake")
-    from drake.lcmtypes.drake import *
+    from drake.lcmtypes.drake import *  # noqa: F403 (import-star)
+    # fmt: on
 except ImportError:
     pass

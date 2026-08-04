@@ -1,11 +1,11 @@
-import numpy as np
 import unittest
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+import numpy as np
+
 from pydrake.solvers import (
     MakeSemidefiniteRelaxation,
-    SemidefiniteRelaxationOptions,
     MathematicalProgram,
+    SemidefiniteRelaxationOptions,
 )
 from pydrake.symbolic import Variables
 
@@ -22,9 +22,7 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         relaxation = MakeSemidefiniteRelaxation(prog=prog, options=options)
 
         self.assertEqual(relaxation.num_vars(), 6)
-        self.assertEqual(
-            len(relaxation.positive_semidefinite_constraints()), 1
-        )
+        self.assertEqual(len(relaxation.positive_semidefinite_constraints()), 1)
         self.assertEqual(len(relaxation.linear_equality_constraints()), 1)
         self.assertEqual(len(relaxation.linear_constraints()), 2)
 
@@ -50,9 +48,7 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         # with the "1" variable double counted. Therefore, there are
         # 5 choose 2 + 4 choose 2 - 1 variables.
         self.assertEqual(relaxation.num_vars(), 10 + 6 - 1)
-        self.assertEqual(
-            len(relaxation.positive_semidefinite_constraints()), 2
-        )
+        self.assertEqual(len(relaxation.positive_semidefinite_constraints()), 2)
         self.assertEqual(len(relaxation.linear_equality_constraints()), 1)
         self.assertEqual(len(relaxation.linear_constraints()), 2 + 1)
 
@@ -62,9 +58,6 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         options.add_implied_linear_constraints = True
         self.assertTrue(options.add_implied_linear_equality_constraints)
         self.assertTrue(options.add_implied_linear_constraints)
-        with catch_drake_warnings(expected_count=2) as w:
-            options.preserve_convex_quadratic_constraints = True
-            self.assertTrue(options.preserve_convex_quadratic_constraints)
 
         options.set_to_weakest()
         self.assertFalse(options.add_implied_linear_equality_constraints)

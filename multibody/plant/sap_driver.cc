@@ -26,6 +26,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_tendon_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_weld_constraint.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
+#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
@@ -134,7 +135,8 @@ template <typename T>
 void SapDriver<T>::CalcLinearDynamicsMatrix(const systems::Context<T>& context,
                                             std::vector<MatrixX<T>>* A) const {
   DRAKE_DEMAND(A != nullptr);
-  A->resize(tree_topology().num_trees());
+  const SpanningForest& forest = get_forest();
+  A->resize(forest.num_trees());
   const int nv = plant().num_velocities();
 
   // TODO(amcastro-tri): consider placing the computation of the dense mass
@@ -152,9 +154,10 @@ void SapDriver<T>::CalcLinearDynamicsMatrix(const systems::Context<T>& context,
   //   A = ∂m/∂v = (M + dt⋅D)
   M.diagonal() += plant().time_step() * plant().EvalJointDampingCache(context);
 
-  for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
-    const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
-    const int tree_nv = tree_topology().num_tree_velocities(t);
+  for (TreeIndex t(0); t < forest.num_trees(); ++t) {
+    const SpanningForest::Tree& tree = forest.trees(t);
+    const int tree_start_in_v = tree.v_start();
+    const int tree_nv = tree.nv();
     (*A)[t] = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
   }
 
@@ -203,8 +206,11 @@ template <typename T>
 std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const systems::Context<T>& context, SapContactProblem<T>* problem) const {
   DRAKE_DEMAND(problem != nullptr);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_DEMAND(plant().get_discrete_contact_approximation() !=
                DiscreteContactApproximation::kTamsi);
+#pragma GCC diagnostic pop
 
   // Parameters used by SAP to estimate regularization, see [Castro et al.,
   // 2021].
@@ -321,6 +327,7 @@ void SapDriver<T>::AddLimitConstraints(const systems::Context<T>& context,
   const double stiffness = 1.0e12;
   const double dissipation_time_scale = dt;
 
+  const SpanningForest& forest = get_forest();
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
@@ -328,11 +335,10 @@ void SapDriver<T>::AddLimitConstraints(const systems::Context<T>& context,
       const double lower_limit = joint.position_lower_limits()[0];
       const double upper_limit = joint.position_upper_limits()[0];
       const int velocity_start = joint.velocity_start();
-      const TreeIndex tree_index =
-          tree_topology().velocity_to_tree_index(velocity_start);
-      const int tree_nv = tree_topology().num_tree_velocities(tree_index);
-      const int tree_velocity_start =
-          tree_topology().tree_velocities_start_in_v(tree_index);
+      const TreeIndex tree_index = forest.v_to_tree_index(velocity_start);
+      const SpanningForest::Tree& tree = forest.trees(tree_index);
+      const int tree_nv = tree.nv();
+      const int tree_velocity_start = tree.v_start();
       const int tree_dof = velocity_start - tree_velocity_start;
 
       // Current configuration position.
@@ -396,6 +402,7 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
   const std::map<MultibodyConstraintId, bool>& constraint_active_status =
       manager().GetConstraintActiveStatus(context);
 
+  const SpanningForest& forest = get_forest();
   for (const auto& [id, info] : manager().coupler_constraints_specs()) {
     // Skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
@@ -403,24 +410,25 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
     const Joint<T>& joint1 = plant().get_joint(info.joint1_index);
     const int dof0 = joint0.velocity_start();
     const int dof1 = joint1.velocity_start();
-    const TreeIndex tree0 = tree_topology().velocity_to_tree_index(dof0);
-    const TreeIndex tree1 = tree_topology().velocity_to_tree_index(dof1);
+    const TreeIndex tree0_index = forest.v_to_tree_index(dof0);
+    const TreeIndex tree1_index = forest.v_to_tree_index(dof1);
 
     // Sanity check.
-    DRAKE_DEMAND(tree0.is_valid() && tree1.is_valid());
+    DRAKE_DEMAND(tree0_index.is_valid() && tree1_index.is_valid());
+
+    const SpanningForest::Tree& tree0 = forest.trees(tree0_index);
+    const SpanningForest::Tree& tree1 = forest.trees(tree1_index);
 
     // DOFs local to their tree.
-    const int tree_dof0 =
-        dof0 - tree_topology().tree_velocities_start_in_v(tree0);
-    const int tree_dof1 =
-        dof1 - tree_topology().tree_velocities_start_in_v(tree1);
+    const int tree_dof0 = dof0 - tree0.v_start();
+    const int tree_dof1 = dof1 - tree1.v_start();
 
-    const int tree_nv0 = tree_topology().num_tree_velocities(tree0);
-    const int tree_nv1 = tree_topology().num_tree_velocities(tree1);
+    const int tree_nv0 = tree0.nv();
+    const int tree_nv1 = tree1.nv();
 
     const typename SapCouplerConstraint<T>::Kinematics kinematics{
-        tree0,           tree_dof0,  tree_nv0, joint0.GetOnePosition(context),
-        tree1,           tree_dof1,  tree_nv1, joint1.GetOnePosition(context),
+        tree0_index,     tree_dof0,  tree_nv0, joint0.GetOnePosition(context),
+        tree1_index,     tree_dof1,  tree_nv1, joint1.GetOnePosition(context),
         info.gear_ratio, info.offset};
 
     problem->AddConstraint(
@@ -443,22 +451,25 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
   const std::map<MultibodyConstraintId, bool>& constraint_active_status =
       manager().GetConstraintActiveStatus(context);
 
-  for (const auto& [id, spec] : manager().distance_constraints_specs()) {
+  for (const auto& [id, params] :
+       manager().GetDistanceConstraintParams(context)) {
     // skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
 
-    const RigidBody<T>& body_A = plant().get_body(spec.body_A);
-    const RigidBody<T>& body_B = plant().get_body(spec.body_B);
+    const RigidBody<T>& body_A = plant().get_body(params.bodyA());
+    const RigidBody<T>& body_B = plant().get_body(params.bodyB());
     DRAKE_DEMAND(body_A.index() != body_B.index());
 
     const math::RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
     const math::RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
-    const Vector3<T> p_WP = X_WA * spec.p_AP.template cast<T>();
-    const Vector3<T> p_AP_W = X_WA.rotation() * spec.p_AP.template cast<T>();
-    const Vector3<T> p_WQ = X_WB * spec.p_BQ.template cast<T>();
-    const Vector3<T> p_BQ_W = X_WB.rotation() * spec.p_BQ.template cast<T>();
+    const Vector3<T> p_WP = X_WA * params.p_AP().template cast<T>();
+    const Vector3<T> p_AP_W =
+        X_WA.rotation() * params.p_AP().template cast<T>();
+    const Vector3<T> p_WQ = X_WB * params.p_BQ().template cast<T>();
+    const Vector3<T> p_BQ_W =
+        X_WB.rotation() * params.p_BQ().template cast<T>();
 
     // Jacobian for the velocity of point Q (on body B) relative to point P (on
     // body B).
@@ -474,10 +485,14 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
     // SapDistanceConstraint.
     auto make_constraint_jacobian = [this, &Jv_ApBq_W](BodyIndex bodyA,
                                                        BodyIndex bodyB) {
-      const TreeIndex treeA_index = tree_topology().body_to_tree_index(bodyA);
-      const TreeIndex treeB_index = tree_topology().body_to_tree_index(bodyB);
-      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
-      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
+      const SpanningForest& forest = get_forest();
+      const TreeIndex treeA_index = forest.link_to_tree_index(bodyA);
+      const SpanningForest::Tree& treeA = forest.trees(treeA_index);
+      const bool treeA_has_dofs = treeA.has_dofs();
+
+      const TreeIndex treeB_index = forest.link_to_tree_index(bodyB);
+      const SpanningForest::Tree& treeB = forest.trees(treeB_index);
+      const bool treeB_has_dofs = treeB.has_dofs();
 
       // Sanity check at least one body is not World or anchored to World.
       DRAKE_DEMAND(treeA_has_dofs || treeB_has_dofs);
@@ -488,29 +503,24 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
           !treeA_has_dofs || !treeB_has_dofs || treeA_index == treeB_index;
 
       if (single_tree) {
-        const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
-        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(tree_index),
-            tree_topology().num_tree_velocities(tree_index));
-        return SapConstraintJacobian<T>(tree_index, std::move(Jtree));
+        const SpanningForest::Tree& tree = treeA_has_dofs ? treeA : treeB;
+        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(tree.v_start(), tree.nv());
+        return SapConstraintJacobian<T>(tree.index(), std::move(Jtree));
       } else {
-        MatrixX<T> JA = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeA_index),
-            tree_topology().num_tree_velocities(treeA_index));
-        MatrixX<T> JB = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeB_index),
-            tree_topology().num_tree_velocities(treeB_index));
+        MatrixX<T> JA = Jv_ApBq_W.middleCols(treeA.v_start(), treeA.nv());
+        MatrixX<T> JB = Jv_ApBq_W.middleCols(treeB.v_start(), treeB.nv());
         return SapConstraintJacobian<T>(treeA_index, std::move(JA), treeB_index,
                                         std::move(JB));
       }
     };
 
     const typename SapDistanceConstraint<T>::Kinematics kinematics(
-        spec.body_A, p_WP, p_AP_W, spec.body_B, p_WQ, p_BQ_W, spec.distance,
-        make_constraint_jacobian(spec.body_A, spec.body_B));
+        params.bodyA(), p_WP, p_AP_W, params.bodyB(), p_WQ, p_BQ_W,
+        params.distance(),
+        make_constraint_jacobian(params.bodyA(), params.bodyB()));
 
     const typename SapDistanceConstraint<T>::ComplianceParameters parameters(
-        spec.stiffness, spec.damping);
+        params.stiffness(), params.damping());
 
     problem->AddConstraint(std::make_unique<SapDistanceConstraint<T>>(
         std::move(kinematics), std::move(parameters)));
@@ -564,12 +574,11 @@ void SapDriver<T>::AddBallConstraints(
     // Jacobian for the relative velocity v_PQ_W, as required by
     // SapDistanceConstraint.
     auto make_constraint_jacobian = [this, &Jv_ApBq_W, &body_A, &body_B]() {
-      const TreeIndex treeA_index =
-          tree_topology().body_to_tree_index(body_A.index());
-      const TreeIndex treeB_index =
-          tree_topology().body_to_tree_index(body_B.index());
-      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
-      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
+      const SpanningForest& forest = get_forest();
+      const TreeIndex treeA_index = forest.link_to_tree_index(body_A.index());
+      const TreeIndex treeB_index = forest.link_to_tree_index(body_B.index());
+      const bool treeA_has_dofs = forest.trees(treeA_index).has_dofs();
+      const bool treeB_has_dofs = forest.trees(treeB_index).has_dofs();
 
       // TODO(joemasterjohn): Move this exception up to the plant level so that
       // it fails as fast as possible. Currently, the earliest this can happen
@@ -589,17 +598,14 @@ void SapDriver<T>::AddBallConstraints(
 
       if (single_tree) {
         const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
-        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(tree_index),
-            tree_topology().num_tree_velocities(tree_index));
+        const SpanningForest::Tree& tree = forest.trees(tree_index);
+        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(tree.v_start(), tree.nv());
         return SapConstraintJacobian<T>(tree_index, std::move(Jtree));
       } else {
-        MatrixX<T> JA = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeA_index),
-            tree_topology().num_tree_velocities(treeA_index));
-        MatrixX<T> JB = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeB_index),
-            tree_topology().num_tree_velocities(treeB_index));
+        const SpanningForest::Tree& treeA = forest.trees(treeA_index);
+        const SpanningForest::Tree& treeB = forest.trees(treeB_index);
+        MatrixX<T> JA = Jv_ApBq_W.middleCols(treeA.v_start(), treeA.nv());
+        MatrixX<T> JB = Jv_ApBq_W.middleCols(treeB.v_start(), treeB.nv());
         return SapConstraintJacobian<T>(treeA_index, std::move(JA), treeB_index,
                                         std::move(JB));
       }
@@ -668,12 +674,15 @@ void SapDriver<T>::AddWeldConstraints(
     auto make_constraint_jacobian = [this, &J_W_AmBm](
                                         const RigidBody<T>& bodyA,
                                         const RigidBody<T>& bodyB) {
-      const TreeIndex treeA_index =
-          tree_topology().body_to_tree_index(bodyA.index());
-      const TreeIndex treeB_index =
-          tree_topology().body_to_tree_index(bodyB.index());
-      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
-      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
+      const SpanningForest& forest = get_forest();
+
+      const TreeIndex treeA_index = forest.link_to_tree_index(bodyA.index());
+      const SpanningForest::Tree& treeA = forest.trees(treeA_index);
+      const bool treeA_has_dofs = treeA.has_dofs();
+
+      const TreeIndex treeB_index = forest.link_to_tree_index(bodyB.index());
+      const SpanningForest::Tree& treeB = forest.trees(treeB_index);
+      const bool treeB_has_dofs = treeB.has_dofs();
 
       // TODO(joemasterjohn): Move this exception up to the plant level so
       //  that it fails as fast as possible. Currently, the earliest this can
@@ -692,18 +701,12 @@ void SapDriver<T>::AddWeldConstraints(
           !treeA_has_dofs || !treeB_has_dofs || treeA_index == treeB_index;
 
       if (single_tree) {
-        const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
-        MatrixX<T> Jtree_W = J_W_AmBm.middleCols(
-            tree_topology().tree_velocities_start_in_v(tree_index),
-            tree_topology().num_tree_velocities(tree_index));
-        return SapConstraintJacobian<T>(tree_index, std::move(Jtree_W));
+        const SpanningForest::Tree& tree = treeA_has_dofs ? treeA : treeB;
+        MatrixX<T> Jtree_W = J_W_AmBm.middleCols(tree.v_start(), tree.nv());
+        return SapConstraintJacobian<T>(tree.index(), std::move(Jtree_W));
       } else {
-        MatrixX<T> JA_W = J_W_AmBm.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeA_index),
-            tree_topology().num_tree_velocities(treeA_index));
-        MatrixX<T> JB_W = J_W_AmBm.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeB_index),
-            tree_topology().num_tree_velocities(treeB_index));
+        MatrixX<T> JA_W = J_W_AmBm.middleCols(treeA.v_start(), treeA.nv());
+        MatrixX<T> JB_W = J_W_AmBm.middleCols(treeB.v_start(), treeB.nv());
         return SapConstraintJacobian<T>(treeA_index, std::move(JA_W),
                                         treeB_index, std::move(JB_W));
       }
@@ -726,66 +729,44 @@ void SapDriver<T>::AddPdControllerConstraints(
   // Do nothing if not PD controllers were specified.
   if (plant().num_actuators() == 0) return;
 
-  // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
-  // allocations.
-  const DesiredStateInput<T> desired_states =
-      manager_->AssembleDesiredStateInput(context);
-  const VectorX<T> feed_forward_actuation =
-      manager_->AssembleActuationInput(context);
+  // Eval the input port values. Note that the effort limit is only applied to
+  // the full PD control expression `-Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff`, not the
+  // individual `u_ff` term, so we set `effort_limit = false` here to obtain the
+  // unadulterated input port value.
+  const DesiredStateInput<T>& desired_states =
+      manager_->EvalDesiredStateInput(context);
+  const VectorX<T>& feed_forward_actuation =
+      manager_->EvalActuationInput(context, /* apply_effort_limit = */ false);
 
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < plant().num_model_instances();
-       ++model_instance_index) {
-    if (desired_states.is_armed(model_instance_index)) {
-      const VectorX<T>& instance_qd =
-          desired_states.positions(model_instance_index);
-      const VectorX<T>& instance_vd =
-          desired_states.velocities(model_instance_index);
+  const SpanningForest& forest = get_forest();
+  for (const typename DesiredStateInput<T>::Item& item : desired_states.items) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(item.actuator_index);
+    const Joint<T>& joint = actuator.joint();
+    const double effort_limit = actuator.effort_limit();
+    const T& qd = item.qd;
+    const T& vd = item.vd;
+    const T& u0 = feed_forward_actuation[actuator.input_start()];
 
-      // Sanity check sizes before accessing qd and vd below.
-      DRAKE_DEMAND(instance_qd.size() ==
-                   plant().num_actuators(model_instance_index));
-      DRAKE_DEMAND(instance_vd.size() ==
-                   plant().num_actuators(model_instance_index));
+    const T& q0 = joint.GetOnePosition(context);
+    const int dof = joint.velocity_start();
+    const TreeIndex tree_index = forest.v_to_tree_index(dof);
+    const SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_dof = dof - tree.v_start();
+    const int tree_nv = tree.nv();
 
-      int a = 0;  // Actuator index local to its model-instance.
-      for (JointActuatorIndex actuator_index :
-           plant().GetJointActuatorIndices(model_instance_index)) {
-        const JointActuator<T>& actuator =
-            plant().get_joint_actuator(actuator_index);
-        const Joint<T>& joint = actuator.joint();
-        // There is no point in modeling PD controllers if the joint is locked.
-        // Therefore we do not add these constraints and actuation due to PD
-        // controllers on locked joints is considered to be zero.
-        if (actuator.has_controller() && !joint.is_locked(context)) {
-          const double effort_limit = actuator.effort_limit();
-          const T& qd = instance_qd[a];
-          const T& vd = instance_vd[a];
-          const T& u0 = feed_forward_actuation[actuator.input_start()];
+    // Controller gains.
+    const PdControllerGains& gains = actuator.get_controller_gains();
+    const T& Kp = gains.p;
+    const T& Kd = gains.d;
 
-          const T& q0 = joint.GetOnePosition(context);
-          const int dof = joint.velocity_start();
-          const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
-          const int tree_dof =
-              dof - tree_topology().tree_velocities_start_in_v(tree);
-          const int tree_nv = tree_topology().num_tree_velocities(tree);
+    typename SapPdControllerConstraint<T>::Parameters parameters{Kp, Kd,
+                                                                 effort_limit};
+    typename SapPdControllerConstraint<T>::Configuration configuration{
+        tree_index, tree_dof, tree_nv, q0, qd, vd, u0};
 
-          // Controller gains.
-          const PdControllerGains& gains = actuator.get_controller_gains();
-          const T& Kp = gains.p;
-          const T& Kd = gains.d;
-
-          typename SapPdControllerConstraint<T>::Parameters parameters{
-              Kp, Kd, effort_limit};
-          typename SapPdControllerConstraint<T>::Configuration configuration{
-              tree, tree_dof, tree_nv, q0, qd, vd, u0};
-
-          problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
-              std::move(configuration), std::move(parameters)));
-        }
-        ++a;
-      }
-    }
+    problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
+        std::move(configuration), std::move(parameters)));
   }
 }
 
@@ -822,6 +803,7 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
   const std::map<MultibodyConstraintId, bool>& constraint_active_status =
       manager().GetConstraintActiveStatus(context);
 
+  const SpanningForest& forest = get_forest();
   for (const auto& [id, info] : manager().tendon_constraints_specs()) {
     // Skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
@@ -831,36 +813,37 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
         kBeta);
 
     // Find the set of trees that the joints of this constraint belong to.
-    TreeIndex tree0, tree1;
+    TreeIndex tree0_index, tree1_index;
     for (int i = 0; i < ssize(info.joints); ++i) {
       const Joint<T>& joint = plant().get_joint(info.joints[i]);
-      const TreeIndex tree =
-          tree_topology().velocity_to_tree_index(joint.velocity_start());
+      const TreeIndex tree_index =
+          forest.v_to_tree_index(joint.velocity_start());
       // Sanity check.
-      DRAKE_DEMAND(tree.is_valid());
+      DRAKE_DEMAND(tree_index.is_valid());
 
       // Update the first two trees that we find along the way.
-      if (!tree0.is_valid()) {
-        tree0 = tree;
-      } else if (!tree1.is_valid() && tree != tree0) {
-        tree1 = tree;
+      if (!tree0_index.is_valid()) {
+        tree0_index = tree_index;
+      } else if (!tree1_index.is_valid() && tree_index != tree0_index) {
+        tree1_index = tree_index;
       }
 
       // Constraints can have at most 2 participating cliques.
       // TODO(joemasterjohn): Fail faster by moving this detection to
-      // MultibodyPlant at Finalize() time.
-      if (tree != tree0 && tree != tree1) {
+      //  MultibodyPlant at Finalize() time.
+      if (tree_index != tree0_index && tree_index != tree1_index) {
         throw std::logic_error(
             "Creating a tendon constraint for a set of joints that belong "
             "to more than two kinematic trees is not allowed.");
       }
     }
 
-    DRAKE_DEMAND(tree0.is_valid());
+    DRAKE_DEMAND(tree0_index.is_valid());
 
     // Single clique version.
-    if (!tree1.is_valid()) {
-      const int tree0_nv = tree_topology().num_tree_velocities(tree0);
+    if (!tree1_index.is_valid()) {
+      const SpanningForest::Tree& tree0 = forest.trees(tree0_index);
+      const int tree0_nv = tree0.nv();
       VectorX<T> q0(tree0_nv);
       VectorX<T> a0(tree0_nv);
       q0.setZero();
@@ -870,14 +853,13 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
         const Joint<T>& joint = plant().get_joint(info.joints[i]);
         const int dof = joint.velocity_start();
         // DOFs local to their tree.
-        const int tree_dof =
-            dof - tree_topology().tree_velocities_start_in_v(tree0);
+        const int tree_dof = dof - tree0.v_start();
         q0(tree_dof) = joint.GetOnePosition(context);
         a0(tree_dof) = info.a[i];
       }
 
-      typename SapTendonConstraint<T>::Kinematics kinematics(tree0, q0, a0,
-                                                             info.offset);
+      typename SapTendonConstraint<T>::Kinematics kinematics(tree0_index, q0,
+                                                             a0, info.offset);
 
       // Only add the constraint if it is violated at q_0.
       if ((SapTendonConstraint<T>::CalcConstraintFunction(parameters,
@@ -890,8 +872,11 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
 
     } else {
       // 2 clique version.
-      const int tree_nv0 = tree_topology().num_tree_velocities(tree0);
-      const int tree_nv1 = tree_topology().num_tree_velocities(tree1);
+      const SpanningForest::Tree& tree0 = forest.trees(tree0_index);
+      const SpanningForest::Tree& tree1 = forest.trees(tree1_index);
+
+      const int tree_nv0 = tree0.nv();
+      const int tree_nv1 = tree1.nv();
       VectorX<T> q0(tree_nv0);
       VectorX<T> q1(tree_nv1);
       VectorX<T> a0(tree_nv0);
@@ -903,24 +888,21 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
 
       for (int i = 0; i < ssize(info.joints); ++i) {
         const Joint<T>& joint = plant().get_joint(info.joints[i]);
-        const TreeIndex tree =
-            tree_topology().velocity_to_tree_index(joint.velocity_start());
         const int dof = joint.velocity_start();
-        if (tree == tree0) {
-          const int tree_dof =
-              dof - tree_topology().tree_velocities_start_in_v(tree0);
+        const TreeIndex tree_index = forest.v_to_tree_index(dof);
+        if (tree_index == tree0_index) {
+          const int tree_dof = dof - tree0.v_start();
           q0(tree_dof) = joint.GetOnePosition(context);
           a0(tree_dof) = info.a[i];
         } else {
-          const int tree_dof =
-              dof - tree_topology().tree_velocities_start_in_v(tree1);
+          const int tree_dof = dof - tree1.v_start();
           q1(tree_dof) = joint.GetOnePosition(context);
           a1(tree_dof) = info.a[i];
         }
       }
 
       typename SapTendonConstraint<T>::Kinematics kinematics(
-          tree0, tree1, q0, q1, a0, a1, info.offset);
+          tree0_index, tree1_index, q0, q1, a0, a1, info.offset);
       // Only add the constraint if it is violated at q_0.
       if ((SapTendonConstraint<T>::CalcConstraintFunction(parameters,
                                                           kinematics)
@@ -1047,7 +1029,8 @@ void SapDriver<T>::AddCliqueContribution(
     const systems::Context<T>& context, int clique,
     const Eigen::Ref<const VectorX<T>>& clique_values,
     EigenPtr<VectorX<T>> values) const {
-  if (clique >= tree_topology().num_trees()) {
+  const SpanningForest& forest = get_forest();
+  if (clique >= forest.num_trees()) {
     const DeformableDriver<double>* deformable_driver =
         manager().deformable_driver();
     DRAKE_THROW_UNLESS(deformable_driver != nullptr);
@@ -1055,7 +1038,7 @@ void SapDriver<T>::AddCliqueContribution(
       const int num_deformable_dofs = values->size() - plant().num_velocities();
       Eigen::Ref<VectorX<T>> deformable_values =
           values->tail(num_deformable_dofs);
-      DeformableBodyIndex body_index(clique - tree_topology().num_trees());
+      DeformableBodyIndex body_index(clique - forest.num_trees());
       deformable_driver->EvalParticipatingVelocityMultiplexer(context)
           .Demultiplex(&deformable_values, body_index) += clique_values;
     } else {
@@ -1065,8 +1048,9 @@ void SapDriver<T>::AddCliqueContribution(
     }
   } else {
     const TreeIndex t(clique);
-    const int v_start = tree_topology().tree_velocities_start_in_v(t);
-    const int nv = tree_topology().num_tree_velocities(t);
+    const SpanningForest::Tree& tree = forest.trees(t);
+    const int v_start = tree.v_start();
+    const int nv = tree.nv();
     values->segment(v_start, nv) += clique_values;
   }
 }
@@ -1166,16 +1150,17 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   auto& generalized_forces = forces->mutable_generalized_forces();
   auto& spatial_forces = forces->mutable_body_forces();
 
-  // Current state (previous time step).
-  const VectorX<T>& x0 =
+  // Current rigid body state (previous time step).
+  const int num_rigid_dofs = plant().num_velocities();
+  const VectorX<T>& rigid_x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
-  const auto v0 = x0.bottomRows(plant().num_velocities());
+  const auto rigid_v0 = rigid_x0.bottomRows(num_rigid_dofs);
 
   // Next time step state.
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
-  // Generalized velocities and accelerations.
-  const VectorX<T>& v = sap_results.v;
-  const VectorX<T> a = (v - v0) / plant().time_step();
+  // Generalized velocities and accelerations for rigid dofs.
+  const auto rigid_v = sap_results.v.head(num_rigid_dofs);
+  const VectorX<T> rigid_a = (rigid_v - rigid_v0) / plant().time_step();
 
   // Include all state dependent forces (not constraints) evaluated at t₀
   // (previous time step as stored in the context).
@@ -1184,33 +1169,33 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
                                  /* include_pd_controlled_input */ false,
                                  forces);
 
-  // SAP evaluates damping terms (joint damping and reflected inertia)
-  // implicitly. Therefore we must subtract the explicit term evaluated above
-  // and include the implicit term instead.
+  // SAP evaluates damping terms for rigid dofs (joint damping and reflected
+  // inertia) implicitly. Therefore we must subtract the explicit term evaluated
+  // above and include the implicit term instead.
   const VectorX<T> diagonal_inertia = manager().CalcEffectiveDamping(context);
-  generalized_forces -= diagonal_inertia.asDiagonal() * a;
+  generalized_forces -= diagonal_inertia.asDiagonal() * rigid_a;
 
-  // Include the contribution from constraints.
-  // TODO(amcastro-tri): Consider deformables.
-  if (manager().deformable_driver() != nullptr) {
-    throw std::logic_error(
-        "The computation of MultibodyForces must be updated to include "
-        "deformable objects.");
-  }
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
 
-  VectorX<T> constraints_generalized_forces(plant().num_velocities());
-  std::vector<SpatialForce<T>> constraint_spatial_forces(plant().num_bodies());
+  // constraints_generalized_forces is the size of the full problem.
+  // The rigid dofs come before the deformable dofs.
+  const int num_dofs = contact_problem_cache.sap_problem->num_velocities();
+  // num_objects includes both rigid and deformable bodies
+  const int num_objects = contact_problem_cache.sap_problem->num_objects();
+  VectorX<T> constraints_generalized_forces(num_dofs);
+  std::vector<SpatialForce<T>> constraint_spatial_forces(num_objects);
   const VectorX<T>& gamma = sap_results.gamma;
 
   // N.B. When CompliantContactManager builds the problem, the "about point" for
   // the reporting of multibody forces is defined to be at body origins and
   // expressed in the world frame.
   // Therefore aggregation of forces per-body makes sense in this call.
-  const ContactProblemCache<T>& contact_problem_cache =
-      EvalContactProblemCache(context);
   contact_problem_cache.sap_problem->CalcConstraintMultibodyForces(
       gamma, &constraints_generalized_forces, &constraint_spatial_forces);
-  generalized_forces += constraints_generalized_forces;
+  // Extract the generalized forces on the rigid dofs from the full
+  // generalized forces vector.
+  generalized_forces += constraints_generalized_forces.head(num_rigid_dofs);
 
   // N.B. The CompliantContactManager indexes constraints objects with body
   // indexes. Therefore using body indices on constraint_spatial_forces is
@@ -1225,11 +1210,14 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
 template <typename T>
 void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
                                  VectorX<T>* actuation) const {
-  // By default, models with no controllers feed through the output.
-  // PD controlled actuation values are overwritten below with values computed
-  // by the SAP solver, which includes these terms implicitly and enforces
-  // effort limits.
-  *actuation = manager().AssembleActuationInput(context);
+  // If there are no PD controllers, then the net actuation output is simply the
+  // (effort-limited) actuation input. We'll use that as our baseline here.
+  //
+  // Any PD controlled actuators are overwritten below with values computed by
+  // the SAP solver; those values already account for the PD actuation,
+  // feedforward actuation, and effort limits.
+  *actuation =
+      manager().EvalActuationInput(context, /* apply_effort_limit = */ true);
 
   // Add contribution from PD controllers.
   const ContactProblemCache<T>& contact_problem_cache =

@@ -5,6 +5,7 @@
 
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include <gflags/gflags.h>
 
@@ -147,7 +148,6 @@ int DoMain() {
       initial_position);
 
   simulator.Initialize();
-  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
   simulator.AdvanceTo(FLAGS_simulation_sec);
 

@@ -18,12 +18,9 @@ namespace internal {
 
 /* Returns the static content for the given URL, or nullopt when the URL is
 invalid. The valid static resource URLs are:
-- `/`
 - `/favicon.ico`
-- `/index.html`
 - `/meshcat.html`
-- `/meshcat.js`
-- `/stats.min.js` */
+- `/meshcat.js` */
 std::optional<std::string_view> GetMeshcatStaticResource(
     std::string_view url_path);
 
@@ -75,8 +72,7 @@ original file has disappeared in the meantime.
 @param[in,out] storage The database where assets should be stored.
 
 @returns The handles for all assets cited by `gltf_contents`. */
-[[nodiscard]] std::vector<std::shared_ptr<const MemoryFile>>
-UnbundleGltfAssets(
+[[nodiscard]] std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
     const MeshSource& mesh_source, std::string* gltf_contents,
     FileStorage* storage);
 

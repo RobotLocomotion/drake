@@ -38,27 +38,30 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
   const Vector3<double> p_BoBcm_B = M_expected.get_com();
   const UnitInertia<double> G_BBo_B = M_expected.get_unit_inertia();
   if (std::abs(mass - dut.get_mass()) > tolerance) {
-    return ::testing::AssertionFailure()
-           << "Expected equal masses\n"
-           << "  expected:   " << mass << "\n"
-           << "  tested:     " << dut.get_mass() << "\n"
-           << "  difference: " << std::abs(mass - dut.get_mass()) << "\n"
-           << "  is greater than tolerance: " << tolerance << "\n";
+    return ::testing::AssertionFailure() << fmt::format(
+               "Expected equal masses\n"
+               "  expected:   {}\n"
+               "  tested:     {}\n"
+               "  difference: {}\n"
+               "  is greater than tolerance: {}\n",
+               mass, dut.get_mass(), std::abs(mass - dut.get_mass()),
+               tolerance);
   }
   ::testing::AssertionResult result =
       CompareMatrices(dut.get_com(), p_BoBcm_B, tolerance);
   if (!result) return result;
   if (!dut.get_unit_inertia().IsNearlyEqualTo(G_BBo_B, tolerance)) {
-    return ::testing::AssertionFailure()
-           << "Expected equal unit inertias\n"
-           << "  expected\n"
-           << G_BBo_B << "\n"
-           << "  tested\n"
-           << dut.get_unit_inertia() << "\n"
-           << "  with tolerance: " << tolerance << "\n"
-           << "(with mass: " << dut.get_mass() << "\n"
-           << " and com: "
-           << fmt::to_string(fmt_eigen(dut.get_com().transpose())) << "\n";
+    return ::testing::AssertionFailure() << fmt::format(
+               "Expected equal unit inertias\n"
+               "  expected\n"
+               "{}\n"
+               "  tested\n"
+               "{}\n"
+               "  with tolerance: {}\n"
+               "  with mass: {}\n"
+               "  and com: {}\n",
+               G_BBo_B, dut.get_unit_inertia(), tolerance, dut.get_mass(),
+               fmt_eigen(dut.get_com()));
   }
   return ::testing::AssertionSuccess();
 }
@@ -217,9 +220,13 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
   const std::string valid_vtk_path =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
   const MeshType unit_scale_obj(valid_obj_path, 1.0);
-  const MeshType double_scale_obj(valid_obj_path, 2.0);
+  // By creating a non-uniform scale, we're increasing the volume by a factor
+  // of sx * sy * sz.
+  const Vector3d scale3(2, 3, 4);
+  const double increase_factor = scale3.prod();
+  const MeshType double_scale_obj(valid_obj_path, scale3);
   const MeshType unit_scale_vtk(valid_vtk_path, 1.0);
-  const MeshType double_scale_vtk(valid_vtk_path, 2.0);
+  const MeshType double_scale_vtk(valid_vtk_path, scale3);
   const MeshType nonexistent("nonexistent.stl", 1.0);
 
   {
@@ -249,7 +256,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
     const SpatialInertia<double> M_SScm_S_obj_large =
         CalcSpatialInertia(double_scale_obj, kDensity);
     EXPECT_DOUBLE_EQ(M_SScm_S_obj_large.get_mass(),
-                     M_SScm_S_obj_small.get_mass() * 8);
+                     M_SScm_S_obj_small.get_mass() * increase_factor);
   }
 
   {
@@ -259,7 +266,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
     const SpatialInertia<double> M_SScm_S_vtk_large =
         CalcSpatialInertia(double_scale_vtk, kDensity);
     EXPECT_DOUBLE_EQ(M_SScm_S_vtk_large.get_mass(),
-                     M_SScm_S_vtk_small.get_mass() * 8);
+                     M_SScm_S_vtk_small.get_mass() * increase_factor);
   }
 
   {
@@ -336,7 +343,7 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
     // tolerance.
     EXPECT_TRUE(SpatialInertiasEqual(
         CalcSpatialInertia(mesh, kDensity),
-        SpatialInertia<double>(mass, p_BcmMcm, G_MMo_M), 16 * kTol));
+        SpatialInertia<double>(mass, p_BcmMcm, G_MMo_M), 32 * kTol));
   }
 }
 

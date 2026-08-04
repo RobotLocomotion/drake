@@ -355,9 +355,9 @@ nlopt::algorithm ParseNloptAlgorithm(const std::string& algorithm_string) {
     auto c_enum = static_cast<nlopt_algorithm>(i);
     known.push_back(nlopt_algorithm_to_string(c_enum));
   }
-  throw std::logic_error(fmt::format(
-      "Unknown NLopt algorithm {}; valid choices are: {}",
-      algorithm_string, fmt::join(known, ", ")));
+  throw std::logic_error(
+      fmt::format("Unknown NLopt algorithm {}; valid choices are: {}",
+                  algorithm_string, fmt::join(known, ", ")));
 }
 
 struct KnownOptions {
@@ -366,6 +366,7 @@ struct KnownOptions {
   double xtol_rel{1e-6};
   double xtol_abs{1e-6};
   int max_eval{1000};
+  double max_time{0.0};
 };
 
 void Serialize(internal::SpecificOptions* archive,
@@ -381,6 +382,8 @@ void Serialize(internal::SpecificOptions* archive,
                                &options.xtol_abs));
   archive->Visit(MakeNameValue(NloptSolver::MaxEvalName().c_str(),  // BR
                                &options.max_eval));
+  archive->Visit(MakeNameValue(NloptSolver::MaxTimeName().c_str(),  // BR
+                               &options.max_time));
 }
 
 KnownOptions ParseOptions(internal::SpecificOptions* options) {
@@ -479,6 +482,7 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
   opt.set_xtol_rel(parsed_options.xtol_rel);
   opt.set_xtol_abs(parsed_options.xtol_abs);
   opt.set_maxeval(parsed_options.max_eval);
+  opt.set_maxtime(parsed_options.max_time);
 
   result->set_solution_result(SolutionResult::kSolutionFound);
 

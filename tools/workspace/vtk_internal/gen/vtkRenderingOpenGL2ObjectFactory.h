@@ -15,9 +15,9 @@ public:
   static vtkRenderingOpenGL2ObjectFactory * New();
   vtkTypeMacro(vtkRenderingOpenGL2ObjectFactory, vtkObjectFactory);
 
-  const char * GetDescription() override { return "vtkRenderingOpenGL2 factory overrides."; }
+  const char * GetDescription() VTK_FUTURE_CONST override { return "vtkRenderingOpenGL2 factory overrides."; }
 
-  const char * GetVTKSourceVersion() override;
+  const char * GetVTKSourceVersion() VTK_FUTURE_CONST override;
 
   void PrintSelf(ostream &os, vtkIndent indent) override;
 

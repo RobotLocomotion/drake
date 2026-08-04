@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/examples_rimless_wheel.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
@@ -10,19 +10,20 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineExamplesRimlessWheel(py::module m) {
+void DefineExamplesRimlessWheel(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::rimless_wheel;
-  constexpr auto& doc = pydrake_doc.drake.examples.rimless_wheel;
+  constexpr auto& doc =
+      pydrake_doc_examples_rimless_wheel.drake.examples.rimless_wheel;
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
   // conversion.
   using T = double;
 
-  py::class_<RimlessWheelParams<T>, BasicVector<T>>(
+  class_<RimlessWheelParams<T>, BasicVector<T>>(
       m, "RimlessWheelParams", doc.RimlessWheelParams.doc)
       .def(py::init<>(), doc.RimlessWheelParams.ctor.doc)
       .def(
@@ -46,7 +47,7 @@ void DefineExamplesRimlessWheel(py::module m) {
       .def("set_slope", &RimlessWheelParams<T>::set_slope,
           doc.RimlessWheelParams.set_slope.doc);
 
-  py::class_<RimlessWheelContinuousState<T>, BasicVector<T>>(
+  class_<RimlessWheelContinuousState<T>, BasicVector<T>>(
       m, "RimlessWheelContinuousState", doc.RimlessWheelContinuousState.doc)
       .def(py::init<>(), doc.RimlessWheelContinuousState.ctor.doc)
       .def("theta", &RimlessWheelContinuousState<T>::theta,
@@ -58,7 +59,7 @@ void DefineExamplesRimlessWheel(py::module m) {
       .def("set_thetadot", &RimlessWheelContinuousState<T>::set_thetadot,
           doc.RimlessWheelContinuousState.set_thetadot.doc);
 
-  py::class_<RimlessWheel<T>, LeafSystem<T>>(
+  class_<RimlessWheel<T>, LeafSystem<T>>(
       m, "RimlessWheel", doc.RimlessWheel.doc)
       .def(py::init<>(), doc.RimlessWheel.ctor.doc)
       .def("get_minimal_state_output_port",
@@ -72,7 +73,7 @@ void DefineExamplesRimlessWheel(py::module m) {
       .def_static("calc_alpha", &RimlessWheel<T>::calc_alpha, py::arg("params"),
           doc.RimlessWheel.calc_alpha.doc);
 
-  py::class_<RimlessWheelGeometry, LeafSystem<double>>(
+  class_<RimlessWheelGeometry, LeafSystem<double>>(
       m, "RimlessWheelGeometry", doc.RimlessWheelGeometry.doc)
       .def_static("AddToBuilder",
           py::overload_cast<systems::DiagramBuilder<double>*,

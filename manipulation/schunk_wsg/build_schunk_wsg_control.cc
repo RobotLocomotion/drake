@@ -48,7 +48,7 @@ void BuildSchunkWsgControl(const MultibodyPlant<double>& plant,
   builder->Connect(*wsg_status_sender, *wsg_status_pub);
 
   auto wsg_mbp_state_to_wsg_state =
-      builder->template AddSystem(MakeMultibodyStateToWsgStateSystem<double>());
+      builder->AddSystem(MakeMultibodyStateToWsgStateSystem<double>());
   builder->Connect(plant.get_state_output_port(wsg_instance),
                    wsg_mbp_state_to_wsg_state->get_input_port());
   builder->Connect(wsg_mbp_state_to_wsg_state->get_output_port(),

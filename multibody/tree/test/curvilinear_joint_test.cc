@@ -1,5 +1,10 @@
 #include "drake/multibody/tree/curvilinear_joint.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -47,11 +52,11 @@ class CurvilinearJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add joint to it.
-    body1_ = &model->AddRigidBody("Body", M_B);
+    body1_ = &model->AddLink("Body", M_B);
 
     // Add a curvilinear joint between the world and body1.
     joint1_ = &model->AddJoint<CurvilinearJoint>(
-        "Joint1", model->world_body(), std::nullopt, *body1_, std::nullopt,
+        "Joint1", model->world_link(), std::nullopt, *body1_, std::nullopt,
         trajectory_, kDamping);
     Joint<double>& mutable_joint = model->get_mutable_joint(joint1_->index());
     mutable_joint1_ = dynamic_cast<CurvilinearJoint<double>*>(&mutable_joint);
@@ -93,7 +98,7 @@ class CurvilinearJointTest : public ::testing::Test {
   const Vector3d tangent_axis_{1., -std::sqrt(2.), 1.};
   const Vector3d plane_axis_{1., std::sqrt(2.), 1.};
   const Vector3d initial_position_{1., 2., 3.};
-  const PiecewiseConstantCurvatureTrajectory<double> trajectory_{
+  const trajectories::PiecewiseConstantCurvatureTrajectory<double> trajectory_{
       breaks_, turning_rates_, tangent_axis_, plane_axis_, initial_position_};
 };
 

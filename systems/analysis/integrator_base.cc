@@ -1,10 +1,52 @@
 #include "drake/systems/analysis/integrator_base.h"
 
+#include <stdexcept>
+
+#include "drake/common/text_logging.h"
+
 namespace drake {
 namespace systems {
 
 template <class T>
 IntegratorBase<T>::~IntegratorBase() = default;
+
+template <class T>
+std::vector<NamedStatistic> IntegratorBase<T>::GetStatisticsSummary() const {
+  std::vector<NamedStatistic> result;
+
+  // Add our local statistics.
+  result.emplace_back("integrator_num_steps_taken", get_num_steps_taken());
+  if (!get_fixed_step_mode()) {
+    result.emplace_back(
+        "integrator_actual_initial_step_size_taken",
+        ExtractDoubleOrThrow(get_actual_initial_step_size_taken()));
+    result.emplace_back("integrator_largest_step_size_taken",
+                        ExtractDoubleOrThrow(get_largest_step_size_taken()));
+    result.emplace_back(
+        "integrator_smallest_adapted_step_size_taken",
+        ExtractDoubleOrThrow(get_smallest_adapted_step_size_taken()));
+    result.emplace_back("integrator_num_step_shrinkages_from_error_control",
+                        get_num_step_shrinkages_from_error_control());
+  }
+  result.emplace_back("integrator_num_derivative_evaluations",
+                      get_num_derivative_evaluations());
+
+  // Add subclass statistics afterward.
+  auto subclass_data = DoGetStatisticsSummary();
+  result.insert(result.end(), std::make_move_iterator(subclass_data.begin()),
+                std::make_move_iterator(subclass_data.end()));
+  subclass_data.clear();
+
+  return result;
+}
+
+template <class T>
+void IntegratorBase<T>::DoResetStatistics() {}
+
+template <class T>
+std::vector<NamedStatistic> IntegratorBase<T>::DoGetStatisticsSummary() const {
+  return {};
+}
 
 template <class T>
 bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
@@ -13,8 +55,8 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
 
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation()) {
-    throw std::logic_error("StepOnceErrorControlledAtMost() requires error "
-                               "estimation.");
+    throw std::logic_error(
+        "StepOnceErrorControlledAtMost() requires error estimation.");
   }
 
   // Save time, continuous variables, and time derivative because we'll possibly
@@ -86,8 +128,9 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
       // However, that issue could be addressed instead by scaling units, and
       // using machine epsilon allows failure to be detected much more rapidly.
       if (adjusted_step_size < std::numeric_limits<double>::epsilon()) {
-        throw std::runtime_error("Integrator has been directed to a near zero-"
-                                 "length step in order to obtain convergence.");
+        throw std::runtime_error(
+            "Integrator has been directed to a near zero-"
+            "length step in order to obtain convergence.");
       }
       ValidateSmallerStepSize(step_size_to_attempt, adjusted_step_size);
       ++num_shrinkages_from_substep_failures_;
@@ -105,14 +148,15 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
     T next_step_size;
     std::tie(step_succeeded, next_step_size) = CalcAdjustedStepSize(
         err_norm, step_size_to_attempt, &at_minimum_step_size);
-    DRAKE_LOGGER_DEBUG("Succeeded? {}, Next step size: {}",
-        step_succeeded, next_step_size);
+    DRAKE_LOGGER_DEBUG("Succeeded? {}, Next step size: {}", step_succeeded,
+                       next_step_size);
 
     if (step_succeeded) {
       // Only update the next step size (retain the previous one) if the
       // step size was not artificially limited.
-      if (!h_was_artificially_limited)
+      if (!h_was_artificially_limited) {
         ideal_next_step_size_ = next_step_size;
+      }
 
       if (isnan(get_actual_initial_step_size_taken()))
         set_actual_initial_step_size_taken(step_size_to_attempt);
@@ -120,8 +164,8 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
       // Record the adapted step size taken.
       if (isnan(get_smallest_adapted_step_size_taken()) ||
           (step_size_to_attempt < get_smallest_adapted_step_size_taken() &&
-                step_size_to_attempt < h_max))
-          set_smallest_adapted_step_size_taken(step_size_to_attempt);
+           step_size_to_attempt < h_max))
+        set_smallest_adapted_step_size_taken(step_size_to_attempt);
     } else {
       ++num_shrinkages_from_error_control_;
 
@@ -174,8 +218,9 @@ T IntegratorBase<T>::CalcStateChangeNorm(
 
   // Computes the infinity norm of the weighted velocity variables.
   unweighted_substate_change_ = dgv.CopyToVector();
-  T v_nrm = qbar_v_weight.cwiseProduct(unweighted_substate_change_).
-      template lpNorm<Eigen::Infinity>() * characteristic_time;
+  T v_nrm = qbar_v_weight.cwiseProduct(unweighted_substate_change_)
+                .template lpNorm<Eigen::Infinity>() *
+            characteristic_time;
 
   // Compute the infinity norm of the weighted auxiliary variables.
   unweighted_substate_change_ = dgz.CopyToVector();
@@ -189,10 +234,10 @@ T IntegratorBase<T>::CalcStateChangeNorm(
   system.MapVelocityToQDot(
       context, qbar_v_weight.cwiseProduct(pinvN_dq_change_->CopyToVector()),
       weighted_q_change_.get());
-  T q_nrm = weighted_q_change_->CopyToVector().
-      template lpNorm<Eigen::Infinity>();
-  DRAKE_LOGGER_DEBUG("dq norm: {}, dv norm: {}, dz norm: {}",
-      q_nrm, v_nrm, z_nrm);
+  T q_nrm =
+      weighted_q_change_->CopyToVector().template lpNorm<Eigen::Infinity>();
+  DRAKE_LOGGER_DEBUG("dq norm: {}, dv norm: {}, dz norm: {}", q_nrm, v_nrm,
+                     z_nrm);
 
   // Return NaN if one of the values is NaN (whether std::max does this is
   // dependent upon ordering!)
@@ -209,14 +254,12 @@ T IntegratorBase<T>::CalcStateChangeNorm(
 
 template <class T>
 std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
-    const T& err,
-    const T& step_taken,
-    bool* at_minimum_step_size) const {
-  using std::pow;
-  using std::min;
-  using std::max;
-  using std::isnan;
+    const T& err, const T& step_taken, bool* at_minimum_step_size) const {
   using std::isinf;
+  using std::isnan;
+  using std::max;
+  using std::min;
+  using std::pow;
 
   // Magic numbers come from Simbody.
   const double kSafety = 0.9;
@@ -306,19 +349,20 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
 
     // If the integrator wants to shrink the step size below the
     // minimum allowed and exceptions are suppressed, indicate that status.
-    if (new_step_size < step_taken)
+    if (new_step_size < step_taken) {
       return std::make_pair(false, new_step_size);
+    }
   }
 
-  return std::make_pair(
-      static_cast<bool>(new_step_size >= step_taken),
-      new_step_size);
+  return std::make_pair(static_cast<bool>(new_step_size >= step_taken),
+                        new_step_size);
 }
 
 template <class T>
 typename IntegratorBase<T>::StepResult
-    IntegratorBase<T>::IntegrateNoFurtherThanTime(
-        const T& publish_time, const T& update_time, const T& boundary_time) {
+IntegratorBase<T>::IntegrateNoFurtherThanTime(const T& publish_time,
+                                              const T& update_time,
+                                              const T& boundary_time) {
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
@@ -330,12 +374,15 @@ typename IntegratorBase<T>::StepResult
   const T publish_dt = publish_time - t0;
   const T update_dt = update_time - t0;
   const T boundary_dt = boundary_time - t0;
-  if (publish_dt < 0.0)
+  if (publish_dt < 0.0) {
     throw std::logic_error("Publish h is negative.");
-  if (update_dt < 0.0)
+  }
+  if (update_dt < 0.0) {
     throw std::logic_error("Update h is negative.");
-  if (boundary_dt < 0.0)
+  }
+  if (boundary_dt < 0.0) {
     throw std::logic_error("Boundary h is negative.");
+  }
 
   // The size of the integration step is the minimum of the time until the next
   // update event, the time until the next publish event, the boundary time
@@ -466,6 +513,45 @@ typename IntegratorBase<T>::StepResult
 }
 
 template <typename T>
+void IntegratorBase<T>::reset_context(Context<T>* context) {
+  context_ = std::shared_ptr<Context<T>>(
+      /* managed object = */ std::shared_ptr<void>{},
+      /* stored pointer = */ context);
+  initialization_done_ = false;
+}
+
+template <typename T>
+void IntegratorBase<T>::reset_context(std::unique_ptr<Context<T>> context) {
+  context_ = std::move(context);
+  initialization_done_ = false;
+}
+
+template <typename T>
+std::unique_ptr<IntegratorBase<T>> IntegratorBase<T>::Clone() const {
+  auto cloned = this->DoClone();
+  cloned->reset_context(this->context_ ? this->context_->Clone() : nullptr);
+  if (cloned->supports_error_estimation()) {
+    cloned->set_target_accuracy(this->get_target_accuracy());
+  }
+  cloned->set_fixed_step_mode(this->get_fixed_step_mode());
+  cloned->set_maximum_step_size(this->get_maximum_step_size());
+  cloned->set_requested_minimum_step_size(
+      this->get_requested_minimum_step_size());
+  cloned->set_throw_on_minimum_step_size_violation(
+      this->get_throw_on_minimum_step_size_violation());
+  if (this->is_initialized()) {
+    cloned->Initialize();
+  }
+  return cloned;
+}
+
+template <typename T>
+std::unique_ptr<IntegratorBase<T>> IntegratorBase<T>::DoClone() const {
+  throw std::logic_error(
+      "This integrator has not implemented the DoClone() method yet.");
+}
+
+template <typename T>
 void IntegratorBase<T>::ValidateSmallerStepSize(const T& current_step_size,
                                                 const T& new_step_size) const {
   if (new_step_size < get_working_minimum_step_size() &&
@@ -475,15 +561,14 @@ void IntegratorBase<T>::ValidateSmallerStepSize(const T& current_step_size,
         "Integrator wants to select too small step "
         "size of {}; working minimum is ",
         new_step_size, get_working_minimum_step_size());
-    std::ostringstream str;
     // TODO(russt): Link to the "debugging dynamical systems" tutorial
     // (#17249) once it exists.
-    str << "Error control wants to select step smaller than minimum"
-        << " allowed (" << get_working_minimum_step_size()
-        << "). This is typically an indication that some part of your system "
-           "*with continuous state* is going unstable and/or is producing "
-           "excessively large derivatives.";
-    throw std::runtime_error(str.str());
+    throw std::runtime_error(fmt::format(
+        "Error control wants to select step smaller than minimum allowed ({}). "
+        "This is typically an indication that some part of your system *with "
+        "continuous state* is going unstable and/or is producing excessively "
+        "large derivatives.",
+        get_working_minimum_step_size()));
   }
 }
 

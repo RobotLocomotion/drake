@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
+  <model name='bubble'>
+    <link name='left'>
+      <pose>-0.185 -0.09 0.06 1.5707 3.1416 0</pose>
+      <collision name='collision'>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/wsg_50_description/meshes/bubble.vtk</uri>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:hunt_crossley_dissipation>5</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <visual name='visual'>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/wsg_50_description/meshes/textured_bubble.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <drake:deformable_properties>
+        <drake:youngs_modulus>1e4</drake:youngs_modulus>
+        <drake:poissons_ratio>0.45</drake:poissons_ratio>
+        <drake:stiffness_damping>0.05</drake:stiffness_damping>
+        <drake:mass_density>10.0</drake:mass_density>
+      </drake:deformable_properties>
+    </link>
+    <link name='right'>
+      <pose>-0.185 0.09 0.06 -1.5707 3.1416 0</pose>
+      <collision name='collision'>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/wsg_50_description/meshes/bubble.vtk</uri>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:hunt_crossley_dissipation>5</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <visual name='visual'>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/wsg_50_description/meshes/textured_bubble.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <drake:deformable_properties>
+        <drake:youngs_modulus>1e4</drake:youngs_modulus>
+        <drake:poissons_ratio>0.45</drake:poissons_ratio>
+        <drake:stiffness_damping>0.05</drake:stiffness_damping>
+        <drake:mass_density>10.0</drake:mass_density>
+      </drake:deformable_properties>
+    </link>
+  </model>
+</sdf>

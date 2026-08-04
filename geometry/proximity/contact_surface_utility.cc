@@ -60,13 +60,9 @@ void ThrowIfInvalidForCentroid(const char* prefix,
                                const Vector3<T>& n_F,
                                const std::vector<Vector3<T>>& vertices_F) {
   // TODO(SeanCurtis-TRI): Consider also validating convexity.
-
   // First test for sufficient length.
-  if (n_F.norm() < 1e-10) {
-    throw std::runtime_error(
-        fmt::format("{}: given normal is too small; normal [{}] with length {}",
-                    prefix, fmt_eigen(n_F.transpose()), n_F.norm()));
-  }
+  const Vector3<double> n(ExtractDoubleOrThrow(n_F));
+  DRAKE_THROW_UNLESS(n.norm() >= 1e-10, fmt_eigen(n), n.norm());
 
   // Now test for orthogonality.
   // We have no assurance as to the degeneracy of the input polygon. Inferring
@@ -130,9 +126,9 @@ void ThrowIfInvalidForCentroid(const char* prefix,
   using std::abs;
   if (abs(plane_norm.dot(n_F.normalized())) < 0.7071) {
     throw std::runtime_error(fmt::format(
-        "{}: the given normal is not perpendicular to the "
-        "polygon's plane; given normal: [{}], plane normal: [{}]",
-        prefix, fmt_eigen(n_F.transpose()), fmt_eigen(plane_norm.transpose())));
+        "{}: the given normal is not perpendicular to the polygon's plane; "
+        "given normal: {}, plane normal: {}",
+        prefix, fmt_eigen(n_F), fmt_eigen(plane_norm)));
   }
 }
 

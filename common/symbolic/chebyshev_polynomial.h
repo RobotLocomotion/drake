@@ -1,13 +1,13 @@
 #pragma once
 
-#include <ostream>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -115,7 +115,7 @@ class ChebyshevPolynomial {
   int degree_{};
 };
 
-std::ostream& operator<<(std::ostream& out, const ChebyshevPolynomial& p);
+std::string to_string(const ChebyshevPolynomial& p);
 
 /**
  * Evaluates a Chebyshev polynomial at a given value.
@@ -133,9 +133,5 @@ struct hash<drake::symbolic::ChebyshevPolynomial> : public drake::DefaultHash {
 };
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::symbolic::ChebyshevPolynomial>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::symbolic, ChebyshevPolynomial, x,
+                   drake::symbolic::to_string(x))

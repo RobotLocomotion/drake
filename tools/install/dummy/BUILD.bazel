@@ -57,6 +57,5 @@ install(
 )
 
 add_lint_tests(
-    enable_install_lint = False,
     enable_library_lint = False,
 )

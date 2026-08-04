@@ -2,9 +2,12 @@
 ///
 /// Implements a controller for a KUKA iiwa arm.
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <string>
+#include <utility>
 
 #include <gflags/gflags.h>
 

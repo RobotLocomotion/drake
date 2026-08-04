@@ -1,5 +1,4 @@
 import unittest
-import warnings
 
 import numpy as np
 
@@ -33,16 +32,19 @@ class TestIpoptSolver(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
         self.assertEqual(result.get_solver_details().status, 0)
-        self.assertEqual(result.get_solver_details().ConvertStatusToString(),
-                         "Success")
+        self.assertEqual(
+            result.get_solver_details().ConvertStatusToString(), "Success"
+        )
         np.testing.assert_allclose(
-            result.get_solver_details().z_L, np.array([1., 1.]))
+            result.get_solver_details().z_L, np.array([1.0, 1.0])
+        )
         np.testing.assert_allclose(
-            result.get_solver_details().z_U, np.array([0., 0.]))
+            result.get_solver_details().z_U, np.array([0.0, 0.0])
+        )
+        np.testing.assert_allclose(result.get_solver_details().g, np.array([]))
         np.testing.assert_allclose(
-            result.get_solver_details().g, np.array([]))
-        np.testing.assert_allclose(
-            result.get_solver_details().lambda_val, np.array([]))
+            result.get_solver_details().lambda_val, np.array([])
+        )
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when Ipopt is disabled."""

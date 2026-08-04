@@ -7,11 +7,9 @@ load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
-    "drake_cc_googletest_linux_only",
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -115,6 +113,7 @@ drake_cc_library(
         ":rgbd_sensor_async",
         ":sim_rgbd_sensor",
         "//common:overloaded",
+        "//common/yaml:yaml_io",
         "//geometry/render_gl",
         "//geometry/render_gltf_client",
         "//geometry/render_vtk",
@@ -217,7 +216,7 @@ drake_cc_library(
     ],
     deps = [
         ":image",
-        "//lcmtypes:image",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 
@@ -231,7 +230,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
-        "//lcmtypes:image_array",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework",
     ],
     implementation_deps = [
@@ -256,7 +255,7 @@ drake_cc_library(
     implementation_deps = [
         ":lcm_image_traits",
         ":vtk_image_reader_writer",
-        "//lcmtypes:image_array",
+        "//lcmtypes:lcmtypes_drake_cc",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOImage",
         "@zlib",
@@ -377,6 +376,7 @@ drake_cc_library(
         ":image_file_format",
         "//common:unused",
         "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOCore",
         "@vtk_internal//:vtkIOImage",
     ],
 )
@@ -425,7 +425,7 @@ drake_cc_googletest(
     name = "camera_config_functions_test",
     allow_network = ["render_gltf_client"],
     display = True,
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":camera_config_functions",
         ":image_to_lcm_image_array_t",
@@ -485,7 +485,7 @@ drake_cc_library(
     deps = [
         ":image",
         ":image_file_format",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
     ],
@@ -523,7 +523,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "image_writer_test",
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":image_writer",
         "//common:temp_directory",
@@ -550,7 +550,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rgbd_sensor_test",
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":rgbd_sensor",
         "//common/test_utilities:eigen_matrix_compare",
@@ -572,7 +572,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rgbd_sensor_discrete_test",
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":rgbd_sensor",
         "//common/test_utilities:eigen_matrix_compare",
@@ -580,21 +580,19 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_googletest(
     name = "rgbd_sensor_async_gl_test",
+    opt_in_condition = "//tools/skylark:linux",
+    build_when_skipped = False,
     timeout = "moderate",
     data = [
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",
         "@drake_models//:manipulation_station",
     ],
     display = True,
-    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
-    enable_condition = "//tools:ubuntu_jammy",
-    tags = vtk_test_tags() + [
-        # Similar to #7520, the GL vendor's libraries are not sufficiently
-        # instrumented for compatibility with TSan.
-        "no_tsan",
-    ],
+    rendering = True,
+    # TODO(#21420) This test is currently broken on at least Ubuntu 24.04.
+    tags = ["manual"],
     deps = [
         ":image_writer",
         ":rgbd_sensor",
@@ -634,7 +632,7 @@ drake_cc_googletest(
     deps = [
         ":lcm_image_array_to_images",
         "//common:find_resource",
-        "//lcmtypes:image_array",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 

@@ -2,8 +2,8 @@
 
 #include <limits>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/mesh_traits.h"
 #include "drake/geometry/proximity/plane.h"
@@ -59,7 +59,7 @@ class PosedHalfSpace {
   }
 
   /* Gets the normal expressed in Frame F. */
-  const Vector3<T>& normal() const { return plane_.normal(); }
+  const Vector3<T>& normal() const { return plane_.unit_normal(); }
 
   /* Gets the boundary plane of `this` posed half space.  */
   const Plane<T>& boundary_plane() const { return plane_; }

@@ -10,9 +10,9 @@
 Drake uses [pybind11](http://pybind11.readthedocs.io/en/stable/) for binding
 its C++ API to Python.
 
-At present, a fork of `pybind11` is used which permits bindings matrices with
-`dtype=object`, passing `unique_ptr` objects, and prevents aliasing for Python
-classes derived from `pybind11` classes.
+At present, patches against `pybind11` are used which permit binding matrices
+with `dtype=object`, improve support for Python classes derived from C++ base
+classes, and check for errors that impact generated documentation.
 
 Before delving too deep into this, please first review the user-facing
 documentation about
@@ -51,7 +51,7 @@ elaborate, the binding of `Parser` is found in
 
 ```{.cc}
 using Class = Parser;
-py::class_<Class>(m, "Parser", ...)
+class_<Class>(m, "Parser", ...)
 ```
 
 and binding of `MultibodyPlant` template instantiations are in
@@ -82,7 +82,7 @@ definitions themselves are split into
 ### Python Types
 
 Throughout the Drake code, Python types provided by `pybind11` are used, such
-as `py::handle`, `py::object`, `py::module`, `py::str`, `py::list`, etc.
+as `py::handle`, `py::object`, `py::module_`, `py::str`, `py::list`, etc.
 For an overview, see the
 [pybind11 reference](http://pybind11.readthedocs.io/en/stable/reference.html).
 
@@ -95,14 +95,15 @@ your method if it mutates the object in a non-obvious fashion.
 
 ### Python Type Conversions
 
-You can implicit convert between `py::object` and its derived classes (such
+You can implicitly convert between `py::object` and its derived classes (such
 as `py::list`, `py::class_`, etc.), assuming the actual Python types agree.
 You may also implicitly convert from `py::object` (and its derived classes) to
 `py::handle`.
 
 If you wish to convert a `py::handle` (or `PyObject*`) to `py::object` or a
 derived class, you should use
-[`py::reinterpret_borrow<>`](http://pybind11.readthedocs.io/en/stable/reference.html#_CPPv218reinterpret_borrow6handle).
+[`py::borrow<>`](https://pybind11.readthedocs.io/en/stable/reference.html#_CPPv4I0E18reinterpret_borrow1T6handle)
+(which is a Drake-specific synonym for `py::reinterpret_borrow<>`).
 
 # Conventions
 
@@ -189,7 +190,7 @@ components being built.
   - foo_py.h: provides function signatures for the various "Define..." helper
     functions that comprise the module. In general, splitting into more
     (smaller) helper functions is better than fewer (larger) helper functions.
-  - foo_py.cc: uses PYBIND11_MODULE to define the package or module, by
+  - foo_py.cc: uses PYDRAKE_MODULE to define the package or module, by
     importing other dependent modules, calling the "Define..." helper functions,
     and possibly defining submodules.  Must not itself add bindings; it must
     always call helpers that add them.
@@ -208,7 +209,7 @@ anonymous namespaces. Avoid `using namespace` directives otherwise.
 - Any symbol referenced in a module binding (even as function/method parameters)
 must either be *bound* in that compilation unit (with the binding evaluated
 before to the reference), or the module must import the pydrake module in which
-it is bound (e.g., `py::module::import("pydrake.foo"))`). Failure to do so can
+it is bound (e.g., `py::module_::import_("pydrake.foo"))`). Failure to do so can
 cause errors (unable to cast unregistered types from Python to C++) and can
 cause the generated docstring from pybind11 to render these types by their C++
 `typeid` rather than the Python type name.
@@ -241,7 +242,7 @@ the following:
 
         # bindings/.../my_method_py.cc
         PYBIND_MODULE(my_method, m) {
-          py::module::import("pydrake.geometry");
+          py::module_::import_("pydrake.geometry");
           m.def("MyMethod", &MyMethod, ...);
         }
 
@@ -252,21 +253,21 @@ Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
 Python bindings are used to generate C++ docstrings accessible to the C++
 binding code.
 
-These docstrings are available within `constexpr struct ... pydrake_doc`
-as `const char*` values . When these are not available or not suitable for
-Python documentation, provide custom strings. If this custom string is long,
-consider placing them in a heredoc string.
+These docstrings are available within nested `constexpr struct` trees as
+`const char*` values. When these are not available or not suitable for Python
+documentation, provide custom strings. If this custom string is long, consider
+placing them in a heredoc string.
 
-An example of incorporating docstrings from `pydrake_doc`:
+An example of incorporating docstrings:
 
-```{.cc}
-    #include "drake/bindings/pydrake/documentation_pybind.h"
+@code{.cc}
+    #include "drake/bindings/generated_docstrings/math.h"
 
-    PYBIND11_MODULE(math, m) {
+    PYDRAKE_MODULE(math, m) {
       using namespace drake::math;
-      constexpr auto& doc = pydrake_doc.drake.math;
+      constexpr auto& doc = pydrake_doc_math.drake.math;
       using T = double;
-      py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
+      class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
           .def(py::init(), doc.RigidTransform.ctor.doc_0args)
           ...
           .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
@@ -279,7 +280,7 @@ An example of incorporating docstrings from `pydrake_doc`:
               doc.RigidTransform.set_rotation.doc)
       ...
     }
-```
+@endcode
 
 An example of supplying custom strings:
 
@@ -289,7 +290,7 @@ An example of supplying custom strings:
     And has multiple lines.
     )""";
 
-    PYBIND11_MODULE(example, m) {
+    PYDRAKE_MODULE(example, m) {
       m.def("helper", []() { return 42; }, "My helper method");
       m.def("another_helper", []() { return 10; }, another_helper_doc);
     }
@@ -302,7 +303,7 @@ and the docstring structures. Borrowing from above:
     {
       using Class = RigidTransform<T>;
       constexpr auto& cls_doc = doc.RigidTransform;
-      py::class_<Class>(m, "RigidTransform", cls_doc.doc)
+      class_<Class>(m, "RigidTransform", cls_doc.doc)
           .def(py::init(), cls_doc.ctor.doc_0args)
           ...
     }
@@ -310,43 +311,34 @@ and the docstring structures. Borrowing from above:
 
 To view the documentation rendered in Sphinx:
 
-    bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
+    bazel run -- //doc/pydrake:build --serve [--browser=false]
 
-@note Drake's online Python documentation is generated on Ubuntu Jammy, and it
+@note Drake's online Python documentation is generated on Ubuntu Noble, and it
 is suggested to preview documentation using this platform. Other platforms may
 have slightly different generated documentation.
 
 To browse the generated documentation strings that are available for use (or
 especially, to find out the names for overloaded functions' documentation),
-generate and open the docstring header:
+re-generate and open the docstring header:
 
-    bazel build //bindings/pydrake:documentation_pybind.h
-    $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
+    bazel run //bindings/generated_docstrings:regenerate
+    $EDITOR bazel-bin/bindings/generated_docstrings/SOME_FILE.h
 
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
 line corresponding to the symbol that the docstring was pulled from.
 
-@note This file may be large, on the order of ~100K lines; be sure to use an
+@note This file may be large, on the order of ~10K lines; be sure to use an
 efficient editor!
-
-@note If you are debugging a certain file and want quicker generation and a
-smaller generated file, you can hack `mkdoc.py` to focus only on your include
-file of chioce. As an example, debugging `mathematical_program.h`:
-```{.py}
-    ...
-    assert len(include_files) > 0  # Existing code.
-    include_files = ["drake/solvers/mathematical_program.h"]  # HACK
-```
-This may break the bindings themselves, and should only be used for inspecting
-the output.
 
 For more detail:
 
-- Each docstring is stored in `documentation_pybind.h` in the nested structure
-`pydrake_doc`.
+- Docstrings are stored in files named after the subdirectory where the original
+C++ header file lives, e.g., `multibody_tree.h` for `drake/multibody/tree` docs.
+- The constants sit within structures named `pydrake_doc_{directory_names}`,
+e.g., `pydrake_doc_multibody_tree` for `drake/multibody/tree` docs.
 - The docstring for a symbol without any overloads will be accessible via
-`pydrake_doc.drake.{namespace...}.{symbol}.doc`.
+`pydrake_doc_{directory_names}.drake.{namespace...}.{symbol}.doc`.
 - The docstring for an overloaded symbol will be `.doc_something` instead of
 just `.doc`, where the `_something` suffix conveys some information about the
 overload.  Browse the documentation_pybind.h (described above) for details.
@@ -402,9 +394,12 @@ dealing with methods / members. The primary relationships:
 - "Keep alive, ownership" implies that a Patient owns the Nurse (or vice
 versa).
 - "Keep alive, reference" implies a Patient that is referred to by the Nurse.
-If there is an indirect / transitive relationship (storing a reference to
-an argument's member or a transfer of ownership, as with
-`DiagramBuilder.Build()`), append `(tr.)` to the relationship.
+
+If there is an indirect / transitive relationship (storing a reference to an
+argument's member or a transfer of ownership, append `(tr.)` to the
+relationship. Note: ownership transfer solutions likely require treatment of
+all the involved objects; see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle" and
+[issue #14387](https://github.com/RobotLocomotion/drake/issues/14387).
 
 Some example comments:
 
@@ -413,6 +408,13 @@ Some example comments:
 // Keep alive, ownership (tr.): `return` keeps `self` alive.
 ```
 
+@warning Keep-alives hold Python references in a way that cannot be found by
+Python garbage collection. Any reference cycle made of keep-alives will make
+all of the objects involved immortal. That is, their memory will be leaked for
+the entire lifetime of the process.  For complicated situations involving
+object structures that are logically cyclic, ownership transfer in C++, etc.,
+see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle".
+
 @anchor PydrakeReturnValuePolicy
 ## Return Value Policy
 
@@ -420,8 +422,8 @@ For more information about `pybind11` return value policies, see [the pybind11
 documentation](
 https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies).
 
-`pydrake` offers the @ref drake::pydrake::py_rvp "py_rvp" alias to help with
-shortened usage of `py::return_value_policy`. The most used (non-default)
+`pydrake` offers the `drake::pydrake::py_rvp` alias to help with
+shortened usage of `py::rv_policy`. The most used (non-default)
 policies in `pydrake` are `reference` and `reference_internal` due to the usage
 of raw pointers / references in the public C++ API (rather than
 `std::shared_ptr<>`).
@@ -432,12 +434,69 @@ of raw pointers / references in the public C++ API (rather than
 static / free functions, we instead explicitly spell out `py_rvp::reference`
 and `py::keep_alive<0, 1>()`.
 
+@warning Use of `py_rvp::reference_internal` can contribute to memory leaks if
+a returned object is stored in memory controlled by the lifetime of the Patient.
+For a full discussion, see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle".
+
+@anchor PydrakeRefCycle
+## Using pydrake::internal::ref_cycle
+
+For complicated lifetime management situations, `pydrake` itself provides
+`internal::ref_cycle<>()`.  It creates a bidirectional cycle between two
+objects that is garbage collectible. It has two prerequisites:
+
+- include `drake/bindings/pydrake/common/ref_cycle_pybind.h`
+- ensure that both objects have `py::dynamic_attr()` in their class definition
+
+If those prerequisites can be met, then `ref_cycle` is a drop-in replacement
+for `keep_alive` that is guaranteed not to cause permanent memory leaks. Note
+that the cycle will remain alive as long as either object is reachable from a
+live python variable. Once the cycle is not reachable, it will be deleted at
+the next automatic garbage collection, or when `gc.collect()` is invoked
+explicitly.
+
+The `ref_cycle` annotation has been helpful in solving some tricky lifetime
+problems with pydrake bindings. It was one piece of the solution to Diagram
+memory leaks; see
+[issue #14387](https://github.com/RobotLocomotion/drake/issues/14387) for
+details. In the case of Python custom leaf systems, it was used to avoid
+inadvertent self-reference via stored references to port objects. See
+[issue #22515](https://github.com/RobotLocomotion/drake/issues/22515) for
+details.
+
+A fairly simple example of using `ref_cycle` might look like the code
+below. The code is excerpted from fixes to
+[issue #22515](https://github.com/RobotLocomotion/drake/issues/22515):
+
+```
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
+...
+    auto system_cls =
+        DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(m,
+            "System", GetPyParam<T>(), doc.System.doc, std::nullopt,
+            py::dynamic_attr());
+...
+        // Port access methods. All returned port references use a ref_cycle
+        // (rather than the implicit keep-alive of reference_internal) to avoid
+        // immortality hazards like #22515.
+        .def("get_input_port",
+            overload_cast_explicit<const InputPort<T>&, int, bool>(
+                &System<T>::get_input_port),
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_index"), py::arg("warn_deprecated") = true,
+            doc.System.get_input_port.doc_2args)
+```
+
+Notice that in replacing `py_rvp::reference_internal`, we need both the
+`ref_cycle` (to manage lifetimes in lieu of the implicit keep-alive) and
+`py_rvp::reference` (to avoid copying).
+
 @anchor PydrakeOverloads
 ## Function Overloads
 
 To bind function overloads, please try the following (in order):
-- `py::overload_cast<Args>(func)`: See [the pybind11
-documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
+- `py::overload_cast<Args>(func)`: See
+[the pybind11 documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
 This works about 80% of the time.
 - `pydrake::overload_cast_explicit<Return, Args...>(func)`: When
 `py::overload_cast` does not work (not always guaranteed to work).
@@ -451,7 +510,7 @@ C++ has the ability to distinguish `T` and `const T` for both function arguments
 and class methods. However, Python does not have a native mechanism for this. It
 is possible to provide a feature like this in Python (see discussion and
 prototypes in [#7793](https://github.com/RobotLocomotion/drake/issues/7793));
-however, its pros (similarity to C++) have not yet outweighted the cons (awkward
+however, its pros (similarity to C++) have not yet outweighed the cons (awkward
 non-Pythonic types and workflows).
 
 When a function is overloaded only by its `const`-ness, choose to bind the
@@ -545,14 +604,14 @@ API for `AddProperty` ([code permalink](https://git.io/JfqiT)):
 ```
 using Class = GeometryProperties;
 py::handle abstract_value_cls =
-    py::module::import("pydrake.systems.framework").attr("AbstractValue");
+    py::module_::import_("pydrake.systems.framework").attr("AbstractValue");
 ...
     .def("AddProperty",
         [abstract_value_cls](Class* self, const std::string& group_name,
             const std::string& name, py::object value) {
           py::object abstract = abstract_value_cls.attr("Make")(value);
           self->AddPropertyAbstract(
-              group_name, name, abstract.cast<const AbstractValue&>());
+              group_name, name, py::cast<const AbstractValue&>(abstract));
         },
         py::arg("group_name"), py::arg("name"), py::arg("value"),
         cls_doc.AddProperty.doc)
@@ -563,7 +622,7 @@ py::handle abstract_value_cls =
 
 For objects that may be represented by matrices or vectors (e.g.
 RigidTransform, RotationMatrix), the `*` operator (via `__mul__`) should *not*
-be bound because the `*` operator in NumPy implies elemnt-wise multiplication
+be bound because the `*` operator in NumPy implies element-wise multiplication
 for arrays.
 
 For simplicity, we instead bind the explicitly named `.multiply()` method, and
@@ -595,14 +654,12 @@ should use the drake::pydrake::WrapToMatchInputShape function.
 
 In general, minimize the amount in which users may subclass C++ classes in
 Python. When you do wish to do this, ensure that you use a trampoline class
-in `pybind`, and ensure that the trampoline class inherits from the
-`py::wrapper<>` class specific to our fork of `pybind`. This ensures that no
-slicing happens with the subclassed instances.
+in `pybind`.
 
 @anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel
 
-If you are debugging a unitest, first try running the test with `--trace=user`
+If you are debugging a unit test, first try running the test with `--trace=user`
 to see where the code is failing. This should cover most cases where you need
 to debug C++ bits. Example:
 
@@ -614,7 +671,7 @@ If you need to debug further while using Bazel, it is suggested to use
 ```
     # Terminal 1 - Host process.
     cd drake
-    bazel run -c dbg \
+    bazel run --config=debug \
         --run_under='gdbserver localhost:9999' \
         //bindings/pydrake/systems:py/lifetime_test -- \
         --trace=user
@@ -646,10 +703,9 @@ covered.
 // TODO(eric.cousineau): If it ever stops redirecting stdin, use
 // `bazel run --run_under='gdb --args python' --script_path=...`.
 
-/**
-@addtogroup environment_variables
+/** @defgroup pydrake_python_logging DRAKE_PYTHON_LOGGING
+@ingroup environment_variables
 @{
-@defgroup pydrake_python_logging DRAKE_PYTHON_LOGGING
 
 By default, pydrake will redirect spdlog logging (from C++) to Python's
 `logging` module. However, if this environment variable is set to "0",

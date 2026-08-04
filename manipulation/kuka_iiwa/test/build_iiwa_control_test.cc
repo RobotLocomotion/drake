@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -76,11 +78,12 @@ class BuildIiwaControlTest : public ::testing::Test {
   MultibodyPlant<double>* controller_plant_{nullptr};
   lcm::DrakeLcm lcm_;
   ModelInstanceInfo iiwa7_info_;
+  IiwaDriver driver_config_;
 };
 
 TEST_F(BuildIiwaControlTest, BuildIiwaControl) {
-  BuildIiwaControl(*sim_plant_, iiwa7_info_.model_instance, *controller_plant_,
-                   &lcm_, &builder_);
+  BuildIiwaControl(&builder_, &lcm_, *sim_plant_, iiwa7_info_.model_instance,
+                   driver_config_, *controller_plant_);
   const auto diagram = builder_.Build();
   systems::Simulator<double> simulator(*diagram);
 
@@ -115,10 +118,11 @@ TEST_F(BuildIiwaControlTest, BuildIiwaControl) {
 }
 
 TEST_F(BuildIiwaControlTest, PositionOnly) {
+  driver_config_.control_mode = "position_only";
   IiwaControlPorts control_ports{};
   control_ports = BuildSimplifiedIiwaControl(
-      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::kPositionOnly);
+      &builder_, *sim_plant_, iiwa7_info_.model_instance, driver_config_,
+      *controller_plant_);
   const auto diagram = builder_.Build();
 
   // Expect position as input.
@@ -146,10 +150,11 @@ TEST_F(BuildIiwaControlTest, PositionOnly) {
 }
 
 TEST_F(BuildIiwaControlTest, TorqueOnly) {
+  driver_config_.control_mode = "torque_only";
   IiwaControlPorts control_ports{};
   control_ports = BuildSimplifiedIiwaControl(
-      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::kTorqueOnly);
+      &builder_, *sim_plant_, iiwa7_info_.model_instance, driver_config_,
+      *controller_plant_);
   const auto diagram = builder_.Build();
 
   // Expect torque as input.
@@ -178,10 +183,9 @@ TEST_F(BuildIiwaControlTest, TorqueOnly) {
 
 TEST_F(BuildIiwaControlTest, PositionAndTorque) {
   IiwaControlPorts control_ports{};
-  const double ext_joint_filter_tau{0.01};
   control_ports = BuildSimplifiedIiwaControl(
-      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      ext_joint_filter_tau, {});
+      &builder_, *sim_plant_, iiwa7_info_.model_instance, driver_config_,
+      *controller_plant_);
 
   /* Send a non-zero position command and a zero-feedforward-torque command. The
    Iiwa arm should reach the commanded position without a problem. */

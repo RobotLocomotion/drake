@@ -6,6 +6,37 @@ namespace drake {
 namespace geometry {
 
 template <typename T>
+TriangleSurfaceMesh<T> TriangleSurfaceMesh<T>::CreateScaledMesh(
+    const Vector3<double>& scale) const {
+  DRAKE_DEMAND(scale.allFinite());
+
+  // The scaled mesh vertex positions are simply the element-wise product of the
+  // source vertex positions with the scale factors.
+  std::vector<Vector3<T>> scaled_vertices;
+  scaled_vertices.reserve(vertices_M_.size());
+  for (const auto& v : vertices_M_) {
+    scaled_vertices.push_back(v.cwiseProduct(scale));
+  }
+
+  std::vector<SurfaceTriangle> scaled_triangles = triangles_;
+
+  TriangleSurfaceMesh<T> scaled_mesh(std::move(scaled_triangles),
+                                     std::move(scaled_vertices));
+
+  // The triangle connectivity is identical to the source mesh. However, if the
+  // scale has an *odd* number of negative elements, this will "mirror" the
+  // mesh. The mesh has a convention of face vertex ordering that needs to be
+  // maintained. If the scaled mesh has been mirrored, we need to reverse the
+  // face vertex ordering to maintain that convention.
+  const int num_negative = (scale.array() < 0).count();
+  if (num_negative % 2 != 0) {
+    scaled_mesh.ReverseFaceWinding();
+  }
+
+  return scaled_mesh;
+}
+
+template <typename T>
 void TriangleSurfaceMesh<T>::ReverseFaceWinding() {
   for (auto& f : triangles_) {
     f.ReverseWinding();
@@ -14,6 +45,69 @@ void TriangleSurfaceMesh<T>::ReverseFaceWinding() {
     n = -n;
   }
 }
+
+template <typename T>
+template <typename C>
+typename TriangleSurfaceMesh<T>::template Barycentric<
+    promoted_numerical_t<T, C>>
+TriangleSurfaceMesh<T>::CalcBarycentric(const Vector3<C>& p_MQ, int t) const
+  requires scalar_predicate<C>::is_bool
+{
+  const Vector3<T>& v0 = vertex(element(t).vertex(0));
+  const Vector3<T>& v1 = vertex(element(t).vertex(1));
+  const Vector3<T>& v2 = vertex(element(t).vertex(2));
+  // Translate the triangle to the origin to simplify calculations;
+  // barycentric coordinates stay the same.
+  //     u⃗i = v⃗i - v0
+  //     p_MR = p_MQ - v0
+  //
+  // Consider R' on the spanning plane through the origin, u1, u2:
+  //     R' = b₀*u0 + b₁*u1 + b₂*u2
+  //        = 0 + b₁*u1 + b₂*u2
+  //        = b₁*u1 + b₂*u2
+  //
+  // Solve for b₁, b₂ that give R' "closest" to R in the least square sense:
+  //
+  //      |      ||b1|
+  //      |u⃗1  u⃗2||b2| ~ R'
+  //      |      |
+  //
+  // return Barycentric (1-b₁-b₂, b₁, b₂)
+  //
+  using ReturnType = promoted_numerical_t<T, C>;
+  Eigen::Matrix<ReturnType, 3, 2> A;
+  A.col(0) << v1 - v0;
+  A.col(1) << v2 - v0;
+  Vector2<ReturnType> solution = A.colPivHouseholderQr().solve(p_MQ - v0);
+
+  const ReturnType& b1 = solution(0);
+  const ReturnType& b2 = solution(1);
+  const ReturnType b0 = T(1.) - b1 - b2;
+  return {b0, b1, b2};
+}
+// TODO(DamrongGuoy): Investigate alternative calculation suggested by
+//  Alejandro Castro:
+// 1. Starting with the same ui and p_MR.
+// 2. Calculate the unit normal vector n to the spanning plane S through
+//    the origin, u1, and u2.
+//        n = u1.cross(u2).normalize().
+// 3. Project p_MR to p_MR' on the plane S,
+//        p_MR' = p_MR - (p_MR.dot(n))*n
+//
+// Now we have p_MR' = b₀*u⃗0 + b₁*u⃗1 + b₂*u⃗2 by barycentric coordinates.
+//                   =   0   + b₁*u1 + b₂*u2
+//
+// 5. Solve for b₁ and b₂.
+//        (b₁*u1 + b₂*u2).dot(u1) = p_MR'.dot(u1)
+//        (b₁*u1 + b₂*u2).dot(u2) = p_MR'.dot(u2)
+//    Therefore, the 2x2 system:
+//        |u1.dot(u1)  u2.dot(u1)||b1| = |p_MR'.dot(u1)|
+//        |u1.dot(u2)  u2.dot(u2)||b2|   |p_MR'.dot(u2)|
+//
+// 6. return Barycentric(1-b₁-b₂, b₁, b₂)
+//
+// Optimization: save n, and the inverse of matrix |uᵢ.dot(uⱼ)| for later.
+//
 
 template <typename T>
 void TriangleSurfaceMesh<T>::SetAllPositions(
@@ -34,6 +128,9 @@ void TriangleSurfaceMesh<T>::SetAllPositions(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class TriangleSurfaceMesh);
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&TriangleSurfaceMesh<T>::template CalcBarycentric<U>));
 
 }  // namespace geometry
 }  // namespace drake

@@ -7,6 +7,9 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <string>
+#include <tuple>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -142,7 +145,7 @@ class GeometryStateTester {
   }
 
   const internal::DrivenMeshData& driven_mesh_data(Role role) const {
-    return state_->driven_mesh_data_.at(role);
+    return state_->kinematics_data_.driven_mesh_data.at(role);
   }
 
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
@@ -164,13 +167,13 @@ class GeometryStateTester {
 
   void FinalizeConfigurationUpdate() {
     for (const auto role : std::vector<Role>{
-             Role::kPerception, Role::kIllustration, Role::kProximity}) {
-      state_->driven_mesh_data_[role].SetControlMeshPositions(
+             Role::kIllustration, Role::kPerception, Role::kProximity}) {
+      state_->kinematics_data_.driven_mesh_data[role].SetControlMeshPositions(
           state_->kinematics_data_.q_WGs);
     }
-    state_->FinalizeConfigurationUpdate(
-        state_->kinematics_data_, state_->driven_mesh_data_[Role::kPerception],
-        &state_->mutable_proximity_engine(), state_->GetMutableRenderEngines());
+    state_->FinalizeConfigurationUpdate(state_->kinematics_data_,
+                                        &state_->mutable_proximity_engine(),
+                                        state_->GetMutableRenderEngines());
   }
 
   template <typename ValueType>
@@ -193,9 +196,7 @@ class GeometryStateTester {
     return *state_->geometry_engine_;
   }
 
-  int RendererCount() const {
-    return state_->RendererCount();
-  }
+  int RendererCount() const { return state_->RendererCount(); }
 
   const GeometryVersion& geometry_version() const {
     return state_->geometry_version_;
@@ -407,9 +408,12 @@ void ShapeMatcher<Mesh>::TestShapeParameters(const Mesh& test) {
     error() << "\nExpected description " << expected_.source().description()
             << ", received description " << test.source().description();
   }
-  if (test.scale() != expected_.scale()) {
-    error() << "\nExpected mesh scale " << expected_.scale()
-            << ", received mesh scale " << test.scale();
+  // Looking for *exact* match.
+  if (test.scale3() != expected_.scale3()) {
+    error() << "\nExpected mesh scale "
+            << fmt::to_string(fmt_eigen(expected_.scale3()))
+            << ", received mesh scale "
+            << fmt::to_string(fmt_eigen(test.scale3()));
   }
 }
 
@@ -420,9 +424,12 @@ void ShapeMatcher<Convex>::TestShapeParameters(const Convex& test) {
     error() << "\nExpected description " << expected_.source().description()
             << ", received description " << test.source().description();
   }
-  if (test.scale() != expected_.scale()) {
-    error() << "\nExpected convex scale " << expected_.scale()
-            << ", received convex scale " << test.scale();
+  // Looking for *exact* match.
+  if (test.scale3() != expected_.scale3()) {
+    error() << "\nExpected convex scale "
+            << fmt::to_string(fmt_eigen(expected_.scale3()))
+            << ", received convex scale "
+            << fmt::to_string(fmt_eigen(test.scale3()));
   }
 }
 
@@ -1390,8 +1397,7 @@ TEST_F(GeometryStateTest, GetGeometryIds) {
 // Tests the GetNum*Geometry*Methods.
 TEST_F(GeometryStateTest, GetNumGeometryTests) {
   SetUpWithRigidAndDeformableGeometries(Assign::kProximity);
-  EXPECT_EQ(total_geometry_count(),
-            geometry_state_.get_num_geometries());
+  EXPECT_EQ(total_geometry_count(), geometry_state_.get_num_geometries());
   EXPECT_EQ(total_geometry_count(),
             geometry_state_.NumGeometriesWithRole(Role::kProximity));
   EXPECT_EQ(0, geometry_state_.NumGeometriesWithRole(Role::kPerception));
@@ -1933,9 +1939,10 @@ class ChangeShapeRenderEngine : public DummyRenderEngine {
   }
 
  protected:
-  bool DoRegisterVisual(GeometryId id, const Shape&,
-                        const PerceptionProperties&,
-                        const math::RigidTransformd&) override {
+  bool DoRegisterNamedVisual(GeometryId id, const Shape&,
+                             const PerceptionProperties&,
+                             const math::RigidTransformd&,
+                             std::string_view) override {
     registered_id_ = id;
     return true;
   }
@@ -2076,10 +2083,11 @@ TEST_F(GeometryStateTest, SetGeometryConfiguration) {
   // Add a rigid geometry with a resolution hint (so that it can be in contact
   // with deformable geometries).
   auto rigid_instance = make_unique<GeometryInstance>(
-      RigidTransformd::Identity(), make_unique<Box>(1.5, 1.5, 1.5),
+      RigidTransformd(Vector3d(1, 0, 0)), make_unique<Box>(1.5, 1.5, 1.5),
       "rigid_box");
   ProximityProperties rigid_properties;
   rigid_properties.AddProperty(internal::kHydroGroup, internal::kRezHint, 1.0);
+  rigid_properties.AddProperty(internal::kHydroGroup, internal::kElastic, 1e6);
   rigid_instance->set_proximity_properties(std::move(rigid_properties));
   const FrameId f_id =
       geometry_state_.RegisterFrame(s_id, GeometryFrame("frame"));
@@ -2634,7 +2642,7 @@ TEST_F(GeometryStateTest, TestCollisionCandidates) {
             if (!diff.empty()) {
               result << "\n    " << msg;
               for (const auto& p : diff) {
-                result << " (" << p.first << ", " << p.second << ")";
+                result << fmt::format(" ({}, {})", p.first, p.second);
               }
             }
           };
@@ -2739,6 +2747,29 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 }
 
+// For CollisionFilterManager's (De)Activate() methods, GeometryState has the
+// responsibility of making sure that the ProximityEngine's activation change
+// callback is invoked. So, we'll make sure that the calling activation methods
+// on the CollisionFilterManager by the state has the downstream impact on the
+// state's proximity engine (the observable set of inactive geometries changes).
+// The correctness of the set and the handling of that set is tested in the
+// requisite components.
+TEST_F(GeometryStateTest, DeactivateReachesProximityEngine) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  const ProximityEngine<double>& engine = gs_tester_.proximity_engine();
+
+  ASSERT_EQ(engine.num_inactive_dynamic(), 0);
+
+  geometry_state_.collision_filter_manager().Deactivate(
+      GeometrySet(geometries_[0]));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 1);
+  EXPECT_TRUE(engine.IsInactiveDynamic(geometries_[0]));
+
+  geometry_state_.collision_filter_manager().Activate(
+      GeometrySet(geometries_[0]));
+  EXPECT_EQ(engine.num_inactive_dynamic(), 0);
+}
+
 // Tests two aspects of GeometryState collision filter behavior:
 //
 //   1. No collision filters are applied to a deformable geometry (it and the
@@ -2747,32 +2778,38 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
 //      collision filters.
 //
 // This is tested by calling ComputeDeformableContact(). In its initial state,
-// we should report contact between a massive deformable geometry and *all*
-// rigid geometries. Then applying a collision filter between the deformable
-// geometry and one of the rigid geometries will reduce the number of contacts
-// by one.
+// we should report contact between a deformable geometry and *all* rigid
+// geometries. Then applying a collision filter between the deformable geometry
+// and one of the rigid geometries will reduce the number of contacts.
 TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
-  SourceId s_id = SetUpSingleSourceTree();
+  const SourceId s_id = NewSource("new source");
+  auto rigid_instance0 = make_unique<GeometryInstance>(
+      RigidTransformd(Vector3d(0.75, 0, 0)), make_unique<Box>(1.0, 1.0, 1.0),
+      "rigid_box0");
+  auto rigid_instance1 = make_unique<GeometryInstance>(
+      RigidTransformd(Vector3d(-0.75, 0, 0)), make_unique<Box>(1.0, 1.0, 1.0),
+      "rigid_box1");
 
-  // Give all rigid geometries resolution hint so that they can collide with
-  // deformable geometries.
+  // Give all rigid geometries resolution hint and a hydroelastic modulus so
+  // that they can collide with deformable geometries.
   ProximityProperties rigid_properties;
   rigid_properties.AddProperty(internal::kHydroGroup, internal::kRezHint, 10.0);
-  AssignRoleToSingleSourceTree(rigid_properties);
+  rigid_properties.AddProperty(internal::kHydroGroup, internal::kElastic, 1e6);
+  rigid_instance0->set_proximity_properties(rigid_properties);
+  rigid_instance1->set_proximity_properties(rigid_properties);
 
-  // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses;
-  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
-    poses.set_value(frames_[f], X_PFs_[f]);
-  }
-  gs_tester_.SetFramePoses(source_id_, poses,
-                           &gs_tester_.mutable_kinematics_data());
-  gs_tester_.FinalizePoseUpdate();
+  // Register two rigid geometries, one anchored and one dynamic.
+  const FrameId f_id =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("frame"));
+  GeometryId rigid_id0 =
+      geometry_state_.RegisterGeometry(s_id, f_id, std::move(rigid_instance0));
+  GeometryId rigid_id1 = geometry_state_.RegisterGeometry(
+      s_id, InternalFrame::world_frame_id(), std::move(rigid_instance1));
 
-  // Register a giant deformable geometry that's guaranteed to be in collision
-  // with every single rigid geometry.
-  const Sphere sphere(200.0);
-  constexpr double kRezHint = 100.0;
+  // Register a deformable geometry that's guaranteed to be in collision
+  // with both rigid geometries.
+  const Sphere sphere(1.0);
+  constexpr double kRezHint = 2.0;
   auto instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(sphere), "deformable");
   instance->set_proximity_properties(ProximityProperties());
@@ -2780,8 +2817,7 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
       s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
   internal::DeformableContact<double> contacts;
   geometry_state_.ComputeDeformableContact(&contacts);
-  EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_rigid_geometry_count());
+  EXPECT_EQ(contacts.contact_surfaces().size(), 2);
 
   // Attempting to filter collisions with scope omitting deformable geometries
   // should have no effect on the number of collisions.
@@ -2790,20 +2826,24 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
           .ExcludeBetween(GeometrySet{deformable_id},
                           GeometrySet(geometries_)));
   geometry_state_.ComputeDeformableContact(&contacts);
-  EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_rigid_geometry_count());
+  EXPECT_EQ(contacts.contact_surfaces().size(), 2);
 
   // Filter with the kAll flag as the scope should have an effect. The collision
-  // between the deformable geometry and one dynamic rigid geometry and one
-  // anchored rigid geometry are filtered, so the number of collisions should
-  // reduce by 2.
+  // between the deformable geometry and the dynamic rigid geometry is filtered,
+  // so the number of collisions should now be 1.
   geometry_state_.collision_filter_manager().Apply(
       CollisionFilterDeclaration(CollisionFilterScope::kAll)
-          .ExcludeBetween(GeometrySet{deformable_id},
-                          GeometrySet({geometries_[0], anchored_geometry_})));
+          .ExcludeBetween(GeometrySet{deformable_id}, GeometrySet{rigid_id0}));
   geometry_state_.ComputeDeformableContact(&contacts);
-  EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_rigid_geometry_count() - 2);
+  EXPECT_EQ(contacts.contact_surfaces().size(), 1);
+
+  // Now filter the collision between the deformable geometry and the anchored
+  // rigid geometry. The number of collisions should now be 0.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration(CollisionFilterScope::kAll)
+          .ExcludeBetween(GeometrySet{deformable_id}, GeometrySet{rigid_id1}));
+  geometry_state_.ComputeDeformableContact(&contacts);
+  EXPECT_EQ(contacts.contact_surfaces().size(), 0);
 }
 
 // Test that the appropriate error messages are dispatched.
@@ -3112,10 +3152,11 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
                                    : "not expected, but found. ");
       passes = false;
     }
-    if (passes)
+    if (passes) {
       return ::testing::AssertionSuccess();
-    else
+    } else {
       return failure;
+    }
   };
 
   // Given three role types, assign all eight types of assignments.
@@ -3124,12 +3165,11 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
     const bool illustration = i & 0x2;
     const bool perception = i & 0x4;
     const GeometryId id = geometries_[i];
-    EXPECT_TRUE(has_expected_roles(id, false, false, false))
-        << "Geometry " << id << " at index (" << i
-        << ") didn't start without roles";
+    EXPECT_TRUE(has_expected_roles(id, false, false, false)) << fmt::format(
+        "Geometry {} at index ({}) didn't start without roles", id, i);
     set_roles(id, proximity, perception, illustration);
     EXPECT_TRUE(has_expected_roles(id, proximity, perception, illustration))
-        << "Incorrect roles for geometry " << id << " at index (" << i << ").";
+        << fmt::format("Incorrect roles for geometry {} at index ({}).", id, i);
   }
 
   // Confirm it works on anchored geometry. Pick, arbitrarily, assigning
@@ -3175,6 +3215,18 @@ TEST_F(GeometryStateTest, ConvexHullForProximityGeometry) {
   // Changing the shape clears the convex hull.
   geometry_state_.ChangeShape(source_id_, mesh_id, Sphere(2), std::nullopt);
   EXPECT_EQ(geometry_state_.GetConvexHull(mesh_id), nullptr);
+}
+
+// The implementation of computing the OBB is tested in calc_obb_test.cc. This
+// test simply confirms that the right function is called.
+TEST_F(GeometryStateTest, GetObbInGeometryFrame) {
+  SetUpSingleSourceTree(Assign::kIllustration);
+  const std::optional<Obb>& maybe_obb =
+      geometry_state_.GetObbInGeometryFrame(geometries_[0]);
+  EXPECT_TRUE(maybe_obb.has_value());
+  EXPECT_EQ(maybe_obb->center(), Vector3d::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(maybe_obb->half_width(), Vector3d(1, 1, 1), 1e-13));
 }
 
 // Test the ability to reassign proximity properties to a geometry that already
@@ -3572,13 +3624,14 @@ TEST_F(GeometryStateTest, ChildGeometryRoleCount) {
       if (actual_count != expected_count) {
         success = false;
         failure << "\nExpected " << expected_count << " geometries with the "
-                << role << " role. Found " << actual_count;
+                << fmt::to_string(role) << " role. Found " << actual_count;
       }
     }
-    if (success)
+    if (success) {
       return ::testing::AssertionSuccess();
-    else
+    } else {
       return failure;
+    }
   };
 
   // Assert initial conditions.
@@ -4293,15 +4346,16 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   SourceId new_source = VerifyVersionUnchanged(
       &GeometryState<double>::RegisterNewSource, "my_new_source");
   // Registering a new frame does not modify the versions.
-  FrameId new_frame_0 =
-      VerifyVersionUnchanged(static_cast<FrameId(GeometryState<double>::*)(
-                                 SourceId, const GeometryFrame&)>(
-                                 &GeometryState<double>::RegisterFrame),
-                             new_source, GeometryFrame("new_f0"));
-  VerifyVersionUnchanged(static_cast<FrameId(GeometryState<double>::*)(
-                             SourceId, FrameId, const GeometryFrame&)>(
-                             &GeometryState<double>::RegisterFrame),
-                         new_source, new_frame_0, GeometryFrame("new_f1"));
+  FrameId new_frame_0 = VerifyVersionUnchanged(
+      static_cast<FrameId (GeometryState<double>::*)(  // NOLINT
+          SourceId, const GeometryFrame&)>(
+          &GeometryState<double>::RegisterFrame),
+      new_source, GeometryFrame("new_f0"));
+  VerifyVersionUnchanged(
+      static_cast<FrameId (GeometryState<double>::*)(  // NOLINT
+          SourceId, FrameId, const GeometryFrame&)>(
+          &GeometryState<double>::RegisterFrame),
+      new_source, new_frame_0, GeometryFrame("new_f1"));
 
   // Registering geometries with no roles assigned does not change the versions.
   VerifyVersionUnchanged(
@@ -4317,14 +4371,14 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   // proximity version, but not the other versions.
   VerifyRoleVersionModified(
       Role::kProximity,
-      static_cast<void(GeometryState<double>::*)(
+      static_cast<void (GeometryState<double>::*)(  // NOLINT
           SourceId, GeometryId, ProximityProperties, RoleAssign)>(
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[0], ProximityProperties(), RoleAssign::kNew);
 
   VerifyRoleVersionModified(
       Role::kProximity,
-      static_cast<void(GeometryState<double>::*)(
+      static_cast<void (GeometryState<double>::*)(  // NOLINT
           SourceId, GeometryId, ProximityProperties, RoleAssign)>(
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[0], ProximityProperties(), RoleAssign::kReplace);
@@ -4342,7 +4396,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
                                       set<string>{kDummyRenderName});
     VerifyRoleVersionModified(
         Role::kPerception,
-        static_cast<void(GeometryState<double>::*)(
+        static_cast<void (GeometryState<double>::*)(  // NOLINT
             SourceId, GeometryId, PerceptionProperties, RoleAssign)>(
             &GeometryState<double>::AssignRole),
         source_id_, geometries_[1], perception_properties, RoleAssign::kNew);
@@ -4355,7 +4409,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
     perception_properties.AddProperty("renderer", "accepting",
                                       set<string>{"junk"});
     VerifyVersionUnchanged(
-        static_cast<void(GeometryState<double>::*)(
+        static_cast<void (GeometryState<double>::*)(  // NOLINT
             SourceId, GeometryId, PerceptionProperties, RoleAssign)>(
             &GeometryState<double>::AssignRole),
         source_id_, geometries_[2], perception_properties, RoleAssign::kNew);
@@ -4368,7 +4422,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
                                       Vector4<double>{0.8, 0.8, 0.8, 1.0});
   VerifyRoleVersionModified(
       Role::kIllustration,
-      static_cast<void(GeometryState<double>::*)(
+      static_cast<void (GeometryState<double>::*)(  // NOLINT
           SourceId, GeometryId, IllustrationProperties, RoleAssign)>(
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[3], illustration_properties, RoleAssign::kNew);
@@ -4416,7 +4470,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
 
   // Removing a geometry without any perception role from a renderer does not
   // modify any version.
-  VerifyVersionUnchanged(static_cast<int(GeometryState<double>::*)(
+  VerifyVersionUnchanged(static_cast<int (GeometryState<double>::*)(  // NOLINT
                              const std::string&, SourceId, GeometryId)>(
                              &GeometryState<double>::RemoveFromRenderer),
                          kDummyRenderName, source_id_, geometries_[1]);
@@ -4430,11 +4484,12 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
 
   // Removing a geometry with perception role from a renderer does modify
   // the perception version.
-  VerifyRoleVersionModified(Role::kPerception,
-                            static_cast<int(GeometryState<double>::*)(
-                                const std::string&, SourceId, GeometryId)>(
-                                &GeometryState<double>::RemoveFromRenderer),
-                            kDummyRenderName, source_id_, geometries_[1]);
+  VerifyRoleVersionModified(
+      Role::kPerception,
+      static_cast<int (GeometryState<double>::*)(  // NOLINT
+          const std::string&, SourceId, GeometryId)>(
+          &GeometryState<double>::RemoveFromRenderer),
+      kDummyRenderName, source_id_, geometries_[1]);
 
   // Assign proximity role to the first three geometries to test versions on
   // proximity filters.
@@ -4519,6 +4574,39 @@ TEST_F(GeometryStateTest, ComputeSignedDistancePairClosestPointsError) {
       ".*has the perception role.");
 }
 
+// GeometryState must convert GeometrySet to a set of GeometryIds for proximity
+// engine. This will confirm that the transformation takes place.
+TEST_F(GeometryStateTest, ComputeSignedDistanceGeometryToPoint) {
+  SetUpWithRigidAndDeformableGeometries(Assign::kProximity);
+
+  // This set includes rigid geometries 0, 1, 2, and anchored. Rigid 0 is
+  // specified redundantly (explicitly and as part of frame 0). Rigid geometry 1
+  // also comes from frame 0.
+  const GeometrySet ids({geometries_[0], geometries_[2], anchored_geometry_},
+                        {frames_[0]});
+  // Confirm expected ordering.
+  DRAKE_DEMAND(geometries_.back() < anchored_geometry_);
+  DRAKE_DEMAND(anchored_geometry_ < deformable_geometries_[0]);
+
+  const std::vector<SignedDistanceToPoint<double>> result =
+      geometry_state_.ComputeSignedDistanceGeometryToPoint(Vector3d::Zero(),
+                                                           ids);
+  ASSERT_EQ(result.size(), 4);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(result[i].id_G, geometries_[i]);
+  }
+  EXPECT_EQ(result[3].id_G, anchored_geometry_);
+
+  // Deformable geometries throw. Note: we're testing this explicitly because
+  // a small change to GeometryState could cause the deformable geometry to
+  // simply be ignored; we want to make sure that doesn't happen.
+  const GeometrySet bad_id(deformable_geometries_[0]);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistanceGeometryToPoint(Vector3d::Zero(),
+                                                           bad_id),
+      ".*does not reference a geometry.*signed distance query");
+}
+
 // This is the base for testing the ApplyProximityDefaults() overloaded
 // methods. Note that only the resulting proximity properties contents are
 // tested.  Since we know (glass-box knowledge) that ApplyProximityDefaults
@@ -4529,8 +4617,7 @@ class ApplyProximityDefaultsTests : public testing::Test {
   std::unique_ptr<ProximityProperties> MakeFullProperties() {
     // Fill the properties with identifiably stupid values.
     auto props = std::make_unique<ProximityProperties>();
-    props->AddProperty(kHydroGroup, kComplianceType,
-                       HydroelasticType::kRigid);
+    props->AddProperty(kHydroGroup, kComplianceType, HydroelasticType::kRigid);
     props->AddProperty(kHydroGroup, kElastic, 123.0);
     props->AddProperty(kHydroGroup, kRezHint, 456.0);
     props->AddProperty(kHydroGroup, kSlabThickness, 789.0);
@@ -4553,15 +4640,15 @@ class ApplyProximityDefaultsTests : public testing::Test {
                                             std::move(instance));
   }
 
-  DefaultProximityProperties empty_defaults_{
-    "undefined", {}, {}, {}, {}, {}, {}, {}, {}, {}};
+  DefaultProximityProperties empty_defaults_{"undefined", {}, {}, {}, {},
+                                             {},          {}, {}, {}, {}};
   // Use stupid values distinct from those in MakeFullProperties().
-  DefaultProximityProperties full_defaults_{
-    "compliant", 0.1, 0.2, 0.3, 0.4, 0.4, 0.5, 0.6, 0.7, 0.8};
+  DefaultProximityProperties full_defaults_{"compliant", 0.1, 0.2, 0.3, 0.4,
+                                            0.4,         0.5, 0.6, 0.7, 0.8};
   GeometryState<double> geometry_state_;
   SourceId source_id_{geometry_state_.RegisterNewSource("test")};
   FrameId frame_id_{
-    geometry_state_.RegisterFrame(source_id_, GeometryFrame("frame"))};
+      geometry_state_.RegisterFrame(source_id_, GeometryFrame("frame"))};
 };
 
 TEST_F(ApplyProximityDefaultsTests, TrivialApplyProximityDefaults) {
@@ -4584,9 +4671,8 @@ TEST_F(ApplyProximityDefaultsTests, EmptyPropsEmptyDefaults) {
   geometry_state_.ApplyProximityDefaults(empty_defaults_, geometry_id);
   auto* props = geometry_state_.GetProximityProperties(geometry_id);
   ASSERT_NE(props, nullptr);
-  EXPECT_EQ(
-      props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-      HydroelasticType::kUndefined);
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            HydroelasticType::kUndefined);
   EXPECT_FALSE(props->HasProperty(kHydroGroup, kElastic));
   EXPECT_FALSE(props->HasProperty(kHydroGroup, kRezHint));
   EXPECT_FALSE(props->HasProperty(kHydroGroup, kSlabThickness));
@@ -4604,9 +4690,9 @@ TEST_F(ApplyProximityDefaultsTests, EmptyPropsFullDefaults) {
   geometry_state_.ApplyProximityDefaults(full_defaults_, geometry_id);
   auto* props = geometry_state_.GetProximityProperties(geometry_id);
   ASSERT_NE(props, nullptr);
-  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-            internal::GetHydroelasticTypeFromString(
-                full_defaults_.compliance_type));
+  EXPECT_EQ(
+      props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+      internal::GetHydroelasticTypeFromString(full_defaults_.compliance_type));
   EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kElastic),
             *full_defaults_.hydroelastic_modulus);
   EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kRezHint),
@@ -4634,9 +4720,9 @@ TEST_F(ApplyProximityDefaultsTests, FullPropsFullDefaults) {
   geometry_state_.ApplyProximityDefaults(full_defaults_, geometry_id);
   auto* props = geometry_state_.GetProximityProperties(geometry_id);
   ASSERT_NE(props, nullptr);
-  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-            full_props->GetProperty<HydroelasticType>(kHydroGroup,
-                                                      kComplianceType));
+  EXPECT_EQ(
+      props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+      full_props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType));
   EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kElastic),
             full_props->GetProperty<double>(kHydroGroup, kElastic));
   EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kRezHint),
@@ -4694,9 +4780,9 @@ GTEST_TEST(GeometryStateHydroTest, GetHydroMesh) {
 
   ProximityProperties rigid_hydro;
   AddRigidHydroelasticProperties(1.0, &rigid_hydro);
-  ProximityProperties soft_hydro;
-  AddContactMaterial(0.0, {}, {}, &soft_hydro);
-  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_hydro);
+  ProximityProperties compliant_hydro;
+  AddContactMaterial(0.0, {}, {}, &compliant_hydro);
+  AddCompliantHydroelasticProperties(1.0, 1e8, &compliant_hydro);
 
   // We'll simply affix a number of geometries as anchored with the identity
   // pose. The other details don't really matter.
@@ -4749,8 +4835,8 @@ GTEST_TEST(GeometryStateHydroTest, GetHydroMesh) {
   {
     const GeometryId id = geometry_state.RegisterAnchoredGeometry(
         source_id, make_unique<GeometryInstance>(X_WG, make_unique<Sphere>(1),
-                                                 "soft_mesh"));
-    geometry_state.AssignRole(source_id, id, soft_hydro);
+                                                 "compliant_mesh"));
+    geometry_state.AssignRole(source_id, id, compliant_hydro);
 
     const auto maybe_mesh = geometry_state.maybe_get_hydroelastic_mesh(id);
     EXPECT_TRUE(std::holds_alternative<const VolumeMesh<double>*>(maybe_mesh));
@@ -4965,6 +5051,144 @@ TEST_F(GeometryStateNoRendererTest, PerceptionRoleWithoutRenderer) {
   EXPECT_EQ(
       geometry_state_.RemoveRole(source_id_, geometries_[0], Role::kPerception),
       0);
+}
+
+TEST_F(GeometryStateTest, ComputeAabbInWorld) {
+  // Test invalid geometry id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeAabbInWorld(GeometryId::get_new_id()),
+      "No AABB available for invalid geometry id.*");
+
+  const auto expect_aabb = [&](GeometryId id,
+                               const Vector3d& expected_half_width,
+                               const Vector3d& expected_center,
+                               double tol = 1e-13) {
+    const std::optional<Aabb> aabb = geometry_state_.ComputeAabbInWorld(id);
+    ASSERT_TRUE(aabb.has_value());
+    EXPECT_TRUE(CompareMatrices(aabb->half_width(), expected_half_width, tol));
+    EXPECT_TRUE(CompareMatrices(aabb->center(), expected_center, tol));
+  };
+
+  const Sphere sphere(1.0);
+  const auto register_deformable = [&](const std::string& name,
+                                       bool add_proximity_role) {
+    auto instance = make_unique<GeometryInstance>(
+        RigidTransformd::Identity(), make_unique<Sphere>(sphere), name);
+    if (add_proximity_role) {
+      instance->set_proximity_properties(ProximityProperties());
+    }
+    return geometry_state_.RegisterDeformableGeometry(
+        source_id_, InternalFrame::world_frame_id(), std::move(instance), 1.0);
+  };
+
+  // Test with non-deformable geometry.
+  SetUpSingleSourceTree(Assign::kProximity);
+  const GeometryId rigid_geom_id = geometries_[0];
+  EXPECT_FALSE(geometry_state_.IsDeformableGeometry(rigid_geom_id));
+  EXPECT_EQ(geometry_state_.ComputeAabbInWorld(rigid_geom_id), std::nullopt);
+
+  // Test with deformable geometry with proximity role.
+  const GeometryId deformable_id = register_deformable("deformable", true);
+  expect_aabb(deformable_id, Vector3d::Ones(), Vector3d::Zero());
+
+  // Test with deformable geometry without proximity role.
+  const GeometryId deformable_no_prox_id =
+      register_deformable("deformable_no_prox", false);
+  expect_aabb(deformable_no_prox_id, Vector3d::Ones(), Vector3d::Zero());
+
+  // Test deforming the geometry.
+  const VectorX<double> original_q =
+      geometry_state_.get_configurations_in_world(deformable_id);
+  VectorX<double> new_q = original_q;
+  // Move all vertices to (0.5, 0.5, 0.5)...
+  for (int i = 0; i < new_q.size() / 3; ++i) {
+    new_q.segment<3>(3 * i) = Vector3d(0.5, 0.5, 0.5);
+  }
+  // ...and move two vertices to (1, 1, 1) and (0, 0, 0) so that the AABB
+  // is the unit cube centered at (0.5, 0.5, 0.5).
+  new_q.segment<3>(0) = Vector3d(1, 1, 1);
+  new_q.segment<3>(3) = Vector3d(0, 0, 0);
+
+  GeometryConfigurationVector<double> configurations;
+  configurations.set_value(deformable_id, new_q);
+  configurations.set_value(deformable_no_prox_id, new_q);
+  gs_tester_.SetGeometryConfiguration(source_id_, configurations,
+                                      &gs_tester_.mutable_kinematics_data());
+  gs_tester_.FinalizeConfigurationUpdate();
+
+  expect_aabb(deformable_id, Vector3d(0.5, 0.5, 0.5), Vector3d(0.5, 0.5, 0.5));
+  expect_aabb(deformable_no_prox_id, Vector3d(0.5, 0.5, 0.5),
+              Vector3d(0.5, 0.5, 0.5));
+}
+
+TEST_F(GeometryStateTest, ComputeObbInWorld) {
+  // Test invalid geometry id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeObbInWorld(GeometryId::get_new_id()),
+      "No OBB available for invalid geometry id.*");
+
+  SetUpSingleSourceTree();
+
+  // Helper to push poses to GeometryState and finalize.
+  auto apply_poses = [&](const FramePoseVector<double>& poses) {
+    gs_tester_.SetFramePoses(source_id_, poses,
+                             &gs_tester_.mutable_kinematics_data());
+    gs_tester_.FinalizePoseUpdate();
+  };
+
+  // Helper to check the OBB against expected results.
+  constexpr double kTol = 1e-13;
+  auto expect_obb = [&](GeometryId id, const RigidTransformd& X_WG) {
+    const std::optional<Obb> obb = geometry_state_.ComputeObbInWorld(id);
+    EXPECT_TRUE(obb.has_value());
+    EXPECT_TRUE(CompareMatrices(obb->half_width(), Vector3d::Ones(), kTol));
+    EXPECT_TRUE(
+        CompareMatrices(obb->pose().translation(), X_WG.translation(), kTol));
+    const RigidTransformd& X_GB =
+        geometry_state_.GetObbInGeometryFrame(id)->pose();
+    const RigidTransformd X_WB = X_WG * X_GB;
+    EXPECT_TRUE(CompareMatrices(obb->pose().rotation().matrix(),
+                                X_WB.rotation().matrix(), kTol));
+  };
+
+  const Sphere sphere(1.0);
+  auto deformable_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "deformable");
+  const GeometryId deformable_id = geometry_state_.RegisterDeformableGeometry(
+      source_id_, InternalFrame::world_frame_id(),
+      std::move(deformable_instance), 1.0);
+  // The computation of OBB for deformable meshes involves a PCA and is hard to
+  // write down, and the code paths is covered by other tests, so here we just
+  // verify some OBB is produced.
+  std::optional<Obb> obb = geometry_state_.ComputeObbInWorld(deformable_id);
+  ASSERT_TRUE(obb.has_value());
+
+  // Rigid geometry (Sphere) that supports OBBs.
+  const GeometryId sphere_id = geometries_[0];
+  ASSERT_FALSE(geometry_state_.IsDeformableGeometry(sphere_id));
+
+  // Default frame poses.
+  FramePoseVector<double> poses;
+  for (int i = 0; i < static_cast<int>(frames_.size()); ++i) {
+    poses.set_value(frames_[i], X_PFs_[i]);
+  }
+  apply_poses(poses);
+  expect_obb(sphere_id, X_WFs_[0] * X_FGs_[0]);
+
+  // Update frame pose and repeat.
+  const RigidTransformd X_WF_new(math::RollPitchYawd(0.1, 0.2, 0.3),
+                                 Vector3d(10.0, 20.0, 30.0));
+  poses.set_value(frames_[0], X_WF_new);
+  apply_poses(poses);
+  expect_obb(sphere_id, X_WF_new * X_FGs_[0]);
+
+  // Geometry that does not support OBBs (HalfSpace).
+  const RigidTransformd X_WG = RigidTransformd::Identity();
+  const GeometryId half_space_id = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(X_WG, make_unique<HalfSpace>(),
+                                    "half_space"));
+  EXPECT_EQ(geometry_state_.ComputeObbInWorld(half_space_id), std::nullopt);
 }
 
 // GeometryState has three responsibilities when it comes to rendering:

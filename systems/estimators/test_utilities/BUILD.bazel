@@ -1,0 +1,62 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "test_utilities",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":stochastic_linear_system",
+        ":sum_matrix_columns_system",
+    ],
+)
+
+drake_cc_library(
+    name = "stochastic_linear_system",
+    testonly = 1,
+    srcs = ["stochastic_linear_system.cc"],
+    hdrs = ["stochastic_linear_system.h"],
+    deps = [
+        "//common:default_scalars",
+        "//systems/framework",
+        "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_library(
+    name = "sum_matrix_columns_system",
+    testonly = 1,
+    srcs = ["sum_matrix_columns_system.cc"],
+    hdrs = ["sum_matrix_columns_system.h"],
+    deps = [
+        "//common:default_scalars",
+        "//systems/framework",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "stochastic_linear_system_test",
+    deps = [
+        ":stochastic_linear_system",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sum_matrix_columns_system_test",
+    deps = [
+        ":sum_matrix_columns_system",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()

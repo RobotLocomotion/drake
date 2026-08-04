@@ -1,6 +1,7 @@
 #include "drake/solvers/constraint.h"
 
 #include <limits>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -279,6 +280,22 @@ GTEST_TEST(testConstraint, testRemoveTinyCoefficient) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(dut.RemoveTinyCoefficient(-1),
                               ".*tol should be non-negative");
+}
+
+GTEST_TEST(testConstraint, ToStringFmtFormatter) {
+  Eigen::Matrix2d Q;
+  Eigen::Vector2d b;
+  // clang-format off
+  Q << 1, 0,
+       0, 1;
+  // clang-format on
+  b << 1, 2;
+  // Constructs a constraint with a symmetric Q.
+  QuadraticConstraint constraint1(Q, b, 0, 1);
+  EXPECT_EQ(fmt::to_string(constraint1),
+            "QuadraticConstraint\n"
+            "0 <= ($(0) + 2 * $(1) + 0.5 * pow($(0), 2) + 0.5 * pow($(1), 2)) "
+            "<= 1\n");
 }
 
 GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {

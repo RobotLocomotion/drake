@@ -1,5 +1,8 @@
 #include "drake/geometry/proximity/make_capsule_mesh.h"
 
+#include <algorithm>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

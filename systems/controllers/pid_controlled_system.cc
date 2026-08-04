@@ -70,7 +70,7 @@ void PidControlledSystem<T>::Initialize(
   DRAKE_DEMAND(plant != nullptr);
 
   DiagramBuilder<T> builder;
-  plant_ = builder.template AddSystem(std::move(plant));
+  plant_ = builder.AddSystem(std::move(plant));
   DRAKE_ASSERT(plant_->num_input_ports() >= 1);
   DRAKE_ASSERT(plant_->num_output_ports() >= 1);
   // state_output_port_index_ will be checked by the get_output_port call below.

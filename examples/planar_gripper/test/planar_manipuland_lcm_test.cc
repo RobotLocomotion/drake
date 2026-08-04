@@ -1,5 +1,7 @@
 #include "drake/examples/planar_gripper/planar_manipuland_lcm.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/diagram.h"

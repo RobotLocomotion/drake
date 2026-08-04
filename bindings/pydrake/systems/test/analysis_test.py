@@ -1,49 +1,132 @@
 import copy
-import numpy as np
+import gc
 import unittest
+import weakref
 
+import numpy as np
+
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import Parallelism
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.math import isnan
-from pydrake.symbolic import Variable, Expression
-from pydrake.autodiffutils import AutoDiffXd
-from pydrake.systems.primitives import (
-    ConstantVectorSource,
-    ConstantVectorSource_,
-    FirstOrderLowPassFilter_,
-    LinearSystem_,
-    SymbolicVectorSystem,
-    SymbolicVectorSystem_,
-)
-from pydrake.systems.framework import Context_, EventStatus
+from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
-    BatchEvalUniquePeriodicDiscreteUpdate,
     BatchEvalTimeDerivatives,
+    BatchEvalUniquePeriodicDiscreteUpdate,
+    DiscreteTimeApproximation,
     ExtractSimulatorConfig,
     InitializeParams,
     IntegratorBase_,
     PrintSimulatorStatistics,
-    ResetIntegratorFromFlags,
-    RungeKutta2Integrator, RungeKutta2Integrator_,
-    RungeKutta3Integrator, RungeKutta3Integrator_,
     RegionOfAttraction,
     RegionOfAttractionOptions,
+    ResetIntegratorFromFlags,
+    RungeKutta2Integrator,
+    RungeKutta2Integrator_,
+    RungeKutta3Integrator,
+    RungeKutta3Integrator_,
     Simulator,
     Simulator_,
     SimulatorConfig,
     SimulatorStatus,
 )
+from pydrake.systems.framework import Context_, DiagramBuilder_, EventStatus
+from pydrake.systems.primitives import (
+    AffineSystem_,
+    ConstantVectorSource,
+    ConstantVectorSource_,
+    FirstOrderLowPassFilter_,
+    Integrator_,
+    LinearSystem_,
+    SymbolicVectorSystem,
+    SymbolicVectorSystem_,
+)
+from pydrake.systems.test.test_util import CountingContextSystem
 from pydrake.trajectories import PiecewisePolynomial, PiecewisePolynomial_
 
 
 class TestAnalysis(unittest.TestCase):
+    @numpy_compare.check_all_types
+    def test_discrete_time_approximation_affine_and_linear_system(self, T):
+        A = np.array([[0, 1], [0, 0]])
+        B = np.array([[0], [1]])
+        f0 = np.array([2, 1])
+        C = np.array([[1, 0]])
+        D = np.array([[0]])
+        y0 = np.array([0])
+
+        h = 0.031415926
+        Ad = np.array([[1, h], [0, 1]])
+        Bd = np.array([[0.5 * h**2], [h]])
+        f0d = np.array([2 * h + 0.5 * h**2, h])
+        Cd = C
+        Dd = D
+        y0d = y0
+
+        continuous_system = LinearSystem_[T](A, B, C, D)
+        discrete_system = DiscreteTimeApproximation(
+            linear_system=continuous_system, time_period=h
+        )
+        numpy_compare.assert_allclose(discrete_system.A(), Ad)
+        numpy_compare.assert_allclose(discrete_system.B(), Bd)
+        numpy_compare.assert_equal(discrete_system.C(), Cd)
+        numpy_compare.assert_equal(discrete_system.D(), Dd)
+
+        continuous_system = AffineSystem_[T](A, B, f0, C, D, y0)
+        discrete_system = DiscreteTimeApproximation(
+            affine_system=continuous_system, time_period=h
+        )
+        numpy_compare.assert_allclose(discrete_system.A(), Ad)
+        numpy_compare.assert_allclose(discrete_system.B(), Bd)
+        numpy_compare.assert_allclose(discrete_system.f0(), f0d)
+        numpy_compare.assert_equal(discrete_system.C(), Cd)
+        numpy_compare.assert_equal(discrete_system.D(), Dd)
+        numpy_compare.assert_equal(discrete_system.y0(), y0d)
+
+    @numpy_compare.check_all_types
+    def test_discrete_time_approximation_system(self, T):
+        size = 5
+        config = SimulatorConfig(integration_scheme="explicit_euler")
+        continuous_system = Integrator_[T](size)
+        discrete_system = DiscreteTimeApproximation(
+            system=continuous_system, time_period=0.01, integrator_config=config
+        )
+        context = discrete_system.CreateDefaultContext()
+
+        if T != AutoDiffXd:
+            discrete_system.ToAutoDiffXd()
+        discrete_system.Clone()
+        copy.copy(discrete_system)
+        copy.deepcopy(discrete_system)
+
+        self.assertEqual(discrete_system.get_input_port().size(), size)
+        self.assertEqual(discrete_system.get_output_port().size(), size)
+        self.assertEqual(context.num_discrete_state_groups(), 1)
+        self.assertEqual(context.get_discrete_state_vector().size(), size)
+        self.assertEqual(context.get_continuous_state_vector().size(), 0)
+
+        builder = DiagramBuilder_[T]()
+        builder.AddSystem(discrete_system)
+        diagram = builder.Build()
+
+        spy = weakref.finalize(continuous_system, lambda: None)
+        del discrete_system, context, continuous_system, builder
+        gc.collect()
+        # The diagram containing the discrete_system keeps its contained
+        # continuous_system alive.
+        self.assertTrue(spy.alive)
+        # The continuous_system is garbage collectible.
+        del diagram
+        gc.collect()
+        self.assertFalse(spy.alive)
+
     def test_region_of_attraction(self):
         x = Variable("x")
-        sys = SymbolicVectorSystem(state=[x], dynamics=[-x+x**3])
+        sys = SymbolicVectorSystem(state=[x], dynamics=[-x + x**3])
         context = sys.CreateDefaultContext()
         options = RegionOfAttractionOptions()
-        options.lyapunov_candidate = x*x
+        options.lyapunov_candidate = x * x
         options.state_variables = [x]
         numpy_compare.assert_equal(options.state_variables, [x])
         options.use_implicit_dynamics = False
@@ -60,7 +143,8 @@ class TestAnalysis(unittest.TestCase):
         context = system.CreateDefaultContext()
         RungeKutta2Integrator(system=system, max_step_size=0.01)
         RungeKutta2Integrator(
-            system=system, max_step_size=0.01, context=context)
+            system=system, max_step_size=0.01, context=context
+        )
         RungeKutta3Integrator(system=system)
         RungeKutta3Integrator(system=system, context=context)
 
@@ -85,8 +169,7 @@ class TestAnalysis(unittest.TestCase):
             input_port_index=dt_system.get_input_port().get_index(),
             parallelize=Parallelism(num_threads=2),
         )
-        numpy_compare.assert_float_allclose(
-            next_state, A @ states + B @ inputs)
+        numpy_compare.assert_float_allclose(next_state, A @ states + B @ inputs)
 
         ct_system = LinearSystem_[T](A, B)
         ct_context = ct_system.CreateDefaultContext()
@@ -100,7 +183,8 @@ class TestAnalysis(unittest.TestCase):
             parallelize=Parallelism(num_threads=2),
         )
         numpy_compare.assert_float_allclose(
-            derivatives, A @ states + B @ inputs)
+            derivatives, A @ states + B @ inputs
+        )
 
     @numpy_compare.check_nonsymbolic_types
     def test_integrator_api(self, T):
@@ -117,7 +201,7 @@ class TestAnalysis(unittest.TestCase):
         self.assertIs(integrator.get_context(), context)
         self.assertIs(integrator.get_mutable_context(), context)
 
-        target_accuracy = 1E-6
+        target_accuracy = 1e-6
         integrator.set_target_accuracy(accuracy=target_accuracy)
         self.assertEqual(integrator.get_target_accuracy(), target_accuracy)
 
@@ -125,11 +209,13 @@ class TestAnalysis(unittest.TestCase):
         integrator.set_maximum_step_size(max_step_size=maximum_step_size)
         self.assertEqual(integrator.get_maximum_step_size(), maximum_step_size)
 
-        minimum_step_size = 2E-2
+        minimum_step_size = 2e-2
         integrator.set_requested_minimum_step_size(
-            min_step_size=minimum_step_size)
+            min_step_size=minimum_step_size
+        )
         self.assertEqual(
-            integrator.get_requested_minimum_step_size(), minimum_step_size)
+            integrator.get_requested_minimum_step_size(), minimum_step_size
+        )
 
         integrator.set_throw_on_minimum_step_size_violation(throws=True)
         self.assertTrue(integrator.get_throw_on_minimum_step_size_violation())
@@ -146,22 +232,29 @@ class TestAnalysis(unittest.TestCase):
 
         self.assertEqual(integrator.get_num_substep_failures(), 0)
         self.assertEqual(
-            integrator.get_num_step_shrinkages_from_substep_failures(), 0)
+            integrator.get_num_step_shrinkages_from_substep_failures(), 0
+        )
         self.assertEqual(
-            integrator.get_num_step_shrinkages_from_error_control(), 0)
+            integrator.get_num_step_shrinkages_from_error_control(), 0
+        )
         self.assertEqual(integrator.get_num_derivative_evaluations(), 0)
         self.assertTrue(isnan(integrator.get_actual_initial_step_size_taken()))
         self.assertTrue(
-            isnan(integrator.get_smallest_adapted_step_size_taken()))
+            isnan(integrator.get_smallest_adapted_step_size_taken())
+        )
         self.assertTrue(isnan(integrator.get_largest_step_size_taken()))
         self.assertEqual(integrator.get_num_steps_taken(), 0)
+        self.assertGreater(len(integrator.GetStatisticsSummary()), 0)
         integrator.ResetStatistics()
 
         integrator.Reset()
 
+        # Clearing the context is allowed.
+        integrator.reset_context(context=None)
+
     def test_symbolic_integrators(self):
         x = Variable("x")
-        sys = SymbolicVectorSystem_[Expression](state=[x], dynamics=[-x+x**3])
+        sys = SymbolicVectorSystem_[Expression](state=[x], dynamics=[-x + x**3])
         context = sys.CreateDefaultContext()
 
         max_h = 0.1
@@ -169,7 +262,7 @@ class TestAnalysis(unittest.TestCase):
 
     def test_dense_integration(self):
         x = Variable("x")
-        sys = SymbolicVectorSystem(state=[x], dynamics=[-x+x**3])
+        sys = SymbolicVectorSystem(state=[x], dynamics=[-x + x**3])
         simulator = Simulator(sys)
         integrator = simulator.get_mutable_integrator()
         self.assertIsNone(integrator.get_dense_output())
@@ -186,17 +279,20 @@ class TestAnalysis(unittest.TestCase):
     def test_simulator_api(self, T):
         """Tests basic Simulator API."""
         # TODO(eric.cousineau): Migrate tests from `general_test.py` to here.
-        system = ConstantVectorSource_[T]([1.])
+        system = ConstantVectorSource_[T]([1.0])
         simulator = Simulator_[T](system=system)
         simulator = Simulator_[T](
-            system=system, context=system.CreateDefaultContext())
+            system=system, context=system.CreateDefaultContext()
+        )
 
         simulator.Initialize()
         initialize_params = InitializeParams(
-            suppress_initialization_events=True)
+            suppress_initialization_events=True
+        )
         self.assertEqual(
             repr(initialize_params),
-            "InitializeParams(suppress_initialization_events=True)")
+            "InitializeParams(suppress_initialization_events=True)",
+        )
         copy.copy(initialize_params)
         simulator.Initialize(params=initialize_params)
 
@@ -239,13 +335,13 @@ class TestAnalysis(unittest.TestCase):
         self.assertTrue(simulator.has_context())
 
         self.assertIsInstance(
-            simulator.get_integrator(), RungeKutta3Integrator_[T])
+            simulator.get_integrator(), RungeKutta3Integrator_[T]
+        )
         self.assertIs(
-            simulator.get_integrator(), simulator.get_mutable_integrator())
+            simulator.get_integrator(), simulator.get_mutable_integrator()
+        )
         simulator.reset_context(context=simulator.get_context().Clone())
 
-        simulator.set_publish_every_time_step(publish=True)
-        simulator.set_publish_at_initialization(publish=True)
         simulator.set_target_realtime_rate(realtime_rate=0.0)
         self.assertEqual(simulator.get_target_realtime_rate(), 0.0)
         self.assertIsInstance(simulator.get_actual_realtime_rate(), float)
@@ -258,23 +354,43 @@ class TestAnalysis(unittest.TestCase):
 
         self.assertIs(simulator.get_system(), system)
 
+        # Clearing the context is allowed.
+        simulator.reset_context(context=None)
+
+    def test_simulator_default_context_no_cpp_leak(self):
+        """Regression test for #23924"""
+        gc.collect()
+        baseline = CountingContextSystem.GetNumberOfLiveContexts()
+        self.assertEqual(baseline, 0)
+
+        simulator = Simulator(CountingContextSystem())
+        self.assertGreater(
+            CountingContextSystem.GetNumberOfLiveContexts(), baseline
+        )
+        del simulator
+        gc.collect()
+        self.assertEqual(
+            CountingContextSystem.GetNumberOfLiveContexts(), baseline
+        )
+
     def test_simulator_status(self):
         SimulatorStatus.ReturnReason.kReachedBoundaryTime
         SimulatorStatus.ReturnReason.kReachedTerminationCondition
         SimulatorStatus.ReturnReason.kEventHandlerFailed
 
-        system = ConstantVectorSource([1.])
+        system = ConstantVectorSource([1.0])
         simulator = Simulator(system)
-        status = simulator.AdvanceTo(1.)
+        status = simulator.AdvanceTo(1.0)
         self.assertRegex(
             status.FormatMessage(),
-            "^Simulator successfully reached the boundary time")
+            "^Simulator successfully reached the boundary time",
+        )
         self.assertTrue(status.succeeded())
-        self.assertEqual(status.boundary_time(), 1.)
-        self.assertEqual(status.return_time(), 1.)
+        self.assertEqual(status.boundary_time(), 1.0)
+        self.assertEqual(status.return_time(), 1.0)
         self.assertEqual(
-            status.reason(),
-            SimulatorStatus.ReturnReason.kReachedBoundaryTime)
+            status.reason(), SimulatorStatus.ReturnReason.kReachedBoundaryTime
+        )
         self.assertIsNone(status.system())
         self.assertEqual(status.message(), "")
         self.assertTrue(status.IsIdenticalStatus(other=status))
@@ -285,8 +401,8 @@ class TestAnalysis(unittest.TestCase):
             source = ConstantVectorSource_[T]([2, 3])
             simulator = Simulator_[T](source)
             new_integrator = ResetIntegratorFromFlags(
-                simulator=simulator, scheme="runge_kutta2",
-                max_step_size=0.001)
+                simulator=simulator, scheme="runge_kutta2", max_step_size=0.001
+            )
             self.assertIsInstance(new_integrator, RungeKutta2Integrator_[T])
 
     def test_simulator_config(self):
@@ -307,12 +423,12 @@ class TestAnalysis(unittest.TestCase):
 
     def test_system_monitor(self):
         x = Variable("x")
-        sys = SymbolicVectorSystem(state=[x], dynamics=[-x+x**3])
+        sys = SymbolicVectorSystem(state=[x], dynamics=[-x + x**3])
         simulator = Simulator(sys)
 
         def monitor(root_context):
             context = sys.GetMyContextFromRoot(root_context)
-            if context.get_time() >= 1.:
+            if context.get_time() >= 1.0:
                 return EventStatus.ReachedTermination(sys, "Time reached")
             # N.B. We suppress returning anything to test the binding's ability
             # to handle `None` return type.
@@ -320,10 +436,11 @@ class TestAnalysis(unittest.TestCase):
         self.assertIsNone(simulator.get_monitor())
         simulator.set_monitor(monitor)
         self.assertIsNotNone(simulator.get_monitor())
-        status = simulator.AdvanceTo(2.)
+        status = simulator.AdvanceTo(2.0)
         self.assertEqual(
             status.reason(),
-            SimulatorStatus.ReturnReason.kReachedTerminationCondition)
+            SimulatorStatus.ReturnReason.kReachedTerminationCondition,
+        )
         self.assertLess(status.return_time(), 1.1)
         simulator.clear_monitor()
         self.assertIsNone(simulator.get_monitor())

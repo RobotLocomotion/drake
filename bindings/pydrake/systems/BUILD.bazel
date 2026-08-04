@@ -17,7 +17,6 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -43,10 +42,9 @@ drake_py_library(
 drake_pybind_library(
     name = "framework_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:systems_framework",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:type_safe_index_pybind",
@@ -82,7 +80,7 @@ drake_py_library(
 drake_pybind_library(
     name = "primitives_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:systems_primitives",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:eigen_pybind",
@@ -100,7 +98,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "analysis_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:systems_analysis",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
@@ -113,6 +111,7 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
+        ":primitives_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/solvers",
     ],
@@ -121,9 +120,8 @@ drake_pybind_library(
 drake_pybind_library(
     name = "controllers_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:systems_controllers",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
@@ -141,7 +139,8 @@ drake_pybind_library(
 drake_pybind_library(
     name = "estimators_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:systems_estimators",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["estimators_py.cc"],
@@ -156,7 +155,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:systems_rendering",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
@@ -171,7 +170,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:systems_sensors",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
@@ -184,7 +183,9 @@ drake_pybind_library(
     cc_srcs = [
         "sensors_py.h",
         "sensors_py.cc",
+        "sensors_py_accelerometer.cc",
         "sensors_py_camera_config.cc",
+        "sensors_py_gyroscope.cc",
         "sensors_py_image.cc",
         "sensors_py_image_io.cc",
         "sensors_py_lcm.cc",
@@ -197,6 +198,7 @@ drake_pybind_library(
         ":lcm_py",
         ":module_py",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
@@ -232,7 +234,8 @@ drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         ":lcm_pybind",
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:lcm",
+        "//bindings/generated_docstrings:systems_lcm",
     ],
     cc_srcs = [
         "lcm_py.cc",
@@ -364,17 +367,16 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/examples",
+        "//bindings/pydrake/systems/test_utilities:framework_test_util_py",
     ],
 )
 
 drake_py_binary(
     name = "drawing_graphviz_example",
     srcs = ["drawing_graphviz_example.py"],
-    add_test_rule = 1,
     data = [
         "//examples/multibody/cart_pole:models",
     ],
-    test_rule_timeout = "moderate",
     deps = [
         ":drawing_py",
         ":framework_py",
@@ -384,11 +386,12 @@ drake_py_binary(
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/visualization",
     ],
+    add_test_rule = True,
+    test_rule_timeout = "moderate",
 )
 
 drake_jupyter_py_binary(
     name = "jupyter_widgets_examples",
-    add_test_rule = 1,
     data = [
         "@drake_models//:ycb",
     ],
@@ -400,6 +403,7 @@ drake_jupyter_py_binary(
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
+    add_test_rule = True,
 )
 
 drake_pybind_library(
@@ -407,7 +411,6 @@ drake_pybind_library(
     testonly = 1,
     add_install = False,
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:value_pybind",
@@ -429,6 +432,7 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
+        ":test_util_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities",
     ],
@@ -439,10 +443,53 @@ drake_py_unittest(
     # Somehow kcov and pybind11 objects interact to spoil reference counting
     # heuristics. In any case, kcov can't really introspect mixed-language
     # programs.
-    tags = ["no_kcov"],
+    opt_out_conditions = ["//tools/kcov:enabled"],
     deps = [
         ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "controllers_test",
+    data = [
+        "@drake_models//:iiwa_description",
+    ],
+    deps = [
+        ":controllers_py",
+        ":test_util_py",
+        "//bindings/pydrake/examples",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/multibody:tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "custom_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+        ":test_util_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "estimators_test",
+    deps = [
+        ":estimators_py",
+        ":primitives_py",
+        "//bindings/pydrake/examples",
+    ],
+)
+
+drake_py_unittest(
+    name = "event_gc_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
     ],
 )
 
@@ -459,54 +506,19 @@ drake_py_unittest(
 drake_jupyter_py_binary(
     name = "test/lifetime_test_notebook",
     testonly = True,
-    add_test_rule = 1,
     deps = [
         ":framework_py",
         ":primitives_py",
     ],
+    add_test_rule = True,
 )
 
 drake_py_unittest(
-    name = "custom_test",
+    name = "monte_carlo_test",
     deps = [
         ":analysis_py",
-        ":framework_py",
         ":primitives_py",
-        ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
-    ],
-)
-
-drake_py_unittest(
-    name = "value_test",
-    deps = [
-        ":framework_py",
-        "//bindings/pydrake/common/test_utilities",
-    ],
-)
-
-drake_py_unittest(
-    name = "controllers_test",
-    data = [
-        "@drake_models//:iiwa_description",
-    ],
-    deps = [
-        ":controllers_py",
-        ":test_util_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
-        "//bindings/pydrake/examples",
-        "//bindings/pydrake/multibody:parsing_py",
-        "//bindings/pydrake/multibody:plant_py",
-        "//bindings/pydrake/multibody:tree_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "estimators_test",
-    deps = [
-        ":estimators_py",
-        ":primitives_py",
-        "//bindings/pydrake/examples",
     ],
 )
 
@@ -528,8 +540,9 @@ drake_py_unittest(
         ":primitives_py",
         ":test_util_py",
         "//bindings/pydrake:trajectories_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -592,20 +605,23 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "sensors_test",
-    tags = vtk_test_tags(),
+    data = [
+        "//multibody:models",
+    ],
+    rendering = True,
     deps = [
         ":sensors_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
 drake_py_unittest(
-    name = "monte_carlo_test",
+    name = "value_test",
     deps = [
-        ":analysis_py",
-        ":primitives_py",
+        ":framework_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )

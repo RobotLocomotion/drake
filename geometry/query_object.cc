@@ -69,6 +69,8 @@ template <typename T>
 const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
+  FullPoseUpdate();
+
   if (inspector_.IsDeformableGeometry(geometry_id)) {
     throw std::logic_error(
         fmt::format("{} is not allowed to be called on deformable geometries. "
@@ -79,7 +81,6 @@ const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
                     __func__));
   }
 
-  FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_pose_in_world(geometry_id);
 }
@@ -104,11 +105,29 @@ std::vector<VectorX<T>> QueryObject<T>::GetDrivenMeshConfigurationsInWorld(
 }
 
 template <typename T>
+std::optional<Aabb> QueryObject<T>::ComputeAabbInWorld(
+    GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+  FullConfigurationUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeAabbInWorld(geometry_id);
+}
+
+template <typename T>
+std::optional<Obb> QueryObject<T>::ComputeObbInWorld(
+    GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeObbInWorld(geometry_id);
+}
+
+template <typename T>
 std::vector<PenetrationAsPointPair<T>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfNotCallable();
 
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputePointPairPenetration();
 }
@@ -118,7 +137,7 @@ std::vector<SortedPair<GeometryId>> QueryObject<T>::FindCollisionCandidates()
     const {
   ThrowIfNotCallable();
   // TODO(amcastro-tri): Modify this when the cache system is in place.
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.FindCollisionCandidates();
 }
@@ -127,7 +146,7 @@ template <typename T>
 bool QueryObject<T>::HasCollisions() const {
   ThrowIfNotCallable();
 
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.HasCollisions();
 }
@@ -183,7 +202,7 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
     const double max_distance) const {
   ThrowIfNotCallable();
 
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistancePairwiseClosestPoints(max_distance);
 }
@@ -193,7 +212,7 @@ SignedDistancePair<T> QueryObject<T>::ComputeSignedDistancePairClosestPoints(
     GeometryId geometry_id_A, GeometryId geometry_id_B) const {
   ThrowIfNotCallable();
 
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistancePairClosestPoints(geometry_id_A,
                                                       geometry_id_B);
@@ -205,9 +224,20 @@ QueryObject<T>::ComputeSignedDistanceToPoint(const Vector3<T>& p_WQ,
                                              const double threshold) const {
   ThrowIfNotCallable();
 
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistanceToPoint(p_WQ, threshold);
+}
+
+template <typename T>
+std::vector<SignedDistanceToPoint<T>>
+QueryObject<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& p_WQ, const GeometrySet& geometries) const {
+  ThrowIfNotCallable();
+
+  FullPoseAndConfigurationUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeSignedDistanceGeometryToPoint(p_WQ, geometries);
 }
 
 template <typename T>
@@ -217,7 +247,7 @@ void QueryObject<T>::RenderColorImage(const ColorRenderCamera& camera,
                                       ImageRgba8U* color_image_out) const {
   ThrowIfNotCallable();
 
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.RenderColorImage(camera, parent_frame, X_PC, color_image_out);
 }
@@ -229,7 +259,7 @@ void QueryObject<T>::RenderDepthImage(const DepthRenderCamera& camera,
                                       ImageDepth32F* depth_image_out) const {
   ThrowIfNotCallable();
 
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
 }
@@ -241,7 +271,7 @@ void QueryObject<T>::RenderLabelImage(const ColorRenderCamera& camera,
                                       ImageLabel16I* label_image_out) const {
   ThrowIfNotCallable();
 
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.RenderLabelImage(camera, parent_frame, X_PC, label_image_out);
 }
@@ -250,7 +280,7 @@ template <typename T>
 const render::RenderEngine* QueryObject<T>::GetRenderEngineByName(
     const std::string& name) const {
   ThrowIfNotCallable();
-  FullPoseUpdate();
+  FullPoseAndConfigurationUpdate();
 
   const GeometryState<T>& state = geometry_state();
   return state.GetRenderEngineByName(name);

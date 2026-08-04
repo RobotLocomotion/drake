@@ -4,13 +4,14 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/ssize.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+using math::internal::PartialPermutation;
 
 template <typename T>
 SapConstraint<T>::SapConstraint(SapConstraintJacobian<T> J,

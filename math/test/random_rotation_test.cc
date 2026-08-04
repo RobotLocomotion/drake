@@ -1,5 +1,7 @@
 #include "drake/math/random_rotation.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/expression.h"

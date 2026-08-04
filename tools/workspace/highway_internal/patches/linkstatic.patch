@@ -7,18 +7,174 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- BUILD
 +++ BUILD
-@@ -174,4 +174,5 @@
+@@ -193,8 +193,9 @@
+         "hwy/x86_cpuid.h",
+     ],
      compatible_with = [],
 -    copts = COPTS,
 +    copts = COPTS + ["-fvisibility=hidden"],
      defines = DEFINES,
 +    linkstatic = True,
      local_defines = ["hwy_EXPORTS"],
-@@ -238,2 +238,3 @@
+     textual_hdrs = [
+         # These are textual because config macros influence them:
+@@ -239,6 +240,7 @@
+     hdrs = ["hwy/stats.h"],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     deps = [":hwy"],
+ )
+ 
+@@ -247,6 +249,7 @@
+     hdrs = ["hwy/robust_statistics.h"],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     deps = [":hwy"],
+ )
+ 
+@@ -256,6 +259,7 @@
+     hdrs = ["hwy/timer.h"],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     # Deprecated.
+     textual_hdrs = [
+         "hwy/timer-inl.h",
+@@ -277,6 +281,7 @@
+     ],
+     compatible_with = [],
      copts = COPTS,
 +    linkstatic = True,
      local_defines = ["hwy_EXPORTS"],
-@@ -419,2 +420,3 @@
+     deps = [
+         ":hwy",
+@@ -290,6 +295,7 @@
+     hdrs = ["hwy/bit_set.h"],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     deps = [
+         ":hwy",  # HWY_DASSERT
+     ],
+@@ -300,6 +306,7 @@
+     hdrs = ["hwy/auto_tune.h"],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     deps = [
+         ":hwy",
+         "//hwy/contrib/sort:vqsort",
+@@ -312,6 +319,7 @@
+     hdrs = ["hwy/perf_counters.h"],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     deps = [
+         ":bit_set",
+         ":hwy",
+@@ -325,6 +333,7 @@
+     hdrs = ["hwy/profiler.h"],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     deps = [
+         ":bit_set",
+         ":hwy",
+@@ -349,6 +358,7 @@
+     name = "algo",
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     textual_hdrs = [
+         "hwy/contrib/algo/copy-inl.h",
+         "hwy/contrib/algo/find-inl.h",
+@@ -363,6 +373,7 @@
+     name = "bit_pack",
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     textual_hdrs = [
+         "hwy/contrib/bit_pack/bit_pack-inl.h",
+     ],
+@@ -375,6 +386,7 @@
+     name = "dot",
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     textual_hdrs = [
+         "hwy/contrib/dot/dot-inl.h",
+     ],
+@@ -404,6 +416,7 @@
+     ],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     deps = [
+         ":auto_tune",
+         ":bit_set",
+@@ -419,6 +432,7 @@
+     name = "matvec",
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     textual_hdrs = [
+         "hwy/contrib/matvec/matvec-inl.h",
+     ],
+@@ -438,6 +452,7 @@
+     ],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     local_defines = ["hwy_contrib_EXPORTS"],
+     deps = [
+         ":hwy",
+@@ -448,6 +463,7 @@
+     name = "math",
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     textual_hdrs = [
+         "hwy/contrib/math/math-inl.h",
+     ],
+@@ -460,6 +476,7 @@
+     name = "random",
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     textual_hdrs = [
+         "hwy/contrib/random/random-inl.h",
+     ],
+@@ -472,6 +489,7 @@
+     name = "unroller",
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     textual_hdrs = [
+         "hwy/contrib/unroller/unroller-inl.h",
+     ],
+@@ -487,6 +505,7 @@
+     hdrs = ["hwy/tests/test_util.h"],
+     compatible_with = [],
      copts = COPTS,
 +    linkstatic = True,
      local_defines = ["hwy_test_EXPORTS"],
+     textual_hdrs = [
+         "hwy/tests/test_util-inl.h",
+@@ -515,6 +534,7 @@
+     srcs = ["hwy/examples/skeleton.cc"],
+     hdrs = ["hwy/examples/skeleton.h"],
+     copts = COPTS,
++    linkstatic = True,
+     local_defines = ["hwy_EXPORTS"],
+     textual_hdrs = ["hwy/examples/skeleton-inl.h"],
+     deps = [
+@@ -532,6 +552,7 @@
+     ],
+     compatible_with = [],
+     copts = COPTS,
++    linkstatic = True,
+     local_defines = ["HWY_HEADER_ONLY"],
+ )
+ 

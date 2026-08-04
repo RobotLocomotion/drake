@@ -39,6 +39,6 @@ training examples will not run without it, and drake does not come with it
 not enough to perform training).
 """
 
-from ._drake_gym_env import DrakeGymEnv
+from ._drake_gym_env import DrakeGymEnv  # noqa: F401 (unused-import)
 
 __all__ = [x for x in globals() if not x.startswith("_")]

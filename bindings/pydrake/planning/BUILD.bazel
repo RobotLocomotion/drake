@@ -24,7 +24,12 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "planning",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:planning",
+        "//bindings/generated_docstrings:planning_experimental",
+        "//bindings/generated_docstrings:planning_graph_algorithms",
+        "//bindings/generated_docstrings:planning_iris",
+        "//bindings/generated_docstrings:planning_locomotion",
+        "//bindings/generated_docstrings:planning_trajectory_optimization",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
@@ -38,12 +43,17 @@ drake_pybind_library(
         "planning_py.cc",
         "planning_py_collision_checker.cc",
         "planning_py_collision_checker_interface_types.cc",
+        "planning_py_dof_mask.cc",
+        "planning_py_experimental_placeholder.cc",
         "planning_py_graph_algorithms.cc",
+        "planning_py_iris_common.cc",
+        "planning_py_iris_from_clique_cover.cc",
+        "planning_py_iris_np2.cc",
+        "planning_py_iris_zo.cc",
+        "planning_py_joint_limits.cc",
         "planning_py_robot_diagram.cc",
         "planning_py_trajectory_optimization.cc",
         "planning_py_visibility_graph.cc",
-        "planning_py_iris_from_clique_cover.cc",
-        "planning_py_iris_zo.cc",
         "planning_py_zmp_planner.cc",
     ],
     package_info = PACKAGE_INFO,
@@ -75,9 +85,8 @@ drake_py_unittest(
     num_threads = 2,
     deps = [
         ":planning",
-        "//bindings/pydrake/common/test_utilities:memory_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -88,6 +97,13 @@ drake_py_unittest(
         "//planning/test_utilities:collision_ground_plane.sdf",
     ],
     num_threads = 2,
+    deps = [
+        ":planning",
+    ],
+)
+
+drake_py_unittest(
+    name = "dof_mask_test",
     deps = [
         ":planning",
     ],
@@ -121,7 +137,7 @@ drake_py_unittest(
     deps = [
         ":planning",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -135,16 +151,30 @@ drake_py_unittest(
     deps = [
         ":planning",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
 drake_py_unittest(
-    name = "iris_zo_test",
+    name = "iris_test",
     num_threads = 2,
     deps = [
         ":planning",
         "//bindings/pydrake/multibody:inverse_kinematics_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "joint_limits_test",
+    deps = [
+        ":planning",
+    ],
+)
+
+drake_py_unittest(
+    name = "placeholder_test",
+    deps = [
+        ":planning",
     ],
 )
 

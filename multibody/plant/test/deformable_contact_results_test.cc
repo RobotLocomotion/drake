@@ -1,3 +1,6 @@
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity_properties.h"

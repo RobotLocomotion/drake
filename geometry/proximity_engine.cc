@@ -1,12 +1,15 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <limits>
+#include <map>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -15,6 +18,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
@@ -24,12 +28,7 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_calculator.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
-#include "drake/geometry/proximity/make_mesh_from_vtk.h"
-#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
-#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
-#include "drake/geometry/proximity/volume_to_surface_mesh.h"
-#include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/geometry/utilities.h"
 
@@ -61,89 +60,27 @@ class FclDynamicAABBTreeCollisionManager
     : public fcl::DynamicAABBTreeCollisionManager<double> {};
 class MapGeometryIdToFclCollisionObject
     : public unordered_map<GeometryId, unique_ptr<CollisionObjectd>> {};
+// Cache entry for a single mesh source file (independent of scale). Stores the
+// convex hull topology and unit-scale vertex positions once, then maps each
+// encountered scale factor to its own fcl::Convexd.
+struct ConvexHullCacheEntry {
+  // Vertex positions of the convex hull evaluated at unit scale (1, 1, 1).
+  shared_ptr<std::vector<Vector3d>> unit_vertices;
+  // Face topology data; identical across all scale factors.
+  shared_ptr<std::vector<int>> faces;
+  // Number of convex hull faces.
+  int num_faces{0};
+  // Sub-cache of fcl::Convexd objects keyed by (scale_x, scale_y, scale_z,
+  // margin). Scale values are validated as finite by Mesh/Convex; margin is
+  // non-negative and finite (and is validated in AddGeometry()). Two entries
+  // that differ only in margin need distinct fcl::Convexd objects because
+  // InflateAabbForHydroelasticTypesOnly() mutates the geometry's aabb_local
+  // in-place.
+  std::map<std::array<double, 4>, shared_ptr<fcl::Convexd>> scaled_hulls;
+};
 
-// Returns a copy of the given fcl collision geometry; throws an exception for
-// unsupported collision geometry types. This supplements the *missing* cloning
-// functionality in FCL. Issue has been submitted to FCL:
-// https://github.com/flexible-collision-library/fcl/issues/246
-shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
-    const fcl::CollisionGeometryd& geometry) {
-  // NOTE: Returns a shared pointer because of the FCL API in assigning
-  // collision geometry to collision objects.
-  switch (geometry.getNodeType()) {
-    case fcl::GEOM_SPHERE: {
-      const auto& sphere = dynamic_cast<const fcl::Sphered&>(geometry);
-      return make_shared<fcl::Sphered>(sphere.radius);
-    }
-    case fcl::GEOM_CYLINDER: {
-      const auto& cylinder = dynamic_cast<const fcl::Cylinderd&>(geometry);
-      return make_shared<fcl::Cylinderd>(cylinder.radius, cylinder.lz);
-    }
-    case fcl::GEOM_ELLIPSOID: {
-      const auto& ellipsoid = dynamic_cast<const fcl::Ellipsoidd&>(geometry);
-      return make_shared<fcl::Ellipsoidd>(ellipsoid.radii);
-    }
-    case fcl::GEOM_HALFSPACE:
-      // All half spaces are defined exactly the same.
-      return make_shared<fcl::Halfspaced>(0, 0, 1, 0);
-    case fcl::GEOM_BOX: {
-      const auto& box = dynamic_cast<const fcl::Boxd&>(geometry);
-      return make_shared<fcl::Boxd>(box.side);
-    }
-    case fcl::GEOM_CAPSULE: {
-      const auto& capsule = dynamic_cast<const fcl::Capsuled&>(geometry);
-      return make_shared<fcl::Capsuled>(capsule.radius, capsule.lz);
-    }
-    case fcl::GEOM_CONVEX: {
-      const auto& convex = dynamic_cast<const fcl::Convexd&>(geometry);
-      // TODO(DamrongGuoy): Change to the copy constructor Convex(other) when
-      //  we figure out why "Convex(const Convex& other) = default" created
-      //  link errors for Xenial Debug build.  For now we do deep copy of the
-      //  vertices and faces instead of simply copying the shared pointer.
-      return make_shared<fcl::Convexd>(
-          make_shared<const std::vector<Vector3d>>(convex.getVertices()),
-          convex.getFaceCount(),
-          make_shared<const std::vector<int>>(convex.getFaces()));
-    }
-    case fcl::GEOM_CONE:
-    case fcl::GEOM_PLANE:
-    case fcl::GEOM_TRIANGLE:
-      throw std::logic_error(
-          "Trying to copy fcl::CollisionGeometry of unsupported GEOM_* type");
-    default:
-      throw std::logic_error(
-          "Trying to copy fcl::CollisionGeometry of non GEOM_* type");
-  }
-}
-
-// Helper function that creates a *deep* copy of the given collision object.
-unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
-    const CollisionObjectd& object_source) {
-  const auto& shape_source = *object_source.collisionGeometry();
-
-  shared_ptr<fcl::ShapeBased> shape_copy = CopyShapeOrThrow(shape_source);
-
-  // A copy of the geometry is passed to FCL, but CollisionObject's constructor
-  // resets that copy's local bounding box to fit the _instantiated_ shape. So
-  // we retain a pointer to the shape copy long enough after handing it off to
-  // FCL to fix it back up to its original AABB.
-  auto object_copy = make_unique<CollisionObjectd>(shape_copy);
-
-  // The source's local AABB may have been inflated if the underlying object is
-  // associated with a compliant hydroelastic shape with a non-zero margin;
-  // therefore the AABB that fits the shape may not be what we want. We can't
-  // tell simply by looking at the fcl object if this is the case, so, we'll
-  // simply copy the source's local AABB verbatim to preserve the effect.
-  shape_copy->aabb_local.min_ = shape_source.aabb_local.min_;
-  shape_copy->aabb_local.max_ = shape_source.aabb_local.max_;
-  shape_copy->aabb_radius = shape_source.aabb_radius;
-
-  object_copy->setUserData(object_source.getUserData());
-  object_copy->setTransform(object_source.getTransform());
-  object_copy->computeAABB();
-
-  return object_copy;
-}
+class MapStringToConvexHullCache
+    : public string_unordered_map<ConvexHullCacheEntry> {};
 
 // Helper function that creates a deep copy of a vector of collision objects.
 // Assumes the input vector has already been cleared. The `copy_map` parameter
@@ -159,7 +96,8 @@ void CopyFclObjectsOrThrow(
   for (const auto& source_id_object_pair : source_objects) {
     const GeometryId source_id = source_id_object_pair.first;
     const CollisionObjectd& source_object = *source_id_object_pair.second;
-    (*target_objects)[source_id] = CopyFclObjectOrThrow(source_object);
+    (*target_objects)[source_id] =
+        make_unique<fcl::CollisionObjectd>(source_object);
     copy_map->insert({&source_object, (*target_objects)[source_id].get()});
   }
 }
@@ -271,7 +209,7 @@ void CullFlatten(std::vector<X>* maybes, std::vector<R>* objects) {
 
 }  // namespace
 
-// The implementation class for the fcl engine. Each of these functions
+// The implementation class for the FCL engine. Each of these functions
 // mirrors a method on the ProximityEngine (unless otherwise indicated.
 // See ProximityEngine for documentation.
 template <typename T>
@@ -283,11 +221,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_ = other.hydroelastic_geometries_;
     geometries_for_deformable_contact_ =
         other.geometries_for_deformable_contact_;
-    mesh_sdf_data_ = other.mesh_sdf_data_;
+    mesh_distance_boundary_cahe_ = other.mesh_distance_boundary_cahe_;
+    convex_hull_cache_ = other.convex_hull_cache_;
+    geometry_to_hull_key_ = other.geometry_to_hull_key_;
     dynamic_tree_.clear();
     dynamic_objects_.clear();
     anchored_tree_.clear();
     anchored_objects_.clear();
+    inactive_dynamic_tree_.clear();
 
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
@@ -298,9 +239,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
+    BuildTreeFromReference(other.inactive_dynamic_tree_, object_map,
+                           &inactive_dynamic_tree_);
     BuildTreeFromReference(other.anchored_tree_, object_map, &anchored_tree_);
 
     collision_filter_ = other.collision_filter_;
+    inactive_dynamic_geometries_ = other.inactive_dynamic_geometries_;
+    // We'll conservatively mark the copy as stale.
+    inactive_dynamic_stale_ = true;
   }
 
   // Only the copy constructor is used to facilitate copying of the parent
@@ -324,21 +270,83 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &object_map);
 
     engine->collision_filter_ = this->collision_filter_;
+    engine->inactive_dynamic_geometries_ = this->inactive_dynamic_geometries_;
+    // We'll conservatively mark the copy as stale.
+    engine->inactive_dynamic_stale_ = true;
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(dynamic_tree_, object_map, &engine->dynamic_tree_);
+    BuildTreeFromReference(inactive_dynamic_tree_, object_map,
+                           &engine->inactive_dynamic_tree_);
     BuildTreeFromReference(anchored_tree_, object_map, &engine->anchored_tree_);
 
     engine->hydroelastic_geometries_ = this->hydroelastic_geometries_;
     engine->geometries_for_deformable_contact_ =
         this->geometries_for_deformable_contact_;
-    engine->mesh_sdf_data_ = this->mesh_sdf_data_;
+    engine->mesh_distance_boundary_cahe_ = this->mesh_distance_boundary_cahe_;
+    engine->convex_hull_cache_ = this->convex_hull_cache_;
+    engine->geometry_to_hull_key_ = this->geometry_to_hull_key_;
     engine->distance_tolerance_ = this->distance_tolerance_;
 
     return engine;
   }
 
   CollisionFilter& collision_filter() { return collision_filter_; }
+
+  // Reflects a net change of the collision filter's inactive set into the
+  // broadphase: newly inactive dynamic geometries move out of dynamic_tree_
+  // into inactive_dynamic_tree_; reactivated ones move back.
+  //
+  // Note: there is no invocation of tree.update() here. This is because
+  // update() is only necessary when geometry *poses* change. The act of adding
+  // or removing objects from the tree does *not* invalidate the tree. What
+  // matters is that the objects being inserted have up-to-date AABBs. Rather
+  // than "dirtying" the inactive tree, we choose to maintain it in a consistent
+  // state. The cost of registerObject() is far more expensive than
+  // computeAABB(), so it's a reasonable trade off.
+  //
+  // We rely on UpdateWorldPoses() to always update the object's poses and then
+  // can freely call computeAABB() as necessary to guarantee up-to-date-ness.
+  void ApplyActiveStatusChange(
+      const CollisionFilter::ActiveStatusChange& change) {
+    DRAKE_DEMAND(!change.empty());
+    for (const GeometryId id : change.deactivated) {
+      const auto iter = dynamic_objects_.find(id);
+      DRAKE_DEMAND(iter != dynamic_objects_.end());
+      DRAKE_DEMAND(inactive_dynamic_geometries_.insert(id).second);
+      CollisionObjectd* object = iter->second.get();
+      dynamic_tree_.unregisterObject(object);
+      if (!inactive_dynamic_stale_) {
+        // The inactive tree is *not* stale. To guarantee we can keep that
+        // state, we need to guarantee that the object being registered with it
+        // has an up-to-date AABB.
+        object->computeAABB();
+      }
+      inactive_dynamic_tree_.registerObject(object);
+    }
+    for (const GeometryId id : change.activated) {
+      const auto iter = dynamic_objects_.find(id);
+      DRAKE_DEMAND(iter != dynamic_objects_.end());
+      DRAKE_DEMAND(inactive_dynamic_geometries_.erase(id) != 0);
+      CollisionObjectd* object = iter->second.get();
+      inactive_dynamic_tree_.unregisterObject(object);
+      if (inactive_dynamic_stale_) {
+        // We only want to move an object with an up-to-date AABB into the
+        // dynamic tree. So, if the inactive tree is stale, we'll refresh the
+        // AABB.
+        object->computeAABB();
+      }
+      dynamic_tree_.registerObject(object);
+    }
+  }
+
+  bool IsInactiveDynamic(GeometryId id) const {
+    return inactive_dynamic_geometries_.contains(id);
+  }
+
+  int num_inactive_dynamic() const {
+    return ssize(inactive_dynamic_geometries_);
+  }
 
   void AddDynamicGeometry(const Shape& shape, const RigidTransformd& X_WG,
                           GeometryId id, const ProximityProperties& props) {
@@ -352,8 +360,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                 &anchored_objects_);
   }
 
-  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id) {
-    geometries_for_deformable_contact_.AddDeformableGeometry(id, mesh_W);
+  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W,
+                             TriangleSurfaceMesh<double> surface_mesh_W,
+                             std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet,
+                             GeometryId id) {
+    geometries_for_deformable_contact_.AddDeformableGeometry(
+        id, mesh_W, std::move(surface_mesh_W),
+        std::move(surface_index_to_volume_index),
+        std::move(surface_tri_to_volume_tet));
     // Currently, even though no collision filtering is done for deformable
     // geometries, the collision filter still needs to be aware of the existence
     // of deformable geometries. This is because collision filters implicitly
@@ -388,8 +403,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     const double margin =
         props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
 
-    if (margin == 0) return;  // nothing to update.
-
     CollisionObjectd* object = geometry.is_dynamic()
                                    ? dynamic_objects_[geometry.id()].get()
                                    : anchored_objects_[geometry.id()].get();
@@ -398,12 +411,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     InflateAabbForHydroelasticTypesOnly(geometry.shape(), geometry.id(), margin,
                                         object);
 
-    // If this led to a change in the collision object's AABB, we need to
-    // propagate those changes up through the tree's BVH. The surest way to do
-    // that is to explicitly update.
-    FclDynamicAABBTreeCollisionManager& tree =
-        geometry.is_dynamic() ? dynamic_tree_ : anchored_tree_;
-    tree.update();
+    if (inactive_dynamic_geometries_.contains(geometry.id())) {
+      // The geometry is inactive, so its tree is inactive_dynamic_tree_. That
+      // tree gets updated at need in EnsureInactiveDynamicUpToDate().
+      inactive_dynamic_stale_ = true;
+    } else if (geometry.is_dynamic()) {
+      dynamic_tree_.update();
+    } else {
+      anchored_tree_.update();
+    }
   }
 
   void UpdateRepresentationForNewProperties(
@@ -466,13 +482,43 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // Removes a non-deformable geometry from this engine.
   void RemoveGeometry(GeometryId id, bool is_dynamic) {
     if (is_dynamic) {
-      RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
+      // An inactive dynamic geometry lives in inactive_dynamic_tree_, not
+      // dynamic_tree_. (Removing a geometry never changes any *other*
+      // geometry's active status, so no further partition bookkeeping is
+      // needed; the filter drops the removed geometry from its inactive set in
+      // collision_filter_.RemoveGeometry().)
+      if (inactive_dynamic_geometries_.erase(id) > 0) {
+        RemoveGeometry(id, &inactive_dynamic_tree_, &dynamic_objects_);
+      } else {
+        RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
+      }
     } else {
       RemoveGeometry(id, &anchored_tree_, &anchored_objects_);
     }
     hydroelastic_geometries_.RemoveGeometry(id);
     geometries_for_deformable_contact_.RemoveGeometry(id);
-    mesh_sdf_data_.erase(id);
+    mesh_distance_boundary_cahe_.Remove(id);
+
+    // Evict the convex hull cache entry for this geometry if it is the last
+    // user. The CollisionObjectd was already destroyed above (by the inner
+    // RemoveGeometry overload), so the cache entry's shared_ptr is the sole
+    // remaining owner when use_count() == 1.
+    if (auto it = geometry_to_hull_key_.find(id);
+        it != geometry_to_hull_key_.end()) {
+      const auto& [file_key, scale_key] = it->second;
+      if (auto cache_it = convex_hull_cache_.find(file_key);
+          cache_it != convex_hull_cache_.end()) {
+        auto& scaled_hulls = cache_it->second.scaled_hulls;
+        if (auto hull_it = scaled_hulls.find(scale_key);
+            hull_it != scaled_hulls.end() && hull_it->second.use_count() == 1) {
+          scaled_hulls.erase(hull_it);
+          if (scaled_hulls.empty()) {
+            convex_hull_cache_.erase(cache_it);
+          }
+        }
+      }
+      geometry_to_hull_key_.erase(it);
+    }
   }
 
   void RemoveDeformableGeometry(GeometryId id) {
@@ -504,24 +550,44 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) {
-    for (const auto& id_object_pair : dynamic_objects_) {
-      const GeometryId id = id_object_pair.first;
+    // Hoisted so that scenes with no inactive geometries (the common case)
+    // skip the per-geometry membership test below entirely.
+    const bool has_inactive = !inactive_dynamic_geometries_.empty();
+    for (const auto& [id, object_ptr] : dynamic_objects_) {
       const RigidTransform<T>& X_WG = X_WGs.at(id);
       // The FCL broadphase requires double-valued poses; so we use ADL to
       // efficiently get double-valued poses out of arbitrary T-valued poses.
       const RigidTransform<double>& X_WG_d = convert_to_double(X_WG);
-      dynamic_objects_[id]->setTransform(X_WG_d.GetAsIsometry3());
-      dynamic_objects_[id]->computeAABB();
+      object_ptr->setTransform(X_WG_d.GetAsIsometry3());
+      // We'll keep the inactive geometry's *pose* up to date in the collision
+      // object (cheap), but we won't update its AABB or tree until we need to
+      // query against it.
+      if (has_inactive && inactive_dynamic_geometries_.contains(id)) {
+        continue;
+      }
+      object_ptr->computeAABB();
       geometries_for_deformable_contact_.UpdateRigidWorldPose(id, X_WG_d);
     }
     dynamic_tree_.update();
+    // The poses of inactive geometries may have changed. We'll conservatively
+    // mark them as stale.
+    inactive_dynamic_stale_ |= has_inactive;
   }
 
   void UpdateDeformableVertexPositions(
-      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs) {
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
+      const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+          driven_meshes) {
     for (const auto& [id, q_WG] : q_WGs) {
+      if (!driven_meshes.contains(id)) {
+        continue;  // No driven meshes for this id because there's no proximity
+                   // role for this geometry.
+      }
+      DRAKE_DEMAND(driven_meshes.at(id).size() == 1);
+      const DrivenTriangleMesh& driven_mesh = driven_meshes.at(id)[0];
       geometries_for_deformable_contact_.UpdateDeformableVertexPositions(
-          id, ExtractDoubleOrThrow(q_WG));
+          id, ExtractDoubleOrThrow(q_WG),
+          driven_mesh.GetDrivenVertexPositions());
     }
   }
 
@@ -573,7 +639,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void ImplementGeometry(const Convex& convex, void* user_data) override {
     ImplementFromConvexHull(convex, user_data);
     // Set up data for ComputeSignedDistanceToPoint() from convex meshes.
-    ImplementMeshSdfData(convex, user_data);
+    const ReifyData& data = *static_cast<ReifyData*>(user_data);
+    mesh_distance_boundary_cahe_.Register(data.id, convex);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
@@ -604,10 +671,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    // We currently represent Mesh shapes with their convex hulls in fcl.
+    // We currently represent Mesh shapes with their convex hulls in FCL.
     ImplementFromConvexHull(mesh, user_data);
     // Set up data for ComputeSignedDistanceToPoint() from non-convex meshes.
-    ImplementMeshSdfData(mesh, user_data);
+    const ReifyData& data = *static_cast<ReifyData*>(user_data);
+    mesh_distance_boundary_cahe_.Register(data.id, mesh);
   }
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
@@ -642,6 +710,25 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return witness_pairs;
   }
 
+  /* Searches for an fcl::CollisionObject associated with the given `id`.
+   Note: this strips the const away from the collision object because FCL's
+   API requires non-const inputs.
+   @throws if the proximity engine has no geometry for the id. */
+  CollisionObjectd* FindCollisionObject(GeometryId id,
+                                        std::string_view query_type) const {
+    auto iter = dynamic_objects_.find(id);
+    if (iter == dynamic_objects_.end()) {
+      iter = anchored_objects_.find(id);
+      if (iter == anchored_objects_.end()) {
+        throw std::runtime_error(
+            fmt::format("The geometry given by id {} does not reference a "
+                        "geometry that can be used in a {} query",
+                        id, query_type));
+      }
+    }
+    return const_cast<CollisionObjectd*>(iter->second.get());
+  }
+
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId id_A, GeometryId id_B,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
@@ -655,22 +742,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
     data.request.distance_tolerance = distance_tolerance_;
 
-    auto find_geometry = [this](GeometryId id) -> CollisionObjectd* {
-      auto iter = dynamic_objects_.find(id);
-      if (iter == dynamic_objects_.end()) {
-        iter = anchored_objects_.find(id);
-        if (iter == anchored_objects_.end()) {
-          throw std::runtime_error(fmt::format(
-              "The geometry given by id {} does not reference a "
-              "geometry that can be used in a signed distance query",
-              id));
-        }
-      }
-      return const_cast<CollisionObjectd*>(iter->second.get());
-    };
-
-    CollisionObjectd* object_A = find_geometry(id_A);
-    CollisionObjectd* object_B = find_geometry(id_B);
+    CollisionObjectd* object_A = FindCollisionObject(id_A, "signed distance");
+    CollisionObjectd* object_B = FindCollisionObject(id_B, "signed distance");
     shape_distance::Callback<T>(object_A, object_B, &data, max_distance);
 
     // If the callback didn't throw, it returned an actual value.
@@ -683,6 +756,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       const double threshold) const {
+    // This query ignores collision filters, so inactive geometries must
+    // participate. They live in inactive_dynamic_tree_, which
+    // UpdateWorldPoses() defers; bring the inactive objects' poses and that
+    // tree up to date here, as necessary.
+    EnsureInactiveDynamicUpToDate();
+    mesh_distance_boundary_cahe_.ComputeAll();
     // We create a sphere of zero radius centered at the query point and put
     // it into a CollisionObject.
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
@@ -695,16 +774,71 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<SignedDistanceToPoint<T>> distances;
 
     point_distance::CallbackData<T> data{
-        &query_point, threshold, p_WQ, &X_WGs, &mesh_sdf_data_, &distances};
+        &query_point, threshold, p_WQ, &X_WGs, &mesh_distance_boundary_cahe_,
+        &distances};
 
-    // Perform query of point vs dynamic objects.
+    // Perform query of point vs dynamic objects (including the inactive
+    // ones).
     dynamic_tree_.distance(&query_point, &data, point_distance::Callback<T>);
+    inactive_dynamic_tree_.distance(&query_point, &data,
+                                    point_distance::Callback<T>);
 
     // Perform query of point vs anchored objects.
     anchored_tree_.distance(&query_point, &data, point_distance::Callback<T>);
 
     std::sort(distances.begin(), distances.end(),
               OrderSignedDistanceToPoint<T>);
+    return distances;
+  }
+
+  // Updates the broadphase tree for the inactive geometries based on the fact
+  // that each collision object in that tree already knows its current pose.
+  void EnsureInactiveDynamicUpToDate() const {
+    if (!inactive_dynamic_stale_) return;
+    for (const GeometryId id : inactive_dynamic_geometries_) {
+      CollisionObjectd& object = *dynamic_objects_.at(id);
+      // The object's *pose* has been maintained by UpdateWorldPoses().
+      object.computeAABB();
+    }
+    // Note: We lazily update the inactive geometries when we specifically make
+    // a query that needs them. The queries are const methods, so, to support
+    // that lazy update, we const cast here. While not generally thread safe,
+    // we rely on on Drake's convention that we operate on one Context in a
+    // single thread, and that each Context has its own engine instance.
+    const_cast<FclDynamicAABBTreeCollisionManager&>(inactive_dynamic_tree_)
+        .update();
+    const_cast<bool&>(inactive_dynamic_stale_) = false;
+  }
+
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ,
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      const std::unordered_set<GeometryId>& geometries) const {
+    mesh_distance_boundary_cahe_.ComputeAll();
+    // We create a sphere of zero radius centered at the query point and put
+    // it into a CollisionObject.
+    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
+    CollisionObjectd query_point(fcl_sphere);
+    // The FCL broadphase requires double-valued poses; so we use ADL to
+    // efficiently get double-valued poses out of arbitrary T-valued poses.
+    query_point.setTranslation(convert_to_double(p_WQ));
+    query_point.computeAABB();
+
+    // Cheaper to sort the ids than to sort the results.
+    std::vector<GeometryId> ids(geometries.begin(), geometries.end());
+    std::sort(ids.begin(), ids.end());
+
+    double kInf = std::numeric_limits<double>::infinity();
+    std::vector<SignedDistanceToPoint<T>> distances;
+    point_distance::CallbackData<T> data{
+        &query_point, kInf, p_WQ, &X_WGs, &mesh_distance_boundary_cahe_,
+        &distances};
+    for (const GeometryId& id : ids) {
+      CollisionObjectd* geometry = FindCollisionObject(id, "signed distance");
+      DRAKE_DEMAND(geometry != nullptr);
+
+      point_distance::Callback<T>(&query_point, geometry, &data, kInf);
+    }
     return distances;
   }
 
@@ -754,6 +888,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, has_collisions::Callback);
+
+    // Testing to see if we've already discovered collisions here is not just
+    // a matter of efficiency; it is a matter of correctness. If the only
+    // observable collisions are between dynamic objects, blindly proceeding to
+    // examining collisions between dynamic-anchored pairs will end up
+    // overwriting the `collision_exist` value we'd already found.
+    if (data.collisions_exist) return true;
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
@@ -888,7 +1029,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                               other.anchored_objects_)) {
         return false;
       }
-      if (this->collision_filter_ != other.collision_filter_) return false;
+      if (!this->collision_filter_.IsEquivalent(other.collision_filter_)) {
+        return false;
+      }
       return true;
     }
     return false;
@@ -901,12 +1044,27 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return RigidTransformd(objects.at(id)->getTransform());
   }
 
+  bool is_inactive_dynamic_stale() const { return inactive_dynamic_stale_; }
+
   const hydroelastic::Geometries& hydroelastic_geometries() const {
     return hydroelastic_geometries_;
   }
 
   const deformable::Geometries& deformable_contact_geometries() const {
     return geometries_for_deformable_contact_;
+  }
+
+  const TriangleSurfaceMesh<double>* mesh_distance_boundary(
+      GeometryId g_id) const {
+    mesh_distance_boundary_cahe_.ComputeAll();
+    const MeshDistanceBoundary* boundary =
+        mesh_distance_boundary_cahe_.GetBoundary(g_id);
+    if (boundary == nullptr) return nullptr;
+    return &boundary->tri_mesh();
+  }
+
+  const Aabb& GetDeformableAabbInWorld(GeometryId id) const {
+    return geometries_for_deformable_contact_.GetDeformableAabbInWorld(id);
   }
 
   bool IsFclConvexType(GeometryId id) const {
@@ -932,6 +1090,38 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       return iter->second.get();
     }
     return nullptr;
+  }
+
+  int convex_hull_cache_file_entries() const {
+    return ssize(convex_hull_cache_);
+  }
+
+  int convex_hull_cache_hull_entries() const {
+    int n = 0;
+    for (const auto& [_, entry] : convex_hull_cache_) {
+      n += ssize(entry.scaled_hulls);
+    }
+    return n;
+  }
+
+  bool geometry_hull_key_valid(GeometryId id) const {
+    if (!geometry_to_hull_key_.contains(id)) return false;
+
+    const auto& [file_key, scale_key] = geometry_to_hull_key_.at(id);
+    if (!convex_hull_cache_.contains(file_key)) return false;
+
+    return convex_hull_cache_.at(file_key).scaled_hulls.contains(scale_key);
+  }
+
+  bool geometry_hull_key_absent(GeometryId id) const {
+    return geometry_to_hull_key_.count(id) == 0;
+  }
+
+  bool geometry_hull_reverse_map_consistent() const {
+    for (const auto& [geometry_id, _] : geometry_to_hull_key_) {
+      if (!geometry_hull_key_valid(geometry_id)) return false;
+    }
+    return true;
   }
 
  private:
@@ -962,7 +1152,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // geometry's frame (its "local AABB") during construction. The hydroelastic
   // representations are larger than the specified shapes and we want to make
   // sure that the bounding volumes associated with those hydro geometries
-  // properly enclose them. So, we'll edit fcl's bounding box definition after
+  // properly enclose them. So, we'll edit FCL's bounding box definition after
   // the fact to account for the inflation.
   //
   // The fcl::CollisionObject likewise has a bounding box based on the
@@ -976,31 +1166,31 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // set of vertices.
   //
   // @pre `id` has a compliant hydroelastic representation.
-  // @pre `margin` > 0.
+  // @pre `margin` >= 0.
   // @pre `object != nullptr`.
   void InflateAabbForHydroelasticTypesOnly(const Shape& shape,
                                            const GeometryId id, double margin,
                                            fcl::CollisionObjectd* object) {
-    DRAKE_DEMAND(margin > 0);
+    DRAKE_DEMAND(margin >= 0);
     DRAKE_DEMAND(hydroelastic_geometries_.hydroelastic_type(id) ==
                  HydroelasticType::kCompliant);
     DRAKE_DEMAND(object != nullptr);
 
     // To edit the assigned collision geometry, we have to cheat and temporarily
-    // ignore the const-ness. Note: this assumes that the collision object
-    // hasn't been added to a BVH yet; as long as this is part of the
-    // reification process, that will remain true. The collision object only
-    // gets added when reification is complete.
+    // ignore the const-ness.
     auto* g =
         const_cast<fcl::CollisionGeometryd*>(object->collisionGeometry().get());
     DRAKE_DEMAND(g != nullptr);
 
     std::string_view shape_name = shape.type_name();
-    if (shape_name == "Mesh" || shape_name == "Convex") {
+    if (margin == 0) {
+      // No inflation needed; reset to the tight-fitting local AABB.
+      g->computeLocalAABB();
+    } else if (shape_name == "Mesh" || shape_name == "Convex") {
       // Meshes can have their vertices move an arbitrary amount, we simply need
       // to recompute the bounding box based on the *moved* vertex positions
       // defined in the hydro mesh.
-      const auto& mesh = hydroelastic_geometries_.soft_geometry(id).mesh();
+      const auto& mesh = hydroelastic_geometries_.compliant_geometry(id).mesh();
       g->aabb_local.min_ =
           Vector3d::Constant(std::numeric_limits<double>::infinity());
       g->aabb_local.max_ = -g->aabb_local.min_;
@@ -1029,6 +1219,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
     const double margin =
         props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
+    if (!(margin >= 0 && std::isfinite(margin))) {
+      throw std::logic_error("Margin must be non-negative and finite.");
+    }
     ReifyData data{nullptr, id, props, X_WG, margin};
     shape.Reify(this, &data);
 
@@ -1066,7 +1259,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // Helper method called by the various ImplementGeometry overrides to
   // facilitate the logistics of creating shapes from specifications. `data`
-  // is a unique_ptr of an fcl CollisionObject that should be instantiated
+  // is a unique_ptr of an FCL CollisionObject that should be instantiated
   // with the given shape.
   void TakeShapeOwnership(const std::shared_ptr<fcl::ShapeBased>& shape,
                           void* data) {
@@ -1079,15 +1272,64 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // from its convex hull (rather than from the actual mesh data).
   template <typename MeshType>
   void ImplementFromConvexHull(const MeshType& mesh, void* user_data) {
-    // Create fcl::Convex for the fcl bounding volume hierarchy.
-    const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
-    auto shared_verts = make_shared<std::vector<Vector3d>>();
-    for (int vi = 0; vi < hull.num_vertices(); ++vi) {
-      shared_verts->push_back(hull.vertex(vi));
+    // Look up (or build) the per-file cache entry for this mesh source.
+    const std::string cache_key =
+        mesh.source().GetCacheKey(/* is_convex= */ true);
+    ConvexHullCacheEntry& entry = convex_hull_cache_[cache_key];
+
+    // Populate unit-scale vertex positions and face topology on first visit.
+    // The convex hull topology is the same for all scale factors; only vertex
+    // positions differ.  We therefore store vertices at unit scale (1,1,1) and
+    // derive per-scale copies on demand.
+    const Vector3d scale = mesh.scale3();
+    const bool is_unit_scale = (scale == Vector3d::Ones());
+    if (entry.unit_vertices == nullptr) {
+      const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
+      auto unit_verts = make_shared<std::vector<Vector3d>>();
+      unit_verts->reserve(hull.num_vertices());
+      if (is_unit_scale) {
+        for (int vi = 0; vi < hull.num_vertices(); ++vi) {
+          unit_verts->push_back(hull.vertex(vi));
+        }
+      } else {
+        for (int vi = 0; vi < hull.num_vertices(); ++vi) {
+          unit_verts->push_back(hull.vertex(vi).array() / scale.array());
+        }
+      }
+      entry.unit_vertices = std::move(unit_verts);
+      entry.faces = make_shared<std::vector<int>>(hull.face_data());
+      entry.num_faces = hull.num_elements();
     }
-    auto shared_faces = make_shared<std::vector<int>>(hull.face_data());
-    auto fcl_convex = make_shared<fcl::Convexd>(
-        std::move(shared_verts), hull.num_elements(), std::move(shared_faces));
+
+    // Look up (or create) the fcl::Convexd for the current (scale, margin)
+    // pair. Scale values are validated as finite by Mesh/Convex; margin is
+    // non-negative. Margin is part of the key because
+    // InflateAabbForHydroelasticTypesOnly() mutates the geometry's aabb_local
+    // in-place, so two geometries with the same scale but different margins
+    // must not share an fcl::Convexd.
+    const double margin = static_cast<const ReifyData*>(user_data)->margin;
+    const std::array<double, 4> scale_key{scale[0], scale[1], scale[2], margin};
+    shared_ptr<fcl::Convexd>& fcl_convex = entry.scaled_hulls[scale_key];
+    if (fcl_convex == nullptr) {
+      // For the unit-scale case (the common case), share the unit_vertices
+      // shared_ptr directly rather than allocating and filling a second vector.
+      shared_ptr<std::vector<Vector3d>> verts_for_fcl;
+      if (is_unit_scale) {
+        verts_for_fcl = entry.unit_vertices;
+      } else {
+        verts_for_fcl = make_shared<std::vector<Vector3d>>();
+        verts_for_fcl->reserve(entry.unit_vertices->size());
+        for (const Vector3d& uv : *entry.unit_vertices) {
+          verts_for_fcl->push_back(uv.array() * scale.array());
+        }
+      }
+      fcl_convex = make_shared<fcl::Convexd>(std::move(verts_for_fcl),
+                                             entry.num_faces, entry.faces);
+    }
+
+    // Record the reverse mapping so RemoveGeometry() can evict stale entries.
+    geometry_to_hull_key_[static_cast<const ReifyData*>(user_data)->id] = {
+        cache_key, scale_key};
 
     TakeShapeOwnership(fcl_convex, user_data);
     ProcessHydroelastic(mesh, user_data);
@@ -1097,40 +1339,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     //  (kHydroGroup, kRezHint). We should make exception for Mesh and Convex
     //  since they don't need resolution hint.
     ProcessGeometriesForDeformableContact(mesh, user_data);
-  }
-
-  // TODO(DamrongGuoy): If setting up mesh_sdf_data_ turns out to be too
-  //  expensive during initialization, defer its computation to the time when
-  //  users call ComputeSignedDistanceToPoint(). The deferred computation
-  //  will need to be thread-safe.
-
-  // Populate the proximity representation of Mesh for
-  // ComputeSignedDistanceToPoint. It could be .vtk tetrahedral mesh or
-  // .obj triangle mesh.
-  void ImplementMeshSdfData(const Mesh& mesh, void* user_data) {
-    const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    if (mesh.extension() == ".vtk") {
-      // Assume the .vtk file is a tetrahedral mesh.  If that's not true,
-      // we'll get an error.
-      VolumeMesh<double> volume_mesh = MakeVolumeMeshFromVtk<double>(mesh);
-      mesh_sdf_data_.emplace(data.id, MeshDistanceBoundary(volume_mesh));
-    } else if (mesh.extension() == ".obj") {
-      mesh_sdf_data_.emplace(data.id,
-                             MeshDistanceBoundary(ReadObjToTriangleSurfaceMesh(
-                                 mesh.source(), mesh.scale())));
-    }
-    // Meshes are unsupported if we cannot compute a MeshDistanceBoundary.
-    // point_distance::Callback() skips every Mesh that doesn't have an entry
-    // in mesh_sdf_data_.
-  }
-
-  // Populate the proximity representation of Convex for
-  // ComputeSignedDistanceToPoint.
-  void ImplementMeshSdfData(const Convex& convex, void* user_data) {
-    const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
-    const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    mesh_sdf_data_.emplace(
-        data.id, MeshDistanceBoundary(MakeTriangleFromPolygonMesh(hull)));
   }
 
   /* @throws a std::exception with an appropriate error message for the various
@@ -1189,18 +1397,75 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_UNREACHABLE();
   }
 
-  // The BVH of all dynamic geometries; this depends on *all* inputs.
-  // TODO(SeanCurtis-TRI): Ultimately, this should probably be a cache entry.
+  // A note on the storage of dynamic objects.
+  //  - Every registered dynamic geometry has a corresponding
+  //    fcl::CollisionObjectd stored in dynamic_objects_.
+  //  - The full set of dynamic geometries is partitioned into two sets: active
+  //    and inactive.
+  //    - The inactive partition is *explicitly* enumerated in
+  //      inactive_dynamic_geometries_.
+  //    - The active partition is _implicitly_ defined as the keys in
+  //      dynamic_objects_ that don't appear in inactive_dynamic_geometries_.
+  //  - All active dynamic geometries' collision objects are registered in
+  //    dynamic_tree_.
+  //  - All inactive dynamic geometries' collision objects are registered in
+  //    inactive_dynamic_tree_.
+
+  // All of the *dynamic* collision elements registered on this engine.
+  MapGeometryIdToFclCollisionObject dynamic_objects_;
+
+  // The subset of dynamic geometry ids known to be inactive. Each id is a key
+  // in dynamic_objects_ and its corresponding collision object is registered
+  // in inactive_dynamic_tree_.
+  std::unordered_set<GeometryId> inactive_dynamic_geometries_;
+
+  // The BVH of all active dynamic geometries.
   FclDynamicAABBTreeCollisionManager dynamic_tree_;
 
-  // All of the *dynamic* collision elements (spanning all sources).
-  MapGeometryIdToFclCollisionObject dynamic_objects_;
+  // The BVH of all inactive dynamic geometries.
+  FclDynamicAABBTreeCollisionManager inactive_dynamic_tree_;
+
+  // True when the inactive geometries' object poses/AABBs in
+  // inactive_dynamic_tree_ may be out of date. See
+  // EnsureUpToDateInactiveDynamicTree(). The staleness protocol is defined as
+  // follows:
+  //
+  //  - UpdateWorldPoses() marks the inactive tree as stale. Poses for
+  //    "inactive" geometries can be moved (even if they wouldn't be for the
+  //    *intended* application).
+  //  - EnsureUpToDateInactiveDynamicTree() will always clear the staleness
+  //    mark.
+  //  - Modifying the properties on an inactive geometry will mark the inactive
+  //    tree as stale.
+  //
+  // Surprisingly ApplyPendingDynamicTreeUpdates() does *not* mark the inactive
+  // tree as stale. That method moves collision objects between the active and
+  // inactive trees. It doesn't incur staleness for the following reasons:
+  //
+  //   - FCL's broadphase tree is immediately queryable after removing a
+  //     collision object. Removing an object doesn't invalidate it.
+  //   - The same can be said about *adding* an object to the tree with one
+  //     caveat: the object's AABB must, itself, be up to date.
+  //     - Moving inactive -> active:
+  //       - The inactive collision object's AABB is explicitly updated prior
+  //         to adding it to the active tree (based on the current pose set in
+  //         UpdateWorldPoses()).
+  //       - So, both trees' validity remains unchanged.
+  //     - Moving active -> inactive:
+  //       - The active tree is valid because removal doesn't harm it.
+  //       - If the inactive tree was already marked stale, it doesn't matter
+  //         if the deactivated collision object's AABB is up to date or not.
+  //       - If the inactive tree was *not* stale, then we explicitly update the
+  //         deactivated collision object's AABB prior to adding it.
+  bool inactive_dynamic_stale_{false};
+
+  // All of the *anchored* collision elements. The anchored geometries are not
+  // partitioned like the dynamic geometries. All anchored geometries are
+  // solely listed in anchored_objects_ and registered in anchored_tree_.
+  MapGeometryIdToFclCollisionObject anchored_objects_;
 
   // The tree containing all of the anchored geometry.
   FclDynamicAABBTreeCollisionManager anchored_tree_;
-
-  // All of the *anchored* collision elements (spanning *all* sources).
-  MapGeometryIdToFclCollisionObject anchored_objects_;
 
   // The mechanism for dictating collision filtering.
   CollisionFilter collision_filter_;
@@ -1220,8 +1485,25 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // `dynamic_objects_` and `dynamic_tree_`.
   deformable::Geometries geometries_for_deformable_contact_;
 
-  // Data for ComputeSignedDistanceToPoint from meshes (Mesh and Convex).
-  std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_sdf_data_{};
+  // Deferred repository of per-geometry data for point_distance::Callback on
+  // meshes (Mesh and Convex). It converts declarations to definitions within
+  // queries that require it.
+  MeshDistanceBoundaryCache mesh_distance_boundary_cahe_{};
+
+  // Two-level cache used by ImplementFromConvexHull().
+  //   Level 1: mesh-source cache key  →  ConvexHullCacheEntry
+  //     Stores unit-scale vertex positions and shared face topology so that
+  //     parsing each mesh file is done at most once.
+  //   Level 2 (inside ConvexHullCacheEntry): scale factor  →  fcl::Convexd
+  //     Stores one fcl::Convexd per distinct scale, sharing face topology
+  //     across all scales of the same source file.
+  MapStringToConvexHullCache convex_hull_cache_{};
+
+  // Reverse map from GeometryId to its convex hull cache key. Populated in
+  // ImplementFromConvexHull() for Mesh and Convex geometries; used by
+  // RemoveGeometry() to evict stale cache entries.
+  std::unordered_map<GeometryId, std::pair<std::string, std::array<double, 4>>>
+      geometry_to_hull_key_{};
 };
 
 template <typename T>
@@ -1282,9 +1564,13 @@ void ProximityEngine<T>::AddAnchoredGeometry(const Shape& shape,
 }
 
 template <typename T>
-void ProximityEngine<T>::AddDeformableGeometry(const VolumeMesh<double>& mesh,
-                                               GeometryId id) {
-  impl_->AddDeformableGeometry(mesh, id);
+void ProximityEngine<T>::AddDeformableGeometry(
+    const VolumeMesh<double>& mesh, TriangleSurfaceMesh<double> surface_mesh,
+    std::vector<int> surface_index_to_volume_index,
+    std::vector<int> surface_tri_to_volume_tet, GeometryId id) {
+  impl_->AddDeformableGeometry(mesh, std::move(surface_mesh),
+                               std::move(surface_index_to_volume_index),
+                               std::move(surface_tri_to_volume_tet), id);
 }
 
 template <typename T>
@@ -1347,6 +1633,22 @@ CollisionFilter& ProximityEngine<T>::collision_filter() {
 }
 
 template <typename T>
+void ProximityEngine<T>::ApplyActiveStatusChange(
+    const CollisionFilter::ActiveStatusChange& change) {
+  impl_->ApplyActiveStatusChange(change);
+}
+
+template <typename T>
+bool ProximityEngine<T>::IsInactiveDynamic(GeometryId id) const {
+  return impl_->IsInactiveDynamic(id);
+}
+
+template <typename T>
+int ProximityEngine<T>::num_inactive_dynamic() const {
+  return impl_->num_inactive_dynamic();
+}
+
+template <typename T>
 void ProximityEngine<T>::UpdateWorldPoses(
     const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) {
   impl_->UpdateWorldPoses(X_WGs);
@@ -1354,8 +1656,10 @@ void ProximityEngine<T>::UpdateWorldPoses(
 
 template <typename T>
 void ProximityEngine<T>::UpdateDeformableVertexPositions(
-    const std::unordered_map<GeometryId, VectorX<T>>& q_WGs) {
-  impl_->UpdateDeformableVertexPositions(q_WGs);
+    const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
+    const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+        driven_meshes) {
+  impl_->UpdateDeformableVertexPositions(q_WGs, driven_meshes);
 }
 
 template <typename T>
@@ -1382,6 +1686,15 @@ ProximityEngine<T>::ComputeSignedDistanceToPoint(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     const double threshold) const {
   return impl_->ComputeSignedDistanceToPoint(query, X_WGs, threshold);
+}
+
+template <typename T>
+std::vector<SignedDistanceToPoint<T>>
+ProximityEngine<T>::ComputeSignedDistanceGeometryToPoint(
+    const Vector3<T>& query,
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    const std::unordered_set<GeometryId>& geometries) const {
+  return impl_->ComputeSignedDistanceGeometryToPoint(query, X_WGs, geometries);
 }
 
 template <typename T>
@@ -1447,6 +1760,11 @@ const RigidTransformd ProximityEngine<T>::GetX_WG(GeometryId id,
 }
 
 template <typename T>
+bool ProximityEngine<T>::is_inactive_dynamic_stale() const {
+  return impl_->is_inactive_dynamic_stale();
+}
+
+template <typename T>
 const hydroelastic::Geometries& ProximityEngine<T>::hydroelastic_geometries()
     const {
   return impl_->hydroelastic_geometries();
@@ -1459,6 +1777,17 @@ ProximityEngine<T>::deformable_contact_geometries() const {
 }
 
 template <typename T>
+const TriangleSurfaceMesh<double>* ProximityEngine<T>::mesh_distance_boundary(
+    GeometryId g_id) const {
+  return impl_->mesh_distance_boundary(g_id);
+}
+
+template <typename T>
+const Aabb& ProximityEngine<T>::GetDeformableAabbInWorld(GeometryId id) const {
+  return impl_->GetDeformableAabbInWorld(id);
+}
+
+template <typename T>
 bool ProximityEngine<T>::IsFclConvexType(GeometryId id) const {
   return impl_->IsFclConvexType(id);
 }
@@ -1466,6 +1795,31 @@ bool ProximityEngine<T>::IsFclConvexType(GeometryId id) const {
 template <typename T>
 void* ProximityEngine<T>::GetCollisionObject(GeometryId id) const {
   return impl_->GetCollisionObject(id);
+}
+
+template <typename T>
+int ProximityEngine<T>::convex_hull_cache_file_entries() const {
+  return impl_->convex_hull_cache_file_entries();
+}
+
+template <typename T>
+int ProximityEngine<T>::convex_hull_cache_hull_entries() const {
+  return impl_->convex_hull_cache_hull_entries();
+}
+
+template <typename T>
+bool ProximityEngine<T>::geometry_hull_key_valid(GeometryId id) const {
+  return impl_->geometry_hull_key_valid(id);
+}
+
+template <typename T>
+bool ProximityEngine<T>::geometry_hull_key_absent(GeometryId id) const {
+  return impl_->geometry_hull_key_absent(id);
+}
+
+template <typename T>
+bool ProximityEngine<T>::geometry_hull_reverse_map_consistent() const {
+  return impl_->geometry_hull_reverse_map_consistent();
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

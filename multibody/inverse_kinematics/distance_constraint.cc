@@ -11,6 +11,8 @@ namespace drake {
 namespace multibody {
 using internal::RefFromPtrOrThrow;
 
+DistanceConstraint::~DistanceConstraint() = default;
+
 DistanceConstraint::DistanceConstraint(
     const multibody::MultibodyPlant<double>* const plant,
     SortedPair<geometry::GeometryId> geometry_pair,

@@ -2,6 +2,10 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 // clang-format: on
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -38,10 +42,10 @@ class UniversalJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add some bodies so we can add joints between them:
-    body_ = &model->AddRigidBody("Body", M_B);
+    body_ = &model->AddLink("Body", M_B);
 
     // Add a universal joint between the world and body1:
-    joint_ = &model->AddJoint<UniversalJoint>("Joint", model->world_body(),
+    joint_ = &model->AddJoint<UniversalJoint>("Joint", model->world_link(),
                                               std::nullopt, *body_,
                                               std::nullopt, kDamping);
     mutable_joint_ = dynamic_cast<UniversalJoint<double>*>(

@@ -1,5 +1,8 @@
 #include "drake/multibody/plant/deformable_contact_info.h"
 
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 using drake::geometry::GeometryId;
@@ -25,6 +28,11 @@ GTEST_TEST(DeformableContactInfo, ConstructAndAccess) {
   EXPECT_TRUE(dut.contact_mesh().Equal(contact_mesh));
   EXPECT_EQ(dut.F_Ac_W().translational(), F_Ac_W.translational());
   EXPECT_EQ(dut.F_Ac_W().rotational(), F_Ac_W.rotational());
+}
+
+GTEST_TEST(DeformableContactInfo, EmptyForExpression) {
+  DeformableContactInfo<symbolic::Expression> dut;
+  EXPECT_EQ(sizeof(dut), 1);
 }
 
 }  // namespace

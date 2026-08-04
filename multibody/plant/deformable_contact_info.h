@@ -74,6 +74,17 @@ class DeformableContactInfo {
   SpatialForce<T> F_Ac_W_;
 };
 
+#ifndef __MKDOC_PY__
+/** Full specialization of DeformableContactInfo for T = Expression, with
+ no member data. */
+template <>
+class DeformableContactInfo<symbolic::Expression> {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContactInfo);
+  DeformableContactInfo() = default;
+};
+#endif
+
 }  // namespace multibody
 }  // namespace drake
 

@@ -1,5 +1,7 @@
 #include "drake/common/symbolic/chebyshev_basis_element.h"
 
+#include <unordered_map>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
@@ -215,22 +217,12 @@ TEST_F(SymbolicChebyshevBasisElementTest, Integrate) {
   EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 2}, {y_, 2}})), -1. / 4);
 }
 
-TEST_F(SymbolicChebyshevBasisElementTest, StringOutput) {
-  std::ostringstream os1;
-  os1 << ChebyshevBasisElement();
-  EXPECT_EQ(fmt::format("{}", os1.str()), "T0()");
-
-  std::ostringstream os2;
-  os2 << ChebyshevBasisElement({{x_, 1}});
-  EXPECT_EQ(fmt::format("{}", os2.str()), "T1(x)");
-
-  std::ostringstream os3;
-  os3 << ChebyshevBasisElement({{x_, 0}});
-  EXPECT_EQ(fmt::format("{}", os3.str()), "T0()");
-
-  std::ostringstream os4;
-  os4 << ChebyshevBasisElement({{x_, 1}, {y_, 2}});
-  EXPECT_EQ(fmt::format("{}", os4.str()), "T1(x)T2(y)");
+TEST_F(SymbolicChebyshevBasisElementTest, ToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(ChebyshevBasisElement()), "T0()");
+  EXPECT_EQ(fmt::to_string(ChebyshevBasisElement({{x_, 1}})), "T1(x)");
+  EXPECT_EQ(fmt::to_string(ChebyshevBasisElement({{x_, 0}})), "T0()");
+  EXPECT_EQ(fmt::to_string(ChebyshevBasisElement({{x_, 1}, {y_, 2}})),
+            "T1(x)T2(y)");
 }
 
 TEST_F(SymbolicChebyshevBasisElementTest, ToExpression) {

@@ -1,6 +1,12 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 
+#include <limits>
+#include <memory>
 #include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -779,7 +785,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   const double E = 1.0e5;  // in Pa.
   const double h = 0.1;    // in m.
   // Pressure value at the centroid, computed using Elastic Foundation as a
-  // simple proxy of hydroelastics (equivalent for soft half-spaces).
+  // simple proxy of hydroelastics (equivalent for compliant half-spaces).
   const AutoDiffXd e = p_WC[2] * E / h;
   const double dissipation = 0.1;
   const double mu_coulomb = 1.0;

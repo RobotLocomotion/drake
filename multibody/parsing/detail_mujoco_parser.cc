@@ -475,7 +475,7 @@ class MujocoParser {
                     "supported for free bodies.",
                     name));
       }
-      plant_->SetDefaultFreeBodyPose(child, X_WC);
+      plant_->SetDefaultFloatingBaseBodyPose(child, X_WC);
     } else if (type == "ball") {
       index =
           plant_
@@ -606,28 +606,18 @@ class MujocoParser {
       if (mesh_inertia_->contains(name_)) {
         M_GGo_G_unitDensity = mesh_inertia_->at(name_);
       } else {
-        CalcSpatialInertiaResult result =
-            CalcSpatialInertiaImpl(mesh, 1.0 /* density */);
-        if (std::holds_alternative<std::string>(result)) {
-          policy_.Warning(std::get<std::string>(result));
+        CalcSpatialInertiaResult result = CalcSpatialInertiaWithFallback(
+            mesh, /* density= */ 1.0,
+            /* warn_on_convex= */ [this](const std::string& message) {
+              used_convex_hull_fallback_ = true;
+              policy_.Warning(message);
+            });
 
-          // As this calculator is only used for Mesh shapes that are specified
-          // in a mujoco file, the mesh *must* be on-disk.
-          DRAKE_DEMAND(mesh.source().is_path());
-          // As with mujoco, failure leads to using the convex hull.
-          // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
-          result = CalcSpatialInertiaImpl(
-              geometry::Convex(mesh.source().path(), mesh.scale()),
-              1.0 /* density */);
-          if (std::holds_alternative<std::string>(result)) {
-            policy_.Error(fmt::format(
-                "Failed to compute spatial inertia even for the convex hull of "
-                "{}.\n{}",
-                mesh.source().path().string(), std::get<std::string>(result)));
-          } else {
-            M_GGo_G_unitDensity = std::get<SpatialInertia<double>>(result);
-          }
-          used_convex_hull_fallback_ = true;
+        if (std::holds_alternative<std::string>(result)) {
+          policy_.Error(fmt::format(
+              "Failed to compute spatial inertia even for the convex hull of "
+              "{}.\n{}",
+              mesh.source().path().string(), std::get<std::string>(result)));
         } else {
           M_GGo_G_unitDensity = std::get<SpatialInertia<double>>(result);
         }
@@ -1236,7 +1226,7 @@ class MujocoParser {
       if (XMLElement* freejoint_node = node->FirstChildElement("freejoint")) {
         WarnUnsupportedElement(*freejoint_node, "name");
         WarnUnsupportedElement(*freejoint_node, "group");
-        plant_->SetDefaultFreeBodyPose(body, X_WB);
+        plant_->SetDefaultFloatingBaseBodyPose(body, X_WB);
       } else {
         plant_->WeldFrames(parent.body_frame(), body.body_frame(), X_PB);
       }
@@ -1415,18 +1405,7 @@ class MujocoParser {
         }
 
         Vector3d scale{1, 1, 1};
-        if (ParseVectorAttribute(mesh_node, "scale", &scale)) {
-          if (scale[0] != scale[1] || scale[1] != scale[2]) {
-            Error(*node,
-                  fmt::format(
-                      "mesh {} was defined with a non-uniform scale; but Drake "
-                      "currently only supports uniform scaling. See "
-                      "https://drake.mit.edu/troubleshooting.html for "
-                      "additional resources.",
-                      name));
-            continue;
-          }
-        }
+        ParseVectorAttribute(mesh_node, "scale", &scale);
 
         std::filesystem::path filename(file);
 
@@ -1460,7 +1439,7 @@ class MujocoParser {
                          ::tolower);
           // TODO(russt): Support .vtk files.
           if (extension == ".obj") {
-            mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
+            mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale);
           } else {
             Error(
                 *node,

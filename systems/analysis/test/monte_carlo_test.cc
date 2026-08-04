@@ -1,7 +1,10 @@
 #include "drake/systems/analysis/monte_carlo.h"
 
 #include <cmath>
+#include <memory>
 #include <thread>
+#include <unordered_set>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -65,23 +68,6 @@ GTEST_TEST(RandomSimulationTest, DeterministicSimulator) {
                              &generator),
             value);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Ditto but using the deprecated SimulatorFactory callback.
-GTEST_TEST(RandomSimulationTest, DeprecatedDeterministicSimulator) {
-  RandomGenerator generator;
-  const double final_time = 0.1;
-  const double value = 1.432;
-  const SimulatorFactory make_simulator = [value](RandomGenerator*) {
-    auto system = std::make_unique<ConstantVectorSource<double>>(value);
-    return std::make_unique<Simulator<double>>(std::move(system));
-  };
-  EXPECT_EQ(RandomSimulation(make_simulator, &GetScalarOutput, final_time,
-                             &generator),
-            value);
-}
-#pragma GCC diagnostic pop
 
 // Ensure that RandomSimulation provides deterministic results when
 // the "randomness" is in the RandomSimulatorFactory.
@@ -174,9 +160,9 @@ GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
   RandomGenerator serial_generator(prototype_generator);
   RandomGenerator parallel_generator(prototype_generator);
 
-  const auto serial_results = MonteCarloSimulation(
-      make_simulator, &GetScalarOutput, final_time, num_samples,
-      &serial_generator, Parallelism::None());
+  const auto serial_results =
+      MonteCarloSimulation(make_simulator, &GetScalarOutput, final_time,
+                           num_samples, &serial_generator, Parallelism::None());
   const auto parallel_results = MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
       &parallel_generator, Parallelism::Max());
@@ -259,14 +245,14 @@ GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
   RandomGenerator serial_generator(prototype_generator);
   RandomGenerator parallel_generator(prototype_generator);
 
-  EXPECT_THROW(MonteCarloSimulation(
-      make_simulator, &GetScalarOutput, final_time, num_samples,
-      &serial_generator, Parallelism::None()),
+  EXPECT_THROW(
+      MonteCarloSimulation(make_simulator, &GetScalarOutput, final_time,
+                           num_samples, &serial_generator, Parallelism::None()),
       std::exception);
-  EXPECT_THROW(MonteCarloSimulation(
-      make_simulator, &GetScalarOutput, final_time, num_samples,
-      &parallel_generator, Parallelism::Max()),
-      std::exception);
+  EXPECT_THROW(MonteCarloSimulation(make_simulator, &GetScalarOutput,
+                                    final_time, num_samples,
+                                    &parallel_generator, Parallelism::Max()),
+               std::exception);
 }
 
 }  // namespace

@@ -5,7 +5,6 @@ from python import runfiles
 
 
 class TestEnum(unittest.TestCase):
-
     def setUp(self):
         self.maxDiff = None
 
@@ -20,12 +19,12 @@ class TestEnum(unittest.TestCase):
         # "actual" refers to the the Drake-created flavor (via a patch file).
         # "expected" refers to the upstream-generated flavor (via CMake).
         manifest = runfiles.Create()
-        actual_file = manifest.Rlocation(
-            "nlopt_internal/genrule/nlopt.hpp")
+        actual_file = manifest.Rlocation("nlopt_internal/genrule/nlopt.hpp")
         with open(actual_file) as f:
             actual = f.read()
         expected_file = manifest.Rlocation(
-            "drake/tools/workspace/nlopt_internal/test/nlopt-upstream.hpp")
+            "drake/tools/workspace/nlopt_internal/test/nlopt-upstream.hpp"
+        )
         with open(expected_file) as f:
             expected = f.read()
 
@@ -36,8 +35,8 @@ class TestEnum(unittest.TestCase):
 
         # CMake also does something inexplicable to tab-spaced macro line
         # endings. Canonicalize those in both files for comparison.
-        actual = re.sub(r'\s+\\', r' \\', actual)
-        expected = re.sub(r'\s+\\', r' \\', expected)
+        actual = re.sub(r"\s+\\", r" \\", actual)
+        expected = re.sub(r"\s+\\", r" \\", expected)
 
         # Compare.
         self.assertMultiLineEqual(expected, actual)

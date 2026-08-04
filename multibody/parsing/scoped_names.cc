@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/scoped_names.h"
 
+#include <string>
+
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/scoped_name.h"
 
@@ -10,11 +12,11 @@ namespace parsing {
 template <typename T>
 const drake::multibody::Frame<T>* GetScopedFrameByNameMaybe(
     const drake::multibody::MultibodyPlant<T>& plant,
-    const std::string& full_name) {
+    std::string_view full_name) {
   if (full_name == "world") {
     return &plant.world_frame();
   }
-  auto scoped_name = multibody::ScopedName::Parse(full_name);
+  auto scoped_name = ScopedName::Parse(std::string{full_name});
   if (!scoped_name.get_namespace().empty()) {
     if (plant.HasModelInstanceNamed(scoped_name.get_namespace())) {
       auto instance = plant.GetModelInstanceByName(scoped_name.get_namespace());
@@ -31,11 +33,11 @@ const drake::multibody::Frame<T>* GetScopedFrameByNameMaybe(
 template <typename T>
 const drake::multibody::Frame<T>& GetScopedFrameByName(
     const drake::multibody::MultibodyPlant<T>& plant,
-    const std::string& full_name) {
+    std::string_view full_name) {
   if (full_name == "world") {
     return plant.world_frame();
   }
-  auto scoped_name = multibody::ScopedName::Parse(full_name);
+  auto scoped_name = ScopedName::Parse(std::string{full_name});
   if (!scoped_name.get_namespace().empty()) {
     auto instance = plant.GetModelInstanceByName(scoped_name.get_namespace());
     return plant.GetFrameByName(scoped_name.get_element(), instance);

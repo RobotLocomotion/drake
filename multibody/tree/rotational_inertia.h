@@ -5,7 +5,6 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -17,10 +16,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/extract_double.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -328,7 +325,7 @@ class RotationalInertia {
   /// @see operator+().
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
   RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_BP_E) {
-    this->get_mutable_triangular_view() += I_BP_E.get_matrix();
+    this->get_mutable_triangular_view() += I_BP_E.get_matrix();  // 6 flops
     return *this;
   }
 
@@ -341,7 +338,7 @@ class RotationalInertia {
   /// @return The sum of `this` rotational inertia and `I_BP_E`.
   /// @see operator+=().
   RotationalInertia<T> operator+(const RotationalInertia<T>& I_BP_E) const {
-    return RotationalInertia(*this) += I_BP_E;
+    return RotationalInertia(*this) += I_BP_E;  // 6 flops
   }
 
   /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
@@ -453,7 +450,8 @@ class RotationalInertia {
   /// @see operator/().
   RotationalInertia<T>& operator/=(const T& positive_scalar) {
     DRAKE_ASSERT_VOID(ThrowIfDivideByZeroOrNegativeScalar(positive_scalar));
-    this->get_mutable_triangular_view() /= positive_scalar;
+    const T one_over_positive_scalar = 1 / positive_scalar;
+    this->get_mutable_triangular_view() *= one_over_positive_scalar;
     return *this;
   }
 
@@ -638,7 +636,7 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpress().
-  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE);
+  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE);  // 57 flops
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
@@ -650,7 +648,7 @@ class RotationalInertia {
   [[nodiscard]] RotationalInertia<T> ReExpress(
       const math::RotationMatrix<T>& R_AE) const {
     RotationalInertia result(*this);
-    result.ReExpressInPlace(R_AE);
+    result.ReExpressInPlace(R_AE);  // 57 flops
     return result;
   }
 
@@ -795,7 +793,7 @@ class RotationalInertia {
   /// @see operator-=().
   RotationalInertia<T>& MinusEqualsUnchecked(
       const RotationalInertia<T>& I_BP_E) {
-    this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
+    this->get_mutable_triangular_view() -= I_BP_E.get_matrix();  // 6 flops
     return *this;
   }
 
@@ -1070,20 +1068,16 @@ class RotationalInertia {
       std::numeric_limits<typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
 
-/// Writes an instance of RotationalInertia into a std::ostream.
+/// Returns the string representation of a RotationalInertia object.
 /// @relates RotationalInertia
 template <typename T>
-std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I);
+std::string to_string(const RotationalInertia<T>& I);
 
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename T>
-struct formatter<drake::multibody::RotationalInertia<T>>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename T, drake::multibody, RotationalInertia<T>, x,
+                   drake::multibody::to_string(x))
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::RotationalInertia);

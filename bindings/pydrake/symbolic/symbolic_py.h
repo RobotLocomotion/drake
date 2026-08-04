@@ -16,7 +16,7 @@ namespace pydrake {
 namespace internal {
 
 /* Defines bindings per symbolic_py_monolith.cc. */
-void DefineSymbolicMonolith(py::module m);
+void DefineSymbolicMonolith(py::module_ m);
 
 }  // namespace internal
 }  // namespace pydrake

@@ -2,10 +2,11 @@
  They can be found in the pydrake.geometry module. */
 
 #include <filesystem>
+#include <vector>
 
+#include "drake/bindings/generated_docstrings/geometry_proximity.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
@@ -18,9 +19,9 @@ namespace pydrake {
 namespace {
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
-  constexpr auto& doc = pydrake_doc.drake.geometry;
+  constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
@@ -92,15 +93,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "CalcCartesianFromBarycentric",
             [](const Class* self, int element_index, const Vector3<T>& b_Q) {
-              return self->template CalcCartesianFromBarycentric(
-                  element_index, b_Q);
+              return self->CalcCartesianFromBarycentric(element_index, b_Q);
             },
             py::arg("element_index"), py::arg("b_Q"),
             cls_doc.CalcCartesianFromBarycentric.doc)
         .def(
             "CalcBarycentric",
             [](const Class* self, const Vector3<T>& p_MQ, int t) {
-              return self->template CalcBarycentric(p_MQ, t);
+              return self->CalcBarycentric(p_MQ, t);
             },
             py::arg("p_MQ"), py::arg("t"), cls_doc.CalcBarycentric.doc);
   }
@@ -132,7 +132,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "CalcBarycentric",
             [](const Class* self, const Vector3<T>& p_MQ, int e) {
-              return self->template CalcBarycentric(p_MQ, e);
+              return self->CalcBarycentric(p_MQ, e);
             },
             py::arg("p_MQ"), py::arg("e"), cls_doc.CalcBarycentric.doc)
         .def("Equal", &Class::Equal, py::arg("mesh"),
@@ -143,16 +143,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
       py::arg("volume"), doc.ConvertVolumeToSurfaceMesh.doc);
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
+  constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
 
   // SurfacePolygon
   {
     using Class = SurfacePolygon;
     constexpr auto& cls_doc = doc.SurfacePolygon;
-    py::class_<Class> cls(m, "SurfacePolygon", cls_doc.doc);
+    class_<Class> cls(m, "SurfacePolygon", cls_doc.doc);
     cls  // BR
         .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
         .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
@@ -162,7 +162,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = SurfaceTriangle;
     constexpr auto& cls_doc = doc.SurfaceTriangle;
-    py::class_<Class> cls(m, "SurfaceTriangle", cls_doc.doc);
+    class_<Class> cls(m, "SurfaceTriangle", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), cls_doc.ctor.doc_3args)
@@ -176,7 +176,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = VolumeElement;
     constexpr auto& cls_doc = doc.VolumeElement;
-    py::class_<Class> cls(m, "VolumeElement", cls_doc.doc);
+    class_<Class> cls(m, "VolumeElement", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), py::arg("v3"), cls_doc.ctor.doc_4args)
@@ -187,10 +187,10 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 }
 
-void DoMeshDependentDefinitions(py::module m) {
+void DoMeshDependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
+  constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
   m.def(
       "ReadObjToTriangleSurfaceMesh",
       [](const std::filesystem::path& filename, double scale) {
@@ -213,7 +213,7 @@ void DoMeshDependentDefinitions(py::module m) {
 
 }  // namespace
 
-void DefineGeometryMeshes(py::module m) {
+void DefineGeometryMeshes(py::module_ m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});

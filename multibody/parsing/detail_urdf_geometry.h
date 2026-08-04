@@ -126,22 +126,44 @@ constexpr int kDefaultNumericSuffixLimit = 10000;
   - Multiple instances of this tag are allowed. Each instance adds a renderer to
     the list of targeted renderers.
 
- This feature is one way to provide multiple visual representations of a body.
+This feature is one way to provide multiple visual representations of a body.
 
- @param[in] diagnostic The diagnostic handler.
- @param[in] parent_element_name The name of the parent link element, used
- for error reporting.
- @param[in,out] materials The MaterialMap is used to look up materials
- which are referenced by name only in the visual element.  New materials
- which are specified by both color and name will be added to the map and
- can be used by later visual elements.  Material definitions may be
- repeated if the material properties are identical.
- @param[in,out] geometry_names The list of visual geometry names already used
- within the current MbP body (i.e., link), so that this function can be sure not
- to reuse an already-used name. This function adds the name used by the returned
- geometry into this set.
- @param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
-                                      numeric suffixes.
+<h2>Drake Visual Property Tags</h2>
+
+In addition to the standard URDF <visual> hierarchy, Drake supports additional
+tags for controlling which roles (illustration and/or perception) are assigned:
+
+```
+   <visual>
+     <geometry ... />
+     <drake:illustration_properties enabled="true|false" />
+     <drake:perception_properties enabled="true|false" />
+     ...
+   </visual>
+```
+
+`<visual>` geometries are assigned both illustration and perception roles by
+default. Setting `enabled="false"` on a tag opts out of that role. Setting
+`enabled="true"` is equivalent to omitting the tag (keeps default behavior).
+
+If both tags are present with enabled="false", a warning will be emitted and
+the visual geometry will be skipped entirely. This matches the semantics of
+the corresponding tags in SDFormat.
+
+@param[in] diagnostic The diagnostic handler.
+@param[in] parent_element_name The name of the parent link element, used
+for error reporting.
+@param[in,out] materials The MaterialMap is used to look up materials
+which are referenced by name only in the visual element.  New materials
+which are specified by both color and name will be added to the map and
+can be used by later visual elements.  Material definitions may be
+repeated if the material properties are identical.
+@param[in,out] geometry_names The list of visual geometry names already used
+within the current MbP body (i.e., link), so that this function can be sure not
+to reuse an already-used name. This function adds the name used by the returned
+geometry into this set.
+@param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
+                                     numeric suffixes.
 */
 std::optional<geometry::GeometryInstance> ParseVisual(
     const TinyXml2Diagnostic& diagnostic,

@@ -1,5 +1,9 @@
 #include <limits>
+#include <map>
 #include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -24,6 +28,7 @@ using multibody::test::RobotModelConfig;
 using symbolic::Expression;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::SubsystemIndex;
 using systems::System;
 
 namespace multibody {
@@ -142,10 +147,48 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, PortIndexOrdering) {
 
   std::unique_ptr<Diagram<U>> diagram_u =
       System<double>::ToScalarType<U>(*diagram);
-  const auto& plant_u =
-      dynamic_cast<const MultibodyPlant<U>&>(*diagram_u->GetSystems().at(0));
+  const auto& plant_u = dynamic_cast<const MultibodyPlant<U>&>(
+      diagram_u->get_system(SubsystemIndex{0}));
 
   CompareMultibodyPlantPortIndices(plant, plant_u);
+}
+
+// This test verifies that scalar conversion preserves the surface displacement
+// state used to integrate surface displacements. As the discrete and continuous
+// implementations are independent, we test both using a mode-agnostic
+// mechanism; if the surface_displacements output port reports a signal, we
+// infer the presence of the supporting state.
+TYPED_TEST_P(MultibodyPlantDefaultScalarsTest,
+             SurfaceVelocityDisplacementState) {
+  using U = TypeParam;
+
+  for (double time_step : {0.0, 0.1}) {
+    SCOPED_TRACE(fmt::format("time_step = {}", time_step));
+    MultibodyPlant<double> plant(time_step);
+    const RigidBody<double>& belt =
+        plant.AddRigidBody("belt", SpatialInertia<double>::MakeUnitary());
+    plant.SetSurfaceVelocityAxis(belt, Vector3<double>::UnitX());
+    plant.Finalize();
+
+    auto context = plant.CreateDefaultContext();
+    const auto& displacements =
+        plant.get_surface_displacements_output_port().Eval<systems::BusValue>(
+            *context);
+    // Presence of the output signal implies presence of the state.
+    EXPECT_NE(displacements.Find(belt.scoped_name().to_string()), nullptr);
+
+    std::unique_ptr<MultibodyPlant<U>> plant_u =
+        System<double>::ToScalarType<U>(plant);
+    const RigidBody<U>& belt_u = plant_u->GetBodyByName("belt");
+    EXPECT_TRUE(plant_u->GetSurfaceVelocityAxis(belt_u).has_value());
+
+    auto context_u = plant_u->CreateDefaultContext();
+    const auto& displacements_u =
+        plant_u->get_surface_displacements_output_port()
+            .template Eval<systems::BusValue>(*context_u);
+    // Presence of the output signal implies presence of the state.
+    EXPECT_NE(displacements_u.Find(belt.scoped_name().to_string()), nullptr);
+  }
 }
 
 // Verifies that we can AddMultibodyPlantSceneGraph, without any conversion.
@@ -160,7 +203,7 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, DirectlyAdded) {
 
 REGISTER_TYPED_TEST_SUITE_P(MultibodyPlantDefaultScalarsTest,
                             RevoluteJointAndSpring, PortIndexOrdering,
-                            DirectlyAdded);
+                            SurfaceVelocityDisplacementState, DirectlyAdded);
 
 using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, MultibodyPlantDefaultScalarsTest,
@@ -320,11 +363,18 @@ std::string ParamInfoToString(
   return s.str();
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kDiscreteContactApproximationTamsi =
+    DiscreteContactApproximation::kTamsi;
+#pragma GCC diagnostic push
+
 // Helper to make all parameter permutations for DiscretePlantTest.
 auto MakeAllPermutations() {
   return ::testing::Combine(
       ::testing::Values(DiscreteContactApproximation::kSimilar,
-                        DiscreteContactApproximation::kTamsi),
+                        kDiscreteContactApproximationTamsi),
       ::testing::Values(ContactModel::kPoint,
                         ContactModel::kHydroelasticWithFallback),
       ::testing::Values(RobotModelConfig::ContactConfig::kNoGeometry,

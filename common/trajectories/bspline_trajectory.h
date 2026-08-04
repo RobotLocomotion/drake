@@ -5,9 +5,9 @@
 
 #include <Eigen/Sparse>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
 #include "drake/common/trajectories/trajectory.h"
@@ -57,7 +57,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
            trajectory will silently be evaluated at the closest
            valid value of time to t. For example, `value(-1)` will return
            `value(0)` for a trajectory defined over [0, 1]. */
-  MatrixX<T> value(const T& t) const final {
+  MatrixX<T> value(const T& t) const {
     // We shadowed the base class to add documentation, not to change logic.
     return Trajectory<T>::value(t);
   }

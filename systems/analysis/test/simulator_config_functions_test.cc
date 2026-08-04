@@ -1,9 +1,13 @@
 #include "drake/systems/analysis/simulator_config_functions.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -45,6 +49,10 @@ TYPED_TEST(SimulatorConfigFunctionsTest, GetSchemes) {
   ConstantVectorSource<T> source(2);
   Simulator<T> simulator(source);
   for (const auto& one_scheme : schemes) {
+    // Skip CENIC, since it requires a MultibodyPlant.
+    if (one_scheme == "cenic") {
+      continue;
+    }
     DRAKE_EXPECT_NO_THROW(
         ResetIntegratorFromFlags(&simulator, one_scheme, T(0.001)));
   }
@@ -73,20 +81,20 @@ TYPED_TEST(SimulatorConfigFunctionsTest, CongruenceTest) {
   EXPECT_EQ(sim_defaults.max_step_size, config_defaults.max_step_size);
   EXPECT_EQ(sim_defaults.accuracy, config_defaults.accuracy);
   EXPECT_EQ(sim_defaults.use_error_control, config_defaults.use_error_control);
+  EXPECT_EQ(sim_defaults.start_time, config_defaults.start_time);
   EXPECT_EQ(sim_defaults.target_realtime_rate,
             config_defaults.target_realtime_rate);
-  EXPECT_EQ(sim_defaults.publish_every_time_step,
-            config_defaults.publish_every_time_step);
 }
 
 TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   using T = TypeParam;
-  const std::string bespoke_str = "integration_scheme: runge_kutta5\n"
-                                  "max_step_size: 0.003\n"
-                                  "accuracy: 0.03\n"
-                                  "use_error_control: true\n"
-                                  "target_realtime_rate: 3.0\n"
-                                  "publish_every_time_step: true\n";
+  const std::string bespoke_str =
+      "integration_scheme: runge_kutta5\n"
+      "max_step_size: 0.003\n"
+      "accuracy: 0.03\n"
+      "use_error_control: true\n"
+      "start_time: 0.5\n"
+      "target_realtime_rate: 3.0\n";
 
   // Ensure that the string and the struct have the same fields.
   const auto bespoke = LoadYamlString<SimulatorConfig>(bespoke_str);
@@ -105,8 +113,77 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   EXPECT_EQ(readback.max_step_size, bespoke.max_step_size);
   EXPECT_EQ(readback.accuracy, bespoke.accuracy);
   EXPECT_EQ(readback.use_error_control, bespoke.use_error_control);
+  EXPECT_EQ(readback.start_time, bespoke.start_time);
   EXPECT_EQ(readback.target_realtime_rate, bespoke.target_realtime_rate);
-  EXPECT_EQ(readback.publish_every_time_step, bespoke.publish_every_time_step);
+}
+
+template <typename T>
+class IntegratorConfigFunctionsTest : public ::testing::Test {
+ protected:
+  // (integration scheme, type name, support symbolic::Expression) pairs.
+  std::vector<std::tuple<std::string, std::string, bool>> suites_ = {
+      {"bogacki_shampine3", "BogackiShampine3Integrator<T>", false},
+      {"explicit_euler", "ExplicitEulerIntegrator<T>", true},
+      {"implicit_euler", "ImplicitEulerIntegrator<T>", false},
+      {"radau1", "RadauIntegrator<T,1>", false},
+      {"radau3", "RadauIntegrator<T,2>", false},
+      {"runge_kutta2", "RungeKutta2Integrator<T>", true},
+      {"runge_kutta3", "RungeKutta3Integrator<T>", false},
+      {"runge_kutta5", "RungeKutta5Integrator<T>", false},
+      {"semi_explicit_euler", "SemiExplicitEulerIntegrator<T>", true},
+      {"velocity_implicit_euler", "VelocityImplicitEulerIntegrator<T>", false},
+  };
+
+  void SetUp() override {
+    for (auto& suite : suites_) {
+      std::string& type_name = std::get<1>(suite);
+      type_name = "drake::systems::" + type_name;
+      type_name.replace(type_name.rfind("T"), 1, NiceTypeName::Get<T>());
+    }
+  }
+};
+
+using DefaultScalars =
+    ::testing::Types<double, AutoDiffXd, symbolic::Expression>;
+TYPED_TEST_SUITE(IntegratorConfigFunctionsTest, DefaultScalars);
+
+TYPED_TEST(IntegratorConfigFunctionsTest, CreateIntegratorFromConfigTest) {
+  using T = TypeParam;
+  for (const auto& [scheme, type_name, support_symbolic] : this->suites_) {
+    ConstantVectorSource<T> system(2);
+    SimulatorConfig config{.integration_scheme = scheme};
+
+    if (std::is_same_v<T, symbolic::Expression> && !support_symbolic) {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          CreateIntegratorFromConfig(&system, config),
+          ".+ does not support scalar type " +
+              NiceTypeName::Get<symbolic::Expression>());
+    } else {
+      auto integrator = CreateIntegratorFromConfig(&system, config);
+
+      EXPECT_EQ(NiceTypeName::Get(*integrator), type_name);
+
+      EXPECT_EQ(integrator->get_maximum_step_size(), config.max_step_size);
+      if (integrator->supports_error_estimation()) {
+        EXPECT_EQ(integrator->get_fixed_step_mode(), !config.use_error_control);
+        EXPECT_EQ(integrator->get_target_accuracy(), config.accuracy);
+      }
+    }
+  }
+}
+
+TYPED_TEST(IntegratorConfigFunctionsTest,
+           IsScalarTypeSupportedByIntegratorTest) {
+  using T = TypeParam;
+  for (const auto& [scheme, type_name, support_symbolic] : this->suites_) {
+    if constexpr (std::is_same_v<T, symbolic::Expression>) {
+      EXPECT_EQ(IsScalarTypeSupportedByIntegrator<T>(scheme), support_symbolic);
+    } else {
+      EXPECT_TRUE(IsScalarTypeSupportedByIntegrator<T>(scheme));
+    }
+  }
+  DRAKE_EXPECT_THROWS_MESSAGE(IsScalarTypeSupportedByIntegrator<T>("abc"),
+                              "Unknown integration scheme.*");
 }
 
 }  // namespace

@@ -24,11 +24,10 @@ class EventfulSystem final : public LeafSystem<double> {
     DeclarePerStepDiscreteUpdateEvent(&EventfulSystem::Update);
     DeclarePerStepUnrestrictedUpdateEvent(&EventfulSystem::Update);
 
-    // These events were not found to allocate at AdvanceTo(); they are
-    // included for completeness.
-    DeclareForcedPublishEvent(&EventfulSystem::Update);
-    DeclareForcedDiscreteUpdateEvent(&EventfulSystem::Update);
-    DeclareForcedUnrestrictedUpdateEvent(&EventfulSystem::Update);
+    // Simulator should never call forced events.
+    DeclareForcedPublishEvent(&EventfulSystem::Throws);
+    DeclareForcedDiscreteUpdateEvent(&EventfulSystem::Throws);
+    DeclareForcedUnrestrictedUpdateEvent(&EventfulSystem::Throws);
 
     // It turns out that declaring an init event can actually *reduce* the
     // allocation count, by forcing earlier allocations in underlying storage
@@ -49,6 +48,15 @@ class EventfulSystem final : public LeafSystem<double> {
   EventStatus Update(const Context<double>&, State<double>*) const {
     return EventStatus::Succeeded();
   }
+  EventStatus Throws(const Context<double>&) const {
+    throw std::runtime_error("Simulator shouldn't call forced events");
+  }
+  EventStatus Throws(const Context<double>&, DiscreteValues<double>*) const {
+    throw std::runtime_error("Simulator shouldn't call forced events");
+  }
+  EventStatus Throws(const Context<double>&, State<double>*) const {
+    throw std::runtime_error("Simulator shouldn't call forced events");
+  }
 };
 
 // Tests that heap allocations do not occur from Simulator and the systems
@@ -65,8 +73,6 @@ GTEST_TEST(SimulatorLimitMallocTest,
 
   // Create a Simulator and use it to advance time until t=3.
   Simulator<double> simulator(*diagram);
-  // Actually cause forced-publish events to be issued.
-  simulator.set_publish_every_time_step(true);
   // Trigger first (and only allowable) heap allocation.
   simulator.Initialize();
   {

@@ -1,5 +1,11 @@
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/planning.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/collision_checker.h"
@@ -15,15 +21,15 @@ using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::RigidBody;
 
-void DefinePlanningCollisionChecker(py::module m) {
+void DefinePlanningCollisionChecker(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning.drake.planning;
 
   {
     using Class = CollisionChecker;
     constexpr auto& cls_doc = doc.CollisionChecker;
-    py::class_<Class> cls(m, "CollisionChecker", cls_doc.doc);
+    class_<Class> cls(m, "CollisionChecker", cls_doc.doc);
     cls  // BR
         .def("model", &Class::model, py_rvp::reference_internal,
             cls_doc.model.doc)
@@ -282,25 +288,26 @@ void DefinePlanningCollisionChecker(py::module m) {
   {
     using Class = SceneGraphCollisionChecker;
     constexpr auto& cls_doc = doc.SceneGraphCollisionChecker;
-    py::class_<Class, CollisionChecker> cls(
+    class_<Class, CollisionChecker> cls(
         m, "SceneGraphCollisionChecker", cls_doc.doc);
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR
         .def(
-            py::init([params_ctor](py::object model, const py::kwargs& kwargs) {
+            "__init__",
+            [params_ctor](
+                Class* self, py::object model, const py::kwargs& kwargs) {
               // For lifetime management, we need to treat pointer-like
               // arguments separately. Start by creating a Params object in
               // Python with all of the other non-pointer kwargs.
               py::object params_py = params_ctor(**kwargs);
-              auto* params = params_py.cast<CollisionCheckerParams*>();
+              auto* params = py::cast<CollisionCheckerParams*>(params_py);
               DRAKE_DEMAND(params != nullptr);
               // Now, add a python reference to model (owned by the shared
               // pointer), and transfer that to the c++ checker.
               params->model =
                   make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
-              return std::make_unique<SceneGraphCollisionChecker>(
-                  std::move(*params));
-            }),
+              new (self) Class(std::move(*params));
+            },
             py::kw_only(), py::arg("model"),
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
@@ -314,26 +321,26 @@ void DefinePlanningCollisionChecker(py::module m) {
   {
     using Class = UnimplementedCollisionChecker;
     constexpr auto& cls_doc = doc.UnimplementedCollisionChecker;
-    py::class_<Class, CollisionChecker> cls(
+    class_<Class, CollisionChecker> cls(
         m, "UnimplementedCollisionChecker", cls_doc.doc);
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR
-        .def(py::init([params_ctor](py::object model,
-                          bool supports_parallel_checking,
-                          const py::kwargs& kwargs) {
-          // For lifetime management, we need to treat pointer-like
-          // arguments separately. Start by creating a Params object in
-          // Python with all of the other non-pointer kwargs.
-          py::object params_py = params_ctor(**kwargs);
-          auto* params = params_py.cast<CollisionCheckerParams*>();
-          DRAKE_DEMAND(params != nullptr);
-          // Now, add a python reference to model (owned by the shared
-          // pointer), and transfer that to the c++ checker.
-          params->model =
-              make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
-          return std::make_unique<UnimplementedCollisionChecker>(
-              std::move(*params), supports_parallel_checking);
-        }),
+        .def(
+            "__init__",
+            [params_ctor](Class* self, py::object model,
+                bool supports_parallel_checking, const py::kwargs& kwargs) {
+              // For lifetime management, we need to treat pointer-like
+              // arguments separately. Start by creating a Params object in
+              // Python with all of the other non-pointer kwargs.
+              py::object params_py = params_ctor(**kwargs);
+              auto* params = py::cast<CollisionCheckerParams*>(params_py);
+              DRAKE_DEMAND(params != nullptr);
+              // Now, add a python reference to model (owned by the shared
+              // pointer), and transfer that to the c++ checker.
+              params->model =
+                  make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
+              new (self) Class(std::move(*params), supports_parallel_checking);
+            },
             py::kw_only(), py::arg("model"),
             py::arg("supports_parallel_checking"),
             (std::string(cls_doc.ctor.doc) +

@@ -7,31 +7,31 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_binary(
     name = "simple_continuous_time_system",
     srcs = ["simple_continuous_time_system.cc"],
-    add_test_rule = 1,
     deps = [
         "//systems/analysis:simulator",
         "//systems/framework:vector_system",
     ],
+    add_test_rule = True,
 )
 
 drake_cc_binary(
     name = "simple_discrete_time_system",
     srcs = ["simple_discrete_time_system.cc"],
-    add_test_rule = 1,
     deps = [
         "//systems/analysis:simulator",
         "//systems/framework:vector_system",
     ],
+    add_test_rule = True,
 )
 
 drake_cc_binary(
     name = "simple_mixed_continuous_and_discrete_time_system",
     srcs = ["simple_mixed_continuous_and_discrete_time_system.cc"],
-    add_test_rule = 1,
     deps = [
         "//systems/analysis:simulator",
         "//systems/framework:leaf_system",
     ],
+    add_test_rule = True,
 )
 
 # The :models in these packages are installed as part of the Drake release

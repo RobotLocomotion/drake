@@ -25,29 +25,31 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
-// TODO(SeanCurtis-TRI): When we do soft-soft contact, we'll need ∇p̃(e) as well.
+// TODO(SeanCurtis-TRI): When we do compliant-compliant contact, we'll need
+// ∇p̃(e) as well.
 //  ∇p̃(e) is piecewise constant -- one ℜ³ vector per tetrahedron.
-/* Defines a soft mesh -- a volume mesh, its linearized pressure field, p̃(e),
-and derived objects:
+/* Defines a compliant mesh -- a volume mesh, its linearized pressure field,
+p̃(e), and derived objects:
   - The bounding volume hierarchy of the volume mesh
   - The surface of the volume mesh
   - The bounding volume hierarchy of the surface
   - The mapping from surface mesh triangles to volume mesh tetrahedra
   - The topology of the volume mesh.
 */
-class SoftMesh {
+class CompliantMesh {
  public:
-  SoftMesh() = default;
+  CompliantMesh() = default;
 
-  SoftMesh(std::unique_ptr<VolumeMesh<double>> mesh,
-           std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure);
+  CompliantMesh(
+      std::unique_ptr<VolumeMesh<double>> mesh,
+      std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure);
 
-  SoftMesh(const SoftMesh& s) { *this = s; }
-  SoftMesh& operator=(const SoftMesh& s);
-  SoftMesh(SoftMesh&&) = default;
-  SoftMesh& operator=(SoftMesh&&) = default;
+  CompliantMesh(const CompliantMesh& s) { *this = s; }
+  CompliantMesh& operator=(const CompliantMesh& s);
+  CompliantMesh(CompliantMesh&&) = default;
+  CompliantMesh& operator=(CompliantMesh&&) = default;
 
-  /* The mesh representing this SoftMesh. */
+  /* The mesh representing this CompliantMesh. */
   const VolumeMesh<double>& mesh() const {
     DRAKE_DEMAND(mesh_ != nullptr);
     return *mesh_;
@@ -100,9 +102,9 @@ class SoftMesh {
   std::unique_ptr<std::vector<TetFace>> tri_to_tet_;
 };
 
-/* Defines a soft half space. The half space is defined such that the half
+/* Defines a compliant half space. The half space is defined such that the half
  space's boundary plane is z = 0 in Frame H. Vector Hz points _out_ of the half
- space. The half space is considered to be a soft layer of thickness h
+ space. The half space is considered to be a compliant layer of thickness h
  overlaying a rigid substrate of infinite extent. Its compliance is
  characterized by two parameters:
 
@@ -110,12 +112,13 @@ class SoftMesh {
      deformation (<< h), and
    - slab thickness: the thickness of the compliant layer.
 
- The pressure in the soft layer may be modeled in many ways. Currently, we use
- the simplest model in which the pressure field is `ρ = E⋅d/h`, where `E` is the
- elastic modulus, `d` is the positive penetration measure, and `h` is the slab
- thickness -- a simple linear function where pressure is a scale of the depth.
- This model is valid for small penetrations but fails to capture the increased
- stiffness for deformations that approach or penetrate the rigid substrate.
+ The pressure in the compliant layer may be modeled in many ways. Currently, we
+ use the simplest model in which the pressure field is `ρ = E⋅d/h`, where `E` is
+ the elastic modulus, `d` is the positive penetration measure, and `h` is the
+ slab thickness -- a simple linear function where pressure is a scale of the
+ depth. This model is valid for small penetrations but fails to capture the
+ increased stiffness for deformations that approach or penetrate the rigid
+ substrate.
 
  The hydroelastic representation combines elastic modulus and slab thickness
  into a "pressure scale" value: `s = E / h`, which maps penetration depth to
@@ -126,33 +129,33 @@ class SoftMesh {
    - a finite discretization is a poor representation of an infinite volume, and
    - it is computationally advantageous to *not* discretize the half space.
  */
-struct SoftHalfSpace {
+struct CompliantHalfSpace {
   double pressure_scale;
   double margin;
   // TODO(SeanCurtis-TRI): Possibly add a customizable pressure function in the
   //  future; one that isn't simply the scaled, normalized penetration distance.
 };
 
-/* Definition of a soft geometry for hydroelastic implementations. To be a
- soft geometry, a shape must be associated with either:
+/* Definition of a compliant geometry for hydroelastic implementations. To be a
+ compliant geometry, a shape must be associated with either:
 
    - a volume mesh (including a linearized scalar pressure field), or
-   - a soft half space (with a "slab thickness").  */
-class SoftGeometry {
+   - a compliant half space (with a "slab thickness").  */
+class CompliantGeometry {
  public:
-  /* Constructs a soft half space representation.  */
-  explicit SoftGeometry(const SoftHalfSpace& soft_half_space)
-      : geometry_(soft_half_space) {}
+  /* Constructs a compliant half space representation.  */
+  explicit CompliantGeometry(const CompliantHalfSpace& compliant_half_space)
+      : geometry_(compliant_half_space) {}
 
-  /* Constructs a soft mesh representation.  */
-  explicit SoftGeometry(SoftMesh&& soft_mesh)
-      : geometry_(std::move(soft_mesh)) {}
+  /* Constructs a compliant mesh representation.  */
+  explicit CompliantGeometry(CompliantMesh&& compliant_mesh)
+      : geometry_(std::move(compliant_mesh)) {}
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SoftGeometry);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CompliantGeometry);
 
   /* @name  Distinguishing compliant representations
 
-   The %SoftGeometry can contain either a volume mesh (used as the
+   The %CompliantGeometry can contain either a volume mesh (used as the
    representation for most shapes) or a half space. Accessing the members of
    either representation (`mesh()`, `pressure_field()`, and `bvh()` for the
    volume mesh or `pressure_scale()` for the half space) is conditioned on
@@ -160,32 +163,34 @@ class SoftGeometry {
 
    This can be accomplished by querying `is_half_space()`. Attempting to access
    data members of the *wrong* type will throw an exception.  */
-  // TODO(SeanCurtis-TRI): remove all of these legacy API wrappers for SoftMesh
-  // and SoftHalfSpace.
+  // TODO(SeanCurtis-TRI): remove all of these legacy API wrappers for
+  // CompliantMesh and CompliantHalfSpace.
   //@{
 
   bool is_half_space() const {
-    return std::holds_alternative<SoftHalfSpace>(geometry_);
+    return std::holds_alternative<CompliantHalfSpace>(geometry_);
   }
 
-  /* Returns a reference to the SoftMesh -- calling this will throw if
+  /* Returns a reference to the CompliantMesh -- calling this will throw if
    is_half_space() returns `true`.  */
-  const SoftMesh& soft_mesh() const {
+  const CompliantMesh& compliant_mesh() const {
     if (is_half_space()) {
       throw std::runtime_error(
-          "SoftGeometry::soft_mesh() cannot be invoked for soft half space.");
+          "CompliantGeometry::compliant_mesh() cannot be invoked for compliant "
+          "half space.");
     }
-    return std::get<SoftMesh>(geometry_);
+    return std::get<CompliantMesh>(geometry_);
   }
 
-  /* Returns a reference to the SoftHalfSpace -- calling this will throw if
+  /* Returns a reference to the CompliantHalfSpace -- calling this will throw if
    is_half_space() returns `false`.  */
-  const SoftHalfSpace& soft_half_space() const {
+  const CompliantHalfSpace& compliant_half_space() const {
     if (!is_half_space()) {
       throw std::runtime_error(
-          "SoftGeometry::soft_half_space() cannot be invoked for soft mesh.");
+          "CompliantGeometry::compliant_half_space() cannot be invoked for "
+          "compliant mesh.");
     }
-    return std::get<SoftHalfSpace>(geometry_);
+    return std::get<CompliantHalfSpace>(geometry_);
   }
 
   /* Returns a reference to the volume mesh -- calling this will throw if
@@ -193,9 +198,10 @@ class SoftGeometry {
   const VolumeMesh<double>& mesh() const {
     if (is_half_space()) {
       throw std::runtime_error(
-          "SoftGeometry::mesh() cannot be invoked for soft half space");
+          "CompliantGeometry::mesh() cannot be invoked for compliant half "
+          "space");
     }
-    return std::get<SoftMesh>(geometry_).mesh();
+    return std::get<CompliantMesh>(geometry_).mesh();
   }
 
   /* Returns a reference to the mesh's linearized pressure field -- calling
@@ -203,10 +209,10 @@ class SoftGeometry {
   const VolumeMeshFieldLinear<double, double>& pressure_field() const {
     if (is_half_space()) {
       throw std::runtime_error(
-          "SoftGeometry::pressure_field() cannot be "
-          "invoked for soft half space");
+          "CompliantGeometry::pressure_field() cannot be "
+          "invoked for compliant half space");
     }
-    return std::get<SoftMesh>(geometry_).pressure();
+    return std::get<CompliantMesh>(geometry_).pressure();
   }
 
   /* Returns a reference to the bounding volume hierarchy -- calling this will
@@ -214,9 +220,10 @@ class SoftGeometry {
   const Bvh<Obb, VolumeMesh<double>>& bvh() const {
     if (is_half_space()) {
       throw std::runtime_error(
-          "SoftGeometry::bvh() cannot be invoked for soft half space");
+          "CompliantGeometry::bvh() cannot be invoked for compliant half "
+          "space");
     }
-    return std::get<SoftMesh>(geometry_).bvh();
+    return std::get<CompliantMesh>(geometry_).bvh();
   }
 
   /* Returns the half space's pressure scale -- calling this will throw if
@@ -224,28 +231,29 @@ class SoftGeometry {
   double pressure_scale() const {
     if (!is_half_space()) {
       throw std::runtime_error(
-          "SoftGeometry::pressure_scale() cannot be invoked for soft mesh");
+          "CompliantGeometry::pressure_scale() cannot be invoked for compliant "
+          "mesh");
     }
-    return std::get<SoftHalfSpace>(geometry_).pressure_scale;
+    return std::get<CompliantHalfSpace>(geometry_).pressure_scale;
   }
 
   /* Returns the half space's margin -- calling this will throw if
    is_half_space() returns `false`.
    The margin value is part of the contact surface calculation for half spaces.
-   For SoftMesh instances, the margin is already part of the representative mesh
-   and it is not necessary to carry the value here.  */
+   For CompliantMesh instances, the margin is already part of the representative
+   mesh and it is not necessary to carry the value here.  */
   double half_space_margin() const {
     if (!is_half_space()) {
       throw std::runtime_error(
-          "SoftGeometry::margin() cannot be invoked for soft mesh");
+          "CompliantGeometry::margin() cannot be invoked for compliant mesh");
     }
-    return std::get<SoftHalfSpace>(geometry_).margin;
+    return std::get<CompliantHalfSpace>(geometry_).margin;
   }
 
   //@}
 
  private:
-  std::variant<SoftHalfSpace, SoftMesh> geometry_;
+  std::variant<CompliantHalfSpace, CompliantMesh> geometry_;
 };
 
 /* Defines a rigid mesh -- a surface mesh and its bounding volume hierarchy.
@@ -359,9 +367,9 @@ class Geometries final : public ShapeReifier {
      - If HydroelasticType::kRigid is returned, there is a rigid geometry
        associated with that id and calling rigid_geometry() will return a
        valid RigidGeometry.
-     - If HydroelasticType::kSoft is returned, there is a soft geometry
-       associated with that id and calling soft_geometry() will return a valid
-       SoftGeometry.  */
+     - If HydroelasticType::kCompliant is returned, there is a compliant
+   geometry associated with that id and calling compliant_geometry() will return
+   a valid CompliantGeometry.  */
   HydroelasticType hydroelastic_type(GeometryId id) const;
 
   /* Returns true iff the hydroelastic representation of this geometry has been
@@ -371,11 +379,11 @@ class Geometries final : public ShapeReifier {
    primitive). */
   bool is_vanished(GeometryId id) const;
 
-  /* Returns the representation of the soft geometry with the given `id`.
-   @pre hydroelastic_type(id) returns HydroelasticType::kSoft.  */
-  const SoftGeometry& soft_geometry(GeometryId id) const {
-    DRAKE_DEMAND(hydroelastic_type(id) == HydroelasticType::kSoft);
-    return soft_geometries_.at(id);
+  /* Returns the representation of the compliant geometry with the given `id`.
+   @pre hydroelastic_type(id) returns HydroelasticType::kCompliant.  */
+  const CompliantGeometry& compliant_geometry(GeometryId id) const {
+    DRAKE_DEMAND(hydroelastic_type(id) == HydroelasticType::kCompliant);
+    return compliant_geometries_.at(id);
   }
 
   /* Returns the representation of the rigid geometry with the given `id`.
@@ -427,9 +435,9 @@ class Geometries final : public ShapeReifier {
   template <typename ShapeType>
   void MakeShape(const ShapeType& shape, const ReifyData& data);
 
-  // Adds a representation of the soft geometry with the given `id`.
+  // Adds a representation of the compliant geometry with the given `id`.
   // @pre there is no previous representation associated with `id`.
-  void AddGeometry(GeometryId id, SoftGeometry field);
+  void AddGeometry(GeometryId id, CompliantGeometry field);
 
   // Adds a representation of the rigid geometry with the given `id`.
   // @pre there is no previous representation associated with `id`.
@@ -439,8 +447,8 @@ class Geometries final : public ShapeReifier {
   // the type of representation.
   std::unordered_map<GeometryId, HydroelasticType> supported_geometries_;
 
-  // The representations of all soft geometries.
-  std::unordered_map<GeometryId, SoftGeometry> soft_geometries_;
+  // The representations of all compliant geometries.
+  std::unordered_map<GeometryId, CompliantGeometry> compliant_geometries_;
 
   // The representations of all rigid geometries.
   std::unordered_map<GeometryId, RigidGeometry> rigid_geometries_;
@@ -511,64 +519,64 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);
 
-/* Warning utility function for MakeSoftRepresentation(). */
-void WarnNoSoftRepresentation(std::string_view shape_type_name);
+/* Warning utility function for MakeCompliantRepresentation(). */
+void WarnNoCompliantRepresentation(std::string_view shape_type_name);
 
-/* Generic interface for handling unsupported soft Shapes. Unsupported
+/* Generic interface for handling unsupported compliant Shapes. Unsupported
  geometries will return a std::nullopt.  */
 template <typename Shape>
-std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
-                                                   const ProximityProperties&) {
-  WarnNoSoftRepresentation(shape.type_name());
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
+    const Shape& shape, const ProximityProperties&) {
+  WarnNoCompliantRepresentation(shape.type_name());
   return {};
 }
 
-/* Creates a soft sphere (assuming the proximity properties have sufficient
+/* Creates a compliant sphere (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
-/* Creates a soft box (assuming the proximity properties have sufficient
+/* Creates a compliant box (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'hydroelastic_modulus')
  properties.  */
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Box& box, const ProximityProperties& props);
 
-/* Creates a soft cylinder (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
+/* Creates a compliant cylinder (assuming the proximity properties have
+ sufficient information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
 
-/* Creates a soft capsule (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
+/* Creates a compliant capsule (assuming the proximity properties have
+ sufficient information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Capsule& capsule, const ProximityProperties& props);
 
-/* Creates a soft ellipsoid (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
+/* Creates a compliant ellipsoid (assuming the proximity properties have
+ sufficient information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
 /* Creates a compliant half space (assuming the proximity properties have
  sufficient information). Requires the ('hydroelastic', 'slab_thickness') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);
 
 /* Creates a compliant convex volume mesh (assuming the proximity properties
 have sufficient information). Requires the
 ('hydroelastic','hydroelastic_modulus') property. */
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Convex& convex_spec, const ProximityProperties& props);
 
 /* Creates a compliant (generally) non-convex mesh (assuming the proximity
  properties have sufficient information). Requires the ('hydroelastic',
  'hydroelastic_modulus') properties. */
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Mesh& mesh_spec, const ProximityProperties& props);
 
 //@}

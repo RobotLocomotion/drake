@@ -20,8 +20,8 @@ namespace {
 
 // Helper because AddLinearConstraint throws if I pass in something trivially
 // true.
-void AddLinearConstraintIfNonTrivial(const symbolic::Formula &f,
-                                     solvers::MathematicalProgram *prog) {
+void AddLinearConstraintIfNonTrivial(const symbolic::Formula& f,
+                                     solvers::MathematicalProgram* prog) {
   if (!symbolic::is_true(f)) {
     prog->AddLinearConstraint(f);
   }
@@ -49,8 +49,7 @@ Eigen::VectorXd SampleBasedLyapunovAnalysis(
 
   solvers::MathematicalProgram prog;
 
-  const VectorXd phi0 =
-      math::ExtractValue(basis_functions(V_zero_state));
+  const VectorXd phi0 = math::ExtractValue(basis_functions(V_zero_state));
   const int num_parameters = phi0.size();
   DRAKE_DEMAND(num_parameters > 0);
 
@@ -65,8 +64,8 @@ Eigen::VectorXd SampleBasedLyapunovAnalysis(
   // But having this objective is much more generally useful, I think.
   //
   // Add slack variables s >= |Vdot + 1|.
-  const solvers::VectorXDecisionVariable slack = prog.NewContinuousVariables
-      (num_samples, "s");
+  const solvers::VectorXDecisionVariable slack =
+      prog.NewContinuousVariables(num_samples, "s");
   // Minimize ∑ sᵢ
   prog.AddLinearCost(VectorXd::Ones(num_samples), 0, slack);
 

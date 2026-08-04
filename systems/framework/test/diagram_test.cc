@@ -1,5 +1,10 @@
 #include "drake/systems/framework/diagram.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <Eigen/Dense>
 #include <fmt/ranges.h>
 #include <gmock/gmock.h>
@@ -60,7 +65,8 @@ class EmptySystem : public LeafSystem<T> {
 
   // Adds a specific periodic discrete update.
   void AddPeriodicDiscreteUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdateEvent(period, offset,
+    // Add a small increment to guard against a 0 period.
+    this->DeclarePeriodicDiscreteUpdateEvent(0.001 + period, offset,
                                              &EmptySystem::Noop);
   }
 
@@ -1243,7 +1249,8 @@ GTEST_TEST(PythonDiagramTest, Unwrap) {
   ASSERT_EQ(diagram_autodiff->GetSystems().size(), 1);
 
   // Check that the child is an Adder, not a WrappedSystem.
-  const System<AutoDiffXd>* child = diagram_autodiff->GetSystems().at(0);
+  const System<AutoDiffXd>* child =
+      &diagram_autodiff->get_system(SubsystemIndex{0});
   ASSERT_THAT(child, testing::WhenDynamicCastTo<const Adder<AutoDiffXd>*>(
                          testing::NotNull()));
   EXPECT_EQ(child->get_name(), "my_adder");
@@ -1629,12 +1636,17 @@ GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
 // transmogrification will preserve the subtype.
 TEST_F(DiagramTest, SubclassTransmogrificationTest) {
   const FeedbackDiagram<double> dut;
-  EXPECT_TRUE(is_autodiffxd_convertible(dut, [](const auto& converted) {
-    EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
-  }));
-  EXPECT_TRUE(is_symbolic_convertible(dut, [](const auto& converted) {
-    EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
-  }));
+  const testing::AssertionResult autodiff_ok =
+      is_autodiffxd_convertible(dut, [](const auto& converted) {
+        EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
+      });
+  EXPECT_TRUE(autodiff_ok);
+
+  const testing::AssertionResult symbolic_ok =
+      is_symbolic_convertible(dut, [](const auto& converted) {
+        EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
+      });
+  EXPECT_TRUE(symbolic_ok);
 
   // Check that the subtype makes it all the way through cloning.
   // Any mismatched subtype will fail-fast within the Clone implementation.
@@ -1645,20 +1657,10 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
   // subclass at runtime will fail-fast.
   class SubclassOfFeedbackDiagram : public FeedbackDiagram<double> {};
   const SubclassOfFeedbackDiagram subclass_dut{};
-  EXPECT_THROW(
-      ({
-        try {
-          subclass_dut.ToAutoDiffXd();
-        } catch (const std::runtime_error& e) {
-          EXPECT_THAT(
-              std::string(e.what()),
-              testing::MatchesRegex(
-                  ".*convert a .*::FeedbackDiagram<double>.* called with a"
-                  ".*::SubclassOfFeedbackDiagram at runtime"));
-          throw;
-        }
-      }),
-      std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      subclass_dut.ToAutoDiffXd(),
+      ".*convert a .*::FeedbackDiagram<double>.* called with a"
+      ".*::SubclassOfFeedbackDiagram at runtime");
 }
 
 // A simple class that consumes *two* inputs and passes one input through. The
@@ -1895,7 +1897,7 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   EXPECT_EQ(vmutable[1], 17);
 }
 
-// Test for GetSystems.
+// Test for GetSystems and get_system.
 GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
   EXPECT_EQ(
@@ -1904,6 +1906,11 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
           diagram->stateless(), diagram->integrator0(), diagram->integrator1(),
           diagram->sink(), diagram->kitchen_sink()}),
       diagram->GetSystems());
+  int index{0};
+  for (const auto* system : diagram->GetSystems()) {
+    EXPECT_EQ(system, &diagram->get_system(SubsystemIndex{index}));
+    ++index;
+  }
 }
 
 const double kTestPublishPeriod = 19.0;

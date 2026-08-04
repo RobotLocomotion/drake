@@ -104,9 +104,12 @@ class SapPdControllerConstraint final : public SapConstraint<T> {
 
     // TODO(amcastro-tri): Consider extending support for both gains being zero.
     /* Constructs a valid set of parameters.
-     @param Kp Proportional gain. It must be strictly positive.
+     @param Kp Proportional gain. It must be non-negative.
      @param Kd Derivative gain. It must be non-negative.
      @param effort_limit Effort limit. It must be strictly positive.
+
+     @pre At least one of Kp and Kd must be strictly positive. That is, they
+     cannot both be zero.
      @note Units will depend on the joint type on which this constraint is
      added. E.g. For a prismatic joint, Kp will be in N/m, Kd in N⋅s/m, and
      effort_limit in N. */

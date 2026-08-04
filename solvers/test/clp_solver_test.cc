@@ -5,6 +5,12 @@
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 
+#if defined(__APPLE__)
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
+
 namespace drake {
 namespace solvers {
 namespace test {
@@ -254,6 +260,22 @@ GTEST_TEST(ClpSolverTest, TestNumericalScaling) {
   TestLPPoorScaling1(solver, false, 1E-14, solver_options);
   TestLPPoorScaling2(solver, false, 1E-4, solver_options);
 }
+
+// The following simple QP is feasible, but CLP cannot currently solve it. Once
+// CLP can solve this QP successfully, we can remove the warning in the
+// ConstructClpModel function (in clp_solver.cc). See #22985 for details.
+GTEST_TEST(ClpSolverTest, QuadraticProgram22985) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2);
+  prog.AddLinearConstraint(x[0] + x[1] == 1);
+  prog.AddBoundingBoxConstraint(0, 1, x[1]);
+  prog.AddQuadraticErrorCost(1, Eigen::Vector2d(-0.1, 0), x);
+
+  ClpSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.is_success(), kApple);  // CLP succeeds on macOS only.
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

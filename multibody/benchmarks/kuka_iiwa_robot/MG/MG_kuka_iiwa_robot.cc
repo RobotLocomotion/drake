@@ -7,14 +7,14 @@ namespace kuka_iiwa_robot {
 namespace MG {
 
 using Eigen::Map;
-using Eigen::Matrix3d;
 using Eigen::Matrix;
+using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
 using test_utilities::SpatialKinematicsPVA;
 
-template<typename T>
+template <typename T>
 void MGKukaIIwaRobot<T>::PrepareMGOutput(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
@@ -26,12 +26,11 @@ void MGKukaIIwaRobot<T>::PrepareMGOutput(
 
   // Calculate MotionGenesis output quantities.
   MG_kuka_auto_generated_.SetVariablesFromArray(
-        joint_angles_and_1st_2nd_derivatives.data());
+      joint_angles_and_1st_2nd_derivatives.data());
   MG_kuka_auto_generated_.CalculateOutput();
 }
 
-
-template<typename T>
+template <typename T>
 SpatialKinematicsPVA<T> MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
@@ -55,11 +54,10 @@ SpatialKinematicsPVA<T> MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
   const Vector3d a_NGo_N(MG_kuka_auto_generated_.a_NGo_N);
 
   return SpatialKinematicsPVA<T>(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N,
-      a_NGo_N);
+                                 a_NGo_N);
 }
 
-
-template<typename T>
+template <typename T>
 std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
            SpatialForced, SpatialForced, SpatialForced>
 MGKukaIIwaRobot<T>::CalcJointReactionForcesExpressedInMobilizer(
@@ -85,12 +83,11 @@ MGKukaIIwaRobot<T>::CalcJointReactionForcesExpressedInMobilizer(
   const SpatialForced F_G_Fg(Vector3d(MG_kuka_auto_generated_.tG),
                              Vector3d(MG_kuka_auto_generated_.fG));
 
-  return std::make_tuple(F_A_Na, F_B_Ab, F_C_Bc, F_D_Cd,
-                         F_E_De, F_F_Ef, F_G_Fg);
+  return std::make_tuple(F_A_Na, F_B_Ab, F_C_Bc, F_D_Cd, F_E_De, F_F_Ef,
+                         F_G_Fg);
 }
 
-
-template<typename T>
+template <typename T>
 std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
            SpatialForced, SpatialForced, SpatialForced>
 MGKukaIIwaRobot<T>::CalcJointReactionForcesExpressedInWorld(
@@ -111,8 +108,7 @@ MGKukaIIwaRobot<T>::CalcJointReactionForcesExpressedInWorld(
   return std::make_tuple(F_A_W, F_B_W, F_C_W, F_D_W, F_E_W, F_F_W, F_G_W);
 }
 
-
-template<typename T>
+template <typename T>
 Vector7d MGKukaIIwaRobot<T>::CalcRevoluteMotorZTorques(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
@@ -134,10 +130,8 @@ Vector7d MGKukaIIwaRobot<T>::CalcRevoluteMotorZTorques(
   return motor_torques;
 }
 
-
 // Explicitly instantiates on the most common scalar types.
-template
-class MGKukaIIwaRobot<double>;
+template class MGKukaIIwaRobot<double>;
 
 }  // namespace MG
 }  // namespace kuka_iiwa_robot

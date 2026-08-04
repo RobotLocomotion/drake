@@ -1,5 +1,9 @@
 #include "drake/math/rigid_transform.h"
 
+#include <cstdio>
+#include <limits>
+#include <string>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -824,6 +828,100 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
   }
 }
 
+// Test special case routines for working with transforms that have specialized
+// structures such as axial rotations or translations. These should produce the
+// same answers as the general functions. These functions all have the
+// precondition that the given operands have the expected structure, but they
+// don't necessarily check that precondition so there aren't any error tests
+// here.
+GTEST_TEST(RigidTransform, SpecializedTransformOperators) {
+  using Xform = RigidTransformd;         // For less clutter below.
+  constexpr double kTol = 4 * kEpsilon;  // Allow for differing implementations.
+
+  // Make transforms that are axial rotations only (zero translations).
+  const double theta = 0.234;
+  const Xform xrX_BC(Xform::MakeAxialRotation<0>(theta));  // about x
+  const Xform yrX_BC(Xform::MakeAxialRotation<1>(theta));  // about y
+  const Xform zrX_BC(Xform::MakeAxialRotation<2>(theta));  // about z
+
+  // Test MakeAxialRotation().
+  EXPECT_TRUE(xrX_BC.IsNearlyEqualTo(
+      Xform(RotationMatrixd::MakeXRotation(theta)), kTol));
+  EXPECT_TRUE(yrX_BC.IsNearlyEqualTo(
+      Xform(RotationMatrixd::MakeYRotation(theta)), kTol));
+  EXPECT_TRUE(zrX_BC.IsNearlyEqualTo(
+      Xform(RotationMatrixd::MakeZRotation(theta)), kTol));
+
+  // Test ApplyAxialRotation().
+  const Vector3d p_C(1.0, 2.0, 3.0);
+  EXPECT_TRUE(CompareMatrices(Xform::ApplyAxialRotation<0>(xrX_BC, p_C),
+                              xrX_BC * p_C, kTol));
+  EXPECT_TRUE(CompareMatrices(Xform::ApplyAxialRotation<1>(yrX_BC, p_C),
+                              yrX_BC * p_C, kTol));
+  EXPECT_TRUE(CompareMatrices(Xform::ApplyAxialRotation<2>(zrX_BC, p_C),
+                              zrX_BC * p_C, kTol));
+
+  // Test UpdateAxialRotation().
+  Xform X_BC_update = xrX_BC;
+  Xform::UpdateAxialRotation<0>(2 * theta, &X_BC_update);
+  EXPECT_TRUE(X_BC_update.IsNearlyEqualTo(
+      Xform::MakeAxialRotation<0>(2 * theta), kTol));
+  X_BC_update = yrX_BC;
+  Xform::UpdateAxialRotation<1>(3 * theta, &X_BC_update);
+  EXPECT_TRUE(X_BC_update.IsNearlyEqualTo(
+      Xform::MakeAxialRotation<1>(3 * theta), kTol));
+  X_BC_update = zrX_BC;
+  // Use the alternate signature.
+  Xform::UpdateAxialRotation<2>(std::sin(4 * theta), std::cos(4 * theta),
+                                &X_BC_update);
+  EXPECT_TRUE(X_BC_update.IsNearlyEqualTo(
+      Xform::MakeAxialRotation<2>(4 * theta), kTol));
+
+  // Make an axial translation transform (this one is y-axial).
+  const Xform ytX_BC(Vector3d(0, -2, 0));  // d = -2
+
+  // Test UpdateAxialTranslation().
+  Xform ytX_BC_update = ytX_BC;
+  Xform::UpdateAxialTranslation<1>(5, &ytX_BC_update);  // d = 5
+  EXPECT_TRUE(ytX_BC_update.IsExactlyEqualTo(Xform(Vector3d(0, 5, 0))));
+
+  // Make general, rotation-only, and translation-only transforms.
+  const Xform X_AB(RollPitchYaw(1.0, 2.0, 3.0), Vector3d(1.5, 2.5, 3.5));
+  const Xform rX_BC(RollPitchYaw(0.5, 1.5, -2.5), Vector3d::Zero());
+  const Xform tX_BC(Vector3d(-1.0, 2.0, -3.0));
+  Xform X_AC;  // reusable result
+
+  // Test PostMultiplyByRotation() and PostMultiplyBy[Axial]Translation().
+  X_AB.PostMultiplyByRotation(rX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * rX_BC, kTol));
+
+  X_AB.PostMultiplyByTranslation(tX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * tX_BC, kTol));
+
+  X_AB.PostMultiplyByAxialTranslation<1>(ytX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * ytX_BC, kTol));
+
+  // Test PostMultiplyByAxialRotation().
+  X_AB.PostMultiplyByAxialRotation<0>(xrX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * xrX_BC, kTol));
+  X_AB.PostMultiplyByAxialRotation<1>(yrX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * yrX_BC, kTol));
+  X_AB.PostMultiplyByAxialRotation<2>(zrX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * zrX_BC, kTol));
+
+  // Test PreMultiplyByAxialRotation(), PreMultiplyByAxialTranslation().
+  const Xform X_CD(RollPitchYaw(1.0, 2.0, 3.0), Vector3d(1.5, 2.5, 3.5));
+  Xform X_BD;  // reusable result
+  X_CD.PreMultiplyByAxialRotation<0>(xrX_BC, &X_BD);
+  EXPECT_TRUE(X_BD.IsNearlyEqualTo(xrX_BC * X_CD, kTol));
+  X_CD.PreMultiplyByAxialRotation<1>(yrX_BC, &X_BD);
+  EXPECT_TRUE(X_BD.IsNearlyEqualTo(yrX_BC * X_CD, kTol));
+  X_CD.PreMultiplyByAxialRotation<2>(zrX_BC, &X_BD);
+  EXPECT_TRUE(X_BD.IsNearlyEqualTo(zrX_BC * X_CD, kTol));
+  X_CD.PreMultiplyByAxialTranslation<1>(ytX_BC, &X_BD);
+  EXPECT_TRUE(X_BD.IsNearlyEqualTo(ytX_BC * X_CD, kTol));
+}
+
 GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
   // For optimization (e.g., AVX instructions), verify RigidTransform<double>
   // is packed into 12 consecutive doubles, first with a 3x3 rotation matrix
@@ -849,7 +947,7 @@ GTEST_TEST(RigidTransform, Hash) {
 }
 
 // This utility function helps verify the output string from RigidTransform's
-// stream insertion operator <<.  Specifically, it does the following:
+// fmt formatter.  Specifically, it does the following:
 // 1. Verifies the output string has form: "rpy = 0.125 0.25 0.5 xyz = 7 6 5";
 // 2. Verifies the numerical values for roll (r), pitch (p) and yaw (y) that are
 //    contained in the output string are within a 4 epsilon of their expected
@@ -857,58 +955,60 @@ GTEST_TEST(RigidTransform, Hash) {
 // 3. Verifies that output string's xyz matches (with regular expressions) the
 //    expected string.
 template <typename T>
-void VerifyStreamInsertionOperator(const RigidTransform<T> X_AB,
-                                   const Vector3<double>& rpy_expected,
-                                   const std::string& xyz_expected_string) {
+void VerifyToStringFmtFormatter(const RigidTransform<T> X_AB,
+                                const Vector3<double>& rpy_expected,
+                                const std::string& xyz_expected_string) {
   // Due to the conversion from a RollPitchYaw to a RotationMatrix and then back
   // to a RollPitchYaw, the input rpy_double may slightly mismatch output, so
-  // stream_string may be something like
+  // result string may be something like
   // “rpy = 0.12499999999999997 0.25 0.4999999999999999 xyz = 4.0 3.0 2.0
-  std::stringstream stream;
-  stream << X_AB;
-  const std::string stream_string = stream.str();
-  ASSERT_EQ(stream_string.find("rpy = "), 0);
-  const char* cstring = stream_string.c_str() + 6;  // Start of double value.
+  const std::string result{fmt::to_string(X_AB)};
+  ASSERT_EQ(result.find("rpy = "), 0);
+  const char* cstring =
+      result.c_str() + 6;  // Move the pointer to the start of double value.
   double roll, pitch, yaw;
   int match_count = sscanf(cstring, "%lf %lf %lf ", &roll, &pitch, &yaw);
-  ASSERT_EQ(match_count, 3) << "When scanning " << stream_string;
+  ASSERT_EQ(match_count, 3) << fmt::format("When scanning {}", result);
   EXPECT_TRUE(CompareMatrices(Vector3<double>(roll, pitch, yaw), rpy_expected,
                               4 * kEpsilon));
 
   // Verify string contains something like xyz = 7 6 5 or xyz = 7.0 6.0 5.0.
-  EXPECT_THAT(stream_string, testing::ContainsRegex(xyz_expected_string));
+  EXPECT_THAT(result, testing::ContainsRegex(xyz_expected_string));
 }
 
-// Test the stream insertion operator to write into a stream.
-GTEST_TEST(RigidTransform, StreamInsertionOperator) {
-  // Test stream insertion for RigidTransform<double>.
-  // Verify streamA.str() is similar to "rpy = 0.125 0.25 0.5 xyz = 4 3 2";
+// Test the fmt formatter.
+GTEST_TEST(RigidTransform, ToStringFmtFormatter) {
+  // Test the fmt formatter for RigidTransform<double>.
+  // Verify the resulting string is similar to "rpy = 0.125 0.25 0.5 xyz = 4 3
+  // 2";
   RollPitchYaw<double> rpy_double(0.125, 0.25, 0.5);
   Vector3<double> xyz_double(4, 3, 2);
   std::string xyz_expected_string = "xyz = 4.* 3.* 2.*";
-  VerifyStreamInsertionOperator(RigidTransform<double>(rpy_double, xyz_double),
-                                rpy_double.vector(), xyz_expected_string);
+  VerifyToStringFmtFormatter(RigidTransform<double>(rpy_double, xyz_double),
+                             rpy_double.vector(), xyz_expected_string);
 
-  // Test stream insertion for RigidTransform<double> with NaN and inf.
-  // Verify streamA.str() is similar to "rpy = 0.125 0.25 0.5 xyz = Inf 3 NaN";
+  // Test the fmt formatter for RigidTransform<double> with NaN and inf.
+  // Verify the resulting string is similar to "rpy = 0.125 0.25 0.5 xyz = Inf 3
+  // NaN";
   constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
   xyz_double = Vector3<double>(kInfinity, 3, kNaN);
   xyz_expected_string = "xyz = inf 3.* nan";
-  VerifyStreamInsertionOperator(RigidTransform<double>(rpy_double, xyz_double),
-                                rpy_double.vector(), xyz_expected_string);
+  VerifyToStringFmtFormatter(RigidTransform<double>(rpy_double, xyz_double),
+                             rpy_double.vector(), xyz_expected_string);
 
-  // Test stream insertion for RigidTransform<AutoDiffXd>.
-  // Verify streamB.str() is similar to "rpy = -0.33 0.17 0.9 xyz = 7 6 5";
+  // Test the fmt formatter for RigidTransform<AutoDiffXd>.
+  // Verify the resulting string is similar to "rpy = -0.33 0.17 0.9 xyz = 7 6
+  // 5";
   const RollPitchYaw<AutoDiffXd> rpy_autodiff(-0.33, 0.17, 0.9);
   const Vector3<AutoDiffXd> xyz_autodiff(-17, 987, 6.5432);
   xyz_expected_string = "xyz = -17.* 987.* 6.5432.*";
   const Vector3<double> rpy_values = ExtractValue(rpy_autodiff.vector());
-  VerifyStreamInsertionOperator(
+  VerifyToStringFmtFormatter(
       RigidTransform<AutoDiffXd>(rpy_autodiff, xyz_autodiff), rpy_values,
       xyz_expected_string);
 
-  // Test stream insertion for RigidTransform<Expression>.
+  // Test the fmt formatter for RigidTransform<Expression>.
   // Note: A numerical process calculates RollPitchYaw from a RotationMatrix.
   // Verify that RigidTransform prints a symbolic placeholder for its rotational
   // component (roll-pitch-yaw string) when T = Expression.
@@ -917,17 +1017,15 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   const Vector3<Expression> xyz_symbolic(x, y, z);
   RollPitchYaw<Expression> rpy_symbolic(roll, pitch, yaw);
   RigidTransform<Expression> X_symbolic(rpy_symbolic, xyz_symbolic);
-  std::stringstream stream;
-  stream << X_symbolic;
   const std::string expected_string =
       "rpy = <symbolic> <symbolic> <symbolic> xyz = x y z";
-  EXPECT_EQ(expected_string, stream.str());
+  EXPECT_EQ(fmt::to_string(X_symbolic), expected_string);
 
-  // Test stream insertion for RigidTransform<Expression> when the expression
+  // Test the fmt formatter for RigidTransform<Expression> when the expression
   // is only constants (i.e., with no free variables).
   const RollPitchYaw<Expression> rpy_const_expr(-0.1, 0.2, 0.3);
   const Vector3<Expression> xyz_const_expr(-10, 20, 30);
-  VerifyStreamInsertionOperator(
+  VerifyToStringFmtFormatter(
       RigidTransform<Expression>(rpy_const_expr, xyz_const_expr),
       Vector3d{-0.1, 0.2, 0.3}, "xyz = -10 20 30");
 }

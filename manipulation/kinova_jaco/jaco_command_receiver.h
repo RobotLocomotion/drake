@@ -82,28 +82,27 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   const systems::OutputPort<double>& get_time_output_port() const {
     return *time_output_;
   }
-//@}
+  //@}
 
  private:
   void CalcInput(const systems::Context<double>&, lcmt_jaco_command*) const;
 
-  void DoCalcNextUpdateTime(
-      const systems::Context<double>&,
-      systems::CompositeEventCollection<double>*, double*) const final;
-  void CalcPositionMeasuredOrZero(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
+  void DoCalcNextUpdateTime(const systems::Context<double>&,
+                            systems::CompositeEventCollection<double>*,
+                            double*) const final;
+  void CalcPositionMeasuredOrZero(const systems::Context<double>&,
+                                  systems::BasicVector<double>*) const;
 
   // Copies the current "position measured" input (or zero if not connected)
   // into the @p result.
-  void LatchInitialPosition(
-      const systems::Context<double>&,
-      systems::DiscreteValues<double>*) const;
-  void CalcPositionOutput(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
-  void CalcVelocityOutput(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
-  void CalcTimeOutput(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
+  void LatchInitialPosition(const systems::Context<double>&,
+                            systems::DiscreteValues<double>*) const;
+  void CalcPositionOutput(const systems::Context<double>&,
+                          systems::BasicVector<double>*) const;
+  void CalcVelocityOutput(const systems::Context<double>&,
+                          systems::BasicVector<double>*) const;
+  void CalcTimeOutput(const systems::Context<double>&,
+                      systems::BasicVector<double>*) const;
 
   const int num_joints_;
   const int num_fingers_;

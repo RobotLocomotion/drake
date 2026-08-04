@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -13,27 +14,28 @@ namespace systems {
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
-    : Simulator(&system, nullptr, std::move(context)) {}
+    : Simulator(&system, nullptr, std::move(context), false) {}
 
 template <typename T>
 Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
                         std::unique_ptr<Context<T>> context)
-    : Simulator(nullptr, std::move(owned_system), std::move(context)) {}
+    : Simulator(nullptr, std::move(owned_system), std::move(context), true) {}
 
 template <typename T>
-std::unique_ptr<Simulator<T>> Simulator<T>::MakeWithSharedContext(
-    const System<T>& system, std::shared_ptr<Context<T>> context) {
-  // This slightly odd spelling allows access to the private constructor.
-  return std::unique_ptr<Simulator<T>>(
-      new Simulator(&system, nullptr, std::move(context)));
+void Simulator<T>::EmplaceWithSharedContext(
+    Simulator<T>* self, const System<T>& system,
+    std::shared_ptr<Context<T>> context) {
+  new (self) Simulator(&system, nullptr, std::move(context), false);
 }
 
 template <typename T>
 Simulator<T>::Simulator(const System<T>* system,
                         std::unique_ptr<const System<T>> owned_system,
-                        std::shared_ptr<Context<T>> context)
+                        std::shared_ptr<Context<T>> context,
+                        bool use_owned_system)
     : owned_system_(std::move(owned_system)),
-      system_(owned_system_ ? *owned_system_ : *system),
+      system_(use_owned_system ? DRAKE_DEREF(owned_system_)
+                               : DRAKE_DEREF(system)),
       context_{std::move(context)} {
   // TODO(dale.mcconachie) move this default to SimulatorConfig
   constexpr double kDefaultInitialStepSizeTarget = 1e-4;
@@ -45,8 +47,7 @@ Simulator<T>::Simulator(const System<T>* system,
   DRAKE_DEMAND(SimulatorConfig{}.integration_scheme == "runge_kutta3");
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
       new RungeKutta3Integrator<T>(system_, context_.get()));
-  integrator_->request_initial_step_size_target(
-      kDefaultInitialStepSizeTarget);
+  integrator_->request_initial_step_size_target(kDefaultInitialStepSizeTarget);
   integrator_->set_maximum_step_size(SimulatorConfig{}.max_step_size);
   integrator_->set_target_accuracy(SimulatorConfig{}.accuracy);
   integrator_->Initialize();
@@ -57,11 +58,23 @@ Simulator<T>::Simulator(const System<T>* system,
   unrestricted_updates_ = context_->CloneState();
 
   // Allocate the vector of active witness functions.
-  witness_functions_ = std::make_unique<
-      std::vector<const WitnessFunction<T>*>>();
+  witness_functions_ =
+      std::make_unique<std::vector<const WitnessFunction<T>*>>();
 
   // Allocate the necessary temporary for witness-based event handling.
   event_handler_xc_ = system_.AllocateTimeDerivatives();
+}
+
+template <typename T>
+IntegratorBase<T>& Simulator<T>::reset_integrator(
+    std::unique_ptr<IntegratorBase<T>> integrator) {
+  DRAKE_THROW_UNLESS(integrator != nullptr);
+  DRAKE_THROW_UNLESS(&integrator->get_system() == &this->get_system());
+  integrator->reset_context(&this->get_mutable_context());
+  IntegratorBase<T>* result = integrator.get();
+  integrator_ = std::move(integrator);
+  initialization_done_ = false;
+  return *result;
 }
 
 template <typename T>
@@ -173,12 +186,6 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
     accumulated_event_status.KeepMoreSevere(
         HandlePublish(merged_events_->get_publish_events()));
 
-    // If requested, do a force-publish before the simulation starts.
-    if (publish_at_initialization_) {
-      accumulated_event_status.KeepMoreSevere(
-          HandlePublish(system_.get_forced_publish_events()));
-    }
-
     // Invoke the monitor() if there is one. This is logically like a
     // Diagram-level Publish event so we handle it similarly.
     if (get_monitor())
@@ -287,8 +294,9 @@ template <typename T>
 SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   if (!initialization_done_) {
     const SimulatorStatus initialize_status = Initialize();
-    if (!initialize_status.succeeded())
+    if (!initialize_status.succeeded()) {
       return initialize_status;
+    }
   }
 
   DRAKE_DEMAND(!std::isnan(last_known_simtime_));
@@ -378,7 +386,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
       using std::isfinite;
       DRAKE_DEMAND(!isfinite(time_of_next_timed_event) ||
-          timed_events_->HasEvents());
+                   timed_events_->HasEvents());
 
       // Determine whether the set of events requested by the System at
       // time_of_next_timed_event includes an Update action, a Publish action,
@@ -396,11 +404,9 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
       // Integrate the continuous state (if any) forward in time. Note that if
       // time_of_next_timed_event is the current time, this will return
       // immediately without time having advanced. That still counts as a step.
-      time_or_witness_triggered_ = IntegrateContinuousState(
-          next_publish_time,
-          next_update_time,
-          boundary_time,
-          witnessed_events_.get());
+      time_or_witness_triggered_ =
+          IntegrateContinuousState(next_publish_time, next_update_time,
+                                   boundary_time, witnessed_events_.get());
 
       // Update the number of simulation steps taken.
       ++num_steps_taken_;
@@ -425,12 +431,6 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
       accumulated_event_status.KeepMoreSevere(
           HandlePublish(merged_events_->get_publish_events()));
-
-      if (get_publish_every_time_step()) {
-        accumulated_event_status.KeepMoreSevere(
-            HandlePublish(system_.get_forced_publish_events()));
-      }
-
       // Invoke the monitor() if there is one. This is logically like a
       // Diagram-level Publish event so we handle it similarly.
       if (get_monitor())
@@ -510,7 +510,7 @@ std::optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
     if (accuracy) {
       return max(integrator_->get_working_minimum_step_size(),
                  T(iso_scale_factor * accuracy.value() *
-                     integrator_->get_maximum_step_size()));
+                   integrator_->get_maximum_step_size()));
     } else {
       return std::optional<T>();
     }
@@ -518,8 +518,9 @@ std::optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 
   // Integration with error control isolation window determination.
   if (!accuracy) {
-    throw std::logic_error("Integrator is not operating in fixed step mode "
-                               "and accuracy is not set in the context.");
+    throw std::logic_error(
+        "Integrator is not operating in fixed step mode "
+        "and accuracy is not set in the context.");
   }
 
   // Note: the max computation is used (here and above) because it is
@@ -556,10 +557,8 @@ std::optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 template <class T>
 void Simulator<T>::IsolateWitnessTriggers(
     const std::vector<const WitnessFunction<T>*>& witnesses,
-    const VectorX<T>& w0,
-    const T& t0, const VectorX<T>& x0, const T& tf,
+    const VectorX<T>& w0, const T& t0, const VectorX<T>& x0, const T& tf,
     std::vector<const WitnessFunction<T>*>* triggered_witnesses) {
-
   // Verify that the vector of triggered witnesses is non-null.
   DRAKE_DEMAND(triggered_witnesses != nullptr);
 
@@ -575,12 +574,13 @@ void Simulator<T>::IsolateWitnessTriggers(
 
   // Check whether witness functions *are* to be isolated. If not, the witnesses
   // that were triggered on entry will be the set that is returned.
-  if (!witness_iso_len)
+  if (!witness_iso_len) {
     return;
+  }
 
   // Mini function for integrating the system forward in time from t0.
-  std::function<void(const T&)> integrate_forward =
-      [&t0, &x0, &context, this](const T& t_des) {
+  std::function<void(const T&)> integrate_forward = [&t0, &x0, &context,
+                                                     this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
     context.SetTime(t0);
     context.SetContinuousState(x0);
@@ -609,8 +609,9 @@ void Simulator<T>::IsolateWitnessTriggers(
     bool trigger = false;
     for (size_t i = 0; i < witnesses.size(); ++i) {
       wc[i] = get_system().CalcWitnessValue(context, *witnesses[i]);
-      if (witnesses[i]->should_trigger(w0[i], wc[i]))
+      if (witnesses[i]->should_trigger(w0[i], wc[i])) {
         trigger = true;
+      }
     }
 
     // If no witness function triggered, we can continue integrating forward.
@@ -664,17 +665,16 @@ VectorX<T> Simulator<T>::EvaluateWitnessFunctions(
 template <class T>
 bool Simulator<T>::DidWitnessTrigger(
     const std::vector<const WitnessFunction<T>*>& witness_functions,
-    const VectorX<T>& w0,
-    const VectorX<T>& wf,
+    const VectorX<T>& w0, const VectorX<T>& wf,
     std::vector<const WitnessFunction<T>*>* triggered_witnesses) {
   // See whether a witness function triggered.
   triggered_witnesses->clear();
   bool witness_triggered = false;
   for (size_t i = 0; i < witness_functions.size() && !witness_triggered; ++i) {
-      if (witness_functions[i]->should_trigger(w0[i], wf[i])) {
-        witness_triggered = true;
-        triggered_witnesses->push_back(witness_functions[i]);
-      }
+    if (witness_functions[i]->should_trigger(w0[i], wf[i])) {
+      witness_triggered = true;
+      triggered_witnesses->push_back(witness_functions[i]);
+    }
   }
 
   return witness_triggered;
@@ -696,8 +696,8 @@ void Simulator<T>::PopulateEventDataForTriggeredWitness(
   event_data->set_tf(tf);
   event_data->set_xc0(event_handler_xc_.get());
   event_data->set_xcf(&context_->get_continuous_state());
-  get_system().AddTriggeredWitnessFunctionToCompositeEventCollection(
-      event, events);
+  get_system().AddTriggeredWitnessFunctionToCompositeEventCollection(event,
+                                                                     events);
 }
 
 // (Re)determines the set of witness functions active over this interval,
@@ -749,8 +749,8 @@ Simulator<T>::IntegrateContinuousState(
   // distinguished between. See internal documentation for
   // IntegratorBase::IntegrateNoFurtherThanTime() for more information.
   typename IntegratorBase<T>::StepResult result =
-      integrator_->IntegrateNoFurtherThanTime(
-          next_publish_time, next_update_time, boundary_time);
+      integrator_->IntegrateNoFurtherThanTime(next_publish_time,
+                                              next_update_time, boundary_time);
   const T tf = context.get_time();
 
   // Evaluate the witness functions again.
@@ -762,25 +762,27 @@ Simulator<T>::IntegrateContinuousState(
     // are detected in the interval [t0, tf], any additional time-triggered
     // events are only relevant iff at least one witness function is
     // successfully isolated (see IsolateWitnessTriggers() for details).
-    IsolateWitnessTriggers(
-        witness_functions, w0_, t0, x0, tf, &triggered_witnesses_);
+    IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
+                           &triggered_witnesses_);
 
     // Store the state at x0 in the temporary continuous state. We only do this
     // if there are triggered witnesses (even though `witness_triggered` is
     // `true`, the witness might not have actually triggered after isolation).
-    if (!triggered_witnesses_.empty())
+    if (!triggered_witnesses_.empty()) {
       event_handler_xc_->SetFromVector(x0);
+    }
 
     // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       DRAKE_LOGGER_DEBUG("Witness function {} crossed zero at time {}",
-          fn->description(), context.get_time());
+                         fn->description(), context.get_time());
 
       // Skip witness functions that have no associated event (i.e., skip
       // witness functions whose sole purpose is to insert a break in the
       // integration of continuous state).
-      if (!fn->get_event())
+      if (!fn->get_event()) {
         continue;
+      }
 
       // Get the event object that corresponds to this witness function. If
       // Simulator has yet to create this object, go ahead and create it.
@@ -882,21 +884,6 @@ void Simulator<T>::reset_context_from_shared(
 }
 
 template <typename T>
-std::unique_ptr<Context<T>> Simulator<T>::release_context() {
-  integrator_->reset_context(nullptr);
-  initialization_done_ = false;
-  std::unique_ptr<Context<T>> result;
-  if (std::holds_alternative<std::shared_ptr<Context<T>>>(context_.ptr)) {
-    result = context_.get()->Clone();
-    context_.ptr = std::unique_ptr<Context<T>>();
-  } else if (std::holds_alternative<std::unique_ptr<Context<T>>>(
-                 context_.ptr)) {
-    result = std::move(std::get<std::unique_ptr<Context<T>>>(context_.ptr));
-  }
-  return result;
-}
-
-template <typename T>
 void Simulator<T>::ResetStatistics() {
   integrator_->ResetStatistics();
   num_steps_taken_ = 0;
@@ -910,8 +897,8 @@ void Simulator<T>::ResetStatistics() {
 
 namespace internal {
 template <typename T>
-void SimulatorPythonInternal<T>::set_python_monitor(
-    Simulator<T>* simulator, void (*monitor)()) {
+void SimulatorPythonInternal<T>::set_python_monitor(Simulator<T>* simulator,
+                                                    void (*monitor)()) {
   DRAKE_DEMAND(simulator != nullptr);
   simulator->python_monitor_ = monitor;
 }

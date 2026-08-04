@@ -1,5 +1,10 @@
 #include "drake/geometry/geometry_properties.h"
 
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -530,6 +535,13 @@ GTEST_TEST(GeometryProperties, RgbaAndVector4) {
   EXPECT_EQ(color, properties.GetProperty<Rgba>(group_name, vector_name));
   // - Get<Vector4d>.
   EXPECT_EQ(vector, properties.GetProperty<Vector4d>(group_name, vector_name));
+}
+
+GTEST_TEST(GeometryProperties, ToString) {
+  const TestProperties subclass;
+  const GeometryProperties& dut = subclass;
+  EXPECT_EQ(dut.to_string(), "[__default__]");
+  EXPECT_EQ(fmt::to_string(dut), "[__default__]");
 }
 
 }  // namespace

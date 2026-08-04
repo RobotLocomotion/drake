@@ -1,5 +1,9 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
+#include <algorithm>
+#include <memory>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/symbolic_test_util.h"

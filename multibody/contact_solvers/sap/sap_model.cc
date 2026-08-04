@@ -15,6 +15,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using math::internal::PartialPermutation;
 using systems::Context;
 
 HessianFactorizationCache::HessianFactorizationCache(

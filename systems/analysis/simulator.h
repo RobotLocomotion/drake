@@ -13,7 +13,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/name_value.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -276,14 +275,20 @@ class Simulator {
                      std::unique_ptr<Context<T>> context = nullptr);
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // (Internal use only) Makes a Simulator which accepts a context via shared
-  // pointer.
+  // (Internal use only) Emplaces a Simulator which accepts a context via
+  // shared pointer.
+  //
+  // The `self` parameter should point to uninitialized storage of at least
+  // sizeof(Simulator<T>) bytes. It is the calling code's responsibility to
+  // eventually destroy the Simulator<T> instance, using (for example)
+  // std::destroy_at.
   //
   // The shared pointer signature is useful for implementing pydrake memory
   // management, because it permits supplying a custom deleter. The context is
   // not *actually* shared. The simulator will modify it at will.
-  static std::unique_ptr<Simulator<T>> MakeWithSharedContext(
-      const System<T>& system, std::shared_ptr<Context<T>> context);
+  static void EmplaceWithSharedContext(Simulator<T>* self,
+                                       const System<T>& system,
+                                       std::shared_ptr<Context<T>> context);
 #endif
 
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
@@ -424,9 +429,8 @@ class Simulator {
   /// Output time and continuous states whenever the trajectory is advanced:
   /// @code
   /// simulator.set_monitor([](const Context<T>& root_context) {
-  ///   std::cout << root_context.get_time() << " "
-  ///             << root_context.get_continuous_state_vector()
-  ///             << std::endl;
+  ///   fmt::print("{} {}\n", root_context.get_time(),
+  ///                         root_context.get_continuous_state_vector());
   ///   return EventStatus::Succeeded();
   /// });
   /// @endcode
@@ -521,9 +525,7 @@ class Simulator {
   /// Return the real time rate target currently in effect. The default is
   /// zero, meaning the %Simulator runs as fast as possible. You can change the
   /// target with set_target_realtime_rate().
-  double get_target_realtime_rate() const {
-    return target_realtime_rate_;
-  }
+  double get_target_realtime_rate() const { return target_realtime_rate_; }
 
   /// Return the rate that simulated time has progressed relative to real time.
   /// A return of 1 means the simulation just matched real
@@ -546,45 +548,6 @@ class Simulator {
   /// @see set_target_realtime_rate()
   double get_actual_realtime_rate() const;
 
-  /// (To be deprecated) Prefer using per-step publish events instead.
-  ///
-  /// Sets whether the simulation should trigger a forced-Publish event on the
-  /// System under simulation at the end of every trajectory-advancing step.
-  /// Specifically, that means the System::Publish() event dispatcher will be
-  /// invoked on each subsystem of the System and passed the current Context
-  /// and a forced-publish Event. If a subsystem has declared a forced-publish
-  /// event handler, that will be called. Otherwise, nothing will happen.
-  ///
-  /// Enabling this option does not cause a forced-publish to be triggered at
-  /// initialization; if you want that you should also call
-  /// `set_publish_at_initialization(true)`. If you want a forced-publish at the
-  /// end of every step, you will usually also want one at the end of
-  /// initialization, requiring both options to be enabled.
-  ///
-  /// @see LeafSystem::DeclarePerStepPublishEvent()
-  /// @see LeafSystem::DeclareForcedPublishEvent()
-  void set_publish_every_time_step(bool publish) {
-    publish_every_time_step_ = publish;
-  }
-
-  /// (To be deprecated) Prefer using initialization or per-step publish
-  /// events instead.
-  ///
-  /// Sets whether the simulation should trigger a forced-Publish at the end
-  /// of Initialize(). See set_publish_every_time_step() documentation for
-  /// more information.
-  ///
-  /// @see LeafSystem::DeclareInitializationPublishEvent()
-  /// @see LeafSystem::DeclarePerStepPublishEvent()
-  /// @see LeafSystem::DeclareForcedPublishEvent()
-  void set_publish_at_initialization(bool publish) {
-    publish_at_initialization_ = publish;
-  }
-
-  /// Returns true if the set_publish_every_time_step() option has been
-  /// enabled. By default, returns false.
-  bool get_publish_every_time_step() const { return publish_every_time_step_; }
-
   /// Returns a const reference to the internally-maintained Context holding the
   /// most recent step in the trajectory. This is suitable for publishing or
   /// extracting information about this trajectory step. Do not call this method
@@ -599,7 +562,7 @@ class Simulator {
   /// updates, sampling operations, event handlers, and constraint projection.
   /// You can also modify this prior to calling Initialize() to set initial
   /// conditions. Do not call this method if there is no Context.
-  Context<T>& get_mutable_context()  {
+  Context<T>& get_mutable_context() {
     DRAKE_ASSERT(context_ != nullptr);
     return *context_;
   }
@@ -635,11 +598,6 @@ class Simulator {
   void reset_context_from_shared(std::shared_ptr<Context<T>> context);
 #endif
 
-  DRAKE_DEPRECATED(
-      "2025-06-01",
-      "Use get_context()->Clone() and reset_context(nullptr) instead.")
-  std::unique_ptr<Context<T>> release_context();
-
   /// Forget accumulated statistics. Statistics are reset to the values they
   /// have post construction or immediately after `Initialize()`.
   void ResetStatistics();
@@ -669,7 +627,8 @@ class Simulator {
   /// the unrestricted update events return "did nothing". A single dispatcher
   /// call may handle multiple unrestricted update events.
   int64_t get_num_unrestricted_updates() const {
-    return num_unrestricted_updates_; }
+    return num_unrestricted_updates_;
+  }
 
   /// Gets a reference to the integrator used to advance the continuous aspects
   /// of the system.
@@ -714,7 +673,7 @@ class Simulator {
   ///       constructor is usually associated with fixed-step integrators (i.e.,
   ///       integrators which do not support error estimation).
   template <class Integrator>
-  Integrator& reset_integrator(const T max_step_size) {
+  Integrator& reset_integrator(const T& max_step_size) {
     static_assert(
         std::is_constructible_v<Integrator, const System<T>&, double,
                                 Context<T>*>,
@@ -722,10 +681,17 @@ class Simulator {
         "Integrator::Integrator(const System&, const T&, Context*); this "
         "constructor is usually associated with fixed-step integrators.");
     integrator_ = std::make_unique<Integrator>(get_system(), max_step_size,
-                                      &get_mutable_context());
+                                               &get_mutable_context());
     initialization_done_ = false;
     return *static_cast<Integrator*>(integrator_.get());
   }
+
+  /// (Advanced) Resets the integrator to the given object.
+  /// @see argument-less version of reset_integrator() for note about
+  ///      initialization.
+  /// @pre integrator->get_system() is the same object as this->get_system().
+  IntegratorBase<T>& reset_integrator(
+      std::unique_ptr<IntegratorBase<T>> integrator);
 
   /// Gets the length of the interval used for witness function time isolation.
   /// The length of the interval is computed differently, depending on context,
@@ -762,7 +728,8 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
-  template <typename> friend class internal::SimulatorPythonInternal;
+  template <typename>
+  friend class internal::SimulatorPythonInternal;
 
   enum TimeOrWitnessTriggered {
     kNothingTriggered = 0b00,
@@ -772,10 +739,11 @@ class Simulator {
   };
 
   // All constructors delegate to here.
-  Simulator(
-      const System<T>* system,
-      std::unique_ptr<const System<T>> owned_system,
-      std::shared_ptr<Context<T>> context);
+  // @param use_owned_system  If true, `owned_system` must not be null. If
+  //                          false, `system` must not be null.
+  Simulator(const System<T>* system,
+            std::unique_ptr<const System<T>> owned_system,
+            std::shared_ptr<Context<T>> context, bool use_owned_system);
 
   [[nodiscard]] EventStatus HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
@@ -790,33 +758,29 @@ class Simulator {
   // In that case, updates the SimulatorStatus to explain what happened and
   // then optionally throws or returns true. Returns false and does nothing
   // if no failure.
-  bool HasEventFailureOrMaybeThrow(
-      const EventStatus& event_status, bool throw_on_failure,
-      SimulatorStatus* simulator_status);
+  bool HasEventFailureOrMaybeThrow(const EventStatus& event_status,
+                                   bool throw_on_failure,
+                                   SimulatorStatus* simulator_status);
 
   TimeOrWitnessTriggered IntegrateContinuousState(
-      const T& next_publish_time,
-      const T& next_update_time,
-      const T& boundary_time,
-      CompositeEventCollection<T>* witnessed_events);
+      const T& next_publish_time, const T& next_update_time,
+      const T& boundary_time, CompositeEventCollection<T>* witnessed_events);
 
   // Private methods related to witness functions.
   void IsolateWitnessTriggers(
       const std::vector<const WitnessFunction<T>*>& witnesses,
-      const VectorX<T>& w0,
-      const T& t0, const VectorX<T>& x0, const T& tf,
+      const VectorX<T>& w0, const T& t0, const VectorX<T>& x0, const T& tf,
       std::vector<const WitnessFunction<T>*>* triggered_witnesses);
   void PopulateEventDataForTriggeredWitness(
       const T& t0, const T& tf, const WitnessFunction<T>* witness,
       Event<T>* event, CompositeEventCollection<T>* events) const;
   static bool DidWitnessTrigger(
-    const std::vector<const WitnessFunction<T>*>& witness_functions,
-    const VectorX<T>& w0,
-    const VectorX<T>& wf,
-    std::vector<const WitnessFunction<T>*>* triggered_witnesses);
+      const std::vector<const WitnessFunction<T>*>& witness_functions,
+      const VectorX<T>& w0, const VectorX<T>& wf,
+      std::vector<const WitnessFunction<T>*>* triggered_witnesses);
   VectorX<T> EvaluateWitnessFunctions(
-    const std::vector<const WitnessFunction<T>*>& witness_functions,
-    const Context<T>& context) const;
+      const std::vector<const WitnessFunction<T>*>& witness_functions,
+      const Context<T>& context) const;
   void RedetermineActiveWitnessFunctionsIfNecessary();
 
   // The steady_clock is immune to system clock changes so increases
@@ -845,7 +809,7 @@ class Simulator {
   // system_ variable instead, which is valid always.
   const std::unique_ptr<const System<T>> owned_system_;
 
-  const System<T>& system_;              // Just a reference; not owned.
+  const System<T>& system_;  // Just a reference; not owned.
 
   // Context ownership is logically unique, but we allow a shared pointer to
   // accommodate custom memory management for python bindings.
@@ -873,10 +837,6 @@ class Simulator {
 
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{SimulatorConfig{}.target_realtime_rate};
-
-  bool publish_every_time_step_{SimulatorConfig{}.publish_every_time_step};
-
-  bool publish_at_initialization_{SimulatorConfig{}.publish_every_time_step};
 
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
@@ -928,8 +888,7 @@ class Simulator {
   // Indicates when a timed or witnessed event needs to be handled on the next
   // call to AdvanceTo().
   TimeOrWitnessTriggered time_or_witness_triggered_{
-      TimeOrWitnessTriggered::kNothingTriggered
-  };
+      TimeOrWitnessTriggered::kNothingTriggered};
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;
@@ -969,8 +928,8 @@ namespace internal {
 //        use gcc's -ffast-math option).
 template <class T>
 T GetPreviousNormalizedValue(const T& value) {
-  using std::nexttoward;
   using std::abs;
+  using std::nexttoward;
 
   // There are three distinct cases to be handled:
   //     -∞        -10⁻³⁰⁸  0      10⁻³⁰⁸      ∞
@@ -987,17 +946,18 @@ T GetPreviousNormalizedValue(const T& value) {
 
   // Treat zero (b) and DBL_MIN (c) specially, since nexttoward(value, -inf)
   // returns denormalized numbers for these two values.
-  if (value_mod == 0.0)
+  if (value_mod == 0.0) {
     return -std::numeric_limits<double>::min();
-  if (value_mod == min_normalized)
+  }
+  if (value_mod == min_normalized) {
     return 0.0;
+  }
 
   // Case (a) uses nexttoward(.).
   const long double inf = std::numeric_limits<long double>::infinity();
   const double prev_value = nexttoward(value, -inf);
-  DRAKE_DEMAND(
-      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_NORMAL ||
-      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_ZERO);
+  DRAKE_DEMAND(std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_NORMAL ||
+               std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_ZERO);
   return prev_value;
 }
 }  // namespace internal

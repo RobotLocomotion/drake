@@ -29,6 +29,7 @@ cmake_configure_file(
     name = "config",
     src = "include/sdf/config.hh.in",
     out = "include/sdf/config.hh",
+    strict = True,
     cmakelists = ["CMakeLists.txt"],
     defines = [
         "PROJECT_NAME=SDFormat",
@@ -37,7 +38,6 @@ cmake_configure_file(
         "PROJECT_VERSION_PATCH=0",
         "PROJECT_VERSION=0.0",
         "PROJECT_VERSION_FULL=0.0.0",
-        "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
     undefines = [
         "USE_INTERNAL_URDF",
@@ -45,7 +45,6 @@ cmake_configure_file(
         # some or all of our console.patch file.
         "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
     ],
-    strict = True,
     visibility = ["//visibility:private"],
 )
 
@@ -263,9 +262,13 @@ cc_library_vendored(
         x.replace("include/sdf/", "drake_hdr/sdf/")
         for x in _HDRS
     ],
-    includes = ["drake_hdr"],
     copts = ["-w"],
-    defines = ["SDFORMAT_STATIC_DEFINE", "SDFORMAT_DISABLE_CONSOLE_LOGFILE"],
+    defines = [
+        "SDFORMAT_STATIC_DEFINE",
+        "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
+    ],
+    includes = ["drake_hdr"],
+    isystem = True,
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
@@ -279,28 +282,8 @@ cc_library_vendored(
     ],
 )
 
-_IGN_CMDLINE_SRCS = [
-    "src/gz.cc",
-    "src/gz.hh",
-]
-
-cc_library_vendored(
-    name = "ign_cmdline",
-    srcs = _IGN_CMDLINE_SRCS,
-    srcs_vendored = [
-        x.replace("src/", "drake_src/src/")
-        for x in _IGN_CMDLINE_SRCS
-    ],
-    copts = ["-w"],
-    linkstatic = 1,
-    visibility = ["@drake//tools/workspace/sdformat_internal:__pkg__"],
-    deps = [
-        ":sdformat",
-    ],
-)
-
 check_lists_consistency(
-    files = _MOST_HDRS + _SRCS + _SKIP_SRCS + _IGN_CMDLINE_SRCS,
+    files = _MOST_HDRS + _SRCS + _SKIP_SRCS,
     glob_include = [
         "include/**/*.hh",
         "src/**/*.hh",
@@ -311,6 +294,8 @@ check_lists_consistency(
         "include/sdf/sdf.hh",
         # Drake doesn't use sdformat's URDF parser; we have our own.
         "src/parser_urdf.*",
+        # This is unused binary program code, not library code.
+        "src/cmd/*",
         # These are test code, not library code.
         "**/*TEST*",
     ],
@@ -318,8 +303,10 @@ check_lists_consistency(
 
 install(
     name = "install",
-    visibility = ["//visibility:public"],
     docs = [
         "LICENSE",
     ],
+    visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

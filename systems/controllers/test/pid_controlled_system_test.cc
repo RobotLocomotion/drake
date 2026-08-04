@@ -1,6 +1,7 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 

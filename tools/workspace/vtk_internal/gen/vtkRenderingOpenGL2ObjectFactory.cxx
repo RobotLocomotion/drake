@@ -34,7 +34,7 @@
 #include "vtkOpenGLTextMapper.h"
 #include "vtkOpenGLTexture.h"
 // Removed the next lines for Drake.
-// #include "vtkCocoaRenderWindow.h"
+// #include "vtkOpenGLHyperTreeGridMapper.h"
 // #include "vtkOpenGLRenderWindow.h"
 
 
@@ -68,8 +68,9 @@ VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTextActor3D)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTextMapper)
 VTK_CREATE_CREATE_FUNCTION(vtkOpenGLTexture)
 // Removed the next lines for Drake.
-// VTK_CREATE_CREATE_FUNCTION(vtkCocoaRenderWindow)
+// VTK_CREATE_CREATE_FUNCTION(vtkOpenGLHyperTreeGridMapper)
 // VTK_CREATE_CREATE_FUNCTION(vtkOpenGLRenderWindow)
+
 
 vtkRenderingOpenGL2ObjectFactory::vtkRenderingOpenGL2ObjectFactory()
 {
@@ -97,13 +98,13 @@ this->RegisterOverride("vtkTextActor", "vtkOpenGLTextActor", "Override for VTK::
 this->RegisterOverride("vtkTextActor3D", "vtkOpenGLTextActor3D", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTextActor3D);
 this->RegisterOverride("vtkTextMapper", "vtkOpenGLTextMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTextMapper);
 this->RegisterOverride("vtkTexture", "vtkOpenGLTexture", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLTexture);
-// Removed the next line for Drake.
-// this->RegisterOverride("vtkRenderWindow", "vtkCocoaRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkCocoaRenderWindow);
+// Removed the next lines for Drake.
+// this->RegisterOverride("vtkHyperTreeGridMapper", "vtkOpenGLHyperTreeGridMapper", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLHyperTreeGridMapper);
 // this->RegisterOverride("vtkRenderWindow", "vtkOpenGLRenderWindow", "Override for VTK::RenderingOpenGL2 module", 1, vtkObjectFactoryCreatevtkOpenGLRenderWindow);
 
 }
 
-const char * vtkRenderingOpenGL2ObjectFactory::GetVTKSourceVersion()
+const char * vtkRenderingOpenGL2ObjectFactory::GetVTKSourceVersion() VTK_FUTURE_CONST
 {
   return VTK_SOURCE_VERSION;
 }

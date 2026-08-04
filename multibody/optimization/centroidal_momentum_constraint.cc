@@ -10,8 +10,12 @@ using drake::multibody::internal::UpdateContextPositionsAndVelocities;
 namespace drake {
 namespace multibody {
 namespace {
-int momentum_dim(bool angular_only) { return angular_only ? 3 : 6; }
+int momentum_dim(bool angular_only) {
+  return angular_only ? 3 : 6;
+}
 }  // namespace
+
+CentroidalMomentumConstraint::~CentroidalMomentumConstraint() = default;
 
 CentroidalMomentumConstraint::CentroidalMomentumConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,

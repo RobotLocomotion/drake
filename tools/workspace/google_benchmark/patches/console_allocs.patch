@@ -1,0 +1,33 @@
+If a memory manager is installed then shows allocs in the summary table.
+
+Reasoning for not upstreaming this patch: don't want to spend the time
+reworking the patch and tests to be suitable.
+
+--- src/console_reporter.cc
++++ src/console_reporter.cc
+@@ -59,9 +59,11 @@ bool ConsoleReporter::ReportContext(const Context& context) {
+ 
+ BENCHMARK_EXPORT
+ void ConsoleReporter::PrintHeader(const Run& run) {
++  const bool show_allocs = (run.memory_result.memory_iterations > 0);
+   std::string str =
+-      FormatString("%-*s %13s %15s %12s", static_cast<int>(name_field_width_),
+-                   "Benchmark", "Time", "CPU", "Iterations");
++      FormatString("%-*s %13s %15s %*s%12s", static_cast<int>(name_field_width_),
++                   "Benchmark", "Time", "CPU", show_allocs ? 10 : 0,
++                   show_allocs ? "Allocs " : "", "Iterations");
+   if (!run.counters.empty()) {
+     if ((output_options_ & OO_Tabular) != 0) {
+       for (auto const& c : run.counters) {
+@@ -176,6 +178,11 @@ void ConsoleReporter::PrintRunData(const Run& result) {
+   }
+ 
+   if (!result.report_big_o && !result.report_rms) {
++    const bool show_allocs = (result.memory_result.memory_iterations > 0);
++    if (show_allocs) {
++      const std::string s = HumanReadableNumber(result.allocs_per_iter, Counter::kIs1000);
++      printer(Out, COLOR_YELLOW, "%7s   ", s.c_str());
++    }
+     printer(Out, COLOR_CYAN, "%10lld", result.iterations);
+   }
+ 

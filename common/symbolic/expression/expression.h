@@ -11,7 +11,6 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <ostream>
 #include <random>
 #include <string>
 #include <type_traits>
@@ -25,7 +24,6 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
@@ -509,7 +507,6 @@ class Expression {
   friend Expression uninterpreted_function(std::string name,
                                            std::vector<Expression> arguments);
 
-  friend std::ostream& operator<<(std::ostream& os, const Expression& e);
   friend void swap(Expression& a, Expression& b) {
     std::swap(a.boxed_, b.boxed_);
   }
@@ -683,8 +680,6 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
 Expression uninterpreted_function(std::string name,
                                   std::vector<Expression> arguments);
 void swap(Expression& a, Expression& b);
-
-std::ostream& operator<<(std::ostream& os, const Expression& e);
 
 /** Checks if @p e is a constant expression. */
 inline bool is_constant(const Expression& e) {
@@ -908,6 +903,8 @@ Expression TaylorExpand(const Expression& f, const Environment& a, int order);
 }  // namespace symbolic
 }  // namespace drake
 
+DRAKE_FORMATTER_AS(, drake::symbolic, Expression, e, e.to_string())
+
 namespace std {
 /* Provides std::hash<drake::symbolic::Expression>. */
 template <>
@@ -1035,13 +1032,6 @@ inline bool operator!=(
     const uniform_real_distribution<drake::symbolic::Expression>& lhs,
     const uniform_real_distribution<drake::symbolic::Expression>& rhs) {
   return !(lhs == rhs);
-}
-
-// TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
-inline std::ostream& operator<<(
-    std::ostream& os,
-    const uniform_real_distribution<drake::symbolic::Expression>& d) {
-  return os << d.a() << " " << d.b();
 }
 
 /// Provides std::normal_distribution, N(μ, σ), for symbolic expressions.
@@ -1179,13 +1169,6 @@ inline bool operator!=(
   return !(lhs == rhs);
 }
 
-// TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
-inline std::ostream& operator<<(
-    std::ostream& os,
-    const normal_distribution<drake::symbolic::Expression>& d) {
-  return os << d.mean() << " " << d.stddev();
-}
-
 /// Provides std::exponential_distribution, Exp(λ), for symbolic expressions.
 ///
 /// When operator() is called, it returns a symbolic expression `v / λ` where v
@@ -1278,13 +1261,6 @@ inline bool operator!=(
   return !(lhs == rhs);
 }
 
-// TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
-inline std::ostream& operator<<(
-    std::ostream& os,
-    const exponential_distribution<drake::symbolic::Expression>& d) {
-  return os << d.lambda();
-}
-
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -1294,7 +1270,9 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::Expression>
     : GenericNumTraits<drake::symbolic::Expression> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 // Informs Eigen that Variable op Variable gets Expression.
@@ -1407,8 +1385,12 @@ class ExpressionInnerProduct
     : public Expression,
       public Eigen::Map<Eigen::Matrix<Expression, 1, 1>> {
  public:
-  ExpressionInnerProduct() : Map(this) {}
-  void resize(int rows, int cols) { DRAKE_ASSERT(rows == 1 && cols == 1); }
+  ExpressionInnerProduct()
+      // Because Map here expects an Expression* the `this` pointer to the just-
+      // constructed object converts to point to the Expression base class
+      // object so that both the Map matrix and the Expression scalar use the
+      // same memory.
+      : Map(this) {}
 };
 
 /* Helper to look up the return type we'll use for an Expression matmul. */
@@ -1760,5 +1742,3 @@ struct is_eigen_vector_expression_double_pair
           is_eigen_vector_of<DerivedB, double>::value> {};
 
 }  // namespace drake
-
-DRAKE_FORMATTER_AS(, drake::symbolic, Expression, e, e.to_string())

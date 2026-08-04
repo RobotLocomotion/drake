@@ -1,0 +1,46 @@
+#!/usr/bin/env groovy
+
+library 'drake-ci@main'
+
+// Define job properties. Other Jenkinsfiles which do not correspond to
+// multibranch pipelines (i.e., for non-experimental jobs) should inherit
+// properties from the original job definitions rather than calling
+// properties() here.
+properties([
+  parameters([
+    string(name: 'deePR', defaultValue: 'main',
+      description: 'Pull request name. ' +
+        'For pull requests, enter project name <code>PR-1234</code> ' +
+        'for pull request #1234. Defaults to <code>main</code>.'),
+  ]),
+  buildDiscarder(
+    logRotator(
+      daysToKeepStr: '90',
+      artifactDaysToKeepStr: '90'
+    )
+  ),
+  disableConcurrentBuilds(
+    abortPrevious: true
+  ),
+])
+
+def scmVars = null
+
+node(utils.getNodeLabel()) {
+  stage('drake-checkout') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          scmVars = checkout scm
+        }
+      }
+    }
+  }
+}
+
+build(
+  job: "RobotLocomotion/drake-external-examples/${params.deePR}",
+  parameters: [
+    string(name: 'drakeSha', value: scmVars.GIT_COMMIT)
+  ]
+)

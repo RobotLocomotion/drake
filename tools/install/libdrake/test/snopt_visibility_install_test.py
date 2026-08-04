@@ -7,7 +7,6 @@ import install_test_helper
 
 
 class SnoptVisibilityTest(unittest.TestCase):
-
     def test_visibility(self):
         """Confirm that SNOPT's symbols are not exported in the installed
         libdrake.so.  See comments in //tools/workspace/snopt/... for details.
@@ -15,9 +14,8 @@ class SnoptVisibilityTest(unittest.TestCase):
 
         # The shared library to be tested.
         libdrake = os.path.join(
-            install_test_helper.get_install_dir(),
-            "lib/libdrake.so"
-            )
+            install_test_helper.get_install_dir(), "lib/libdrake.so"
+        )
         self.assertTrue(os.path.exists(libdrake))
 
         # Dump the symbol names to an output string.
@@ -40,5 +38,5 @@ class SnoptVisibilityTest(unittest.TestCase):
             self.assertNotIn(" _sn", line)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

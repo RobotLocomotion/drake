@@ -1,5 +1,11 @@
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -15,7 +21,9 @@ namespace {
 using ::testing::MatchesRegex;
 
 using geometry::GeometryId;
+using geometry::GeometryInstance;
 using geometry::SceneGraph;
+using geometry::Sphere;
 using math::RigidTransformd;
 
 class CollisionFilterGroupResolverTest : public test::DiagnosticPolicyTestBase {
@@ -34,7 +42,7 @@ class CollisionFilterGroupResolverTest : public test::DiagnosticPolicyTestBase {
   }
 
  protected:
-  MultibodyPlant<double> plant_{0.0};
+  MultibodyPlant<double> plant_{0.01};
   SceneGraph<double> scene_graph_;
   const geometry::SceneGraphInspector<double>& inspector_{
       scene_graph_.model_inspector()};
@@ -163,6 +171,28 @@ TEST_F(CollisionFilterGroupResolverTest, MissingMemberGroupScoped) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*'r1::agroup'.*not found"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*'r1::sub::agroup'.*not found"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*'r1::zzz::agroup'.*not found"));
+}
+
+TEST_F(CollisionFilterGroupResolverTest, AmbiguousRigidAndDeformableName) {
+  ModelInstanceIndex model = plant_.AddModelInstance("amodel");
+
+  // Add a rigid body to the model.
+  AddBody("abody", model);
+
+  // Add a deformable body to the model with the same name.
+  auto& deformable_model = plant_.mutable_deformable_model();
+  auto sphere = std::make_unique<GeometryInstance>(
+      math::RigidTransformd::Identity(), std::make_unique<Sphere>(1.0),
+      "abody");
+  deformable_model.RegisterDeformableBody(std::move(sphere), model,
+                                          /*config=*/{},
+                                          /*resolution_hint=*/2.0);
+
+  // Ensure that the resolver catches the ambiguous name in the group body
+  // names.
+  resolver_.AddGroup(diagnostic_policy_, "a", {"abody"}, {}, model);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*body.*'amodel::abody'.*is ambiguous.*"));
 }
 
 TEST_F(CollisionFilterGroupResolverTest, GroupGlobalBodies) {

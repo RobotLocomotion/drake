@@ -3,7 +3,10 @@
 // clang-format: on
 
 #include <functional>
+#include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -126,9 +129,9 @@ class DoublePendulumModel {
     SpatialInertia<double> M2_L2 = M2_L2cm.Shift(-p_L2oL2cm);
 
     // Adds the upper and lower links of the pendulum:
-    link1_ = &model->AddRigidBody("Link1", M1_L1);
-    link2_ = &model->AddRigidBody("Link2", M2_L2);
-    world_body_ = &model->world_body();
+    link1_ = &model->AddLink("Link1", M1_L1);
+    link2_ = &model->AddLink("Link2", M2_L2);
+    world_body_ = &model->world_link();
 
     // The shoulder joint connects the world with link 1.
     // Its inboard frame, Si, is the world frame.
@@ -242,13 +245,16 @@ class PendulumTests : public ::testing::Test {
     pendulum_.elbow().set_angle(context_.get(), theta2);
 
     // MultibodyTree mass matrix:
-    Matrix2d H;
-    tree().CalcMassMatrixViaInverseDynamics(*context_, &H);
+    Matrix2d H_id, H_in_world;
+    tree().CalcMassMatrixViaInverseDynamics(*context_, &H_id);
+    tree().CalcMassMatrix(*context_, &H_in_world);
 
-    // Benchmark mass matrix:
+    // Benchmark mass matrix (doesn't actually depend on theta1):
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
 
-    EXPECT_TRUE(CompareMatrices(H, H_expected, kTolerance,
+    EXPECT_TRUE(CompareMatrices(H_id, H_expected, kTolerance,
+                                MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(H_in_world, H_expected, kTolerance,
                                 MatrixCompareType::relative));
   }
 
@@ -292,7 +298,7 @@ class PendulumTests : public ::testing::Test {
     // External forces:
     MultibodyForces<double> forces(pendulum_.tree());
     // Accelerations of the bodies:
-    std::vector<SpatialAcceleration<double>> A_WB_array(tree().num_bodies());
+    std::vector<SpatialAcceleration<double>> A_WB_array(tree().num_links());
     // Generalized accelerations:
     VectorX<double> vdot = VectorX<double>::Zero(nv);
 
@@ -309,8 +315,8 @@ class PendulumTests : public ::testing::Test {
     pendulum_.shoulder().set_angular_rate(context_.get(), theta1dot);
     pendulum_.elbow().set_angular_rate(context_.get(), theta2dot);
 
-    internal::PositionKinematicsCache<double> pc(tree().get_topology());
-    internal::VelocityKinematicsCache<double> vc(tree().get_topology());
+    internal::PositionKinematicsCache<double> pc(tree().forest());
+    internal::VelocityKinematicsCache<double> vc(tree().forest());
     tree().CalcPositionKinematicsCache(*context_, &pc);
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
 
@@ -323,7 +329,7 @@ class PendulumTests : public ::testing::Test {
     pendulum_.elbow().AddInTorque(*context_, tau2, &forces);
 
     // Arrays for output forces:
-    std::vector<SpatialForce<double>> F_BMo_W(tree().num_bodies());
+    std::vector<SpatialForce<double>> F_BMo_W(tree().num_links());
     VectorX<double> tau(tree().num_velocities());
 
     // With vdot = 0, this computes:

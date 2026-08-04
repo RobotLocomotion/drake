@@ -1,5 +1,11 @@
 #include "drake/multibody/plant/contact_results.h"
 
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/limit_malloc.h"

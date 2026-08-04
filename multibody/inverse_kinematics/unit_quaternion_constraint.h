@@ -28,7 +28,7 @@ class UnitQuaternionConstraint : public solvers::Constraint {
 
   UnitQuaternionConstraint();
 
-  ~UnitQuaternionConstraint() override {}
+  ~UnitQuaternionConstraint() override;
 
  private:
   template <typename T, typename S>

@@ -1,16 +1,4 @@
-load("//tools/workspace:deprecation.bzl", "add_deprecation")
 load("//tools/workspace:github.bzl", "github_archive")
-
-def common_robotics_utilities_repository(
-        name,
-        mirrors = None):
-    add_deprecation(
-        name = name,
-        date = "2025-04-01",
-        cc_aliases = {
-            "common_robotics_utilities": "@common_robotics_utilities_internal//:common_robotics_utilities",  # noqa
-        },
-    )
 
 def common_robotics_utilities_internal_repository(
         name,
@@ -24,8 +12,9 @@ def common_robotics_utilities_internal_repository(
         updated in ToyotaResearchInstitute/common_robotics_utilities/test/ or
         ToyotaResearchInstitute/common_robotics_utilities/CMakeLists.txt.ros2
         """,
-        commit = "86aca2b6ef69e677f41700fe5f6f33f6bda358fa",
-        sha256 = "e1bd9e4554b3b098595c5691ed3dd3f88f1a943c2007781f17bc665599d8a0ad",  # noqa
+        upgrade_type = "commit",
+        commit = "f50b1fd1e7b940f0c4e0c91d7e39fc0f15c45881",
+        sha256 = "43ebeb9bbcd533d69c0f94c0a6bc3aed57edb1ac51266103f897330d11f501a3",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/vendor.patch",

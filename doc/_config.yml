@@ -30,7 +30,17 @@ custom:
       - title: 'Home'
         url: '/'
       - title: 'Installation'
-        url: '/installation.html'
+        subfolderitems:
+        - page: 'Overview'
+          url: '/installation.html'
+        - page: 'Pip'
+          url: '/pip.html'
+        - page: 'APT'
+          url: '/apt.html'
+        - page: 'Binary Download'
+          url: '/from_binary.html'
+        - page: 'Build From Source'
+          url: '/from_source.html'
       - title: 'Gallery'
         url: '/gallery.html'
       - title: 'API Documentation'
@@ -44,11 +54,11 @@ custom:
         - page: 'Getting Help'
           url: /getting_help.html
         - page: 'Tutorials'
-          url: 'https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Findex.ipynb'
+          url: /tutorials/index.html
         - page: 'Troubleshooting'
           url: /troubleshooting.html
         - page: 'Python Bindings'
-          url: '/python_bindings.html'
+          url: /python_bindings.html
         - page: 'For Developers'
           url: /developers.html
         - page: 'Credits'
@@ -56,6 +66,8 @@ custom:
 
   footer:
     menu_items:
+      - title: 'Accessibility'
+        url: https://accessibility.mit.edu/
       - title: 'C++'
         url: /doxygen_cxx/index.html
       - title: 'Python'

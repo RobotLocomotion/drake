@@ -1,12 +1,15 @@
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -57,14 +60,19 @@ namespace {
  */
 template <typename C>
 auto RegisterBinding(py::handle* scope) {
-  constexpr auto& cls_doc = pydrake_doc.drake.solvers.Binding;
+  constexpr auto& cls_doc = pydrake_doc_solvers.drake.solvers.Binding;
   typedef Binding<C> B;
   const string pyname = TemporaryClassName<B>();
-  py::class_<B> binding_cls(*scope, pyname.c_str());
+  class_<B> binding_cls(*scope, pyname.c_str());
   AddTemplateClass(*scope, "Binding", binding_cls, GetPyParam<C>());
   binding_cls  // BR
       .def(
-          py::init<const std::shared_ptr<C>&, const VectorXDecisionVariable&>(),
+          "__init__",
+          [](B* self, C* c, const VectorXDecisionVariable& v) {
+            // Maintain python wrapper to avoid hazards like #20131.
+            py::object c_py = py::cast(c);
+            new (self) Binding(make_shared_ptr_from_py_object<C>(c_py), v);
+          },
           py::arg("c"), py::arg("v"), cls_doc.ctor.doc)
       .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
       .def("variables", &B::variables, cls_doc.variables.doc)
@@ -92,16 +100,17 @@ auto RegisterBinding(py::handle* scope) {
 
 template <typename C, typename PyClass>
 void DefBindingCastConstructor(PyClass* cls) {
-  static_assert(std::is_same_v<Binding<C>, typename PyClass::type>,
+  static_assert(std::is_same_v<Binding<C>, typename PyClass::Type>,
       "Bound type must be Binding<C>");
   (*cls)  // BR
-      .def(py::init([](py::object binding) {
+      .def("__init__", [](Binding<C>* self, py::object binding) {
         // Define a type-erased downcast to mirror the implicit
         // "downcast-ability" of Binding<> types.
-        return std::make_unique<Binding<C>>(
-            binding.attr("evaluator")().cast<std::shared_ptr<C>>(),
-            binding.attr("variables")().cast<VectorXDecisionVariable>());
-      }));
+        new (self) Binding<C>(
+            // Maintain python wrapper to avoid hazards like #20131.
+            make_shared_ptr_from_py_object<C>(binding.attr("evaluator")()),
+            py::cast<VectorXDecisionVariable>(binding.attr("variables")()));
+      });
 }
 
 class StubEvaluatorBase : public EvaluatorBase {
@@ -124,28 +133,34 @@ class StubEvaluatorBase : public EvaluatorBase {
   }
 };
 
-void DefTesting(py::module m) {
-  // To test binding casting.
-  py::class_<StubEvaluatorBase, EvaluatorBase,
-      std::shared_ptr<StubEvaluatorBase>>(m, "StubEvaluatorBase");
+void DefTesting(py::module_ m) {
+  // Test helpers for binding casting.
+  class_<StubEvaluatorBase, EvaluatorBase, std::shared_ptr<StubEvaluatorBase>>(
+      m, "StubEvaluatorBase");
   RegisterBinding<StubEvaluatorBase>(&m)  // BR
       .def_static(
           "Make", [](const Eigen::Ref<const VectorXDecisionVariable>& v) {
             return Binding<StubEvaluatorBase>(
                 std::make_shared<StubEvaluatorBase>(), v);
           });
+  // The Accept* methods use specific c++ argument signatures to invoke all of
+  // the cases of automatic casting supported by
+  // DefBindingCastConstructor. They return their arguments to help with
+  // testing of lifetime issues.
   m  // BR
-      .def("AcceptBindingEvaluatorBase", [](const Binding<EvaluatorBase>&) {})
-      .def("AcceptBindingCost", [](const Binding<Cost>&) {})
-      .def("AcceptBindingConstraint", [](const Binding<Constraint>&) {});
+      .def("AcceptBindingEvaluatorBase",
+          [](const Binding<EvaluatorBase>& arg) { return arg; })
+      .def("AcceptBindingCost", [](const Binding<Cost>& arg) { return arg; })
+      .def("AcceptBindingConstraint",
+          [](const Binding<Constraint>& arg) { return arg; });
 }
 
-void BindEvaluatorsAndBindings(py::module m) {
-  constexpr auto& doc = pydrake_doc.drake.solvers;
+void BindEvaluatorsAndBindings(py::module_ m) {
+  constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   {
     using Class = EvaluatorBase;
     constexpr auto& cls_doc = doc.EvaluatorBase;
-    py::class_<Class, std::shared_ptr<EvaluatorBase>> cls(m, "EvaluatorBase");
+    class_<Class, std::shared_ptr<EvaluatorBase>> cls(m, "EvaluatorBase");
     cls  // BR
         .def("num_outputs", &Class::num_outputs, cls_doc.num_outputs.doc)
         .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc)
@@ -182,7 +197,7 @@ void BindEvaluatorsAndBindings(py::module m) {
   auto evaluator_binding = RegisterBinding<EvaluatorBase>(&m);
   DefBindingCastConstructor<EvaluatorBase>(&evaluator_binding);
 
-  py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
+  class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
       m, "Constraint", doc.Constraint.doc)
       .def("num_constraints", &Constraint::num_constraints,
           doc.Constraint.num_constraints.doc)
@@ -223,20 +238,17 @@ void BindEvaluatorsAndBindings(py::module m) {
           },
           py::arg("x"), doc.Constraint.CheckSatisfied.doc);
 
-  py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>
+  class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>
       linear_constraint_cls(m, "LinearConstraint", doc.LinearConstraint.doc);
   linear_constraint_cls
-      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& lb,
-                        const Eigen::VectorXd& ub) {
-        return std::make_unique<LinearConstraint>(A, lb, ub);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("lb"), py::arg("ub"),
           doc.LinearConstraint.ctor.doc_dense_A)
-      .def(py::init([](const Eigen::SparseMatrix<double>& A,
-                        const Eigen::Ref<const Eigen::VectorXd>& lb,
-                        const Eigen::Ref<const Eigen::VectorXd>& ub) {
-        return std::make_unique<LinearConstraint>(A, lb, ub);
-      }),
+      .def(py::init<const Eigen::SparseMatrix<double>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("lb"), py::arg("ub"),
           doc.LinearConstraint.ctor.doc_sparse_A)
       .def("GetDenseA", &LinearConstraint::GetDenseA,
@@ -283,7 +295,7 @@ void BindEvaluatorsAndBindings(py::module m) {
           },
           py::arg("new_lb"), py::arg("new_ub"), doc.Constraint.set_bounds.doc);
 
-  py::class_<LorentzConeConstraint, Constraint,
+  class_<LorentzConeConstraint, Constraint,
       std::shared_ptr<LorentzConeConstraint>>
       lorentz_cone_cls(
           m, "LorentzConeConstraint", doc.LorentzConeConstraint.doc);
@@ -298,10 +310,9 @@ void BindEvaluatorsAndBindings(py::module m) {
           doc.LorentzConeConstraint.EvalType.kNonconvex.doc);
 
   lorentz_cone_cls
-      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
-                        LorentzConeConstraint::EvalType eval_type) {
-        return std::make_unique<LorentzConeConstraint>(A, b, eval_type);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               LorentzConeConstraint::EvalType>(),
           py::arg("A"), py::arg("b"),
           py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
           doc.LorentzConeConstraint.ctor.doc)
@@ -313,12 +324,11 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("new_A"), py::arg("new_b"),
           doc.LorentzConeConstraint.UpdateCoefficients.doc);
 
-  py::class_<RotatedLorentzConeConstraint, Constraint,
+  class_<RotatedLorentzConeConstraint, Constraint,
       std::shared_ptr<RotatedLorentzConeConstraint>>(
       m, "RotatedLorentzConeConstraint", doc.RotatedLorentzConeConstraint.doc)
-      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
-        return std::make_unique<RotatedLorentzConeConstraint>(A, b);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.RotatedLorentzConeConstraint.ctor.doc)
       .def("A", &RotatedLorentzConeConstraint::A,
           doc.RotatedLorentzConeConstraint.A.doc)
@@ -329,23 +339,18 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("new_b"),
           doc.RotatedLorentzConeConstraint.UpdateCoefficients.doc);
 
-  py::class_<LinearEqualityConstraint, LinearConstraint,
+  class_<LinearEqualityConstraint, LinearConstraint,
       std::shared_ptr<LinearEqualityConstraint>>(
       m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
-      .def(py::init([](const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq) {
-        return std::make_unique<LinearEqualityConstraint>(Aeq, beq);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("Aeq"), py::arg("beq"),
           doc.LinearEqualityConstraint.ctor.doc_dense_Aeq)
-      .def(py::init([](const Eigen::SparseMatrix<double>& Aeq,
-                        const Eigen::VectorXd& beq) {
-        return std::make_unique<LinearEqualityConstraint>(Aeq, beq);
-      }),
+      .def(py::init<const Eigen::SparseMatrix<double>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("Aeq"), py::arg("beq"),
           doc.LinearEqualityConstraint.ctor.doc_sparse_Aeq)
-      .def(py::init([](const Eigen::RowVectorXd& a, double beq) {
-        return std::make_unique<LinearEqualityConstraint>(a, beq);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::RowVectorXd>&, double>(),
           py::arg("a"), py::arg("beq"),
           doc.LinearEqualityConstraint.ctor.doc_row_a)
       .def(
@@ -366,16 +371,14 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("Aeq"), py::arg("beq"),
           doc.LinearEqualityConstraint.UpdateCoefficients.doc);
 
-  py::class_<BoundingBoxConstraint, LinearConstraint,
+  class_<BoundingBoxConstraint, LinearConstraint,
       std::shared_ptr<BoundingBoxConstraint>>(
       m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.doc)
-      .def(py::init([](const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
-        return std::make_unique<BoundingBoxConstraint>(lb, ub);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc);
 
-  py::class_<QuadraticConstraint, Constraint,
-      std::shared_ptr<QuadraticConstraint>>
+  class_<QuadraticConstraint, Constraint, std::shared_ptr<QuadraticConstraint>>
       quadratic_constraint_cls(
           m, "QuadraticConstraint", doc.QuadraticConstraint.doc);
 
@@ -393,14 +396,9 @@ void BindEvaluatorsAndBindings(py::module m) {
           doc.QuadraticConstraint.HessianType.kZero.doc);
 
   quadratic_constraint_cls
-      .def(py::init([](const Eigen::Ref<const Eigen::MatrixXd>& Q0,
-                        const Eigen::Ref<const Eigen::VectorXd>& b, double lb,
-                        double ub,
-                        std::optional<QuadraticConstraint::HessianType>
-                            hessian_type) {
-        return std::make_unique<QuadraticConstraint>(
-            Q0, b, lb, ub, hessian_type);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&, double, double,
+               std::optional<QuadraticConstraint::HessianType>>(),
           py::arg("Q0"), py::arg("b"), py::arg("lb"), py::arg("ub"),
           py::arg("hessian_type") = std::nullopt,
           doc.QuadraticConstraint.ctor.doc)
@@ -424,33 +422,27 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("hessian_type", &QuadraticConstraint::hessian_type,
           doc.QuadraticConstraint.hessian_type.doc);
 
-  py::class_<PositiveSemidefiniteConstraint, Constraint,
+  class_<PositiveSemidefiniteConstraint, Constraint,
       std::shared_ptr<PositiveSemidefiniteConstraint>>(m,
       "PositiveSemidefiniteConstraint", doc.PositiveSemidefiniteConstraint.doc)
-      .def(py::init([](int rows) {
-        return std::make_unique<PositiveSemidefiniteConstraint>(rows);
-      }),
-          py::arg("rows"), doc.PositiveSemidefiniteConstraint.ctor.doc)
+      .def(py::init<int>(), py::arg("rows"),
+          doc.PositiveSemidefiniteConstraint.ctor.doc)
       .def("matrix_rows", &PositiveSemidefiniteConstraint::matrix_rows,
           doc.PositiveSemidefiniteConstraint.matrix_rows.doc);
 
-  py::class_<LinearMatrixInequalityConstraint, Constraint,
+  class_<LinearMatrixInequalityConstraint, Constraint,
       std::shared_ptr<LinearMatrixInequalityConstraint>>(m,
       "LinearMatrixInequalityConstraint",
       doc.LinearMatrixInequalityConstraint.doc)
-      .def(py::init(
-               [](std::vector<Eigen::MatrixXd> F, double symmetry_tolerance) {
-                 return std::make_unique<LinearMatrixInequalityConstraint>(
-                     std::move(F), symmetry_tolerance);
-               }),
-          py::arg("F"), py::arg("symmetry_tolerance") = 1E-10,
+      .def(py::init<std::vector<Eigen::MatrixXd>, double>(), py::arg("F"),
+          py::arg("symmetry_tolerance") = 1E-10,
           doc.LinearMatrixInequalityConstraint.ctor.doc)
       .def("F", &LinearMatrixInequalityConstraint::F,
           doc.LinearMatrixInequalityConstraint.F.doc)
       .def("matrix_rows", &LinearMatrixInequalityConstraint::matrix_rows,
           doc.LinearMatrixInequalityConstraint.matrix_rows.doc);
 
-  py::class_<LinearComplementarityConstraint, Constraint,
+  class_<LinearComplementarityConstraint, Constraint,
       std::shared_ptr<LinearComplementarityConstraint>>(m,
       "LinearComplementarityConstraint",
       doc.LinearComplementarityConstraint.doc)
@@ -459,13 +451,11 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("q", &LinearComplementarityConstraint::q,
           doc.LinearComplementarityConstraint.q.doc);
 
-  py::class_<ExponentialConeConstraint, Constraint,
+  class_<ExponentialConeConstraint, Constraint,
       std::shared_ptr<ExponentialConeConstraint>>(
       m, "ExponentialConeConstraint", doc.ExponentialConeConstraint.doc)
-      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::Vector3d& b) {
-        Eigen::SparseMatrix<double> A_sparse = A.sparseView();
-        return std::make_unique<ExponentialConeConstraint>(A_sparse, b);
-      }),
+      .def(py::init<const Eigen::SparseMatrix<double>&,
+               const Eigen::Ref<const Eigen::Vector3d>&>(),
           py::arg("A"), py::arg("b"), doc.ExponentialConeConstraint.ctor.doc)
       .def(
           "A",
@@ -476,7 +466,7 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("b", &ExponentialConeConstraint::b,
           doc.ExponentialConeConstraint.b.doc);
 
-  py::class_<ExpressionConstraint, Constraint,
+  class_<ExpressionConstraint, Constraint,
       std::shared_ptr<ExpressionConstraint>>(
       m, "ExpressionConstraint", doc.ExpressionConstraint.doc)
       .def(py::init<const Eigen::Ref<const VectorX<symbolic::Expression>>&,
@@ -491,115 +481,118 @@ void BindEvaluatorsAndBindings(py::module m) {
           // dtype = object arrays must be copied, and cannot be referenced.
           py_rvp::copy, doc.ExpressionConstraint.vars.doc);
 
-  py::class_<MinimumValueLowerBoundConstraint, Constraint,
-      std::shared_ptr<MinimumValueLowerBoundConstraint>>(m,
-      "MinimumValueLowerBoundConstraint",
-      doc.MinimumValueLowerBoundConstraint.doc)
-      .def(py::init(
-               [](int num_vars, double minimum_value_lower,
-                   double influence_value_offset, int max_num_values,
-                   // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
-                   // then I got the RuntimeError: dtype=object arrays must be
-                   // copied, and cannot be referenced.
-                   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                       value_function,
-                   std::function<Eigen::VectorXd(
-                       const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                       value_function_double) {
-                 return std::make_unique<MinimumValueLowerBoundConstraint>(
-                     num_vars, minimum_value_lower, influence_value_offset,
-                     max_num_values, value_function, value_function_double);
-               }),
-          py::arg("num_vars"), py::arg("minimum_value_lower"),
-          py::arg("influence_value_offset"), py::arg("max_num_values"),
-          py::arg("value_function"),
-          py::arg("value_function_double") = std::function<Eigen::VectorXd(
-              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
-          doc.MinimumValueLowerBoundConstraint.ctor.doc)
-      .def("minimum_value_lower",
-          &MinimumValueLowerBoundConstraint::minimum_value_lower,
-          doc.MinimumValueLowerBoundConstraint.minimum_value_lower.doc)
-      .def("influence_value",
-          &MinimumValueLowerBoundConstraint::influence_value,
-          doc.MinimumValueLowerBoundConstraint.influence_value.doc)
-      .def(
-          "set_penalty_function",
-          [](MinimumValueLowerBoundConstraint* self,
-              std::function<py::tuple(double, bool)> new_penalty_function) {
-            auto penalty_fun = [new_penalty_function](double x, double* penalty,
-                                   double* dpenalty) {
-              py::tuple penalty_tuple(2);
-              penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
-              *penalty = penalty_tuple[0].cast<double>();
-              if (dpenalty) {
-                *dpenalty = penalty_tuple[1].cast<double>();
-              }
-            };
-            self->set_penalty_function(penalty_fun);
-          },
-          py::arg("new_penalty_function"),
-          "Setter for the penalty function. The penalty function "
-          "new_penalty_function(x: float, compute_grad: bool) -> tuple[float, "
-          "Optional[float]] "
-          "returns [penalty_value, penalty_gradient] when "
-          "compute_grad=True, or [penalty_value, None] when "
-          "compute_grad=False. See minimum_value_constraint.h on the "
-          "requirement on MinimumValuePenaltyFunction.");
+  {
+    using Class = MinimumValueLowerBoundConstraint;
+    constexpr auto& cls_doc = doc.MinimumValueLowerBoundConstraint;
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "MinimumValueLowerBoundConstraint", cls_doc.doc)
+        .def(
+            "__init__",
+            [](Class* self, int num_vars, double minimum_value_lower,
+                double influence_value_offset, int max_num_values,
+                // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
+                // I got the RuntimeError: dtype=object arrays must be copied,
+                // and cannot be referenced.
+                std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                    value_function,
+                std::function<Eigen::VectorXd(
+                    const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                    value_function_double) {
+              new (self)
+                  Class(num_vars, minimum_value_lower, influence_value_offset,
+                      max_num_values, value_function, value_function_double);
+            },
+            py::arg("num_vars"), py::arg("minimum_value_lower"),
+            py::arg("influence_value_offset"), py::arg("max_num_values"),
+            py::arg("value_function"),
+            py::arg("value_function_double") = std::function<Eigen::VectorXd(
+                const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+            cls_doc.ctor.doc)
+        .def("minimum_value_lower", &Class::minimum_value_lower,
+            cls_doc.minimum_value_lower.doc)
+        .def("influence_value", &Class::influence_value,
+            cls_doc.influence_value.doc)
+        .def(
+            "set_penalty_function",
+            [](Class* self,
+                std::function<py::tuple(double, bool)> new_penalty_function) {
+              auto penalty_fun = [new_penalty_function](double x,
+                                     double* penalty, double* dpenalty) {
+                py::tuple penalty_tuple =
+                    new_penalty_function(x, dpenalty != nullptr);
+                *penalty = py::cast<double>(penalty_tuple[0]);
+                if (dpenalty) {
+                  *dpenalty = py::cast<double>(penalty_tuple[1]);
+                }
+              };
+              self->set_penalty_function(penalty_fun);
+            },
+            py::arg("new_penalty_function"),
+            "Setter for the penalty function. The penalty function "
+            "new_penalty_function(x: float, compute_grad: bool) -> "
+            "tuple[float, Optional[float]] "
+            "returns [penalty_value, penalty_gradient] when "
+            "compute_grad=True, or [penalty_value, None] when "
+            "compute_grad=False. See minimum_value_constraint.h on the "
+            "requirement on MinimumValuePenaltyFunction.");
+  }
 
-  py::class_<MinimumValueUpperBoundConstraint, Constraint,
-      std::shared_ptr<MinimumValueUpperBoundConstraint>>(m,
-      "MinimumValueUpperBoundConstraint",
-      doc.MinimumValueUpperBoundConstraint.doc)
-      .def(py::init(
-               [](int num_vars, double minimum_value_upper,
-                   double influence_value_offset, int max_num_values,
-                   // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
-                   // then I got the RuntimeError: dtype=object arrays must be
-                   // copied, and cannot be referenced.
-                   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
-                       value_function,
-                   std::function<Eigen::VectorXd(
-                       const Eigen::Ref<const Eigen::VectorXd>&, double)>
-                       value_function_double) {
-                 return std::make_unique<MinimumValueUpperBoundConstraint>(
-                     num_vars, minimum_value_upper, influence_value_offset,
-                     max_num_values, value_function, value_function_double);
-               }),
-          py::arg("num_vars"), py::arg("minimum_value_upper"),
-          py::arg("influence_value_offset"), py::arg("max_num_values"),
-          py::arg("value_function"),
-          py::arg("value_function_double") = std::function<Eigen::VectorXd(
-              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
-          doc.MinimumValueUpperBoundConstraint.ctor.doc)
-      .def("minimum_value_upper",
-          &MinimumValueUpperBoundConstraint::minimum_value_upper,
-          doc.MinimumValueUpperBoundConstraint.minimum_value_upper.doc)
-      .def("influence_value",
-          &MinimumValueUpperBoundConstraint::influence_value,
-          doc.MinimumValueUpperBoundConstraint.influence_value.doc)
-      .def(
-          "set_penalty_function",
-          [](MinimumValueUpperBoundConstraint* self,
-              std::function<py::tuple(double, bool)> new_penalty_function) {
-            auto penalty_fun = [new_penalty_function](double x, double* penalty,
-                                   double* dpenalty) {
-              py::tuple penalty_tuple(2);
-              penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
-              *penalty = penalty_tuple[0].cast<double>();
-              if (dpenalty) {
-                *dpenalty = penalty_tuple[1].cast<double>();
-              }
-            };
-            self->set_penalty_function(penalty_fun);
-          },
-          py::arg("new_penalty_function"),
-          "Setter for the penalty function. The penalty function "
-          "new_penalty_function(x: float, compute_grad: bool) -> tuple[float, "
-          "Optional[float]] "
-          "returns [penalty_value, penalty_gradient] when "
-          "compute_grad=True, or [penalty_value, None] when "
-          "compute_grad=False. See minimum_value_constraint.h on the "
-          "requirement on MinimumValuePenaltyFunction.");
+  {
+    using Class = MinimumValueUpperBoundConstraint;
+    constexpr auto& cls_doc = doc.MinimumValueUpperBoundConstraint;
+    class_<Class, Constraint, std::shared_ptr<Class>>(
+        m, "MinimumValueUpperBoundConstraint", cls_doc.doc)
+        .def(
+            "__init__",
+            [](MinimumValueUpperBoundConstraint* self, int num_vars,
+                double minimum_value_upper, double influence_value_offset,
+                int max_num_values,
+                // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here then
+                // I got the RuntimeError: dtype=object arrays must be copied,
+                // and cannot be referenced.
+                std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                    value_function,
+                std::function<Eigen::VectorXd(
+                    const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                    value_function_double) {
+              new (self) MinimumValueUpperBoundConstraint(num_vars,
+                  minimum_value_upper, influence_value_offset, max_num_values,
+                  value_function, value_function_double);
+            },
+            py::arg("num_vars"), py::arg("minimum_value_upper"),
+            py::arg("influence_value_offset"), py::arg("max_num_values"),
+            py::arg("value_function"),
+            py::arg("value_function_double") = std::function<Eigen::VectorXd(
+                const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+            cls_doc.ctor.doc)
+        .def("minimum_value_upper", &Class::minimum_value_upper,
+            cls_doc.minimum_value_upper.doc)
+        .def("influence_value", &Class::influence_value,
+            cls_doc.influence_value.doc)
+        .def(
+            "set_penalty_function",
+            [](Class* self,
+                std::function<py::tuple(double, bool)> new_penalty_function) {
+              auto penalty_fun = [new_penalty_function](double x,
+                                     double* penalty, double* dpenalty) {
+                py::tuple penalty_tuple =
+                    new_penalty_function(x, dpenalty != nullptr);
+                *penalty = py::cast<double>(penalty_tuple[0]);
+                if (dpenalty) {
+                  *dpenalty = py::cast<double>(penalty_tuple[1]);
+                }
+              };
+              self->set_penalty_function(penalty_fun);
+            },
+            py::arg("new_penalty_function"),
+            "Setter for the penalty function. The penalty function "
+            "new_penalty_function(x: float, compute_grad: bool) -> "
+            "tuple[float, Optional[float]] "
+            "returns [penalty_value, penalty_gradient] when "
+            "compute_grad=True, or [penalty_value, None] when "
+            "compute_grad=False. See minimum_value_constraint.h on the "
+            "requirement on MinimumValuePenaltyFunction.");
+  }
 
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
@@ -621,14 +614,12 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<ExpressionConstraint>(&m);
 
   // Mirror procedure for costs
-  py::class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(
+  class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(
       m, "Cost", doc.Cost.doc);
 
-  py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(
+  class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(
       m, "LinearCost", doc.LinearCost.doc)
-      .def(py::init([](const Eigen::VectorXd& a, double b) {
-        return std::make_unique<LinearCost>(a, b);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&, double>(),
           py::arg("a"), py::arg("b"), doc.LinearCost.ctor.doc)
       .def("a", &LinearCost::a, doc.LinearCost.a.doc)
       .def("b", &LinearCost::b, doc.LinearCost.b.doc)
@@ -645,12 +636,11 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("update_constant_term", &LinearCost::update_constant_term,
           py::arg("new_b"), doc.LinearCost.update_constant_term.doc);
 
-  py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
+  class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
       m, "QuadraticCost", doc.QuadraticCost.doc)
-      .def(py::init([](const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
-                        double c, std::optional<bool> is_convex) {
-        return std::make_unique<QuadraticCost>(Q, b, c, is_convex);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&, double,
+               std::optional<bool>>(),
           py::arg("Q"), py::arg("b"), py::arg("c"),
           py::arg("is_convex") = py::none(), doc.QuadraticCost.ctor.doc)
       .def("Q", &QuadraticCost::Q, doc.QuadraticCost.Q.doc)
@@ -678,11 +668,10 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("update_constant_term", &QuadraticCost::update_constant_term,
           py::arg("new_c"), doc.QuadraticCost.update_constant_term.doc);
 
-  py::class_<L1NormCost, Cost, std::shared_ptr<L1NormCost>>(
+  class_<L1NormCost, Cost, std::shared_ptr<L1NormCost>>(
       m, "L1NormCost", doc.L1NormCost.doc)
-      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
-        return std::make_unique<L1NormCost>(A, b);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.L1NormCost.ctor.doc)
       .def("A", &L1NormCost::A, doc.L1NormCost.A.doc)
       .def("b", &L1NormCost::b, doc.L1NormCost.b.doc)
@@ -700,16 +689,14 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("val"), doc.L1NormCost.update_b_entry.doc);
 
   {
-    py::class_<L2NormCost, Cost, std::shared_ptr<L2NormCost>> cls(
+    class_<L2NormCost, Cost, std::shared_ptr<L2NormCost>> cls(
         m, "L2NormCost", doc.L2NormCost.doc);
-    cls.def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
-         return std::make_unique<L2NormCost>(A, b);
-       }),
-           py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
-        .def(py::init([](const Eigen::SparseMatrix<double>& A,
-                          const Eigen::VectorXd& b) {
-          return std::make_unique<L2NormCost>(A, b);
-        }),
+    cls  // BR
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_dense_A)
+        .def(py::init<const Eigen::SparseMatrix<double>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc_sparse_A)
         .def("get_sparse_A", &L2NormCost::get_sparse_A,
             doc.L2NormCost.get_sparse_A.doc)
@@ -733,11 +720,10 @@ void BindEvaluatorsAndBindings(py::module m) {
             doc.L2NormCost.UpdateCoefficients.doc_sparse_A);
   }
 
-  py::class_<LInfNormCost, Cost, std::shared_ptr<LInfNormCost>>(
+  class_<LInfNormCost, Cost, std::shared_ptr<LInfNormCost>>(
       m, "LInfNormCost", doc.LInfNormCost.doc)
-      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
-        return std::make_unique<LInfNormCost>(A, b);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.LInfNormCost.ctor.doc)
       .def("A", &LInfNormCost::A, doc.LInfNormCost.A.doc)
       .def("b", &LInfNormCost::b, doc.LInfNormCost.b.doc)
@@ -754,12 +740,11 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("update_b_entry", &LInfNormCost::update_b_entry, py::arg("i"),
           py::arg("val"), doc.LInfNormCost.update_b_entry.doc);
 
-  py::class_<PerspectiveQuadraticCost, Cost,
+  class_<PerspectiveQuadraticCost, Cost,
       std::shared_ptr<PerspectiveQuadraticCost>>(
       m, "PerspectiveQuadraticCost", doc.PerspectiveQuadraticCost.doc)
-      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
-        return std::make_unique<PerspectiveQuadraticCost>(A, b);
-      }),
+      .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("A"), py::arg("b"), doc.PerspectiveQuadraticCost.ctor.doc)
       .def(
           "A", &PerspectiveQuadraticCost::A, doc.PerspectiveQuadraticCost.A.doc)
@@ -780,7 +765,7 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("i"), py::arg("val"),
           doc.PerspectiveQuadraticCost.update_b_entry.doc);
 
-  py::class_<ExpressionCost, Cost, std::shared_ptr<ExpressionCost>>(
+  class_<ExpressionCost, Cost, std::shared_ptr<ExpressionCost>>(
       m, "ExpressionCost", doc.ExpressionCost.doc)
       .def(py::init<const symbolic::Expression&>(), py::arg("e"),
           doc.ExpressionCost.ctor.doc)
@@ -803,7 +788,7 @@ void BindEvaluatorsAndBindings(py::module m) {
   // implementation as is, or convert it to symbolic::Polynomial first.
   RegisterBinding<ExpressionCost>(&m);
 
-  py::class_<VisualizationCallback, EvaluatorBase,
+  class_<VisualizationCallback, EvaluatorBase,
       std::shared_ptr<VisualizationCallback>>(
       m, "VisualizationCallback", doc.VisualizationCallback.doc);
 
@@ -813,7 +798,7 @@ void BindEvaluatorsAndBindings(py::module m) {
 }  // namespace
 
 namespace internal {
-void DefineSolversEvaluators(py::module m) {
+void DefineSolversEvaluators(py::module_ m) {
   BindEvaluatorsAndBindings(m);
   DefTesting(m.def_submodule("_testing"));
 }

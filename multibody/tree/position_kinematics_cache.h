@@ -9,26 +9,56 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/topology/forest.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 
-// This class is one of the cache entries in the Context. It holds the
-// kinematics results of computations that only depend on the generalized
-// positions of the system.
-// Kinematics results include:
-//
-// - Body frame B poses X_WB measured and expressed in the world frame W.
-// - Pose X_FM of a mobilizer's outboard frame M measured and expressed in the
-//   inboard frame F.
-// - Mobilizer's matrices H_FM (with F and M defined above) that map the
-//   mobilizer's generalized velocities v to cross-joint spatial velocities
-//   V_FM = H_FM * v.
-//
-// @tparam_default_scalar
+template <typename T>
+class FrameBodyPoseCache;
+
+/* This class is one of the cache entries in the Context. It holds the
+kinematics results of computations that only depend on the generalized
+positions q of the system.
+
+Position kinematics results are mostly per-Mobod. We also need to know the pose
+of every Link (composite mobods carry multiple links). Note that every mobod B
+(composite or not) has a distinguished "active" link L₀, which is the most
+inboard link following that mobod (that is, the link with the joint that
+connects the mobod to its inboard mobod). The body frame B of a mobod is always
+coincident with the frame L₀ of its active link.
+
+Results are indexed by MobodIndex unless otherwise specified:
+ - X_WB: Pose of mobod B measured and expressed in the world frame W.
+         Frame B is the same as frame L₀ of a mobod's active link.
+ - X_WL: Pose of link L in W for every link. Indexed by LinkOrdinal. Same as
+         X_WB if L is the active link of mobod B.
+ - X_PB: Pose of mobod B measured and expressed in its parent (inboard) mobod's
+         frame P.
+ - p_PoBo_W:
+         Position of mobod B's origin Bo measured in its parent (inboard) mobod
+         P, expressed in world frame W.
+ - p_BoLo_W:
+         Position of link L's origin Lo measured from its mobod B's origin Bo,
+         expressed in the world frame W. Indexed by LinkOrdinal. Zero for the
+         active link L₀ (since B=L₀).
+ - X_FM: Pose of mobilizer's outboard frame M measured and expressed in
+         its inboard frame F.
+
+@tparam_default_scalar */
+
+// TODO(sherm1) X_WL mostly duplicates X_WB (they are identical if there are no
+//  composite bodies), and always contains all the X_WB transforms (for the
+//  active links). Claude's idea to avoid duplication with no overhead: assign
+//  active link ordinals first, so that
+//  LinkOrdinal(mobod.active_link) == MobodIndex(mobod). Then
+//  X_WL(mobod.index()) == X_WB(mobod.index()) avoiding indirection.
+//  Applies to the velocity_kinematics_cache also.
+
+// TODO(sherm1) Currently we never form composites so each Mobod has only
+//  its active link L₀.
 template <typename T>
 class PositionKinematicsCache {
  public:
@@ -37,12 +67,7 @@ class PositionKinematicsCache {
   template <typename U>
   using RigidTransform = drake::math::RigidTransform<U>;
 
-  // Constructs a position kinematics cache entry for the given
-  // MultibodyTreeTopology.
-  explicit PositionKinematicsCache(const MultibodyTreeTopology& topology)
-      : num_mobods_(topology.num_mobods()) {
-    Allocate();
-  }
+  explicit PositionKinematicsCache(const SpanningForest& forest);
 
   // Returns a const reference to pose `X_WB` of the body B (associated with
   // mobilized body mobod_index) as measured and expressed in the world frame W.
@@ -60,6 +85,30 @@ class PositionKinematicsCache {
   RigidTransform<T>& get_mutable_X_WB(MobodIndex mobod_index) {
     DRAKE_ASSERT(0 <= mobod_index && mobod_index < num_mobods_);
     return X_WB_pool_[mobod_index];
+  }
+
+  const RigidTransform<T>& get_X_WL(LinkOrdinal ordinal) const {
+    DRAKE_ASSERT(0 <= ordinal && ordinal < num_links_);
+    return X_WL_pool_[ordinal];
+  }
+
+  void SetX_WL(LinkOrdinal ordinal, const math::RigidTransform<T>& X_WL) {
+    DRAKE_DEMAND(0 <= ordinal && ordinal < num_links_);
+    X_WL_pool_[ordinal] = X_WL;
+  }
+
+  // Returns X_BL.translation() re-expressed in the world frame W.
+  // @param[in] ordinal The LinkOrdinal for the link L.
+  // @returns p_BoLo_W, the position of link L's origin Lo measured from its
+  //          mobod B's origin Bo, expressed in the world frame W.
+  const Vector3<T>& get_p_BoLo_W(LinkOrdinal ordinal) const {
+    DRAKE_ASSERT(0 <= ordinal && ordinal < num_links_);
+    return p_BoLo_W_pool_[ordinal];
+  }
+
+  void Set_p_BoLo_W(LinkOrdinal ordinal, const Vector3<T>& p_BoLo_W) {
+    DRAKE_DEMAND(0 <= ordinal && ordinal < num_links_);
+    p_BoLo_W_pool_[ordinal] = p_BoLo_W;
   }
 
   // Returns a const reference to the rotation matrix `R_WB` that relates the
@@ -121,57 +170,53 @@ class PositionKinematicsCache {
     return p_PoBo_W_pool_[mobod_index];
   }
 
+  // Once we know where the links are placed on the World composite, we can fill
+  // in X_WL for those links once and for all. X_WL₀ (≜ X_WL[link₀]) and
+  // X_WB₀ (≜ X_WB[mobod₀]) are identity transforms (set during allocation).
+  // Consequently, X_WLᵢ = X_WB₀ * X_B₀Lᵢ = X_B₀Lᵢ for each of the links Lᵢ that
+  // are fixed to World. Do nothing if the serial number hasn't changed.
+  void PrecomputeWorldCompositeIfNeeded(
+      const SpanningForest& forest,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,
+      int64_t frame_body_pose_cache_serial_number) {
+    if (world_composite_serial_number_ == frame_body_pose_cache_serial_number)
+      return;
+    ComputeWorldComposite(forest, frame_body_pose_cache);
+    world_composite_serial_number_ = frame_body_pose_cache_serial_number;
+  }
+
  private:
-  // Pool types:
-  // Pools store entries in the same order as the mobilized bodies (BodyNodes)
-  // in the multibody forest, i.e. in DFT (Depth-First Traversal) order.
-  // Therefore clients of this class will access entries by MobodIndex, see
-  // `get_X_WB()` for instance.
-
-  // The type of pools for storing poses.
-  typedef std::vector<RigidTransform<T>> X_PoolType;
-
-  // The type of pools for storing 3D vectors.
-  typedef std::vector<Vector3<T>> Vector3PoolType;
-
   // Allocates resources for this position kinematics cache.
-  void Allocate() {
-    X_WB_pool_.resize(num_mobods_);
-    // Even though RigidTransform defaults to identity, we make it explicit.
-    // This pose will never change after this initialization.
-    X_WB_pool_[world_mobod_index()] = RigidTransform<T>::Identity();
+  void Allocate();
 
-    X_PB_pool_.resize(num_mobods_);
-    X_PB_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
+  // Called when we know we have to recompute the parameter-dependent
+  // world composite kinematics.
+  void ComputeWorldComposite(
+      const SpanningForest& forest,
+      const FrameBodyPoseCache<T>& frame_body_pose_cache);
 
-    X_FM_pool_.resize(num_mobods_);
-    X_FM_pool_[world_mobod_index()] = NaNPose();  // It should never be used.
-
-    p_PoBo_W_pool_.resize(num_mobods_);
-    // p_PoBo_W for the world body should never be used.
-    p_PoBo_W_pool_[world_mobod_index()].setConstant(
-        std::numeric_limits<
-            typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
-  }
-
-  // Helper method to initialize poses to garbage values including NaNs.
-  // This allow us to quickly verify some of the values stored in the pools are
-  // never used (however we store them anyway to simplify the indexing).
-  static RigidTransform<T> NaNPose() {
-    // Note: RotationMatrix will throw in Debug builds if values are NaN. For
-    // our purposes, it is enough the translation has NaN values.
-    return RigidTransform<T>(
-        math::RotationMatrix<T>::Identity(),
-        Vector3<T>::Constant(Eigen::NumTraits<double>::quiet_NaN()));
-  }
-
-  // Number of mobilized bodies in the corresponding multibody forest.
+  // Number of Mobods in the multibody forest, including the World mobod.
   int num_mobods_{0};
-  // Pools indexed by MobodIndex.
-  X_PoolType X_WB_pool_;
-  X_PoolType X_PB_pool_;
-  X_PoolType X_FM_pool_;
-  Vector3PoolType p_PoBo_W_pool_;
+
+  // Number of links in the multibody graph includes all user-defined links
+  // (including the World link) and possibly some ephemeral links.
+  int num_links_{0};
+
+  // The serial number of the last FrameBodyPoseCache that was used to update
+  // the state-independent quantities in this cache (such as the X_WL for links
+  // fixed to World). This is used to determine whether we need to recompute
+  // those quantities when PrecomputeWorldComposite() is called.
+  int64_t world_composite_serial_number_{-1};
+
+  // These are indexed by MobodIndex so are in depth-first order.
+  std::vector<RigidTransform<T>> X_WB_pool_;
+  std::vector<RigidTransform<T>> X_PB_pool_;
+  std::vector<RigidTransform<T>> X_FM_pool_;
+  std::vector<Vector3<T>> p_PoBo_W_pool_;
+
+  // These pools are indexed by LinkOrdinal.
+  std::vector<RigidTransform<T>> X_WL_pool_;
+  std::vector<Vector3<T>> p_BoLo_W_pool_;
 };
 
 }  // namespace internal

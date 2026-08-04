@@ -1,5 +1,8 @@
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 
+#include <memory>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -16,7 +19,7 @@ namespace {
 /* An arbitrary number of degree of freedom made up for testing purpose. */
 static constexpr int kNumDofs = 6;
 using DenseMatrix = Eigen::Matrix<double, kNumDofs, kNumDofs>;
-using contact_solvers::internal::Block3x3SparseSymmetricMatrix;
+using contact_solvers::internal::BlockSparseSymmetricMatrix3d;
 using Eigen::Matrix3d;
 using Eigen::VectorXd;
 using std::make_unique;
@@ -57,12 +60,12 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
   /* Makes a block diagonal tangent matrix with
     [ A00   0;
       0    A11]. */
-  static unique_ptr<Block3x3SparseSymmetricMatrix> MakeTangentMatrix() {
+  static unique_ptr<BlockSparseSymmetricMatrix3d> MakeTangentMatrix() {
     const std::vector<std::vector<int>> sparsity = {std::vector<int>({0}),
                                                     std::vector<int>({1})};
     contact_solvers::internal::BlockSparsityPattern block_pattern(
         std::vector<int>(2, 3), sparsity);
-    auto A = make_unique<Block3x3SparseSymmetricMatrix>(block_pattern);
+    auto A = make_unique<BlockSparseSymmetricMatrix3d>(block_pattern);
     A->SetBlock(0, 0, A00);
     A->SetBlock(1, 1, A11);
     return A;
@@ -134,6 +137,69 @@ TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       bc_.ApplyBoundaryConditionToTangentMatrix(A.get()),
       "An index of the Dirichlet boundary condition is out of range.");
+}
+
+/* Tests merging  */
+TEST_F(DirichletBoundaryConditionTest, Merge) {
+  /* Disjoint BCs. */
+  {
+    DirichletBoundaryCondition<double> another_bc;
+    const Vector3<double> bc_q(10, 20, 30);
+    const Vector3<double> bc_v(40, 50, 60);
+    const Vector3<double> bc_a(70, 80, 90);
+    another_bc.AddBoundaryCondition(FemNodeIndex(1), {bc_q, bc_v, bc_a});
+    bc_.Merge(another_bc);
+    Vector<double, kNumDofs> expected_q, expected_v, expected_a;
+    expected_q << 1, 2, 3, 10, 20, 30;
+    expected_v << 4, 5, 6, 40, 50, 60;
+    expected_a << 7, 8, 9, 70, 80, 90;
+    bc_.ApplyBoundaryConditionToState(fem_state_.get());
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
+  }
+  {
+    /* Overlapping BCs. */
+    DirichletBoundaryCondition<double> yet_another_bc;
+    const Vector3<double> bc_q(100, 200, 300);
+    const Vector3<double> bc_v(400, 500, 600);
+    const Vector3<double> bc_a(700, 800, 900);
+    yet_another_bc.AddBoundaryCondition(FemNodeIndex(0), {bc_q, bc_v, bc_a});
+    bc_.Merge(yet_another_bc);
+    Vector<double, kNumDofs> expected_q, expected_v, expected_a;
+    expected_q << 100, 200, 300, 10, 20, 30;
+    expected_v << 400, 500, 600, 40, 50, 60;
+    expected_a << 700, 800, 900, 70, 80, 90;
+    bc_.ApplyBoundaryConditionToState(fem_state_.get());
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
+  }
+  {
+    /* Empty BC. */
+    DirichletBoundaryCondition<double> empty_bc;
+    bc_.Merge(empty_bc);
+    Vector<double, kNumDofs> expected_q, expected_v, expected_a;
+    expected_q << 100, 200, 300, 10, 20, 30;
+    expected_v << 400, 500, 600, 40, 50, 60;
+    expected_a << 700, 800, 900, 70, 80, 90;
+    bc_.ApplyBoundaryConditionToState(fem_state_.get());
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
+  }
+  {
+    /* Merge with self. */
+    bc_.Merge(bc_);
+    Vector<double, kNumDofs> expected_q, expected_v, expected_a;
+    expected_q << 100, 200, 300, 10, 20, 30;
+    expected_v << 400, 500, 600, 40, 50, 60;
+    expected_a << 700, 800, 900, 70, 80, 90;
+    bc_.ApplyBoundaryConditionToState(fem_state_.get());
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
+  }
 }
 
 }  // namespace

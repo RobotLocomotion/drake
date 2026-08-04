@@ -1,0 +1,30 @@
+#!/usr/bin/env groovy
+
+library 'drake-ci@main'
+
+node(utils.getNodeLabel()) {
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            utils.cleanWorkspace()
+            dir(env.WORKSPACE) {
+              // Always use drake-ci/main for staging builds, but use the
+              // drake SHA parameter for the drake checkout.
+              def scmVars = utils.checkout('main', params.sha1)
+              utils.doMainBuild(scmVars, params.release_version)
+            }
+          } finally {
+            try {
+              utils.checkBuildResult()
+              utils.addCDashBadge()
+            } finally {
+              utils.cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}

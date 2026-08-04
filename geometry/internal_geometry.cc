@@ -1,9 +1,11 @@
 #include "drake/geometry/internal_geometry.h"
 
+#include <atomic>
 #include <memory>
 
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/make_mesh_for_deformable.h"
+#include "drake/geometry/proximity/calc_obb.h"
 
 namespace drake {
 namespace geometry {
@@ -69,6 +71,12 @@ const GeometryProperties* InternalGeometry::properties(Role role) const {
       break;
   }
   DRAKE_UNREACHABLE();
+}
+
+const std::optional<Obb>& InternalGeometry::GetObb() const {
+  return obb_.GetOrMake([this]() {
+    return std::make_shared<std::optional<Obb>>(CalcObb(*shape_spec_));
+  });
 }
 
 }  // namespace internal

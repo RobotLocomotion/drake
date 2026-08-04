@@ -35,12 +35,3 @@ git fetch upstream pull/99999/head && git checkout FETCH_HEAD
 ```
 
 Run the tutorial using bazel as shown in Local Editing above.
-
-# Deploying changes
-
-The tutorials on the Drake website are refreshed to latest master as part of
-our [stable release process](/release_playbook.html). In general we do not
-upgrade them between those monthly releases, but in case of emergency feel
-free to manually edit them online at deepnote.com. Any manual changes will
-be overwritten during the next stable release, so be sure that the fixes
-get merged to Drake master as well.

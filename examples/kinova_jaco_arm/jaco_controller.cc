@@ -3,6 +3,9 @@
 /// Implements a controller for a Kinova Jaco arm.
 
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gflags/gflags.h>
 

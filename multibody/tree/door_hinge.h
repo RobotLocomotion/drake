@@ -147,6 +147,8 @@ class DoorHinge final : public ForceElement<T> {
 
   ~DoorHinge() override;
 
+  /// @throws std::exception if this element is not associated with a
+  /// MultibodyPlant.
   const RevoluteJoint<T>& joint() const;
 
   const DoorHingeConfig& config() const { return config_; }

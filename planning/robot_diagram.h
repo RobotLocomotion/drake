@@ -116,7 +116,7 @@ class RobotDiagram final : public systems::Diagram<T> {
   friend class RobotDiagramBuilder;
 
   // For use by RobotDiagramBuilder.
-  explicit RobotDiagram(std::unique_ptr<systems::DiagramBuilder<T>>);
+  explicit RobotDiagram(systems::DiagramBuilder<T>*);
 
   // Aliases for the plant and scene graph (which are owned by our base class).
   multibody::MultibodyPlant<T>& plant_;

@@ -60,12 +60,9 @@ class SurfacePolygon {
    @param index      The index into the face data of where this polygon's data
                      starts; the value contained is the number of vertices for
                      this polygon. It is _not_ the publicly visible index of the
-                     polygon.
-   */
+                     polygon. */
   SurfacePolygon(const std::vector<int>* face_data, int index)
-      : index_(index), mesh_face_data_(*face_data) {
-    DRAKE_DEMAND(face_data != nullptr);
-  }
+      : index_(index), mesh_face_data_(DRAKE_DEREF(face_data)) {}
 
   /* The index of *this* polygon in the polygonal surface. The index points to
    the first entry, which contains the vertex count. */
@@ -233,15 +230,15 @@ class PolygonSurfaceMesh {
 
   /** See TriangleSurfaceMesh::CalcBaryCentric(). This implementation is
    provided to maintain compatibility with MeshFieldLinear. However, it only
-   throws. %PolygonSurfaceMesh does not support barycentric coordinates. */
+   throws. %PolygonSurfaceMesh does not support barycentric coordinates.
+   @tparam C must be either `double` or `AutoDiffXd`. */
   template <typename C>
   Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
-      const Vector3<C>& p_MQ, int p) const {
-    unused(p_MQ, p);
-    throw std::runtime_error(
-        "PolygonSurfaceMesh::CalcBarycentric(): PolygonSurfaceMesh does not "
-        "have barycentric coordinates.");
-  }
+      const Vector3<C>& p_MQ, int p) const
+#ifndef DRAKE_DOXYGEN_CXX
+    requires scalar_predicate<C>::is_bool
+#endif
+  ;  // NOLINT(whitespace/semicolon)
 
   // TODO(DamrongGuoy): Consider using an oriented bounding box in obb.h.
   //  Currently we have a problem that PolygonSurfaceMesh and its vertices are

@@ -1,9 +1,19 @@
 #include "drake/systems/analysis/integrator_base.h"
 
+#include <limits>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace systems {
@@ -34,9 +44,9 @@ class DummyIntegrator : public IntegratorBase<T> {
   // We want the Step function to fail whenever the step size is greater than
   // or equal to unity (see FixedStepFailureIndicatesSubstepFailure).
   bool DoStep(const T& step_size) override {
-      Context<T>* context = this->get_mutable_context();
-      context->SetTime(context->get_time() + step_size);
-      return (step_size < 1.0);
+    Context<T>* context = this->get_mutable_context();
+    context->SetTime(context->get_time() + step_size);
+    return (step_size < 1.0);
   }
 };
 
@@ -264,6 +274,107 @@ GTEST_TEST(IntegratorBaseTest, DenseOutputTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       static_cast<void>(integrator.IntegrateWithSingleFixedStepToTime(0.3)),
       ".*ConcatenateInTime.*time_offset.*");
+}
+
+GTEST_TEST(IntegratorBaseTest, Clone) {
+  // Create a free mass system.
+  Eigen::Matrix2d A;
+  A << 0.0, 1.0, 0.0, 0.0;
+  LinearSystem<double> system(A);
+
+  for (auto& scheme : GetIntegrationSchemes()) {
+    // Skip CENIC, since it requires a MultibodyPlant.
+    if (scheme == "cenic") {
+      continue;
+    }
+
+    // Create an original integrator corresponding to scheme.
+    Simulator<double> tmp(system);
+    auto& original = ResetIntegratorFromFlags(&tmp, scheme, 0.2);
+    original.reset_context(system.CreateDefaultContext());
+    original.set_fixed_step_mode(true);
+    if (original.supports_error_estimation()) {
+      original.set_target_accuracy(1e-10);
+    }
+    original.Initialize();
+
+    // Clone the integrator.
+    auto integrator = original.Clone();
+
+    // The context should be cloned.
+    EXPECT_NE(integrator->get_mutable_context(), nullptr);
+    EXPECT_NE(&integrator->get_context(), &original.get_context());
+
+    // Compare configuration parameters.
+    EXPECT_EQ(&integrator->get_system(), &original.get_system());
+    EXPECT_EQ(integrator->is_initialized(), original.is_initialized());
+    EXPECT_EQ(integrator->supports_error_estimation(),
+              original.supports_error_estimation());
+    if (integrator->supports_error_estimation()) {
+      EXPECT_EQ(integrator->get_target_accuracy(),
+                original.get_target_accuracy());
+    }
+    EXPECT_EQ(integrator->get_error_estimate_order(),
+              original.get_error_estimate_order());
+    EXPECT_EQ(integrator->get_fixed_step_mode(),
+              original.get_fixed_step_mode());
+    EXPECT_EQ(integrator->get_maximum_step_size(),
+              original.get_maximum_step_size());
+    EXPECT_EQ(integrator->get_stretch_factor(), original.get_stretch_factor());
+    EXPECT_EQ(integrator->get_requested_minimum_step_size(),
+              original.get_requested_minimum_step_size());
+    EXPECT_EQ(integrator->get_throw_on_minimum_step_size_violation(),
+              original.get_throw_on_minimum_step_size_violation());
+
+    // Integrate to h and compare to the known analytical solution.
+    const double h = 3.1415926;
+    Eigen::Vector2d x0 = Eigen::Vector2d::Ones();
+
+    Eigen::Vector2d xf;
+    xf << x0(0) + h * x0(1), x0(1);
+
+    // Check IntegrateWithSingleFixedStepToTime() works.
+    integrator->get_mutable_context()->SetTimeAndContinuousState(0.0, x0);
+    EXPECT_TRUE(integrator->IntegrateWithSingleFixedStepToTime(h));
+    EXPECT_TRUE(CompareMatrices(
+        integrator->get_context().get_continuous_state().CopyToVector(), xf,
+        1e-10));
+
+    // Check IntegrateWithMultipleStepsToTime() works.
+    integrator->get_mutable_context()->SetTimeAndContinuousState(0.0, x0);
+    integrator->IntegrateWithMultipleStepsToTime(h);
+    EXPECT_TRUE(CompareMatrices(
+        integrator->get_context().get_continuous_state().CopyToVector(), xf,
+        1e-10));
+
+    // Cloning an uninitialized integration should result in an uninitialized
+    // integrator.
+    original.reset_context(nullptr);
+    EXPECT_FALSE(original.Clone()->is_initialized());
+  }
+}
+
+GTEST_TEST(IntegratorBaseTest, GetStatisticsSummary) {
+  for (auto& scheme : GetIntegrationSchemes()) {
+    // Skip CENIC, since it requires a MultibodyPlant.
+    if (scheme == "cenic") {
+      continue;
+    }
+
+    // Create the integrator.
+    const LinearSystem<double> system(Eigen::Matrix2d::Zero());
+    Simulator<double> simulator(system);
+    auto& integrator = ResetIntegratorFromFlags(&simulator, scheme, 0.01);
+
+    // The summary should be non-empty and have no duplicates.
+    std::vector<NamedStatistic> summary = integrator.GetStatisticsSummary();
+    EXPECT_GT(summary.size(), 0);
+    std::set<std::string> keys;
+    for (const auto& [key, _] : summary) {
+      keys.insert(key);
+    }
+    EXPECT_EQ(keys.size(), summary.size());
+  }
 }
 
 }  // namespace

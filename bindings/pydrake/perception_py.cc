@@ -1,6 +1,8 @@
+#include <string>
+
+#include "drake/bindings/generated_docstrings/perception.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
 #include "drake/perception/point_cloud.h"
@@ -14,15 +16,15 @@ namespace {
 // features (e.g. no descriptors exposed, skipping performance-based args
 // (like `skip_initialization`)). Bind these if they are useful.
 
-void init_pc_flags(py::module m) {
+void init_pc_flags(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::perception::pc_flags;
-  constexpr auto& doc = pydrake_doc.drake.perception.pc_flags;
+  constexpr auto& doc = pydrake_doc_perception.drake.perception.pc_flags;
 
   {
     using Class = BaseField;
     constexpr auto& cls_doc = doc.BaseField;
-    py::enum_<Class>(m, "BaseField", py::arithmetic(), cls_doc.doc)
+    py::enum_<Class>(m, "BaseField", py::is_arithmetic(), cls_doc.doc)
         .value("kNone", Class::kNone, cls_doc.kNone.doc)
         .value("kXYZs", Class::kXYZs, cls_doc.kXYZs.doc)
         .value("kNormals", Class::kNormals, cls_doc.kNormals.doc)
@@ -32,7 +34,7 @@ void init_pc_flags(py::module m) {
   {
     using Class = Fields;
     constexpr auto& cls_doc = doc.Fields;
-    py::class_<Class>(m, "Fields", cls_doc.doc)
+    class_<Class>(m, "Fields", cls_doc.doc)
         .def(py::init<BaseFieldT>(), py::arg("base_fields"), cls_doc.ctor.doc)
         .def("base_fields", &Class::base_fields, cls_doc.base_fields.doc)
         .def("has_base_fields", &Class::has_base_fields,
@@ -47,29 +49,30 @@ void init_pc_flags(py::module m) {
   }
 }
 
-void init_perception(py::module m) {
+void init_perception(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::perception;
-  constexpr auto& doc = pydrake_doc.drake.perception;
+  constexpr auto& doc = pydrake_doc_perception.drake.perception;
 
   using systems::LeafSystem;
   using systems::sensors::CameraInfo;
   using systems::sensors::PixelType;
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.sensors");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.sensors");
 
   {
     using Class = PointCloud;
     constexpr auto& cls_doc = doc.PointCloud;
-    py::class_<Class> cls(m, "PointCloud", cls_doc.doc);
+    class_<Class> cls(m, "PointCloud", cls_doc.doc);
     cls.attr("T") = GetPyParam<Class::T>()[0];
     cls.attr("C") = GetPyParam<Class::C>()[0];
     cls.attr("D") = GetPyParam<Class::D>()[0];
     // N.B. Workaround linking error for `constexpr` bits.
     cls.attr("kDefaultValue") = Class::T{Class::kDefaultValue};
-    cls.def_static("IsDefaultValue", &Class::IsDefaultValue, py::arg("value"),
-           cls_doc.IsDefaultValue.doc)
+    cls  // BR
+        .def_static("IsDefaultValue", &Class::IsDefaultValue, py::arg("value"),
+            cls_doc.IsDefaultValue.doc)
         .def_static("IsInvalidValue", &Class::IsInvalidValue, py::arg("value"),
             cls_doc.IsInvalidValue.doc)
         .def(py::init<int, pc_flags::Fields>(), py::arg("new_size") = 0,
@@ -139,8 +142,7 @@ void init_perception(py::module m) {
   {
     using Class = DepthImageToPointCloud;
     constexpr auto& cls_doc = doc.DepthImageToPointCloud;
-    py::class_<Class, LeafSystem<double>>(
-        m, "DepthImageToPointCloud", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "DepthImageToPointCloud", cls_doc.doc)
         .def(py::init<const CameraInfo&, PixelType, float,
                  pc_flags::BaseFieldT>(),
             py::arg("camera_info"),
@@ -160,16 +162,16 @@ void init_perception(py::module m) {
   {
     using Class = PointCloudToLcm;
     constexpr auto& cls_doc = doc.PointCloudToLcm;
-    py::class_<Class, LeafSystem<double>>(m, "PointCloudToLcm", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "PointCloudToLcm", cls_doc.doc)
         .def(py::init<std::string>(), py::arg("frame_name") = std::string(),
             cls_doc.ctor.doc);
   }
 }
 
-PYBIND11_MODULE(perception, m) {
+PYDRAKE_MODULE(perception, m) {
   m.doc() = "Python bindings for //perception";
 
-  py::module::import("pydrake.common");
+  py::module_::import_("pydrake.common");
 
   // N.B. To stick to directory structure, we do not define this in a
   // `pc_flags` submodule.

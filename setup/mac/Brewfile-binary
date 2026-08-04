@@ -1,0 +1,11 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+cask 'temurin'
+
+brew 'gcc'
+brew 'glib'
+brew 'graphviz'
+brew 'python@3.14'
+
+mas 'Xcode', id: 497799835 unless File.exist? '/Applications/Xcode.app'

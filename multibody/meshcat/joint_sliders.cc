@@ -1,5 +1,6 @@
 #include "drake/multibody/meshcat/joint_sliders.h"
 
+#include <algorithm>
 #include <chrono>
 #include <thread>
 #include <unordered_set>
@@ -8,7 +9,6 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/autodiff_overloads.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"

@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/collision_filter_groups.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/multibody/parsing/detail_collision_filter_groups_impl.h"

@@ -13,6 +13,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/mesh_deformation_interpolator.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
@@ -42,12 +43,9 @@ namespace internal {
    - distance
    - ray-intersection
 
- Not all shape queries are fully supported. To add support for a shape:
- 1. for fcl versions of the specification, modify CopyShapeOrThrow().
- 2. add an instance of the new shape to the CopySemantics test in
-    proximity_engine_test.cc.
- 3. for penetration, test the new shape in the class BoxPenetrationTest of
-    proximity_engine_test.cc and document its configuration.
+ Not all shape queries are fully supported. If adding a shape that supports
+ point penetration, add the new shape in the BoxPenetrationTest of
+ proximity_engine_test.cc and document its configuration.
 
  <!-- TODO(SeanCurtis-TRI): Fully document the semantics of the proximity
  properties that will affect the proximity engine -- hydroelastic semantics,
@@ -88,6 +86,30 @@ class ProximityEngine {
   /* Provides access to the mutable collision filter this engine uses. */
   CollisionFilter& collision_filter();
 
+  /* Updates the engine's broadphase culling of inactive dynamic geometries to
+   reflect the given net change to the collision filter's inactive set (see
+   CollisionFilterManager::Deactivate()) -- a mechanism to resolve issue #24607.
+
+   @pre change.empty() == false.
+   @pre Every geometry in `change` is dynamic and its active status change is
+        consistent with the engine's current understanding. */
+  // TODO(xuchen-han): Only dynamic geometries are culled. We are not optimizing
+  // for anchored geometries yet. Do that when there's a use where it brings
+  // noticeable performance improvement.
+  void ApplyActiveStatusChange(
+      const CollisionFilter::ActiveStatusChange& change);
+
+  /* (Introspection) Reports whether the dynamic geometry with the given `id`
+   is currently inactive and thus culled from the filter-respecting broadphase.
+   See ApplyActiveStatusChange(). This accessor exists so tests can confirm the
+   bookkeeping. */
+  bool IsInactiveDynamic(GeometryId id) const;
+
+  /* (Introspection) Reports the number of currently culled (inactive) dynamic
+   geometries. Inactive anchored or deformable geometries are not counted; see
+   ApplyActiveStatusChange(). */
+  int num_inactive_dynamic() const;
+
   /* @name Topology management */
   //@{
 
@@ -114,9 +136,23 @@ class ProximityEngine {
    @param mesh_W  The volume mesh representation of the deformable geometry
                   represented in the world frame, including initial positions of
                   the vertices.
+   @param surface_mesh_W
+                  The surface mesh representation of the deformable geometry
+                  represented in the world frame. This is the surface of the
+                  volume mesh `mesh_W`.
+   @param surface_index_to_volume_index
+                  A mapping from the index of a vertex in the surface mesh to
+                  the index of the corresponding vertex in the volume mesh.
+   @param surface_tri_to_volume_tet
+                  A mapping from the index of a triangle in the surface mesh to
+                  the index of the corresponding tetrahedron in the volume mesh.
    @param id      The id of the geometry in SceneGraph to which this mesh
                   belongs. */
-  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id);
+  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W,
+                             TriangleSurfaceMesh<double> surface_mesh_W,
+                             std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet,
+                             GeometryId id);
 
   /* Reports if the engine requires a convex hull for the given geometry. */
   bool NeedsConvexHull(const InternalGeometry& geometry) const;
@@ -176,11 +212,12 @@ class ProximityEngine {
 
   //@}
 
-  /* Updates the poses for all of the _dynamic_ geometries in the engine.
-   @param X_WGs     The poses of each geometry `G` measured and expressed in the
-                    world frame `W` (including geometries which may *not* be
-                    registered with the proximity engine or may not be
-                    dynamic).
+  /* Updates the poses for all active dynamic geometries in the engine.
+   @param X_WGs     The poses of each active dynamic geometry `G` measured and
+                    expressed in the world frame `W` (the map can include
+                    poses for other geometries as well (e.g., anchored
+                    geometries, unregistered geometries, inactive geometries,
+                    etc.)
   */
   // TODO(SeanCurtis-TRI): I could do things here differently a number of ways:
   //  1. I could make this move semantics (or swap semantics).
@@ -195,10 +232,17 @@ class ProximityEngine {
                  world frame `W`. If a deformable geometry with the given `id`
                  is registered in the engine (and hasn't been removed), its
                  vertex position is updated to the value in the given map.
+   @param driven_meshes
+                 The mapping from GeometryId `id` to driven triangle meshes for
+                 proximity roles.
    @pre if a deformable geometry with the given `id` is registered, its number
-   of dofs matches the size of the value in the corresponding q_WG. */
+   of dofs matches the size of the value in the corresponding q_WG.
+   @pre if a deformable geometry with the given `id` is registered with a
+   proximity role, driven_mesh.at(id) has size 1. */
   void UpdateDeformableVertexPositions(
-      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs);
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
+      const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+          driven_meshes);
 
   // ----------------------------------------------------------------------
   /* @name              Signed Distance Queries
@@ -230,6 +274,14 @@ class ProximityEngine {
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double threshold = std::numeric_limits<double>::infinity()) const;
+
+  /* Implementation of GeometryState::ComputeSignedDistanceGeometryToPoint().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ,
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
+      const std::unordered_set<GeometryId>& geometries) const;
   //@}
 
   //----------------------------------------------------------------------------
@@ -296,6 +348,15 @@ class ProximityEngine {
    use for proximity queries for deformable contact. */
   const deformable::Geometries& deformable_contact_geometries() const;
 
+  /* (For testing) Returns the mesh-distance boundary surface associated with
+   the given geometry id; if it exists (otherwise null). */
+  const TriangleSurfaceMesh<double>* mesh_distance_boundary(
+      GeometryId g_id) const;
+
+  /* Returns the axis-aligned bounding box of the geometry with the given id.
+   @throws std::exception if the geometry is not deformable. */
+  const Aabb& GetDeformableAabbInWorld(GeometryId geometry_id) const;
+
  private:
   // Testing utilities:
   // These functions facilitate *limited* introspection into the engine state.
@@ -308,6 +369,9 @@ class ProximityEngine {
   // Reports the pose (X_WG) of the geometry with the given id.
   const math::RigidTransform<double> GetX_WG(GeometryId id,
                                              bool is_dynamic) const;
+
+  // Reports whether the inactive-geometry cache is currently marked stale.
+  bool is_inactive_dynamic_stale() const;
 
   ////////////////////////////////////////////////////////////////////////////
 
@@ -344,6 +408,18 @@ class ProximityEngine {
   // pointer type. But if the return value is not null, it can be safely cast to
   // fcl::CollisionObjectd*. This is for testing only.
   void* GetCollisionObject(GeometryId id) const;
+
+  // Returns the number of top-level file entries in the convex hull cache.
+  int convex_hull_cache_file_entries() const;
+  // Returns the total number of (scale,margin) sub-entries across all file
+  // entries in the convex hull cache.
+  int convex_hull_cache_hull_entries() const;
+  // Returns true if id is in the reverse map and its key pair is valid.
+  bool geometry_hull_key_valid(GeometryId id) const;
+  // Returns true if id is absent from the reverse map.
+  bool geometry_hull_key_absent(GeometryId id) const;
+  // Returns true if every reverse-map entry points to a valid cache entry.
+  bool geometry_hull_reverse_map_consistent() const;
 };
 
 }  // namespace internal

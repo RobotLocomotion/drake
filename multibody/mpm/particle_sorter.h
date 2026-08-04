@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/ssize.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/mpm/bspline_weights.h"
 #include "drake/multibody/mpm/spgrid_flags.h"
@@ -64,6 +63,13 @@ using G2PKernelType = std::function<void(
 template <typename Grid, typename ParticleData>
 using P2GKernelType = std::function<void(
     int, const PadNodeType<Grid>&, const ParticleData&, PadDataType<Grid>*)>;
+
+/* Callback type used by ParticleSorter::Iterate for operations that don't
+modify either the particles or the grid. */
+template <typename Grid, typename ParticleData>
+using TraverseKernelType =
+    std::function<void(int, const PadNodeType<Grid>&, const PadDataType<Grid>&,
+                       const ParticleData&)>;
 
 /* ParticleSorter sorts MPM particle data based on their positions within the
  grid.
@@ -191,9 +197,9 @@ class ParticleSorter {
    }
    ```
 
-   Refer to Section 3.2 of the technical document of [Hu et al. 2018]
-   (https://yzhu.io/publication/mpmmls2018siggraph/supp.pdf) for more
-   details about how the colors are arranged and why there are 8 colors.
+   Refer to Section 3.2 of the technical document of
+   [Hu et al. 2018](https://yzhu.io/publication/mpmmls2018siggraph/supp.pdf) for
+   more details about how the colors are arranged and why there are 8 colors.
 
    [Hu et al. 2018] Hu, Yuanming, et al. "A moving least squares material point
    method with displacement discontinuity and two-way rigid body coupling." ACM
@@ -235,17 +241,26 @@ class ParticleSorter {
     using PadNodeType = typename Grid::PadNodeType;
     using PadDataType = typename Grid::PadDataType;
 
-    constexpr bool is_g2p = std::is_const_v<Grid>;
-    constexpr bool is_p2g = std::is_const_v<ParticleData>;
-    static_assert(is_g2p ^ is_p2g);
+    constexpr bool const_grid = std::is_const_v<Grid>;
+    constexpr bool const_particle = std::is_const_v<ParticleData>;
+
+    constexpr bool is_g2p = const_grid && !const_particle;
+    constexpr bool is_p2g = const_particle && !const_grid;
+    constexpr bool is_traverse = const_grid && const_particle;
+    static_assert(is_g2p || is_p2g || is_traverse);
     if constexpr (is_g2p) {
       static_assert(std::is_same_v<Func, G2PKernelType<Grid, ParticleData>>,
                     "The provided function does not match the expected "
                     "signature for grid-to-particle operations.");
-    } else {
+    } else if constexpr (is_p2g) {
       static_assert(std::is_same_v<Func, P2GKernelType<Grid, ParticleData>>,
                     "The provided function does not match the expected "
                     "signature for particle-to-grid operations.");
+    } else {
+      static_assert(
+          std::is_same_v<Func, TraverseKernelType<Grid, ParticleData>>,
+          "The provided function does not match the expected "
+          "signature for traverse operations.");
     }
 
     /* Temporary variables for pad nodes and pad data. */
@@ -275,8 +290,11 @@ class ParticleSorter {
         /* Apply the provided function to the current particle. */
         if constexpr (is_g2p) {
           func(data_index, grid_nodes, grid_data, particle_data_ptr);
-        } else {
+        } else if constexpr (is_p2g) {
           func(data_index, grid_nodes, *particle_data_ptr, &grid_data);
+        } else {
+          static_assert(is_traverse);
+          func(data_index, grid_nodes, grid_data, *particle_data_ptr);
         }
 
         /* Determine if the next particle requires new pad data. */
@@ -340,7 +358,7 @@ class ParticleSorter {
    indices. */
   void UnpackResults();
 
-  /* Helper for `Sort`()` that builds `colored_ranges_`. */
+  /* Helper for `Sort()` that builds `colored_ranges_`. */
   template <typename SpGrid>
   void BuildColoredRanges(const SpGrid& spgrid, int num_particles) {
     /* Keep track of where each new "page" begins. */

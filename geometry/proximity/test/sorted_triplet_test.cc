@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/sorted_triplet.h"
 
+#include <map>
+
 #include <gtest/gtest.h>
 
 namespace drake {

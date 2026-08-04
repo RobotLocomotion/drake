@@ -1,0 +1,7 @@
+# This function purposefully creates a never-deleted singleton display, but
+# LSan can't discern that the g_display (and memory associated with it) is
+# still reachable at the end of the program.
+leak:drake::geometry::render_gl::internal::GladLoaderLoadGlx
+
+# This function triggers spurious leaks on CI runners with MESA drivers.
+leak:drake::geometry::render_gl::internal::(anonymous namespace)::vtk_glad_glXCreateContextAttribsARB

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <set>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -231,8 +232,8 @@ FramePoseVector<T> MakePoses(const std::vector<FrameId>& ids, double value) {
 }
 
 template <typename T>
-GeometryConfigurationVector<T> MakeConfigs(
-    const std::vector<GeometryId>& ids, double value) {
+GeometryConfigurationVector<T> MakeConfigs(const std::vector<GeometryId>& ids,
+                                           double value) {
   GeometryConfigurationVector<T> configs;
   for (int i = 0; i < ssize(ids); ++i) {
     const double d = i % 2 ? i : value;

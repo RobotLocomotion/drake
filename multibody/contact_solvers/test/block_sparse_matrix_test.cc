@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

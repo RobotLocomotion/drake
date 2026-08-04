@@ -9,12 +9,12 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_binary(
     name = "downsample_benchmark",
     srcs = ["downsample_benchmark.cc"],
-    add_test_rule = True,
-    test_rule_args = ["--size=10"],
     deps = [
         "//perception:point_cloud",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--size=10"],
 )
 
 add_lint_tests()

@@ -311,7 +311,7 @@ void TestGenericPrimitiveTraits(const RenderMesh& mesh,
     }
     const NormalCone cone(mesh, t);
     ASSERT_TRUE(cone.Contains(n_face)) << fmt::format(
-        "for triangle {}\n  face normal: {}", t, fmt_eigen(n_face.transpose()));
+        "for triangle {}\n  face normal: {}", t, fmt_eigen(n_face));
   }
 
   // UVs lie in the expected range.

@@ -77,9 +77,8 @@ CompassGaitGeometry::CompassGaitGeometry(
 
   left_leg_frame_id_ =
       scene_graph->RegisterFrame(source_id_, GeometryFrame("left_leg"));
-  right_leg_frame_id_ =
-      scene_graph->RegisterFrame(source_id_, left_leg_frame_id_,
-          GeometryFrame("right_leg"));
+  right_leg_frame_id_ = scene_graph->RegisterFrame(
+      source_id_, left_leg_frame_id_, GeometryFrame("right_leg"));
 
   // Add the hip.  Both legs have the same origin of rotation and the hip
   // geometry is rotationally symmetric, so we opt to arbitrarily attach it

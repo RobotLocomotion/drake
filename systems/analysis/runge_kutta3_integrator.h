@@ -78,6 +78,8 @@ class RungeKutta3Integrator final : public IntegratorBase<T> {
   void DoInitialize() override;
   bool DoStep(const T& h) override;
 
+  std::unique_ptr<IntegratorBase<T>> DoClone() const override;
+
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;
 

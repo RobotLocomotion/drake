@@ -1,0 +1,67 @@
+#!/usr/bin/env groovy
+
+// Define job properties. Other Jenkinsfiles which do not correspond to
+// multibranch pipelines (i.e., for non-experimental jobs) should inherit
+// properties from the original job definitions rather than calling
+// properties() here.
+def props = [
+  parameters([
+    string(name: 'ciSha', defaultValue: 'main',
+      description: 'Commit SHA or branch name. Defaults to <code>main</code>.'),
+    ]
+  ),
+  buildDiscarder(
+    logRotator(
+      daysToKeepStr: '90',
+      artifactDaysToKeepStr: '90'
+    )
+  ),
+  disableConcurrentBuilds(
+    abortPrevious: true
+  )
+]
+properties(props)
+
+// Check if CI should be deferred for this pull request based on the label.
+// CHANGE_ID should always be defined in this file, as it corresponds to
+// pull requests, but we should check anyways.
+if(env.CHANGE_ID) {
+  if (pullRequest.labels.contains('status: defer ci')) {
+    currentBuild.result == 'ABORTED'
+    throw new Exception(
+      "This pull request is labeled 'defer ci'. " +
+      "This label will need to be removed in order for CI to pass " +
+      "before merging."
+    )
+  }
+}
+
+// N.B. Load the drake-ci utilities after parsing the parameters, above, so
+// we can optionally load a branched version.
+library "drake-ci@${params.ciSha}"
+
+node(utils.getNodeLabel()) {
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            utils.cleanWorkspace()
+            dir(env.WORKSPACE) {
+              // Use the CI branch parameter for checkout (defaults to main).
+              def scmVars = utils.checkout(params.ciSha)
+              utils.doMainBuild(scmVars)
+            }
+          } finally {
+            try {
+              utils.checkBuildResult()
+              utils.addCDashBadge()
+            } finally {
+              utils.cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}

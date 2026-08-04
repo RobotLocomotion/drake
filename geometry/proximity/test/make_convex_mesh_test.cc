@@ -1,5 +1,10 @@
 #include "drake/geometry/proximity/make_convex_mesh.h"
 
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

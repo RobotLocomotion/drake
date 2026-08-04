@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -33,7 +32,7 @@ bool Obb::HasOverlap(const Obb& a, const Obb& b, const RigidTransformd& X_GH) {
   const RigidTransformd& X_GA = a.pose();
   const RigidTransformd& X_HB = b.pose();
   const RigidTransformd X_AB = X_GA.InvertAndCompose(X_GH * X_HB);
-  return BoxesOverlap(a.half_width(), b.half_width(), X_AB);
+  return internal::BoxesOverlap(a.half_width(), b.half_width(), X_AB);
 }
 
 bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
@@ -51,43 +50,18 @@ bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
   const RigidTransformd X_HG = X_GH.inverse();
   const RotationMatrixd R_AO = X_HG.rotation() * obb_G.pose().rotation();
   const RigidTransformd X_AO(R_AO, X_HG * obb_G.center() - aabb_H.center());
-  return BoxesOverlap(aabb_H.half_width(), obb_G.half_width(), X_AO);
+  return internal::BoxesOverlap(aabb_H.half_width(), obb_G.half_width(), X_AO);
 }
 
-bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
+bool Obb::HasOverlap(const Obb& bv_H, const Plane<double>& plane_P,
                      const math::RigidTransformd& X_PH) {
-  // We want the two corners of the box that lie at the most extreme extents in
-  // the plane's normal direction. Then we can determine their heights
-  // -- if the interval of heights includes _zero_, the box overlaps.
-
-  // The box's canonical frame B is posed in the hierarchy frame H.
-  const RigidTransformd& X_HB = bv.pose();
-  const RotationMatrixd R_PB = X_PH.rotation() * X_HB.rotation();
-  // The corner of the box that will have the *greatest* height value w.r.t.
-  // the plane measured from the box's frame's origin (Bo) but expressed in the
-  // plane's frame.
-  Vector3d p_BoCmax_P = Vector3d::Zero();
-  // We want to find the vectors Bᴹᵃˣᵢ  ∈ {Bᵢ, -Bᵢ}, such that Bᴹᵃˣᵢ ⋅ n̂ₚ is
-  // positive. The maximum box corner is a combination of those Bᴹᵃˣᵢ vectors.
-  for (int i = 0; i < 3; ++i) {
-    const Vector3d& Bi_P = R_PB.col(i);
-    const Vector3d& Bi_max_P = Bi_P.dot(plane_P.normal()) > 0 ? Bi_P : -Bi_P;
-    p_BoCmax_P += Bi_max_P * bv.half_width()(i);
-  }
-
-  const Vector3d& p_HoBo_H = bv.center();
-  const Vector3d p_PoBo_P = X_PH * p_HoBo_H;
-  // Minimum corner is merely the reflection of the maximum corner across the
-  // center of the box.
-  const Vector3d p_PoCmax_P = p_PoBo_P + p_BoCmax_P;
-  const Vector3d p_PoCmin_P = p_PoBo_P - p_BoCmax_P;
-
-  const double max_height = plane_P.CalcHeight(p_PoCmax_P);
-  const double min_height = plane_P.CalcHeight(p_PoCmin_P);
-  return min_height <= 0 && 0 <= max_height;
+  const RotationMatrixd& R_HB = bv_H.pose().rotation();
+  const Vector3d& p_HBo = bv_H.center();
+  return plane_P.BoxOverlaps(bv_H.half_width(), X_PH * p_HBo,
+                             X_PH.rotation() * R_HB);
 }
 
-bool Obb::HasOverlap(const Obb& bv, const HalfSpace&,
+bool Obb::HasOverlap(const Obb& bv_H, const HalfSpace&,
                      const math::RigidTransformd& X_CH) {
   /*
                                               Hy           Hx
@@ -109,52 +83,41 @@ bool Obb::HasOverlap(const Obb& bv, const HalfSpace&,
               ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Half space
               ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-    If any point in the bounding volume has a signed distance φ that is less
-    than or equal to zero, we consider the box to be overlapping the half space.
-    We could simply, yet inefficiently, determine this by iterating over all
-    eight vertices and evaluating the signed distance for each vertex.
+    In the picture above, L is the point of the box that is "lowest" (in the
+    opposite direction of the normal. We can project the vector from v_BoL onto
+    the half space normal Cz to get the _minimum distance_ between the box
+    center and the half space boundary for the box to be outside the half space.
 
-    However, to provide value as a culling algorithm, we need to be cheaper. So,
-    if the lowest corner (marked `L`) has a signed distance less than or equal
-    to zero, the overlapping condition is met.
+    So, |v_BoL·Cz| is the clearance distance. The signed distance of the box
+    center to the half space boundary is p_CB·Cz. The box doesn't overlap the
+    half space iff p_CB·Cz > |v_BoL·Cz|.
 
-    The point L = Bₒ + ∑ sᵢ * dᵢ * Bᵢ, where:
-      - i ∈ {x, y, z}.
-      - dᵢ is the _half_ measure of the box's dimension along axis i.
-      - sᵢ ∈ {1, -1}, such that sᵢBᵢ ⋅ Cz ≤ 0.
-
-    Since, φ(p_CL) = p_CL ⋅ Cz. If p_CL is expressed in C, then the z-component
-    of p_CL (p_CL_z), is equal to φ(p_CL). So, if p_CL_z ≤ 0, they overlap.
+    Given we're dotting everything with Cz, we only need the z-components of
+    the quantities in question.
    */
 
   // The box's canonical frame B is posed in the hierarchy frame H.
-  const RigidTransformd& X_HB = bv.pose();
+  const RigidTransformd& X_HB = bv_H.pose();
   // The z-component of the position vector from box center (Bo) to the lowest
   // corner of the box (L) expressed in the half space's canonical frame C.
   const RotationMatrixd& R_CH = X_CH.rotation();
-  const auto R_CB = (R_CH * X_HB.rotation()).matrix();
-  double p_BL_C_z = 0.0;
-  for (int i = 0; i < 3; ++i) {
-    // R_CB(2, i) is Bi_C(2) --> the z-component of Bi_C.
-    const double Bi_C_z = R_CB(2, i);
-    const double s_i = Bi_C_z > 0 ? -1 : 1;
-    p_BL_C_z += s_i * bv.half_width()(i) * Bi_C_z;
-  }
-  // Now we compute the z-component of the position vector from Co to L,
-  // expressed in Frame C.
-  //  p_CL_C = p_CB_C                   + p_BL_C
-  //         = p_CH_C + p_HB_C          + p_BL_C
-  //         = p_CH_C + (R_CH * p_HB_H) + p_BL_C
+  const auto R_CB = (R_CH * X_HB.rotation());
+  // Just taking the bottom row of R_CB operates on just the z-components.
+  const double clearance =
+      R_CB.row(2).cwiseAbs().dot(bv_H.half_width().transpose());
+
+  // Now we compute the z-component of p_CB:
+  //  p_CB_C = p_CH_C + p_HB_C
+  //         = p_CH_C + (R_CB * p_HB_H)
   // In all of these calculations, we only need the z-component. So, that means
   // we can get the z-component of p_HB_C without the full
   // R_CH * p_HB_H calculation; we can simply do Cz_H ⋅ p_HB_H.
-  const Vector3d& p_HB_H = bv.center();
+  const Vector3d& p_HB_H = bv_H.center();
   const Vector3d& Cz_H = R_CH.row(2);
   const double p_HB_C_z = Cz_H.dot(p_HB_H);
   const double p_CH_C_z = X_CH.translation()(2);
   const double p_CB_C_z = p_CH_C_z + p_HB_C_z;
-  const double p_CL_C_z = p_CB_C_z + p_BL_C_z;
-  return p_CL_C_z <= 0;
+  return p_CB_C_z <= clearance;
 }
 
 void Obb::PadBoundary() {
@@ -176,13 +139,13 @@ RotationMatrixd ObbMaker<MeshType>::CalcOrientationByPca() const {
   // C is for centroid.
   Vector3d p_MC = Vector3d::Zero();
   for (int v : vertices_) {
-    p_MC += convert_to_double(mesh_M_.vertex(v));
+    p_MC += internal::convert_to_double(mesh_M_.vertex(v));
   }
   p_MC *= one_over_n;
 
   Matrix3d covariance_M = Matrix3d::Zero();
   for (int v : vertices_) {
-    const Vector3d& p_MV = convert_to_double(mesh_M_.vertex(v));
+    const Vector3d& p_MV = internal::convert_to_double(mesh_M_.vertex(v));
     const Vector3d p_CV_M = p_MV - p_MC;
     // covariance_M is a symmetric matrix because it's a sum of the
     // 3x3 symmetric matrices V*Vᵀ of column vectors V.
@@ -276,7 +239,7 @@ Obb ObbMaker<MeshType>::CalcOrientedBox(const RotationMatrixd& R_MB) const {
   for (int v : vertices_) {
     // Since frame F is a rotation of frame M with the same origin, we can use
     // the rotation R_FM for the transform X_FM.
-    const Vector3d p_FV = R_FM * convert_to_double(mesh_M_.vertex(v));
+    const Vector3d p_FV = R_FM * internal::convert_to_double(mesh_M_.vertex(v));
     p_FL = p_FL.cwiseMin(p_FV);
     p_FU = p_FU.cwiseMax(p_FV);
   }
@@ -391,16 +354,17 @@ Obb ObbMaker<MeshType>::Compute() const {
   return OptimizeObbVolume(box);
 }
 
+template class ObbMaker<PolygonSurfaceMesh<double>>;
 template class ObbMaker<TriangleSurfaceMesh<double>>;
 template class ObbMaker<VolumeMesh<double>>;
 
 // TODO(SeanCurtis-TRI): Remove support for building a Bvh on an AutoDiff-valued
 //  mesh after we've cleaned up the scalar types in hydroelastics. Specifically,
 //  this is here to support the unit tests in mesh_intersection_test.cc. Also
-//  the calls to convert_to_double should be removed.
+//  the calls to internal::convert_to_double should be removed.
+template class ObbMaker<PolygonSurfaceMesh<drake::AutoDiffXd>>;
 template class ObbMaker<TriangleSurfaceMesh<drake::AutoDiffXd>>;
 template class ObbMaker<VolumeMesh<drake::AutoDiffXd>>;
 
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

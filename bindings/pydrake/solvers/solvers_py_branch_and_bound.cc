@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -9,20 +9,20 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversBranchAndBound(py::module m) {
+void DefineSolversBranchAndBound(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
-  constexpr auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
   {
     using Class = MixedIntegerBranchAndBound;
     constexpr auto& cls_doc = doc.MixedIntegerBranchAndBound;
-    py::class_<Class> bnb_cls(m, "MixedIntegerBranchAndBound", cls_doc.doc);
+    class_<Class> bnb_cls(m, "MixedIntegerBranchAndBound", cls_doc.doc);
 
     {
       using Nested = MixedIntegerBranchAndBound::Options;
       constexpr auto& options_doc = cls_doc.Options;
-      py::class_<Nested> options_cls(bnb_cls, "Options", options_doc.doc);
+      class_<Nested> options_cls(bnb_cls, "Options", options_doc.doc);
       options_cls.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&options_cls, options_doc);
       DefReprUsingSerialize(&options_cls);

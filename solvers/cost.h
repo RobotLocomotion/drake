@@ -614,7 +614,9 @@ class EvaluatorCost : public Cost {
 
   std::shared_ptr<EvaluatorType> evaluator_;
   std::optional<Eigen::VectorXd> a_;
+#ifndef DRAKE_DOXYGEN_CXX  // See drake#24013 for why this is necessary.
   double b_{};
+#endif
 };
 
 /**
@@ -695,7 +697,7 @@ class ExpressionCost : public Cost {
 
 /**
  * Converts an input of type @p F to a nonlinear cost.
- * @tparam FF The forwarded function type (e.g., `const F&, `F&&`, ...).
+ * @tparam FF The forwarded function type (e.g., `const F&`, `F&&`, ...).
  * The class `F` should have functions numInputs(), numOutputs(), and
  * eval(x, y).
  *

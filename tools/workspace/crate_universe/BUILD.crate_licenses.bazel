@@ -1,0 +1,27 @@
+# -*- bazel -*-
+
+# This is the BUILD file for our @crate_licenses module extension.
+# Refer to extensions.bzl for how it gets used.
+
+load("@drake//tools/install:install.bzl", "install", "install_license")
+load(":lock/repo_names.bzl", "REPO_NAMES")
+
+[
+    install_license(
+        name = "install_{}".format(name),
+        doc_dest = "share/doc/{}".format(name),
+        licenses = [
+            "@{}//:license".format(name),
+        ],
+    )
+    for name in REPO_NAMES
+]
+
+install(
+    name = "install",
+    visibility = ["@drake//tools/workspace/crate_universe:__pkg__"],
+    deps = [
+        "install_{}".format(name)
+        for name in REPO_NAMES
+    ],
+)

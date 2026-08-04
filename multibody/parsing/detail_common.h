@@ -16,6 +16,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/linear_spring_damper.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
@@ -84,16 +85,17 @@ class DataSource {
 // For this reason, we create and return an instance of CoulombFriction
 // instead of using a static variable.
 // Default value of the Coulomb's law coefficients of friction for when they
-// are not specified in the URDF/SDF file.
+// are not specified in the URDF/SDFormat file.
 inline CoulombFriction<double> default_friction() {
   return CoulombFriction<double>(1.0, 1.0);
 }
 
 // Populates an instance of geometry::ProximityProperties from a reading
-// interface in a URDF/SDF agnostic manner. This unifies the URDF and SDF
-// parsing logic and eliminates code redundancy. The individual URDF and SDF
-// parsers have the following responsibilities (based on the simple fact that
-// the two parsers use different mechanisms to extract data from the file):
+// interface in a URDF/SDFormat agnostic manner. This unifies the URDF and
+// SDFormat parsing logic and eliminates code redundancy. The individual URDF
+// and SDFormat parsers have the following responsibilities (based on the simple
+// fact that the two parsers use different mechanisms to extract data from the
+// file):
 //
 //   1. Determine if the `<drake:rigid_hydroelastic>` tag is present.
 //   2. Determine if the `<drake:compliant_hydroelastic>` tag is present.
@@ -122,14 +124,14 @@ geometry::ProximityProperties ParseProximityProperties(
     const std::function<std::optional<double>(const char*)>& read_double,
     bool is_rigid, bool is_compliant);
 
-// Populates a LinearBushingRollPitchYaw from a reading interface in a URDF/SDF
-// agnostic manner. This function does no semantic parsing and leaves the
-// responsibility of handling errors or missing values to the individual
-// parsers. All values are expected to exist and be well formed. Through this,
-// the API to specify the linear_bushing_rpy tag in both SDF and URDF can be
-// controlled/modified in a single function.
+// Populates a LinearBushingRollPitchYaw from a reading interface in a
+// URDF/SDFormat agnostic manner. This function does no semantic parsing and
+// leaves the responsibility of handling errors or missing values to the
+// individual parsers. All values are expected to exist and be well formed.
+// Through this, the API to specify the linear_bushing_rpy tag in both SDFormat
+// and URDF can be controlled/modified in a single function.
 //
-// __SDF__:
+// __SDFormat__:
 //
 // <drake:linear_bushing_rpy>
 //   <drake:bushing_frameA>frameA</drake:bushing_frameA>
@@ -163,14 +165,54 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
     const std::function<const Frame<double>*(const char*)>& read_frame,
     MultibodyPlant<double>* plant);
 
-// Adds a ball constraint to `plant` from a reading interface in a URDF/SDF
+// Populates a LinearSpringDamper from a reading interface in a URDF/SDFormat
 // agnostic manner. This function does no semantic parsing and leaves the
 // responsibility of handling errors or missing values to the individual
 // parsers. All values are expected to exist and be well formed. Through this,
-// the API to specify the ball_constraint tag in both SDF and URDF can be
+// the API to specify the linear_spring_damper tag in both SDFormat and URDF can
+// be controlled/modified in a single function.
+//
+// __SDFormat__:
+//
+// <drake:linear_spring_damper>
+//   <drake:linear_spring_damper_body_A>body_A</drake:linear_spring_damper_body_A>
+//   <drake:linear_spring_damper_p_AP>0 0 0</drake:linear_spring_damper_p_AP>
+//   <drake:linear_spring_damper_body_B>body_B</drake:linear_spring_damper_body_B>
+//   <drake:linear_spring_damper_p_BQ>0 0 0</drake:linear_spring_damper_p_BQ>
+//   <drake:linear_spring_damper_free_length>1.0</drake:linear_spring_damper_free_length>
+//   <drake:linear_spring_damper_stiffness>1.0</drake:linear_spring_damper_stiffness>
+//   <drake:linear_spring_damper_damping>1.0</drake:linear_spring_damper_damping>
+// </drake:linear_spring_damper>
+//
+// __URDF__:
+//
+// <drake:linear_spring_damper>
+//   <drake:linear_spring_damper_body_A name="body_A"/>
+//   <drake:linear_spring_damper_p_AP value="0 0 0"/>
+//   <drake:linear_spring_damper_body_B name="body_B"/>
+//   <drake:linear_spring_damper_p_BQ value="0 0 0"/>
+//   <drake:linear_spring_damper_free_length value="1.0"/>
+//   <drake:linear_spring_damper_stiffness value="1.0"/>
+//   <drake:linear_spring_damper_damping value="1.0"/>
+// </drake:linear_spring_damper>
+//
+// Each of the various @p read_* functors may (at its option) emit diagnostic
+// errors or warnings but should not throw. ParseLinearSpringDamper() may return
+// nullptr at its option.
+const LinearSpringDamper<double>* ParseLinearSpringDamper(
+    const std::function<Eigen::Vector3d(const char*)>& read_vector,
+    const std::function<const RigidBody<double>*(const char*)>& read_body,
+    const std::function<std::optional<double>(const char*)>& read_double,
+    MultibodyPlant<double>* plant);
+
+// Adds a ball constraint to `plant` from a reading interface in a URDF/SDFormat
+// agnostic manner. This function does no semantic parsing and leaves the
+// responsibility of handling errors or missing values to the individual
+// parsers. All values are expected to exist and be well formed. Through this,
+// the API to specify the ball_constraint tag in both SDFormat and URDF can be
 // controlled/modified in a single function.
 //
-// __SDF__:
+// __SDFormat__:
 //
 // <drake:ball_constraint>
 //   <drake:ball_constraint_body_A>body_A</drake:ball_constraint_body_A>
@@ -197,16 +239,104 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
     const std::function<const RigidBody<double>*(const char*)>& read_body,
     MultibodyPlant<double>* plant);
 
+// Adds a distance constraint to `plant` from a reading interface in a
+// URDF/SDFormat agnostic manner. This function leaves the responsibility of
+// handling errors or missing values to the individual parsers. Through this,
+// the API to specify the distance_constraint tag in both SDFormat and URDF can
+// be controlled/modified in a single function.
+//
+// __SDFormat__:
+//
+// <drake:distance_constraint>
+//   <drake:distance_constraint_body_A>body_A</drake:distance_constraint_body_A>
+//   <drake:distance_constraint_p_AP>0 0 0</drake:distance_constraint_p_AP>
+//   <drake:distance_constraint_body_B>body_B</drake:distance_constraint_body_B>
+//   <drake:distance_constraint_p_BQ>0 0 0</drake:distance_constraint_p_BQ>
+//   <drake:distance_constraint_distance>1.0</drake:distance_constraint_distance>
+//   <drake:distance_constraint_stiffness>1.0</drake:distance_constraint_stiffness>
+//   <drake:distance_constraint_damping>1.0</drake:distance_constraint_damping>
+// </drake:distance_constraint>
+//
+// __URDF__:
+//
+// <drake:distance_constraint>
+//   <drake:distance_constraint_body_A name="body_A"/>
+//   <drake:distance_constraint_p_AP value="0 0 0"/>
+//   <drake:distance_constraint_body_B name="body_B"/>
+//   <drake:distance_constraint_p_BQ value="0 0 0"/>
+//   <drake:distance_constraint_distance value="1.0"/>
+//   <drake:distance_constraint_stiffness value="1.0"/>
+//   <drake:distance_constraint_damping value="1.0"/>
+// </drake:distance_constraint>
+//
+// Each of the various @p read_* functors may (at its option) emit diagnostic
+// errors or warnings but should not throw. ParseDistanceConstraint() may return
+// nullopt at its option.
+std::optional<MultibodyConstraintId> ParseDistanceConstraint(
+    const std::function<Eigen::Vector3d(const char*)>& read_vector,
+    const std::function<const RigidBody<double>*(const char*)>& read_body,
+    const std::function<std::optional<double>(const char*)>& read_double,
+    MultibodyPlant<double>* plant);
+
+// Adds a tendon constraint to `plant` from a reading interface in a
+// URDF/SDFormat agnostic manner. This function validates that the specified
+// joints exist in the model, but otherwise does no semantic parsing and leaves
+// the responsibility of handling errors or missing values to the individual
+// parsers. All values are expected to exist and be well formed. Through this,
+// the API to specify the tendon_constraint tag in both SDFormat and URDF can be
+// controlled/modified in a single function.
+//
+// __SDFormat__:
+//
+// <drake:tendon_constraint>
+//   <drake:tendon_constraint_joint name='joint_A' a='10.0'/>
+//   <drake:tendon_constraint_joint name='joint_B' a='20.0'/>
+//   <drake:tendon_constraint_offset>0.5</drake:tendon_constraint_offset>
+//   <drake:tendon_constraint_lower_limit>-1.0</drake:tendon_constraint_lower_limit>
+//   <drake:tendon_constraint_upper_limit>1.0</drake:tendon_constraint_upper_limit>
+//   <drake:tendon_constraint_stiffness>0.1</drake:tendon_constraint_stiffness>
+//   <drake:tendon_constraint_damping>0.01</drake:tendon_constraint_damping>
+// </drake:tendon_constraint>
+//
+// __URDF__:
+//
+// <drake:tendon_constraint>
+//   <drake:tendon_constraint_joint name='joint_A' a='10.0'/>
+//   <drake:tendon_constraint_joint name='joint_B' a='20.0'/>
+//   <drake:tendon_constraint_offset value="0.5"/>
+//   <drake:tendon_constraint_lower_limit value="-1.0"/>
+//   <drake:tendon_constraint_upper_limit value="1.0"/>
+//   <drake:tendon_constraint_stiffness value="0.1"/>
+//   <drake:tendon_constraint_damping value="0.01"/>
+// </drake:tendon_constraint>
+//
+// The various @p read_* functors may (at its option) emit diagnostic errors or
+// warnings but should not throw. ParseTendonConstraint() may return nullopt at
+// its option.
+std::optional<MultibodyConstraintId> ParseTendonConstraint(
+    const drake::internal::DiagnosticPolicy& diagnostic,
+    ModelInstanceIndex model_instance, const ElementNode& constraint_node,
+    const std::function<std::optional<double>(const char*)>& read_double,
+    const std::function<ElementNode(const ElementNode&, const char*)>&
+        next_child_element,
+    const std::function<ElementNode(const ElementNode&, const char*)>&
+        next_sibling_element,
+    const std::function<std::string(const ElementNode&, const char*)>&
+        read_string_attribute,
+    const std::function<double(const ElementNode&, const char*)>&
+        read_double_attribute,
+    MultibodyPlant<double>* plant);
+
 // TODO(@SeanCurtis-TRI): The real solution here is to create a wrapper
 // class that provides a consistent interface to either representation.
 // Then instantiate on the caller side and express the code here in terms of
 // that type.
 //
-// Populates collision filter groups from a reading interface in a URDF/SDF
+// Populates collision filter groups from a reading interface in a URDF/SDFormat
 // agnostic manner. Through this, the API to specify the collision_filter_group
-// tag in both SDF and URDF can be controlled/modified in a single function.
-// Functors are allowed to throw an exception when the requested quantities
-// are not available.
+// tag in both SDFormat and URDF can be controlled/modified in a single
+// function.  Functors are allowed to throw an exception when the requested
+// quantities are not available.
 // @param diagnostic            The error-reporting channel.
 // @param model_instance        Model Instance that contains the bodies involved
 //                              in the collision filter groups.
@@ -223,8 +353,8 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
 //                              provided.
 // @param has_attribute         Function that checks if an attribute exists
 //                              in the ElementNode provided.
-// @param read_tag_string       Function that provides a common interface
-//                              to extract a tag value. In SDF it will be a
+// @param read_tag_string       Function that provides a common interface to
+//                              extract a tag value. In SDFormat it will be a
 //                              tag "value" (the attribute "name" will not be
 //                              used), in URDF it will be a named attribute.
 // @param read_string_attribute Function that reads a string attribute with the

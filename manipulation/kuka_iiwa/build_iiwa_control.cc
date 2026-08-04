@@ -19,22 +19,37 @@ using multibody::MultibodyPlant;
 using systems::Demultiplexer;
 using systems::DiagramBuilder;
 using systems::Gain;
+using systems::OutputPort;
 using systems::System;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::LcmSubscriberSystem;
 
-void BuildIiwaControl(
-    const MultibodyPlant<double>& plant, const ModelInstanceIndex iiwa_instance,
-    const MultibodyPlant<double>& controller_plant, DrakeLcmInterface* lcm,
-    DiagramBuilder<double>* builder, double ext_joint_filter_tau,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-    IiwaControlMode control_mode) {
+namespace {
+
+const OutputPort<double>& NegatedPort(DiagramBuilder<double>* builder,
+                                      const OutputPort<double>& output_port,
+                                      const std::string& prefix = "") {
+  auto negate = builder->AddNamedSystem<Gain>(
+      fmt::format("sign_flip_{}{}", prefix, output_port.get_name()), -1,
+      output_port.size());
+  builder->Connect(output_port, negate->get_input_port());
+  return negate->get_output_port();
+}
+
+}  // namespace
+
+void BuildIiwaControl(DiagramBuilder<double>* builder, DrakeLcmInterface* lcm,
+                      const MultibodyPlant<double>& plant,
+                      const ModelInstanceIndex iiwa_instance,
+                      const IiwaDriver& driver_config,
+                      const MultibodyPlant<double>& controller_plant) {
   const IiwaControlPorts sim_ports = BuildSimplifiedIiwaControl(
-      plant, iiwa_instance, controller_plant, builder, ext_joint_filter_tau,
-      desired_iiwa_kp_gains, control_mode);
+      builder, plant, iiwa_instance, driver_config, controller_plant);
 
   const int num_iiwa_positions = controller_plant.num_positions();
   const std::string model_name = plant.GetModelInstanceName(iiwa_instance);
+  const IiwaControlMode control_mode =
+      ParseIiwaControlMode(driver_config.control_mode);
 
   // Create the Iiwa command receiver.
   auto command_sub = builder->AddNamedSystem(
@@ -84,27 +99,30 @@ void BuildIiwaControl(
                    status_encode->get_position_measured_input_port());
   builder->Connect(*sim_ports.velocity_estimated,
                    status_encode->get_velocity_estimated_input_port());
-  builder->Connect(*sim_ports.joint_torque,
+  const std::string port_prefix = model_name + "_";
+  // This is *negative* w.r.t. the conventions outlined in manipulation/README.
+  builder->Connect(NegatedPort(builder, *sim_ports.joint_torque, port_prefix),
                    status_encode->get_torque_commanded_input_port());
-  builder->Connect(*sim_ports.torque_measured,
-                   status_encode->get_torque_measured_input_port());
+  // This is *negative* w.r.t. the conventions outlined in manipulation/README.
+  builder->Connect(
+      NegatedPort(builder, *sim_ports.torque_measured, port_prefix),
+      status_encode->get_torque_measured_input_port());
   builder->Connect(*sim_ports.external_torque,
                    status_encode->get_torque_external_input_port());
 }
 
 IiwaControlPorts BuildSimplifiedIiwaControl(
-    const MultibodyPlant<double>& plant, const ModelInstanceIndex iiwa_instance,
-    const MultibodyPlant<double>& controller_plant,
-    DiagramBuilder<double>* builder, double ext_joint_filter_tau,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-    IiwaControlMode control_mode) {
+    DiagramBuilder<double>* builder, const MultibodyPlant<double>& plant,
+    const ModelInstanceIndex iiwa_instance, const IiwaDriver& driver_config,
+    const MultibodyPlant<double>& controller_plant) {
   const int num_positions = controller_plant.num_positions();
   DRAKE_THROW_UNLESS(num_positions == 7);
+  const IiwaControlMode control_mode =
+      ParseIiwaControlMode(driver_config.control_mode);
 
   // Add the sim driver to the builder.
   const System<double>* const system = &SimIiwaDriver<double>::AddToBuilder(
-      builder, plant, iiwa_instance, controller_plant, ext_joint_filter_tau,
-      desired_iiwa_kp_gains, control_mode);
+      builder, plant, iiwa_instance, driver_config, controller_plant);
 
   // Return the necessary port pointers.
   IiwaControlPorts result;
@@ -117,26 +135,8 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   result.position_commanded = &system->GetOutputPort("position_commanded");
   result.position_measured = &system->GetOutputPort("position_measured");
   result.velocity_estimated = &system->GetOutputPort("velocity_estimated");
-  {
-    // TODO(eric.cousineau): Why do we flip this?
-    auto negate = builder->AddNamedSystem<Gain>(
-        fmt::format("sign_flip_{}_torque_commanded",
-                    plant.GetModelInstanceName(iiwa_instance)),
-        -1, num_positions);
-    builder->Connect(system->GetOutputPort("torque_commanded"),
-                     negate->get_input_port());
-    result.joint_torque = &negate->get_output_port();
-  }
-  {
-    // TODO(eric.cousineau): Why do we flip this?
-    auto negate = builder->AddNamedSystem<Gain>(
-        fmt::format("sign_flip_{}_torque_measured",
-                    plant.GetModelInstanceName(iiwa_instance)),
-        -1, num_positions);
-    builder->Connect(system->GetOutputPort("torque_measured"),
-                     negate->get_input_port());
-    result.torque_measured = &negate->get_output_port();
-  }
+  result.joint_torque = &system->GetOutputPort("torque_commanded");
+  result.torque_measured = &system->GetOutputPort("torque_measured");
   result.external_torque = &system->GetOutputPort("torque_external");
   return result;
 }

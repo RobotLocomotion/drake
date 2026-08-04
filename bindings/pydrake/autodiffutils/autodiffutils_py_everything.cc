@@ -1,16 +1,14 @@
 #include <Eigen/Core>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/bindings/generated_docstrings/math.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/autodiffutils/autodiffutils_py.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
-using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
 using std::cos;
 using std::sin;
@@ -19,13 +17,13 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineAutodiffutils(py::module m) {
+void DefineAutodiffutils(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // TODO(m-chaturvedi) Add Pybind11 documentation.
-  py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
+  class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
   autodiff  // BR
       .def(py::init<double>(), py::arg("value"),
           "Constructs a value with empty derivatives.")
@@ -83,15 +81,16 @@ void DefineAutodiffutils(py::module m) {
             return pow(base, exponent);
           },
           py::is_operator())
-      .def("__abs__", [](const AutoDiffXd& x) { return abs(x); })
-      .def(py::pickle(
-          [](const AutoDiffXd& self) {
-            return py::make_tuple(self.value(), self.derivatives());
-          },
-          [](py::tuple t) {
-            DRAKE_THROW_UNLESS(t.size() == 2);
-            return AutoDiffXd(t[0].cast<double>(), t[1].cast<VectorXd>());
-          }));
+      .def("__abs__", [](const AutoDiffXd& x) { return abs(x); });
+  DefPickle(
+      &autodiff,
+      [](const AutoDiffXd& self) {
+        return py::make_tuple(self.value(), self.derivatives());
+      },
+      [](AutoDiffXd* self, py::tuple t) {
+        DRAKE_THROW_UNLESS(t.size() == 2);
+        new (self) AutoDiffXd(py::cast<double>(t[0]), py::cast<VectorXd>(t[1]));
+      });
   DefCopyAndDeepCopy(&autodiff);
 
   py::implicitly_convertible<double, AutoDiffXd>();

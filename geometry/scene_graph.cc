@@ -1,6 +1,7 @@
 #include "drake/geometry/scene_graph.h"
 
 #include <algorithm>
+#include <mutex>
 #include <string>
 #include <utility>
 
@@ -82,7 +83,6 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 };
 
 }  // namespace
-
 
 /* Hub: Helps minimize the work needed to allocate multiple identical contexts.
 
@@ -196,8 +196,7 @@ SceneGraph<T>::SceneGraph()
 }
 
 template <typename T>
-SceneGraph<T>::SceneGraph(const SceneGraphConfig& config)
-    : SceneGraph() {
+SceneGraph<T>::SceneGraph(const SceneGraphConfig& config) : SceneGraph() {
   config.ValidateOrThrow();
   hub_.mutable_config() = config;
 }
@@ -207,12 +206,10 @@ int64_t SceneGraph<T>::scalar_conversion_count_{0};
 
 template <typename T>
 template <typename U>
-SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
-    : SceneGraph() {
+SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   ++scalar_conversion_count_;
   hub_.mutable_config() = other.hub_.config();
-  hub_.mutable_model() =
-      GeometryState<T>(other.hub_.model());
+  hub_.mutable_model() = GeometryState<T>(other.hub_.model());
 
   // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
@@ -290,8 +287,7 @@ FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
                                      const GeometryFrame& frame) {
-  return hub_.mutable_model().RegisterFrame(
-      source_id, parent_id, frame);
+  return hub_.mutable_model().RegisterFrame(source_id, parent_id, frame);
 }
 
 template <typename T>
@@ -303,8 +299,8 @@ template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  return hub_.mutable_model().RegisterGeometry(
-      source_id, frame_id, std::move(geometry));
+  return hub_.mutable_model().RegisterGeometry(source_id, frame_id,
+                                               std::move(geometry));
 }
 
 template <typename T>
@@ -326,8 +322,8 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
-  return hub_.mutable_model().RegisterAnchoredGeometry(
-      source_id, std::move(geometry));
+  return hub_.mutable_model().RegisterAnchoredGeometry(source_id,
+                                                       std::move(geometry));
 }
 
 template <typename T>
@@ -398,8 +394,7 @@ void SceneGraph<T>::AddRenderer(Context<T>* context, std::string name,
 template <typename T>
 void SceneGraph<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
-  return hub_.mutable_model().AddRenderer(
-      std::move(name), std::move(renderer));
+  return hub_.mutable_model().AddRenderer(std::move(name), std::move(renderer));
 }
 
 template <typename T>
@@ -436,8 +431,7 @@ bool SceneGraph<T>::HasRenderer(const Context<T>& context,
 
 template <typename T>
 std::string SceneGraph<T>::GetRendererTypeName(const std::string& name) const {
-  const render::RenderEngine* engine =
-      hub_.model().GetRenderEngineByName(name);
+  const render::RenderEngine* engine = hub_.model().GetRenderEngineByName(name);
   if (engine == nullptr) {
     return {};
   }
@@ -455,6 +449,27 @@ std::string SceneGraph<T>::GetRendererTypeName(const Context<T>& context,
   }
 
   return NiceTypeName::Get(*engine);
+}
+
+template <typename T>
+std::string SceneGraph<T>::GetRendererParameterYaml(
+    const std::string& name) const {
+  const render::RenderEngine* engine = hub_.model().GetRenderEngineByName(name);
+  if (engine == nullptr) {
+    return {};
+  }
+  return engine->GetParameterYaml();
+}
+
+template <typename T>
+std::string SceneGraph<T>::GetRendererParameterYaml(
+    const Context<T>& context, const std::string& name) const {
+  const auto& g_state = geometry_state(context);
+  const render::RenderEngine* engine = g_state.GetRenderEngineByName(name);
+  if (engine == nullptr) {
+    return {};
+  }
+  return engine->GetParameterYaml();
 }
 
 template <typename T>
@@ -484,8 +499,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                ProximityProperties properties,
                                RoleAssign assign) {
-  hub_.mutable_model().AssignRole(
-      source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(source_id, geometry_id, std::move(properties),
+                                  assign);
 }
 
 template <typename T>
@@ -504,8 +519,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                PerceptionProperties properties,
                                RoleAssign assign) {
-  hub_.mutable_model().AssignRole(
-      source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(source_id, geometry_id, std::move(properties),
+                                  assign);
 }
 
 template <typename T>
@@ -521,8 +536,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) {
-  hub_.mutable_model().AssignRole(
-      source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(source_id, geometry_id, std::move(properties),
+                                  assign);
 }
 
 template <typename T>
@@ -530,13 +545,6 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) const {
-  // TODO(#20962) We have deleted drake_visualizer. This warning is probably no
-  // longer accurate.
-  static const logging::Warn one_time(
-      "Due to a bug (see issue #13597), changing the illustration roles or "
-      "properties in the context will not have any apparent effect in "
-      "some viewer applications. Please change the illustration role in the "
-      "model prior to allocating the Context.");
   auto& g_state = mutable_geometry_state(context);
   g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
@@ -556,8 +564,7 @@ int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
                               Role role) {
-  return hub_.mutable_model().RemoveRole(
-      source_id, geometry_id, role);
+  return hub_.mutable_model().RemoveRole(source_id, geometry_id, role);
 }
 
 template <typename T>
@@ -601,15 +608,14 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
   source_ports.pose_port =
-      this->DeclareAbstractInputPort(
-          hub_.model().GetName(source_id) + "_pose",
-          Value<FramePoseVector<T>>())
-      .get_index();
+      this->DeclareAbstractInputPort(hub_.model().GetName(source_id) + "_pose",
+                                     Value<FramePoseVector<T>>())
+          .get_index();
   source_ports.configuration_port =
       this->DeclareAbstractInputPort(
-          hub_.model().GetName(source_id) + "_configuration",
-          Value<GeometryConfigurationVector<T>>())
-      .get_index();
+              hub_.model().GetName(source_id) + "_configuration",
+              Value<GeometryConfigurationVector<T>>())
+          .get_index();
 }
 
 template <typename T>
@@ -682,7 +688,7 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context, int*) const {
               "SceneGraph encountered a non-finite value (e.g., NaN or "
               "infinity) on a pose input port. It came from the input "
               "associated with source id {} and name '{}'.",
-              fmt_streamed(source_id), state.GetName(source_id)));
+              source_id, state.GetName(source_id)));
         }
         state.SetFramePoses(source_id, poses, &kinematics_data);
       }
@@ -727,7 +733,7 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
               "SceneGraph encountered a non-finite value (e.g., Nan or "
               "infinity) on a deformable configuration input port. It came "
               "from the input associated with source id {} and name '{}'.",
-              fmt_streamed(source_id), state.GetName(source_id)));
+              source_id, state.GetName(source_id)));
         }
         state.SetGeometryConfiguration(source_id, configs, &kinematics_data);
       }
@@ -736,12 +742,12 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
 
   for (const auto role : std::vector<Role>{
            Role::kIllustration, Role::kPerception, Role::kProximity}) {
-    state.mutable_driven_mesh_data(role).SetControlMeshPositions(
+    kinematics_data.driven_mesh_data[role].SetControlMeshPositions(
         kinematics_data.q_WGs);
   }
-  state.FinalizeConfigurationUpdate(
-      kinematics_data, state.mutable_driven_mesh_data(Role::kPerception),
-      &state.mutable_proximity_engine(), state.GetMutableRenderEngines());
+  state.FinalizeConfigurationUpdate(kinematics_data,
+                                    &state.mutable_proximity_engine(),
+                                    state.GetMutableRenderEngines());
 }
 
 template <typename T>

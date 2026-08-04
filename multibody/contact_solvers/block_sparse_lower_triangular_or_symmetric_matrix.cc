@@ -1,11 +1,11 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 
 #include <algorithm>
-#include <unordered_set>
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/autodiff.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
 
 namespace drake {
@@ -68,26 +68,27 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType,
 }
 
 template <typename MatrixType, bool is_symmetric>
-MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
+MatrixX<typename MatrixType::Scalar>
+BlockSparseLowerTriangularOrSymmetricMatrix<
     MatrixType, is_symmetric>::MakeDenseMatrix() const {
   return MakeDenseBottomRightCorner(block_cols());
 }
 
 template <typename MatrixType, bool is_symmetric>
-MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
-    MatrixType, is_symmetric>::MakeDenseBottomRightCorner(const int num_blocks)
-    const {
+MatrixX<typename MatrixType::Scalar>
+BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
+    MakeDenseBottomRightCorner(const int num_blocks) const {
   DRAKE_DEMAND(0 <= num_blocks && num_blocks <= block_cols());
   if (num_blocks == 0) {
-    return MatrixX<double>::Zero(0, 0);
+    return MatrixX<Scalar>::Zero(0, 0);
   }
   const int block_col_start = block_cols() - num_blocks;
   /* The row/column in `this` matrix that corresponds to the 0,0-th entry in the
    dense result. */
   const int col_start = starting_cols_[block_col_start];
   const int row_start = col_start;
-  MatrixX<double> result =
-      MatrixX<double>::Zero(rows() - row_start, cols() - col_start);
+  MatrixX<Scalar> result =
+      MatrixX<Scalar>::Zero(rows() - row_start, cols() - col_start);
   for (int j = block_col_start; j < block_cols(); ++j) {
     for (int flat = 0; flat < ssize(block_row_indices(j)); ++flat) {
       const int i = block_row_indices(j)[flat];
@@ -115,7 +116,7 @@ MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
 
 template <typename MatrixType, bool is_symmetric>
 void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
-    ZeroRowsAndColumns(const std::vector<int>& indices) {
+    ZeroRowsAndColumns(const std::set<int>& indices) {
   DRAKE_THROW_UNLESS(is_symmetric);
   for (int j : indices) {
     if (!(0 <= j && j < block_cols())) {
@@ -124,11 +125,10 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
           block_cols(), j));
     }
   }
-  std::unordered_set<int> indices_set(indices.begin(), indices.end());
   for (int j = 0; j < block_cols(); ++j) {
     /* Zero all blocks in the column except the diagonal if j is among the
      row/column indices to be zeroed out. */
-    if (indices_set.contains(j)) {
+    if (indices.contains(j)) {
       /* We want to keep the conditioning of the matrix in the ballpark of the
        original matrix (e.g. setting diagonal blocks to identity when the
        original values are the on order of millions is a bad idea), so we keep
@@ -185,9 +185,15 @@ template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>,
                                                            true>;
 template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>,
                                                            false>;
+
 template class BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>,
                                                            true>;
 template class BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>,
+                                                           false>;
+
+template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>,
+                                                           true>;
+template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>,
                                                            false>;
 
 }  // namespace internal

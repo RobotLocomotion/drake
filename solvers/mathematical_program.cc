@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
-#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -18,7 +17,6 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/ssize.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
 #include "drake/common/symbolic/monomial_util.h"
@@ -68,7 +66,23 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
 
 string MathematicalProgram::to_string() const {
   std::ostringstream os;
-  os << *this;
+  if (num_vars() > 0) {
+    os << fmt::format("Decision variables: {}\n\n",
+                      fmt_eigen(decision_variables()));
+  } else {
+    os << "No decision variables.\n";
+  }
+
+  if (num_indeterminates() > 0) {
+    os << fmt::format("Indeterminates: {}\n\n", fmt_eigen(indeterminates()));
+  }
+
+  for (const auto& b : GetAllCosts()) {
+    os << fmt::to_string(b) << "\n";
+  }
+  for (const auto& b : GetAllConstraints()) {
+    os << fmt::to_string(b);
+  }
   return os.str();
 }
 
@@ -600,6 +614,40 @@ MathematicalProgram::AddL2NormCostUsingConicConstraint(
   return std::make_tuple(s, linear_cost, lorentz_cone_constraint);
 }
 
+std::tuple<VectorX<symbolic::Variable>, Binding<LinearCost>,
+           Binding<LinearConstraint>>
+MathematicalProgram::AddL1NormCostInEpigraphForm(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  auto s = this->NewContinuousVariables(A.rows(), "l1_norm_cost_epigraph");
+  // We want to encode s >= Ax+b and s >= -(Ax+b), with a cost Σᵢsᵢ on s. This
+  // can be written as:
+  //   A_full = [-I  A]
+  //            [-I -A]
+  //   ub = [-b]
+  //        [ b]
+  // A_full * vars <= ub
+  // for variables [s; vars]
+  auto linear_cost = this->AddLinearCost(Eigen::VectorXd::Ones(A.rows()), 0, s);
+
+  Eigen::MatrixXd I = Eigen::MatrixXd::Identity(A.rows(), A.rows());
+  Eigen::MatrixXd A_full(2 * A.rows(), A.rows() + A.cols());
+  A_full.topRows(A.rows()) << -I, A;
+  A_full.bottomRows(A.rows()) << -I, -A;
+
+  Eigen::VectorXd lb = Eigen::VectorXd::Constant(
+      2 * A.rows(), -std::numeric_limits<double>::infinity());
+  Eigen::VectorXd ub(2 * A.rows());
+  ub.head(A.rows()) = -b;
+  ub.tail(A.rows()) = b;
+
+  solvers::VectorXDecisionVariable all_vars(s.size() + vars.size());
+  all_vars << s, vars;
+  auto linear_constraint = this->AddLinearConstraint(A_full, lb, ub, all_vars);
+  return std::make_tuple(s, linear_cost, linear_constraint);
+}
+
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
     const Expression& e) {
   auto binding = AddCost(internal::ParsePolynomialCost(e));
@@ -850,9 +898,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
-    std::stringstream oss;
-    oss << "Expression " << e << " is non-linear.";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format("Expression {} is non-linear.", e));
   }
 }
 
@@ -884,9 +930,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
-    std::stringstream oss;
-    oss << "Formula " << f << " is non-linear.";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format("Formula {} is non-linear.", f));
   }
 }
 
@@ -969,6 +1013,25 @@ MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Formula& f) {
   return AddConstraint(internal::ParseLinearEqualityConstraint(f));
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(
+    const Eigen::Ref<const Eigen::Array<Formula, Eigen::Dynamic,
+                                        Eigen::Dynamic>>& formulas) {
+  std::set<Formula> formula_set;
+  for (int i = 0; i < formulas.rows(); ++i) {
+    for (int j = 0; j < formulas.cols(); ++j) {
+      if (is_conjunction(formulas(i, j))) {
+        for (const Formula& operand : get_operands(formulas(i, j))) {
+          formula_set.insert(operand);
+        }
+      } else {
+        formula_set.insert(formulas(i, j));
+      }
+    }
+  }
+  return AddConstraint(internal::ParseLinearEqualityConstraint(formula_set));
 }
 
 Binding<LinearEqualityConstraint>
@@ -1691,11 +1754,10 @@ std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
-    ostringstream oss;
-    oss << var
-        << " is not a decision variable in the mathematical program, "
-           "when calling FindDecisionVariableIndex.\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(fmt::format(
+        "{} is not a decision variable in the mathematical program, "
+        "when calling FindDecisionVariableIndex.\n",
+        var));
   }
   return it->second;
 }
@@ -1712,11 +1774,10 @@ std::vector<int> MathematicalProgram::FindDecisionVariableIndices(
 size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   auto it = indeterminates_index_.find(var.get_id());
   if (it == indeterminates_index_.end()) {
-    ostringstream oss;
-    oss << var
-        << " is not an indeterminate in the mathematical program, "
-           "when calling GetSolution.\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("{} is not an indeterminate in the mathematical program, "
+                    "when calling GetSolution.\n",
+                    var));
   }
   return it->second;
 }
@@ -2296,28 +2357,6 @@ bool MathematicalProgram::CheckBinding(const Binding<C>& binding) const {
   // retrofitting `description`), ensure that they have unique names.
   CheckIsDecisionVariable(binding.variables());
   return (binding.evaluator()->num_outputs() > 0);
-}
-
-std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
-  if (prog.num_vars() > 0) {
-    os << fmt::format("Decision variables: {}\n\n",
-                      fmt_eigen(prog.decision_variables().transpose()));
-  } else {
-    os << "No decision variables.\n";
-  }
-
-  if (prog.num_indeterminates() > 0) {
-    os << fmt::format("Indeterminates: {}\n\n",
-                      fmt_eigen(prog.indeterminates().transpose()));
-  }
-
-  for (const auto& b : prog.GetAllCosts()) {
-    os << b << "\n";
-  }
-  for (const auto& b : prog.GetAllConstraints()) {
-    os << b;
-  }
-  return os;
 }
 
 }  // namespace solvers

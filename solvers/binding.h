@@ -2,13 +2,12 @@
 
 #include <cstdint>
 #include <memory>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
@@ -83,7 +82,7 @@ class Binding {
    */
   [[nodiscard]] std::string to_string() const {
     std::ostringstream os;
-    os << *this;
+    evaluator()->Display(os, variables());
     return os.str();
   }
 
@@ -140,14 +139,6 @@ class Binding {
   VectorXDecisionVariable vars_;
 };
 
-/**
- * Print out the Binding.
- */
-template <typename C>
-std::ostream& operator<<(std::ostream& os, const Binding<C>& binding) {
-  return binding.evaluator()->Display(os, binding.variables());
-}
-
 namespace internal {
 
 /*
@@ -179,8 +170,4 @@ template <typename C>
 struct hash<drake::solvers::Binding<C>> : public drake::DefaultHash {};
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename C>
-struct formatter<drake::solvers::Binding<C>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename C, drake::solvers, Binding<C>, x, x.to_string())

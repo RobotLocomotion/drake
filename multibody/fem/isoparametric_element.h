@@ -141,7 +141,7 @@ class IsoparametricElement {
   /* Computes the Jacobian matrix, dx/dξ, at each sample location in the parent
    domain provided at construction.
    @param xa  Spatial coordinates for each element node stored column-wise.
-   @returns an std::array of size 'num_sample_locations`. The q-th entry
+   @returns an std::array of size `num_sample_locations`. The q-th entry
    contains the Jacobian matrix dx/dξ, of size
    `spatial_dimension`-by-`natural_dimension`, evaluated at the q-th sample
    location in the parent domain provided at construction. */

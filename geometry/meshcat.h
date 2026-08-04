@@ -176,21 +176,33 @@ class Meshcat {
 
   /** Sets the 3D object at a given `path` in the scene tree.  Note that
   `path`="/foo" will always set an object in the tree at "/foo/<object>".  See
-  @ref meshcat_path.  Any objects previously set at this `path` will be
-  replaced.
+  @ref meshcat_path. Any objects previously set at this `path` will be replaced.
+
+  The `rgba` and `diffuse_map` values work together. The color modulates the
+  textures appearance (by doing a channel-wise multiplication). For example,
+  specifying a red color will "tint" the texture red.
+
   @param path a "/"-delimited string indicating the path in the scene tree.
               See @ref meshcat_path "Meshcat paths" for the semantics.
   @param shape a Shape that specifies the geometry of the object.
   @param rgba an Rgba that specifies the (solid) color of the object.
+  @param diffuse_map an optional path to an image file to use as a diffuse
+              texture map. The image must be in a format supported by the
+              browser's three.js renderer (e.g., PNG, JPEG, WebP). It will _not_
+              be applied to Convex shapes (as convex hulls don't have texture
+              coordinates). It is not _currently_ applied to Mesh shapes because
+              Mesh shapes reference file formats that can define their own
+              materials. In the future, the map may be applied if the referenced
+              file doesn't actually specify any materials; this will not be
+              considered a "breaking" change.
   @note If `shape` is a mesh, the file referred to can be either an .obj file
   or an _embedded_ .gltf file (it has all geometry data and texture data
   contained within the single .gltf file).
   @pydrake_mkdoc_identifier{shape}
   */
   void SetObject(std::string_view path, const Shape& shape,
-                 const Rgba& rgba = Rgba(.9, .9, .9, 1.));
-
-  // TODO(russt): SetObject with texture map.
+                 const Rgba& rgba = Rgba(.9, .9, .9, 1.),
+                 std::string_view diffuse_map = "");
 
   /** Sets the "object" at a given `path` in the scene tree to be
   `point_cloud`.  Note that `path`="/foo" will always set an object in the tree
@@ -552,7 +564,7 @@ class Meshcat {
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
 
-  /** @group Realtime Rate Reporting
+  /** @name Realtime Rate Reporting
 
    %Meshcat can be used to visualize the realtime rate of a simulation's
    computation in the meshcat visualizer webpage. Meshcat broadcasts a realtime
@@ -790,8 +802,8 @@ class Meshcat {
    @throws std::exception if `name` has already been added as any type of
    control (e.g., either button or slider). */
   double AddSlider(std::string name, double min, double max, double step,
-                 double value, std::string decrement_keycode = "",
-                 std::string increment_keycode = "");
+                   double value, std::string decrement_keycode = "",
+                   std::string increment_keycode = "");
 
   /** Sets the current `value` of the slider `name`. `value` will be truncated
    to the slider range and rounded to the nearest increment specified by the
@@ -903,7 +915,20 @@ class Meshcat {
 
   You can also use your browser to download this file, by typing "/download"
   on the end of the URL (i.e., accessing `web_url() + "/download"`). */
-  std::string StaticHtml();
+  std::string StaticHtml() const;
+
+  /** Like StaticHtml(), returns a standalone snapshot of the visualizer and its
+  contents; the return value is a ZIP file containing a thin `meshcat.html` page
+  and the assets (meshes, textures, etc.) as separate files.
+
+  When you are uploading the unzipped files to a website, this will typically be
+  a more efficient representation as compared to StaticHtml(). However, it
+  cannot be opened directly by a browser from disk. A simple web server like
+  `python -m http.server` is required.
+
+  You can also use your browser to download this file, by typing "/download.zip"
+  on the end of the URL (i.e., accessing `web_url() + "/download.zip"`). */
+  std::string StaticZip() const;
 
   /** Sets a flag indicating that subsequent calls to SetTransform and
   SetProperty should also be "recorded" into a MeshcatAnimation when their

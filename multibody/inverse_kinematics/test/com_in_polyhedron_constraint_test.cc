@@ -1,5 +1,8 @@
 #include "drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

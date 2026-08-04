@@ -75,16 +75,14 @@ std::string GetStringFromHydroelasticType(HydroelasticType hydroelastic_type) {
   DRAKE_UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
-  out << EnumToChars(type);
-  return out;
+std::string_view to_string(const HydroelasticType& type) {
+  return EnumToChars(type);
 }
 
 }  // namespace internal
 
 void AddContactMaterial(
-    std::optional<double> dissipation,
-    std::optional<double> point_stiffness,
+    std::optional<double> dissipation, std::optional<double> point_stiffness,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);

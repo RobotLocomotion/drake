@@ -3,7 +3,7 @@
 
 /**
 @addtogroup multibody_parsing
-
+@{
 Drake's drake::multibody::Parser accepts model files written in a variety of
 input formats. Drake's parsing of URDF, SDFormat, and MJCF (Mujoco XML) has
 Drake-specific extensions and limitations.
@@ -12,7 +12,8 @@ The result of the parse is an in-memory model realized within
 drake::multibody::MultibodyPlant and (optionally)
 drake::geometry::SceneGraph. Note that parses that do not use a `SceneGraph`
 will effectively ignore geometric model elements, especially `//visual` and
-`//collision` elements.
+`//collision` elements. Without a `SceneGraph`, deformable models will also
+be ignored.
 
 In the reference sections below, when discussing XML formats, the relevant
 usage paths for various tags are indicated using
@@ -37,7 +38,7 @@ for any unsupported MuJoCo XML elements or attributes at runtime.
 @subsection mjcf_camera MuJoCo camera support
 
 The MuJoCo camera element is supported (with any unsupported attributes
-emmitting the standard parser warnings). To parse cameras, you must register a
+emitting the standard parser warnings). To parse cameras, you must register a
 DiagramBuilder with the Parser, and the MultibodyPlant must have a registered
 SceneGraph. The parser will call ApplyCameraConfig() to produce a camera named
 "{model_instance_name}/{mjcf_camera_name}", where a default {mjcf_camera_name}
@@ -151,6 +152,39 @@ start with `::`; there is no way to denote any "outer" or "outermost" scope.
 For a detailed design discussion with examples, see the
 <a href='http://sdformat.org/tutorials?tut=composition_proposal#1-3-name-scoping-and-cross-referencing'>SDFormat documentation of name scoping.</a>
 
+@subsection tag_deformable_link_requirements Deformable link requirements
+
+Drake supports specifying deformable bodies through SDFormat via custom tags as
+an experimental feature. A `<link>` element is interpreted as a deformable body
+if it contains a `<drake:deformable_properties>` element
+(see @ref tag_drake_deformable_properties). In that case, there are several
+requirements that must be satisfied:
+
+- **Exactly one `<collision>` element**: The `<collision>` tag must be present,
+  but more than one `<collision>` tag is forbidden.
+- **Geometry restriction**: the `<collision>/<geometry>` must contain a single
+  `<mesh>` whose URI points to a `.vtk` file that specifies a tetrahedral mesh;
+  primitive shapes are not yet supported.  The geometry is used for both
+  collision and dynamics.
+- **Limited proximity properties**: inside `<collision>`, the only Drake
+  proximity tag recognized are `<drake:mu_dynamic>`,
+  `<drake:hunt_crossley_dissipation>`, and `drake:relaxation_time>`.
+  All other tags are not allowed.
+- **At most one `<visual>` element**: The default visual representation of the
+  deformable body is the surface of the simulated tetrahedral mesh. However,
+  a single `<visual>` element may be present to provide an alternative visual
+  representation of the deformable body. Currently, the visual geometry is
+  only used for rendering (and the surface of the simulated mesh is *always*
+  used for visualization). Therefore, it's only meaningful to specify a non-empty
+  `<geometry>` element if the `<drake:perception_properties>` element is not
+  disabled; otherwise, the geometry supplied will be ignored with a warning. The
+  `<geometry>` element, if non-empty, must contain a single `<mesh>` element, and
+  the URI of the mesh must point to a `.obj` file, and the (potentially textured)
+  surface described by the `.obj` file is used for rendering. More than one
+  `<visual>` is an error.
+
+Violating any of these rules results in a *parsing error*.
+
 @section multibody_parsing_urdf URDF Support
 Drake supports URDF files as described here: http://wiki.ros.org/urdf/XML.
 
@@ -237,6 +271,15 @@ Here is the full list of custom elements:
 - @ref tag_drake_curves
 - @ref tag_drake_damping
 - @ref tag_drake_declare_convex
+- @ref tag_drake_deformable_properties
+- @ref tag_drake_distance_constraint
+- @ref tag_drake_distance_constraint_body_A
+- @ref tag_drake_distance_constraint_p_AP
+- @ref tag_drake_distance_constraint_body_B
+- @ref tag_drake_distance_constraint_p_BQ
+- @ref tag_drake_distance_constraint_distance
+- @ref tag_drake_distance_constraint_stiffness
+- @ref tag_drake_distance_constraint_damping
 - @ref tag_drake_diffuse_map
 - @ref tag_drake_ellipsoid
 - @ref tag_drake_gear_ratio
@@ -251,6 +294,17 @@ Here is the full list of custom elements:
 - @ref tag_drake_length
 - @ref tag_drake_line_segment
 - @ref tag_drake_linear_bushing_rpy
+- @ref tag_drake_linear_spring_damper
+- @ref tag_drake_linear_spring_damper_body_A
+- @ref tag_drake_linear_spring_damper_p_AP
+- @ref tag_drake_linear_spring_damper_body_B
+- @ref tag_drake_linear_spring_damper_p_BQ
+- @ref tag_drake_linear_spring_damper_free_length
+- @ref tag_drake_linear_spring_damper_stiffness
+- @ref tag_drake_linear_spring_damper_damping
+- @ref tag_drake_mass_damping
+- @ref tag_drake_mass_density
+- @ref tag_drake_material_model
 - @ref tag_drake_member
 - @ref tag_drake_member_group
 - @ref tag_drake_mesh_resolution_hint
@@ -261,13 +315,25 @@ Here is the full list of custom elements:
 - @ref tag_drake_perception_properties
 - @ref tag_drake_plane_normal
 - @ref tag_drake_point_contact_stiffness
+- @ref tag_drake_poissons_ratio
 - @ref tag_drake_proximity_properties
 - @ref tag_drake_radius
 - @ref tag_drake_relaxation_time
 - @ref tag_drake_rigid_hydroelastic
 - @ref tag_drake_rotor_inertia
 - @ref tag_drake_screw_thread_pitch
+- @ref tag_drake_stiffness_damping
+- @ref tag_drake_surface_velocity_axis
+- @ref tag_drake_tendon_constraint
+- @ref tag_drake_tendon_constraint_joint
+- @ref tag_drake_tendon_constraint_offset
+- @ref tag_drake_tendon_constraint_lower_limit
+- @ref tag_drake_tendon_constraint_upper_limit
+- @ref tag_drake_tendon_constraint_stiffness
+- @ref tag_drake_tendon_constraint_damping
 - @ref tag_drake_visual
+- @ref tag_drake_wall_boundary_condition
+- @ref tag_drake_youngs_modulus
 
 @subsection tag_drake_acceleration drake:acceleration
 
@@ -326,7 +392,7 @@ Specifies the angle of a circular by right-hand-rule. Units are radians.
 tag_drake_ball_constraint_body_B, @ref tag_drake_ball_constraint_p_AP, and @ref
 tag_drake_ball_constraint_p_BQ
 
-@subsection tag_drake_ball_constraint_semantics Semantics
+@subsubsection tag_drake_ball_constraint_semantics Semantics
 
 The element adds a ball constraint to the model via
 drake::multibody::MultibodyPlant::AddBallConstraint().
@@ -337,7 +403,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint().
 - URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_A/@name`
 - Syntax: String.
 
-@subsection tag_drake_ball_constraint_body_A_semantics Semantics
+@subsubsection tag_drake_ball_constraint_body_A_semantics Semantics
 
 The string names a body (expected to already be defined by this model) that
 will be passed to drake::multibody::MultibodyPlant::AddBallConstraint()
@@ -352,7 +418,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 - URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_B/@name`
 - Syntax: String.
 
-@subsection tag_drake_ball_constraint_body_B_semantics Semantics
+@subsubsection tag_drake_ball_constraint_body_B_semantics Semantics
 
 The string names a body (expected to already be defined by this model) that
 will be passed to drake::multibody::MultibodyPlant::AddBallConstraint()
@@ -367,7 +433,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 - URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_p_AP/@value`
 - Syntax: Three floating point values.
 
-@subsection tag_drake_ball_constraint_p_AP_semantics Semantics
+@subsubsection tag_drake_ball_constraint_p_AP_semantics Semantics
 
 The three floating point values (units of meters) are formed into a
 vector and passed into drake::multibody::MultibodyPlant::AddBallConstraint() as
@@ -382,7 +448,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 - URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_p_BQ/@value`
 - Syntax: Three floating point values.
 
-@subsection tag_drake_ball_constraint_p_BQ_semantics Semantics
+@subsubsection tag_drake_ball_constraint_p_BQ_semantics Semantics
 
 The three floating point values (units of meters) are formed into a
 vector and passed into drake::multibody::MultibodyPlant::AddBallConstraint() as
@@ -390,6 +456,260 @@ the `p_BQ` parameter.
 
 @see @ref tag_drake_ball_constraint,
 drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_distance_constraint drake:distance_constraint
+
+- SDFormat path: `//model/drake:distance_constraint`
+- URDF path: `/robot/drake:distance_constraint`
+- Syntax: Required nested elements
+  @ref tag_drake_distance_constraint_body_A,
+  @ref tag_drake_distance_constraint_p_AP,
+  @ref tag_drake_distance_constraint_body_B,
+  @ref tag_drake_distance_constraint_p_BQ,
+  @ref tag_drake_distance_constraint_distance,
+  @ref tag_drake_distance_constraint_stiffness, and
+  @ref tag_drake_distance_constraint_damping
+
+@subsubsection tag_drake_distance_constraint_semantics Semantics
+
+The element adds a distance constraint to the model via
+drake::multibody::MultibodyPlant::AddDistanceConstraint(). Distance
+constraints require a discrete MultibodyPlant configured to use the SAP
+solver.
+
+@subsection tag_drake_distance_constraint_body_A drake:distance_constraint_body_A
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_body_A`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_body_A/@name`
+- Syntax: String.
+
+@subsubsection tag_drake_distance_constraint_body_A_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that
+will be passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `body_A`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_p_AP drake:distance_constraint_p_AP
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_p_AP`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_p_AP/@value`
+- Syntax: Three floating point values.
+
+@subsubsection tag_drake_distance_constraint_p_AP_semantics Semantics
+
+The three floating point values (units of meters) are formed into a vector and
+passed to drake::multibody::MultibodyPlant::AddDistanceConstraint() as the
+`p_AP` parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_body_B drake:distance_constraint_body_B
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_body_B`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_body_B/@name`
+- Syntax: String.
+
+@subsubsection tag_drake_distance_constraint_body_B_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that
+will be passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `body_B`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_p_BQ drake:distance_constraint_p_BQ
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_p_BQ`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_p_BQ/@value`
+- Syntax: Three floating point values.
+
+@subsubsection tag_drake_distance_constraint_p_BQ_semantics Semantics
+
+The three floating point values (units of meters) are formed into a vector and
+passed to drake::multibody::MultibodyPlant::AddDistanceConstraint() as the
+`p_BQ` parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_distance drake:distance_constraint_distance
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_distance`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_distance/@value`
+- Syntax: A strictly positive floating point value.
+
+@subsubsection tag_drake_distance_constraint_distance_semantics Semantics
+
+The floating point value (units of meters) is passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `distance`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_stiffness drake:distance_constraint_stiffness
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_stiffness`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_stiffness/@value`
+- Syntax: A strictly positive floating point value.
+
+@subsubsection tag_drake_distance_constraint_stiffness_semantics Semantics
+
+The floating point value (units of N/m) is passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `stiffness`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_distance_constraint_damping drake:distance_constraint_damping
+
+- SDFormat path:
+`//model/drake:distance_constraint/drake:distance_constraint_damping`
+- URDF path:
+`/robot/drake:distance_constraint/drake:distance_constraint_damping/@value`
+- Syntax: A non-negative floating point value.
+
+@subsubsection tag_drake_distance_constraint_damping_semantics Semantics
+
+The floating point value (units of N⋅s/m) is passed to
+drake::multibody::MultibodyPlant::AddDistanceConstraint() as the `damping`
+parameter.
+
+@see @ref tag_drake_distance_constraint,
+drake::multibody::MultibodyPlant::AddDistanceConstraint()
+
+@subsection tag_drake_tendon_constraint drake:tendon_constraint
+
+- SDFormat path: `//model/drake:tendon_constraint`
+- URDF path: `/robot/drake:tendon_constraint`
+- Syntax: Nested elements @ref tag_drake_tendon_constraint_joint,
+  @ref tag_drake_tendon_constraint_offset,
+  @ref tag_drake_tendon_constraint_lower_limit,
+  @ref tag_drake_tendon_constraint_upper_limit,
+  @ref tag_drake_tendon_constraint_stiffness,
+  and @ref tag_drake_tendon_constraint_damping
+
+@subsubsection tag_drake_tendon_constraint_semantics Semantics
+
+The element adds a tendon constraint to the model via
+drake::multibody::MultibodyPlant::AddTendonConstraint().
+
+@subsection tag_drake_tendon_constraint_joint drake:tendon_constraint_joint
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_joint`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_joint`
+- Syntax: Two attributes `name` containing a string value and `a` containing a
+          floating point value.
+
+@subsubsection tag_drake_tendon_constraint_joint_semantics Semantics
+
+The string names a joint (expected to already be defined by this model and be
+single-dof) and the float specifies a coefficient to be applied to the joint
+configuration to determine the tendon length. These will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `joints` and `a`
+parameters, respectively. The tag can be repeated to specify multiple joints.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_offset drake:tendon_constraint_offset
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_offset`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_offset/@value`
+- Syntax: Floating point value.
+
+@subsubsection tag_drake_tendon_constraint_offset_semantics Semantics
+
+A floating point value specifying the length offset in either [m] or [rad] that
+will be passed to drake::multibody::MultibodyPlant::AddTendonConstraint() as the
+`offset` parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_lower_limit drake:tendon_constraint_lower_limit
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_lower_limit`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_lower_limit/@value`
+- Syntax: Floating point value.
+
+@subsubsection tag_drake_tendon_constraint_lower_limit_semantics Semantics
+
+A floating point value specifying the lower bound on the constraint in either
+[m] or [rad] that will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `lower_bound`
+parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_upper_limit drake:tendon_constraint_upper_limit
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_upper_limit`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_upper_limit/@value`
+- Syntax: Floating point value.
+
+@subsubsection tag_drake_tendon_constraint_upper_limit_semantics Semantics
+
+A floating point value specifying the upper bound on the constraint in either
+[m] or [rad] that will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `upper_bound`
+parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_stiffness drake:tendon_constraint_stiffness
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_stiffness`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_stiffness/@value`
+- Syntax: Floating point value.
+
+@subsubsection tag_drake_tendon_constraint_stiffness_semantics Semantics
+
+A floating point value specifying the constraint stiffness in either [N/m] or
+[N⋅m/rad] that will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `stiffness`
+parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
+
+@subsection tag_drake_tendon_constraint_damping drake:tendon_constraint_damping
+
+- SDFormat path: `//model/drake:tendon_constraint/drake:tendon_constraint_damping`
+- URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_damping/@value`
+- Syntax: Floating point value.
+
+@subsubsection tag_drake_tendon_constraint_damping_semantics Semantics
+
+A floating point value specifying the constraint damping in either [N⋅s/m] or
+[N⋅m⋅rad/s] that will be passed to
+drake::multibody::MultibodyPlant::AddTendonConstraint() as the `damping`
+parameter.
+
+@see @ref tag_drake_tendon_constraint,
+drake::multibody::MultibodyPlant::AddTendonConstraint()
 
 @subsection tag_drake_bushing_force_damping drake:bushing_force_damping
 
@@ -482,6 +802,113 @@ passed to the constructor of drake::multibody::LinearBushingRollPitchYaw as the
 @see @ref tag_drake_linear_bushing_rpy,
 drake::multibody::LinearBushingRollPitchYaw,
 @ref Basic_bushing_torque_stiffness_and_damping "How to choose torque stiffness and damping constants"
+
+@subsection tag_drake_linear_spring_damper drake:linear_spring_damper
+
+- SDFormat path: `//model/drake:linear_spring_damper`
+- URDF path: `/robot/drake:linear_spring_damper`
+- Syntax: Nested elements @ref tag_drake_linear_spring_damper_body_A,
+  @ref tag_drake_linear_spring_damper_p_AP,
+  @ref tag_drake_linear_spring_damper_body_B,
+  @ref tag_drake_linear_spring_damper_p_BQ,
+  @ref tag_drake_linear_spring_damper_free_length,
+  @ref tag_drake_linear_spring_damper_stiffness,
+  and @ref tag_drake_linear_spring_damper_damping
+
+@subsubsection tag_drake_linear_spring_damper_semantics Semantics
+
+The element adds a drake::multibody::LinearSpringDamper to the model.
+
+@subsection tag_drake_linear_spring_damper_body_A drake:linear_spring_damper_body_A
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_body_A`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_body_A/@name`
+- Syntax: String.
+
+@subsubsection tag_drake_linear_spring_damper_body_A_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that will
+be passed to drake::multibody::LinearSpringDamper() as the `body_A` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_p_AP drake:linear_spring_damper_p_AP
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_p_AP`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_p_AP/@value`
+- Syntax: Three floating point values.
+
+@subsubsection tag_drake_linear_spring_damper_p_AP_semantics Semantics
+
+The three floating point values (units of meters) are formed into a vector and
+passed into drake::multibody::LinearSpringDamper() as the `p_AP` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_body_B drake:linear_spring_damper_body_B
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_body_B`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_body_B/@name`
+- Syntax: String.
+
+@subsubsection tag_drake_linear_spring_damper_body_B_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that will
+be passed to drake::multibody::LinearSpringDamper() as the `body_B` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_p_BQ drake:linear_spring_damper_p_BQ
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_p_BQ`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_p_BQ/@value`
+- Syntax: Three floating point values.
+
+@subsubsection tag_drake_linear_spring_damper_p_BQ_semantics Semantics
+
+The three floating point values (units of meters) are formed into a vector and
+passed into drake::multibody::LinearSpringDamper() as the `p_BQ` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_free_length drake:linear_spring_damper_free_length
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_free_length`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_free_length/@value`
+- Syntax: a strictly positive floating point value.
+
+@subsubsection tag_drake_linear_spring_damper_free_length_semantics Semantics
+
+The floating point value (unit of meters) is passed into
+drake::multibody::LinearSpringDamper() as the `free_length` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_stiffness drake:linear_spring_damper_stiffness
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_stiffness`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_stiffness/@value`
+- Syntax: a non-negative floating point value.
+
+@subsubsection tag_drake_linear_spring_damper_stiffness_semantics Semantics
+
+The floating point value (unit of N/m) is passed into
+drake::multibody::LinearSpringDamper() as the `stiffness` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_damping drake:linear_spring_damper_damping
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_damping`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_damping/@value`
+- Syntax: a non-negative floating point value.
+
+@subsubsection tag_drake_linear_spring_damper_damping_semantics Semantics
+
+The floating point value (unit of N⋅s/m) is passed into
+drake::multibody::LinearSpringDamper() as the `damping` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
 
 @subsection tag_drake_capsule drake:capsule
 
@@ -590,7 +1017,7 @@ to be compliant, as opposed to rigid, in hydroelastic contact models.
           point value and `d` (derivative gain) containing a non-negative
           floating point value.
 
-@subsection tag_drake_controller_gains_semantics Semantics
+@subsubsection tag_drake_controller_gains_semantics Semantics
 
 If present, this element provides proportional and derivative gains for a low
 level PD controller for the drake::multibody::JointActuator associated with the
@@ -612,7 +1039,7 @@ A joint-type-specific tag for drake::multibody::CurvilinearJoint, corresponding 
 `drake:joint` of `curvilinear` type.
 
 Curvilinear joints allow the child frame to move relative to the parent along a
-planer curvilinear path, expressed in this tag as an ordered list of linear
+planar curvilinear path, expressed in this tag as an ordered list of linear
 and circular arc segments. Each segment is appended to the end of the previous
 segment, so that the entire path is continuously differentiable.
 
@@ -652,6 +1079,40 @@ geometry. The resulting geometry in memory will be drake::geometry::Convex,
 rather than drake::geometry::Mesh.
 
 @see drake::geometry::Convex, drake::geometry::Mesh
+
+@subsection tag_drake_deformable_properties drake:deformable_properties
+
+- SDFormat path: `//model/link/drake:deformable_properties`
+- URDF path: n/a
+- Syntax: Nested elements; see below.
+
+@subsubsection tag_drake_deformable_properties Semantics
+
+If present, this element defines the link element as a deformable body in Drake.
+Such link elements are not treated as rigid bodies, and the standard tags such as
+inertia are illegal and provoke errors. The only other tags that
+are allowed are under such "deformable" links are `<pose>`, `<collision>`, and
+`<visual>`. Attaching frames, joints, and other elements to deformable links is
+not allowed. The `<pose>` tag is interpreted as the pose of the deformable geometry
+used for dynamics and collision in its reference configuration. The `<collision>`
+and `<visual>` tags are *not* interpreted exactly the same way as the standard
+`<collision>` and `<visual>` tags either. We explain the differences in the
+@ref tag_deformable_link_requirements section.
+
+The following nested elements may be present under `<drake:deformable_properties>`:
+- `drake:youngs_modulus`
+- `drake:poissons_ratio`
+- `drake:mass_damping`
+- `drake:stiffness_damping`
+- `drake:mass_density`
+- `drake:material_model`
+
+see @ref tag_drake_youngs_modulus
+@ref tag_drake_poissons_ratio
+@ref tag_drake_mass_damping
+@ref tag_drake_stiffness_damping
+@ref tag_drake_mass_density
+@ref tag_drake_material_model
 
 @subsection tag_drake_diffuse_map drake:diffuse_map
 
@@ -767,7 +1228,7 @@ In SDFormat files only, the name may refer to a group within a nested model
 @subsection tag_drake_illustration_properties drake:illustration_properties
 
 - SDFormat path: `//model/link/visual/drake:illustration_properties`
-- URDF path: n/a
+- URDF path: `/robot/link/visual/drake:illustration_properties`
 - Syntax: Single attribute: `enabled` (bool).
 
 @subsubsection tag_drake_illustration_properties_semantics Semantics
@@ -853,7 +1314,7 @@ joint moves, specified as the following:
   expressed in parent frame.
 - `drake:curves`: A list of line segments and circular arcs defining the curve shape.
 - `drake:is_periodic`: A boolean value specifying whether the curve is periodic, allowing
-  the joint to traves multiple laps of the curve without hitting joint limits.
+  the joint to traverse multiple laps of the curve without hitting joint limits.
 
 @see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping,
 @ref tag_drake_screw_thread_pitch, @ref tag_drake_initial_tangent,
@@ -910,6 +1371,38 @@ This element adds a drake::multibody::LinearBushingRollPitchYaw to the model.
 @ref tag_drake_bushing_force_damping, @ref tag_drake_bushing_force_stiffness,
 @ref tag_drake_bushing_frameA, @ref tag_drake_bushing_frameC,
 @ref tag_drake_bushing_torque_damping, @ref tag_drake_bushing_torque_stiffness
+
+@subsection tag_drake_mass_damping drake:mass_damping
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:mass_damping`
+- URDF path: n/a
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_mass_damping_semantics Semantics
+
+If present, this element provides a value (with unit `1/s`) for the mass damping
+coefficient in Rayleigh damping for the deformable body.
+
+@subsection tag_drake_mass_density drake:mass_density
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:mass_density`
+- URDF path: n/a
+- Syntax: Positive floating point value.
+
+@subsubsection tag_drake_mass_density_semantics Semantics
+
+If present, this element provides a value (with unit `kg/m³`) for the mass
+density of the deformable body.
+
+@subsection tag_drake_material_model drake:material_model
+- SDFormat path: `//model/link/drake:deformable_properties/drake:material_model`
+- URDF path: n/a
+- Syntax: String.
+
+@subsubsection tag_drake_material_model_semantics Semantics
+
+If present, this element provides the material model of the deformable body.
+The valid values are `linear_corotated`, `corotated`, and `linear`.
 
 @subsection tag_drake_member drake:member
 
@@ -1014,10 +1507,15 @@ MultibodyPlant's constructor documentation for details.
 - URDF path: N/A
 - Syntax: String.
 
+@subsubsection tag_drake_parent_semantics Semantics
+
+The string names a frame (defined elsewhere in the model) that is associated
+with the parent link of the joint being defined.
+
 @subsection tag_drake_perception_properties drake:perception_properties
 
 - SDFormat path: `//model/link/visual/drake:perception_properties`
-- URDF path: n/a
+- URDF path: `/robot/link/visual/drake:perception_properties`
 - Syntax: Single attribute: `enabled` (bool).
 
 @subsubsection tag_drake_perception_properties_semantics Semantics
@@ -1039,11 +1537,6 @@ visuals.
 
 @see @ref tag_drake_illustration_properties
 @see @ref tag_drake_visual
-
-@subsubsection tag_drake_parent_semantics Semantics
-
-The string names a frame (defined elsewhere in the model) that is associated
-with the parent link of the joint being defined.
 
 @see @ref tag_drake_joint
 
@@ -1079,6 +1572,17 @@ ProximityProperties object under `(material, point_contact_stiffness)`.
 @see @ref accessing_contact_properties "Accessing point contact parameters",
 @ref point_forces_modeling "Point Contact Forces", and
 drake::geometry::ProximityProperties
+
+@subsection tag_drake_poissons_ratio drake:poissons_ratio
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:poissons_ratio`
+- URDF path: n/a
+- Syntax: Floating point value in (-1, 0.5), non-inclusive.
+
+@subsubsection tag_drake_poissons_ratio_semantics Semantics
+
+If present, this element provides a value (unitless) for the Poisson's ratio for
+for the deformable body.
 
 @subsection tag_drake_proximity_properties drake:proximity_properties
 
@@ -1179,6 +1683,28 @@ corresponding to a right-handed thread.
 
 @see drake::multibody::ScrewJoint
 
+@subsection tag_drake_stiffness_damping drake:stiffness_damping
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:stiffness_damping`
+- URDF path: n/a
+- Syntax: Non-negative floating point value.
+
+@subsection tag_drake_surface_velocity_axis drake:surface_velocity_axis
+
+- SDFormat path: `//model/link/drake:surface_velocity_axis`
+- URDF path: `//robot/link/drake:surface_velocity_axis`
+- Syntax: Three space-separated floating point values.
+
+@subsubsection tag_drake_surface_velocity_axis_semantics Semantics
+
+If present, this element defines the surface velocity axis for the associated
+link. See @ref mbp_surface_velocity "Surface Velocity" for details.
+
+@subsubsection tag_drake_stiffness_damping_semantics Semantics
+
+If present, this element provides a value (with unit `s`) for the stiffness
+damping coefficient in Rayleigh damping for the deformable body.
+
 @subsection tag_drake_visual drake:visual
 
 - SDFormat path: `//model/link`
@@ -1222,4 +1748,45 @@ emit a warning as it would for doing the same to a `<visual>` tag.
 @see @ref tag_drake_perception_properties
 @see @ref tag_drake_illustration_properties
 
+@subsection tag_drake_wall_boundary_condition drake:wall_boundary_condition
+
+- SDFormat path: `//model/link/drake:wall_boundary_condition`
+- URDF path: n/a
+- Syntax: Nested elements `drake:point_on_plane` and `drake:outward_normal`.
+
+@subsubsection tag_drake_wall_boundary_condition_semantics Semantics
+
+If present, this element specifies a wall boundary condition for a deformable
+body. The wall boundary condition constrains vertices of the deformable body's
+mesh to have zero displacement if their reference positions are inside a
+prescribed open half space. The half space is defined by a plane with an
+outward normal vector.
+
+The nested elements are:
+- `drake:point_on_plane`: Position of a point Q on the plane in the world frame,
+  specified as three space-separated floating point values (x y z coordinates
+  in meters).
+- `drake:outward_normal`: Outward normal to the half space expressed in the
+  world frame, specified as three space-separated floating point values (nx ny
+  nz components). The normal vector is automatically normalized to unit length.
+
+Multiple `drake:wall_boundary_condition` elements can be specified for a single
+deformable link to define multiple boundary conditions. This element is only
+valid for deformable links (those containing a `drake:deformable_properties`
+element).
+
+@see @ref tag_deformable_link_requirements,
+drake::multibody::DeformableModel::SetWallBoundaryCondition()
+
+@subsection tag_drake_youngs_modulus drake:youngs_modulus
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:youngs_modulus`
+- URDF path: n/a
+- Syntax: Positive floating point value.
+
+@subsubsection tag_drake_youngs_modulus_semantics Semantics
+
+If present, this element provides a value (with unit `Pa(N/m²)`) for the Young's
+modulus for the deformable body.
+@}
 */

@@ -18,7 +18,7 @@ def _find_latest(repo_ctx, path, prefix, subdir):
 
     return best_dir or (path + "/" + prefix + "-notfound/" + subdir)
 
-# Ubuntu only: GUROBI_HOME should be the linux64 directory in the Gurobi 10.0
+# Ubuntu only: GUROBI_HOME should be the linux64 directory in the Gurobi 13.0
 # release.
 #
 def _gurobi_impl(repo_ctx):
@@ -31,21 +31,21 @@ def _gurobi_impl(repo_ctx):
         gurobi_home = _find_latest(
             repo_ctx,
             "/Library",
-            "gurobi100",
+            "gurobi130",
             "macos_universal2",
         )
         repo_ctx.symlink(gurobi_home, "gurobi-distro")
     elif os_name == "linux":
-        # The default directory for the downloaded gurobi is
-        # /opt/gurobi100*/linux64. If the user does not use the default
-        # directory, the he/she should set GUROBI_HOME environment variable to
-        # the gurobi file location.
+        # The default directory for the downloaded Gurobi is
+        # /opt/gurobi130*/linux64. If the user does not use the default
+        # directory, then they should set the GUROBI_HOME environment variable
+        # to the Gurobi file location.
         gurobi_home = repo_ctx.getenv("GUROBI_HOME", "")
         repo_ctx.symlink(
             gurobi_home or _find_latest(
                 repo_ctx,
                 "/opt",
-                "gurobi100",
+                "gurobi130",
                 "linux64",
             ),
             "gurobi-distro",
@@ -63,16 +63,6 @@ def _gurobi_impl(repo_ctx):
         substitutions = {
             "{gurobi_home}": gurobi_home,
         },
-        executable = False,
-    )
-
-    # Capture whether or not Gurobi tests can run in parallel.
-    license_unlimited_int = repo_ctx.getenv("DRAKE_GUROBI_LICENSE_UNLIMITED", "0")  # noqa: E501
-    license_unlimited = bool(int(license_unlimited_int) == 1)
-    repo_ctx.file(
-        "defs.bzl",
-        content = "DRAKE_GUROBI_LICENSE_UNLIMITED = {}"
-            .format(license_unlimited),
         executable = False,
     )
 

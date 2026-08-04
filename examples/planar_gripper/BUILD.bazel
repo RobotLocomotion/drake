@@ -38,7 +38,7 @@ drake_cc_library(
     srcs = ["planar_gripper_lcm.cc"],
     hdrs = ["planar_gripper_lcm.h"],
     deps = [
-        "//lcmtypes:planar_gripper",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
     ],
 )
@@ -48,7 +48,7 @@ drake_cc_library(
     srcs = ["planar_manipuland_lcm.cc"],
     hdrs = ["planar_manipuland_lcm.h"],
     deps = [
-        "//lcmtypes:planar_manipuland_status",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:event_collection",
         "//systems/framework:leaf_system",
     ],
@@ -109,14 +109,9 @@ drake_cc_binary(
 drake_cc_binary(
     name = "planar_gripper_simulation",
     srcs = ["planar_gripper_simulation.cc"],
-    add_test_rule = 1,
     data = [
         ":models",
         "//examples/planar_gripper:postures.txt",
-    ],
-    test_rule_args = [
-        "--simulation_time=0.1",
-        "--target_realtime_rate=0",
     ],
     deps = [
         ":planar_gripper_common",
@@ -129,6 +124,11 @@ drake_cc_binary(
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework:diagram",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0",
     ],
 )
 
@@ -199,4 +199,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

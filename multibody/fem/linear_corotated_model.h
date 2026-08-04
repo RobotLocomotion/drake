@@ -74,6 +74,11 @@ class LinearCorotatedModel final
   void CalcFirstPiolaStressDerivativeImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* dPdF) const;
 
+  /* Shadows ConstitutiveModel::CalcFilteredHessianImpl() in the CRTP base
+   class. */
+  void CalcFilteredHessianImpl(
+      const Data& data, math::internal::FourthOrderTensor<T>* hessian) const;
+
   T E_;       // Young's modulus, N/m².
   T nu_;      // Poisson's ratio.
   T mu_;      // Lamé's second parameter/Shear modulus, N/m².

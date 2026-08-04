@@ -1,11 +1,15 @@
-#include "pybind11/eval.h"
+#include <limits>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
+#include "drake/bindings/generated_docstrings/common_trajectories.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/trajectories/bezier_curve.h"
@@ -62,9 +66,9 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
     Polynomials polynomials;
   };
   // Add the same __fields__ that DefAttributesUsingSerialize would have added.
-  cls->def_property_readonly_static("__fields__", [](py::object /* cls */) {
-    auto ndarray = py::module::import("numpy").attr("ndarray");
-    auto make_namespace = py::module::import("types").attr("SimpleNamespace");
+  cls->def_prop_ro_static("__fields__", [](py::object /* cls */) {
+    auto ndarray = py::module_::import_("numpy").attr("ndarray");
+    auto make_namespace = py::module_::import_("types").attr("SimpleNamespace");
     auto breaks = make_namespace();
     py::setattr(breaks, "name", py::str("breaks"));
     py::setattr(breaks, "type", ndarray);
@@ -76,36 +80,85 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
     fields.append(polynomials);
     return py::tuple(fields);
   });
-  // Given the __fields__ above, yaml_load_typed will try to setattr on "breaks"
-  // and "polynomials". However, we don't want to expose those properties to
-  // users so we'll respell the name during setattr to add a leading underscore,
-  // and bind the properties using the private name.
+  // Given the __fields__ above, yaml_dump_typed (and yaml_load_typed) will try
+  // to getattr (and setattr) on "breaks" and "polynomials". However, we don't
+  // want to expose those properties to users so we'll respell the name to add a
+  // leading underscore, and bind the properties using the private name.
+  cls->def("__getattr__", [](Class& self, py::str name) -> py::object {
+    py::object self_py = py::cast(self, py_rvp::reference);
+    const std::string_view name_cxx(name.c_str());
+    if (name_cxx == "breaks") {
+      return self_py.attr("_breaks");
+    } else if (name_cxx == "polynomials") {
+      return self_py.attr("_polynomials");
+    }
+    throw py::attribute_error(
+        fmt::format("PiecewisePolynomial has no attribute '{}'", name_cxx)
+            .c_str());
+  });
   cls->def("__setattr__", [](Class& self, py::str name, py::object value) {
-    if (std::string(name) == "breaks") {
+    const std::string_view name_cxx(name.c_str());
+    if (name_cxx == "breaks") {
       name = py::str("_breaks");
-    } else if (std::string(name) == "polynomials") {
+    } else if (name_cxx == "polynomials") {
       name = py::str("_polynomials");
     }
-    py::eval("object.__setattr__")(self, name, value);
+    py::eval("object.__setattr__", py::globals())(&self, name, value);
   });
-  // Define a property setter for "_breaks" (the getter is never called).
-  // Setting the breaks resets all of the polynomials; this is fine because
-  // deserialization matches __fields__ order, which has "breaks" come first
-  // followed by setting the "polynomials" afterward.
-  cls->def_property("_breaks", nullptr, [](Class& self, const Breaks& breaks) {
-    const size_t num_poly = breaks.empty() ? 0 : breaks.size() - 1;
-    const MatrixX<Eigen::VectorXd> empty_poly;
-    Archive archive{.set_breaks = true,
-        .breaks = breaks,
-        .set_polynomials = true,
-        .polynomials = Polynomials(num_poly, empty_poly)};
-    self.Serialize(&archive);
-  });
-  // Define a property setter for "_polynomials" (the getter is never called).
-  // We bind it as private: only yaml_load_typed should call it, not users.
-  // The property accepts a 4D ndarray and converts it to C++'s convention of
-  // vector-of-matrix-of-coeffs storage.
-  cls->def_property("_polynomials", nullptr,
+  // Define a private property for "_breaks". Setting the breaks resets all of
+  // the polynomials; this is fine because deserialization matches __fields__
+  // order, which has "breaks" come first followed by setting the "polynomials"
+  // afterward.
+  cls->def_prop_rw(
+      "_breaks",
+      [](const Class& self) -> Eigen::VectorXd {
+        const int num_poly = self.get_number_of_segments();
+        if (num_poly == 0) {
+          return Eigen::VectorXd();
+        }
+        Eigen::VectorXd breaks(num_poly + 1);
+        breaks[0] = self.start_time(0);
+        for (int i = 0; i < num_poly; ++i) {
+          breaks[i + 1] = self.end_time(i);
+        }
+        return breaks;
+      },
+      [](Class& self, const Breaks& breaks) {
+        const size_t num_poly = breaks.empty() ? 0 : breaks.size() - 1;
+        const MatrixX<Eigen::VectorXd> empty_poly;
+        Archive archive{.set_breaks = true,
+            .breaks = breaks,
+            .set_polynomials = true,
+            .polynomials = Polynomials(num_poly, empty_poly)};
+        self.Serialize(&archive);
+      });
+  // Define a private property for "_polynomials". The property is a 4D ndarray
+  // that we biject to C++'s convention of vector-of-matrix-of-coeffs storage.
+  cls->def_prop_rw(
+      "_polynomials",
+      [](const Class& self) -> py::array_t<double> {
+        Archive archive;
+        const_cast<Class&>(self).Serialize(&archive);
+        const Polynomials& polynomials = archive.polynomials;
+        const int num_poly = ssize(polynomials);
+        const int num_rows = num_poly == 0 ? 0 : polynomials.at(0).rows();
+        const int num_cols = num_poly == 0 ? 0 : polynomials.at(0).cols();
+        const int num_coeffs = (num_rows == 0 || num_cols == 0)
+                                   ? 0
+                                   : polynomials.at(0)(0, 0).size();
+        const std::vector<int> shape{num_poly, num_rows, num_cols, num_coeffs};
+        std::vector<double> buffer;
+        for (int i = 0; i < num_poly; ++i) {
+          for (int j = 0; j < num_rows; ++j) {
+            for (int k = 0; k < num_cols; ++k) {
+              for (int c = 0; c < num_coeffs; ++c) {
+                buffer.push_back(polynomials[i](j, k)(c));
+              }
+            }
+          }
+        }
+        return py::array_t<double>(shape, buffer.data());
+      },
       [](Class& self, const py::array_t<double>& polynomials) {
         Polynomials cxx_poly;
         if (polynomials.size() > 0) {
@@ -172,20 +225,10 @@ struct Impl {
     using Base::DoClone;
   };
 
-  class PyTrajectory : public py::wrapper<TrajectoryPublic> {
+  class PyTrajectory : public TrajectoryPublic {
    public:
-    using Base = py::wrapper<TrajectoryPublic>;
-    using Base::Base;
-
-    void WarnDeprecatedOverride(std::string_view func_name) const {
-      WarnDeprecated(
-          fmt::format(
-              "Support for overriding {}.{} as a virtual function is "
-              "deprecated. Subclasses should override the do_{} virtual "
-              "function, instead.",
-              NiceTypeName::Get(*this), func_name, func_name),
-          "2025-08-01");
-    }
+    NB_TRAMPOLINE(TrajectoryPublic, 7);
+    using Base = TrajectoryPublic;
 
     // Utility function that takes a Python object which is-a Trajectory and
     // wraps it in a unique_ptr that manages object lifetime when returned back
@@ -213,110 +256,60 @@ struct Impl {
 
     std::unique_ptr<Trajectory<T>> DoClone() const final {
       py::gil_scoped_acquire guard;
+      const Trajectory<T>* const self = this;
       // Trajectory subclasses in Python must implement cloning by defining
-      // either a __deepcopy__ (preferred) or Clone (legacy) method. We'll try
-      // Clone first so it has priority, but if it doesn't exist we'll fall back
-      // to __deepcopy__ and just let the "no such method deepcopy" error
-      // message propagate if both were missing. Because the
-      // PYBIND11_OVERLOAD_INT macro embeds a conditional `return ...;`
-      // statement, we must wrap it in lambda so that we can post-process the
-      // return value in case it does return.
-      bool used_legacy_clone = true;
-      auto make_python_deepcopy = [&]() -> py::object {
-        PYBIND11_OVERLOAD_INT(py::object, Trajectory<T>, "Clone");
-        used_legacy_clone = false;
-        auto deepcopy = py::module_::import("copy").attr("deepcopy");
-        return deepcopy(this);
-      };
-      py::object copied = make_python_deepcopy();
-      if (used_legacy_clone) {
-        WarnDeprecated(
-            fmt::format(
-                "Support for overriding {}.Clone as a virtual function is "
-                "deprecated. Subclasses should implement __deepcopy__, "
-                "instead.",
-                NiceTypeName::Get(*this)),
-            "2025-08-01");
-      }
-      return WrapPyTrajectory(std::move(copied));
+      // a __deepcopy__ method.
+      auto deepcopy = py::module_::import_("copy").attr("deepcopy");
+      return WrapPyTrajectory(deepcopy(self));
     }
 
     MatrixX<T> do_value(const T& t) const final {
-      PYBIND11_OVERLOAD_INT(MatrixX<T>, Trajectory<T>, "do_value", t);
-      WarnDeprecatedOverride("value");
-      PYBIND11_OVERLOAD_INT(MatrixX<T>, Trajectory<T>, "value", t);
-      // If the macro did not return, use default functionality.
-      return Base::do_value(t);
+      PYDRAKE_OVERRIDE_PURE(MatrixX<T>, Trajectory<T>, do_value, t);
     }
 
     bool do_has_derivative() const final {
-      PYBIND11_OVERLOAD_INT(bool, Trajectory<T>, "do_has_derivative");
-      // If the macro did not return, use default functionality.
-      return Base::do_has_derivative();
+      PYDRAKE_OVERRIDE_PURE(bool, Trajectory<T>, do_has_derivative);
     }
 
     MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final {
-      PYBIND11_OVERLOAD_INT(
-          MatrixX<T>, Trajectory<T>, "DoEvalDerivative", t, derivative_order);
-      // If the macro did not return, use default functionality.
-      return Base::DoEvalDerivative(t, derivative_order);
+      PYDRAKE_OVERRIDE_PURE(
+          MatrixX<T>, Trajectory<T>, DoEvalDerivative, t, derivative_order);
     }
 
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
         int derivative_order) const final {
       py::gil_scoped_acquire guard;
-      // Because the PYBIND11_OVERLOAD_INT macro embeds a `return ...;`
-      // statement, we must wrap it in lambda so that we can post-process the
+      const Trajectory<T>* const self = this;
+      // We can't use PYDRAKE_OVERRIDE_PURE because we need to post-process the
       // return value.
-      auto make_python_derivative = [&]() -> py::object {
-        PYBIND11_OVERLOAD_INT(
-            py::object, Trajectory<T>, "DoMakeDerivative", derivative_order);
-        // If the macro did not return, use the base class error message.
-        Base::DoMakeDerivative(derivative_order);
-        DRAKE_UNREACHABLE();
-      };
-      return WrapPyTrajectory(make_python_derivative());
+      py::object result =
+          py::cast(self).attr("DoMakeDerivative")(derivative_order);
+      return WrapPyTrajectory(result);
     }
 
     T do_start_time() const final {
-      PYBIND11_OVERLOAD_INT(T, Trajectory<T>, "do_start_time");
-      WarnDeprecatedOverride("start_time");
-      PYBIND11_OVERLOAD_INT(T, Trajectory<T>, "start_time");
-      // If the macro did not return, use default functionality.
-      return Base::do_start_time();
+      PYDRAKE_OVERRIDE_PURE(T, Trajectory<T>, do_start_time);
     }
 
     T do_end_time() const final {
-      PYBIND11_OVERLOAD_INT(T, Trajectory<T>, "do_end_time");
-      WarnDeprecatedOverride("end_time");
-      PYBIND11_OVERLOAD_INT(T, Trajectory<T>, "end_time");
-      // If the macro did not return, use default functionality.
-      return Base::do_end_time();
+      PYDRAKE_OVERRIDE_PURE(T, Trajectory<T>, do_end_time);
     }
 
     Eigen::Index do_rows() const final {
-      PYBIND11_OVERLOAD_INT(Eigen::Index, Trajectory<T>, "do_rows");
-      WarnDeprecatedOverride("rows");
-      PYBIND11_OVERLOAD_INT(Eigen::Index, Trajectory<T>, "rows");
-      // If the macro did not return, use default functionality.
-      return Base::do_rows();
+      PYDRAKE_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_rows);
     }
 
     Eigen::Index do_cols() const final {
-      PYBIND11_OVERLOAD_INT(Eigen::Index, Trajectory<T>, "do_cols");
-      WarnDeprecatedOverride("cols");
-      PYBIND11_OVERLOAD_INT(Eigen::Index, Trajectory<T>, "cols");
-      // If the macro did not return, use default functionality.
-      return Base::do_cols();
+      PYDRAKE_OVERRIDE_PURE(Eigen::Index, Trajectory<T>, do_cols);
     }
   };
 
-  static void DoScalarDependentDefinitions(py::module m) {
+  static void DoScalarDependentDefinitions(py::module_ m) {
     py::tuple param = GetPyParam<T>();
 
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::trajectories;
-    constexpr auto& doc = pydrake_doc.drake.trajectories;
+    constexpr auto& doc = pydrake_doc_common_trajectories.drake.trajectories;
 
     {
       using Class = Trajectory<T>;
@@ -367,6 +360,18 @@ struct Impl {
               py::arg("time") = symbolic::Variable("t"),
               cls_doc.GetExpression.doc)
           .def("ElevateOrder", &Class::ElevateOrder, cls_doc.ElevateOrder.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            return std::make_tuple(ExtractDoubleOrThrow(self.start_time()),
+                ExtractDoubleOrThrow(self.end_time()), self.control_points());
+          },
+          [](Class* self, std::tuple<double, double, MatrixX<T>> args) {
+            new (self) Class(
+                /* start_time = */ std::get<0>(args),
+                /* end_time = */ std::get<1>(args),
+                /* control_points = */ std::get<2>(args));
+          });
       if constexpr (std::is_same_v<T, double>) {  // #19712
         cls.def("AsLinearInControlPoints", &Class::AsLinearInControlPoints,
             py::arg("derivative_order") = 1,
@@ -386,10 +391,13 @@ struct Impl {
           // std::vector<MatrixX<T>>. We want each column of the numpy array as
           // a MatrixX of control points, but the std::vectors here are
           // associated with the rows in numpy.
-          .def(py::init([](math::BsplineBasis<T> basis,
-                            std::vector<std::vector<T>> control_points) {
-            return Class(basis, MakeEigenFromRowMajorVectors(control_points));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, math::BsplineBasis<T> basis,
+                  std::vector<std::vector<T>> control_points) {
+                new (self)
+                    Class(basis, MakeEigenFromRowMajorVectors(control_points));
+              },
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
@@ -409,15 +417,17 @@ struct Impl {
           .def("CopyBlock", &Class::CopyBlock, py::arg("start_row"),
               py::arg("start_col"), py::arg("block_rows"),
               py::arg("block_cols"), cls_doc.CopyBlock.doc)
-          .def("CopyHead", &Class::CopyHead, py::arg("n"), cls_doc.CopyHead.doc)
-          .def(py::pickle(
-              [](const Class& self) {
-                return std::make_pair(self.basis(), self.control_points());
-              },
-              [](std::pair<math::BsplineBasis<T>, std::vector<MatrixX<T>>>
-                      args) {
-                return Class(std::get<0>(args), std::get<1>(args));
-              }));
+          .def(
+              "CopyHead", &Class::CopyHead, py::arg("n"), cls_doc.CopyHead.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            return std::make_pair(self.basis(), self.control_points());
+          },
+          [](Class* self,
+              std::pair<math::BsplineBasis<T>, std::vector<MatrixX<T>>> args) {
+            new (self) Class(std::get<0>(args), std::get<1>(args));
+          });
       if constexpr (std::is_same_v<T, double>) {  // #19712
         cls.def("AsLinearInControlPoints", &Class::AsLinearInControlPoints,
             py::arg("derivative_order") = 1,
@@ -466,6 +476,28 @@ struct Impl {
               cls_doc.path.doc)
           .def("time_scaling", &Class::time_scaling, py_rvp::reference_internal,
               cls_doc.time_scaling.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            // Explicitly use reference_internal to avoid copying the
+            // abstract Trajectory class. We tie the reference to 'self' to
+            // ensure validity during the pickle operation.
+            return py::make_tuple(
+                py::cast(
+                    self.path(), py_rvp::reference_internal, py::cast(&self)),
+                py::cast(self.time_scaling(), py_rvp::reference_internal,
+                    py::cast(&self)));
+          },
+          [](Class* self, py::tuple t) {
+            // t[0] and t[1] are Python objects. We can cast them back to
+            // C++ references, and the constructor will then clone them
+            // internally.
+            DRAKE_THROW_UNLESS(t.size() == 2);
+            const Trajectory<T>& path = py::cast<const Trajectory<T>&>(t[0]);
+            const Trajectory<T>& time_scaling =
+                py::cast<const Trajectory<T>&>(t[1]);
+            new (self) Class(path, time_scaling);
+          });
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -677,6 +709,28 @@ struct Impl {
               py::arg("replacement"), py::arg("segment_index"),
               py::arg("row_start") = 0, py::arg("col_start") = 0,
               cls_doc.setPolynomialMatrixBlock.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            std::vector<typename Class::PolynomialMatrix>
+                pickled_polynomials_matrix;
+            std::vector<T> pickled_breaks;
+            pickled_polynomials_matrix.reserve(self.get_number_of_segments());
+            pickled_breaks.reserve(self.get_number_of_segments() + 1);
+            pickled_breaks.push_back(self.start_time(0));
+            for (int i = 0; i < self.get_number_of_segments(); ++i) {
+              pickled_polynomials_matrix.push_back(self.getPolynomialMatrix(i));
+              pickled_breaks.push_back(self.end_time(i));
+            }
+            return std::make_pair(pickled_polynomials_matrix, pickled_breaks);
+          },
+          [](Class* self,
+              std::pair<std::vector<typename Class::PolynomialMatrix>,
+                  std::vector<T>>
+                  args) {
+            new (self) Class(/* polynomials_matrix = */ std::get<0>(args),
+                /* breaks = */ std::get<1>(args));
+          });
       DefCopyAndDeepCopy(&cls);
       if constexpr (std::is_same_v<T, double>) {
         BindPiecewisePolynomialSerialize(&cls);
@@ -689,15 +743,17 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, PiecewiseTrajectory<T>>(
           m, "CompositeTrajectory", param, cls_doc.doc);
       cls  // BR
-          .def(py::init([](std::vector<const Trajectory<T>*> py_segments) {
-            std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
-            segments.reserve(py_segments.size());
-            for (const Trajectory<T>* py_segment : py_segments) {
-              segments.emplace_back(py_segment ? py_segment->Clone() : nullptr);
-            }
-            return std::make_unique<CompositeTrajectory<T>>(
-                std::move(segments));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, std::vector<const Trajectory<T>*> py_segments) {
+                std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+                segments.reserve(py_segments.size());
+                for (const Trajectory<T>* py_segment : py_segments) {
+                  segments.emplace_back(
+                      py_segment ? py_segment->Clone() : nullptr);
+                }
+                new (self) Class(std::move(segments));
+              },
               py::arg("segments"), cls_doc.ctor.doc)
           .def("segment", &Class::segment, py::arg("segment_index"),
               py_rvp::reference_internal, cls_doc.segment.doc)
@@ -713,6 +769,25 @@ struct Impl {
                 return CompositeTrajectory<T>::AlignAndConcatenate(segments);
               },
               py::arg("segments"), cls_doc.AlignAndConcatenate.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            py::list segments_pickle;
+            for (int i = 0; i < self.get_number_of_segments(); ++i) {
+              segments_pickle.append(self.segment(i).Clone());
+            }
+            return segments_pickle;
+          },
+          [](Class* self, py::list segments_pickle) {
+            std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+            segments.reserve(segments_pickle.size());
+            for (py::handle segment_pickle : segments_pickle) {
+              const Trajectory<T>& segment =
+                  py::cast<const Trajectory<T>&>(segment_pickle);
+              segments.emplace_back(segment.Clone());
+            }
+            new (self) Class(std::move(segments));
+          });
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -733,6 +808,24 @@ struct Impl {
               cls_doc.time_comparison_tolerance.doc)
           .def("num_times", &Class::num_times, cls_doc.num_times.doc)
           .def("get_times", &Class::get_times, cls_doc.get_times.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            std::vector<MatrixX<T>> values_pickle;
+            for (const auto& time : self.get_times()) {
+              values_pickle.push_back(self.value(time));
+            }
+            return std::make_tuple(self.get_times(), values_pickle,
+                self.time_comparison_tolerance());
+          },
+          [](Class* self,
+              std::tuple<std::vector<T>, std::vector<MatrixX<T>>, double>
+                  args) {
+            const std::vector<T>& times = std::get<0>(args);
+            const std::vector<MatrixX<T>>& values = std::get<1>(args);
+            const double time_comparison_tolerance = std::get<2>(args);
+            new (self) Class(times, values, time_comparison_tolerance);
+          });
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -742,13 +835,8 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, PiecewiseTrajectory<T>>(
           m, "ExponentialPlusPiecewisePolynomial", param, cls_doc.doc);
       cls  // BR
-          .def(
-              py::init(
-                  [](const Eigen::MatrixX<T>& K, const Eigen::MatrixX<T>& A,
-                      const Eigen::MatrixX<T>& alpha,
-                      const PiecewisePolynomial<T>& piecewise_polynomial_part) {
-                    return Class(K, A, alpha, piecewise_polynomial_part);
-                  }),
+          .def(py::init<const Eigen::MatrixX<T>&, const Eigen::MatrixX<T>&,
+                   const Eigen::MatrixX<T>&, const PiecewisePolynomial<T>&>(),
               py::arg("K"), py::arg("A"), py::arg("alpha"),
               py::arg("piecewise_polynomial_part"), cls_doc.ctor.doc)
           .def("shiftRight", &Class::shiftRight, py::arg("offset"),
@@ -797,7 +885,20 @@ struct Impl {
           .def("angular_velocity", &Class::angular_velocity, py::arg("time"),
               cls_doc.angular_velocity.doc)
           .def("angular_acceleration", &Class::angular_acceleration,
-              py::arg("time"), cls_doc.angular_acceleration.doc);
+              py::arg("time"), cls_doc.angular_acceleration.doc)
+          .def("get_quaternion_samples", &Class::get_quaternion_samples,
+              cls_doc.get_quaternion_samples.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            return std::make_pair(
+                self.get_segment_times(), self.get_quaternion_samples());
+          },
+          [](Class* self,
+              std::pair<std::vector<T>, std::vector<Quaternion<T>>> args) {
+            new (self) Class(/* breaks = */ std::get<0>(args),
+                /* quaternions = */ std::get<1>(args));
+          });
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -831,6 +932,18 @@ struct Impl {
               cls_doc.get_position_trajectory.doc)
           .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
               cls_doc.get_orientation_trajectory.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            return std::make_pair(self.get_position_trajectory(),
+                self.get_orientation_trajectory());
+          },
+          [](Class* self,
+              std::pair<PiecewisePolynomial<T>, PiecewiseQuaternionSlerp<T>>
+                  args) {
+            new (self) Class(/* position_trajectory = */ std::get<0>(args),
+                /* orientation_trajectory = */ std::get<1>(args));
+          });
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -844,7 +957,32 @@ struct Impl {
           .def("Append",
               py::overload_cast<const Trajectory<T>&>(&Class::Append),
               /* N.B. We choose to omit any py::arg name here. */
-              cls_doc.Append.doc);
+              cls_doc.Append.doc)
+          .def("rowwise", &Class::rowwise, cls_doc.rowwise.doc)
+          .def(
+              "children",
+              [](const Class& self) {
+                auto range = self.children();
+                // pybind11 doesn't understand ranges, so copy into a vector.
+                return std::vector<const Trajectory<T>*>(
+                    range.begin(), range.end());
+              },
+              py_rvp::reference_internal, cls_doc.children.doc);
+      DefPickle(
+          &cls,
+          [](const Class& self) {
+            auto range = self.children();
+            std::vector<const Trajectory<T>*> children_pickle(
+                range.begin(), range.end());
+            return std::make_pair(self.rowwise(), children_pickle);
+          },
+          [](Class* self,
+              std::pair<bool, std::vector<const Trajectory<T>*>> args) {
+            new (self) Class(/* rowwise = */ std::get<0>(args));
+            for (const auto* trajectory_pickle : std::get<1>(args)) {
+              self->Append(*trajectory_pickle);
+            }
+          });
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -853,12 +991,13 @@ struct Impl {
       auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
           m, "_WrappedTrajectory", param, "(Internal use only)");
       cls  // BR
-          .def(py::init([](const Trajectory<T>& trajectory) {
-            // The keep_alive is responsible for object lifetime, so we'll give
-            // the constructor an unowned pointer.
-            return std::make_unique<Class>(
-                make_unowned_shared_ptr_from_raw(&trajectory));
-          }),
+          .def(
+              "__init__",
+              [](Class* self, const Trajectory<T>& trajectory) {
+                // The keep_alive is responsible for object lifetime, so we'll
+                // give the constructor an unowned pointer.
+                new (self) Class(make_unowned_shared_ptr_from_raw(&trajectory));
+              },
               py::arg("trajectory"),
               // Keep alive, ownership: `return` keeps `trajectory` alive.
               py::keep_alive<0, 1>())
@@ -868,11 +1007,11 @@ struct Impl {
 };
 }  // namespace
 
-PYBIND11_MODULE(trajectories, m) {
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.common");
-  py::module::import("pydrake.polynomial");
-  py::module::import("pydrake.symbolic");
+PYDRAKE_MODULE(trajectories, m) {
+  py::module_::import_("pydrake.autodiffutils");
+  py::module_::import_("pydrake.common");
+  py::module_::import_("pydrake.polynomial");
+  py::module_::import_("pydrake.symbolic");
 
   // Do templated instantiations of system types.
   auto bind_common_scalar_types = [m](auto dummy) {

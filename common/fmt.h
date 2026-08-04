@@ -2,45 +2,25 @@
 
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 #include <fmt/format.h>
 
 // This file contains the essentials of fmt support in Drake, mainly
 // compatibility code to inter-operate with different versions of fmt.
 
-namespace drake {
+// N.B. The spelling of the macro names between doc/Doxyfile_CXX.in and this
+// file should be kept in sync.
 
-#if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
-/** When using fmt >= 8, this is an alias for
-<a href="https://fmt.dev/latest/api.html#compile-time-format-string-checks">fmt::runtime</a>.
-When using fmt < 8, this is a no-op. */
-inline auto fmt_runtime(std::string_view s) {
-  return fmt::runtime(s);
-}
-/** When using fmt >= 8, this is defined to be `const` to indicate that the
-`fmt::formatter<T>::format(...)` function should be object-const.
-When using fmt < 8, the function signature was incorrect (lacking the const),
-so this macro will be empty. */
-#define DRAKE_FMT8_CONST const
-#else  // FMT_VERSION
-inline auto fmt_runtime(std::string_view s) {
-  return s;
-}
-#define DRAKE_FMT8_CONST
-#endif  // FMT_VERSION
+namespace drake {
 
 /** Returns `fmt::to_string(x)` but always with at least one digit after the
 decimal point. Different versions of fmt disagree on whether to omit the
-trailing ".0" when formatting integer-valued floating-point numbers. */
+trailing ".0" when formatting integer-valued floating-point numbers.
+@tparam T must be either `float` or `double`. */
 template <typename T>
-std::string fmt_floating_point(T x) {
-  std::string result = fmt::format("{:#}", x);
-  if (result.back() == '.') {
-    result.push_back('0');
-  }
-  return result;
-}
-
+std::string fmt_floating_point(T x)
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>);
 
 /** Returns `fmt::("{:?}", x)`, i.e, using fmt's "debug string format"; see
 https://fmt.dev docs for the '?' presentation type for details. We provide this
@@ -128,8 +108,8 @@ template arguments, note that macros will fight with commas so you should use
 `typename... Ts` instead of writing them all out.
 
 @param NAMESPACE The namespace that encloses the `TYPE` being formatted. Cannot
-be empty. For nested namespaces, use intemediate colons, e.g., `%drake::common`.
-Do not place _leading_ colons on the `NAMESPACE`.
+be empty. For nested namespaces, use intermediate colons, e.g.,
+`%drake::common`. Do not place _leading_ colons on the `NAMESPACE`.
 
 @param TYPE The class name (or struct name, or enum name, etc.) being formatted.
 Do not place _leading_ double-colons on the `TYPE`. If the type is templated,
@@ -140,7 +120,9 @@ chosen as `typename T`.
 being formatted within the `EXPR` expression.
 
 @param EXPR An expression to `return` from the format_as function; it can
-refer to the given `ARG` name which will be of type `const TYPE& ARG`.
+refer to the given `ARG` name which will be of type `const TYPE& ARG`. The
+evaluated expression can only ever throw exceptions that `std::string`'s
+default allocator might throw (i.e., `std::bad_alloc`).
 
 @note In future versions of fmt (perhaps fmt >= 10) there might be an ADL
 `format_as` customization point with this feature built-in. If so, then we can
@@ -163,7 +145,7 @@ Drake drops support for earlier version of fmt. */
     /* Shadow our base class member function template of the same name. */     \
     template <typename FormatContext>                                          \
     auto format(const typename MyTraits::InputType& x,                         \
-                FormatContext& ctx) DRAKE_FMT8_CONST {                         \
+                FormatContext& ctx) const {                                    \
       /* Call the base class member function after laundering the object   */  \
       /* through the user's provided format_as function. Older versions of */  \
       /* fmt have const-correctness bugs, which we can fix with some good  */  \
@@ -172,6 +154,8 @@ Drake drops support for earlier version of fmt. */
       const Base* const self = this;                                           \
       return const_cast<Base*>(self)->format(MyTraits::Functor::call(x), ctx); \
     }                                                                          \
+    /* Disable re-quoting the return value of the EXPR (e.g., in std::map). */ \
+    void set_debug_format() = delete;                                          \
   };                                                                           \
   } /* namespace drake::internal::formatter_as */                              \
                                                                                \

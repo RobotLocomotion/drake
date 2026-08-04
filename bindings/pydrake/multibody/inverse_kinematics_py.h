@@ -15,7 +15,7 @@ namespace pydrake {
 namespace internal {
 
 /* Defines bindings per inverse_kinematics_py_differential.cc. */
-void DefineIkDifferential(py::module m);
+void DefineIkDifferential(py::module_ m);
 
 // TODO(SeanCurtis-TRI): Make the partition promise true by refactoring
 // inverse_kinematics_py.cc into its own function declared here.

@@ -52,31 +52,72 @@ std::unique_ptr<AbstractValue> SapPdControllerConstraint<T>::DoMakeData(
   // TODO(amcastro-tri): consider exposing the near rigid parameter.
   constexpr double beta = 0.1;
 
-  // Estimate regularization based on near-rigid regime threshold.
-  // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
-  // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
-  // [Castro et al., 2021] for details.
+  // In the near-rigid regime [Castro et al., 2021], the constraint time scale
+  // is limited to Tₙᵣ = β⋅δt, with β < 1,  making it under-resolved. This sets
+  // a lower bound on the regularization parameter: Rₙᵣ = β²/(4π²)⋅wᵢ, where wᵢ
+  // is the Delassus estimate, ensuring controlled numerical conditioning.
   const double beta_factor = beta * beta / (4.0 * M_PI * M_PI);
+  const T R_nr = beta_factor * delassus_estimation[0];
 
-  // Effective gain values are clamped in the near-rigid regime.
-  T Kp_eff = parameters_.Kp();
-  T Kd_eff = parameters_.Kd();
+  // "Effective regularization" R [Castro et al., 2021] for this constraint
+  // based on user specified gains:
+  const T& Kp = parameters_.Kp();
+  const T& Kd = parameters_.Kd();
+  const T R = 1.0 / (dt * (dt * Kp + Kd));
 
-  // "Effective regularization" [Castro et al., 2021] for this constraint.
-  const T R = 1.0 / (dt * (dt * Kp_eff + Kd_eff));
+  // To keep numerical conditioning under control, [Castro et al., 2021] propose
+  // to use Rₙᵣ as a lower bound on R such that constraint time scale is
+  // Tₙᵣ = β⋅δt, i.e. under resolved for β < 1.
+  //
+  // However, we also want to respect the ratio Kd/Kp set by the user. In
+  // particular, if Kp = 0, that means the user wants velocity control only.
+  // Similarly, if Kd = 0, the user wants position control only. From the
+  // expression above for R, we observe we can write the effective
+  // regularization R in two different but equivalent ways:
+  //  R = 1/(δt⋅(δt +   Kd/Kp )⋅Kp),   if Kp > 0
+  //  R = 1/(δt⋅( 1 + δt⋅Kp/Kd)⋅Kd),   if Kd > 0
+  // Keeping the ratio τ = Kd/Kp (or its inverse) constant, and equating R =
+  // Rₙᵣ, we can obtain expressions for the near-rigid regime gains from:
+  //  Rₙᵣ = 1/(δt⋅(δt +   Kd/Kp )⋅Kpₙᵣ),   if Kp > 0
+  //  Rₙᵣ = 1/(δt⋅( 1 + δt⋅Kp/Kd)⋅Kdₙᵣ),   if Kd > 0
+  // And solving for Kpₙᵣ and Kdₙᵣ as:
+  //  1) Kpₙᵣ = 1/(δt⋅(δt +   Kd/Kp )⋅Rₙᵣ),   if Kp > 0
+  //  2) Kdₙᵣ = 1/(δt⋅( 1 + δt⋅Kp/Kd)⋅Rₙᵣ),   if Kd > 0
+  //
+  // It is clear that when Kp = 0 we should use (2) and when Kd = 0 we should
+  // use (1). However, we'd also like to be careful for when either Kp or Kd are
+  // close to zero to avoid round-off errors. We could use a fixed threshold,
+  // but instead we observe we can have a smooth transition between (1) and (2)
+  // by analyzing their dimensionless forms:
+  //  1*) Kp* = δt⋅Kpₙᵣ⋅(δt⋅Rₙᵣ) =  1/(1 + τ*)
+  //  2*) Kd* =    Kdₙᵣ⋅(δt⋅Rₙᵣ) = τ*/(1 + τ*)
+  // with τ* = τ/δt the dimensionless dissipation time constant. In this
+  // dimensionless form, Kp* + Kd* = 1, Kp*/Kd* = τ*, and thus τ* controls the
+  // relative contribution of Kp and Kd to the effective regularization.
+  //
+  // Therefore, to minimize round-off errors, the criterion we use to choose
+  // from (1*) or (2*) is to use the expression that makes Kp* (or Kd*) farthest
+  // from zero. That is, we use (1*) whenever τ* < 1 and (2*) when τ* ≥ 1. This
+  // criterion keeps Kp* (or Kd*) in the range (1/2; 1) at all times.
+  //
+  // Back to the dimensional form, and to avoid division by zero, we obtain our
+  // first gain using (1) (for Kp) when δt⋅Kp > Kd and (2) (for Kd) when
+  // δt⋅Kp ≤ Kd. The second gain is obtained from the condition to respect the
+  // user provided Kp to Kd ratio.
 
-  // "Near-rigid" regularization, [Castro et al., 2021].
-  const T& w = delassus_estimation[0];
-  const T R_near_rigid = beta_factor * w;
-
-  // In the near rigid regime we clamp Kp and Kd so that the effective
-  // regularization is Rnr.
-  if (R < R_near_rigid) {
-    // Per [Castro et al., 2021], the relaxation time tau
-    // for a critically damped constraint equals the time step, tau = dt.
-    // With Kd = tau * Kp, and R = Rₙᵣ, we obtain Rₙᵣ⁻¹ = 2δt² Kₚ.
-    Kp_eff = 1.0 / R_near_rigid / (2.0 * dt * dt);
-    Kd_eff = dt * Kp_eff;
+  // We start from the original gains.
+  T Kp_eff = Kp;
+  T Kd_eff = Kd;
+  if (R < R_nr) {  // If in the near-rigid regime, we limit the effective gains.
+    if (dt * Kp > Kd) {
+      const T tau = Kd / Kp;
+      Kp_eff = 1.0 / (dt * (dt + tau) * R_nr);  // Equation (1).
+      Kd_eff = tau * Kp_eff;                    // We keep ratio tau constant.
+    } else {
+      const T tau_inv = Kp / Kd;
+      Kd_eff = 1.0 / (dt * (1.0 + dt * tau_inv) * R_nr);  // Equation (2).
+      Kp_eff = tau_inv * Kd_eff;  // We keep ratio tau_inv constant.
+    }
   }
 
   // Make data.

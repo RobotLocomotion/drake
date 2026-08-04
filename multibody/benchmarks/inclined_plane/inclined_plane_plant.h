@@ -65,9 +65,9 @@ void AddInclinedPlaneWithBlockToPlant(
     double gravity, double inclined_plane_angle,
     const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
-    const CoulombFriction<double>& coefficient_friction_bodyB,
-    double massB, const Vector3<double>& block_dimensions,
-    bool is_block_with_4Spheres, MultibodyPlant<double>* plant);
+    const CoulombFriction<double>& coefficient_friction_bodyB, double massB,
+    const Vector3<double>& block_dimensions, bool is_block_with_4Spheres,
+    MultibodyPlant<double>* plant);
 
 /// Creates an inclined plane A and a uniform-density sphere (body B) and adds
 /// them to an existing plant.
@@ -79,8 +79,8 @@ void AddInclinedPlaneWithSphereToPlant(
     double gravity, double inclined_plane_angle,
     const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
-    const CoulombFriction<double>& coefficient_friction_bodyB,
-    double massB, double radiusB, MultibodyPlant<double>* plant);
+    const CoulombFriction<double>& coefficient_friction_bodyB, double massB,
+    double radiusB, MultibodyPlant<double>* plant);
 //@}
 
 }  // namespace inclined_plane

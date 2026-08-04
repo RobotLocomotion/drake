@@ -9,8 +9,12 @@ load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
 def github_archive(
         name,
         repository = None,
+        upgrade_type = None,
         commit = None,
         commit_pin = None,
+        tags_pattern = None,
+        exclude_tags_pattern = None,
+        upgrade_cooldown_days = None,
         sha256 = "0" * 64,
         build_file = None,
         patches = None,
@@ -19,8 +23,8 @@ def github_archive(
         mirrors = None,
         upgrade_advice = "",
         **kwargs):
-    """A macro to be called in the WORKSPACE that adds an external from GitHub
-    using a workspace rule.
+    """A macro to be called in the MODULE.bazel that adds an external from
+    GitHub using a workspace rule.
 
     This rule downloads the source code. To download attachments instead, see
     github_release_attachments().
@@ -30,10 +34,25 @@ def github_archive(
             labels when referring to this archive from BUILD files.
         repository: required GitHub repository name in the form
             organization/project.
+        upgrade_type: required whether this dependency should be upgraded by
+            searching for releases ("release"), tags ("tag"), or arbitrary
+            commits to the main branch ("commit").
         commit: required commit is the tag name or git commit sha to download.
         commit_pin: optional boolean, set to True iff the archive should remain
             at the same version indefinitely, eschewing automated upgrades to
             newer versions.
+        tags_pattern: optional string specifies a regex describing the
+            portion of the current tag to lock as invariant (achieved by a
+            parenthetical group). This can be used to pin to a given major or
+            major.minor release series. For example, if version 1.2 of a
+            package is currently in use and
+            `tags_pattern = r"^(\\d+\\.)"` is specified, all newer
+            major versions will be ignored during upgrades, but version 1.3 or
+            1.2.1 would be considered.
+        exclude_tags_pattern: optional string specifies a regex describing the
+            set of tags to ignore when upgrading.
+        upgrade_cooldown_days: optional integer is the required number of days
+            after the latest upstream release/commit before upgrading.
         sha256: required sha256 is the expected SHA-256 checksum of the
             downloaded archive. When unsure, you can omit this argument (or
             comment it out) and then the checksum-mismatch error message will
@@ -100,8 +119,12 @@ def github_archive(
     _github_archive_real(
         name = name,
         repository = repository,
+        upgrade_type = upgrade_type,
         commit = commit,
         commit_pin = commit_pin,
+        tags_pattern = tags_pattern,
+        exclude_tags_pattern = exclude_tags_pattern,
+        upgrade_cooldown_days = upgrade_cooldown_days,
         sha256 = sha256,
         build_file = build_file,
         patches = patches,
@@ -139,10 +162,19 @@ _github_archive_real = repository_rule(
         "repository": attr.string(
             mandatory = True,
         ),
+        "upgrade_type": attr.string(
+            mandatory = True,
+        ),
         "commit": attr.string(
             mandatory = True,
         ),
         "commit_pin": attr.bool(),
+        "tags_pattern": attr.string(),
+        "exclude_tags_pattern": attr.string(),
+        "upgrade_cooldown_days": attr.int(
+            mandatory = False,
+            default = -1,
+        ),
         "sha256": attr.string(
             mandatory = False,
             default = "0" * 64,
@@ -188,11 +220,18 @@ def setup_github_repository(repository_ctx):
     """
 
     # Do the download step first.  (This also writes the metadata.)
+    upgrade_cooldown_days = getattr(repository_ctx.attr, "upgrade_cooldown_days", -1)
+    if upgrade_cooldown_days < 0:
+        upgrade_cooldown_days = None
     github_download_and_extract(
         repository_ctx,
         repository = repository_ctx.attr.repository,
+        upgrade_type = repository_ctx.attr.upgrade_type,
         commit = repository_ctx.attr.commit,
         commit_pin = getattr(repository_ctx.attr, "commit_pin", None),
+        tags_pattern = getattr(repository_ctx.attr, "tags_pattern", None),
+        exclude_tags_pattern = getattr(repository_ctx.attr, "exclude_tags_pattern", None),
+        upgrade_cooldown_days = upgrade_cooldown_days,
         mirrors = repository_ctx.attr.mirrors,
         sha256 = repository_ctx.attr.sha256,
         extra_strip_prefix = repository_ctx.attr.extra_strip_prefix,
@@ -205,39 +244,30 @@ def setup_github_repository(repository_ctx):
     patch_triggers = ["patches", "patch_cmds"]
     if any([getattr(repository_ctx.attr, a, None) for a in patch_triggers]):
         patch(repository_ctx)
+        for patch_label in getattr(repository_ctx.attr, "patches", []):
+            repository_ctx.watch(patch_label)
 
-    # We re-implement Bazel's workspace_and_buildfile utility, so that options
-    # we don't care about (e.g., build_file_content) do not have to be declared
-    # as attrs on our all of our own repository rules.
-    #
-    # Unlike workspace_and_buildfile, we create WORKSPACE.bazel and BUILD.bazel
-    # (rather than WORKSPACE and BUILD) because when the "*.bazel" flavor is
-    # present, it always takes precedence.
-    files_to_be_created = ["WORKSPACE.bazel"]
+    # We create BUILD.bazel (rather than BUILD) because when the "*.bazel"
+    # flavor is present, it always takes precedence.
     if repository_ctx.attr.build_file:
-        files_to_be_created.append("BUILD.bazel")
-    for name in files_to_be_created:
-        if repository_ctx.path(name).exists:
-            repository_ctx.execute(["/bin/mv", name, name + ".ignored"])
-    repository_ctx.file(
-        "WORKSPACE.bazel",
-        "workspace(name = \"{name}\")\n".format(
-            name = repository_ctx.name,
-        ),
-    )
-    if repository_ctx.attr.build_file:
+        if repository_ctx.path("BUILD.bazel").exists:
+            repository_ctx.execute(["/bin/mv", "BUILD.bazel", "BUILD.ignored"])
         repository_ctx.symlink(repository_ctx.attr.build_file, "BUILD.bazel")
     return struct(error = None)
 
 def github_download_and_extract(
         repository_ctx,
         repository,
+        upgrade_type,
         commit,
+        tags_pattern,
+        exclude_tags_pattern,
         mirrors,
         output = "",
         sha256 = "0" * 64,
         extra_strip_prefix = "",
         upgrade_advice = "",
+        upgrade_cooldown_days = None,
         commit_pin = None):
     """Download an archive of the provided GitHub repository and commit to the
     output path and extract it.
@@ -245,7 +275,19 @@ def github_download_and_extract(
     Args:
         repository_ctx: context of a Bazel repository rule.
         repository: GitHub repository name in the form organization/project.
+        upgrade_type: whether this dependency should be upgraded by searching
+            for releases ("release"), tags ("tag"), or arbitrary commits to the
+            main branch ("commit").
         commit: git revision for which the archive should be downloaded.
+        tags_pattern: regex describing the portion of the current tag
+            to lock when upgrading (achieved by a parenthetical group).
+            Used by //tools/workspace:new_release.
+        exclude_tags_pattern: regex describing tags to ignore when performing
+            upgrades.
+            Used by //tools/workspace:new_release.
+        upgrade_cooldown_days: integer describing the required number of days
+            after the latest upstream release/commit before upgrading.
+            Used by //tools/workspace:new_release.
         mirrors: dictionary of mirrors, see mirrors.bzl in this directory for
             an example.
         output: path to the directory where the archive will be unpacked,
@@ -282,12 +324,30 @@ def github_download_and_extract(
         [line.strip() for line in upgrade_advice.strip().split("\n")],
     ).replace("\\\n", "\\\n    ")
 
+    upgrade_types = ["commit", "release", "tag"]
+    if upgrade_type not in upgrade_types:
+        fail("got invalid upgrade_type '{}'; must be one of: {}".format(
+            upgrade_type,
+            ", ".join(upgrade_types),
+        ))
+
+    # TODO(tyler-yankee): We should support tags_pattern for releases,
+    # too.
+    if upgrade_type != "tag" and tags_pattern:
+        fail("tags_pattern can only be used for tags")
+    if upgrade_type not in ["release", "tag"] and exclude_tags_pattern:
+        fail("exclude_tags_pattern can only be used for releases or tags")
+
     # Create a summary file for Drake maintainers.
     generate_repository_metadata(
         repository_ctx,
         repository_rule_type = "github",
         repository = repository,
+        upgrade_type = upgrade_type,
+        upgrade_cooldown_days = upgrade_cooldown_days,
         commit = commit,
+        tags_pattern = tags_pattern,
+        exclude_tags_pattern = exclude_tags_pattern,
         version_pin = commit_pin,
         sha256 = sha256,
         urls = urls,
@@ -576,6 +636,7 @@ def setup_github_release_attachments(repository_ctx):
         repository_ctx,
         repository_rule_type = "github_release_attachments",
         repository = repository,
+        upgrade_type = "release",
         commit = commit,
         version_pin = commit_pin,
         attachments = attachments,

@@ -1,11 +1,8 @@
+load("@drake_mypy//:requirements.bzl", mypy_requirement = "requirement")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//bindings/pydrake:stubgen.bzl", "generate_python_stubs")
 load("//tools/install:install.bzl", "install")
-load(
-    "//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
-)
+load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
@@ -14,9 +11,7 @@ load(
 )
 load(
     "//tools/skylark:pybind.bzl",
-    "drake_pybind_cc_googletest",
     "drake_pybind_library",
-    "generate_pybind_documentation_header",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
@@ -29,6 +24,13 @@ package(default_visibility = [
 exports_files([
     ".clang-format",
 ])
+
+filegroup(
+    name = "doxygen_input",
+    srcs = ["pydrake_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
@@ -53,37 +55,27 @@ drake_py_library(
     ],
 )
 
-generate_pybind_documentation_header(
-    name = "generate_pybind_documentation_header",
-    out = "documentation_pybind.h",
-    # Anonymous namespace and deduction guides both confuse pybind.
-    exclude_hdr_patterns = ["drake/common/overloaded.h"],
-    root_name = "pydrake_doc",
-    targets = [
-        "//tools/install/libdrake:drake_headers",
-    ],
-)
-
-drake_cc_library(
-    name = "documentation_pybind",
-    hdrs = ["documentation_pybind.h"],
-    declare_installed_headers = 0,
-    tags = ["nolint"],
-)
-
 drake_cc_library(
     name = "pydrake_pybind",
     hdrs = ["pydrake_pybind.h"],
     declare_installed_headers = 0,
+    defines = select({
+        "//tools/workspace/nanobind:enabled": [
+            "PYDRAKE_USE_NANOBIND",
+        ],
+        "//conditions:default": [
+            "PYDRAKE_USE_PYBIND11",
+        ],
+    }),
     visibility = ["//visibility:public"],
-)
-
-drake_cc_library(
-    name = "test_util_pybind",
-    testonly = 1,
-    hdrs = ["test/test_util_pybind.h"],
-    declare_installed_headers = 0,
-    visibility = ["//visibility:public"],
+    deps = select({
+        "//tools/workspace/nanobind:enabled": [
+            "@drake//tools/workspace/nanobind",
+        ],
+        "//conditions:default": [
+            "@drake//tools/workspace/pybind11",
+        ],
+    }),
 )
 
 drake_cc_library(
@@ -107,7 +99,7 @@ drake_py_library(
 drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
-        ":documentation_pybind",
+        "//bindings/generated_docstrings:lcm",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
     ],
@@ -129,7 +121,7 @@ drake_cc_library(
 drake_pybind_library(
     name = "perception_py",
     cc_deps = [
-        ":documentation_pybind",
+        "//bindings/generated_docstrings:perception",
         "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["perception_py.cc"],
@@ -151,8 +143,8 @@ drake_cc_library(
 drake_pybind_library(
     name = "polynomial_py",
     cc_deps = [
-        ":documentation_pybind",
         ":polynomial_types_pybind",
+        "//bindings/generated_docstrings:common",
         "//bindings/pydrake/common:default_scalars_pybind",
     ],
     cc_srcs = ["polynomial_py.cc"],
@@ -168,7 +160,6 @@ drake_cc_library(
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = [
-        ":documentation_pybind",
         "//:drake_shared_library",
     ],
 )
@@ -176,8 +167,8 @@ drake_cc_library(
 drake_pybind_library(
     name = "trajectories_py",
     cc_deps = [
-        ":documentation_pybind",
         ":polynomial_types_pybind",
+        "//bindings/generated_docstrings:common_trajectories",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
     ],
@@ -258,28 +249,30 @@ drake_py_library(
     ],
 )
 
-drake_cc_googletest(
-    name = "documentation_pybind_test",
-    deps = [
-        ":documentation_pybind",
-    ],
+drake_pybind_library(
+    name = "pydrake_pybind_test_util_py",
+    testonly = True,
+    add_install = False,
+    cc_srcs = ["test/pydrake_pybind_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
 )
 
 # N.B. Due to dependency on `common` (#7912), this is not a fully isolated /
 # decoupled test.
-drake_pybind_cc_googletest(
+drake_py_unittest(
     name = "pydrake_pybind_test",
-    cc_deps = [":test_util_pybind"],
-    py_deps = [":module_py"],
-    py_srcs = ["test/_pydrake_pybind_test_extra.py"],
+    deps = [
+        ":module_py",
+        ":pydrake_pybind_test_util_py",
+    ],
 )
 
 drake_py_binary(
     name = "print_symbol_collisions",
     testonly = 1,
     srcs = ["test/print_symbol_collisions.py"],
-    add_test_rule = 1,
     deps = [":all_py"],
+    add_test_rule = True,
 )
 
 drake_py_unittest(
@@ -305,10 +298,7 @@ drake_pybind_library(
     name = "odr_test_module_py",
     testonly = 1,
     add_install = False,
-    cc_deps = [
-        ":documentation_pybind",
-        ":symbolic_types_pybind",
-    ],
+    cc_deps = [":symbolic_types_pybind"],
     cc_so_name = "test/odr_test_module",
     cc_srcs = ["test/odr_test_module_py.cc"],
     package_info = PACKAGE_INFO,
@@ -366,6 +356,7 @@ drake_py_unittest(
     deps = [
         ":polynomial_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 
@@ -376,7 +367,7 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -392,6 +383,7 @@ drake_py_unittest(
         "//:.clang-format",
     ],
     tags = ["lint"],
+    test_alt_binder = False,
 )
 
 drake_py_unittest(
@@ -413,8 +405,8 @@ drake_py_binary(
     srcs = ["stubgen.py"],
     deps = [
         ":all_py",
-        "@mypy_internal//:mypy",
         "@stable_baselines3_internal//:stable_baselines3",
+        mypy_requirement("mypy"),
     ],
 )
 
@@ -437,6 +429,8 @@ PYI_FILES = [
     "pydrake/multibody/benchmarks/__init__.pyi",
     "pydrake/multibody/benchmarks/acrobot.pyi",
     "pydrake/multibody/benchmarks/all.pyi",
+    "pydrake/multibody/cenic.pyi",
+    "pydrake/multibody/contact_solvers.pyi",
     "pydrake/multibody/fem.pyi",
     "pydrake/multibody/inverse_kinematics.pyi",
     "pydrake/multibody/math.pyi",
@@ -447,7 +441,8 @@ PYI_FILES = [
     "pydrake/multibody/rational.pyi",
     "pydrake/multibody/tree.pyi",
     "pydrake/perception.pyi",
-    "pydrake/planning.pyi",
+    "pydrake/planning/__init__.pyi",
+    "pydrake/planning/experimental.pyi",
     "pydrake/polynomial.pyi",
     "pydrake/solvers.pyi",
     "pydrake/symbolic.pyi",
@@ -494,16 +489,16 @@ drake_py_unittest(
         ":pydrake_typed",
     ],
     deps = [
-        "@mypy_internal//:mypy",
         "@rules_python//python/runfiles",
+        mypy_requirement("mypy"),
     ],
 )
 
 install(
     name = "install",
     install_tests = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
+        "test/all_install_test.py",
+        "test/common_install_test.py",
     ],
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
@@ -519,12 +514,17 @@ install(
         "//bindings/pydrake/autodiffutils:install",
         "//bindings/pydrake/math:install",
         "//bindings/pydrake/symbolic:install",
-    ],
+    ] + select({
+        # Install the binder library as part of the pydrake install, not the
+        # workspace install, so that it gets installed if and only if we're
+        # installing pydrake. (Users can opt-out of Python installation.)
+        "//tools/workspace/nanobind:enabled": [
+            "//tools/workspace/nanobind:install",
+        ],
+        "//conditions:default": [
+            "@pybind11//:install",
+        ],
+    }),
 )
 
-add_lint_tests_pydrake(
-    python_lint_extra_srcs = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
-    ],
-)
+add_lint_tests_pydrake()

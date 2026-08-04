@@ -113,7 +113,7 @@ Eigen::VectorXd KukaTest::CheckNonlinearIK(
   for (const auto& q_guess : q_guesses) {
     const auto result = solvers::Solve(ik.prog(), q_guess);
     if (!result.is_success()) {
-      drake::log()->info("q_guess: {}\n", fmt_eigen(q_guess.transpose()));
+      drake::log()->info("q_guess: {}\n", fmt_eigen(q_guess));
       drake::log()->info("Nonlinear IK use solver {}",
                          result.get_solver_id().name());
       drake::log()->info("Solution result is {}", result.get_solution_result());

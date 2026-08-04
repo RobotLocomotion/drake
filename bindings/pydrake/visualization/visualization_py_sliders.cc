@@ -1,5 +1,8 @@
+#include <string>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/visualization.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/visualization/visualization_py.h"
 #include "drake/visualization/meshcat_pose_sliders.h"
 
@@ -9,12 +12,12 @@ namespace internal {
 namespace {
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::visualization;
-  constexpr auto& doc = pydrake_doc.drake.visualization;
+  constexpr auto& doc = pydrake_doc_visualization.drake.visualization;
 
   // MeshcatPoseSliders
   {
@@ -57,7 +60,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
 }  // namespace
 
-void DefineVisualizationSliders(py::module m) {
+void DefineVisualizationSliders(py::module_ m) {
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});
 }

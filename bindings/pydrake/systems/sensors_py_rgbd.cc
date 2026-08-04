@@ -1,6 +1,8 @@
+#include <memory>
+
+#include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
@@ -16,15 +18,15 @@ using geometry::render::DepthRenderCamera;
 using systems::Diagram;
 using systems::LeafSystem;
 
-void DefineSensorsRgbd(py::module m) {
+void DefineSensorsRgbd(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   auto def_camera_ports = [](auto* ppy_class, auto cls_doc) {
     auto& py_class = *ppy_class;
     using PyClass = std::decay_t<decltype(py_class)>;
-    using Class = typename PyClass::type;
+    using Class = typename PyClass::Type;
     py_class
         .def("query_object_input_port", &Class::query_object_input_port,
             py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
@@ -46,7 +48,7 @@ void DefineSensorsRgbd(py::module m) {
   {
     using Class = CameraInfo;
     constexpr auto& cls_doc = doc.CameraInfo;
-    py::class_<Class> cls(m, "CameraInfo", cls_doc.doc);
+    class_<Class> cls(m, "CameraInfo", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, double>(), py::arg("width"), py::arg("height"),
             py::arg("fov_y"), cls_doc.ctor.doc_3args_width_height_fov_y)
@@ -67,21 +69,22 @@ void DefineSensorsRgbd(py::module m) {
         .def("center_x", &Class::center_x, cls_doc.center_x.doc)
         .def("center_y", &Class::center_y, cls_doc.center_y.doc)
         .def("intrinsic_matrix", &Class::intrinsic_matrix,
-            cls_doc.intrinsic_matrix.doc)
-        .def(py::pickle(
-            [](const Class& self) {
-              return py::make_tuple(self.width(), self.height(), self.focal_x(),
-                  self.focal_y(), self.center_x(), self.center_y());
-            },
-            [](py::tuple t) {
-              DRAKE_DEMAND(t.size() == 6);
-              return Class(t[0].cast<int>(), t[1].cast<int>(),
-                  t[2].cast<double>(), t[3].cast<double>(), t[4].cast<double>(),
-                  t[5].cast<double>());
-            }));
+            cls_doc.intrinsic_matrix.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return py::make_tuple(self.width(), self.height(), self.focal_x(),
+              self.focal_y(), self.center_x(), self.center_y());
+        },
+        [](Class* self, py::tuple t) {
+          DRAKE_DEMAND(t.size() == 6);
+          new (self) Class(py::cast<int>(t[0]), py::cast<int>(t[1]),
+              py::cast<double>(t[2]), py::cast<double>(t[3]),
+              py::cast<double>(t[4]), py::cast<double>(t[5]));
+        });
   }
 
-  py::class_<RgbdSensor, LeafSystem<double>> rgbd_sensor(
+  class_<RgbdSensor, LeafSystem<double>> rgbd_sensor(
       m, "RgbdSensor", doc.RgbdSensor.doc);
 
   rgbd_sensor
@@ -139,39 +142,40 @@ void DefineSensorsRgbd(py::module m) {
           doc.RgbdSensor.SetParentFrameId.doc);
   def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
 
-  py::class_<RgbdSensorDiscrete, Diagram<double>> rgbd_camera_discrete(
-      m, "RgbdSensorDiscrete", doc.RgbdSensorDiscrete.doc);
-  rgbd_camera_discrete
-      .def(py::init(
-               [](RgbdSensor& sensor, double period, bool render_label_image) {
-                 // The C++ constructor doesn't offer a bare-pointer overload,
-                 // only shared_ptr. Because object lifetime is already handled
-                 // by the ref_cycle annotation below (as required for all
-                 // subclasses of Diagram), we can pass the `sensor` as an
-                 // unowned shared_ptr.
-                 return std::make_unique<RgbdSensorDiscrete>(
-                     make_unowned_shared_ptr_from_raw(&sensor), period,
-                     render_label_image);
-               }),
-          py::arg("sensor"),
-          py::arg("period") = double{RgbdSensorDiscrete::kDefaultPeriod},
-          py::arg("render_label_image") = true,
-          // `self` and `sensor` form a cycle as part of the Diagram.
-          internal::ref_cycle<1, 2>(), doc.RgbdSensorDiscrete.ctor.doc)
-      // N.B. Since `camera` is already connected, we do not need additional
-      // `keep_alive`s.
-      .def("sensor", &RgbdSensorDiscrete::sensor, py_rvp::reference_internal,
-          doc.RgbdSensorDiscrete.sensor.doc)
-      .def("period", &RgbdSensorDiscrete::period,
-          doc.RgbdSensorDiscrete.period.doc);
-  def_camera_ports(&rgbd_camera_discrete, doc.RgbdSensorDiscrete);
-  rgbd_camera_discrete.attr("kDefaultPeriod") =
-      double{RgbdSensorDiscrete::kDefaultPeriod};
+  {
+    using Class = RgbdSensorDiscrete;
+    constexpr auto& cls_doc = doc.RgbdSensorDiscrete;
+    class_<Class, Diagram<double>> cls(m, "RgbdSensorDiscrete", cls_doc.doc);
+    cls  // BR
+        .def(
+            "__init__",
+            [](Class* self, RgbdSensor& sensor, double period,
+                bool render_label_image) {
+              // The C++ constructor doesn't offer a bare-pointer overload, only
+              // shared_ptr. Because object lifetime is already handled by the
+              // ref_cycle annotation below (as required for all subclasses of
+              // Diagram), we can pass the `sensor` as an unowned shared_ptr.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&sensor),
+                  period, render_label_image);
+            },
+            py::arg("sensor"),
+            py::arg("period") = double{Class::kDefaultPeriod},
+            py::arg("render_label_image") = true,
+            // `self` and `sensor` form a cycle as part of the Diagram.
+            internal::ref_cycle<1, 2>(), cls_doc.ctor.doc)
+        // N.B. Since `camera` is already connected, we do not need additional
+        // `keep_alive`s.
+        .def("sensor", &Class::sensor, py_rvp::reference_internal,
+            cls_doc.sensor.doc)
+        .def("period", &Class::period, cls_doc.period.doc);
+    def_camera_ports(&cls, cls_doc);
+    cls.attr("kDefaultPeriod") = double{Class::kDefaultPeriod};
+  }
 
   {
     using Class = RgbdSensorAsync;
     constexpr auto& cls_doc = doc.RgbdSensorAsync;
-    py::class_<Class, LeafSystem<double>> rgbd_sensor_async(
+    class_<Class, LeafSystem<double>> rgbd_sensor_async(
         m, "RgbdSensorAsync", cls_doc.doc);
     rgbd_sensor_async
         .def(py::init<const geometry::SceneGraph<double>*, geometry::FrameId,
@@ -235,23 +239,6 @@ void DefineSensorsRgbd(py::module m) {
             cls_doc.body_pose_in_world_output_port.doc)
         .def("image_time_output_port", &Class::image_time_output_port,
             py_rvp::reference_internal, cls_doc.image_time_output_port.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    rgbd_sensor_async  // BR
-        .def("parent_id",
-            WrapDeprecated(cls_doc.parent_id.doc_deprecated, &Class::parent_id),
-            cls_doc.parent_id.doc_deprecated)
-        .def("X_PB", WrapDeprecated(cls_doc.X_PB.doc_deprecated, &Class::X_PB),
-            cls_doc.X_PB.doc_deprecated)
-        .def("color_camera",
-            WrapDeprecated(
-                cls_doc.color_camera.doc_deprecated, &Class::color_camera),
-            cls_doc.color_camera.doc_deprecated)
-        .def("depth_camera",
-            WrapDeprecated(
-                cls_doc.depth_camera.doc_deprecated, &Class::depth_camera),
-            cls_doc.depth_camera.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 }
 

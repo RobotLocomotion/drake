@@ -1,12 +1,16 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
-#include <functional>
+#include <algorithm>
 #include <limits>
 #include <memory>
+#include <numbers>
 #include <regex>
 #include <set>
+#include <string>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -16,7 +20,6 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
-#include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
@@ -43,12 +46,12 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 
@@ -111,10 +114,11 @@ class MultibodyPlantTester {
   }
 
   template <typename T>
-  static void AddJointActuationForces(const MultibodyPlant<T>& plant,
-                                      const systems::Context<T>& context,
-                                      VectorX<T>* forces) {
-    plant.AddJointActuationForces(context, forces);
+  static void AddJointActuationForcesContinuous(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      VectorX<T>* forces) {
+    DRAKE_DEMAND(!plant.is_discrete());
+    plant.AddJointActuationForcesContinuous(context, forces);
   }
 };
 
@@ -123,8 +127,7 @@ namespace {
 // Verifies that fresh-constructed plants are using the default contact surface
 // representation.
 GTEST_TEST(MultibodyPlant, GetDefaultContactSurfaceRepresentation) {
-  std::array<double, 2> time_steps{0.0, 0.1};
-  for (const auto& time_step : time_steps) {
+  for (const double time_step : {0.0, 0.1}) {
     MultibodyPlant<double> plant{time_step};
     EXPECT_EQ(plant.get_contact_surface_representation(),
               MultibodyPlant<double>::GetDefaultContactSurfaceRepresentation(
@@ -187,6 +190,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_positions(), 3);
   EXPECT_EQ(plant->num_velocities(), 3);
   EXPECT_EQ(plant->num_multibody_states(), 6);
+  EXPECT_EQ(plant->num_misc_continuous_states(), 0);
 
   // Acrobot is in the default model instance.
   EXPECT_EQ(plant->num_actuators(default_model_instance()), 1);
@@ -380,7 +384,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
-  // type throws an exception. We need another joint type to do so.
+  //  type throws an exception. We need another joint type to do so.
 
   // Get frame indices by model_instance
   const std::vector<FrameIndex> acrobot_frame_indices =
@@ -593,11 +597,12 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   EXPECT_EQ(plant.num_actuated_dofs(cylinder_instance), 0);
 
   // Verify which bodies are free and modeled with quaternions.
-  EXPECT_FALSE(plant.GetBodyByName("Link1").is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("Link1").is_floating_base_body());
   EXPECT_FALSE(plant.GetBodyByName("Link1").has_quaternion_dofs());
-  EXPECT_FALSE(plant.GetBodyByName("Link2").is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("Link2").is_floating_base_body());
   EXPECT_FALSE(plant.GetBodyByName("Link2").has_quaternion_dofs());
-  EXPECT_TRUE(plant.GetBodyByName("uniformSolidCylinder").is_floating());
+  EXPECT_TRUE(
+      plant.GetBodyByName("uniformSolidCylinder").is_floating_base_body());
   EXPECT_TRUE(
       plant.GetBodyByName("uniformSolidCylinder").has_quaternion_dofs());
 
@@ -1234,9 +1239,9 @@ TEST_F(AcrobotPlantTests, SetPositionAndVelocitiesWithNonFinites) {
   }
 }
 
-GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
-  // We cannot use Acrobot for testing `SetDefaultFreeBodyPose` since it has no
-  // free bodies.
+GTEST_TEST(MultibodyPlantTest, SetDefaultFloatingBaseBodyPose) {
+  // We cannot use Acrobot for testing `SetDefaultFloatingBaseBodyPose` since it
+  // has no free bodies.
   MultibodyPlant<double> plant(0.0);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const auto& body =
@@ -1245,19 +1250,21 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
       plant.AddRigidBody("welded body", SpatialInertia<double>::MakeUnitary());
   plant.WeldFrames(plant.world_body().body_frame(), welded_body.body_frame());
   // Default pose is identity when unset.
-  EXPECT_TRUE(CompareMatrices(plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
-                              RigidTransformd::Identity().GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(plant.GetDefaultFloatingBaseBodyPose(body).GetAsMatrix4(),
+                      RigidTransformd::Identity().GetAsMatrix4()));
 
   // Ok to set default pose for any body pre-finalize.
   const RigidTransformd X_WB(RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
-  EXPECT_NO_THROW(plant.SetDefaultFreeBodyPose(body, X_WB));
-  EXPECT_NO_THROW(plant.SetDefaultFreeBodyPose(welded_body, X_WB));
+  EXPECT_NO_THROW(plant.SetDefaultFloatingBaseBodyPose(body, X_WB));
+  EXPECT_NO_THROW(plant.SetDefaultFloatingBaseBodyPose(welded_body, X_WB));
   const double kTolerance = 4.0 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
-                              X_WB.GetAsMatrix4(), kTolerance));
   EXPECT_TRUE(
-      CompareMatrices(plant.GetDefaultFreeBodyPose(welded_body).GetAsMatrix4(),
+      CompareMatrices(plant.GetDefaultFloatingBaseBodyPose(body).GetAsMatrix4(),
                       X_WB.GetAsMatrix4(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(
+      plant.GetDefaultFloatingBaseBodyPose(welded_body).GetAsMatrix4(),
+      X_WB.GetAsMatrix4(), kTolerance));
 
   plant.Finalize();
   EXPECT_GT(plant.num_positions(), 0);
@@ -1265,7 +1272,7 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   EXPECT_TRUE(CompareMatrices(body.EvalPoseInWorld(*context).GetAsMatrix4(),
                               X_WB.GetAsMatrix4(), kTolerance));
   // The pose of a non-free body isn't affected by the call to
-  // SetDefaultFreeBodyPose() even though it's allowed.
+  // SetDefaultFloatingBaseBodyPose() even though it's allowed.
   EXPECT_TRUE(
       CompareMatrices(welded_body.EvalPoseInWorld(*context).GetAsMatrix4(),
                       RigidTransformd::Identity().GetAsMatrix4(), kTolerance));
@@ -1599,8 +1606,8 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
         auto pair2 = std::make_pair(id2, id1);
         if (!expected_pairs.contains(pair1) &&
             !expected_pairs.contains(pair2)) {
-          GTEST_FAIL() << "The pair " << id1 << ", " << id2
-                       << " is not in the expected set";
+          GTEST_FAIL() << fmt::format(
+              "The pair {}, {} is not in the expected set", id1, id2);
         }
       };
       for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
@@ -1820,10 +1827,13 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
   plant.Finalize();
   EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints1), expected_bodies1);
 
-  // Test throw condition: weld joint.
+  // Adding a weld joint doesn't change the result; still the same bodies
+  // based on the non-weld joints.
   const std::vector<JointIndex> joints2{shoulder, elbow};
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joints2),
-                              ".*joint with index.*welded.");
+  EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints2), expected_bodies1);
+
+  // Passing only a weld joint produces no bodies.
+  EXPECT_TRUE(plant.GetBodiesKinematicallyAffectedBy({elbow}).empty());
 
   // Test throw condition: unregistered joint.
   std::vector<JointIndex> joint100{JointIndex(100)};
@@ -1846,14 +1856,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
   // rotate 90°. Just need to avoid roundoff troubles.
   constexpr double kTolerance = 16 * std::numeric_limits<double>::epsilon();
   const double g = UniformGravityFieldElement<double>::kDefaultStrength;
-
-  // We need a plant to start with but we aren't using anything that depends
-  // on this one specifically. We'll add some bodies and joints that reflect
-  // the conditions we want to test.
-  const std::string sdf_url =
-      "package://drake/multibody/plant/test/split_pendulum.sdf";
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelsFromUrl(sdf_url);
 
   // Coincident frames test: We expect the sign of the reaction force to account
   // for the possibility that a Drake user may create a "weird" weld joint with
@@ -1979,26 +1982,280 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
       kTolerance));
 }
 
-GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
-  // We need a plant to start with but we aren't using anything that depends
-  // on this one specifically.
-  const std::string sdf_url =
-      "package://drake/multibody/plant/test/split_pendulum.sdf";
+GTEST_TEST(MultibodyPlantTest, ReversedRevoluteJoint) {
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelsFromUrl(sdf_url);
 
-  // Add a body with parent=reverse_body, child=world. This is only allowed
-  // for Weld joints currently.
+  // Add a normal body which we'll use as the child of a revolute joint.
+  const RigidBody<double>& body = plant.AddRigidBody(
+      "body", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const RevoluteJoint<double>& revolute = plant.AddJoint<RevoluteJoint>(
+      "revolute", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
+
+  // Add a body with parent=reverse_body, child=world.
   const RigidBody<double>& reverse_body =
       plant.AddRigidBody("reverse_body", default_model_instance(),
                          SpatialInertia<double>::MakeUnitary());
-  plant.AddJoint<RevoluteJoint>("reverse_revolute", reverse_body, {},
-                                plant.world_body(), {}, Vector3d(1, 0, 0));
+  const RevoluteJoint<double>& reverse_revolute =
+      plant.AddJoint<RevoluteJoint>("reverse_revolute", reverse_body, {},
+                                    plant.world_body(), {}, Vector3d(1, 1, 1));
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+
+  for (int i = 0; i < 3; ++i) {
+    const double third = std::numbers::inv_sqrt3_v<double>;
+    EXPECT_NEAR(revolute.revolute_axis()[i], third, kTolerance);
+    EXPECT_NEAR(reverse_revolute.revolute_axis()[i], third, kTolerance);
+  }
+
+  // The forward and reverse joints should produce the same motion, but the
+  // meaning of the generalized coordinate q (angle) is reversed.
+  revolute.set_angle(&*context, 0.125);
+  EXPECT_EQ(revolute.get_angle(*context), 0.125);
+  reverse_revolute.set_angle(&*context, -0.125);
+  EXPECT_EQ(reverse_revolute.get_angle(*context), -0.125);
+
+  const RigidTransformd pose = body.EvalPoseInWorld(*context);
+  const RigidTransformd rpose = reverse_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rpose.GetAsMatrix34(), pose.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Now check the velocities.
+  revolute.set_angular_rate(&*context, 1.5);
+  EXPECT_EQ(revolute.get_angular_rate(*context), 1.5);
+  reverse_revolute.set_angular_rate(&*context, -1.5);
+  EXPECT_EQ(reverse_revolute.get_angular_rate(*context), -1.5);
+  const SpatialVelocity<double>& velocity =
+      body.EvalSpatialVelocityInWorld(*context);
+  const SpatialVelocity<double>& rvelocity =
+      reverse_body.EvalSpatialVelocityInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rvelocity.get_coeffs(), velocity.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
+GTEST_TEST(MultibodyPlantTest, ReversedPrismaticJoint) {
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  MultibodyPlant<double> plant(0.0);
+
+  // Add a normal body which we'll use as the child of a prismatic joint.
+  const RigidBody<double>& body = plant.AddRigidBody(
+      "body", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const PrismaticJoint<double>& prismatic = plant.AddJoint<PrismaticJoint>(
+      "prismatic", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
+
+  // Add a body ("reverse_body") and a joint ("reverse_prismatic") with
+  // parent=reverse_body, child=world.
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  const PrismaticJoint<double>& reverse_prismatic =
+      plant.AddJoint<PrismaticJoint>("reverse_prismatic", reverse_body, {},
+                                     plant.world_body(), {}, Vector3d(1, 1, 1));
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+
+  for (int i = 0; i < 3; ++i) {
+    const double third = std::numbers::inv_sqrt3_v<double>;
+    EXPECT_NEAR(prismatic.translation_axis()[i], third, kTolerance);
+    EXPECT_NEAR(reverse_prismatic.translation_axis()[i], third, kTolerance);
+  }
+
+  // The forward and reverse joints should produce the same motion, but the
+  // meaning of the generalized coordinate q (translation) is reversed.
+  prismatic.set_translation(&*context, 0.125);
+  EXPECT_EQ(prismatic.get_translation(*context), 0.125);
+  reverse_prismatic.set_translation(&*context, -0.125);
+  EXPECT_EQ(reverse_prismatic.get_translation(*context), -0.125);
+
+  const RigidTransformd pose = body.EvalPoseInWorld(*context);
+  const RigidTransformd rpose = reverse_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rpose.GetAsMatrix34(), pose.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Now check the velocities.
+  prismatic.set_translation_rate(&*context, 1.5);
+  EXPECT_EQ(prismatic.get_translation_rate(*context), 1.5);
+  reverse_prismatic.set_translation_rate(&*context, -1.5);
+  EXPECT_EQ(reverse_prismatic.get_translation_rate(*context), -1.5);
+  const SpatialVelocity<double>& velocity =
+      body.EvalSpatialVelocityInWorld(*context);
+  const SpatialVelocity<double>& rvelocity =
+      reverse_body.EvalSpatialVelocityInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rvelocity.get_coeffs(), velocity.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
+GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
+  MultibodyPlant<double> plant(0.0);
+
+  // Add a body ("reverse_body") and a joint ("reverse_universal") with
+  // parent=reverse_body, child=world. Reversal is allowed for a limited set of
+  // joints, and UniversalJoint is not currently among them.
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  plant.AddJoint<UniversalJoint>("reverse_universal", reverse_body, {},
+                                 plant.world_body(), {});
+
+  // Check that the message (a) identifies Finalize() as the failed operation,
+  // (b) complains about the non-reversible joint, (c) lists the reversible
+  // ones (in alphabetical order), and (e) provides instructions about what to
+  // do to get around the problem.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.Finalize(),
+      ".*Finalize.*parent/child ordering.*universal joint reverse_universal"
+      ".*reversed.*does not support.*universal.*can be reversed.*"
+      ".*prismatic.*revolute.*weld.*Reverse.*ordering.*");
+}
+
+// This test verifies that these two issues are fixed:
+//  - #9939 (duplicate welds give a bad error message)
+//  - #17429 (can't weld anything but base link)
+//
+// Issue #17429 complained that welding a non-base body to World failed.
+// This is a model of the system shown in that issue:
+//     base -p-> waist -r-> waist1 -r-> waist2 -r-> torso -r-> arm
+//       legend: p=prismatic, r=revolute, parent -> child
+// When "base" is welded to World, the parent->child directions are preserved
+// as inboard->outboard directions in the tree. But if we weld "waist" or
+// "torso" to World then some of the tree's mobilizers have to be reversed from
+// the joints. That should work as of PR #22949 (2025-04-30).
+GTEST_TEST(MultibodyPlantTest, WeldOfNonBaseBody) {
+  auto fill_plant = [](MultibodyPlant<double>* plant) {
+    const auto& base = plant->AddRigidBody("base");
+    const auto& waist = plant->AddRigidBody("waist");
+    const auto& waist1 = plant->AddRigidBody("waist1");
+    const auto& waist2 = plant->AddRigidBody("waist2");
+    const auto& torso = plant->AddRigidBody("torso");
+    const auto& arm = plant->AddRigidBody("arm");
+
+    plant->AddJoint<PrismaticJoint>("prismatic_z", base, {}, waist, {},
+                                    Vector3d(0, 0, 1));
+    plant->AddJoint<RevoluteJoint>("torso_joint1", waist, {}, waist1, {},
+                                   Vector3d(1, 0, 0));
+    plant->AddJoint<RevoluteJoint>("torso_joint2", waist1, {}, waist2, {},
+                                   Vector3d(0, 1, 0));
+    plant->AddJoint<RevoluteJoint>("torso_joint3", waist2, {}, torso, {},
+                                   Vector3d(0, 1, 0));
+    plant->AddJoint<RevoluteJoint>("shoulder", torso, {}, arm, {},
+                                   Vector3d(1, 1, 1));
+  };
+
+  // Issue #17429, first with no welds so the robot is floating.
+  MultibodyPlant<double> floating(0.0);
+  fill_plant(&floating);
+  EXPECT_NO_THROW(floating.Finalize());
+
+  // Issue #17429, the three welded cases mentioned above.
+  for (auto body : {"base", "waist", "torso"}) {
+    MultibodyPlant<double> plant(0.0);
+    fill_plant(&plant);
+    plant.AddJoint<WeldJoint>("body_to_world", plant.world_body(), {},
+                              plant.GetRigidBodyByName(body), {},
+                              RigidTransformd());
+    EXPECT_NO_THROW(plant.Finalize());
+  }
+
+  // Issue #9939, verify that welding the same body twice now produces a
+  // reasonable error message.
+  MultibodyPlant<double> bad_double_weld(0.0);
+  fill_plant(&bad_double_weld);
+  bad_double_weld.AddJoint<WeldJoint>(
+      "base_to_world1", bad_double_weld.world_body(), {},
+      bad_double_weld.GetRigidBodyByName("base"), {}, RigidTransformd());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bad_double_weld.AddJoint<WeldJoint>(
+          "base_to_world2", bad_double_weld.world_body(), {},
+          bad_double_weld.GetRigidBodyByName("base"), {}, RigidTransformd()),
+      "AddJoint.*already.*base_to_world1.*world.*base.*base_to_world2.*"
+      "not allowed.*");
+
+  // The attempt to add the redundant joint should have been ignored.
+  EXPECT_NO_THROW(bad_double_weld.Finalize());
+}
+
+// Currently we don't support automatic modeling of systems where the links
+// and joints form topological loops. Make sure we reject those for now.
+GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
+  MultibodyPlant<double> plant(0.0);
+
+  // Create a loop with two bodies:
+  //   World->body1->body2<-World
+  const RigidBody<double>& body1 = plant.AddRigidBody(
+      "body1", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const RigidBody<double>& body2 = plant.AddRigidBody(
+      "body2", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  plant.AddJoint<RevoluteJoint>("joint1", plant.world_body(), {}, body1, {},
+                                Vector3d(0, 0, 1));
+  plant.AddJoint<RevoluteJoint>("joint2", body1, {}, body2, {},
+                                Vector3d(0, 0, 1));
+  plant.AddJoint<RevoluteJoint>("joint3", plant.world_body(), {}, body2, {},
+                                Vector3d(0, 0, 1));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.Finalize(),
-      ".*Finalize.*parent/child ordering.*revolute joint reverse_revolute"
-      ".*reversed.*");
+      "The bodies and joints of this system form one or more loops.*");
+}
+
+// Position kinematics attempts to optimize for cases when X_PF or X_MB are
+// identity matrices. That makes for four distinct cases which we'll engineer
+// here and check that we get X_PB = X_PF * X_FM * X_MB in all cases. We'll
+// avoid any special handling of World by making four systems like this:
+//    World -> parent => child
+// with the joint "=>" being the one we'll check. We don't have direct control
+// over F and M since we only get to specify Jp and Jc for a joint so we'll
+// check to make sure we're testing the right cases. It's sufficient to use
+// easy-to-calculate translations here (no rotations) since we just want to
+// see if the right transforms got applied.
+GTEST_TEST(MultibodyTree, PositionKinematicsFrameOptimizations) {
+  // Test one case, see CalcPositionKinematicsCache_BaseToTip() in
+  // body_node_impl.cc for correspondence.
+  auto test_case = [](int which_case) {
+    const bool X_PF_is_identity = which_case & 0b01;
+    const bool X_BM_is_identity = which_case & 0b10;
+
+    const RigidTransformd X_PJp = X_PF_is_identity
+                                      ? RigidTransformd()
+                                      : RigidTransformd(Vector3d(10, 11, 12));
+
+    const RigidTransformd X_CJc = X_BM_is_identity
+                                      ? RigidTransformd()
+                                      : RigidTransformd(Vector3d(7, 8, 9));
+
+    MultibodyPlant<double> plant(0.0);
+
+    const RigidBody<double>& parent0 = plant.AddRigidBody("parent0");
+    const RigidBody<double>& child0 = plant.AddRigidBody("child0");
+    const PrismaticJoint<double>& joint0 = plant.AddJoint<PrismaticJoint>(
+        "joint0", parent0, X_PJp, child0, X_CJc, Vector3d::UnitX());
+
+    plant.Finalize();
+    auto context = plant.CreateDefaultContext();
+
+    const internal::Mobilizer<double>& mobilizer0 = joint0.GetMobilizerInUse();
+    const RigidTransformd& X_PF =
+        mobilizer0.inboard_frame().EvalPoseInBodyFrame(*context);
+    const RigidTransformd& X_BM =
+        mobilizer0.outboard_frame().EvalPoseInBodyFrame(*context);
+
+    EXPECT_EQ(X_PF.IsExactlyIdentity(), X_PF_is_identity);
+    EXPECT_EQ(X_BM.IsExactlyIdentity(), X_BM_is_identity);
+    const RigidTransformd X_WP = RigidTransformd(Vector3d(1, 2, 3));
+    plant.SetFreeBodyPose(&*context, parent0, X_WP);
+    const RigidTransformd X_JpJc(Vector3d(100, 0, 0));
+    joint0.set_translation(&*context, X_JpJc.translation().x());  // sets X_JpJc
+    const RigidTransformd& X_WC = child0.EvalPoseInWorld(*context);
+
+    EXPECT_EQ(X_WC.translation(), X_WP.translation() + X_PJp.translation() +
+                                      X_JpJc.translation() +
+                                      X_CJc.inverse().translation());
+  };
+
+  test_case(0);
+  test_case(1);
+  test_case(2);
+  test_case(3);
 }
 
 // Verifies exact set of output ports we expect to be a direct feedthrough of
@@ -2026,6 +2283,8 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
       // Green group.
       {"geometry_pose", false},
       {"deformable_body_configuration", false},
+      // Miscellaneous.
+      {"surface_displacements", false},
   };
 
   // Split the manifest into (non-)feedthrough sets, while also substituting and
@@ -2741,13 +3000,76 @@ TEST_F(SplitPendulum, MassMatrix) {
   // We choose an arbitrary angle since the mass matrix is independent of the
   // state.
   const double theta = M_PI / 3;
-
-  MatrixX<double> M(1, 1);
   pin_->set_angle(context_.get(), theta);
-  plant_.CalcMassMatrixViaInverseDynamics(*context_, &M);
+
+  MatrixX<double> M_via_id(1, 1), M_via_W(1, 1);
+  plant_.CalcMassMatrixViaInverseDynamics(*context_, &M_via_id);
+  plant_.CalcMassMatrix(*context_, &M_via_W);
 
   // We can only expect values within the precision specified in the sdf file.
-  EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
+  EXPECT_NEAR(M_via_id(0, 0), Io, 1.0e-6);
+  EXPECT_NEAR(M_via_W(0, 0), Io, 1.0e-6);
+}
+
+// This test ensures that we can create a symbolic mass matrix successfully.
+TEST_F(SplitPendulum, SymbolicMassMatrix) {
+  auto sym_plant = systems::System<double>::ToSymbolic(plant_);
+  auto sym_context = sym_plant->CreateDefaultContext();
+
+  // State variables
+  const Eigen::VectorX<symbolic::Variable> q_var =
+      symbolic::MakeVectorVariable(1, "q");
+  const Eigen::VectorX<symbolic::Variable> v_var =
+      symbolic::MakeVectorVariable(1, "v");
+
+  // Parameters
+  const Eigen::VectorX<symbolic::Variable> m_var =
+      symbolic::MakeVectorVariable(2, "m");
+  const Eigen::VectorX<symbolic::Variable> l_var =
+      symbolic::MakeVectorVariable(2, "l");
+
+  const Eigen::VectorX<symbolic::Expression> q = q_var, v = v_var, m = m_var,
+                                             l = l_var;
+
+  const auto& upper_arm = sym_plant->GetBodyByName("upper_section");
+  const SpatialInertia<symbolic::Expression> inertia0(
+      m[0], Vector3<symbolic::Expression>(0, 0, -l[0]),
+      UnitInertia<symbolic::Expression>(l[0] * l[0], l[0] * l[0], 0));
+  upper_arm.SetSpatialInertiaInBodyFrame(sym_context.get(), inertia0);
+  const auto& lower_arm = sym_plant->GetBodyByName("lower_section");
+  const SpatialInertia<symbolic::Expression> inertia1(
+      m[1], Vector3<symbolic::Expression>(0, 0, -l[1]),
+      UnitInertia<symbolic::Expression>(l[1] * l[1], l[1] * l[1], 0));
+  lower_arm.SetSpatialInertiaInBodyFrame(sym_context.get(), inertia1);
+
+  sym_plant->SetPositions(sym_context.get(), q);
+  sym_plant->SetVelocities(sym_context.get(), v);
+
+  // Calculate the mass matrix two different ways, via Inverse Dynamics
+  // ("_via_id") and using the Composite Body Algorithm via recursion of
+  // World-frame quantities ("_via_W"). Verify that evaluating the resulting
+  // expressions yields the same result numerically.
+  Eigen::MatrixX<symbolic::Expression> M_via_id(1, 1), M_via_W(1, 1);
+  sym_plant->CalcMassMatrixViaInverseDynamics(*sym_context, &M_via_id);
+  sym_plant->CalcMassMatrix(*sym_context, &M_via_W);
+
+  const symbolic::Environment env{{q_var(0), 2.0}, {v_var(0), 10.},
+                                  {m_var(0), 3.0}, {m_var(1), 4.0},
+                                  {l_var(0), 5.0}, {l_var(1), 6.0}};
+  EXPECT_NEAR(M_via_W(0, 0).Evaluate(env), M_via_id(0, 0).Evaluate(env), 1e-14);
+
+  // Generate symbolic expressions for a few more quantities here just as a
+  // sanity check that we can do so. We won't look at the results.
+  Eigen::VectorX<symbolic::Expression> Cv(1), tauExt(1);
+  sym_plant->CalcBiasTerm(*sym_context, &Cv);
+  EXPECT_NO_THROW(sym_plant->CalcGravityGeneralizedForces(*sym_context));
+  const Eigen::MatrixX<symbolic::Expression> B =
+      sym_plant->MakeActuationMatrix();
+  EXPECT_EQ(B.rows(), 1);
+  EXPECT_EQ(B.cols(), 1);
+  MultibodyForces<symbolic::Expression> forces(*sym_plant);
+  sym_plant->CalcForceElementsContribution(*sym_context, &forces);
+  sym_plant->CalcGeneralizedForces(*sym_context, forces, &tauExt);
 }
 
 // Verify that we can obtain the owning MultibodyPlant from one of its
@@ -2761,7 +3083,7 @@ TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
   struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
     MyMBSystem() {
       rigid_body =
-          &mutable_tree().AddRigidBody("Body", SpatialInertia<double>::NaN());
+          &mutable_tree().AddLink("Body", SpatialInertia<double>::NaN());
       Finalize();
     }
     const RigidBody<double>* rigid_body{};
@@ -2783,7 +3105,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
 
   // Try scalar-converting pre-finalize - error.
   DRAKE_EXPECT_THROWS_MESSAGE(systems::System<double>::ToAutoDiffXd(plant),
-                              ".*MultibodyTree with an invalid topology.*");
+                              ".*MultibodyTree that has not been finalized.*");
 
   plant.Finalize();
 
@@ -2813,6 +3135,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   ASSERT_EQ(link3_num_visuals, 0);
 
   // Scalar convert the plant and verify invariants.
+  ASSERT_TRUE(plant.is_finalized());
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff =
       systems::System<double>::ToAutoDiffXd(plant);
   EXPECT_TRUE(plant_autodiff->geometry_source_is_registered());
@@ -3238,10 +3561,16 @@ GTEST_TEST(KukaModel, ActuationMatrix) {
   EXPECT_TRUE((B_inv * B).isIdentity());
 }
 
-TEST_F(MultibodyPlantRemodeling, MakeActuationMatrix) {
+TEST_F(MultibodyPlantRemodelingDiscrete, MakeActuationMatrix) {
   BuildModel();
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
+
+  // We didn't remove any bodies, all indexes from 0 to num_bodies() should be
+  // present.
+  for (BodyIndex b(0); b < plant_->num_bodies(); ++b) {
+    EXPECT_TRUE(plant_->has_body(b));
+  }
 
   // Actuator with index 1 has been removed.
   // clang-format off
@@ -3262,7 +3591,7 @@ TEST_F(MultibodyPlantRemodeling, MakeActuationMatrix) {
   EXPECT_TRUE(CompareMatrices(B_inv, B_inv_expected));
 }
 
-TEST_F(MultibodyPlantRemodeling, MakeActuatorSelectorMatrix) {
+TEST_F(MultibodyPlantRemodelingDiscrete, MakeActuatorSelectorMatrix) {
   BuildModel();
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
@@ -3287,7 +3616,7 @@ TEST_F(MultibodyPlantRemodeling, MakeActuatorSelectorMatrix) {
   EXPECT_TRUE(CompareMatrices(Su, Su_expected));
 }
 
-TEST_F(MultibodyPlantRemodeling, AddJointActuationForces) {
+TEST_F(MultibodyPlantRemodelingContinuous, AddJointActuationForcesContinuous) {
   BuildModel();
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
@@ -3295,20 +3624,20 @@ TEST_F(MultibodyPlantRemodeling, AddJointActuationForces) {
   // Actuator with index 1 has been removed.
   const systems::InputPort<double>& u_input =
       plant_->get_actuation_input_port();
-  u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
+  u_input.FixValue(plant_context_, Vector2d(0.25, 0.5));
 
-  const VectorXd forces_expected = (VectorXd(3) << 1.0, 0.0, 3.0).finished();
+  const VectorXd forces_expected = Vector3d(0.25, 0.0, 0.5);
 
-  // Test that AddJointActuationForces uses the correct indices into 'u'
-  // using JointActuator::input_start().
+  // Test that AddJointActuationForcesContinuous uses the correct indices into
+  // 'u' using JointActuator::input_start().
   VectorXd forces(3);
   forces.setZero();
-  MultibodyPlantTester::AddJointActuationForces(*plant_, *plant_context_,
-                                                &forces);
+  MultibodyPlantTester::AddJointActuationForcesContinuous(
+      *plant_, *plant_context_, &forces);
   EXPECT_TRUE(CompareMatrices(forces, forces_expected));
 }
 
-TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJoint) {
   BuildModel();
   DoRemoval(true /* remove actuator */, true /* remove joint */);
   // Before finalize we remove `joint1`. This makes body1 a free
@@ -3326,8 +3655,8 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
   // Validate that ordinals are assigned and updated contiguously.
   const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
   const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
 
   FinalizeAndBuild();
 
@@ -3350,9 +3679,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
       plant_->GetJointByName<QuaternionFloatingJoint>("body1");
   EXPECT_EQ(body1_floating_joint.index(), JointIndex(3));
 
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(body1_floating_joint.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(body1_floating_joint.ordinal(), JointOrdinal(2));
 
   // Confirm that removed joint logic is preserved after cloning.
   std::unique_ptr<MultibodyPlant<double>> clone =
@@ -3369,12 +3698,12 @@ TEST_F(MultibodyPlantRemodeling, RemoveJoint) {
   EXPECT_THAT(
       clone->GetJointIndices(),
       testing::ElementsAre(JointIndex(0), JointIndex(2), JointIndex(3)));
-  EXPECT_EQ(clone->get_joint(JointIndex(0)).ordinal(), 0);
-  EXPECT_EQ(clone->get_joint(JointIndex(2)).ordinal(), 1);
-  EXPECT_EQ(clone->get_joint(JointIndex(3)).ordinal(), 2);
+  EXPECT_EQ(clone->get_joint(JointIndex(0)).ordinal(), JointOrdinal(0));
+  EXPECT_EQ(clone->get_joint(JointIndex(2)).ordinal(), JointOrdinal(1));
+  EXPECT_EQ(clone->get_joint(JointIndex(3)).ordinal(), JointOrdinal(2));
 }
 
-TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveAndReplaceJoint) {
   BuildModel();
   DoRemoval(true /* remove actuator */, true /* remove joint */);
   constexpr int num_replacements = 100;
@@ -3385,7 +3714,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
         "joint1", plant_->GetBodyByName("body0"), {},
         plant_->GetBodyByName("body1"), {}, Vector3d::UnitZ());
     EXPECT_EQ(joint1.index(), JointIndex(2 + i));
-    EXPECT_EQ(joint1.ordinal(), 2);
+    EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
     plant_->RemoveJoint(joint1);
   }
 
@@ -3409,9 +3738,9 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
   // Validate that ordinals are assigned and updated contiguously.
   const Joint<double>& joint0 = plant_->get_joint(JointIndex(0));
   const Joint<double>& joint2 = plant_->get_joint(JointIndex(2));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(joint1.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
 
   FinalizeAndBuild();
 
@@ -3426,12 +3755,12 @@ TEST_F(MultibodyPlantRemodeling, RemoveAndReplaceJoint) {
   EXPECT_THAT(plant_->GetJointIndices(),
               testing::ElementsAre(JointIndex(0), JointIndex(2),
                                    JointIndex(2 + num_replacements)));
-  EXPECT_EQ(joint0.ordinal(), 0);
-  EXPECT_EQ(joint2.ordinal(), 1);
-  EXPECT_EQ(joint1.ordinal(), 2);
+  EXPECT_EQ(joint0.ordinal(), JointOrdinal(0));
+  EXPECT_EQ(joint2.ordinal(), JointOrdinal(1));
+  EXPECT_EQ(joint1.ordinal(), JointOrdinal(2));
 }
 
-TEST_F(MultibodyPlantRemodeling, RemoveJointWithActuator) {
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointWithActuator) {
   BuildModel();
   DRAKE_EXPECT_THROWS_MESSAGE(
       DoRemoval(false /* do not remove actuator */, true /* remove joint */),
@@ -3439,7 +3768,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointWithActuator) {
       "elements which must be removed prior to joint removal.*JointActuator.*");
 }
 
-TEST_F(MultibodyPlantRemodeling, RemoveJointWithCoupler) {
+TEST_P(MultibodyPlantRemodelingParam, RemoveJointWithCoupler) {
   BuildModel();
   // Add a coupler constraint between joint0 and joint1 before removal.
   plant_->AddCouplerConstraint(plant_->GetJointByName<RevoluteJoint>("joint0"),
@@ -3451,7 +3780,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointWithCoupler) {
       "have 0 user-added constraints in order to remove joint with index.*");
 }
 
-TEST_F(MultibodyPlantRemodeling, RemoveJointWithDoorHinge) {
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointWithDoorHinge) {
   BuildModel();
   // Add a DoorHinge with joint1 before removal.
   plant_->AddForceElement<DoorHinge>(
@@ -3463,7 +3792,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointWithDoorHinge) {
       "index.*");
 }
 
-TEST_F(MultibodyPlantRemodeling, RemoveJointWithRevoluteSpring) {
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointWithRevoluteSpring) {
   BuildModel();
   // Add a RevoluteSpring with joint1 before removal.
   plant_->AddForceElement<RevoluteSpring>(
@@ -3476,7 +3805,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointWithRevoluteSpring) {
       "index.*");
 }
 
-TEST_F(MultibodyPlantRemodeling, RemoveJointWithPrismaticSpring) {
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointWithPrismaticSpring) {
   BuildModel<PrismaticJoint>();
   // Add a PrismaticSpring with joint1 before removal.
   plant_->AddForceElement<PrismaticSpring>(
@@ -3487,6 +3816,30 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointWithPrismaticSpring) {
       "RemoveJoint: This plant has 1 user-added force elements. This plant "
       "must have 0 user-added force elements in order to remove joint with "
       "index.*");
+}
+
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointActuator) {
+  BuildModel();
+
+  for (bool has_actuator : {true, false}) {
+    // The first time through the loop, the actuator remains intact.
+    // The second time through, we'll remove it.
+    if (!has_actuator) {
+      DoRemoval(true /* remove_actuator */, false /* remove joint */);
+    }
+    // Check whether the joint exists or was removed.
+    EXPECT_EQ(plant_->HasJointActuatorNamed("actuator1"), has_actuator);
+    EXPECT_EQ(
+        plant_->HasJointActuatorNamed("actuator1", default_model_instance()),
+        has_actuator);
+    EXPECT_EQ(plant_->has_joint_actuator(JointActuatorIndex{1}), has_actuator);
+  }
+
+  // This function only works post-finalize.
+  plant_->Finalize();
+  EXPECT_THAT(
+      plant_->GetJointActuatorIndices(default_model_instance()),
+      testing::ElementsAre(JointActuatorIndex{0}, JointActuatorIndex{2}));
 }
 
 // Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic
@@ -3519,10 +3872,9 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
     context_ = plant_->CreateDefaultContext();
   }
 
-  // Helper to set the multibody state x to x[i] = i for each i-th entry in the
-  // state vector.
-  // We use RevoluteJoint's methods to set the state in order to independently
-  // unit test the proper workings of
+  // Helper to set the multibody state x to x[i] = xc[i] for each i-th entry in
+  // the state vector. We use RevoluteJoint's methods to set the state in order
+  // to independently unit test the proper workings of
   // MultibodyTree::get_multibody_state_vector() and its mutable counterpart.
   void SetState(const VectorX<double>& xc) {
     const int nq = plant_->num_positions();
@@ -3593,9 +3945,16 @@ TEST_P(KukaArmTest, StateAccess) {
     plant_->SetVelocities(context_.get(), v_block);
     plant_->SetPositionsAndVelocities(context_.get(), qv_block);
   }
+}
 
+TEST_P(KukaArmTest, EffortLimits) {
   Eigen::VectorXd effort_limits(7);
   effort_limits << 320, 320, 176, 176, 110, 40, 40;
+  EXPECT_TRUE(CompareMatrices(plant_->GetEffortLowerLimits(), -effort_limits));
+  EXPECT_TRUE(CompareMatrices(plant_->GetEffortUpperLimits(), effort_limits));
+
+  plant_->RemoveAllJointActuatorEffortLimits();
+  effort_limits.setConstant(std::numeric_limits<double>::infinity());
   EXPECT_TRUE(CompareMatrices(plant_->GetEffortLowerLimits(), -effort_limits));
   EXPECT_TRUE(CompareMatrices(plant_->GetEffortUpperLimits(), effort_limits));
 }
@@ -3745,7 +4104,8 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
 // Verifies we instantiated an appropriate MultibodyPlant model based on the
 // fixture's parameter.
 TEST_P(KukaArmTest, CheckContinuousOrDiscreteModel) {
-  // The plant must be a discrete system if the periodic update period is zero.
+  // The plant must not be a discrete system if the periodic update period is
+  // zero.
   EXPECT_EQ(!plant_->is_discrete(), this->GetParam() == 0);
 }
 
@@ -3800,7 +4160,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 
   // Assert the base of the robot is free and modeled with a quaternion before
   // moving on with this assumption.
-  ASSERT_TRUE(plant.GetBodyByName("iiwa_link_0").is_floating());
+  ASSERT_TRUE(plant.GetBodyByName("iiwa_link_0").is_floating_base_body());
   ASSERT_TRUE(plant.GetBodyByName("iiwa_link_0").has_quaternion_dofs());
 
   // Sanity check basic invariants.
@@ -4011,7 +4371,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 //
 // This test explicitly omits some APIs because they are tested elsewhere:
 //   - GTEST_TEST(StateSelection, FloatingBodies) tests
-//     SetFreeBodyPoseInAnchoredFrame.
+//     SetFloatingBaseBodyPoseInAnchoredFrame.
 //   - GTEST_TEST(SetRandomTest, FloatingBodies) the random distribution of
 //     of free body poses, as that is dealt with below in
 //   - multibody_plant_introspection_test.cc covers the "UniqueFreeBody" APIs.
@@ -4069,7 +4429,7 @@ GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
     DRAKE_DEMAND(mug_in_world || !CompareMatrices(X_PM.GetAsMatrix34(),
                                                   X_WM.GetAsMatrix34(), 1));
     // Whether the mug is a "floating base" body depends on its parent frame.
-    ASSERT_EQ(mug.is_floating(), mug_in_world);
+    ASSERT_EQ(mug.is_floating_base_body(), mug_in_world);
     ASSERT_EQ(plant.GetFloatingBaseBodies().contains(mug.index()),
               mug_in_world);
 
@@ -4099,25 +4459,26 @@ GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
     // tested by the call to SetFreeBodyPose(context, body, X_PB).
 
     // Explicitly setting things in the world frame produces the expected pose
-    // in world for floating free bodies, but not for "internal" free bodies.
+    // in world for floating base bodies, but not for "internal" free bodies.
     if (mug_in_world) {
-      plant.SetFreeBodyPoseInWorldFrame(context.get(), mug, X_WM);
+      plant.SetFloatingBaseBodyPoseInWorldFrame(context.get(), mug, X_WM);
       EXPECT_TRUE(CompareMatrices(
           plant.EvalBodyPoseInWorld(*context, mug).GetAsMatrix34(),
           X_WM.GetAsMatrix34()));
     } else {
-      EXPECT_THROW(plant.SetFreeBodyPoseInWorldFrame(context.get(), mug, X_WM),
-                   std::exception);
+      EXPECT_THROW(
+          plant.SetFloatingBaseBodyPoseInWorldFrame(context.get(), mug, X_WM),
+          std::exception);
     }
 
     // Although the mug has a quaternion floating joint, that is insufficient
     // for setting a *default* floating pose -- the parent must be world.
-    plant.SetDefaultFreeBodyPose(mug, X_PM);
+    plant.SetDefaultFloatingBaseBodyPose(mug, X_PM);
 
     // As promised, the value set is regurgitated back.
-    EXPECT_TRUE(
-        CompareMatrices(plant.GetDefaultFreeBodyPose(mug).GetAsMatrix34(),
-                        X_PM.GetAsMatrix34()));
+    EXPECT_TRUE(CompareMatrices(
+        plant.GetDefaultFloatingBaseBodyPose(mug).GetAsMatrix34(),
+        X_PM.GetAsMatrix34()));
 
     // The default pose takes affect iff the world is the parent frame.
     auto alt_context = plant.CreateDefaultContext();
@@ -4147,7 +4508,7 @@ GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
 }
 
 // This unit test verifies the workings of
-// MBP::SetFreeBodyPoseInAnchoredFrame(). To that end we build a model
+// MBP::SetFloatingBaseBodyPoseInAnchoredFrame(). To that end we build a model
 // representative of a real setup consisting of a robot arm mounted on a robot
 // table, an objects table and a mug. This test defines an objects frame O with
 // its origin located a the -x, -y corner of the objects table. With this setup,
@@ -4209,7 +4570,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   plant.Finalize();
 
   // Assert that the mug is a free body before moving on with this assumption.
-  ASSERT_TRUE(mug.is_floating());
+  ASSERT_TRUE(mug.is_floating_base_body());
   ASSERT_TRUE(mug.has_quaternion_dofs());
   EXPECT_EQ(mug.floating_position_suffix(0), "qw");
   EXPECT_EQ(mug.floating_position_suffix(1), "qx");
@@ -4226,11 +4587,12 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   EXPECT_EQ(mug.floating_velocity_suffix(5), "vz");
 
   // The "world" is not considered as a free body.
-  EXPECT_FALSE(plant.world_body().is_floating());
+  EXPECT_FALSE(plant.world_body().is_floating_base_body());
 
   // Sanity check that bodies welded to the world are not free.
-  EXPECT_FALSE(plant.GetBodyByName("iiwa_link_0").is_floating());
-  EXPECT_FALSE(plant.GetBodyByName("link", objects_table_model).is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("iiwa_link_0").is_floating_base_body());
+  EXPECT_FALSE(
+      plant.GetBodyByName("link", objects_table_model).is_floating_base_body());
 
   std::unordered_set<BodyIndex> expected_floating_bodies({mug.index()});
   auto floating_bodies = plant.GetFloatingBaseBodies();
@@ -4245,8 +4607,8 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   // Initialize the pose X_OM of the mug frame M in the objects table frame O.
   const Vector3d p_OoMo_O(0.05, 0.0, 0.05);
   const RigidTransformd X_OM(p_OoMo_O);
-  plant.SetFreeBodyPoseInAnchoredFrame(context.get(), objects_frame_O, mug,
-                                       X_OM);
+  plant.SetFloatingBaseBodyPoseInAnchoredFrame(context.get(), objects_frame_O,
+                                               mug, X_OM);
 
   // Retrieve the pose of the mug in the world.
   const RigidTransformd& X_WM = plant.EvalBodyPoseInWorld(*context, mug);
@@ -4257,14 +4619,14 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   EXPECT_TRUE(CompareMatrices(X_WM.GetAsMatrix4(), X_WM_expected.GetAsMatrix4(),
                               kTolerance, MatrixCompareType::relative));
 
-  // SetFreeBodyPoseInAnchoredFrame() should throw if the reference frame F is
-  // not anchored to the world.
+  // SetFloatingBaseBodyPoseInAnchoredFrame() should throw if the reference
+  // frame F is not anchored to the world.
   const Frame<double>& end_effector_frame =
       plant.GetFrameByName("iiwa_link_7", arm_model);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.SetFreeBodyPoseInAnchoredFrame(context.get(), end_effector_frame,
-                                           mug, X_OM),
+      plant.SetFloatingBaseBodyPoseInAnchoredFrame(
+          context.get(), end_effector_frame, mug, X_OM),
       "Frame 'iiwa_link_7' must be anchored to the world frame.");
 
   // Check qdot to v mappings.
@@ -4320,9 +4682,9 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
               BaseBodyJointType::kQuaternionFloatingJoint);
 
     plant->Finalize();  // Two quaternion floating joints.
-    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->is_floating_base_body());
     EXPECT_TRUE(default_body->has_quaternion_dofs());
-    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->is_floating_base_body());
     EXPECT_TRUE(instance_body->has_quaternion_dofs());
     EXPECT_EQ(plant->num_joints(), 2);
     EXPECT_EQ(plant->num_positions(), 14);
@@ -4378,9 +4740,9 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
     EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
               BaseBodyJointType::kRpyFloatingJoint);
 
-    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->is_floating_base_body());
     EXPECT_FALSE(default_body->has_quaternion_dofs());
-    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->is_floating_base_body());
     EXPECT_FALSE(instance_body->has_quaternion_dofs());
     EXPECT_EQ(plant->num_joints(), 2);
     EXPECT_EQ(plant->num_positions(), 12);
@@ -4422,9 +4784,9 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
               BaseBodyJointType::kRpyFloatingJoint);
 
     plant->Finalize();  // One quaternion and one rpy floating joint.
-    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->is_floating_base_body());
     EXPECT_TRUE(default_body->has_quaternion_dofs());
-    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->is_floating_base_body());
     EXPECT_FALSE(instance_body->has_quaternion_dofs());
     EXPECT_EQ(plant->num_joints(), 2);
     EXPECT_EQ(plant->num_positions(), 13);
@@ -4443,9 +4805,9 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
               BaseBodyJointType::kQuaternionFloatingJoint);
 
     plant->Finalize();  // One weld and one quaternion floating joint.
-    EXPECT_FALSE(default_body->is_floating());
+    EXPECT_FALSE(default_body->is_floating_base_body());
     EXPECT_FALSE(default_body->has_quaternion_dofs());
-    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->is_floating_base_body());
     EXPECT_TRUE(instance_body->has_quaternion_dofs());
     EXPECT_EQ(plant->num_joints(), 2);
     EXPECT_EQ(plant->num_positions(), 7);
@@ -4649,8 +5011,8 @@ GTEST_TEST(SetRandomTest, SetDefaultWhenNoDistributionSpecified) {
                               Vector3d(1.0, 2.0, 3.0));
   const RigidTransformd X_WB1(RollPitchYawd(0.1, 0.2, 0.3),
                               Vector3d(2.0, 4.0, 6.0));
-  plant.SetDefaultFreeBodyPose(body0, X_WB0);
-  plant.SetDefaultFreeBodyPose(body1, X_WB1);
+  plant.SetDefaultFloatingBaseBodyPose(body0, X_WB0);
+  plant.SetDefaultFloatingBaseBodyPose(body1, X_WB1);
 
   // The random positions should match the default positions when no
   // distribution is set.
@@ -4990,202 +5352,190 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
                               MatrixCompareType::relative));
 }
 
-GTEST_TEST(MultibodyPlantTests, GetConstraintIds) {
+class MultibodyPlantConstraintTestTimeStepParam
+    : public ::testing::TestWithParam<double> {
+ public:
+  MultibodyPlantConstraintTestTimeStepParam()
+      : plant_(GetParam()),
+        body_A_(plant_.AddRigidBody("body_A", SpatialInertia<double>::NaN())),
+        body_B_(plant_.AddRigidBody("body_B", SpatialInertia<double>::NaN())) {}
+
+ protected:
+  MultibodyPlant<double> plant_;
+  const RigidBody<double>& body_A_;
+  const RigidBody<double>& body_B_;
+};
+
+TEST_P(MultibodyPlantConstraintTestTimeStepParam, GetConstraintIds) {
   // Set up a plant with each constraint type with arbitrary parameters.
-  MultibodyPlant<double> plant(0.01);
-
-  EXPECT_EQ(plant.GetConstraintIds().size(), 0);
-
-  // N.B. This feature is only supported by the SAP solver. Therefore we
-  // arbitrarily choose one model approximation that uses the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  const RigidBody<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
-  const RigidBody<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
-  const RevoluteJoint<double>& world_A =
-      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
-                                    body_A, std::nullopt, Vector3d::UnitZ());
-  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
-      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+  EXPECT_EQ(plant_.GetConstraintIds().size(), 0);
+  const RevoluteJoint<double>& world_A = plant_.AddJoint<RevoluteJoint>(
+      "world_A", plant_.world_body(), std::nullopt, body_A_, std::nullopt,
+      Vector3d::UnitZ());
+  const RevoluteJoint<double>& A_B = plant_.AddJoint<RevoluteJoint>(
+      "A_B", body_A_, std::nullopt, body_B_, std::nullopt, Vector3d::UnitZ());
   MultibodyConstraintId coupler_id =
-      plant.AddCouplerConstraint(world_A, A_B, 2.3);
-  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
-      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
-  MultibodyConstraintId ball_id = plant.AddBallConstraint(
-      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
-  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
-      body_A, RigidTransformd(), body_B, RigidTransformd());
-  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+      plant_.AddCouplerConstraint(world_A, A_B, 2.3);
+  MultibodyConstraintId distance_id = plant_.AddDistanceConstraint(
+      body_A_, Vector3d(1.0, 2.0, 3.0), body_B_, Vector3d(4.0, 5.0, 6.0), 2.0);
+  MultibodyConstraintId ball_id = plant_.AddBallConstraint(
+      body_A_, Vector3d(-1.0, -2.0, -3.0), body_B_, Vector3d(-4.0, -5.0, -6.0));
+  MultibodyConstraintId weld_id = plant_.AddWeldConstraint(
+      body_A_, RigidTransformd(), body_B_, RigidTransformd());
+  MultibodyConstraintId tendon_id = plant_.AddTendonConstraint(
       {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
-  std::vector<MultibodyConstraintId> ids = plant.GetConstraintIds();
+  std::vector<MultibodyConstraintId> ids = plant_.GetConstraintIds();
   // The order of the constraints is not guaranteed.
   EXPECT_THAT(ids, testing::UnorderedElementsAre(coupler_id, distance_id,
                                                  ball_id, weld_id, tendon_id));
 
-  plant.RemoveConstraint(coupler_id);
-  plant.RemoveConstraint(ball_id);
-  ids = plant.GetConstraintIds();
+  plant_.RemoveConstraint(coupler_id);
+  plant_.RemoveConstraint(ball_id);
+  ids = plant_.GetConstraintIds();
   EXPECT_THAT(ids,
               testing::UnorderedElementsAre(distance_id, weld_id, tendon_id));
 }
 
-GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
+TEST_P(MultibodyPlantConstraintTestTimeStepParam, ConstraintActiveStatus) {
   // Set up a plant with 3 constraints with arbitrary parameters.
-  MultibodyPlant<double> plant(0.01);
-  // N.B. This feature is only supported by the SAP solver. Therefore we
-  // arbitrarily choose one model approximation that uses the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  const RigidBody<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
-  const RigidBody<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
-  const RevoluteJoint<double>& world_A =
-      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
-                                    body_A, std::nullopt, Vector3d::UnitZ());
-  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
-      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+  const RevoluteJoint<double>& world_A = plant_.AddJoint<RevoluteJoint>(
+      "world_A", plant_.world_body(), std::nullopt, body_A_, std::nullopt,
+      Vector3d::UnitZ());
+  const RevoluteJoint<double>& A_B = plant_.AddJoint<RevoluteJoint>(
+      "A_B", body_A_, std::nullopt, body_B_, std::nullopt, Vector3d::UnitZ());
   MultibodyConstraintId coupler_id =
-      plant.AddCouplerConstraint(world_A, A_B, 2.3);
-  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
-      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
-  MultibodyConstraintId ball_id = plant.AddBallConstraint(
-      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
-  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
-      body_A, RigidTransformd(), body_B, RigidTransformd());
-  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+      plant_.AddCouplerConstraint(world_A, A_B, 2.3);
+  MultibodyConstraintId distance_id = plant_.AddDistanceConstraint(
+      body_A_, Vector3d(1.0, 2.0, 3.0), body_B_, Vector3d(4.0, 5.0, 6.0), 2.0);
+  MultibodyConstraintId ball_id = plant_.AddBallConstraint(
+      body_A_, Vector3d(-1.0, -2.0, -3.0), body_B_, Vector3d(-4.0, -5.0, -6.0));
+  MultibodyConstraintId weld_id = plant_.AddWeldConstraint(
+      body_A_, RigidTransformd(), body_B_, RigidTransformd());
+  MultibodyConstraintId tendon_id = plant_.AddTendonConstraint(
       {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.set_discrete_contact_approximation(
-                                  DiscreteContactApproximation::kTamsi),
-                              ".*TAMSI does not support constraints.*");
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  if (plant_.is_discrete()) {
+    DRAKE_EXPECT_THROWS_MESSAGE(plant_.set_discrete_contact_approximation(
+                                    DiscreteContactApproximation::kTamsi),
+                                ".*TAMSI does not support constraints.*");
+  }
+#pragma GCC diagnostic pop
 
-  plant.Finalize();
+  plant_.Finalize();
 
-  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();
 
   // Verify all constraints are active in a default context.
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, tendon_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, coupler_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, distance_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, ball_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, weld_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, tendon_id));
 
   // Set all constraints to inactive.
-  plant.SetConstraintActiveStatus(context.get(), coupler_id, false);
-  plant.SetConstraintActiveStatus(context.get(), distance_id, false);
-  plant.SetConstraintActiveStatus(context.get(), ball_id, false);
-  plant.SetConstraintActiveStatus(context.get(), weld_id, false);
-  plant.SetConstraintActiveStatus(context.get(), tendon_id, false);
+  plant_.SetConstraintActiveStatus(context.get(), coupler_id, false);
+  plant_.SetConstraintActiveStatus(context.get(), distance_id, false);
+  plant_.SetConstraintActiveStatus(context.get(), ball_id, false);
+  plant_.SetConstraintActiveStatus(context.get(), weld_id, false);
+  plant_.SetConstraintActiveStatus(context.get(), tendon_id, false);
 
   // Verify all constraints are inactive in the context.
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, coupler_id));
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, distance_id));
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, ball_id));
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, weld_id));
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, tendon_id));
+  EXPECT_FALSE(plant_.GetConstraintActiveStatus(*context, coupler_id));
+  EXPECT_FALSE(plant_.GetConstraintActiveStatus(*context, distance_id));
+  EXPECT_FALSE(plant_.GetConstraintActiveStatus(*context, ball_id));
+  EXPECT_FALSE(plant_.GetConstraintActiveStatus(*context, weld_id));
+  EXPECT_FALSE(plant_.GetConstraintActiveStatus(*context, tendon_id));
 
   // Set all constraints to back to active.
-  plant.SetConstraintActiveStatus(context.get(), coupler_id, true);
-  plant.SetConstraintActiveStatus(context.get(), distance_id, true);
-  plant.SetConstraintActiveStatus(context.get(), ball_id, true);
-  plant.SetConstraintActiveStatus(context.get(), weld_id, true);
-  plant.SetConstraintActiveStatus(context.get(), tendon_id, true);
+  plant_.SetConstraintActiveStatus(context.get(), coupler_id, true);
+  plant_.SetConstraintActiveStatus(context.get(), distance_id, true);
+  plant_.SetConstraintActiveStatus(context.get(), ball_id, true);
+  plant_.SetConstraintActiveStatus(context.get(), weld_id, true);
+  plant_.SetConstraintActiveStatus(context.get(), tendon_id, true);
 
   // Verify all constraints are active in the context.
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, tendon_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, coupler_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, distance_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, ball_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, weld_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, weld_id));
+  EXPECT_TRUE(plant_.GetConstraintActiveStatus(*context, tendon_id));
 }
 
-GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
+TEST_P(MultibodyPlantConstraintTestTimeStepParam, RemoveConstraint) {
   // Set up a plant with 3 constraints with arbitrary parameters.
-  MultibodyPlant<double> plant(0.01);
-  // N.B. This feature is only supported by the SAP solver. Therefore we
-  // arbitrarily choose one model approximation that uses the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  const Body<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
-  const Body<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
-  const RevoluteJoint<double>& world_A =
-      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
-                                    body_A, std::nullopt, Vector3d::UnitZ());
-  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
-      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+  const RevoluteJoint<double>& world_A = plant_.AddJoint<RevoluteJoint>(
+      "world_A", plant_.world_body(), std::nullopt, body_A_, std::nullopt,
+      Vector3d::UnitZ());
+  const RevoluteJoint<double>& A_B = plant_.AddJoint<RevoluteJoint>(
+      "A_B", body_A_, std::nullopt, body_B_, std::nullopt, Vector3d::UnitZ());
   MultibodyConstraintId coupler_id =
-      plant.AddCouplerConstraint(world_A, A_B, 2.3);
-  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
-      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
-  MultibodyConstraintId ball_id = plant.AddBallConstraint(
-      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
-  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
-      body_A, RigidTransformd(), body_B, RigidTransformd());
-  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+      plant_.AddCouplerConstraint(world_A, A_B, 2.3);
+  MultibodyConstraintId distance_id = plant_.AddDistanceConstraint(
+      body_A_, Vector3d(1.0, 2.0, 3.0), body_B_, Vector3d(4.0, 5.0, 6.0), 2.0);
+  MultibodyConstraintId ball_id = plant_.AddBallConstraint(
+      body_A_, Vector3d(-1.0, -2.0, -3.0), body_B_, Vector3d(-4.0, -5.0, -6.0));
+  MultibodyConstraintId weld_id = plant_.AddWeldConstraint(
+      body_A_, RigidTransformd(), body_B_, RigidTransformd());
+  MultibodyConstraintId tendon_id = plant_.AddTendonConstraint(
       {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
-  EXPECT_EQ(plant.num_coupler_constraints(), 1);
-  EXPECT_EQ(plant.num_distance_constraints(), 1);
-  EXPECT_EQ(plant.num_ball_constraints(), 1);
-  EXPECT_EQ(plant.num_weld_constraints(), 1);
-  EXPECT_EQ(plant.num_tendon_constraints(), 1);
-  plant.RemoveConstraint(coupler_id);
-  plant.RemoveConstraint(distance_id);
-  plant.RemoveConstraint(ball_id);
-  plant.RemoveConstraint(weld_id);
-  plant.RemoveConstraint(tendon_id);
-  EXPECT_EQ(plant.num_coupler_constraints(), 0);
-  EXPECT_EQ(plant.num_distance_constraints(), 0);
-  EXPECT_EQ(plant.num_ball_constraints(), 0);
-  EXPECT_EQ(plant.num_weld_constraints(), 0);
-  EXPECT_EQ(plant.num_tendon_constraints(), 0);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  EXPECT_EQ(plant_.num_distance_constraints(), 1);
+  EXPECT_EQ(plant_.num_ball_constraints(), 1);
+  EXPECT_EQ(plant_.num_weld_constraints(), 1);
+  EXPECT_EQ(plant_.num_tendon_constraints(), 1);
+  plant_.RemoveConstraint(coupler_id);
+  plant_.RemoveConstraint(distance_id);
+  plant_.RemoveConstraint(ball_id);
+  plant_.RemoveConstraint(weld_id);
+  plant_.RemoveConstraint(tendon_id);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 0);
+  EXPECT_EQ(plant_.num_distance_constraints(), 0);
+  EXPECT_EQ(plant_.num_ball_constraints(), 0);
+  EXPECT_EQ(plant_.num_weld_constraints(), 0);
+  EXPECT_EQ(plant_.num_tendon_constraints(), 0);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.RemoveConstraint(coupler_id),
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_.RemoveConstraint(coupler_id),
                               ".*does not match any constraint.*");
 
   // Add a new coupler constraint
   MultibodyConstraintId coupler_id2 =
-      plant.AddCouplerConstraint(world_A, A_B, 2.3);
-  EXPECT_EQ(plant.num_coupler_constraints(), 1);
+      plant_.AddCouplerConstraint(world_A, A_B, 2.3);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
 
-  plant.Finalize();
+  plant_.Finalize();
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.RemoveConstraint(coupler_id2),
+      plant_.RemoveConstraint(coupler_id2),
       ".*Post-finalize calls to .*RemoveConstraint.* are not allowed.*");
 }
 
-GTEST_TEST(MultibodyPlantTests, FinalizeConstraints) {
-  // Set up a plant with partially specified constraints that must be finalized.
-  MultibodyPlant<double> plant(0.01);
-  // N.B. This feature is only supported by the SAP solver. Therefore we
-  // arbitrarily choose one model approximation that uses the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  const Body<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
-  const Body<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
+TEST_P(MultibodyPlantConstraintTestTimeStepParam, FinalizeConstraints) {
+  // Set up a plant with partially specified constraints that must be
+  // finalized.
   RigidTransformd X_WA(Vector3d(-1.0, -2.0, -3.0));
-  plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), X_WA, body_A,
-                                std::nullopt, Vector3d::UnitZ());
+  plant_.AddJoint<RevoluteJoint>("world_A", plant_.world_body(), X_WA, body_A_,
+                                 std::nullopt, Vector3d::UnitZ());
   RigidTransformd X_WB(Vector3d(1.2, 3.4, 5.6));
-  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("body_B"), X_WB);
+  plant_.WeldFrames(plant_.world_frame(), plant_.GetFrameByName("body_B"),
+                    X_WB);
 
   Vector3d p_AP = Vector3d(4.0, 5.0, 6.0);
-  MultibodyConstraintId ball_id = plant.AddBallConstraint(
-      body_A, p_AP, body_B, std::nullopt /* p_BQ is left unspecified */);
-  EXPECT_FALSE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
+  MultibodyConstraintId ball_id = plant_.AddBallConstraint(
+      body_A_, p_AP, body_B_, std::nullopt /* p_BQ is left unspecified */);
+  EXPECT_FALSE(plant_.get_ball_constraint_specs(ball_id).p_BQ.has_value());
 
-  plant.Finalize();
+  plant_.Finalize();
 
   Vector3d p_BQ = X_WB.inverse() * X_WA * p_AP;  // since Q == P.
-  ASSERT_TRUE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
+  ASSERT_TRUE(plant_.get_ball_constraint_specs(ball_id).p_BQ.has_value());
   EXPECT_TRUE(CompareMatrices(
-      plant.get_ball_constraint_specs(ball_id).p_BQ.value(), p_BQ, 1e-14));
+      plant_.get_ball_constraint_specs(ball_id).p_BQ.value(), p_BQ, 1e-14));
 }
 
 GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
@@ -5226,6 +5576,8 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   RigidTransformd X_BP_check2 = frame_P.CalcPoseInBodyFrame(*context);
   EXPECT_TRUE(X_BP_check1.IsNearlyEqualTo(X_BP, kTolerance));
   EXPECT_TRUE(X_BP_check2.IsNearlyEqualTo(X_BP, kTolerance));
+  // Verify parent frame is body_B's frame
+  EXPECT_EQ(frame_P.parent_frame().index(), body_B.body_frame().index());
 
   // Verify frame P's pose in world W.
   RigidTransformd X_WP = X_WWp * X_WpP;
@@ -5836,10 +6188,74 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
 GTEST_TEST(MultibodyPlantTest, FloatingJointNames) {
   {
     MultibodyPlant<double> plant(0.0);
-    plant.AddRigidBody("free_body", default_model_instance(),
-                       SpatialInertia<double>::MakeUnitary());
+    const ModelInstanceIndex my_model_instance =
+        plant.AddModelInstance("MyModelInstance");
+
+    // These bodies are in "my_model_instance" _not_ the default one. Their
+    // body frames are in the same model instance.
+    const RigidBody<double>& free_body = plant.AddRigidBody(
+        "free_body", my_model_instance, SpatialInertia<double>::MakeUnitary());
+    const RigidBody<double>& outer_body = plant.AddRigidBody(
+        "outer_body", my_model_instance, SpatialInertia<double>::MakeUnitary());
+
+    // But this frame is in the default model instance.
+    auto frame_on_outer_ptr = std::make_unique<FixedOffsetFrame<double>>(
+        "frame_on_outer", outer_body.body_frame(),
+        RigidTransform<double>(Vector3<double>(1, 0, 0)),
+        default_model_instance());
+    const Frame<double>& frame_on_outer =
+        plant.AddFrame(std::move(frame_on_outer_ptr));
+
+    // A joint inherits its model instance from the child _frame_, not the
+    // child _body_. Hence, this joint is in the default model instance while
+    // the ephemeral floating joint will be in my_model_instance. This caused
+    // a bug in the past (see issue #23379).
+    auto the_joint_ptr = std::make_unique<RevoluteJoint<double>>(
+        "the_joint", free_body.body_frame(), frame_on_outer,
+        Vector3<double>(0, 0, 1));
+    const Joint<double>& the_joint = plant.AddJoint(std::move(the_joint_ptr));
+
+    // This weld joint is in "my_model_instance", but follows an unrelated
+    // joint, so its "start coordinate" is outside the range of coordinates
+    // in use by my_model_instance. That shouldn't cause any problems, but
+    // did in the past (see issue #23379).
+    const RigidBody<double>& last_body = plant.AddRigidBody(
+        "last_body", my_model_instance, SpatialInertia<double>::MakeUnitary());
+    const Joint<double>& weld_joint =
+        plant.AddJoint<WeldJoint>("weld_joint", last_body, {}, outer_body, {},
+                                  RigidTransform<double>::Identity());
+
     plant.Finalize();
-    EXPECT_NO_THROW(plant.GetJointByName("free_body"));
+
+    // Check that an ephemeral floating joint was added and named "free_body" to
+    // match the body it mobilizes, and that it is in my_model_instance.
+    const Joint<double>& floating_joint = plant.GetJointByName("free_body");
+    EXPECT_EQ(floating_joint.num_positions(), 7);
+    EXPECT_EQ(floating_joint.num_velocities(), 6);
+    EXPECT_EQ(floating_joint.model_instance(), my_model_instance);
+
+    // Check that the revolute joint followed frame_on_outer's model instance,
+    // _not_ outer_body's. Its start coordinate follows the floating joint's 7.
+    EXPECT_EQ(the_joint.model_instance(), default_model_instance());
+    EXPECT_EQ(the_joint.position_start(), 7);
+    EXPECT_EQ(the_joint.num_positions(), 1);
+
+    // Check that the weld joint is in my_model_instance and that its start
+    // coordinate is out of range for that model instance, which has only
+    // 0-6 for the floating joint. The 7th is for the revolute joint (in the
+    // default model instance). Hence the next available is 8.
+    EXPECT_EQ(weld_joint.model_instance(), my_model_instance);
+    EXPECT_EQ(weld_joint.position_start(), 8);
+    EXPECT_EQ(weld_joint.num_positions(), 0);
+
+    // There was a bug where either
+    //   - the different model instances for child frame and child body, or
+    //   - the out-of-range start coordinate for the weld joint
+    // caused GetPositionNames(model_instance) to throw.
+    // Check that the various forms all work now.
+    EXPECT_NO_THROW(plant.GetPositionNames());
+    EXPECT_NO_THROW(plant.GetPositionNames(my_model_instance));
+    EXPECT_NO_THROW(plant.GetPositionNames(default_model_instance()));
   }
 
   // Verify that in case of a name conflict, we prepend with underscores
@@ -5951,6 +6367,10 @@ GTEST_TEST(MultibodyPlantTest, RenameModelInstance) {
                               ".*finalized.*");
 }
 
+// Rework this test on 2026-09-01 per TAMSI deprecation. The only test logic we
+// still need is to check for a post-Finalize call to change the approximation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Verify the proper coordination of discrete contact approximations with their
 // corresponding solvers.
 GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
@@ -5993,6 +6413,15 @@ GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
           DiscreteContactApproximation::kTamsi),
       "Post-finalize calls to '.*' are not allowed; .*");
 }
+#pragma GCC diagnostic pop
+
+INSTANTIATE_TEST_SUITE_P(ContinousAndDiscreteRemodeling,
+                         MultibodyPlantRemodelingParam,
+                         ::testing::Values(0.0, 0.1));
+
+INSTANTIATE_TEST_SUITE_P(ContinousAndDiscreteConstraints,
+                         MultibodyPlantConstraintTestTimeStepParam,
+                         ::testing::Values(0.0, 0.1));
 
 }  // namespace
 }  // namespace multibody

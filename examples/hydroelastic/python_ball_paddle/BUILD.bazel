@@ -15,14 +15,14 @@ filegroup(
 drake_py_binary(
     name = "contact_sim_demo_py",
     srcs = ["contact_sim_demo.py"],
-    add_test_rule = 1,
     data = [":models"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+    add_test_rule = True,
     test_rule_args = [
         "--target_realtime_rate=0",
         "--simulation_time=0.1",
-    ],
-    deps = [
-        "//bindings/pydrake",
     ],
 )
 

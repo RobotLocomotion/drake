@@ -11,6 +11,7 @@
    @defgroup planning_trajectory
    @defgroup planning_collision_checker
    @defgroup planning_infrastructure
+   @defgroup planning_iris
  @}
 */
 
@@ -40,5 +41,12 @@
    Simplifications for managing @ref drake::systems::Diagram "Diagrams"
    containing @ref drake::multibody::MultibodyPlant "MultibodyPlant" and
    @ref drake::geometry::SceneGraph "SceneGraph" systems in planning tasks.
+ @}
+*/
+
+/** @addtogroup planning_iris Iris
+ @{
+  These algorithms help construct regions of configuration space that are
+  collision free.
  @}
 */

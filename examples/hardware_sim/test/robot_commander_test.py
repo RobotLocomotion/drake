@@ -1,14 +1,13 @@
+import examples.hardware_sim.robot_commander as mut  # ruff: isort: skip
+
 import unittest
 
 from python.runfiles import Create as CreateRunfiles
 
 from pydrake.common.yaml import yaml_load
 
-import examples.hardware_sim.robot_commander as mut
-
 
 class RobotCommanderTest(unittest.TestCase):
-
     def setUp(self):
         runfiles = CreateRunfiles()
         self._example_scenarios = runfiles.Rlocation(
@@ -32,7 +31,7 @@ class RobotCommanderTest(unittest.TestCase):
         wsg_directive = demo["directives"][5]["add_model"]
         self.assertEqual(wsg_directive["name"], "wsg")
         wsg_q0 = []
-        for _, qs in wsg_directive["default_joint_positions"].items():
+        for _, qs in demo["initial_position"]["wsg"].items():
             wsg_q0.extend(qs)
         self.assertListEqual([-mut.WSG_Q0, mut.WSG_Q0], wsg_q0)
 

@@ -1,0 +1,9 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+brew 'bazelisk'
+brew 'cmake'
+brew 'eigen'
+brew 'fmt'
+brew 'pkg-config'
+brew 'spdlog'

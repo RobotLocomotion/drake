@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/cspace_free_polytope.h"
 
 #include <limits>
+#include <unordered_set>
 
 #include <gtest/gtest.h>
 

@@ -54,8 +54,8 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
-T PendulumPlant<T>::DoCalcPotentialEnergy(const systems::Context<T>& context)
-const {
+T PendulumPlant<T>::DoCalcPotentialEnergy(
+    const systems::Context<T>& context) const {
   using std::cos;
   const PendulumState<T>& state = get_state(context);
   const PendulumParams<T>& params = get_parameters(context);
@@ -65,8 +65,8 @@ const {
 }
 
 template <typename T>
-T PendulumPlant<T>::DoCalcKineticEnergy(const systems::Context<T>& context)
-const {
+T PendulumPlant<T>::DoCalcKineticEnergy(
+    const systems::Context<T>& context) const {
   using std::pow;
   const PendulumState<T>& state = get_state(context);
   const PendulumParams<T>& params = get_parameters(context);

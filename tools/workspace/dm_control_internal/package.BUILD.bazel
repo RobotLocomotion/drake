@@ -4,9 +4,14 @@ package(default_visibility = ["//visibility:private"])
 
 exports_files(
     # Keep this list alpha-sorted.
-    srcs = glob([
-        "dm_control/suite/*.xml",
-        "dm_control/suite/common/*.xml",
-    ] + ["LICENSE"], allow_empty = False),
+    srcs = glob(
+        [
+            "dm_control/suite/*.xml",
+            "dm_control/suite/common/*.xml",
+        ] + ["LICENSE"],
+        allow_empty = False,
+    ),
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

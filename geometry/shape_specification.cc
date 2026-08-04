@@ -1,6 +1,7 @@
 #include "drake/geometry/shape_specification.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <limits>
 #include <memory>
@@ -9,7 +10,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
@@ -35,31 +37,11 @@ namespace drake {
 namespace geometry {
 namespace {
 
-// Computes a convex hull and assigns it to the given shared pointer in a
-// thread-safe manner. Only does work if the shared_ptr is null (i.e., there is
-// no convex hull yet). Used by Mesh::GetConvexHull() and
-// Convex::GetConvexHull(). Note: the correctness of this function is tested in
-// shape_specification_thread_test.cc.
-void ComputeConvexHullAsNecessary(
-    std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
-    const MeshSource& mesh_source, double scale) {
-  std::shared_ptr<PolygonSurfaceMesh<double>> check =
-      std::atomic_load(hull_ptr);
-  if (check == nullptr) {
-    // Note: This approach means that multiple threads *may* redundantly compute
-    // the convex hull; but only the first one will set the hull.
-    auto new_hull =
-        std::make_shared<PolygonSurfaceMesh<double>>(internal::MakeConvexHull(
-            mesh_source, Vector3<double>::Constant(scale)));
-    std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
-  }
-}
-
 // Support for Mesh and Convex do_to_string(). It does the hard work of
 // converting the MeshSource into the appropriate parameter name and value
 // representation and then packages it into the full Mesh string representation.
 std::string MeshToString(std::string_view class_name, const MeshSource& source,
-                         double scale) {
+                         const Vector3<double>& scale) {
   const std::string mesh_parameter = [&source]() {
     if (source.is_path()) {
       return fmt::format("filename='{}'", source.path().string());
@@ -67,14 +49,15 @@ std::string MeshToString(std::string_view class_name, const MeshSource& source,
       return fmt::format("mesh_data={}", source.in_memory());
     }
   }();
-  return fmt::format("{}({}, scale={})", class_name, mesh_parameter, scale);
+  return fmt::format("{}({}, scale={})", class_name, mesh_parameter,
+                     fmt_eigen(scale));
 }
 
-void ThrowForBadScale(double scale, std::string_view source) {
-  if (std::abs(scale) < 1e-8) {
-    throw std::logic_error(
-        fmt::format("{} |scale| cannot be < 1e-8, given {}.", source, scale));
-  }
+void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
+  if ((scale.array().abs() >= 1e-8).all() && scale.allFinite()) return;
+  throw std::logic_error(
+      fmt::format("{} |scale| cannot be < 1e-8 on any axis, given {}.", source,
+                  fmt_eigen(scale)));
 }
 
 }  // namespace
@@ -96,12 +79,9 @@ std::unique_ptr<Shape> Shape::Clone() const {
 
 Box::Box(double width, double depth, double height)
     : size_(width, depth, height) {
-  if (width <= 0 || depth <= 0 || height <= 0) {
-    throw std::logic_error(
-        fmt::format("Box width, depth, and height should all be > 0 (were {}, "
-                    "{}, and {}, respectively).",
-                    width, depth, height));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(width) && width > 0, width);
+  DRAKE_THROW_UNLESS(std::isfinite(depth) && depth > 0, depth);
+  DRAKE_THROW_UNLESS(std::isfinite(height) && height > 0, height);
 }
 
 Box::Box(const Vector3<double>& measures)
@@ -118,12 +98,8 @@ std::string Box::do_to_string() const {
 
 Capsule::Capsule(double radius, double length)
     : radius_(radius), length_(length) {
-  if (radius <= 0 || length <= 0) {
-    throw std::logic_error(
-        fmt::format("Capsule radius and length should both be > 0 (were {} "
-                    "and {}, respectively).",
-                    radius, length));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(radius) && radius > 0, radius);
+  DRAKE_THROW_UNLESS(std::isfinite(length) && length > 0, length);
 }
 
 Capsule::Capsule(const Vector2<double>& measures)
@@ -134,52 +110,63 @@ std::string Capsule::do_to_string() const {
 }
 
 Convex::Convex(const std::filesystem::path& filename, double scale)
-    : Convex(MeshSource(std::filesystem::absolute(filename)), scale) {}
+    : Convex(filename, Vector3<double>::Constant(scale)) {}
+
+Convex::Convex(const std::filesystem::path& filename,
+               const Vector3<double>& scale3)
+    : Convex(MeshSource(std::filesystem::absolute(filename)), scale3) {}
 
 Convex::Convex(InMemoryMesh mesh_data, double scale)
-    : Convex(MeshSource(std::move(mesh_data)), scale) {}
+    : Convex(std::move(mesh_data), Vector3<double>::Constant(scale)) {}
+
+Convex::Convex(InMemoryMesh mesh_data, const Vector3<double>& scale3)
+    : Convex(MeshSource(std::move(mesh_data)), scale3) {}
 
 Convex::Convex(MeshSource source, double scale)
-    : source_(std::move(source)), scale_(scale) {
+    : Convex(std::move(source), Vector3<double>::Constant(scale)) {}
+
+Convex::Convex(MeshSource source, const Vector3<double>& scale3)
+    : source_(std::make_shared<MeshSource>(std::move(source))), scale_(scale3) {
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.
-  ThrowForBadScale(scale, "Convex");
+  ThrowForBadScale(scale_, "Convex");
 }
 
 Convex::Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
                double scale)
+    : Convex(points, label, Vector3<double>::Constant(scale)) {}
+
+Convex::Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
+               const Vector3<double>& scale3)
     : Convex(InMemoryMesh{.mesh_file = MemoryFile(PointsToObjString(points),
                                                   ".obj", label)},
-             scale) {}
+             scale3) {}
 
-std::string Convex::filename() const {
-  if (source_.is_path()) {
-    return source_.path().string();
+double Convex::scale() const {
+  if ((scale_.array() != scale_[0]).any()) {
+    throw std::runtime_error(
+        fmt::format("Convex::scale() can only be called for uniform scaling. "
+                    "This mesh has scale {}. Use Convex::scale3() instead.",
+                    fmt_eigen(scale_)));
   }
-  throw std::runtime_error(
-      fmt::format("Convex::filename() cannot be called when constructed on "
-                  "in-memory mesh data: '{}'. Call Convex::source().path() "
-                  "instead.",
-                  source_.in_memory().mesh_file.filename_hint()));
+  return scale_[0];
 }
 
 const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
-  ComputeConvexHullAsNecessary(&hull_, source_, scale_);
-  return *hull_;
+  return hull_.GetOrMake([this]() {
+    return std::make_shared<PolygonSurfaceMesh<double>>(
+        internal::MakeConvexHull(source(), scale_));
+  });
 }
 
 std::string Convex::do_to_string() const {
-  return MeshToString(type_name(), source(), scale());
+  return MeshToString(type_name(), source(), scale_);
 }
 
 Cylinder::Cylinder(double radius, double length)
     : radius_(radius), length_(length) {
-  if (radius <= 0 || length <= 0) {
-    throw std::logic_error(
-        fmt::format("Cylinder radius and length should both be > 0 (were {} "
-                    "and {}, respectively).",
-                    radius, length));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(radius) && radius > 0, radius);
+  DRAKE_THROW_UNLESS(std::isfinite(length) && length > 0, length);
 }
 
 Cylinder::Cylinder(const Vector2<double>& measures)
@@ -190,12 +177,9 @@ std::string Cylinder::do_to_string() const {
 }
 
 Ellipsoid::Ellipsoid(double a, double b, double c) : radii_(a, b, c) {
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw std::logic_error(
-        fmt::format("Ellipsoid lengths of principal semi-axes a, b, and c "
-                    "should all be > 0 (were {}, {}, and {}, respectively).",
-                    a, b, c));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(a) && a > 0, a);
+  DRAKE_THROW_UNLESS(std::isfinite(b) && b > 0, b);
+  DRAKE_THROW_UNLESS(std::isfinite(c) && c > 0, c);
 }
 
 Ellipsoid::Ellipsoid(const Vector3<double>& measures)
@@ -212,9 +196,7 @@ RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
   const double norm = Hz_dir_F.norm();
   // Note: this value of epsilon is somewhat arbitrary. It's merely a minor
   // fence over which ridiculous vectors will trip.
-  if (norm < 1e-10) {
-    throw std::logic_error("Can't make pose from a zero vector.");
-  }
+  DRAKE_THROW_UNLESS(norm >= 1e-10, norm);
 
   // First create basis.
   // Projects the normal into the first quadrant in order to identify the
@@ -243,46 +225,53 @@ std::string HalfSpace::do_to_string() const {
 }
 
 Mesh::Mesh(const std::filesystem::path& filename, double scale)
-    : Mesh(MeshSource(std::filesystem::absolute(filename)), scale) {}
+    : Mesh(filename, Vector3<double>::Constant(scale)) {}
+
+Mesh::Mesh(const std::filesystem::path& filename, const Vector3<double>& scale3)
+    : Mesh(MeshSource(std::filesystem::absolute(filename)), scale3) {}
 
 Mesh::Mesh(InMemoryMesh mesh_data, double scale)
-    : Mesh(MeshSource(std::move(mesh_data)), scale) {}
+    : Mesh(std::move(mesh_data), Vector3<double>::Constant(scale)) {}
+
+Mesh::Mesh(InMemoryMesh mesh_data, const Vector3<double>& scale3)
+    : Mesh(MeshSource(std::move(mesh_data)), scale3) {}
 
 Mesh::Mesh(MeshSource source, double scale)
-    : source_(std::move(source)), scale_(scale) {
+    : Mesh(std::move(source), Vector3<double>::Constant(scale)) {}
+
+Mesh::Mesh(MeshSource source, const Vector3<double>& scale3)
+    : source_(std::make_shared<MeshSource>(std::move(source))), scale_(scale3) {
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.
-  ThrowForBadScale(scale, "Mesh");
+  ThrowForBadScale(scale_, "Mesh");
 }
 
-std::string Mesh::filename() const {
-  if (source_.is_path()) {
-    return source_.path().string();
+double Mesh::scale() const {
+  if ((scale_.array() != scale_[0]).any()) {
+    throw std::runtime_error(
+        fmt::format("Mesh::scale() can only be called for uniform scaling. "
+                    "This mesh has scale {}. Use Mesh::scale3() instead.",
+                    fmt_eigen(scale_)));
   }
-  throw std::runtime_error(
-      fmt::format("Mesh::filename() cannot be called when constructed on "
-                  "in-memory mesh data: '{}'. Call Mesh::source().path() "
-                  "instead.",
-                  source_.in_memory().mesh_file.filename_hint()));
+  return scale_[0];
 }
 
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
-  ComputeConvexHullAsNecessary(&hull_, source_, scale_);
-  return *hull_;
+  return hull_.GetOrMake([this]() {
+    return std::make_shared<PolygonSurfaceMesh<double>>(
+        internal::MakeConvexHull(source(), scale_));
+  });
 }
 
 std::string Mesh::do_to_string() const {
-  return MeshToString(type_name(), source(), scale());
+  return MeshToString(type_name(), source(), scale_);
 }
 
 MeshcatCone::MeshcatCone(double height, double a, double b)
     : height_(height), a_(a), b_(b) {
-  if (height <= 0 || a <= 0 || b <= 0) {
-    throw std::logic_error(fmt::format(
-        "MeshcatCone parameters height, a, and b should all be > 0 (they were "
-        "{}, {}, and {}, respectively).",
-        height, a, b));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(height) && height > 0, height);
+  DRAKE_THROW_UNLESS(std::isfinite(a) && a > 0, a);
+  DRAKE_THROW_UNLESS(std::isfinite(b) && b > 0, b);
 }
 
 MeshcatCone::MeshcatCone(const Vector3<double>& measures)
@@ -293,10 +282,7 @@ std::string MeshcatCone::do_to_string() const {
 }
 
 Sphere::Sphere(double radius) : radius_(radius) {
-  if (radius < 0) {
-    throw std::logic_error(
-        fmt::format("Sphere radius should be >= 0 (was {}).", radius));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(radius) && radius >= 0, radius);
 }
 
 std::string Sphere::do_to_string() const {
@@ -362,7 +348,7 @@ double CalcMeshVolume(const Mesh& mesh) {
         mesh_source.description()));
   }
   TriangleSurfaceMesh<double> surface_mesh =
-      ReadObjToTriangleSurfaceMesh(mesh_source, mesh.scale());
+      ReadObjToTriangleSurfaceMesh(mesh_source, mesh.scale3());
   return internal::CalcEnclosedVolume(surface_mesh);
 }
 
@@ -404,18 +390,20 @@ double CalcVolume(const Shape& shape) {
 // The NVI function definitions are enough boilerplate to merit a macro to
 // implement them, and we might as well toss in the dtor for good measure.
 
-#define DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(ShapeType)                \
-  ShapeType::~ShapeType() = default;                                      \
-  void ShapeType::DoReify(ShapeReifier* shape_reifier, void* user_data)   \
-      const {                                                             \
-    shape_reifier->ImplementGeometry(*this, user_data);                   \
-  }                                                                       \
-  std::unique_ptr<Shape> ShapeType::DoClone() const {                     \
-    return std::unique_ptr<ShapeType>(new ShapeType(*this));              \
-  }                                                                       \
-  std::string_view ShapeType::do_type_name() const { return #ShapeType; } \
-  Shape::VariantShapeConstPtr ShapeType::get_variant_this() const {       \
-    return this;                                                          \
+#define DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(ShapeType)              \
+  ShapeType::~ShapeType() = default;                                    \
+  void ShapeType::DoReify(ShapeReifier* shape_reifier, void* user_data) \
+      const {                                                           \
+    shape_reifier->ImplementGeometry(*this, user_data);                 \
+  }                                                                     \
+  std::unique_ptr<Shape> ShapeType::DoClone() const {                   \
+    return std::unique_ptr<ShapeType>(new ShapeType(*this));            \
+  }                                                                     \
+  std::string_view ShapeType::do_type_name() const {                    \
+    return #ShapeType;                                                  \
+  }                                                                     \
+  Shape::VariantShapeConstPtr ShapeType::get_variant_this() const {     \
+    return this;                                                        \
   }
 
 DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(Box)

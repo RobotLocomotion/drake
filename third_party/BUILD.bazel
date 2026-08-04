@@ -9,6 +9,7 @@ exports_files(glob([
 
 add_lint_tests(
     bazel_lint_extra_srcs = [
+        "com_github_bazelbuild_rules_cc/find_cc_toolchain.bzl",
         "com_github_bazelbuild_rules_cc/whole_archive.bzl",
     ],
 )

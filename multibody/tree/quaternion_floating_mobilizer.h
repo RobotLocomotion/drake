@@ -11,27 +11,34 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 
-// This Mobilizer allows two frames to move freely relatively to one another.
-// To fully specify this mobilizer a user must provide an inboard frame F and
-// an outboard frame M. This mobilizer introduces six degrees of freedom which
-// allow frame M to freely move with respect to frame F.  This mobilizer
-// introduces four generalized positions to describe the orientation R_FM of
-// frame M in F with a quaternion q_FM, and three generalized positions to
-// describe the translation of frame M's origin in F with a position vector
-// p_FM. The seven entries of the configuration vector q are ordered
-// (q_FM, p_FM) with the quaternion, ordered wxyz (scalar then vector),
-// preceding the translation vector. As generalized velocities, this mobilizer
-// introduces the angular velocity w_FM of frame M in F and the linear
-// velocity v_FM of frame M's origin in frame F, ordered (w_FM, v_FM).
+// This Mobilizer allows a "mobilized" frame M to freely rotate and translate
+// relative to a "fixed" frame F (frame M has 6 degrees of freedom in frame F).
 //
-//   H_FM₆ₓ₆ = I₆ₓ₆     Hdot_FM₆ₓ₆ = 0₆ₓ₆
+// The rotational part of this mobilizer is characterized by generalized
+// positions q_FM = qᵣ = [qw, qx, qy, qz]ᵀ (the quaternion relating frame F and
+// frame M, with qw the scalar part and (qx, qy, qz) the vector part of the
+// quaternion) and generalized velocities w_FM_F = vᵣ = [ωx, ωy, ωz]ᵀ
+// (frame M's angular velocity in frame F, expressed in frame F).
+//
+// The translational part of this mobilizer is characterized by generalized
+// positions p_FM_F = qₜ = [x, y, z]ᵀ (the position from frame F's origin Fo
+// to frame M's origin Mo, expressed in frame F) and generalized velocities
+// v_FM_F = vₜ = [vx, vy, vz]ᵀ (the velocity of frame M's origin Mo, measured
+// and expressed in frame F).
+//
+// The 7 generalized positions are ordered [q_FM, p_FM_F].
+// The 6 generalized velocities are ordered [w_FM_F, v_FM_F].
+//
+//   H_FM_F₆ₓ₆ = I₆ₓ₆     Hdot_FM_F₆ₓ₆ = 0₆ₓ₆
+//
+//   H_FM_M = R_MF ⋅ H_FM_F = [ R_MF   0  ]
+//                            [   0  R_MF ]
 //
 // @tparam_default_scalar
 template <typename T>
@@ -220,21 +227,28 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                                    Vector3<T>(q[4], q[5], q[6]));
   }
 
+  /* There's nothing to optimize for the X_FM update. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     DRAKE_ASSERT(v != nullptr);
     const Eigen::Map<const VVector<T>> V_FM(v);
     return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
   }
 
-  // We chose the generalized velocities for this mobilizer so that H=I, Hdot=0.
-  // Therefore A_FM = H⋅vdot + Hdot⋅v = vdot.
+  // We chose the generalized velocities for this mobilizer so that
+  // H_F = Identity, Hdot_F = 0. Therefore A_FM_F = H_F⋅vdot + Hdot_F⋅v = vdot.
+  // 0 flops
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
     DRAKE_ASSERT(vdot != nullptr);
     const Eigen::Map<const VVector<T>> A_FM(vdot);
     return SpatialAcceleration<T>(A_FM);
   }
 
-  // Returns tau = H_FMᵀ⋅F. H is identity for this mobilizer.
+  // Returns tau = H_FM_Fᵀ⋅F_F. H is identity for this mobilizer.
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     Eigen::Map<VVector<T>> tau_as_vector(tau);
@@ -258,15 +272,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   bool is_velocity_equal_to_qdot() const final { return false; }
 
-  void MapVelocityToQDot(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& v,
-                         EigenPtr<VectorX<T>> qdot) const final;
-
-  void MapQDotToVelocity(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& qdot,
-                         EigenPtr<VectorX<T>> v) const final;
-
-  // This mobilizer can't use the default implementaion because it is
+  // This mobilizer can't use the default implementation because it is
   // required to preserve bit-identical state.
   std::pair<Eigen::Quaternion<T>, Vector3<T>> GetPosePair(
       const systems::Context<T>& context) const final;
@@ -286,11 +292,84 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
     return velocity.get_coeffs();
   }
 
+  // This function calculates this mobilizer's N matrix using the quaternion in
+  // context, _without_ normalization, which differs from DoCalcNplusMatrix()
+  // which uses the quaternion in context _with_ normalization.
+  // This mobilizer's N(q) matrix relates q̇ (time derivatives of 7 generalized
+  // positions) to v (6 generalized velocities) as q̇ = N(q)⋅v, where
+  // N(q) = ⎡ Nᵣ(q)  0₄₃ ⎤   Nᵣ(q) is a 4x3 matrix. 0₄₃ is the 4x3 zero matrix.
+  //        ⎣ 0₃₃    I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
+  // Lemma: If q̇ᵣ (the time-derivative of the quaternion qᵣ in context) are
+  // calculated as q̇ᵣ = Nᵣ(q) vᵣ, where vᵣ are the rotational generalized
+  // velocities, then q̇ᵣ satisfies the "orthogonality constraint" qᵣ ⋅ q̇ᵣ = 0.
+  // Proof: qᵣ ⋅ q̇ᵣ = qᵣ ⋅ Nᵣ(qᵣ) vᵣ
+  //                = |qᵣ| q̂ᵣ ⋅ |qᵣ| Nᵣ(q̂ᵣ) vᵣ
+  //                = |qᵣ|² q̂ᵣ ⋅ Nᵣ(q̂ᵣ) vᵣ
+  //                = |qᵣ|² [0 0 0] vᵣ = 0, where
+  // q̂ᵣ is a unit quaternion (|q̂ᵣ|² = q̂w² + q̂x² + q̂y² + q̂z² = 1) and
+  //
+  //       ⌈ q̂w ⌉                  ⌈ -qx   -qy   -qz ⌉
+  //  q̂ᵣ = | q̂x | and Nᵣ(q̂ᵣ) = 0.5 |  qw    qz   -qy | so q̂ᵣ ⋅ Nᵣ(q̂ᵣ) = [0 0 0]
+  //       | q̂y |                  | -qz    qw    qx |
+  //       ⌊ q̂z ⌋                  ⌊  qy   -qx    qw ⌋
+  //
+  // Lemma: If qᵣ ⋅ q̇ᵣ = 0, |qᵣ| (and hence |qᵣ|² = qᵣ ⋅ qᵣ) are constant.
+  // Proof: 2 qᵣ ⋅ q̇ᵣ = d/dt(qᵣ ⋅ qᵣ) = 0, so qᵣ ⋅ qᵣ = |qᵣ|² is constant.
+  // Summary: When the time derivative q̇ᵣ of the quaternion qᵣ in context is
+  // calculated as q̇ᵣ = Nᵣ(qᵣ) vᵣ = |qᵣ| Nᵣ(q̂ᵣ) vᵣ, then q̇ᵣ is orthogonal
+  // (perpendicular) to qᵣ (i.e., qᵣ ⋅ q̇ᵣ = 0) and a perfect numerical
+  // integrator would ensure |qᵣ| would stay constant.
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
+  // This function calculates this mobilizer's N⁺ matrix using the quaternion qᵣ
+  // in context, _with_ normalization, which differs from DoCalcNMatrix() which
+  // uses the quaternion in context _without_ normalization. That is, if qᵣ is
+  // the unnormalized quaternion taken directly from context and if q̇ᵣ is
+  // perpendicular to qᵣ (meaning qᵣ ⋅ q̇ᵣ = 0), we calculate Nᵣ⁺(qᵣ) so that
+  // w_FM_F = Nᵣ⁺(qᵣ) * q̇ᵣ is the angular velocity of the mobilizer's M frame in
+  // the mobilizer's F frame, expressed in the F frame. If q̇ᵣ is perpendicular
+  // to qᵣ, we can prove |qᵣ|² (and hence |qᵣ|) are constant (unchanged).
+  // Note: We can prove that if q̇ᵣ is calculated from q̇ᵣ = Nᵣ(qᵣ) * w_FM_F, then
+  // qᵣ ⋅ q̇ᵣ = 0 and Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) = I₃₃, which means Nᵣ⁺(qᵣ) is truly a
+  // pseudo-inverse of Nᵣ(qᵣ). If  qᵣ ⋅ q̇ᵣ ≠ 0 (q̇ᵣ is not perpendicular to qᵣ),
+  // Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) ≠ I₃₃, so here Nᵣ⁺(qᵣ) is not a pseudo-inverse of Nᵣ(qᵣ).
+  // Contextual definition of the 3x4 matrix Nᵣ⁺(qᵣ): denoting q̂ = qᵣ / |qᵣ|,
+  // w_FM_F = Nᵣ⁺(q̂ᵣ) * d/dt(q̂) = Nᵣ⁺(qᵣ) * d/dt(qᵣ). Hence, using
+  // Nᵣ⁺(qᵣ) = QuaternionRateToAngularVelocityMatrix(qᵣ) accounts for a non-unit
+  // qᵣ and its corresponding time-derivative q̇ᵣ.
+  // Considering this mobilizer in its entirety (both rotation and translation),
+  // this mobilizer's N⁺(q) matrix relates v (6 generalized velocities) to q̇
+  // (time derivatives of 7 generalized positions) as v = N⁺(q)⋅q̇, where
+  // N⁺(q) = ⎡ Nᵣ⁺(q)  0₃₃ ⎤   0₃₃ is the 3x3 zero matrix.
+  //         ⎣ 0₃₄     I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
+  // Reminder: although the N+(q) notation typically denotes a pseudoinverse of
+  // this mobilizer's N(q) matrix, if q̇ᵣ is not perpendicular to qᵣ, then N+(q)
+  // differs from a true pseudoinverse as explained above.
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
+
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
+
+  void DoMapVelocityToQDot(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& v,
+                           EigenPtr<VectorX<T>> qdot) const final;
+
+  void DoMapQDotToVelocity(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           EigenPtr<VectorX<T>> v) const final;
+
+  void DoMapAccelerationToQDDot(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& vdot,
+                                EigenPtr<VectorX<T>> qddot) const final;
+
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;
@@ -302,21 +381,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  // Helper to compute the kinematic map N(q). L ∈ ℝ⁴ˣ³.
-  static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
-  // Helper to compute the kinematic map N(q) from angular velocity to
-  // quaternion time derivative for which q̇_WB = N(q)⋅w_WB.
-  // With L given by CalcLMatrix we have:
-  // N(q) = L(q_FM/2)
-  static Eigen::Matrix<T, 4, 3> AngularVelocityToQuaternionRateMatrix(
-      const Quaternion<T>& q);
-
-  // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
-  // to angular velocity for which w_WB = N⁺(q)⋅q̇_WB.
-  // This method can take a non unity quaternion q_tilde such that
-  // w_WB = N⁺(q_tilde)⋅q̇_tilde_WB also holds true.
-  // With L given by CalcLMatrix we have:
-  // N⁺(q) = L(2 q_FM)ᵀ
+  // Helper function to form this mobilizer's Nᵣ⁺(qᵣ) matrix, to relate angular
+  // velocity w_FM_F to the quaternion 1ˢᵗ time-derivative q̇ᵣ, and to relate
+  // angular acceleration alpha_FM_F to q̈ᵣ, where w_FM_F is frame M's angular
+  // velocity in frame F, expressed in F. Similarly for alpha_FM_F.
+  // param[in] q_FM quaternion describing the orientation of frames F and M.
+  // @see DoCalcNplusMatrix() and this function's .cc code for many details.
+  // @note This function is only documented for use with q_FM, not q_MF.
+  // TODO(Mitiguy) Improve the name of this function, maybe CalcNrPlus_F().
   static Eigen::Matrix<T, 3, 4> QuaternionRateToAngularVelocityMatrix(
       const Quaternion<T>& q);
 

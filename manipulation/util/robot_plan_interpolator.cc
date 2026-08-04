@@ -148,7 +148,7 @@ void RobotPlanInterpolator::MakeFixedPlan(double plan_start_time,
   plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(times, knots);
   plan.pp_deriv = plan.pp.derivative();
   plan.pp_double_deriv = plan.pp_deriv.derivative();
-  drake::log()->info("Generated fixed plan at {}", fmt_eigen(q0.transpose()));
+  drake::log()->info("Generated fixed plan at {}", fmt_eigen(q0));
 }
 
 void RobotPlanInterpolator::Initialize(double plan_start_time,

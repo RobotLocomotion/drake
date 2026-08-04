@@ -27,8 +27,7 @@ namespace internal {
 template <typename T>
 const RevoluteJoint<T>&
 KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-    const std::string& joint_name,
-    const RigidBody<T>& A,
+    const std::string& joint_name, const RigidBody<T>& A,
     const Vector3<double>& q123A, const Vector3<double>& xyzA,
     const RigidBody<T>& B, const Vector3<double>& revolute_unit_vector,
     multibody::internal::MultibodyTree<T>* model) {
@@ -40,8 +39,8 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
   // Create transform from outboard body B to mobilizer outboard frame Ba.
   const math::RigidTransformd X_BBa;  // Identity transform.
 
-  return model->template AddJoint<RevoluteJoint>(joint_name,
-                              A, X_AAb, B, X_BBa, revolute_unit_vector);
+  return model->template AddJoint<RevoluteJoint>(joint_name, A, X_AAb, B, X_BBa,
+                                                 revolute_unit_vector);
 }
 
 template <typename T>
@@ -76,13 +75,13 @@ KukaIiwaModelBuilder<T>::Build() const {
                                                      I_GGcm_G_);
 
   // Add this robot's seven links.
-  const RigidBody<T>& linkA = model->AddRigidBody("iiwa_link_1", M_AAo_A);
-  const RigidBody<T>& linkB = model->AddRigidBody("iiwa_link_2", M_BBo_B);
-  const RigidBody<T>& linkC = model->AddRigidBody("iiwa_link_3", M_CCo_C);
-  const RigidBody<T>& linkD = model->AddRigidBody("iiwa_link_4", M_DDo_D);
-  const RigidBody<T>& linkE = model->AddRigidBody("iiwa_link_5", M_EEo_E);
-  const RigidBody<T>& linkF = model->AddRigidBody("iiwa_link_6", M_FFo_F);
-  const RigidBody<T>& linkG = model->AddRigidBody("iiwa_link_7", M_GGo_G);
+  const Link<T>& linkA = model->AddLink("iiwa_link_1", M_AAo_A);
+  const Link<T>& linkB = model->AddLink("iiwa_link_2", M_BBo_B);
+  const Link<T>& linkC = model->AddLink("iiwa_link_3", M_CCo_C);
+  const Link<T>& linkD = model->AddLink("iiwa_link_4", M_DDo_D);
+  const Link<T>& linkE = model->AddLink("iiwa_link_5", M_EEo_E);
+  const Link<T>& linkF = model->AddLink("iiwa_link_6", M_FFo_F);
+  const Link<T>& linkG = model->AddLink("iiwa_link_7", M_GGo_G);
 
   // Create a revolute joint between linkN (Newtonian frame/world) and linkA
   // using two joint-frames, namely "Na" and "An".  The "inboard frame" Na is
@@ -92,53 +91,46 @@ KukaIiwaModelBuilder<T>::Build() const {
   // angles and a position vector. Alternately, frame An is regarded as
   // coincident with linkA.
   const Joint<T>* joint{nullptr};
-  const RigidBody<T>& linkN = model->world_body();
+  const Link<T>& linkN = model->world_link();
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      "iiwa_joint_1",
-      linkN, joint_1_rpy_, joint_1_xyz_,
-      linkA, Eigen::Vector3d::UnitZ(), model.get());
+      "iiwa_joint_1", linkN, joint_1_rpy_, joint_1_xyz_, linkA,
+      Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_1", *joint);
 
   // Create a revolute joint between linkA and linkB.
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      "iiwa_joint_2",
-      linkA, joint_2_rpy_, joint_2_xyz_,
-      linkB, Eigen::Vector3d::UnitZ(), model.get());
+      "iiwa_joint_2", linkA, joint_2_rpy_, joint_2_xyz_, linkB,
+      Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_2", *joint);
 
   // Create a revolute joint between linkB and linkC.
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      "iiwa_joint_3",
-      linkB, joint_3_rpy_, joint_3_xyz_,
-      linkC, Eigen::Vector3d::UnitZ(), model.get());
+      "iiwa_joint_3", linkB, joint_3_rpy_, joint_3_xyz_, linkC,
+      Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_3", *joint);
 
-  // Create a revolute joint between linkB and linkC.
+  // Create a revolute joint between linkC and linkD.
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      "iiwa_joint_4",
-      linkC, joint_4_rpy_, joint_4_xyz_,
-      linkD, Eigen::Vector3d::UnitZ(), model.get());
+      "iiwa_joint_4", linkC, joint_4_rpy_, joint_4_xyz_, linkD,
+      Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_4", *joint);
 
   // Create a revolute joint between linkD and linkE.
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      "iiwa_joint_5",
-      linkD, joint_5_rpy_, joint_5_xyz_,
-      linkE, Eigen::Vector3d::UnitZ(), model.get());
+      "iiwa_joint_5", linkD, joint_5_rpy_, joint_5_xyz_, linkE,
+      Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_5", *joint);
 
   // Create a revolute joint between linkE and linkF.
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      "iiwa_joint_6",
-      linkE, joint_6_rpy_, joint_6_xyz_,
-      linkF, Eigen::Vector3d::UnitZ(), model.get());
+      "iiwa_joint_6", linkE, joint_6_rpy_, joint_6_xyz_, linkF,
+      Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_6", *joint);
 
   // Create a revolute joint between linkE and linkF.
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      "iiwa_joint_7",
-      linkF, joint_7_rpy_, joint_7_xyz_,
-      linkG, Eigen::Vector3d::UnitZ(), model.get());
+      "iiwa_joint_7", linkF, joint_7_rpy_, joint_7_xyz_, linkG,
+      Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_7", *joint);
 
   // Add arbitrary tool frame.

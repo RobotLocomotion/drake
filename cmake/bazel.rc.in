@@ -19,27 +19,20 @@ common --@drake//tools/flags:private_runtime_repo_default=internal
 # Flags that tweak repository rules (if any).
 common @BAZEL_REPO_ENV@
 
-# Disable the "convenience symlinks" intended for Bazel users; they only add
-# confusion for the CMake use case.
-build --symlink_prefix=/
-
-# Fix macOS per https://github.com/bazelbuild/bazel/issues/14294.
-build --notrim_test_configuration
-
-# Disable ccache due to incompatibility with Bazel.
-build --action_env=CCACHE_DISABLE=1
-
 # Transcriptions of CMake configs into their equivalent Bazel flags.
-build:Debug --compilation_mode=dbg --fission=no
+build:Debug --config=debug --fission=no
 build:MinSizeRel --compilation_mode=opt --copt=-Os --host_copt=-Os
 build:Release --compilation_mode=opt
 build:RelWithDebInfo --compilation_mode=opt --fission=no --copt=-g --host_copt=-g
 
-# Pass along the compiler version.
-build --@drake//tools/cc_toolchain:compiler_major=@DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR@
-
 # Match CMAKE_BUILD_TYPE as well as the WITH_FOO customizations.
 build @BAZEL_CONFIG@
+
+# The drake_refresh_cmake_bazelrc custom target in our CMakeLists.txt runs Bazel
+# to generate this file prior to building the rest of Drake. However, we must
+# use "try-import" instead of "import" because we need to run Bazel to generate
+# this file but Bazel will fail if an "import"ed rcfile is missing.
+try-import bazel-bin/external/drake+/tools/cc_toolchain/cmake.bazelrc
 
 # Respect user.bazelrc (when present).
 try-import @PROJECT_SOURCE_DIR@/user.bazelrc
@@ -52,5 +45,11 @@ try-import @PROJECT_BINARY_DIR@/drake.bazelrc
 build --stamp
 build --workspace_status_command="sed 's/^/STABLE_VERSION /' '@PROJECT_BINARY_DIR@/VERSION.TXT'"
 
-# TODO(jwnimmer-tri) Pass along CMAKE_C_FLAGS and CMAKE_CXX_FLAGS also, and
-# specifically make sure the user's -std=c++NN is respected.
+# Forward CMAKE_C_FLAGS and CMAKE_CXX_FLAGS, plus the build-type-specific
+# variants matching CMAKE_BUILD_TYPE (like CMAKE_C_FLAGS_RELEASE or
+# CMAKE_CXX_FLAGS_DEBUG). The C and CXX flags are forwarded as --conlyopt and
+# --cxxopt respectively. These are placed in their own bazelrc line below
+# BAZEL_CONFIG so user-supplied flags appear near the end of the compiler
+# command line. Target-level `copts = [...]` in Drake's BUILD files still
+# appear after these and will win conflicts.
+build @BAZEL_USER_COMPILE_FLAGS@

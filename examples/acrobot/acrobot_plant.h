@@ -61,8 +61,8 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// - bias[2x1] includes the Coriolis term, gravity term and the damping term,
   ///   i.e. bias[2x1] = C(q,v)*v - τ_g(q) + [b1*q̇₁;b2*q̇₂].
   // TODO(russt): Update this to the newest conventions.
-  Vector2<T> DynamicsBiasTerm(const systems::Context<T> &context) const;
-  Matrix2<T> MassMatrix(const systems::Context<T> &context) const;
+  Vector2<T> DynamicsBiasTerm(const systems::Context<T>& context) const;
+  Matrix2<T> MassMatrix(const systems::Context<T>& context) const;
   ///@}
 
   /// Evaluates the input port and returns the scalar value of the commanded
@@ -110,9 +110,9 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       systems::ContinuousState<T>* derivatives) const override;
 
   void DoCalcImplicitTimeDerivativesResidual(
-    const systems::Context<T>& context,
-    const systems::ContinuousState<T>& proposed_derivatives,
-    EigenPtr<VectorX<T>> residual) const override;
+      const systems::Context<T>& context,
+      const systems::ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const override;
 };
 
 /// Constructs the Acrobot with (only) encoder outputs.

@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/math/rigid_transform.h"
 
@@ -50,7 +49,7 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
         depth_camera_{color_camera_.core(), {0.01, 0.011}},
         label_camera_{color_camera_} {}
 
-  /* @group No-op implementation of RenderEngine interface.  */
+  /* @name No-op implementation of RenderEngine interface.  */
   //@{
   void UpdateViewpoint(const math::RigidTransformd& X_WC) override {
     X_WC_ = X_WC;
@@ -104,6 +103,12 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
   bool is_registered(GeometryId id) const {
     return registered_geometries_.contains(id);
   }
+
+  /* A _possible_ mapping of each registered id to its name. DummyRenderEngine
+   ignores names and, as such, this map will always be empty. Derived class
+   that track names (e.g., DummyRenderEngineWithNames) will capture the names
+   and this map will be fully populated. */
+  const std::map<GeometryId, std::string>& names() const { return names_; }
 
   // These six functions (and supporting members) facilitate testing while there
   // are two APIs for specifying the camera for rendering images. They should
@@ -160,7 +165,10 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
   /* Dummy implementation that registers the given `shape` if the `properties`
    contains the "in_test" group or the render engine has been forced to accept
    all geometries (via set_force_accept()). (Also counts the number of
-   successfully registered shape over the lifespan of `this` instance.) */
+   successfully registered shape over the lifespan of `this` instance.)
+   This implements the *legacy* visual registration; it ignores names and
+   provides the basis testing that legacy behavior. To test name registration,
+   use DummyRenderEngineWithNames (see below). */
   bool DoRegisterVisual(GeometryId id, const Shape&,
                         const PerceptionProperties& properties,
                         const math::RigidTransformd& X_WG) override {
@@ -245,11 +253,25 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
     label_camera_ = camera;
   }
 
+  /* Implementation of RenderEngine::DoGetParameterYaml().  */
+  std::string DoGetParameterYaml() const override {
+    return "DummyRenderEngineParams: {}";
+  }
+
+  /* Registers an (id, name) pair -- derived classes that track names should
+   use this to capture the names. */
+  void RegisterName(GeometryId id, const std::string& name) {
+    names_[id] = name;
+  }
+
  private:
   // If true, the engine will accept all geometries.
   bool force_accept_{};
 
   std::unordered_set<GeometryId> registered_geometries_;
+
+  // The names associated with the geometries.
+  std::map<GeometryId, std::string> names_;
 
   // The current poses of the geometries in the world frame.
   std::map<GeometryId, math::RigidTransformd> X_WGs_;
@@ -285,6 +307,39 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
   mutable render::ColorRenderCamera color_camera_;
   mutable render::DepthRenderCamera depth_camera_;
   mutable render::ColorRenderCamera label_camera_;
+};
+
+/* A variant of DummyRenderEngine that captures names of registered visuals.*/
+class DummyRenderEngineWithNames : public DummyRenderEngine {
+ public:
+  explicit DummyRenderEngineWithNames(const render::RenderLabel& label)
+      : DummyRenderEngine(label) {}
+
+ protected:
+  /* This dummy implements named visuals; as such, we won't allow derived
+   classes to override this method anymore. Leaving it overridable might allow
+   erring downstream implementations that would simply become dead code. */
+  bool DoRegisterVisual(GeometryId id, const Shape&,
+                        const PerceptionProperties& properties,
+                        const math::RigidTransformd& X_WG) final {
+    throw std::runtime_error(
+        "DoRegisterNamedVisual is implemented instead; this should never get "
+        "invoked.");
+  }
+
+  /* Registration of a _named_ visual. The name will be captured and reported
+  in this->names(). */
+  bool DoRegisterNamedVisual(GeometryId id, const Shape& shape,
+                             const PerceptionProperties& properties,
+                             const math::RigidTransformd& X_WG,
+                             std::string_view name) override {
+    bool result =
+        DummyRenderEngine::DoRegisterVisual(id, shape, properties, X_WG);
+    if (result) {
+      RegisterName(id, std::string(name));
+    }
+    return result;
+  }
 };
 
 }  // namespace internal

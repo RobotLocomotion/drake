@@ -4,8 +4,14 @@
 /* clang-format on */
 
 #include <algorithm>
+#include <functional>
 #include <ios>
+#include <limits>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
@@ -235,9 +241,11 @@ RowVectorX<Expression> Expression::Jacobian(
 }
 
 string Expression::to_string() const {
-  ostringstream oss;
-  oss << *this;
-  return oss.str();
+  if (is_constant(*this)) {
+    return fmt::to_string(get_constant_value(*this));
+  } else {
+    return cell().Display();
+  }
 }
 
 void Expression::AddImpl(const Expression& rhs) {
@@ -505,9 +513,7 @@ void Expression::DivImpl(const Expression& rhs) {
   // really is NaN.
   if (is_constant(lhs) && is_constant(rhs)) {
     if (is_zero(rhs)) {
-      ostringstream oss{};
-      oss << "Division by zero: " << lhs << "/0";
-      throw runtime_error(oss.str());
+      throw runtime_error(fmt::format("Division by zero: {}/0", lhs));
     }
     ConstructExpressionCellNaN();
     return;
@@ -520,36 +526,6 @@ void Expression::DivImpl(const Expression& rhs) {
     return;
   }
   lhs = Expression{make_unique<ExpressionDiv>(lhs, rhs)};
-}
-
-namespace {
-// Changes the precision of `os` to be the `new_precision` and saves the
-// original precision so that it can be reverted when an instance of this class
-// is destructed. It is used in `operator<<` of symbolic expression.
-class PrecisionGuard {
- public:
-  PrecisionGuard(ostream* const os, const streamsize& new_precision)
-      : os_{os}, original_precision_{os->precision()} {
-    os_->precision(new_precision);
-  }
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrecisionGuard);
-  ~PrecisionGuard() { os_->precision(original_precision_); }
-
- private:
-  ostream* const os_;
-  const streamsize original_precision_;
-};
-}  // namespace
-
-ostream& operator<<(ostream& os, const Expression& e) {
-  const PrecisionGuard precision_guard{&os,
-                                       numeric_limits<double>::max_digits10};
-  if (is_constant(e)) {
-    os << get_constant_value(e);
-  } else {
-    e.cell().Display(os);
-  }
-  return os;
 }
 
 Expression log(const Expression& e) {
@@ -1006,6 +982,23 @@ struct GetDistinctVariablesVisitor {
   Variables variables;
 };
 }  // namespace
+}  // namespace symbolic
+}  // namespace drake
+
+namespace Eigen {
+namespace internal {
+// Using Matrix::visit requires providing functor_traits.
+template <>
+struct functor_traits<drake::symbolic::GetDistinctVariablesVisitor> {
+  static constexpr int Cost = 10;
+  [[maybe_unused]] static constexpr bool LinearAccess = false;
+  [[maybe_unused]] static constexpr bool PacketAccess = false;
+};
+}  // namespace internal
+}  // namespace Eigen
+
+namespace drake {
+namespace symbolic {
 
 Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {
   GetDistinctVariablesVisitor visitor;

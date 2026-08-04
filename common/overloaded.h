@@ -27,7 +27,7 @@ use the variant visit pattern, i.e.
 
 // We put this in the anonymous namespace to ensure that it will not generate
 // linkable symbols for every specialization in every library that uses it.
-namespace {  // NOLINT(build/namespaces)
+namespace {  // NOLINT(build/namespaces_headers)
 
 // Boilerplate for `std::visit`; see
 // https://en.cppreference.com/w/cpp/utility/variant/visit
@@ -35,11 +35,5 @@ template <class... Ts>
 struct overloaded : Ts... {
   using Ts::operator()...;
 };
-
-// Even though Drake requires C++20, Clang versions prior to 17 do not implement
-// P1816 yet, so we need to write out a deduction guide. We can remove this once
-// Drake requires Clang 17 or newer (as well as the matching Apple Clang).
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
 
 }  // namespace

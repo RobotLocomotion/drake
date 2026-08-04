@@ -1,6 +1,8 @@
 #include "drake/systems/primitives/trajectory_source.h"
 
+#include <algorithm>
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -4,10 +4,13 @@
 /* clang-format on */
 
 #include <algorithm>
+#include <limits>
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -15,7 +18,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -58,19 +60,18 @@ using std::set;
 using std::unique_ptr;
 
 // Tests the basic MultibodyTree API to add bodies and joints.
-// Tests we cannot create graph loops.
 GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   auto model = std::make_unique<MultibodyTree<double>>();
 
   // Initially there is only one body, the world.
-  EXPECT_EQ(model->num_bodies(), 1);
+  EXPECT_EQ(model->num_links(), 1);
 
   // Retrieves the world body.
-  const RigidBody<double>& world_body = model->world_body();
+  const RigidBody<double>& world_body = model->world_link();
   EXPECT_EQ(world_body.name(), "world");
 
   // Make sure the (dispreferred) Body alias is working.
-  const Body<double>& also_world_body = model->world_body();
+  const Body<double>& also_world_body = model->world_link();
   EXPECT_EQ(also_world_body.name(), "world");
 
   // Creates a NaN SpatialInertia to instantiate the RigidBody links of the
@@ -81,7 +82,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   const auto M_Bo_B = SpatialInertia<double>::NaN();
 
   // Adds a new body to the world.
-  const RigidBody<double>& pendulum = model->AddRigidBody("pendulum", M_Bo_B);
+  const RigidBody<double>& pendulum = model->AddLink("pendulum", M_Bo_B);
   EXPECT_EQ(pendulum.scoped_name().get_full(),
             "DefaultModelInstance::pendulum");
   EXPECT_EQ(pendulum.body_frame().scoped_name().get_full(),
@@ -108,65 +109,71 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
       "AddJoint.*joint1 would connect body pendulum to itself.*");
 
   // Adds a second pendulum.
-  const RigidBody<double>& pendulum2 = model->AddRigidBody("pendulum2", M_Bo_B);
+  const RigidBody<double>& pendulum2 = model->AddLink("pendulum2", M_Bo_B);
   model->AddJoint<RevoluteJoint>("joint1", world_body, {}, pendulum2, {},
                                  Vector3d::UnitZ());
 
-  EXPECT_EQ(model->num_bodies(), 3);
+  EXPECT_EQ(model->num_links(), 3);
   EXPECT_EQ(model->num_joints(), 2);
 
   // Topology is invalid before MultibodyTree::Finalize().
-  EXPECT_FALSE(model->topology_is_valid());
+  EXPECT_FALSE(model->is_finalized());
+  EXPECT_FALSE(model->graph().forest_is_valid());
   // Verifies that the topology of this model gets validated at finalize stage.
   DRAKE_EXPECT_NO_THROW(model->Finalize());
-  EXPECT_TRUE(model->topology_is_valid());
+  EXPECT_TRUE(model->graph().forest_is_valid());
+  EXPECT_TRUE(model->is_finalized());
 
   // Body identifiers are unique and are assigned by MultibodyTree in increasing
   // order starting with index = 0 (world_index()) for the "world" body.
   EXPECT_EQ(world_body.index(), world_index());
-  EXPECT_EQ(pendulum.index(), BodyIndex(1));
-  EXPECT_EQ(pendulum2.index(), BodyIndex(2));
+  EXPECT_EQ(pendulum.index(), LinkIndex(1));
+  EXPECT_EQ(pendulum2.index(), LinkIndex(2));
 
   // Tests API to access bodies.
-  EXPECT_EQ(model->get_body(BodyIndex(1)).index(), pendulum.index());
-  EXPECT_EQ(model->get_body(BodyIndex(2)).index(), pendulum2.index());
+  EXPECT_EQ(model->get_link(LinkIndex(1)).index(), pendulum.index());
+  EXPECT_EQ(model->get_link(LinkIndex(2)).index(), pendulum2.index());
 
   // Verifies that an exception is throw if a call to Finalize() is attempted to
   // an already finalized MultibodyTree.
   EXPECT_THROW(model->Finalize(), std::exception);
 
   // Verifies that after compilation no more bodies can be added.
-  EXPECT_THROW(model->AddRigidBody("B", M_Bo_B), std::exception);
+  EXPECT_THROW(model->AddLink("B", M_Bo_B), std::exception);
 }
 
 // Tests the basic MultibodyTree API to add bodies and joints.
-// Tests we cannot create graph loops. See previous test for notes.
+// Tests we cannot currently create graph loops. See previous test for notes.
 GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   auto model = std::make_unique<MultibodyTree<double>>();
-  const RigidBody<double>& world_body = model->world_body();
+  const RigidBody<double>& world_body = model->world_link();
   const auto M_Bo_B = SpatialInertia<double>::NaN();
-  const RigidBody<double>& pendulum = model->AddRigidBody("pendulum", M_Bo_B);
+  const RigidBody<double>& pendulum = model->AddLink("pendulum", M_Bo_B);
   model->AddJoint<RevoluteJoint>("joint0", world_body, {}, pendulum, {},
                                  Vector3d::UnitZ());
-  const RigidBody<double>& pendulum2 = model->AddRigidBody("pendulum2", M_Bo_B);
+  const RigidBody<double>& pendulum2 = model->AddLink("pendulum2", M_Bo_B);
   model->AddJoint<RevoluteJoint>("joint1", world_body, {}, pendulum2, {},
                                  Vector3d::UnitZ());
 
-  EXPECT_EQ(model->num_bodies(), 3);
+  EXPECT_EQ(model->num_links(), 3);
   EXPECT_EQ(model->num_joints(), 2);
 
-  // Attempts to create a loop. Verify we gen an exception at Finalize().
+  // Attempts to create a loop. Verify we get an exception at Finalize().
   model->AddJoint<RevoluteJoint>("joint2", pendulum, {}, pendulum2, {},
                                  Vector3d::UnitZ());
 
-  EXPECT_EQ(model->num_bodies(), 3);
+  EXPECT_EQ(model->num_links(), 3);
   EXPECT_EQ(model->num_joints(), 3);
 
-  // Topology is invalid before MultibodyTree::Finalize(), and after fail.
-  EXPECT_FALSE(model->topology_is_valid());
-  DRAKE_EXPECT_THROWS_MESSAGE(model->Finalize(),
-                              ".*kinematic loop using joints.*");
-  EXPECT_FALSE(model->topology_is_valid());
+  // Topology is invalid before MultibodyTree::Finalize() or after a
+  // topological failure (unsupported loop in graph).
+  EXPECT_FALSE(model->is_finalized());
+  EXPECT_FALSE(model->graph().forest_is_valid());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model->Finalize(),
+      "The bodies and joints of this system form one or more loops.*");
+  EXPECT_FALSE(model->graph().forest_is_valid());
+  EXPECT_FALSE(model->is_finalized());
 }
 
 // Tests the correctness of MultibodyElement checks to verify one or more
@@ -182,18 +189,18 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   // expressed in the body frame B.
   const auto M_Bo_B = SpatialInertia<double>::NaN();
 
-  const RigidBody<double>& body1 = model1->AddRigidBody("body1", M_Bo_B);
-  const RigidBody<double>& body2 = model2->AddRigidBody("body2", M_Bo_B);
+  const RigidBody<double>& body1 = model1->AddLink("body1", M_Bo_B);
+  const RigidBody<double>& body2 = model2->AddLink("body2", M_Bo_B);
 
   // Verify we can add a joint between body1 and the world of model1.
   const RevoluteJoint<double>& pin1 = model1->AddJoint<RevoluteJoint>(
-      "pin1", model1->world_body(), std::nullopt /*inboard frame*/, body1,
+      "pin1", model1->world_link(), std::nullopt /*inboard frame*/, body1,
       std::nullopt /*outboard frame*/, Vector3d::UnitZ() /*axis of rotation*/);
 
   // Verify we can't add a joint between bodies that belong to another plant.
   DRAKE_EXPECT_THROWS_MESSAGE(
       (model1->AddJoint<RevoluteJoint>(
-          "nogood", model1->world_body(), std::nullopt,
+          "nogood", model1->world_link(), std::nullopt,
           body2 /*body2 belongs to model2, not model1!!!*/, std::nullopt,
           Vector3d::UnitZ() /*axis of rotation*/)),
       "AddJoint.*can't add joint nogood.*world.*body2.*different.*Plant.*");
@@ -221,9 +228,9 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   const auto& body1_tree = MultibodyElementTester::get_parent_tree(body1);
   const auto& body2_tree = MultibodyElementTester::get_parent_tree(body2);
   EXPECT_NE(&body1_tree, &body2_tree);
-  EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model1->world_body()),
+  EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model1->world_link()),
             &body1_tree);
-  EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model2->world_body()),
+  EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model2->world_link()),
             &body2_tree);
 
   // Verify that bodies have the correct parent tree.
@@ -276,7 +283,7 @@ class TreeTopologyTests : public ::testing::Test {
     model_ = std::make_unique<MultibodyTree<double>>();
 
     const int kNumRigidBodies = 10;
-    bodies_.push_back(&model_->world_body());
+    bodies_.push_back(&model_->world_link());
     for (int i = 1; i < kNumRigidBodies; ++i) AddTestBody(i);
 
     // Adds Joints to connect bodies according to the following diagram:
@@ -296,7 +303,7 @@ class TreeTopologyTests : public ::testing::Test {
     // It is safe here since this tests only focus on topological information.
     const auto M_Bo_B = SpatialInertia<double>::NaN();
     const RigidBody<double>* body =
-        &model_->AddRigidBody(fmt::format("TestBody_{}", i), M_Bo_B);
+        &model_->AddLink(fmt::format("TestBody_{}", i), M_Bo_B);
     bodies_.push_back(body);
     return body;
   }
@@ -327,157 +334,135 @@ class TreeTopologyTests : public ::testing::Test {
 
   void FinalizeModel() { model_->Finalize(); }
 
-  // Performs a number of tests on the BodyNodeTopology corresponding to the
+  // Performs a number of tests on the BodyNode corresponding to the
   // body indexed by `body`.
-  static void TestBodyNode(const MultibodyTreeTopology& topology,
-                           BodyIndex body) {
-    const MobodIndex node = topology.get_rigid_body(body).mobod_index;
+  static void TestBodyNode(const SpanningForest& forest, BodyIndex body) {
+    // In case of merged composites, many links may follow the same mobod.
+    // Make sure the link's mobod agrees that the link follows it.
+    const LinkJointGraph::Link& link = forest.link_by_index(body);
+    const MobodIndex mobod_index = link.mobod_index();
+    const SpanningForest::Mobod& mobod = forest.mobods(mobod_index);
+    EXPECT_EQ(mobod.index(), mobod_index);
+    mobod.HasFollower(link.ordinal());
 
-    // Verify that the corresponding RigidBody and BodyNode reference each other
-    // correctly.
-    EXPECT_EQ(topology.get_rigid_body(body).mobod_index,
-              topology.get_body_node(node).index);
-    EXPECT_EQ(topology.get_body_node(node).rigid_body,
-              topology.get_rigid_body(body).index);
+    const MobodIndex parent_mobod_index = mobod.inboard_mobod();
+    EXPECT_TRUE(parent_mobod_index.is_valid() ^ link.is_world());
 
-    // They should belong to the same level.
-    EXPECT_EQ(topology.get_rigid_body(body).level,
-              topology.get_body_node(node).level);
+    if (link.is_world()) return;
 
-    const MobodIndex parent_node =
-        topology.get_body_node(node).parent_body_node;
-    // Either (and thus the exclusive or):
-    // 1. `body` is the world, and thus `parent_node` is invalid, XOR
-    // 2. `body` is not the world, and thus we have a valid `parent_node`.
-    EXPECT_TRUE(parent_node.is_valid() ^ (body == world_index()));
-
-    if (body != world_index()) {
-      // Verifies BodyNode has the parent node to the correct body.
-      const BodyIndex parent_body =
-          topology.get_body_node(parent_node).rigid_body;
-      EXPECT_TRUE(parent_body.is_valid());
-      EXPECT_EQ(parent_body, topology.get_rigid_body(body).parent_body);
-      EXPECT_EQ(topology.get_body_node(parent_node).index,
-                topology.get_rigid_body(parent_body).mobod_index);
-
-      // Verifies that BodyNode and Mobilizer indexes match.
-      const MobodIndex mobilizer = topology.get_body_node(node).index;
-      EXPECT_EQ(mobilizer, topology.get_rigid_body(body).inboard_mobilizer);
-      EXPECT_EQ(topology.get_mobilizer(mobilizer).index, node);
-
-      // Helper lambda to check if this "node" effectively is a child of
-      // "parent_node".
-      auto is_child_of_parent = [&]() {
-        const auto& children = topology.get_body_node(parent_node).child_nodes;
-        return std::find(children.begin(), children.end(), node) !=
-               children.end();
-      };
-      EXPECT_TRUE(is_child_of_parent());
-    }
+    // Verify that the link's mobod is actually a child of its parent mobod.
+    const SpanningForest::Mobod& parent_mobod =
+        forest.mobods(parent_mobod_index);
+    const std::vector<MobodIndex>& child_mobods =
+        parent_mobod.outboard_mobods();
+    EXPECT_TRUE(std::find(child_mobods.begin(), child_mobods.end(),
+                          mobod_index) != child_mobods.end());
   }
 
-  static const BodyNodeTopology& node_topology_from_body_index(
-      const MultibodyTreeTopology& topology, int body_index) {
-    return topology.get_body_node(
-        topology.get_rigid_body(BodyIndex(body_index)).mobod_index);
-  }
-
-  static void VerifyTopology(const MultibodyTreeTopology& topology) {
+  static void VerifyTopology(const SpanningForest& forest) {
     const int kNumRigidBodies = 10;
 
-    EXPECT_EQ(topology.num_rigid_bodies(), kNumRigidBodies);
-    EXPECT_EQ(topology.num_mobilizers(), kNumRigidBodies);
-    EXPECT_EQ(topology.num_mobods(), kNumRigidBodies);
-    EXPECT_EQ(topology.forest_height(), 4);
+    EXPECT_EQ(forest.num_links(), kNumRigidBodies);
+    EXPECT_EQ(forest.num_mobods(), kNumRigidBodies);
+    EXPECT_EQ(forest.height(), 4);
 
     // These sets contain the indexes of the RigidBodies in each tree level.
     // The order of these indexes in each set is not important, but only the
     // fact that they belong to the appropriate set.
-    set<BodyIndex> expected_level0 = {BodyIndex(0)};
-    set<BodyIndex> expected_level1 = {BodyIndex(4), BodyIndex(7), BodyIndex(5),
-                                      BodyIndex(9)};
-    set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3),
-                                      BodyIndex(8)};
-    set<BodyIndex> expected_level3 = {BodyIndex(6)};
-
-    std::vector<std::set<BodyIndex>> levels(topology.num_rigid_bodies());
-    for (BodyIndex index(0); index < topology.num_rigid_bodies(); ++index) {
-      const RigidBodyTopology& rigid_body_topology =
-          topology.get_rigid_body(index);
-      levels[rigid_body_topology.level].insert(index);
-    }
+    const set<LinkIndex> expected_level0 = {LinkIndex(0)};
+    const set<LinkIndex> expected_level1 = {LinkIndex(4), LinkIndex(7),
+                                            LinkIndex(5), LinkIndex(9)};
+    const set<LinkIndex> expected_level2 = {LinkIndex(2), LinkIndex(1),
+                                            LinkIndex(3), LinkIndex(8)};
+    const set<LinkIndex> expected_level3 = {LinkIndex(6)};
 
     // Comparison of sets. The order of the elements is not important.
+    std::vector<std::set<LinkIndex>> levels(forest.height());
+    for (const LinkJointGraph::Link& link : forest.links()) {
+      const int level = forest.mobods(link.mobod_index()).level();
+      levels[level].insert(link.index());
+    }
     EXPECT_EQ(levels[0], expected_level0);
     EXPECT_EQ(levels[1], expected_level1);
     EXPECT_EQ(levels[2], expected_level2);
     EXPECT_EQ(levels[3], expected_level3);
 
+    const std::map<LinkIndex, int> expected_num_outboards{
+        {LinkIndex(0), 4}, {LinkIndex(1), 1}, {LinkIndex(2), 0},
+        {LinkIndex(3), 0}, {LinkIndex(4), 2}, {LinkIndex(5), 1},
+        {LinkIndex(6), 0}, {LinkIndex(7), 0}, {LinkIndex(8), 0},
+        {LinkIndex(9), 1}};
+
     // Verifies the expected number of child nodes.
-    EXPECT_EQ(node_topology_from_body_index(topology, 0).get_num_children(), 4);
-    EXPECT_EQ(node_topology_from_body_index(topology, 4).get_num_children(), 2);
-    EXPECT_EQ(node_topology_from_body_index(topology, 7).get_num_children(), 0);
-    EXPECT_EQ(node_topology_from_body_index(topology, 5).get_num_children(), 1);
-    EXPECT_EQ(node_topology_from_body_index(topology, 9).get_num_children(), 1);
-    EXPECT_EQ(node_topology_from_body_index(topology, 2).get_num_children(), 0);
-    EXPECT_EQ(node_topology_from_body_index(topology, 1).get_num_children(), 1);
-    EXPECT_EQ(node_topology_from_body_index(topology, 3).get_num_children(), 0);
-    EXPECT_EQ(node_topology_from_body_index(topology, 8).get_num_children(), 0);
-    EXPECT_EQ(node_topology_from_body_index(topology, 6).get_num_children(), 0);
+    for (const auto& [link_index, num_outboards] : expected_num_outboards) {
+      const LinkOrdinal ordinal = forest.graph().index_to_ordinal(link_index);
+      const LinkJointGraph::Link& link = forest.links(ordinal);
+      const SpanningForest::Mobod& mobod = forest.mobods(link.mobod_index());
+      EXPECT_EQ(ssize(mobod.outboard_mobods()), num_outboards);
+    }
 
     // Checks the correctness of each BodyNode associated with a Link.
     for (BodyIndex index(0); index < kNumRigidBodies; ++index) {
-      TestBodyNode(topology, index);
+      TestBodyNode(forest, index);
     }
 
     // We now verify the precise expected topology. We use our internal
     // knowledge that branches are created according to the order in which
     // Joints are added. Refer to schematic in the documentation of this
     // test fixture.
-    EXPECT_EQ(world_mobod_index(), MobodIndex(0));
-    EXPECT_EQ(topology.get_body_node(MobodIndex(0)).rigid_body, 0);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(1)).rigid_body, 7);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(2)).rigid_body, 5);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(3)).rigid_body, 3);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(4)).rigid_body, 9);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(5)).rigid_body, 8);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(6)).rigid_body, 4);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(7)).rigid_body, 2);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(8)).rigid_body, 1);
-    EXPECT_EQ(topology.get_body_node(MobodIndex(9)).rigid_body, 6);
+    const std::map<MobodIndex, LinkIndex> expected_mobod_to_link = {
+        {MobodIndex(0), LinkIndex(0)}, {MobodIndex(1), LinkIndex(7)},
+        {MobodIndex(2), LinkIndex(5)}, {MobodIndex(3), LinkIndex(3)},
+        {MobodIndex(4), LinkIndex(9)}, {MobodIndex(5), LinkIndex(8)},
+        {MobodIndex(6), LinkIndex(4)}, {MobodIndex(7), LinkIndex(2)},
+        {MobodIndex(8), LinkIndex(1)}, {MobodIndex(9), LinkIndex(6)}};
 
-    // Verify the expected "forest" of trees.
-    EXPECT_EQ(topology.num_trees(), 4);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(0)), 1);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 0);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(3)), 4);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(0)), 0);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(1)), 1);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(2)), 3);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(3)), 3);
+    for (const auto& [mobod_index, primary_link_index] :
+         expected_mobod_to_link) {
+      const SpanningForest::Mobod& mobod = forest.mobods(mobod_index);
+      const LinkJointGraph::Link& link =
+          forest.links(mobod.active_link_ordinal());
+      EXPECT_EQ(link.index(), primary_link_index);
+    }
+
+    // Verify the expected forest of trees.
+    EXPECT_EQ(forest.num_trees(), 4);
+    EXPECT_EQ(forest.trees(TreeIndex(0)).nv(), 1);
+    EXPECT_EQ(forest.trees(TreeIndex(1)).nv(), 2);
+    EXPECT_EQ(forest.trees(TreeIndex(2)).nv(), 0);
+    EXPECT_EQ(forest.trees(TreeIndex(3)).nv(), 4);
+    EXPECT_EQ(forest.trees(TreeIndex(0)).v_start(), 0);
+    EXPECT_EQ(forest.trees(TreeIndex(1)).v_start(), 1);
+    EXPECT_EQ(forest.trees(TreeIndex(2)).v_start(), 3);
+    EXPECT_EQ(forest.trees(TreeIndex(3)).v_start(), 3);
+
+    const std::map<LinkIndex, TreeIndex> expected_link_to_tree = {
+        {LinkIndex(0), TreeIndex()},  {LinkIndex(1), TreeIndex(3)},
+        {LinkIndex(2), TreeIndex(3)}, {LinkIndex(3), TreeIndex(1)},
+        {LinkIndex(4), TreeIndex(3)}, {LinkIndex(5), TreeIndex(1)},
+        {LinkIndex(6), TreeIndex(3)}, {LinkIndex(7), TreeIndex(0)},
+        {LinkIndex(8), TreeIndex(2)}, {LinkIndex(9), TreeIndex(2)}};
+
     // The world body does not belong to a tree. Therefore the returned index is
     // invalid.
-    EXPECT_FALSE(topology.body_to_tree_index(world_index()).is_valid());
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(7)), TreeIndex(0));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(5)), TreeIndex(1));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(3)), TreeIndex(1));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(9)), TreeIndex(2));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(8)), TreeIndex(2));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(4)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(2)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(1)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(6)), TreeIndex(3));
+    for (const auto& [link_index, tree_index] : expected_link_to_tree) {
+      if (link_index == world_index()) {
+        EXPECT_FALSE(forest.link_to_tree_index(link_index).is_valid());
+        continue;
+      }
+      EXPECT_EQ(forest.link_to_tree_index(link_index), tree_index);
+    }
 
-    EXPECT_EQ(topology.num_velocities(), 7);
-    EXPECT_EQ(topology.velocity_to_tree_index(0), TreeIndex(0));
-    EXPECT_EQ(topology.velocity_to_tree_index(1), TreeIndex(1));
-    EXPECT_EQ(topology.velocity_to_tree_index(2), TreeIndex(1));
     // No velocities map to Tree 2.
-    EXPECT_EQ(topology.velocity_to_tree_index(3), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(4), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(5), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(6), TreeIndex(3));
+    const std::map<int, TreeIndex> expected_velocity_to_tree = {
+        {0, TreeIndex(0)}, {1, TreeIndex(1)}, {2, TreeIndex(1)},
+        {3, TreeIndex(3)}, {4, TreeIndex(3)}, {5, TreeIndex(3)},
+        {6, TreeIndex(3)}};
+
+    EXPECT_EQ(forest.num_velocities(), 7);
+    for (const auto& [velocity_index, tree_index] : expected_velocity_to_tree) {
+      EXPECT_EQ(forest.v_to_tree_index(velocity_index), tree_index);
+    }
   }
 
  protected:
@@ -494,62 +479,49 @@ class TreeTopologyTests : public ::testing::Test {
 // This unit tests verifies that the multibody topology is properly compiled.
 TEST_F(TreeTopologyTests, Finalize) {
   model_->Finalize();
-  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_links(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
 
-  const MultibodyTreeTopology& topology = model_->get_topology();
-  EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
-  EXPECT_EQ(topology.forest_height(), 4);
+  const SpanningForest& forest = model_->forest();
+  EXPECT_EQ(forest.num_mobods(), 10);
+  EXPECT_EQ(forest.height(), 4);
 
-  VerifyTopology(topology);
+  VerifyTopology(forest);
 }
 
 // This unit tests verifies the correct number of generalized positions and
 // velocities as well as the start indexes into the state vector.
 TEST_F(TreeTopologyTests, SizesAndIndexing) {
   FinalizeModel();
-  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_links(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
   EXPECT_EQ(model_->num_joints(), 9);
 
-  const MultibodyTreeTopology& topology = model_->get_topology();
-  EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
-  EXPECT_EQ(topology.forest_height(), 4);
+  const SpanningForest& forest = model_->forest();
 
-  // Verifies the total number of generalized positions and velocities.
-  EXPECT_EQ(topology.num_positions(), 7);
-  EXPECT_EQ(topology.num_velocities(), 7);
-  EXPECT_EQ(topology.num_states(), 14);
+  EXPECT_EQ(forest.num_mobods(), 10);
+  EXPECT_EQ(forest.height(), 4);
+  EXPECT_EQ(forest.num_positions(), 7);
+  EXPECT_EQ(forest.num_velocities(), 7);
 
-  // Tip-to-Base recursion.
   // In this case all mobilizers are RevoluteMobilizer objects with one
   // generalized position and one generalized velocity per mobilizer.
   int positions_index = 0;
   int velocities_index = 0;
-  for (MobodIndex mobod_index(1); /* Skips the world mobilized body. */
-       mobod_index < topology.num_mobods(); ++mobod_index) {
-    const BodyNodeTopology& node = topology.get_body_node(mobod_index);
-    const BodyIndex body_index = node.rigid_body;
-    const MobodIndex mobilizer_index = node.index;
+  for (const SpanningForest::Mobod& mobod : forest.mobods()) {
+    const LinkOrdinal active_link_ordinal = mobod.active_link_ordinal();
+    const LinkJointGraph::Link active_link = forest.links(active_link_ordinal);
 
-    const MobilizerTopology& mobilizer_topology =
-        topology.get_mobilizer(mobilizer_index);
+    EXPECT_EQ(active_link.mobod_index(), mobod.index());
+    EXPECT_EQ(active_link.ordinal(), active_link_ordinal);
 
-    EXPECT_EQ(body_index, bodies_[body_index]->index());
-
-    // Verify positions and velocity indexes.
-    EXPECT_EQ(positions_index, node.mobilizer_positions_start);
-    EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
-    EXPECT_EQ(velocities_index, node.mobilizer_velocities_start_in_v);
-    EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start_in_v);
-
-    // Mobilizers 5 and 8 are weld joints, with no velocities. All other
-    // mobilizers introduce one position and one velocity.
-    positions_index += mobilizer_topology.num_positions;
-    velocities_index += mobilizer_topology.num_velocities;
+    EXPECT_EQ(positions_index, mobod.q_start());
+    EXPECT_EQ(velocities_index, mobod.v_start());
+    positions_index += mobod.nq();
+    velocities_index += mobod.nv();
   }
-  EXPECT_EQ(positions_index, topology.num_positions());
-  EXPECT_EQ(velocities_index, topology.num_velocities());
+  EXPECT_EQ(positions_index, forest.num_positions());
+  EXPECT_EQ(velocities_index, forest.num_velocities());
 }
 
 // Verifies that the clone of a given MultibodyTree model created with
@@ -557,27 +529,21 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
 // model.
 TEST_F(TreeTopologyTests, Clone) {
   model_->Finalize();
-  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_links(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
   EXPECT_EQ(model_->num_force_elements(), 1);
-  const MultibodyTreeTopology& topology = model_->get_topology();
+  const SpanningForest& forest = model_->forest();
 
   auto cloned_model = model_->Clone();
-  EXPECT_EQ(cloned_model->num_bodies(), 10);
+  EXPECT_EQ(cloned_model->num_links(), 10);
   EXPECT_EQ(cloned_model->num_mobilizers(), 10);
   EXPECT_EQ(cloned_model->num_force_elements(), 1);
-  const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
+  const SpanningForest& clone_forest = cloned_model->forest();
 
   // Verify the cloned topology actually is a different object.
-  ASSERT_NE(&topology, &clone_topology);
+  ASSERT_NE(&forest, &clone_forest);
 
-  // The topology of the clone must be exactly equal to the topology of the
-  // original MultibodyTree.
-  EXPECT_EQ(topology, clone_topology);
-
-  // Even though the test above confirms the two topologies are exactly equal,
-  // we perform a number of additional tests.
-  VerifyTopology(clone_topology);
+  VerifyTopology(clone_forest);
 }
 
 // Verifies that the AutoDiffXd version of a given MultibodyTree model created
@@ -585,23 +551,15 @@ TEST_F(TreeTopologyTests, Clone) {
 // original model.
 TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   model_->Finalize();
-  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_links(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
-  const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto autodiff_model = model_->ToAutoDiffXd();
-  EXPECT_EQ(autodiff_model->num_bodies(), 10);
+  EXPECT_EQ(autodiff_model->num_links(), 10);
   EXPECT_EQ(autodiff_model->num_mobilizers(), 10);
-  const MultibodyTreeTopology& autodiff_topology =
-      autodiff_model->get_topology();
+  const SpanningForest& autodiff_forest = autodiff_model->forest();
 
-  // The topology of the clone must be exactly equal to the topology of the
-  // original MultibodyTree.
-  EXPECT_EQ(topology, autodiff_topology);
-
-  // Even though the test above confirms the two topologies are exactly equal,
-  // we perform a number of additional tests.
-  VerifyTopology(autodiff_topology);
+  VerifyTopology(autodiff_forest);
 }
 
 // Verifies that the symbolic version of a given MultibodyTree model created
@@ -609,23 +567,15 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
 // original model.
 TEST_F(TreeTopologyTests, ToSymbolic) {
   model_->Finalize();
-  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_links(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
-  const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto symbolic_model = model_->CloneToScalar<symbolic::Expression>();
-  EXPECT_EQ(symbolic_model->num_bodies(), 10);
+  EXPECT_EQ(symbolic_model->num_links(), 10);
   EXPECT_EQ(symbolic_model->num_mobilizers(), 10);
-  const MultibodyTreeTopology& symbolic_topology =
-      symbolic_model->get_topology();
+  const SpanningForest& symbolic_forest = symbolic_model->forest();
 
-  // The topology of the clone must be exactly equal to the topology of the
-  // original MultibodyTree.
-  EXPECT_EQ(topology, symbolic_topology);
-
-  // Even though the test above confirms the two topologies are exactly equal,
-  // we perform a number of additional tests.
-  VerifyTopology(symbolic_topology);
+  VerifyTopology(symbolic_forest);
 }
 
 // Confirm that the topology methods SpanningForest::FindPathFromWorld() and
@@ -664,7 +614,7 @@ TEST_F(TreeTopologyTests, KinematicPathFromWorld) {
     const MobodIndex expected_mobod_index =
         forest.link_by_index(body_index).mobod_index();
     const SpanningForest::Mobod& mobod = forest.mobods(expected_mobod_index);
-    EXPECT_EQ(forest.links(mobod.link_ordinal()).index(), body_index);
+    EXPECT_EQ(forest.links(mobod.active_link_ordinal()).index(), body_index);
     // Both expected and computed Mobods must be at the same level (depth) in
     // the tree.
     const int level = mobod.level();
@@ -684,22 +634,20 @@ TEST_F(TreeTopologyTests, GetTransitiveOutboardBodies) {
   const std::vector<BodyIndex> body4{body4_index};
   std::set<BodyIndex> expected_outboard_bodies{body1_index, body2_index,
                                                body4_index, body6_index};
-  EXPECT_EQ(model_->GetBodiesOutboardOfBodies(body4), expected_outboard_bodies);
+  EXPECT_EQ(model_->GetLinksOutboardOfLinks(body4), expected_outboard_bodies);
 
   const std::vector<BodyIndex> body14{body1_index, body4_index};
-  EXPECT_EQ(model_->GetBodiesOutboardOfBodies(body14),
-            expected_outboard_bodies);
+  EXPECT_EQ(model_->GetLinksOutboardOfLinks(body14), expected_outboard_bodies);
 
   const std::vector<BodyIndex> body94{body9_index, body4_index};
   expected_outboard_bodies.insert(body8_index);
   expected_outboard_bodies.insert(body9_index);
-  EXPECT_EQ(model_->GetBodiesOutboardOfBodies(body94),
-            expected_outboard_bodies);
+  EXPECT_EQ(model_->GetLinksOutboardOfLinks(body94), expected_outboard_bodies);
 
   const std::vector<BodyIndex> body6{body6_index};
   expected_outboard_bodies.clear();
   expected_outboard_bodies.insert(body6_index);
-  EXPECT_EQ(model_->GetBodiesOutboardOfBodies(body6), expected_outboard_bodies);
+  EXPECT_EQ(model_->GetLinksOutboardOfLinks(body6), expected_outboard_bodies);
 }
 
 // Unit test to verify that LinkJointGraph::GetSubgraphsOfWeldedLinks()
@@ -749,9 +697,8 @@ GTEST_TEST(WeldedBodies, CreateSubgraphsOfWeldedLinks) {
 
   // Helper to add a rigid body. For these tests the value of the spatial
   // inertia is not relevant and therefore we leave it un-initialized.
-  auto AddRigidBody =
-      [&model](const std::string& name) -> const RigidBody<double>& {
-    return model.AddRigidBody(name, SpatialInertia<double>::NaN());
+  auto AddLink = [&model](const std::string& name) -> const RigidBody<double>& {
+    return model.AddLink(name, SpatialInertia<double>::NaN());
   };
 
   // Helper to add a joint between two bodies. For this test the actual type of
@@ -772,28 +719,28 @@ GTEST_TEST(WeldedBodies, CreateSubgraphsOfWeldedLinks) {
   };
 
   // Start building the test model.
-  const RigidBody<double>& body_a = AddRigidBody("a");
-  const RigidBody<double>& body_b = AddRigidBody("b");
-  const RigidBody<double>& body_c = AddRigidBody("c");
-  const RigidBody<double>& body_d = AddRigidBody("d");
-  const RigidBody<double>& body_e = AddRigidBody("e");
-  const RigidBody<double>& body_f = AddRigidBody("f");
-  const RigidBody<double>& body_g = AddRigidBody("g");
-  const RigidBody<double>& body_h = AddRigidBody("h");
-  const RigidBody<double>& body_i = AddRigidBody("i");
-  const RigidBody<double>& body_j = AddRigidBody("j");
-  const RigidBody<double>& body_k = AddRigidBody("k");
-  const RigidBody<double>& body_l = AddRigidBody("l");
-  const RigidBody<double>& body_m = AddRigidBody("m");
-  const RigidBody<double>& body_n = AddRigidBody("n");
+  const RigidBody<double>& body_a = AddLink("a");
+  const RigidBody<double>& body_b = AddLink("b");
+  const RigidBody<double>& body_c = AddLink("c");
+  const RigidBody<double>& body_d = AddLink("d");
+  const RigidBody<double>& body_e = AddLink("e");
+  const RigidBody<double>& body_f = AddLink("f");
+  const RigidBody<double>& body_g = AddLink("g");
+  const RigidBody<double>& body_h = AddLink("h");
+  const RigidBody<double>& body_i = AddLink("i");
+  const RigidBody<double>& body_j = AddLink("j");
+  const RigidBody<double>& body_k = AddLink("k");
+  const RigidBody<double>& body_l = AddLink("l");
+  const RigidBody<double>& body_m = AddLink("m");
+  const RigidBody<double>& body_n = AddLink("n");
 
-  AddJoint("wa", model.world_body(), body_a);
+  AddJoint("wa", model.world_link(), body_a);
 
   // Welded body formed by bodies a and b.
   AddWeldJoint("ab", body_a, body_b);
 
   AddJoint("bc", body_b, body_c);
-  AddJoint("wd", model.world_body(), body_d);
+  AddJoint("wd", model.world_link(), body_d);
 
   // Welded body formed by bodies d, e, f and, g.
   AddWeldJoint("de", body_d, body_e);
@@ -801,14 +748,14 @@ GTEST_TEST(WeldedBodies, CreateSubgraphsOfWeldedLinks) {
   AddWeldJoint("dg", body_d, body_g);
 
   AddJoint("gh", body_g, body_h);
-  AddJoint("wi", model.world_body(), body_i);
+  AddJoint("wi", model.world_link(), body_i);
   AddJoint("ij", body_i, body_j);
 
   // Welded body formed by bodies j and k.
   AddWeldJoint("jk", body_j, body_k);
 
   // Welded body formed by bodies w (world), l, m and n.
-  AddWeldJoint("wl", model.world_body(), body_l);
+  AddWeldJoint("wl", model.world_link(), body_l);
   AddWeldJoint("lm", body_l, body_m);
   AddWeldJoint("ln", body_l, body_n);
 
@@ -895,7 +842,7 @@ const RigidBody<double>& AddCubicalLink(
   const UnitInertia<double> G_BBo_B = MakeTestCubeUnitInertia(link_length);
   const SpatialInertia<double> M_BBo_B(mass, p_BoBcm_B, G_BBo_B,
                                        skip_validity_check);
-  return model->AddRigidBody(body_name, M_BBo_B);
+  return model->AddLink(body_name, M_BBo_B);
 }
 
 // Verify RigidBody::default_rotational_inertia() and related MultibodyTree
@@ -991,7 +938,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroMass) {
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
   // Add a prismatic joint between the world body and bodyA.
-  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_body(), body_A);
+  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_link(), body_A);
 
   // Add a weld joint between bodyA and bodyB.
   AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
@@ -1001,7 +948,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroMass) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "is massless, but its joint has a translational degree of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
                               expected_message);
@@ -1018,7 +965,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroInertia) {
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
   // Add a revolute joint between the world body and bodyA.
-  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_body(), body_A);
+  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_link(), body_A);
 
   // Add a weld joint between bodyA and bodyB.
   AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
@@ -1028,7 +975,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroInertia) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "has zero rotational inertia, but its joint has a rotational degree "
       "of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
@@ -1049,7 +996,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithNaNInertia) {
       AddCubicalLink(&model, "bodyB", mass, length, skip_validity_check);
 
   // Add a revolute joint between the world body and bodyA.
-  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_body(), body_A);
+  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_link(), body_A);
 
   // Add a weld joint between bodyA and bodyB.
   AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
@@ -1059,7 +1006,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithNaNInertia) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "has a NaN rotational inertia, but its joint has a rotational degree "
       "of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
@@ -1077,7 +1024,7 @@ GTEST_TEST(WeldedBodies, NoErrorIfCompositeBodyHasMassDueToWeldedBody) {
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
   // Add a prismatic joint between the world body and bodyA (bodyA has mass 0).
-  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_body(), body_A);
+  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_link(), body_A);
 
   // Add a weld joint between bodyA and bodyB (bodyB has mass 1).
   AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
@@ -1100,7 +1047,7 @@ GTEST_TEST(WeldedBodies, NoErrorIfCompositeBodyHasInertiaDueToWeldedBody) {
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
   // Add a revolute joint between the world body and bodyA.
-  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_body(), body_A);
+  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_link(), body_A);
 
   // Add a weld joint between bodyA and bodyB (bodyB has non-zero inertia).
   AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
@@ -1125,7 +1072,7 @@ GTEST_TEST(TestDistalBody, NoThrowErrorIfZeroMassBodyIsNotDistal) {
   const RigidBody<double>& body_D = AddCubicalLink(&model, "bodyD", mD, length);
 
   // Add world to bodyA X-prismatic joint (bodyA has zero mass and inertia).
-  AddPrismaticJointX(&model, "WA_prismatic_jointX", model.world_body(), body_A);
+  AddPrismaticJointX(&model, "WA_prismatic_jointX", model.world_link(), body_A);
 
   // Add bodyA to bodyB Y-prismatic joint (bodyB has zero mass and inertia).
   model.AddJoint<PrismaticJoint>("AB_prismatic_jointY", body_A, {}, body_B, {},
@@ -1159,7 +1106,7 @@ GTEST_TEST(TestDistalBody, NoThrowErrorIfZeroInertiaBodyIsNotDistal) {
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
   // Add a revolute joint from the world body to bodyA (bodyA has no inertia).
-  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_body(), body_A);
+  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_link(), body_A);
 
   // Add a revolute joint between bodyA and bodyB (bodyB has non-zero inertia).
   AddRevoluteJointZ(&model, "AB_revolute_joint", body_A, body_B);

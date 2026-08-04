@@ -1,5 +1,7 @@
 #include "drake/examples/pendulum/pendulum_plant.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"

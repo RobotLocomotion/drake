@@ -30,10 +30,10 @@ drake_cc_library(
 drake_py_binary(
     name = "plot_limit_cycle",
     srcs = ["plot_limit_cycle.py"],
-    add_test_rule = 1,
     deps = [
         "//bindings/pydrake",
     ],
+    add_test_rule = True,
 )
 
 drake_cc_googletest(

@@ -1,4 +1,10 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/planning_trajectory_optimization.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -15,24 +21,29 @@ namespace internal {
 
 template <typename C>
 void RegisterAddConstraintToAllKnotPoints(
-    py::class_<planning::trajectory_optimization::MultipleShooting>* cls) {
+    class_<planning::trajectory_optimization::MultipleShooting>* cls) {
   using drake::planning::trajectory_optimization::MultipleShooting;
-  constexpr auto& doc = pydrake_doc.drake.planning.trajectory_optimization;
+  constexpr auto& doc = pydrake_doc_planning_trajectory_optimization.drake
+                            .planning.trajectory_optimization;
   cls->def(
       "AddConstraintToAllKnotPoints",
-      [](MultipleShooting* self, std::shared_ptr<C> constraint,
+      [](MultipleShooting* self, C* constraint,
           const Eigen::Ref<const VectorX<symbolic::Variable>>& vars)
           -> std::vector<solvers::Binding<C>> {
-        return self->AddConstraintToAllKnotPoints<C>(constraint, vars);
+        // Maintain python wrapper to avoid hazards like #20131.
+        py::object constraint_py = py::cast(constraint);
+        return self->AddConstraintToAllKnotPoints<C>(
+            make_shared_ptr_from_py_object<C>(constraint_py), vars);
       },
       py::arg("constraint"), py::arg("vars"),
       doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_shared_ptr);
 }
 
-void DefinePlanningTrajectoryOptimization(py::module m) {
+void DefinePlanningTrajectoryOptimization(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::trajectory_optimization;
-  constexpr auto& doc = pydrake_doc.drake.planning.trajectory_optimization;
+  constexpr auto& doc = pydrake_doc_planning_trajectory_optimization.drake
+                            .planning.trajectory_optimization;
 
   using solvers::MathematicalProgram;
   using solvers::MatrixXDecisionVariable;
@@ -41,7 +52,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   {
     using Class = MultipleShooting;
     constexpr auto& cls_doc = doc.MultipleShooting;
-    py::class_<Class> cls(m, "MultipleShooting", cls_doc.doc);
+    class_<Class> cls(m, "MultipleShooting", cls_doc.doc);
     cls  // BR
         .def("time", &Class::time, cls_doc.time.doc)
         .def("prog", overload_cast_explicit<MathematicalProgram&>(&Class::prog),
@@ -199,7 +210,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   {
     using Class = DirectCollocation;
     constexpr auto& cls_doc = doc.DirectCollocation;
-    py::class_<Class, MultipleShooting>(m, "DirectCollocation", cls_doc.doc)
+    class_<Class, MultipleShooting>(m, "DirectCollocation", cls_doc.doc)
         .def(py::init<const systems::System<double>*,
                  const systems::Context<double>&, int, double, double,
                  std::variant<systems::InputPortSelection,
@@ -216,7 +227,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   {
     using Class = DirectCollocationConstraint;
     constexpr auto& cls_doc = doc.DirectCollocationConstraint;
-    py::class_<Class, solvers::Constraint, std::shared_ptr<Class>>(
+    class_<Class, solvers::Constraint, std::shared_ptr<Class>>(
         m, "DirectCollocationConstraint", cls_doc.doc)
         .def(py::init<const systems::System<double>&,
                  const systems::Context<double>&,
@@ -238,15 +249,15 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   {
     using Class = DirectTranscription;
     constexpr auto& cls_doc = doc.DirectTranscription;
-    py::class_<Class, MultipleShooting> cls(
+    class_<Class, MultipleShooting> cls(
         m, "DirectTranscription", doc.DirectTranscription.doc);
 
     // Inject the nested TimeStep so it's already bound when we bind the
     // constructor that depends on it. In C++ it's *not* nested. Nesting makes
     // things a bit more pythonic -- better would be kwonly named arg.
-    py::class_<TimeStep>(cls, "TimeStep", doc.TimeStep.doc)
+    class_<TimeStep>(cls, "TimeStep", doc.TimeStep.doc)
         .def(py::init<double>(), py::arg("value"))
-        .def_readwrite("value", &TimeStep::value, doc.TimeStep.value.doc);
+        .def_rw("value", &TimeStep::value, doc.TimeStep.value.doc);
 
     cls  // BR
         .def(py::init<const systems::System<double>*,
@@ -271,7 +282,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   {
     using Class = KinematicTrajectoryOptimization;
     constexpr auto& cls_doc = doc.KinematicTrajectoryOptimization;
-    py::class_<Class>(m, "KinematicTrajectoryOptimization", cls_doc.doc)
+    class_<Class>(m, "KinematicTrajectoryOptimization", cls_doc.doc)
         .def(py::init<int, int, int, double>(), py::arg("num_positions"),
             py::arg("num_control_points"), py::arg("spline_order") = 4,
             py::arg("duration") = 1.0, cls_doc.ctor.doc_4args)
@@ -307,9 +318,16 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 &Class::AddPathPositionConstraint),
             py::arg("lb"), py::arg("ub"), py::arg("s"),
             cls_doc.AddPathPositionConstraint.doc_3args)
-        .def("AddPathPositionConstraint",
-            py::overload_cast<const std::shared_ptr<solvers::Constraint>&,
-                double>(&Class::AddPathPositionConstraint),
+        .def(
+            "AddPathPositionConstraint",
+            [](Class* self, solvers::Constraint* constraint, double s) {
+              // Maintain python wrapper to avoid hazards like #20131.
+              py::object constraint_py = py::cast(constraint);
+              return self->AddPathPositionConstraint(
+                  make_shared_ptr_from_py_object<solvers::Constraint>(
+                      constraint_py),
+                  s);
+            },
             py::arg("constraint"), py::arg("s"),
             cls_doc.AddPathPositionConstraint.doc_2args)
         .def("AddPathVelocityConstraint", &Class::AddPathVelocityConstraint,
@@ -317,10 +335,13 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             cls_doc.AddPathVelocityConstraint.doc)
         .def(
             "AddVelocityConstraintAtNormalizedTime",
-            [](Class* self,
-                const std::shared_ptr<solvers::Constraint> constraint,
-                double s) {
-              return self->AddVelocityConstraintAtNormalizedTime(constraint, s);
+            [](Class* self, solvers::Constraint* constraint, double s) {
+              // Maintain python wrapper to avoid hazards like #20131.
+              py::object constraint_py = py::cast(constraint);
+              return self->AddVelocityConstraintAtNormalizedTime(
+                  make_shared_ptr_from_py_object<solvers::Constraint>(
+                      constraint_py),
+                  s);
             },
             py::arg("constraint"), py::arg("s"),
             cls_doc.AddVelocityConstraintAtNormalizedTime
@@ -367,7 +388,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   {
     using Class = GcsTrajectoryOptimization;
     constexpr auto& cls_doc = doc.GcsTrajectoryOptimization;
-    py::class_<Class> gcs_traj_opt(m, "GcsTrajectoryOptimization", cls_doc.doc);
+    class_<Class> gcs_traj_opt(m, "GcsTrajectoryOptimization", cls_doc.doc);
 
     const std::unordered_set<
         geometry::optimization::GraphOfConvexSets::Transcription>
@@ -380,7 +401,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
 
     // Subgraph
     const auto& subgraph_doc = doc.GcsTrajectoryOptimization.Subgraph;
-    py::class_<Class::Subgraph>(gcs_traj_opt, "Subgraph", subgraph_doc.doc)
+    class_<Class::Subgraph>(gcs_traj_opt, "Subgraph", subgraph_doc.doc)
         .def("name", &Class::Subgraph::name, subgraph_doc.name.doc)
         .def("order", &Class::Subgraph::order, subgraph_doc.order.doc)
         .def("size", &Class::Subgraph::size, subgraph_doc.size.doc)
@@ -531,7 +552,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
     // EdgesBetweenSubgraphs
     const auto& subgraph_edges_doc =
         doc.GcsTrajectoryOptimization.EdgesBetweenSubgraphs;
-    py::class_<Class::EdgesBetweenSubgraphs>(
+    class_<Class::EdgesBetweenSubgraphs>(
         gcs_traj_opt, "EdgesBetweenSubgraphs", subgraph_edges_doc.doc)
         .def("AddVelocityBounds",
             &Class::EdgesBetweenSubgraphs::AddVelocityBounds, py::arg("lb"),

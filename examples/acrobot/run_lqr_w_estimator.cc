@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -28,8 +29,7 @@ namespace {
 // fixed point and a state estimator in the loop. Run meldis to see the
 // animated result.
 
-DEFINE_double(simulation_sec, 5.0,
-              "Number of seconds to simulate.");
+DEFINE_double(simulation_sec, 5.0, "Number of seconds to simulate.");
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -45,8 +45,8 @@ int do_main() {
 
   // Attach a DrakeVisualizer so we can animate the robot.
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  AcrobotGeometry::AddToBuilder(
-      &builder, acrobot_w_encoder->get_output_port(1), scene_graph);
+  AcrobotGeometry::AddToBuilder(&builder, acrobot_w_encoder->get_output_port(1),
+                                scene_graph);
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
 
   // Make a Kalman filter observer.
@@ -98,8 +98,8 @@ int do_main() {
   builder.Connect(controller->get_output_port(), observer->get_input_port(1));
 
   // Log the true state and the estimated state.
-  auto x_logger = LogVectorOutput(acrobot_w_encoder->get_output_port(1),
-                                  &builder);
+  auto x_logger =
+      LogVectorOutput(acrobot_w_encoder->get_output_port(1), &builder);
   x_logger->set_name("x_logger");
   auto xhat_logger = LogVectorOutput(observer->get_output_port(0), &builder);
   xhat_logger->set_name("xhat_logger");
@@ -142,20 +142,19 @@ int do_main() {
   CallPython("figure", 1);
   CallPython("clf");
   CallPython("plot", x_log.sample_times(),
-             (x_log.data().row(0).array() - M_PI)
-                 .matrix().transpose());
+             (x_log.data().row(0).array() - M_PI).matrix().transpose());
   CallPython("plot", x_log.sample_times(), x_log.data().row(1).transpose());
   CallPython("legend", ToPythonTuple("theta1 - PI", "theta2"));
   CallPython("axis", "tight");
 
   CallPython("figure", 2);
   CallPython("clf");
-  CallPython("plot", x_log.sample_times(),
-             (x_log.data().array() - xhat_log.data().array())
-                 .matrix().transpose());
+  CallPython(
+      "plot", x_log.sample_times(),
+      (x_log.data().array() - xhat_log.data().array()).matrix().transpose());
   CallPython("ylabel", "error");
-  CallPython("legend", ToPythonTuple("theta1", "theta2", "theta1dot",
-                                     "theta2dot"));
+  CallPython("legend",
+             ToPythonTuple("theta1", "theta2", "theta1dot", "theta2dot"));
   CallPython("axis", "tight");
 
   return 0;

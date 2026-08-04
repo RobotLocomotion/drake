@@ -3,7 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/ssize.h"
 #include "drake/solvers/choose_best_solver.h"
 
 namespace drake {
@@ -88,10 +87,6 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
   return result.GetSolution(x).unaryExpr([](double elt) {
     return elt >= 0.5;
   });
-}
-
-std::unique_ptr<MaxCliqueSolverBase> MaxCliqueSolverViaMip::DoClone() const {
-  return std::make_unique<MaxCliqueSolverViaMip>(*this);
 }
 
 }  // namespace graph_algorithms

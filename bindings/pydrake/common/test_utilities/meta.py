@@ -45,22 +45,23 @@ class ValueParameterizedTest(type):
               foo = 33
               self.assertGreater(dut(foo), 0)
     """
+
     def __new__(metacls, name, bases, namespace):
         # Find all of the unittest methods.
-        test_methods = [
-            x for x in namespace.keys()
-            if x.startswith("test")
-        ]
+        test_methods = [x for x in namespace.keys() if x.startswith("test")]
         assert len(test_methods) > 0
 
         # Find the unittest methods that used our decorator.
         parameterized_methods = [
-            x for x in test_methods
+            x
+            for x in test_methods
             if hasattr(namespace[x], "_value_parameterized_test_pairs")
         ]
         if not parameterized_methods:
-            raise RuntimeError("ValueParameterizedTest was used without any"
-                               " @run_with_multiple_values decorators")
+            raise RuntimeError(
+                "ValueParameterizedTest was used without any"
+                " @run_with_multiple_values decorators"
+            )
 
         # Multiply the decorated methods into real test cases.
         for method_name in parameterized_methods:
@@ -75,9 +76,8 @@ class ValueParameterizedTest(type):
 
                 # Create a new method with bound kwargs.
                 new_method = functools.partialmethod(
-                    _run_subtest,
-                    old_method=old_method,
-                    **kwargs)
+                    _run_subtest, old_method=old_method, **kwargs
+                )
 
                 # Keep the same docstring.
                 new_method.__doc__ = old_method.__doc__
@@ -103,10 +103,7 @@ def _make_test_pairs(values):
     """Returns a list of (test_suffix, kwargs) pairs for the given list of
     kwargs values, by calculating a unique test_suffix summary of the kwargs.
     """
-    pairs = [
-        [_choose_test_suffix(kwargs), kwargs]
-        for kwargs in values
-    ]
+    pairs = [[_choose_test_suffix(kwargs), kwargs] for kwargs in values]
     # Uniquify any duplicate (or missing) suffix names.
     counter = collections.Counter([x for x, _ in pairs])
     bad_names = set([x for x, count in counter.items() if count > 1 or not x])
@@ -127,4 +124,5 @@ def run_with_multiple_values(values):
     def wrap(check_func):
         check_func._value_parameterized_test_pairs = pairs
         return check_func
+
     return wrap

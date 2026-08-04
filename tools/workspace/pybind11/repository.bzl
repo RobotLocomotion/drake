@@ -17,13 +17,14 @@ def pybind11_repository(
     github_archive(
         name = name,
         repository = _REPOSITORY,
+        upgrade_type = "release",
         commit = _COMMIT,
         sha256 = _SHA256,
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/check_signature_infection.patch",
             ":patches/eigen_object_matrices.patch",
-            ":patches/no_op_wrapper_type.patch",
+            ":patches/nanobind_spellings.patch",
             ":patches/shared_ptr_lifetime.patch",
         ],
         mirrors = mirrors,

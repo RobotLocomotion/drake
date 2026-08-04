@@ -116,8 +116,14 @@ external "foo"):
   bazel run //tools/workspace:new_release -- --lint --commit foo
 ```
 
-If the automated update doesn't succeed, then you'll need to make the edits
-manually.  Ask for help in drake developers slack channel for ``#build``.
+If the automated update doesn't succeed and the error message is
+"Reversed (or previously applied) patch detected!" and refers to a patch
+named /upstream/, try to remove the patch from Drake by deleting the patch
+file and removing its mention in the repository.bzl. If the update then works,
+the deletions can be amended into the commit for that external.
+
+If it still fails, or for any other errors, you'll need to make the edits
+manually. Ask for help in drake developers slack channel for ``#build``.
 
 If the automated update succeeded, check the output of ``new_release`` for any
 additional steps that need to be manually performed to complete the upgrade.
@@ -185,6 +191,65 @@ If an external required non-trivial changes, even if you were able to make the
 changes yourself, consider separating that external into its own pull request
 and assigning it to the associated feature owner.
 
+## Python
+
+As part of the monthly upgrades process, the pinned Python packages used on
+platforms for which Drake relies on a virtual environment should be updated.
+This is the reminder that the `new_release` tool prints for "python".
+
+The accompanying script to perform the upgrade can only be invoked on a system
+where Drake actually uses a virtual environment, which is currently only macOS.
+(Drake uses a venv when building Python wheels on Linux also, but inside a
+Docker container. Running the script inside a container adds complications and
+is not recommended.)
+
+On a supported platform, run the script:
+
+```
+./tools/workspace/python/venv_upgrade [--commit]
+```
+
+Always push these changes to a separate branch from the regular monthly
+upgrades. Like the other upgrades, it can be tagged
+`status: single reviewer ok`, and typically assigned to the on-call platform
+reviewer in absence of any failures.
+
+For further details, see:
+
+* `//tools/workspace/python/venv_upgrade` for the upgrade script;
+* `//setup/python/pyproject.toml` for the TOML file; and
+* `//setup/python/{hub}/requirements.in` for the requirements files managed by
+  `uv` via `rules_python`.
+
+## drake-external-examples
+
+The
+[drake_cmake_external](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_external)
+example demonstrates the use of some of Drake's CMake options for user-provided
+external packages as part of the public API. While users may be able to provide
+their own versions which don't necessarily match those officially supported by
+Drake, the official examples should match and be kept up-to-date as part of the
+monthly upgrades process.
+
+The packages with their canonical versions are listed in Drake's `MODULE.bazel`,
+and the corresponding user-provided versions in drake-external-examples are
+found in the calls to `ExternalProject_Add` in the example's
+[CMakeLists.txt](https://github.com/RobotLocomotion/drake-external-examples/blob/main/drake_cmake_external/CMakeLists.txt).
+Any time these packages are upgraded in Drake (via the steps above, or separate
+from the monthly upgrades), use the
+[automated upgrade script](https://github.com/RobotLocomotion/drake-external-examples/blob/main/private/upgrade_cmake_externals.py)
+to create a pull request on drake-external-examples. See the script for its
+usage requirements; it mirrors the workflow of the `new_release` tool. For the
+automated upgrades, it's best to wait to perform upgrades in
+drake-external-examples until after the Renovate bot is scheduled to open pull
+requests with upgrades, and those upgrades have been merged by Drake
+maintainers. See `.github/renovate.json` for the most up-to-date schedule for
+automated upgrades.
+
+The continuous integration (via GitHub Actions) in that repository runs the
+upgrade script to verify that packages are in sync with Drake, which should
+serve as a reminder to maintainers to perform regular upgrades.
+
 # Changing the version of third-party software manually
 
 The instructions for updating third-party software differ depending on how
@@ -214,6 +279,7 @@ argument to the `github_archive` macro call pointing at a local checkout, e.g.:
         name = "foobar",
         local_repository_override = "/path/to/local/foo/bar",
         repository = "foo/bar",
+        type = "commit",
         commit = "0123456789abcdef0123456789abcdef01234567",
         sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",  # noqa
     )
@@ -318,6 +384,7 @@ roughly:
   `foo_repository()` macro or rule.
 - Load the module extension in `MODULE.bazel`.
 - Add a courtesy mention of the software in `doc/_pages/credits.md`.
+- List the `drake_repository_metadata.json` in `tools/workspace/BUILD.bazel`.
 
 When indicating licenses in the source, use the identifier from the
 [SPDX License List](https://spdx.org/licenses/).
@@ -326,14 +393,17 @@ When indicating licenses in the source, use the identifier from the
 
 For choosing the version or commit to use in `repository.bzl`:
 
-* When upstream provides numbered releases, pin Drake to use the most recent
-stable release. Drake maintainers will automatically upgrade to a more recent
-stable release on a monthly basis.
+* When upstream provides numbered releases, either by official GitHub releases
+  or tagged commits, pin Drake to use the most recent stable release by using
+  either `upgrade_type = "release"` or `upgrade_type = "tag"`, respectively.
+  (Prefer the former if official releases exist and are kept up-to-date.)
+  Drake maintainers will automatically upgrade to a more recent stable release
+  on a monthly basis.
 * Otherwise, pin Drake to use the most recent commit of the upstream mainline
-branch. Drake maintainers will automatically upgrade to a more recent mainline
-commit on a monthly basis.
+  branch by using `upgrade_type = "commit"`. Drake maintainers will
+  automatically upgrade to a more recent mainline commit on a monthly basis.
 * If the pin policy is unsatisfactory for the case of some specific external,
-consult Drake's build system maintainers for advice.
+  consult Drake's build system maintainers for advice.
 
 Mimic an existing example to complete the process, e.g., look at
 `//tools/workspace/tinyobjloader_internal` and mimic the `repository.bzl` and

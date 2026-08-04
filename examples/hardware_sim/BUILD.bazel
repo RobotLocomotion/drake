@@ -36,6 +36,7 @@ drake_cc_library(
         "//lcm:drake_lcm_params",
         "//manipulation/kuka_iiwa:iiwa_driver",
         "//manipulation/schunk_wsg:schunk_wsg_driver",
+        "//manipulation/util:named_positions_functions",
         "//manipulation/util:zero_force_driver",
         "//multibody/parsing:model_directives",
         "//multibody/plant:multibody_plant_config",
@@ -57,6 +58,7 @@ drake_cc_binary(
         "//manipulation/kuka_iiwa:iiwa_driver_functions",
         "//manipulation/schunk_wsg:schunk_wsg_driver_functions",
         "//manipulation/util:apply_driver_configs",
+        "//manipulation/util:named_positions_functions",
         "//manipulation/util:zero_force_driver_functions",
         "//multibody/parsing",
         "//multibody/plant",
@@ -103,6 +105,7 @@ drake_py_unittest(
         ":demo_cc",
     ],
     shard_count = 4,
+    test_alt_binder = False,
     deps = [
         ":hardware_sim_test_common",
     ],
@@ -147,11 +150,13 @@ drake_py_unittest(
         ":demo_py",
     ],
     env = {
-        "_DRAKE_DEPRECATION_IS_ERROR": "1",
+        "DRAKE_DEPRECATION_RUNTIME_SEVERITY": "error",
     },
     shard_count = 4,
     deps = [
         ":hardware_sim_test_common",
+        # This is only used by :demo_py, but it needs to be here.
+        "//bindings/pydrake",
     ],
 )
 
@@ -173,4 +178,4 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

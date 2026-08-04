@@ -1,12 +1,14 @@
 #include "drake/examples/rod2d/constraint_solver.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/ssize.h"
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/solvers/unrevised_lemke_solver.h"
 

@@ -1,5 +1,6 @@
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/solvers/semidefinite_relaxation.h"
@@ -8,24 +9,24 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineSolversSemidefiniteRelaxation(py::module m) {
+void DefineSolversSemidefiniteRelaxation(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
-  constexpr auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
   {
     const auto& cls_doc = doc.SemidefiniteRelaxationOptions;
-    py::class_<SemidefiniteRelaxationOptions> options(
+    class_<SemidefiniteRelaxationOptions> options(
         m, "SemidefiniteRelaxationOptions", cls_doc.doc);
-    options.def(ParamInit<SemidefiniteRelaxationOptions>())
-        .def_readwrite("add_implied_linear_equality_constraints",
+    options  // BR
+        .def(ParamInit<SemidefiniteRelaxationOptions>())
+        .def_rw("add_implied_linear_equality_constraints",
             &SemidefiniteRelaxationOptions::
                 add_implied_linear_equality_constraints,
             cls_doc.add_implied_linear_equality_constraints.doc)
-        .def_readwrite("add_implied_linear_constraints",
+        .def_rw("add_implied_linear_constraints",
             &SemidefiniteRelaxationOptions::add_implied_linear_constraints,
-            cls_doc.add_implied_linear_constraints.doc);
-    options
+            cls_doc.add_implied_linear_constraints.doc)
         .def("set_to_strongest",
             &SemidefiniteRelaxationOptions::set_to_strongest,
             cls_doc.set_to_strongest.doc)
@@ -39,11 +40,6 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
               .format(self.add_implied_linear_equality_constraints,
                   self.add_implied_linear_constraints);
         });
-    options.def_readwrite("preserve_convex_quadratic_constraints",
-        &SemidefiniteRelaxationOptions::preserve_convex_quadratic_constraints,
-        cls_doc.preserve_convex_quadratic_constraints.doc);
-    DeprecateAttribute(options, "preserve_convex_quadratic_constraints",
-        cls_doc.preserve_convex_quadratic_constraints.doc);
   }
 
   m.def("MakeSemidefiniteRelaxation",

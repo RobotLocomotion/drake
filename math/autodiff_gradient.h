@@ -18,20 +18,20 @@ gradient matrices. */
 namespace drake {
 namespace math {
 
-/** Extracts the `derivatives()` portion from a matrix of AutoDiffScalar
-entries. (Each entry contains a value and derivatives.)
+/** Extracts the `derivatives()` portion from an AutoDiffScalar matrix into a
+pre-existing matrix (resizing if necessary).
 
-@param auto_diff_matrix An object whose Eigen type represents a matrix of
+@param[in] auto_diff_matrix An object whose Eigen type represents a matrix of
     AutoDiffScalar entries.
-@param num_derivatives (Optional) The number of derivatives to return in case
+@param[in] num_derivatives The number of derivatives to return in case
     the input matrix has none, which we interpret as `num_derivatives` zeroes.
     If `num_derivatives` is supplied and the input matrix has derivatives, the
     sizes must match.
-@retval gradient_matrix An Eigen::Matrix with number of rows equal to the
-    total size (rows x cols) of the input matrix and number of columns equal
+@param[out] gradient An Eigen::Matrix resized if necessary to have rows equal to
+    the total size (rows x cols) of the input matrix and number of columns equal
     to the number of derivatives. Each output row corresponds to one entry of
-    the input matrix, using the input matrix storage order. For example, in
-    the typical case of a ColMajor `auto_diff_matrix`, we have
+    the input matrix, using the input matrix storage order. For example, in the
+    typical case of a ColMajor `auto_diff_matrix`, we have
     `auto_diff_matrix(r, c).derivatives() ==
     gradient_matrix.row(r + c * auto_diff_matrix.rows())`.
 
@@ -39,15 +39,19 @@ entries. (Each entry contains a value and derivatives.)
     entries. The type will be inferred from the type of the `auto_diff_matrix`
     parameter at the call site.
 
+@pre `gradient != nullptr`.
 @throws std::exception if the input matrix has elements with inconsistent,
     non-zero numbers of derivatives.
 @throws std::exception if `num_derivatives` is specified but the input matrix
-    has a different, non-zero number of derivatives.*/
+    has a different, non-zero number of derivatives.
+@exclude_from_pydrake_mkdoc{This overload is not bound.} */
 template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
-              Eigen::Dynamic>
-ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
-                std::optional<int> num_derivatives = {}) {
+void ExtractGradient(
+    const Eigen::MatrixBase<Derived>& auto_diff_matrix,
+    std::optional<int> num_derivatives,
+    Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
+                  Eigen::Dynamic>* gradient) {
+  DRAKE_THROW_UNLESS(gradient != nullptr);
   // Entries in an AutoDiff matrix must all have the same number of derivatives,
   // or 0-length derivatives in which case they are interpreted as all-zero.
   int num_derivatives_from_matrix = 0;
@@ -76,20 +80,54 @@ ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
         num_derivatives_from_matrix, *num_derivatives));
   }
 
-  Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
-                Eigen::Dynamic>
-      gradient(auto_diff_matrix.size(), *num_derivatives);
-  if (gradient.size() == 0) {
-    return gradient;
+  gradient->resize(auto_diff_matrix.size(), *num_derivatives);
+  if (gradient->size() == 0) {
+    return;
   }
   for (int i = 0; i < auto_diff_matrix.size(); ++i) {
-    auto gradient_row = gradient.row(i).transpose();
+    auto gradient_row = gradient->row(i).transpose();
     if (auto_diff_matrix(i).derivatives().size() == 0) {
       gradient_row.setZero();
     } else {
       gradient_row = auto_diff_matrix(i).derivatives();
     }
   }
+}
+
+/** Returns the `derivatives()` portion from a matrix of AutoDiffScalar
+entries. (Each entry contains a value and derivatives.)
+
+@param[in] auto_diff_matrix An object whose Eigen type represents a matrix of
+    AutoDiffScalar entries.
+@param[in] num_derivatives (Optional) The number of derivatives to return in
+    case the input matrix has none, which we interpret as `num_derivatives`
+    zeroes. If `num_derivatives` is supplied and the input matrix has
+    derivatives, the sizes must match.
+@retval gradient_matrix An Eigen::Matrix with number of rows equal to the
+    total size (rows x cols) of the input matrix and number of columns equal
+    to the number of derivatives. Each output row corresponds to one entry of
+    the input matrix, using the input matrix storage order. For example, in
+    the typical case of a ColMajor `auto_diff_matrix`, we have
+    `auto_diff_matrix(r, c).derivatives() ==
+    gradient_matrix.row(r + c * auto_diff_matrix.rows())`.
+
+@tparam Derived An Eigen type representing a matrix with AutoDiffScalar
+    entries. The type will be inferred from the type of the `auto_diff_matrix`
+    parameter at the call site.
+
+@throws std::exception if the input matrix has elements with inconsistent,
+    non-zero numbers of derivatives.
+@throws std::exception if `num_derivatives` is specified but the input matrix
+    has a different, non-zero number of derivatives.*/
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
+              Eigen::Dynamic>
+ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
+                std::optional<int> num_derivatives = {}) {
+  Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
+                Eigen::Dynamic>
+      gradient;
+  ExtractGradient(auto_diff_matrix, num_derivatives, &gradient);
   return gradient;
 }
 

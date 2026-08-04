@@ -77,8 +77,8 @@ class PendulumPlant final : public systems::LeafSystem<T> {
 
   PendulumParams<T>& get_mutable_parameters(
       systems::Context<T>* context) const {
-    return this->template GetMutableNumericParameter<PendulumParams>(
-        context, 0);
+    return this->template GetMutableNumericParameter<PendulumParams>(context,
+                                                                     0);
   }
 
  private:

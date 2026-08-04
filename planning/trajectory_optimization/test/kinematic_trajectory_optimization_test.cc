@@ -1,7 +1,9 @@
 #include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 #include <limits>
+#include <memory>
 #include <optional>
+#include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -40,6 +42,27 @@ using trajectories::BsplineTrajectory;
 
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
+
+template <typename C>
+void CheckBindingGradientSparsityPattern(const solvers::Binding<C>& binding,
+                                         bool strict) {
+  const auto gradient_sparsity_pattern =
+      binding.evaluator()->gradient_sparsity_pattern();
+  EXPECT_TRUE(gradient_sparsity_pattern.has_value());
+  // Evaluate the gradient for an arbitrary input, make sure it matches with
+  // `gradient_sparsity_pattern`.
+  {
+    const Eigen::VectorXd x_val =
+        Eigen::VectorXd::LinSpaced(binding.variables().rows(), 1,
+                                   binding.variables().rows())
+            .array()
+            .cos()
+            .matrix();
+    const auto x_ad = math::InitializeAutoDiff(x_val);
+    solvers::test::CheckGradientSparsityPattern(*binding.evaluator(), x_ad,
+                                                strict);
+  }
+}
 
 class KinematicTrajectoryOptimizationTest : public ::testing::Test {
  public:
@@ -145,17 +168,7 @@ TEST_F(KinematicTrajectoryOptimizationTest,
       std::make_shared<solvers::BoundingBoxConstraint>(x_desired, x_desired),
       0.2);
   // binding specifies gradient sparsity pattern.
-  const auto gradient_sparsity_pattern =
-      binding.evaluator()->gradient_sparsity_pattern();
-  EXPECT_TRUE(gradient_sparsity_pattern.has_value());
-  // Evaluate the gradient for an arbitrary input, make sure it matches with
-  // `gradient_sparsity_pattern`.
-  {
-    const auto x_ad = math::InitializeAutoDiff(Eigen::VectorXd::LinSpaced(
-        binding.variables().rows(), 1, binding.variables().rows()));
-    solvers::test::CheckGradientSparsityPattern(*binding.evaluator(), x_ad,
-                                                /*strict=*/false);
-  }
+  CheckBindingGradientSparsityPattern(binding, /*strict=*/false);
 
   EXPECT_THAT(binding.to_string(), HasSubstr("velocity constraint"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 1);
@@ -356,6 +369,7 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddAccelerationBounds) {
   EXPECT_THAT(binding[0].to_string(), HasSubstr("acceleration bound"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(),
             trajopt_.num_positions());
+  CheckBindingGradientSparsityPattern(binding[0], /*strict=*/true);
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
@@ -404,6 +418,7 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddJerkBounds) {
   EXPECT_THAT(binding[0].to_string(), HasSubstr("jerk bound"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(),
             trajopt_.num_positions());
+  CheckBindingGradientSparsityPattern(binding[0], /*strict=*/true);
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
@@ -434,6 +449,7 @@ GTEST_TEST(KinematicTrajectoryOptimizationMultibodyTest,
   EXPECT_EQ(bindings[0].evaluator()->num_constraints(), 1);
   EXPECT_EQ(bindings[0].evaluator()->lower_bound(), tau_lb);
   EXPECT_EQ(bindings[0].evaluator()->upper_bound(), tau_ub);
+  CheckBindingGradientSparsityPattern(bindings[0], /*strict=*/true);
 
   // Use a small traj opt to compute the (normalized) control points.
   auto MakeNormalizedTrajectory = [&](double duration, double q0, double v0,

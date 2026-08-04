@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_bundle.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/supernodal_solver.h"
@@ -244,7 +244,7 @@ class SapModel {
    velocities_permutation().ApplyInverse(vp, &v) places participating velocities
    in the full vector of generalized velocities v, leaving non-participating
    velocities untouched. */
-  const PartialPermutation& velocities_permutation() const {
+  const math::internal::PartialPermutation& velocities_permutation() const {
     return const_model_data_.velocities_permutation;
   }
 
@@ -253,7 +253,7 @@ class SapModel {
    model for computational efficiency. This mapping can be used on impulses,
    constraint velocities or any other quantity indexed with constraint equations
    indexes. */
-  const PartialPermutation& impulses_permutation() const {
+  const math::internal::PartialPermutation& impulses_permutation() const {
     return const_model_data_.impulses_permutation;
   }
 
@@ -469,10 +469,10 @@ class SapModel {
   struct ConstModelData {
     /* Permutation to map back and forth between DOFs in problem_ and DOFs in
      this model. */
-    PartialPermutation velocities_permutation;
+    math::internal::PartialPermutation velocities_permutation;
     /* Permutation to map back and forth between impulses in problem_ and
      impulses as ordered according to the contact graph in this model. */
-    PartialPermutation impulses_permutation;
+    math::internal::PartialPermutation impulses_permutation;
     /* Per-clique blocks of the system's dynamic matrix A. Only participating
      cliques. */
     std::vector<MatrixX<T>> dynamics_matrix;
@@ -502,15 +502,15 @@ class SapModel {
 
   /* Makes a permutation to go back and forth between dofs in the original
    contact problem and "participating dofs" in this model. */
-  static PartialPermutation MakeParticipatingVelocitiesPermutation(
-      const SapContactProblem<T>& problem);
+  static math::internal::PartialPermutation
+  MakeParticipatingVelocitiesPermutation(const SapContactProblem<T>& problem);
 
   /* Makes a permutation to go back and forth between constraint equations in
    the original contact problem and constraint equations as ordered in this
    model for computational efficiency. This mapping can be used on impulses,
    constraint velocities or any other quantity indexed as constraint equations.
    */
-  PartialPermutation MakeImpulsesPermutation(
+  math::internal::PartialPermutation MakeImpulsesPermutation(
       const ContactProblemGraph& graph) const;
 
   /* Computes a diagonal approximation of the Delassus operator used for

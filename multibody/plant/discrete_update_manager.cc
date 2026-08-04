@@ -8,6 +8,7 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_discrete_update_manager_attorney.h"
+#include "drake/multibody/topology/forest.h"
 
 namespace drake {
 namespace multibody {
@@ -20,8 +21,6 @@ using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
-using drake::multibody::internal::DiscreteContactPair;
-using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
 using drake::systems::DependencyTicket;
 
@@ -150,8 +149,14 @@ double DiscreteUpdateManager<T>::default_contact_stiffness() const {
 
 template <typename T>
 double DiscreteUpdateManager<T>::default_contact_dissipation() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
+  // TODO(xuchenhan-tri): The plant's default contact dissipation may be NaN,
+  // We guard against that here as a band-aid fix. See #19981.
+  const double plant_dissipation = MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::default_contact_dissipation(plant());
+  if (!(plant_dissipation >= 0.0)) {
+    return 0.0;
+  }
+  return plant_dissipation;
 }
 
 template <typename T>
@@ -204,11 +209,6 @@ template <typename T>
 const MultibodyPlant<T>& DiscreteUpdateManager<T>::plant() const {
   DRAKE_DEMAND(plant_ != nullptr);
   return *plant_;
-}
-
-template <typename T>
-const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::internal_tree(plant());
 }
 
 template <typename T>
@@ -273,17 +273,17 @@ DiscreteUpdateManager<T>::EvalJointLocking(
 }
 
 template <typename T>
-VectorX<T> DiscreteUpdateManager<T>::AssembleActuationInput(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::AssembleActuationInput(
-      plant(), context);
+const VectorX<T>& DiscreteUpdateManager<T>::EvalActuationInput(
+    const systems::Context<T>& context, bool apply_effort_limit) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalActuationInput(
+      plant(), context, apply_effort_limit);
 }
 
 template <typename T>
-DesiredStateInput<T> DiscreteUpdateManager<T>::AssembleDesiredStateInput(
+const DesiredStateInput<T>& DiscreteUpdateManager<T>::EvalDesiredStateInput(
     const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::AssembleDesiredStateInput(plant(), context);
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalDesiredStateInput(
+      plant(), context);
 }
 
 template <typename T>
@@ -294,10 +294,11 @@ DiscreteUpdateManager<T>::coupler_constraints_specs() const {
 }
 
 template <typename T>
-const std::map<MultibodyConstraintId, internal::DistanceConstraintSpec>&
-DiscreteUpdateManager<T>::distance_constraints_specs() const {
+const std::map<MultibodyConstraintId, DistanceConstraintParams>&
+DiscreteUpdateManager<T>::GetDistanceConstraintParams(
+    const systems::Context<T>& context) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::distance_constraints_specs(*plant_);
+      T>::GetDistanceConstraintParams(*plant_, context);
 }
 
 template <typename T>
@@ -340,7 +341,8 @@ void DiscreteUpdateManager<T>::CalcJointActuationForces(
   actuation_w_pd->setZero();
   actuation_wo_pd->setZero();
   if (plant().num_actuators() > 0) {
-    const VectorX<T> u = AssembleActuationInput(context);
+    const VectorX<T>& u =
+        EvalActuationInput(context, /* apply_effort_limit = */ true);
     for (JointActuatorIndex actuator_index :
          plant().GetJointActuatorIndices()) {
       const JointActuator<T>& actuator =
@@ -637,7 +639,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
   contact_pairs->Reserve(num_point_contacts, 0, 0);
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
-  const MultibodyTreeTopology& topology = internal_tree().get_topology();
+  const SpanningForest& forest = get_forest();
   const Eigen::VectorBlock<const VectorX<T>> v = plant().GetVelocities(context);
   const Frame<T>& frame_W = plant().world_frame();
 
@@ -656,10 +658,13 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     const BodyIndex body_B_index = FindBodyByGeometryId(pair.id_B);
     const RigidBody<T>& body_B = plant().get_body(body_B_index);
 
-    const TreeIndex treeA_index = topology.body_to_tree_index(body_A_index);
-    const TreeIndex treeB_index = topology.body_to_tree_index(body_B_index);
-    const bool treeA_has_dofs = topology.tree_has_dofs(treeA_index);
-    const bool treeB_has_dofs = topology.tree_has_dofs(treeB_index);
+    const TreeIndex& tree_A_index = forest.link_to_tree_index(body_A_index);
+    const bool tree_A_has_dofs =
+        tree_A_index.is_valid() && forest.trees(tree_A_index).has_dofs();
+
+    const TreeIndex& tree_B_index = forest.link_to_tree_index(body_B_index);
+    const bool tree_B_has_dofs =
+        tree_B_index.is_valid() && forest.trees(tree_B_index).has_dofs();
 
     const T kA = GetPointContactStiffness(
         pair.id_A, default_contact_stiffness(), inspector);
@@ -704,25 +709,21 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     jacobian_blocks.reserve(2);
 
     // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
-    if (treeA_has_dofs) {
-      Matrix3X<T> J =
-          R_WC.matrix().transpose() *
-          Jv_AcBc_W.middleCols(
-              tree_topology().tree_velocities_start_in_v(treeA_index),
-              tree_topology().num_tree_velocities(treeA_index));
-      jacobian_blocks.emplace_back(treeA_index, MatrixBlock<T>(std::move(J)));
+    if (tree_A_has_dofs) {
+      const SpanningForest::Tree& tree_A = forest.trees(tree_A_index);
+      Matrix3X<T> J = R_WC.matrix().transpose() *
+                      Jv_AcBc_W.middleCols(tree_A.v_start(), tree_A.nv());
+      jacobian_blocks.emplace_back(tree_A_index, MatrixBlock<T>(std::move(J)));
     }
 
     // Tree B contribution to contact Jacobian Jv_W_AcBc_C.
     // This contribution must be added only if B is different from A.
-    if ((treeB_has_dofs && !treeA_has_dofs) ||
-        (treeB_has_dofs && treeB_index != treeA_index)) {
-      Matrix3X<T> J =
-          R_WC.matrix().transpose() *
-          Jv_AcBc_W.middleCols(
-              tree_topology().tree_velocities_start_in_v(treeB_index),
-              tree_topology().num_tree_velocities(treeB_index));
-      jacobian_blocks.emplace_back(treeB_index, MatrixBlock<T>(std::move(J)));
+    if ((tree_B_has_dofs && !tree_A_has_dofs) ||
+        (tree_B_has_dofs && tree_B_index != tree_A_index)) {
+      const SpanningForest::Tree& tree_B = forest.trees(tree_B_index);
+      Matrix3X<T> J = R_WC.matrix().transpose() *
+                      Jv_AcBc_W.middleCols(tree_B.v_start(), tree_B.nv());
+      jacobian_blocks.emplace_back(tree_B_index, MatrixBlock<T>(std::move(J)));
     }
 
     // Contact stiffness and damping
@@ -805,7 +806,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
   contact_pairs->Reserve(0, num_hydro_contacts, 0);
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
-  const MultibodyTreeTopology& topology = internal_tree().get_topology();
+  const SpanningForest& forest = get_forest();
   const Eigen::VectorBlock<const VectorX<T>> v = plant().GetVelocities(context);
   const Frame<T>& frame_W = plant().world_frame();
 
@@ -830,10 +831,15 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
     const BodyIndex body_B_index = FindBodyByGeometryId(s.id_N());
     const RigidBody<T>& body_B = plant().get_body(body_B_index);
 
-    const TreeIndex& tree_A_index = topology.body_to_tree_index(body_A_index);
-    const TreeIndex& tree_B_index = topology.body_to_tree_index(body_B_index);
-    const bool treeA_has_dofs = topology.tree_has_dofs(tree_A_index);
-    const bool treeB_has_dofs = topology.tree_has_dofs(tree_B_index);
+    const TreeIndex& tree_A_index = forest.link_to_tree_index(body_A_index);
+    // World isn't in any tree so we can't call forest.trees() on the index,
+    // which will be invalid.
+    const bool treeA_has_dofs =
+        tree_A_index.is_valid() && forest.trees(tree_A_index).has_dofs();
+
+    const TreeIndex& tree_B_index = forest.link_to_tree_index(body_B_index);
+    const bool treeB_has_dofs =
+        tree_B_index.is_valid() && forest.trees(tree_B_index).has_dofs();
 
     // TODO(amcastro-tri): Consider making the modulus required, instead of
     // a default infinite value.
@@ -944,11 +950,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
         // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
         if (treeA_has_dofs) {
-          Matrix3X<T> J =
-              R_WC.matrix().transpose() *
-              Jv_AcBc_W.middleCols(
-                  tree_topology().tree_velocities_start_in_v(tree_A_index),
-                  tree_topology().num_tree_velocities(tree_A_index));
+          const SpanningForest::Tree& tree_A = forest.trees(tree_A_index);
+          Matrix3X<T> J = R_WC.matrix().transpose() *
+                          Jv_AcBc_W.middleCols(tree_A.v_start(), tree_A.nv());
           jacobian_blocks.emplace_back(tree_A_index,
                                        MatrixBlock<T>(std::move(J)));
         }
@@ -957,11 +961,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         // This contribution must be added only if B is different from A.
         if ((treeB_has_dofs && !treeA_has_dofs) ||
             (treeB_has_dofs && tree_B_index != tree_A_index)) {
-          Matrix3X<T> J =
-              R_WC.matrix().transpose() *
-              Jv_AcBc_W.middleCols(
-                  tree_topology().tree_velocities_start_in_v(tree_B_index),
-                  tree_topology().num_tree_velocities(tree_B_index));
+          const SpanningForest::Tree& tree_B = forest.trees(tree_B_index);
+          Matrix3X<T> J = R_WC.matrix().transpose() *
+                          Jv_AcBc_W.middleCols(tree_B.v_start(), tree_B.nv());
           jacobian_blocks.emplace_back(tree_B_index,
                                        MatrixBlock<T>(std::move(J)));
         }

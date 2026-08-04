@@ -1,8 +1,12 @@
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/multibody_meshcat.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/meshcat/contact_visualizer_params.h"
@@ -17,16 +21,16 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::meshcat;
-  constexpr auto& doc = pydrake_doc.drake.multibody.meshcat;
+  constexpr auto& doc = pydrake_doc_multibody_meshcat.drake.multibody.meshcat;
 
   // ContactVisualizerParams
   {
     using Class = ContactVisualizerParams;
     constexpr auto& cls_doc = doc.ContactVisualizerParams;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "ContactVisualizerParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -39,23 +43,23 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = multibody::meshcat::internal::PointContactVisualizerItem;
     constexpr char doc_internal[] = "(internal use only)";
-    py::class_<Class>(
+    class_<Class>(
         m, "_PointContactVisualizerItem", py::dynamic_attr(), doc_internal)
         .def(py::init<std::string, std::string, Eigen::Vector3d,
                  Eigen::Vector3d>(),
             py::arg("body_A"), py::arg("body_B"), py::arg("contact_force"),
             py::arg("contact_point"), doc_internal)
-        .def_readwrite("body_A", &Class::body_A, doc_internal)
-        .def_readwrite("body_B", &Class::body_B, doc_internal)
-        .def_readwrite("contact_force", &Class::contact_force, doc_internal)
-        .def_readwrite("contact_point", &Class::contact_point, doc_internal);
+        .def_rw("body_A", &Class::body_A, doc_internal)
+        .def_rw("body_B", &Class::body_B, doc_internal)
+        .def_rw("contact_force", &Class::contact_force, doc_internal)
+        .def_rw("contact_point", &Class::contact_point, doc_internal);
   }
 
   // PointContactVisualizer (internal)
   {
     using Class = multibody::meshcat::internal::PointContactVisualizer;
     constexpr char doc_internal[] = "(internal use only)";
-    py::class_<Class>(m, "_PointContactVisualizer", doc_internal)
+    class_<Class>(m, "_PointContactVisualizer", doc_internal)
         .def(py::init<std::shared_ptr<geometry::Meshcat>,
                  ContactVisualizerParams>(),
             py::arg("meshcat"), py::arg("params"), doc_internal)
@@ -67,29 +71,29 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class =
         multibody::meshcat::internal::HydroelasticContactVisualizerItem;
     constexpr char doc_internal[] = "(internal use only)";
-    py::class_<Class>(m, "_HydroelasticContactVisualizerItem",
-        py::dynamic_attr(), doc_internal)
+    class_<Class>(m, "_HydroelasticContactVisualizerItem", py::dynamic_attr(),
+        doc_internal)
         .def(py::init<std::string, std::string, Eigen::Vector3d,
                  Eigen::Vector3d, Eigen::Vector3d, Eigen::Matrix3Xd,
                  Eigen::Matrix3Xi, Eigen::VectorXd>(),
             py::arg("body_A"), py::arg("body_B"), py::arg("centroid_W"),
             py::arg("force_C_W"), py::arg("moment_C_W"), py::arg("p_WV"),
             py::arg("faces"), py::arg("pressure"), doc_internal)
-        .def_readwrite("body_A", &Class::body_A, doc_internal)
-        .def_readwrite("body_B", &Class::body_B, doc_internal)
-        .def_readwrite("centroid_W", &Class::centroid_W, doc_internal)
-        .def_readwrite("force_C_W", &Class::force_C_W, doc_internal)
-        .def_readwrite("moment_C_W", &Class::moment_C_W, doc_internal)
-        .def_readwrite("p_WV", &Class::p_WV, doc_internal)
-        .def_readwrite("faces", &Class::faces, doc_internal)
-        .def_readwrite("pressure", &Class::pressure, doc_internal);
+        .def_rw("body_A", &Class::body_A, doc_internal)
+        .def_rw("body_B", &Class::body_B, doc_internal)
+        .def_rw("centroid_W", &Class::centroid_W, doc_internal)
+        .def_rw("force_C_W", &Class::force_C_W, doc_internal)
+        .def_rw("moment_C_W", &Class::moment_C_W, doc_internal)
+        .def_rw("p_WV", &Class::p_WV, doc_internal)
+        .def_rw("faces", &Class::faces, doc_internal)
+        .def_rw("pressure", &Class::pressure, doc_internal);
   }
 
   // HydroelasticContactVisualizer (internal)
   {
     using Class = multibody::meshcat::internal::HydroelasticContactVisualizer;
     constexpr char doc_internal[] = "(internal use only)";
-    py::class_<Class>(m, "_HydroelasticContactVisualizer", doc_internal)
+    class_<Class>(m, "_HydroelasticContactVisualizer", doc_internal)
         .def(py::init<std::shared_ptr<geometry::Meshcat>,
                  ContactVisualizerParams>(),
             py::arg("meshcat"), py::arg("params"), doc_internal)
@@ -99,12 +103,12 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::meshcat;
-  constexpr auto& doc = pydrake_doc.drake.multibody.meshcat;
+  constexpr auto& doc = pydrake_doc_multibody_meshcat.drake.multibody.meshcat;
 
   // ContactVisualizer
   {
@@ -197,11 +201,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 }  // namespace
 
-PYBIND11_MODULE(meshcat, m) {
+PYDRAKE_MODULE(meshcat, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Interface code for Meshcat-based visualization";
 
-  py::module::import("pydrake.multibody.plant");
+  py::module_::import_("pydrake.multibody.plant");
 
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

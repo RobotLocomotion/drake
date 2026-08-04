@@ -41,21 +41,15 @@ std::optional<std::string_view> GetMeshcatStaticResource(
     std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_js(
       LoadResource("drake/geometry/meshcat.js"));
-  static const drake::never_destroyed<std::string> stats_js(
-      LoadResource("drake/geometry/stats.min.js"));
   static const drake::never_destroyed<std::string> meshcat_ico(
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
       LoadResource("drake/geometry/meshcat.html"));
-  if ((url_path == "/") || (url_path == "/index.html") ||
-      (url_path == "/meshcat.html")) {
+  if (url_path == "/meshcat.html") {
     return meshcat_html.access();
   }
   if (url_path == "/meshcat.js") {
     return meshcat_js.access();
-  }
-  if (url_path == "/stats.min.js") {
-    return stats_js.access();
   }
   if (url_path == "/favicon.ico") {
     return meshcat_ico.access();
@@ -82,7 +76,7 @@ std::string UuidGenerator::GenerateRandom() {
 namespace {
 
 // The result of loading a URI: the URI's contents (maybe) and a description.
-struct UriLoadResult{
+struct UriLoadResult {
   // The contents of a requested Uri. May be null if the URI could not be
   // successfully read.
   std::optional<std::string> contents;
@@ -185,16 +179,17 @@ std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
 
       const auto file_source_iter = memory_mesh.supporting_files.find(uri);
       if (file_source_iter != memory_mesh.supporting_files.end()) {
-        contents = std::visit<std::optional<std::string>>(overloaded{
-          [](const fs::path& path) {
-            // Either uri is absolute or meaningful w.r.t. cwd, otherwise, we'll
-            // respond appropriately to an otherwise unavailable uri.
-            return ReadFile(path);
-          },
-          [](const MemoryFile& file) {
-            return file.contents();
-          }},
-          file_source_iter->second);
+        contents = std::visit<std::optional<std::string>>(
+            overloaded{[](const fs::path& path) {
+                         // Either uri is absolute or meaningful w.r.t. cwd,
+                         // otherwise, we'll respond appropriately to an
+                         // otherwise unavailable uri.
+                         return ReadFile(path);
+                       },
+                       [](const MemoryFile& file) {
+                         return file.contents();
+                       }},
+            file_source_iter->second);
       }
 
       return {std::move(contents), description};

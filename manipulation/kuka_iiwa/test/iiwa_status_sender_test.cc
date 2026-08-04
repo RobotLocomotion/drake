@@ -1,5 +1,8 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_status_sender.h"
 
+#include <memory>
+#include <vector>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

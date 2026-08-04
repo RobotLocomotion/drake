@@ -1,5 +1,6 @@
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -96,18 +97,17 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
     const internal::MultibodyTree<double>& tree =
         MultibodyPlantTester::internal_tree(plant);
 
-    internal::ArticulatedBodyInertiaCache<double> abic(tree.get_topology());
+    internal::ArticulatedBodyInertiaCache<double> abic(tree.forest());
     tree.CalcArticulatedBodyInertiaCache(context, additional_diagonal_inertias,
                                          &abic);
-    internal::ArticulatedBodyForceCache<double> aba_force_cache(
-        tree.get_topology());
+    internal::ArticulatedBodyForceCache<double> aba_force_cache(tree.forest());
     MultibodyForces<double> forces(plant);
     plant.CalcForceElementsContribution(context, &forces);
     std::vector<SpatialForce<double>> Zb_Bo_W(plant.num_bodies());
     tree.CalcArticulatedBodyForceBias(context, abic, &Zb_Bo_W);
     tree.CalcArticulatedBodyForceCache(context, abic, Zb_Bo_W, forces,
                                        &aba_force_cache);
-    internal::AccelerationKinematicsCache<double> ac(tree.get_topology());
+    internal::AccelerationKinematicsCache<double> ac(tree.forest());
     tree.CalcArticulatedBodyAccelerations(context, abic, aba_force_cache, &ac);
     return ac.get_vdot();
   }

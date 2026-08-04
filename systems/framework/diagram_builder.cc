@@ -9,7 +9,6 @@
 #include <fmt/ranges.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace systems {
@@ -400,6 +399,24 @@ OutputPortIndex DiagramBuilder<T>::ExportOutput(
   output_port_names_.emplace_back(std::move(port_name));
 
   return return_id;
+}
+
+template <typename T>
+void DiagramBuilder<T>::Disconnect(const OutputPort<T>& source,
+                                   const InputPort<T>& dest) {
+  OutputPortLocator source_id{&source.get_system(), source.get_index()};
+  InputPortLocator dest_id{&dest.get_system(), dest.get_index()};
+  const auto iter = connection_map_.find(dest_id);
+  if (iter != connection_map_.end()) {
+    if (iter->second == source_id) {
+      connection_map_.erase(iter);
+      return;
+    }
+  }
+  throw std::logic_error(fmt::format(
+      "DiagramBuilder::Disconnect(source={}, dest={}) error: the ports were "
+      "not already connected, so cannot be disconnected.",
+      source.get_name(), dest.get_name()));
 }
 
 template <typename T>

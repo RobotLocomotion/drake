@@ -1,5 +1,10 @@
 #include "drake/multibody/plant/contact_properties.h"
 
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/pointer_cast.h"
@@ -55,7 +60,7 @@ class ContactPropertiesTest : public ::testing::Test {
         geometry::internal::HydroelasticType::kRigid);
     unique_ptr<GeometryInstance> geometry_C = MakeGeometryInstance(
         "C", kMuC, kKC, std::nullopt, std::nullopt, kHydroModulusC,
-        geometry::internal::HydroelasticType::kSoft);
+        geometry::internal::HydroelasticType::kCompliant);
     unique_ptr<GeometryInstance> geometry_D = MakeGeometryInstance(
         "D", kMuD, std::nullopt, kNegativeTauD, std::nullopt);
 

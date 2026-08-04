@@ -6,6 +6,9 @@ namespace fem {
 namespace internal {
 
 template <typename T>
+DiscreteTimeIntegrator<T>::~DiscreteTimeIntegrator() = default;
+
+template <typename T>
 Vector3<T> DiscreteTimeIntegrator<T>::GetWeights() const {
   return DoGetWeights();
 }
@@ -42,5 +45,5 @@ void DiscreteTimeIntegrator<T>::AdvanceOneTimeStep(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::fem::internal::DiscreteTimeIntegrator);

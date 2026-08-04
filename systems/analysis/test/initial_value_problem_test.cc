@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/initial_value_problem.h"
 
 #include <algorithm>
+#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -38,7 +39,8 @@ GTEST_TEST(InitialValueProblemTest, SolutionUsingMultipleIntegrators) {
          const VectorX<double>& k) -> VectorX<double> {
         unused(t);
         return -x + k;
-      }, kInitialState, kParameters);
+      },
+      kInitialState, kParameters);
 
   // Testing against closed form solution of above's IVP, which can be written
   // as 𝐱(t; 𝐤) = 𝐤 + (𝐱₀ - 𝐤) * e^(-(t - t₀)).
@@ -69,9 +71,7 @@ GTEST_TEST(InitialValueProblemTest, SolutionUsingMultipleIntegrators) {
 class InitialValueProblemAccuracyTest
     : public ::testing::TestWithParam<double> {
  protected:
-  void SetUp() {
-    integration_accuracy_ = GetParam();
-  }
+  void SetUp() { integration_accuracy_ = GetParam(); }
 
   // Expected accuracy for numerical integral
   // evaluation in the relative tolerance sense.
@@ -85,8 +85,8 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
   // The initial momentum 𝐩₀ of the particle at time t₀.
-  const VectorX<double> kInitialParticleMomentum = (
-      VectorX<double>(3) << -3.0, 1.0, 2.0).finished();
+  const VectorX<double> kInitialParticleMomentum =
+      (VectorX<double>(3) << -3.0, 1.0, 2.0).finished();
 
   const double kLowestGasViscosity = 1.0;
   const double kHighestGasViscosity = 10.0;

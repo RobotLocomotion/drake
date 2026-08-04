@@ -1,7 +1,12 @@
 #include "drake/systems/analysis/implicit_integrator.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/pointer_cast.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 
 using Eigen::VectorXd;
@@ -24,9 +29,7 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
   using ImplicitIntegrator<double>::IsUpdateZero;
 
   // Returns whether DoResetCachedMatrices() has been called.
-  bool get_has_reset_cached_matrices() {
-    return has_reset_cached_matrices_;
-  }
+  bool get_has_reset_cached_matrices() { return has_reset_cached_matrices_; }
 
  private:
   // There is no stepping so no stats should accumulate.
@@ -55,6 +58,11 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
 
   bool DoImplicitIntegratorStep(const double& h) override {
     throw std::logic_error("Dummy integrator not meant to be stepped.");
+  }
+
+  std::unique_ptr<ImplicitIntegrator<double>> DoImplicitIntegratorClone()
+      const override {
+    throw std::logic_error("Dummy integrator not meant to be cloned.");
   }
 
   bool has_reset_cached_matrices_{false};
@@ -117,8 +125,8 @@ GTEST_TEST(ImplicitIntegratorTest, SetComputationSchemeResetsCachedMatrices) {
 
   // The default scheme should be kForwardDifference.
   EXPECT_EQ(dummy_integrator.get_jacobian_computation_scheme(),
-            ImplicitIntegrator<double>
-            ::JacobianComputationScheme::kForwardDifference);
+            ImplicitIntegrator<
+                double>::JacobianComputationScheme::kForwardDifference);
 
   // Verify that DoResetCachedMatrices() has not been called yet.
   EXPECT_FALSE(dummy_integrator.get_has_reset_cached_matrices());
@@ -132,10 +140,40 @@ GTEST_TEST(ImplicitIntegratorTest, SetComputationSchemeResetsCachedMatrices) {
 
   // Verify that the scheme has been properly changed.
   EXPECT_EQ(dummy_integrator.get_jacobian_computation_scheme(),
-            ImplicitIntegrator<double>
-            ::JacobianComputationScheme::kAutomatic);
+            ImplicitIntegrator<double>::JacobianComputationScheme::kAutomatic);
 }
+
+GTEST_TEST(ImplicitIntegratorTest, Clone) {
+  const double mass = 1.0;
+  const double spring_k = 1.0;
+  SpringMassSystem<double> dummy_system(spring_k, mass, false /* unforced */);
+
+  for (auto& scheme : GetIntegrationSchemes()) {
+    // Skip CENIC, since it requires a MultibodyPlant.
+    if (scheme == "cenic") {
+      continue;
+    }
+
+    // Create the original implicit integrator.
+    Simulator<double> tmp(dummy_system);
+    auto original = dynamic_cast<ImplicitIntegrator<double>*>(
+        &ResetIntegratorFromFlags(&tmp, scheme, 0.2));
+    if (original == nullptr) continue;
+
+    // Clone the integrator.
+    auto integrator =
+        dynamic_pointer_cast<ImplicitIntegrator<double>>(original->Clone());
+
+    // Compare configuration parameters.
+    EXPECT_EQ(&integrator->get_system(), &original->get_system());
+    EXPECT_EQ(integrator->get_reuse(), original->get_reuse());
+    EXPECT_EQ(integrator->get_use_full_newton(),
+              original->get_use_full_newton());
+    EXPECT_EQ(integrator->get_jacobian_computation_scheme(),
+              original->get_jacobian_computation_scheme());
+  }
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
-

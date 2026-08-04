@@ -63,6 +63,24 @@ class IsAffineVisitor {
 
 }  // namespace
 
+}  // namespace symbolic
+}  // namespace drake
+
+namespace Eigen {
+namespace internal {
+// Using Matrix::visit requires providing functor_traits.
+template <>
+struct functor_traits<drake::symbolic::IsAffineVisitor> {
+  static constexpr int Cost = 10;
+  [[maybe_unused]] static constexpr bool LinearAccess = false;
+  [[maybe_unused]] static constexpr bool PacketAccess = false;
+};
+}  // namespace internal
+}  // namespace Eigen
+
+namespace drake {
+namespace symbolic {
+
 bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
               const Variables& vars) {
   if (m.size() == 0) {
@@ -126,15 +144,12 @@ void DecomposeLinearExpressions(
   for (int i = 0; i < expressions.size(); ++i) {
     const Expression& e{expressions(i)};
     if (!e.is_polynomial()) {
-      ThrowError("non-polynomial", e.to_string(),
-                 "");  // e should be a polynomial.
+      ThrowError("non-polynomial", e.to_string(), "");
     }
     const Polynomial p{e, Variables{vars}};
     if (p.TotalDegree() > 1) {
-      ThrowError(
-          "non-linear", e.to_string(),
-          fmt::format(" of indeterminates {}",
-                      fmt_eigen(vars.transpose())));  // e should be linear.
+      ThrowError("non-linear", e.to_string(),
+                 fmt::format(" of indeterminates {}", fmt_eigen(vars)));
     }
     const Polynomial::MapType& map{p.monomial_to_coefficient_map()};
     if (map.contains(Monomial{})) {
@@ -144,7 +159,7 @@ void DecomposeLinearExpressions(
           fmt::format(" of indeterminates {}, with a constant term {}. "
                       "This is an affine expression; a linear should have no "
                       "constant terms.",
-                      fmt_eigen(vars.transpose()), map.at(Monomial{})));
+                      fmt_eigen(vars), map.at(Monomial{})));
     }
     // Fill M(i, j).
     for (int j = 0; j < vars.size(); ++j) {
@@ -168,10 +183,8 @@ void DecomposeAffineExpressions(
     }
     const Polynomial p{e, Variables{vars}};
     if (p.TotalDegree() > 1) {
-      ThrowError(
-          "non-linear", e.to_string(),
-          fmt::format(" of indeterminates {}",
-                      fmt_eigen(vars.transpose())));  // e should be linear.
+      ThrowError("non-linear", e.to_string(),
+                 fmt::format(" of indeterminates {}", fmt_eigen(vars)));
     }
     const Polynomial::MapType& map{p.monomial_to_coefficient_map()};
     // Fill M(i, j).
@@ -194,20 +207,6 @@ void ExtractAndAppendVariablesFromExpression(
         map_var_to_index->try_emplace(var.get_id(), vars->size());
     if (emplace_success) {
       vars->push_back(var);
-    }
-  }
-}
-
-void ExtractAndAppendVariablesFromExpression(
-    const Expression& e, VectorX<Variable>* vars,
-    std::unordered_map<Variable::Id, int>* map_var_to_index) {
-  DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
-  for (const Variable& var : e.GetVariables()) {
-    if (map_var_to_index->find(var.get_id()) == map_var_to_index->end()) {
-      map_var_to_index->emplace(var.get_id(), vars->size());
-      const int vars_size = vars->size();
-      vars->conservativeResize(vars_size + 1, Eigen::NoChange);
-      (*vars)(vars_size) = var;
     }
   }
 }
@@ -261,12 +260,10 @@ void DecomposeQuadraticPolynomial(
     const double coefficient = get_constant_value(p.second);
     const symbolic::Monomial& p_monomial = p.first;
     if (p_monomial.total_degree() > 2) {
-      ostringstream oss;
-      oss << p.first
-          << " has order higher than 2 and it cannot be handled by "
-             "DecomposeQuadraticPolynomial."
-          << std::endl;
-      throw runtime_error(oss.str());
+      throw runtime_error(
+          fmt::format("{} has order higher than 2 and it cannot be handled by "
+                      "DecomposeQuadraticPolynomial.\n",
+                      p.first));
     }
     const auto& monomial_powers = p_monomial.get_powers();
     if (monomial_powers.size() == 2) {
@@ -327,9 +324,8 @@ int DecomposeAffineExpression(
   coeffs->setZero();
   *constant_term = 0;
   if (!e.is_polynomial()) {
-    std::ostringstream oss;
-    oss << "Expression " << e << " is not a polynomial.\n";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(
+        fmt::format("Expression {} is not a polynomial.\n", e));
   }
   const symbolic::Polynomial poly{e};
   int num_variable = 0;
@@ -338,9 +334,7 @@ int DecomposeAffineExpression(
     DRAKE_ASSERT(is_constant(p.second));
     const double p_coeff = symbolic::get_constant_value(p.second);
     if (p_monomial.total_degree() > 1) {
-      std::stringstream oss;
-      oss << "Expression " << e << " is non-linear.";
-      throw std::runtime_error(oss.str());
+      throw std::runtime_error(fmt::format("Expression {} is non-linear.", e));
     } else if (p_monomial.total_degree() == 1) {
       // Linear coefficient.
       const auto& p_monomial_powers = p_monomial.get_powers();

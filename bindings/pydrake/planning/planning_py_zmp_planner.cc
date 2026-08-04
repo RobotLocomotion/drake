@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/planning_locomotion.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/locomotion/zmp_planner.h"
@@ -7,20 +7,21 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningZmpPlanner(py::module m) {
+void DefinePlanningZmpPlanner(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning_locomotion.drake.planning;
 
   {
     using Class = ZmpPlanner;
     constexpr auto& cls_doc = doc.ZmpPlanner;
-    auto cls = py::class_<Class>(m, "ZmpPlanner", cls_doc.doc)
+    auto cls = class_<Class>(m, "ZmpPlanner", cls_doc.doc)
                    .def(py::init<>(), cls_doc.ctor.doc);
-    cls.def("Plan", &Class::Plan, py::arg("zmp_d"), py::arg("x0"),
-           py::arg("height"), py::arg("gravity") = 9.81,
-           py::arg("Qy") = Eigen::Matrix2d::Identity(),
-           py::arg("R") = 0.1 * Eigen::Matrix2d::Identity(), cls_doc.ctor.doc)
+    cls  // BR
+        .def("Plan", &Class::Plan, py::arg("zmp_d"), py::arg("x0"),
+            py::arg("height"), py::arg("gravity") = 9.81,
+            py::arg("Qy") = Eigen::Matrix2d::Identity(),
+            py::arg("R") = 0.1 * Eigen::Matrix2d::Identity(), cls_doc.ctor.doc)
         .def("has_planned", &Class::has_planned, cls_doc.has_planned.doc)
         .def("ComputeOptimalCoMdd", &Class::ComputeOptimalCoMdd,
             py::arg("time"), py::arg("x"), cls_doc.ComputeOptimalCoMdd.doc)

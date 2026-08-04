@@ -56,7 +56,7 @@ RobotLocomotion/drake-ci
 
 <tr>
 <td><code>distribution</code></td>
-<td>Nightly binaries, monthly releases, docker, installation.</td>
+<td>Nightly binaries, monthly releases, installation.</td>
 <td>jwnimmer-tri</td>
 <td><small>
 tools/install<br>
@@ -68,7 +68,7 @@ tools/wheel
 <td><code>geometry general</code></td>
 <td>Geometry infrastructure or topics that defy categorization into other
   geometry components.</td>
-<td>rpoyner-tri</td>
+<td>SeanCurtis-TRI</td>
 <td><small>
 n/a
 </small></td>
@@ -88,7 +88,7 @@ multibody/meshcat
 <td><code>geometry perception</code></td>
 <td>How geometry appears in color, depth, and label images (via the
   RenderEngine API).</td>
-<td>zachfang</td>
+<td>SeanCurtis-TRI</td>
 <td><small>
 geometry/render<br>
 systems/rendering
@@ -98,7 +98,7 @@ systems/rendering
 <tr>
 <td><code>geometry proximity</code></td>
 <td>Contact, distance, signed distance queries and related properties.</td>
-<td>DamrongGuoy</td>
+<td>SeanCurtis-TRI</td>
 <td><small>
 (portions of) geometry<br>
 geometry/proximity
@@ -159,7 +159,7 @@ multibody/parsing
 <tr>
 <td><code>multibody plant</code></td>
 <td>MultibodyPlant and supporting code.</td>
-<td>amcastro-tri</td>
+<td>joemasterjohn</td>
 <td><small>
 multibody/contact_solvers<br>
 multibody/math<br>
@@ -185,7 +185,7 @@ systems/trajectory_optimization
 <tr>
 <td><code>pydrake</code></td>
 <td>Python API and its supporting Starlark macros.</td>
-<td>EricCousineau-TRI</td>
+<td>rpoyner-tri</td>
 <td><small>
 bindings/pydrake<br>
 RobotLocomotion/pybind11

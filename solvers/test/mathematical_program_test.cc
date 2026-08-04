@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -19,7 +20,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -126,7 +126,7 @@ void CheckAddedVariable(const MathematicalProgram& prog, const T& var, int rows,
   EXPECT_EQ(var.rows(), rows);
   EXPECT_EQ(var.cols(), cols);
   // Checks the name of the newly added variables.
-  EXPECT_EQ(fmt::to_string(fmt_eigen(var)), var_name);
+  EXPECT_EQ(fmt::format("{:#}", fmt_eigen(var)), var_name);
   // Checks num_vars() function.
   const int num_new_vars =
       is_symmetric ? var.rows() * (var.rows() + 1) / 2 : var.size();
@@ -164,7 +164,8 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
                               const Eigen::MatrixBase<Derived>& indeterminates,
                               const string& indeterminates_name) {
   // Checks the name of the newly added indeterminates.
-  EXPECT_EQ(fmt::to_string(fmt_eigen(indeterminates)), indeterminates_name);
+  EXPECT_EQ(fmt::format("{:#}", fmt_eigen(indeterminates)),
+            indeterminates_name);
   // Checks num_indeterminates() function.
   const int num_new_indeterminates = indeterminates.size();
   EXPECT_EQ(prog.num_indeterminates(), num_new_indeterminates);
@@ -2488,15 +2489,20 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
 }
 
 // Tests `AddLinearEqualityConstraint(const symbolic::Formula& f)` method with a
-// case where `f` is a conjunction of linear-equality formulas .
+// case where `f` is a conjunction of linear-equality formulas, and tests
+// `AddLinearEqualityConstraint(const Eigen::Ref<const
+// Eigen::Array<symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas)`
+// method with a case where `f` is a vector of linear-equality formulas, a
+// vector of conjunctions of linear-equality formulas, or a mix of the two.
 GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
   // Test problem: Ax = b where
   //
   // A = |-3.0  0.0  2.0|  x = |x0|  b = | 9.0|
   //     | 0.0  7.0 -3.0|      |x1|      | 3.0|
   //     | 2.0  5.0  0.0|      |x2|      |-5.0|
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>("x");
+  MathematicalProgram prog1;
+  VectorX<Variable> x = prog1.NewContinuousVariables<3>("x");
+  prog1.AddDecisionVariables(x);
   Eigen::Matrix3d A;
   Vector3d b;
   // clang-format off
@@ -2508,22 +2514,59 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
       -5.0;
   // clang-format on
   const Formula f{A * x == b};
-  const Binding<LinearEqualityConstraint> binding{
-      prog.AddLinearEqualityConstraint(f)};
-  EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
+  Binding<LinearEqualityConstraint> binding1{
+      prog1.AddLinearEqualityConstraint(f)};
 
-  // Checks if AddLinearEqualityConstraint added the constraint correctly.
-  const Eigen::Matrix<Expression, 3, 1> exprs_in_added_constraint{
-      binding.evaluator()->GetDenseA() * binding.variables() -
-      binding.evaluator()->lower_bound()};
   const Eigen::Matrix<Expression, 3, 1> expected_exprs{A * x - b};
+  auto check_binding =
+      [&expected_exprs](const MathematicalProgram& test_prog,
+                        const Binding<LinearEqualityConstraint>& test_binding) {
+        EXPECT_EQ(test_prog.linear_equality_constraints().size(), 1u);
 
-  // Since a conjunctive symbolic formula uses `std::set` as an internal
-  // representation, we need to check if `exprs_in_added_constraint` is a
-  // permutation of `expected_exprs`.
-  EXPECT_TRUE(is_permutation(
-      exprs_in_added_constraint.data(), exprs_in_added_constraint.data() + 3,
-      expected_exprs.data(), expected_exprs.data() + 3, ExprEqual));
+        // Checks if AddLinearEqualityConstraint added the constraint correctly.
+        auto exprs_in_added_constraint = Eigen::Matrix<Expression, 3, 1>{
+            test_binding.evaluator()->GetDenseA() * test_binding.variables() -
+            test_binding.evaluator()->lower_bound()};
+
+        // Since a conjunctive symbolic formula uses `std::set` as an internal
+        // representation, we need to check if `exprs_in_added_constraint` is a
+        // permutation of `expected_exprs`.
+        EXPECT_TRUE(is_permutation(exprs_in_added_constraint.data(),
+                                   exprs_in_added_constraint.data() + 3,
+                                   expected_exprs.data(),
+                                   expected_exprs.data() + 3, ExprEqual));
+      };
+
+  check_binding(prog1, binding1);
+
+  // Now we test the vector of formulas bindings.
+  std::vector<Binding<LinearEqualityConstraint>> bindings;
+
+  // Test 1: each formula is its own entry.
+  Eigen::Vector3<Formula> f1;
+  for (int i = 0; i < 3; ++i) {
+    f1[i] = A.row(i).dot(x) == b[i];
+  }
+
+  // Test 2: combine the first two formulas in a conjunction of equalities,
+  // while leaving the third as an equality.
+  Eigen::Vector2<Formula> f2;
+  f2[0] = f1[0] && f1[1];
+  f2[1] = f1[2];
+
+  // Test 3: combine all three formulas in a conjunction of equalities.
+  Vector1<Formula> f3;
+  f3[0] = f1[0] && f1[1] && f1[2];
+
+  std::vector<VectorX<Formula>> formulas{f1, f2, f3};
+
+  for (const auto& test_formula : formulas) {
+    MathematicalProgram prog2;
+    prog2.AddDecisionVariables(x);
+    Binding<LinearEqualityConstraint> binding2{
+        prog2.AddLinearEqualityConstraint(test_formula)};
+    check_binding(prog2, binding2);
+  }
 }
 
 // Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
@@ -3479,38 +3522,119 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCostUsingConicConstraint) {
             lorentz_eval_expected);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddL1NormCostInEpigraphForm_Rectangular) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2>("x");
+
+  // Rectangular A: 3 rows, 2 columns.
+  Eigen::Matrix<double, 3, 2> A;
+  A << 1, 0, 0, 1, 1, 1;
+  const Eigen::Vector3d b(1, -2, -1);  // So that A * [1, -2] + b = 0.
+
+  const auto [s, linear_cost, linear_constraint] =
+      prog.AddL1NormCostInEpigraphForm(A, b, x);
+
+  // Check that s was added as new decision variables.
+  EXPECT_EQ(s.rows(), 3);
+  for (int i = 0; i < s.size(); ++i) {
+    ASSERT_NO_THROW(void(prog.FindDecisionVariableIndex(s(i))));
+  }
+
+  // Check that the linear cost is Σᵢsᵢ.
+  EXPECT_TRUE(linear_cost.evaluator());
+  EXPECT_EQ(linear_cost.variables(), s);
+  EXPECT_TRUE((linear_cost.evaluator()->a().array() == 1.0).all());
+  EXPECT_EQ(linear_cost.evaluator()->b(), 0.0);
+  EXPECT_EQ(prog.linear_costs().size(), 1);
+
+  // Check that the constraint s >= Ax + b and s >= -(Ax + b) is encoded
+  // correctly.
+  EXPECT_TRUE(linear_constraint.evaluator() != nullptr);
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  EXPECT_EQ(linear_constraint.evaluator()->GetDenseA().rows(),
+            6);  // 2 * A.rows().
+  EXPECT_EQ(linear_constraint.evaluator()->GetDenseA().cols(),
+            5);  // s.size() + x.size().
+
+  // Check constraint variable ordering: [s0, s1, s2, x0, x1].
+  const auto& constraint_vars = linear_constraint.variables();
+  EXPECT_EQ(constraint_vars.size(), 5);
+  EXPECT_EQ(constraint_vars.segment(0, 3), s);
+  EXPECT_EQ(constraint_vars.segment(3, 2), x);
+
+  // s should satisfy:
+  // s ≥  A * x + b
+  // s ≥ -A * x - b.
+  const Eigen::Vector2d x_value(-1.0, 2.0);
+  const Eigen::Vector3d s_value = Eigen::Vector3d::Zero();
+
+  // Form the full variable vector [s; x].
+  Eigen::Matrix<double, 5, 1> vars;
+  vars << s_value, x_value;
+
+  const double kTol = 1e-15;
+  EXPECT_TRUE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
+
+  // Verify it still works if s is larger.
+  vars[0] += 1.0;
+  EXPECT_TRUE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
+  vars[0] -= 1.0;
+
+  // Check cost
+  const double expected_cost = 0.0;
+  Eigen::VectorXd actual_cost(1);
+  linear_cost.evaluator()->Eval(s_value, &actual_cost);
+  ASSERT_EQ(actual_cost.size(), 1);
+  EXPECT_EQ(actual_cost[0], expected_cost);
+
+  // Check failure case.
+  vars[0] -= 2 * kTol;  // Decrease s[0].
+  EXPECT_FALSE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
+}
+
+using MapPolynomialVarTypeToSymbolicVariable =
+    map<Polynomial<double>::VarType, Variable>;
+
 // Helper function for ArePolynomialIsomorphic.
 //
-// Transforms a monomial into an isomorphic one up to a given map (Variable::Id
-// → Variable). Consider an example where monomial is "x³y⁴" and var_id_to_var
-// is {x.get_id() ↦ z, y.get_id() ↦ w}. We have transform(x³y⁴, {x.get_id() ↦ z,
-// y.get_id() ↦ w}) = z³w⁴.
+// Transforms a monomial into an isomorphic one up to a given map
+// (Polynomiald::VarType → symbolic::Variable). Consider an example where
+// monomial is "x³y⁴" and polynomial_var_to_symbolic_var is {x ↦ z, y ↦ w}. We
+// have transform(x³y⁴, {x ↦ z, y ↦ w}) = z³w⁴.
 //
-// @pre `var_id_to_var` is 1-1.
-// @pre The domain of `var_id_to_var` includes all variables in `monomial`.
-// @pre `var_id_to_var` should be chain-free. Formally, for all variable v in
-// the image of var_id_to_var, its ID, id(v) should not be in the domain of
-// var_id_to_var. For example, {x.get_id() -> y, y.get_id() -> z} is not
-// allowed.
+// @pre `polynomial_var_to_symbolic_var` is 1-1.
+//
+// @pre The domain of `polynomial_var_to_symbolic_var` includes all variables in
+// `monomial`.
+//
+// @pre `polynomial_var_to_symbolic_var` should be chain-free. Formally, for all
+// variable v in the image of polynomial_var_to_symbolic_var, v should not be in
+// the domain of polynomial_var_to_symbolic_var. For example, {x ↦ y, y ↦ z} is
+// not allowed.
 symbolic::Monomial transform(const symbolic::Monomial& monomial,
-                             const map<Variable::Id, Variable>& var_id_to_var) {
-  // var_id_to_var should be chain-free.
-  for (const pair<const Variable::Id, Variable>& p : var_id_to_var) {
-    const Variable& var{p.second};
-    DRAKE_DEMAND(var_id_to_var.find(var.get_id()) == var_id_to_var.end());
+                             const MapPolynomialVarTypeToSymbolicVariable&
+                                 polynomial_var_to_symbolic_var) {
+  // polynomial_var_to_symbolic_var should be chain-free.
+  for (const auto& [_, symbolic_var] : polynomial_var_to_symbolic_var) {
+    const Polynomial<double>::VarType as_polynomial_var =
+        Polynomial<double>::VariableIdToVarType(symbolic_var.get_id());
+    DRAKE_DEMAND(!polynomial_var_to_symbolic_var.contains(as_polynomial_var));
   }
   map<Variable, int> new_powers;
-  for (const pair<Variable, int> p : monomial.get_powers()) {
-    const Variable& var_in_monomial{p.first};
-    const int exponent{p.second};
-    const auto it = var_id_to_var.find(var_in_monomial.get_id());
+  for (const auto& [symbolic_var_in_monomial, exponent] :
+       monomial.get_powers()) {
+    const Polynomial<double>::VarType polynomial_var_in_monomial =
+        Polynomial<double>::VariableIdToVarType(
+            symbolic_var_in_monomial.get_id());
+    const auto iter =
+        polynomial_var_to_symbolic_var.find(polynomial_var_in_monomial);
 
-    // There should be a mapping for the ID in var_id_to_var.
-    DRAKE_DEMAND(it != var_id_to_var.end());
-    const Variable new_var{it->second};
+    // There should be a mapping for the ID in polynomial_var_to_symbolic_var.
+    DRAKE_DEMAND(iter != polynomial_var_to_symbolic_var.end());
+    const Variable new_var{iter->second};
 
-    // var_id_to_var should be 1-1.
-    DRAKE_DEMAND(new_powers.find(new_var) == new_powers.end());
+    // polynomial_var_to_symbolic_var should be 1-1.
+    DRAKE_DEMAND(!new_powers.contains(new_var));
     new_powers.emplace(new_var, exponent);
   }
   return symbolic::Monomial{new_powers};
@@ -3519,20 +3643,24 @@ symbolic::Monomial transform(const symbolic::Monomial& monomial,
 // Helper function for ArePolynomialIsomorphic.
 //
 // Transforms a Polynomial into an isomorphic one up to a given map
-// (Variable::Id → Variable). Consider an example where poly = x³y⁴ + 2x² and
-// var_id_to_var is {x.get_id() ↦ z, y.get_id() ↦ w}. We have transform(poly,
-// var_id_to_var) = z³w⁴ + 2z².
+// (Polynomiald::VarType → symbolic::Variable). Consider an example where poly =
+// x³y⁴ + 2x² and polynomial_var_to_symbolic_var is {x ↦ z, y ↦ w}. We have
+// transform(poly, polynomial_var_to_symbolic_var) = z³w⁴ + 2z².
 //
-// @pre `var_id_to_var` is 1-1.
-// @pre The domain of `var_id_to_var` includes all variables in `m`.
-// @pre `var_id_to_var` should be chain-free.
-symbolic::Polynomial transform(
-    const symbolic::Polynomial& poly,
-    const map<Variable::Id, Variable>& var_id_to_var) {
+// @pre `polynomial_var_to_symbolic_var` is 1-1.
+//
+// @pre The domain of `polynomial_var_to_symbolic_var` includes all variables in
+// `m`.
+//
+// @pre `polynomial_var_to_symbolic_var` should be chain-free.
+symbolic::Polynomial transform(const symbolic::Polynomial& poly,
+                               const MapPolynomialVarTypeToSymbolicVariable&
+                                   polynomial_var_to_symbolic_var) {
   symbolic::Polynomial::MapType new_map;
   for (const pair<const symbolic::Monomial, symbolic::Expression>& p :
        poly.monomial_to_coefficient_map()) {
-    new_map.emplace(transform(p.first, var_id_to_var), p.second);
+    new_map.emplace(transform(p.first, polynomial_var_to_symbolic_var),
+                    p.second);
   }
   return symbolic::Polynomial{new_map};
 }
@@ -3540,15 +3668,19 @@ symbolic::Polynomial transform(
 // Helper function for CheckAddedPolynomialCost.
 //
 // Checks if two Polynomial `p1` and `p2` are isomorphic with respect to a
-// bijection `var_id_to_var`.
+// bijection `polynomial_var_to_symbolic_var`.
 //
-// @pre `var_id_to_var` is 1-1.
-// @pre The domain of `var_id_to_var` includes all variables in `m`.
-// @pre `var_id_to_var` should be chain-free.
+// @pre `polynomial_var_to_symbolic_var` is 1-1.
+//
+// @pre The domain of `polynomial_var_to_symbolic_var` includes all variables in
+// `m`.
+//
+// @pre `polynomial_var_to_symbolic_var` should be chain-free.
 bool ArePolynomialIsomorphic(const symbolic::Polynomial& p1,
                              const symbolic::Polynomial& p2,
-                             const map<Variable::Id, Variable>& var_id_to_var) {
-  return transform(p1, var_id_to_var).EqualTo(p2);
+                             const MapPolynomialVarTypeToSymbolicVariable&
+                                 polynomial_var_to_symbolic_var) {
+  return transform(p1, polynomial_var_to_symbolic_var).EqualTo(p2);
 }
 
 void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
@@ -3559,17 +3691,17 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
   // Now reconstruct the symbolic expression from `binding`.
   const auto polynomial = binding.evaluator()->polynomials()(0);
 
-  // var_id_to_var : Variable::Id → Variable. It keeps the relation between a
-  // variable in a Polynomial<double> and symbolic::Monomial.
+  // polynomial_var_to_symbolic_var : Polynomiald::VarType → Variable. It keeps
+  // the relation between a variable in a Polynomiald and symbolic::Monomial.
   symbolic::Polynomial poly_expected;
-  map<Variable::Id, Variable> var_id_to_var;
+  MapPolynomialVarTypeToSymbolicVariable polynomial_var_to_symbolic_var;
   for (const Polynomial<double>::Monomial& m : polynomial.GetMonomials()) {
     map<Variable, int> map_var_to_power;
     for (const Polynomial<double>::Term& term : m.terms) {
-      auto it = var_id_to_var.find(term.var);
-      if (it == var_id_to_var.end()) {
+      auto it = polynomial_var_to_symbolic_var.find(term.var);
+      if (it == polynomial_var_to_symbolic_var.end()) {
         Variable var{std::to_string(term.var)};
-        var_id_to_var.emplace_hint(it, term.var, var);
+        polynomial_var_to_symbolic_var.emplace_hint(it, term.var, var);
         map_var_to_power.emplace(var, term.power);
       } else {
         map_var_to_power.emplace(it->second, term.power);
@@ -3578,9 +3710,10 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
     poly_expected += symbolic::Monomial(map_var_to_power) * m.coefficient;
   }
   // Checks if the two polynomials, `poly` and `poly_expected` are isomorphic
-  // with respect to `var_id_to_var`.
+  // with respect to `polynomial_var_to_symbolic_var`.
   const symbolic::Polynomial poly{e};
-  EXPECT_TRUE(ArePolynomialIsomorphic(poly, poly_expected, var_id_to_var));
+  EXPECT_TRUE(ArePolynomialIsomorphic(poly, poly_expected,
+                                      polynomial_var_to_symbolic_var));
 }
 
 GTEST_TEST(TestMathematicalProgram, TestAddPolynomialCost) {
@@ -3976,40 +4109,6 @@ GTEST_TEST(TestMathematicalProgram, TestAddVisualizationCallback) {
   EXPECT_TRUE(was_called);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(TestMathematicalProgram, DeprecatedTestSolverOptions) {
-  MathematicalProgram prog;
-  const SolverId solver_id("solver_id");
-  const SolverId wrong_solver_id("wrong_solver_id");
-
-  prog.SetSolverOption(solver_id, "double_name", 1.0);
-  EXPECT_EQ(prog.GetSolverOptionsDouble(solver_id).at("double_name"), 1.0);
-  EXPECT_EQ(prog.GetSolverOptionsDouble(wrong_solver_id).size(), 0);
-
-  prog.SetSolverOption(solver_id, "int_name", 2);
-  EXPECT_EQ(prog.GetSolverOptionsInt(solver_id).at("int_name"), 2);
-  EXPECT_EQ(prog.GetSolverOptionsInt(wrong_solver_id).size(), 0);
-
-  prog.SetSolverOption(solver_id, "string_name", "3");
-  EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).at("string_name"), "3");
-  EXPECT_EQ(prog.GetSolverOptionsStr(wrong_solver_id).size(), 0);
-
-  const SolverId dummy_id("dummy_id");
-  SolverOptions dummy_options;
-  dummy_options.SetOption(dummy_id, "double_name", 10.0);
-  dummy_options.SetOption(dummy_id, "int_name", 20);
-  dummy_options.SetOption(dummy_id, "string_name", "30.0");
-  prog.SetSolverOptions(dummy_options);
-  EXPECT_EQ(prog.GetSolverOptionsDouble(dummy_id).at("double_name"), 10.0);
-  EXPECT_EQ(prog.GetSolverOptionsDouble(solver_id).size(), 0);
-  EXPECT_EQ(prog.GetSolverOptionsInt(dummy_id).at("int_name"), 20);
-  EXPECT_EQ(prog.GetSolverOptionsInt(solver_id).size(), 0);
-  EXPECT_EQ(prog.GetSolverOptionsStr(dummy_id).at("string_name"), "30.0");
-  EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).size(), 0);
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(TestMathematicalProgram, TestSolverOptions) {
   MathematicalProgram prog;
   const SolverId solver_id("solver_id");
@@ -4290,9 +4389,6 @@ GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix2) {
   ASSERT_EQ(prog.GetAllConstraints().size(), 1);
   ASSERT_EQ(prog.GetAllLinearConstraints().size(), 1);
 
-  Eigen::Matrix<double, 4, 2> A_expected;
-  Eigen::Matrix<double, 4, 1> lower_bound_expected;
-  Eigen::Matrix<double, 4, 1> upper_bound_expected;
   std::array<std::array<Eigen::RowVector2d, 2>, 2> coeff;
   coeff[0][0] << 1, 0;
   coeff[0][1] << 1, 2;

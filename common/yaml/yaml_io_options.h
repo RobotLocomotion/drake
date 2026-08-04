@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ostream>
+#include <string>
 
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 
 namespace drake {
 namespace yaml {
@@ -10,8 +10,6 @@ namespace yaml {
 /** Configuration for LoadYamlFile() and LoadYamlString() to govern when certain
 conditions are errors or not. Refer to the member fields for details. */
 struct LoadYamlOptions {
-  friend std::ostream& operator<<(std::ostream&, const LoadYamlOptions&);
-
   /** Allows yaml Maps to have extra key-value pairs that are not Visited by the
   Serializable being parsed into. In other words, the Serializable types provide
   an incomplete schema for the YAML data. This allows for parsing only a subset
@@ -30,11 +28,9 @@ struct LoadYamlOptions {
   bool retain_map_defaults{false};
 };
 
+std::string to_string(const LoadYamlOptions& options);
+
 }  // namespace yaml
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::yaml::LoadYamlOptions> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::yaml, LoadYamlOptions, x, drake::yaml::to_string(x))

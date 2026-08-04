@@ -1,6 +1,7 @@
 #include "drake/planning/locomotion/zmp_planner.h"
 
 #include <typeinfo>
+#include <vector>
 
 #include <gtest/gtest.h>
 

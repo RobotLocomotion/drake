@@ -6,6 +6,12 @@ namespace fem {
 namespace internal {
 
 template <typename T>
+std::unique_ptr<DiscreteTimeIntegrator<T>>
+AccelerationNewmarkScheme<T>::DoClone() const {
+  return std::make_unique<AccelerationNewmarkScheme<T>>(dt(), gamma_, beta_);
+}
+
+template <typename T>
 void AccelerationNewmarkScheme<T>::DoUpdateStateFromChangeInUnknowns(
     const VectorX<T>& dz, FemState<T>* state) const {
   const VectorX<T>& a = state->GetAccelerations();
@@ -39,5 +45,5 @@ void AccelerationNewmarkScheme<T>::DoAdvanceOneTimeStep(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::fem::internal::AccelerationNewmarkScheme);

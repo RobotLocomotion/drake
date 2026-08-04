@@ -1,5 +1,8 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h"
 
+#include <memory>
+#include <utility>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

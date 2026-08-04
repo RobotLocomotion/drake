@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 
 /// @defgroup hash_append hash_append generic hashing
 /// @{
@@ -75,8 +74,7 @@ namespace drake {
 
 /// Provides @ref hash_append for integral constants.
 template <class HashAlgorithm, class T>
-std::enable_if_t<std::is_integral_v<T>>
-hash_append(
+std::enable_if_t<std::is_integral_v<T>> hash_append(
     // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   hasher(std::addressof(item), sizeof(item));
@@ -91,8 +89,7 @@ void hash_append(HashAlgorithm& hasher, const T* item) noexcept {
 
 /// Provides @ref hash_append for enumerations.
 template <class HashAlgorithm, class T>
-std::enable_if_t<std::is_enum_v<T>>
-hash_append(
+std::enable_if_t<std::is_enum_v<T>> hash_append(
     // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   hasher(std::addressof(item), sizeof(item));
@@ -100,8 +97,7 @@ hash_append(
 
 /// Provides @ref hash_append for floating point values.
 template <class HashAlgorithm, class T>
-std::enable_if_t<std::is_floating_point_v<T>>
-hash_append(
+std::enable_if_t<std::is_floating_point_v<T>> hash_append(
     // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   // Hashing a NaN makes no sense, since they cannot compare as equal.

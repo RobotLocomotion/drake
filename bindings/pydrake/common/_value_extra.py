@@ -1,6 +1,8 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 from pydrake.common.cpp_param import List
 
 

@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_tinyxml.h"
 
 #include <locale>
+#include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

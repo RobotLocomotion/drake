@@ -103,7 +103,7 @@ class MinimumDistanceLowerBoundConstraint final : public solvers::Constraint {
       solvers::MinimumValuePenaltyFunction penalty_function = {},
       double influence_distance_offset = 0.01);
 
-  ~MinimumDistanceLowerBoundConstraint() override {}
+  ~MinimumDistanceLowerBoundConstraint() override;
 
   /** Getter for the lower bound of the minimum distance. */
   double distance_bound() const {

@@ -14,7 +14,8 @@ template <typename T>
 CurvilinearMobilizer<T>::CurvilinearMobilizer(
     const SpanningForest::Mobod& mobod, const Frame<T>& inboard_frame_F,
     const Frame<T>& outboard_frame_M,
-    const PiecewiseConstantCurvatureTrajectory<double>& curvilinear_path)
+    const trajectories::PiecewiseConstantCurvatureTrajectory<double>&
+        curvilinear_path)
     : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M),
       curvilinear_path_(curvilinear_path) {}
 
@@ -191,22 +192,28 @@ void CurvilinearMobilizer<T>::DoCalcNplusMatrix(
 }
 
 template <typename T>
-void CurvilinearMobilizer<T>::MapVelocityToQDot(
+void CurvilinearMobilizer<T>::DoCalcNDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> Ndot) const {
+  (*Ndot)(0, 0) = 0.0;
+}
+
+template <typename T>
+void CurvilinearMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> NplusDot) const {
+  (*NplusDot)(0, 0) = 0.0;
+}
+
+template <typename T>
+void CurvilinearMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  DRAKE_ASSERT(qdot != nullptr);
-  DRAKE_ASSERT(qdot->size() == kNq);
   *qdot = v;
 }
 
 template <typename T>
-void CurvilinearMobilizer<T>::MapQDotToVelocity(
+void CurvilinearMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
-  DRAKE_ASSERT(qdot.size() == kNq);
-  DRAKE_ASSERT(v != nullptr);
-  DRAKE_ASSERT(v->size() == kNv);
   *v = qdot;
 }
 
@@ -222,7 +229,8 @@ CurvilinearMobilizer<T>::TemplatedDoCloneToScalar(
   return std::make_unique<CurvilinearMobilizer<ToScalar>>(
       tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
       outboard_frame_clone,
-      PiecewiseConstantCurvatureTrajectory<double>(curvilinear_path_));
+      trajectories::PiecewiseConstantCurvatureTrajectory<double>(
+          curvilinear_path_));
 }
 
 template <typename T>

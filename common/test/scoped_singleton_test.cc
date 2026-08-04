@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -33,13 +34,9 @@ class InstanceCountedDummy {
     DRAKE_DEMAND(momentary_total >= 0);
   }
 
-  static int instance_count() {
-    return mutable_instance_count();
-  }
+  static int instance_count() { return mutable_instance_count(); }
 
-  static int max_instance_count() {
-    return mutable_max_instance_count();
-  }
+  static int max_instance_count() { return mutable_max_instance_count(); }
 
   static std::atomic<int>& mutable_instance_count() {
     static never_destroyed<std::atomic<int>> global_counter(0);

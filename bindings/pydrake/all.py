@@ -16,6 +16,7 @@ Things to note:
   otherwise, `all` would emit noisy deprecation warnings, or if they are
   suppressed, subseqeuent imports of those deprecated modules will not trigger
   warnings.
+* Experimental modules are excluded from `all`.
 
 To see example usages, please see `doc/python_bindings.rst`.
 
@@ -32,6 +33,9 @@ collisions, please run ``bazel run //bindings/pydrake:print_symbol_collision``
 from the Drake source tree.
 """
 
+# ruff: noqa: F401,F403 (unused-import, import-star)
+# ruff: isort: skip_file
+
 # Normal symbols.
 from . import getDrakePath
 from .autodiffutils import *
@@ -47,23 +51,25 @@ from .symbolic import *
 from .trajectories import *
 
 # Submodules.
-from .common.all import *
-from .geometry.all import *
 # - `.gym` is an optional dependency, so is excluded from `all`.
 # - `.examples` does not offer public Drake library symbols.
+from .common.all import *
+from .geometry.all import *
 from .multibody.all import *
 from .systems.all import *
 from .visualization import *
 
-# Preferred Ordering.
-# Please note this will *re*import some modules.
-# To view what collisions may occur, please run:
+# Preferred Ordering. Please note this will *re*import some modules.
 # - Ensure .math imports win over less capable .symbolic or .autodiffutils
 # overloads.
 from .math import *
-# - Ensure symbolic.Polynomial wins (#18353).
+
+# - Ensure symbolic.Polynomial wins over math.Polynomial (#18353).
 from .symbolic import Polynomial
 
 # Ensure that the command-line modules appear in the pydrake API reference.
 import pydrake.visualization.meldis
 import pydrake.visualization.model_visualizer
+
+# Don't export submodule(s) named "experimental" (e.g., planning.experimental).
+del experimental  # noqa: F821 (undefined-name)

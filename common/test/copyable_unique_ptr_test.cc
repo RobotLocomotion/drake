@@ -1,8 +1,10 @@
 #include "drake/common/copyable_unique_ptr.h"
 
+#include <algorithm>
 #include <memory>
 #include <regex>
 #include <sstream>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -11,7 +13,7 @@
 #include "drake/common/unused.h"
 
 namespace drake {
-namespace  {
+namespace {
 
 using std::make_unique;
 using std::regex;
@@ -32,9 +34,9 @@ using cup = copyable_unique_ptr<T>;
 
 // Indicator of where a particular instance came from.
 enum class Origin {
-  UNINITIALIZED,
-  CONSTRUCT,
-  COPY,
+  UNINITIALIZED,  // BR
+  CONSTRUCT,      //
+  COPY,           //
   CLONE
 };
 
@@ -48,6 +50,7 @@ struct Base {
 
   Origin origin{Origin::UNINITIALIZED};
   int value{-1};
+
  protected:
   Base(const Base& b) : origin(Origin::COPY), value(b.value) {}
 };
@@ -75,7 +78,7 @@ GTEST_TEST(CopyableUniquePtrTest, CopyOnlySuccess) {
 class FriendsWithBenefitsCopy {
  public:
   explicit FriendsWithBenefitsCopy(int value) : value_(value) {}
-  int value() const {return value_;}
+  int value() const { return value_; }
 
  private:
   friend class copyable_unique_ptr<FriendsWithBenefitsCopy>;
@@ -89,7 +92,7 @@ class FriendsWithBenefitsCopy {
 class FriendsWithBenefitsClone {
  public:
   explicit FriendsWithBenefitsClone(int value) : value_(value) {}
-  int value() const {return value_;}
+  int value() const { return value_; }
   FriendsWithBenefitsClone(const FriendsWithBenefitsClone&) = delete;
 
  private:
@@ -147,6 +150,7 @@ struct CloneOnly : Base {
   unique_ptr<CloneOnly> Clone() const {
     return unique_ptr<CloneOnly>(DoClone());
   }
+
  protected:
   CloneOnly(const CloneOnly& other) : Base(other.value) {}
   [[nodiscard]] virtual CloneOnly* DoClone() const {
@@ -178,6 +182,7 @@ struct CloneOnlyChildWithClone : CloneOnly {
   unique_ptr<CloneOnlyChildWithClone> Clone() const {
     return unique_ptr<CloneOnlyChildWithClone>(DoClone());
   }
+
  protected:
   [[nodiscard]] CloneOnlyChildWithClone* DoClone() const override {
     return new CloneOnlyChildWithClone(value, Origin::CLONE);
@@ -194,6 +199,7 @@ struct CloneOnlyChildWithCopyVClone : CloneOnly {
   explicit CloneOnlyChildWithCopyVClone(int v, Origin org = Origin::CONSTRUCT)
       : CloneOnly(v, org) {}
   CloneOnlyChildWithCopyVClone(const CloneOnlyChildWithCopyVClone&) = default;
+
  protected:
   [[nodiscard]] CloneOnlyChildWithCopyVClone* DoClone() const override {
     return new CloneOnlyChildWithCopyVClone(value, Origin::CLONE);
@@ -281,7 +287,7 @@ void TestPolymorphicCopy(bool copy_success) {
                 "from CloneOnly.");
   cup<CloneOnly> src(new T(1));
   cup<CloneOnly> tgt;
-  tgt = src;    // Triggers a copy
+  tgt = src;                        // Triggers a copy
   EXPECT_NE(tgt.get(), nullptr);    // Confirm actual object assigned.
   EXPECT_NE(tgt.get(), src.get());  // Confirm different objects.
   if (copy_success) {
@@ -308,7 +314,7 @@ GTEST_TEST(CopyableUniquePtrTest, CopyTypeSlicing) {
   // Case 5) Child with copy, derived from base with copy.
   cup<FullyCopyable> src(new CopyChild(1));
   cup<FullyCopyable> tgt;
-  tgt = src;    // Triggers a copy
+  tgt = src;                        // Triggers a copy
   EXPECT_NE(tgt.get(), nullptr);    // Confirm actual object assigned.
   EXPECT_NE(tgt.get(), src.get());  // Confirm different objects.
   EXPECT_TRUE((std::is_same_v<const FullyCopyable*, decltype(tgt.get())>));
@@ -757,9 +763,9 @@ GTEST_TEST(CopyableUniquePtrTest, CopyAssignFromCopyableUniquePtr) {
   DestructorTracker::dtor_called = false;
   tgt = src2;
   EXPECT_TRUE(DestructorTracker::dtor_called);
-  EXPECT_NE(tgt.get(), src2.get());     // Not the same pointer as src.
-  EXPECT_EQ(src2.get(), raw2);          // Src has original value.
-  EXPECT_EQ(tgt->value, src2->value);   // Src and tgt are copies.
+  EXPECT_NE(tgt.get(), src2.get());    // Not the same pointer as src.
+  EXPECT_EQ(src2.get(), raw2);         // Src has original value.
+  EXPECT_EQ(tgt->value, src2->value);  // Src and tgt are copies.
 
   // Case 4: Assign non-empty cup<Derived> to empty cup<Base>
   cup<CloneOnly> base_tgt;
@@ -813,9 +819,9 @@ GTEST_TEST(CopyableUniquePtrTest, CopyAssignFromUniquePtr) {
   DestructorTracker::dtor_called = false;
   tgt = src2;
   EXPECT_TRUE(DestructorTracker::dtor_called);
-  EXPECT_NE(tgt.get(), src2.get());     // Not the same pointer as src.
-  EXPECT_EQ(src2.get(), raw2);          // Src has original value.
-  EXPECT_EQ(tgt->value, src2->value);   // Src and tgt are copies.
+  EXPECT_NE(tgt.get(), src2.get());    // Not the same pointer as src.
+  EXPECT_EQ(src2.get(), raw2);         // Src has original value.
+  EXPECT_EQ(tgt->value, src2->value);  // Src and tgt are copies.
 
   // Case 4: Assign non-empty unique_ptr<Derived> to empty cup<Base>
   cup<CloneOnly> base_tgt;
@@ -869,8 +875,8 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromCopyableUniquePtr) {
   DestructorTracker::dtor_called = false;
   tgt = std::move(src2);
   EXPECT_TRUE(DestructorTracker::dtor_called);
-  EXPECT_EQ(tgt.get(), raw2);       // Tgt has taken ownership of raw.
-  EXPECT_EQ(src2.get(), nullptr);   // Src has been cleared.
+  EXPECT_EQ(tgt.get(), raw2);      // Tgt has taken ownership of raw.
+  EXPECT_EQ(src2.get(), nullptr);  // Src has been cleared.
 
   // Case 4: Assign non-empty unique_ptr<Derived> to empty cup<Base>
   cup<CloneOnly> base_tgt;
@@ -879,8 +885,8 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromCopyableUniquePtr) {
                                                new CloneOnlyChildWithClone(13));
   base_tgt = std::move(derived_src);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(base_tgt.get()));
-  EXPECT_EQ(base_tgt.get(), derived_raw);   // Tgt has taken ownership of raw.
-  EXPECT_EQ(derived_src.get(), nullptr);    // Src has been cleared.
+  EXPECT_EQ(base_tgt.get(), derived_raw);  // Tgt has taken ownership of raw.
+  EXPECT_EQ(derived_src.get(), nullptr);   // Src has been cleared.
 }
 
 // Tests the move assignment of a standard unique_ptr to a copyable_unique_ptr.
@@ -924,8 +930,8 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromUniquePtr) {
   DestructorTracker::dtor_called = false;
   tgt = std::move(src2);
   EXPECT_TRUE(DestructorTracker::dtor_called);
-  EXPECT_EQ(tgt.get(), raw2);       // Tgt has taken ownership of raw.
-  EXPECT_EQ(src2.get(), nullptr);   // Src has been cleared.
+  EXPECT_EQ(tgt.get(), raw2);      // Tgt has taken ownership of raw.
+  EXPECT_EQ(src2.get(), nullptr);  // Src has been cleared.
 
   // Case 4: Assign non-empty unique_ptr<Derived> to empty cup<Base>
   cup<CloneOnly> base_tgt;
@@ -934,15 +940,14 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromUniquePtr) {
       derived_raw = new CloneOnlyChildWithClone(13));
   base_tgt = std::move(derived_src);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(base_tgt.get()));
-  EXPECT_EQ(base_tgt.get(), derived_raw);   // Tgt has taken ownership of raw.
-  EXPECT_EQ(derived_src.get(), nullptr);    // Src has been cleared.
+  EXPECT_EQ(base_tgt.get(), derived_raw);  // Tgt has taken ownership of raw.
+  EXPECT_EQ(derived_src.get(), nullptr);   // Src has been cleared.
 }
 
 // ------------------------ Observer Tests ------------------------------
 // These tests cover the introspective functions: determining if the pointer is
 // empty, acquiring access to the raw pointer, and references. The empty()
 // method is implicitly tested multiple times in other methods.
-
 
 // Tests the semantics that get() and get_mutable() return const and non-const
 // pointers respectively.

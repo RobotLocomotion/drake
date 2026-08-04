@@ -8,7 +8,9 @@
  and anchored) and their properties to see the effect on contact surface.  */
 
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <gflags/gflags.h>
 
@@ -42,8 +44,8 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using geometry::AddRigidHydroelasticProperties;
 using geometry::AddCompliantHydroelasticProperties;
+using geometry::AddRigidHydroelasticProperties;
 using geometry::Box;
 using geometry::ContactSurface;
 using geometry::Cylinder;
@@ -233,103 +235,102 @@ class ContactResultMaker final : public LeafSystem<double> {
     message.num_hydroelastic_contacts = num_surfaces;
     message.hydroelastic_contacts.resize(num_surfaces);
     for (int i = 0; i < num_surfaces; ++i) {
-        lcmt_hydroelastic_contact_surface_for_viz& surface_message =
-            message.hydroelastic_contacts[i];
-        const auto& surface = surfaces[i];
+      lcmt_hydroelastic_contact_surface_for_viz& surface_message =
+          message.hydroelastic_contacts[i];
+      const auto& surface = surfaces[i];
 
-        // We'll simulate MbP's model instance/body paradigm. We have a look up
-        // function to define a model instance. The body name will be the frame
-        // name as there is a 1-to-1 correspondence between MbP bodies and
-        // geometry frames. The geometry will use the name stored in SceneGraph.
-        const GeometryId id1 = surface.id_M();
-        const FrameId f_id1 = inspector.GetFrameId(id1);
-        surface_message.body1_name = inspector.GetName(f_id1);
-        surface_message.model1_name =
-            ModelInstanceName(inspector.GetFrameGroup(f_id1));
-        surface_message.geometry1_name = inspector.GetName(id1);
-        surface_message.body1_unique = !FLAGS_force_full_name;
-        surface_message.collision_count1 =
-            inspector.NumGeometriesForFrameWithRole(inspector.GetFrameId(id1),
-                                                    Role::kProximity);
+      // We'll simulate MbP's model instance/body paradigm. We have a look up
+      // function to define a model instance. The body name will be the frame
+      // name as there is a 1-to-1 correspondence between MbP bodies and
+      // geometry frames. The geometry will use the name stored in SceneGraph.
+      const GeometryId id1 = surface.id_M();
+      const FrameId f_id1 = inspector.GetFrameId(id1);
+      surface_message.body1_name = inspector.GetName(f_id1);
+      surface_message.model1_name =
+          ModelInstanceName(inspector.GetFrameGroup(f_id1));
+      surface_message.geometry1_name = inspector.GetName(id1);
+      surface_message.body1_unique = !FLAGS_force_full_name;
+      surface_message.collision_count1 =
+          inspector.NumGeometriesForFrameWithRole(inspector.GetFrameId(id1),
+                                                  Role::kProximity);
 
-        const GeometryId id2 = surface.id_N();
-        const FrameId f_id2 = inspector.GetFrameId(id2);
-        surface_message.body2_name =
-            inspector.GetName(inspector.GetFrameId(id2));
-        surface_message.model2_name =
-            ModelInstanceName(inspector.GetFrameGroup(f_id2));
-        surface_message.geometry2_name = inspector.GetName(id2);
-        surface_message.body2_unique = !FLAGS_force_full_name;
-        surface_message.collision_count2 =
-            inspector.NumGeometriesForFrameWithRole(inspector.GetFrameId(id2),
-                                                    Role::kProximity);
+      const GeometryId id2 = surface.id_N();
+      const FrameId f_id2 = inspector.GetFrameId(id2);
+      surface_message.body2_name = inspector.GetName(inspector.GetFrameId(id2));
+      surface_message.model2_name =
+          ModelInstanceName(inspector.GetFrameGroup(f_id2));
+      surface_message.geometry2_name = inspector.GetName(id2);
+      surface_message.body2_unique = !FLAGS_force_full_name;
+      surface_message.collision_count2 =
+          inspector.NumGeometriesForFrameWithRole(inspector.GetFrameId(id2),
+                                                  Role::kProximity);
 
-        // Fake contact *force* and *moment* data, with some variations across
-        // different faces to facilitate visualizer testing.
-        EigenMapView(surface_message.centroid_W) = surface.centroid();
-        EigenMapView(surface_message.force_C_W) =
-            Vector3<double>(1.2 * (i + 1), 0, 0);
-        EigenMapView(surface_message.moment_C_W) =
-            Vector3<double>(0, 0, 0.5 * (i + 1));
+      // Fake contact *force* and *moment* data, with some variations across
+      // different faces to facilitate visualizer testing.
+      EigenMapView(surface_message.centroid_W) = surface.centroid();
+      EigenMapView(surface_message.force_C_W) =
+          Vector3<double>(1.2 * (i + 1), 0, 0);
+      EigenMapView(surface_message.moment_C_W) =
+          Vector3<double>(0, 0, 0.5 * (i + 1));
 
-        // Write fake quadrature data.
-        surface_message.num_quadrature_points = surface.num_faces();
-        surface_message.quadrature_point_data.resize(
-            surface_message.num_quadrature_points);
-        for (int j = 0; j < surface_message.num_quadrature_points; ++j) {
-          lcmt_hydroelastic_quadrature_per_point_data_for_viz&
-              quad_data_message = surface_message.quadrature_point_data[j];
-          EigenMapView(quad_data_message.p_WQ) = surface.centroid(j);
-          EigenMapView(quad_data_message.vt_BqAq_W) =
-              Vector3d(0, 0.2 + (j * 0.005), 0);
-          EigenMapView(quad_data_message.traction_Aq_W) =
-              Vector3d(0, -0.2 - (j * 0.005), 0);
+      // Write fake quadrature data.
+      surface_message.num_quadrature_points = surface.num_faces();
+      surface_message.quadrature_point_data.resize(
+          surface_message.num_quadrature_points);
+      for (int j = 0; j < surface_message.num_quadrature_points; ++j) {
+        lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_data_message =
+            surface_message.quadrature_point_data[j];
+        EigenMapView(quad_data_message.p_WQ) = surface.centroid(j);
+        EigenMapView(quad_data_message.vt_BqAq_W) =
+            Vector3d(0, 0.2 + (j * 0.005), 0);
+        EigenMapView(quad_data_message.traction_Aq_W) =
+            Vector3d(0, -0.2 - (j * 0.005), 0);
+      }
+
+      // Now write the *real* mesh.
+      const int num_vertices = surface.num_vertices();
+      surface_message.num_vertices = num_vertices;
+      surface_message.p_WV.resize(num_vertices);
+      surface_message.pressure.resize(num_vertices);
+
+      if (surface.is_triangle()) {
+        const auto& mesh_W = surface.tri_mesh_W();
+        const auto& e_MN_W = surface.tri_e_MN();
+
+        // Write vertices and per vertex pressure values.
+        for (int v = 0; v < num_vertices; ++v) {
+          const Vector3d& p_WV = mesh_W.vertex(v);
+          surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+          surface_message.pressure[v] =
+              ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
         }
 
-        // Now write the *real* mesh.
-        const int num_vertices = surface.num_vertices();
-        surface_message.num_vertices = num_vertices;
-        surface_message.p_WV.resize(num_vertices);
-        surface_message.pressure.resize(num_vertices);
-
-        if (surface.is_triangle()) {
-          const auto& mesh_W = surface.tri_mesh_W();
-          const auto& e_MN_W = surface.tri_e_MN();
-
-          // Write vertices and per vertex pressure values.
-          for (int v = 0; v < num_vertices; ++v) {
-            const Vector3d& p_WV = mesh_W.vertex(v);
-            surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
-            surface_message.pressure[v] =
-                ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
-          }
-
-          // Write faces.
-          surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
-          surface_message.poly_data.resize(surface_message.poly_data_int_count);
-          int index = -1;
-          for (int t = 0; t < mesh_W.num_triangles(); ++t) {
-            const geometry::SurfaceTriangle& tri = mesh_W.element(t);
-            surface_message.poly_data[++index] = 3;
-            surface_message.poly_data[++index] = tri.vertex(0);
-            surface_message.poly_data[++index] = tri.vertex(1);
-            surface_message.poly_data[++index] = tri.vertex(2);
-          }
-        } else {
-          const auto& mesh_W = surface.poly_mesh_W();
-          const auto& e_MN_W = surface.poly_e_MN();
-
-          // Write vertices and per vertex pressure values.
-          for (int v = 0; v < num_vertices; ++v) {
-            const Vector3d& p_WV = mesh_W.vertex(v);
-            surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
-            surface_message.pressure[v] =
-                ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
-          }
-
-          surface_message.poly_data_int_count = mesh_W.face_data().size();
-          surface_message.poly_data = mesh_W.face_data();
+        // Write faces.
+        surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
+        surface_message.poly_data.resize(surface_message.poly_data_int_count);
+        int index = -1;
+        for (int t = 0; t < mesh_W.num_triangles(); ++t) {
+          const geometry::SurfaceTriangle& tri = mesh_W.element(t);
+          surface_message.poly_data[++index] = 3;
+          surface_message.poly_data[++index] = tri.vertex(0);
+          surface_message.poly_data[++index] = tri.vertex(1);
+          surface_message.poly_data[++index] = tri.vertex(2);
         }
+      } else {
+        const auto& mesh_W = surface.poly_mesh_W();
+        const auto& e_MN_W = surface.poly_e_MN();
+
+        // Write vertices and per vertex pressure values.
+        for (int v = 0; v < num_vertices; ++v) {
+          const Vector3d& p_WV = mesh_W.vertex(v);
+          surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+          surface_message.pressure[v] =
+              ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+        }
+
+        surface_message.poly_data_int_count = mesh_W.face_data().size();
+        surface_message.poly_data = mesh_W.face_data();
+      }
     }
 
     // Point pairs.
@@ -395,11 +396,13 @@ int do_main() {
   const RigidTransformd X_WC1(Vector3d{-0.5, 0, 3});
   const RigidTransformd X_WC2(Vector3d{0.5, 0, 3});
   const GeometryId can1_id = scene_graph.RegisterGeometry(
-      source_id, can_frame_id, make_unique<GeometryInstance>(
-                     X_WC1, make_unique<Cylinder>(0.5, 1.0), "can1"));
+      source_id, can_frame_id,
+      make_unique<GeometryInstance>(X_WC1, make_unique<Cylinder>(0.5, 1.0),
+                                    "can1"));
   const GeometryId can2_id = scene_graph.RegisterGeometry(
-      source_id, can_frame_id, make_unique<GeometryInstance>(
-                     X_WC2, make_unique<Cylinder>(0.5, 1.0), "can2"));
+      source_id, can_frame_id,
+      make_unique<GeometryInstance>(X_WC2, make_unique<Cylinder>(0.5, 1.0),
+                                    "can2"));
   ProximityProperties proximity_cylinder;
   if (FLAGS_rigid_cylinders) {
     AddRigidHydroelasticProperties(0.5, &proximity_cylinder);

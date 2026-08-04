@@ -1,19 +1,19 @@
 import copy
-import numpy as np
 import pickle
 from textwrap import dedent
 import unittest
+
+import numpy as np
 import scipy.sparse
 
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
-from pydrake.common.value import AbstractValue
-from pydrake.common.yaml import yaml_load_typed
+from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
+from pydrake.symbolic import Expression, Variable
 from pydrake.trajectories import (
     BezierCurve_,
     BsplineTrajectory_,
@@ -31,7 +31,6 @@ from pydrake.trajectories import (
     Trajectory_,
     _WrappedTrajectory_,
 )
-from pydrake.symbolic import Variable, Expression
 
 
 # Custom trajectory class used to test Trajectory subclassing in Python.
@@ -75,50 +74,6 @@ class CustomTrajectory(Trajectory):
         return 4.0
 
 
-# Legacy custom trajectory class used to test Trajectory subclassing in Python.
-# This uses the old spellings for how to override the NVI functions.
-class LegacyCustomTrajectory(Trajectory):
-    def __init__(self):
-        Trajectory.__init__(self)
-
-    def Clone(self):
-        return LegacyCustomTrajectory()
-
-    # This spelling of the virtual override is deprecated.
-    def rows(self):
-        return 1
-
-    # This spelling of the virtual override is deprecated.
-    def cols(self):
-        return 2
-
-    # This spelling of the virtual override is deprecated.
-    def start_time(self):
-        return 3.0
-
-    # This spelling of the virtual override is deprecated.
-    def end_time(self):
-        return 4.0
-
-    # This spelling of the virtual override is deprecated.
-    def value(self, t):
-        return np.array([[t + 1.0, t + 2.0]])
-
-    def do_has_derivative(self):
-        return True
-
-    def DoEvalDerivative(self, t, derivative_order):
-        if derivative_order >= 2:
-            return np.zeros((1, 2))
-        elif derivative_order == 1:
-            return np.ones((1, 2))
-        elif derivative_order == 0:
-            return self.value(t)
-
-    def DoMakeDerivative(self, derivative_order):
-        return DerivativeTrajectory_[float](self, derivative_order)
-
-
 class TestTrajectories(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_trajectory_start_end_time(self, T):
@@ -134,58 +89,30 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(trajectory.end_time(), 4.0)
         self.assertTrue(trajectory.has_derivative())
         self.assertEqual(repr(trajectory), "CustomTrajectory()")
-        numpy_compare.assert_float_equal(trajectory.value(t=1.5),
-                                         np.array([[2.5, 3.5]]))
+        numpy_compare.assert_float_equal(
+            trajectory.value(t=1.5), np.array([[2.5, 3.5]])
+        )
         numpy_compare.assert_float_equal(
             trajectory.EvalDerivative(t=2.3, derivative_order=1),
-            np.ones((1, 2)))
+            np.ones((1, 2)),
+        )
         numpy_compare.assert_float_equal(
             trajectory.EvalDerivative(t=2.3, derivative_order=2),
-            np.zeros((1, 2)))
+            np.zeros((1, 2)),
+        )
 
         clone = trajectory.Clone()
-        numpy_compare.assert_float_equal(clone.value(t=1.5),
-                                         np.array([[2.5, 3.5]]))
+        numpy_compare.assert_float_equal(
+            clone.value(t=1.5), np.array([[2.5, 3.5]])
+        )
         self.assertEqual(repr(clone), "_WrappedTrajectory(CustomTrajectory())")
 
         deriv = trajectory.MakeDerivative(derivative_order=1)
-        numpy_compare.assert_float_equal(
-            deriv.value(t=2.3), np.ones((1, 2)))
+        numpy_compare.assert_float_equal(deriv.value(t=2.3), np.ones((1, 2)))
         self.assertIn(
             "_WrappedTrajectory(<pydrake.trajectories.DerivativeTrajectory",
-            repr(deriv))
-
-    def test_legacy_custom_trajectory(self):
-        trajectory = LegacyCustomTrajectory()
-        self.assertEqual(trajectory.rows(), 1)
-        self.assertEqual(trajectory.cols(), 2)
-        self.assertEqual(trajectory.start_time(), 3.0)
-        self.assertEqual(trajectory.end_time(), 4.0)
-        self.assertTrue(trajectory.has_derivative())
-        numpy_compare.assert_float_equal(trajectory.value(t=1.5),
-                                         np.array([[2.5, 3.5]]))
-        numpy_compare.assert_float_equal(
-            trajectory.EvalDerivative(t=2.3, derivative_order=1),
-            np.ones((1, 2)))
-        numpy_compare.assert_float_equal(
-            trajectory.EvalDerivative(t=2.3, derivative_order=2),
-            np.zeros((1, 2)))
-
-        # Use StackedTrajectory to call the deprecated overrides from C++ so
-        # that we trigger the deprecation warnings.
-        stacked = StackedTrajectory_[float]()
-        with catch_drake_warnings():
-            # The C++ code calls rows() and cols() and Clone() -- all of which
-            # cause deprecation warnings with the legacy overrides -- but the
-            # total number of calls varies between Debug and Release, so we
-            # don't check the exact tally here.
-            stacked.Append(trajectory)
-        with catch_drake_warnings(expected_count=1):
-            stacked.value(t=1.5)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(stacked.start_time(), 3.0)
-        with catch_drake_warnings(expected_count=1):
-            self.assertEqual(stacked.end_time(), 4.0)
+            repr(deriv),
+        )
 
     @numpy_compare.check_all_types
     def test_bezier_curve(self, T):
@@ -194,9 +121,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(curve.cols(), 1)
 
         points = np.array([[4.0, 5.0], [6.0, 7.0]])
-        curve = BezierCurve_[T](start_time=1,
-                                end_time=2,
-                                control_points=points)
+        curve = BezierCurve_[T](start_time=1, end_time=2, control_points=points)
         numpy_compare.assert_float_equal(curve.start_time(), 1.0)
         numpy_compare.assert_float_equal(curve.end_time(), 2.0)
         self.assertEqual(curve.rows(), 2)
@@ -207,7 +132,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(b, T)
         numpy_compare.assert_float_equal(curve.control_points(), points)
 
-        if T == float:  # See Drake#19712
+        if T is float:  # See Drake#19712
             M = curve.AsLinearInControlPoints(derivative_order=1)
             self.assertEqual(M.shape, (2, 1))
             self.assertIsInstance(M, scipy.sparse.csc_matrix)
@@ -217,8 +142,16 @@ class TestTrajectories(unittest.TestCase):
         for expr in curve_expression:
             self.assertTrue(isinstance(expr, Expression))
 
+        assert_pickle(
+            self, curve, lambda traj: np.array(traj.control_points()), T=T
+        )
+
         curve.ElevateOrder()
         self.assertEqual(curve.order(), 2)
+
+        assert_pickle(
+            self, curve, lambda traj: np.array(traj.control_points()), T=T
+        )
 
     @numpy_compare.check_all_types
     def test_bspline_trajectory(self, T):
@@ -230,51 +163,61 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(bspline, BsplineTrajectory)
         self.assertEqual(BsplineBasis().num_basis_functions(), 0)
         # Call the vector<vector<T>> constructor.
-        bspline = BsplineTrajectory(basis=BsplineBasis(2, [0, 1, 2, 3]),
-                                    control_points=np.zeros((4, 2)))
+        bspline = BsplineTrajectory(
+            basis=BsplineBasis(2, [0, 1, 2, 3]), control_points=np.zeros((4, 2))
+        )
         self.assertEqual(bspline.rows(), 4)
         self.assertEqual(bspline.cols(), 1)
         self.assertEqual(bspline.num_control_points(), 2)
-        if T == float:  # See Drake#19712
+        if T is float:  # See Drake#19712
             M = bspline.AsLinearInControlPoints(derivative_order=1)
             self.assertEqual(M.shape, (2, 1))
             self.assertIsInstance(M, scipy.sparse.csc_matrix)
         M = bspline.EvaluateLinearInControlPoints(
-            parameter_value=1.5, derivative_order=1)
+            parameter_value=1.5, derivative_order=1
+        )
         self.assertEqual(M.shape, (2,))
         # Call the vector<MatrixX<T>> constructor.
         bspline = BsplineTrajectory(
             basis=BsplineBasis(2, [0, 1, 2, 3]),
-            control_points=[np.zeros((3, 4)), np.ones((3, 4))])
+            control_points=[np.zeros((3, 4)), np.ones((3, 4))],
+        )
         self.assertIsInstance(bspline.Clone(), BsplineTrajectory)
-        numpy_compare.assert_float_equal(bspline.value(t=1.5),
-                                         0.5*np.ones((3, 4)))
+        numpy_compare.assert_float_equal(
+            bspline.value(t=1.5), 0.5 * np.ones((3, 4))
+        )
         self.assertEqual(bspline.rows(), 3)
         self.assertEqual(bspline.cols(), 4)
-        numpy_compare.assert_float_equal(bspline.start_time(), 1.)
-        numpy_compare.assert_float_equal(bspline.end_time(), 2.)
+        numpy_compare.assert_float_equal(bspline.start_time(), 1.0)
+        numpy_compare.assert_float_equal(bspline.end_time(), 2.0)
         self.assertEqual(bspline.num_control_points(), 2)
-        numpy_compare.assert_float_equal(bspline.control_points()[1],
-                                         np.ones((3, 4)))
-        numpy_compare.assert_float_equal(bspline.InitialValue(),
-                                         np.zeros((3, 4)))
+        numpy_compare.assert_float_equal(
+            bspline.control_points()[1], np.ones((3, 4))
+        )
+        numpy_compare.assert_float_equal(
+            bspline.InitialValue(), np.zeros((3, 4))
+        )
         numpy_compare.assert_float_equal(bspline.FinalValue(), np.ones((3, 4)))
         self.assertIsInstance(bspline.basis(), BsplineBasis)
         bspline.InsertKnots(additional_knots=[1.3, 1.6])
         self.assertEqual(len(bspline.control_points()), 4)
         self.assertIsInstance(
-            bspline.CopyBlock(start_row=1, start_col=2,
-                              block_rows=2, block_cols=1),
-            BsplineTrajectory)
-        bspline = BsplineTrajectory(basis=BsplineBasis(2, [0, 1, 2, 3]),
-                                    control_points=np.array([[0, 1], [0, 1],
-                                                             [0, 1]]))
+            bspline.CopyBlock(
+                start_row=1, start_col=2, block_rows=2, block_cols=1
+            ),
+            BsplineTrajectory,
+        )
+        bspline = BsplineTrajectory(
+            basis=BsplineBasis(2, [0, 1, 2, 3]),
+            control_points=np.array([[0, 1], [0, 1], [0, 1]]),
+        )
         self.assertIsInstance(bspline.CopyHead(n=2), BsplineTrajectory)
         # Ensure we can copy.
         self.assertEqual(copy.copy(bspline).rows(), 3)
         self.assertEqual(copy.deepcopy(bspline).rows(), 3)
-        assert_pickle(self, bspline,
-                      lambda traj: np.array(traj.control_points()), T=T)
+        assert_pickle(
+            self, bspline, lambda traj: np.array(traj.control_points()), T=T
+        )
 
     @numpy_compare.check_all_types
     def test_derivative_trajectory(self, T):
@@ -292,10 +235,10 @@ class TestTrajectories(unittest.TestCase):
     def test_discrete_time_trajectory(self, T):
         times = [0, 1, 2]
         values = [[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]
-        dut1 = DiscreteTimeTrajectory_[T](
-            times=times, values=values)
+        dut1 = DiscreteTimeTrajectory_[T](times=times, values=values)
         dut2 = DiscreteTimeTrajectory_[T](
-            times=times, values=np.array(values)[..., np.newaxis])
+            times=times, values=np.array(values)[..., np.newaxis]
+        )
         zoh = dut2.ToZeroOrderHold()
 
         self.assertTrue(dut1.num_times() == dut2.num_times() == len(times))
@@ -307,16 +250,25 @@ class TestTrajectories(unittest.TestCase):
         numpy_compare.assert_equal(zoh.end_time() == times[-1], True)
         for i, t in enumerate(times):
             expected_value = np.array(values[i])[..., np.newaxis]
-            numpy_compare.assert_float_equal(
-                dut1.value(t), expected_value)
-            numpy_compare.assert_float_equal(
-                dut2.value(t), expected_value)
+            numpy_compare.assert_float_equal(dut1.value(t), expected_value)
+            numpy_compare.assert_float_equal(dut2.value(t), expected_value)
             if i < len(times) - 1:
-                numpy_compare.assert_float_equal(
-                    zoh.value(t), expected_value)
+                numpy_compare.assert_float_equal(zoh.value(t), expected_value)
         dut1.Clone()
         copy.copy(dut1)
         copy.deepcopy(dut1)
+
+        for dut in [dut1, dut2]:
+            assert_pickle(
+                self,
+                dut,
+                lambda traj: dict(
+                    times=traj.get_times(),
+                    values=np.array([traj.value(t) for t in traj.get_times()]),
+                    time_comparison_tolerance=traj.time_comparison_tolerance(),
+                ),
+                T=T,
+            )
 
     def test_exponential_plus_piecewise_polynomial(self):
         K = np.array([1.23])
@@ -325,9 +277,11 @@ class TestTrajectories(unittest.TestCase):
         breaks = np.array([0.0, 0.5])
         samples = np.array([[1.0, 2.0]])
         polynomial_part = PiecewisePolynomial_[float].FirstOrderHold(
-            breaks, samples)
+            breaks, samples
+        )
         dut = ExponentialPlusPiecewisePolynomial(
-            K=K, A=A, alpha=alpha, piecewise_polynomial_part=polynomial_part)
+            K=K, A=A, alpha=alpha, piecewise_polynomial_part=polynomial_part
+        )
         self.assertEqual(dut.rows(), 1)
         self.assertEqual(dut.cols(), 1)
         self.assertEqual(dut.value(0.25).shape, (1, 1))
@@ -344,8 +298,10 @@ class TestTrajectories(unittest.TestCase):
     def test_function_handle_trajectory(self, T):
         def f(t):
             return np.array([[t, t**2]])
+
         dut = FunctionHandleTrajectory_[T](
-            func=f, rows=1, cols=2, start_time=0, end_time=1)
+            func=f, rows=1, cols=2, start_time=0, end_time=1
+        )
         self.assertEqual(dut.rows(), 1)
         self.assertEqual(dut.cols(), 2)
         self.assertFalse(dut.has_derivative())
@@ -359,15 +315,14 @@ class TestTrajectories(unittest.TestCase):
 
         def df(t, order):
             if order == 1:
-                return np.array([[1, 2*t]])
+                return np.array([[1, 2 * t]])
             else:
                 raise RuntimeError("Unsupported order")
 
         dut.set_derivative(func=df)
         self.assertTrue(dut.has_derivative())
         for t in [0.0, 0.5, 1.0]:
-            numpy_compare.assert_float_equal(
-                dut.EvalDerivative(t, 1), df(t, 1))
+            numpy_compare.assert_float_equal(dut.EvalDerivative(t, 1), df(t, 1))
         self.assertIsInstance(dut.MakeDerivative(1), DerivativeTrajectory_[T])
 
     def test_legacy_unpickle(self):
@@ -386,20 +341,45 @@ class TestTrajectories(unittest.TestCase):
         PathParameterizedTrajectory = PathParameterizedTrajectory_[T]
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        s = np.array([[1., 3., 5.]])
-        x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
-        param = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], s)
+        s = np.array([[1.0, 3.0, 5.0]])
+        x = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]).transpose()
+        param = PiecewisePolynomial.FirstOrderHold([0.0, 1.0, 2.0], s)
         path = PiecewisePolynomial.ZeroOrderHold(s[0], x)
         trajectory = PathParameterizedTrajectory(path, param)
         self.assertIsInstance(trajectory.Clone(), PathParameterizedTrajectory)
         numpy_compare.assert_float_equal(trajectory.value(t=1.5), x[:, 1:2])
         self.assertEqual(trajectory.rows(), 2)
         self.assertEqual(trajectory.cols(), 1)
-        numpy_compare.assert_float_equal(trajectory.start_time(), 0.)
-        numpy_compare.assert_float_equal(trajectory.end_time(), 2.)
+        numpy_compare.assert_float_equal(trajectory.start_time(), 0.0)
+        numpy_compare.assert_float_equal(trajectory.end_time(), 2.0)
         self.assertIsInstance(trajectory.path(), PiecewisePolynomial)
-        self.assertIsInstance(trajectory.time_scaling(),
-                              PiecewisePolynomial)
+        self.assertIsInstance(trajectory.time_scaling(), PiecewisePolynomial)
+
+        assert_pickle(
+            self,
+            trajectory,
+            lambda traj: dict(
+                path_breaks=traj.path().get_segment_times(),
+                path_polynomials=np.array(
+                    [
+                        traj.path().getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.path().get_number_of_segments()
+                        )
+                    ]
+                ),
+                time_breaks=traj.time_scaling().get_segment_times(),
+                time_polynomials=np.array(
+                    [
+                        traj.time_scaling().getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.time_scaling().get_number_of_segments()
+                        )
+                    ]
+                ),
+            ),
+            T=T,
+        )
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
@@ -416,11 +396,11 @@ class TestTrajectories(unittest.TestCase):
     def test_piecewise_polynomial_constant_constructor(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        x = np.array([[1.], [4.]])
+        x = np.array([[1.0], [4.0]])
         pp = PiecewisePolynomial(x)
         self.assertEqual(pp.rows(), 2)
         self.assertEqual(pp.cols(), 1)
-        numpy_compare.assert_float_equal(pp.value(11.), x)
+        numpy_compare.assert_float_equal(pp.value(11.0), x)
         # Ensure we can copy.
         self.assertEqual(copy.copy(pp).rows(), 2)
         self.assertEqual(copy.deepcopy(pp).rows(), 2)
@@ -433,8 +413,7 @@ class TestTrajectories(unittest.TestCase):
         pm1 = np.array([[Polynomial(1), Polynomial(2)]])
         pm2 = np.array([[Polynomial(2), Polynomial(0)]])
         pp = PiecewisePolynomial([pm1, pm2], [0, 1, 2])
-        numpy_compare.assert_equal(pp.getPolynomialMatrix(segment_index=0),
-                                   pm1)
+        numpy_compare.assert_equal(pp.getPolynomialMatrix(segment_index=0), pm1)
         pm3 = np.array([[Polynomial(5), Polynomial(10)]])
         pp.setPolynomialMatrixBlock(replacement=pm3, segment_index=1)
         # Ensure we can copy.
@@ -453,15 +432,41 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(copy.copy(pp).rows(), 1)
         self.assertEqual(copy.deepcopy(pp).rows(), 1)
 
-    def test_piecewise_polynomial_serialize(self):
+    @numpy_compare.check_all_types
+    def test_piecewise_polynomial_pickle(self, T):
+        Polynomial = Polynomial_[T]
+        PiecewisePolynomial = PiecewisePolynomial_[T]
+
+        p1 = Polynomial(1)
+        p2 = Polynomial(2)
+        pp = PiecewisePolynomial([p1, p2], [0, 1, 2])
+
+        assert_pickle(
+            self,
+            pp,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                polynomial_matrices=np.array(
+                    [
+                        traj.getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.get_number_of_segments()
+                        )
+                    ]
+                ),
+            ),
+            T=T,
+        )
+
+    def test_piecewise_polynomial_serialize_zoh(self):
         PiecewisePolynomial = PiecewisePolynomial_[float]
         breaks = [0, 0.5, 1]
         sample0 = np.array([[1, 1, 2], [2, 0, 3]])
         sample1 = np.array([[3, 4, 5], [6, 7, 8]])
         sample2 = np.zeros((2, 3))
         expected = PiecewisePolynomial.ZeroOrderHold(
-            breaks=breaks,
-            samples=[sample0, sample1, sample2])
+            breaks=breaks, samples=[sample0, sample1, sample2]
+        )
         data = dedent("""
         breaks: [0.0, 0.5, 1.0]
         polynomials:
@@ -478,137 +483,186 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(dut.cols(), 3)
         self.assertTrue(dut.isApprox(expected, tol=0))
 
+        yaml = yaml_dump_typed(dut)
+        readback = yaml_load_typed(schema=PiecewisePolynomial, data=yaml)
+        self.assertEqual(readback.get_number_of_segments(), 2)
+        self.assertEqual(readback.rows(), 2)
+        self.assertEqual(readback.cols(), 3)
+        self.assertTrue(readback.isApprox(expected, tol=0))
+
+    def test_piecewise_polynomial_serialize_cubic(self):
+        PiecewisePolynomial = PiecewisePolynomial_[float]
+        dut = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=[0.0, 1.0, 2.0],
+            samples=np.diag([4.0, 5.0, 6.0]),
+            sample_dot_at_start=[0.0, 0.0, 0.0],
+            sample_dot_at_end=[0.0, 0.0, 0.0],
+        )
+        yaml = yaml_dump_typed(dut)
+        readback = yaml_load_typed(schema=PiecewisePolynomial, data=yaml)
+        self.assertTrue(readback.isApprox(dut, tol=0))
+
+        assert_pickle(self, dut, yaml_dump_typed, T=float)
+
     def test_piecewise_polynomial_serialize_empty(self):
-        data = dedent("""
+        data = dedent("""\
         breaks: []
         polynomials: []
         """)
         dut = yaml_load_typed(schema=PiecewisePolynomial_[float], data=data)
         self.assertEqual(dut.get_number_of_segments(), 0)
+        yaml = yaml_dump_typed(dut)
+        self.assertEqual(yaml, data)
 
     @numpy_compare.check_all_types
     def test_zero_order_hold_vector(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
-        pp = PiecewisePolynomial.ZeroOrderHold([0., 1., 2.], x)
+        x = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]).transpose()
+        pp = PiecewisePolynomial.ZeroOrderHold([0.0, 1.0, 2.0], x)
         pp_d = pp.derivative(derivative_order=1)
-        numpy_compare.assert_float_equal(pp.value(.5), np.array([[1.], [2.]]))
         numpy_compare.assert_float_equal(
-            pp_d.value(.5), np.array([[0.], [0.]]))
+            pp.value(0.5), np.array([[1.0], [2.0]])
+        )
         numpy_compare.assert_float_equal(
-            pp.EvalDerivative(t=.5, derivative_order=1),
-            np.array([[0.], [0.]]))
+            pp_d.value(0.5), np.array([[0.0], [0.0]])
+        )
+        numpy_compare.assert_float_equal(
+            pp.EvalDerivative(t=0.5, derivative_order=1),
+            np.array([[0.0], [0.0]]),
+        )
         p = pp.getPolynomial(segment_index=0, row=1, col=0)
-        numpy_compare.assert_float_equal(p.GetCoefficients(), np.array([2.]))
+        numpy_compare.assert_float_equal(p.GetCoefficients(), np.array([2.0]))
         self.assertEqual(pp.getSegmentPolynomialDegree(segment_index=1), 0)
         self.assertEqual(pp.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pp.start_time(), 0.)
-        numpy_compare.assert_float_equal(pp.end_time(), 2.)
+        numpy_compare.assert_float_equal(pp.start_time(), 0.0)
+        numpy_compare.assert_float_equal(pp.end_time(), 2.0)
         self.assertEqual(pp.rows(), 2)
         self.assertEqual(pp.cols(), 1)
-        numpy_compare.assert_float_equal(pp.start_time(segment_index=0), 0.)
-        numpy_compare.assert_float_equal(pp.end_time(segment_index=0), 1.)
-        numpy_compare.assert_float_equal(pp.duration(segment_index=0), 1.)
+        numpy_compare.assert_float_equal(pp.start_time(segment_index=0), 0.0)
+        numpy_compare.assert_float_equal(pp.end_time(segment_index=0), 1.0)
+        numpy_compare.assert_float_equal(pp.duration(segment_index=0), 1.0)
         numpy_compare.assert_equal(pp.is_time_in_range(t=1.5), True)
         self.assertEqual(pp.get_segment_index(t=1.5), 1)
-        numpy_compare.assert_float_equal(pp.get_segment_times(), [0., 1., 2.])
+        numpy_compare.assert_float_equal(
+            pp.get_segment_times(), [0.0, 1.0, 2.0]
+        )
 
     @numpy_compare.check_all_types
     def test_first_order_hold_vector(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
-        pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
-        numpy_compare.assert_float_equal(pp.value(.5), np.array([[2.], [3.]]))
+        x = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]).transpose()
+        pp = PiecewisePolynomial.FirstOrderHold([0.0, 1.0, 2.0], x)
+        numpy_compare.assert_float_equal(
+            pp.value(0.5), np.array([[2.0], [3.0]])
+        )
 
         deriv = pp.MakeDerivative(derivative_order=1)
-        numpy_compare.assert_float_equal(deriv.value(.5),
-                                         np.array([[2.], [2.]]))
-        pp.AppendFirstOrderSegment(time=3., sample=[-0.4, .57])
+        numpy_compare.assert_float_equal(
+            deriv.value(0.5), np.array([[2.0], [2.0]])
+        )
+        pp.AppendFirstOrderSegment(time=3.0, sample=[-0.4, 0.57])
 
     @numpy_compare.check_all_types
     def test_hermite_vector(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        t = [0., 1., 2.]
+        t = [0.0, 1.0, 2.0]
         x = np.array([[0, 1, 1]])
         pp = PiecewisePolynomial.CubicShapePreserving(
-            breaks=t, samples=x, zero_end_point_derivatives=False)
-        pp.AppendCubicHermiteSegment(time=3., sample=[2], sample_dot=[2])
+            breaks=t, samples=x, zero_end_point_derivatives=False
+        )
+        pp.AppendCubicHermiteSegment(time=3.0, sample=[2], sample_dot=[2])
         pp.RemoveFinalSegment()
 
     @numpy_compare.check_all_types
     def test_cubic_vector(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        t = [0., 1., 2.]
-        x = np.diag([4., 5., 6.])
+        t = [0.0, 1.0, 2.0]
+        x = np.diag([4.0, 5.0, 6.0])
         periodic_end = False
         # Just test the spelling for these.
-        pp1 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
-            breaks=t, samples=x, periodic_end=periodic_end)
-        pp2 = PiecewisePolynomial.CubicHermite(
-            breaks=t, samples=x, samples_dot=np.identity(3))
-        pp3 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
-            breaks=t, samples=x, sample_dot_at_start=[0., 0., 0.],
-            sample_dot_at_end=[0., 0., 0.])
+        PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=t, samples=x, periodic_end=periodic_end
+        )
+        PiecewisePolynomial.CubicHermite(
+            breaks=t, samples=x, samples_dot=np.identity(3)
+        )
+        PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=t,
+            samples=x,
+            sample_dot_at_start=[0.0, 0.0, 0.0],
+            sample_dot_at_end=[0.0, 0.0, 0.0],
+        )
 
     @numpy_compare.check_all_types
     def test_lagrange_interpolating_polynomial_vector(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        t = [0., 1., 2.]
-        x = np.diag([4., 5., 6.])
-        pp = PiecewisePolynomial.LagrangeInterpolatingPolynomial(times=t,
-                                                                 samples=x)
+        t = [0.0, 1.0, 2.0]
+        x = np.diag([4.0, 5.0, 6.0])
+        pp = PiecewisePolynomial.LagrangeInterpolatingPolynomial(
+            times=t, samples=x
+        )
         self.assertEqual(pp.get_number_of_segments(), 1)
-        numpy_compare.assert_float_allclose(pp.value(1.), x[:, [1]], 1e-12)
+        numpy_compare.assert_float_allclose(pp.value(1.0), x[:, [1]], 1e-12)
 
     @numpy_compare.check_all_types
     def test_matrix_trajectories(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        A0 = np.array([[1., 2., 3.], [4., 5., 6.]])
-        A1 = np.array([[7., 8., 9.], [10., 11., 12.]])
-        A2 = np.array([[13., 14., 15.], [16., 17., 18.]])
-        t = [0., 1., 2.]
+        A0 = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        A1 = np.array([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
+        A2 = np.array([[13.0, 14.0, 15.0], [16.0, 17.0, 18.0]])
+        t = [0.0, 1.0, 2.0]
         pp = dict()
         pp["zoh"] = PiecewisePolynomial.ZeroOrderHold(
-            breaks=t, samples=[A0, A1, A2])
+            breaks=t, samples=[A0, A1, A2]
+        )
         pp["foh"] = PiecewisePolynomial.FirstOrderHold(
-            breaks=t, samples=[A0, A1, A2])
+            breaks=t, samples=[A0, A1, A2]
+        )
         pp["hermite"] = PiecewisePolynomial.CubicShapePreserving(
-            breaks=t, samples=[A0, A1, A2], zero_end_point_derivatives=False)
+            breaks=t, samples=[A0, A1, A2], zero_end_point_derivatives=False
+        )
         pp["c1"] = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
-            breaks=t, samples=[A0, A1, A2], periodic_end=False)
+            breaks=t, samples=[A0, A1, A2], periodic_end=False
+        )
         pp["c2"] = PiecewisePolynomial.CubicHermite(
-            breaks=t, samples=[A0, A1, A2], samples_dot=[0*A0, 0*A1, 0*A2])
+            breaks=t, samples=[A0, A1, A2], samples_dot=[0 * A0, 0 * A1, 0 * A2]
+        )
         pp["c3"] = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
-            breaks=t, samples=[A0, A1, A2], sample_dot_at_start=0*A0,
-            sample_dot_at_end=0*A0)
+            breaks=t,
+            samples=[A0, A1, A2],
+            sample_dot_at_start=0 * A0,
+            sample_dot_at_end=0 * A0,
+        )
         pp["lagrange"] = PiecewisePolynomial.LagrangeInterpolatingPolynomial(
-            times=t, samples=[A0, A1, A2])
+            times=t, samples=[A0, A1, A2]
+        )
         for name, traj in pp.items():
             if name == "lagrange":
                 self.assertEqual(traj.get_number_of_segments(), 1)
             else:
                 self.assertEqual(traj.get_number_of_segments(), 2)
-            numpy_compare.assert_float_equal(traj.start_time(), 0.)
-            numpy_compare.assert_float_equal(traj.end_time(), 2.)
+            numpy_compare.assert_float_equal(traj.start_time(), 0.0)
+            numpy_compare.assert_float_equal(traj.end_time(), 2.0)
             self.assertEqual(traj.rows(), 2)
             self.assertEqual(traj.cols(), 3)
         # Check the values for the easy cases:
-        numpy_compare.assert_float_equal(pp["zoh"].value(.5), A0)
+        numpy_compare.assert_float_equal(pp["zoh"].value(0.5), A0)
         numpy_compare.assert_float_allclose(
-            pp["foh"].value(.5), 0.5*A0 + 0.5*A1, 1e-15)
+            pp["foh"].value(0.5), 0.5 * A0 + 0.5 * A1, 1e-15
+        )
 
     @numpy_compare.check_all_types
     def test_reverse_and_scale_time(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        x = np.array([[10.], [20.], [30.]]).transpose()
-        pp = PiecewisePolynomial.FirstOrderHold([0.5, 1., 2.], x)
+        x = np.array([[10.0], [20.0], [30.0]]).transpose()
+        pp = PiecewisePolynomial.FirstOrderHold([0.5, 1.0, 2.0], x)
         pp.ReverseTime()
         numpy_compare.assert_float_equal(pp.start_time(), -2.0)
         numpy_compare.assert_float_equal(pp.end_time(), -0.5)
@@ -620,8 +674,8 @@ class TestTrajectories(unittest.TestCase):
     def test_reshape_block_and_transpose(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        t = [0., 1., 2., 3.]
-        x = np.diag([4., 5., 6., 7.])
+        t = [0.0, 1.0, 2.0, 3.0]
+        x = np.diag([4.0, 5.0, 6.0, 7.0])
         pp = PiecewisePolynomial.FirstOrderHold(t, x)
         self.assertEqual(pp.rows(), 4)
         self.assertEqual(pp.cols(), 1)
@@ -639,29 +693,30 @@ class TestTrajectories(unittest.TestCase):
     def test_slice_and_shift(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        x = np.array([[10.], [20.], [30.]]).transpose()
-        pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
+        x = np.array([[10.0], [20.0], [30.0]]).transpose()
+        pp = PiecewisePolynomial.FirstOrderHold([0.0, 1.0, 2.0], x)
         pp_sub = pp.slice(start_segment_index=1, num_segments=1)
         self.assertEqual(pp_sub.get_number_of_segments(), 1)
-        numpy_compare.assert_float_equal(pp_sub.start_time(), 1.)
-        numpy_compare.assert_float_equal(pp_sub.end_time(), 2.)
-        values_sub = np.array(list(map(pp_sub.value, [1., 2.])))
-        numpy_compare.assert_float_equal(values_sub, [[[20.]], [[30.]]])
-        pp_sub.shiftRight(10.)
-        numpy_compare.assert_float_equal(pp_sub.start_time(), 11.)
-        numpy_compare.assert_float_equal(pp_sub.end_time(), 12.)
+        numpy_compare.assert_float_equal(pp_sub.start_time(), 1.0)
+        numpy_compare.assert_float_equal(pp_sub.end_time(), 2.0)
+        values_sub = np.array(list(map(pp_sub.value, [1.0, 2.0])))
+        numpy_compare.assert_float_equal(values_sub, [[[20.0]], [[30.0]]])
+        pp_sub.shiftRight(10.0)
+        numpy_compare.assert_float_equal(pp_sub.start_time(), 11.0)
+        numpy_compare.assert_float_equal(pp_sub.end_time(), 12.0)
 
     @numpy_compare.check_all_types
     def test_compare_and_concatenate(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
-        x = np.array([[10.], [20.], [30.]]).transpose()
-        pp1 = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
-        pp2 = PiecewisePolynomial.FirstOrderHold([2., 3., 4.], x)
-        self.assertTrue(pp1.isApprox(
-            other=pp1, tol=1e-14, tol_type=ToleranceType.kRelative))
+        x = np.array([[10.0], [20.0], [30.0]]).transpose()
+        pp1 = PiecewisePolynomial.FirstOrderHold([0.0, 1.0, 2.0], x)
+        pp2 = PiecewisePolynomial.FirstOrderHold([2.0, 3.0, 4.0], x)
+        self.assertTrue(
+            pp1.isApprox(other=pp1, tol=1e-14, tol_type=ToleranceType.kRelative)
+        )
         pp1.ConcatenateInTime(other=pp2)
-        numpy_compare.assert_float_equal(pp1.end_time(), 4.)
+        numpy_compare.assert_float_equal(pp1.end_time(), 4.0)
 
     @numpy_compare.check_all_types
     def test_vector_values(self, T):
@@ -693,10 +748,35 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(traj.cols(), 1)
         numpy_compare.assert_float_equal(traj.start_time(), 0.0)
         numpy_compare.assert_float_equal(traj.end_time(), 4.0)
-        self.assertIsInstance(traj.segment(segment_index=0),
-                              PiecewisePolynomial)
-        self.assertIsInstance(traj.segment(segment_index=1),
-                              PiecewisePolynomial)
+        self.assertIsInstance(
+            traj.segment(segment_index=0), PiecewisePolynomial
+        )
+        self.assertIsInstance(
+            traj.segment(segment_index=1), PiecewisePolynomial
+        )
+
+        assert_pickle(
+            self,
+            traj,
+            lambda t: dict(
+                outer_breaks=traj.get_segment_times(),
+                inner_breaks_1=traj.segment(0).get_segment_times(),
+                polynomial_matrices_1=[
+                    traj.segment(0).getPolynomialMatrix(segment_index)
+                    for segment_index in range(
+                        traj.segment(0).get_number_of_segments()
+                    )
+                ],
+                inner_breaks_2=traj.segment(1).get_segment_times(),
+                polynomial_matrices_2=[
+                    traj.segment(1).getPolynomialMatrix(segment_index)
+                    for segment_index in range(
+                        traj.segment(1).get_number_of_segments()
+                    )
+                ],
+            ),
+            T=T,
+        )
 
         traj = CompositeTrajectory.AlignAndConcatenate(segments=[pp1, pp2])
         self.assertIsInstance(traj, CompositeTrajectory)
@@ -714,7 +794,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pq.cols(), 1)
         self.assertEqual(pq.get_number_of_segments(), 0)
 
-        t = [0., 1., 2.]
+        t = [0.0, 1.0, 2.0]
         # Make identity rotations.
         q = Quaternion()
         m = np.identity(3)
@@ -722,44 +802,55 @@ class TestTrajectories(unittest.TestCase):
         R = RotationMatrix()
 
         # Test quaternion constructor.
-        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=[q, q, q])
+        quaternions = [q, q, q]
+        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=quaternions)
         self.assertEqual(pq.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pq.value(0.5),
-                                         [[1.], [0.], [0.], [0.]])
+        for i in range(len(quaternions)):
+            numpy_compare.assert_equal(
+                quaternions[i].wxyz(), pq.get_quaternion_samples()[i].wxyz()
+            )
+        numpy_compare.assert_float_equal(
+            pq.value(0.5), [[1.0], [0.0], [0.0], [0.0]]
+        )
 
         # Test matrix constructor.
         pq = PiecewiseQuaternionSlerp(breaks=t, rotation_matrices=[m, m, m])
         self.assertEqual(pq.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pq.value(0.5),
-                                         [[1.], [0.], [0.], [0.]])
+        numpy_compare.assert_float_equal(
+            pq.value(0.5), [[1.0], [0.0], [0.0], [0.0]]
+        )
 
         # Test axis angle constructor.
         pq = PiecewiseQuaternionSlerp(breaks=t, angle_axes=[a, a, a])
         self.assertEqual(pq.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pq.value(0.5),
-                                         [[1.], [0.], [0.], [0.]])
+        numpy_compare.assert_float_equal(
+            pq.value(0.5), [[1.0], [0.0], [0.0], [0.0]]
+        )
 
         # Test rotation matrix constructor.
         pq = PiecewiseQuaternionSlerp(breaks=t, rotation_matrices=[R, R, R])
         self.assertEqual(pq.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pq.value(0.5),
-                                         [[1.], [0.], [0.], [0.]])
+        numpy_compare.assert_float_equal(
+            pq.value(0.5), [[1.0], [0.0], [0.0], [0.0]]
+        )
 
         # Test append operations.
-        pq.Append(time=3., quaternion=q)
-        pq.Append(time=4., rotation_matrix=R)
-        pq.Append(time=5., angle_axis=a)
+        pq.Append(time=3.0, quaternion=q)
+        pq.Append(time=4.0, rotation_matrix=R)
+        pq.Append(time=5.0, angle_axis=a)
 
         # Test getters.
         pq = PiecewiseQuaternionSlerp(
-            breaks=[0, 1], angle_axes=[a, AngleAxis(np.pi/2, [0, 0, 1])]
+            breaks=[0, 1], angle_axes=[a, AngleAxis(np.pi / 2, [0, 0, 1])]
         )
         numpy_compare.assert_float_equal(
-            pq.orientation(time=0).wxyz(), np.array([1., 0., 0., 0.])
+            pq.orientation(time=0).wxyz(), np.array([1.0, 0.0, 0.0, 0.0])
         )
         numpy_compare.assert_float_allclose(
-            pq.angular_velocity(time=0), np.array([0, 0, np.pi/2]),
-            atol=1e-15, rtol=0,
+            pq.angular_velocity(time=0),
+            np.array([0, 0, np.pi / 2]),
+            atol=1e-15,
+            rtol=0,
         )
         numpy_compare.assert_float_equal(
             pq.angular_acceleration(time=0), np.zeros(3)
@@ -767,12 +858,15 @@ class TestTrajectories(unittest.TestCase):
 
         numpy_compare.assert_float_allclose(
             pq.orientation(time=1).wxyz(),
-            np.array([np.cos(np.pi/4), 0, 0, np.sin(np.pi/4)]),
-            atol=1e-15, rtol=0,
+            np.array([np.cos(np.pi / 4), 0, 0, np.sin(np.pi / 4)]),
+            atol=1e-15,
+            rtol=0,
         )
         numpy_compare.assert_float_allclose(
-            pq.angular_velocity(time=1), np.array([0, 0, np.pi/2]),
-            atol=1e-15, rtol=0,
+            pq.angular_velocity(time=1),
+            np.array([0, 0, np.pi / 2]),
+            atol=1e-15,
+            rtol=0,
         )
         numpy_compare.assert_float_equal(
             pq.angular_acceleration(time=1), np.zeros(3)
@@ -780,13 +874,27 @@ class TestTrajectories(unittest.TestCase):
         # Ensure we can copy.
         numpy_compare.assert_float_allclose(
             copy.copy(pq).orientation(time=1).wxyz(),
-            np.array([np.cos(np.pi/4), 0, 0, np.sin(np.pi/4)]),
-            atol=1e-15, rtol=0,
+            np.array([np.cos(np.pi / 4), 0, 0, np.sin(np.pi / 4)]),
+            atol=1e-15,
+            rtol=0,
         )
         numpy_compare.assert_float_allclose(
             copy.deepcopy(pq).orientation(time=1).wxyz(),
-            np.array([np.cos(np.pi/4), 0, 0, np.sin(np.pi/4)]),
-            atol=1e-15, rtol=0,
+            np.array([np.cos(np.pi / 4), 0, 0, np.sin(np.pi / 4)]),
+            atol=1e-15,
+            rtol=0,
+        )
+
+        assert_pickle(
+            self,
+            pq,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                quaternions=np.array(
+                    [q.wxyz() for q in traj.get_quaternion_samples()]
+                ),
+            ),
+            T=T,
         )
 
     @numpy_compare.check_all_types
@@ -803,37 +911,71 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(ppose.cols(), 4)
         self.assertEqual(ppose.get_number_of_segments(), 0)
 
-        t = [0., 1., 2.]
+        t = [0.0, 1.0, 2.0]
         q = Quaternion()
         pp = PiecewisePolynomial.FirstOrderHold(t, np.zeros((3, 3)))
         pq = PiecewiseQuaternionSlerp(t, [q, q, q])
-        ppose = PiecewisePose(position_trajectory=pp,
-                              orientation_trajectory=pq)
+        ppose = PiecewisePose(position_trajectory=pp, orientation_trajectory=pq)
         self.assertEqual(ppose.get_number_of_segments(), 2)
 
-        numpy_compare.assert_float_equal(ppose.GetPose(
-            time=0).GetAsMatrix4(), np.eye(4))
         numpy_compare.assert_float_equal(
-            ppose.GetVelocity(time=0), np.zeros((6,)))
+            ppose.GetPose(time=0).GetAsMatrix4(), np.eye(4)
+        )
         numpy_compare.assert_float_equal(
-            ppose.GetAcceleration(time=0), np.zeros((6,)))
+            ppose.GetVelocity(time=0), np.zeros((6,))
+        )
+        numpy_compare.assert_float_equal(
+            ppose.GetAcceleration(time=0), np.zeros((6,))
+        )
         self.assertTrue(ppose.IsApprox(other=ppose, tol=0.0))
         self.assertIsInstance(
-            ppose.get_position_trajectory(), PiecewisePolynomial)
+            ppose.get_position_trajectory(), PiecewisePolynomial
+        )
         self.assertIsInstance(
-            ppose.get_orientation_trajectory(), PiecewiseQuaternionSlerp)
+            ppose.get_orientation_trajectory(), PiecewiseQuaternionSlerp
+        )
 
         X = RigidTransform()
         ppose = PiecewisePose.MakeLinear(times=t, poses=[X, X, X])
         self.assertEqual(ppose.get_number_of_segments(), 2)
 
         ppose = PiecewisePose.MakeCubicLinearWithEndLinearVelocity(
-            times=t, poses=[X, X, X], start_vel=np.zeros((3, 1)),
-            end_vel=np.zeros((3, 1)))
+            times=t,
+            poses=[X, X, X],
+            start_vel=np.zeros((3, 1)),
+            end_vel=np.zeros((3, 1)),
+        )
         self.assertEqual(ppose.get_number_of_segments(), 2)
         # Ensure we can copy.
         self.assertEqual(copy.copy(ppose).get_number_of_segments(), 2)
         self.assertEqual(copy.deepcopy(ppose).get_number_of_segments(), 2)
+
+        # We do not have to test the inner breaks match, because this is a
+        # required invariant of the Class.
+        assert_pickle(
+            self,
+            ppose,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                position_polynomials=np.array(
+                    [
+                        traj.get_position_trajectory().getPolynomialMatrix(
+                            segment_index
+                        )
+                        for segment_index in range(
+                            traj.get_number_of_segments()
+                        )
+                    ]
+                ),
+                quaternions=np.array(
+                    [
+                        q.wxyz()
+                        for q in traj.get_orientation_trajectory().get_quaternion_samples()  # noqa: E501
+                    ]
+                ),
+            ),
+            T=T,
+        )
 
     @numpy_compare.check_all_types
     def test_stacked_trajectory(self, T):
@@ -841,13 +983,36 @@ class TestTrajectories(unittest.TestCase):
         samples = [[[0]], [[1]], [[2]]]
         zoh = PiecewisePolynomial_[T].ZeroOrderHold(breaks, samples)
         dut = StackedTrajectory_[T](rowwise=True)
+        self.assertTrue(dut.rowwise())
         dut.Append(zoh)
         dut.Append(zoh)
         self.assertEqual(dut.rows(), 2)
         self.assertEqual(dut.cols(), 1)
+        children = dut.children()
+        self.assertEqual(len(children), 2)
+        self.assertEqual(
+            children[0].getPolynomialMatrix(0), zoh.getPolynomialMatrix(0)
+        )
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
+
+        def get_data_as_dict(traj):
+            data = dict()
+            data["rowwise"] = traj.rowwise()
+            for i, child in enumerate(traj.children()):
+                data[f"child{i}_breaks"] = child.get_segment_times()
+                data[f"child{i}_polynomials"] = np.array(
+                    [
+                        child.getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            child.get_number_of_segments()
+                        )
+                    ]
+                )
+            return data
+
+        assert_pickle(self, dut, get_data_as_dict, T=T)
 
     @numpy_compare.check_all_types
     def test_wrapped_trajectory(self, T):

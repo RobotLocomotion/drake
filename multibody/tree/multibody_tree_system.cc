@@ -23,21 +23,25 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(
     std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete)
     : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
                           false,  // Null tree is not allowed here.
-                          std::move(tree), is_discrete) {}
+                          std::move(tree), is_discrete,
+                          0 /* num_misc_continuous_states */) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(bool is_discrete)
     : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
                           true,  // Null tree is OK.
-                          nullptr, is_discrete) {}
+                          nullptr, is_discrete,
+                          0 /* num_misc_continuous_states */) {}
 
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(
     systems::SystemScalarConverter converter,
-    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete)
+    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete,
+    int num_misc_continuous_states)
     : MultibodyTreeSystem(std::move(converter),
                           true,  // Null tree is OK.
-                          std::move(tree), is_discrete) {}
+                          std::move(tree), is_discrete,
+                          num_misc_continuous_states) {}
 
 template <typename T>
 template <typename U>
@@ -45,14 +49,21 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(const MultibodyTreeSystem<U>& other)
     : MultibodyTreeSystem(systems::SystemTypeTag<MultibodyTreeSystem>{},
                           false,  // Null tree isn't allowed (or possible).
                           other.internal_tree().template CloneToScalar<T>(),
-                          other.is_discrete()) {}
+                          other.is_discrete(),
+                          other.num_misc_continuous_states_) {}
 
 // This is the one true constructor.
 template <typename T>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(
     systems::SystemScalarConverter converter, bool null_tree_is_ok,
-    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete)
+    std::unique_ptr<MultibodyTree<T>> tree, bool is_discrete,
+    int num_misc_continuous_states)
     : LeafSystem<T>(std::move(converter)), is_discrete_(is_discrete) {
+  DRAKE_THROW_UNLESS(num_misc_continuous_states >= 0);
+  DRAKE_THROW_UNLESS(!is_discrete_ || num_misc_continuous_states == 0);
+
+  num_misc_continuous_states_ = num_misc_continuous_states;
+
   if (tree == nullptr) {
     if (!null_tree_is_ok) {
       throw std::logic_error(
@@ -68,6 +79,15 @@ MultibodyTreeSystem<T>::MultibodyTreeSystem(
   tree_ = std::move(tree);
   tree_->set_tree_system(this);
   Finalize();
+}
+
+template <typename T>
+void MultibodyTreeSystem<T>::DoCalcMiscDerivatives(
+    const systems::Context<T>&, systems::VectorBase<T>*) const {
+  throw std::logic_error(
+      "MultibodyTreeSystem::DoCalcMiscDerivatives(): derived class must "
+      "override this method to compute derivatives for the misc continuous "
+      "state.");
 }
 
 template <typename T>
@@ -99,10 +119,9 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
         .get_joint_actuator(joint_actuator_index)
         .SetDefaultParameters(parameters);
   }
-  // Bodies.
-  for (BodyIndex body_index(0); body_index < tree_->num_bodies();
-       ++body_index) {
-    internal_tree().get_body(body_index).SetDefaultParameters(parameters);
+  // Links.
+  for (LinkIndex link_index(0); link_index < tree_->num_links(); ++link_index) {
+    internal_tree().get_link(link_index).SetDefaultParameters(parameters);
   }
   // Frames.
   for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
@@ -136,8 +155,26 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() {
 }
 
 template <typename T>
-void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters(
-    int* num_frame_body_pose_slots_needed) {
+int MultibodyTreeSystem<T>::DeclareMiscContinuousState(
+    int num_state_variables) {
+  if (already_finalized_) {
+    throw std::logic_error(
+        "DeclareMiscContinuousState(): calls after Finalize() are not "
+        "allowed.");
+  }
+  DRAKE_THROW_UNLESS(num_state_variables >= 0);
+  if (is_discrete_ && num_state_variables > 0) {
+    throw std::logic_error(
+        "DeclareMiscContinuousState(): cannot declare continuous state for a "
+        "discrete MultibodyTreeSystem.");
+  }
+  const int result = num_misc_continuous_states_;
+  num_misc_continuous_states_ += num_state_variables;
+  return result;
+}
+
+template <typename T>
+void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
   // Mobilizers.
   for (MobodIndex mobilizer_index(0); mobilizer_index < tree_->num_mobilizers();
        ++mobilizer_index) {
@@ -156,21 +193,15 @@ void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters(
         .get_mutable_joint_actuator(joint_actuator_index)
         .DeclareParameters(this);
   }
-  // Bodies.
-  for (BodyIndex body_index(0); body_index < tree_->num_bodies();
-       ++body_index) {
-    mutable_tree().get_mutable_body(body_index).DeclareParameters(this);
+  // Links.
+  for (LinkIndex link_index(0); link_index < tree_->num_links(); ++link_index) {
+    mutable_tree().get_mutable_link(link_index).DeclareParameters(this);
   }
   // Frames.
-  *num_frame_body_pose_slots_needed = 1;  // 0th is for an identity transform.
   for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
        ++frame_index) {
     Frame<T>& frame = mutable_tree().get_mutable_frame(frame_index);
     frame.DeclareParameters(this);
-    // This is where the extracted, reformatted, and composed body pose X_BF for
-    // this Frame will be stored in the frame body poses cache entry.
-    frame.set_body_pose_index_in_cache(
-        frame.is_body_frame() ? 0 : (*num_frame_body_pose_slots_needed)++);
   }
   // Force Elements.
   for (ForceElementIndex force_element_index(0);
@@ -188,22 +219,22 @@ void MultibodyTreeSystem<T>::Finalize() {
     throw std::logic_error(
         "MultibodyTreeSystem::Finalize(): repeated calls not allowed.");
   }
-  if (!tree_->topology_is_valid()) {
+  if (!tree_->is_finalized()) {
     tree_->Finalize();
   }
 
-  int num_frame_body_poses_needed{-1};
-  DeclareMultibodyElementParameters(&num_frame_body_poses_needed);
-  DRAKE_DEMAND(num_frame_body_poses_needed > 0);  // Always at least 1.
+  DeclareMultibodyElementParameters();
 
   // Declare state.
   if (is_discrete_) {
     tree_->set_discrete_state_index(
         this->DeclareDiscreteState(tree_->num_states()));
   } else {
-    this->DeclareContinuousState(BasicVector<T>(tree_->num_states()),
-                                 tree_->num_positions(),
-                                 tree_->num_velocities(), 0 /* num_z */);
+    const int num_z = num_misc_continuous_states_;
+    BasicVector<T> model_continuous_state(tree_->num_states() + num_z);
+    model_continuous_state.get_mutable_value().tail(num_z).setZero();
+    this->DeclareContinuousState(model_continuous_state, tree_->num_positions(),
+                                 tree_->num_velocities(), num_z);
   }
 
   // Declare cache entries dependent only on parameters.
@@ -214,22 +245,23 @@ void MultibodyTreeSystem<T>::Finalize() {
 
   cache_indexes_.reflected_inertia =
       this->DeclareCacheEntry(std::string("reflected inertia"),
-                              VectorX<T>(internal_tree().num_velocities()),
+                              VectorX<T>(tree_->num_velocities()),
                               &MultibodyTreeSystem<T>::CalcReflectedInertia,
                               {this->all_parameters_ticket()})
           .cache_index();
 
   cache_indexes_.joint_damping =
       this->DeclareCacheEntry(std::string("joint damping"),
-                              VectorX<T>(internal_tree().num_velocities()),
+                              VectorX<T>(tree_->num_velocities()),
                               &MultibodyTreeSystem<T>::CalcJointDamping,
                               {this->all_parameters_ticket()})
           .cache_index();
 
   cache_indexes_.frame_body_poses =
       this->DeclareCacheEntry(
-              std::string("frame pose in body frame"),
-              FrameBodyPoseCache<T>(num_frame_body_poses_needed),
+              std::string("frame pose in link and body frames"),
+              FrameBodyPoseCache<T>(tree_->num_links(), tree_->num_frames(),
+                                    tree_->num_mobods()),
               &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
               {this->all_parameters_ticket()})
           .cache_index();
@@ -245,26 +277,35 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.position_kinematics =
       this->DeclareCacheEntry(
               std::string("position kinematics"),
-              PositionKinematicsCache<T>(internal_tree().get_topology()),
+              PositionKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcPositionKinematicsCache,
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
 
-  // Allocate cache entry to store spatial inertia M_B_W(q) for each body.
+  // Allocate system Jacobian cache.
+  cache_indexes_.block_system_jacobian =
+      this->DeclareCacheEntry(
+              std::string("system Jacobian"),
+              BlockSystemJacobianCache<T>(internal_tree().forest()),
+              &MultibodyTreeSystem<T>::CalcBlockSystemJacobianCache,
+              {position_kinematics_cache_entry().ticket()})
+          .cache_index();
+
+  // Allocate cache entry to store spatial inertia M_B_W(q) for each mobod.
   cache_indexes_.spatial_inertia_in_world =
       this->DeclareCacheEntry(
-              std::string("spatial inertia in world (M_B_W)"),
-              std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
+              std::string("mobod spatial inertia in world (M_B_W)"),
+              std::vector<SpatialInertia<T>>(internal_tree().num_mobods(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcSpatialInertiasInWorld,
               {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
-  // Allocate cache entry for composite-body inertias Mc_B_W(q) for each body.
+  // Allocate cache entry for composite-body inertias K_BBo_W(q) for each body.
   cache_indexes_.composite_body_inertia_in_world =
       this->DeclareCacheEntry(
-              std::string("composite body inertia in world (Mc_B_W)"),
-              std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
+              std::string("composite mobod inertia in world (K_BBo_W)"),
+              std::vector<SpatialInertia<T>>(internal_tree().num_mobods(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcCompositeBodyInertiasInWorld,
               {position_kinematics_cache_entry().ticket()})
@@ -276,7 +317,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.velocity_kinematics =
       this->DeclareCacheEntry(
               std::string("velocity kinematics"),
-              VelocityKinematicsCache<T>(internal_tree().get_topology()),
+              VelocityKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -284,8 +325,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   // Allocate cache entry to store Fb_Bo_W(q, v) for each body.
   cache_indexes_.dynamic_bias =
       this->DeclareCacheEntry(
-              std::string("dynamic bias (Fb_Bo_W)"),
-              std::vector<SpatialForce<T>>(internal_tree().num_bodies()),
+              std::string("mobod dynamic bias (Fb_Bo_W)"),
+              std::vector<SpatialForce<T>>(internal_tree().num_mobods()),
               &MultibodyTreeSystem<T>::CalcDynamicBiasForces,
               // The computation of Fb_Bo_W(q, v) requires updated values of
               // M_Bo_W(q) and V_WB(q, v). We make these prerequisites explicit.
@@ -312,7 +353,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.abi_cache_index =
       this->DeclareCacheEntry(
               std::string("Articulated Body Inertia"),
-              ArticulatedBodyInertiaCache<T>(internal_tree().get_topology()),
+              ArticulatedBodyInertiaCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcArticulatedBodyInertiaCache,
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -320,7 +361,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.spatial_acceleration_bias =
       this->DeclareCacheEntry(
               std::string("spatial acceleration bias (Ab_WB)"),
-              std::vector<SpatialAcceleration<T>>(internal_tree().num_bodies()),
+              std::vector<SpatialAcceleration<T>>(internal_tree().num_mobods()),
               &MultibodyTreeSystem<T>::CalcSpatialAccelerationBias,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -328,7 +369,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.articulated_body_force_bias =
       this->DeclareCacheEntry(
               std::string("ABI force bias cache (Zb_Bo_W)"),
-              std::vector<SpatialForce<T>>(internal_tree().num_bodies()),
+              std::vector<SpatialForce<T>>(internal_tree().num_mobods()),
               &MultibodyTreeSystem<T>::CalcArticulatedBodyForceBias,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -338,8 +379,9 @@ void MultibodyTreeSystem<T>::Finalize() {
 
   // Forces, and thus accelerations, are functions not only of state but also
   // inputs. In addition, the forces and accelerations can have extra
-  // user-injected dependencies through MultibodyElement and ForceDensityField,
-  // so we must include tickets that users might depend on.
+  // user-injected dependencies through MultibodyElement and
+  // ForceDensityFieldBase, so we must include tickets that users might depend
+  // on.
   const std::set<DependencyTicket> force_and_acceleration_prereqs = {
       position_ticket,
       velocity_ticket,
@@ -351,7 +393,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   // Articulated Body Algorithm (ABA) force cache.
   const auto& articulated_body_forces_cache_entry = this->DeclareCacheEntry(
       std::string("ABA force cache"),
-      ArticulatedBodyForceCache<T>(internal_tree().get_topology()),
+      ArticulatedBodyForceCache<T>(internal_tree().forest()),
       &MultibodyTreeSystem<T>::CalcArticulatedBodyForceCache,
       force_and_acceleration_prereqs);
   cache_indexes_.articulated_body_forces =
@@ -363,7 +405,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.acceleration_kinematics =
       this->DeclareCacheEntry(
               std::string("Accelerations"),
-              AccelerationKinematicsCache<T>(internal_tree().get_topology()),
+              AccelerationKinematicsCache<T>(internal_tree().forest()),
               &MultibodyTreeSystem<T>::CalcForwardDynamics,
               force_and_acceleration_prereqs)
           .cache_index();
@@ -375,26 +417,28 @@ template <typename T>
 void MultibodyTreeSystem<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  // No derivatives to compute if state is discrete.
+  // No derivatives to compute if state is discrete or there are no derivatives.
   if (is_discrete()) return;
-  // No derivatives to compute if state is empty. (Will segfault otherwise.)
-  // TODO(amcastro-tri): When nv = 0 we should not declare state or cache
-  // entries at all and the system framework will never call this.
-  if (internal_tree().num_states() == 0) return;
+  if (derivatives->size() == 0) return;
 
   const VectorX<T>& x = dynamic_cast<const systems::BasicVector<T>&>(
                             context.get_continuous_state_vector())
                             .value();
-  const auto v = x.bottomRows(internal_tree().num_velocities());
+  const int nq = internal_tree().num_positions();
+  const int nv = internal_tree().num_velocities();
+  const auto v = x.segment(nq, nv);
 
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
 
   // TODO(sherm1) Heap allocation here. Get rid of it.
-  VectorX<T> xdot(internal_tree().num_states());
-  VectorX<T> qdot(internal_tree().num_positions());
+  VectorX<T> qdot(nq);
   internal_tree().MapVelocityToQDot(context, v, &qdot);
-  xdot << qdot, vdot;
-  derivatives->SetFromVector(xdot);
+  derivatives->get_mutable_generalized_position().SetFromVector(qdot);
+  derivatives->get_mutable_generalized_velocity().SetFromVector(vdot);
+  if (num_misc_continuous_states_ > 0) {
+    DoCalcMiscDerivatives(context,
+                          &derivatives->get_mutable_misc_continuous_state());
+  }
 }
 
 template <typename T>
@@ -460,23 +504,27 @@ void MultibodyTreeSystem<T>::DoCalcImplicitTimeDerivativesResidual(
   // Compute forces applied by the derived class (likely MultibodyPlant).
   AddInForcesContinuous(context, &forces);
 
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
-  const VectorX<T>& qvdot_proposed =
+  const VectorX<T>& xdot_proposed =
       dynamic_cast<const systems::BasicVector<T>&>(
           proposed_derivatives.get_vector())
           .value();
-  DRAKE_ASSERT(qvdot_proposed.size() == nq + nv);
+  const int nz = num_misc_continuous_states_;
+  DRAKE_DEMAND(xdot_proposed.size() == nq + nv + nz);
 
   auto qdot_residual = residual->head(nq);
   // N(q)⋅v
   internal_tree().MapVelocityToQDot(
       context, internal_tree().get_velocities(context), &qdot_residual);
   // q̇_proposed - N(q)⋅v
-  qdot_residual = qvdot_proposed.head(nq) - qdot_residual;
+  qdot_residual = xdot_proposed.head(nq) - qdot_residual;
   // InverseDynamics(context, v_proposed)
-  residual->tail(nv) = internal_tree().CalcInverseDynamics(
-      context, qvdot_proposed.tail(nv), forces);
+  residual->segment(nq, nv) = internal_tree().CalcInverseDynamics(
+      context, xdot_proposed.segment(nq, nv), forces);
+
+  if (num_misc_continuous_states_ == 0) return;
+  BasicVector<T> zdot_residual(nz);
+  DoCalcMiscDerivatives(context, &zdot_residual);
+  residual->tail(nz) = xdot_proposed.tail(nz) - zdot_residual.get_value();
 }
 
 template <typename T>

@@ -11,6 +11,11 @@ package(
 
 py_library(
     name = "uritemplate_py",
-    srcs = glob(["uritemplate/**/*.py"], allow_empty = False),
+    srcs = glob(
+        ["uritemplate/**/*.py"],
+        allow_empty = False,
+    ),
     imports = ["."],
 )
+
+exports_files(["drake_repository_metadata.json"])

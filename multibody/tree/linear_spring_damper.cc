@@ -144,12 +144,12 @@ template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 LinearSpringDamper<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const RigidBody<ToScalar>& bodyA_clone = tree_clone.get_body(bodyA().index());
-  const RigidBody<ToScalar>& bodyB_clone = tree_clone.get_body(bodyB().index());
+  const Link<ToScalar>& linkA_clone = tree_clone.get_link(bodyA().index());
+  const Link<ToScalar>& linkB_clone = tree_clone.get_link(bodyB().index());
 
   // Make the LinearSpringDamper<T> clone.
   auto spring_damper_clone = std::make_unique<LinearSpringDamper<ToScalar>>(
-      bodyA_clone, p_AP(), bodyB_clone, p_BQ(), free_length(), stiffness(),
+      linkA_clone, p_AP(), linkB_clone, p_BQ(), free_length(), stiffness(),
       damping());
 
   return spring_damper_clone;

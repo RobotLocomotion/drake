@@ -63,26 +63,22 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
 
   /// Gets the two spring constants.
   Eigen::Vector2d get_spring_constants() const {
-    return
-        Eigen::Vector2d(750, 1e20);
+    return Eigen::Vector2d(750, 1e20);
   }
 
   /// Gets the two damping constants.
   Eigen::Vector2d get_damping_constants() const {
-    return
-        Eigen::Vector2d(0, 0);
+    return Eigen::Vector2d(0, 0);
   }
 
   /// Gets the positions of the two point mass bodies.
   Vector2<T> get_position(const Context<T>& c) const {
-    return
-        c.get_continuous_state().get_generalized_position().CopyToVector();
+    return c.get_continuous_state().get_generalized_position().CopyToVector();
   }
 
   /// Gets the velocity of the two point mass bodies.
   Vector2<T> get_velocity(const Context<T>& c) const {
-    return
-        c.get_continuous_state().get_generalized_velocity().CopyToVector();
+    return c.get_continuous_state().get_generalized_velocity().CopyToVector();
   }
 
   /// Gets the mass for the bodies in the system.
@@ -91,8 +87,8 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* deriv) const override {
     // Get velocity.
-    const VectorBase<T>& xd = context.get_continuous_state().
-        get_generalized_velocity();
+    const VectorBase<T>& xd =
+        context.get_continuous_state().get_generalized_velocity();
 
     // Get the masses and spring and damping coefficients.
     const Vector2<T> mass = get_mass();
@@ -114,17 +110,18 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   /// Sets the initial conditions for the system.
   /// The first mass will be located at x1 = 0.5 and second will be located at
   /// x2 = 1.5. No initial velocity is present.
-  void SetDefaultState(const Context<T>&,
-                       State<T>* state) const override {
+  void SetDefaultState(const Context<T>&, State<T>* state) const override {
     Vector2<T> x, xd;
     x(0) = 0.5;
     x(1) = 1.5;
     xd.setZero();
 
-    state->get_mutable_continuous_state().get_mutable_generalized_position().
-        SetFromVector(x);
-    state->get_mutable_continuous_state().get_mutable_generalized_velocity().
-        SetFromVector(xd);
+    state->get_mutable_continuous_state()
+        .get_mutable_generalized_position()
+        .SetFromVector(x);
+    state->get_mutable_continuous_state()
+        .get_mutable_generalized_velocity()
+        .SetFromVector(xd);
   }
 
   /// Gets the solution for the system with initial state defined at @p context,
@@ -142,23 +139,23 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
 
     // Get the offset between the two bodies
     const T offset = state->get_generalized_position().GetAtIndex(1) -
-        state->get_generalized_position().GetAtIndex(0);
+                     state->get_generalized_position().GetAtIndex(0);
 
     // Omega will use the first body (the one connected to the "world" with the
     // non-stiff spring).
-    const double omega = std::sqrt(get_spring_constants()(0) /
-        (get_mass()(0) + get_mass()(1)));
+    const double omega =
+        std::sqrt(get_spring_constants()(0) / (get_mass()(0) + get_mass()(1)));
 
     // Setup c1 and c2 for ODE constants.
-    const double c1 = context.get_continuous_state().
-        get_generalized_position().GetAtIndex(0);
-    const double c2 = context.get_continuous_state().
-        get_generalized_velocity().GetAtIndex(0) / omega;
+    const double c1 =
+        context.get_continuous_state().get_generalized_position()[0];
+    const double c2 =
+        context.get_continuous_state().get_generalized_velocity()[0] / omega;
 
     // Set the position and velocity of the first body using the ODE solution.
     const double x1_final = c1 * cos(omega * t) + c2 * sin(omega * t);
-    const double v1_final = c1 * -sin(omega * t) * omega +
-        c2 * +cos(omega * t) * omega;
+    const double v1_final =
+        c1 * -sin(omega * t) * omega + c2 * +cos(omega * t) * omega;
     state->get_mutable_generalized_position().SetAtIndex(0, x1_final);
     state->get_mutable_generalized_velocity().SetAtIndex(0, v1_final);
 

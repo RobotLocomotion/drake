@@ -1,10 +1,13 @@
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
+#include <limits>
 #include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 

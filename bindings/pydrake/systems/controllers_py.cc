@@ -1,7 +1,9 @@
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include <memory>
+#include <utility>
+
+#include "drake/bindings/generated_docstrings/systems_controllers.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -17,57 +19,57 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(controllers, m) {
+PYDRAKE_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
   using drake::multibody::MultibodyPlant;
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
   using drake::systems::System;
-  constexpr auto& doc = pydrake_doc.drake.systems.controllers;
+  constexpr auto& doc =
+      pydrake_doc_systems_controllers.drake.systems.controllers;
 
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.symbolic");
-  py::module::import("pydrake.systems.analysis");
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.primitives");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.plant");
+  py::module_::import_("pydrake.symbolic");
+  py::module_::import_("pydrake.systems.analysis");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.primitives");
+  py::module_::import_("pydrake.trajectories");
 
   {
     using Class = DynamicProgrammingOptions;
     constexpr auto& cls_doc = doc.DynamicProgrammingOptions;
-    py::class_<DynamicProgrammingOptions> cls(
+    class_<DynamicProgrammingOptions> cls(
         m, "DynamicProgrammingOptions", cls_doc.doc);
     {
       using Nested = Class::PeriodicBoundaryCondition;
       constexpr auto& nested_doc = cls_doc.PeriodicBoundaryCondition;
-      py::class_<Nested> nested(
-          cls, "PeriodicBoundaryCondition", nested_doc.doc);
+      class_<Nested> nested(cls, "PeriodicBoundaryCondition", nested_doc.doc);
       nested  // BR
           .def(py::init<int, double, double>(), py::arg("state_index"),
               py::arg("low"), py::arg("high"), nested_doc.ctor.doc)
-          .def_readwrite(
+          .def_rw(
               "state_index", &Nested::state_index, nested_doc.state_index.doc)
-          .def_readwrite("low", &Nested::low, nested_doc.low.doc)
-          .def_readwrite("high", &Nested::high, nested_doc.high.doc);
+          .def_rw("low", &Nested::low, nested_doc.low.doc)
+          .def_rw("high", &Nested::high, nested_doc.high.doc);
       // TODO(eric.cousineau): Deprecate module-scope alias.
       m.attr("PeriodicBoundaryCondition") = nested;
     }
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def_readwrite("discount_factor", &Class::discount_factor,
+        .def_rw("discount_factor", &Class::discount_factor,
             cls_doc.discount_factor.doc)
-        .def_readwrite("periodic_boundary_conditions",
+        .def_rw("periodic_boundary_conditions",
             &Class::periodic_boundary_conditions,
             cls_doc.periodic_boundary_conditions.doc)
-        .def_readwrite("convergence_tol", &Class::convergence_tol,
+        .def_rw("convergence_tol", &Class::convergence_tol,
             cls_doc.convergence_tol.doc)
-        .def_readwrite("visualization_callback", &Class::visualization_callback,
+        .def_rw("visualization_callback", &Class::visualization_callback,
             cls_doc.visualization_callback.doc)
-        .def_readwrite("input_port_index", &Class::input_port_index,
+        .def_rw("input_port_index", &Class::input_port_index,
             cls_doc.input_port_index.doc)
-        .def_readwrite("assume_non_continuous_states_are_fixed",
+        .def_rw("assume_non_continuous_states_are_fixed",
             &Class::assume_non_continuous_states_are_fixed,
             cls_doc.assume_non_continuous_states_are_fixed.doc);
   }
@@ -77,8 +79,7 @@ PYBIND11_MODULE(controllers, m) {
   {
     using Class = InverseDynamics<double>;
     constexpr auto& cls_doc = doc.InverseDynamics;
-    py::class_<Class, LeafSystem<double>> cls(
-        m, "InverseDynamics", cls_doc.doc);
+    class_<Class, LeafSystem<double>> cls(m, "InverseDynamics", cls_doc.doc);
     {
       using Nested = Class::InverseDynamicsMode;
       constexpr auto& nested_doc = cls_doc.InverseDynamicsMode;
@@ -114,8 +115,7 @@ PYBIND11_MODULE(controllers, m) {
   {
     using Class = InverseDynamicsController<double>;
     constexpr auto& cls_doc = doc.InverseDynamicsController;
-    py::class_<Class, Diagram<double>>(
-        m, "InverseDynamicsController", cls_doc.doc)
+    class_<Class, Diagram<double>>(m, "InverseDynamicsController", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>&, const VectorX<double>&,
                  const VectorX<double>&, const VectorX<double>&, bool,
                  const systems::Context<double>*>(),
@@ -151,14 +151,15 @@ PYBIND11_MODULE(controllers, m) {
   {
     using Class = JointStiffnessController<double>;
     constexpr auto& cls_doc = doc.JointStiffnessController;
-    py::class_<Class, LeafSystem<double>> cls(
+    class_<Class, LeafSystem<double>> cls(
         m, "JointStiffnessController", cls_doc.doc);
-    cls.def(py::init<const MultibodyPlant<double>&,
-                const Eigen::Ref<const Eigen::VectorXd>&,
-                const Eigen::Ref<const Eigen::VectorXd>&>(),
-           py::arg("plant"), py::arg("kp"), py::arg("kd"),
-           // Keep alive, reference: `self` keeps `robot` alive.
-           py::keep_alive<1, 2>(), cls_doc.ctor.doc)
+    cls  // BR
+        .def(py::init<const MultibodyPlant<double>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("plant"), py::arg("kp"), py::arg("kd"),
+            // Keep alive, reference: `self` keeps `robot` alive.
+            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
         .def("get_input_port_estimated_state",
             &Class::get_input_port_estimated_state, py_rvp::reference_internal,
             cls_doc.get_input_port_estimated_state.doc)
@@ -169,79 +170,72 @@ PYBIND11_MODULE(controllers, m) {
             py_rvp::reference_internal, cls_doc.get_output_port_actuation.doc)
         .def("get_multibody_plant", &Class::get_multibody_plant,
             py_rvp::reference_internal, cls_doc.get_multibody_plant.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("get_output_port_generalized_force",
-        WrapDeprecated(cls_doc.get_output_port_generalized_force.doc_deprecated,
-            &Class::get_output_port_generalized_force),
-        py_rvp::reference_internal,
-        cls_doc.get_output_port_generalized_force.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   {
     using T = double;
     using Class = PidControlledSystem<T>;
     constexpr auto& cls_doc = doc.PidControlledSystem;
-    py::class_<Class, Diagram<T>>(m, "PidControlledSystem", cls_doc.doc)
-        .def(py::init(
-                 [](System<T>& plant, double Kp, double Ki, double Kd,
-                     int state_output_port_index, int plant_input_port_index) {
-                   // The C++ constructor doesn't offer a bare-pointer overload,
-                   // only shared_ptr. Because object lifetime is already
-                   // handled by the ref_cycle annotation below (as required for
-                   // all subclasses of Diagram), we can pass the `plant` as an
-                   // unowned shared_ptr.
-                   return std::make_unique<Class>(
-                       make_unowned_shared_ptr_from_raw(&plant), Kp, Ki, Kd,
-                       state_output_port_index, plant_input_port_index);
-                 }),
+    class_<Class, Diagram<T>>(m, "PidControlledSystem", cls_doc.doc)
+        .def(
+            "__init__",
+            [](Class* self, System<T>& plant, double Kp, double Ki, double Kd,
+                int state_output_port_index, int plant_input_port_index) {
+              // The C++ constructor doesn't offer a bare-pointer overload, only
+              // shared_ptr. Because object lifetime is already handled by the
+              // ref_cycle annotation below (as required for all subclasses of
+              // Diagram), we can pass the `plant` as an unowned shared_ptr.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&plant), Kp, Ki,
+                  Kd, state_output_port_index, plant_input_port_index);
+            },
             py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
             py::arg("plant_input_port_index") = 0,
             // `self` and `plant` form a cycle as part of the Diagram.
             internal::ref_cycle<1, 2>(), cls_doc.ctor.doc_6args_double_gains)
-        .def(py::init(
-                 [](System<T>& plant, const Eigen::VectorXd& Kp,
-                     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
-                     int state_output_port_index, int plant_input_port_index) {
-                   // See comment in py::init() above for how &plant is handled.
-                   return std::make_unique<Class>(
-                       make_unowned_shared_ptr_from_raw(&plant), Kp, Ki, Kd,
-                       state_output_port_index, plant_input_port_index);
-                 }),
+        .def(
+            "__init__",
+            [](Class* self, System<T>& plant, const Eigen::VectorXd& Kp,
+                const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
+                int state_output_port_index, int plant_input_port_index) {
+              // See comment in "__init__" above for how &plant is handled.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&plant), Kp, Ki,
+                  Kd, state_output_port_index, plant_input_port_index);
+            },
             py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
             py::arg("plant_input_port_index") = 0,
             // `self` and `plant` form a cycle as part of the Diagram.
             internal::ref_cycle<1, 2>(), cls_doc.ctor.doc_6args_vector_gains)
-        .def(py::init([](System<T>& plant,
-                          const MatrixX<double>& feedback_selector, double Kp,
-                          double Ki, double Kd, int state_output_port_index,
-                          int plant_input_port_index) {
-          // See comment in py::init() above for how &plant is handled.
-          return std::make_unique<Class>(
-              make_unowned_shared_ptr_from_raw(&plant), feedback_selector, Kp,
-              Ki, Kd, state_output_port_index, plant_input_port_index);
-        }),
+        .def(
+            "__init__",
+            [](Class* self, System<T>& plant,
+                const MatrixX<double>& feedback_selector, double Kp, double Ki,
+                double Kd, int state_output_port_index,
+                int plant_input_port_index) {
+              // See comment in "__init__" above for how &plant is handled.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&plant),
+                  feedback_selector, Kp, Ki, Kd, state_output_port_index,
+                  plant_input_port_index);
+            },
             py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
             py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
             py::arg("plant_input_port_index") = 0,
             // `self` and `plant` form a cycle as part of the Diagram.
             internal::ref_cycle<1, 2>(), cls_doc.ctor.doc_7args_double_gains)
-        .def(py::init(
-                 [](System<T>& plant, const MatrixX<double>& feedback_selector,
-                     const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
-                     const Eigen::VectorXd& Kd, int state_output_port_index,
-                     int plant_input_port_index) {
-                   // See comment in py::init() above for how &plant is handled.
-                   return std::make_unique<Class>(
-                       make_unowned_shared_ptr_from_raw(&plant),
-                       feedback_selector, Kp, Ki, Kd, state_output_port_index,
-                       plant_input_port_index);
-                 }),
+        .def(
+            "__init__",
+            [](Class* self, System<T>& plant,
+                const MatrixX<double>& feedback_selector,
+                const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                const Eigen::VectorXd& Kd, int state_output_port_index,
+                int plant_input_port_index) {
+              // See comment in "__init__" above for how &plant is handled.
+              new (self) Class(make_unowned_shared_ptr_from_raw(&plant),
+                  feedback_selector, Kp, Ki, Kd, state_output_port_index,
+                  plant_input_port_index);
+            },
             py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
             py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
@@ -261,7 +255,7 @@ PYBIND11_MODULE(controllers, m) {
   {
     using Class = PidController<double>;
     constexpr auto& cls_doc = doc.PidController;
-    py::class_<Class, LeafSystem<double>>(m, "PidController", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "PidController", cls_doc.doc)
         .def(py::init<const VectorX<double>&, const VectorX<double>&,
                  const VectorX<double>&>(),
             py::arg("kp"), py::arg("ki"), py::arg("kd"), cls_doc.ctor.doc_3args)
@@ -348,17 +342,17 @@ PYBIND11_MODULE(controllers, m) {
   {
     using Class = FiniteHorizonLinearQuadraticRegulatorOptions;
     constexpr auto& cls_doc = doc.FiniteHorizonLinearQuadraticRegulatorOptions;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "FiniteHorizonLinearQuadraticRegulatorOptions", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def_readwrite("Qf", &Class::Qf, cls_doc.Qf.doc)
-        .def_readwrite("N", &Class::N, cls_doc.N.doc)
-        .def_readwrite("input_port_index", &Class::input_port_index,
+        .def_rw("Qf", &Class::Qf, cls_doc.Qf.doc)
+        .def_rw("N", &Class::N, cls_doc.N.doc)
+        .def_rw("input_port_index", &Class::input_port_index,
             cls_doc.input_port_index.doc)
-        .def_readwrite("use_square_root_method", &Class::use_square_root_method,
+        .def_rw("use_square_root_method", &Class::use_square_root_method,
             cls_doc.use_square_root_method.doc)
-        .def_readwrite("simulator_config", &Class::simulator_config,
+        .def_rw("simulator_config", &Class::simulator_config,
             cls_doc.simulator_config.doc)
         .def("__repr__", [](const Class& self) {
           return py::str(
@@ -380,7 +374,7 @@ PYBIND11_MODULE(controllers, m) {
   {
     using Class = FiniteHorizonLinearQuadraticRegulatorResult;
     constexpr auto& cls_doc = doc.FiniteHorizonLinearQuadraticRegulatorResult;
-    py::class_<Class> cls(
+    class_<Class> cls(
         m, "FiniteHorizonLinearQuadraticRegulatorResult", cls_doc.doc);
     DefReadUniquePtr(&cls, "x0", &Class::x0, cls_doc.x0.doc);
     DefReadUniquePtr(&cls, "u0", &Class::u0, cls_doc.u0.doc);

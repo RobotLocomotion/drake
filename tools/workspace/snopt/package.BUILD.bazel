@@ -1,7 +1,10 @@
 # -*- bazel -*-
 
 load("@drake//tools/skylark:cc.bzl", "cc_library")
-load("@drake//tools/workspace/gfortran:fortran.bzl", "fortran_library")
+load(
+    "@drake//tools/workspace/gfortran_internal:fortran.bzl",
+    "fortran_library",
+)
 
 licenses(["by_exception_only"])  # SNOPT
 
@@ -51,9 +54,6 @@ cc_library(
         "interfaces/include/snopt.h",
         "interfaces/include/snopt_cwrap.h",
     ],
-    includes = [
-        "interfaces/include",
-    ],
     copts = [
         "-w",
         # Hide symbols per note (2) above.  The snopt_cwrap.c file isn't
@@ -61,6 +61,9 @@ cc_library(
         # but perhaps keeping these functions obscured helps serve the overall
         # goal of obscuring the calls into the SNOPT object code even more.
         "-fvisibility=hidden",
+    ],
+    includes = [
+        "interfaces/include",
     ],
     # Link statically per note (1) above.
     linkstatic = 1,

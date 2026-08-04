@@ -54,7 +54,7 @@ class StaticEquilibriumConstraint final : public solvers::Constraint {
       const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& u_vars);
 
-  ~StaticEquilibriumConstraint() override {}
+  ~StaticEquilibriumConstraint() override;
 
   /**
    * Getter for contact_pair_to_wrench_evaluator, passed in the constructor.

@@ -1,4 +1,3 @@
-import logging
 import unittest
 
 from pydrake.common import use_native_cpp_logging

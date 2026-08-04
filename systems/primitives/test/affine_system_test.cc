@@ -1,5 +1,8 @@
 #include "drake/systems/primitives/affine_system.h"
 
+#include <memory>
+#include <string>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
@@ -139,12 +142,12 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
 }
 
 TEST_F(AffineSystemTest, UpdateCoefficientsButWrongSize) {
-  const Eigen::Matrix<double, 2, 3> new_A;
-  const Eigen::Matrix<double, 3, 2> new_B;
-  const Eigen::Vector3d new_f0;
-  const Eigen::Matrix3d new_C;
-  const Eigen::Matrix4d new_D;
-  const Eigen::Vector4d new_y0;
+  const Eigen::Matrix<double, 2, 3> new_A = Eigen::Matrix<double, 2, 3>::Zero();
+  const Eigen::Matrix<double, 3, 2> new_B = Eigen::Matrix<double, 3, 2>::Zero();
+  const Eigen::Vector3d new_f0 = Eigen::Vector3d::Zero();
+  const Eigen::Matrix3d new_C = Eigen::Matrix3d::Zero();
+  const Eigen::Matrix4d new_D = Eigen::Matrix4d::Zero();
+  const Eigen::Vector4d new_y0 = Eigen::Vector4d::Zero();
 
   const std::string error_msg_regrex =
       "^New and current .* have different sizes\\.$";
@@ -195,30 +198,35 @@ TEST_F(AffineSystemTest, DefaultAndRandomState) {
 
 // Tests converting to different scalar types.
 TEST_F(AffineSystemTest, ConvertScalarType) {
-  EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
-    EXPECT_EQ(converted.A(), A_);
-    EXPECT_EQ(converted.B(), B_);
-    EXPECT_EQ(converted.f0(), f0_);
-    EXPECT_EQ(converted.C(), C_);
-    EXPECT_EQ(converted.D(), D_);
-    EXPECT_EQ(converted.y0(), y0_);
-    EXPECT_TRUE(CompareMatrices(
-        math::ExtractValue(converted.get_default_state()), x0_, 0.0));
-    EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
-                                Sigma_x0_, 1e-16));
-  }));
-  EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
-    EXPECT_EQ(converted.A(), A_);
-    EXPECT_EQ(converted.B(), B_);
-    EXPECT_EQ(converted.f0(), f0_);
-    EXPECT_EQ(converted.C(), C_);
-    EXPECT_EQ(converted.D(), D_);
-    EXPECT_EQ(converted.y0(), y0_);
-    EXPECT_TRUE(CompareMatrices(
-        symbolic::Evaluate(converted.get_default_state()), x0_, 0.0));
-    EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
-                                Sigma_x0_, 1e-16));
-  }));
+  const testing::AssertionResult autodiff_ok =
+      is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
+        EXPECT_EQ(converted.A(), A_);
+        EXPECT_EQ(converted.B(), B_);
+        EXPECT_EQ(converted.f0(), f0_);
+        EXPECT_EQ(converted.C(), C_);
+        EXPECT_EQ(converted.D(), D_);
+        EXPECT_EQ(converted.y0(), y0_);
+        EXPECT_TRUE(CompareMatrices(
+            math::ExtractValue(converted.get_default_state()), x0_, 0.0));
+        EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
+                                    Sigma_x0_, 1e-16));
+      });
+  EXPECT_TRUE(autodiff_ok);
+
+  const testing::AssertionResult symbolic_ok =
+      is_symbolic_convertible(*dut_, [&](const auto& converted) {
+        EXPECT_EQ(converted.A(), A_);
+        EXPECT_EQ(converted.B(), B_);
+        EXPECT_EQ(converted.f0(), f0_);
+        EXPECT_EQ(converted.C(), C_);
+        EXPECT_EQ(converted.D(), D_);
+        EXPECT_EQ(converted.y0(), y0_);
+        EXPECT_TRUE(CompareMatrices(
+            symbolic::Evaluate(converted.get_default_state()), x0_, 0.0));
+        EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
+                                    Sigma_x0_, 1e-16));
+      });
+  EXPECT_TRUE(symbolic_ok);
 }
 
 class FeedthroughAffineSystemTest : public ::testing::Test {

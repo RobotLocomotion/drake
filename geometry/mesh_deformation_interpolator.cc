@@ -34,7 +34,7 @@ BarycentricInterpolator::BarycentricInterpolator(
     if (!matched) {
       throw std::runtime_error(fmt::format(
           "A passively driven point lies outside the control mesh: ({}): {}", v,
-          fmt_eigen(p_MV.transpose())));
+          fmt_eigen(p_MV)));
     }
   }
   DRAKE_DEMAND(vertex_indices_.size() == barycentric_coordinates_.size());

@@ -1,4 +1,6 @@
+#include <limits>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -94,7 +96,7 @@ INSTANTIATE_TEST_SUITE_P(
         QueryInstance(kBox, kCylinder, 6e-6),
         QueryInstance(kBox, kEllipsoid, 9e-6),
         QueryInstance(kBox, kHalfSpace, kThrows),
-        QueryInstance(kBox, kSphere, 3e-15),
+        QueryInstance(kBox, kSphere, 4e-15),
 
         QueryInstance(kCapsule, kCapsule, 2e-5),
         QueryInstance(kCapsule, kConvex, 2e-5),

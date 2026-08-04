@@ -1,0 +1,16 @@
+# -*- bazel -*-
+
+# The bazelisk external is in a unique situation. Because we must run bazelisk
+# to bootstrap everything else we need, we must keep a vendored copy of it in
+# drake/third_party/com_github_bazelbuild_bazelisk/. The workspace external
+# only serves as a reference point so that Drake's third-party dependency
+# mirroring and automatic upgrades will also cover bazelisk. We use a lint test
+# to flag when the workspace external differs from the vendored copy, whereupon
+# we print out Drake maintainer instructions explaining how to sync the copy.
+
+exports_files([
+    "LICENSE",
+    "bazelisk.py",
+])
+
+exports_files(["drake_repository_metadata.json"])

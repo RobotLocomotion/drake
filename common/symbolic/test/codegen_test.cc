@@ -1,6 +1,8 @@
 #include "drake/common/symbolic/codegen.h"
 
+#include <algorithm>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include <fmt/format.h>

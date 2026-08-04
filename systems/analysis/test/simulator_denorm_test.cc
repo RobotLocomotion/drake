@@ -29,7 +29,7 @@ GTEST_TEST(SimulatorTest, PreviousNormalizedValueTest) {
   // "denormalized numbers flushed to zero" (FTZ) modes enabled. These modes
   // are activated when shared libraries are built using the -ffast-math option
   // in gcc.
-  #ifdef __x86_64__
+#ifdef __x86_64__
   const volatile double denorm_num = std::numeric_limits<double>::denorm_min();
   const unsigned MXCSR_DAZ = (1 << 6);
   const unsigned MXCSR_FTZ = (1 << 15);
@@ -38,13 +38,13 @@ GTEST_TEST(SimulatorTest, PreviousNormalizedValueTest) {
 
   // Verify that the flags were set as expected.
   EXPECT_EQ(denorm_num, 0.0);
-  #endif
+#endif
 
   const double min_double = std::numeric_limits<double>::min();
   EXPECT_EQ(internal::GetPreviousNormalizedValue(0.0), -min_double);
-  EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double/2), -min_double);
+  EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double / 2), -min_double);
   EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double), 0.0);
-  EXPECT_EQ(internal::GetPreviousNormalizedValue(-min_double/2), -min_double);
+  EXPECT_EQ(internal::GetPreviousNormalizedValue(-min_double / 2), -min_double);
   EXPECT_LE(internal::GetPreviousNormalizedValue(-min_double), -min_double);
   EXPECT_LE(internal::GetPreviousNormalizedValue(1.0), 1.0);
   EXPECT_NEAR(internal::GetPreviousNormalizedValue(1.0), 1.0,
@@ -52,19 +52,19 @@ GTEST_TEST(SimulatorTest, PreviousNormalizedValueTest) {
 
   // Since mxcsr has the flags set, XORing against those flags will set them
   // to zero.
-  #ifdef __x86_64__
+#ifdef __x86_64__
   __builtin_ia32_ldmxcsr(mxcsr ^ MXCSR_DAZ ^ MXCSR_FTZ);
 
   // Verify that the flags are set as expected.
   EXPECT_NE(denorm_num, 0.0);
   EXPECT_NE(std::numeric_limits<double>::min() / 2, 0.0);
-  #endif
+#endif
 
   // Do the tests again now that DAZ and FTZ modes are disabled.
   EXPECT_EQ(internal::GetPreviousNormalizedValue(0.0), -min_double);
-  EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double/2), -min_double);
+  EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double / 2), -min_double);
   EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double), 0.0);
-  EXPECT_EQ(internal::GetPreviousNormalizedValue(-min_double/2), -min_double);
+  EXPECT_EQ(internal::GetPreviousNormalizedValue(-min_double / 2), -min_double);
   EXPECT_LE(internal::GetPreviousNormalizedValue(-min_double), -min_double);
   EXPECT_LE(internal::GetPreviousNormalizedValue(1.0), 1.0);
   EXPECT_NEAR(internal::GetPreviousNormalizedValue(1.0), 1.0,

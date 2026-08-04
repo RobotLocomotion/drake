@@ -40,8 +40,8 @@ void UpdateContextPositionsAndVelocities(
 void UpdateContextPositionsAndVelocities(
     systems::Context<double>* context, const MultibodyPlant<double>& plant,
     const Eigen::Ref<const AutoDiffVecXd>& q_v) {
-  return UpdateContextPositionsAndVelocities(
-      context, plant, math::ExtractValue(q_v));
+  return UpdateContextPositionsAndVelocities(context, plant,
+                                             math::ExtractValue(q_v));
 }
 
 void UpdateContextPositionsAndVelocities(

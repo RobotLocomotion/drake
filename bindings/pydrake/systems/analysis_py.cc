@@ -1,12 +1,18 @@
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/systems_analysis.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
 #include "drake/systems/analysis/batch_eval.h"
+#include "drake/systems/analysis/discrete_time_approximation.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
 #include "drake/systems/analysis/region_of_attraction.h"
@@ -34,22 +40,24 @@ void ThrowIfPythonHasPendingSignals() {
 }
 }  // namespace
 
-PYBIND11_MODULE(analysis, m) {
+PYDRAKE_MODULE(analysis, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::analysis;
+  constexpr auto& doc = pydrake_doc_systems_analysis.drake.systems;
 
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.solvers");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.primitives");
+  py::module_::import_("pydrake.solvers");
+  py::module_::import_("pydrake.trajectories");
 
   {
     using Class = SimulatorConfig;
-    constexpr auto& cls_doc = pydrake_doc.drake.systems.SimulatorConfig;
-    py::class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
+    constexpr auto& cls_doc = doc.SimulatorConfig;
+    class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -58,10 +66,9 @@ PYBIND11_MODULE(analysis, m) {
   }
 
   {
-    constexpr auto& doc = pydrake_doc.drake.systems;
     using Class = SimulatorStatus;
     constexpr auto& cls_doc = doc.SimulatorStatus;
-    py::class_<Class> cls(m, "SimulatorStatus", cls_doc.doc);
+    class_<Class> cls(m, "SimulatorStatus", cls_doc.doc);
 
     using Enum = Class::ReturnReason;
     constexpr auto& enum_doc = cls_doc.ReturnReason;
@@ -88,9 +95,9 @@ PYBIND11_MODULE(analysis, m) {
   }
 
   {
-    constexpr auto& cls_doc = pydrake_doc.drake.systems.InitializeParams;
+    constexpr auto& cls_doc = doc.InitializeParams;
     using Class = InitializeParams;
-    py::class_<Class> cls(m, "InitializeParams", cls_doc.doc);
+    class_<Class> cls(m, "InitializeParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -99,7 +106,6 @@ PYBIND11_MODULE(analysis, m) {
   }
 
   auto bind_scalar_types = [&m](auto dummy) {
-    constexpr auto& doc = pydrake_doc.drake.systems;
     using T = decltype(dummy);
 
     m.def("BatchEvalUniquePeriodicDiscreteUpdate",
@@ -203,16 +209,19 @@ PYBIND11_MODULE(analysis, m) {
               cls_doc.get_largest_step_size_taken.doc)
           .def("get_num_steps_taken", &Class::get_num_steps_taken,
               cls_doc.get_num_steps_taken.doc)
+          .def("GetStatisticsSummary", &Class::GetStatisticsSummary,
+              cls_doc.GetStatisticsSummary.doc)
           // N.B. While `context` is not directly owned by this system, we
           // would still like our accessors to keep it alive (e.g. a user calls
           // `simulator.get_integrator().get_context()`.
-          .def("get_context", &Class::get_context,
-              // Keep alive, transitive: `return` keeps `self` alive.
-              py::keep_alive<0, 1>(), cls_doc.get_context.doc)
+          .def("get_context", &Class::get_context, py_rvp::reference_internal,
+              cls_doc.get_context.doc)
           .def("get_mutable_context", &Class::get_mutable_context,
               // Keep alive, transitive: `return` keeps `self` alive.
               py::keep_alive<0, 1>(), cls_doc.get_mutable_context.doc)
-          .def("reset_context", &Class::reset_context, py::arg("context"),
+          .def("reset_context",
+              py::overload_cast<Context<T>*>(&Class::reset_context),
+              py::arg("context") = nullptr,
               // Keep alive, reference: `context` keeps `self` alive.
               py::keep_alive<2, 1>(), cls_doc.reset_context.doc);
     }
@@ -227,11 +236,41 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc);
+
+    {
+      m.def("DiscreteTimeApproximation",
+          overload_cast_explicit<std::unique_ptr<LinearSystem<T>>,
+              const LinearSystem<T>&, double>(&DiscreteTimeApproximation),
+          py::arg("linear_system"), py::arg("time_period"),
+          doc.DiscreteTimeApproximation.doc_2args_constLinearSystem_double);
+
+      m.def("DiscreteTimeApproximation",
+          overload_cast_explicit<std::unique_ptr<AffineSystem<T>>,
+              const AffineSystem<T>&, double>(&DiscreteTimeApproximation),
+          py::arg("affine_system"), py::arg("time_period"),
+          doc.DiscreteTimeApproximation.doc_2args_constAffineSystem_double);
+
+      m.def(
+          "DiscreteTimeApproximation",
+          [](const System<T>& system, double time_period,
+              const SimulatorConfig& integrator_config) {
+            return DiscreteTimeApproximation(
+                // The lifetime of `system` is managed by the keep_alive
+                // below, not the C++ shared_ptr.
+                make_unowned_shared_ptr_from_raw(&system), time_period,
+                integrator_config);
+          },
+          py::arg("system"), py::arg("time_period"),
+          py::arg("integrator_config") = SimulatorConfig(),
+          // Keep alive, reference: `result` keeps `system` alive.
+          py::keep_alive<0, 1>(),
+          doc.DiscreteTimeApproximation
+              .doc_3args_constSystem_double_SimulatorConfig);
+    }
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
-    constexpr auto& doc = pydrake_doc.drake.systems;
     using T = decltype(dummy);
 
     DefineTemplateClassWithDefault<RungeKutta3Integrator<T>, IntegratorBase<T>>(
@@ -251,21 +290,29 @@ PYBIND11_MODULE(analysis, m) {
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
-        .def(py::init([](const System<T>& system, Context<T>* context) {
-          // Expand the default-context request here, so that it gets a
-          // python-compatible lifetime.
-          if (context == nullptr) {
-            std::unique_ptr<Context<T>> context_ptr =
-                system.CreateDefaultContext();
-            // Python ownership will be created below by
-            // make_shared_ptr_from_py_object.
-            context = context_ptr.release();
-          }
-          auto py_context = py::cast(context);
-          return Simulator<T>::MakeWithSharedContext(
-              system, make_shared_ptr_from_py_object<Context<T>>(py_context));
-        }),
-            py::arg("system"), py::arg("context") = nullptr,
+        .def(
+            "__init__",
+            [](Simulator<T>* self, const System<T>& system,
+                py::object py_context) {
+              // Handle the two cases for context ownership explicitly:
+              // 1. If py_context is None, create a new context and take
+              //    ownership.
+              // 2. If py_context is provided, use the existing Python wrapper
+              //    directly (it already owns the C++ object).
+              if (py_context.is_none()) {
+                std::unique_ptr<Context<T>> context_ptr =
+                    system.CreateDefaultContext();
+                // Use take_ownership because we just created this context and
+                // need Python to own it. The unique_ptr is released, leaving
+                // the raw pointer with no owner until take_ownership
+                // establishes Python ownership.
+                py_context =
+                    py::cast(context_ptr.release(), py_rvp::take_ownership);
+              }
+              Simulator<T>::EmplaceWithSharedContext(self, system,
+                  make_shared_ptr_from_py_object<Context<T>>(py_context));
+            },
+            py::arg("system"), py::arg("context") = py::none(),
             // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
             []() {
@@ -352,13 +399,7 @@ Parameter ``interruptible``:
               self->reset_context_from_shared(
                   make_shared_ptr_from_py_object<Context<T>>(py_context));
             },
-            py::arg("context"), doc.Simulator.reset_context.doc)
-        .def("set_publish_every_time_step",
-            &Simulator<T>::set_publish_every_time_step, py::arg("publish"),
-            doc.Simulator.set_publish_every_time_step.doc)
-        .def("set_publish_at_initialization",
-            &Simulator<T>::set_publish_at_initialization, py::arg("publish"),
-            doc.Simulator.set_publish_at_initialization.doc)
+            py::arg("context").none(), doc.Simulator.reset_context.doc)
         .def("set_target_realtime_rate",
             &Simulator<T>::set_target_realtime_rate, py::arg("realtime_rate"),
             doc.Simulator.set_target_realtime_rate.doc)
@@ -382,16 +423,14 @@ Parameter ``interruptible``:
             doc.Simulator.get_num_unrestricted_updates.doc)
         .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
-
     m  // BR
         .def("ApplySimulatorConfig",
             py::overload_cast<const SimulatorConfig&,
                 drake::systems::Simulator<T>*>(&ApplySimulatorConfig<T>),
             py::arg("config"), py::arg("simulator"),
-            pydrake_doc.drake.systems.ApplySimulatorConfig.doc_config_sim)
+            doc.ApplySimulatorConfig.doc_config_sim)
         .def("ExtractSimulatorConfig", &ExtractSimulatorConfig<T>,
-            py::arg("simulator"),
-            pydrake_doc.drake.systems.ExtractSimulatorConfig.doc);
+            py::arg("simulator"), doc.ExtractSimulatorConfig.doc);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 
@@ -408,8 +447,7 @@ Parameter ``interruptible``:
           py::arg("simulator"), py::arg("scheme"), py::arg("max_step_size"),
           py_rvp::reference,
           // Keep alive, reference: `return` keeps `simulator` alive.
-          py::keep_alive<0, 1>(),
-          pydrake_doc.drake.systems.ResetIntegratorFromFlags.doc)
+          py::keep_alive<0, 1>(), doc.ResetIntegratorFromFlags.doc)
       .def(
           "ResetIntegratorFromFlags",
           [](Simulator<AutoDiffXd>* simulator, const std::string& scheme,
@@ -421,22 +459,19 @@ Parameter ``interruptible``:
           py::arg("simulator"), py::arg("scheme"), py::arg("max_step_size"),
           py_rvp::reference,
           // Keep alive, reference: `return` keeps `simulator` alive.
-          py::keep_alive<0, 1>(),
-          pydrake_doc.drake.systems.ResetIntegratorFromFlags.doc)
+          py::keep_alive<0, 1>(), doc.ResetIntegratorFromFlags.doc)
       .def("GetIntegrationSchemes", &GetIntegrationSchemes,
-          pydrake_doc.drake.systems.GetIntegrationSchemes.doc);
+          doc.GetIntegrationSchemes.doc);
 
   // Print Simulator Statistics
   m  // BR
       .def("PrintSimulatorStatistics", &PrintSimulatorStatistics<double>,
-          pydrake_doc.drake.systems.PrintSimulatorStatistics.doc)
+          doc.PrintSimulatorStatistics.doc)
       .def("PrintSimulatorStatistics", &PrintSimulatorStatistics<AutoDiffXd>,
-          pydrake_doc.drake.systems.PrintSimulatorStatistics.doc);
+          doc.PrintSimulatorStatistics.doc);
 
   // Monte Carlo Testing
   {
-    constexpr auto& doc = pydrake_doc.drake.systems.analysis;
-
     // Like RandomSimulatorFactory but returning a Python object instead of C++.
     using PyRandomSimulatorFactory =
         std::function<py::object(RandomGenerator*)>;
@@ -479,15 +514,15 @@ Parameter ``interruptible``:
               generator);
         },
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
-        py::arg("generator"), doc.RandomSimulation.doc);
+        py::arg("generator"), doc.analysis.RandomSimulation.doc);
 
-    py::class_<RandomSimulationResult>(
-        m, "RandomSimulationResult", doc.RandomSimulationResult.doc)
-        .def_readwrite("output", &RandomSimulationResult::output,
-            doc.RandomSimulationResult.output.doc)
-        .def_readwrite("generator_snapshot",
+    class_<RandomSimulationResult>(
+        m, "RandomSimulationResult", doc.analysis.RandomSimulationResult.doc)
+        .def_rw("output", &RandomSimulationResult::output,
+            doc.analysis.RandomSimulationResult.output.doc)
+        .def_rw("generator_snapshot",
             &RandomSimulationResult::generator_snapshot,
-            doc.RandomSimulationResult.generator_snapshot.doc);
+            doc.analysis.RandomSimulationResult.generator_snapshot.doc);
 
     // Note: This hard-codes `parallelism` to be off, since parallel execution
     // of Python systems on multiple threads was thought to be unsupported. It's
@@ -505,43 +540,40 @@ Parameter ``interruptible``:
               num_samples, generator, /* parallelism = */ Parallelism::None());
         },
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
-        py::arg("num_samples"), py::arg("generator"),
-        doc.MonteCarloSimulation.doc);
+        py::arg("num_samples"), py::arg("generator") = nullptr,
+        doc.analysis.MonteCarloSimulation.doc);
   }
 
   {
-    constexpr auto& doc = pydrake_doc.drake.systems.analysis;
-
     using Class = RegionOfAttractionOptions;
-    constexpr auto& cls_doc = doc.RegionOfAttractionOptions;
-    py::class_<Class, std::shared_ptr<Class>> cls(
+    constexpr auto& cls_doc = doc.analysis.RegionOfAttractionOptions;
+    class_<Class, std::shared_ptr<Class>> cls(
         m, "RegionOfAttractionOptions", cls_doc.doc);
-    cls.def(py::init<>(), cls_doc.ctor.doc)
-        // TODO(jeremy.nimmer): replace the def_readwrite with
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        // TODO(jeremy.nimmer): replace the def_rw with
         // DefAttributesUsingSerialize when we fix binding a
         // VectorX<symbolic::Variable> state_variables to a numpy array of
         // objects.
-        .def_readwrite("lyapunov_candidate",
+        .def_rw("lyapunov_candidate",
             &RegionOfAttractionOptions::lyapunov_candidate,
-            doc.RegionOfAttractionOptions.lyapunov_candidate.doc)
-        .def_readwrite("state_variables",
-            &RegionOfAttractionOptions::state_variables,
+            cls_doc.lyapunov_candidate.doc)
+        .def_rw("state_variables", &RegionOfAttractionOptions::state_variables,
             // dtype = object arrays must be copied, and cannot be referenced.
-            py_rvp::copy, doc.RegionOfAttractionOptions.state_variables.doc)
-        .def_readwrite("use_implicit_dynamics",
+            py_rvp::copy, cls_doc.state_variables.doc)
+        .def_rw("use_implicit_dynamics",
             &RegionOfAttractionOptions::use_implicit_dynamics,
-            doc.RegionOfAttractionOptions.use_implicit_dynamics.doc)
-        .def_readwrite("solver_id", &RegionOfAttractionOptions::solver_id,
-            doc.RegionOfAttractionOptions.solver_id.doc)
-        .def_readwrite("solver_options",
-            &RegionOfAttractionOptions::solver_options,
-            doc.RegionOfAttractionOptions.solver_options.doc);
+            cls_doc.use_implicit_dynamics.doc)
+        .def_rw("solver_id", &RegionOfAttractionOptions::solver_id,
+            cls_doc.solver_id.doc)
+        .def_rw("solver_options", &RegionOfAttractionOptions::solver_options,
+            cls_doc.solver_options.doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
 
     m.def("RegionOfAttraction", &RegionOfAttraction, py::arg("system"),
         py::arg("context"), py::arg("options") = RegionOfAttractionOptions(),
-        doc.RegionOfAttraction.doc);
+        doc.analysis.RegionOfAttraction.doc);
   }
 }
 

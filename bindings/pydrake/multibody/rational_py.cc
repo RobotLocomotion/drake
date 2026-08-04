@@ -1,6 +1,6 @@
+#include "drake/bindings/generated_docstrings/multibody_rational.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
@@ -9,24 +9,25 @@ namespace pydrake {
 namespace {
 
 template <typename T>
-void DoPoseDeclaration(py::module m, T) {
+void DoPoseDeclaration(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   using Class = multibody::RationalForwardKinematics::Pose<T>;
   auto cls = DefineTemplateClassWithDefault<Class>(
       m, "RationalForwardKinematicsPose", param);
-  cls.def("position", [](const Class& self) { return self.position; })
+  cls  // BR
+      .def("position", [](const Class& self) { return self.position; })
       .def("rotation", [](const Class& self) { return self.rotation; });
 
   DefCopyAndDeepCopy(&cls);
 }
 
-PYBIND11_MODULE(rational, m) {
+PYDRAKE_MODULE(rational, m) {
   using drake::multibody::MultibodyPlant;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_rational.drake.multibody;
 
   m.doc() = "RationalForwardKinematics module";
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.plant");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.plant");
 
   type_pack<symbolic::Polynomial, symbolic::RationalFunction> sym_pack;
   type_visit([m](auto dummy) { DoPoseDeclaration(m, dummy); }, sym_pack);
@@ -34,7 +35,7 @@ PYBIND11_MODULE(rational, m) {
   {
     using Class = drake::multibody::RationalForwardKinematics;
     constexpr auto& cls_doc = doc.RationalForwardKinematics;
-    py::class_<Class>(m, "RationalForwardKinematics")
+    class_<Class>(m, "RationalForwardKinematics")
         .def(py::init<const MultibodyPlant<double>*>(), py::arg("plant"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>()  // BR

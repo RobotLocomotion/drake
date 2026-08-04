@@ -59,8 +59,7 @@ definition is Bazel magic that takes on _different values_ depending on which
 translation unit is being compiled (and is undefined unless you add Bazel's
 runfiles library to your own library's `deps = ...` directly), so cannot be
 used as the default value here. */
-RlocationOrError FindRunfile(
-    const std::string& resource_path,
-    const std::string& source_repository = {});
+RlocationOrError FindRunfile(const std::string& resource_path,
+                             const std::string& source_repository = {});
 
 }  // namespace drake

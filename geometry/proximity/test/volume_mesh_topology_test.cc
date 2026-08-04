@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/volume_mesh_topology.h"
 
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

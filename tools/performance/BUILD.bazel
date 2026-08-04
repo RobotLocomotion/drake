@@ -24,7 +24,7 @@ drake_cc_library(
     srcs = ["fixture_common.cc"],
     hdrs = ["fixture_common.h"],
     deps = [
-        "@googlebenchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -37,7 +37,7 @@ selects.config_setting_group(
     name = "fixture_memory_no",
     match_any = [
         ":apple",
-        "//tools:using_memcheck",
+        "//tools/valgrind:enabled",
         "//tools:using_sanitizer",
     ],
 )
@@ -51,7 +51,7 @@ drake_cc_library(
     hdrs = ["fixture_memory.h"],
     deps = [
         "//common:essential",
-        "@googlebenchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -61,7 +61,7 @@ drake_cc_library(
     deps = [
         ":fixture_memory",
         "@gflags",
-        "@googlebenchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -69,9 +69,6 @@ drake_py_binary(
     name = "benchmark_tool",
     testonly = True,
     srcs = ["benchmark_tool.py"],
-    data = [
-        "//tools/workspace/cc:compiler.txt",
-    ],
 )
 
 add_lint_tests(

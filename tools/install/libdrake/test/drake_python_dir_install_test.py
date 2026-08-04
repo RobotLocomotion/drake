@@ -9,13 +9,17 @@ import install_test_helper
 
 class DrakePythonDirInstallTest(unittest.TestCase):
     def test_drake_python_dir(self):
-        cmake_source_dir = install_test_helper.create_temporary_dir(
-            "pydir_src")
+        cmake_source_dir = install_test_helper.create_temporary_dir("pydir_src")
 
         cmake_prefix_path = install_test_helper.get_install_dir()
 
+        venv_pythonpath = ""
+        for item in sys.path:
+            if "/venv.drake/" in item:
+                venv_pythonpath = item
+
         cmake_content = """
-            cmake_minimum_required(VERSION 3.10)
+            cmake_minimum_required(VERSION 3.20...4.3)
             project(drake_python_dir_install_test)
             set(CMAKE_PREFIX_PATH {cmake_prefix_path})
             find_package(drake CONFIG REQUIRED)
@@ -31,7 +35,7 @@ class DrakePythonDirInstallTest(unittest.TestCase):
 
             # PYTHON_DIR Sanity check
             execute_process(
-              COMMAND ${{CMAKE_COMMAND}} -E env PYTHONPATH=""
+              COMMAND ${{CMAKE_COMMAND}} -E env PYTHONPATH="{venv_pythonpath}"
                 {python_exe} -c "import pydrake.all"
               ERROR_QUIET
               RESULT_VARIABLE _IMPORT_RESULT)
@@ -42,7 +46,7 @@ class DrakePythonDirInstallTest(unittest.TestCase):
             # PYTHON_DIR Actual test
             execute_process(
               COMMAND ${{CMAKE_COMMAND}} -E env
-                PYTHONPATH=${{drake_PYTHON_DIR}}
+                PYTHONPATH={venv_pythonpath}:${{drake_PYTHON_DIR}}
                 {python_exe} -c "import pydrake.all"
               RESULT_VARIABLE _IMPORT_RESULT)
             if(NOT 0 EQUAL _IMPORT_RESULT)
@@ -51,8 +55,12 @@ class DrakePythonDirInstallTest(unittest.TestCase):
               message(STATUS "Import of pydrake works as expected")
             endif()
         """.format(
-            cmake_prefix_path=cmake_prefix_path, python_exe=sys.executable,
-            py_major=sys.version_info.major, py_minor=sys.version_info.minor)
+            cmake_prefix_path=cmake_prefix_path,
+            python_exe=sys.executable,
+            venv_pythonpath=venv_pythonpath,
+            py_major=sys.version_info.major,
+            py_minor=sys.version_info.minor,
+        )
 
         cmake_filename = os.path.join(cmake_source_dir, "CMakeLists.txt")
 
@@ -60,11 +68,11 @@ class DrakePythonDirInstallTest(unittest.TestCase):
             f.write(textwrap.dedent(cmake_content))
 
         cmake_binary_dir = install_test_helper.create_temporary_dir(
-            "pydir_build")
+            "pydir_build"
+        )
 
-        subprocess.check_call(["cmake", cmake_source_dir],
-                              cwd=cmake_binary_dir)
+        subprocess.check_call(["cmake", cmake_source_dir], cwd=cmake_binary_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

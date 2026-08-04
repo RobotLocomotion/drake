@@ -28,7 +28,7 @@ DifferentialInverseKinematicsIntegrator::
                             .get_index();
 
   systems::InputPort<double>& X_WE_desired = this->DeclareAbstractInputPort(
-                                "X_WE_desired", Value<math::RigidTransformd>{});
+      "X_WE_desired", Value<math::RigidTransformd>{});
   this->DeprecateInputPort(X_WE_desired,
                            "Use the `X_AE_desired` input port instead.");
   X_WE_desired_index_ = X_WE_desired.get_index();
@@ -107,8 +107,7 @@ DifferentialInverseKinematicsIntegrator::get_mutable_parameters() {
 }
 
 void DifferentialInverseKinematicsIntegrator::UpdateRobotContext(
-    const Context<double>& context,
-    Context<double>* robot_context) const {
+    const Context<double>& context, Context<double>* robot_context) const {
   if (this->get_input_port(robot_state_index_).HasValue(context) &&
       this->get_input_port(use_robot_state_index_).HasValue(context) &&
       this->get_input_port(use_robot_state_index_).Eval<bool>(context)) {
@@ -153,8 +152,7 @@ systems::EventStatus DifferentialInverseKinematicsIntegrator::Integrate(
     Eigen::VectorXd qdot(robot_.num_positions());
     robot_.MapVelocityToQDot(robot_context, result.joint_velocities.value(),
                              &qdot);
-    discrete_state->set_value(
-        0, positions + time_step_ * qdot);
+    discrete_state->set_value(0, positions + time_step_ * qdot);
   }
 
   if (this->num_discrete_state_groups() > 1) {

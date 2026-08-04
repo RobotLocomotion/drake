@@ -28,15 +28,13 @@ using SpatialForced = SpatialForce<double>;
 // w_NG_N_expected    |  G's angular velocity in N, expressed in N.
 // v_NGo_N_expected   |  Go's velocity in N, expressed in N.
 void CompareEndEffectorPositionVelocityVsExpectedSolution(
-    const Vector7d &q,
-    const Vector7d &qDt,
-    const Vector7d &qDDt,
-    const Eigen::Matrix3d &R_NG_expected,
-    const Eigen::Vector3d &p_No_Go_N_expected,
-    const Eigen::Vector3d &w_NG_N_expected,
-    const Eigen::Vector3d &v_NGo_N_expected,
-    const Eigen::Vector3d &alpha_NG_N_expected,
-    const Eigen::Vector3d &a_NGo_N_expected) {
+    const Vector7d& q, const Vector7d& qDt, const Vector7d& qDDt,
+    const Eigen::Matrix3d& R_NG_expected,
+    const Eigen::Vector3d& p_No_Go_N_expected,
+    const Eigen::Vector3d& w_NG_N_expected,
+    const Eigen::Vector3d& v_NGo_N_expected,
+    const Eigen::Vector3d& alpha_NG_N_expected,
+    const Eigen::Vector3d& a_NGo_N_expected) {
   MGKukaIIwaRobot<double> MG_kuka_robot(0);
   const test_utilities::SpatialKinematicsPVA<double> kinematics =
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
@@ -45,18 +43,17 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
   constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(
       kinematics.rotation_matrix().matrix().isApprox(R_NG_expected, kEpsilon));
-  EXPECT_TRUE(kinematics.position_vector().isApprox(p_No_Go_N_expected,
-      kEpsilon));
-  EXPECT_TRUE(kinematics.angular_velocity().isApprox(w_NG_N_expected,
-      kEpsilon));
-  EXPECT_TRUE(kinematics.translational_velocity().isApprox(v_NGo_N_expected,
-      kEpsilon));
+  EXPECT_TRUE(
+      kinematics.position_vector().isApprox(p_No_Go_N_expected, kEpsilon));
+  EXPECT_TRUE(
+      kinematics.angular_velocity().isApprox(w_NG_N_expected, kEpsilon));
+  EXPECT_TRUE(
+      kinematics.translational_velocity().isApprox(v_NGo_N_expected, kEpsilon));
   EXPECT_TRUE(kinematics.angular_acceleration().isApprox(alpha_NG_N_expected,
-      kEpsilon));
+                                                         kEpsilon));
   EXPECT_TRUE(kinematics.translational_acceleration().isApprox(a_NGo_N_expected,
-      kEpsilon));
+                                                               kEpsilon));
 }
-
 
 // Test accuracy of calculations for Kuka iiwa robot arm end-effector
 // orientation, position, angular velocity, and velocity for the
@@ -88,15 +85,10 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsA) {
   alpha_NG_N_expected << 0, 0, 0;
   a_NGo_N_expected << 0, 0, 0;
 
-  CompareEndEffectorPositionVelocityVsExpectedSolution(q, q_Dt, q_DDt,
-                                                       R_NG_expected,
-                                                       p_No_Go_N_expected,
-                                                       w_NG_N_expected,
-                                                       v_NGo_N_expected,
-                                                       alpha_NG_N_expected,
-                                                       a_NGo_N_expected);
+  CompareEndEffectorPositionVelocityVsExpectedSolution(
+      q, q_Dt, q_DDt, R_NG_expected, p_No_Go_N_expected, w_NG_N_expected,
+      v_NGo_N_expected, alpha_NG_N_expected, a_NGo_N_expected);
 }
-
 
 // Test accuracy of calculations for Kuka iiwa robot arm end-effector
 // orientation, position, angular velocity, velocity for the situation when
@@ -122,8 +114,8 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
   Eigen::Vector3d p_No_Go_N_expected, w_NG_N_expected, v_NGo_N_expected;
   Eigen::Vector3d alpha_NG_N_expected, a_NGo_N_expected;
   R_NG_expected << -0.5939002959880204, 0.8043869080239565, -0.015625,
-      -0.8043869080239565, -0.5932991120359317, 0.03094940802395521,
-      0.015625, 0.03094940802395527, 0.9993988160479114;
+      -0.8043869080239565, -0.5932991120359317, 0.03094940802395521, 0.015625,
+      0.03094940802395527, 0.9993988160479114;
   p_No_Go_N_expected << 0.2970356451892219, 0.1727696964662288,
       1.154681973689345;
   w_NG_N_expected << 0, 0, 0;
@@ -131,13 +123,9 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
   alpha_NG_N_expected << 0, 0, 0;
   a_NGo_N_expected << 0, 0, 0;
 
-  CompareEndEffectorPositionVelocityVsExpectedSolution(q, q_Dt, q_DDt,
-                                                       R_NG_expected,
-                                                       p_No_Go_N_expected,
-                                                       w_NG_N_expected,
-                                                       v_NGo_N_expected,
-                                                       alpha_NG_N_expected,
-                                                       a_NGo_N_expected);
+  CompareEndEffectorPositionVelocityVsExpectedSolution(
+      q, q_Dt, q_DDt, R_NG_expected, p_No_Go_N_expected, w_NG_N_expected,
+      v_NGo_N_expected, alpha_NG_N_expected, a_NGo_N_expected);
 }
 
 // Test accuracy of calculations for Kuka iiwa robot arm torque motors.
@@ -218,8 +206,8 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   // drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot-urdf.
   const double mB = MG_kuka_robot.get_mass_of_link_B();
   const double mE = MG_kuka_robot.get_mass_of_link_E();
-  const double gravity_moment_B =  0.0003 * mB * g;
-  const double gravity_moment_E =  0.0001 * mE * g;
+  const double gravity_moment_B = 0.0003 * mB * g;
+  const double gravity_moment_E = 0.0001 * mE * g;
   const double gravity_moment_sum = gravity_moment_B + gravity_moment_E;
   zTorques_expected << 1, gravity_moment_sum, 1, -gravity_moment_E, 1, 0, 1;
 
@@ -233,4 +221,3 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
-

@@ -1,30 +1,27 @@
-import unittest
-
-import pydrake.planning as mut
-from pydrake.common import RandomGenerator, Parallelism
-from pydrake.planning import (
-    RobotDiagramBuilder,
-    SceneGraphCollisionChecker,
-    CollisionCheckerParams,
-)
-from pydrake.solvers import MosekSolver, GurobiSolver, SnoptSolver
+import pydrake.planning as mut  # ruff: isort: skip
 
 import textwrap
+import unittest
+
 import numpy as np
-import scipy.sparse as sp
-import scipy
+
+from pydrake.common import Parallelism, RandomGenerator
+from pydrake.geometry.optimization import IrisOptions
+from pydrake.planning import (
+    IrisNp2Options,
+    IrisZoOptions,
+    RobotDiagramBuilder,
+    SceneGraphCollisionChecker,
+)
+from pydrake.solvers import GurobiSolver, MosekSolver, SnoptSolver
 
 
 def _snopt_and_mip_solver_available():
-    mip_solver_available = (
-       MosekSolver().available() and MosekSolver().enabled() or (
-        GurobiSolver().available() and GurobiSolver().enabled()
-        )
-    )
-    snopt_solver_available = (
-            SnoptSolver().available() and SnoptSolver().enabled()
-    )
-    return mip_solver_available and snopt_solver_available
+    has_mosek = MosekSolver().available() and MosekSolver().enabled()
+    has_gurobi = GurobiSolver().available() and GurobiSolver().enabled()
+    has_snopt = SnoptSolver().available() and SnoptSolver().enabled()
+    has_mip_solver = has_mosek or has_gurobi
+    return has_mip_solver and has_snopt
 
 
 class TestIrisFromCliqueCover(unittest.TestCase):
@@ -63,13 +60,13 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         )
 
         if use_provider:
-            checker_kwargs[
-                "distance_and_interpolation_provider"
-            ] = mut.LinearDistanceAndInterpolationProvider(plant)
+            checker_kwargs["distance_and_interpolation_provider"] = (
+                mut.LinearDistanceAndInterpolationProvider(plant)
+            )
         if use_function:
-            checker_kwargs[
-                "configuration_distance_function"
-            ] = self._configuration_distance
+            checker_kwargs["configuration_distance_function"] = (
+                self._configuration_distance
+            )
 
         return mut.SceneGraphCollisionChecker(**checker_kwargs)
 
@@ -95,6 +92,22 @@ class TestIrisFromCliqueCover(unittest.TestCase):
         )
         options.point_in_set_tol = 1e-5
         self.assertEqual(options.point_in_set_tol, 1e-5)
+
+        self.assertIsInstance(options.iris_options, IrisOptions)
+
+        options.iris_options = IrisZoOptions()
+        self.assertIsInstance(options.iris_options, IrisZoOptions)
+        options.iris_options.sampled_iris_options.max_iterations = 2
+        self.assertEqual(
+            options.iris_options.sampled_iris_options.max_iterations, 2
+        )
+
+        options.iris_options = IrisNp2Options()
+        self.assertIsInstance(options.iris_options, IrisNp2Options)
+        options.iris_options.sampled_iris_options.max_iterations = 1
+        self.assertEqual(
+            options.iris_options.sampled_iris_options.max_iterations, 1
+        )
 
     # IPOPT performs poorly on this test. We also need a MIP solver to
     # be available.  Hence only run this test if both SNOPT and a MIP solver

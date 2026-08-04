@@ -4,8 +4,8 @@
 
 using Eigen::Vector3d;
 
-using drake::solvers::SolutionResult;
 using drake::math::RigidTransformd;
+using drake::solvers::SolutionResult;
 
 namespace drake {
 namespace multibody {
@@ -131,25 +131,21 @@ TEST_F(KukaTest, ReachableWithCost) {
       *context, plant_->world_frame(), plant_->GetFrameByName("iiwa_link_0"));
   // Constrain the global IK to reach the exact end effector pose as the
   // posture q.
-  global_ik_.AddWorldPositionConstraint(
-      ee_idx_,                         // body index
-      Vector3d::Zero(),                // p_BQ
-      X_WEe.translation(),   // lower bound
-      X_WEe.translation(),   // upper bound
-      RigidTransformd());
+  global_ik_.AddWorldPositionConstraint(ee_idx_,              // body index
+                                        Vector3d::Zero(),     // p_BQ
+                                        X_WEe.translation(),  // lower bound
+                                        X_WEe.translation(),  // upper bound
+                                        RigidTransformd());
   global_ik_.AddWorldRelativePositionConstraint(
-      ee_idx_,
+      ee_idx_, Vector3d::Zero(), plant_->GetBodyByName("iiwa_link_0").index(),
       Vector3d::Zero(),
-      plant_->GetBodyByName("iiwa_link_0").index(),
-      Vector3d::Zero(),
-      X_WEe.translation() - X_W0.translation(),   // lower bound
-      X_WEe.translation() - X_W0.translation(),   // upper bound
+      X_WEe.translation() - X_W0.translation(),  // lower bound
+      X_WEe.translation() - X_W0.translation(),  // upper bound
       RigidTransformd());
   global_ik_.AddWorldOrientationConstraint(
-      ee_idx_,  // body index
-      Eigen::Quaterniond(
-          X_WEe.rotation().matrix()),  // desired orientation
-      0);                                        // tolerance.
+      ee_idx_,                                        // body index
+      Eigen::Quaterniond(X_WEe.rotation().matrix()),  // desired orientation
+      0);                                             // tolerance.
 
   solvers::GurobiSolver gurobi_solver;
 

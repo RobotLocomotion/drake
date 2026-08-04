@@ -1,0 +1,30 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:sh.bzl", "sh_binary")
+load(":path.bzl", "LIBDIR")
+
+licenses(["restricted"])  # libgfortran: GPL-3.0-or-later WITH GCC-exception-3.1
+
+sh_binary(
+    name = "compiler",
+    srcs = ["gfortran-found"],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "x86_64",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+cc_library(
+    name = "runtime",
+    linkopts = [
+        "-L{}".format(LIBDIR),
+        "-ldl",
+        "-lgfortran",
+    ],
+    visibility = ["//visibility:public"],
+)

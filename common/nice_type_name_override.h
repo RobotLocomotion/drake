@@ -17,6 +17,7 @@ namespace internal {
 struct type_erased_ptr {
   const void* raw{};
   const std::type_info& info;
+  bool is_polymorphic{};
 };
 
 // Callback for overriding an object's nice type name.

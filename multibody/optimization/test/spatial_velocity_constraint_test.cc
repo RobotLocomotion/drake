@@ -100,14 +100,17 @@ TEST_F(IiwaKinematicConstraintTest, InvalidInputs) {
       plant_context_autodiff_.get(), w_AC_bounds);
 
   // @throws std::exception if `plant` is nullptr.
-  DRAKE_EXPECT_THROWS_MESSAGE(SpatialVelocityConstraint(
-      nullptr, frameA, v_AC_lower, v_AC_upper, frameB, p_BC,
-      plant_context_autodiff_.get(), w_AC_bounds), "plant is nullptr.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialVelocityConstraint(nullptr, frameA, v_AC_lower, v_AC_upper, frameB,
+                                p_BC, plant_context_autodiff_.get(),
+                                w_AC_bounds),
+      "plant is nullptr.");
 
   // @throws std::exception if `plant_context` is nullptr.
-  DRAKE_EXPECT_THROWS_MESSAGE(SpatialVelocityConstraint(
-      plant_autodiff_.get(), frameA, v_AC_lower, v_AC_upper, frameB, p_BC,
-      nullptr, w_AC_bounds), "plant_context is nullptr.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialVelocityConstraint(plant_autodiff_.get(), frameA, v_AC_lower,
+                                v_AC_upper, frameB, p_BC, nullptr, w_AC_bounds),
+      "plant_context is nullptr.");
 
   // @throws std::exception if invalid w_AC_bounds are provided.
   w_AC_bounds.magnitude_upper = 0.01;

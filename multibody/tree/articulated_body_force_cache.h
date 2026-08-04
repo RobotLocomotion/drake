@@ -6,8 +6,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/math/spatial_algebra.h"
+#include "drake/multibody/topology/forest.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
@@ -29,8 +29,8 @@ class ArticulatedBodyForceCache {
 
   // Constructs an %ArticulatedBodyForceCache object properly sized to
   // store the force bias terms for a model with the given `topology`.
-  explicit ArticulatedBodyForceCache(const MultibodyTreeTopology& topology)
-      : num_mobods_(topology.num_mobods()) {
+  explicit ArticulatedBodyForceCache(const internal::SpanningForest& forest)
+      : num_mobods_(forest.num_mobods()) {
     Allocate();
   }
 

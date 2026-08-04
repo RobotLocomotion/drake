@@ -78,6 +78,10 @@ div.groupText {
   font-family: 'DejaVu Sans Mono', monospace;
 }
 
+td.paramname {
+  white-space: normal;
+}
+
 .icon {
   font-family: 'DejaVu Sans', sans-serif;
 }
@@ -123,7 +127,8 @@ pre.unicode-art {
 
 /* General Reset */
 
-body, p,h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+body, p, h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
   margin: 0;
   font-family: 'Work Sans', 'DejaVu Sans', 'DejaVu Sans Mono', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   font-size: 1rem;
@@ -240,6 +245,7 @@ a:hover {
 a:visited,
 .contents a:visited,
 a.code, a.code:visited,
+a.el, a.el:visited,
 a.line, a.line:visited,
 a.codeRef, a.codeRef:visited,
 a.lineRef, a.lineRef:visited,
@@ -913,9 +919,6 @@ HEADER
 
 .menu-mobile-toggle {
   display: none;
-}
-
-.menu-mobile-toggle {
   width: 30px;
   height: 30px;
   position: relative;
@@ -1107,16 +1110,18 @@ footer.site-footer>div.contain {
   text-shadow: none;
 }
 
-.arrow {
-  color: var(--primary);
+span.arrowhead {
+  border-right-color: var(--primary);
+  border-bottom-color: var(--primary);
 }
 
 #nav-tree .selected {
   background: var(--primary);
 }
 
-#nav-tree .selected .arrow {
-  color: white;
+#nav-tree .selected span.arrowhead {
+  border-right-color: white;
+  border-bottom-color: white;
 }
 
 #nav-tree .selected .label, #nav-tree .selected .label a {
@@ -1176,6 +1181,8 @@ div.navpath {
 #MSearchBox {
   margin-left: auto;
   width: 260px;
+  align-items: center;
+  border: 0;
 }
 
 input[type=text] {
@@ -1192,7 +1199,6 @@ input[type=text] {
   width: 200px;
   max-width: 100%;
   background-color: #f3f4f7;
-  background-image: url(../images/search.svg);
   background-repeat: no-repeat;
   background-size: 18px 18px;
   background-position: 12px 10px;
@@ -1222,8 +1228,13 @@ input[type=text] {
   background-color: #ffffff;
 }
 
-#MSearchBox img {
-  z-index: 1;
+#MSearchBox .search-icon {
+  z-index: 200;
+  height: 0;
+}
+
+#MSearchBox .close-icon {
+  vertical-align: middle;
 }
 
 #MSearchBox .left,
@@ -1238,12 +1249,7 @@ input[type=text] {
 
 .left #MSearchSelect {
   left: 11px;
-  top: 10px;
-}
-
-#MSearchBox .right {
-  top: 10px;
-  background: none;
+  top: 8px;
 }
 
 @media screen and (max-width: 980px) {

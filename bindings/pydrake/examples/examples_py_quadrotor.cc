@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/examples_quadrotor.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/quadrotor/quadrotor_geometry.h"
@@ -9,19 +9,19 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineExamplesQuadrotor(py::module m) {
+void DefineExamplesQuadrotor(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::quadrotor;
-  constexpr auto& doc = pydrake_doc.drake.examples.quadrotor;
+  constexpr auto& doc = pydrake_doc_examples_quadrotor.drake.examples.quadrotor;
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
   // conversion. Issue #7660.
   using T = double;
 
-  py::class_<QuadrotorPlant<T>, LeafSystem<T>>(
+  class_<QuadrotorPlant<T>, LeafSystem<T>>(
       m, "QuadrotorPlant", doc.QuadrotorPlant.doc)
       .def(py::init<>(), doc.QuadrotorPlant.ctor.doc)
       .def(py::init<double, double, const Eigen::Matrix3d&, double, double>(),
@@ -37,13 +37,13 @@ void DefineExamplesQuadrotor(py::module m) {
       .def("inertia", &QuadrotorPlant<T>::inertia, py_rvp::reference_internal,
           doc.QuadrotorPlant.inertia.doc);
 
-  py::class_<QuadrotorGeometry, LeafSystem<double>>(
+  class_<QuadrotorGeometry, LeafSystem<double>>(
       m, "QuadrotorGeometry", doc.QuadrotorGeometry.doc)
       .def("get_frame_id", &QuadrotorGeometry::get_frame_id,
           doc.QuadrotorGeometry.get_frame_id.doc)
       .def_static("AddToBuilder", &QuadrotorGeometry::AddToBuilder,
           py::arg("builder"), py::arg("quadrotor_state_port"),
-          py::arg("scene_graph"), py::return_value_policy::reference,
+          py::arg("scene_graph"), py_rvp::reference,
           // Keep alive, ownership: `return` keeps `builder` alive.
           py::keep_alive<0, 1>(), doc.QuadrotorGeometry.AddToBuilder.doc);
 

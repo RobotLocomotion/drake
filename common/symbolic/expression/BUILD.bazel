@@ -45,8 +45,13 @@ drake_cc_library(
         "variable.h",
         "variables.h",
     ],
+    install_hdrs_exclude = [
+        "expression_cell.h",
+        "formula_cell.h",
+    ],
     deps = [
         "//common:drake_bool",
+        "//common:dummy_value",
         "//common:essential",
         "//common:hash",
         "//common:random",
@@ -175,13 +180,6 @@ drake_cc_googletest(
     deps = [
         ":expression",
         "//common/test_utilities:limit_malloc",
-    ],
-)
-
-drake_cc_googletest(
-    name = "ostream_test",
-    deps = [
-        ":expression",
     ],
 )
 

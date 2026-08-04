@@ -26,7 +26,7 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
   /** Constructs a composite trajectory from a list of Trajectories.
   @pre ∀i, `segments[i].get() != nullptr`.
   @pre ∀i, `segments[i+1].start_time() == segments[i].end_time()`.
-  @pre ∀i, `segments[i].rows() == segments[0].rows()` and segments[i].cols() ==
+  @pre ∀i, `segments[i].rows() == segments[0].rows()` and `segments[i].cols() ==
   segments[0].cols()`. */
   explicit CompositeTrajectory(
       std::vector<copyable_unique_ptr<Trajectory<T>>> segments);
@@ -38,7 +38,7 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
   trajectory will silently be evaluated at the closest valid value of time to
   `time`. For example, `value(-1)` will return `value(0)` for a trajectory
   defined over [0, 1]. */
-  MatrixX<T> value(const T& t) const final {
+  MatrixX<T> value(const T& t) const {
     // We shadowed the base class to add documentation, not to change logic.
     return PiecewiseTrajectory<T>::value(t);
   }
@@ -53,7 +53,7 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
   /** Constructs a composite trajectory from a list of trajectories whose start
   and end times may not coincide, by translating their start and end times.
   @pre ∀i, `segments[i].get() != nullptr`.
-  @pre ∀i, `segments[i].rows() == segments[0].rows()` and segments[i].cols() ==
+  @pre ∀i, `segments[i].rows() == segments[0].rows()` and `segments[i].cols() ==
   segments[0].cols()`. */
   static CompositeTrajectory<T> AlignAndConcatenate(
       const std::vector<copyable_unique_ptr<Trajectory<T>>>& segments);

@@ -31,8 +31,8 @@ py::object BindCppSerializer(const std::string& lcm_package) {
   // Retrieve Python type using C++ name.
   // N.B. Since the LCM type does not supply the package, we need it supplied.
   py::object py_type =
-      py::module::import(lcm_package.c_str()).attr(CppType::getTypeName());
-  py::module lcm_py = py::module::import("pydrake.systems.lcm");
+      py::module_::import_(lcm_package.c_str()).attr(CppType::getTypeName());
+  py::module_ lcm_py = py::module_::import_("pydrake.systems.lcm");
   auto py_cls = DefineTemplateClassWithDefault<Serializer<CppType>,
       SerializerInterface, std::shared_ptr<Serializer<CppType>>>(
       lcm_py, "_Serializer", py::make_tuple(py_type));

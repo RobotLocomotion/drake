@@ -5,7 +5,8 @@
 #include <common_robotics_utilities/math.hpp>
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 
 namespace drake {
@@ -60,19 +61,19 @@ Eigen::VectorXd GetDistanceWeights(
 
     if (joint.num_positions() != joint_weights.size()) {
       throw std::runtime_error(fmt::format(
-          "Provided distance weights for joint {} [{}] with type [{}] are [{}] "
+          "Provided distance weights for joint {} [{}] with type [{}] are {} "
           "which do not match that joint's num_positions {}",
           joint_index, joint.name(), joint.type_name(),
-          fmt_eigen(joint_weights.transpose()), joint.num_positions()));
+          fmt_eigen(joint_weights), joint.num_positions()));
     }
 
     for (int i = 0; i < joint_weights.size(); ++i) {
       const double weight = joint_weights(i);
       if (!std::isfinite(weight) || weight < 0.0) {
         throw std::runtime_error(fmt::format(
-            "Provided distance weights for joint {} [{}] are [{}] which are not"
+            "Provided distance weights for joint {} [{}] are {} which are not"
             " non-negative and finite",
-            joint_index, joint.name(), fmt_eigen(joint_weights.transpose())));
+            joint_index, joint.name(), fmt_eigen(joint_weights)));
       }
     }
 

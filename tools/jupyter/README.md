@@ -19,7 +19,7 @@ The file `jupyter_py.bzl` contains the Skylark macro `drake_jupyter_py_binary`
 which defines a Python target to run the notebook. As is always the case,
 ensure that you add the appropriate Python dependencies (`deps = [...]`) and
 data dependencies (`data = [...]`). All notebooks should be tested by using
-`add_test_rule = 1`.
+`add_test_rule = True`.
 
 As an example:
 
@@ -27,8 +27,8 @@ As an example:
 
     drake_jupyter_py_binary(
         name = "example",
-        add_test_rule = 1,
         deps = [":example_library"],
+        add_test_rule = True,
     )
 
 ## Running Notebooks

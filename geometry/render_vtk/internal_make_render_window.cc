@@ -10,6 +10,7 @@
 #include <vtkCocoaRenderWindow.h>  // vtkRenderingOpenGL2
 #else
 #include <vtkEGLRenderWindow.h>      // vtkRenderingOpenGL2
+#include <vtkX11Functions.h>         // vtkx11
 #include <vtkXOpenGLRenderWindow.h>  // vtkRenderingOpenGL2
 #endif
 
@@ -42,9 +43,6 @@ vtkSmartPointer<vtkRenderWindow> MakeRenderWindow(
     }
     case RenderEngineVtkBackend::kGlx: {
 #if !defined(__APPLE__)
-      // Open the library at most once per process. This is important because
-      // loading the library every time leaks resources ("too many clients")
-      // that are in short supply when using a typical Xorg server.
       Display* display =
           static_cast<Display*>(render_gl::internal::GladLoaderLoadGlx());
       DRAKE_DEMAND(display != nullptr);

@@ -1,5 +1,6 @@
 #include "drake/common/symbolic/simplification.h"
 
+#include <algorithm>
 #include <functional>
 #include <stdexcept>
 

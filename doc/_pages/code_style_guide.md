@@ -54,7 +54,9 @@ TODO(eric.cousineau): Move these clarifications and exceptions to styleguide
 
 ## Exceptions
 
-* Lines containing a long URL may be longer than 80 columns if necessary to
+* Drake uses an 80-character limit, instead of PEP 8's limit of 79. Docstrings
+  may also use all 80 characters (ignoring the limit of 72 from PEP 8).
+* Lines containing a long URL may be longer than 80 characters if necessary to
   avoid splitting the URL.
 
 ## Additional Rules

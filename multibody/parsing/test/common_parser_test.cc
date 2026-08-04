@@ -6,6 +6,7 @@
 /// model in the appropriate format (URDF/SDF).
 
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

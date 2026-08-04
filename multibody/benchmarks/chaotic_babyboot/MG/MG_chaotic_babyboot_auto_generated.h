@@ -1,3 +1,4 @@
+// clang-format off
 // GENERATED FILE DO NOT EDIT
 // -----------------------------------------------------------------------------
 // File: MGChaoticBabyboot.h created Aug 30 2017 by MotionGenesis 5.9.
@@ -97,5 +98,4 @@ class MGChaoticBabyboot : public MGIntegrator {
 
 //------------------------------------------------------------------------------
 #endif   // End of #ifndef MGCHAOTICBABYBOOT_
-
-
+// clang-format on

@@ -32,13 +32,13 @@ void CheckGradientSparsityPattern(const EvaluatorBase& evaluator,
     }
     for (int i = 0; i < y_grad.rows(); ++i) {
       for (int j = 0; j < y_grad.cols(); ++j) {
+        const bool gradient_nonzero_indices_has_ij =
+            gradient_nonzero_indices.contains(std::pair<int, int>(i, j));
         if (y_grad(i, j) != 0) {
-          EXPECT_GT(gradient_nonzero_indices.count(std::pair<int, int>(i, j)),
-                    0);
+          EXPECT_TRUE(gradient_nonzero_indices_has_ij);
         } else if (strict) {
           // y_grad(i, j) == 0
-          EXPECT_EQ(gradient_nonzero_indices.count(std::pair<int, int>(i, j)),
-                    0);
+          EXPECT_FALSE(gradient_nonzero_indices_has_ij);
         }
       }
     }

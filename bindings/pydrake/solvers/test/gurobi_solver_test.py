@@ -27,7 +27,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
-        self.assertGreater(result.get_solver_details().optimizer_time, 0.)
+        self.assertGreater(result.get_solver_details().optimizer_time, 0.0)
         self.assertEqual(result.get_solver_details().error_code, 0)
         self.assertEqual(result.get_solver_details().optimization_status, 2)
         self.assertTrue(np.isnan(result.get_solver_details().objective_bound))
@@ -35,14 +35,17 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_gurobi_socp_dual(self):
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        constraint = prog.AddLorentzConeConstraint([2., 2*x[0], 3 * x[1] + 1])
+        constraint = prog.AddLorentzConeConstraint(
+            [2.0, 2*x[0], 3*x[1] + 1]
+        )  # fmt: skip
         prog.AddLinearCost(x[1])
         solver = GurobiSolver()
         options = SolverOptions()
         options.SetOption(solver.solver_id(), "QCPDual", 1)
         result = solver.Solve(prog, None, options)
         np.testing.assert_allclose(
-            result.GetDualSolution(constraint), np.array([-1./12]), atol=1e-7)
+            result.GetDualSolution(constraint), np.array([-1.0 / 12]), atol=1e-7
+        )
 
     def test_gurobi_license(self):
         # Nominal use case.
@@ -56,13 +59,14 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_write_to_file(self):
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(2)
-        prog.AddLinearConstraint(x[0] + x[1] == 1)
-        prog.AddQuadraticCost(x[0] * x[0] + x[1] * x[1])
+        x0, x1 = x
+        prog.AddLinearConstraint(x0 + x1 == 1)
+        prog.AddQuadraticCost(x0**2 + x1**2)
         solver = GurobiSolver()
         file_name = temp_directory() + "/gurobi.mps"
         options = SolverOptions()
         options.SetOption(solver.id(), "GRBwrite", file_name)
-        result = solver.Solve(prog, None, options)
+        solver.Solve(prog, None, options)
         self.assertTrue(os.path.exists(file_name))
 
     def test_compute_iis(self):
@@ -75,7 +79,7 @@ class TestMathematicalProgram(unittest.TestCase):
         options = SolverOptions()
         options.SetOption(solver.id(), "GRBwrite", ilp_file_name)
         options.SetOption(solver.id(), "GRBcomputeIIS", 1)
-        result = solver.Solve(prog, None, options)
+        solver.Solve(prog, None, options)
         self.assertTrue(os.path.exists(ilp_file_name))
 
     def test_callback(self):
@@ -86,11 +90,11 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearCost(-b[0] - b[1])
 
         prog.SetSolverOption(GurobiSolver.id(), "Presolve", 0)
-        prog.SetSolverOption(GurobiSolver.id(), "Heuristics", 0.)
+        prog.SetSolverOption(GurobiSolver.id(), "Heuristics", 0.0)
         prog.SetSolverOption(GurobiSolver.id(), "Cuts", 0)
         prog.SetSolverOption(GurobiSolver.id(), "NodeMethod", 2)
 
-        b_init = np.array([0, 0., 0., 0.])
+        b_init = np.array([0, 0.0, 0.0, 0.0])
 
         prog.SetInitialGuess(b, b_init)
         solver = GurobiSolver()
@@ -103,7 +107,9 @@ class TestMathematicalProgram(unittest.TestCase):
 
         solver.AddMipNodeCallback(
             callback=lambda prog, solver_status_info, x, x_vals: node_callback(
-                prog, solver_status_info, x, x_vals))
+                prog, solver_status_info, x, x_vals
+            )
+        )
 
         best_objectives = []
 
@@ -113,7 +119,9 @@ class TestMathematicalProgram(unittest.TestCase):
 
         solver.AddMipSolCallback(
             callback=lambda prog, callback_info: sol_callback(
-                prog, callback_info, best_objectives))
+                prog, callback_info, best_objectives
+            )
+        )
 
         result = solver.Solve(prog)
         self.assertTrue(result.is_success())

@@ -2,10 +2,16 @@
 
 #include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/multibody/plant/multibody_plant_model_attorney.h"
 
 namespace drake {
 namespace multibody {
+
+template <typename T>
+PhysicalModel<T>::PhysicalModel(MultibodyPlant<T>* owning_plant)
+    : owning_plant_(DRAKE_DEREF(owning_plant)),
+      mutable_owning_plant_(owning_plant) {}
 
 template <typename T>
 PhysicalModel<T>::~PhysicalModel() = default;
@@ -61,6 +67,11 @@ void PhysicalModel<T>::DeclareSceneGraphPorts() {
   /* Note that DoDeclareSceneGraphPorts throws an exception when a port (with
    the same name) is declared for the second time. */
   DoDeclareSceneGraphPorts();
+}
+
+template <typename T>
+const internal::MultibodyTree<T>& PhysicalModel<T>::internal_tree() const {
+  return internal::MultibodyPlantModelAttorney<T>::internal_tree(plant());
 }
 
 template <typename T>

@@ -1,3 +1,5 @@
+#include <string>
+
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 
@@ -7,7 +9,7 @@ using symbolic::Variable;
 
 namespace pydrake {
 
-PYBIND11_MODULE(odr_test_module, m) {
+PYDRAKE_MODULE(odr_test_module, m) {
   m.doc() = "Test ODR using Variable.";
 
   m.def("new_variable",

@@ -54,8 +54,7 @@ of artifacts distributed with this website.
 
 # Testing
 
-* [Detailed Notes on Drake's Unit Tests](/unit_testing_instructions.html)
-* [Downstream Testing (Drake as a Dependency)](/downstream_testing.html)
+Refer to [Detailed Notes on Drake's Unit Tests](/unit_testing_instructions.html).
 
 # Supported Configurations
 
@@ -105,7 +104,7 @@ green ``+###`` number as reported by github), and *must not* include more than
   * Data files do not count towards the line limit.
   * Machine-generated changes do not count towards the line limit.
   * Files in
-    [Dev Directories](/directory_structure.html#dev-directories)
+    [Dev Directories](/directory_structure.html#experimental-and-dev-directories)
     do not count towards the line limit.
   * This rule may be overridden by agreement of at least two platform reviewers
     (listed below).
@@ -211,33 +210,20 @@ Choose the "Squash and merge option" unless otherwise instructed (see
 # User Assistance
 
 The user-facing instructions for requesting assistance are located in
-[Getting Help](/getting_help.html). The two main options for requesting assistance are either
-posting a GitHub issue or a StackOverflow question.
+[Getting Help](/getting_help.html). The options for requesting assistance
+are posting a GitHub issue or a GitHub discussion.
 
-## Handling User GitHub Issues
+See also [GitHub Issue Management](/issues.html).
 
-See [GitHub Issue Management](/issues.html).
+# Local Development Notes
 
-If a GitHub issue should instead be a StackOverflow question (e.g. it is of a
-tutorial nature that does not require code or documentation modification),
-please request that the user repost the question on StackOverflow, post the
-new link on the GitHub issue, and close the issue.
-
-## Handling User StackOverflow Questions
-
-Please subscribe to the ``drake`` tag by following these instructions:
-
-* [How to get notifications for drake-tagged Stackoverflow questions](/stackoverflow_notifications.html)
-
-Please also monitor for [unanswered StackOverflow posts](https://stackoverflow.com/unanswered/tagged/drake?tab=noanswers)
-once per day. If there are unanswered questions that you are unsure of the
-answer, consider posting on the Slack ``#onramp`` channel to see if someone
-can look into the question.
+* [Developing Drake Using Bazel](/bazel.html)
+* [Developing Drake on macOS](/development_on_mac.html)
 
 # Continuous Integration Notes
 
 * [CDash](https://drake-cdash.csail.mit.edu/index.php?project=Drake)
-* [GitHub PR Interaction with Jenkins](/jenkins.html)
+* [Continuous Integration with GitHub Pull Requests](/jenkins.html)
 * [Build Cop](/buildcop.html)
 
 # Programming Tools
@@ -260,10 +246,6 @@ can look into the question.
 * [Sublime Text Notes](/sublime_text.html)
 * [Unicode Tips & Tricks](/unicode_tips_tricks.html)
 * [Vim/Neovim Notes](/vim.html)
-
-# Operating System Notes
-
-* [Drake Development on macOS](/development_on_mac.html)
 
 # Programming Style Notes
 

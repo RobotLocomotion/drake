@@ -4,7 +4,6 @@
 #include <Eigen/LU>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/systems/primitives/linear_system_internal.h"
 

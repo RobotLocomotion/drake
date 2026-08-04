@@ -1,7 +1,7 @@
 #include <Eigen/Dense>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 
 using Eigen::Isometry3d;
@@ -16,7 +16,7 @@ const double kTolerance = 1e-8;
 
 }  // namespace
 
-PYBIND11_MODULE(eigen_geometry_test_util, m) {
+PYDRAKE_MODULE(eigen_geometry_test_util, m) {
   m.doc() = "Bindings for Eigen geometric types.";
 
   using T = double;

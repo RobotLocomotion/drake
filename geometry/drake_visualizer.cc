@@ -14,6 +14,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/value.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
@@ -371,9 +372,10 @@ class ShapeToLcm : public ShapeReifier {
     // No specific mesh beat out the mesh file, so we'll simply send that.
     geometry_data_.type = geometry_data_.MESH;
     geometry_data_.num_float_data = 3;
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    const Vector3<double>& scale = mesh.scale3();
+    geometry_data_.float_data.push_back(static_cast<float>(scale.x()));
+    geometry_data_.float_data.push_back(static_cast<float>(scale.y()));
+    geometry_data_.float_data.push_back(static_cast<float>(scale.z()));
     const MeshSource& mesh_source = mesh.source();
     if (mesh_source.is_path()) {
       geometry_data_.string_data = mesh_source.path().string();
@@ -642,6 +644,17 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
         return MakeHydroMesh(g_id, inspector, inspector.GetPoseInFrame(g_id),
                              color);
       }
+    }
+    if (params.role == Role::kIllustration &&
+        props->HasProperty("phong", "diffuse_map")) {
+      static logging::Warn log_once(
+          "DrakeVisualizer does not currently support the ('phong', "
+          "'diffuse_map') property (see issue #19077). This warning is only "
+          "shown on the first encounter, which occurred with the geometry "
+          "named '{}' on frame '{}'; further encounters will be silently "
+          "ignored.",
+          inspector.GetName(g_id),
+          inspector.GetName(inspector.GetFrameId(g_id)));
     }
     return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), params,
                                 color);

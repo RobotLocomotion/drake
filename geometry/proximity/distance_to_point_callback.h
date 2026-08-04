@@ -12,7 +12,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/mesh_distance_boundary.h"
+#include "drake/geometry/proximity/mesh_distance_boundary_cache.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/math/rigid_transform.h"
@@ -29,8 +29,8 @@ namespace point_distance DRAKE_NO_EXPORT {
     - The query point Q, measured and expressed in the world frame, `p_WQ_W`.
     - The T-valued poses of _all_ geometries in the corresponding SceneGraph
       keyed on their GeometryId.
-    - The mesh data for calculating signed distances of _all_ mesh geometries
-      in the corresponding SceneGraph keyed on their GeometryId.
+    - The cache for computing signed distances of _all_ mesh geometries in the
+      corresponding SceneGraph.
     - A vector of distance results -- one instance of SignedDistanceToPoint for
       every supported geometry which lies within the threshold.
  */
@@ -41,30 +41,30 @@ struct CallbackData {
    aliased parameters to remain valid at least as long as the CallbackData
    instance.
 
-   @param query_in            The object representing the query point. Aliased.
-   @param threshold_in        The query threshold.
-   @param p_WQ_W_in           The T-valued position of the query point.
-   @param X_WGs_in            The T-valued poses. Aliased.
-   @param mesh_boundaries_in  The mesh data for calculating signed distances.
-                              Aliased.
-   @param distances_in[out]   The output results. Aliased.
+   @param query_in          The object representing the query point. Aliased.
+   @param threshold_in      The query threshold.
+   @param p_WQ_W_in         The T-valued position of the query point.
+   @param X_WGs_in          The T-valued poses. Aliased.
+   @param mesh_distance_boundary_cache_in The cache for mesh signed distance
+   data. Aliased.
+   @param distances_in[out] The output results. Aliased.
    */
   CallbackData(
       fcl::CollisionObjectd* query_in, const double threshold_in,
       const Vector3<T>& p_WQ_W_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
-      const std::unordered_map<GeometryId, MeshDistanceBoundary>*
-          mesh_boundaries_in,
+      const MeshDistanceBoundaryCache* mesh_distance_boundary_cache_in,
       std::vector<SignedDistanceToPoint<T>>* distances_in)
       : query_point(*query_in),
         threshold(threshold_in),
         p_WQ_W(p_WQ_W_in),
         X_WGs(*X_WGs_in),
-        mesh_boundaries(*mesh_boundaries_in),
+        mesh_distance_boundary_cache(
+            DRAKE_DEREF(mesh_distance_boundary_cache_in)),
         distances(*distances_in) {
     DRAKE_DEMAND(query_in != nullptr);
     DRAKE_DEMAND(X_WGs_in != nullptr);
-    DRAKE_DEMAND(mesh_boundaries_in != nullptr);
+    DRAKE_DEMAND(mesh_distance_boundary_cache_in != nullptr);
     DRAKE_DEMAND(distances_in != nullptr);
   }
 
@@ -80,8 +80,8 @@ struct CallbackData {
   /* The T-valued pose of every geometry.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
-  /* Data for calculating signed distances of every mesh geometry.  */
-  const std::unordered_map<GeometryId, MeshDistanceBoundary>& mesh_boundaries;
+  /* Cache for computing signed distances of mesh geometries.  */
+  const MeshDistanceBoundaryCache& mesh_distance_boundary_cache;
 
   /* The accumulator for results.  */
   std::vector<SignedDistanceToPoint<T>>& distances;

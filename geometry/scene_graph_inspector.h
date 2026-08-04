@@ -14,6 +14,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -119,7 +120,7 @@ class SceneGraphInspector {
    will be returned.
 
    @note Specifying `role` *can* have the effect of filtering geometries *from*
-   the given geometry_set` -- if a GeometryId is an explicit member of the
+   the given `geometry_set` -- if a GeometryId is an explicit member of the
    geometry set but does not have the requested role, it will not be contained
    in the output.
 
@@ -407,7 +408,7 @@ class SceneGraphInspector {
                            acquired.
    @throws std::exception  if `geometry_id` does not map to a registered
                            deformable geometry with the given `role` or if
-                           `role` is Role::kUnassigned.
+                           `role` is undefined.
    @experimental */
   const std::vector<internal::RenderMesh>& GetDrivenRenderMeshes(
       GeometryId geometry_id, Role role) const;
@@ -429,8 +430,25 @@ class SceneGraphInspector {
    Convex::GetConvexHull(), respectively. */
   const PolygonSurfaceMesh<double>* GetConvexHull(GeometryId geometry_id) const;
 
+  /** Returns the oriented bounding box (OBB) associated with the given
+   `geometry_id` in the geometry's frame, G. The OBB is defined in the
+   geometry's canonical frame such that it tightly bounds the geometry. For
+   primitive shapes, the OBB is computed analytically. For mesh-based shapes
+   (Mesh and Convex), the OBB is computed using the mesh vertices.
+   @param geometry_id   The identifier for the queried geometry.
+   @note If geometry_id refers to a deformable geometry, the OBB is computed
+         using the reference mesh. See QueryObject::ComputeObbInWorld() for
+         computing the OBB of the deformed mesh in the world frame.
+   @return The oriented bounding box (or `std::nullopt` if the geometry is an
+           HalfSpace and doesn't have a bounding box).
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  const std::optional<Obb>& GetObbInGeometryFrame(GeometryId geometry_id) const;
+
   /** Reports true if the two geometries with given ids `geometry_id1` and
-   `geometry_id2`, define a collision pair that has been filtered out.
+   `geometry_id2`, define a collision pair that has been filtered out. See
+   CollisionFilterManager for the definition of what would consider a pair to
+   be considered "filtered out".
    @throws std::exception if either id does not map to a registered geometry
                           or if any of the geometries do not have a proximity
                           role.  */

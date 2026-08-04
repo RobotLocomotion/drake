@@ -1,0 +1,65 @@
+[qhull] Remove global_log singleton
+
+Drake does not allow static global constructors or destructors.
+
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
+A future improvement could be changing all of Qhull's error output to
+use drake::log() instead of cerr.
+
+The Qhull license requires us to publish the author, date, and reason
+for changes: Author: Jeremy Nimmer; Date: Dec 29, 2024.
+
+--- src/libqhullcpp/RoadError.h
++++ src/libqhullcpp/RoadError.h
+@@ -37,8 +37,10 @@
+ 
+ #//!\name Class fields
+     static const char  *  ROADtag;
++#if 0  // Disabled in Drake.
+     static std::ostringstream  global_log; //!< May be replaced with any ostream object
+                                     //!< Not reentrant -- only used by RoadError::logErrorLastResort()
++#endif
+ 
+ public:
+ #//!\name Constants
+@@ -64,9 +64,13 @@
+ 
+ #//!\name Class methods
+ 
++#if 0  // Disabled in Drake.
+     static void         clearGlobalLog() { global_log.seekp(0); }
+     static bool         emptyGlobalLog() { return global_log.tellp()<=0; }
+     static std::string  stringGlobalLog() { return global_log.str(); }
++#else
++    static void         clearGlobalLog() {}
++#endif
+ 
+ #//!\name Virtual
+     virtual const char *what() const throw();
+
+--- src/libqhullcpp/RoadError.cpp
++++ src/libqhullcpp/RoadError.cpp
+@@ -31,8 +31,10 @@
+ const char * RoadError::
+ ROADtag= "QH";
+ 
++#if 0  // Disabled in Drake.
+ std::ostringstream RoadError::
+ global_log;
++#endif
+ 
+ #//!\name Constructor
+ 
+@@ -150,7 +152,11 @@
+ void RoadError::
+ logErrorLastResort() const
+ {
++#if 0  // Disabled in Drake.
+     global_log << what() << endl;
++#else
++    std::cerr << what() << "\n";
++#endif
+ }//logError
+ 
+ 

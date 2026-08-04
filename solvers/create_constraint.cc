@@ -255,11 +255,10 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
   } else if (is_addition(e1_expanded)) {
     c1 = get_constant_in_addition(e1_expanded);
     if (!isfinite(c1)) {
-      ostringstream oss;
-      oss << "FindBound() cannot handle the constraint: " << e1 << " <= " << e2
-          << " because " << e1
-          << " has infinity in the constant term after expansion.";
-      throw runtime_error{oss.str()};
+      throw runtime_error{fmt::format(
+          "FindBound() cannot handle the constraint: {} <= {} because {} has "
+          "infinity in the constant term after expansion.",
+          e1, e2, e1)};
     }
     *e = Expression::Zero();
     for (const auto& p : get_expr_to_coeff_map_in_addition(e1_expanded)) {
@@ -274,11 +273,10 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
   } else if (is_addition(e2_expanded)) {
     c2 = get_constant_in_addition(e2_expanded);
     if (!isfinite(c2)) {
-      ostringstream oss;
-      oss << "FindBound() cannot handle the constraint: " << e1 << " <= " << e2
-          << " because " << e2
-          << " has infinity in the constant term after expansion.";
-      throw runtime_error{oss.str()};
+      throw runtime_error{fmt::format(
+          "FindBound() cannot handle the constraint: {} <= {} because {} has "
+          "infinity in the constant term after expansion.",
+          e1, e2, e2)};
     }
     for (const auto& p : get_expr_to_coeff_map_in_addition(e2_expanded)) {
       *e -= p.first * p.second;
@@ -300,13 +298,11 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
   ostringstream oss;
   if (c1 == numeric_limits<double>::infinity() &&
       c2 == -numeric_limits<double>::infinity()) {
-    oss << "FindBound() detects an infeasible constraint: " << e1
-        << " <= " << e2 << ".";
-    throw runtime_error{oss.str()};
+    throw runtime_error{fmt::format(
+        "FindBound() detects an infeasible constraint: {} <= {}.", e1, e2)};
   } else {
-    oss << "FindBound() detects a trivial constraint: " << e1 << " <= " << e2
-        << ".";
-    throw runtime_error{oss.str()};
+    throw runtime_error{fmt::format(
+        "FindBound() detects a trivial constraint: {} <= {}.", e1, e2)};
   }
 }
 
@@ -470,13 +466,11 @@ Binding<Constraint> ParseConstraint(
           ub(k) = kInf;
         }
       } else {
-        std::ostringstream oss;
-        oss << "ParseConstraint is called with an "
-               "array of formulas which includes a formula "
-            << f
-            << " which is not a relational formula using one of {==, <=, >=} "
-               "operators.";
-        throw std::runtime_error(oss.str());
+        throw std::runtime_error(fmt::format(
+            "ParseConstraint is called with an array of formulas which "
+            "includes a formula {} which is not a relational formula using one "
+            "of {{==, <=, >=}} operators.",
+            f));
       }
       ++k;
     }
@@ -539,11 +533,11 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
                                                           vec_operands.size());
     return ParseConstraint(map_operands);
   }
-  ostringstream oss;
-  oss << "ParseConstraint is called with a formula " << f
-      << " which is neither a relational formula using one of {==, <=, >=} "
-         "operators nor a conjunction of those relational formulas.";
-  throw runtime_error(oss.str());
+  throw runtime_error(fmt::format(
+      "ParseConstraint is called with a formula {} which is neither a "
+      "relational formula using one of {{==, <=, >=}} operators nor a "
+      "conjunction of those relational formulas.",
+      f));
 }
 
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
@@ -565,11 +559,11 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
       //      (lhs - rhs == 0)
       v(i) = get_lhs_expression(f) - get_rhs_expression(f);
     } else {
-      ostringstream oss;
-      oss << "ParseLinearEqualityConstraint(const "
-          << "set<Formula>& formulas) is called while its argument 'formulas' "
-          << "includes a non-equality formula " << f << ".";
-      throw runtime_error(oss.str());
+      throw runtime_error(fmt::format(
+          "ParseLinearEqualityConstraint(const set<Formula>& formulas) is "
+          "called while its argument 'formulas' includes a non-equality "
+          "formula {}.",
+          f));
     }
     ++i;
   }
@@ -605,11 +599,10 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
   if (is_conjunction(f)) {
     return ParseLinearEqualityConstraint(get_operands(f));
   }
-  ostringstream oss;
-  oss << "ParseLinearConstraint is called with a formula " << f
-      << " which is neither an equality formula nor a conjunction of equality "
-         "formulas.";
-  throw runtime_error(oss.str());
+  throw runtime_error(fmt::format(
+      "ParseLinearConstraint is called with a formula {} which is neither an "
+      "equality formula nor a conjunction of equality formulas.",
+      f));
 }
 
 Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
@@ -805,6 +798,13 @@ ParseQuadraticAsRotatedLorentzConeConstraint(
   // [-bᵀx-c, 1, Fx] is in the rotated Lorentz cone, where FᵀF = 0.5 * Q
   const Eigen::MatrixXd F = math::DecomposePSDmatrixIntoXtransposeTimesX(
       (Q + Q.transpose()) / 4, zero_tol);
+  if (F.rows() == 0) {
+    throw std::runtime_error(
+        "AddQuadraticAsRotatedLorentzConeConstraint: The quadratic terms is "
+        "numerically zero. This quadratic is actually linear, so the rotated "
+        "Lorentz cone constraint would be ill-defined. Please add this "
+        "constraint as a linear constraint instead.");
+  }
   // A_lorentz * x + b_lorentz = [-bᵀx-c, 1, Fx]
   Eigen::MatrixXd A_lorentz = Eigen::MatrixXd::Zero(2 + F.rows(), F.cols());
   Eigen::VectorXd b_lorentz = Eigen::VectorXd::Zero(2 + F.rows());

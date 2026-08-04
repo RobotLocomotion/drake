@@ -19,7 +19,6 @@ DECLARE_bool(simulator_use_error_control);
 
 // Declares simulator gflags.
 DECLARE_double(simulator_target_realtime_rate);
-DECLARE_bool(simulator_publish_every_time_step);
 
 namespace drake {
 namespace systems {

@@ -1,6 +1,6 @@
 #include "drake/geometry/proximity_properties.h"
 
-#include <sstream>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -137,7 +137,7 @@ GTEST_TEST(ProximityPropertiesTest, AddCompliantProperties) {
     AddCompliantHydroelasticProperties(length, E, &props);
     EXPECT_TRUE(props.HasProperty(kHydroGroup, kComplianceType));
     EXPECT_EQ(props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-              HydroelasticType::kSoft);
+              HydroelasticType::kCompliant);
     EXPECT_TRUE(props.HasProperty(kHydroGroup, kRezHint));
     EXPECT_EQ(props.GetProperty<double>(kHydroGroup, kRezHint), length);
     EXPECT_TRUE(props.HasProperty(kHydroGroup, kElastic));
@@ -153,7 +153,7 @@ GTEST_TEST(ProximityPropertiesTest, AddCompliantProperties) {
 
 // Tests the variant where the static pressure field is defined by the
 // enumeration.
-GTEST_TEST(ProximityPropertiesTest, AddHalfSpaceSoftProperties) {
+GTEST_TEST(ProximityPropertiesTest, AddHalfSpaceCompliantProperties) {
   const double E = 1.5e8;
   for (double thickness : {1e-5, 1.25, 1e7}) {
     ProximityProperties props;
@@ -164,7 +164,7 @@ GTEST_TEST(ProximityPropertiesTest, AddHalfSpaceSoftProperties) {
     EXPECT_TRUE(props.HasProperty(kHydroGroup, kElastic));
     EXPECT_EQ(props.GetProperty<double>(kHydroGroup, kElastic), E);
     EXPECT_EQ(props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-              HydroelasticType::kSoft);
+              HydroelasticType::kCompliant);
   }
 
   CheckDisallowedModulusValues("AddCompliantHydroelasticPropertiesForHalfSpace",
@@ -178,15 +178,13 @@ GTEST_TEST(ProximityPropertiesTest, HydroelasticTypeTest) {
   std::vector<std::pair<const char*, HydroelasticType>> known_values{
       std::pair("undefined", HydroelasticType::kUndefined),
       std::pair("rigid", HydroelasticType::kRigid),
-      std::pair("compliant", HydroelasticType::kSoft),
+      std::pair("compliant", HydroelasticType::kCompliant),
   };
 
   for (const auto& [name, value] : known_values) {
     EXPECT_EQ(internal::GetHydroelasticTypeFromString(name), value);
     EXPECT_EQ(internal::GetStringFromHydroelasticType(value), name);
-    std::stringstream ss;
-    ss << value;
-    EXPECT_EQ(ss.str(), name);
+    EXPECT_EQ(fmt::to_string(value), name);
   }
 
   DRAKE_EXPECT_THROWS_MESSAGE(internal::GetHydroelasticTypeFromString("foobar"),

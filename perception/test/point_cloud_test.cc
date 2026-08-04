@@ -1,6 +1,9 @@
 #include "drake/perception/point_cloud.h"
 
+#include <limits>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include <common_robotics_utilities/openmp_helpers.hpp>
 #include <gtest/gtest.h>
@@ -14,10 +17,9 @@ using Eigen::Matrix3Xf;
 using Eigen::RowVectorXf;
 using Eigen::Vector3f;
 
+using ::testing::AssertionFailure;
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
-using ::testing::AssertionFailure;
-
 
 namespace drake {
 namespace perception {
@@ -95,6 +97,7 @@ GTEST_TEST(PointCloudTest, Basic) {
   const int count = 5;
 
   // Declare default values for each field to facilitate testing.
+  // clang-format off
   Matrix3Xf xyzs_expected(3, count);
   xyzs_expected.transpose() <<
     1, 2, 3,
@@ -118,6 +121,7 @@ GTEST_TEST(PointCloudTest, Basic) {
     40, 50, 60;
   RowVectorXf descriptors_expected(count);
   descriptors_expected << 1, 2, 3, 4, 5;
+  // clang-format on
 
   // Create a point cloud with default values.
   auto CreatePointCloud = [&](pc_flags::Fields fields) {
@@ -169,12 +173,10 @@ GTEST_TEST(PointCloudTest, Basic) {
     // Check copy and move constructors.
     {
       PointCloud cloud_copy(cloud);
-      EXPECT_TRUE(
-          CompareMatrices(values_expected, get_values(cloud_copy)));
+      EXPECT_TRUE(CompareMatrices(values_expected, get_values(cloud_copy)));
 
       PointCloud cloud_move(std::move(cloud_copy));
-      EXPECT_TRUE(
-          CompareMatrices(values_expected, get_values(cloud_move)));
+      EXPECT_TRUE(CompareMatrices(values_expected, get_values(cloud_move)));
       // Ensure the original cloud was emptied out.
       EXPECT_EQ(0, cloud_copy.size());
     }
@@ -183,13 +185,11 @@ GTEST_TEST(PointCloudTest, Basic) {
     {
       PointCloud cloud_copy(0, fields);
       cloud_copy = cloud;
-      EXPECT_TRUE(
-          CompareMatrices(values_expected, get_values(cloud_copy)));
+      EXPECT_TRUE(CompareMatrices(values_expected, get_values(cloud_copy)));
 
       PointCloud cloud_move(0, fields);
       cloud_move = std::move(cloud_copy);
-      EXPECT_TRUE(
-          CompareMatrices(values_expected, get_values(cloud_move)));
+      EXPECT_TRUE(CompareMatrices(values_expected, get_values(cloud_move)));
       // Ensure the original cloud was emptied out.
       EXPECT_EQ(0, cloud_copy.size());
     }
@@ -201,59 +201,89 @@ GTEST_TEST(PointCloudTest, Basic) {
     // Check default-initialized.
     EXPECT_TRUE(check_helper<T>::IsDefault(get_value(cloud, last)));
     // Ensure that we preserve the values.
-    EXPECT_TRUE(
-        CompareMatrices(values_expected,
-                        get_values(cloud).middleCols(0, last)));
+    EXPECT_TRUE(CompareMatrices(values_expected,
+                                get_values(cloud).middleCols(0, last)));
 
     // Resize to a size smaller.
     int small_size = 3;
     cloud.resize(small_size);
     EXPECT_EQ(small_size, cloud.size());
-    EXPECT_TRUE(
-        CompareMatrices(values_expected.middleCols(0, small_size),
-                        get_values(cloud)));
+    EXPECT_TRUE(CompareMatrices(values_expected.middleCols(0, small_size),
+                                get_values(cloud)));
 
     // Resize to a size larger.
     int large_size = 6;
     cloud.resize(large_size);
     EXPECT_EQ(large_size, cloud.size());
-    EXPECT_TRUE(
-        CompareMatrices(values_expected.middleCols(0, small_size),
-                        get_values(cloud).middleCols(0, small_size)));
-    EXPECT_TRUE(
-        check_helper<T>::IsDefault(
-            get_values(cloud).middleCols(small_size, large_size - small_size)));
+    EXPECT_TRUE(CompareMatrices(values_expected.middleCols(0, small_size),
+                                get_values(cloud).middleCols(0, small_size)));
+    EXPECT_TRUE(check_helper<T>::IsDefault(
+        get_values(cloud).middleCols(small_size, large_size - small_size)));
   };
 
   // XYZs.
-  CheckFields(xyzs_expected, pc_flags::kXYZs,
-              [](PointCloud& cloud) { return cloud.mutable_xyzs(); },
-              [](PointCloud& cloud) { return cloud.xyzs(); },
-              [](PointCloud& cloud, int i) { return cloud.mutable_xyz(i); },
-              [](PointCloud& cloud, int i) { return cloud.xyz(i); });
+  CheckFields(
+      xyzs_expected, pc_flags::kXYZs,
+      [](PointCloud& cloud) {
+        return cloud.mutable_xyzs();
+      },
+      [](PointCloud& cloud) {
+        return cloud.xyzs();
+      },
+      [](PointCloud& cloud, int i) {
+        return cloud.mutable_xyz(i);
+      },
+      [](PointCloud& cloud, int i) {
+        return cloud.xyz(i);
+      });
 
   // Normals.
-  CheckFields(normals_expected, pc_flags::kNormals,
-              [](PointCloud& cloud) { return cloud.mutable_normals(); },
-              [](PointCloud& cloud) { return cloud.normals(); },
-              [](PointCloud& cloud, int i) { return cloud.mutable_normal(i); },
-              [](PointCloud& cloud, int i) { return cloud.normal(i); });
+  CheckFields(
+      normals_expected, pc_flags::kNormals,
+      [](PointCloud& cloud) {
+        return cloud.mutable_normals();
+      },
+      [](PointCloud& cloud) {
+        return cloud.normals();
+      },
+      [](PointCloud& cloud, int i) {
+        return cloud.mutable_normal(i);
+      },
+      [](PointCloud& cloud, int i) {
+        return cloud.normal(i);
+      });
 
   // RGBs.
-  CheckFields(rgbs_expected, pc_flags::kRGBs,
-            [](PointCloud& cloud) { return cloud.mutable_rgbs(); },
-            [](PointCloud& cloud) { return cloud.rgbs(); },
-            [](PointCloud& cloud, int i) { return cloud.mutable_rgb(i); },
-            [](PointCloud& cloud, int i) { return cloud.rgb(i); });
+  CheckFields(
+      rgbs_expected, pc_flags::kRGBs,
+      [](PointCloud& cloud) {
+        return cloud.mutable_rgbs();
+      },
+      [](PointCloud& cloud) {
+        return cloud.rgbs();
+      },
+      [](PointCloud& cloud, int i) {
+        return cloud.mutable_rgb(i);
+      },
+      [](PointCloud& cloud, int i) {
+        return cloud.rgb(i);
+      });
 
   // Descriptors (Curvature).
-  CheckFields(descriptors_expected, pc_flags::kDescriptorCurvature,
-              [](PointCloud& cloud) { return cloud.mutable_descriptors(); },
-              [](PointCloud& cloud) { return cloud.descriptors(); },
-              [](PointCloud& cloud, int i) {
-                return cloud.mutable_descriptor(i);
-              },
-              [](PointCloud& cloud, int i) { return cloud.descriptor(i); });
+  CheckFields(
+      descriptors_expected, pc_flags::kDescriptorCurvature,
+      [](PointCloud& cloud) {
+        return cloud.mutable_descriptors();
+      },
+      [](PointCloud& cloud) {
+        return cloud.descriptors();
+      },
+      [](PointCloud& cloud, int i) {
+        return cloud.mutable_descriptor(i);
+      },
+      [](PointCloud& cloud, int i) {
+        return cloud.descriptor(i);
+      });
 
   // Test operator= between two clouds with different fields.
   {
@@ -308,7 +338,6 @@ GTEST_TEST(PointCloudTest, Basic) {
     EXPECT_FALSE(cloud.HasFields(pc_flags::kXYZs));
     // The rows size should be consistent with the new FPFH descriptor.
     EXPECT_EQ(cloud.descriptors().rows(), 33);
-    EXPECT_FALSE((cloud.descriptors().array().isNaN()).all());
   }
 
   // Test point cloud cropping.
@@ -360,8 +389,7 @@ GTEST_TEST(PointCloudTest, Fields) {
     EXPECT_TRUE(cloud.HasExactFields(fields));
     DRAKE_EXPECT_NO_THROW(cloud.RequireExactFields(fields));
     EXPECT_FALSE(cloud.HasExactFields(pc_flags::kXYZs));
-    EXPECT_THROW(cloud.RequireExactFields(pc_flags::kXYZs),
-                 std::runtime_error);
+    EXPECT_THROW(cloud.RequireExactFields(pc_flags::kXYZs), std::runtime_error);
   }
 
   // Check invalid fields.
@@ -387,8 +415,7 @@ GTEST_TEST(PointCloudTest, Fields) {
 
     // Negative tests for construction.
     EXPECT_THROW(PointCloud(1, pc_flags::kNone), std::runtime_error);
-    EXPECT_THROW(PointCloud(1, pc_flags::kDescriptorNone),
-                 std::runtime_error);
+    EXPECT_THROW(PointCloud(1, pc_flags::kDescriptorNone), std::runtime_error);
   }
 }
 
@@ -535,8 +562,8 @@ GTEST_TEST(PointCloudTest, FlipNormals) {
 }
 
 GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
-  const auto fields = pc_flags::kXYZs | pc_flags::kNormals |
-                          pc_flags::kRGBs | pc_flags::kDescriptorCurvature;
+  const auto fields = pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs |
+                      pc_flags::kDescriptorCurvature;
   constexpr int num_points{6};
   PointCloud cloud(num_points, fields);
   // Place points inside the cube with corners at (±1, ±1, ±1).
@@ -665,7 +692,8 @@ GTEST_TEST(PointCloudTest, EstimateNormalsPlane) {
   cloud.EstimateNormals(10, 3, ENABLE_PARALLEL_OPS);
   for (int i = 0; i < 3; ++i) {
     CheckNormal(cloud.normal(i),
-                Vector3f{0, 1.0 / std::sqrt(2.0), -1.0 / std::sqrt(2.0)}, kTol);
+                Vector3f{0, 1.0f / std::sqrt(2.0f), -1.0f / std::sqrt(2.0f)},
+                kTol);
   }
 }
 

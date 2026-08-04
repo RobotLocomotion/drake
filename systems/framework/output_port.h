@@ -189,14 +189,7 @@ class OutputPort : public OutputPortBase {
              internal::SystemMessageInterface* system_interface,
              internal::SystemId system_id, std::string name,
              OutputPortIndex index, DependencyTicket ticket,
-             PortDataType data_type, int size)
-      : OutputPortBase(system_interface, system_id, std::move(name), index,
-                       ticket, data_type, size),
-        system_{*system} {
-    // Check the precondition on identical parameters; note that comparing as
-    // void* is only valid because we have single inheritance.
-    DRAKE_DEMAND(static_cast<const void*>(system) == system_interface);
-  }
+             PortDataType data_type, int size);
 
   /** A concrete %OutputPort must provide a way to allocate a suitable object
   for holding the runtime value of this output port. The particulars may depend

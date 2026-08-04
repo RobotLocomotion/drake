@@ -1,5 +1,8 @@
 #include "drake/systems/optimization/system_constraint_adapter.h"
 
+#include <limits>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -11,7 +14,6 @@
 
 namespace drake {
 namespace systems {
-namespace kcov339_avoidance_magic {
 const double kInf = std::numeric_limits<double>::infinity();
 const double kEps = std::numeric_limits<double>::epsilon();
 
@@ -142,26 +144,27 @@ GTEST_TEST(SystemConstraintAdapterTest,
                                Eigen::Matrix4Xd::Identity(4, 4));
 
   // Implicitly relying on auto to all resolve to the same type.
-  auto set_bound_variable_value = [&a, &b, &c, &t](
-      const VectorX<symbolic::Variable>& bound_variables, auto a_value,
-      auto b_value, auto c_value, auto t_value) {
-    VectorX<decltype(a_value)> bound_variable_values(bound_variables.rows());
-    for (int i = 0; i < bound_variables.rows(); ++i) {
-      if (bound_variables(i).get_id() == a.get_id()) {
-        bound_variable_values(i) = a_value;
-      } else if (bound_variables(i).get_id() == b.get_id()) {
-        bound_variable_values(i) = b_value;
-      } else if (bound_variables(i).get_id() == c.get_id()) {
-        bound_variable_values(i) = c_value;
-      } else if (bound_variables(i).get_id() == t.get_id()) {
-        bound_variable_values(i) = t_value;
-      } else {
-        throw std::runtime_error(
-            "The bound_variables should only include a, b and t.");
-      }
-    }
-    return bound_variable_values;
-  };
+  auto set_bound_variable_value =
+      [&a, &b, &c, &t](const VectorX<symbolic::Variable>& bound_variables,
+                       auto a_value, auto b_value, auto c_value, auto t_value) {
+        VectorX<decltype(a_value)> bound_variable_values(
+            bound_variables.rows());
+        for (int i = 0; i < bound_variables.rows(); ++i) {
+          if (bound_variables(i).get_id() == a.get_id()) {
+            bound_variable_values(i) = a_value;
+          } else if (bound_variables(i).get_id() == b.get_id()) {
+            bound_variable_values(i) = b_value;
+          } else if (bound_variables(i).get_id() == c.get_id()) {
+            bound_variable_values(i) = c_value;
+          } else if (bound_variables(i).get_id() == t.get_id()) {
+            bound_variable_values(i) = t_value;
+          } else {
+            throw std::runtime_error(
+                "The bound_variables should only include a, b and t.");
+          }
+        }
+        return bound_variable_values;
+      };
 
   // Evaluate this constraint.
   auto context_double = system.CreateDefaultContext();
@@ -198,9 +201,9 @@ GTEST_TEST(SystemConstraintAdapterTest,
                                abct_autodiff(1), abct_autodiff(2),
                                abct_autodiff(3)),
       &constraint_autodiff);
-  EXPECT_TRUE(CompareMatrices(
-      math::ExtractValue(constraint_autodiff),
-      math::ExtractValue(constraint_autodiff_expected), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(constraint_autodiff),
+                              math::ExtractValue(constraint_autodiff_expected),
+                              tol));
   EXPECT_TRUE(CompareMatrices(
       math::ExtractGradient(constraint_autodiff),
       math::ExtractGradient(constraint_autodiff_expected), tol));
@@ -403,6 +406,5 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
       system_constraint_index, *context_symbolic);
   EXPECT_FALSE(constraints.has_value());
 }
-}  // namespace kcov339_avoidance_magic
 }  // namespace systems
 }  // namespace drake

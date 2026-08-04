@@ -19,6 +19,10 @@ inline const LinkJointGraph::Link& LinkJointGraph::links(
   return data_.links[link_ordinal];
 }
 
+inline int LinkJointGraph::num_links() const {
+  return std::ssize(links());
+}
+
 inline const LinkJointGraph::Link& LinkJointGraph::link_by_index(
     LinkIndex link_index) const {
   const std::optional<LinkOrdinal>& ordinal =
@@ -47,13 +51,14 @@ inline void LinkJointGraph::set_primary_mobod_for_link(
   link.joint_ = primary_joint_index;
 }
 
-inline bool LinkJointGraph::link_and_its_composite_are_massless(
+inline bool LinkJointGraph::link_and_its_assembly_are_massless(
     LinkOrdinal link_ordinal) const {
   const Link& link = links(link_ordinal);
   if (!link.is_massless()) return false;
 
-  return link.composite().has_value()
-             ? link_composites(*link.composite()).is_massless
+  return link.welded_links_assembly().has_value()
+             ? welded_links_assemblies(*link.welded_links_assembly())
+                   .is_massless()
              : true;
 }
 
@@ -63,6 +68,10 @@ inline const LinkJointGraph::Joint& LinkJointGraph::joints(
     JointOrdinal joint_ordinal) const {
   DRAKE_ASSERT(joint_ordinal < ssize(joints()));
   return data_.joints[joint_ordinal];
+}
+
+inline int LinkJointGraph::num_joints() const {
+  return std::ssize(joints());
 }
 
 inline const LinkJointGraph::Joint& LinkJointGraph::joint_by_index(

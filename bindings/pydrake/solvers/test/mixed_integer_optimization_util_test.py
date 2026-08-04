@@ -31,13 +31,14 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
             satisfied = True
             for binding in prog.GetAllConstraints():
                 satisfied = satisfied and binding.evaluator().CheckSatisfied(
-                    prog.GetBindingVariableValues(binding, x_val))
+                    prog.GetBindingVariableValues(binding, x_val)
+                )
             self.assertEqual(satisfied, satisfied_expected)
 
-        check_val([0], [0.2, 0.8, 0.], True)
-        check_val([0], [0.2, 0.7, 0.], False)
-        check_val([1], [0.2, 0.7, 0.], False)
-        check_val([1], [0., 0.3, 0.7], True)
+        check_val([0], [0.2, 0.8, 0.0], True)
+        check_val([0], [0.2, 0.7, 0.0], False)
+        check_val([1], [0.2, 0.7, 0.0], False)
+        check_val([1], [0.0, 0.3, 0.7], True)
 
     def test_AddSos2Constraint(self):
         prog = MathematicalProgram()
@@ -54,15 +55,16 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
             satisfied = True
             for binding in prog.GetAllConstraints():
                 satisfied = satisfied and binding.evaluator().CheckSatisfied(
-                    prog.GetBindingVariableValues(binding, x_val))
+                    prog.GetBindingVariableValues(binding, x_val)
+                )
             self.assertEqual(satisfied, satisfied_expected)
 
-        check_val([1, 0], [0.2, 0.8, 0.], True)
-        check_val([1, 0], [0.2, 0.7, 0.], False)
-        check_val([0, 1], [0.2, 0.7, 0.], False)
-        check_val([0, 1], [0., 0.3, 0.7], True)
-        check_val([1, 1], [0., 0.3, 0.7], False)
-        check_val([0, 0], [0., 0.3, 0.7], False)
+        check_val([1, 0], [0.2, 0.8, 0.0], True)
+        check_val([1, 0], [0.2, 0.7, 0.0], False)
+        check_val([0, 1], [0.2, 0.7, 0.0], False)
+        check_val([0, 1], [0.0, 0.3, 0.7], True)
+        check_val([1, 1], [0.0, 0.3, 0.7], False)
+        check_val([0, 0], [0.0, 0.3, 0.7], False)
 
     def test_AddLogarithmicSos1Constraint(self):
         prog = MathematicalProgram()
@@ -75,7 +77,8 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
             satisfied = True
             for binding in prog.GetAllConstraints():
                 satisfied = satisfied and binding.evaluator().CheckSatisfied(
-                    prog.GetBindingVariableValues(binding, x_val))
+                    prog.GetBindingVariableValues(binding, x_val)
+                )
             self.assertEqual(satisfied, satisfied_expected)
 
         check_val([1, 0], [0, 0, 0, 1], True)
@@ -83,15 +86,16 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
         check_val([1, 0], [0, 0, 0.5, 0.5], False)
 
     def test_AddBilinearProductMcCormickEnvelopeSos2(self):
-        '''
-            Test that this constraint works when using a linear binning option.
-            The logarithmic binning case requires slightly more involved setup,
-            but uses the same codepath, so it's not tested here.
-        '''
+        """
+        Test that this constraint works when using a linear binning option.
+        The logarithmic binning case requires slightly more involved setup,
+        but uses the same codepath, so it's not tested here.
+        """
 
         def setup_and_test_prog(
-                setup_aux, expected_xyw, expected_Bx, expected_By):
-            '''
+            setup_aux, expected_xyw, expected_Bx, expected_By
+        ):
+            """
             1) Setup an optimization with 1D continuous variables x, y, and
                w.
             2) Constraint x*y=w using this piecewise McCormick envelope
@@ -100,7 +104,7 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
                to add additional costs and constraints for testing.
             4) Solve the program and assert that the solver finds the
                expected xyw values and the expected binary setting.
-            '''
+            """
             prog = MathematicalProgram()
 
             w, x, y = prog.NewContinuousVariables(3)
@@ -109,12 +113,19 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
             Bx = prog.NewBinaryVariables(N_x_divisions)
             By = prog.NewBinaryVariables(N_y_divisions)
             # Divide range [0, 1] into appropriate number of bins.
-            phi_x = np.linspace(0., 1., N_x_divisions+1)
-            phi_y = np.linspace(0., 1., N_y_divisions+1)
+            phi_x = np.linspace(0.0, 1.0, N_x_divisions + 1)
+            phi_y = np.linspace(0.0, 1.0, N_y_divisions + 1)
             binning = IntervalBinning.kLinear
             AddBilinearProductMcCormickEnvelopeSos2(
-                prog=prog, x=x, y=y, w=w, phi_x=phi_x, phi_y=phi_y,
-                Bx=Bx, By=By, binning=binning
+                prog=prog,
+                x=x,
+                y=y,
+                w=w,
+                phi_x=phi_x,
+                phi_y=phi_y,
+                Bx=Bx,
+                By=By,
+                binning=binning,
             )
             setup_aux(prog, x, y, w)
             solver = MixedIntegerBranchAndBound(prog, ClpSolver().solver_id())
@@ -130,31 +141,32 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
         # extreme values.
         setup_and_test_prog(
             lambda prog, x, y, w: prog.AddLinearCost(x + y + w),
-            expected_xyw=[0., 0., 0.],
-            expected_Bx=[1.],
-            expected_By=[1., 0., 0.]
+            expected_xyw=[0.0, 0.0, 0.0],
+            expected_Bx=[1.0],
+            expected_By=[1.0, 0.0, 0.0],
         )
         setup_and_test_prog(
             lambda prog, x, y, w: prog.AddLinearCost(x - y - w),
-            expected_xyw=[0., 1., 0.],
-            expected_Bx=[1.],
-            expected_By=[0., 0., 1.]
+            expected_xyw=[0.0, 1.0, 0.0],
+            expected_Bx=[1.0],
+            expected_By=[0.0, 0.0, 1.0],
         )
         setup_and_test_prog(
             lambda prog, x, y, w: prog.AddLinearCost(-x - y - w),
-            expected_xyw=[1., 1., 1.],
-            expected_Bx=[1.],
-            expected_By=[0., 0., 1.]
+            expected_xyw=[1.0, 1.0, 1.0],
+            expected_Bx=[1.0],
+            expected_By=[0.0, 0.0, 1.0],
         )
 
         # Force x=1, w=0.5, (y=0.5), which should activate the
         # middle bin for y.
         def setup_aux(prog, x, y, w):
             prog.AddLinearEqualityConstraint(w == 0.5)
-            prog.AddLinearEqualityConstraint(x == 1.)
+            prog.AddLinearEqualityConstraint(x == 1.0)
+
         setup_and_test_prog(
             setup_aux,
-            expected_xyw=[1., 0.5, 0.5],
-            expected_Bx=[1.],
-            expected_By=[0., 1., 0.]
+            expected_xyw=[1.0, 0.5, 0.5],
+            expected_Bx=[1.0],
+            expected_By=[0.0, 1.0, 0.0],
         )

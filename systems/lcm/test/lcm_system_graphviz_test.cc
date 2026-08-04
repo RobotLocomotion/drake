@@ -1,5 +1,8 @@
 #include "drake/systems/lcm/lcm_system_graphviz.h"
 
+#include <string>
+#include <vector>
+
 #include "absl/strings/str_split.h"
 #include <fmt/ranges.h>
 #include <gmock/gmock.h>

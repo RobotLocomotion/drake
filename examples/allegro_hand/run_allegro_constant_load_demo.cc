@@ -5,6 +5,10 @@
 /// and defined by a command-line parameter. This demo also allows to specify
 /// whether the right or left hand is simulated.
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
@@ -121,7 +125,6 @@ void DoMain() {
 
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-  simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

@@ -1,0 +1,11 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Additional packages needed to build wheels.
+brew 'bash'
+brew 'coreutils'
+
+# Python(s) for building wheels.  These should be kept in sync with
+# `python_targets` in `tools/wheel/wheel_builder/macos.py`.
+brew 'python@3.13'
+brew 'python@3.14'

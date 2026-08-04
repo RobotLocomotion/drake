@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <random>
+#include <vector>
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>

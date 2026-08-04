@@ -1,4 +1,9 @@
+#include <limits>
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -142,11 +147,11 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
   // function.
   // Moreover, rotate both bodies A and B an arbitrary non-identity amount.
   if (!config.bodyA_anchored) {
-    plant_.SetFreeBodyPoseInWorldFrame(
+    plant_.SetFloatingBaseBodyPoseInWorldFrame(
         context_.get(), *bodyA_,
         RigidTransformd(kRotationOffset_, Vector3d::Zero()));
   }
-  plant_.SetFreeBodyPoseInWorldFrame(
+  plant_.SetFloatingBaseBodyPoseInWorldFrame(
       context_.get(), *bodyB_, RigidTransformd(kRotationOffset_, kOffset_));
   const ContactProblemCache<double>& problem_cache =
       SapDriverTest::EvalContactProblemCache(sap_driver(), *context_);
@@ -323,9 +328,11 @@ GTEST_TEST(WeldConstraintsTests, VerifyIdMapping) {
   // Throw on id to wrong constraint specs type.
   EXPECT_THROW(plant.get_coupler_constraint_specs(weld_id), std::exception);
   EXPECT_THROW(plant.get_ball_constraint_specs(weld_id), std::exception);
-  EXPECT_THROW(plant.get_distance_constraint_specs(weld_id), std::exception);
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(
@@ -338,6 +345,7 @@ GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
                                                       bodyB, RigidTransformd()),
                               ".*TAMSI does not support weld constraints.*");
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(WeldConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};
@@ -345,11 +353,26 @@ GTEST_TEST(WeldConstraintTests, FailOnContinuous) {
       plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>::NaN());
+  plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyB,
+                          RigidTransformd{Vector3d{0, 0, 0}});
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              ".*continuous.*not.*support.*constraints.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyB,
-                              RigidTransformd{Vector3d{0, 0, 0}}),
-      ".*Currently weld constraints are only supported for discrete "
-      "MultibodyPlant models.*");
+      plant.get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_generalized_acceleration_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_reaction_forces_output_port().Eval(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcCenterOfMassTranslationalAccelerationInWorld(*context),
+      ".*continuous.*not.*support.*constraints.*");
 }
 
 GTEST_TEST(WeldConstraintTests, FailOnFinalized) {

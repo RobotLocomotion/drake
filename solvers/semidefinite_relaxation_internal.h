@@ -165,24 +165,6 @@ void AddMatrixIsPositiveOrthantByLorentzSeparableConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
     MathematicalProgram* prog);
 
-// Adds the constraint that the matrix X is Lorentz-Lorentz separable i.e. a
-// conic combination of tensors in ℒᵐ ⊗ ℒⁿ, where ℒᵐ is the Lorentz cone of size
-// m and ℒⁿ is the Lorentz cone of size n. Namely X = ∑ᵢ λᵢxᵢyᵢᵀ where λᵢ ≥ 0,
-// xᵢ is in the Lorentz cone of size X.rows() and yᵢ is in the Lorentz cone of
-// size X.cols().
-void AddMatrixIsLorentzByLorentzSeparableConstraint(
-    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X,
-    MathematicalProgram* prog);
-
-// Adds the constraint that the matrix of expresssions X is Lorentz-Lorentz
-// separable i.e. a conic combination of tensors in ℒᵐ ⊗ ℒⁿ, where ℒᵐ is the
-// Lorentz cone of size m and ℒⁿ is the Lorentz cone of size n. Namely X = ∑ᵢ
-// λᵢxᵢyᵢᵀ where λᵢ ≥ 0, xᵢ is in the Lorentz cone of size X.rows() and yᵢ is in
-// the Lorentz cone of size X.cols().
-void AddMatrixIsLorentzByLorentzSeparableConstraint(
-    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
-    MathematicalProgram* prog);
-
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

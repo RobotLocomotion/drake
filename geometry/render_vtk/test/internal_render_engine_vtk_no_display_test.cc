@@ -1,5 +1,8 @@
 #include <stdlib.h>
 
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

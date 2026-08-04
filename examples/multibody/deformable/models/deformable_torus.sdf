@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
+  <model name='deformable'>
+    <link name='torus'>
+      <pose>0 0 0.02925 0 0 0</pose>
+      <collision name='collision'>
+        <geometry>
+          <mesh>
+            <uri>package://drake/examples/multibody/deformable/models/torus.vtk</uri>
+            <scale>0.65 0.65 0.65</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>1.15</drake:mu_dynamic>
+          <drake:hunt_crossley_dissipation>10</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <drake:deformable_properties>
+        <drake:youngs_modulus>3e4</drake:youngs_modulus>
+        <drake:poissons_ratio>0.4</drake:poissons_ratio>
+        <drake:stiffness_damping>0.01</drake:stiffness_damping>
+        <drake:mass_density>1000.0</drake:mass_density>
+        <drake:material_model>neohookean</drake:material_model>
+      </drake:deformable_properties>
+    </link>
+  </model>
+</sdf>

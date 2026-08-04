@@ -1,12 +1,11 @@
 #include <memory>
+#include <string>
 #include <vector>
 
-#include "pybind11/eval.h"
-
+#include "drake/bindings/generated_docstrings/common_schema.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/submodules_py.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/common/schema/rotation.h"
@@ -17,17 +16,17 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineModuleSchema(py::module m) {
+void DefineModuleSchema(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::schema;
-  constexpr auto& doc = pydrake_doc.drake.schema;
+  constexpr auto& doc = pydrake_doc_common_schema.drake.schema;
 
   // Bindings for stochastic.h.
 
   {
     using Class = Distribution;
     constexpr auto& cls_doc = doc.Distribution;
-    py::class_<Class>(m, "Distribution", cls_doc.doc)
+    class_<Class>(m, "Distribution", cls_doc.doc)
         .def("Sample", &Class::Sample, py::arg("generator"), cls_doc.Sample.doc)
         .def("Mean", &Class::Mean, cls_doc.Mean.doc)
         .def("ToSymbolic", &Class::ToSymbolic, cls_doc.ToSymbolic.doc);
@@ -36,7 +35,7 @@ void DefineModuleSchema(py::module m) {
   {
     using Class = Deterministic;
     constexpr auto& cls_doc = doc.Deterministic;
-    py::class_<Class, Distribution> cls(m, "Deterministic", cls_doc.doc);
+    class_<Class, Distribution> cls(m, "Deterministic", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -48,7 +47,7 @@ void DefineModuleSchema(py::module m) {
   {
     using Class = Gaussian;
     constexpr auto& cls_doc = doc.Gaussian;
-    py::class_<Class, Distribution> cls(m, "Gaussian", cls_doc.doc);
+    class_<Class, Distribution> cls(m, "Gaussian", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -61,7 +60,7 @@ void DefineModuleSchema(py::module m) {
   {
     using Class = Uniform;
     constexpr auto& cls_doc = doc.Uniform;
-    py::class_<Class, Distribution> cls(m, "Uniform", cls_doc.doc);
+    class_<Class, Distribution> cls(m, "Uniform", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -74,7 +73,7 @@ void DefineModuleSchema(py::module m) {
   {
     using Class = UniformDiscrete;
     constexpr auto& cls_doc = doc.UniformDiscrete;
-    py::class_<Class, Distribution> cls(m, "UniformDiscrete", cls_doc.doc);
+    class_<Class, Distribution> cls(m, "UniformDiscrete", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -116,18 +115,18 @@ void DefineModuleSchema(py::module m) {
   {
     // We need to bind these to placate some runtime type checks, but we should
     // not expose them to users.
-    py::class_<schema::internal::InvalidVariantSelection<Deterministic>>(
+    class_<schema::internal::InvalidVariantSelection<Deterministic>>(
         m, "_InvalidVariantSelectionDeterministic");
-    py::class_<schema::internal::InvalidVariantSelection<Gaussian>>(
+    class_<schema::internal::InvalidVariantSelection<Gaussian>>(
         m, "_InvalidVariantSelectionGaussian");
-    py::class_<schema::internal::InvalidVariantSelection<Uniform>>(
+    class_<schema::internal::InvalidVariantSelection<Uniform>>(
         m, "_InvalidVariantSelectionUniform");
   }
 
   {
     using Class = DistributionVector;
     constexpr auto& cls_doc = doc.DistributionVector;
-    py::class_<Class>(m, "DistributionVector", cls_doc.doc)
+    class_<Class>(m, "DistributionVector", cls_doc.doc)
         .def("Sample", &Class::Sample, py::arg("generator"), cls_doc.Sample.doc)
         .def("Mean", &Class::Mean, cls_doc.Mean.doc)
         .def("ToSymbolic", &Class::ToSymbolic, cls_doc.ToSymbolic.doc);
@@ -148,7 +147,7 @@ void DefineModuleSchema(py::module m) {
     {
       using Class = DeterministicVector<Size>;
       constexpr auto& cls_doc = doc.DeterministicVector;
-      py::class_<Class, DistributionVector> cls(
+      class_<Class, DistributionVector> cls(
           m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
       AddTemplateClass(m, "DeterministicVector", cls, py_param);
       if constexpr (Size == Eigen::Dynamic) {
@@ -166,7 +165,7 @@ void DefineModuleSchema(py::module m) {
     {
       using Class = GaussianVector<Size>;
       constexpr auto& cls_doc = doc.GaussianVector;
-      py::class_<Class, DistributionVector> cls(
+      class_<Class, DistributionVector> cls(
           m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
       AddTemplateClass(m, "GaussianVector", cls, py_param);
       if constexpr (Size == Eigen::Dynamic) {
@@ -185,7 +184,7 @@ void DefineModuleSchema(py::module m) {
     {
       using Class = UniformVector<Size>;
       constexpr auto& cls_doc = doc.UniformVector;
-      py::class_<Class, DistributionVector> cls(
+      class_<Class, DistributionVector> cls(
           m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
       AddTemplateClass(m, "UniformVector", cls, py_param);
       if constexpr (Size == Eigen::Dynamic) {
@@ -237,12 +236,12 @@ void DefineModuleSchema(py::module m) {
     // struct first, then bind its inner structs, then bind the outer struct.
     using Class = Rotation;
     constexpr auto& cls_doc = doc.Rotation;
-    py::class_<Class> cls(m, "Rotation", cls_doc.doc);
+    class_<Class> cls(m, "Rotation", cls_doc.doc);
 
     // Inner structs.
     {
       using Inner = Class::Identity;
-      py::class_<Inner> inner(cls, "Identity", cls_doc.Identity.doc);
+      class_<Inner> inner(cls, "Identity", cls_doc.Identity.doc);
       inner.def(py::init<const Inner&>(), py::arg("other"));
       inner.def(ParamInit<Inner>());
       DefAttributesUsingSerialize(&inner, cls_doc.Identity);
@@ -251,7 +250,7 @@ void DefineModuleSchema(py::module m) {
     }
     {
       using Inner = Class::Rpy;
-      py::class_<Inner> inner(cls, "Rpy", cls_doc.Rpy.doc);
+      class_<Inner> inner(cls, "Rpy", cls_doc.Rpy.doc);
       inner.def(py::init<const Inner&>(), py::arg("other"));
       inner.def(ParamInit<Inner>());
       DefAttributesUsingSerialize(&inner, cls_doc.Rpy);
@@ -260,7 +259,7 @@ void DefineModuleSchema(py::module m) {
     }
     {
       using Inner = Class::AngleAxis;
-      py::class_<Inner> inner(cls, "AngleAxis", cls_doc.AngleAxis.doc);
+      class_<Inner> inner(cls, "AngleAxis", cls_doc.AngleAxis.doc);
       inner.def(py::init<const Inner&>(), py::arg("other"));
       inner.def(ParamInit<Inner>());
       DefAttributesUsingSerialize(&inner, cls_doc.AngleAxis);
@@ -269,7 +268,7 @@ void DefineModuleSchema(py::module m) {
     }
     {
       using Inner = Class::Uniform;
-      py::class_<Inner> inner(cls, "Uniform", cls_doc.Uniform.doc);
+      class_<Inner> inner(cls, "Uniform", cls_doc.Uniform.doc);
       inner.def(py::init<const Inner&>(), py::arg("other"));
       inner.def(ParamInit<Inner>());
       DefAttributesUsingSerialize(&inner, cls_doc.Uniform);
@@ -301,24 +300,24 @@ void DefineModuleSchema(py::module m) {
     // adding special-cases to getattr and setattr.
     cls.def("__getattr__", [](const Class& self, py::str name) -> py::object {
       if (std::holds_alternative<Rotation::Rpy>(self.value)) {
-        const std::string name_cxx = name;
+        const std::string_view name_cxx(name.c_str());
         if (name_cxx == "deg") {
           py::object self_py = py::cast(self, py_rvp::reference);
           return self_py.attr("value").attr(name);
         }
       }
       if (std::holds_alternative<Rotation::AngleAxis>(self.value)) {
-        const std::string name_cxx = name;
+        const std::string_view name_cxx(name.c_str());
         if ((name_cxx == "angle_deg") || (name_cxx == "axis")) {
           py::object self_py = py::cast(self, py_rvp::reference);
           return self_py.attr("value").attr(name);
         }
       }
-      return py::eval("object.__getattr__")(self, name);
+      return py::eval("object.__getattr__", py::globals())(self, name);
     });
     cls.def("__setattr__", [](Class& self, py::str name, py::object value) {
       if (std::holds_alternative<Rotation::Rpy>(self.value)) {
-        const std::string name_cxx = name;
+        const std::string_view name_cxx(name.c_str());
         if (name_cxx == "deg") {
           py::object self_py = py::cast(self, py_rvp::reference);
           self_py.attr("value").attr(name) = value;
@@ -326,14 +325,14 @@ void DefineModuleSchema(py::module m) {
         }
       }
       if (std::holds_alternative<Rotation::AngleAxis>(self.value)) {
-        const std::string name_cxx = name;
+        const std::string_view name_cxx(name.c_str());
         if ((name_cxx == "angle_deg") || (name_cxx == "axis")) {
           py::object self_py = py::cast(self, py_rvp::reference);
           self_py.attr("value").attr(name) = value;
           return;
         }
       }
-      py::eval("object.__setattr__")(self, name, value);
+      py::eval("object.__setattr__", py::globals())(&self, name, value);
     });
   }
 
@@ -342,7 +341,7 @@ void DefineModuleSchema(py::module m) {
   {
     using Class = Transform;
     constexpr auto& cls_doc = doc.Transform;
-    py::class_<Class> cls(m, "Transform", cls_doc.doc);
+    class_<Class> cls(m, "Transform", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -370,7 +369,7 @@ void DefineModuleSchema(py::module m) {
     static_assert(
         std::variant_size_v<RotationOrNestedValue> ==
         1 /* for Rotation */ + std::variant_size_v<Rotation::Variant>);
-    cls.def_property(
+    cls.def_prop_rw(
         "rotation", [](const Class& self) { return &self.rotation; },
         // The setter accepts a more generous allowed set of argument types.
         [](Class& self, RotationOrNestedValue value_variant) {
@@ -394,7 +393,7 @@ void DefineModuleSchema(py::module m) {
           }
           return name;
         });
-    cls.def_property_readonly(
+    cls.def_prop_ro(
         "_rotation_value",
         [](const Class& self) { return &self.rotation.value; },
         py_rvp::reference_internal);

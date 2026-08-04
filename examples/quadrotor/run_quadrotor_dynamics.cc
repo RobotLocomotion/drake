@@ -36,10 +36,8 @@ class Quadrotor : public systems::Diagram<T> {
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
     multibody::Parser parser(&builder);
-    parser.AddModelsFromUrl(
-        "package://drake_models/skydio_2/quadrotor.urdf");
-    parser.AddModelsFromUrl(
-        "package://drake/examples/quadrotor/warehouse.sdf");
+    parser.AddModelsFromUrl("package://drake_models/skydio_2/quadrotor.urdf");
+    parser.AddModelsFromUrl("package://drake/examples/quadrotor/warehouse.sdf");
     plant.Finalize();
     DRAKE_DEMAND(plant.num_actuators() == 0);
     DRAKE_DEMAND(plant.num_positions() == 7);
@@ -59,8 +57,8 @@ class Quadrotor : public systems::Diagram<T> {
         this->GetMutableSubsystemState(*plant_, state);
     const math::RigidTransform<T> X_WB(
         Vector3<T>{0.0, 0.0, FLAGS_initial_height});
-    plant_->SetFreeBodyPose(
-        plant_context, &plant_state, plant_->GetBodyByName("base_link"), X_WB);
+    plant_->SetFreeBodyPose(plant_context, &plant_state,
+                            plant_->GetBodyByName("base_link"), X_WB);
   }
 
  private:

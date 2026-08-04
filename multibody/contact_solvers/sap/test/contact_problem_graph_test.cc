@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 namespace drake {
@@ -7,6 +9,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 namespace {
+
+using math::internal::PartialPermutation;
 
 /* We test ContactProblemGraph with the graph setup sketched below where each
  box corresponds to a clique (a node in the graph) an edges correspond to a

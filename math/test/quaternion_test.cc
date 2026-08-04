@@ -3,6 +3,7 @@
 #include "drake/math/quaternion.h"
 
 #include <cmath>
+#include <limits>
 
 #include <gtest/gtest.h>
 

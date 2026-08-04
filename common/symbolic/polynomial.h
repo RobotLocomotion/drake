@@ -3,14 +3,14 @@
 #include <algorithm>
 #include <functional>
 #include <map>
-#include <ostream>
+#include <string>
 #include <unordered_map>
 #include <utility>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/symbolic/expression.h"
 #define DRAKE_COMMON_SYMBOLIC_POLYNOMIAL_H
 #include "drake/common/symbolic/monomial.h"
@@ -454,7 +454,7 @@ class Polynomial {
 /** Returns polynomial `p` raised to `n`. */
 [[nodiscard]] Polynomial pow(const Polynomial& p, int n);
 
-std::ostream& operator<<(std::ostream& os, const Polynomial& p);
+std::string to_string(const Polynomial& p);
 
 /** Provides the following matrix operations:
 
@@ -477,8 +477,8 @@ for more information. */
 #if defined(DRAKE_DOXYGEN_CXX)
 template <typename MatrixL, typename MatrixR>
 Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-              MatrixR::ColsAtCompileTime>
-operator*(const MatrixL& lhs, const MatrixR& rhs);
+              MatrixR::ColsAtCompileTime> operator*(const MatrixL& lhs,
+                                                    const MatrixR& rhs);
 #else
 // clang-format off
 template <typename MatrixL, typename MatrixR>
@@ -522,8 +522,8 @@ for more information. */
 #if defined(DRAKE_DOXYGEN_CXX)
 template <typename MatrixL, typename MatrixR>
 Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-              MatrixR::ColsAtCompileTime>
-operator*(const MatrixL& lhs, const MatrixR& rhs);
+              MatrixR::ColsAtCompileTime> operator*(const MatrixL& lhs,
+                                                    const MatrixR& rhs);
 #else
 // clang-format off
 template <typename MatrixL, typename MatrixR>
@@ -572,7 +572,9 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::Polynomial>
     : GenericNumTraits<drake::symbolic::Polynomial> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 /* Informs Eigen that BinaryOp(LhsType, RhsType) gets ResultType. */
@@ -778,8 +780,5 @@ CalcPolynomialWLowerTriangularPart(
 }  // namespace symbolic
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::symbolic::Polynomial> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::symbolic, Polynomial, x,
+                   drake::symbolic::to_string(x))

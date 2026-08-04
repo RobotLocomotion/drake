@@ -350,10 +350,11 @@ VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
   const double smaller_measure = std::min(top_z, cylinder.radius());
   const double tolerance = DistanceToPointRelativeTolerance(smaller_measure);
   CylinderClass cylinder_class = CylinderClass::kMedium;
-  if (top_z - cylinder.radius() > tolerance)
+  if (top_z - cylinder.radius() > tolerance) {
     cylinder_class = CylinderClass::kLong;
-  else if (cylinder.radius() - top_z > tolerance)
+  } else if (cylinder.radius() - top_z > tolerance) {
     cylinder_class = CylinderClass::kShort;
+  }
 
   // At the minimum 3 vertices per circular rims of the cylinder, the mesh
   // will cover a triangular prism inside the cylinder. The larger value

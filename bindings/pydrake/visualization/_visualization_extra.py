@@ -1,3 +1,5 @@
+# ruff: noqa: F401 (unused-import)
+
 from ._meldis import (
     Meldis,
 )

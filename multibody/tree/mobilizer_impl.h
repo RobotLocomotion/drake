@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <optional>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -12,8 +11,6 @@
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_element.h"
-#include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -29,25 +26,53 @@ of dynamic-sized Eigen matrices that would otherwise lead to run-time
 dynamic memory allocations.
 
 Every concrete Mobilizer derived from MobilizerImpl must implement the
-following (ideally inline) methods.
+following (ideally inline) methods (some have defaults; see below). Note that
+these are not virtual methods so we have to document them here in a comment
+rather than as declarations in the header file. The code won't compile if
+any mobilizer fails to implement the non-defaulted methods. These are const
+member functions (rather than static members) so are permitted to depend on
+mobilizer-specific data members, though in many cases they don't require any
+such data.
 
 @note The coordinate pointers q and v are guaranteed to point to the kNq or kNv
 state variables for the particular mobilizer. They are only 8-byte aligned so be
 careful when interpreting them as Eigen vectors for computation purposes.
 
-  // Returns X_FM(q)
-  math::RigidTransform<T> calc_X_FM(const T* q) const;
+  // Computes every element of X_FM(q).
+  RigidTransform<T> calc_X_FM(const T* q) const;
 
-  // Returns V_FM_F = H_FM_F(q)⋅v
+  // Given current q and an X_FM that was initialized to the identity transform
+  // and then possibly updated by this same mobilizer (meaning it has the
+  // right structure), update to X_FM(q) by filling in only the
+  // potentially-changed elements. For example, a revolute mobilizer about
+  // one of the frame axes will update only the four sine & cosine entries.
+  // A prismatic mobilizer along the Z axis updates only the z shift element.
+  void update_X_FM(const T* q, RigidTransform<T>* X_FM) const;
+
+  // Compose X_AM = X_AF ⋅ X_FM, optimized for the known structure of X_FM.
+  // For example, a revolute mobilizer has only 4 significant entries in X_FM
+  // out of 12, and a prismatic along Z has only 1.
+  RigidTransform<T> post_multiply_by_X_FM(const RigidTransform<T>& X_AF,
+                                          const RigidTransform<T>& X_FM) const;
+
+  // Compose X_FB = X_FM ⋅ X_MB, optimized for the known structure of X_FM.
+  RigidTransform<T> pre_multiply_by_X_FM(const RigidTransform<T>& X_FM,
+                                         const RigidTransform<T>& X_MB) const;
+
+  // Returns v_F = R_FM ⋅ v_M (re-express vector).
+  Vector3<T> apply_R_FM(const RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const;
+
+  // Returns V_FM_F = H_FM_F(q)⋅v.
   SpatialVelocity<T> calc_V_FM(const T* q,
                                const T* v) const;
 
-  // Returns A_FM_F = H_FM_F(q)⋅vdot + Hdot_FM_F(q,v)⋅v
+  // Returns A_FM_F = H_FM_F(q)⋅vdot + Hdot_FM_F(q,v)⋅v.
   SpatialAcceleration<T> calc_A_FM(const T* q,
                                    const T* v,
                                    const T* vdot) const;
 
-  // Returns tau = H_FM_Fᵀ(q)⋅F_BMo_F
+  // Returns tau = H_FM_Fᵀ(q)⋅F_BMo_F.
   void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const;
 
   // TODO(sherm1) More to come (see #22253)
@@ -64,6 +89,8 @@ template <typename T, int compile_time_num_positions,
 class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl);
+
+  using ScalarType = T;
 
   // Handy enum to grant specific implementations compile time sizes.
   // static constexpr int i = 42; discouraged.  See answer in:
@@ -150,6 +177,42 @@ class MobilizerImpl : public Mobilizer<T> {
     random_state_distribution_->template tail<kNv>() = velocity;
   }
 
+  // N.B. no default implementations possible for calc_X_FM() and update_X_FM()
+  // here. However, a minimal implementation for update_X_FM() in a concrete
+  // mobilizer is just *X_FM = calc_X_FM(q).
+
+  // Returns the composition X_AM = X_AF ⋅ X_FM. The default implementation
+  // treats X_FM as fully general and performs this in 63 flops. Mobilizers
+  // that know more about the structure of their X_FM should override.
+  math::RigidTransform<T> post_multiply_by_X_FM(
+      const math::RigidTransform<T>& X_AF,
+      const math::RigidTransform<T>& X_FM) const {
+    const math::RigidTransform<T> X_AM = X_AF * X_FM;
+    return X_AM;
+  }
+
+  // Returns the composition X_FB = X_FM ⋅ X_MB. The default implementation
+  // treats X_FM as fully general and performs this in 63 flops. Mobilizers
+  // that know more about the structure of their X_FM should override.
+  math::RigidTransform<T> pre_multiply_by_X_FM(
+      const math::RigidTransform<T>& X_FM,
+      const math::RigidTransform<T>& X_MB) const {
+    const math::RigidTransform<T> X_FB = X_FM * X_MB;
+    return X_FB;
+  }
+
+  // N.B. no default implementations possible for calc_X_FM() and update_X_FM()
+  // here. However, a minimal implementation for update_X_FM() in a concrete
+  // mobilizer is just *X_FM = calc_X_FM(q).
+
+  // Returns v_F = R_FM ⋅ v_M (re-express). The default implementation
+  // treats R_FM as fully general and performs this in 15 flops. Mobilizers
+  // that know more about the structure of their R_FM should override.
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const {
+    return R_FM * v_M;
+  }
+
  protected:
   // Returns the zero configuration for the mobilizer.
   virtual QVector<double> get_zero_position() const {
@@ -192,6 +255,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<const VectorX<T>, kNq> get_positions(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template get_state_segment<kNq>(
         context, this->position_start_in_q());
   }
@@ -202,6 +266,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<VectorX<T>, kNq> GetMutablePositions(
       systems::Context<T>* context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template GetMutableStateSegment<kNq>(
         context, this->position_start_in_q());
   }
@@ -212,6 +277,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `state` is a valid multibody system State.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       systems::State<T>* state) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template get_mutable_state_segment<kNq>(
         state, this->position_start_in_q());
   }
@@ -221,6 +287,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template get_state_segment<kNv>(
         context, num_qs_in_state() + this->velocity_start_in_v());
   }
@@ -231,6 +298,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<VectorX<T>, kNv> GetMutableVelocities(
       systems::Context<T>* context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template GetMutableStateSegment<kNv>(
         context, num_qs_in_state() + this->velocity_start_in_v());
   }
@@ -241,6 +309,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // @pre `state` is a valid multibody system State.
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       systems::State<T>* state) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().template get_mutable_state_segment<kNv>(
         state, num_qs_in_state() + this->velocity_start_in_v());
   }

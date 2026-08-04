@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "lcm/lcm.h"
+#include <lcm/lcm.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/string_map.h"
@@ -160,6 +160,10 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
 void DrakeLcmLog::OnHandleSubscriptionsError(const std::string& error_message) {
   // We are not called via LCM C code, so it's safe to throw there.
   throw std::runtime_error(error_message);
+}
+
+bool DrakeLcmLog::available() {
+  return true;
 }
 
 }  // namespace lcm

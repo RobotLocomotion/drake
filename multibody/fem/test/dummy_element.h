@@ -25,6 +25,10 @@ struct DummyData {
   Vector<T, num_dofs> element_q;
   Vector<T, num_dofs> element_v;
   Vector<T, num_dofs> element_a;
+  Vector<T, num_dofs> inverse_dynamics;
+  Eigen::Matrix<T, num_dofs, num_dofs> stiffness_matrix;
+  Eigen::Matrix<T, num_dofs, num_dofs> damping_matrix;
+  Eigen::Matrix<T, num_dofs, num_dofs> tangent_matrix;
 };
 
 /* The traits for the DummyElement. In this case, all of the traits are unique
@@ -64,7 +68,10 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
                ConstitutiveModel constitutive_model,
                DampingModel<T> damping_model)
       : Base(node_indices, std::move(constitutive_model),
-             std::move(damping_model)) {}
+             std::move(damping_model)) {
+    /* Set an arbitrary mass for testing. */
+    this->set_mass(1.23);
+  }
 
   /* Provides a fixed return value for CalcInverseDynamics(). */
   static Vector<T, kNumDofs> inverse_dynamics_force() {
@@ -94,6 +101,28 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
     return 7.89 * MakeSpdMatrix();
   }
 
+  /* Arbitrary values for testing. */
+  Vector3<T> CalcMassTimesPositionForQuadraturePoints(
+      const Data& /*data*/) const {
+    return Vector3<T>(1.0, 2.0, 3.0);
+  }
+
+  /* Arbitrary values for testing. */
+  Vector3<T> CalcTranslationalMomentumForQuadraturePoints(
+      const Data& /*data*/) const {
+    return Vector3<T>(4.0, 5.0, 6.0);
+  }
+
+  /* Arbitrary values for testing. */
+  Vector3<T> CalcAngularMomentumAboutWorldOrigin(const Data& /*data*/) const {
+    return Vector3<T>(7.0, 8.0, 9.0);
+  }
+
+  /* Arbitrary values for testing. */
+  Matrix3<T> CalcRotationalInertiaAboutWorldOrigin(const Data& /*data*/) const {
+    return Matrix3<T>::Identity();
+  }
+
  private:
   /* Friend the base class so that the interface in the CRTP base class can
    access the private implementations of this class. */
@@ -101,7 +130,8 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
 
   /* Implements FemElement::ComputeData(). Returns the sum of the last entries
    in each state. */
-  typename Traits::Data DoComputeData(const FemState<T>& state) const {
+  typename Traits::Data DoComputeData(const FemState<T>& state,
+                                      const Vector3<T>& weights) const {
     const int state_dofs = state.num_dofs();
     const auto& q = state.GetPositions();
     const auto& v = state.GetVelocities();
@@ -113,33 +143,27 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
     data.element_q = this->ExtractElementDofs(q);
     data.element_v = this->ExtractElementDofs(v);
     data.element_a = this->ExtractElementDofs(a);
+    CalcInverseDynamics(data, &data.inverse_dynamics);
+    data.stiffness_matrix = stiffness_matrix();
+    data.damping_matrix =
+        this->damping_model().stiffness_coeff_beta() * stiffness_matrix() +
+        this->damping_model().mass_coeff_alpha() * mass_matrix();
+    data.tangent_matrix = weights(0) * stiffness_matrix() +
+                          weights(1) * data.damping_matrix +
+                          weights(2) * mass_matrix();
     return data;
   }
 
-  /* Implements FemElement::CalcInverseDynamics().
-   The inverse dynamics force is equal to a dummy nonzero value if the element
-   has zero velocity and zero acceleration. Otherwise the force is zero.*/
-  void DoCalcInverseDynamics(
-      const Data& data, EigenPtr<Vector<T, kNumDofs>> external_force) const {
+  /*  A dummy inverse dynamics force computation such that the force is equal to
+   a dummy nonzero value if the element has zero velocity and zero acceleration.
+   Otherwise the force is zero.*/
+  void CalcInverseDynamics(const Data& data,
+                           EigenPtr<Vector<T, kNumDofs>> external_force) const {
     if (data.element_v.norm() == 0.0 && data.element_a.norm() == 0.0) {
       *external_force = this->inverse_dynamics_force();
     } else {
       external_force->setZero();
     }
-  }
-
-  /* Implements FemElement::AddScaledStiffnessMatrix(). */
-  void DoAddScaledStiffnessMatrix(
-      const Data&, const T& scale,
-      EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> K) const {
-    *K += scale * stiffness_matrix();
-  }
-
-  /* Implements FemElement::AddScaledMassMatrix(). */
-  void DoAddScaledMassMatrix(
-      const Data&, const T& scale,
-      EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> M) const {
-    *M += scale * mass_matrix();
   }
 
   /* Implements FemElement::DoAddScaledExternalForces(). Here we add the force
@@ -152,7 +176,7 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
                                  EigenPtr<Vector<T, kNumDofs>> result) const {
     for (int i = 0; i < this->num_nodes; ++i) {
       const auto node_q = data.element_q.template segment<3>(3 * i);
-      for (const multibody::ForceDensityField<T>* force_density :
+      for (const multibody::ForceDensityFieldBase<T>* force_density :
            plant_data.force_density_fields) {
         result->template segment<3>(3 * i) +=
             scale * force_density->EvaluateAt(plant_data.plant_context, node_q);

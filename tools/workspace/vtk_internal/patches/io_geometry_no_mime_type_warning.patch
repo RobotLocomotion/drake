@@ -1,0 +1,53 @@
+If VTK encounters a glTF *extension* it doesn't support, it warns that the
+*extension* will be *ignored*. Furthermore, if it encounters an *image* with an
+unexpected mime type, it *also* dispatches a warning.
+
+However, the mime type may only exist in support of the extension that has
+already been declared as "ignored". There are two problems with this:
+
+1. It is logically inconsistent. Barking about images that only exist as part
+   of an "ignored" extension is contradictory.
+2. Drake provides a list of glTF extensions it supports (see
+   RenderEngineVtkParams::gltf_extensions). Each listed extension, can be
+   configured to *suppress* warnings about lack of support (we default to
+   ignoring lack of support for KHR_texture_basisu). However, it works by
+   focusing on a very specific message about glTF *extensions*. There is no
+   simple way to change that mechanism to also account for other affiliated
+   warning messages that might come through (i.e., the "unsupported mime type"
+   warnings described above). But we *want* them suppressed.
+
+The *proper* solution would be to modify VTK so that it is smart enough to
+recognize the relationship between unsupported extension and other artifacts.
+That is big and ugly. Instead, we simply remove the arbitrary per-image
+warnings. The justification is as follows:
+
+1. Generally, we expect the unsupported mime type to be related to an
+   unsupported glTF extension. A warning for that has already been
+   dispatched. We don't need any further warnings in this case.
+2. It won't *fail* silently
+   a. Obviously, if the image can be loaded, the warning doesn't get dispatched
+      and removal of the warning has no bearing.
+   b. If the image *can't* be loaded it is either
+      i.  related to an unsupported extension (in which case it won't be used
+          and the warning would be redundant), or
+      ii. it is unaffiliated with any unsupported extension, which means when
+          the scene is fully assembled, an error will be dispatched reporting
+          the fact that the image couldn't be loaded. The error makes the
+          warning mostly redundant.
+
+Note: If someone were to disable Drake's default suppression of KHR_texture_basisu,
+then the warning for the extension *would* be dispatched, but this patch means
+we won't get per-image warnings for the images. As we have historically not
+had these warnings, this constitutes a continuation of the status quo.
+
+--- IO/Geometry/vtkGLTFDocumentLoader.cxx
++++ IO/Geometry/vtkGLTFDocumentLoader.cxx
+@@ -913,8 +913,6 @@ bool vtkGLTFDocumentLoader::LoadImageData()
+         // scene, an error will occur later when we attempt to render it. However, if it is not
+         // used, there is no reason to fail the entire loading process just because we cannot read
+         // an unused image.
+-        vtkWarningMacro("No reader found for image with mime type '"
+-          << image.MimeType << "' and uri '" << image.Uri << "'. Image will be set to null.");
+         image.ImageData = nullptr;
+         continue;
+       }

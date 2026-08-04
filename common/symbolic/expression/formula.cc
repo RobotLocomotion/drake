@@ -8,9 +8,11 @@
 #include <memory>
 #include <ostream>
 #include <set>
-#include <sstream>
+#include <string>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 #define DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 #include "drake/common/symbolic/expression/formula_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
@@ -21,7 +23,6 @@ namespace symbolic {
 using std::make_shared;
 using std::numeric_limits;
 using std::ostream;
-using std::ostringstream;
 using std::set;
 using std::shared_ptr;
 using std::string;
@@ -109,18 +110,17 @@ Formula Formula::Substitute(const Substitution& s) const {
 }
 
 string Formula::to_string() const {
-  ostringstream oss;
-  oss << *this;
-  return oss.str();
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->Display();
 }
 
 Formula Formula::True() {
-  static Formula tt{make_shared<const FormulaTrue>()};
-  return tt;
+  static never_destroyed<Formula> tt{make_shared<const FormulaTrue>()};
+  return tt.access();
 }
 Formula Formula::False() {
-  static Formula ff{make_shared<const FormulaFalse>()};
-  return ff;
+  static never_destroyed<Formula> ff{make_shared<const FormulaFalse>()};
+  return ff.access();
 }
 
 Formula forall(const Variables& vars, const Formula& f) {
@@ -238,11 +238,6 @@ Formula operator!(const Formula& f) {
 
 Formula operator!(const Variable& v) {
   return !Formula(v);
-}
-
-ostream& operator<<(ostream& os, const Formula& f) {
-  DRAKE_ASSERT(f.ptr_ != nullptr);
-  return f.ptr_->Display(os);
 }
 
 Formula operator==(const Expression& e1, const Expression& e2) {

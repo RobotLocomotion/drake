@@ -13,6 +13,11 @@ an `#if MSVC` stanza. This is not strictly necessary for Drake, but
 keeps the patch itself compiler-neutral. The second change block is for
 all remaining compilers, and the third change block applies the repair.
 
+We also add the inline annotation to LoadMask, so that it never generates
+a (non-hidden) function symbol. This is not a correctness issue (the code
+will choose the correct target either way), but does fix a public symbol
+error flagged by exported_symbols_test.
+
 Reasoning for not upstreaming this patch: The deeper issue is
 that highway currently relies on delicate handling of deliberate ODR
 violations. Analyzing and fixing ODR issues in highway is beyond the
@@ -55,3 +60,12 @@ scope of work needed for Drake.
      return hwy::Num0BitsBelowLS1Bit_Nonzero64(
          static_cast<uint64_t>(LoadMask() & HWY_CHOSEN_TARGET_MASK_TARGETS));
    }
+@@ -369,7 +369,7 @@
+ 
+   int64_t mask_{1};  // Initialized to 1 so GetIndex() returns 0.
+ #else
+-  int64_t LoadMask() const { return mask_.load(); }
++  int64_t HWY_ALWAYS_INLINE LoadMask() const { return mask_.load(); }
+   void StoreMask(int64_t mask) { mask_.store(mask); }
+ 
+   std::atomic<int64_t> mask_{1};  // Initialized to 1 so GetIndex() returns 0.

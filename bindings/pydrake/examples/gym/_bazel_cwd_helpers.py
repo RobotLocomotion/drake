@@ -7,5 +7,5 @@ def bazel_chdir():
     In case relative paths are given on the command line, we need to restore
     the original cwd so that those paths resolve correctly.
     """
-    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
-        os.chdir(os.environ['BUILD_WORKSPACE_DIRECTORY'])
+    if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
+        os.chdir(os.environ["BUILD_WORKSPACE_DIRECTORY"])

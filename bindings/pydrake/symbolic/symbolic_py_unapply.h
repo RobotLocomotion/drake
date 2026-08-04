@@ -19,7 +19,7 @@ e.get_kind(); do not try to infer it from the returned ctor's identity.
 )""";
 
 // @param m The pydrake.symbolic module.
-py::object Unapply(py::module m, const symbolic::Expression& e);
+py::object Unapply(py::module_ m, const symbolic::Expression& e);
 
 constexpr char kUnapplyFormulaDoc[] = R"""(
 Given a formula, returns a tuple (ctor, args) that would re-create an
@@ -33,7 +33,17 @@ ctor's identity.
 )""";
 
 // @param m The pydrake.symbolic module.
-py::object Unapply(py::module m, const symbolic::Formula& f);
+py::object Unapply(py::module_ m, const symbolic::Formula& f);
+
+py::tuple PickleExpression(const symbolic::Expression& e);
+
+// @param m The pydrake.symbolic module.
+symbolic::Expression UnpickleExpression(py::module_ m, py::tuple state);
+
+py::tuple PickleFormula(const symbolic::Formula& f);
+
+// @param m The pydrake.symbolic module.
+symbolic::Formula UnpickleFormula(py::module_ m, py::tuple state);
 
 }  // namespace internal
 }  // namespace pydrake

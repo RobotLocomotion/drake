@@ -41,9 +41,9 @@ namespace bouncing_ball {
 ///   The acceleration of gravity vector, expressed in the world frame W.
 /// @param[in] rigid_sphere
 ///   If `true`, the sphere will have a _rigid_ hydroelastic representation
-///   (soft otherwise).
+///   (compliant otherwise).
 /// @param[in] compliant_ground
-///   If 'true', the ground will have a _soft_ hydroelastic representation
+///   If 'true', the ground will have a _compliant_ hydroelastic representation
 ///   (rigid otherwise).
 /// @param[in,out] plant
 ///   A valid pointer to a MultibodyPlant. This function will register
@@ -52,8 +52,7 @@ namespace bouncing_ball {
 /// @note The given plant is not finalized. You must call Finalize() on the new
 ///   model once you are done populating it.
 void PopulateBallPlant(
-    double radius, double mass,
-    double hydroelastic_modulus, double dissipation,
+    double radius, double mass, double hydroelastic_modulus, double dissipation,
     const drake::multibody::CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W, bool rigid_sphere, bool compliant_ground,
     drake::multibody::MultibodyPlant<double>* plant);

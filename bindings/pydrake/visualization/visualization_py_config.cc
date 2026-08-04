@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/visualization.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/visualization/visualization_py.h"
 #include "drake/visualization/visualization_config.h"
@@ -9,15 +9,15 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineVisualizationConfig(py::module m) {
+void DefineVisualizationConfig(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::visualization;
-  constexpr auto& doc = pydrake_doc.drake.visualization;
+  constexpr auto& doc = pydrake_doc_visualization.drake.visualization;
 
   {
     using Class = VisualizationConfig;
     constexpr auto& cls_doc = doc.VisualizationConfig;
-    py::class_<Class> cls(m, "VisualizationConfig", cls_doc.doc);
+    class_<Class> cls(m, "VisualizationConfig", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);

@@ -1,6 +1,6 @@
 #include "drake/planning/graph_algorithms/min_clique_cover_solver_base.h"
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace planning {

@@ -13,12 +13,13 @@ cc_library(
     name = "uwebsockets",
     hdrs = glob(["src/*.h"]),
     includes = ["src"],
+    isystem = True,
+    linkopts = ["-pthread"],
+    linkstatic = 1,
     deps = [
         "@usockets_internal//:usockets",
         "@zlib",
     ],
-    linkopts = ["-pthread"],
-    linkstatic = 1,
 )
 
 # Install the license file.
@@ -26,3 +27,5 @@ install(
     name = "install",
     docs = ["LICENSE"],
 )
+
+exports_files(["drake_repository_metadata.json"])

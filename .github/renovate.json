@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "automerge": false,
+  "timezone": "America/New_York",
+  "schedule": [
+    "* * 1 * *"
+  ],
+  "enabledManagers": [
+    "bazelisk",
+    "bazel-module"
+  ],
+  "bazel-module": {
+    "managerFilePatterns": [
+      "/^cmake/.*/?MODULE\\.bazel\\.in$/"
+    ]
+  },
+  "labels": [
+    "priority: low",
+    "release notes: fix",
+    "status: single reviewer ok"
+  ]
+}

@@ -1,6 +1,11 @@
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
+#include <iostream>
+#include <limits>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -228,8 +233,9 @@ std::vector<RootFindingTestData> GenerateTestCases() {
 // Test parametrized on different root finding cases.
 // To see debug information printed out by DoNewtonWithBisectionFallback, run
 // with:
-//   bazel run -c dbg multibody/contact_solvers:newton_with_bisection_test --
-//   --spdlog_level debug
+//   bazel run --config=debug
+//    multibody/contact_solvers:newton_with_bisection_test --
+//    --spdlog_level debug
 struct RootFindingTest : public testing::TestWithParam<RootFindingTestData> {};
 
 TEST_P(RootFindingTest, VerifyExpectedResults) {

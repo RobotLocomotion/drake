@@ -10,6 +10,17 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "doxygen_input",
+    srcs = glob([
+        "images/*.jpg",
+        "images/*.png",
+        "images/*.svg",
+    ]),
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_cc_package_library(
     name = "tree",
     visibility = ["//visibility:public"],
@@ -19,7 +30,6 @@ drake_cc_package_library(
         ":multibody_tree_caches",
         ":multibody_tree_core",
         ":multibody_tree_indexes",
-        ":multibody_tree_topology",
         ":rotational_inertia",
         ":scoped_name",
         ":spatial_inertia",
@@ -40,25 +50,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_tree_topology",
-    srcs = [
-        "multibody_tree_topology.cc",
-    ],
-    hdrs = [
-        "multibody_tree_topology.h",
-    ],
-    deps = [
-        ":multibody_tree_indexes",
-        "//multibody/topology",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_tree_caches",
     srcs = [
         "acceleration_kinematics_cache.cc",
         "articulated_body_force_cache.cc",
         "articulated_body_inertia_cache.cc",
+        "block_system_jacobian_cache.cc",
         "frame_body_pose_cache.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
@@ -67,15 +64,16 @@ drake_cc_library(
         "acceleration_kinematics_cache.h",
         "articulated_body_force_cache.h",
         "articulated_body_inertia_cache.h",
+        "block_system_jacobian_cache.h",
         "frame_body_pose_cache.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
     ],
     deps = [
         ":articulated_body_inertia",
-        ":multibody_tree_topology",
         "//common:autodiff",
         "//multibody/math:spatial_algebra",
+        "//multibody/topology",
         "//systems/framework:leaf_context",
     ],
 )
@@ -89,9 +87,11 @@ drake_cc_library(
         "body_node_impl_mass_matrix.cc",
         "curvilinear_joint.cc",
         "curvilinear_mobilizer.cc",
+        "deformable_body.cc",
         "door_hinge.cc",
         "element_collection.cc",
         "fixed_offset_frame.cc",
+        "force_density_field.cc",
         "force_element.cc",
         "frame.cc",
         "joint.cc",
@@ -134,9 +134,11 @@ drake_cc_library(
         "body_node_world.h",
         "curvilinear_joint.h",
         "curvilinear_mobilizer.h",
+        "deformable_body.h",
         "door_hinge.h",
         "element_collection.h",
         "fixed_offset_frame.h",
+        "force_density_field.h",
         "force_element.h",
         "frame.h",
         "joint.h",
@@ -188,7 +190,13 @@ drake_cc_library(
         "//common:string_container",
         "//common:unused",
         "//common/trajectories:piecewise_constant_curvature_trajectory",
+        "//geometry:geometry_ids",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
+        "//multibody/fem",
+        "//multibody/plant:constraint_specs",
         "//multibody/topology",
         "//systems/framework:leaf_system",
     ],
@@ -302,6 +310,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_body_test",
+    deps = [
+        ":multibody_tree_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_googletest(
     name = "element_collection_test",
     deps = [
         ":multibody_tree_core",
@@ -356,7 +374,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "frames_test",
-    deps = [":tree"],
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_throws_message",
+    ],
 )
 
 drake_cc_googletest(
@@ -511,6 +532,7 @@ drake_cc_googletest(
         ":mobilizer_tester",
         ":tree",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -689,6 +711,7 @@ drake_cc_googletest(
     deps = [
         ":tree",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

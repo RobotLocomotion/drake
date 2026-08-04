@@ -1,5 +1,7 @@
 #include "drake/solvers/non_convex_optimization_util.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

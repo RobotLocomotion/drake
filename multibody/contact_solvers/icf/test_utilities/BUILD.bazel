@@ -1,0 +1,29 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "test_utilities",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":icf_model_test_helpers",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_model_test_helpers",
+    testonly = 1,
+    srcs = ["icf_model_test_helpers.cc"],
+    hdrs = ["icf_model_test_helpers.h"],
+    deps = [
+        "//multibody/contact_solvers/icf:icf_model",
+    ],
+)
+
+add_lint_tests()

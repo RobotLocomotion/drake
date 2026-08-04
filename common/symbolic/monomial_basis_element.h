@@ -1,12 +1,13 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include <utility>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/chebyshev_basis_element.h"
 #include "drake/common/symbolic/polynomial_basis_element.h"
@@ -182,7 +183,7 @@ class MonomialBasisElement : public PolynomialBasisElement {
   [[nodiscard]] Expression DoToExpression() const override;
 };
 
-std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m);
+std::string to_string(const MonomialBasisElement& m);
 
 /** Returns a multiplication of two monomials, @p m1 and @p m2.
  * @note that we return a map from the monomial product to its coefficient. This
@@ -223,7 +224,9 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::MonomialBasisElement>
     : GenericNumTraits<drake::symbolic::MonomialBasisElement> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 namespace internal {
@@ -238,9 +241,5 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::symbolic::MonomialBasisElement>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::symbolic, MonomialBasisElement, x,
+                   drake::symbolic::to_string(x))

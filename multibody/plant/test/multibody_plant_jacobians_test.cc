@@ -1,5 +1,6 @@
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -8,11 +9,11 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
+#include "drake/multibody/tree/block_system_jacobian_cache.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -135,6 +136,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityNonUnitQuaternion) {
 }
 
 TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
   // Herein, E is the robot's end-effector frame and Ep is a point fixed on E.
   // This test does the following:
   // 1. Calculates Ep's spatial velocity Jacobian with respect to generalized
@@ -164,6 +167,27 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kQDot,
                                       end_effector_frame, p_EoEp_E, world_frame,
                                       world_frame, &Jq_V_WEp);
+
+  // Calculate the System Jacobian Jv_V_WB_W two ways and compare.
+  const int num_mobods = ssize(plant_->graph().forest().mobods());
+  MatrixX<double> Jv_V_WB1(6 * num_mobods, plant_->num_velocities());
+  Jv_V_WB1.setZero();
+  for (BodyIndex body_index{1}; body_index < plant_->num_bodies();
+       ++body_index) {
+    const RigidBody<double>& body = plant_->get_body(body_index);
+    const internal::MobodIndex mobod_index = body.mobod_index();
+    auto J = Jv_V_WB1.block(6 * mobod_index, 0, 6, plant_->num_velocities());
+    plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
+                                        body.body_frame(), Vector3d::Zero(),
+                                        world_frame, world_frame, &J);
+  }
+
+  // Note that this is ordered by MobodIndex, not BodyIndex.
+  MatrixX<double> Jv_V_WB2 = plant_->CalcFullSystemJacobian(*context_);
+  EXPECT_EQ(Jv_V_WB2.rows(), 6 * num_mobods);
+  EXPECT_EQ(Jv_V_WB2.cols(), plant_->num_velocities());
+
+  EXPECT_TRUE(CompareMatrices(Jv_V_WB1, Jv_V_WB2, kTolerance));
 
   // Alternately, compute the spatial velocity Jacobian via the gradient of the
   // spatial velocity V_WEp with respect to q̇, since V_WEp = Jq_V_WEp * q̇.
@@ -204,7 +228,6 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
 
   // Verify the spatial Jacobian Jq_V_WEp computed by the method under test
   // matches the one obtained using automatic differentiation.
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(Jq_V_WEp, Jq_V_WEp_autodiff, kTolerance,
                               MatrixCompareType::relative));
 
@@ -410,6 +433,27 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
   joint2_->set_angle(context_.get(), state[1]);
   joint1_->set_angular_rate(context_.get(), state[2]);
   joint2_->set_angular_rate(context_.get(), state[3]);
+
+  // Calculate the System Jacobian Jv_V_WB_W two ways and compare.
+  const int num_mobods = ssize(plant_->graph().forest().mobods());
+  MatrixX<double> Jv_V_WB1(6 * num_mobods, plant_->num_velocities());
+  Jv_V_WB1.setZero();
+  for (BodyIndex body_index{1}; body_index < plant_->num_bodies();
+       ++body_index) {
+    const RigidBody<double>& body = plant_->get_body(body_index);
+    const internal::MobodIndex mobod_index = body.mobod_index();
+    auto J = Jv_V_WB1.block(6 * mobod_index, 0, 6, plant_->num_velocities());
+    plant_->CalcJacobianSpatialVelocity(
+        *context_, JacobianWrtVariable::kV, body.body_frame(), Vector3d::Zero(),
+        plant_->world_frame(), plant_->world_frame(), &J);
+  }
+
+  // Note that this is ordered by MobodIndex, not BodyIndex.
+  MatrixX<double> Jv_V_WB2 = plant_->CalcFullSystemJacobian(*context_);
+  EXPECT_EQ(Jv_V_WB2.rows(), 6 * num_mobods);
+  EXPECT_EQ(Jv_V_WB2.cols(), plant_->num_velocities());
+
+  EXPECT_TRUE(CompareMatrices(Jv_V_WB1, Jv_V_WB2, kTolerance));
 
   // Point Ap is the point of A located at the revolute joint connecting link A
   // and link B.  Calculate Ap's bias spatial acceleration in world W.
@@ -1001,6 +1045,197 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
                    *context_, JacobianWrtVariable::kQDot, frame_E, p_EEi,
                    frame_W, frame_W),
                std::exception);
+}
+
+GTEST_TEST(BlockSystemJacobian, MultipleTrees) {
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+
+  MultibodyPlant<double> plant(0.0);  // Continuous coordinates.
+  Parser parser(&plant);
+  parser.SetAutoRenaming(true);
+  const ModelInstanceIndex model_instance = plant.AddModelInstance("instance");
+  // We want two Kukas and some manipulands.
+  const std::vector<ModelInstanceIndex> instance1 = parser.AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  const std::vector<ModelInstanceIndex> instance2 = parser.AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  ASSERT_EQ(instance1.size(), 1);
+  ASSERT_EQ(instance2.size(), 1);
+
+  const SpatialInertia<double> M_Bcm =  // mass, lx, ly, lz
+      SpatialInertia<double>::SolidBoxWithMass(5.0, 4.0, 1.0, 1.0);
+  for (int i = 0; i < 10; ++i) {
+    plant.AddRigidBody(fmt::format("manipuland{}", i), model_instance, M_Bcm);
+  }
+
+  // Add one more tree that consists just of a single body welded to World
+  // to test that we can properly handle a zero-dimension Jacobian.
+  const RigidTransform<double> X_Identity;
+  const RigidBody<double>& welded =
+      plant.AddRigidBody("welded", model_instance, M_Bcm);
+  plant.AddJoint<WeldJoint>("weld_joint", plant.world_body(), X_Identity,
+                            welded, X_Identity, X_Identity);
+
+  plant.Finalize();
+
+  // Sanity check that we know what's in the model.
+  EXPECT_EQ(plant.num_bodies(), 1 + 2 * 8 + 10 + 1);
+  EXPECT_EQ(plant.num_positions(), 2 * 14 + 10 * 7);
+  EXPECT_EQ(plant.num_velocities(), 2 * 13 + 10 * 6);
+
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+
+  // Let's make sure we're in some arbitrary configuration rather than zero.
+  // By setting every q to 0.5 any quaternions there will be properly
+  // normalized so we don't need to special case floating bodies.
+  VectorX<double> q = VectorX<double>::Constant(plant.num_positions(), 0.5);
+  context->get_mutable_continuous_state()
+      .get_mutable_generalized_position()
+      .SetFromVector(q);
+
+  // Run a few tests on the cache entry. Then we'll use it to generate a
+  // full matrix to check the numbers.
+  const internal::BlockSystemJacobianCache<double>& sjc =
+      plant.EvalBlockSystemJacobianCache(*context);
+  const std::vector<Eigen::MatrixX<double>>& block_system_jacobian =
+      sjc.block_system_jacobian();
+  // Should be 13 trees (1 weld, 2 kukas, 10 floating bodies).
+  EXPECT_EQ(block_system_jacobian.size(), 13);
+  // SpanningForest will have put the static weld as the first Tree. Let's
+  // verify that we got the expected 6x0 block for that.
+  EXPECT_EQ(block_system_jacobian[0].rows(), 6);
+  EXPECT_EQ(block_system_jacobian[0].cols(), 0);
+
+  // Calculate the System Jacobian Jv_V_WB_W two ways and compare.
+  const int num_mobods = ssize(plant.graph().forest().mobods());
+  MatrixX<double> Jv_V_WB1(6 * num_mobods, plant.num_velocities());
+  Jv_V_WB1.setZero();
+  for (BodyIndex body_index{1}; body_index < plant.num_bodies(); ++body_index) {
+    const RigidBody<double>& body = plant.get_body(body_index);
+    const internal::MobodIndex mobod_index = body.mobod_index();
+    auto J = Jv_V_WB1.block(6 * mobod_index, 0, 6, plant.num_velocities());
+    plant.CalcJacobianSpatialVelocity(
+        *context, JacobianWrtVariable::kV, body.body_frame(), Vector3d::Zero(),
+        plant.world_frame(), plant.world_frame(), &J);
+  }
+
+  // Note that this is ordered by MobodIndex, not BodyIndex.
+  MatrixX<double> Jv_V_WB2 = plant.CalcFullSystemJacobian(*context);
+  EXPECT_EQ(Jv_V_WB2.rows(), 6 * num_mobods);
+  EXPECT_EQ(Jv_V_WB2.cols(), plant.num_velocities());
+
+  EXPECT_TRUE(CompareMatrices(Jv_V_WB1, Jv_V_WB2, kTolerance));
+}
+
+// Builds a multi-tree model (two Kukas, ten floating manipulands, and a
+// welded body) and exercises CalcSystemJacobianTransposeTimesF against the
+// reference τ = Jᵀ⋅F computed via the explicit full system Jacobian.
+GTEST_TEST(SystemJacobianTransposeTimesF, MultipleTrees) {
+  const double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+
+  MultibodyPlant<double> plant(0.0);
+  Parser parser(&plant);
+  parser.SetAutoRenaming(true);
+  const ModelInstanceIndex model_instance = plant.AddModelInstance("instance");
+  parser.AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  parser.AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+
+  // Add 10 floating bodies (manipulands). Then weld 1 body to World.
+  const SpatialInertia<double> M_Bcm =
+      SpatialInertia<double>::SolidBoxWithMass(5.0, 4.0, 1.0, 1.0);
+  for (int i = 0; i < 10; ++i) {
+    plant.AddRigidBody(fmt::format("manipuland{}", i), model_instance, M_Bcm);
+  }
+  const RigidTransform<double> X_Identity;
+  const RigidBody<double>& welded =
+      plant.AddRigidBody("welded", model_instance, M_Bcm);
+  plant.AddJoint<WeldJoint>("weld_joint", plant.world_body(), X_Identity,
+                            welded, X_Identity, X_Identity);
+  plant.Finalize();
+
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  // Arbitrary, non-zero, but normalized-quaternion-friendly q.
+  const VectorX<double> q =
+      VectorX<double>::Constant(plant.num_positions(), 0.5);
+  context->get_mutable_continuous_state()
+      .get_mutable_generalized_position()
+      .SetFromVector(q);
+
+  const int num_mobods = ssize(plant.graph().forest().mobods());
+  const int nv = plant.num_velocities();
+
+  // Build the reference full System Jacobian J (size 6*num_mobods × nv).
+  const MatrixX<double> J = plant.CalcFullSystemJacobian(*context);
+  ASSERT_EQ(J.rows(), 6 * num_mobods);
+  ASSERT_EQ(J.cols(), nv);
+
+  // Build a matching applied-force stack F_stack of size 6*num_mobods.
+  // F_stack[6k:6k+6] = [τ_k; f_k] in the same convention as
+  // SpatialForce::get_coeffs(). Values are deterministic, arbitrary per-body
+  // spatial forces (no <random> dependency).
+  std::vector<SpatialForce<double>> F_Bo_W_array(num_mobods);
+  VectorX<double> F_stack(6 * num_mobods);
+  for (int k = 0; k < num_mobods; ++k) {
+    Vector6<double> Fk;
+    for (int j = 0; j < 6; ++j) {
+      Fk[j] = std::sin(0.123 * k + 0.789 * j + 0.456);
+    }
+    F_Bo_W_array[k] = SpatialForce<double>(Fk);
+    F_stack.segment<6>(6 * k) = Fk;
+  }
+
+  const VectorX<double> tau_expected = J.transpose() * F_stack;
+
+  VectorX<double> tau(nv);
+  // The operator destroys F_Bo_W_array; verify against a copy.
+  std::vector<SpatialForce<double>> F_input = F_Bo_W_array;
+  plant.CalcSystemJacobianTransposeTimesF(*context, &F_input, &tau);
+
+  EXPECT_TRUE(CompareMatrices(tau, tau_expected, kTolerance));
+
+  // Trivial case: zero applied forces ⇒ zero generalized forces.
+  std::vector<SpatialForce<double>> F_zero(num_mobods,
+                                           SpatialForce<double>::Zero());
+  VectorX<double> tau_zero(nv);
+  plant.CalcSystemJacobianTransposeTimesF(*context, &F_zero, &tau_zero);
+  EXPECT_TRUE(CompareMatrices(tau_zero, VectorX<double>::Zero(nv), kTolerance));
+
+  // Simple case: a single non-zero force on one mobod must equal that mobod's
+  // block-row of Jᵀ times that force.
+  std::vector<SpatialForce<double>> F_one(num_mobods,
+                                          SpatialForce<double>::Zero());
+  // Pick a mobod somewhere in the middle (not World).
+  const internal::MobodIndex picked(num_mobods / 2);
+  const Vector6<double> force_coeffs =
+      (Vector6<double>() << 1.0, -2.0, 3.0, -4.0, 5.0, -6.0).finished();
+  F_one[picked] = SpatialForce<double>(force_coeffs);
+  VectorX<double> tau_one(nv);
+  plant.CalcSystemJacobianTransposeTimesF(*context, &F_one, &tau_one);
+  const VectorX<double> tau_one_expected =
+      J.middleRows<6>(6 * picked).transpose() * force_coeffs;
+  EXPECT_TRUE(CompareMatrices(tau_one, tau_one_expected, kTolerance));
+
+  // AutoDiff smoke test: Create an AutoDiff version of the base T=double plant
+  // above, and ensure the AutoDiff results match the tau_expected results from
+  // the base plant. Numerical accuracy is covered by the base plant checks
+  // above.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  std::unique_ptr<Context<AutoDiffXd>> context_ad =
+      plant_ad->CreateDefaultContext();
+  context_ad->get_mutable_continuous_state()
+      .get_mutable_generalized_position()
+      .SetFromVector(q.cast<AutoDiffXd>());
+  std::vector<SpatialForce<AutoDiffXd>> F_ad(num_mobods);
+  for (int k = 0; k < num_mobods; ++k) {
+    F_ad[k] = SpatialForce<AutoDiffXd>(F_Bo_W_array[k].get_coeffs());
+  }
+  VectorX<AutoDiffXd> tau_ad(nv);
+  plant_ad->CalcSystemJacobianTransposeTimesF(*context_ad, &F_ad, &tau_ad);
+  EXPECT_TRUE(
+      CompareMatrices(math::ExtractValue(tau_ad), tau_expected, kTolerance));
 }
 
 }  // namespace

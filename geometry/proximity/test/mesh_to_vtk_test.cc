@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/mesh_to_vtk.h"
 
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -35,6 +36,25 @@ GTEST_TEST(MeshToVtkTest, BoxTetrahedra) {
                        "Tetrahedral Mesh of Box");
 }
 
+GTEST_TEST(MeshToVtkTest, BoxTetrahedraToString) {
+  const Box box(4.0, 4.0, 2.0);
+  // resolution_hint 0.5 is enough to have vertices on the medial axis.
+  const auto mesh = MakeBoxVolumeMesh<double>(box, 0.5);
+  const std::string vtk_string =
+      WriteVolumeMeshToVtkFileContents(mesh, "Tetrahedral Mesh of Box");
+
+  // Verify the string contains key VTK elements.
+  EXPECT_TRUE(vtk_string.find("# vtk DataFile Version 3.0") !=
+              std::string::npos);
+  EXPECT_TRUE(vtk_string.find("Tetrahedral Mesh of Box") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("ASCII") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("DATASET UNSTRUCTURED_GRID") !=
+              std::string::npos);
+  EXPECT_TRUE(vtk_string.find("POINTS") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("CELLS") != std::string::npos);
+  EXPECT_TRUE(vtk_string.find("CELL_TYPES") != std::string::npos);
+}
+
 GTEST_TEST(MeshToVtkTest, BoxTriangles) {
   const Box box(4.0, 4.0, 2.0);
   // Very coarse resolution_hint 4.0 should give the coarsest mesh.
@@ -55,17 +75,18 @@ GTEST_TEST(MeshToVtkTest, BoxTetrahedraPressureField) {
       pressure, "Pressure Field in Box");
 }
 
-// Helper function to create a contact surface between a soft box and a rigid
-// box.
+// Helper function to create a contact surface between a compliant box and a
+// rigid box.
 unique_ptr<ContactSurface<double>> BoxContactSurface() {
-  const Box soft_box(4., 4., 2.);
+  const Box compliant_box(4., 4., 2.);
   // resolution_hint 0.5 is enough to have vertices on the medial axis.
-  const VolumeMesh<double> volume_S = MakeBoxVolumeMesh<double>(soft_box, 0.5);
+  const VolumeMesh<double> volume_S =
+      MakeBoxVolumeMesh<double>(compliant_box, 0.5);
   const double kElasticModulus = 1.0e+5;
   const VolumeMeshFieldLinear<double, double> field_S =
-      MakeBoxPressureField<double>(soft_box, &volume_S, kElasticModulus);
+      MakeBoxPressureField<double>(compliant_box, &volume_S, kElasticModulus);
   const Bvh<Obb, VolumeMesh<double>> bvh_volume_S(volume_S);
-  // The soft box is at the center of World.
+  // The compliant box is at the center of World.
   RigidTransformd X_WS = RigidTransformd::Identity();
 
   const Box rigid_box(4, 4, 2);
@@ -73,11 +94,11 @@ unique_ptr<ContactSurface<double>> BoxContactSurface() {
   const TriangleSurfaceMesh<double> surface_R =
       MakeBoxSurfaceMesh<double>(rigid_box, 4.0);
   const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_surface_R(surface_R);
-  // The rigid box intersects the soft box in a unit cube at the corner
+  // The rigid box intersects the compliant box in a unit cube at the corner
   // (2.0, 2.0, 1.0).
   RigidTransformd X_WR(Vector3d{3., 3., 1.});
 
-  return ComputeContactSurfaceFromSoftVolumeRigidSurface(
+  return ComputeContactSurfaceFromCompliantVolumeRigidSurface(
       GeometryId::get_new_id(), field_S, bvh_volume_S, X_WS,
       GeometryId::get_new_id(), surface_R, bvh_surface_R, X_WR,
       HydroelasticContactRepresentation::kTriangle);
@@ -90,7 +111,7 @@ GTEST_TEST(MeshToVtkTest, BoxContactSurfacePressure) {
           &contact->tri_e_MN());
   ASSERT_NE(contact_pressure, nullptr);
   WriteTriangleSurfaceMeshFieldLinearToVtk(
-      temp_directory() + "/" + "box_rigid_soft_contact_pressure.vtk",
+      temp_directory() + "/" + "box_rigid_compliant_contact_pressure.vtk",
       "Pressure[Pa]", *contact_pressure,
       "Pressure Distribution on Contact Surface");
 }

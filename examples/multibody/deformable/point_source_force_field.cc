@@ -4,7 +4,7 @@ namespace drake {
 namespace examples {
 namespace deformable {
 
-using multibody::ForceDensityField;
+using multibody::ForceDensityFieldBase;
 using multibody::MultibodyPlant;
 using multibody::RigidBody;
 using systems::BasicVector;
@@ -38,7 +38,7 @@ Vector3<double> PointSourceForceField::DoEvaluateAt(
   return magnitude * p_QC_W / p_QC_W.norm();
 }
 
-std::unique_ptr<ForceDensityField<double>> PointSourceForceField::DoClone()
+std::unique_ptr<ForceDensityFieldBase<double>> PointSourceForceField::DoClone()
     const {
   return std::make_unique<PointSourceForceField>(
       *plant_, plant_->get_body(body_), p_BC_, falloff_distance_);

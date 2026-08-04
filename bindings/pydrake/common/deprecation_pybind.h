@@ -25,7 +25,7 @@ namespace pydrake {
 inline void DeprecateAttribute(py::object cls, py::str name, py::str message,
     std::optional<std::string> date = {}) {
   py::object deprecated =
-      py::module::import("pydrake.common.deprecation").attr("deprecated");
+      py::module_::import_("pydrake.common.deprecation").attr("deprecated");
   py::object original = cls.attr(name);
   cls.attr(name) = deprecated(message, py::arg("date") = date)(original);
 }
@@ -39,7 +39,8 @@ inline void WarnDeprecated(
     const std::string& message, std::optional<std::string> date = {}) {
   py::gil_scoped_acquire guard;
   py::object warn_deprecated =
-      py::module::import("pydrake.common.deprecation").attr("_warn_deprecated");
+      py::module_::import_("pydrake.common.deprecation")
+          .attr("_warn_deprecated");
   warn_deprecated(message, py::arg("date") = date);
 }
 
@@ -108,7 +109,7 @@ auto DeprecatedParamInit(std::string message) {
     // constructed. Would be alleviated using old-style pybind11 init :(
     Class obj{};
     py::object py_obj = py::cast(&obj, py_rvp::reference);
-    py::module::import("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
     return obj;
   }));
 }

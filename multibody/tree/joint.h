@@ -197,7 +197,9 @@ class Joint : public MultibodyElement<T> {
   /// thus a set of joints sorted by ordinal has the same ordering as if it were
   /// sorted by JointIndex. If joints have been removed from the plant, do *not*
   /// use index() to access contiguous containers with entries per Joint.
-  int ordinal() const { return this->ordinal_impl(); }
+  JointOrdinal ordinal() const {
+    return this->template ordinal_impl<JointOrdinal>();
+  }
 
   /// Returns the name of this joint.
   const std::string& name() const { return name_; }
@@ -322,6 +324,7 @@ class Joint : public MultibodyElement<T> {
                      const T& joint_tau, MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_velocities());
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInOneForce(context, joint_dof, joint_tau, forces);
   }
@@ -340,18 +343,21 @@ class Joint : public MultibodyElement<T> {
   void AddInDamping(const systems::Context<T>& context,
                     MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInDamping(context, forces);
   }
 
-  /// Lock the joint. Its generalized velocities will be 0 until it is
-  /// unlocked.
+  /// Lock the joint. Its generalized velocities will be 0 until it is unlocked.
+  /// If actuated, its PD controllers will be ignored and thus will have no
+  /// effect on the reported actuation output nor reaction forces.
   void Lock(systems::Context<T>* context) const {
     DRAKE_DEMAND(has_mobilizer());
     mobilizer_->Lock(context);
   }
 
-  /// Unlock the joint.
+  /// Unlock the joint.  If actuated, its PD controllers (if any) will no longer
+  /// be ignored.
   void Unlock(systems::Context<T>* context) const {
     DRAKE_DEMAND(has_mobilizer());
     mobilizer_->Unlock(context);
@@ -720,11 +726,14 @@ class Joint : public MultibodyElement<T> {
   /// Refer to default_damping_vector() for details.
   /// @throws std::exception if damping.size() != num_velocities().
   /// @throws std::exception if any of the damping coefficients is negative.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   /// @pre the MultibodyPlant must not be finalized.
   void set_default_damping_vector(const VectorX<double>& damping) {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
-    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
+    DRAKE_DEMAND(!this->get_parent_tree().is_finalized());
     damping_ = damping;
   }
 
@@ -745,7 +754,7 @@ class Joint : public MultibodyElement<T> {
   void SetDampingVector(systems::Context<T>* context,
                         const VectorX<T>& damping) const {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
-    DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_THROW_UNLESS((damping.array() >= 0).template cast<bool>().all());
     context->get_mutable_numeric_parameter(damping_parameter_index_)
         .set_value(damping);
   }
@@ -765,7 +774,8 @@ class Joint : public MultibodyElement<T> {
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
-    joint_clone->mobilizer_ = FindMobilizerToScalarClone<ToScalar>(tree_clone);
+    DRAKE_DEMAND(mobilizer_ != nullptr);
+    joint_clone->mobilizer_ = &tree_clone->get_mutable_variant(*mobilizer_);
     return joint_clone;
   }
 
@@ -779,6 +789,16 @@ class Joint : public MultibodyElement<T> {
     DRAKE_DEMAND(has_mobilizer());
     return *mobilizer_;
   }
+
+  // (Internal use only) This utility generates a unique name for an offset
+  // frame of the form jointname_parentframename_suffix. This is intended for
+  // creating F and M mobilizer frames that are offset from joint frames Jp and
+  // Jc. The name is guaranteed to be unique within this Joint's model instance.
+  // If necessary, leading underscores are prepended until uniqueness is
+  // achieved. Be sure to create the new frame in the _Joint's_ model instance
+  // to avoid name clashes.
+  std::string MakeUniqueOffsetFrameName(const Frame<T>& parent_frame,
+                                        const std::string& suffix) const;
 #endif
   // End of hidden Doxygen section.
 
@@ -905,7 +925,7 @@ class Joint : public MultibodyElement<T> {
 
   // Implements MultibodyElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
-  void DoSetTopology(const internal::MultibodyTreeTopology&) override {}
+  void DoSetTopology() override {}
 
   /// @name Methods to make a clone, optionally templated on different scalar
   /// types.
@@ -944,12 +964,13 @@ class Joint : public MultibodyElement<T> {
   ///
   /// @pre A mobilizer has been created for this Joint.
   /// @pre ConcreteMobilizer must exactly match the dynamic type of the
-  /// mobilizer associated with this Joint. This requirement is (only) checked
-  /// in Debug builds.
+  /// mobilizer associated with this Joint, or be a base class of the
+  /// dynamic type. This requirement is (only) checked in Debug builds.
   template <template <typename> class ConcreteMobilizer>
   const ConcreteMobilizer<T>& get_mobilizer_downcast() const {
     DRAKE_DEMAND(has_mobilizer());
-    DRAKE_ASSERT(typeid(*mobilizer_) == typeid(ConcreteMobilizer<T>));
+    DRAKE_ASSERT(dynamic_cast<const ConcreteMobilizer<T>*>(mobilizer_) !=
+                 nullptr);
     return static_cast<const ConcreteMobilizer<T>&>(*mobilizer_);
   }
 
@@ -957,18 +978,13 @@ class Joint : public MultibodyElement<T> {
   template <template <typename> class ConcreteMobilizer>
   ConcreteMobilizer<T>& get_mutable_mobilizer_downcast() {
     DRAKE_DEMAND(has_mobilizer());
-    DRAKE_ASSERT(typeid(*mobilizer_) == typeid(ConcreteMobilizer<T>));
+    DRAKE_ASSERT(dynamic_cast<ConcreteMobilizer<T>*>(mobilizer_) != nullptr);
     return static_cast<ConcreteMobilizer<T>&>(*mobilizer_);
   }
 
   /// (Internal use only) Returns true if this Joint has an implementing
   /// Mobilizer.
   bool has_mobilizer() const { return mobilizer_ != nullptr; }
-
-  DRAKE_DEPRECATED(
-      "2025-06-01",
-      "Use has_mobilizer() instead (JointImplementation class is gone).")
-  bool has_implementation() const { return has_mobilizer(); }
 
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can clone
@@ -977,27 +993,27 @@ class Joint : public MultibodyElement<T> {
   friend class Joint;
 
   /* This method must be implemented by derived Joint classes in order to create
-  a Mobilizer as the Joint's internal representation. Starting with the
-  user's joint frames Jp (on parent) and Jc (on child) we must create an
-  inboard frame F and outboard frame M suitable for an available Mobilizer.
-  For example, if a revolute Mobilizer can only rotate around its z axis,
-  while the revolute Joint specifies an arbitrary axis â, we'll need to
-  calculate frames such that Fz and Mz are aligned with â, and the other
-  axes chosen so that the joint coordinate q has the same meaning as it would
-  when rotating about â. We also must decide whether inboard/outboard is
-  reversed from parent/child. Normally we need X_JpF and X_JcM but when reversed
-  we need X_JcF and X_JpM. (We're ignoring reversal in the discussion below.)
+  a Mobilizer as the Joint's internal representation. Starting with the user's
+  joint frames Jp (on parent) and Jc (on child) we must create an inboard frame
+  F and outboard frame M suitable for an available Mobilizer. For example, if a
+  revolute Mobilizer can only rotate around its z axis, while the revolute Joint
+  specifies an arbitrary axis â, we'll need to calculate frames such that Fz and
+  Mz are aligned with â, and the other axes chosen so that the joint coordinate
+  q has the same meaning as it would when rotating about â. We also must decide
+  whether inboard/outboard is reversed from parent/child. Normally we need X_JpF
+  and X_JcM but when reversed we need X_JcF and X_JpM. (We're ignoring reversal
+  in the discussion below.)
 
-  In the case of revolute, prismatic, and screw joints we have an axis â
-  whose measure numbers are the same in Jp and Jc. However, for maximum
-  speed, the available mobilizers are specialized to rotate only about the
-  +z axis.
-  TODO(sherm1) Make that happen.
-  Consequently, we want new frames F and M with Fz=Mz=â, Fo=Jpo, Mo=Jco. We
-  also want F==M when Jp==Jc, i.e. at the joint zero position so that the
-  coordinate q will mean the same thing using F and M as it would have using
-  Jp, Jc, and â. We need to calculate R_JpF and R_JcM so that we can create
-  appropriate offset frames:
+  In the case of revolute, prismatic, and screw joints we have an axis â whose
+  components are the same in Jp and Jc. However, for maximum speed, the
+  available mobilizers for revolute and prismatic are specialized to rotate
+  about or translate along a coordinate axis.
+
+  As an example, if the mobilizer rotates around z, we want new frames F and M
+  with Fz=Mz=â, Fo=Jpo, Mo=Jco. We also want F==M when Jp==Jc, i.e. at the joint
+  zero position so that the coordinate q will mean the same thing using F and M
+  as it would have using Jp, Jc, and â. We need to calculate R_JpF and R_JcM so
+  that we can create appropriate offset frames:
        R_JpF = MakeFromOneVector(â_Jp, 2)   ("2" means "z axis")
        R_JcM = R_JcJp(0) * R_JpF * R_FM(0)  (at q=0)
   But in the zero configurations we have R_JcJp(0)=I and we want R_FM(0)=I
@@ -1015,16 +1031,6 @@ class Joint : public MultibodyElement<T> {
   virtual std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
       const internal::SpanningForest::Mobod& mobod,
       internal::MultibodyTree<T>* tree) const = 0;
-
-  // Helper method to be called within Joint::CloneToScalar() to locate the
-  // cloned Mobilizer corresponding to this Joint's Mobilizer.
-  template <typename ToScalar>
-  internal::Mobilizer<ToScalar>* FindMobilizerToScalarClone(
-      internal::MultibodyTree<ToScalar>* tree_clone) const {
-    internal::Mobilizer<ToScalar>* mobilizer_clone =
-        &tree_clone->get_mutable_variant(*mobilizer_);
-    return mobilizer_clone;
-  }
 
   // Implementation for MultibodyElement::DoDeclareParameters().
   void DoDeclareParameters(

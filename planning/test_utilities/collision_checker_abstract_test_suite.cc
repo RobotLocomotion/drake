@@ -96,7 +96,7 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddSpheres) {
   checker.AddCollisionShapeToFrame("test", dut_frame, geometry::Sphere(1.0),
                                    math::RigidTransform<double>());
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
-  EXPECT_NE(checker.GetAllAddedCollisionShapes().size(), 0);
+  EXPECT_NE(ssize(checker.GetAllAddedCollisionShapes()), 0);
 
   // While there are collisions, do some classifying.
   std::vector<RobotCollisionType> kinds =
@@ -113,21 +113,21 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddSpheres) {
   // Also test the logic of removals and enumeration.
   checker.RemoveAllAddedCollisionShapes("other");
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
-  EXPECT_NE(checker.GetAllAddedCollisionShapes().size(), 0);
+  EXPECT_NE(ssize(checker.GetAllAddedCollisionShapes()), 0);
 
   checker.RemoveAllAddedCollisionShapes("test");
   EXPECT_TRUE(checker.CheckConfigCollisionFree(qs_.q1));
-  EXPECT_EQ(checker.GetAllAddedCollisionShapes().size(), 0);
+  EXPECT_EQ(ssize(checker.GetAllAddedCollisionShapes()), 0);
 
   // Re-add a shape to test removal of everything.
   checker.AddCollisionShapeToFrame("test", dut_frame, geometry::Sphere(1.0),
                                    math::RigidTransform<double>());
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
-  EXPECT_NE(checker.GetAllAddedCollisionShapes().size(), 0);
+  EXPECT_NE(ssize(checker.GetAllAddedCollisionShapes()), 0);
 
   checker.RemoveAllAddedCollisionShapes();
   EXPECT_TRUE(checker.CheckConfigCollisionFree(qs_.q1));
-  EXPECT_EQ(checker.GetAllAddedCollisionShapes().size(), 0);
+  EXPECT_EQ(ssize(checker.GetAllAddedCollisionShapes()), 0);
 }
 
 TEST_P(CollisionCheckerAbstractTestSuite, AddObstacles) {

@@ -1,5 +1,7 @@
 #include "drake/multibody/mpm/spgrid.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/limit_malloc.h"
@@ -178,8 +180,8 @@ GTEST_TEST(SpGridTest, IterateGridWithOffset) {
     TripleLoop(func);
   }
 
-  // Use IterateConstGridWithOffset to ensure const access does not modify data
-  grid.IterateConstGridWithOffset([](Offset offset, const GridData& node_data) {
+  // Use IterateGridWithOffset to ensure const access does not modify data
+  grid.IterateGridWithOffset([](Offset offset, const GridData& node_data) {
     Vector4d expected_value(offset * 1.0, offset * 2.0, offset * 3.0,
                             offset * 4.0);
     EXPECT_EQ(node_data.data, expected_value);

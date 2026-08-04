@@ -1,5 +1,7 @@
 #include "drake/manipulation/kinova_jaco/jaco_command_receiver.h"
 
+#include <memory>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -24,15 +26,15 @@ class JacoCommandReceiverTestBase : public testing::Test {
 
   // For use only by our constructor.
   systems::FixedInputPortValue& FixInput() {
-    return dut_.get_message_input_port().FixValue(
-        &context_, lcmt_jaco_command{});
+    return dut_.get_message_input_port().FixValue(&context_,
+                                                  lcmt_jaco_command{});
   }
 
   // Test cases should call this to set the DUT's input value.
   void SetInput(const lcmt_jaco_command& message) {
     // TODO(jwnimmer-tri) This systems framework API is not very ergonomic.
-    fixed_input_.GetMutableData()->
-        template get_mutable_value<lcmt_jaco_command>() = message;
+    fixed_input_.GetMutableData()
+        ->template get_mutable_value<lcmt_jaco_command>() = message;
   }
 
   VectorXd position() const {
@@ -59,15 +61,14 @@ constexpr double kCommandTime = 1.2;
 class JacoCommandReceiverTest : public JacoCommandReceiverTestBase {
  public:
   JacoCommandReceiverTest()
-      : JacoCommandReceiverTestBase(
-            kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers) {}
+      : JacoCommandReceiverTestBase(kJacoDefaultArmNumJoints,
+                                    kJacoDefaultArmNumFingers) {}
 };
 
 class JacoCommandReceiverNoFingersTest : public JacoCommandReceiverTestBase {
  public:
   JacoCommandReceiverNoFingersTest()
-      : JacoCommandReceiverTestBase(
-            kJacoDefaultArmNumJoints, 0) {}
+      : JacoCommandReceiverTestBase(kJacoDefaultArmNumJoints, 0) {}
 };
 
 TEST_F(JacoCommandReceiverTest, AcceptanceTestWithoutMeasuredPositionInput) {
@@ -115,8 +116,7 @@ TEST_F(JacoCommandReceiverNoFingersTest,
   EXPECT_EQ(time_output(), kCommandTime);
 }
 
-TEST_F(JacoCommandReceiverNoFingersTest,
-       AcceptanceTestWithLatchingNoFingers) {
+TEST_F(JacoCommandReceiverNoFingersTest, AcceptanceTestWithLatchingNoFingers) {
   const VectorXd zero = VectorXd::Zero(N);
 
   // When no message has been received and a measurement *is* connected, the
@@ -155,8 +155,7 @@ TEST_F(JacoCommandReceiverNoFingersTest,
   EXPECT_EQ(time_output(), kCommandTime);
 }
 
-TEST_F(JacoCommandReceiverTest,
-       AcceptanceTestWithMeasuredPositionInput) {
+TEST_F(JacoCommandReceiverTest, AcceptanceTestWithMeasuredPositionInput) {
   const VectorXd zero = VectorXd::Zero(N + N_F);
 
   // When no message has been received and a measurement *is* connected, the

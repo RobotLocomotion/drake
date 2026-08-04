@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -47,10 +48,8 @@ struct CloneableInt {
 struct MoveOrCloneInt {
   MoveOrCloneInt() {}
   explicit MoveOrCloneInt(int i) : data{i} {}
-  MoveOrCloneInt(MoveOrCloneInt&& other) {
-    std::swap(data, other.data);
-  }
-  MoveOrCloneInt& operator=(MoveOrCloneInt&& other)  {
+  MoveOrCloneInt(MoveOrCloneInt&& other) { std::swap(data, other.data); }
+  MoveOrCloneInt& operator=(MoveOrCloneInt&& other) {
     std::swap(data, other.data);
     return *this;
   }
@@ -66,20 +65,23 @@ struct MoveOrCloneInt {
 
 // Helper for EXPECT_EQ to unwrap the data field.
 template <typename T>
-bool operator==(int i, const T& value) { return i == value.data; }
+bool operator==(int i, const T& value) {
+  return i == value.data;
+}
 
 using systems::BasicVector;
 using systems::MyVector2d;
 
 // Boilerplate for tests that are identical across different types.  Our
 // TYPED_TESTs will run using all of the below types as the TypeParam.
-template <typename TypeParam> class TypedValueTest : public ::testing::Test {};
-typedef ::testing::Types<
-    int,
-    CopyableInt,
-    CloneableInt,
-    MoveOrCloneInt
-    > Implementations;
+template <typename TypeParam>
+class TypedValueTest : public ::testing::Test {};
+typedef ::testing::Types<  // BR
+    int,                   //
+    CopyableInt,           //
+    CloneableInt,          //
+    MoveOrCloneInt>
+    Implementations;
 TYPED_TEST_SUITE(TypedValueTest, Implementations);
 
 // Value<T>() should work if and only if T is default-constructible.
@@ -199,8 +201,7 @@ GTEST_TEST(ValueTest, MaybeGetValue) {
   EXPECT_EQ(double_value->maybe_get_value<std::string>(), nullptr);
   EXPECT_EQ(string_value->maybe_get_value<double>(), nullptr);
 
-  const double* const double_pointer =
-      double_value->maybe_get_value<double>();
+  const double* const double_pointer = double_value->maybe_get_value<double>();
   const std::string* const string_pointer =
       string_value->maybe_get_value<std::string>();
 
@@ -279,6 +280,7 @@ class PrintInterface {
  public:
   virtual ~PrintInterface() {}
   virtual std::string print() const = 0;
+
  protected:
   // Allow our subclasses to make these public.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PrintInterface);
@@ -462,27 +464,25 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
 
   // Templated containers without default template arguments.
   const std::string stdcc = kAppleInlineNamespace ? "std::__1" : "std";
-  CheckHash<std::shared_ptr<double>>(fmt::format(
-      "{std}::shared_ptr<double>",
-      fmt::arg("std", stdcc)));
-  CheckHash<std::pair<int, double>>(fmt::format(
-      "{std}::pair<int,double>",
-      fmt::arg("std", stdcc)));
+  CheckHash<std::shared_ptr<double>>(
+      fmt::format("{std}::shared_ptr<double>", fmt::arg("std", stdcc)));
+  CheckHash<std::pair<int, double>>(
+      fmt::format("{std}::pair<int,double>", fmt::arg("std", stdcc)));
 
   // Templated classes *with* default template arguments.
-  CheckHash<std::vector<double>>(fmt::format(
-      "{std}::vector<double,{std}::allocator<double>>",
-      fmt::arg("std", stdcc)));
-  CheckHash<std::vector<BasicVector<double>>>(fmt::format(
-      "{std}::vector<"
-        "drake::systems::BasicVector<double>,"
-        "{std}::allocator<drake::systems::BasicVector<double>>"
-      ">", fmt::arg("std", stdcc)));
+  CheckHash<std::vector<double>>(
+      fmt::format("{std}::vector<double,{std}::allocator<double>>",
+                  fmt::arg("std", stdcc)));
+  CheckHash<std::vector<BasicVector<double>>>(
+      fmt::format("{std}::vector<"
+                  "drake::systems::BasicVector<double>,"
+                  "{std}::allocator<drake::systems::BasicVector<double>>"
+                  ">",
+                  fmt::arg("std", stdcc)));
 
   // Const-qualified types.
-  CheckHash<std::shared_ptr<const double>>(fmt::format(
-      "{std}::shared_ptr<const double>",
-      fmt::arg("std", stdcc)));
+  CheckHash<std::shared_ptr<const double>>(
+      fmt::format("{std}::shared_ptr<const double>", fmt::arg("std", stdcc)));
 
   // Eigen classes.
   CheckHash<Eigen::VectorXd>(
@@ -499,12 +499,13 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
       "{std}::vector<{eigen},{std}::allocator<{eigen}>>",
       fmt::arg("std", stdcc),
       fmt::arg("eigen",
-          "Eigen::Matrix<double,int=-1,int=1,int=0,int=-1,int=1>")));
+               "Eigen::Matrix<double,int=-1,int=1,int=0,int=-1,int=1>")));
 
   // Everything together at once works.
-  using BigType = std::vector<std::pair<
-      const double, std::shared_ptr<Eigen::Matrix3d>>>;
+  using BigType =
+      std::vector<std::pair<const double, std::shared_ptr<Eigen::Matrix3d>>>;
   CheckHash<BigType>(fmt::format(
+      // clang-format off
       "{std}::vector<"
         "{std}::pair<"
           "const double,"
@@ -512,9 +513,10 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
         "{std}::allocator<{std}::pair<"
           "const double,"
           "{std}::shared_ptr<{eigen}>>>>",
+      // clang-format on
       fmt::arg("std", stdcc),
       fmt::arg("eigen",
-          "Eigen::Matrix<double,int=3,int=3,int=0,int=3,int=3>")));
+               "Eigen::Matrix<double,int=3,int=3,int=0,int=3,int=3>")));
 
   // Templated on a value, but with the 'using NonTypeTemplateParameter'
   // decoration so that the hash works.
@@ -522,7 +524,8 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
       kClang || kGcc9 ? "drake::test::{anonymous}::AnonEnum::kFoo" : "0";
   CheckHash<NiceAnonEnumTemplate<AnonEnum::kFoo>>(
       "drake::test::{anonymous}::NiceAnonEnumTemplate<"
-        "drake::test::{anonymous}::AnonEnum=" + kfoo + ">");
+      "drake::test::{anonymous}::AnonEnum=" +
+      kfoo + ">");
 }
 
 // Tests that a type mismatched is detected for a mismatched non-type template
@@ -556,16 +559,14 @@ GTEST_TEST(ValueTest, TypesInBadCastMessage) {
 
   {
     // Make a base-typed value container with a more-derived value inside.
-    auto value =
-        std::make_unique<Value<BasicVector<double>>>(MyVector1d{});
+    auto value = std::make_unique<Value<BasicVector<double>>>(MyVector1d{});
     AbstractValue& abstract = *value;
 
     // This request looks like it should work, but doesn't. The error message
     // should indicate why.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        abstract.get_value<MyVector1d>(),
-        ".*request.*MyVector.*static.*BasicVector.*"
-        "dynamic.*MyVector.*'\\)\\.$");
+    DRAKE_EXPECT_THROWS_MESSAGE(abstract.get_value<MyVector1d>(),
+                                ".*request.*MyVector.*static.*BasicVector.*"
+                                "dynamic.*MyVector.*'\\)\\.$");
 
     // This is the proper request type.
     DRAKE_EXPECT_NO_THROW(abstract.get_value<BasicVector<double>>());
@@ -581,9 +582,8 @@ GTEST_TEST(ValueTest, TypesInBadCastMessage) {
     // expression here specifically rejects parentheses near the end of the
     // line, to exclude the more elaborate error message matched in the case
     // above.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        abstract.get_value<double>(),
-        ".*request.*double.*static.*int'\\.$");
+    DRAKE_EXPECT_THROWS_MESSAGE(abstract.get_value<double>(),
+                                ".*request.*double.*static.*int'\\.$");
   }
 }
 

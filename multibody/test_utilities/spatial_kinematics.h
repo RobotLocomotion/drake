@@ -24,8 +24,8 @@ class SpatialKinematicsPVA {
   /// @param[in] A_NBo_N B's spatial acceleration in N, expressed in N.
   SpatialKinematicsPVA(const math::RigidTransform<T>& X_NB,
                        const SpatialVelocity<T>& V_NBo_N,
-                       const SpatialAcceleration<T>& A_NBo_N) :
-                       X_NB_(X_NB), V_NBo_N_(V_NBo_N), A_NBo_N_(A_NBo_N) {}
+                       const SpatialAcceleration<T>& A_NBo_N)
+      : X_NB_(X_NB), V_NBo_N_(V_NBo_N), A_NBo_N_(A_NBo_N) {}
 
   /// Constructor that populates the members of this class.
   /// @param[in] R_NB 3x3 rotation matrix relating Nx, Ny, Nz to Bx, By, Bz.
@@ -35,13 +35,10 @@ class SpatialKinematicsPVA {
   /// @param[in] alpha_NB_N B's angular acceleration in N, expressed in N.
   /// @param[in] a_NBo_N Bo's translational acceleration in N, expressed in N.
   SpatialKinematicsPVA(const math::RotationMatrix<T>& R_NB,
-                       const Vector3<T>& p_NoBo_N,
-                       const Vector3<T>& w_NB_N,
-                       const Vector3<T>& v_NBo_N,
-                       const Vector3<T>& alpha_NB_N,
-                       const Vector3<T>& a_NBo_N) :
-                       V_NBo_N_(w_NB_N, v_NBo_N),
-                       A_NBo_N_(alpha_NB_N, a_NBo_N) {
+                       const Vector3<T>& p_NoBo_N, const Vector3<T>& w_NB_N,
+                       const Vector3<T>& v_NBo_N, const Vector3<T>& alpha_NB_N,
+                       const Vector3<T>& a_NBo_N)
+      : V_NBo_N_(w_NB_N, v_NBo_N), A_NBo_N_(alpha_NB_N, a_NBo_N) {
     X_NB_.set_rotation(R_NB);
     X_NB_.set_translation(p_NoBo_N);
   }

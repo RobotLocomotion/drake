@@ -12,28 +12,35 @@ namespace quadrotor {
 
 namespace {
 Matrix3d default_moment_of_inertia() {
-  return (Eigen::Matrix3d() <<  // BR
-          0.0015, 0, 0,  // BR
-          0, 0.0025, 0,  // BR
+  // clang-format off
+  return (Eigen::Matrix3d() <<
+          0.0015, 0, 0,
+          0, 0.0025, 0,
           0, 0, 0.0035).finished();
+  // clang-format on
 }
 }  // namespace
 
 template <typename T>
 QuadrotorPlant<T>::QuadrotorPlant()
     : QuadrotorPlant(0.775,  // m (kg)
-                     0.15,  // L (m)
+                     0.15,   // L (m)
                      default_moment_of_inertia(),
                      1.0,    // kF
                      0.0245  // kM
-                     ) {}
+      ) {}
 
 template <typename T>
 QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
                                   const Matrix3d& I_arg, double kF_arg,
                                   double kM_arg)
     : systems::LeafSystem<T>(systems::SystemTypeTag<QuadrotorPlant>{}),
-      g_{9.81}, m_(m_arg), L_(L_arg), kF_(kF_arg), kM_(kM_arg), I_(I_arg) {
+      g_{9.81},
+      m_(m_arg),
+      L_(L_arg),
+      kF_(kF_arg),
+      kM_(kM_arg),
+      I_(I_arg) {
   // Four inputs -- one for each propeller.
   this->DeclareInputPort("propeller_force", systems::kVectorValued, 4);
   // State is x ,y , z, roll, pitch, yaw + velocities.
@@ -44,7 +51,7 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
 
 template <typename T>
 template <typename U>
-QuadrotorPlant<T>:: QuadrotorPlant(const QuadrotorPlant<U>& other)
+QuadrotorPlant<T>::QuadrotorPlant(const QuadrotorPlant<U>& other)
     : QuadrotorPlant<T>(other.m_, other.L_, other.I_, other.kF_, other.kM_) {}
 
 template <typename T>
@@ -53,8 +60,8 @@ QuadrotorPlant<T>::~QuadrotorPlant() {}
 // TODO(russt): Generalize this to support the rotor locations on the Skydio R2.
 template <typename T>
 void QuadrotorPlant<T>::DoCalcTimeDerivatives(
-    const systems::Context<T> &context,
-    systems::ContinuousState<T> *derivatives) const {
+    const systems::Context<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
   // Get the input value characterizing each of the 4 rotor's aerodynamics.
   const systems::BasicVector<T>* u_vec = this->EvalVectorInput(context, 0);
   const Vector4<T> u = u_vec ? u_vec->value() : Vector4<T>::Zero();

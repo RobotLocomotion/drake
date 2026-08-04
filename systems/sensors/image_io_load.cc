@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.

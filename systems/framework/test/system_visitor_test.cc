@@ -1,6 +1,7 @@
 #include "drake/systems/framework/system_visitor.h"
 
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

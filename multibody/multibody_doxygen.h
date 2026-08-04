@@ -12,7 +12,7 @@
 
 //------------------------------------------------------------------------------
 /** @addtogroup multibody_notation
-
+@{
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
 code is correct. In Drake we use terminology, notation, and abstractions that
@@ -82,6 +82,7 @@ from your Doxygen comments; instructions are at the top of the source file used
 to generate them.</em>
 
 Next topic: @ref multibody_notation_basics
+@}
 */
 
 // Developers: this document is somewhat of an exception to the motherhood-
@@ -320,6 +321,7 @@ Quantity                     |Symbol|     Typeset              | Monogram   | Me
 -----------------------------|:----:|:------------------------:|:----------:|----------------------------
 Generic vector v             |  v   |@f$[v]_E@f$               |`v_E`       |Vector v expressed in frame E.
 Rotation matrix              |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
+Rotation quaternion          |  q   |@f$^Bq^C@f$               |`q_BC`      |Frame C's orientation in frame B
 Position vector              |  p   |@f$^Bp^C@f$               |`p_BC`      |Position vector from Bo (frame B's origin) to Co (frame C's origin), expressed in frame B (implied).
 Position vector              |  p   |@f$[^Pp^Q]_E@f$           |`p_PQ_E`    |Position vector from point P to point Q, expressed in frame E.
 Transform/pose               |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *rigid* transform (pose) in frame B
@@ -409,6 +411,10 @@ w_BCset_E  | w_BClist_E   |  Set of angular velocities in frame B for the frames
 vset_E     | vlist_E      |  Set of generic vectors v = {v₀,  v₁,  v₂} expressed in frame E
 mesh_B                    || A mesh whose underlying vertices' positions are from Bo (frame B's origin), expressed in frame B
 point_cloud_B             || A point cloud whose underlying points' positions are from Bo (frame B's origin), expressed in frame B
+
+<b>Historical note</b>: In the 1980s, monogram notation extended Thomas Kane's 
+1960s kinematic and dynamics typeset notation to software by Kane's associates,
+e.g., Michael Sherman, David Schaechter, David Levinson, and Paul Mitiguy.
 
  Next topic: @ref multibody_quantities_units
 */

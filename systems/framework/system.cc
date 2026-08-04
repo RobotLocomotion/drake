@@ -602,8 +602,7 @@ bool System<T>::IsDifferentialEquationSystem() const {
 }
 
 template <typename T>
-std::map<PeriodicEventData, std::vector<const Event<T>*>,
-         PeriodicEventDataComparator>
+std::map<PeriodicEventData, std::vector<const Event<T>*>>
 System<T>::MapPeriodicEventsByTiming(const Context<T>* context) const {
   std::unique_ptr<Context<T>> dummy_context;
   const Context<T>* context_to_use = context;

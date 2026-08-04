@@ -1,13 +1,18 @@
 #include "drake/bindings/pydrake/systems/framework_py_systems.h"
 
-#include "pybind11/eval.h"
+#include <memory>
+#include <set>
+#include <source_location>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "drake/bindings/generated_docstrings/systems_framework.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/value_producer_pybind.h"
 #include "drake/systems/framework/diagram.h"
@@ -50,10 +55,116 @@ using systems::internal::WrappedSystem;
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::systems;
-constexpr auto& doc = pydrake_doc.drake.systems;
+constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
+
+// This helper function works around a peculiarity of pybind11 wrapping of
+// python bound methods for calls from C++. It is possible to end up with
+// distinct call wrappers of the same method, with independent memory, but that
+// *compare* as equal. This quirk defeats the reference bookkeeping of
+// common/ref_cycle_pybind; attempts to add distinct but "equal" wrappers fail,
+// and a reference is lost. To compensate, this function wraps a potentially
+// quirky callable in a tuple with a unique integer, so that apparently "equal"
+// callables can be inserted as distinct set members with the
+// common/ref_cycle_pybind bookkeeping scheme.
+py::object UniquelyWrapCallback(py::object callback) {
+  static std::atomic<uint64_t> uniquifier{0};
+  return py::make_tuple(callback, uniquifier.fetch_add(1));
+}
+
+// This helper function causes the lifetime of `callback` to be at least as
+// long as the lifetime of `system`.
+void EnsureCallbackLifetime(py::object system, py::object callback,
+    const std::source_location location = std::source_location::current()) {
+  internal::make_arbitrary_ref_link(system, UniquelyWrapCallback(callback),
+      fmt::format("{}:{}", location.file_name(), location.line()));
+}
+
+// Because Python doesn't offer static type checking to help remind
+// the user to return an EventStatus from an event handler function,
+// we'll bind the callback as optional<> to allow the user to omit a
+// return statement. (When declaring a periodic event in C++, the
+// user-provided callback function is similarly overloaded to return
+// either EventStatus or void. We can't overload based on return
+// values in pybind11, so that's another reason we'll use optional<>
+// in Python for the same effect.)
+template <typename... Args>
+using EventSignature = std::optional<EventStatus>(Args...);
+// Declare the handler signature within std::function.
+template <typename... Args>
+using EventCallback = std::function<EventSignature<Args...>>;
+// Declare the handler signature as a python function object with compile-time
+// readable type signature.
+template <typename... Args>
+using PyEventCallback = py::typing::Callable<EventSignature<Args...>>;
+
+// Declare the various callback types that will appear as parameters of
+// bindings, such that automatic documentation has correct type signatures.
+template <typename T>
+using PyPublishCallback = PyEventCallback<const Context<T>*>;
+template <typename T>
+using PyDiscreteUpdateCallback =
+    PyEventCallback<const Context<T>*, DiscreteValues<T>*>;
+template <typename T>
+using PyUnrestrictedUpdateCallback =
+    PyEventCallback<const Context<T>*, State<T>*>;
+
+// Constructs a publish event for bound Declare*Event methods.
+// @param trigger_type the trigger type.
+// @param callback_ptr a callable expecting a context. Aliased; its lifetime
+// must be guaranteed elsewhere.
+template <typename T>
+PublishEvent<T> MakePublishEvent(
+    TriggerType trigger_type, PyObject* callback_ptr) {
+  return PublishEvent<T>(
+      trigger_type, [callback_ptr](const System<T>&, const Context<T>& context,
+                        const PublishEvent<T>&) {
+        py::gil_scoped_acquire guard;
+        py::handle py_callback_from_ptr = callback_ptr;
+        auto callback =
+            py::cast<EventCallback<const Context<T>*>>(py_callback_from_ptr);
+        return callback(&context).value_or(EventStatus::Succeeded());
+      });
+}
+
+// Constructs a DiscreteUpdate event for bound Declare*Event methods.
+// @param trigger_type the trigger type.
+// @param callback_ptr a callable expecting a context and a DiscreteValues
+// object. Aliased; its lifetime must be guaranteed elsewhere.
+template <typename T>
+DiscreteUpdateEvent<T> MakeDiscreteUpdateEvent(
+    TriggerType trigger_type, PyObject* callback_ptr) {
+  return DiscreteUpdateEvent<T>(
+      trigger_type, [callback_ptr](const System<T>&, const Context<T>& context,
+                        const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+        py::gil_scoped_acquire guard;
+        py::handle py_callback_from_ptr = callback_ptr;
+        auto callback =
+            py::cast<EventCallback<const Context<T>*, DiscreteValues<T>*>>(
+                py_callback_from_ptr);
+        return callback(&context, &*xd).value_or(EventStatus::Succeeded());
+      });
+}
+
+// Constructs an UnrestrictedUpdate event for bound Declare*Event methods.
+// @param trigger_type the trigger type.
+// @param callback_ptr a callable expecting a context and a State object.
+// Aliased; its lifetime must be guaranteed elsewhere.
+template <typename T>
+UnrestrictedUpdateEvent<T> MakeUnrestrictedUpdateEvent(
+    TriggerType trigger_type, PyObject* callback_ptr) {
+  return UnrestrictedUpdateEvent<T>(
+      trigger_type, [callback_ptr](const System<T>&, const Context<T>& context,
+                        const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+        py::gil_scoped_acquire guard;
+        py::handle py_callback_from_ptr = callback_ptr;
+        auto callback = py::cast<EventCallback<const Context<T>*, State<T>*>>(
+            py_callback_from_ptr);
+        return callback(&context, &*x).value_or(EventStatus::Succeeded());
+      });
+}
 
 class SystemBasePublic : public SystemBase {
  public:
@@ -69,9 +180,9 @@ class SystemBasePublic : public SystemBase {
 // Provides a templated 'namespace'.
 template <typename T>
 struct Impl {
-  class PySystem : public py::wrapper<System<T>> {
+  class PySystem : public System<T> {
    public:
-    using Base = py::wrapper<System<T>>;
+    using Base = System<T>;
     using Base::Base;
     // Expose protected methods for binding.
     using Base::DeclareInputPort;
@@ -118,7 +229,7 @@ struct Impl {
     // to override this method in `PyLeafSystem`, expose the method here for
     // direct(-ish) access. (Otherwise, we get an error about inaccessible
     // downcasting when trying to bind `PyLeafSystem::DoCalcTimeDerivatives` to
-    // `py::class_<LeafSystem<T>, ...>`.
+    // `class_<LeafSystem<T>, ...>`.
     using Base::DoCalcTimeDerivatives;
   };
 
@@ -126,25 +237,17 @@ struct Impl {
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
   template <typename LeafSystemBase = LeafSystemPublic>
-  class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
+  class PyLeafSystemBase : public LeafSystemBase {
    public:
-    using Base = py::wrapper<LeafSystemBase>;
-    using Base::Base;
+    NB_TRAMPOLINE(LeafSystemBase, 2);
+    using Base = LeafSystemBase;
 
     // Trampoline virtual methods.
 
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
-      // Yuck! We have to dig in and use internals :(
-      // We must ensure that pybind only sees pointers, since this method may
-      // be called from C++, and pybind will not have seen these objects yet.
-      // @see https://github.com/pybind/pybind11/issues/1241
-      // TODO(eric.cousineau): Figure out how to supply different behavior,
-      // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(
-          void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
-      // If the macro did not return, use default functionality.
-      Base::DoCalcTimeDerivatives(context, derivatives);
+      PYDRAKE_OVERRIDE(void, LeafSystem<T>, DoCalcTimeDerivatives,
+          std::ref(context), derivatives);
     }
 
     // This actually changes the signature of DoGetWitnessFunction,
@@ -154,30 +257,32 @@ struct Impl {
     // trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
-      py::gil_scoped_acquire guard;
-      auto wrapped =
-          [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
-        PYBIND11_OVERLOAD_INT(
-            std::optional<std::vector<const WitnessFunction<T>*>>,
-            LeafSystem<T>, "DoGetWitnessFunctions", &context);
-        std::vector<const WitnessFunction<T>*> result;
-        // If the macro did not return, use default functionality.
-        Base::DoGetWitnessFunctions(context, &result);
-        return {result};
-      };
-      auto result = wrapped();
-      if (!result.has_value()) {
-        // Give a good error message in case the user forgot to return anything.
-        throw py::type_error(
-            "Overrides of DoGetWitnessFunctions() must return "
-            "List[WitnessFunction], not NoneType.");
+      {
+        py::gil_scoped_acquire guard;
+        const LeafSystem<T>* base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoGetWitnessFunctions")) {
+          auto result =
+              py::cast<std::optional<std::vector<const WitnessFunction<T>*>>>(
+                  (self.attr("DoGetWitnessFunctions"))(&context));
+          if (!result.has_value()) {
+            // Give a good error message in case the user forgot to return
+            // anything.
+            throw py::type_error(
+                "Overrides of DoGetWitnessFunctions() must return "
+                "List[WitnessFunction], not NoneType.");
+          }
+          *witnesses = std::move(*result);
+          return;
+        }
       }
-      *witnesses = std::move(*result);
+      // If not overridden, use default functionality.
+      return Base::DoGetWitnessFunctions(context, witnesses);
     }
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
+      PYDRAKE_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
           DoGetGraphvizFragment, params);
     }
   };
@@ -195,14 +300,14 @@ struct Impl {
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
   template <typename DiagramBase = DiagramPublic>
-  class PyDiagramBase : public py::wrapper<DiagramBase> {
+  class PyDiagramBase : public DiagramBase {
    public:
-    using Base = py::wrapper<DiagramBase>;
-    using Base::Base;
+    NB_TRAMPOLINE(DiagramBase, 1);
+    using Base = DiagramBase;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
         const SystemBase::GraphvizFragmentParams& params) const override {
-      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
+      PYDRAKE_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
           DoGetGraphvizFragment, params);
     }
   };
@@ -226,26 +331,33 @@ struct Impl {
     using Base::DoCalcVectorTimeDerivatives;
   };
 
-  class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
+  class PyVectorSystem : public VectorSystemPublic {
    public:
-    using Base = py::wrapper<VectorSystemPublic>;
-    using Base::Base;
+    NB_TRAMPOLINE(VectorSystemPublic, 0);
+    using Base = VectorSystemPublic;
 
     void DoCalcVectorOutput(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* output) const override {
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `output` will not work when T is AutoDiffXd,
-      // Expression, etc. See
+      // Expression, etc. For pybind11 background, see
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
       // TODO(eric.cousineau): This will be resolved once dtype=custom is
       // resolved.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>, "DoCalcVectorOutput",
-          // N.B. Passing `Eigen::Map<>` derived classes by reference rather
-          // than pointer to ensure conceptual clarity. pybind11 `type_caster`
-          // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
-          &context, input, state, ToEigenRef(output));
-      // If the macro did not return, use default functionality.
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorOutput")) {
+          self.attr("DoCalcVectorOutput")(
+              &context, input, state, ToEigenRef(output));
+          return;
+        }
+      }
+      // If not overridden, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, output);
     }
 
@@ -253,12 +365,21 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "DoCalcVectorTimeDerivatives", &context, input, state,
-          ToEigenRef(derivatives));
-      // If the macro did not return, use default functionality.
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorTimeDerivatives")) {
+          self.attr("DoCalcVectorTimeDerivatives")(
+              &context, input, state, ToEigenRef(derivatives));
+          return;
+        }
+      }
+      // If not overridden, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, derivatives);
     }
 
@@ -266,42 +387,43 @@ struct Impl {
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
+      // We can't use PYDRAKE_OVERRIDE here because of the ToEigenRef.
+      //
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
-          ToEigenRef(next_state));
-      // If the macro did not return, use default functionality.
+      {
+        py::gil_scoped_acquire guard;
+        const VectorSystem<T>* const base = this;
+        py::object self = py::cast(base);
+        if (py::hasattr(self, "DoCalcVectorDiscreteVariableUpdates")) {
+          self.attr("DoCalcVectorDiscreteVariableUpdates")(
+              &context, input, state, ToEigenRef(next_state));
+          return;
+        }
+      }
+      // If not overridden, use default functionality.
       Base::DoCalcVectorDiscreteVariableUpdates(
           context, input, state, next_state);
     }
   };
 
-  class PySystemVisitor : public py::wrapper<SystemVisitor<T>> {
+  class PySystemVisitor : public SystemVisitor<T> {
    public:
+    NB_TRAMPOLINE(SystemVisitor<T>, 2);
+
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
-      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitSystem, system);
+      PYDRAKE_OVERRIDE_PURE(
+          void, SystemVisitor<T>, VisitSystem, std::cref(system));
     };
 
     void VisitDiagram(const Diagram<T>& diagram) override {
-      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
+      PYDRAKE_OVERRIDE_PURE(
+          void, SystemVisitor<T>, VisitDiagram, std::cref(diagram));
     }
   };
 
-  // Because Python doesn't offer static type checking to help remind
-  // the user to return an EventStatus from an event handler function,
-  // we'll bind the callback as optional<> to allow the user to omit a
-  // return statement. (When declaring a periodic event in C++, the
-  // user-provided callback function is similarly overloaded to return
-  // either EventStatus or void. We can't overload based on return
-  // values in pybind11, so that's another reason we'll use optional<>
-  // in Python for the same effect.)
-  template <typename... Args>
-  using EventCallback = std::function<std::optional<EventStatus>(Args...)>;
-
-  static py::class_<System<T>, SystemBase, PySystem> DefineSystem(
-      py::module m) {
+  static class_<System<T>, SystemBase, PySystem> DefineSystem(py::module_ m) {
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
     auto system_cls =
@@ -379,11 +501,17 @@ struct Impl {
         // Calculations.
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
-            doc.System.CalcTimeDerivatives.doc)
-        .def("CalcImplicitTimeDerivativesResidual",
-            &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
-            py::arg("proposed_derivatives"), py::arg("residual"),
-            doc.System.CalcImplicitTimeDerivativesResidual.doc)
+            doc.System.CalcTimeDerivatives.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      system_cls  // BR
+          .def("CalcImplicitTimeDerivativesResidual",
+              &System<T>::CalcImplicitTimeDerivativesResidual,
+              py::arg("context"), py::arg("proposed_derivatives"),
+              py::arg("residual"),
+              doc.System.CalcImplicitTimeDerivativesResidual.doc);
+    }
+    system_cls  // BR
         .def(
             "CalcImplicitTimeDerivativesResidual",
             [](const System<T>* self, const Context<T>& context,
@@ -468,35 +596,39 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("root_context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
-        // Utility methods.
+        // Port access methods. All returned port references use a ref_cycle
+        // (rather than the implicit keep-alive of reference_internal) to avoid
+        // immortality hazards like #22515.
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&, int, bool>(
                 &System<T>::get_input_port),
-            py_rvp::reference_internal, py::arg("port_index"),
-            py::arg("warn_deprecated") = true,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_index"), py::arg("warn_deprecated") = true,
             doc.System.get_input_port.doc_2args)
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&>(
                 &System<T>::get_input_port),
-            py_rvp::reference_internal, doc.System.get_input_port.doc_0args)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            doc.System.get_input_port.doc_0args)
         .def("GetInputPort", &System<T>::GetInputPort,
-            py_rvp::reference_internal, py::arg("port_name"),
-            doc.System.GetInputPort.doc)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_name"), doc.System.GetInputPort.doc)
         .def("HasInputPort", &System<T>::HasInputPort, py::arg("port_name"),
             doc.System.HasInputPort.doc)
         .def("get_output_port",
             overload_cast_explicit<const OutputPort<T>&, int, bool>(
                 &System<T>::get_output_port),
-            py_rvp::reference_internal, py::arg("port_index"),
-            py::arg("warn_deprecated") = true,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_index"), py::arg("warn_deprecated") = true,
             doc.System.get_output_port.doc_2args)
         .def("get_output_port",
             overload_cast_explicit<const OutputPort<T>&>(
                 &System<T>::get_output_port),
-            py_rvp::reference_internal, doc.System.get_output_port.doc_0args)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            doc.System.get_output_port.doc_0args)
         .def("GetOutputPort", &System<T>::GetOutputPort,
-            py_rvp::reference_internal, py::arg("port_name"),
-            doc.System.GetOutputPort.doc)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("HasOutputPort", &System<T>::HasOutputPort, py::arg("port_name"),
             doc.System.HasOutputPort.doc)
         // Witness functions.
@@ -517,8 +649,11 @@ Note: The above is for the C++ documentation. For Python, use
             overload_cast_explicit<InputPort<T>&,
                 std::variant<std::string, UseDefaultName>, PortDataType, int,
                 std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
-            py_rvp::reference_internal, py::arg("name"), py::arg("type"),
-            py::arg("size"), py::arg("random_type") = std::nullopt,
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("type"), py::arg("size"),
+            py::arg("random_type") = std::nullopt,
             doc.System.DeclareInputPort.doc)
         // Not part of System; SystemBase method promoted in bindings.
         .def(
@@ -589,7 +724,7 @@ Note: The above is for the C++ documentation. For Python, use
     type_visit(def_to_scalar_type_maybe, CommonScalarPack{});
   }
 
-  static void DefineLeafSystem(py::module m) {
+  static void DefineLeafSystem(py::module_ m) {
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
     auto leaf_system_cls =
         DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
@@ -610,8 +745,10 @@ Note: The above is for the C++ documentation. For Python, use
                 const AbstractValue& model_value) -> const InputPort<T>& {
               return self->DeclareAbstractInputPort(name, model_value);
             },
-            py_rvp::reference_internal, py::arg("name"), py::arg("model_value"),
-            doc.LeafSystem.DeclareAbstractInputPort.doc)
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("model_value"), doc.LeafSystem.DeclareAbstractInputPort.doc)
         .def("DeclareAbstractParameter",
             &PyLeafSystem::DeclareAbstractParameter, py::arg("model_value"),
             doc.LeafSystem.DeclareAbstractParameter.doc)
@@ -619,7 +756,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
         .def(
             "DeclareAbstractOutputPort",
-            [](PyLeafSystem* self, const std::string& name, py::function alloc,
+            [](PyLeafSystem* self, const std::string& name, py::callable alloc,
                 std::function<void(py::object, py::object)> calc,
                 const std::set<DependencyTicket>& prerequisites_of_calc)
                 -> const OutputPort<T>& {
@@ -628,8 +765,10 @@ Note: The above is for the C++ documentation. For Python, use
                   MakeCppCompatibleCalcCallback(std::move(calc)),
                   prerequisites_of_calc);
             },
-            py_rvp::reference_internal, py::arg("name"), py::arg("alloc"),
-            py::arg("calc"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("alloc"), py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
@@ -643,7 +782,9 @@ Note: The above is for the C++ documentation. For Python, use
               return self->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },
-            py_rvp::reference_internal, py::arg("name"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
             py::arg("model_vector"), py::arg("random_type") = std::nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args_model_vector)
         .def(
@@ -653,8 +794,10 @@ Note: The above is for the C++ documentation. For Python, use
                 -> InputPort<T>& {
               return self->DeclareVectorInputPort(name, size, random_type);
             },
-            py_rvp::reference_internal, py::arg("name"), py::arg("size"),
-            py::arg("random_type") = std::nullopt,
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("size"), py::arg("random_type") = std::nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args_size)
         .def("DeclareVectorOutputPort",
             WrapCallbacks(
@@ -664,8 +807,10 @@ Note: The above is for the C++ documentation. For Python, use
                     -> const OutputPort<T>& {
                   return self->DeclareVectorOutputPort(name, arg1, arg2, arg3);
                 }),
-            py_rvp::reference_internal, py::arg("name"), py::arg("model_value"),
-            py::arg("calc"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("model_value"), py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareVectorOutputPort.doc_4args_model_vector)
@@ -678,8 +823,10 @@ Note: The above is for the C++ documentation. For Python, use
                   return self->DeclareVectorOutputPort(
                       name, size, calc, prerequisites_of_calc);
                 }),
-            py_rvp::reference_internal, py::arg("name"), py::arg("size"),
-            py::arg("calc"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("size"), py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareVectorOutputPort.doc_4args_size)
@@ -687,61 +834,58 @@ Note: The above is for the C++ documentation. For Python, use
             py::overload_cast<std::variant<std::string, UseDefaultName>,
                 ContinuousStateIndex>(
                 &LeafSystemPublic::DeclareStateOutputPort),
-            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            py::arg("name"), py::arg("state_index"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LeafSystem.DeclareStateOutputPort.doc_continuous)
         .def("DeclareStateOutputPort",
             py::overload_cast<std::variant<std::string, UseDefaultName>,
                 DiscreteStateIndex>(&LeafSystemPublic::DeclareStateOutputPort),
-            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            py::arg("name"), py::arg("state_index"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LeafSystem.DeclareStateOutputPort.doc_discrete)
         .def("DeclareStateOutputPort",
             py::overload_cast<std::variant<std::string, UseDefaultName>,
                 AbstractStateIndex>(&LeafSystemPublic::DeclareStateOutputPort),
-            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            py::arg("name"), py::arg("state_index"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LeafSystem.DeclareStateOutputPort.doc_abstract)
         // TODO(russt): Implement the std::function variant of
         // LeafSystem::Declare*Event sugar methods if they are ever needed,
         // instead of implementing them here.
-        .def("DeclareInitializationPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              EventCallback<const Context<T>&> publish) {
-              self->DeclareInitializationEvent(PublishEvent<T>(
-                  TriggerType::kInitialization,
-                  [publish](const System<T>&, const Context<T>& context,
-                      const PublishEvent<T>&) {
-                    return publish(context).value_or(EventStatus::Succeeded());
-                  }));
-            }),
+        .def(
+            "DeclareInitializationPublishEvent",
+            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_publish);
+              self->DeclareInitializationEvent(MakePublishEvent<T>(
+                  TriggerType::kInitialization, py_publish.ptr()));
+            },
             py::arg("publish"),
             doc.LeafSystem.DeclareInitializationPublishEvent.doc)
-        .def("DeclareInitializationDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->DeclareInitializationEvent(
-                      DiscreteUpdateEvent<T>(TriggerType::kInitialization,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareInitializationDiscreteUpdateEvent",
+            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclareInitializationEvent(MakeDiscreteUpdateEvent<T>(
+                  TriggerType::kInitialization, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationDiscreteUpdateEvent.doc)
-        .def("DeclareInitializationUnrestrictedUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, State<T>*> update) {
-                  self->DeclareInitializationEvent(
-                      UnrestrictedUpdateEvent<T>(TriggerType::kInitialization,
-                          [update](const System<T>&, const Context<T>& context,
-                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            return update(context, &*x)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareInitializationUnrestrictedUpdateEvent",
+            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclareInitializationEvent(MakeUnrestrictedUpdateEvent<T>(
+                  TriggerType::kInitialization, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationUnrestrictedUpdateEvent.doc)
         .def(
@@ -750,48 +894,40 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        .def("DeclarePeriodicPublishEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    EventCallback<const Context<T>&> publish) {
-                  self->DeclarePeriodicEvent(period_sec, offset_sec,
-                      PublishEvent<T>(TriggerType::kPeriodic,
-                          [publish](const System<T>&, const Context<T>& context,
-                              const PublishEvent<T>&) {
-                            return publish(context).value_or(
-                                EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePeriodicPublishEvent",
+            [](PyLeafSystem* self, double period_sec, double offset_sec,
+                PyPublishCallback<T> py_publish) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_publish);
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  MakePublishEvent<T>(
+                      TriggerType::kPeriodic, py_publish.ptr()));
+            },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("publish"),
             doc.LeafSystem.DeclarePeriodicPublishEvent.doc)
-        .def("DeclarePeriodicDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->DeclarePeriodicEvent(period_sec, offset_sec,
-                      DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePeriodicDiscreteUpdateEvent",
+            [](PyLeafSystem* self, double period_sec, double offset_sec,
+                PyDiscreteUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  MakeDiscreteUpdateEvent<T>(
+                      TriggerType::kPeriodic, py_update.ptr()));
+            },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
             doc.LeafSystem.DeclarePeriodicDiscreteUpdateEvent.doc)
-        .def("DeclarePeriodicUnrestrictedUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    EventCallback<const Context<T>&, State<T>*> update) {
-                  self->DeclarePeriodicEvent(period_sec, offset_sec,
-                      UnrestrictedUpdateEvent<T>(TriggerType::kPeriodic,
-                          [update](const System<T>&, const Context<T>& context,
-                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            return update(context, &*x)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePeriodicUnrestrictedUpdateEvent",
+            [](PyLeafSystem* self, double period_sec, double offset_sec,
+                PyUnrestrictedUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  MakeUnrestrictedUpdateEvent<T>(
+                      TriggerType::kPeriodic, py_update.ptr()));
+            },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
             doc.LeafSystem.DeclarePeriodicUnrestrictedUpdateEvent.doc)
         .def(
@@ -802,44 +938,33 @@ Note: The above is for the C++ documentation. For Python, use
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
             doc.LeafSystem.DeclarePeriodicEvent.doc)
-        .def("DeclarePerStepPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              EventCallback<const Context<T>&> publish) {
-              self->DeclarePerStepEvent(PublishEvent<T>(TriggerType::kPerStep,
-                  [publish](const System<T>&, const Context<T>& context,
-                      const PublishEvent<T>&) {
-                    return publish(context).value_or(EventStatus::Succeeded());
-                  }));
-            }),
+        .def(
+            "DeclarePerStepPublishEvent",
+            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_publish);
+              self->DeclarePerStepEvent(
+                  MakePublishEvent<T>(TriggerType::kPerStep, py_publish.ptr()));
+            },
             py::arg("publish"), doc.LeafSystem.DeclarePerStepPublishEvent.doc)
-        .def("DeclarePerStepDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->DeclarePerStepEvent(
-                      DiscreteUpdateEvent<T>(TriggerType::kPerStep,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePerStepDiscreteUpdateEvent",
+            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclarePerStepEvent(MakeDiscreteUpdateEvent<T>(
+                  TriggerType::kPerStep, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclarePerStepDiscreteUpdateEvent.doc)
-        .def("DeclarePerStepUnrestrictedUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, State<T>*> update) {
-                  self->DeclarePerStepEvent(
-                      UnrestrictedUpdateEvent<T>(TriggerType::kPerStep,
-                          [update](const System<T>&, const Context<T>& context,
-                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            return update(context, &*x)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePerStepUnrestrictedUpdateEvent",
+            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclarePerStepEvent(MakeUnrestrictedUpdateEvent<T>(
+                  TriggerType::kPerStep, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclarePerStepUnrestrictedUpdateEvent.doc)
         .def(
@@ -848,46 +973,35 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclarePerStepEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
-        .def("DeclareForcedPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              EventCallback<const Context<T>&> publish) {
+        .def(
+            "DeclareForcedPublishEvent",
+            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_publish);
               self->get_mutable_forced_publish_events().AddEvent(
-                  PublishEvent<T>(TriggerType::kForced,
-                      [publish](const System<T>&, const Context<T>& context,
-                          const PublishEvent<T>&) {
-                        return publish(context).value_or(
-                            EventStatus::Succeeded());
-                      }));
-            }),
+                  MakePublishEvent<T>(TriggerType::kForced, py_publish.ptr()));
+            },
             py::arg("publish"), doc.LeafSystem.DeclareForcedPublishEvent.doc)
-        .def("DeclareForcedDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->get_mutable_forced_discrete_update_events().AddEvent(
-                      DiscreteUpdateEvent<T>(TriggerType::kForced,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareForcedDiscreteUpdateEvent",
+            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->get_mutable_forced_discrete_update_events().AddEvent(
+                  MakeDiscreteUpdateEvent<T>(
+                      TriggerType::kForced, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareForcedDiscreteUpdateEvent.doc)
-        .def("DeclareForcedUnrestrictedUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, State<T>*> update) {
-                  self->get_mutable_forced_unrestricted_update_events()
-                      .AddEvent(UnrestrictedUpdateEvent<T>(TriggerType::kForced,
-                          [update](const System<T>&, const Context<T>& context,
-                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            return update(context, &*x)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareForcedUnrestrictedUpdateEvent",
+            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->get_mutable_forced_unrestricted_update_events().AddEvent(
+                  MakeUnrestrictedUpdateEvent<T>(
+                      TriggerType::kForced, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareForcedUnrestrictedUpdateEvent.doc)
         .def("MakeWitnessFunction",
@@ -962,7 +1076,6 @@ Note: The above is for the C++ documentation. For Python, use
             py::overload_cast<int>(&LeafSystemPublic::DeclareDiscreteState),
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_num_state_variables)
-        .def("DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
         // Abstract state.
         .def("DeclareAbstractState",
             py::overload_cast<const AbstractValue&>(
@@ -970,7 +1083,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("model_value"), doc.LeafSystem.DeclareAbstractState.doc);
   }
 
-  static void DefineDiagram(py::module m) {
+  static void DefineDiagram(py::module_ m) {
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
         .def(py::init<>(), doc.Diagram.ctor.doc_0args)
@@ -990,9 +1103,8 @@ Note: The above is for the C++ documentation. For Python, use
                     input_locator.first, py_rvp::reference_internal, self_py);
                 py::object input_port_index_py = py::cast(input_locator.second);
 
-                py::tuple input_locator_py(2);
-                input_locator_py[0] = input_system_py;
-                input_locator_py[1] = input_port_index_py;
+                py::tuple input_locator_py =
+                    py::make_tuple(input_system_py, input_port_index_py);
 
                 // Keep alive, ownership: `output_system_py` keeps `self` alive.
                 py::object output_system_py = py::cast(
@@ -1000,9 +1112,8 @@ Note: The above is for the C++ documentation. For Python, use
                 py::object output_port_index_py =
                     py::cast(output_locator.second);
 
-                py::tuple output_locator_py(2);
-                output_locator_py[0] = output_system_py;
-                output_locator_py[1] = output_port_index_py;
+                py::tuple output_locator_py =
+                    py::make_tuple(output_system_py, output_port_index_py);
 
                 out[input_locator_py] = output_locator_py;
               }
@@ -1020,9 +1131,7 @@ Note: The above is for the C++ documentation. For Python, use
                     locator.first, py_rvp::reference_internal, self_py);
                 py::object port_index_py = py::cast(locator.second);
 
-                py::tuple locator_py(2);
-                locator_py[0] = system_py;
-                locator_py[1] = port_index_py;
+                py::tuple locator_py = py::make_tuple(system_py, port_index_py);
                 out.append(locator_py);
               }
               return out;
@@ -1038,9 +1147,7 @@ Note: The above is for the C++ documentation. For Python, use
                   py::cast(locator.first, py_rvp::reference_internal, self_py);
               py::object port_index_py = py::cast(locator.second);
 
-              py::tuple locator_py(2);
-              locator_py[0] = system_py;
-              locator_py[1] = port_index_py;
+              py::tuple locator_py = py::make_tuple(system_py, port_index_py);
               return locator_py;
             },
             py::arg("port_index"), doc.Diagram.get_output_port_locator.doc)
@@ -1057,10 +1164,14 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("name"), py_rvp::reference_internal,
             doc.Diagram.GetSubsystemByName.doc)
         .def("GetSystems", &Diagram<T>::GetSystems, py_rvp::reference_internal,
-            doc.Diagram.GetSystems.doc);
+            doc.Diagram.GetSystems.doc)
+        .def("get_system", &Diagram<T>::get_system, py_rvp::reference_internal,
+            doc.Diagram.get_system.doc)
+        .def("AreConnected", &Diagram<T>::AreConnected, py::arg("output"),
+            py::arg("input"), doc.Diagram.AreConnected.doc);
   }
 
-  static void DefineVectorSystem(py::module m) {
+  static void DefineVectorSystem(py::module_ m) {
     {
       // N.B. This will effectively allow derived classes of `VectorSystem` to
       // override `LeafSystem` methods, disrespecting `final`-ity.
@@ -1070,17 +1181,13 @@ Note: The above is for the C++ documentation. For Python, use
           LeafSystem<T>>(
           m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc);
       cls  // BR
-          .def(py::init([](int input_size, int output_size,
-                            std::optional<bool> direct_feedthrough) {
-            return new PyVectorSystem(
-                input_size, output_size, direct_feedthrough);
-          }),
-              py::arg("input_size"), py::arg("output_size"),
-              py::arg("direct_feedthrough"), doc.VectorSystem.ctor.doc_3args);
+          .def(py::init<int, int, std::optional<bool>>(), py::arg("input_size"),
+              py::arg("output_size"), py::arg("direct_feedthrough"),
+              doc.VectorSystem.ctor.doc_3args);
     }
   }
 
-  static void DefineWrappedSystem(py::module m) {
+  static void DefineWrappedSystem(py::module_ m) {
     using Class = WrappedSystem<T>;
     auto cls = DefineTemplateClassWithDefault<Class, Diagram<T>>(m,
         "_WrappedSystem", GetPyParam<T>(),
@@ -1091,7 +1198,7 @@ Note: The above is for the C++ documentation. For Python, use
   }
 
   template <typename PyClass>
-  static void DefineSystemVisitor(py::module m, PyClass* system_cls) {
+  static void DefineSystemVisitor(py::module_ m, PyClass* system_cls) {
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in
@@ -1117,33 +1224,31 @@ py::tuple GetPyParamList(type_pack<Packs...> = {}) {
   return py::make_tuple(GetPyParam(Packs{})...);
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = SystemBase;
     constexpr auto& cls_doc = doc.SystemBase;
     // TODO(eric.cousineau): Bind remaining methods.
-    py::class_<Class> cls(m, "SystemBase", cls_doc.doc);
+    class_<Class> cls(m, "SystemBase", cls_doc.doc);
     {
       using Nested = SystemBase::GraphvizFragment;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragment;
-      py::class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
-          .def_readwrite(
+      class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
+          .def_rw(
               "input_ports", &Nested::input_ports, nested_doc.input_ports.doc)
-          .def_readwrite("output_ports", &Nested::output_ports,
+          .def_rw("output_ports", &Nested::output_ports,
               nested_doc.output_ports.doc)
-          .def_readwrite(
-              "fragments", &Nested::fragments, nested_doc.fragments.doc);
+          .def_rw("fragments", &Nested::fragments, nested_doc.fragments.doc);
     }
     {
       // GraphvizFragmentParams
       using Nested = SystemBasePublic::GraphvizFragmentParams;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragmentParams;
-      py::class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
-          .def_readwrite(
-              "max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
-          .def_readwrite("options", &Nested::options, nested_doc.options.doc)
-          .def_readwrite("node_id", &Nested::node_id, nested_doc.node_id.doc)
-          .def_readwrite("header_lines", &Nested::header_lines,
+      class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
+          .def_rw("max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
+          .def_rw("options", &Nested::options, nested_doc.options.doc)
+          .def_rw("node_id", &Nested::node_id, nested_doc.node_id.doc)
+          .def_rw("header_lines", &Nested::header_lines,
               nested_doc.header_lines.doc);
     }
     cls  // BR
@@ -1268,8 +1373,9 @@ void DefineSystemScalarConverter(PyClass* cls) {
               return in;
             });
     // Bind templated instantiations.
-    auto converter_methods = [converter](auto pack) {
-      constexpr auto& cls_doc = pydrake_doc.drake.systems.SystemScalarConverter;
+    auto converter_methods = [&converter](auto pack) {
+      constexpr auto& cls_doc =
+          pydrake_doc_systems_framework.drake.systems.SystemScalarConverter;
       using Pack = decltype(pack);
       using T = typename Pack::template type_at<0>;
       using U = typename Pack::template type_at<1>;
@@ -1283,7 +1389,7 @@ void DefineSystemScalarConverter(PyClass* cls) {
       AddTemplateMethod(
           converter, "_AddConstructor",
           [](SystemScalarConverter* self,
-              py::function python_converter_function) {
+              py::callable python_converter_function) {
             AddPydrakeConverterFunction(self,
                 ConverterFunction{
                     [python_converter_function](const System<U>& system_u_cpp) {
@@ -1331,11 +1437,11 @@ void DefineSystemScalarConverter(PyClass* cls) {
 
 }  // namespace
 
-void DefineFrameworkPySystems(py::module m) {
+void DefineFrameworkPySystems(py::module_ m) {
   DoScalarIndependentDefinitions(m);
 
   // Declare (but don't define) to resolve a dependency cycle.
-  py::class_<SystemScalarConverter> cls_system_scalar_converter(
+  class_<SystemScalarConverter> cls_system_scalar_converter(
       m, "SystemScalarConverter");
   auto cls_system_double = Impl<double>::DefineSystem(m);
   auto cls_system_autodiff = Impl<AutoDiffXd>::DefineSystem(m);
@@ -1344,7 +1450,7 @@ void DefineFrameworkPySystems(py::module m) {
   // Do templated instantiations of system types.
   auto bind_common_scalar_types = [&](auto dummy) {
     using T = decltype(dummy);
-    py::class_<System<T>, SystemBase, typename Impl<T>::PySystem>* cls_system{};
+    class_<System<T>, SystemBase, typename Impl<T>::PySystem>* cls_system{};
     if constexpr (std::is_same_v<T, double>) {
       cls_system = &cls_system_double;
     } else if constexpr (std::is_same_v<T, AutoDiffXd>) {

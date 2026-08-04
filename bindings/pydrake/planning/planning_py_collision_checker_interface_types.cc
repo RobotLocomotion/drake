@@ -1,4 +1,8 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include <map>
+#include <memory>
+#include <string>
+
+#include "drake/bindings/generated_docstrings/planning.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/body_shape_description.h"
@@ -14,15 +18,15 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
+void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning.drake.planning;
 
   {
     using Class = BodyShapeDescription;
     constexpr auto& cls_doc = doc.BodyShapeDescription;
-    py::class_<Class> cls(m, "BodyShapeDescription", cls_doc.doc);
+    class_<Class> cls(m, "BodyShapeDescription", cls_doc.doc);
     cls  // BR
         .def(py::init<const geometry::Shape&, const math::RigidTransformd&,
                  std::string, std::string>(),
@@ -45,7 +49,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   {
     using Class = CollisionCheckerContext;
     constexpr auto& cls_doc = doc.CollisionCheckerContext;
-    py::class_<Class, std::shared_ptr<Class>> cls(
+    class_<Class, std::shared_ptr<Class>> cls(
         m, "CollisionCheckerContext", cls_doc.doc);
     cls  // BR
         .def(py::init<const RobotDiagram<double>*>(), py::arg("model"),
@@ -65,7 +69,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   {
     using Class = DistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.DistanceAndInterpolationProvider;
-    py::class_<Class, std::shared_ptr<Class>> cls(
+    class_<Class, std::shared_ptr<Class>> cls(
         m, "DistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def("ComputeConfigurationDistance",
@@ -79,7 +83,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   {
     using Class = LinearDistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.LinearDistanceAndInterpolationProvider;
-    py::class_<Class, DistanceAndInterpolationProvider,
+    class_<Class, DistanceAndInterpolationProvider,
         std::shared_ptr<LinearDistanceAndInterpolationProvider>>
         cls(m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
@@ -104,11 +108,11 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   {
     using Class = CollisionCheckerParams;
     constexpr auto& cls_doc = doc.CollisionCheckerParams;
-    py::class_<Class> cls(m, "CollisionCheckerParams", cls_doc.doc);
+    class_<Class> cls(m, "CollisionCheckerParams", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_property(
+        .def_prop_rw(
             "model",
             [](const Class& self) -> const RobotDiagram<double>* {
               return self.model.get();
@@ -120,21 +124,21 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
                   make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
             },
             cls_doc.model.doc)
-        .def_readwrite("distance_and_interpolation_provider",
+        .def_rw("distance_and_interpolation_provider",
             &Class::distance_and_interpolation_provider,
             cls_doc.distance_and_interpolation_provider.doc)
-        .def_readwrite("robot_model_instances", &Class::robot_model_instances,
+        .def_rw("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
-        .def_readwrite("configuration_distance_function",
+        .def_rw("configuration_distance_function",
             &Class::configuration_distance_function,
             cls_doc.configuration_distance_function.doc)
-        .def_readwrite("edge_step_size", &Class::edge_step_size,
+        .def_rw("edge_step_size", &Class::edge_step_size,
             cls_doc.edge_step_size.doc)
-        .def_readwrite("env_collision_padding", &Class::env_collision_padding,
+        .def_rw("env_collision_padding", &Class::env_collision_padding,
             cls_doc.env_collision_padding.doc)
-        .def_readwrite("self_collision_padding", &Class::self_collision_padding,
+        .def_rw("self_collision_padding", &Class::self_collision_padding,
             cls_doc.self_collision_padding.doc)
-        .def_readwrite("implicit_context_parallelism",
+        .def_rw("implicit_context_parallelism",
             &Class::implicit_context_parallelism,
             cls_doc.implicit_context_parallelism.doc);
     // N.B. Any time we bind new CollisionCheckerParams fields that have pointer
@@ -146,7 +150,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   {
     using Class = EdgeMeasure;
     constexpr auto& cls_doc = doc.EdgeMeasure;
-    py::class_<Class> cls(m, "EdgeMeasure", cls_doc.doc);
+    class_<Class> cls(m, "EdgeMeasure", cls_doc.doc);
     cls  // BR
         .def(py::init<double, double>(), py::arg("distance"), py::arg("alpha"),
             cls_doc.ctor.doc)
@@ -205,7 +209,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   {
     using Class = RobotClearance;
     constexpr auto& cls_doc = doc.RobotClearance;
-    py::class_<Class> cls(m, "RobotClearance", cls_doc.doc);
+    class_<Class> cls(m, "RobotClearance", cls_doc.doc);
     cls  // BR
         .def(py::init<int>(), py::arg("num_positions"), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))

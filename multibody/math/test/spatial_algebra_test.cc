@@ -1,5 +1,7 @@
 #include "drake/multibody/math/spatial_algebra.h"
 
+#include <algorithm>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -22,7 +24,8 @@ using symbolic::Variable;
 // This is used by the (templated on SpatialQuantityUnderTest)
 // SpatialQuantityTest unit test class below to infer on what scalar type the
 // SpatialQuantityUnderTest is templated on.
-template <class SpatialQuantity> struct spatial_vector_traits {};
+template <class SpatialQuantity>
+struct spatial_vector_traits {};
 
 // traits specialization for SpatialVelocity.
 template <typename T>
@@ -53,8 +56,9 @@ class SpatialQuantityTest : public ::testing::Test {
  public:
   // Useful typedefs when writing unit tests to access types.
   typedef SpatialQuantityUnderTest SpatialQuantityType;
-  typedef typename spatial_vector_traits<
-      SpatialQuantityType>::ScalarType ScalarType;
+  typedef typename spatial_vector_traits<SpatialQuantityType>::ScalarType
+      ScalarType;
+
  protected:
   // A translational component ∈ ℝ³.
   Vector3<ScalarType> v_{1, 2, 0};
@@ -76,19 +80,19 @@ class SpatialQuantityTest : public ::testing::Test {
 };
 
 // Create a list of SpatialVector types to be tested.
-typedef ::testing::Types<
-    SpatialVelocity<double>,
-    SpatialForce<double>,
-    SpatialAcceleration<double>,
-    SpatialMomentum<double>,
-    SpatialVelocity<AutoDiffXd>,
-    SpatialForce<AutoDiffXd>,
-    SpatialAcceleration<AutoDiffXd>,
-    SpatialMomentum<AutoDiffXd>,
-    SpatialVelocity<Expression>,
-    SpatialForce<Expression>,
-    SpatialAcceleration<Expression>,
-    SpatialMomentum<Expression>> SpatialQuantityTypes;
+typedef ::testing::Types<SpatialVelocity<double>,          // BR
+                         SpatialForce<double>,             //
+                         SpatialAcceleration<double>,      //
+                         SpatialMomentum<double>,          //
+                         SpatialVelocity<AutoDiffXd>,      //
+                         SpatialForce<AutoDiffXd>,         //
+                         SpatialAcceleration<AutoDiffXd>,  //
+                         SpatialMomentum<AutoDiffXd>,      //
+                         SpatialVelocity<Expression>,      //
+                         SpatialForce<Expression>,         //
+                         SpatialAcceleration<Expression>,  //
+                         SpatialMomentum<Expression>>      //
+    SpatialQuantityTypes;
 TYPED_TEST_SUITE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
@@ -104,6 +108,27 @@ TYPED_TEST(SpatialQuantityTest, ZeroFactory) {
   SpatialQuantity V = SpatialQuantity::Zero();
   EXPECT_TRUE(V.rotational() == Vector3<T>::Zero());
   EXPECT_TRUE(V.translational() == Vector3<T>::Zero());
+}
+
+// Construction of a "NaN" spatial vector.
+TYPED_TEST(SpatialQuantityTest, NaNFactory) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  SpatialQuantity V = SpatialQuantity::NaN();
+  auto is_nan = [](const T& x) -> bool {
+    if constexpr (std::is_same_v<T, Expression>) {
+      return symbolic::is_nan(x);
+    }
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      return std::isnan(x.value());
+    }
+    if constexpr (std::is_same_v<T, double>) {
+      return std::isnan(x);
+    }
+  };
+  for (int i = 0; i < V.size(); ++i) {
+    EXPECT_TRUE(is_nan(V[i]));
+  }
 }
 
 // Tests:
@@ -248,8 +273,8 @@ TYPED_TEST(SpatialQuantityTest, IsNearlyEqualWithinAbsoluteTolerance) {
   const Vector3<T> vB = vA + Vector3<T>(v_delta, v_delta, -v_delta);
   const SpatialQuantity A(wA, vA), B(wB, vB);
 
-  EXPECT_TRUE(A.IsNearlyEqualWithinAbsoluteTolerance(B, 4 * w_delta,
-                                                     4 * v_delta));
+  EXPECT_TRUE(
+      A.IsNearlyEqualWithinAbsoluteTolerance(B, 4 * w_delta, 4 * v_delta));
   EXPECT_FALSE(A.IsNearlyEqualWithinAbsoluteTolerance(B, 0.25 * w_delta,
                                                       0.25 * v_delta));
 }
@@ -267,21 +292,17 @@ TYPED_TEST(SpatialQuantityTest, IsApprox) {
   const T max_w = w.template lpNorm<Eigen::Infinity>();
   using std::max;
   const double max_V = ExtractDoubleOrThrow(max(max_v, max_w));
-  SpatialQuantity other(
-      (1.0 + precision) * w, (1.0 + precision) * v);
+  SpatialQuantity other((1.0 + precision) * w, (1.0 + precision) * v);
   EXPECT_TRUE(V.IsApprox(other, (max_V + 1.0e-6) * precision));
   EXPECT_FALSE(V.IsApprox(other, precision));
 }
 
-// Test the stream insertion operator to write into a stream.
-TYPED_TEST(SpatialQuantityTest, ShiftOperatorIntoStream) {
+// Test the string representation of spatial vectors.
+TYPED_TEST(SpatialQuantityTest, ToStringFmtFormatter) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   const SpatialQuantity& V = this->V_;
-
-  std::stringstream stream;
-  stream << V;
   std::string expected_string = "[0, 0, 3, 1, 2, 0]ᵀ";
-  EXPECT_EQ(expected_string, stream.str());
+  EXPECT_EQ(fmt::to_string(V), expected_string);
 }
 
 TYPED_TEST(SpatialQuantityTest, MultiplicationAssignmentOperator) {
@@ -383,9 +404,9 @@ TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrame) {
 
   // Some arbitrary rotation between frames E and F.
   const drake::math::RotationMatrix<T> R_EF(
-       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
-       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitY()) *
-       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ()));
+      AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
+      AngleAxis<T>(M_PI / 6, Vector3<T>::UnitY()) *
+      AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ()));
 
   SpatialQuantity V_AB_E = R_EF * V_AB_F;
 
@@ -403,6 +424,7 @@ class SpatialVelocityTest : public ::testing::Test {
  public:
   // Useful typedefs when witting unit tests to access types.
   typedef T ScalarType;
+
  protected:
   // Linear velocity of a Frame Y, measured in Frame X, and expressed in a third
   // frame A.
@@ -440,8 +462,9 @@ TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   EXPECT_TRUE(V_XYz_A.IsApprox(expected_V_XYz_A));
 
   // ComposeWithMovingFrameVelocity() should yield the same result.
-  EXPECT_TRUE(V_XY_A.ComposeWithMovingFrameVelocity(
-      p_YZ_A, SpatialVelocity<T>::Zero()).IsApprox(V_XYz_A));
+  EXPECT_TRUE(
+      V_XY_A.ComposeWithMovingFrameVelocity(p_YZ_A, SpatialVelocity<T>::Zero())
+          .IsApprox(V_XYz_A));
 
   // Unit test with the composition of the spatial velocity of a moving frame Z
   // in frame Y.
@@ -481,11 +504,11 @@ TYPED_TEST(SpatialVelocityTest, ComposeWithMovingFrameVelocity) {
 
   // Verify ComposeWithMovingFrameVelocity() for the degenerate case in which
   // frame C is welded to frame B with point Co offset from point Bo.
-  V_MCo_E = V_MBo_E.ComposeWithMovingFrameVelocity(
-      p_BoCo_E, SpatialVelocity<T>::Zero());
+  V_MCo_E = V_MBo_E.ComposeWithMovingFrameVelocity(p_BoCo_E,
+                                                   SpatialVelocity<T>::Zero());
   EXPECT_TRUE(CompareMatrices(V_MCo_E.rotational(), w_MB_E));
   EXPECT_TRUE(CompareMatrices(V_MCo_E.translational(),
-      v_MBo_E + w_MB_E.cross(p_BoCo_E)));
+                              v_MBo_E + w_MB_E.cross(p_BoCo_E)));
 
   // Frame Bc is fixed to frame B, but offset by p_BoCo_E from frame B.
   // At this point, frame C is regarded as welded to frame B and offset by
@@ -505,7 +528,7 @@ TYPED_TEST(SpatialVelocityTest, ComposeWithMovingFrameVelocity) {
   V_MCo_E = V_MBo_E.ComposeWithMovingFrameVelocity(p_BoCo_E, V_BCo_E);
   EXPECT_TRUE(CompareMatrices(V_MCo_E.rotational(), w_MB_E + w_BC_E));
   EXPECT_TRUE(CompareMatrices(V_MCo_E.translational(),
-      V_MBc_E.translational() + v_BCo_E));
+                              V_MBc_E.translational() + v_BCo_E));
 
   // Verify ComposeWithMovingFrameVelocity() produces a zero vector for the
   // special case in which frame C is frame M, i.e.,
@@ -514,10 +537,10 @@ TYPED_TEST(SpatialVelocityTest, ComposeWithMovingFrameVelocity) {
   const Vector3<T> w_BM_E = -w_MB_E;
   const Vector3<T> v_BMo_E = -v_MBo_E - w_MB_E.cross(p_BoMo_E);  // Proof below.
   const SpatialVelocity<T> V_BMo_E(w_BM_E, v_BMo_E);
-  const SpatialVelocity<T> V_MM_E = V_MBo_E.ComposeWithMovingFrameVelocity(
-      p_BoCo_E, V_BMo_E);
+  const SpatialVelocity<T> V_MM_E =
+      V_MBo_E.ComposeWithMovingFrameVelocity(p_BoCo_E, V_BMo_E);
   EXPECT_TRUE(CompareMatrices(V_MM_E.get_coeffs(),
-      SpatialVelocity<T>::Zero().get_coeffs()));
+                              SpatialVelocity<T>::Zero().get_coeffs()));
 
   // The proof that ᴮ𝐯ᴹᵒ = -ᴹ𝐯ᴮᵒ − ᴹ𝛚ᴮ × ᴮᵒ𝐩ᴹᵒ starts with the definition:
   // ᴮ𝐯ᴹᵒ ≡ ᴮd/dt ᴮᵒ𝐩ᴹᵒ.  Using the transport theorem, allows rewriting to:
@@ -605,8 +628,9 @@ class ElementsInF6Test : public ::testing::Test {
  public:
   // Useful typedefs when writing unit tests to access types.
   typedef SpatialForceQuantityUnderTest SpatialQuantityType;
-  typedef typename spatial_vector_traits<
-      SpatialQuantityType>::ScalarType ScalarType;
+  typedef typename spatial_vector_traits<SpatialQuantityType>::ScalarType
+      ScalarType;
+
  protected:
   // Consider a force (or impulse) applied at the origin of Frame A, expressed
   // in a Frame E.
@@ -622,13 +646,13 @@ class ElementsInF6Test : public ::testing::Test {
 };
 
 // Create a list of force types in F⁶ to be tested.
-typedef ::testing::Types<
-    SpatialForce<double>,
-    SpatialMomentum<double>,
-    SpatialForce<AutoDiffXd>,
-    SpatialMomentum<AutoDiffXd>,
-    SpatialForce<Expression>,
-    SpatialMomentum<Expression>> ElementsInF6Types;
+typedef ::testing::Types<SpatialForce<double>,         // BR
+                         SpatialMomentum<double>,      //
+                         SpatialForce<AutoDiffXd>,     //
+                         SpatialMomentum<AutoDiffXd>,  //
+                         SpatialForce<Expression>,     //
+                         SpatialMomentum<Expression>>  //
+    ElementsInF6Types;
 TYPED_TEST_SUITE(ElementsInF6Test, ElementsInF6Types);
 
 // Tests the shifting of a spatial force between two moving frames rigidly
@@ -766,9 +790,8 @@ TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
   const Vector3<T> w_AP = 3.0 * Vector3<T>::UnitZ();
 
   // Spatial velocity of Q in P.
-  const SpatialVelocity<T> V_PQ(
-      1.5 * Vector3<T>::UnitZ() /* w_PQ */,
-      2.0 * Vector3<T>::UnitX() /* v_PQ */);
+  const SpatialVelocity<T> V_PQ(1.5 * Vector3<T>::UnitZ() /* w_PQ */,
+                                2.0 * Vector3<T>::UnitX() /* v_PQ */);
 
   // Spatial acceleration of Q in P.
   const SpatialAcceleration<T> A_PQ = SpatialAcceleration<T>::Zero();
@@ -889,22 +912,18 @@ class SymbolicSpatialQuantityTest : public ::testing::Test {
 
 // Create a list of SpatialVector with symbolic::Variable entries. These will
 // get tested through fixture SymbolicSpatialQuantityTest.
-typedef ::testing::Types<
-    SpatialVelocity<Expression>,
-    SpatialForce<Expression>,
-    SpatialAcceleration<Expression>,
-    SpatialMomentum<Expression>> SymbolicSpatialQuantityTypes;
+typedef ::testing::Types<SpatialVelocity<Expression>,      // BR
+                         SpatialForce<Expression>,         //
+                         SpatialAcceleration<Expression>,  //
+                         SpatialMomentum<Expression>>      //
+    SymbolicSpatialQuantityTypes;
 TYPED_TEST_SUITE(SymbolicSpatialQuantityTest, SymbolicSpatialQuantityTypes);
 
-TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
-  std::stringstream V_stream;
-  V_stream << this->V_;
+TYPED_TEST(SymbolicSpatialQuantityTest, ToStringFmtFormatter) {
   std::string V_expected_string = "[wx, wy, wz, vx, vy, vz]ᵀ";
-  EXPECT_EQ(V_expected_string, V_stream.str());
-  std::stringstream Q_stream;
-  Q_stream << this->Q_;
+  EXPECT_EQ(fmt::to_string(this->V_), V_expected_string);
   std::string Q_expected_string = "[Q(0), Q(1), Q(2), Q(3), Q(4), Q(5)]ᵀ";
-  EXPECT_EQ(Q_expected_string, Q_stream.str());
+  EXPECT_EQ(fmt::to_string(this->Q_), Q_expected_string);
 }
 
 // Tests the dot product between spatial momentum and spatial velocity
@@ -914,6 +933,7 @@ class MomentumDotVelocityTest : public ::testing::Test {
  public:
   // Useful typedefs when writing unit tests to access types.
   typedef T ScalarType;
+
  protected:
   SpatialMomentum<T> L_WBp_{Vector3<T>{1, 2, 3}, Vector3<T>{4, 5, 6}};
   SpatialVelocity<T> V_WBp_{Vector3<T>{7, 8, 9}, Vector3<T>{-1, -2, -3}};

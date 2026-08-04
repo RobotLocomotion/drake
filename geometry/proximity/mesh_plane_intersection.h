@@ -147,22 +147,22 @@ ComputeContactSurface(
 
 // TODO(SeanCurtis-TRI): This is, in some sense, the "public" api. It refers to
 //  half spaces. Does it belong in this file? Does it belong elsewhere? At the
-//  end of the day, where does surface mesh-soft half space go?
+//  end of the day, where does surface mesh-compliant half space go?
 /* Computes the ContactSurface formed by a rigid half space and a given
- soft mesh.
+ compliant mesh.
 
  The definition of the half space is implicit in the call -- it is the type
  defined by the HalfSpace class, thus, only its id and its pose in a common
  frame (the world frame) is necessary.
 
- @param[in] id_S             The id of the soft mesh.
+ @param[in] id_S             The id of the compliant mesh.
  @param[in] field_S          The _linear_ mesh field (and its corresponding mesh
-                             `mesh_S`) for the soft mesh. The field and mesh
-                             vertices are measured and expressed in Frame S. The
-                             linearity of the field is a strict requirement of
-                             the underlying algorithm.
- @param[in] bvh_S            The bounding-volume hierarchy of the soft volume
-                             mesh measured and expressed in Frame S.
+                             `mesh_S`) for the compliant mesh. The field and
+                             mesh vertices are measured and expressed in
+                             Frame S. The linearity of the field is a strict
+                             requirement of the underlying algorithm.
+ @param[in] bvh_S            The bounding-volume hierarchy of the compliant
+                             volume mesh measured and expressed in Frame S.
  @param[in] X_WS             The relative pose of Frame S and the world frame W.
  @param[in] id_R             The id of the rigid half space.
  @param[in] X_WR             The relative pose between Frame R -- the frame the
@@ -176,7 +176,7 @@ ComputeContactSurface(
  */
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,

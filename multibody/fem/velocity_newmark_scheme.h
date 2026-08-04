@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
 
@@ -24,7 +26,7 @@ namespace internal {
 
  [Newmark, 1959] Newmark, Nathan M. "A method of computation for structural
  dynamics." Journal of the engineering mechanics division 85.3 (1959): 67-94.
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class VelocityNewmarkScheme final : public DiscreteTimeIntegrator<T> {
  public:
@@ -48,6 +50,8 @@ class VelocityNewmarkScheme final : public DiscreteTimeIntegrator<T> {
   using DiscreteTimeIntegrator<T>::dt;
 
  private:
+  std::unique_ptr<DiscreteTimeIntegrator<T>> DoClone() const final;
+
   /* The weights much match the partials in DoAdvanceOneTimeStep(). */
   Vector3<T> DoGetWeights() const final {
     return {beta_over_gamma_ * dt(), 1.0, one_over_dt_gamma_};
@@ -73,5 +77,5 @@ class VelocityNewmarkScheme final : public DiscreteTimeIntegrator<T> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::fem::internal::VelocityNewmarkScheme);

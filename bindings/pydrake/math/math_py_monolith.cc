@@ -1,17 +1,20 @@
 #include <cmath>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "drake/bindings/generated_docstrings/math.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/math/math_py.h"
 #include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/common/fmt_ostream.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/bspline_basis.h"
 #include "drake/math/compute_numerical_gradient.h"
@@ -41,12 +44,12 @@ using symbolic::Variable;
 namespace {
 template <template <typename> typename PyClass, typename T>
 // NOLINTNEXTLINE(runtime/references)
-void DefineRigidTransform(py::module m, py::class_<PyClass<T>>& cls) {
+void DefineRigidTransform(py::module_ m, class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // N.B. Some classes define `__repr__` in `_math_extra.py`.
 
@@ -144,11 +147,12 @@ void DefineRigidTransform(py::module m, py::class_<PyClass<T>>& cls) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"),
-            cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
-        .def(py::pickle([](const Class& self) { return self.GetAsMatrix34(); },
-            [](const Eigen::Matrix<T, 3, 4>& matrix) {
-              return Class::MakeUnchecked(matrix);
-            }));
+            cls_doc.operator_mul.doc_1args_constEigenMatrixBase);
+    DefPickle(
+        &cls, [](const Class& self) { return self.GetAsMatrix34(); },
+        [](Class* self, const Eigen::Matrix<T, 3, 4>& matrix) {
+          new (self) Class(Class::MakeUnchecked(matrix));
+        });
     cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
@@ -161,12 +165,12 @@ void DefineRigidTransform(py::module m, py::class_<PyClass<T>>& cls) {
 
 template <template <typename> typename PyClass, typename T>
 // NOLINTNEXTLINE(runtime/references)
-void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
+void DefineRotationMatrix(py::module_ m, class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   {
     using Class = RotationMatrix<T>;
@@ -200,8 +204,24 @@ void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
             cls_doc.InvertAndCompose.doc)
         .def("transpose", &Class::transpose, cls_doc.transpose.doc)
         .def("matrix", &Class::matrix, cls_doc.matrix.doc)
-        .def("row", &Class::row, py::arg("index"), cls_doc.row.doc)
-        .def("col", &Class::col, py::arg("index"), cls_doc.col.doc)
+        .def(
+            "row",
+            // The `row` method returns an Eigen::Block, but passing that view
+            // back into Python is too difficult, especially for dtype=object,
+            // so we'll write out a lambda that copies it.
+            [](const Class& self, int index) -> Vector3<T> {
+              return self.row(index);
+            },
+            py::arg("index"), cls_doc.row.doc)
+        .def(
+            "col",
+            // The `col` method returns an Eigen::Block, but passing that view
+            // back into Python is too difficult, especially for dtype=object,
+            // so we'll write out a lambda that copies it.
+            [](const Class& self, int index) -> Vector3<T> {
+              return self.col(index);
+            },
+            py::arg("index"), cls_doc.col.doc)
         .def(
             "multiply",
             [](const Class& self, const Class& other) { return self * other; },
@@ -224,6 +244,12 @@ void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
             py::arg("tolerance") =
                 Class::get_internal_tolerance_for_orthonormality(),
             cls_doc.IsNearlyIdentity.doc)
+        .def("IsNearlyEqualTo",
+            overload_cast_explicit<boolean<T>, const RotationMatrix<T>&,
+                double>(&Class::IsNearlyEqualTo),
+            py::arg("other"), py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
+        .def("IsExactlyEqualTo", &Class::IsExactlyEqualTo, py::arg("other"),
+            cls_doc.IsExactlyEqualTo.doc)
         // Does not return the quality_factor
         .def_static(
             "ProjectToRotationMatrix",
@@ -236,11 +262,12 @@ void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
         .def("ToQuaternion",
             overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
             cls_doc.ToQuaternion.doc_0args)
-        .def("ToAngleAxis", &Class::ToAngleAxis, cls_doc.ToAngleAxis.doc)
-        .def(py::pickle([](const Class& self) { return self.matrix(); },
-            [](const Matrix3<T>& matrix) {
-              return Class::MakeUnchecked(matrix);
-            }));
+        .def("ToAngleAxis", &Class::ToAngleAxis, cls_doc.ToAngleAxis.doc);
+    DefPickle(
+        &cls, [](const Class& self) { return self.matrix(); },
+        [](Class* self, const Matrix3<T>& matrix) {
+          new (self) Class(Class::MakeUnchecked(matrix));
+        });
     cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
@@ -253,12 +280,12 @@ void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
 
 template <template <typename> typename PyClass, typename T>
 // NOLINTNEXTLINE(runtime/references)
-void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
+void DefineRollPitchYaw(class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   {
     using Class = RollPitchYaw<T>;
@@ -274,8 +301,8 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
             cls_doc.ctor.doc_1args_R)
         .def(py::init<const Eigen::Quaternion<T>&>(), py::arg("quaternion"),
             cls_doc.ctor.doc_1args_quaternion)
-        .def(py::init([](const Matrix3<T>& matrix) {
-          return Class(RotationMatrix<T>(matrix));
+        .def("__init__", ([](Class* self, const Matrix3<T>& matrix) {
+          new (self) Class(RotationMatrix<T>(matrix));
         }),
             py::arg("matrix"),
             "Construct from raw rotation matrix. See RotationMatrix overload "
@@ -287,6 +314,8 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
         .def("ToQuaternion", &Class::ToQuaternion, cls_doc.ToQuaternion.doc)
         .def("ToRotationMatrix", &Class::ToRotationMatrix,
             cls_doc.ToRotationMatrix.doc)
+        .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
+            py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("CalcRotationMatrixDt", &Class::CalcRotationMatrixDt,
             py::arg("rpyDt"), cls_doc.CalcRotationMatrixDt.doc)
         .def("CalcAngularVelocityInParentFromRpyDt",
@@ -308,18 +337,19 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
         .def("CalcRpyDDtFromAngularAccelInChild",
             &Class::CalcRpyDDtFromAngularAccelInChild, py::arg("rpyDt"),
             py::arg("alpha_AD_D"),
-            cls_doc.CalcRpyDDtFromAngularAccelInChild.doc)
-        .def(py::pickle([](const Class& self) { return self.vector(); },
-            [](const Vector3<T>& rpy) { return Class(rpy); }));
+            cls_doc.CalcRpyDDtFromAngularAccelInChild.doc);
+    DefPickle(
+        &cls, [](const Class& self) { return self.vector(); },
+        [](Class* self, const Vector3<T>& rpy) { new (self) Class(rpy); });
     DefCopyAndDeepCopy(&cls);
     // N.B. `RollPitchYaw::cast` is not defined in C++.
   }
 }
 
-void DefineRigidTransformRotationMatrixRollPitchYaw(py::module m) {
+void DefineRigidTransformRotationMatrixRollPitchYaw(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // The two rotation classes (RotationMatrix, RollPitchYaw) cyclically depend
   // on each other, so we must declare them both before defining them. Also,
@@ -367,12 +397,12 @@ void DefineRigidTransformRotationMatrixRollPitchYaw(py::module m) {
 }
 
 template <typename T>
-void DoMiscScalarDependentDefinitions(py::module m, T) {
+void DoMiscScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
   {
     using Class = BsplineBasis<T>;
     constexpr auto& cls_doc = doc.BsplineBasis;
@@ -424,13 +454,16 @@ void DoMiscScalarDependentDefinitions(py::module m, T) {
         .def("EvaluateBasisFunctionI", &Class::EvaluateBasisFunctionI,
             py::arg("i"), py::arg("parameter_value"),
             cls_doc.EvaluateBasisFunctionI.doc)
-        .def(py::pickle(
-            [](const Class& self) {
-              return std::make_pair(self.order(), self.knots());
-            },
-            [](std::pair<int, std::vector<T>> args) {
-              return Class(std::get<0>(args), std::get<1>(args));
-            }));
+        .def(py::self == py::self)
+        .def(py::self != py::self);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return std::make_pair(self.order(), self.knots());
+        },
+        [](Class* self, std::pair<int, std::vector<T>> args) {
+          new (self) Class(std::get<0>(args), std::get<1>(args));
+        });
   }
 
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
@@ -482,15 +515,15 @@ void DoMiscScalarDependentDefinitions(py::module m, T) {
   // Formula, Formula)) or an exclusion.
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
   using T = double;
-  py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
+  class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
           doc.BarycentricMesh.ctor.doc)
       .def("get_input_grid", &BarycentricMesh<T>::get_input_grid,
@@ -529,7 +562,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = KnotVectorType;
     constexpr auto& cls_doc = doc.KnotVectorType;
-    py::enum_<Class>(m, "KnotVectorType", py::arithmetic(), cls_doc.doc)
+    py::enum_<Class>(m, "KnotVectorType", py::is_arithmetic(), cls_doc.doc)
         .value("kUniform", Class::kUniform, cls_doc.kUniform.doc)
         .value("kClampedUniform", Class::kClampedUniform,
             cls_doc.kClampedUniform.doc);
@@ -637,7 +670,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = NumericalGradientOption;
     constexpr auto& cls_doc = doc.NumericalGradientOption;
-    py::class_<Class>(m, "NumericalGradientOption", cls_doc.doc)
+    class_<Class>(m, "NumericalGradientOption", cls_doc.doc)
         .def(py::init<NumericalGradientMethod, double>(), py::arg("method"),
             py::arg("function_accuracy") = 1E-15, cls_doc.ctor.doc)
         .def("NumericalGradientMethod", &Class::method, cls_doc.method.doc)
@@ -650,8 +683,8 @@ void DoScalarIndependentDefinitions(py::module m) {
               // displaying memory addresses in pydrake docs and help strings.
               // In the future, we should enhance this to display all of the
               // information.
-              return fmt::format("<NumericalGradientOption({})>",
-                  fmt_streamed(py::repr(method)));
+              return fmt::format(
+                  "<NumericalGradientOption({})>", py::repr(method).c_str());
             });
   }
 
@@ -673,10 +706,10 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-void DoNonsymbolicScalarDefinitions(py::module m, T) {
+void DoNonsymbolicScalarDefinitions(py::module_ m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
 
   // Soft min and max
   m.def("SoftOverMax", &SoftOverMax<T>, py::arg("x"), py::arg("alpha") = 1.0,
@@ -690,10 +723,10 @@ void DoNonsymbolicScalarDefinitions(py::module m, T) {
 }
 
 // Bindings for math/random_rotation.h.
-void DefineRandomRotation(py::module m) {
+void DefineRandomRotation(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  constexpr auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc_math.drake.math;
   using T = double;
 
   // Random Rotations
@@ -718,7 +751,7 @@ void DefineRandomRotation(py::module m) {
 
 }  // namespace
 
-void DefineMathMonolith(py::module m) {
+void DefineMathMonolith(py::module_ m) {
   DefineRigidTransformRotationMatrixRollPitchYaw(m);
   DefineRandomRotation(m);
 

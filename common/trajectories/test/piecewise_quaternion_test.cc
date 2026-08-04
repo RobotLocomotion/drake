@@ -1,6 +1,8 @@
 #include "drake/common/trajectories/piecewise_quaternion.h"
 
+#include <algorithm>
 #include <random>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -64,10 +66,11 @@ bool CheckSlerpInterpolation(const PiecewiseQuaternionSlerp<Scalar>& spline,
   Vector3<Scalar> w0 = spline.angular_velocity(t0);
   Quaternion<Scalar> q1 = EulerIntegrateQuaternion(q0, w0, dt);
 
-  if (q_spline.isApprox(q1, 1e-10))
+  if (q_spline.isApprox(q1, 1e-10)) {
     return true;
-  else
+  } else {
     return false;
+  }
 }
 
 // Generates a vector of random orientation using randomized axis angles.

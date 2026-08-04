@@ -2,12 +2,12 @@
 
 #include <algorithm>
 #include <optional>
+#include <set>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/ssize.h"
 
 namespace drake {
 namespace multibody {
@@ -19,8 +19,8 @@ namespace internal {
  non-zero. They can be viewed as nodes in the graph. The number of rows (and
  columns) of these diagonal blocks can be queried with `block_sizes()`.
 
- An edge exist between block i and block j if the ij-th block is non-zero in the
- block sparse matrix. The connectivity information can be queried with
+ An edge exists between block i and block j if the ij-th block is non-zero in
+ the block sparse matrix. The connectivity information can be queried with
  `neighbors()`. */
 class BlockSparsityPattern {
  public:
@@ -90,11 +90,12 @@ class BlockSparsityPattern {
   3. This class only allows square matrices and blocks on the diagonal must be
      square too.
  Most callers should use clearer and less verbose typedefs at the bottom of the
- file (e.g. `BlockSparseSymmetricMatrix`) rather than this class template
+ file (e.g. `BlockSparseSymmetricMatrixXd`) rather than this class template
  directly.
 
  @tparam MatrixType   The Eigen matrix type of each block in block sparse
-                      matrix, e.g. Matrix3<double> or MatrixX<double>.
+                      matrix. The only valid options are `Matrix3d`, `MatrixXd`,
+                      or `MatrixX<AutoDiffXd>`.
  @pre MatrixType::RowsAtCompileType == MatrixType::ColsAtCompileTime.
  @tparam is_symmetric Determines whether the matrix is symmetric or lower
                       triangular.
@@ -109,6 +110,8 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
       BlockSparseLowerTriangularOrSymmetricMatrix);
 
   static_assert(MatrixType::RowsAtCompileTime == MatrixType::ColsAtCompileTime);
+
+  using Scalar = typename MatrixType::Scalar;
 
   /* Constructs a BlockSparseLowerTriangularOrSymmetricMatrix with the given
    block sparsity pattern.
@@ -179,12 +182,12 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
 
   /* Makes a dense representation of the matrix. Useful for debugging purposes.
    */
-  MatrixX<double> MakeDenseMatrix() const;
+  MatrixX<Scalar> MakeDenseMatrix() const;
 
   /* Makes a dense representation of the bottom right `num_blocks` blocks of the
    matrix.
    @pre 0 <= num_blocks <= block_cols(). */
-  MatrixX<double> MakeDenseBottomRightCorner(int num_blocks) const;
+  MatrixX<Scalar> MakeDenseBottomRightCorner(int num_blocks) const;
 
   /* Returns true if the ij-th block in this block sparse matrix is non-zero. In
    particular, this returns false if the indices provided are out of range. */
@@ -221,10 +224,21 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
    indices instead of block row indices.
    @pre 0 <= j < block_cols().
    @pre The j-th block column has at least `flat+1` nonzero entries. */
-  const MatrixType& block_flat(int flat, int j) {
+  const MatrixType& block_flat(int flat, int j) const {
     DRAKE_ASSERT(0 <= j && j < block_cols_);
     DRAKE_ASSERT(flat >= 0 && flat < ssize(blocks_[j]));
     return blocks_[j][flat];
+  }
+
+  /* Returns all stored blocks of `this` matrix. */
+  const std::vector<std::vector<MatrixType>>& blocks() const { return blocks_; }
+
+  /* Returns the mapping from block row index to flat index for each column;
+   i.e., blocks()[j][block_row_to_flat()[j][i]] gives the (i,j) block.
+   block_row_to_flat()[j][i] == -1 if the implied block is empty or is the
+   reflection of the symmetric block. */
+  const std::vector<std::vector<int>>& block_row_to_flat() const {
+    return block_row_to_flat_;
   }
 
   /* Returns the sorted block row indices in the lower triangular part of the
@@ -254,7 +268,7 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
    documentation).
    @pre All entries in `indices` are in [0, block_cols()).
    @throws if `this` matrix is block lower triangular. */
-  void ZeroRowsAndColumns(const std::vector<int>& indices);
+  void ZeroRowsAndColumns(const std::set<int>& indices);
 
  private:
   /* Checks if the input block row and column indices and optionally the
@@ -288,14 +302,22 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   std::vector<std::vector<int>> block_row_to_flat_;
 };
 
+template <typename Block>
 using BlockSparseLowerTriangularMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>, false>;
+    BlockSparseLowerTriangularOrSymmetricMatrix<Block, false>;
+
+template <typename Block>
 using BlockSparseSymmetricMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>, true>;
-using Block3x3SparseLowerTriangularMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>, false>;
-using Block3x3SparseSymmetricMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>, true>;
+    BlockSparseLowerTriangularOrSymmetricMatrix<Block, true>;
+
+using BlockSparseLowerTriangularMatrixXd =
+    BlockSparseLowerTriangularMatrix<MatrixX<double>>;
+using BlockSparseSymmetricMatrixXd =
+    BlockSparseSymmetricMatrix<MatrixX<double>>;
+using BlockSparseLowerTriangularMatrix3d =
+    BlockSparseLowerTriangularMatrix<Matrix3<double>>;
+using BlockSparseSymmetricMatrix3d =
+    BlockSparseSymmetricMatrix<Matrix3<double>>;
 
 }  // namespace internal
 }  // namespace contact_solvers

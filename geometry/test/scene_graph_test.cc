@@ -1,7 +1,10 @@
 #include "drake/geometry/scene_graph.h"
 
+#include <limits>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -373,8 +376,8 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   auto geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Box>(1.0, 2.0, 3.0), "box");
   geometry_instance->set_proximity_properties(ProximityProperties());
-  auto g_id = scene_graph_.RegisterGeometry(
-      s_id, scene_graph_.world_frame_id(), std::move(geometry_instance));
+  auto g_id = scene_graph_.RegisterGeometry(s_id, scene_graph_.world_frame_id(),
+                                            std::move(geometry_instance));
   // Plain context.
   CreateDefaultContext();
   // No hydroelastic mesh available.
@@ -400,9 +403,9 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Box>(1.0, 3.0, 5.0), "box2");
   geometry_instance->set_proximity_properties(ProximityProperties());
-  g_id = scene_graph_.RegisterGeometry(
-      context_.get(), s_id, scene_graph_.world_frame_id(),
-      std::move(geometry_instance));
+  g_id = scene_graph_.RegisterGeometry(context_.get(), s_id,
+                                       scene_graph_.world_frame_id(),
+                                       std::move(geometry_instance));
   // Volume hydroelastic mesh available.
   EXPECT_EQ(
       query_object().inspector().maybe_get_hydroelastic_mesh(g_id).index(), 2);
@@ -411,9 +414,9 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   // resulting properties have proximity defaults applied.
   geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Box>(1.0, 1.0, 1.0), "box3");
-  g_id = scene_graph_.RegisterGeometry(
-      context_.get(), s_id, scene_graph_.world_frame_id(),
-      std::move(geometry_instance));
+  g_id = scene_graph_.RegisterGeometry(context_.get(), s_id,
+                                       scene_graph_.world_frame_id(),
+                                       std::move(geometry_instance));
   scene_graph_.AssignRole(context_.get(), s_id, g_id, ProximityProperties());
   // Volume hydroelastic mesh available.
   EXPECT_EQ(
@@ -422,7 +425,7 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   // Replace the role, with a blank set of properties. The resulting properties
   // are not empty, but have the defaults applied.
   ASSERT_TRUE(scene_graph_.get_config(*context_)
-              .default_proximity_properties.resolution_hint.has_value());
+                  .default_proximity_properties.resolution_hint.has_value());
   scene_graph_.AssignRole(context_.get(), s_id, g_id, ProximityProperties(),
                           RoleAssign::kReplace);
   auto* props = query_object().inspector().GetProximityProperties(g_id);
@@ -432,7 +435,7 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   // get removed, because it is set in the context's scene graph config, and
   // those settings get reapplied during AssignRole().
   ASSERT_TRUE(scene_graph_.get_config(*context_)
-              .default_proximity_properties.resolution_hint.has_value());
+                  .default_proximity_properties.resolution_hint.has_value());
   ProximityProperties edit_props(
       *query_object().inspector().GetProximityProperties(g_id));
   edit_props.RemoveProperty(kHydroGroup, kRezHint);
@@ -693,6 +696,28 @@ TEST_F(SceneGraphTest, GetRendererTypeName) {
             NiceTypeName::Get<DummyRenderEngine>());
   EXPECT_EQ(scene_graph_.GetRendererTypeName(*context_, kRendererName2),
             NiceTypeName::Get<DummyRenderEngine>());
+}
+
+TEST_F(SceneGraphTest, GetRendererParameterYaml) {
+  const std::string kRendererName1 = "bob";
+  const std::string kRendererName2 = "alice";
+
+  CreateDefaultContext();
+  DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+      kRendererName1, make_unique<DummyRenderEngine>()));
+  DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+      context_.get(), kRendererName2, make_unique<DummyRenderEngine>()));
+
+  // If no renderer has the name, the parameter string is empty.
+  EXPECT_EQ(scene_graph_.GetRendererParameterYaml("non-existent"), "");
+  EXPECT_EQ(scene_graph_.GetRendererParameterYaml(*context_, "non-existent"),
+            "");
+
+  // Confirm that the string is *not* empty for valid names. We won't worry
+  // about the string contents; it has been tested elsewhere.
+  EXPECT_FALSE(scene_graph_.GetRendererParameterYaml(kRendererName1).empty());
+  EXPECT_FALSE(
+      scene_graph_.GetRendererParameterYaml(*context_, kRendererName2).empty());
 }
 
 TEST_F(SceneGraphTest, RemoveRenderer) {

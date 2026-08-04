@@ -5,9 +5,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
-    "drake_cc_test",
 )
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -18,7 +16,9 @@ drake_cc_package_library(
         ":add_multibody_plant_constraints",
         ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_controller",
         ":differential_inverse_kinematics_integrator",
+        ":differential_inverse_kinematics_system",
         ":global_inverse_kinematics",
         ":inverse_kinematics_core",
         ":kinematic_evaluators",
@@ -62,12 +62,43 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "differential_inverse_kinematics_controller",
+    srcs = ["differential_inverse_kinematics_controller.cc"],
+    hdrs = ["differential_inverse_kinematics_controller.h"],
+    deps = [
+        ":differential_inverse_kinematics_system",
+        "//systems/framework",
+        "//systems/primitives:discrete_time_integrator",
+        "//systems/primitives:selector",
+        "//systems/primitives:wrap_to_system",
+    ],
+)
+
+drake_cc_library(
     name = "differential_inverse_kinematics_integrator",
     srcs = ["differential_inverse_kinematics_integrator.cc"],
     hdrs = ["differential_inverse_kinematics_integrator.h"],
     deps = [
         ":differential_inverse_kinematics",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_system",
+    srcs = ["differential_inverse_kinematics_system.cc"],
+    hdrs = ["differential_inverse_kinematics_system.h"],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//common:essential",
+        "//common:name_value",
+        "//common:string_container",
+        "//multibody/parsing:scoped_names",
+        "//planning:collision_checker",
+        "//planning:dof_mask",
+        "//planning:joint_limits",
+        "//solvers:osqp_solver",
+        "//systems/framework:bus_value",
     ],
 )
 
@@ -176,11 +207,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "constraint_relaxing_ik_test",
+    opt_in_condition = "//tools/workspace/snopt:enabled",
     srcs = ["test/constraint_relaxing_ik_test.cc"],
     data = [
         "@drake_models//:iiwa_description",
     ],
-    tags = ["snopt"],
     deps = [
         ":constraint_relaxing_ik",
     ],
@@ -202,6 +233,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "differential_inverse_kinematics_controller_test",
+    data = [
+        "@drake_models//:iiwa_description",
+    ],
+    deps = [
+        ":differential_inverse_kinematics_controller",
+        "//common/test_utilities",
+        "//multibody/parsing:parser",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "differential_inverse_kinematics_integrator_test",
     data = [
         "@drake_models//:iiwa_description",
@@ -212,6 +258,20 @@ drake_cc_googletest(
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_system_test",
+    deps = [
+        ":differential_inverse_kinematics_system",
+        "//common:nice_type_name",
+        "//common/test_utilities",
+        "//common/yaml:yaml_io",
+        "//multibody/plant",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
+        "//systems/framework",
     ],
 )
 
@@ -235,7 +295,7 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/tree",
         "//planning:robot_diagram_builder",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -403,20 +463,15 @@ drake_cc_library(
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
         "//solvers:solve",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "moderate",
     num_threads = 4,
-    tags = gurobi_test_tags() + [
-        # Takes too long to run with Valgrind.
-        "no_memcheck",
-        # Excluding because an assertion fails in LLVM code. Issue #6179.
-        "no_tsan",
-    ],
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -426,14 +481,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_reachable_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "moderate",
     num_threads = 4,
-    tags = gurobi_test_tags() + [
-        # Takes too long to run with Valgrind.
-        "no_memcheck",
-        # Excluding because an assertion fails in LLVM code. Issue #6179.
-        "no_tsan",
-    ],
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -443,16 +493,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_feasible_posture_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
+    # This test is prohibitively slow in debug builds.
+    opt_out_conditions = ["//tools:unoptimized"],
     timeout = "long",
-    # This test is prohibitively slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
     num_threads = 4,
-    tags = gurobi_test_tags() + [
-        "no_asan",
-        # Takes too long to run with Valgrind.
-        "no_memcheck",
-        "no_tsan",
-    ],
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -462,18 +507,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_collision_avoidance_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "moderate",
     num_threads = 4,
-    tags = gurobi_test_tags() + [
-        # Takes too long to run with Valgrind.
-        "no_memcheck",
-        # Excluding because an assertion fails in LLVM code. Issue #6179.
-        "no_tsan",
-    ],
     deps = [
         ":global_inverse_kinematics_test_util",
         "//solvers:gurobi_solver",
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

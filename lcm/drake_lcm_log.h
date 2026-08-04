@@ -140,6 +140,13 @@ class DrakeLcmLog : public DrakeLcmInterface {
 
   std::string get_lcm_url() const override;
 
+  /** Returns true if the LCM runtime library is enabled in this build of Drake.
+   * When false, functions that require the runtime (which at the moment is all
+   * functions, including the constructor) will throw an error.
+   * See `//tools/flags:with_lcm_runtime`.
+   */
+  static bool available();
+
  private:
   void OnHandleSubscriptionsError(const std::string&) override;
 

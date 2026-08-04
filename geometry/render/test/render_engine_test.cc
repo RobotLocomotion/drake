@@ -1,12 +1,15 @@
 #include "drake/geometry/render/render_engine.h"
 
+#include <memory>
 #include <optional>
 #include <set>
 #include <unordered_map>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
@@ -17,7 +20,8 @@ namespace render {
 
 class RenderEngineTester {
  public:
-  explicit RenderEngineTester(const RenderEngine* engine) : engine_(*engine) {}
+  explicit RenderEngineTester(const RenderEngine* engine)
+      : engine_(DRAKE_DEREF(engine)) {}
 
   int num_geometries() const {
     return static_cast<int>(engine_.update_ids_.size() +
@@ -41,6 +45,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::internal::DummyRenderEngine;
+using geometry::internal::DummyRenderEngineWithNames;
 using math::RigidTransformd;
 using std::set;
 using std::unordered_map;
@@ -57,6 +62,8 @@ using systems::sensors::ImageRgba8U;
 // This mainline implementation:
 //    - UpdateViewpoint and DoUpdateVisualPose are no-ops.
 //    - DoRegisterVisual and DoRemoveGeometry do nothing and report such.
+//      - DoRegisterVisual is the overload without name information. For a test
+//        engine that includes names, see DummyRenderEngine.
 //    - DoClone simply returns nullptr.
 //    - Implements no rendering interfaces; invocations of
 //      MinimumEngine::Render*Image (in any variant) will throw.
@@ -182,11 +189,10 @@ GTEST_TEST(RenderEngine, DeformableGeometryRegistrationAndUpdate) {
   }
 
   // Now we test for throw conditions for the update.
-  // Non-existant geometry.
+  // Non-existent geometry is fine. It's silently ignored.
   const GeometryId fake_id = GeometryId::get_new_id();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.UpdateDeformableConfigurations(fake_id, {new_q}, {new_normal}),
-      "No deformable geometry with id.*");
+  EXPECT_NO_THROW(
+      engine.UpdateDeformableConfigurations(fake_id, {new_q}, {new_normal}));
   // Wrong number of vertex positions/normals.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.UpdateDeformableConfigurations(id0, {new_q, new_q}, {new_normal}),
@@ -216,8 +222,11 @@ GTEST_TEST(RenderEngine, DeformableGeometryRegistrationAndUpdate) {
 // configure each geometry correctly on whether it gets updated or not, and the
 // latter will confirm that the right geometries get updated.
 GTEST_TEST(RenderEngine, RigidGeometryRegistrationAndUpdate) {
+  // Create two engines. One (engine) represents the legacy behavior that
+  // ignores names. The other (engine_with_names) captures and reports names.
   // Change the default render label to something registerable.
   DummyRenderEngine engine({RenderLabel::kDontCare});
+  DummyRenderEngineWithNames engine_with_names({RenderLabel::kDontCare});
 
   // Configure parameters for registering visuals.
   PerceptionProperties skip_properties = engine.rejecting_properties();
@@ -260,11 +269,11 @@ GTEST_TEST(RenderEngine, RigidGeometryRegistrationAndUpdate) {
   // false (and other arguments do not matter).
   const GeometryId id1 = GeometryId::get_new_id();
   const bool is_dynamic = true;
-  const bool dynamic_accepted =
-      engine.RegisterVisual(id1, sphere, skip_properties, {}, is_dynamic);
+  const bool dynamic_accepted = engine.RegisterVisual(
+      id1, sphere, skip_properties, {}, is_dynamic, "dynamic");
   EXPECT_FALSE(dynamic_accepted);
-  const bool anchored_accepted =
-      engine.RegisterVisual(id1, sphere, skip_properties, {}, !is_dynamic);
+  const bool anchored_accepted = engine.RegisterVisual(
+      id1, sphere, skip_properties, {}, !is_dynamic, "anchored");
   EXPECT_FALSE(anchored_accepted);
   // Confirm nothing is updated - because nothing is registered.
   engine.UpdatePoses(X_WG_all);
@@ -274,8 +283,8 @@ GTEST_TEST(RenderEngine, RigidGeometryRegistrationAndUpdate) {
     // Case: the shape is configured for registration, but does *not* require
     // updating.
     const auto& [id, X_WG] = *(X_WG_all.begin());
-    bool accepted =
-        engine.RegisterVisual(id, sphere, add_properties, X_WG, !is_dynamic);
+    bool accepted = engine.RegisterVisual(id, sphere, add_properties, X_WG,
+                                          !is_dynamic, "anchored");
     EXPECT_TRUE(accepted);
     EXPECT_TRUE(CompareMatrices(engine.world_pose(id).GetAsMatrix34(),
                                 X_WG.GetAsMatrix34()));
@@ -283,14 +292,22 @@ GTEST_TEST(RenderEngine, RigidGeometryRegistrationAndUpdate) {
     EXPECT_EQ(engine.updated_ids().size(), 0);
     EXPECT_TRUE(CompareMatrices(engine.world_pose(id).GetAsMatrix34(),
                                 X_WG.GetAsMatrix34()));
+    // `engine` doesn't capture names.
+    EXPECT_EQ(engine.names().size(), 0);
+
+    // The same act, registered with the name-accepting engine captures names.
+    engine_with_names.RegisterVisual(id, sphere, add_properties, X_WG,
+                                     !is_dynamic, "anchored");
+    EXPECT_THAT(engine_with_names.names(),
+                ::testing::Contains(::testing::Pair(id, "anchored")));
   }
 
   {
     // Case: the shape is configured for registration *and* requires updating.
     // Configure the pose for the id so it is *not* the identity.
     const auto& [id, X_WG] = *(++(X_WG_all.begin()));
-    bool accepted =
-        engine.RegisterVisual(id, sphere, add_properties, X_WG, is_dynamic);
+    bool accepted = engine.RegisterVisual(id, sphere, add_properties, X_WG,
+                                          is_dynamic, "dynamic");
     EXPECT_TRUE(accepted);
     const Vector3d p_WG(1.5, 2.5, 3.5);
     X_WG_all[id].set_translation(p_WG);
@@ -301,6 +318,14 @@ GTEST_TEST(RenderEngine, RigidGeometryRegistrationAndUpdate) {
         CompareMatrices(engine.updated_ids().at(id).translation(), p_WG));
     EXPECT_TRUE(CompareMatrices(engine.world_pose(id).GetAsMatrix34(),
                                 X_WG_all[id].GetAsMatrix34()));
+    // `engine` doesn't capture names.
+    EXPECT_EQ(engine.names().size(), 0);
+
+    // The same act, registered with the name-accepting engine captures names.
+    engine_with_names.RegisterVisual(id, sphere, add_properties, X_WG,
+                                     is_dynamic, "dynamic");
+    EXPECT_THAT(engine_with_names.names(),
+                ::testing::Contains(::testing::Pair(id, "dynamic")));
   }
 }
 

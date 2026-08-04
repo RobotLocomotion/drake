@@ -1,7 +1,9 @@
 #include "drake/geometry/proximity/field_intersection.h"
 
 #include <memory>
+#include <set>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -20,7 +22,7 @@ namespace internal {
 namespace {
 
 using Eigen::Vector3d;
-using hydroelastic::SoftMesh;
+using hydroelastic::CompliantMesh;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
@@ -90,8 +92,8 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneIdenticalFrames) {
       CalcEquilibriumPlane(0, field0_M_, 0, field1_N_, X_MN, &plane_M);
 
   ASSERT_TRUE(success);
-  EXPECT_TRUE(CompareMatrices(plane_M.normal(), expected_plane_M.normal(),
-                              tolerance()));
+  EXPECT_TRUE(CompareMatrices(plane_M.unit_normal(),
+                              expected_plane_M.unit_normal(), tolerance()));
   // The choice of this query point is arbitrary.
   const Vector3d p_MQ(0.1, 0.2, 0.3);
   const double expected_height = expected_plane_M.CalcHeight<double>(p_MQ);
@@ -131,8 +133,8 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneComplexTransform) {
   bool success = CalcEquilibriumPlane(0, field0_F, 0, field1_G, X_FG, &plane_F);
 
   ASSERT_TRUE(success);
-  EXPECT_TRUE(CompareMatrices(plane_F.normal(), expected_plane_F.normal(),
-                              tolerance()));
+  EXPECT_TRUE(CompareMatrices(plane_F.unit_normal(),
+                              expected_plane_F.unit_normal(), tolerance()));
   // The choice of this query point is arbitrary.
   const Vector3d p_FQ(0.1, 0.2, 0.3);
   const double expected_height = expected_plane_F.CalcHeight<double>(p_FQ);
@@ -157,7 +159,7 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneNone) {
 
     ASSERT_FALSE(success);
     // Verify that the plane has not changed from its initial value.
-    EXPECT_EQ(plane_M.normal(), init_plane_M.normal());
+    EXPECT_EQ(plane_M.unit_normal(), init_plane_M.unit_normal());
     // The choice of this query point is arbitrary.
     const Vector3d p_FQ(0.1, 0.2, 0.3);
     const double expected_height = init_plane_M.CalcHeight<double>(p_FQ);
@@ -180,7 +182,7 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneNone) {
 
     ASSERT_FALSE(success);
     // Verify that the plane has not changed from its initial value.
-    EXPECT_EQ(plane_M.normal(), init_plane_M.normal());
+    EXPECT_EQ(plane_M.unit_normal(), init_plane_M.unit_normal());
     // The choice of this query point is arbitrary.
     const Vector3d p_FQ(0.1, 0.2, 0.3);
     const double expected_height = init_plane_M.CalcHeight<double>(p_FQ);
@@ -308,11 +310,11 @@ GTEST_TEST(VolumeIntersectionTest, FullyPenetrated) {
             ball, radius, TessellationStrategy::kSingleInteriorVertex));
     auto field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
         MakeSpherePressureField<double>(ball, mesh.get(), 1e5));
-    return SoftMesh(std::move(mesh), std::move(field));
+    return CompliantMesh(std::move(mesh), std::move(field));
   };
 
-  SoftMesh big_sphere_M = make_ball(1.0);
-  SoftMesh small_sphere_N = make_ball(1.0 / 8.0);
+  CompliantMesh big_sphere_M = make_ball(1.0);
+  CompliantMesh small_sphere_N = make_ball(1.0 / 8.0);
 
   // Place the small sphere well within the big sphere, without surfaces
   // touching.
@@ -362,9 +364,9 @@ class VolumeIntersectorTest : public ::testing::Test {
             MakeSpherePressureField<double>(sphere_, octahedron_mesh.get(),
                                             kOctahedronElasticModulus_));
 
-    box_M_ = SoftMesh(std::move(mesh), std::move(field));
+    box_M_ = CompliantMesh(std::move(mesh), std::move(field));
     octahedron_N_ =
-        SoftMesh(std::move(octahedron_mesh), std::move(octahedron_field));
+        CompliantMesh(std::move(octahedron_mesh), std::move(octahedron_field));
   }
 
  protected:
@@ -375,12 +377,12 @@ class VolumeIntersectorTest : public ::testing::Test {
   // Geometry 0 and its field.
   const Box box_{0.06, 0.10, 0.14};  // 6cm-thick compliant pad.
   const double kBoxElasitcModulus_{1.0e5};
-  SoftMesh box_M_;
+  CompliantMesh box_M_;
 
   // Geometry 1 and its field.
   const Sphere sphere_{0.03};  // 3cm-radius (6cm-diameter) finger tip.
   const double kOctahedronElasticModulus_{1.0e5};
-  SoftMesh octahedron_N_;
+  CompliantMesh octahedron_N_;
 };
 
 // The two algorithms provided by VolumeIntersector only differ in the manner in

@@ -10,9 +10,9 @@ namespace drake {
 namespace test {
 namespace {
 
+using std::make_unique;
 using std::string;
 using std::unique_ptr;
-using std::make_unique;
 
 // An example class that is memcpy-movable.
 class MemcpyMovable {

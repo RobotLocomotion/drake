@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_make_model_name.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 namespace drake {

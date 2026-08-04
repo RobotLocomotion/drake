@@ -17,10 +17,10 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/multibody/plant/deformable_model.h"
-#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/discrete_step_memory.h"
+#include "drake/multibody/plant/distance_constraint_params.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
@@ -31,12 +31,18 @@ namespace drake {
 namespace multibody {
 
 #ifndef DRAKE_DOXYGEN_CXX
+// Forward declarations for multibody_plant.h.
 template <typename T>
 class MultibodyPlant;
 #endif
 
 namespace internal {
 
+// Forward declarations for desired_state_input.h.
+template <typename>
+struct DesiredStateInput;
+
+// Forward declarations for multibody_plant.h.
 template <typename T>
 struct JointLockingCacheData;
 
@@ -62,7 +68,8 @@ struct InputPortForces {
   /* Joint actuation, indexed by DOF. We split them into actuators with and
    without PD control. Both have size equal to the number of generalized
    velocities. Entries with no contribution are zero. In other words, the
-   total actuation equals actuation_w_pd + actuation_wo_pd. */
+   total actuation equals actuation_w_pd + actuation_wo_pd. The values reported
+   here have already been clamped by the actuator's effort_limit. */
   VectorX<T> actuation_w_pd;   // For actuated joints with PD control.
   VectorX<T> actuation_wo_pd;  // For actuated joints without PD control.
 };
@@ -219,7 +226,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* N.B. Keep the spelling and order of declarations here identical to the
    MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
-  const MultibodyTree<T>& internal_tree() const;
+  const MultibodyTree<T>& internal_tree() const {
+    return GetInternalTree(this->plant());
+  }
 
   systems::CacheEntry& DeclareCacheEntry(std::string description,
                                          systems::ValueProducer,
@@ -235,9 +244,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* @} */
 
-  const MultibodyTreeTopology& tree_topology() const {
-    return internal::GetInternalTree(this->plant()).get_topology();
-  }
+  const SpanningForest& get_forest() const { return internal_tree().forest(); }
 
   /* Returns the pointer to the DeformableDriver owned by `this` manager if one
    exists. Otherwise, returns nullptr. */
@@ -312,16 +319,17 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const internal::JointLockingCacheData<T>& EvalJointLocking(
       const systems::Context<T>& context) const;
 
-  VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
+  const VectorX<T>& EvalActuationInput(const systems::Context<T>& context,
+                                       bool apply_effort_limit) const;
 
-  DesiredStateInput<T> AssembleDesiredStateInput(
+  const DesiredStateInput<T>& EvalDesiredStateInput(
       const systems::Context<T>& context) const;
 
   const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&
   coupler_constraints_specs() const;
 
-  const std::map<MultibodyConstraintId, internal::DistanceConstraintSpec>&
-  distance_constraints_specs() const;
+  const std::map<MultibodyConstraintId, DistanceConstraintParams>&
+  GetDistanceConstraintParams(const systems::Context<T>& context) const;
 
   const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&
   ball_constraints_specs() const;

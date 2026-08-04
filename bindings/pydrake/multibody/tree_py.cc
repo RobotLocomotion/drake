@@ -1,7 +1,12 @@
 #include "drake/bindings/pydrake/multibody/tree_py.h"
 
-#include "pybind11/eval.h"
+#include <limits>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
 
+#include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
@@ -10,11 +15,11 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/door_hinge.h"
+#include "drake/multibody/tree/force_density_field.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/joint.h"
@@ -50,7 +55,7 @@ namespace {
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::multibody;
-constexpr auto& doc = pydrake_doc.drake.multibody;
+constexpr auto& doc = pydrake_doc_multibody_tree.drake.multibody;
 
 // Negative case for checking T::name().
 // https://stackoverflow.com/a/16000226/7829525
@@ -70,20 +75,21 @@ struct has_name_func<T, decltype(std::declval<T>().name(), void())>
 // function.
 template <typename T, typename PyClass>
 void BindMultibodyElementMixin(PyClass* pcls) {
-  using Class = typename PyClass::type;
+  using Class = typename PyClass::Type;
   // TODO(eric.cousineau): Fix docstring generation for `MultibodyElement`.
   auto& cls = *pcls;
   cls  // BR
       .def("index", &Class::index)
       .def("model_instance", &Class::model_instance)
       .def("is_ephemeral", &Class::is_ephemeral)
-      .def("GetParentPlant",
+      .def(
+          "GetParentPlant",
           [](const Class& self) -> const multibody::MultibodyPlant<T>& {
             return self.GetParentPlant();
-          })
+          },
+          py_rvp::reference_internal)
       .def("__repr__", [](const Class& self) {
-        py::str cls_name =
-            internal::PrettyClassName(py::cast(&self).get_type());
+        py::str cls_name(internal::PrettyClassName(py::cast(&self).type()));
         const int index = self.index();
         const int model_instance = self.model_instance();
         if constexpr (has_name_func<Class>::value) {
@@ -96,7 +102,7 @@ void BindMultibodyElementMixin(PyClass* pcls) {
       });
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
   BindTypeSafeIndex<FrameIndex>(m, "FrameIndex", doc.FrameIndex.doc);
@@ -106,10 +112,14 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindTypeSafeIndex<JointIndex>(m, "JointIndex", doc.JointIndex.doc);
   BindTypeSafeIndex<JointActuatorIndex>(
       m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
-  BindTypeSafeIndex<ModelInstanceIndex>(
-      m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
   BindIdentifier<MultibodyConstraintId>(
       m, "MultibodyConstraintId", doc.MultibodyConstraintId.doc);
+  BindTypeSafeIndex<ModelInstanceIndex>(
+      m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
+  BindIdentifier<DeformableBodyId>(
+      m, "DeformableBodyId", doc.DeformableBodyId.doc);
+  BindTypeSafeIndex<DeformableBodyIndex>(
+      m, "DeformableBodyIndex", doc.DeformableBodyIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
   m.def("world_frame_index", &world_frame_index, doc.world_frame_index.doc);
   m.def("world_model_instance", &world_model_instance,
@@ -120,7 +130,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = DoorHingeConfig;
     constexpr auto& cls_doc = doc.DoorHingeConfig;
-    py::class_<Class> cls(m, "DoorHingeConfig", cls_doc.doc);
+    class_<Class> cls(m, "DoorHingeConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>(), cls_doc.ctor.doc);
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -140,7 +150,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = ScopedName;
     constexpr auto& cls_doc = doc.ScopedName;
-    py::class_<Class> cls(m, "ScopedName", cls_doc.doc);
+    class_<Class> cls(m, "ScopedName", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::string_view, std::string_view>(),
@@ -162,11 +172,12 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.set_element.doc)
         .def("__str__", &Class::to_string, cls_doc.to_string.doc)
         .def("__repr__", [](const Class& self) {
-          py::str py_namespace = std::string{self.get_namespace()};
-          py::str py_element = std::string{self.get_element()};
+          const std::string_view cxx_namespace = self.get_namespace();
+          const std::string_view cxx_element = self.get_element();
+          py::str py_namespace{cxx_namespace.data(), cxx_namespace.size()};
+          py::str py_element{cxx_element.data(), cxx_element.size()};
           return fmt::format("ScopedName({}, {})",
-              fmt_streamed(py::repr(py_namespace)),
-              fmt_streamed(py::repr(py_element)));
+              py::repr(py_namespace).c_str(), py::repr(py_element).c_str());
         });
     DefCopyAndDeepCopy(&cls);
   }
@@ -174,12 +185,12 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = PdControllerGains;
     constexpr auto& cls_doc = doc.PdControllerGains;
-    py::class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
+    class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     cls  // BR
-        .def_readwrite("p", &Class::p, cls_doc.p.doc)
-        .def_readwrite("d", &Class::d, cls_doc.d.doc);
+        .def_rw("p", &Class::p, cls_doc.p.doc)
+        .def_rw("d", &Class::d, cls_doc.d.doc);
     DefCopyAndDeepCopy(&cls);
   }
 }
@@ -187,7 +198,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 // TODO(jwnimmer-tri) This function is just a grab-bag of several classes. We
 // should split it up into smaller pieces.
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // Frames.
@@ -328,7 +339,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
             cls_doc.body_frame.doc)
-        .def("is_floating", &Class::is_floating, cls_doc.is_floating.doc)
+        .def("is_floating_base_body", &Class::is_floating_base_body,
+            cls_doc.is_floating_base_body.doc)
         .def("has_quaternion_dofs", &Class::has_quaternion_dofs,
             cls_doc.has_quaternion_dofs.doc)
         .def("floating_positions_start", &Class::floating_positions_start,
@@ -495,7 +507,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "BallRpyJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
@@ -506,14 +518,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("set_random_angles_distribution",
             &Class::set_random_angles_distribution, py::arg("angles"),
             cls_doc.set_random_angles_distribution.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("get_default_angles", &Class::get_default_angles,
             cls_doc.get_default_angles.doc)
@@ -528,7 +541,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "PlanarJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  Vector3<double>>(),
@@ -540,23 +553,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("p_FoMo_F"), cls_doc.set_translation.doc)
+            py::arg("p_FoMo_F"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_rotation", &Class::get_rotation, py::arg("context"),
             cls_doc.get_rotation.doc)
         .def("set_rotation", &Class::set_rotation, py::arg("context"),
-            py::arg("theta"), cls_doc.set_rotation.doc)
+            py::arg("theta"), py_rvp::reference_internal,
+            cls_doc.set_rotation.doc)
         .def("set_pose", &Class::set_pose, py::arg("context"),
-            py::arg("p_FoMo_F"), py::arg("theta"), cls_doc.set_pose.doc)
+            py::arg("p_FoMo_F"), py::arg("theta"), py_rvp::reference_internal,
+            cls_doc.set_pose.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FoMo_F"),
+            py::arg("context"), py::arg("v_FoMo_F"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
             py::arg("context"), py::arg("theta_dot"),
-            cls_doc.set_angular_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_angular_velocity.doc)
         .def("get_default_translation", &Class::get_default_translation,
             cls_doc.get_default_translation.doc)
         .def("set_default_translation", &Class::set_default_translation,
@@ -579,7 +595,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "PrismaticJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double, double, double>(),
@@ -611,12 +627,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("translation"), cls_doc.set_translation.doc)
+            py::arg("translation"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_translation_rate", &Class::get_translation_rate,
             py::arg("context"), cls_doc.get_translation_rate.doc)
         .def("set_translation_rate", &Class::set_translation_rate,
             py::arg("context"), py::arg("translation_dot"),
-            cls_doc.set_translation_rate.doc)
+            py_rvp::reference_internal, cls_doc.set_translation_rate.doc)
         .def("get_default_translation", &Class::get_default_translation,
             cls_doc.get_default_translation.doc)
         .def("set_default_translation", &Class::set_default_translation,
@@ -637,7 +654,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "QuaternionFloatingJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -660,18 +677,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("SetQuaternion", &Class::SetQuaternion, py::arg("context"),
-            py::arg("q_FM"), cls_doc.SetQuaternion.doc)
+            py::arg("q_FM"), py_rvp::reference_internal,
+            cls_doc.SetQuaternion.doc)
         .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R"), cls_doc.SetOrientation.doc)
+            py::arg("R"), py_rvp::reference_internal,
+            cls_doc.SetOrientation.doc)
         .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.SetTranslation.doc)
+            py::arg("p_FM"), py_rvp::reference_internal,
+            cls_doc.SetTranslation.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
-            cls_doc.SetPose.doc)
+            py_rvp::reference_internal, cls_doc.SetPose.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FM"),
+            py::arg("context"), py::arg("v_FM"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("set_random_translation_distribution",
             &Class::set_random_translation_distribution, py::arg("translation"),
@@ -699,7 +719,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "RevoluteJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double>(),
@@ -732,14 +752,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_angle", &Class::get_angle, py::arg("context"),
             cls_doc.get_angle.doc)
         .def("set_angle", &Class::set_angle, py::arg("context"),
-            py::arg("angle"), cls_doc.set_angle.doc)
+            py::arg("angle"), py_rvp::reference_internal, cls_doc.set_angle.doc)
         .def("set_random_angle_distribution",
             &Class::set_random_angle_distribution, py::arg("angle"),
             cls_doc.set_random_angle_distribution.doc)
         .def("get_angular_rate", &Class::get_angular_rate, py::arg("context"),
             cls_doc.get_angular_rate.doc)
         .def("set_angular_rate", &Class::set_angular_rate, py::arg("context"),
-            py::arg("angle"), cls_doc.set_angular_rate.doc)
+            py::arg("angle"), py_rvp::reference_internal,
+            cls_doc.set_angular_rate.doc)
         .def("get_default_angle", &Class::get_default_angle,
             cls_doc.get_default_angle.doc)
         .def("set_default_angle", &Class::set_default_angle, py::arg("angle"),
@@ -757,7 +778,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "RpyFloatingJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -772,26 +793,29 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R_FM"), cls_doc.SetOrientation.doc)
+            py::arg("R_FM"), py_rvp::reference_internal,
+            cls_doc.SetOrientation.doc)
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.SetTranslation.doc)
+            py::arg("p_FM"), py_rvp::reference_internal,
+            cls_doc.SetTranslation.doc)
         .def(
             "GetPose", &Class::GetPose, py::arg("context"), cls_doc.GetPose.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
-            cls_doc.SetPose.doc)
+            py_rvp::reference_internal, cls_doc.SetPose.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FM"),
+            py::arg("context"), py::arg("v_FM"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("set_random_angles_distribution",
             &Class::set_random_angles_distribution, py::arg("angles"),
@@ -816,7 +840,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "ScrewJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -842,19 +866,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("translation"), cls_doc.set_translation.doc)
+            py::arg("translation"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
             py::arg("context"), py::arg("translation_dot"),
-            cls_doc.set_translational_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_translational_velocity.doc)
         .def("get_rotation", &Class::get_rotation, py::arg("context"),
             cls_doc.get_rotation.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
             py::arg("context"), py::arg("theta_dot"),
-            cls_doc.set_angular_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_angular_velocity.doc)
         .def("set_random_pose_distribution",
             &Class::set_random_pose_distribution, py::arg("theta"),
             cls_doc.set_random_pose_distribution.doc)
@@ -871,7 +896,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "UniversalJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
@@ -882,11 +907,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("get_angular_rates", &Class::get_angular_rates, py::arg("context"),
             cls_doc.get_angular_rates.doc)
         .def("set_angular_rates", &Class::set_angular_rates, py::arg("context"),
-            py::arg("theta_dot"), cls_doc.set_angular_rates.doc)
+            py::arg("theta_dot"), py_rvp::reference_internal,
+            cls_doc.set_angular_rates.doc)
         .def("get_default_angles", &Class::get_default_angles,
             cls_doc.get_default_angles.doc)
         .def("set_default_angles", &Class::set_default_angles,
@@ -903,7 +930,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "WeldJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const RigidTransform<double>&>(),
@@ -928,13 +955,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [](const Class& self, const VectorX<T>& u) -> VectorX<T> {
               return self.get_actuation_vector(u);
             },
-            py::arg("u"), cls_doc.get_actuation_vector.doc)
-        .def("set_actuation_vector", &Class::set_actuation_vector,
-            py::arg("u_actuator"), py::arg("u"),
-            cls_doc.set_actuation_vector.doc)
+            py::arg("u"), cls_doc.get_actuation_vector.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("set_actuation_vector", &Class::set_actuation_vector,
+              py::arg("u_actuator"), py::arg("u"),
+              cls_doc.set_actuation_vector.doc);
+    }
+    cls  // BR
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
         .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc)
+        .def("set_effort_limit", &Class::set_effort_limit,
+            py::arg("effort_limit"), cls_doc.set_effort_limit.doc)
         .def("default_rotor_inertia", &Class::default_rotor_inertia,
             cls_doc.default_rotor_inertia.doc)
         .def("default_gear_ratio", &Class::default_gear_ratio,
@@ -1022,8 +1056,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc)
         .def("joint", &Class::joint, py_rvp::reference_internal,
             cls_doc.joint.doc)
-        .def("nominal_angle", &Class::nominal_angle, cls_doc.nominal_angle.doc)
-        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc);
+        .def("default_stiffness", &Class::default_stiffness,
+            cls_doc.default_stiffness.doc)
+        .def("GetStiffness", &Class::GetStiffness, py::arg("context"),
+            cls_doc.GetStiffness.doc)
+        .def("SetStiffness", &Class::SetStiffness, py::arg("context"),
+            py::arg("stiffness"), cls_doc.SetStiffness.doc)
+        .def("default_nominal_angle", &Class::default_nominal_angle,
+            cls_doc.default_nominal_angle.doc)
+        .def("GetNominalAngle", &Class::GetNominalAngle, py::arg("context"),
+            cls_doc.GetNominalAngle.doc)
+        .def("SetNominalAngle", &Class::SetNominalAngle, py::arg("context"),
+            py::arg("nominal_angle"), cls_doc.SetNominalAngle.doc);
   }
 
   {
@@ -1032,7 +1076,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
         m, "UniformGravityFieldElement", param, cls_doc.doc);
     cls  // BR
-        .def_readonly_static("kDefaultStrength", &Class::kDefaultStrength)
+        .def_ro_static("kDefaultStrength", &Class::kDefaultStrength)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             py::init<Vector3<double>>(), py::arg("g_W"), cls_doc.ctor.doc_1args)
@@ -1129,7 +1173,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 
 template <typename T>
-void DefineMultibodyForces(py::module m, T) {
+void DefineMultibodyForces(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = MultibodyForces<T>;
@@ -1142,10 +1186,8 @@ void DefineMultibodyForces(py::module m, T) {
     // activated if this module is present, and thus should not create a runtime
     // error.
     cls  // BR
-        .def(py::init([](const MultibodyPlant<T>& plant) {
-          return std::make_unique<Class>(plant);
-        }),
-            py::arg("plant"), cls_doc.ctor.doc_1args_plant)
+        .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
+            cls_doc.ctor.doc_1args_plant)
         .def(py::init<int, int>(), py::arg("nb"), py::arg("nv"),
             cls_doc.ctor.doc_2args_nb_nv)
         .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)
@@ -1163,26 +1205,241 @@ void DefineMultibodyForces(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
   }
 }
+
+template <typename T>
+class ForceDensityFieldPublic : public ForceDensityField<T> {
+ public:
+  // Expose protected methods for binding, take MultibodyPlant instead of
+  // MultibodyTreeSystem as argument so these methods can be bound in Python.
+  static systems::CacheEntry& DeclareCacheEntry(MultibodyPlant<T>* plant,
+      std::string description, systems::ValueProducer value_producer,
+      std::set<systems::DependencyTicket> prerequisites_of_calc) {
+    return ForceDensityField<T>::DeclareCacheEntry(
+        plant, description, value_producer, prerequisites_of_calc);
+  }
+
+  static systems::InputPort<T>& DeclareAbstractInputPort(
+      MultibodyPlant<T>* plant, std::string name,
+      const AbstractValue& model_value) {
+    return ForceDensityField<T>::DeclareAbstractInputPort(
+        plant, name, model_value);
+  }
+
+  static systems::InputPort<T>& DeclareVectorInputPort(MultibodyPlant<T>* plant,
+      std::string name, const systems::BasicVector<T>& model_vector) {
+    return ForceDensityField<T>::DeclareVectorInputPort(
+        plant, name, model_vector);
+  }
+
+  using ForceDensityField<T>::DoDeclareCacheEntries;
+  using ForceDensityField<T>::DoDeclareInputPorts;
+
+ protected:
+  explicit ForceDensityFieldPublic(ForceDensityType density_type)
+      : ForceDensityField<T>(density_type) {}
+};
+
+template <typename T>
+class DelegatedForceDensityField final : public ForceDensityFieldPublic<T> {
+ public:
+  explicit DelegatedForceDensityField(
+      std::shared_ptr<ForceDensityField<T>> impl)
+      : ForceDensityFieldPublic<T>(impl->density_type()),
+        impl_(std::move(impl)) {
+    DRAKE_THROW_UNLESS(impl_ != nullptr);
+  }
+
+ private:
+  Vector3<T> DoEvaluateAt(
+      const systems::Context<T>& context, const Vector3<T>& p_WQ) const final {
+    return impl_->EvaluateAt(context, p_WQ);
+  }
+
+  std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const final {
+    return impl_->Clone();
+  }
+
+  void DoDeclareCacheEntries(MultibodyPlant<T>* plant) final {
+    // We need a static_cast to get around protected access.
+    auto* impl = static_cast<ForceDensityFieldPublic<T>*>(impl_.get());
+    impl->DoDeclareCacheEntries(plant);
+  }
+
+  void DoDeclareInputPorts(MultibodyPlant<T>* plant) final {
+    // We need a static_cast to get around protected access.
+    auto* impl = static_cast<ForceDensityFieldPublic<T>*>(impl_.get());
+    impl->DoDeclareInputPorts(plant);
+  }
+
+  std::shared_ptr<ForceDensityField<T>> impl_;
+};
+
+template <typename T>
+class PyForceDensityField : public ForceDensityFieldPublic<T> {
+ public:
+  NB_TRAMPOLINE(ForceDensityFieldPublic<T>, 3);
+
+  explicit PyForceDensityField(ForceDensityType density_type)
+      : ForceDensityFieldPublic<T>(density_type) {}
+
+  Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
+      const Vector3<T>& p_WQ) const override {
+    PYDRAKE_OVERRIDE_PURE(Vector3<T>, ForceDensityField<T>, DoEvaluateAt,
+        std::cref(context), p_WQ);
+  }
+
+  std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
+    // Our required unique_ptr return type cannot be directly fulfilled by a
+    // PYDRAKE_OVERRIDE_PURE; we need to ask the override for a shared_ptr and
+    // then wrap it in a decorator to obtain the necessary C++ signature.
+    py::gil_scoped_acquire gil;
+    const ForceDensityField<T>* const self = this;
+    py::object result_py = py::cast(self).attr("DoClone")();
+    auto result_cxx =
+        py::cast<std::shared_ptr<ForceDensityField<T>>>(result_py);
+    DRAKE_THROW_UNLESS(result_cxx != nullptr);
+    return std::make_unique<DelegatedForceDensityField<T>>(
+        std::move(result_cxx));
+  }
+
+  void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
+  }
+
+  void DoDeclareInputPorts(MultibodyPlant<T>* plant) override {
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
+  }
+};
+
+template <typename T>
+void DefineForceDensityField(py::module_ m, T) {
+  py::tuple param = GetPyParam<T>();
+  {
+    constexpr auto& cls_doc = doc.ForceDensityField;
+    auto cls = DefineTemplateClassWithDefault<ForceDensityField<T>,
+        PyForceDensityField<T>, ForceDensityFieldBase<T>,
+        std::shared_ptr<ForceDensityField<T>>>(
+        m, "ForceDensityField", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<ForceDensityType>(),
+            py::arg("density_type") = ForceDensityType::kPerCurrentVolume,
+            cls_doc.ctor.doc)
+        .def("has_parent_system", &ForceDensityField<T>::has_parent_system,
+            cls_doc.has_parent_system.doc)
+        .def("parent_system_or_throw",
+            &ForceDensityField<T>::parent_system_or_throw,
+            py_rvp::reference_internal, cls_doc.parent_system_or_throw.doc)
+        .def_static("DeclareCacheEntry",
+            &ForceDensityFieldPublic<T>::DeclareCacheEntry, py::arg("plant"),
+            py::arg("description"), py::arg("value_producer"),
+            py::arg("prerequisites_of_calc"), py_rvp::reference_internal,
+            cls_doc.DeclareCacheEntry.doc)
+        .def_static("DeclareAbstractInputPort",
+            &ForceDensityFieldPublic<T>::DeclareAbstractInputPort,
+            py::arg("plant"), py::arg("name"), py::arg("model_value"),
+            py_rvp::reference_internal, cls_doc.DeclareAbstractInputPort.doc)
+        .def_static("DeclareVectorInputPort",
+            &ForceDensityFieldPublic<T>::DeclareVectorInputPort,
+            py::arg("plant"), py::arg("name"), py::arg("model_vector"),
+            py_rvp::reference_internal, cls_doc.DeclareVectorInputPort.doc);
+  }
+
+  {
+    constexpr auto& cls_doc = doc.GravityForceField;
+    auto cls = DefineTemplateClassWithDefault<GravityForceField<T>,
+        ForceDensityField<T>, std::shared_ptr<GravityForceField<T>>>(
+        m, "GravityForceField", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const Vector3<T>&, const T&>(), py::arg("gravity_vector"),
+            py::arg("mass_density"), cls_doc.ctor.doc);
+  }
+}
+
+void DefineDeformableBody(py::module_ m) {
+  using Class = DeformableBody<double>;
+  constexpr auto& cls_doc = doc.DeformableBody;
+  class_<Class> cls(m, "DeformableBody", cls_doc.doc);
+  BindMultibodyElementMixin<double>(&cls);
+  cls  // BR
+      .def("body_id", &Class::body_id, cls_doc.body_id.doc)
+      .def("name", &Class::name, cls_doc.name.doc)
+      .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
+      .def("geometry_id", &Class::geometry_id, cls_doc.geometry_id.doc)
+      .def("config", &Class::config, py_rvp::reference_internal,
+          cls_doc.config.doc)
+      .def("num_dofs", &Class::num_dofs, cls_doc.num_dofs.doc)
+      .def("reference_positions", &Class::reference_positions,
+          py_rvp::reference_internal, cls_doc.reference_positions.doc)
+      // TODO(xuchenhan-tri): Bind fem_model() or make it internal.
+      .def("external_forces", &Class::external_forces,
+          py_rvp::reference_internal, cls_doc.external_forces.doc)
+      .def("discrete_state_index", &Class::discrete_state_index,
+          cls_doc.discrete_state_index.doc)
+      .def("is_enabled_parameter_index", &Class::is_enabled_parameter_index,
+          cls_doc.is_enabled_parameter_index.doc)
+      .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
+          py::arg("p_WQ"), py::arg("n_W"), cls_doc.SetWallBoundaryCondition.doc)
+      .def("AddFixedConstraint", &Class::AddFixedConstraint, py::arg("body_B"),
+          py::arg("X_BA"), py::arg("shape_G"), py::arg("X_BG"),
+          cls_doc.AddFixedConstraint.doc)
+      .def("has_fixed_constraint", &Class::has_fixed_constraint,
+          cls_doc.has_fixed_constraint.doc)
+      .def("SetPositions", &Class::SetPositions, py::arg("context"),
+          py::arg("q"), cls_doc.SetPositions.doc)
+      .def("GetPositions", &Class::GetPositions, py::arg("context"),
+          cls_doc.GetPositions.doc)
+      .def("SetVelocities", &Class::SetVelocities, py::arg("context"),
+          py::arg("v"), cls_doc.SetVelocities.doc)
+      .def("GetVelocities", &Class::GetVelocities, py::arg("context"),
+          cls_doc.GetVelocities.doc)
+      .def("SetPositionsAndVelocities", &Class::SetPositionsAndVelocities,
+          py::arg("context"), py::arg("q"), py::arg("v"),
+          cls_doc.SetPositionsAndVelocities.doc)
+      .def("GetPositionsAndVelocities", &Class::GetPositionsAndVelocities,
+          py::arg("context"), cls_doc.GetPositionsAndVelocities.doc)
+      .def("is_enabled", &Class::is_enabled, py::arg("context"),
+          cls_doc.is_enabled.doc)
+      .def("Disable", &Class::Disable, py::arg("context"), cls_doc.Disable.doc)
+      .def("Enable", &Class::Enable, py::arg("context"), cls_doc.Enable.doc)
+      .def("set_default_pose", &Class::set_default_pose, py::arg("X_WD"),
+          cls_doc.set_default_pose.doc)
+      .def("get_default_pose", &Class::get_default_pose,
+          cls_doc.get_default_pose.doc)
+      .def("CalcCenterOfMassPositionInWorld",
+          &Class::CalcCenterOfMassPositionInWorld, py::arg("context"),
+          cls_doc.CalcCenterOfMassPositionInWorld.doc)
+      .def("CalcCenterOfMassTranslationalVelocityInWorld",
+          &Class::CalcCenterOfMassTranslationalVelocityInWorld,
+          py::arg("context"),
+          cls_doc.CalcCenterOfMassTranslationalVelocityInWorld.doc)
+      .def("CalcEffectiveAngularVelocity", &Class::CalcEffectiveAngularVelocity,
+          py::arg("context"), cls_doc.CalcEffectiveAngularVelocity.doc);
+}
+
 }  // namespace
 
-PYBIND11_MODULE(tree, m) {
+PYDRAKE_MODULE(tree, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
   m.doc() = "Bindings for MultibodyTree and related components.";
 
-  py::module::import("pydrake.common.eigen_geometry");
-  py::module::import("pydrake.multibody.math");
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.common.eigen_geometry");
+  py::module_::import_("pydrake.multibody.math");
+  py::module_::import_("pydrake.multibody.fem");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.geometry");
 
   internal::DefineTreeInertia(m);
   DoScalarIndependentDefinitions(m);
   type_visit(
       [m](auto dummy) {
         DefineMultibodyForces(m, dummy);
+        DefineForceDensityField(m, dummy);
         DoScalarDependentDefinitions(m, dummy);
       },
       CommonScalarPack{});
+  DefineDeformableBody(m);
 
   ExecuteExtraPythonCode(m);
 }

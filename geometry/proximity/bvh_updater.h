@@ -3,6 +3,7 @@
 #include <limits>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/bvh.h"
 
@@ -40,10 +41,7 @@ class BvhUpdater {
    @pre bvh_M was constructed on mesh_M.
    @pre mesh_M != nullptr and bvh_M != nullptr. */
   BvhUpdater(const MeshType* mesh_M, Bvh<Aabb, MeshType>* bvh_M)
-      : mesh_(*mesh_M), bvh_(*bvh_M) {
-    DRAKE_DEMAND(mesh_M != nullptr);
-    DRAKE_DEMAND(bvh_M != nullptr);
-  }
+      : mesh_(DRAKE_DEREF(mesh_M)), bvh_(DRAKE_DEREF(bvh_M)) {}
 
   const MeshType& mesh() const { return mesh_; }
   const Bvh<Aabb, MeshType>& bvh() const { return bvh_; }
@@ -83,7 +81,6 @@ class BvhUpdater {
                        const std::vector<Vector3<double>>& vertices) {
     /* Intentionally uninitialized. */
     Eigen::Vector3d lower, upper;
-    constexpr int kElementVertexCount = MeshType::kVertexPerElement;
     constexpr double kInf = std::numeric_limits<double>::infinity();
     if (node->is_leaf()) {
       // TODO(SeanCurtis-TRI): This is the limiting factor on supporting Obb.
@@ -94,7 +91,7 @@ class BvhUpdater {
       const int num_elements = node->num_element_indices();
       for (int e = 0; e < num_elements; ++e) {
         const auto& element = mesh_.element(node->element_index(e));
-        for (int i = 0; i < kElementVertexCount; ++i) {
+        for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
           const Eigen::Vector3d& p_MV =
               convert_to_double(vertices[element.vertex(i)]);
           lower = lower.cwiseMin(p_MV);

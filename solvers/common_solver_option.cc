@@ -19,12 +19,5 @@ std::string_view to_string(CommonSolverOption common_solver_option) {
   DRAKE_UNREACHABLE();
 }
 
-// Deprecated 2025-05-01.
-std::ostream& operator<<(std::ostream& os,
-                         CommonSolverOption common_solver_option) {
-  os << to_string(common_solver_option);
-  return os;
-}
-
 }  // namespace solvers
 }  // namespace drake

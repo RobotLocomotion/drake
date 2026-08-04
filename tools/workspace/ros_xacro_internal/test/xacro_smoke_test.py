@@ -1,9 +1,7 @@
-import subprocess
 import unittest
 
 
 class XacroSmokeTest(unittest.TestCase):
-
     def _diff_file(self, filename):
         self.maxDiff = None
         with open(filename) as f:
@@ -15,7 +13,6 @@ class XacroSmokeTest(unittest.TestCase):
         self.assertMultiLineEqual(expected, actual)
 
     def test_samples(self):
-        """Check use of xacro_filegroup and the expected result.
-        """
+        """Check use of xacro_filegroup and the expected result."""
         self._diff_file("tools/workspace/ros_xacro_internal/test/sample1.xml")
         self._diff_file("tools/workspace/ros_xacro_internal/test/sample2.xml")

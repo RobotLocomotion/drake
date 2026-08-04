@@ -4,6 +4,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>

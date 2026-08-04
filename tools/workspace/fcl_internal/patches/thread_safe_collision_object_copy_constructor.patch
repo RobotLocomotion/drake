@@ -1,0 +1,53 @@
+FCL didn't include copy constructors for CollisionObject. Now that we're
+sharing geometries across clones of ProximityEngine, the simplest way to
+clone a CollisionObject is to simply copy construct one collision object from
+another.
+
+We were previously constructing a new CollisionObject from the components of
+the original. This led to race conditions because the CollisionObject
+constructors all performed write operations on the shared geometry. The copy
+constructor promises not to do that, so it makes cloning collision objects
+implicitly threadsafe.
+
+This *could* be upstreamed, but the ambiguity around user data is such that it
+may very will be a footgun. Drake's usage is safe because the user data isn't
+truly a pointer -- merely an integer-encoded value.
+
+--- include/fcl/narrowphase/collision_object-inl.h
++++ include/fcl/narrowphase/collision_object-inl.h
+@@ -85,6 +85,10 @@ CollisionObject<S>::CollisionObject(
+   computeAABB();
+ }
+
++//==============================================================================
++template <typename S>
++CollisionObject<S>::CollisionObject(const CollisionObject& other) = default;
++
+ //==============================================================================
+ template <typename S>
+ CollisionObject<S>::~CollisionObject()
+
+--- include/fcl/narrowphase/collision_object.h
++++ include/fcl/narrowphase/collision_object.h
+@@ -60,6 +60,21 @@ public:
+                   const Matrix3<S>& R,
+                   const Vector3<S>& T);
+
++  // Copy constructor.
++  //
++  // Note: the newly constructed copy will share the underlying geometry
++  // (safely via the shared_ptr). However, it will also share the user data
++  // pointer, which is a potential source for bugs. Whatever user data is being
++  // pointed to must outlive both the original as well as the copy collision
++  // objects. If the copy needs a separate user data object with its own
++  // lifespan, the caller is responsible for updating the user data after
++  // construction.
++  //
++  // Unlike the other constructors, this copy constructor does not perform any
++  // write operations on its geometry (i.e., triggering a local AABB
++  // computation).
++  CollisionObject(const CollisionObject& other);
++
+   ~CollisionObject();
+
+   /// @brief get the type of the object

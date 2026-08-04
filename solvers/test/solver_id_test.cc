@@ -1,5 +1,7 @@
 #include "drake/solvers/solver_id.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/limit_malloc.h"
@@ -55,6 +57,10 @@ GTEST_TEST(SolverId, WarningForVeryLongName) {
   // Solver names that are > 15 characters will warn.
   // We'll just make sure nothing crashes.
   SolverId foo{"this_solver_name_is_way_too_long"};
+}
+
+GTEST_TEST(SolverId, ToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(SolverId{"bar"}), "bar");
 }
 
 }  // namespace

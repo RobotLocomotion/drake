@@ -1,6 +1,5 @@
-#include "pybind11/eval.h"
-
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/multibody_benchmarks_acrobot.h"
+#include "drake/bindings/generated_docstrings/multibody_benchmarks_mass_damper_spring.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h"
@@ -16,16 +15,16 @@ using T = double;
 
 namespace {
 
-void init_acrobot(py::module m) {
+void init_acrobot(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::benchmarks::acrobot;
-  constexpr auto& doc = pydrake_doc.drake.multibody.benchmarks.acrobot;
+  constexpr auto& doc = pydrake_doc_multibody_benchmarks_acrobot.drake.multibody
+                            .benchmarks.acrobot;
 
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.plant");
+  py::module_::import_("pydrake.geometry");
+  py::module_::import_("pydrake.multibody.plant");
 
-  py::class_<AcrobotParameters>(
-      m, "AcrobotParameters", doc.AcrobotParameters.doc)
+  class_<AcrobotParameters>(m, "AcrobotParameters", doc.AcrobotParameters.doc)
       .def(py::init(), doc.AcrobotParameters.doc);
 
   m.def("MakeAcrobotPlant",
@@ -35,7 +34,7 @@ void init_acrobot(py::module m) {
       py::arg("scene_graph") = nullptr, doc.MakeAcrobotPlant.doc);
 }
 
-void init_all(py::module m) {
+void init_all(py::module_ m) {
   py::dict vars = m.attr("__dict__");
   py::exec("from pydrake.multibody.benchmarks.acrobot import *", py::globals(),
       vars);
@@ -43,16 +42,16 @@ void init_all(py::module m) {
 
 }  // namespace
 
-PYBIND11_MODULE(benchmarks, m) {
+PYDRAKE_MODULE(benchmarks, m) {
   init_acrobot(m.def_submodule("acrobot"));
   init_all(m.def_submodule("all"));
 
-  constexpr auto& doc = pydrake_doc.drake.multibody.benchmarks;
-
   {
     using Class = multibody::benchmarks::MassDamperSpringAnalyticalSolution<T>;
-    constexpr auto& cls_doc = doc.MassDamperSpringAnalyticalSolution;
-    py::class_<Class>(m, "MassDamperSpringAnalyticalSolution", cls_doc.doc)
+    constexpr auto& cls_doc =
+        pydrake_doc_multibody_benchmarks_mass_damper_spring.drake.multibody
+            .benchmarks.MassDamperSpringAnalyticalSolution;
+    class_<Class>(m, "MassDamperSpringAnalyticalSolution", cls_doc.doc)
         .def(py::init<const T&, const T&, const T&>(), py::arg("mass"),
             py::arg("b"), py::arg("k"), cls_doc.ctor.doc)
         .def("SetInitialValue", &Class::SetInitialValue, py::arg("x0"),

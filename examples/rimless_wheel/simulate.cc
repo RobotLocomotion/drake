@@ -13,9 +13,12 @@ namespace examples {
 namespace rimless_wheel {
 namespace {
 
-DEFINE_double(accuracy, 1e-4, "Accuracy of the rimless wheel system (unitless);"
-    " must be positive.");
-DEFINE_double(initial_angle, 0.0, "Initial angle of the wheel (rad).  Must be"
+DEFINE_double(accuracy, 1e-4,
+              "Accuracy of the rimless wheel system (unitless);"
+              " must be positive.");
+DEFINE_double(
+    initial_angle, 0.0,
+    "Initial angle of the wheel (rad).  Must be"
     " in the interval (slope - alpha, slope + alpha), as described in "
     "http://underactuated.mit.edu/underactuated.html?chapter=simple_legs .");
 DEFINE_double(initial_angular_velocity, 5.0,

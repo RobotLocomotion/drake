@@ -12,7 +12,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -60,7 +59,8 @@ GTEST_TEST(FindResourceTest, NotFound) {
   const std::optional<string> error_message = result.get_error_message();
   ASSERT_TRUE(error_message);
   EXPECT_THAT(*error_message, testing::ContainsRegex(
-      "Sought '" + relpath + "' in runfiles.*not exist.*on the manifest"));
+                                  "Sought '" + relpath +
+                                  "' in runfiles.*not exist.*on the manifest"));
 
   // Sugar works the same way.
   EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);

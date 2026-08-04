@@ -31,7 +31,7 @@ VectorX<U> CalcNormalForces(const VectorX<U>& x,
   const VectorX<U> k_vn =
       stiffness.array() *
       (VectorX<U>::Ones(nc).array() - dissipation.array() * vn.array());
-  const VectorX<U> k_vn_clamped = k_vn.template cwiseMax(VectorX<U>::Zero(nc));
+  const VectorX<U> k_vn_clamped = k_vn.cwiseMax(VectorX<U>::Zero(nc));
   const VectorX<U> x_clamped = x.cwiseMax(VectorX<U>::Zero(nc));
   const VectorX<U> fn = k_vn_clamped.asDiagonal() * x_clamped;
   return fn;

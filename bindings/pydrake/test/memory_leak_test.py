@@ -3,44 +3,50 @@
 The test contains examples of pydrake code that may leak (DUTs),
 instrumentation to detect leaks, and optional additional debug printing under
 an internal verbose option.
+
+Two test classes provide instrumentation for the likely categories of leaks:
+
+* TestPythonMemoryLeaks detects leaks of python objects after garbage
+  collection.
+
+* TestNativeHeapLeaks detects leaks of memory in the native code heap, using
+  instrumentation only supported on Linux.
 """
 
+import ctypes
 import dataclasses
 import functools
 import gc
-import platform
 import sys
 import textwrap
 import unittest
 import weakref
 
-from pydrake.planning import RobotDiagramBuilder
-from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder, LeafSystem
-from pydrake.systems.primitives import ConstantVectorSource
-
 from pydrake.common import RandomGenerator
 from pydrake.common.schema import Rotation, Transform
-from pydrake.common.test_utilities.memory_test_util import actual_ref_count
+from pydrake.geometry import Meshcat, SceneGraphConfig
 from pydrake.lcm import DrakeLcmParams
-from pydrake.geometry import Meshcat
 from pydrake.manipulation import ApplyDriverConfigs, IiwaDriver
-from pydrake.geometry import SceneGraphConfig
-from pydrake.multibody.plant import AddMultibodyPlant, MultibodyPlantConfig
 from pydrake.multibody.parsing import (
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
 )
+from pydrake.multibody.plant import (
+    AddMultibodyPlant,
+    AddMultibodyPlantSceneGraph,
+    MultibodyPlantConfig,
+)
+from pydrake.planning import RobotDiagramBuilder
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
     Simulator,
     SimulatorConfig,
 )
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import DiagramBuilder, LeafSystem
 from pydrake.systems.lcm import ApplyLcmBusConfig
+from pydrake.systems.primitives import ConstantVectorSource
 from pydrake.systems.sensors import ApplyCameraConfig, CameraConfig
 from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
-
 
 # Developer-only configuration.
 VERBOSE = False
@@ -60,6 +66,7 @@ class _Sentinel:
 
     See also: https://docs.python.org/3/library/weakref.html#weakref.finalize
     """
+
     finalizer: weakref.finalize
     name: str
 
@@ -75,15 +82,18 @@ def _make_sentinel(obj, name):
     def done(oid):
         if VERBOSE:
             print(f"sentinel: unmade {name} {hex(oid)}")
+
     return _Sentinel(finalizer=weakref.finalize(obj, done, id(obj)), name=name)
 
 
 def _make_sentinels_from_locals(dut_name, locals_dict):
     """Makes _Sentinels for all local variables of interest."""
     # Skip specific types not supported by weakref, as needed.
-    return {_make_sentinel(value, f"{dut_name}::{key}")
-            for key, value in locals_dict.items()
-            if not any(isinstance(value, typ) for typ in [list, str])}
+    return {
+        _make_sentinel(value, f"{dut_name}::{key}")
+        for key, value in locals_dict.items()
+        if not any(isinstance(value, typ) for typ in [list, str])
+    }
 
 
 def _report_sentinels(sentinels, message: str):
@@ -92,12 +102,13 @@ def _report_sentinels(sentinels, message: str):
     the call site.
     """
     print(message)
+
     for sentinel in sentinels:
         print(f"sentinel for {sentinel.name}")
         finalizer = sentinel.finalizer
         print(f"sentinel alive? {finalizer.alive}")
         if finalizer.alive:
-            print(f"ref_count: {actual_ref_count(finalizer.peek()[0])}")
+            print(f"ref_count: {sys.getrefcount(finalizer.peek()[0])}")
             o = finalizer.peek()[0]
             is_tracked = gc.is_tracked(o)
             print(f"is_tracked: {is_tracked}")
@@ -167,17 +178,20 @@ def _dut_full_example():
         scene_graph_config=SceneGraphConfig(),
         builder=builder,
     )
-    directives = LoadModelDirectivesFromString(textwrap.dedent("""  # noqa
+    directives = LoadModelDirectivesFromString(
+        textwrap.dedent("""
     directives:
     - add_model:
         name: amazon_table
-        file: package://drake_models/manipulation_station/amazon_table_simplified.sdf
+        file: |-
+          package://drake_models/manipulation_station/amazon_table_simplified.sdf
     - add_weld:
         parent: world
         child: amazon_table::amazon_table
     - add_model:
         name: iiwa
-        file: package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+        file: |-
+          package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
         default_joint_positions:
           iiwa_joint_1: [-0.2]
           iiwa_joint_2: [0.79]
@@ -197,7 +211,8 @@ def _dut_full_example():
         child: iiwa::base
     - add_model:
         name: wsg
-        file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+        file: |-
+          package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
         default_joint_positions:
           left_finger_sliding_joint: [-0.02]
           right_finger_sliding_joint: [0.02]
@@ -212,12 +227,14 @@ def _dut_full_example():
         child: wsg::body
     - add_model:
         name: bell_pepper
-        file: package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
+        file: |-
+          package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
         default_free_body_pose:
           flush_bottom_center__z_up:
             base_frame: amazon_table::amazon_table
             translation: [0, 0.10, 0.20]
-    """))
+    """)
+    )
     added_models = ProcessModelDirectives(
         plant=plant,
         directives=directives,
@@ -307,18 +324,20 @@ def _repeat(*, dut: callable, count: int):
         gc.collect()
         if VERBOSE:
             _report_sentinels(sentinels, "after collect")
-        leaks += any(
-            [sentinel.finalizer.alive for sentinel in sentinels])
+        leaks += any([sentinel.finalizer.alive for sentinel in sentinels])
     return leaks
 
 
-class TestMemoryLeaks(unittest.TestCase):
+class TestPythonMemoryLeaks(unittest.TestCase):
+    """Detects leaks of Python objects."""
+
     def do_test(self, *, dut, count, leaks_allowed=0, leaks_required=0):
         """Runs the requested `dut` (see _repeat() above) for `count`
-        iterations. Check that leaks detected <= leaks allowed. In addition,
-        check if the leaks required <= the actual leaks measured. Using a non-0
-        leaks_required will cause the test to fail if fixes get implemented. In
-        that case, the test can likely be updated to be more strict.
+        iterations. Checks that leaks detected <= leaks allowed. In addition,
+        checks if the leaks required <= the actual leaks measured. Using a
+        non-0 leaks_required will cause the test to fail if fixes get
+        implemented. In that case, the test can likely be updated to be more
+        strict.
         """
         leaks = _repeat(dut=dut, count=count)
         self.assertLessEqual(leaks, leaks_allowed)
@@ -338,6 +357,67 @@ class TestMemoryLeaks(unittest.TestCase):
         self.do_test(dut=_dut_full_example, count=1)
 
     def test_mypyleafsystem(self):
-        # TODO(#22515): Fix this family of leaks.
-        self.do_test(dut=_dut_mypyleafsystem, count=1, leaks_allowed=1,
-                     leaks_required=1)
+        self.do_test(dut=_dut_mypyleafsystem, count=1)
+
+
+class Mallinfo2(ctypes.Structure):
+    """Structure returned by libc `mallinfo2()`. See `man 3 mallinfo`."""
+
+    _fields_ = [
+        ("arena", ctypes.c_size_t),
+        ("ordlbks", ctypes.c_size_t),
+        ("smblks", ctypes.c_size_t),
+        ("hblks", ctypes.c_size_t),
+        ("hblkhd", ctypes.c_size_t),
+        ("usmblks", ctypes.c_size_t),
+        ("fsmblks", ctypes.c_size_t),
+        ("uordblks", ctypes.c_size_t),
+        ("fordblks", ctypes.c_size_t),
+        ("keepcost", ctypes.c_size_t),
+    ]
+
+
+def _dut_bug24529():
+    """A device under test that uses The `time_step` signature of
+    AddMultibodyPlantSceneGraph; see issue #24529.
+    """
+    builder = DiagramBuilder()
+    plant, _ = AddMultibodyPlantSceneGraph(builder, time_step=0.001)
+    plant.Finalize()
+    builder.Build()
+
+
+@unittest.skipUnless(sys.platform == "linux", "native heap tests require Linux")
+class TestNativeHeapLeaks(unittest.TestCase):
+    """Detects leaks in the native code heap. The detection method depends on
+    Linux libc features."""
+
+    def setUp(self):
+        libc = ctypes.CDLL(None)
+        self._mallinfo2 = libc.mallinfo2
+        self._mallinfo2.restype = Mallinfo2
+
+    def do_test(self, *, dut):
+        """Runs the requested `dut` for a fixed number of iterations doing a
+        Python garbage collection before and after each. Checks that native
+        heap growth per iteration reaches 0.
+        """
+        iterations = 20
+        for _ in range(iterations):
+            gc.collect()
+            before = self._mallinfo2()
+            dut()
+            gc.collect()
+            after = self._mallinfo2()
+            growth = after.uordblks - before.uordblks
+            if growth == 0:
+                break
+        self.assertEqual(
+            growth,
+            0,
+            f"heap still growing by {growth} bytes"
+            f" after {iterations} iterations",
+        )
+
+    def test_bug24529(self):
+        self.do_test(dut=_dut_bug24529)

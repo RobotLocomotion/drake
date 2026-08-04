@@ -15,6 +15,7 @@
 #include "drake/lcm/drake_lcm_params.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_driver.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver.h"
+#include "drake/manipulation/util/named_positions_functions.h"
 #include "drake/manipulation/util/zero_force_driver.h"
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
@@ -42,6 +43,7 @@ struct Scenario {
     a->Visit(DRAKE_NVP(model_drivers));
     a->Visit(DRAKE_NVP(cameras));
     a->Visit(DRAKE_NVP(visualization));
+    a->Visit(DRAKE_NVP(initial_position));
   }
 
   /* Random seed for any random elements in the scenario.
@@ -55,9 +57,9 @@ struct Scenario {
 
   /* Simulator configuration (integrator and publisher parameters). */
   systems::SimulatorConfig simulator_config{
-    .max_step_size = 1e-3,
-    .accuracy = 1.0e-2,
-    .target_realtime_rate = 1.0,
+      .max_step_size = 1e-3,
+      .accuracy = 1.0e-2,
+      .target_realtime_rate = 1.0,
   };
 
   /* Plant configuration (time step and contact parameters). */
@@ -75,10 +77,9 @@ struct Scenario {
 
   /* For actuated models, specifies where each model's actuation inputs come
   from, keyed on the ModelInstance name. */
-  using DriverVariant = std::variant<
-      manipulation::kuka_iiwa::IiwaDriver,
-      manipulation::schunk_wsg::SchunkWsgDriver,
-      manipulation::ZeroForceDriver>;
+  using DriverVariant = std::variant<manipulation::kuka_iiwa::IiwaDriver,
+                                     manipulation::schunk_wsg::SchunkWsgDriver,
+                                     manipulation::ZeroForceDriver>;
   std::map<std::string, DriverVariant> model_drivers;
 
   /* Cameras to add to the scene (and broadcast over LCM). The key for each
@@ -88,23 +89,25 @@ struct Scenario {
   std::map<std::string, systems::sensors::CameraConfig> cameras;
 
   visualization::VisualizationConfig visualization;
+
+  /* Optional initial positions to override or supplement those in the
+  directives. */
+  manipulation::NamedPositions initial_position;
 };
 
 /* Returns a C++ representation of the given YAML scenario.
 Refer to the gflags descriptions atop hardware_sim.cc for details. */
-Scenario LoadScenario(
-    const std::string& filename,
-    const std::string& scenario_name,
-    const std::string& scenario_text = "{}");
+Scenario LoadScenario(const std::string& filename,
+                      const std::string& scenario_name,
+                      const std::string& scenario_text = "{}");
 
 /* Returns a YAML representation of this C++ scenario.
 @param verbose When saving the scenario, whether or not default values should be
 written out to be explicit (true) or omitted (false). Verbosity helps defend
 logged testset scenarios against changing defaults. */
-std::string SaveScenario(
-    const Scenario& scenario,
-    const std::string& scenario_name,
-    bool verbose = false);
+std::string SaveScenario(const Scenario& scenario,
+                         const std::string& scenario_name,
+                         bool verbose = false);
 
 }  // namespace internal
 }  // namespace drake

@@ -14,7 +14,7 @@ template <typename T>
 class RigidBody;
 
 /// This %ForceElement models a spring-damper attached between two points on
-/// two different bodies.
+/// two different bodies (links).
 /// Given a point P on a body A and a point Q on a body B with positions
 /// p_AP and p_BQ, respectively, this spring-damper applies equal and
 /// opposite forces on bodies A and B according to: <pre>

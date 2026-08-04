@@ -1,9 +1,13 @@
 #include "drake/geometry/meshcat.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <memory>
+#include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -30,6 +34,9 @@ using math::RollPitchYawd;
 using math::RotationMatrixd;
 using testing::ElementsAre;
 using ::testing::HasSubstr;
+
+// N.B. the bindings/pydrake/geometry/test/visualizers_test.py covers testing
+// of our Meshcat http operations. It's too awkward to try to do that here.
 
 // A small wrapper around std::system to ensure correct argument passing.
 int SystemCall(const std::vector<std::string>& argv) {
@@ -61,10 +68,6 @@ void CheckWebsocketCommand(const Meshcat& meshcat,
   std::vector<std::string> argv;
   argv.push_back(
       FindResourceOrThrow("drake/geometry/meshcat_websocket_client"));
-  // Even when this unit test is itself running under valgrind, we don't want to
-  // instrument the helper process. Our valgrind configuration recognizes this
-  // argument and skips instrumentation of the child process.
-  argv.push_back("--disable-drake-valgrind-tracing");
   argv.push_back(fmt::format("--ws_url={}", meshcat.ws_url()));
   if (send_json) {
     DRAKE_DEMAND(!send_json->empty());
@@ -121,28 +124,6 @@ std::pair<std::string, T> GetDecodedProperty(const Meshcat& meshcat,
   EXPECT_EQ(decoded.type, "set_property");
   EXPECT_EQ(decoded.property, property);
   return {decoded.path, decoded.value};
-}
-
-GTEST_TEST(MeshcatTest, TestHttp) {
-  Meshcat meshcat;
-  // Note: The server doesn't respect all requests; unfortunately we can't use
-  // curl --head and wget --spider nor curl --range to avoid downloading the
-  // full file.
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/index.html"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/meshcat.js"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/favicon.ico"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/no-such-file"}),
-            0);
-  // Note that the pydrake visualizers_test.py case test_start_meshcat() also
-  // checks the http Content-Type and page data. It's too awkward to try to
-  // do that here.
 }
 
 GTEST_TEST(MeshcatTest, ConstructMultiple) {
@@ -345,6 +326,14 @@ GTEST_TEST(MeshcatTest, NumActive) {
   EXPECT_EQ(meshcat.GetNumActiveConnections(), 0);
 }
 
+// Simple utility struct that will allow us to determine the msgpack encoding
+// of an arbitrary 4x4 transform matrix (see e.g., MeshData.matrix or
+// MeshfileObjectData.matrix). The default value is the zero matrix.
+struct JustMatrix {
+  double matrix[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  MSGPACK_DEFINE_MAP(matrix);
+};
+
 // Note: The Mesh shape is special. It can reference on-disk or in-memory data
 // and they all need to be handled. This test runs through the various
 // permutations.
@@ -354,31 +343,54 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
   using testing::HasSubstr;
   using testing::Not;
 
+  // Apply an arbitrary, non-uniform scale so we can detect its inclusion.
+  const Vector3d non_uniform_scale{2, 3, 4};
   // A .obj file with material library and image. The packed message should
   // encode the .obj, the .mtl file, and the image.
   const fs::path obj_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj");
-  const Mesh disk_obj(obj_path, 0.25);
+  const Mesh disk_obj(obj_path, non_uniform_scale);
   const auto obj_file = MemoryFile::Make(obj_path);
   const auto mtl_file = MemoryFile::Make(
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.mtl"));
   const auto png_file = MemoryFile::Make(FindResourceOrThrow(
       "drake/geometry/render/test/meshes/rainbow_stripes.png"));
-  const Mesh memory_obj(InMemoryMesh{
-      MemoryFile(obj_file.contents(), obj_file.extension(),
-                 "a hint; *not* a path"),
-      {{"rainbow_box.mtl", MemoryFile(mtl_file)},
-       {"rainbow_stripes.png", MemoryFile(png_file)}}});
+  const Mesh memory_obj(
+      InMemoryMesh{MemoryFile(obj_file.contents(), obj_file.extension(),
+                              "a hint; *not* a path"),
+                   {{"rainbow_box.mtl", MemoryFile(mtl_file)},
+                    {"rainbow_stripes.png", MemoryFile(png_file)}}},
+      non_uniform_scale);
   // The "hetero" objs mix up the supporting files so that, in turn, one is
   // in memory, and one is on-disk.
-  const Mesh hetero_obj1(InMemoryMesh{
-      MemoryFile(obj_file.contents(), obj_file.extension(), "hetero1_obj"),
-      {{"rainbow_box.mtl", fs::path(mtl_file.filename_hint())},
-       {"rainbow_stripes.png", MemoryFile(png_file)}}});
-  const Mesh hetero_obj2(InMemoryMesh{
-      MemoryFile(obj_file.contents(), obj_file.extension(), "hetero2_obj"),
-      {{"rainbow_box.mtl", MemoryFile(mtl_file)},
-       {"rainbow_stripes.png", fs::path(png_file.filename_hint())}}});
+  const Mesh hetero_obj1(
+      InMemoryMesh{
+          MemoryFile(obj_file.contents(), obj_file.extension(), "hetero1_obj"),
+          {{"rainbow_box.mtl", fs::path(mtl_file.filename_hint())},
+           {"rainbow_stripes.png", MemoryFile(png_file)}}},
+      non_uniform_scale);
+  const Mesh hetero_obj2(
+      InMemoryMesh{
+          MemoryFile(obj_file.contents(), obj_file.extension(), "hetero2_obj"),
+          {{"rainbow_box.mtl", MemoryFile(mtl_file)},
+           {"rainbow_stripes.png", fs::path(png_file.filename_hint())}}},
+      non_uniform_scale);
+
+  // Get the msgpack encoding of the matrix field (leaving out all prefixes).
+  // We'll match the string with the contents below.
+  const std::string matrix_string = [&non_uniform_scale]() {
+    JustMatrix data;
+    data.matrix[0] = non_uniform_scale.x();
+    data.matrix[5] = non_uniform_scale.y();
+    data.matrix[10] = non_uniform_scale.z();
+    data.matrix[15] = 1;  // Homogeneous matrix.
+    std::stringstream matrix_stream;
+    msgpack::pack(matrix_stream, data);
+    const std::string full_string = matrix_stream.str();
+    return full_string.substr(full_string.find("matrix"));
+  }();
+  DRAKE_DEMAND(!matrix_string.empty());
+
   for (const auto* mesh_ptr :
        {&disk_obj, &memory_obj, &hetero_obj1, &hetero_obj2}) {
     const MeshSource& source = mesh_ptr->source();
@@ -395,6 +407,8 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
     EXPECT_THAT(packed_obj, testing::HasSubstr("data:image/png;base64"));
     // Evidence that the material library got loaded.
     EXPECT_THAT(packed_obj, testing::HasSubstr("newmtl Rainbow_Stripes"));
+    // Evidence that the non-uniform scale was propagated.
+    EXPECT_THAT(packed_obj, testing::HasSubstr(matrix_string));
     meshcat.Delete("obj_path");
     ASSERT_TRUE(meshcat.GetPackedObject("obj_path").empty());
   }
@@ -423,9 +437,10 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
   // loaded but the image is not.
   {
     DRAKE_DEMAND(meshcat.GetPackedObject("obj_path").empty());
-    meshcat.SetObject("obj_path",
-                      Mesh(InMemoryMesh{obj_file, {{"rainbow_box.mtl",
-                                                    MemoryFile(mtl_file)}}}));
+    meshcat.SetObject(
+        "obj_path",
+        Mesh(InMemoryMesh{obj_file,
+                          {{"rainbow_box.mtl", MemoryFile(mtl_file)}}}));
     const std::string packed_obj = meshcat.GetPackedObject("obj_path");
     EXPECT_FALSE(packed_obj.empty());
     EXPECT_THAT(packed_obj, Not(HasSubstr("data:image/png;base64")));
@@ -474,6 +489,31 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   // Bad filename (file doesn't exist).  Should only log a warning.
   meshcat.SetObject("bad", Mesh("test.obj"));
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetObjectWithDiffuseMap) {
+  const std::string texture_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/rainbow_stripes.png");
+  Meshcat meshcat;
+  meshcat.SetObject("box", Box(0.5, 0.5, 0.5), Rgba(0.9, 0.9, 0.9),
+                    texture_path);
+  const std::string packed = meshcat.GetPackedObject("box");
+  ASSERT_FALSE(packed.empty());
+  // Image should be served from CAS, not inlined as a data URI.
+  EXPECT_THAT(packed, HasSubstr("cas-v1/"));
+  // Material should reference the texture and carry a wrap mode.
+  EXPECT_THAT(packed, HasSubstr("map"));
+  EXPECT_THAT(packed, HasSubstr("wrap"));
+}
+
+GTEST_TEST(MeshcatTest, SetObjectWithDiffuseMap_MissingFile) {
+  Meshcat meshcat;
+  meshcat.SetObject("box", Box(0.5, 0.5, 0.5), Rgba(0.9, 0.9, 0.9),
+                    "/no/such/texture.png");
+  // Object is still created; the bad texture is skipped after warning.
+  const std::string packed = meshcat.GetPackedObject("box");
+  ASSERT_FALSE(packed.empty());
+  EXPECT_EQ(packed.find("cas-v1/"), std::string::npos);
 }
 
 // Confirms that an OBJ with a missing material becomes a MeshData instead of a
@@ -531,8 +571,7 @@ GTEST_TEST(MeshcatTest, MtlMapAtEOF) {
   std::ofstream eof_mtl_file(eof_mtl_path.string() + ".mtl");
   eof_mtl_file << "map_Kd -s 1 1 1 box.png";
   eof_mtl_file.close();
-  meshcat.SetObject("eof_mtl", Mesh(eof_mtl_path.string()),
-                    Rgba(1, 0.75, 0.5));
+  meshcat.SetObject("eof_mtl", Mesh(eof_mtl_path.string()), Rgba(1, 0.75, 0.5));
 
   const std::string eof_mtl_packed = meshcat.GetPackedObject("eof_mtl");
   EXPECT_THAT(eof_mtl_packed, testing::HasSubstr("_meshfile_object"));
@@ -838,12 +877,13 @@ GTEST_TEST(MeshcatTest, InitialPropeties) {
   const bool some_bool{true};
   const double some_double{22.2};
   const Meshcat meshcat{MeshcatParams{
-      .initial_properties = {
-          {.path = "/a", .property = "p1", .value = some_vector},
-          {.path = "/b", .property = "p2", .value = some_string},
-          {.path = "/c", .property = "p3", .value = some_bool},
-          {.path = "/d", .property = "p4", .value = some_double},
-      },
+      .initial_properties =
+          {
+              {.path = "/a", .property = "p1", .value = some_vector},
+              {.path = "/b", .property = "p2", .value = some_string},
+              {.path = "/c", .property = "p3", .value = some_bool},
+              {.path = "/d", .property = "p4", .value = some_double},
+          },
   }};
 
   // Check that they all showed up.
@@ -986,7 +1026,7 @@ GTEST_TEST(MeshcatTest, Sliders) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.DeleteSlider("slider1"),
       "Meshcat does not have any slider named slider1.*");
-  EXPECT_FALSE(meshcat.DeleteSlider("slider1", /*strict = */false));
+  EXPECT_FALSE(meshcat.DeleteSlider("slider1", /*strict = */ false));
 
   slider_names = meshcat.GetSliderNames();
   EXPECT_EQ(slider_names.size(), 0);
@@ -1505,9 +1545,8 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
 
   const std::string html = meshcat.StaticHtml();
 
-  // Confirm that the js source links were replaced.
+  // Confirm that the js link was replaced.
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
-  EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
   // The static html replaces the javascript web socket connection code with
   // direct invocation of MeshCat with all of the data. We'll confirm that
   // this appears to have happened by testing for the presence of the injected
@@ -1515,6 +1554,12 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   // delimiting text of the connection block.
   EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
+}
+
+GTEST_TEST(MeshcatTest, StaticZip) {
+  Meshcat meshcat;
+  const std::string zip = meshcat.StaticZip();
+  EXPECT_EQ(zip.substr(0, 4), "PK\x03\x04");
 }
 
 // Check that MeshcatParams.show_stats_plot sends a show_realtime_rate message.

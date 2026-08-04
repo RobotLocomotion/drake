@@ -2,9 +2,11 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -191,6 +193,24 @@ class QueryObject {
    @experimental */
   std::vector<VectorX<T>> GetDrivenMeshConfigurationsInWorld(
       GeometryId deformable_geometry_id, Role role) const;
+
+  /** Reports the axis-aligned bounding box of the geometry indicated by
+   `geometry_id` in the world frame. Returns std::nullopt if the geometry is
+   not supported for this query. Currently, only deformable geometries are
+   supported.
+   @throws std::exception if the `geometry_id` is not valid. */
+  std::optional<Aabb> ComputeAabbInWorld(GeometryId geometry_id) const;
+
+  /** Reports the oriented bounding box of the geometry indicated by
+   `geometry_id` in the world frame. Returns std::nullopt if the geometry is
+   an HalfSpace (and doesn't have a bounding box).
+   @note If geometry_id refers to a deformable geometry, the OBB is computed
+   using the deformed mesh in the world frame. See
+   SceneGraphInspector::GetObbInGeometryFrame() for computing the OBB of the
+   reference mesh in its canonical frame.
+   @throws std::exception if the `geometry_id` is not valid. */
+  std::optional<Obb> ComputeObbInWorld(GeometryId geometry_id) const;
+
   //@}
 
   /**
@@ -212,6 +232,8 @@ class QueryObject {
    geometry is penetrating.     */
   //@{
 
+  // Disable formatter to preserve doxygen tables.
+  // clang-format off
   /** Computes the penetrations across all pairs of geometries in the world
    with the penetrations characterized by pairs of points (see
    PenetrationAsPointPair), providing some measure of the penetration "depth" of
@@ -246,7 +268,7 @@ class QueryObject {
    | Ellipsoid |  4e-4ᶜ  |   2e-4ᶜ  |  4e-4ᶜ  |   2e-3ᶜ   |    5e-4ᶜ   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | HalfSpace |  6e-15  |   4e-15  | 3e-15ᶜ  |   4e-15   |   3e-15    |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    |  3e-15  |   5e-15  |  3e-5ᶜ  |   5e-15   |    2e-4ᶜ   |   3e-15    |    ᵇ    |  5e-15  |
+   | Sphere    |  4e-15  |   5e-15  |  3e-5ᶜ  |   5e-15   |    2e-4ᶜ   |   3e-15    |    ᵇ    |  5e-15  |
    __*Table 1*__: Worst observed error (in m) for 2mm penetration between
    geometries approximately 20cm in size for `T` = `double`.
 
@@ -259,7 +281,7 @@ class QueryObject {
    | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    |  2e-15  |  3e-15   | throwsᵈ |   2e-15   |   throwsᵈ  |   2e-15    |    ᵇ    |  5e-15  |
+   | Sphere    |  2e-15  |  5e-15   | throwsᵈ |   2e-15   |   throwsᵈ  |   2e-15    |    ᵇ    |  5e-15  |
    __*Table 2*__: Worst observed error (in m) for 2mm penetration between
    geometries approximately 20cm in size for `T` = @ref drake::AutoDiffXd
    "AutoDiffXd".
@@ -300,8 +322,11 @@ class QueryObject {
             *not* computationally efficient or particularly accurate.
    @throws std::exception if a Shape-Shape pair is in collision and indicated as
            `throws` in the support table above.  */
+  // clang-format on
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
+  // Disable formatter to preserve doxygen tables.
+  // clang-format off
   /** Reports pairwise intersections and characterizes each non-empty
    intersection as a ContactSurface for hydroelastic contact model. The
    computation is subject to collision filtering.
@@ -379,6 +404,7 @@ class QueryObject {
             contact surfaces. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.  */
+  // clang-format on
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool,
                             std::vector<ContactSurface<T>>>
@@ -482,6 +508,9 @@ class QueryObject {
   // TODO(DamrongGuoy): Refactor documentation of
   // ComputeSignedDistancePairwiseClosestPoints(). Move the common sections
   // into Signed Distance Queries.
+
+  // Disable formatter to preserve doxygen tables.
+  // clang-format off
   /**
    Computes the signed distance together with the nearest points across all
    pairs of geometries in the world. Reports both the separating geometries
@@ -560,7 +589,7 @@ class QueryObject {
    | Ellipsoid |  9e-6   |   5e-6   |   9e-6  |   5e-5    |    2e-5    |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |   throwsᵃ  |    ᶜ    |  ░░░░░  |
-   | Sphere    |  3e-15  |  6e-15   |   3e-6  |   5e-15   |    4e-5    |    3e-15   |    ᶜ    |  6e-15  |
+   | Sphere    |  4e-15  |  6e-15   |   3e-6  |   5e-15   |    4e-5    |    3e-15   |    ᶜ    |  6e-15  |
    __*Table 4*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` = `double`.
 
@@ -663,6 +692,7 @@ class QueryObject {
    @throws std::exception as indicated in the table above.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */
+  // clang-format on
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
@@ -696,6 +726,9 @@ class QueryObject {
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
   // Distance Queries. Update documentation as we add more functionality.
+
+  // Disable formatter to preserve doxygen tables.
+  // clang-format off
   /**
    Computes the signed distances and gradients to a query point from each
    geometry in the scene.
@@ -732,8 +765,8 @@ class QueryObject {
 
    |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
    | :--------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   |   double   |  2e-15  |   4e-15  |  5e-15  |   3e-15   |    3e-5ᵇ   |    5e-15   | 5e-15ᶜ  |  4e-15  |
-   | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
+   |   double   |  2e-15  |   5e-15  |  6e-15  |   3e-15   |    3e-5ᵇ   |    5e-15   | 6e-15ᶜ  |  4e-15  |
+   | AutoDiffXd |  1e-15  |   7e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  4e-15  |
    | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
    __*Table 8*__: Worst observed error (in m) for 2mm penetration/separation
    between geometry approximately 20cm in size and a point.
@@ -819,10 +852,31 @@ class QueryObject {
 
    @throws std::exception if there are meshes with extremely sharp features
    where the calculation of feature normals become unstable. */
+  // clang-format on
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
       const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
+
+  /** A variant of ComputeSignedDistanceToPoint(). Instead of finding distances
+   to all geometries, provides the distance to only the geometries indicated by
+   the given set of `geometries`.
+
+   @param p_WQ          Position of a query point Q in world frame W.
+   @param geometries    The set of geometries to query against. The distances
+                        between the surface of each geometry and the point Q
+                        will be returned.
+   @returns the distance measurements. The ordering of the results is guaranteed
+   to be consistent -- for a fixed set of geometries, the results will remain
+   the same.
+
+   @throws std::exception if any GeometryId in `geometries` is invalid.
+   @throws std::exception if the combination of an indicated geometry's Shape
+   type and the given scalar Type T are unsupported in
+   ComputeSignedDistanceToPoint()'s support table.
+   @throws std::exception if any indicated geometry is deformable. */
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceGeometryToPoint(
+      const Vector3<T>& p_WQ, const GeometrySet& geometries) const;
 
   //---------------------------------------------------------------------------
   /**

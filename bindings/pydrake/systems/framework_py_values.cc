@@ -1,12 +1,13 @@
 #include "drake/bindings/pydrake/systems/framework_py_values.h"
 
 #include <sstream>
+#include <string>
 
+#include "drake/bindings/generated_docstrings/systems_framework.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/bus_value.h"
@@ -20,10 +21,10 @@ namespace pydrake {
 
 namespace {
 template <typename T>
-void DoScalarDependentDefinitions(py::module m) {
+void DoScalarDependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
-  constexpr auto& doc = pydrake_doc.drake.systems;
+  constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 
   // Value types.
   DefineTemplateClassWithDefault<VectorBase<T>>(
@@ -35,7 +36,7 @@ void DoScalarDependentDefinitions(py::module m) {
           })
       .def("__repr__",
           [](const VectorBase<T>& self) {
-            py::handle cls = py::cast(&self, py_rvp::reference).get_type();
+            py::handle cls = py::cast(&self, py_rvp::reference).type();
             return py::str("{}({})").format(internal::PrettyClassName(cls),
                 py::cast(self.CopyToVector()).attr("tolist")());
           })
@@ -79,7 +80,13 @@ void DoScalarDependentDefinitions(py::module m) {
       .def(py::init<VectorX<T>>(), py::arg("data"),
           doc.BasicVector.ctor.doc_1args_vec)
       .def(
-          py::init<int>(), py::arg("size"), doc.BasicVector.ctor.doc_1args_size)
+          "__init__",
+          [](BasicVector<T>* self, int size) {
+            // N.B. We can't use the simple py::init<int> sugar here, because
+            // nanobind calls the std::initializer_list overload in that case.
+            new (self) BasicVector<T>(size);
+          },
+          py::arg("size"), doc.BasicVector.ctor.doc_1args_size)
       .def(
           "set_value",
           [](BasicVector<T>* self, const Eigen::Ref<const VectorX<T>>& value) {
@@ -100,17 +107,19 @@ void DoScalarDependentDefinitions(py::module m) {
           py_rvp::reference_internal, doc.BasicVector.get_value.doc)
       // TODO(eric.cousineau): Remove this once `get_value` is changed, or
       // reference semantics are changed for custom dtypes.
-      .def("_get_value_copy",
-          [](const BasicVector<T>* self) -> VectorX<T> {
-            return self->get_value();
-          })
-      .def(
-          "get_mutable_value",
-          [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
-            return self->get_mutable_value();
-          },
-          py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc);
-
+      .def("_get_value_copy", [](const BasicVector<T>* self) -> VectorX<T> {
+        return self->get_value();
+      });
+  if constexpr (std::is_same_v<T, double>) {
+    // Mutable Eigen::Ref return value doesn't work with dtype=object.
+    basic_vector  // BR
+        .def(
+            "get_mutable_value",
+            [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
+              return self->get_mutable_value();
+            },
+            py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc);
+  }
   DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
       m, "Supervector", GetPyParam<T>(), doc.Supervector.doc);
 
@@ -133,10 +142,11 @@ void DoScalarDependentDefinitions(py::module m) {
           py::arg("value"));
 }
 
-void DefineBusValue(py::module m) {
+void DefineBusValue(py::module_ m) {
   using Class = systems::BusValue;
-  constexpr auto& cls_doc = pydrake_doc.drake.systems.BusValue;
-  py::class_<Class> cls(m, "BusValue", cls_doc.doc);
+  constexpr auto& cls_doc =
+      pydrake_doc_systems_framework.drake.systems.BusValue;
+  class_<Class> cls(m, "BusValue", cls_doc.doc);
   cls  // BR
       .def(py::init<>(), cls_doc.ctor.doc)
       .def(
@@ -172,7 +182,7 @@ void DefineBusValue(py::module m) {
           [](py::object self, py::str key) -> py::object {
             py::object result = self.attr("Find")(key);
             if (result.is_none()) {
-              throw py::key_error(std::string{key});
+              throw py::key_error(key.c_str());
             }
             return result;
           },
@@ -183,7 +193,7 @@ void DefineBusValue(py::module m) {
 
 }  // namespace
 
-void DefineFrameworkPyValues(py::module m) {
+void DefineFrameworkPyValues(py::module_ m) {
   DefineBusValue(m);
   // Do templated instantiations.
   auto bind_common_scalar_types = [m](auto dummy) {

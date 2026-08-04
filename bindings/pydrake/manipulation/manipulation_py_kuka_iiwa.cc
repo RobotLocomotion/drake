@@ -1,6 +1,6 @@
+#include "drake/bindings/generated_docstrings/manipulation_kuka_iiwa.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
@@ -21,10 +21,11 @@ namespace internal {
 using systems::Diagram;
 using systems::LeafSystem;
 
-void DefineManipulationKukaIiwa(py::module m) {
+void DefineManipulationKukaIiwa(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation::kuka_iiwa;
-  constexpr auto& doc = pydrake_doc.drake.manipulation.kuka_iiwa;
+  constexpr auto& doc =
+      pydrake_doc_manipulation_kuka_iiwa.drake.manipulation.kuka_iiwa;
 
   // Constants.
   m.attr("kIiwaArmNumJoints") = kIiwaArmNumJoints;
@@ -52,7 +53,7 @@ void DefineManipulationKukaIiwa(py::module m) {
   {
     using Class = IiwaCommandReceiver;
     constexpr auto& cls_doc = doc.IiwaCommandReceiver;
-    py::class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
         .def(py::init<int, IiwaControlMode>(),
             py::arg("num_joints") = kIiwaArmNumJoints,
             py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
@@ -78,7 +79,7 @@ void DefineManipulationKukaIiwa(py::module m) {
   {
     using Class = IiwaCommandSender;
     constexpr auto& cls_doc = doc.IiwaCommandSender;
-    py::class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
         .def(py::init<int, IiwaControlMode>(),
             py::arg("num_joints") = kIiwaArmNumJoints,
             py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
@@ -94,7 +95,7 @@ void DefineManipulationKukaIiwa(py::module m) {
   {
     using Class = IiwaStatusReceiver;
     constexpr auto& cls_doc = doc.IiwaStatusReceiver;
-    py::class_<Class, LeafSystem<double>>(m, "IiwaStatusReceiver", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "IiwaStatusReceiver", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_time_measured_output_port",
@@ -127,7 +128,7 @@ void DefineManipulationKukaIiwa(py::module m) {
   {
     using Class = IiwaStatusSender;
     constexpr auto& cls_doc = doc.IiwaStatusSender;
-    py::class_<Class, LeafSystem<double>>(m, "IiwaStatusSender", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "IiwaStatusSender", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_time_measured_input_port",
@@ -159,7 +160,7 @@ void DefineManipulationKukaIiwa(py::module m) {
   {
     using Class = IiwaDriver;
     constexpr auto& cls_doc = doc.IiwaDriver;
-    py::class_<Class> cls(m, "IiwaDriver", cls_doc.doc);
+    class_<Class> cls(m, "IiwaDriver", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -170,17 +171,15 @@ void DefineManipulationKukaIiwa(py::module m) {
   {
     using Class = SimIiwaDriver<double>;
     constexpr auto& cls_doc = doc.SimIiwaDriver;
-    py::class_<Class, Diagram<double>>(m, "SimIiwaDriver", cls_doc.doc)
-        .def(py::init<IiwaControlMode, const multibody::MultibodyPlant<double>*,
-                 double, const std::optional<Eigen::VectorXd>&>(),
-            py::arg("control_mode"), py::arg("controller_plant"),
-            py::arg("ext_joint_filter_tau"), py::arg("kp_gains"),
+    class_<Class, Diagram<double>>(m, "SimIiwaDriver", cls_doc.doc)
+        .def(py::init<const IiwaDriver&,
+                 const multibody::MultibodyPlant<double>*>(),
+            py::arg("driver_config"), py::arg("controller_plant"),
             // Keep alive, ownership: `self` keeps `controller_plant` alive.
             py::keep_alive<1, 3>(), cls_doc.ctor.doc)
         .def_static("AddToBuilder", &Class::AddToBuilder, py::arg("builder"),
             py::arg("plant"), py::arg("iiwa_instance"),
-            py::arg("controller_plant"), py::arg("ext_joint_filter_tau"),
-            py::arg("desired_iiwa_kp_gains"), py::arg("control_mode"),
+            py::arg("driver_config"), py::arg("controller_plant"),
             // Using builder_life_support_stash makes the
             // builder temporarily immortal (uncollectible self cycle). This
             // will be resolved by the Build() step. See BuilderLifeSupport
@@ -189,7 +188,7 @@ void DefineManipulationKukaIiwa(py::module m) {
             // `return` and `builder` join ref cycle.
             internal::ref_cycle<0, 1>(),
             // Keep alive, reference: `return` keeps `controller_plant` alive.
-            py::keep_alive<0, 4>(), py_rvp::reference,
+            py::keep_alive<0, 5>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc);
   }
 
@@ -199,22 +198,25 @@ void DefineManipulationKukaIiwa(py::module m) {
         py::arg("models_from_directives"), py::arg("lcms"), py::arg("builder"),
         doc.ApplyDriverConfig.doc);
 
-    m.def("BuildIiwaControl", &BuildIiwaControl, py::arg("plant"),
-        py::arg("iiwa_instance"), py::arg("controller_plant"), py::arg("lcm"),
-        py::arg("builder"), py::arg("ext_joint_filter_tau") = 0.01,
-        py::arg("desired_iiwa_kp_gains") = std::nullopt,
-        py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
+    m.def("BuildIiwaControl",
+        overload_cast_explicit<void, systems::DiagramBuilder<double>*,
+            lcm::DrakeLcmInterface*, const multibody::MultibodyPlant<double>&,
+            const multibody::ModelInstanceIndex, const IiwaDriver&,
+            const multibody::MultibodyPlant<double>&>(&BuildIiwaControl),
+        py::arg("builder"), py::arg("lcm"), py::arg("plant"),
+        py::arg("iiwa_instance"), py::arg("driver_config"),
+        py::arg("controller_plant"),
         // Using builder_life_support_stash makes the
         // builder temporarily immortal (uncollectible self cycle). This
         // will be resolved by the Build() step. See BuilderLifeSupport
         // for rationale.
-        internal::builder_life_support_stash<double, 5>(),
+        internal::builder_life_support_stash<double, 1>(),
         // Keep alive, reference: `builder` keeps `controller_plant` alive.  It
         // would be preferable to attach the keep-alive to the SimIiwaDriver
         // diagram/system, but it does not appear in the function signature.
         // Use the builder as an adequate lifetime proxy, since it will be kept
         // alive via lifetime management associated with Build() calls.
-        py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc);
+        py::keep_alive<1, 6>(), doc.BuildIiwaControl.doc);
   }
 }
 

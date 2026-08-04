@@ -73,6 +73,10 @@ struct AddModel {
   /// empty, then the posed frame will be the body frame of the model's sole
   /// body (and if the model has >1 body then it is an error).
   ///
+  /// For deformable bodies, the body pose defines the world pose of the
+  /// reference configuration, i.e. the undeformed geometry of the deformable
+  /// body will have this pose in the world frame.
+  ///
   /// However, the schema::Transform associated with that named body/frame can
   /// define a `base_frame` referring to any frame that has been added prior to
   /// or including this declaration.  The named frame must *always* be a scoped
@@ -99,6 +103,7 @@ struct AddModel {
   ///     (transform's `base_frame`). This is true whether setting the position
   ///     values in the resulting joint directly or using the
   ///     @ref mbp_working_with_free_bodies "MultibodyPlant free body APIs".
+  ///  3. If the body is deformable, non-world `base_frame` is an error.
   ///
   /// @warning There should not already be a joint in the model between the two
   /// bodies implied by the named frames.

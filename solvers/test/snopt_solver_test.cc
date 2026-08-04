@@ -3,8 +3,11 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <regex>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -195,6 +198,31 @@ GTEST_TEST(SnoptTest, TestPrintFile) {
     EXPECT_TRUE(std::filesystem::exists({print_file}));
     EXPECT_FALSE(std::filesystem::exists({print_file_common}));
   }
+}
+
+GTEST_TEST(SnoptTest, TestWorkspaceSizeOptions) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>();
+  prog.AddLinearConstraint(x(0) >= 0);
+  prog.AddLinearCost(x(0));
+
+  // Setting the options (to a value above the minimum) doesn't crash.
+  const SnoptSolver solver;
+  SolverOptions solver_options;
+  solver_options.SetOption(solver.id(), "Total integer workspace", 999);
+  solver_options.SetOption(solver.id(), "Total real workspace", 999);
+  const auto result = solver.Solve(prog, {}, solver_options);
+  EXPECT_TRUE(result.is_success());
+
+  // Setting the options too small is an exception.
+  SolverOptions bad_int_size;
+  bad_int_size.SetOption(solver.id(), "Total integer workspace", 22);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, bad_int_size),
+                              ".*integer.*smaller.*minimum.*");
+  SolverOptions bad_real_size;
+  bad_real_size.SetOption(solver.id(), "Total real workspace", 22);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, bad_real_size),
+                              ".*real.*smaller.*minimum.*");
 }
 
 GTEST_TEST(SnoptTest, TestStringOption) {

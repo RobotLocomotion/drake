@@ -23,3 +23,5 @@ install(
     doc_strip_prefix = ["dist"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

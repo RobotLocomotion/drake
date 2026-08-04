@@ -22,12 +22,14 @@ void RungeKutta3Integrator<T>::DoInitialize() {
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
     // Verify that maximum step size has been set.
-    if (isnan(this->get_maximum_step_size()))
-      throw std::logic_error("Neither initial step size target nor maximum "
-                                 "step size has been set!");
+    if (isnan(this->get_maximum_step_size())) {
+      throw std::logic_error(
+          "Neither initial step size target nor maximum step size has been "
+          "set!");
+    }
 
-    this->request_initial_step_size_target(
-        this->get_maximum_step_size() * kMaxStepFraction);
+    this->request_initial_step_size_target(this->get_maximum_step_size() *
+                                           kMaxStepFraction);
   }
 
   // Sets the working accuracy to a good value.
@@ -36,10 +38,11 @@ void RungeKutta3Integrator<T>::DoInitialize() {
   // If the user asks for accuracy that is looser than the loosest this
   // integrator can provide, use the integrator's loosest accuracy setting
   // instead.
-  if (working_accuracy > kLoosestAccuracy)
+  if (working_accuracy > kLoosestAccuracy) {
     working_accuracy = kLoosestAccuracy;
-  else if (isnan(working_accuracy))
+  } else if (isnan(working_accuracy)) {
     working_accuracy = kDefaultAccuracy;
+  }
   this->set_accuracy_in_use(working_accuracy);
 }
 
@@ -125,9 +128,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   // Cache: xcdot_b still references the derivative cache value, which is
   // unchanged, although it is marked out of date. xcdot0 and xcdot_a are
   // unaffected.
-  xc.PlusEqScaled({{h6,     xcdot0},
-                   {4 * h6, xcdot_a},
-                   {h6,     xcdot_b}});
+  xc.PlusEqScaled({{h6, xcdot0}, {4 * h6, xcdot_a}, {h6, xcdot_b}});
 
   // If the size of the system has changed, the error estimate will no longer
   // be sized correctly. Verify that the error estimate is the correct size.
@@ -142,13 +143,18 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   //              avoid the need for save_xc0_ and this copy altogether.
   err_est_vec_ = save_xc0_;  // ε ← xc₀
 
-  xcdot_a.ScaleAndAddToVector(h, &err_est_vec_);     // ε += h xcdot⁽ᵃ⁾
-  xc.ScaleAndAddToVector(-1.0, &err_est_vec_);       // ε -= xc₁
+  xcdot_a.ScaleAndAddToVector(h, &err_est_vec_);  // ε += h xcdot⁽ᵃ⁾
+  xc.ScaleAndAddToVector(-1.0, &err_est_vec_);    // ε -= xc₁
   err_est_vec_ = err_est_vec_.cwiseAbs();
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 
   // RK3 always succeeds in taking its desired step.
   return true;
+}
+
+template <class T>
+std::unique_ptr<IntegratorBase<T>> RungeKutta3Integrator<T>::DoClone() const {
+  return std::make_unique<RungeKutta3Integrator>(this->get_system());
 }
 
 }  // namespace systems

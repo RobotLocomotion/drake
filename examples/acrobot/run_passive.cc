@@ -18,8 +18,7 @@ namespace {
 // Simple example which simulates the (passive) Acrobot.  Run meldis to see
 // the animated result.
 
-DEFINE_double(simulation_sec, 10.0,
-              "Number of seconds to simulate.");
+DEFINE_double(simulation_sec, 10.0, "Number of seconds to simulate.");
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -29,8 +28,8 @@ int do_main() {
   auto acrobot = builder.AddSystem<AcrobotPlant>();
   acrobot->set_name("acrobot");
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  AcrobotGeometry::AddToBuilder(
-      &builder, acrobot->get_output_port(0), scene_graph);
+  AcrobotGeometry::AddToBuilder(&builder, acrobot->get_output_port(0),
+                                scene_graph);
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
   auto diagram = builder.Build();
 

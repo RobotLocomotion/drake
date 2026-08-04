@@ -21,7 +21,7 @@ drake_py_binary(
     name = "gen_serialize",
     srcs = ["gen_serialize.py"],
     data = [
-        "@clarabel_cpp_internal//:include/cpp/DefaultSettings.h",
+        "@clarabel_cpp_internal//:include/cpp/DefaultSettings.hpp",
     ],
     tags = ["manual"],
     deps = [

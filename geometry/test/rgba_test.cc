@@ -1,6 +1,7 @@
 #include "drake/geometry/rgba.h"
 
 #include <limits>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -104,6 +105,12 @@ GTEST_TEST(RgbaTest, Product) {
 
   // Rgba channel values saturate at 1.
   EXPECT_EQ(a.scale_rgb(10), Rgba(1, 1, 1, a.a()));
+}
+
+GTEST_TEST(RgbaTest, ToString) {
+  const Rgba a(0.25, 0.5, 0.75, 0.875);
+  EXPECT_EQ(a.to_string(), "(0.25, 0.5, 0.75, 0.875)");
+  EXPECT_EQ(fmt::to_string(a), "(0.25, 0.5, 0.75, 0.875)");
 }
 
 /** Confirm that this can be serialized appropriately. */

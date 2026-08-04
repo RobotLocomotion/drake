@@ -53,8 +53,14 @@ void SchunkWsgTrajectoryGenerator::OutputTarget(
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           &context.get_discrete_state(0));
+  DRAKE_DEMAND(traj_state != nullptr);
 
-  if (trajectory_) {
+  const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
+      dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
+          &context.get_discrete_state(0));
+  DRAKE_DEMAND(last_traj_state != nullptr);
+
+  if (trajectory_ && !std::isinf(last_traj_state->trajectory_start_time())) {
     output->get_mutable_value() = trajectory_->value(
         context.get_time() - traj_state->trajectory_start_time());
   } else {
@@ -69,6 +75,7 @@ void SchunkWsgTrajectoryGenerator::OutputForce(
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           &context.get_discrete_state(0));
+  DRAKE_DEMAND(traj_state != nullptr);
   output->get_mutable_value() = Vector1d(traj_state->max_force());
 }
 
@@ -90,9 +97,11 @@ EventStatus SchunkWsgTrajectoryGenerator::CalcDiscreteUpdate(
   const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           &context.get_discrete_state(0));
+  DRAKE_DEMAND(last_traj_state != nullptr);
   SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
       dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           &discrete_state->get_mutable_vector(0));
+  DRAKE_DEMAND(new_traj_state != nullptr);
   new_traj_state->set_last_position(cur_position);
 
   const double max_force =
@@ -104,8 +113,10 @@ EventStatus SchunkWsgTrajectoryGenerator::CalcDiscreteUpdate(
           : std::numeric_limits<double>::quiet_NaN();
   new_traj_state->set_max_force(max_force);
 
-  if (!trajectory_ || std::abs(last_traj_state->last_target_position() -
-                               target_position) > kTargetEpsilon) {
+  if (!trajectory_ ||
+      std::abs(last_traj_state->last_target_position() - target_position) >
+          kTargetEpsilon ||
+      std::isinf(last_traj_state->trajectory_start_time())) {
     UpdateTrajectory(cur_position, target_position);
     new_traj_state->set_last_target_position(target_position);
     new_traj_state->set_trajectory_start_time(context.get_time());

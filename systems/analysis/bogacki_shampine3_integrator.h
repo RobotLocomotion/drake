@@ -41,7 +41,8 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
   ~BogackiShampine3Integrator() override;
 
   explicit BogackiShampine3Integrator(const System<T>& system,
-      Context<T>* context = nullptr) : IntegratorBase<T>(system, context) {
+                                      Context<T>* context = nullptr)
+      : IntegratorBase<T>(system, context) {
     derivs1_ = system.AllocateTimeDerivatives();
     derivs2_ = system.AllocateTimeDerivatives();
     derivs3_ = system.AllocateTimeDerivatives();
@@ -60,6 +61,8 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
  private:
   void DoInitialize() override;
   bool DoStep(const T& h) override;
+
+  std::unique_ptr<IntegratorBase<T>> DoClone() const override;
 
   // Vector used in error estimate calculations.
   std::unique_ptr<BasicVector<T>> err_est_vec_;

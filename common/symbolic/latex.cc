@@ -325,7 +325,7 @@ class LatexVisitor {
       oss << "\\neg ";
     }
     oss << "\\forall " << VisitVariables(get_quantified_variables(f)) << ": "
-        << get_quantified_formula(f);
+        << get_quantified_formula(f).to_string();
     return oss.str();
   }
 

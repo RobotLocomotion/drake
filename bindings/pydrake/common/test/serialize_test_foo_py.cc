@@ -6,8 +6,8 @@ namespace drake {
 namespace pydrake {
 namespace test {
 
-PYBIND11_MODULE(serialize_test_foo, m) {
-  py::class_<Foo> cls(m, "Foo");
+PYDRAKE_MODULE(serialize_test_foo, m) {
+  class_<Foo> cls(m, "Foo");
   DefAttributesUsingSerialize(&cls);
 }
 

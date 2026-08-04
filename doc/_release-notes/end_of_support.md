@@ -9,6 +9,9 @@ If you need to use these, you can use an old release of Drake.
 
 # Ubuntu packages
 
+* Ubuntu 22.04 (Jammy)
+  * The last version with support for Ubuntu 22.04 was
+    [v1.51.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.1).
 * Ubuntu 20.04 (Focal)
   * The last version with support for Ubuntu 20.04 was
     [v1.26.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.26.0).
@@ -19,8 +22,15 @@ If you need to use these, you can use an old release of Drake.
   * The last version with support for Ubuntu 16.04 was
     [v0.11.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.11.0).
 
+The drake APT site `https://drake-apt.csail.mit.edu` supports up to Ubuntu 24.04
+(amd64 only) but not any newer versions. Note that ``*.deb`` packages remain
+supported and are available as release attachments.
+
 # macOS packages
 
+* macOS 14 (Sonoma)
+  * The last version with support for macOS 14 was
+    [v1.45.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.45.0).
 * macOS 13 (Ventura)
   * The last version with support for macOS 13 was
     [v1.33.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.33.0).
@@ -45,18 +55,29 @@ If you need to use these, you can use an old release of Drake.
 
 # Wheel packages
 
+* Python 3.14 (Wheel)
+  * On Linux, Drake still supports Python 3.14 wheels.
+  * On macOS arm64, Drake still supports Python 3.14 wheels.
+* Python 3.13 (Wheel)
+  * On Linux, Drake still supports Python 3.13 wheels.
+  * On macOS arm64, Drake still supports Python 3.13 wheels.
+  * On macOS x86_64, there was never support for Python 3.13 wheels.
 * Python 3.12 (Wheel)
   * On Linux, Drake still supports Python 3.12 wheels.
-  * On macOS arm64, Drake still supports Python 3.12 wheels.
+  * On macOS arm64, the last version with support for Python 3.12 wheels was
+    [v1.46.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.46.0).
   * On macOS x86_64, the last version with support for Python 3.12 wheels was
     [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 * Python 3.11 (Wheel)
-  * On Linux, Drake still supports Python 3.11 wheels.
-  * On macOS arm64, Drake still supports Python 3.11 wheels.
+  * On Linux, the last version with support for Python 3.11 wheels was
+    [v1.51.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.1).
+  * On macOS arm64, the last version with support for Python 3.11 wheels was
+    [v1.40.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.40.0).
   * On macOS x86_64, the last version with support for Python 3.11 wheels was
     [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 * Python 3.10 (Wheel)
-  * On Linux, Drake still supports Python 3.10 wheels.
+  * On Linux, the last version with support for Python 3.10 wheels was
+    [v1.51.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.1).
   * On macOS, the last version with support for Python 3.10 wheels was
     [v1.12.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.12.0).
 * Python 3.9 (Wheel)
@@ -76,6 +97,16 @@ If you need to use these, you can use an old release of Drake.
   * On Linux, the last version with support for Python 3.6 wheels was
     [v1.1.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.1.0).
   * On macOS, Drake never supported Python 3.6 wheels.
+
+# Docker Hub
+
+The drake Docker Hub page `https://hub.docker.com/r/robotlocomotion/drake`
+supports up to
+[noble-1.53.0](https://hub.docker.com/layers/robotlocomotion/drake/noble-1.53.0/images/sha256-d7774d48af11de61619dcb0d725a4c68245cf33fbc969785532c79567722916d),
+but not any newer versions.
+
+See [Installation via Docker](/docker.html) for historical instructions on
+installing using older images.
 
 # MATLAB 2015
 

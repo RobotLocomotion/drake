@@ -28,7 +28,7 @@ CalcSpatialInertiaResult CalcMeshSpatialInertia(const Mesh& mesh,
   const auto& extension = mesh.extension();
   if (extension == ".obj") {
     return internal::CalcSpatialInertiaImpl(
-        geometry::ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale()),
+        geometry::ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale3()),
         density);
   }
   if (extension == ".vtk") {
@@ -198,6 +198,22 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
       result.CreateInvalidityReport();
   if (invalidity_report.has_value()) return *invalidity_report;
 
+  return result;
+}
+
+CalcSpatialInertiaResult CalcSpatialInertiaWithFallback(
+    const geometry::Mesh& mesh, double density,
+    std::function<void(const std::string&)> warn_for_convex) {
+  CalcSpatialInertiaResult result =
+      internal::CalcSpatialInertiaImpl(mesh, density);
+  if (std::holds_alternative<std::string>(result)) {
+    if (warn_for_convex != nullptr) {
+      warn_for_convex(std::get<std::string>(result));
+    }
+
+    result = internal::CalcSpatialInertiaImpl(
+        geometry::Convex(mesh.source().path(), mesh.scale3()), density);
+  }
   return result;
 }
 

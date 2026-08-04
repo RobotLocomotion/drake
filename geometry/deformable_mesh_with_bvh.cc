@@ -13,6 +13,8 @@ void DeformableMeshWithBvh<MeshType>::UpdateVertexPositions(
 
 template class DeformableMeshWithBvh<VolumeMesh<double>>;
 template class DeformableMeshWithBvh<VolumeMesh<AutoDiffXd>>;
+template class DeformableMeshWithBvh<TriangleSurfaceMesh<double>>;
+template class DeformableMeshWithBvh<TriangleSurfaceMesh<AutoDiffXd>>;
 
 }  // namespace internal
 }  // namespace geometry

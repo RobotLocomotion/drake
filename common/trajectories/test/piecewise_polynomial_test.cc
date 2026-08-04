@@ -1,7 +1,11 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
+#include <algorithm>
+#include <limits>
+#include <memory>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <Eigen/Core>
@@ -608,8 +612,9 @@ GTEST_TEST(PiecewiseTrajectoryTest, AutoDiffDerivativesTest) {
     MatrixX<double> derivative_value = ExtractGradient(trajectory.value(t_k));
     MatrixX<double> expected_derivative_value =
         DiscardGradient(derivative_trajectory->value(t(k)));
-    EXPECT_TRUE(CompareMatrices(derivative_value, expected_derivative_value,
-                                tolerance));
+    EXPECT_TRUE(
+        CompareMatrices(derivative_value, expected_derivative_value, tolerance))
+        << fmt::format("at t = {} ({}/{})", t(k), k, num_times - 1);
   }
 }
 

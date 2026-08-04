@@ -1,5 +1,9 @@
 #include "drake/solvers/binding.h"
 
+#include <memory>
+#include <string>
+#include <unordered_map>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -61,7 +65,8 @@ TEST_F(TestBinding, TestPrinting) {
       "0 <= x3 <= 1\n"
       "0 <= x1 <= 1\n"
       "0 <= x2 <= 1\n";
-  EXPECT_EQ(fmt::format("{}", binding1), str_expected1);
+  EXPECT_EQ(fmt::to_string(binding1), str_expected1);
+  EXPECT_EQ(binding1.to_string(), str_expected1);
 
   // Test to_string() for LinearEqualityConstraint binding.
   Eigen::Matrix2d Aeq;
@@ -72,7 +77,7 @@ TEST_F(TestBinding, TestPrinting) {
       linear_eq_constraint, VectorDecisionVariable<2>(x1_, x2_));
   const std::string str_expected2 =
       "LinearEqualityConstraint\n(x1 + 2 * x2) == 1\n(3 * x1 + 4 * x2) == 2\n";
-  EXPECT_EQ(fmt::format("{}", linear_eq_binding), str_expected2);
+  EXPECT_EQ(fmt::to_string(linear_eq_binding), str_expected2);
   EXPECT_EQ(linear_eq_binding.to_string(), str_expected2);
 
   const Eigen::Matrix2d Ain = Aeq;
@@ -83,7 +88,7 @@ TEST_F(TestBinding, TestPrinting) {
   const std::string str_expected3 =
       "LinearConstraint\n1 <= (x1 + 2 * x2) <= 2\n2 <= (3 * x1 + 4 * x2) <= "
       "3\n";
-  EXPECT_EQ(fmt::format("{}", linear_binding), str_expected3);
+  EXPECT_EQ(fmt::to_string(linear_binding), str_expected3);
   EXPECT_EQ(linear_binding.to_string(), str_expected3);
 
   // Test ToLatex().

@@ -1,7 +1,9 @@
 #include "drake/systems/primitives/shared_pointer_system.h"
 
+#include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <gtest/gtest.h>
 

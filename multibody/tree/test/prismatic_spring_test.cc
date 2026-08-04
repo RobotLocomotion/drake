@@ -1,5 +1,9 @@
 #include "drake/multibody/tree/prismatic_spring.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -29,10 +33,10 @@ class SpringTester : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<MultibodyTree<double>>();
 
-    bodyA_ = &model->AddRigidBody("BodyA", SpatialInertia<double>::NaN());
-    bodyB_ = &model->AddRigidBody("BodyB", SpatialInertia<double>::NaN());
+    bodyA_ = &model->AddLink("BodyA", SpatialInertia<double>::NaN());
+    bodyB_ = &model->AddLink("BodyB", SpatialInertia<double>::NaN());
 
-    model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_body(), {},
+    model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_link(), {},
                                *bodyA_, {},
                                math::RigidTransform<double>::Identity());
 

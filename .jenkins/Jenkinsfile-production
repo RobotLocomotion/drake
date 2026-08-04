@@ -1,0 +1,38 @@
+#!/usr/bin/env groovy
+
+library 'drake-ci@main'
+
+// For continuous flavors, abort the current job if there is a newer queued.
+if (env.JOB_NAME.contains("continuous") && utils.isNewerBuildQueued()) {
+  currentBuild.result = 'NOT_BUILT'
+  throw new Exception(
+    "There is a newer job in the queue, which supersedes the current job."
+  )
+}
+
+node(utils.getNodeLabel()) {
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            utils.cleanWorkspace()
+            dir(env.WORKSPACE) {
+              // Always use drake-ci/main and drake/master for production builds.
+              def scmVars = utils.checkout('main', 'master')
+              utils.doMainBuild(scmVars)
+            }
+          } finally {
+            try {
+              utils.checkBuildResult()
+              utils.emailFailureResults()
+              utils.addCDashBadge()
+            } finally {
+              utils.cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}

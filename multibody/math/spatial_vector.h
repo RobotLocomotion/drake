@@ -5,13 +5,24 @@
 #endif
 
 #include <limits>
+#include <string>
 #include <tuple>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/math/rotation_matrix.h"
+
+/* Note: many of the operations in the various SpatialVector-derived classes
+are annotated with operation counts that look like "// 33 flops". These are
+counts of the _logical_ number of floating point operations required for
+the computation, e.g. 9 for a cross product, 45 for the product of two
+3x3 matrices. That is not necessarily the same as the number of instructions
+executed since SIMD instructions can perform multiple operations. These are
+intended as a hint as to where expensive work is being done when looking to
+speed up computation. Be sure to do real A/B performance measurements to
+determine whether a hypothetical improvement is really faster. */
 
 namespace drake {
 namespace multibody {
@@ -42,8 +53,8 @@ class SpatialVector {
 
   /// Sizes for spatial quantities and its components in 3D (three dimensions).
   enum {
-    kSpatialVectorSize = 6,
-    kRotationSize = 3,
+    kSpatialVectorSize = 6,  // BR
+    kRotationSize = 3,       //
     kTranslationSize = 3
   };
 
@@ -54,9 +65,7 @@ class SpatialVector {
   /// constructed spatial vector are uninitialized (for speed).  In Debug
   /// builds, the 6 elements are set to NaN so that invalid operations on an
   /// uninitialized spatial vector fail fast (fast bug detection).
-  SpatialVector() {
-    DRAKE_ASSERT_VOID(SetNaN());
-  }
+  SpatialVector() { DRAKE_ASSERT_VOID(SetNaN()); }
 
   /// Constructs a spatial vector from a rotational component w and a
   /// translational component v.
@@ -113,16 +122,14 @@ class SpatialVector {
   const Vector3<T>& translational() const {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
-    return *reinterpret_cast<const Vector3<T>*>(
-        V_.data() + kRotationSize);
+    return *reinterpret_cast<const Vector3<T>*>(V_.data() + kRotationSize);
   }
 
   /// Mutable access to the translational component of this spatial vector.
   Vector3<T>& translational() {
     // We are counting on a particular representation for an Eigen Vector3<T>:
     // it must be represented exactly as 3 T's in an array with no metadata.
-    return *reinterpret_cast<Vector3<T>*>(
-        V_.data() + kRotationSize);
+    return *reinterpret_cast<Vector3<T>*>(V_.data() + kRotationSize);
   }
 
   /// Returns a (const) bare pointer to the underlying data. It is guaranteed
@@ -191,9 +198,9 @@ class SpatialVector {
   /// Sets all the elements in `this` %SpatialVector to NaN. This is typically
   /// used to quickly detect uninitialized values since NaN will trigger a chain
   /// of invalid computations that can be tracked back to their source.
-  void SetNaN() {
+  void SetNaN() noexcept {
     V_.setConstant(std::numeric_limits<
-        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
+                   typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
   /// Sets both the rotational and translational components of `this`
@@ -204,15 +211,13 @@ class SpatialVector {
   }
 
   /// Returns a mutable reference to the underlying storage.
-  CoeffsEigenType& get_coeffs() { return V_;}
+  CoeffsEigenType& get_coeffs() { return V_; }
 
   /// Returns a constant reference to the underlying storage.
-  const CoeffsEigenType& get_coeffs() const { return V_;}
+  const CoeffsEigenType& get_coeffs() const { return V_; }
 
   /// Unary minus operator.
-  SpatialQuantity operator-() const {
-    return SpatialQuantity(-get_coeffs());
-  }
+  SpatialQuantity operator-() const { return SpatialQuantity(-get_coeffs()); }
 
   /// Addition assignment operator.
   SpatialQuantity& operator+=(const SpatialQuantity& V) {
@@ -276,15 +281,21 @@ class SpatialVector {
   ///   V_F.rotational()    = R_FE * V_E.rotational(),
   ///   V_F.translational() = R_FE * V_E.translational()
   /// </pre>
-  friend SpatialQuantity operator*(
-      const math::RotationMatrix<T>& R_FE, const SpatialQuantity& V_E) {
+  friend SpatialQuantity operator*(const math::RotationMatrix<T>& R_FE,
+                                   const SpatialQuantity& V_E) {
     return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
   }
 
   /// Factory to create a _zero_ spatial vector, i.e., a %SpatialVector whose
   /// rotational and translational components are both zero.
-  static SpatialQuantity Zero() {
-    return SpatialQuantity{}.SetZero();
+  static SpatialQuantity Zero() { return SpatialQuantity{}.SetZero(); }
+
+  /// Factory to create a _NaN_ spatial vector, i.e., a %SpatialVector whose
+  /// rotational and translational components are all NaN.
+  static SpatialQuantity NaN() {
+    SpatialQuantity quantity;
+    quantity.SetNaN();
+    return quantity;
   }
 
  private:
@@ -297,24 +308,30 @@ class SpatialVector {
   CoeffsEigenType V_;
 };
 
-/// Stream insertion operator to write SpatialVector objects into a
-/// `std::ostream`. Especially useful for debugging.
+/// Returns string representation of a SpatialVector. Especially useful for
+/// debugging.
 /// @relates SpatialVector.
 template <template <typename> class SpatialQuantity, typename T>
-std::ostream& operator<<(std::ostream& o,
-                         const SpatialVector<SpatialQuantity, T>& V) {
-  o << "[" << V[0];
-  for (int i = 1; i < V.size(); ++i) o << ", " << V[i];
-  o << "]ᵀ";  // The "transpose" symbol.
-  return o;
+std::string to_string(const SpatialVector<SpatialQuantity, T>& V) {
+  std::string result{fmt::format("[{}", V[0])};
+  for (int i = 1; i < V.size(); ++i) {
+    result.append(fmt::format(", {}", V[i]));
+  }
+  result.append("]ᵀ");  // The "transpose" symbol.
+  return result;
 }
 
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <template <typename> class SpatialQuantity, typename T>
 struct formatter<drake::multibody::SpatialVector<SpatialQuantity, T>>
-    : drake::ostream_formatter {};
+    : formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const drake::multibody::SpatialVector<SpatialQuantity, T>& x,
+              FormatContext& ctx) const {
+    return formatter<std::string>::format(drake::multibody::to_string(x), ctx);
+  }
+};
 }  // namespace fmt

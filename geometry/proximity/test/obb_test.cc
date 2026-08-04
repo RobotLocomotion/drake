@@ -1,20 +1,28 @@
 #include "drake/geometry/proximity/obb.h"
 
+#include <limits>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
@@ -23,6 +31,8 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
 
+// TODO(SeanCurtis-TRI): Add test coverage for obb makers for AutoDiffXd typed
+// meshes.
 // Friend class for accessing Obb's private functionality.
 class ObbTester : public ::testing::Test {
  public:
@@ -232,7 +242,7 @@ class ObbMakerTestRectangularBox : public ::testing::Test {
       : ::testing::Test(),
         // Resolution hint 10 guarantees that the box mesh will be the
         // coarsest possible mesh with only 8 vertices and 12 triangles.
-        mesh_M_(MakeBoxSurfaceMesh<double>(Box(2, 4, 6), 10)) {}
+        mesh_M_(internal::MakeBoxSurfaceMesh<double>(Box(2, 4, 6), 10)) {}
 
   void SetUp() override {
     ASSERT_EQ(mesh_M_.num_vertices(), 8);
@@ -474,7 +484,7 @@ GTEST_TEST(ObbMakerTest, TestOptimizeObbVolume) {
   // The first line calls it mesh_M even though it's actually mesh_E. The
   // second line correctly makes it mesh_M.
   TriangleSurfaceMesh<double> mesh_M =
-      MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6);
+      internal::MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6);
   mesh_M.TransformVertices(X_ME);
   // Confirm that it is an octahedron.
   ASSERT_EQ(8, mesh_M.num_triangles());
@@ -504,7 +514,8 @@ GTEST_TEST(ObbMakerTest, TestOptimizeObbVolume) {
 
   // The whole mesh is much smaller than 1mm -- that should be sufficient.
   TriangleSurfaceMesh<double> mesh2_M =
-      MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1e-5, 2e-5, 3e-5), 6);
+      internal::MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1e-5, 2e-5, 3e-5),
+                                                 6);
   mesh2_M.TransformVertices(X_ME);
   const Obb initial_obb2_M(X_ME, Vector3d(1e-5, 2e-5, 3e-5));
   const Obb optimized_obb2_M =
@@ -536,7 +547,7 @@ class ObbMakerTestOctahedron : public ::testing::Test {
   ObbMakerTestOctahedron()
       : ::testing::Test(),
         // Use a coarse sphere, i.e. an octahedron, as the underlying mesh.
-        mesh_M_(MakeSphereSurfaceMesh<double>(Sphere(1.5), 3)),
+        mesh_M_(internal::MakeSphereSurfaceMesh<double>(Sphere(1.5), 3)),
         test_vertices_{0, 1, 2, 3, 4, 5} {}
 
   void SetUp() override { ASSERT_EQ(mesh_M_.num_vertices(), 6); }
@@ -656,7 +667,7 @@ TEST_F(ObbMakerTestOctahedron, ObbMakerCompute) {
 GTEST_TEST(ObbMakerTest, TestTruncatedBox) {
   // Resolution hint 10 is larger than the largest box dimension 6, so we
   // should get the coarsest mesh: 8 vertices, 12 triangles.
-  auto surface_mesh = MakeBoxSurfaceMesh<double>(Box(6, 4, 2), 10);
+  auto surface_mesh = internal::MakeBoxSurfaceMesh<double>(Box(6, 4, 2), 10);
   ASSERT_EQ(surface_mesh.num_vertices(), 8);
   ASSERT_EQ(surface_mesh.num_triangles(), 12);
   std::set<int> test_vertices;
@@ -691,8 +702,10 @@ GTEST_TEST(ObbMakerTest, TestTruncatedBox) {
 // Smoke test that it works with VolumeMesh<double>.
 GTEST_TEST(ObbMakerTest, TestVolumeMesh) {
   // Use a very coarse mesh.
-  const VolumeMesh<double> volume_mesh = MakeEllipsoidVolumeMesh<double>(
-      Ellipsoid(1., 2., 3.), 6, TessellationStrategy::kSingleInteriorVertex);
+  const VolumeMesh<double> volume_mesh =
+      internal::MakeEllipsoidVolumeMesh<double>(
+          Ellipsoid(1., 2., 3.), 6,
+          internal::TessellationStrategy::kSingleInteriorVertex);
   std::set<int> test_vertices;
   for (int i = 0; i < volume_mesh.num_vertices(); ++i) {
     test_vertices.insert(i);
@@ -704,6 +717,21 @@ GTEST_TEST(ObbMakerTest, TestVolumeMesh) {
   // that fits the ellipsoid. We put a check that the future code will not
   // create a bigger bounding box.
   EXPECT_LT(obb.CalcVolume(), 41.317);
+}
+
+// Smoke test that it works with PolygonSurfaceMesh.
+GTEST_TEST(ObbMakerTest, TestPolygonSurfaceMesh) {
+  const std::string file =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const Mesh mesh(file);
+  const PolygonSurfaceMesh<double> polygon_mesh =
+      internal::MakeConvexHull(mesh);
+  std::set<int> test_vertices;
+  for (int i = 0; i < polygon_mesh.num_vertices(); ++i) {
+    test_vertices.insert(i);
+  }
+  Obb obb = ObbMaker(polygon_mesh, test_vertices).Compute();
+  EXPECT_TRUE(Contain(obb, polygon_mesh, test_vertices));
 }
 
 // Tests API of ObbMaker that it respects the input vertex indices.
@@ -832,124 +860,60 @@ GTEST_TEST(ObbTest, AabbOverlap) {
   }
 }
 
-// Tests Obb-plane intersection. We have four frames:
-//
-//   B: the canonical frame the box is defined in (centered on Bo and aligned
-//      with B's axes).
-//   H: the hierarchy frame in which the box frame B is posed.
-//   P: the frame the plane is defined in.
-//   Q: the frame the query is performed in.
-//
-// For simplicity, we'll define the plane with a normal in the Pz direction
-// passing through Po. We'll pose the box relative to the plane (so we can
-// easily reason about whether it penetrates or not). But then express the plane
-// in the query frame Q (and the pose of B in Q).
+// Tests Obb-plane intersection. The vast majority of the work is done by
+// the Plane class (tested elsewhere). We just need to confirm that the OBB
+// describes itself in the Plane's frame correctly. To that end, we make sure
+// that the obb has non-trivial values for position and orientation and that the
+// transform between the hierarchy frame and plane frame is likewise
+// "interesting" (we're making sure that all the bits get used properly).
 GTEST_TEST(ObbTest, PlaneOverlap) {
-  // The obb is *not* defined at the origin of the hierarchy frame.
-  const Vector3d p_HoBo_H = Vector3d{0.5, 0.25, -0.75};
-  const Obb obb_H{
-      RigidTransformd{RollPitchYawd(2. * M_PI / 3., M_PI_4, -M_PI / 3.),
-                      p_HoBo_H},
-      Vector3d{1, 2, 3}};
+  // We'll define the problem *in* the plane's frame, but arbitrarily pose the
+  // problem in a separate frame prior to evaluation.
+  const Vector3d half_width(0.25, 2.0, 1.5);
 
-  // Use brute force to find the position of the "lowest" corner of the box
-  // measured from Ho and expressed in frame P. "Lowest" means the corner with
-  // the smallest z-component. Note: the "z-component" trick only works because
-  // we expect the plane to be Pz = 0.
-  auto lowest_corner = [&obb_H](const RotationMatrixd& R_PH) {
-    Vector3d p_HoCmin_P =
-        Vector3d::Constant(std::numeric_limits<double>::infinity());
-    for (const double x_sign : {-1.0, 1.0}) {
-      for (const double y_sign : {-1.0, 1.0}) {
-        for (const double z_sign : {-1.0, 1.0}) {
-          const Vector3d signs{x_sign, y_sign, z_sign};
-          const Vector3d p_HoC_H =
-              obb_H.pose() * obb_H.half_width().cwiseProduct(signs);
-          const Vector3d p_HoC_P = R_PH * p_HoC_H;
-          if (p_HoC_P(2) < p_HoCmin_P(2)) {
-            p_HoCmin_P = p_HoC_P;
-          }
-        }
-      }
-    }
-    return p_HoCmin_P;
-  };
+  // Box pose in the hierarchy frame H.
+  const RigidTransformd X_HB(RotationMatrixd::MakeFromOneVector(
+                                 Vector3d(1, 2, 3), /* axis_index= */ 2),
+                             Vector3d(-1, 2, 0.5));
 
-  // Test epsilon is the product of three factors:
-  //  - machine epsilon
-  //  - Two orders of magnitude attributed to the various transformations.
-  //  - A scale factor that is the maximum of (box size, p_HoBo, p_PoHo)
-  const double kEps = 300 * std::numeric_limits<double>::epsilon();
-  // An arbitrary collection of orientations for the box's hierarchy frame H
-  // in the plane frame P.
-  std::vector<AngleAxisd> R_PHs{
-      AngleAxisd{0, Vector3d::UnitX()},
-      AngleAxisd{M_PI / 2, Vector3d::UnitX()},
-      AngleAxisd{M_PI / 2, Vector3d::UnitY()},
-      AngleAxisd{M_PI / 2, Vector3d::UnitZ()},
-      AngleAxisd{M_PI / 4, Vector3d::UnitX()},
-      AngleAxisd{M_PI / 4, Vector3d::UnitY()},
-      AngleAxisd{M_PI / 7, Vector3d{1, 2, 3}.normalized()},
-      AngleAxisd{7 * M_PI / 6, Vector3d{-1, 2, -3}.normalized()},
-      AngleAxisd{12 * M_PI / 7, Vector3d{1, -2, 3}.normalized()}};
-  // An arbitrary collection of poses of the plane in the query frame Q.
-  std::vector<RigidTransformd> X_QPs{
-      RigidTransformd{},  // Identity matrix.
-      RigidTransformd{
-          RotationMatrixd{AngleAxisd{M_PI / 4, Vector3d{1, 2, 3}.normalized()}},
-          Vector3d{1, 2, 3}},
-      RigidTransformd{RotationMatrixd{AngleAxisd{
-                          12 * M_PI / 7, Vector3d{-1, -1, 3}.normalized()}},
-                      Vector3d{-3, -1, 2}}};
-  for (const auto& angle_axis_PH : R_PHs) {
-    const RotationMatrixd R_PH{angle_axis_PH};
-    const Vector3d p_HoCmin_P = lowest_corner(R_PH);
-    for (const auto& X_QP : X_QPs) {
-      // Define the plane in the query frame Q.
-      const Vector3d& Pz_Q = X_QP.rotation().col(2);
-      Plane<double> plane_Q{Pz_Q, X_QP.translation()};
+  // Hierarchy pose in the plane's frame. We're free to pick R_PH (such that
+  // R_PB ≠ I). We have to pick p_PH such that the box's corner just touches the
+  // plane.
+  const auto R_PH = RotationMatrixd::MakeFromOneVector(Vector3d(-1, 2, -2), 2);
 
-      // We position Ho such that Cmin lies on the z = 0 plane in Frame P. Given
-      // we know p_HoCmin_P, we know its current z-value. To put it at zero, we
-      // must displace it in the negative of that z value. The x- and y-values
-      // don't matter, so we pick values we know not to be zero.
-      {
-        // Place the minimum corner just "above" the plane.
-        const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmin_P(2) + kEps}};
-        RigidTransformd X_PH{R_PH, p_PoHo_P};
-        EXPECT_FALSE(Obb::HasOverlap(obb_H, plane_Q, X_QP * X_PH));
-      }
-      {
-        // Place the minimum corner just "below" the plane.
-        const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmin_P(2) - kEps}};
-        RigidTransformd X_PH{R_PH, p_PoHo_P};
-        EXPECT_TRUE(Obb::HasOverlap(obb_H, plane_Q, X_QP * X_PH));
-      }
+  // The "clearance" is the height the box center needs to be off the plane so
+  // that one corner is exactly touching (given its relative orientation).
+  const RotationMatrixd R_PB = R_PH * X_HB.rotation();
+  const double clearance = R_PB.row(2).cwiseAbs().dot(half_width.transpose());
+  // The plane's normal is Pz, so only the z-value in the box origin matters.
+  const Vector3d p_PB(1.5, -0.5, clearance);
+  const Vector3d p_HB_P = R_PH * X_HB.translation();
+  const Vector3d p_PH = p_PB - p_HB_P;
+  const RigidTransformd X_PH(R_PH, p_PH);
 
-      // We repeat the same task but with Cmax. Cmax is the reflection of Cmin
-      // over Bo (the origin of the box). We'll express all vectors in the P
-      // frame so we can place that corner just above and below the Pz = 0
-      // plane using the same trick as documented above.
-      const Vector3d p_HoBo_P = R_PH * p_HoBo_H;
-      const Vector3d p_HoCmax_P = p_HoCmin_P + 2 * (p_HoBo_P - p_HoCmin_P);
-      {
-        // Put the maximum corner *on* the z = 0 plane in Frame P. The bulk of
-        // the box now extends *below* the plane; so bump it up epsilon to
-        // guarantee intersection.
-        const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmax_P(2) + kEps}};
-        RigidTransformd X_PH{R_PH, p_PoHo_P};
-        EXPECT_TRUE(Obb::HasOverlap(obb_H, plane_Q, X_QP * X_PH));
-      }
-      {
-        // Put the maximum corner *on* the z = 0 plane in Frame P. The bulk of
-        // the box now extends *below* the plane; so bump it down epsilon to
-        // guarantee _no_ intersection.
-        const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmax_P(2) - kEps}};
-        RigidTransformd X_PH{R_PH, p_PoHo_P};
-        EXPECT_FALSE(Obb::HasOverlap(obb_H, plane_Q, X_QP * X_PH));
-      }
-    }
-  }
+  // Pose the whole problem in the world frame with some arbitrary, non-identity
+  // pose.
+  const RigidTransformd X_WP(
+      RotationMatrixd::MakeFromOneVector(Vector3d(-1, 2, -2), 2),
+      Vector3d{3, -1, 2});
+  const Vector3d Pz_W = X_WP.rotation().col(2);
+  const Plane<double> plane_W(Pz_W, X_WP.translation());
+
+  const Obb obb_H(X_HB, half_width);
+  // Initialize X_WH such that the box corner exactly touches the plane. Then
+  // we'll perturb it in the normal direction up by epsilon (out of contact) and
+  // down again by two epsilon (into contact).
+  RigidTransformd X_WH = X_WP * X_PH;
+
+  const double kUp = 1e-6;
+  // Shift frame H up.
+  X_WH = RigidTransformd(Pz_W * kUp) * X_WH;
+  EXPECT_FALSE(Obb::HasOverlap(obb_H, plane_W, X_WH));
+
+  const double kDown = -2 * kUp;
+  // Shift frame H down.
+  X_WH = RigidTransformd(Pz_W * kDown) * X_WH;
+  EXPECT_TRUE(Obb::HasOverlap(obb_H, plane_W, X_WH));
 }
 
 // Tests Obb-halfspace itersection.
@@ -1073,6 +1037,5 @@ GTEST_TEST(ObbTest, TestEqual) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

@@ -25,7 +25,8 @@ class InitializationSequenceTest(unittest.TestCase):
     def setUp(self):
         manifest = runfiles.Create()
         self._stub_path = manifest.Rlocation(
-            "drake/lcm/initialization_sequence_test_stub")
+            "drake/lcm/initialization_sequence_test_stub"
+        )
 
         # We need a non-memq URL for this test to be meaningful.  (By default,
         # our configuration for the "bazel test" environment uses "memq://".)
@@ -36,7 +37,10 @@ class InitializationSequenceTest(unittest.TestCase):
         # Launch the C++ stub.
         dut = psutil.Popen(
             [self._stub_path, f"--lcm_url={self._lcm_url}"],
-            stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=STDOUT,
+        )
 
         # Wait for it to complete constructing it's LCM instance and subscribe
         # to a channel.
@@ -53,7 +57,7 @@ class InitializationSequenceTest(unittest.TestCase):
 
         # Prompt it to active the recv parts on the LCM instance and wait until
         # that is complete.
-        dut.stdin.write("dummy\n".encode("utf-8"))
+        dut.stdin.write(b"dummy\n")
         dut.stdin.flush()
         for line in dut.stdout:
             line = line.decode("utf-8").strip()

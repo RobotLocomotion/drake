@@ -1,6 +1,9 @@
 #include "drake/multibody/mpm/particle_sorter.h"
 
+#include <algorithm>
 #include <numeric>
+#include <set>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -132,7 +135,7 @@ GTEST_TEST(ParticleSorterTest, Sort) {
     allocated_offsets.insert(offset);
   };
 
-  another_grid.IterateConstGridWithOffset(callback);
+  another_grid.IterateGridWithOffset(callback);
   for (uint64_t offset : base_node_offsets) {
     const Vector3i coord = another_grid.OffsetToCoordinate(offset);
     /* Get the offsets of nodes in the one-ring of the base node. */
@@ -213,6 +216,10 @@ TYPED_TEST(ParticleSorterTypedTest, Iterate) {
     node_data.v = Vector3<T>(-1.0, -1.0, -1.0);
     return node_data;
   });
+  /* Set all particle velocity to (10, 0, 0). */
+  for (int i = 0; i < particle_data.num_particles(); ++i) {
+    particle_data.mutable_v()[i] = Vector3<T>(10.0, 0.0, 0.0);
+  }
 
   /* Now we test writing to grid flag. The arbitrary kernel writes the particle
    velocity to all grid nodes in the particles' support. It sets grid mass

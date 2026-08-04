@@ -44,6 +44,7 @@ cc_library(
     name = "config",
     hdrs = [":src/nlopt_config.h"],
     includes = ["src"],
+    isystem = True,
     linkstatic = True,
 )
 
@@ -73,8 +74,15 @@ cc_library(
     name = "util",
     srcs = _SRCS_UTIL_CABI,
     hdrs = _HDRS_UTIL_CABI,
-    copts = ["-w", "-fvisibility=hidden"],
-    includes = ["src/api", "src/util"],
+    copts = [
+        "-w",
+        "-fvisibility=hidden",
+    ],
+    includes = [
+        "src/api",
+        "src/util",
+    ],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":config",
@@ -129,7 +137,10 @@ cc_library(
     name = "algs",
     srcs = _SRCS_ALGS_CABI,
     hdrs = _HDRS_ALGS_CABI,
-    copts = ["-w", "-fvisibility=hidden"],
+    copts = [
+        "-w",
+        "-fvisibility=hidden",
+    ],
     includes = [
         "src/algs/auglag",
         "src/algs/bobyqa",
@@ -146,6 +157,7 @@ cc_library(
         "src/algs/praxis",
         "src/algs/slsqp",
     ],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":util",
@@ -188,6 +200,7 @@ cc_library_vendored(
     hdrs_vendored = ["drake_" + x for x in _HDRS_STOGO_CPPABI],
     copts = ["-w"],
     includes = ["drake_src/algs/stogo"],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":util",
@@ -198,8 +211,12 @@ cc_library(
     name = "stogo",
     srcs = _SRCS_STOGO_CABI,
     hdrs = _HDRS_STOGO_CABI,
-    copts = ["-w", "-fvisibility=hidden"],
+    copts = [
+        "-w",
+        "-fvisibility=hidden",
+    ],
     includes = ["src/algs/stogo"],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":stogo_cppabi",
@@ -240,6 +257,7 @@ cc_library_vendored(
     hdrs_vendored = ["drake_" + x for x in _HDRS_AGS_CPPABI],
     copts = ["-w"],
     includes = ["drake_src/algs/ags"],
+    isystem = True,
     linkstatic = True,
 )
 
@@ -247,8 +265,12 @@ cc_library(
     name = "ags",
     srcs = _SRCS_AGS_CABI,
     hdrs = _HDRS_AGS_CABI,
-    copts = ["-w", "-fvisibility=hidden"],
+    copts = [
+        "-w",
+        "-fvisibility=hidden",
+    ],
     includes = ["src/algs/ags"],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":ags_cppabi",
@@ -275,7 +297,10 @@ cc_library(
     name = "api",
     srcs = _SRCS_API,
     hdrs = _HDRS_API,
-    copts = ["-w", "-fvisibility=hidden"],
+    copts = [
+        "-w",
+        "-fvisibility=hidden",
+    ],
     includes = ["src/api"],
     linkstatic = True,
     deps = [
@@ -296,6 +321,7 @@ _ALL_SRCS = (
     _SRCS_AGS_CPPABI +
     _SRCS_API
 )
+
 _ALL_HDRS = (
     _HDRS_UTIL_CABI +
     _HDRS_ALGS_CABI +
@@ -371,6 +397,7 @@ cc_library_vendored(
     hdrs = ["genrule/nlopt.hpp"],
     hdrs_vendored = ["vendored/nlopt.hpp"],
     includes = ["vendored"],
+    isystem = True,
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -383,17 +410,22 @@ install(
     targets = [":nlopt"],
     docs = [
         "AUTHORS",
-    ] + glob([
-        "src/**/COPYING",
-        "src/**/COPYRIGHT",
-        "src/**/README",
-        "src/**/README.orig",
-    ], exclude = [
-        # These are disabled upstream by default.
-        "src/algs/cquad/**",
-        "src/algs/subplex/**",
-        # This is disabled in Drake specifically due to LGPL.
-        "src/algs/luksan/**",
-    ]),
+    ] + glob(
+        [
+            "src/**/COPYING",
+            "src/**/COPYRIGHT",
+            "src/**/README",
+            "src/**/README.orig",
+        ],
+        exclude = [
+            # These are disabled upstream by default.
+            "src/algs/cquad/**",
+            "src/algs/subplex/**",
+            # This is disabled in Drake specifically due to LGPL.
+            "src/algs/luksan/**",
+        ],
+    ),
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

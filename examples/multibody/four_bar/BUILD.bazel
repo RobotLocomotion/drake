@@ -20,11 +20,7 @@ filegroup(
 drake_cc_binary(
     name = "passive_simulation",
     srcs = ["passive_simulation.cc"],
-    add_test_rule = 1,
     data = [":models"],
-    test_rule_args = [
-        "--simulation_time=0.1",
-    ],
     deps = [
         "//multibody/parsing",
         "//multibody/plant",
@@ -35,6 +31,10 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//visualization:visualization_config_functions",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
     ],
 )
 

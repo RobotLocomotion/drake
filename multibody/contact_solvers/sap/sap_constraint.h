@@ -8,8 +8,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 #include "drake/multibody/math/spatial_algebra.h"
 
@@ -288,7 +288,7 @@ class SapConstraint {
       second_clique() < clique_permutation.domain_size().
   */
   std::unique_ptr<SapConstraint<T>> MakeReduced(
-      const PartialPermutation& clique_permutation,
+      const math::internal::PartialPermutation& clique_permutation,
       const std::vector<std::vector<int>>& per_clique_known_dofs) const;
 
  protected:
@@ -304,7 +304,7 @@ class SapConstraint {
     return std::make_unique<Value<U>>(std::move(owned_data));
   }
 
-  // @group NVI implementations. Specific constraints must implement these
+  // @name NVI implementations. Specific constraints must implement these
   // methods. Refer to the specific NVI documentation for details.
   // Proper argument sizes and valid non-null pointers are already guaranteed by
   // checks in the correspondng NVIs.
@@ -320,28 +320,11 @@ class SapConstraint {
   virtual void DoCalcCostHessian(const AbstractValue& data,
                                  MatrixX<T>* G) const = 0;
   virtual void DoAccumulateGeneralizedImpulses(
-      int, const Eigen::Ref<const VectorX<T>>&, EigenPtr<VectorX<T>>) const {
-    // TODO(amcastro-tri): Temporarily, the default implementation throws until
-    // the full resolution of #19435. Once all constraints report forces, this
-    // function will be pure virtual.
-    throw std::logic_error(
-        "Constraints must implement this function. See #19435. ");
-  }
+      int, const Eigen::Ref<const VectorX<T>>&, EigenPtr<VectorX<T>>) const = 0;
   virtual void DoAccumulateSpatialImpulses(int,
                                            const Eigen::Ref<const VectorX<T>>&,
-                                           SpatialForce<T>*) const {
-    // TODO(amcastro-tri): Temporarily, the default implementation throws until
-    // the full resolution of #19435. Once all constraints report forces, this
-    // function will be pure virtual.
-    throw std::logic_error(
-        "Constraints must implement this function. See #19435. ");
-  }
-  /* Clone() implementation. Derived classes must override to provide
-   polymorphic deep-copy into a new instance. */
+                                           SpatialForce<T>*) const = 0;
   virtual std::unique_ptr<SapConstraint<T>> DoClone() const = 0;
-
-  /* ToDouble() implementation. Derived classes must override to provide
-   polymorphic scalar conversion. */
   virtual std::unique_ptr<SapConstraint<double>> DoToDouble() const = 0;
   // @}
 

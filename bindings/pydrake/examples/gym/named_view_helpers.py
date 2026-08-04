@@ -2,10 +2,11 @@
 The following functions provide a convenient method
 to print and access vectors by state or actuator name.
 """
+
 from pydrake.common.containers import namedview
 from pydrake.multibody.tree import (
     JointIndex,
-    )
+)
 
 
 def MakeNamedViewActuation(plant, view_name):
@@ -19,9 +20,9 @@ def MakeNamedViewActuation(plant, view_name):
 
 # Adapted from https://github.com/RussTedrake/manipulation/blob/master/manipulation/utils.py  # noqa
 # TODO(russt): consider making a version with model_instance
-def MakeNamedViewPositions(plant,
-                           view_name,
-                           add_suffix_if_single_position=False):
+def MakeNamedViewPositions(
+    plant, view_name, add_suffix_if_single_position=False
+):
     names = [None] * plant.num_positions()
     for ind in plant.GetJointIndices():
         joint = plant.get_joint(JointIndex(ind))
@@ -29,20 +30,22 @@ def MakeNamedViewPositions(plant,
             names[joint.position_start()] = joint.name()
         else:
             for i in range(joint.num_positions()):
-                names[joint.position_start() + i] = \
+                names[joint.position_start() + i] = (
                     f"{joint.name()}_{joint.position_suffix(i)}"
+                )
     for ind in plant.GetFloatingBaseBodies():
         body = plant.get_body(ind)
         start = body.floating_positions_start()
         for i in range(7):
-            names[start
-                  + i] = f"{body.name()}_{body.floating_position_suffix(i)}"
+            names[start + i] = (
+                f"{body.name()}_{body.floating_position_suffix(i)}"
+            )
     return namedview(view_name, names)
 
 
-def MakeNamedViewVelocities(plant,
-                            view_name,
-                            add_suffix_if_single_velocity=False):
+def MakeNamedViewVelocities(
+    plant, view_name, add_suffix_if_single_velocity=False
+):
     names = [None] * plant.num_velocities()
     for ind in plant.GetJointIndices():
         joint = plant.get_joint(JointIndex(ind))
@@ -50,14 +53,16 @@ def MakeNamedViewVelocities(plant,
             names[joint.velocity_start()] = joint.name()
         else:
             for i in range(joint.num_velocities()):
-                names[joint.velocity_start() + i] = \
+                names[joint.velocity_start() + i] = (
                     f"{joint.name()}_{joint.velocity_suffix(i)}"
+                )
     for ind in plant.GetFloatingBaseBodies():
         body = plant.get_body(ind)
         start = body.floating_velocities_start_in_v()
         for i in range(6):
-            names[start
-                  + i] = f"{body.name()}_{body.floating_velocity_suffix(i)}"
+            names[start + i] = (
+                f"{body.name()}_{body.floating_velocity_suffix(i)}"
+            )
     return namedview(view_name, names)
 
 

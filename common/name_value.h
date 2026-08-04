@@ -16,7 +16,8 @@ namespace drake {
 /// For more information, refer to Drake's
 /// @ref yaml_serialization "YAML Serialization" and especially the
 /// @ref implementing_serialize "Implementing Serialize" section, or also the
-/// <a href="https://www.boost.org/doc/libs/release/libs/serialization/doc/wrappers.html#nvp">Boost
+/// <a
+/// href="https://www.boost.org/doc/libs/release/libs/serialization/doc/wrappers.html#nvp">Boost
 /// Name-Value Pairs</a> documentation for background.
 template <typename T>
 class NameValue {

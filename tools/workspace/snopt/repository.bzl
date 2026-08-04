@@ -163,11 +163,11 @@ def _impl(repo_ctx):
     snopt_path = repo_ctx.getenv("SNOPT_PATH", "")
 
     if len(snopt_path) == 0:
-        # When SNOPT is enabled (e.g., with `--config snopt`), then SNOPT_PATH
-        # must be set.  If it's not set, we'll defer the error messages to the
-        # build phase, instead of loading phase.  This deferment enables
-        # `genquery()` calls that reference `@snopt` to succeed, even if SNOPT
-        # is disabled and we don't have access to its source code.
+        # When SNOPT is enabled, then SNOPT_PATH must be set. If it's not set,
+        # we'll defer the error messages to the build phase, instead of loading
+        # phase. This deferment enables `genquery()` calls that reference
+        # `@snopt` to succeed, even if SNOPT is disabled and we don't have
+        # access to its source code.
         #
         # Once the user sets a SNOPT_PATH, this function will be re-run
         # (because we tag `environ` on our repository_rule).  In this way, we
@@ -175,9 +175,8 @@ def _impl(repo_ctx):
         # re-running git anytime the dependency graph changes.
         _setup_deferred_failure(
             repo_ctx,
-            "SNOPT was enabled via '--config snopt' or '--config everything'" +
-            " (possibly in a '.bazelrc' file) but the SNOPT_PATH environment" +
-            " variable is unset.",
+            "SNOPT was enabled but the SNOPT_PATH environment variable is " +
+            "unset.",
         )
     elif snopt_path == "git":
         # This case does not use deferred error handling.  If you set

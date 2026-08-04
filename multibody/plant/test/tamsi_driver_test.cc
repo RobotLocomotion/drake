@@ -1,6 +1,8 @@
 #include "drake/multibody/plant/tamsi_driver.h"
 
+#include <limits>
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

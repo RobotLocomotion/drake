@@ -40,11 +40,15 @@ class TestYaml(unittest.TestCase):
             bar: 2.0
         """
         parsed = yaml_load_data(data)
-        self.assertDictEqual(parsed["doc"], {
-            "value": {
-                "foo": 1.0,
-                "bar": 2.0,
-            }})
+        self.assertDictEqual(
+            parsed["doc"],
+            {
+                "value": {
+                    "foo": 1.0,
+                    "bar": 2.0,
+                }
+            },
+        )
 
     def test_stochastic(self):
         # Per the variant types in stochastic.h.
@@ -58,34 +62,52 @@ class TestYaml(unittest.TestCase):
         ]
         """
         doc = yaml_load(data=data)["doc"]
-        self.assertDictEqual(doc[0], {
-            "_tag": "!Deterministic",
-            "value": 5.0,
-        })
-        self.assertDictEqual(doc[1], {
-            "_tag": "!Gaussian",
-            "mean": 2.0,
-            "std": 4.0,
-        })
-        self.assertDictEqual(doc[2], {
-            "_tag": "!GaussianVector",
-            "mean": [1.1, 1.2, 1.3],
-            "std": [0.1, 0.2, 0.3]
-        })
-        self.assertDictEqual(doc[3], {
-            "_tag": "!Uniform",
-            "min": 1.0,
-            "max": 5.0,
-        })
-        self.assertDictEqual(doc[4], {
-            "_tag": "!UniformDiscrete",
-            "values": [1, 1.5, 2],
-        })
-        self.assertDictEqual(doc[5], {
-            "_tag": "!UniformVector",
-            "min": [10, 20],
-            "max": [11, 22],
-        })
+        self.assertDictEqual(
+            doc[0],
+            {
+                "_tag": "!Deterministic",
+                "value": 5.0,
+            },
+        )
+        self.assertDictEqual(
+            doc[1],
+            {
+                "_tag": "!Gaussian",
+                "mean": 2.0,
+                "std": 4.0,
+            },
+        )
+        self.assertDictEqual(
+            doc[2],
+            {
+                "_tag": "!GaussianVector",
+                "mean": [1.1, 1.2, 1.3],
+                "std": [0.1, 0.2, 0.3],
+            },
+        )
+        self.assertDictEqual(
+            doc[3],
+            {
+                "_tag": "!Uniform",
+                "min": 1.0,
+                "max": 5.0,
+            },
+        )
+        self.assertDictEqual(
+            doc[4],
+            {
+                "_tag": "!UniformDiscrete",
+                "values": [1, 1.5, 2],
+            },
+        )
+        self.assertDictEqual(
+            doc[5],
+            {
+                "_tag": "!UniformVector",
+                "min": [10, 20],
+                "max": [11, 22],
+            },
+        )
 
         actual_str = yaml_dump({"doc": doc})
         expected_str = dedent(
@@ -118,9 +140,12 @@ class TestYaml(unittest.TestCase):
         rotation: !Uniform {}
         """
         rotation = yaml_load(data=data)["rotation"]
-        self.assertDictEqual(rotation, {
-            "_tag": "!Uniform",
-        })
+        self.assertDictEqual(
+            rotation,
+            {
+                "_tag": "!Uniform",
+            },
+        )
 
     def test_transform_angle_axis(self):
         # Per the variant types in transform.h.
@@ -130,11 +155,14 @@ class TestYaml(unittest.TestCase):
           axis: [0, 0, 1]
         """
         rotation = yaml_load(data=data)["rotation"]
-        self.assertDictEqual(rotation, {
-            "_tag": "!AngleAxis",
-            "angle_deg": {"_tag": "!Uniform", "max": 10, "min": -10},
-            "axis": [0, 0, 1],
-        })
+        self.assertDictEqual(
+            rotation,
+            {
+                "_tag": "!AngleAxis",
+                "angle_deg": {"_tag": "!Uniform", "max": 10, "min": -10},
+                "axis": [0, 0, 1],
+            },
+        )
 
     def test_transform_rpy(self):
         # Per the variant types in transform.h.
@@ -145,14 +173,17 @@ class TestYaml(unittest.TestCase):
             max: [100, 0.25,  1.]
         """
         rotation = yaml_load(data=data)["rotation"]
-        self.assertDictEqual(rotation, {
-            "_tag": "!Rpy",
-            "deg": {
-                "_tag": "!UniformVector",
-                "min": [80, -0.25, -1.],
-                "max": [100, 0.25,  1.],
+        self.assertDictEqual(
+            rotation,
+            {
+                "_tag": "!Rpy",
+                "deg": {
+                    "_tag": "!UniformVector",
+                    "min": [80, -0.25, -1.0],
+                    "max": [100, 0.25, 1.0],
+                },
             },
-        })
+        )
 
     def test_unknown_tag(self):
         data = """
@@ -160,10 +191,13 @@ class TestYaml(unittest.TestCase):
           detail: 22
         """
         bar = yaml_load(data=data)["foo"]
-        self.assertDictEqual(bar, {
-            "_tag": "!Bar",
-            "detail": 22,
-        })
+        self.assertDictEqual(
+            bar,
+            {
+                "_tag": "!Bar",
+                "detail": 22,
+            },
+        )
 
     def test_standard_tag(self):
         data = """
@@ -191,14 +225,14 @@ class TestYaml(unittest.TestCase):
                 "value": {
                     "foo": 1.0,
                     "bar": 2.0,
-                }
+                },
             },
             "name2": {
                 "seed": 2,
                 "value": {
                     "foo": 1.0,
                     "bar": 2.0,
-                }
+                },
             },
         }
         self.assertDictEqual(yaml_load_data(data), expected)

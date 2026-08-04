@@ -13,15 +13,13 @@
 #include <nanoflann.hpp>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/unused.h"
 
+using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGrid;
+using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGridSizes;
+using common_robotics_utilities::voxel_grid::Vector3i64;
 using Eigen::Map;
 using Eigen::NoChange;
-using common_robotics_utilities::voxel_grid::DSHVGSetType;
-using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGrid;
-using common_robotics_utilities::voxel_grid::GridIndex;
-using common_robotics_utilities::voxel_grid::GridSizes;
 
 namespace drake {
 namespace perception {
@@ -44,8 +42,7 @@ class PointCloud::Storage {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Storage);
 
-  Storage(int new_size, pc_flags::Fields fields)
-      : fields_(fields) {
+  Storage(int new_size, pc_flags::Fields fields) : fields_(fields) {
     // Ensure that we incorporate the size of the descriptors.
     descriptors_.resize(fields_.descriptor_type().size(), 0);
     // Resize as normal.
@@ -61,30 +58,43 @@ class PointCloud::Storage {
   // Returns size of the storage.
   int size() const { return size_; }
 
+  // A repaired implementation of Eigen::Matrix::conservativeResize that is safe
+  // to call when the new size is zero. (Eigen 3.4.0 calls 'realloc(size=0)' in
+  // that case, which is undefined.)
+  //
+  // Once Drake's minimum supported Eigen version is circa 2023 or newer, we can
+  // go back to calling conservativeResize even with a zero size.
+  template <typename EigenMatrix>
+  static void ConservativeResizeCols(EigenMatrix* m, int cols) {
+    if (cols == 0) {
+      m->resize(m->rows(), cols);
+    } else {
+      m->conservativeResize(NoChange, cols);
+    }
+  }
+
   // Resize to parent cloud's size.
   void resize(int new_size) {
     size_ = new_size;
     if (fields_.contains(pc_flags::kXYZs))
-      xyzs_.conservativeResize(NoChange, new_size);
+      ConservativeResizeCols(&xyzs_, new_size);
     if (fields_.contains(pc_flags::kNormals))
-      normals_.conservativeResize(NoChange, new_size);
+      ConservativeResizeCols(&normals_, new_size);
     if (fields_.contains(pc_flags::kRGBs))
-      rgbs_.conservativeResize(NoChange, new_size);
+      ConservativeResizeCols(&rgbs_, new_size);
     if (fields_.has_descriptor())
-      descriptors_.conservativeResize(NoChange, new_size);
+      ConservativeResizeCols(&descriptors_, new_size);
     CheckInvariants();
   }
 
   // Update fields, allocating (but not initializing) new fields when needed.
   void UpdateFields(pc_flags::Fields f) {
-    xyzs_.conservativeResize(NoChange, f.contains(pc_flags::kXYZs) ? size_ : 0);
-    normals_.conservativeResize(NoChange,
-                                f.contains(pc_flags::kNormals) ? size_ : 0);
-    rgbs_.conservativeResize(NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
-    // Note: The row size can change depends on whether 'f' contains a
-    // descriptor field and the type of the descriptor.
-    descriptors_.conservativeResize(f.descriptor_type().size(),
-                                    f.has_descriptor() ? size_ : 0);
+    xyzs_.resize(Eigen::NoChange, f.contains(pc_flags::kXYZs) ? size_ : 0);
+    normals_.resize(Eigen::NoChange,
+                    f.contains(pc_flags::kNormals) ? size_ : 0);
+    rgbs_.resize(Eigen::NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
+    descriptors_.resize(f.descriptor_type().size(),
+                        f.has_descriptor() ? size_ : 0);
     fields_ = f;
     CheckInvariants();
   }
@@ -135,8 +145,8 @@ class PointCloud::Storage {
 
 namespace {
 
-pc_flags::Fields ResolveFields(
-    const PointCloud& other, pc_flags::Fields fields) {
+pc_flags::Fields ResolveFields(const PointCloud& other,
+                               pc_flags::Fields fields) {
   if (fields == pc_flags::kInherit) {
     return other.fields();
   } else {
@@ -163,8 +173,8 @@ pc_flags::Fields FindAddedFields(pc_flags::Fields old_fields,
 
 }  // namespace
 
-PointCloud::PointCloud(
-    int new_size, pc_flags::Fields fields, bool skip_initialize) {
+PointCloud::PointCloud(int new_size, pc_flags::Fields fields,
+                       bool skip_initialize) {
   if (fields == pc_flags::kNone)
     throw std::runtime_error("Cannot construct a PointCloud without fields");
   if (fields.contains(pc_flags::kInherit))
@@ -175,8 +185,7 @@ PointCloud::PointCloud(
   }
 }
 
-PointCloud::PointCloud(const PointCloud& other,
-                       pc_flags::Fields copy_fields)
+PointCloud::PointCloud(const PointCloud& other, pc_flags::Fields copy_fields)
     : PointCloud(other.size(), ResolveFields(other, copy_fields)) {
   SetFrom(other);
 }
@@ -215,8 +224,9 @@ int PointCloud::size() const {
 void PointCloud::resize(int new_size, bool skip_initialization) {
   DRAKE_DEMAND(new_size >= 0);
   const int old_size = size();
-  if (old_size == new_size)
+  if (old_size == new_size) {
     return;
+  }
   storage_->resize(new_size);
   DRAKE_DEMAND(storage_->size() == new_size);
   if (new_size > old_size && !skip_initialization) {
@@ -227,8 +237,9 @@ void PointCloud::resize(int new_size, bool skip_initialization) {
 
 void PointCloud::SetFields(pc_flags::Fields new_fields, bool skip_initialize) {
   const pc_flags::Fields old_fields = storage_->fields();
-  if (old_fields == new_fields)
+  if (old_fields == new_fields) {
     return;
+  }
   storage_->UpdateFields(new_fields);
 
   if (!skip_initialize) {
@@ -264,8 +275,7 @@ void PointCloud::SetDefault(int start, int num) {
   }
 }
 
-void PointCloud::SetFrom(const PointCloud& other,
-                         pc_flags::Fields fields_in,
+void PointCloud::SetFrom(const PointCloud& other, pc_flags::Fields fields_in,
                          bool allow_resize) {
   // Update the size of this point cloud if necessary.
   int old_size = size();
@@ -302,9 +312,7 @@ void PointCloud::SetFrom(const PointCloud& other,
   }
 }
 
-void PointCloud::Expand(
-    int add_size,
-    bool skip_initialization) {
+void PointCloud::Expand(int add_size, bool skip_initialization) {
   DRAKE_DEMAND(add_size >= 0);
   const int new_size = size() + add_size;
   resize(new_size, skip_initialization);
@@ -365,14 +373,12 @@ Eigen::Ref<MatrixX<D>> PointCloud::mutable_descriptors() {
   return storage_->descriptors();
 }
 
-bool PointCloud::HasFields(
-    pc_flags::Fields fields_in) const {
+bool PointCloud::HasFields(pc_flags::Fields fields_in) const {
   DRAKE_DEMAND(!fields_in.contains(pc_flags::kInherit));
   return storage_->fields().contains(fields_in);
 }
 
-void PointCloud::RequireFields(
-    pc_flags::Fields fields_in) const {
+void PointCloud::RequireFields(pc_flags::Fields fields_in) const {
   if (!HasFields(fields_in)) {
     throw std::runtime_error(
         fmt::format("PointCloud does not have expected fields.\n"
@@ -381,13 +387,11 @@ void PointCloud::RequireFields(
   }
 }
 
-bool PointCloud::HasExactFields(
-    pc_flags::Fields fields_in) const {
+bool PointCloud::HasExactFields(pc_flags::Fields fields_in) const {
   return storage_->fields() == fields_in;
 }
 
-void PointCloud::RequireExactFields(
-    pc_flags::Fields fields_in) const {
+void PointCloud::RequireExactFields(pc_flags::Fields fields_in) const {
   if (!HasExactFields(fields_in)) {
     throw std::runtime_error(
         fmt::format("PointCloud does not have the exact expected fields."
@@ -478,38 +482,29 @@ PointCloud PointCloud::VoxelizedDownSample(
   // DSHVG usually has each dynamic "chunk" contain multiple voxels, by setting
   // the chunk size to (voxel_size, 1, 1, 1) each chunk contains a single voxel
   // and the whole DSHVG behaves as a sparse voxel grid.
-  const GridSizes chunk_sizes(voxel_size, INT64_C(1), INT64_C(1), INT64_C(1));
+  const auto grid_sizes =
+      DynamicSpatialHashedVoxelGridSizes::FromChunkVoxelCounts(
+          voxel_size, Vector3i64(1, 1, 1));
   const std::vector<int> default_chunk_value;
   // By providing an initial estimated number of chunks, we reduce reallocation
   // and rehashing in the DSHVG.
   const size_t num_expected_chunks = static_cast<size_t>(size() / 16);
   DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
-      chunk_sizes, default_chunk_value, num_expected_chunks);
+      grid_sizes, default_chunk_value, num_expected_chunks);
 
   const auto& my_xyzs = storage_->xyzs();
 
   // Add points into the voxel grid.
   for (int i = 0; i < size(); ++i) {
     if (my_xyzs.col(i).array().isFinite().all()) {
-      auto chunk_query = dynamic_voxel_grid.GetLocationMutable3d(
+      auto query = dynamic_voxel_grid.GetOrCreateLocationMutable3d(
           my_xyzs.col(i).cast<double>());
-      if (chunk_query) {
-        // If the containing chunk has already been allocated, add the current
-        // point index directly.
-        chunk_query.Value().emplace_back(i);
-      } else {
-        // If the containing chunk hasn't already been allocated, create a new
-        // chunk containing the current point index.
-        dynamic_voxel_grid.SetLocation3d(
-            my_xyzs.col(i).cast<double>(), DSHVGSetType::SET_CHUNK, {i});
-      }
+      query.Value().emplace_back(i);
     }
   }
 
   // Initialize downsampled cloud.
-  PointCloud down_sampled(
-      dynamic_voxel_grid.GetImmutableInternalChunks().size(),
-      storage_->fields());
+  PointCloud down_sampled(dynamic_voxel_grid.NumChunks(), storage_->fields());
 
   const bool this_has_normals = has_normals();
   const bool this_has_rgbs = has_rgbs();
@@ -518,10 +513,10 @@ PointCloud PointCloud::VoxelizedDownSample(
   Storage& storage = *storage_;
   Storage& down_sampled_storage = *down_sampled.storage_;
   // Helper lambda to process a single voxel cell.
-  const auto process_voxel =
-      [&storage, &down_sampled_storage, this_has_normals, this_has_rgbs,
-       this_has_descriptors](
-           int index_in_down_sampled, const std::vector<int>& indices_in_this) {
+  const auto process_voxel = [&storage, &down_sampled_storage, this_has_normals,
+                              this_has_rgbs, this_has_descriptors](
+                                 int index_in_down_sampled,
+                                 const std::vector<int>& indices_in_this) {
     // Use doubles instead of floats for accumulators to avoid round-off errors.
     Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
     Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
@@ -573,20 +568,18 @@ PointCloud PointCloud::VoxelizedDownSample(
 #endif
 
   // Since we specify chunks contain a single voxel, a chunk's lone voxel can be
-  // retrieved with index (0, 0, 0).
-  const GridIndex kSingleVoxel(0, 0, 0);
+  // retrieved with index 0.
+  const int64_t kSingleVoxel = 0;
 
   // Populate the elements of the down_sampled cloud.
   if (operate_in_parallel) {
     // Flatten voxel cells to allow parallel processing.
     std::vector<const std::vector<int>*> voxel_indices;
-    voxel_indices.reserve(
-        dynamic_voxel_grid.GetImmutableInternalChunks().size());
-    for (const auto& [chunk_region, chunk] :
-            dynamic_voxel_grid.GetImmutableInternalChunks()) {
-      unused(chunk_region);
-      const std::vector<int>& indices_in_this =
-          chunk.GetIndexImmutable(kSingleVoxel).Value();
+    voxel_indices.reserve(dynamic_voxel_grid.NumChunks());
+    for (const auto& [chunk_base, chunk] :
+         dynamic_voxel_grid.GetImmutableInternalChunkKeeper()) {
+      unused(chunk_base);
+      const std::vector<int>& indices_in_this = chunk.AccessIndex(kSingleVoxel);
       voxel_indices.emplace_back(&indices_in_this);
     }
 
@@ -597,16 +590,15 @@ PointCloud PointCloud::VoxelizedDownSample(
     for (int index_in_down_sampled = 0;
          index_in_down_sampled < static_cast<int>(voxel_indices.size());
          ++index_in_down_sampled) {
-      process_voxel(
-          index_in_down_sampled, *voxel_indices[index_in_down_sampled]);
+      process_voxel(index_in_down_sampled,
+                    *voxel_indices[index_in_down_sampled]);
     }
   } else {
     int index_in_down_sampled = 0;
-    for (const auto& [chunk_region, chunk] :
-            dynamic_voxel_grid.GetImmutableInternalChunks()) {
-      unused(chunk_region);
-      const std::vector<int>& indices_in_this =
-          chunk.GetIndexImmutable(kSingleVoxel).Value();
+    for (const auto& [chunk_base, chunk] :
+         dynamic_voxel_grid.GetImmutableInternalChunkKeeper()) {
+      unused(chunk_base);
+      const std::vector<int>& indices_in_this = chunk.AccessIndex(kSingleVoxel);
       process_voxel(index_in_down_sampled, indices_in_this);
       ++index_in_down_sampled;
     }

@@ -1,0 +1,13 @@
+# -*- bazel -*-
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(default_visibility = ["//visibility:public"])
+
+# Export doc files for website publication.
+exports_files(glob([
+    "*",
+    "include/*",
+]))
+
+exports_files(["drake_repository_metadata.json"])

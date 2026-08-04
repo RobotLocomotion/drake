@@ -28,9 +28,6 @@ drake_py_library(
     srcs = ["install_test_helper.py"],
     data = ["//:install"],
     imports = ["."],
-    deps = [
-        "@rules_python//python/runfiles",
-    ],
 )
 
 exports_files(
@@ -42,7 +39,11 @@ exports_files(
 drake_py_binary(
     name = "installer",
     srcs = ["installer.py"],
-    deps = [":otool"],
+    data = ["@patchelf"],
+    deps = [
+        ":otool",
+        "@rules_python//python/runfiles",
+    ],
 )
 
 drake_py_unittest(

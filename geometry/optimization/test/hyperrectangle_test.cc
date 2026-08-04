@@ -1,6 +1,8 @@
 #include "drake/geometry/optimization/hyperrectangle.h"
 
 #include <limits>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

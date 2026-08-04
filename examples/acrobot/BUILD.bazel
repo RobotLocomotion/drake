@@ -98,7 +98,7 @@ drake_cc_library(
     hdrs = ["acrobot_lcm.h"],
     deps = [
         ":acrobot_state",
-        "//lcmtypes:acrobot",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
         "//systems/framework:vector",
     ],
@@ -204,7 +204,7 @@ drake_cc_binary(
     srcs = ["test/acrobot_lcm_msg_generator.cc"],
     deps = [
         "//lcm",
-        "//lcmtypes:acrobot",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
     ],
 )
@@ -212,29 +212,25 @@ drake_cc_binary(
 drake_py_binary(
     name = "optimizer_demo",
     srcs = ["optimizer_demo.py"],
-    add_test_rule = True,
     data = [
         ":spong_sim_main_cc",
         ":test/example_stochastic_scenario.yaml",
-    ],
-    test_rule_args = [
-        "--ensemble_size=3",
-        "--num_evaluations=3",
     ],
     deps = [
         ":acrobot_io",
         ":metrics",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--ensemble_size=3",
+        "--num_evaluations=3",
+    ],
+    test_rule_test_alt_binder = False,
 )
 
 drake_cc_binary(
     name = "run_lqr",
     srcs = ["run_lqr.cc"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "-simulation_sec=1.0",
-        "-realtime_factor=0.0",
-    ],
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
@@ -242,17 +238,17 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_sec=1.0",
+        "-realtime_factor=0.0",
+    ],
 )
 
 drake_cc_binary(
     name = "run_lqr_w_estimator",
     testonly = 1,
     srcs = ["run_lqr_w_estimator.cc"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "-simulation_sec=1.0",
-        "-realtime_factor=0.0",
-    ],
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
@@ -266,16 +262,16 @@ drake_cc_binary(
         "//systems/sensors:rotary_encoders",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_sec=1.0",
+        "-realtime_factor=0.0",
+    ],
 )
 
 drake_cc_binary(
     name = "run_passive",
     srcs = ["run_passive.cc"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "-simulation_sec=1.0",
-        "-realtime_factor=0.0",
-    ],
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
@@ -284,18 +280,17 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_sec=1.0",
+        "-realtime_factor=0.0",
+    ],
 )
 
 drake_cc_binary(
     name = "run_swing_up",
     srcs = [
         "run_swing_up.cc",
-    ],
-    add_test_rule = 1,
-    test_rule_args = [
-        # N.B. We can't set -simulation_sec here, because the demo program has
-        # success criteria that it asserts after the simulation expires.
-        "-realtime_factor=0.0",
     ],
     deps = [
         ":acrobot_geometry",
@@ -307,15 +302,17 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        # N.B. We can't set -simulation_sec here, because the demo program has
+        # success criteria that it asserts after the simulation expires.
+        "-realtime_factor=0.0",
+    ],
 )
 
 drake_cc_binary(
     name = "run_swing_up_traj_optimization",
     srcs = ["test/run_swing_up_traj_optimization.cc"],
-    # TODO(ggould) Temporarily turned off due to mac test failures, see #10276.
-    add_test_rule = 0,
-    tags = ["snopt"],
-    test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
@@ -329,16 +326,16 @@ drake_cc_binary(
         "//systems/primitives:trajectory_source",
         "@gflags",
     ],
+    # TODO(ggould) Temporarily turned off due to mac test failures, see #10276.
+    add_test_rule = False,
+    test_rule_args = ["-realtime_factor=0.0"],
+    test_rule_opt_in_condition = "//tools/workspace/snopt:enabled",
 )
 
 drake_cc_binary(
     name = "spong_controller_w_lcm",
     srcs = [
         "spong_controller_w_lcm.cc",
-    ],
-    add_test_rule = 1,
-    test_rule_args = [
-        "-time_limit_sec=1.0",
     ],
     deps = [
         ":acrobot_lcm",
@@ -349,17 +346,15 @@ drake_cc_binary(
         "//systems/lcm",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-time_limit_sec=1.0",
+    ],
 )
 
 drake_cc_binary(
     name = "run_plant_w_lcm",
     srcs = ["run_plant_w_lcm.cc"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "-simulation_sec=1.0",
-        "-realtime_factor=0.0",
-    ],
-    test_rule_size = "medium",
     deps = [
         ":acrobot_geometry",
         ":acrobot_lcm",
@@ -370,6 +365,12 @@ drake_cc_binary(
         "//systems/lcm",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_sec=1.0",
+        "-realtime_factor=0.0",
+    ],
+    test_rule_size = "medium",
 )
 
 drake_py_unittest(
@@ -450,10 +451,11 @@ drake_py_test(
         ":test/example_stochastic_scenario.yaml",
     ],
     main = "test/spong_sim_main_test.py",
+    test_alt_binder = False,
     deps = [
         ":acrobot_io",
         "//bindings/pydrake",
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

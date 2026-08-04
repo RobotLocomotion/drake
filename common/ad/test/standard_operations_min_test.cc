@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "drake/common/ad/auto_diff.h"
 #include "drake/common/ad/test/standard_operations_test.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

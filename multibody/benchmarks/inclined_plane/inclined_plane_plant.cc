@@ -32,12 +32,10 @@ void AddInclinedPlaneAndGravityToPlant(
     const RigidTransform<double> X_WA(R_WA, p_WoAo_W);
     plant->RegisterVisualGeometry(plant->world_body(), X_WA,
                                   geometry::HalfSpace(),
-                                  "InclinedPlaneVisualGeometry",
-                                  green);
-    plant->RegisterCollisionGeometry(plant->world_body(), X_WA,
-                                     geometry::HalfSpace(),
-                                     "InclinedPlaneCollisionGeometry",
-                                     coefficient_friction_inclined_plane);
+                                  "InclinedPlaneVisualGeometry", green);
+    plant->RegisterCollisionGeometry(
+        plant->world_body(), X_WA, geometry::HalfSpace(),
+        "InclinedPlaneCollisionGeometry", coefficient_friction_inclined_plane);
   } else {
     // If using a box, ensure its dimensions are positive.
     const double LAx = inclined_plane_dimensions->x();
@@ -53,12 +51,10 @@ void AddInclinedPlaneAndGravityToPlant(
     const RigidTransform<double> X_WA(R_WA, p_WoAo_W);
     plant->RegisterVisualGeometry(plant->world_body(), X_WA,
                                   geometry::Box(LAx, LAy, LAz),
-                                  "InclinedPlaneVisualGeometry",
-                                  green);
-    plant->RegisterCollisionGeometry(plant->world_body(), X_WA,
-                                     geometry::Box(LAx, LAy, LAz),
-                                     "InclinedPlaneCollisionGeometry",
-                                     coefficient_friction_inclined_plane);
+                                  "InclinedPlaneVisualGeometry", green);
+    plant->RegisterCollisionGeometry(
+        plant->world_body(), X_WA, geometry::Box(LAx, LAy, LAz),
+        "InclinedPlaneCollisionGeometry", coefficient_friction_inclined_plane);
   }
 
   // Earth's local gravity acts in the world's -z direction.
@@ -70,14 +66,14 @@ void AddInclinedPlaneWithBlockToPlant(
     double gravity, double inclined_plane_angle,
     const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
-    const CoulombFriction<double>& coefficient_friction_bodyB,
-    double massB, const Vector3<double>& block_dimensions,
-    bool is_block_with_4Spheres, MultibodyPlant<double>* plant) {
+    const CoulombFriction<double>& coefficient_friction_bodyB, double massB,
+    const Vector3<double>& block_dimensions, bool is_block_with_4Spheres,
+    MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
 
-  AddInclinedPlaneAndGravityToPlant(
-      gravity, inclined_plane_angle, inclined_plane_dimensions,
-      coefficient_friction_inclined_plane, plant);
+  AddInclinedPlaneAndGravityToPlant(gravity, inclined_plane_angle,
+                                    inclined_plane_dimensions,
+                                    coefficient_friction_inclined_plane, plant);
 
   // Ensure the block's dimensions are mass are positive.
   const double LBx = block_dimensions.x();
@@ -94,10 +90,9 @@ void AddInclinedPlaneWithBlockToPlant(
 
   // Body B's visual geometry is always a solid box.
   // The pose X_BG of block B's geometry frame G is an identity transform.
-  const RigidTransform<double> X_BG;   // Identity transform.
+  const RigidTransform<double> X_BG;  // Identity transform.
   const Vector4<double> lightBlue(0.5, 0.8, 1.0, 1.0);
-  plant->RegisterVisualGeometry(blockB, X_BG,
-                                geometry::Box(LBx, LBy, LBz),
+  plant->RegisterVisualGeometry(blockB, X_BG, geometry::Box(LBx, LBy, LBz),
                                 "BlockB_VisualGeometry", lightBlue);
 
   // Block B's contacting surface is either a box or 4 spheres.
@@ -105,7 +100,7 @@ void AddInclinedPlaneWithBlockToPlant(
     // There are four red spheres welded to the block B's bottom surface.
     // The rotation matrix for each of these spheres is the 3x3 identity matrix.
     const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
-    const double radius = LBz/2;
+    const double radius = LBz / 2;
     int i = 0;
     for (double x_sign : {-1.0, 1.0}) {
       for (double y_sign : {-1.0, 1.0}) {
@@ -117,18 +112,15 @@ void AddInclinedPlaneWithBlockToPlant(
         const Vector3<double> p_BoSpherei_B(x, y, z);
         const RigidTransform<double> X_BSpherei(p_BoSpherei_B);
         plant->RegisterCollisionGeometry(blockB, X_BSpherei,
-                                         geometry::Sphere(radius),
-                                         name_spherei,
+                                         geometry::Sphere(radius), name_spherei,
                                          coefficient_friction_bodyB);
-        plant->RegisterVisualGeometry(blockB, X_BSpherei,
-                                      geometry::Sphere(radius),
-                                      name_spherei, red);
+        plant->RegisterVisualGeometry(
+            blockB, X_BSpherei, geometry::Sphere(radius), name_spherei, red);
       }
     }
   } else {
     // Block B's collision geometry is a solid box.
-    plant->RegisterCollisionGeometry(blockB, X_BG,
-                                     geometry::Box(LBx, LBy, LBz),
+    plant->RegisterCollisionGeometry(blockB, X_BG, geometry::Box(LBx, LBy, LBz),
                                      "BlockB_VisualGeometry",
                                      coefficient_friction_bodyB);
   }
@@ -138,14 +130,14 @@ void AddInclinedPlaneWithSphereToPlant(
     double gravity, double inclined_plane_angle,
     const std::optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
-    const CoulombFriction<double>& coefficient_friction_bodyB,
-    double massB, double radiusB, MultibodyPlant<double>* plant) {
+    const CoulombFriction<double>& coefficient_friction_bodyB, double massB,
+    double radiusB, MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(radiusB > 0 && massB > 0);
 
-  AddInclinedPlaneAndGravityToPlant(
-      gravity, inclined_plane_angle, inclined_plane_dimensions,
-      coefficient_friction_inclined_plane, plant);
+  AddInclinedPlaneAndGravityToPlant(gravity, inclined_plane_angle,
+                                    inclined_plane_dimensions,
+                                    coefficient_friction_inclined_plane, plant);
 
   // Describe body B's mass, center of mass, and inertia properties.
   const SpatialInertia<double> M_BBcm =
@@ -156,13 +148,11 @@ void AddInclinedPlaneWithSphereToPlant(
 
   // Body B's visual geometry and collision geometry are a sphere.
   // The pose X_BG of block B's geometry frame G is an identity transform.
-  const RigidTransform<double> X_BG;   // Identity transform.
+  const RigidTransform<double> X_BG;  // Identity transform.
   const Vector4<double> lightBlue(0.5, 0.8, 1.0, 1.0);
-  plant->RegisterVisualGeometry(sphereB, X_BG,
-                                geometry::Sphere(radiusB),
+  plant->RegisterVisualGeometry(sphereB, X_BG, geometry::Sphere(radiusB),
                                 "SphereB_VisualGeometry", lightBlue);
-  plant->RegisterCollisionGeometry(sphereB, X_BG,
-                                   geometry::Sphere(radiusB),
+  plant->RegisterCollisionGeometry(sphereB, X_BG, geometry::Sphere(radiusB),
                                    "SphereB_CollisionGeometry",
                                    coefficient_friction_bodyB);
 

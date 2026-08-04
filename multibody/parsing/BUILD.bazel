@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
@@ -12,10 +13,16 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
-load("//tools/workspace:forward_files.bzl", "forward_files")
 load(
     "//tools/workspace/dm_control_internal:files.bzl",
     "dm_control_mujoco_files",
+)
+
+filegroup(
+    name = "doxygen_input",
+    srcs = ["parsing_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
 )
 
 filegroup(
@@ -28,8 +35,7 @@ filegroup(
         "test/**/*.png",
         "test/**/*.sdf",
         "test/**/*.urdf",
-        "test/**/*.usd",
-        "test/**/*.usda",
+        "test/**/*.vtk",
         "test/**/*.xml",
         "test/**/*.zip",
         "test/**/COLCON_IGNORE",
@@ -37,12 +43,24 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-_DM_CONTROL_MUJOCO_FILES = forward_files(
-    srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
-    dest_prefix = "",
-    strip_prefix = "@dm_control_internal//:",
-    tags = ["manual"],
-    visibility = ["//visibility:private"],
+[
+    copy_file(
+        name = "_copy_{}".format(x),
+        testonly = True,
+        src = "@dm_control_internal//:{}".format(x),
+        out = x,
+        allow_symlink = True,
+    )
+    for x in dm_control_mujoco_files()
+]
+
+filegroup(
+    name = "dm_control_mujoco_files",
+    testonly = True,
+    srcs = [
+        ":{}".format(x)
+        for x in dm_control_mujoco_files()
+    ],
 )
 
 drake_cc_package_library(
@@ -270,50 +288,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "detail_usd_parser",
-    srcs = select({
-        "//tools:with_usd": [
-            "detail_usd_geometry.cc",
-            "detail_usd_parser.cc",
-        ],
-        "//conditions:default": [
-            "detail_usd_parser_off.cc",
-        ],
-    }),
-    hdrs = select({
-        "//tools:with_usd": [
-            "detail_usd_geometry.h",
-            "detail_usd_parser.h",
-        ],
-        "//conditions:default": [
-            "detail_usd_parser.h",
-        ],
-    }),
-    copts = [
-        # TODO(jwnimmer-tri) OpenUSD has a gargantuan number of warnings.
-        # We should really try to patch it to fix most/all of them.
-        "-w",
-    ],
-    internal = True,
-    visibility = ["//visibility:private"],
-    deps = [
-        ":detail_misc",
-        ":detail_parsing_workspace",
-        "//multibody/plant",
-    ],
-    implementation_deps = [
-        ":detail_make_model_name",
-        "//common:find_runfiles",
-        "//common:unused",
-    ] + select({
-        "//tools:with_usd": [
-            "@openusd_internal//:openusd",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
-drake_cc_library(
     name = "detail_mujoco_parser",
     srcs = ["detail_mujoco_parser.cc"],
     hdrs = ["detail_mujoco_parser.h"],
@@ -364,6 +338,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "detail_parsing_workspace",
+    srcs = ["detail_parsing_workspace.cc"],
     hdrs = ["detail_parsing_workspace.h"],
     internal = True,
     visibility = ["//visibility:private"],
@@ -388,7 +363,6 @@ drake_cc_library(
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
-        ":detail_usd_parser",
     ],
 )
 
@@ -516,25 +490,26 @@ drake_cc_binary(
     name = "parser_manual_test",
     testonly = 1,
     srcs = ["test/parser_manual_test.cc"],
-    add_test_rule = 1,
     data = [":test_models"],
-    test_rule_args = [
-        "multibody/parsing/test/urdf_parser_test/joint_parsing_test.urdf",
-    ],
     deps = [
         ":parser",
         "//common:add_text_logging_gflags",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "multibody/parsing/test/urdf_parser_test/joint_parsing_test.urdf",
     ],
 )
 
 drake_cc_googletest(
     name = "parser_test",
     data = [
+        ":dm_control_mujoco_files",
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
         "@drake_models//:iiwa_description",
-    ] + _DM_CONTROL_MUJOCO_FILES,
+    ],
     deps = [
         ":parser",
         "//common:find_resource",
@@ -546,7 +521,7 @@ drake_cc_googletest(
 filegroup(
     name = "process_model_directives_test_models",
     testonly = True,
-    data = glob(["test/process_model_directives_test/**"]),
+    data = glob(["test/process_model_directives_test/**"]) + [":test_models"],
     visibility = ["//bindings/pydrake/multibody:__pkg__"],
 )
 
@@ -597,6 +572,7 @@ drake_cc_googletest(
     name = "detail_dmd_parser_test",
     data = [
         ":process_model_directives_test_models",
+        ":test_models",
     ],
     deps = [
         ":detail_dmd_parser",
@@ -639,6 +615,7 @@ drake_cc_googletest(
     name = "detail_sdf_parser_test",
     data = [
         ":test_models",
+        "//geometry:test_obj_files",
         "//multibody/benchmarks/acrobot:models",
         "@drake_models//:iiwa_description",
     ],
@@ -670,11 +647,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "detail_mujoco_parser_test",
     data = [
+        ":dm_control_mujoco_files",
         ":test_models",
         "//geometry:test_obj_files",
         "//geometry:test_stl_files",
         "@mujoco_menagerie_internal//:hello_robot_stretch",
-    ] + _DM_CONTROL_MUJOCO_FILES,
+    ],
     deps = [
         ":detail_mujoco_parser",
         "//common:find_resource",
@@ -692,8 +670,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "detail_mujoco_parser_examples_test",
     data = [
+        ":dm_control_mujoco_files",
         "@mujoco_menagerie_internal//:menagerie",
-    ] + _DM_CONTROL_MUJOCO_FILES,
+    ],
     shard_count = 4,
     deps = [
         ":detail_mujoco_parser",
@@ -850,55 +829,6 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "detail_usd_parser_test",
-    args = select({
-        "//tools:with_usd": [],
-        "//conditions:default": [
-            "--gtest_filter=-*",
-        ],
-    }),
-    data = [
-        ":test_models",
-    ],
-    deps = [
-        ":detail_usd_parser",
-        "//common:find_resource",
-        "//common/test_utilities:diagnostic_policy_test_base",
-    ],
-)
-
-drake_cc_googletest(
-    name = "detail_usd_geometry_test",
-    args = select({
-        "//tools:with_usd": [],
-        "//conditions:default": [
-            "--gtest_filter=-*",
-        ],
-    }),
-    copts = [
-        "-w",
-    ],
-    defines = select({
-        "//tools:with_usd": [
-            "WITH_USD=1",
-        ],
-        "//conditions:default": [
-            "WITH_USD=0",
-        ],
-    }),
-    deps = [
-        ":detail_usd_parser",
-        "//common:is_approx_equal_abstol",
-        "//common/test_utilities:diagnostic_policy_test_base",
-    ] + select({
-        "//tools:with_usd": [
-            "@openusd_internal//:openusd",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
 install_files(
     name = "install",
     dest = "share/drake/multibody/parsing",
@@ -909,9 +839,4 @@ install_files(
     visibility = ["//visibility:public"],
 )
 
-add_lint_tests(
-    cpplint_extra_srcs = [
-        "detail_usd_parser.cc",
-        "detail_usd_parser_off.cc",
-    ],
-)
+add_lint_tests()

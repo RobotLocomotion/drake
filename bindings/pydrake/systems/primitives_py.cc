@@ -1,8 +1,13 @@
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/systems_primitives.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/affine_system.h"
@@ -49,15 +54,15 @@ using symbolic::Variable;
 
 namespace pydrake {
 
-PYBIND11_MODULE(primitives, m) {
+PYDRAKE_MODULE(primitives, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
 
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
-  constexpr auto& doc = pydrake_doc.drake.systems;
+  constexpr auto& doc = pydrake_doc_systems_primitives.drake.systems;
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.trajectories");
 
   py::enum_<PerceptronActivationType>(
       m, "PerceptronActivationType", doc.PerceptronActivationType.doc)
@@ -70,10 +75,10 @@ PYBIND11_MODULE(primitives, m) {
 
   {
     using Class = SelectorParams;
-    py::class_<Class> cls(m, "SelectorParams", doc.SelectorParams.doc);
+    class_<Class> cls(m, "SelectorParams", doc.SelectorParams.doc);
     {
       using Nested = Class::InputPortParams;
-      py::class_<Nested> nested(
+      class_<Nested> nested(
           cls, "InputPortParams", doc.SelectorParams.InputPortParams.doc);
       nested.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&nested, doc.SelectorParams.InputPortParams);
@@ -82,7 +87,7 @@ PYBIND11_MODULE(primitives, m) {
     }
     {
       using Nested = Class::OutputSelection;
-      py::class_<Nested> nested(
+      class_<Nested> nested(
           cls, "OutputSelection", doc.SelectorParams.OutputSelection.doc);
       nested.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&nested, doc.SelectorParams.OutputSelection);
@@ -91,7 +96,7 @@ PYBIND11_MODULE(primitives, m) {
     }
     {
       using Nested = Class::OutputPortParams;
-      py::class_<Nested> nested(
+      class_<Nested> nested(
           cls, "OutputPortParams", doc.SelectorParams.OutputPortParams.doc);
       nested.def(ParamInit<Nested>());
       DefAttributesUsingSerialize(&nested, doc.SelectorParams.OutputPortParams);
@@ -333,8 +338,11 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<const BasicVector<T>&>(), py::arg("model_vector"),
             doc.Multiplexer.ctor.doc_1args_model_vector);
 
-    DefineTemplateClassWithDefault<MultilayerPerceptron<T>, LeafSystem<T>>(m,
-        "MultilayerPerceptron", GetPyParam<T>(), doc.MultilayerPerceptron.doc)
+    auto multilayer_perceptron_cls =
+        DefineTemplateClassWithDefault<MultilayerPerceptron<T>, LeafSystem<T>>(
+            m, "MultilayerPerceptron", GetPyParam<T>(),
+            doc.MultilayerPerceptron.doc);
+    multilayer_perceptron_cls  // BR
         .def(py::init<const std::vector<int>&, PerceptronActivationType>(),
             py::arg("layers"),
             py::arg("activation_type") = PerceptronActivationType::kTanh,
@@ -357,17 +365,22 @@ PYBIND11_MODULE(primitives, m) {
         .def("GetParameters", &MultilayerPerceptron<T>::GetParameters,
             py::arg("context"),
             py::keep_alive<0, 2>() /* return keeps context alive */,
-            py_rvp::reference, doc.MultilayerPerceptron.GetParameters.doc)
-        .def(
-            "GetMutableParameters",
-            [](const MultilayerPerceptron<T>* self,
-                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-              return self->GetMutableParameters(context);
-            },
-            py_rvp::reference, py::arg("context"),
-            // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(),
-            doc.MultilayerPerceptron.GetMutableParameters.doc)
+            py_rvp::reference, doc.MultilayerPerceptron.GetParameters.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable Eigen::Ref return value doesn't work with dtype=object.
+      multilayer_perceptron_cls  // BR
+          .def(
+              "GetMutableParameters",
+              [](const MultilayerPerceptron<T>* self,
+                  Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+                return self->GetMutableParameters(context);
+              },
+              py_rvp::reference, py::arg("context"),
+              // Keep alive, ownership: `return` keeps `context` alive.
+              py::keep_alive<0, 2>(),
+              doc.MultilayerPerceptron.GetMutableParameters.doc);
+    }
+    multilayer_perceptron_cls  // BR
         .def("SetParameters", &MultilayerPerceptron<T>::SetParameters,
             py::arg("context"), py::arg("params"),
             doc.MultilayerPerceptron.SetParameters.doc)
@@ -408,32 +421,38 @@ PYBIND11_MODULE(primitives, m) {
                 &MultilayerPerceptron<T>::GetBiases),
             py::arg("params"), py::arg("layer"),
             py::keep_alive<0, 2>() /* return keeps params alive */,
-            py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_vector)
-        .def("SetWeights",
-            py::overload_cast<EigenPtr<VectorX<T>>, int,
-                const Eigen::Ref<const MatrixX<T>>&>(
-                &MultilayerPerceptron<T>::SetWeights, py::const_),
-            py::arg("params"), py::arg("layer"), py::arg("W"),
-            doc.MultilayerPerceptron.SetWeights.doc_vector)
-        .def("SetBiases",
-            py::overload_cast<EigenPtr<VectorX<T>>, int,
-                const Eigen::Ref<const VectorX<T>>&>(
-                &MultilayerPerceptron<T>::SetBiases, py::const_),
-            py::arg("params"), py::arg("layer"), py::arg("b"),
-            doc.MultilayerPerceptron.SetBiases.doc_vector)
-        .def("Backpropagation",
-            WrapCallbacks(&MultilayerPerceptron<T>::Backpropagation),
-            py::arg("context"), py::arg("X"), py::arg("loss"),
-            py::arg("dloss_dparams"),
-            doc.MultilayerPerceptron.Backpropagation.doc)
-        .def("BackpropagationMeanSquaredError",
-            &MultilayerPerceptron<T>::BackpropagationMeanSquaredError,
-            py::arg("context"), py::arg("X"), py::arg("Y_desired"),
-            py::arg("dloss_dparams"),
-            doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc)
-        .def("BatchOutput", &MultilayerPerceptron<T>::BatchOutput,
-            py::arg("context"), py::arg("X"), py::arg("Y"),
-            py::arg("dYdX") = nullptr, doc.MultilayerPerceptron.BatchOutput.doc)
+            py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_vector);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      multilayer_perceptron_cls  // BR
+          .def("SetWeights",
+              py::overload_cast<EigenPtr<VectorX<T>>, int,
+                  const Eigen::Ref<const MatrixX<T>>&>(
+                  &MultilayerPerceptron<T>::SetWeights, py::const_),
+              py::arg("params"), py::arg("layer"), py::arg("W"),
+              doc.MultilayerPerceptron.SetWeights.doc_vector)
+          .def("SetBiases",
+              py::overload_cast<EigenPtr<VectorX<T>>, int,
+                  const Eigen::Ref<const VectorX<T>>&>(
+                  &MultilayerPerceptron<T>::SetBiases, py::const_),
+              py::arg("params"), py::arg("layer"), py::arg("b"),
+              doc.MultilayerPerceptron.SetBiases.doc_vector)
+          .def("Backpropagation",
+              WrapCallbacks(&MultilayerPerceptron<T>::Backpropagation),
+              py::arg("context"), py::arg("X"), py::arg("loss"),
+              py::arg("dloss_dparams"),
+              doc.MultilayerPerceptron.Backpropagation.doc)
+          .def("BackpropagationMeanSquaredError",
+              &MultilayerPerceptron<T>::BackpropagationMeanSquaredError,
+              py::arg("context"), py::arg("X"), py::arg("Y_desired"),
+              py::arg("dloss_dparams"),
+              doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc)
+          .def("BatchOutput", &MultilayerPerceptron<T>::BatchOutput,
+              py::arg("context"), py::arg("X"), py::arg("Y"),
+              py::arg("dYdX") = nullptr,
+              doc.MultilayerPerceptron.BatchOutput.doc);
+    }
+    multilayer_perceptron_cls  // BR
         .def(
             "BatchOutput",
             [](const MultilayerPerceptron<T>* self, const Context<T>& context,
@@ -478,11 +497,14 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<SparseMatrixGain<T>, LeafSystem<T>>(
         m, "SparseMatrixGain", GetPyParam<T>(), doc.SparseMatrixGain.doc)
-        .def(py::init([](const Eigen::SparseMatrix<double>& D) {
-          // Our interactions with scipy don't work yet with (0,N) matrices.
-          DRAKE_THROW_UNLESS(D.rows() > 0 || D.cols() == 0);
-          return std::make_unique<SparseMatrixGain<T>>(D);
-        }),
+        .def(
+            "__init__",
+            [](SparseMatrixGain<T>* self,
+                const Eigen::SparseMatrix<double>& D) {
+              // Our interactions with scipy don't work yet with (0,N) matrices.
+              DRAKE_THROW_UNLESS(D.rows() > 0 || D.cols() == 0);
+              new (self) SparseMatrixGain<T>(D);
+            },
             py::arg("D"), doc.SparseMatrixGain.ctor.doc)
         .def("D", &SparseMatrixGain<T>::D, doc.SparseMatrixGain.D.doc)
         .def("set_D", &SparseMatrixGain<T>::set_D, py::arg("D"),
@@ -521,11 +543,14 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<SharedPointerSystem<T>, LeafSystem<T>>(
         m, "SharedPointerSystem", GetPyParam<T>(), doc.SharedPointerSystem.doc)
-        .def(py::init([](py::object value_to_hold) {
-          auto wrapped = std::make_unique<py::object>(std::move(value_to_hold));
-          return std::make_unique<SharedPointerSystem<T>>(std::move(wrapped));
-        }),
-            py::arg("value_to_hold"), doc.SharedPointerSystem.ctor.doc)
+        .def(
+            "__init__",
+            [](SharedPointerSystem<T>* self, py::object value_to_hold) {
+              auto wrapped =
+                  std::make_unique<py::object>(std::move(value_to_hold));
+              new (self) SharedPointerSystem<T>(std::move(wrapped));
+            },
+            py::arg("value_to_hold").none(), doc.SharedPointerSystem.ctor.doc)
         .def_static(
             "AddToBuilder",
             [](DiagramBuilder<T>* builder, py::object value_to_hold) {
@@ -534,7 +559,7 @@ PYBIND11_MODULE(primitives, m) {
               return SharedPointerSystem<T>::AddToBuilder(
                   builder, std::move(wrapped));
             },
-            py::arg("builder"), py::arg("value_to_hold"),
+            py::arg("builder"), py::arg("value_to_hold").none(),
             doc.SharedPointerSystem.AddToBuilder.doc)
         .def(
             "get",
@@ -577,7 +602,7 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<VectorLog<T>>(
         m, "VectorLog", GetPyParam<T>(), doc.VectorLog.doc)
-        .def_property_readonly_static("kDefaultCapacity",
+        .def_prop_ro_static("kDefaultCapacity",
             [](py::object) { return VectorLog<T>::kDefaultCapacity; })
         .def(py::init<int>(), py::arg("input_size"), doc.VectorLog.ctor.doc)
         .def("num_samples", &VectorLog<T>::num_samples,
@@ -823,7 +848,7 @@ PYBIND11_MODULE(primitives, m) {
   };
   type_visit(bind_non_symbolic_scalar_types, NonSymbolicScalarPack{});
 
-  py::class_<BarycentricMeshSystem<double>, LeafSystem<double>>(
+  class_<BarycentricMeshSystem<double>, LeafSystem<double>>(
       m, "BarycentricMeshSystem", doc.BarycentricMeshSystem.doc)
       .def(py::init<math::BarycentricMesh<double>,
                const Eigen::Ref<const MatrixX<double>>&>(),
@@ -835,7 +860,7 @@ PYBIND11_MODULE(primitives, m) {
           doc.BarycentricMeshSystem.get_output_values.doc);
 
   // TODO(jwnimmer-tri) Add more scalar types bindings for this class.
-  py::class_<RandomSource<double>, LeafSystem<double>>(
+  class_<RandomSource<double>, LeafSystem<double>>(
       m, "RandomSource", doc.RandomSource.doc)
       .def(py::init<RandomDistribution, int, double>(), py::arg("distribution"),
           py::arg("num_outputs"), py::arg("sampling_interval_sec"),
@@ -880,18 +905,6 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsDetectable", &IsDetectable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsDetectable.doc);
-
-  m.def("DiscreteTimeApproximation",
-      overload_cast_explicit<std::unique_ptr<LinearSystem<double>>,
-          const LinearSystem<double>&, double>(&DiscreteTimeApproximation),
-      py::arg("system"), py::arg("time_period"),
-      doc.DiscreteTimeApproximation.doc_linearsystem);
-
-  m.def("DiscreteTimeApproximation",
-      overload_cast_explicit<std::unique_ptr<AffineSystem<double>>,
-          const AffineSystem<double>&, double>(&DiscreteTimeApproximation),
-      py::arg("system"), py::arg("time_period"),
-      doc.DiscreteTimeApproximation.doc_affinesystem);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

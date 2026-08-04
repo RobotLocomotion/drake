@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <variant>
 
@@ -20,6 +21,25 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density);
 CalcSpatialInertiaResult CalcSpatialInertiaImpl(const geometry::Shape& shape,
                                                 double density);
+
+/* Attempts to compute a SpatialInertia related to a given `mesh`. It assumes
+the mesh is uniformly filled with a material with the given `density`.
+
+The correctness of the inertia depends on the mesh quality (i.e., a closed
+manifold). A malformed mesh may still produce a spatial inertia that _appears_
+physically plausible. That physically-plausible inertia is returned, regardless
+of how incorrect it may actually be.
+
+If the mesh is sufficiently malformed, such that its spatial inertia isn't even
+physically plausible, the mesh's convex hull will be used instead. Furthermore,
+if the `warn_for_convex` function is defined, a message will be passed to that
+function.
+
+In the event that the mesh is so malformed that it doesn't have a valid convex
+hull, an error message is returned instead of a spatial inertia. */
+CalcSpatialInertiaResult CalcSpatialInertiaWithFallback(
+    const geometry::Mesh& mesh, double density,
+    std::function<void(const std::string&)> warn_for_convex = nullptr);
 
 }  // namespace internal
 

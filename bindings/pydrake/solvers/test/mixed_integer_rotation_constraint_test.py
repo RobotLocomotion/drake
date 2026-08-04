@@ -1,7 +1,5 @@
 import unittest
 
-import numpy as np
-
 from pydrake.solvers import (
     IntervalBinning,
     MathematicalProgram,
@@ -21,9 +19,9 @@ class TestMixedIntegerRotationConstraint(unittest.TestCase):
         so3_generator = Generator(
             approach=approach,
             num_intervals_per_half_axis=n_intervals,
-            interval_binning=binning
+            interval_binning=binning,
         )
-        assert so3_generator.phi().shape == (n_intervals*2 + 1,)
+        assert so3_generator.phi().shape == (n_intervals * 2 + 1,)
         assert so3_generator.phi_nonnegative().shape == (n_intervals + 1,)
         assert so3_generator.num_intervals_per_half_axis() == n_intervals
         assert so3_generator.interval_binning() == binning

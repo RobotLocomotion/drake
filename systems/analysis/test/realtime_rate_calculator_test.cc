@@ -2,7 +2,9 @@
 
 #include <ios>
 #include <limits>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -39,7 +41,7 @@ GTEST_TEST(RealtimeRateCalculatorTest, Calculation) {
   ManualTimer& timer = *timer_ptr;
   calculator.InjectMockTimer(std::move(timer_ptr));
 
-  struct Sample{
+  struct Sample {
     // Called t_s, below.
     double sim_time{};
     // Called t_w, below.

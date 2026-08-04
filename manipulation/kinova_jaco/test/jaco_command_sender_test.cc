@@ -1,5 +1,8 @@
 #include "drake/manipulation/kinova_jaco/jaco_command_sender.h"
 
+#include <memory>
+#include <vector>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -36,15 +39,14 @@ class JacoCommandSenderTestBase : public testing::Test {
 class JacoCommandSenderTest : public JacoCommandSenderTestBase {
  public:
   JacoCommandSenderTest()
-      : JacoCommandSenderTestBase(
-            kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers) {}
+      : JacoCommandSenderTestBase(kJacoDefaultArmNumJoints,
+                                  kJacoDefaultArmNumFingers) {}
 };
 
 class JacoCommandSenderNoFingersTest : public JacoCommandSenderTestBase {
  public:
   JacoCommandSenderNoFingersTest()
-      : JacoCommandSenderTestBase(
-            kJacoDefaultArmNumJoints, 0) {}
+      : JacoCommandSenderTestBase(kJacoDefaultArmNumJoints, 0) {}
 };
 
 const std::vector<double> ToStdVec(const Eigen::VectorXd& in) {
@@ -67,7 +69,6 @@ TEST_F(JacoCommandSenderTest, AcceptanceTestWithFingers) {
             ToStdVec(q0.tail(N_F) * kFingerUrdfToSdk));
   EXPECT_EQ(output().finger_velocity,
             ToStdVec(v0.tail(N_F) * kFingerUrdfToSdk));
-
 
   dut_.get_time_input_port().FixValue(&context_, time_);
   EXPECT_EQ(output().utime, time_[0] * 1e6);

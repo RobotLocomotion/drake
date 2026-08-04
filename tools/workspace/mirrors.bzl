@@ -24,19 +24,19 @@ DEFAULT_MIRRORS = {
         "https://s3.amazonaws.com/drake-mirror/crates.io/{archive}",
     ],
     "doxygen": [
-        "https://drake-packages.csail.mit.edu/doxygen/{archive}",
-        "https://s3.amazonaws.com/drake-packages/doxygen/{archive}",
+        "https://drake-mirror.csail.mit.edu/other/doxygen/{archive}",
+        "https://s3.amazonaws.com/drake-mirror/other/doxygen/{archive}",
     ],
     "github": [
         # For github.com, we choose a pattern based on the kind of commit.
-        "https://github.com/{repository}/archive/refs/tags/{tag_name}.tar.gz",  # noqa
+        "https://github.com/{repository}/archive/refs/tags/{tag_name}.tar.gz",
         "https://github.com/{repository}/archive/{commit_sha}.tar.gz",
         # For Drake's mirrors, we use a single pattern no matter the commit.
         "https://drake-mirror.csail.mit.edu/github/{repository}/{commit}.tar.gz",  # noqa
         "https://s3.amazonaws.com/drake-mirror/github/{repository}/{commit}.tar.gz",  # noqa
     ],
     "github_release_attachments": [
-        "https://github.com/{repository}/releases/download/{commit}/{filename}",  # noqa
+        "https://github.com/{repository}/releases/download/{commit}/{filename}",
         "https://drake-mirror.csail.mit.edu/github/{repository}/{commit}/{filename}",  # noqa
         "https://s3.amazonaws.com/drake-mirror/github/{repository}/{commit}/{filename}",  # noqa
     ],

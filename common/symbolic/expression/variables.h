@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <functional>
 #include <initializer_list>
-#include <ostream>
 #include <set>
 #include <string>
 
@@ -135,8 +134,6 @@ class Variables {
   friend bool operator==(const Variables& vars1, const Variables& vars2);
 
   friend bool operator<(const Variables& vars1, const Variables& vars2);
-
-  friend std::ostream& operator<<(std::ostream&, const Variables& vars);
 
   friend Variables intersect(const Variables& vars1, const Variables& vars2);
 

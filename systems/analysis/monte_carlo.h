@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/parallelism.h"
 #include "drake/systems/analysis/simulator.h"
 
@@ -29,12 +28,6 @@ namespace analysis {
  */
 using RandomSimulatorFactory = std::function<std::shared_ptr<Simulator<double>>(
     RandomGenerator* generator)>;
-
-/** (Deprecated.) */
-using SimulatorFactory DRAKE_DEPRECATED("2025-05-01",
-                                        "Use RandomSimulatorFactory instead.") =
-    std::function<
-        std::unique_ptr<Simulator<double>>(RandomGenerator* generator)>;
 
 /***
  * Defines an arbitrary scalar function of the Context.  This is used in the

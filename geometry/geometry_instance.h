@@ -75,7 +75,7 @@ namespace geometry {
  will return this *canonicalized* name.
 
  <!-- Note to developers: The sdf requirements for naming are captured in a
- unit test in `scene_graph_parser_detail_test.cc. See test
+ unit test in `scene_graph_parser_detail_test.cc`. See test
  VisualGeometryNameRequirements and keep those tests and this list in sync. -->
  */
 class GeometryInstance {

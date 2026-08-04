@@ -8,6 +8,8 @@ using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
+PointToPointDistanceConstraint::~PointToPointDistanceConstraint() = default;
+
 PointToPointDistanceConstraint::PointToPointDistanceConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frame1,
     const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,

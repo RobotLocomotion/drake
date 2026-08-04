@@ -22,8 +22,11 @@ namespace multibody {
 // multibody elements when support is added.
 // TODO(joemasterjohn) Consider adding a test param or user functor to specify
 // the model/remodeling to be done.
-class MultibodyPlantRemodeling : public ::testing::Test {
+class MultibodyPlantRemodelingBase {
  public:
+  explicit MultibodyPlantRemodelingBase(double time_step)
+      : time_step_(time_step) {}
+
   // This fixture sets up a plant with a serial chain of 3 bodies connected by
   // joints of the type specified by the type parameter `JointType`. An actuator
   // is added to each joint.
@@ -40,6 +43,8 @@ class MultibodyPlantRemodeling : public ::testing::Test {
   void FinalizeAndBuild();
 
  protected:
+  const double time_step_;
+
   // These members are only valid after SetUp().
   // `builder_` is invalid after calling FinalizeAndBuild().
   std::unique_ptr<systems::DiagramBuilder<double>> builder_;
@@ -50,8 +55,32 @@ class MultibodyPlantRemodeling : public ::testing::Test {
   std::unique_ptr<systems::Diagram<double>> diagram_;
   std::unique_ptr<systems::Simulator<double>> simulator_;
   systems::Context<double>* plant_context_{nullptr};
-
-  const double kTimeStep{0.1};  // Discrete time step of plant_
 };
+
+// This test fixture hard codes the plant time step to an arbitrary discrete
+// time step.
+class MultibodyPlantRemodelingDiscrete : public MultibodyPlantRemodelingBase,
+                                         public ::testing::Test {
+ public:
+  MultibodyPlantRemodelingDiscrete()
+      : MultibodyPlantRemodelingBase(/* time_step = */ 0.1) {}
+};
+
+// This test fixture hard codes the plant time step to zero (i.e., continuous).
+class MultibodyPlantRemodelingContinuous : public MultibodyPlantRemodelingBase,
+                                           public ::testing::Test {
+ public:
+  MultibodyPlantRemodelingContinuous()
+      : MultibodyPlantRemodelingBase(/* time_step = */ 0.0) {}
+};
+
+// This test fixture accepts a time step value by test parameter.
+class MultibodyPlantRemodelingParam : public MultibodyPlantRemodelingBase,
+                                      public ::testing::TestWithParam<double> {
+ public:
+  MultibodyPlantRemodelingParam()
+      : MultibodyPlantRemodelingBase(/* time_step = */ GetParam()) {}
+};
+
 }  // namespace multibody
 }  // namespace drake

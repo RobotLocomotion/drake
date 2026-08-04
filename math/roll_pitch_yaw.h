@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -9,7 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -560,11 +561,11 @@ class RollPitchYaw {
   static constexpr double kGimbalLockToleranceCosPitchAngle = 0.008;
 };
 
-/// Stream insertion operator to write an instance of RollPitchYaw into a
-/// `std::ostream`. Especially useful for debugging.
+/// Represents a RollPitchYaw object as a string. Especially useful for
+/// debugging.
 /// @relates RollPitchYaw.
 template <typename T>
-std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy);
+std::string to_string(const RollPitchYaw<T>& rpy);
 
 /// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
 /// @relates RollPitchYaw
@@ -573,12 +574,8 @@ using RollPitchYawd = RollPitchYaw<double>;
 }  // namespace math
 }  // namespace drake
 
-// Format RollPitchYaw using its operator<<.
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename T>
-struct formatter<drake::math::RollPitchYaw<T>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename T, drake::math, RollPitchYaw<T>, x,
+                   drake::math::to_string(x))
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::math::RollPitchYaw);

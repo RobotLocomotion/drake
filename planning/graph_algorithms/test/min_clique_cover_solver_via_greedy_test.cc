@@ -1,6 +1,9 @@
 #include "drake/planning/graph_algorithms/min_clique_cover_solver_via_greedy.h"
 
 #include <exception>
+#include <memory>
+#include <set>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -49,22 +52,6 @@ void TestMinCliqueCover(
   }
   EXPECT_TRUE(solution_match_found);
 }
-
-// Deprecated 2025-05-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(MinCliqueCoverSolverViaGreedyTest,
-           DeprecatedTestConstructorSettersAndGetters) {
-  // Test the default constructor.
-  MaxCliqueSolverViaGreedy max_clique_solver{};
-  MinCliqueCoverSolverViaGreedy solver{max_clique_solver, 3};
-
-  EXPECT_EQ(solver.get_min_clique_size(), 3);
-
-  solver.set_min_clique_size(5);
-  EXPECT_EQ(solver.get_min_clique_size(), 5);
-}
-#pragma GCC diagnostic pop
 
 GTEST_TEST(MinCliqueCoverSolverViaGreedyTest,
            TestConstructorSettersAndGetters) {

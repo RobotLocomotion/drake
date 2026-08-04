@@ -79,13 +79,8 @@ drake_cc_binary(
     srcs = [
         "deformable_torus.cc",
     ],
-    add_test_rule = 1,
     data = [
         ":models",
-    ],
-    test_rule_args = [
-        "-simulation_time=0.1",
-        "-realtime_rate=0.0",
     ],
     deps = [
         ":deformable_common",
@@ -100,6 +95,11 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_time=0.1",
+        "-realtime_rate=0.0",
+    ],
 )
 
 drake_cc_binary(
@@ -107,14 +107,8 @@ drake_cc_binary(
     srcs = [
         "bubble_gripper.cc",
     ],
-    add_test_rule = 1,
     data = [
         ":models",
-    ],
-    test_rule_args = [
-        "-simulation_time=0.1",
-        "-realtime_rate=0.0",
-        "-render_bubble=false",
     ],
     deps = [
         ":parallel_gripper_controller",
@@ -126,7 +120,14 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/sensors:camera_config_functions",
+        "//visualization:visualization_config_functions",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_time=0.1",
+        "-realtime_rate=0.0",
+        "-render_bubble=false",
     ],
 )
 
@@ -135,13 +136,8 @@ drake_cc_binary(
     srcs = [
         "deformable_disabling.cc",
     ],
-    add_test_rule = 1,
     data = [
         ":models",
-    ],
-    test_rule_args = [
-        "-simulation_time=0.1",
-        "-realtime_rate=0.0",
     ],
     deps = [
         ":deformable_common",
@@ -152,6 +148,37 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_time=0.1",
+        "-realtime_rate=0.0",
+    ],
+)
+
+drake_cc_binary(
+    name = "deformable_subdivision",
+    srcs = [
+        "deformable_subdivision.cc",
+    ],
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":deformable_common",
+        ":point_source_force_field",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_time=0.1",
+        "-realtime_rate=0.0",
     ],
 )
 

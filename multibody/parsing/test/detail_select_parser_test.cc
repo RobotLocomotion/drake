@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_select_parser.h"
 
+#include <string>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

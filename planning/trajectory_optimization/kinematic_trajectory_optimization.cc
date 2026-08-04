@@ -185,11 +185,27 @@ class DerivativeConstraint : public Constraint {
  public:
   DerivativeConstraint(const SparseMatrix<double>& A, int derivative_order,
                        double lb, double ub)
-      : Constraint(A.rows(), A.cols() + 1, VectorXd::Constant(A.rows(), lb),
+      : Constraint(A.rows(), 1 + A.cols(), VectorXd::Constant(A.rows(), lb),
                    VectorXd::Constant(A.rows(), ub)),
         A_{A},
         derivative_order_{derivative_order} {
     DRAKE_DEMAND(derivative_order >= 1);
+    // Since A is often sparse, the constraint gradient should be sparse as
+    // well.
+    std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+    // Constraint always depends on duration.
+    for (int i = 0; i < this->num_outputs(); ++i) {
+      gradient_sparsity_pattern.emplace_back(i, 0);
+    }
+    // Set the sparsity w.r.t control_points.
+    for (int k = 0; k < A_.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A_, k); it; ++it) {
+        if (it.value() != 0) {
+          gradient_sparsity_pattern.emplace_back(it.row(), 1 + it.col());
+        }
+      }
+    }
+    this->SetGradientSparsityPattern(gradient_sparsity_pattern);
   }
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -218,9 +234,7 @@ class DerivativeConstraint : public Constraint {
 
 // Constraint of the form tau_lb <= InverseDynamics(q, v, a) <= tau_ub. The
 // constraint should be bound to the duration followed by all of the control
-// points in the bspline. TODO(russt): The constraint actually only depends on
-// a subset of the control points, depending on s, so we could consider
-// optimizing this aspect.
+// points in the bspline.
 class EffortConstraint : public Constraint {
  public:
   // Note: We use shared_ptr for the plant_context in addition to the plant in
@@ -240,6 +254,29 @@ class EffortConstraint : public Constraint {
     M_q_ = bspline.EvaluateLinearInControlPoints(s, 0).cast<AutoDiffXd>();
     M_qdot_ = bspline.EvaluateLinearInControlPoints(s, 1).cast<AutoDiffXd>();
     M_qddot_ = bspline.EvaluateLinearInControlPoints(s, 2).cast<AutoDiffXd>();
+    // Set sparsity pattern.
+    std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+    // The constraint should depend on the duration.
+    for (int i = 0; i < this->num_outputs(); ++i) {
+      gradient_sparsity_pattern.emplace_back(i, 0);
+    }
+    // q = control_points * M_q_
+    // v = control_points * M_qdot_ / duration
+    // vdot = control_points * M_qddot_ / duration^2
+    // So the constraint gradient is 0 for control_points.col(i) if M_q_(i),
+    // M_qdot_(i) and M_qddot_(i) are all zero.
+    const int num_positions = plant->num_positions();
+    for (int i = 0; i < num_control_points_; ++i) {
+      if (M_q_(i) != 0 || M_qdot_(i) != 0 || M_qddot_(i) != 0) {
+        for (int row = 0; row < this->num_outputs(); ++row) {
+          for (int col = 1 + i * num_positions;
+               col < 1 + (i + 1) * num_positions; ++col) {
+            gradient_sparsity_pattern.emplace_back(row, col);
+          }
+        }
+      }
+    }
+    this->SetGradientSparsityPattern(gradient_sparsity_pattern);
   }
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

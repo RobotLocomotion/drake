@@ -8,6 +8,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
+#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -66,10 +67,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    declares System resources from the `owning_plant` in the call to
    `DeclareSystemResources()` through the call to `MultibodyPlant::Finalize()`.
    @pre owning_plant != nullptr. */
-  explicit PhysicalModel(MultibodyPlant<T>* owning_plant)
-      : owning_plant_(*owning_plant), mutable_owning_plant_(owning_plant) {
-    DRAKE_DEMAND(owning_plant != nullptr);
-  }
+  explicit PhysicalModel(MultibodyPlant<T>* owning_plant);
 
   ~PhysicalModel() override;
 
@@ -147,6 +145,10 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   /* Returns the mutable back pointer to the MultibodyPlant owning `this`
    PhysicalModel pre-finalize and nullptr post-finalize. */
   MultibodyPlant<T>* mutable_plant() { return mutable_owning_plant_; }
+
+  /* Returns the MultibodyTree associated with the MultibodyPlant that owns this
+   physical model. */
+  const internal::MultibodyTree<T>& internal_tree() const;
 
   /* Derived classes must override this function to return their specific model
    variant. */

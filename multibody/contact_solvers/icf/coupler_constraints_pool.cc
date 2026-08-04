@@ -1,0 +1,277 @@
+#include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
+
+#include <utility>
+
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
+
+namespace drake {
+namespace multibody {
+namespace contact_solvers {
+namespace icf {
+namespace internal {
+
+using contact_solvers::internal::BlockSparseSymmetricMatrix;
+
+namespace {
+// Returns true if the index is present (not removed by reduction).
+bool have(int index) {
+  return index >= 0;
+}
+}  // namespace
+
+template <typename T>
+CouplerConstraintsPool<T>::CouplerConstraintsPool(
+    const IcfModel<T>* parent_model)
+    : model_(parent_model) {
+  DRAKE_DEMAND(parent_model != nullptr);
+}
+
+template <typename T>
+CouplerConstraintsPool<T>::~CouplerConstraintsPool() = default;
+
+template <typename T>
+void CouplerConstraintsPool<T>::Resize(const int num_constraints) {
+  constraint_to_clique_.resize(num_constraints);
+  dofs_.resize(num_constraints);
+  gear_ratio_.resize(num_constraints);
+  g0_.resize(num_constraints);
+  R_fragment_.resize(num_constraints);
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
+                                    const T& qi, const T& qj, T gear_ratio,
+                                    T offset) {
+  DRAKE_ASSERT(0 <= index && index < num_constraints());
+  DRAKE_ASSERT(0 <= i && i < model().clique_size(clique));
+  DRAKE_ASSERT(0 <= j && j < model().clique_size(clique));
+
+  constraint_to_clique_[index] = clique;
+  dofs_[index] = std::make_pair(i, j);
+  gear_ratio_[index] = gear_ratio;
+
+  // Near-rigid regularization: this constraint acts as a very stiff
+  // critically-damped spring with time scale β⋅δt [Castro et al., 2022].
+  // For now, we will just compute the part that does not depend on the time
+  // step or the effective time step. That contribution will come later in
+  // CalcData().
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  constexpr double kEps = kBeta * kBeta / (4 * M_PI * M_PI);
+
+  const T g0 = qi - gear_ratio * qj - offset;
+
+  // Eventually we will use
+  //  v̂ = −g₀ / (δt  + τd),
+  // For now, we will just store the part that does not depend on the time
+  // step or the effective time step. That contribution will come later in
+  // CalcData().
+  g0_[index] = g0;
+
+  const auto w_clique = model().clique_diagonal_mass_inverse(clique);
+  // Approximation of W = Jᵀ⋅M⁻¹⋅J ≈ J⋅diag(M)⁻¹⋅Jᵀ, with
+  //  J = [0 ... 1 ... -ρ ... 0]
+  //             ↑      ↑
+  //             i      j
+  const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
+
+  R_fragment_[index] =
+      kEps * w;  // Near-rigid regularization [Castro et al., 2022].
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::CalcData(
+    const VectorX<T>& v, CouplerConstraintsDataPool<T>* coupler_data) const {
+  DRAKE_ASSERT(coupler_data != nullptr);
+
+  const T& dt = model().time_step();
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
+  T& cost = coupler_data->mutable_cost();
+  cost = 0;
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = constraint_to_clique_[k];
+    auto vk = model().clique_segment(c, v);
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+    const T v_hat = -g0_[k] / (dt + taud);
+    // Compute the full regularization:
+    //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
+    // R_fragment_[k] only stores the non-time-step-dependent part:
+    //  R_fragment_[k] = β²·w / (4π²)
+    const T R = R_fragment_[k] * R_time_step_factor;
+
+    // If a dof is locked, its velocity is prescribed to be exactly 0.
+    const T vi = have(i) ? vk(i) : T(0.0);
+    const T vj = have(j) ? vk(j) : T(0.0);
+    const T vc = vi - rho * vj;  // Constraint velocity.
+
+    const T gamma = -(vc - v_hat) / R;
+    coupler_data->mutable_gamma(k) = gamma;
+    cost += 0.5 * (v_hat - vc) * gamma;
+  }
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
+                                                   VectorX<T>* gradient) const {
+  DRAKE_ASSERT(gradient != nullptr);
+
+  const CouplerConstraintsDataPool<T>& coupler_data =
+      data.coupler_constraints_data();
+
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = constraint_to_clique_[k];
+    auto gradient_c = model().mutable_clique_segment(c, gradient);
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+
+    //  J = [0 ... 1 ... -ρ ... 0]
+    //             ↑      ↑
+    //             i      j
+    // Thus: ∇ℓ = −Jᵀ⋅γ = [0 ... -γₖ ... ρ⋅γₖ ... 0]ᵀ.
+    //                            ↑      ↑
+    //                            i      j
+    const T& gamma = coupler_data.gamma(k);
+    if (have(i)) {
+      gradient_c(i) -= gamma;
+    }
+    if (have(j)) {
+      gradient_c(j) += rho * gamma;
+    }
+  }
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>& data,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
+  const T& dt = model().time_step();
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = constraint_to_clique_[k];
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+    // Compute the full regularization:
+    //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
+    // R_fragment_[k] only stores the non-time-step-dependent part:
+    //  R_fragment_[k] = β²·w / (4π²)
+    const T R = R_fragment_[k] * R_time_step_factor;
+
+    EigenPool<MatrixX<T>>& H_cc_pool = data.scratch().H_cc_pool;
+    H_cc_pool.Resize(1, model().clique_size(c), model().clique_size(c));
+    typename EigenPool<MatrixX<T>>::MatrixView Hc = H_cc_pool[0];
+    Hc.setZero();
+
+    // On-diagonal entries, if the relevant dof exists.
+    if (have(i)) {
+      Hc(i, i) += 1.0 / R;
+    }
+    if (have(j)) {
+      Hc(j, j) += rho * rho / R;
+    }
+    // Off-diagonal entries, if both dofs exist.
+    if (have(i) && have(j)) {
+      Hc(i, j) -= rho / R;
+      Hc(j, i) -= rho / R;
+    }
+
+    hessian->AddToBlock(c, c, Hc);
+  }
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::CalcCostAlongLine(
+    const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
+    T* dcost, T* d2cost) const {
+  DRAKE_ASSERT(dcost != nullptr);
+  DRAKE_ASSERT(d2cost != nullptr);
+  *dcost = 0.0;
+  *d2cost = 0.0;
+  const T& dt = model().time_step();
+  const T dt_eff = model().effective_time_step();
+  constexpr double kBeta = IcfModel<T>::kBeta;
+  const T taud = kBeta * dt_eff / M_PI;
+  // Pre-compute a portion of the regularization formula; see below.
+  const T R_time_step_factor = (dt_eff * dt_eff) / (dt * (dt + taud));
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = constraint_to_clique_[k];
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const T& rho = gear_ratio_[k];
+    // Compute the full regularization:
+    //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd))
+    // R_fragment_[k] only stores the non-time-step-dependent part:
+    //  R_fragment_[k] = β²·w / (4π²)
+    const T R = R_fragment_[k] * R_time_step_factor;
+    const T& gamma = coupler_data.gamma(k);
+    auto w_c = model().clique_segment(c, w);
+
+    const T wi = have(i) ? w_c(i) : T(0.0);
+    const T wj = have(j) ? w_c(j) : T(0.0);
+    const T vw = wi - rho * wj;  // "Constraint velocity" evaluated on w.
+
+    (*dcost) -= gamma * vw;
+    (*d2cost) += vw * vw / R;
+  }
+}
+
+template <typename T>
+void CouplerConstraintsPool<T>::ReduceInto(
+    const ReducedMapping& mapping,
+    CouplerConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(num_constraints());
+  // Remove old data.
+  reduced_pool->Resize(0);
+
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = constraint_to_clique_[k];
+    if (!mapping.clique_subsequence.participates(c)) {
+      // Entire clique is locked; remove the constraint.
+      continue;
+    }
+    const auto& [i, j] = dofs_[k];
+    const auto& dof_subsequence = mapping.clique_dof_subsequences[c];
+    const bool have_i = dof_subsequence.participates(i);
+    const bool have_j = dof_subsequence.participates(j);
+    if (!have_i && !have_j) {
+      // Both dofs are locked; remove the constraint.
+      continue;
+    }
+
+    const int r_c = mapping.clique_subsequence.permuted_index(c);
+    // Communicate partial constraint model via negative indices. See `have()`
+    // above.
+    const int r_i = have_i ? dof_subsequence.permuted_index(i) : -1;
+    const int r_j = have_j ? dof_subsequence.permuted_index(j) : -1;
+
+    // Fill in the reduced constraint.
+    reduced_pool->constraint_to_clique_.push_back(r_c);
+    reduced_pool->dofs_.emplace_back(r_i, r_j);
+    reduced_pool->gear_ratio_.push_back(gear_ratio_[k]);
+    reduced_pool->g0_.push_back(g0_[k]);
+    reduced_pool->R_fragment_.push_back(R_fragment_[k]);
+  }
+}
+
+}  // namespace internal
+}  // namespace icf
+}  // namespace contact_solvers
+}  // namespace multibody
+}  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::
+        CouplerConstraintsPool);

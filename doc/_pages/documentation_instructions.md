@@ -16,13 +16,13 @@ The website infrastructure uses a combination of
 # Prerequisites
 
 Documentation generation and preview as described in this document are
-supported on Ubuntu **22.04** only.
+supported on Ubuntu 24.04 (Noble).
 
 Before getting started, install Drake's prerequisites with the additional
-``--with-doc-only`` command line option, i.e.:
+``--developer`` command line option, i.e.:
 
 ```sh
-$ setup/install_prereqs --with-doc-only
+$ setup/install_prereqs --developer
 ```
 
 # Previewing changes
@@ -39,12 +39,14 @@ $ bazel run //doc:build -- --serve
 # Speed up the preview by only processing certain tool(s):
 $ bazel run //doc:pages             -- --serve  # Only the main site.
 $ bazel run //doc/doxygen_cxx:build -- --serve  # Only the C++ API reference.
-$ bazel run //doc/pydrake:build     -- --serve  # Only the Python API reference.
+$ bazel run //bindings/generated_docstrings:regenerate && \
+   bazel run //doc/pydrake:build    -- --serve  # Only the Python API reference.
 $ bazel run //doc/styleguide:build  -- --serve  # Only the Style Guide.
 
 # Further speed up preview generating only some API modules, e.g., math:
 $ bazel run //doc/doxygen_cxx:build -- --serve drake.math            # C++ math API.
-$ bazel run //doc/pydrake:build     -- --serve pydrake.math          # Python math API.
+$ bazel run //bindings/generated_docstrings:regenerate && \
+   bazel run //doc/pydrake:build    -- --serve pydrake.math          # Python math API.
 $ bazel run //doc:build             -- --serve {drake,pydrake}.math  # Both at once.
 
 # Further speed up preview by omitting expensive `dot` graphs (C++ API only):
@@ -59,10 +61,9 @@ the preview command.
 
 # Testing locally
 
-The website is not part of Drake's default local build nor tests, because it
-requires heavy prerequisites to be installed (see ``--with-doc-only`` above).
-Therefore, a simple ``bazel test //...`` will not provide any feedback about
-local documentation edits.
+The website is not part of Drake's default local build nor tests, because it is
+too slow. Therefore, a simple ``bazel test //...`` will not provide any feedback
+about local documentation edits.
 
 To check locally that documentation changes pass all build and test rules, run:
 
@@ -81,7 +82,7 @@ If you would like to check Jenkins results on a pull request, you need to
 by posting a comment
 
 ```
-@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-documentation please
+@drake-jenkins-bot linux-noble-unprovisioned-gcc-bazel-experimental-documentation please
 ```
 
 # Advanced Building

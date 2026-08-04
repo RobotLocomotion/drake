@@ -74,9 +74,8 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
   /* VTK boilerplate to support printing the source.  */
   void PrintSelf(std::ostream& os, vtkIndent indent) override {
     this->Superclass::PrintSelf(os, indent);
-    os << indent << fmt::format("Size: {}\n", fmt_eigen(size_.transpose()));
-    os << indent
-       << fmt::format("UV Scale: {}\n", fmt_eigen(uv_scale_.transpose()));
+    os << indent << fmt::format("Size: {}\n", fmt_eigen(size_));
+    os << indent << fmt::format("UV Scale: {}\n", fmt_eigen(uv_scale_));
   }
 
   /* Set the size of the box along each of its principal axes.
@@ -115,15 +114,15 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
 
     const int num_polys = 6;
     const int num_points = 24;
-    newPoints->Allocate(num_points);
+    newPoints->Reserve(num_points);
     newNormals->SetNumberOfComponents(3);
-    newNormals->Allocate(num_points);
+    newNormals->ReserveValues(num_points);
     newNormals->SetName("Normals");
     newTCoords->SetNumberOfComponents(2);
-    newTCoords->Allocate(num_points);
+    newTCoords->ReserveValues(num_points);
     newTCoords->SetName("TCoords");
     // This estimate is exact because every polygon is a quad.
-    newPolys->Allocate(newPolys->EstimateSize(num_polys, 4));
+    newPolys->AllocateEstimate(num_polys, 4);
 
     /* Each face is defined w.r.t. a particular axis (e.g., +x, -x, +y, ...,
      etc.,) Looking *down* the vector of that axis there is a Frame on which
@@ -277,15 +276,15 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
 
     const int num_points = mesh_.positions.rows();
     const int num_tris = mesh_.indices.rows();
-    newPoints->Allocate(num_points);
+    newPoints->Reserve(num_points);
     newNormals->SetNumberOfComponents(3);
-    newNormals->Allocate(num_points);
+    newNormals->ReserveValues(num_points);
     newNormals->SetName("Normals");
     newTCoords->SetNumberOfComponents(2);
-    newTCoords->Allocate(num_points);
+    newTCoords->ReserveValues(num_points);
     newTCoords->SetName("TCoords");
     // This estimate is exact because every polygon is a triangle.
-    newPolys->Allocate(newPolys->EstimateSize(num_tris, 3));
+    newPolys->AllocateEstimate(num_tris, 3);
 
     for (int p = 0; p < num_points; ++p) {
       newPoints->InsertNextPoint(mesh_.positions(p, 0), mesh_.positions(p, 1),
@@ -323,7 +322,7 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
 
 }  // namespace
 
-vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule) {
+vtkSmartPointer<vtkTransformFilter> CreateVtkCapsule(const Capsule& capsule) {
   // Note: VTK uses cylinder sources as capsules by turning on the caps and
   // making them spherical.
   vtkNew<vtkCylinderSource> vtk_capsule;
@@ -341,10 +340,11 @@ vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
   const Vector2d& uv_scale =
       properties.GetPropertyOrDefault("phong", "diffuse_scale", Vector2d{1, 1});
   vtk_box->set_uv_scale(uv_scale);
+  vtk_box->Update();
   return vtk_box;
 }
 
-vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkEllipsoid(
+vtkSmartPointer<vtkTransformFilter> CreateVtkEllipsoid(
     const Ellipsoid& ellipsoid) {
   vtkNew<vtkTexturedSphereSource> vtk_ellipsoid;
   vtk_ellipsoid->SetRadius(1.0);
@@ -355,8 +355,8 @@ vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkEllipsoid(
   // Scale sphere by each axis extent to generate the ellipsoid.
   vtkNew<vtkTransform> transform;
   transform->Scale(ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
-  vtkSmartPointer<vtkTransformPolyDataFilter> transform_filter =
-      vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+  vtkSmartPointer<vtkTransformFilter> transform_filter =
+      vtkSmartPointer<vtkTransformFilter>::New();
   transform_filter->SetInputConnection(vtk_ellipsoid->GetOutputPort());
   transform_filter->SetTransform(transform);
   transform_filter->Update();
@@ -386,7 +386,7 @@ void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,
   vtk_cylinder->SetResolution(50);
 }
 
-vtkSmartPointer<vtkPolyDataAlgorithm> TransformToDrakeCylinder(
+vtkSmartPointer<vtkTransformFilter> TransformToDrakeCylinder(
     vtkCylinderSource* vtk_cylinder) {
   // We rotate around the x-axis to get the cylinder to be vertical along the
   // z-axis.
@@ -398,7 +398,7 @@ vtkSmartPointer<vtkPolyDataAlgorithm> TransformToDrakeCylinder(
   rotate_around_Z->RotateY(90);
   rotate->Concatenate(rotate_around_Z);
 
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
+  vtkNew<vtkTransformFilter> transform_filter;
   transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
   transform_filter->SetTransform(rotate);
   transform_filter->Update();

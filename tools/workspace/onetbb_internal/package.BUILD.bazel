@@ -1,6 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 # Here we use the header files from oneAPI but the runtime shared library from
 # @mosek//:tbb.  We use the MOSEK™ copy of TBB because that's what we've always
@@ -19,17 +20,19 @@ cc_library(
         "include",
         "include/oneapi",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "@mosek//:tbb",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(
     name = "install",
     docs = ["LICENSE.txt"],
+    visibility = ["//visibility:public"],
     deps = [
         "@mosek//:install_tbb_libraries",
     ],
-    visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

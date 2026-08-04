@@ -6,6 +6,7 @@ def poisson_disk_sampling_internal_repository(
     github_archive(
         name = name,
         repository = "thinks/tph_poisson",
+        upgrade_type = "release",
         commit = "v0.4.0",
         sha256 = "3be4a705ca234ec0dbcc8115e8ac31e9f4dae02423e07e75929d75ed70db0a2d",  # noqa
         build_file = ":package.BUILD.bazel",

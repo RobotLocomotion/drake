@@ -25,7 +25,7 @@ def get_completion_suffixes(namespace, prefix, max_count=1000):
         if candidate is None:
             break
         assert candidate.startswith(prefix), (prefix, candidate)
-        suffix = candidate[len(prefix):]
+        suffix = candidate[len(prefix) :]
         if suffix.endswith("()"):
             suffix = suffix[:-1]
         suffixes.append(suffix)
@@ -35,14 +35,17 @@ def get_completion_suffixes(namespace, prefix, max_count=1000):
 
 
 class TestDeprecation(unittest.TestCase):
-    """Tests module shim functionality. """
+    """Tests module shim functionality."""
+
     def test_module_autocomplete(self):
         # Ensure that we can autocomplete with our example module.
         # Without `__dir__` being implemented, it'll only return `install` as a
         # non-private autocomplete candidate.
         import deprecation_example
+
         suffixes = get_completion_suffixes(
-            locals(), prefix="deprecation_example.")
+            locals(), prefix="deprecation_example."
+        )
         suffixes_expected = [
             # Injection from `Completer.attr_matches`, via `get_class_members`.
             "__class__(",
@@ -53,6 +56,7 @@ class TestDeprecation(unittest.TestCase):
             "__format__(",
             "__getattr__(",
             "__getattribute__(",
+            "__getstate__(",
             "__hash__(",
             "__init__(",
             "__module__",
@@ -70,11 +74,14 @@ class TestDeprecation(unittest.TestCase):
             "sub_module",
             "value",
         ]
-        # Python 3.11 adds a default implementation of __getstate__(), see:
-        # https://docs.python.org/3/library/pickle.html#object.__getstate__
-        # It does not exist in python <=3.10.
-        if sys.version_info[0:2] >= (3, 11):
-            suffixes_expected.append("__getstate__(")
+        # The following version-specific default implementations are added:
+        # * Python 3.13: __firstlineno__ and __static_attributes__, see
+        #   https://docs.python.org/3/reference/datamodel.html#type.__firstlineno__
+        #   https://docs.python.org/3/reference/datamodel.html#type.__static_attributes__
+        # These do not exist in versions of Python before what is listed.
+        if sys.version_info[0:2] >= (3, 13):
+            suffixes_expected.append("__firstlineno__")
+            suffixes_expected.append("__static_attributes__")
         suffixes_expected += [
             "__ge__(",
             "__eq__(",
@@ -86,9 +93,11 @@ class TestDeprecation(unittest.TestCase):
         if hasattr(deprecation_example, "__init_subclass__"):
             suffixes_expected.append("__init_subclass__(")
         under = get_completion_suffixes(
-            locals(), prefix="deprecation_example._")
+            locals(), prefix="deprecation_example._"
+        )
         suffixes += ["_" + s for s in under]
         dunder = get_completion_suffixes(
-            locals(), prefix="deprecation_example.__")
+            locals(), prefix="deprecation_example.__"
+        )
         suffixes += ["__" + s for s in dunder]
         self.assertSetEqual(set(suffixes), set(suffixes_expected))

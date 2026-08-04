@@ -114,7 +114,7 @@ void SapLimitConstraint<T>::DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
   const VectorX<T>& v_hat = data.v_hat();
   data.mutable_vc() = vc;
   data.mutable_y() = R_inv.asDiagonal() * (v_hat - vc);
-  data.mutable_gamma() = data.y().array().max(0.0);
+  data.mutable_gamma() = data.y().array().max(T{0.0});
 }
 
 template <typename T>

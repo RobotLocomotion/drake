@@ -1,4 +1,9 @@
+#include <limits>
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -188,7 +193,6 @@ TEST_P(TwoTreesTest, ConfirmConstraintProperties) {
   // Throw on id to wrong constraint specs type.
   EXPECT_THROW(plant_.get_ball_constraint_specs(id_), std::exception);
   EXPECT_THROW(plant_.get_coupler_constraint_specs(id_), std::exception);
-  EXPECT_THROW(plant_.get_distance_constraint_specs(id_), std::exception);
   EXPECT_THROW(plant_.get_weld_constraint_specs(id_), std::exception);
 
   // The tendon constraint is only added to the problem if it is violated in the
@@ -357,6 +361,9 @@ class SimplePlant : public ::testing::Test {
   double valid_damping_{5};
 };
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(SimplePlant, FailOnTAMSI) {
   MakePlant();
   plant_->set_discrete_contact_approximation(
@@ -367,14 +374,30 @@ TEST_F(SimplePlant, FailOnTAMSI) {
                                   {}, {}, {}),
       ".*TAMSI does not support tendon constraints.*");
 }
+#pragma GCC diagnostic pop
 
 TEST_F(SimplePlant, FailOnContinuous) {
   MakePlant(0.0);  // Continuous plant.
+  plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {},
+                              valid_lower_limit_, {}, {}, {});
+  plant_->Finalize();
+  auto context = plant_->CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_->EvalTimeDerivatives(*context),
+                              ".*continuous.*not.*support.*constraints.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {}, {},
-                                  {}, {}, {}),
-      ".*Currently tendon constraints are only supported for discrete "
-      "MultibodyPlant models.*");
+      plant_->get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->get_generalized_acceleration_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->get_reaction_forces_output_port().Eval(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->CalcCenterOfMassTranslationalAccelerationInWorld(*context),
+      ".*continuous.*not.*support.*constraints.*");
 }
 
 TEST_F(SimplePlant, FailOnFinalized) {

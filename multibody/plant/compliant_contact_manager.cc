@@ -26,23 +26,27 @@ using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
-using drake::multibody::internal::DiscreteContactPair;
-using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
 
 namespace drake {
 namespace multibody {
 namespace internal {
+namespace {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
+#pragma GCC diagnostic pop
+}  // namespace
 
 template <typename T>
 AccelerationsDueNonConstraintForcesCache<
-    T>::AccelerationsDueNonConstraintForcesCache(const MultibodyTreeTopology&
-                                                     topology)
-    : forces(topology.num_rigid_bodies(), topology.num_velocities()),
-      abic(topology),
-      Zb_Bo_W(topology.num_mobods()),
-      aba_forces(topology),
-      ac(topology) {}
+    T>::AccelerationsDueNonConstraintForcesCache(const internal::SpanningForest&
+                                                     forest)
+    : forces(forest.num_links(), forest.num_velocities()),
+      abic(forest),
+      Zb_Bo_W(forest.num_mobods()),
+      aba_forces(forest),
+      ac(forest) {}
 
 template <typename T>
 CompliantContactManager<T>::CompliantContactManager() = default;
@@ -90,7 +94,7 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
   // We cache non-contact forces, ABA forces and accelerations into an
   // AccelerationsDueNonConstraintForcesCache.
   AccelerationsDueNonConstraintForcesCache<T>
-      non_constraint_forces_accelerations(this->internal_tree().get_topology());
+      non_constraint_forces_accelerations(this->internal_tree().forest());
   const auto& non_constraint_forces_accelerations_cache_entry =
       this->DeclareCacheEntry(
           "Non-constraint forces and induced accelerations.",
@@ -206,7 +210,7 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
     }
   }
 
-  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     DRAKE_DEMAND(tamsi_driver_ != nullptr);
     tamsi_driver_->CalcContactSolverResults(context, contact_results);
   }
@@ -270,7 +274,7 @@ void CompliantContactManager<T>::DoExtractModelInfo() {
             std::make_unique<SapDriver<T>>(this, near_rigid_threshold);
       }
       break;
-    case DiscreteContactSolver::kTamsi:
+    case kDiscreteContactSolverTamsi:
       // N.B. We do allow discrete updates with TAMSI when T =
       // symbolic::Expression, but only when there is no contact.
       tamsi_driver_ = std::make_unique<TamsiDriver<T>>(this);
@@ -307,7 +311,7 @@ void CompliantContactManager<T>::DoCalcDiscreteUpdateMultibodyForces(
   // Thus far only TAMSI and SAP are supported. Verify this is true.
   DRAKE_DEMAND(
       plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap ||
-      plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi);
+      plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi);
 
   // Delegate to specific solver driver.
   if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
@@ -321,7 +325,7 @@ void CompliantContactManager<T>::DoCalcDiscreteUpdateMultibodyForces(
     }
   }
 
-  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     DRAKE_DEMAND(tamsi_driver_ != nullptr);
     tamsi_driver_->CalcDiscreteUpdateMultibodyForces(context, forces);
   }
@@ -333,7 +337,7 @@ void CompliantContactManager<T>::DoCalcActuation(
   // Thus far only TAMSI and SAP are supported. Verify this is true.
   DRAKE_DEMAND(
       plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap ||
-      plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi);
+      plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi);
 
   if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
     if constexpr (std::is_same_v<T, symbolic::Expression>) {
@@ -346,10 +350,11 @@ void CompliantContactManager<T>::DoCalcActuation(
     }
   }
 
-  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     DRAKE_DEMAND(tamsi_driver_ != nullptr);
     // TAMSI does not model additional actuation terms as SAP does.
-    *actuation = this->AssembleActuationInput(context);
+    *actuation =
+        this->EvalActuationInput(context, /* apply_effort_limit = */ true);
   }
 }
 

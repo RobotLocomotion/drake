@@ -56,9 +56,7 @@ class CloneToParent : public Base {
  public:
   CloneToParent() {}
   CloneToParent(const CloneToParent& c) = delete;
-  unique_ptr<Base> Clone() const {
-    return make_unique<CloneToParent>();
-  }
+  unique_ptr<Base> Clone() const { return make_unique<CloneToParent>(); }
 };
 
 // This tests the cloneability of a class that *does* have a const Clone()

@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":contact_solver",
         ":contact_solver_results",
         ":contact_solver_utils",
+        ":eigen_block_3x3_sparse_symmetric_matrix",
         ":linear_operator",
         ":matrix_block",
         ":minimum_degree_ordering",
@@ -68,7 +69,7 @@ drake_cc_library(
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//common:reset_after_move",
-        "//multibody/contact_solvers/sap:partial_permutation",
+        "//math:partial_permutation",
     ],
 )
 
@@ -159,7 +160,7 @@ drake_cc_library(
     deps = [
         ":block_sparse_lower_triangular_or_symmetric_matrix",
         "//common:essential",
-        "//multibody/contact_solvers/sap:partial_permutation",
+        "//math:partial_permutation",
     ],
 )
 
@@ -260,7 +261,35 @@ drake_cc_library(
         "block_sparse_lower_triangular_or_symmetric_matrix.h",
     ],
     deps = [
+        "//common:autodiff",
         "//common:essential",
+        "//common:parallelism",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_block_3x3_sparse_symmetric_matrix",
+    srcs = [
+        "eigen_block_3x3_sparse_symmetric_matrix.cc",
+    ],
+    hdrs = [
+        "eigen_block_3x3_sparse_symmetric_matrix.h",
+    ],
+    deps = [
+        ":block_sparse_lower_triangular_or_symmetric_matrix",
+        "//common:unused",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_block_3x3_sparse_symmetric_matrix_test",
+    num_threads = 2,
+    deps = [
+        ":eigen_block_3x3_sparse_symmetric_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

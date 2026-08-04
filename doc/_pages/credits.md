@@ -65,6 +65,7 @@ this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.
 * [Russ Tedrake](http://people.csail.mit.edu/russt/)
 * Belinda Teh
 * Andres Valenzuela
+* Peter Werner
 * [David von Wrangel](https://www.davidvonwrangel.com/)
 * Matthew Woehlke
 * Huihua Zhao
@@ -77,17 +78,26 @@ all of their maintainers, whose work is essential to Drake's success:
 * Developer tools:
   * [abseil](https://abseil.io)
   * [bazel](https://bazel.build)
+  * [buildifier](https://github.com/bazelbuild/buildtools)
+  * [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
+  * [cmake](https://cmake.org/)
+  * [cpplint](https://github.com/cpplint/cpplint)
   * [eigen](https://eigen.tuxfamily.org/)
   * [fmt](https://fmt.dev/)
   * [gbench](https://github.com/google/benchmark)
   * [gflags](https://github.com/gflags/gflags)
   * [gtest](https://github.com/google/googletest)
   * [highway](https://github.com/google/highway)
+  * [implib.so](https://github.com/yugr/Implib.so)
+  * [nanobind](https://nanobind.readthedocs.io/)
   * [numpy](https://numpy.org/)
   * [onetbb](https://github.com/oneapi-src/oneTBB)
+  * [patchelf](https://github.com/nixos/patchelf)
   * [pybind11](https://pybind11.readthedocs.io/)
-  * [pycodestyle](https://github.com/PyCQA/pycodestyle)
+  * [robin-map](https://github.com/Tessil/robin-map)
+  * [ruff](https://github.com/astral-sh/ruff)
   * [spdlog](https://github.com/gabime/spdlog)
+  * [uv](https://github.com/astral-sh/uv)
 
 * Documentation:
   * [doxygen](https://doxygen.nl/)
@@ -103,8 +113,8 @@ all of their maintainers, whose work is essential to Drake's success:
   * [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo)
   * [libpng](https://github.com/glennrp/libpng)
   * [libtiff](https://github.com/libsdl-org/libtiff)
+  * [libzip](https://libzip.org/)
   * [nlohmann/json](https://github.com/nlohmann/json)
-  * [openusd](https://github.com/PixarAnimationStudios/OpenUSD)
   * [pyyaml](https://pyyaml.org/)
   * [tinygltf](https://github.com/syoyo/tinygltf)
   * [tinyjson](https://github.com/rhysd/tinyjson)
@@ -112,6 +122,7 @@ all of their maintainers, whose work is essential to Drake's success:
   * [tinyxml2](https://github.com/leethomason/tinyxml2)
   * [xacro](https://github.com/ros/xacro)
   * [yaml-cpp](https://github.com/jbeder/yaml-cpp)
+  * [zlib](https://zlib.net/)
 
 * Geometry:
   * [common_robotics_utilities](https://github.com/ToyotaResearchInstitute/common_robotics_utilities)
@@ -126,7 +137,6 @@ all of their maintainers, whose work is essential to Drake's success:
 * Graphics
   * [meshcat](https://github.com/meshcat-dev/meshcat)
   * [pillow](https://pillow.readthedocs.io/)
-  * [stats.js](https://github.com/mrdoob/stats.js)
   * [threejs](https://threejs.org/)
   * [vtk](https://github.com/Kitware/VTK)
 

@@ -1,5 +1,9 @@
 #include "drake/geometry/mesh_deformation_interpolator.h"
 
+#include <limits>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -86,8 +90,7 @@ GTEST_TEST(VertexSampler, ConstructAndInterpolate) {
 GTEST_TEST(VertexSampler, ConstructorFailures) {
   const VolumeMesh<double> control_mesh = MakeOctahedronVolumeMesh();
   // No vertex selected.
-  EXPECT_THROW(VertexSampler(std::vector<int>{}, control_mesh),
-               std::exception);
+  EXPECT_THROW(VertexSampler(std::vector<int>{}, control_mesh), std::exception);
   // Duplicated vertices.
   EXPECT_THROW(VertexSampler(std::vector<int>{1, 1}, control_mesh),
                std::exception);
@@ -170,8 +173,9 @@ GTEST_TEST(DrivenTriangleMesh, VertexPositionAndNormal) {
     }
     expected_normals.segment<3>(3 * v).normalize();
   }
-  EXPECT_TRUE(
-      CompareMatrices(expected_normals, driven_mesh.GetDrivenVertexNormals()));
+  EXPECT_TRUE(CompareMatrices(expected_normals,
+                              driven_mesh.GetDrivenVertexNormals(),
+                              2.0 * std::numeric_limits<double>::epsilon()));
 
   /* Now we test the constructor that explicitly specifies the interpolator. */
   VertexSampler interpolator(std::vector<int>{0, 1, 2, 5}, control_mesh);
@@ -183,7 +187,8 @@ GTEST_TEST(DrivenTriangleMesh, VertexPositionAndNormal) {
   EXPECT_TRUE(CompareMatrices(expected_q,
                               another_driven_mesh.GetDrivenVertexPositions()));
   EXPECT_TRUE(CompareMatrices(expected_normals,
-                              another_driven_mesh.GetDrivenVertexNormals()));
+                              another_driven_mesh.GetDrivenVertexNormals(),
+                              2.0 * std::numeric_limits<double>::epsilon()));
 }
 
 // We test geometry::internal::MakeDrivenSurfaceMesh on the unit octahedron

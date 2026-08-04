@@ -3,6 +3,9 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -25,6 +28,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/system_scalar_converter.h"
 
 namespace drake {
 namespace multibody {
@@ -67,8 +71,8 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "iiwa_actuator_4", "iiwa_actuator_5", "iiwa_actuator_6",
       "iiwa_actuator_7"};
 
-  // Model Size. Counting the world body, there should be eight bodies.
-  EXPECT_EQ(model.num_bodies(), 8);  // It includes the "world" body.
+  // Model Size. Counting the world link, there should be eight links.
+  EXPECT_EQ(model.num_links(), 8);  // It includes the "world" link.
   EXPECT_EQ(model.num_joints(), 7);
   EXPECT_EQ(model.num_actuators(), 7);
   EXPECT_EQ(model.num_actuated_dofs(), 7);
@@ -80,11 +84,11 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Query if elements exist in the model.
   for (const std::string& link_name : kLinkNames) {
-    EXPECT_TRUE(model.HasBodyNamed(link_name));
-    EXPECT_EQ(model.NumBodiesWithName(link_name), 1);
+    EXPECT_TRUE(model.HasLinkNamed(link_name));
+    EXPECT_EQ(model.NumLinksWithName(link_name), 1);
   }
-  EXPECT_FALSE(model.HasBodyNamed(kInvalidName));
-  EXPECT_EQ(model.NumBodiesWithName(kInvalidName), 0);
+  EXPECT_FALSE(model.HasLinkNamed(kInvalidName));
+  EXPECT_EQ(model.NumLinksWithName(kInvalidName), 0);
 
   for (const std::string& frame_name : kFrameNames) {
     EXPECT_TRUE(model.HasFrameNamed(frame_name));
@@ -109,24 +113,23 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   // Get links by name.
   for (const std::string& link_name : kLinkNames) {
     drake::test::LimitMalloc guard;
-    const RigidBody<T>& link = model.GetRigidBodyByName(link_name);
+    const RigidBody<T>& link = model.GetLinkByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.GetRigidBodyByName(kInvalidName),
+      model.GetLinkByName(kInvalidName),
       ".*There is no RigidBody named .*valid names in model instance "
       "'WorldModelInstance' are: world; valid names in model instance "
       "'DefaultModelInstance' are: iiwa_link_1, iiwa_link_2.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.GetRigidBodyByName(kLinkNames[0], world_model_instance()),
+      model.GetLinkByName(kLinkNames[0], world_model_instance()),
       ".*There is no RigidBody.*but one does exist in other model instances.*");
 
-  // Test that calling GetRigidBodyByName() with an invalid ModelInstanceIndex
+  // Test that calling GetLinkByName() with an invalid ModelInstanceIndex
   // throws.
   const ModelInstanceIndex kInvalidIndex(1 << 30);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      model.GetRigidBodyByName(kLinkNames[0], kInvalidIndex),
-      ".*There is no model instance.*in the model.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(model.GetLinkByName(kLinkNames[0], kInvalidIndex),
+                              ".*There is no model instance.*in the model.*");
 
   // Get frames by name.
   for (const std::string& frame_name : kFrameNames) {
@@ -205,31 +208,31 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
       MakeKukaIiwaModel<double>(false /* non-finalized model. */);
 
   // Verify the model was not finalized.
-  EXPECT_FALSE(model->topology_is_valid());
+  EXPECT_FALSE(model->is_finalized());
 
   // Attempt to add a body having the same name as a body already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddRigidBody("iiwa_link_5", default_model_instance(),
-                          SpatialInertia<double>::NaN()),
+      model->AddLink("iiwa_link_5", default_model_instance(),
+                     SpatialInertia<double>::NaN()),
       ".* already contains a body named 'iiwa_link_5'. "
       "Body names must be unique within a given model.");
 
   // Attempt to add a frame having the same name as a frame already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddFrame<FixedOffsetFrame>(
-          "iiwa_link_5", model->GetRigidBodyByName("iiwa_link_1"),
-          RigidTransform<double>()),
+      model->AddFrame<FixedOffsetFrame>("iiwa_link_5",
+                                        model->GetLinkByName("iiwa_link_1"),
+                                        RigidTransform<double>()),
       ".* already contains a frame named 'iiwa_link_5'. "
       "Frame names must be unique within a given model.");
 
   // Attempt to add a joint having the same name as a joint already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddJoint<RevoluteJoint>("iiwa_joint_4", model->world_body(),
+      model->AddJoint<RevoluteJoint>("iiwa_joint_4", model->world_link(),
                                      std::nullopt,
-                                     model->GetRigidBodyByName("iiwa_link_5"),
+                                     model->GetLinkByName("iiwa_link_5"),
                                      std::nullopt, Vector3<double>::UnitZ()),
       ".* already contains a joint named 'iiwa_joint_4'. "
       "Joint names must be unique within a given model.");
@@ -260,7 +263,7 @@ GTEST_TEST(MultibodyTree, EmptyGetElementByName) {
   const std::string kInvalidName = "InvalidName";
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.GetRigidBodyByName(kInvalidName),
+      model.GetLinkByName(kInvalidName),
       ".*There is no RigidBody named .*valid names in model instance "
       "'WorldModelInstance' are.* world.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -289,26 +292,25 @@ GTEST_TEST(MultibodyTree, RetrievingAmbiguousNames) {
   const ModelInstanceIndex other_model_instance =
       model->AddModelInstance("other");
   const std::string link_name = "iiwa_link_5";
-  EXPECT_NO_THROW(model->AddRigidBody(link_name, other_model_instance,
-                                      SpatialInertia<double>::NaN()));
+  EXPECT_NO_THROW(model->AddLink(link_name, other_model_instance,
+                                 SpatialInertia<double>::NaN()));
   EXPECT_NO_THROW(model->Finalize());
 
   // Link name is ambiguous, there are more than one bodies that use the name.
-  EXPECT_GT(model->NumBodiesWithName(link_name), 1);
+  EXPECT_GT(model->NumLinksWithName(link_name), 1);
 
   // Checking if the name exists throws (unfortunately), unless we specify the
   // intended model instance.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->HasBodyNamed(link_name),
+      model->HasLinkNamed(link_name),
       ".*Body.*appears in multiple model instances.*disambiguate.*");
-  EXPECT_TRUE(model->HasBodyNamed(link_name, default_model_instance()));
+  EXPECT_TRUE(model->HasLinkNamed(link_name, default_model_instance()));
 
   // Accessing by name throws, unless we specify the intended model instance.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->GetRigidBodyByName(link_name),
+      model->GetLinkByName(link_name),
       ".*RigidBody.*appears in multiple model instances.*disambiguate.*");
-  EXPECT_NO_THROW(
-      model->GetRigidBodyByName(link_name, default_model_instance()));
+  EXPECT_NO_THROW(model->GetLinkByName(link_name, default_model_instance()));
 }
 
 // MBPlant provides most of the testing for MBTreeSystem. Here we just want
@@ -317,7 +319,7 @@ class BadDerivedMBSystem : public MultibodyTreeSystem<double> {
  public:
   explicit BadDerivedMBSystem(bool double_finalize)
       : MultibodyTreeSystem<double>() {
-    mutable_tree().AddRigidBody("body", SpatialInertia<double>::NaN());
+    mutable_tree().AddLink("body", SpatialInertia<double>::NaN());
     Finalize();
     if (double_finalize) {
       Finalize();
@@ -347,6 +349,198 @@ GTEST_TEST(MultibodyTreeSystem, CatchBadBehavior) {
       ".*MultibodyTreeSystem().*MultibodyTree was null.*");
 }
 
+// Testing miscellaneous continuous state APIs.
+
+// A *bad* plant that introduces miscellaneous continuous state but does not
+// implement DoCalcMiscDerivatives(). For a non-empty z state, we should throw
+// when trying to compute derivatives. We use this to test:
+//
+//   1. That the DeclareMiscContinousState() API returns the expected index.
+//   2. Declared misc state appears in the continuous state vector.
+//   3. Calculating time derivatives for non-empty z state throws as part of the
+//      *default* implementation.
+//   4. Calculating time derivatives for _empty_ z state, is a no-op.
+class BadMiscContinuousStateSystem : public MultibodyTreeSystem<double> {
+ public:
+  BadMiscContinuousStateSystem(int first_num_z, int second_num_z,
+                               bool is_discrete)
+      : MultibodyTreeSystem<double>(is_discrete),
+        num_z_(first_num_z + second_num_z) {
+    // Note: there are no qs and no vs; but we should nevertheless be attempting
+    // to compute derivatives for the zs.
+    first_z_start_ = DeclareMiscContinuousState(first_num_z);
+    second_z_start_ = DeclareMiscContinuousState(second_num_z);
+  }
+
+  int first_z_start() const { return first_z_start_; }
+  int second_z_start() const { return second_z_start_; }
+  int num_z() const { return num_z_; }
+
+  using MultibodyTreeSystem<double>::DeclareMiscContinuousState;
+  using MultibodyTreeSystem<double>::Finalize;
+  using MultibodyTreeSystem<double>::num_misc_continuous_states;
+
+ private:
+  int first_z_start_{};
+  int second_z_start_{};
+  int num_z_{};
+};
+
+// Patch the _bad_ system to be a _good_ system -- provide the missing override
+// for DoCalcMiscDerivatives() allows derivative calculations to succeed.
+class GoodMiscContinuousStateSystem final
+    : public BadMiscContinuousStateSystem {
+ public:
+  GoodMiscContinuousStateSystem(int num_z, bool is_discrete)
+      : BadMiscContinuousStateSystem(num_z, 0, is_discrete) {}
+
+ private:
+  void DoCalcMiscDerivatives(const systems::Context<double>&,
+                             systems::VectorBase<double>* zdot) const final {
+    DRAKE_DEMAND(zdot->size() == num_z());
+    for (int i = 0; i < num_z(); ++i) {
+      zdot->SetAtIndex(i, 10.0 + i);
+    }
+  }
+};
+
+GTEST_TEST(MultibodyTreeSystem, MiscContinuousState) {
+  // With z-values, failure to override DoCalcMiscDerivatives() should throw.
+  BadMiscContinuousStateSystem bad_continuous_system(2, 3,
+                                                     /* is_discrete= */ false);
+  bad_continuous_system.Finalize();
+  EXPECT_EQ(bad_continuous_system.num_misc_continuous_states(), 5);
+
+  // DeclareMiscContinuousState() returns the starting index of the newly
+  // declared z-state group.
+  EXPECT_EQ(bad_continuous_system.first_z_start(), 0);
+  EXPECT_EQ(bad_continuous_system.second_z_start(), 2);
+
+  // We have all of the expected continuous state.
+  auto bad_context = bad_continuous_system.CreateDefaultContext();
+  const ContinuousState<double>& xc = bad_context->get_continuous_state();
+  EXPECT_EQ(xc.get_generalized_position().size(), 0);
+  EXPECT_EQ(xc.get_generalized_velocity().size(), 0);
+  ASSERT_EQ(xc.get_misc_continuous_state().size(), 5);
+
+  // Because BadMiscContinuousStateSystem did not override
+  // DoCalcMiscDerivatives(), the base class should throw.
+  auto bad_derivatives = bad_continuous_system.AllocateTimeDerivatives();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bad_continuous_system.CalcTimeDerivatives(*bad_context,
+                                                bad_derivatives.get()),
+      ".*DoCalcMiscDerivatives.*must.*override.*misc continuous state.*");
+
+  // A system with non-empty z *and* a DoCalcMiscDerivatives() override produces
+  // derivatives.
+  GoodMiscContinuousStateSystem good_system(3, /* is_discrete= */ false);
+  good_system.Finalize();
+  EXPECT_EQ(good_system.num_misc_continuous_states(), 3);
+  auto good_context = good_system.CreateDefaultContext();
+  auto good_derivatives = good_system.AllocateTimeDerivatives();
+  good_system.CalcTimeDerivatives(*good_context, good_derivatives.get());
+  ASSERT_EQ(good_derivatives->get_misc_continuous_state().size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(good_derivatives->get_misc_continuous_state().GetAtIndex(i),
+              10.0 + i);
+  }
+
+  // Can't declare on a finalized system.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      good_system.DeclareMiscContinuousState(1),
+      ".*DeclareMiscContinuousState.*after Finalize.*not allowed.*");
+
+  // A system with no misc continuous state should not throw when calculating
+  // time derivatives.
+  BadMiscContinuousStateSystem no_z_system(0, 0, /* is_discrete */ false);
+  no_z_system.Finalize();
+  auto no_z_context = no_z_system.CreateDefaultContext();
+  auto no_z_derivatives = no_z_system.AllocateTimeDerivatives();
+  DRAKE_EXPECT_NO_THROW(
+      no_z_system.CalcTimeDerivatives(*no_z_context, no_z_derivatives.get()));
+
+  // A _discrete_ system cannot declare misc _continuous_ state.
+  GoodMiscContinuousStateSystem discrete_system(0, /* is_discrete= */ true);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      discrete_system.DeclareMiscContinuousState(1),
+      ".*DeclareMiscContinuousState.*continuous state.*discrete.*");
+
+  // Computing derivative residuals.
+  // A bad system with an empty z does nothing.
+  Eigen::VectorXd no_z_residual(0);
+  EXPECT_NO_THROW(no_z_system.CalcImplicitTimeDerivativesResidual(
+      *no_z_context, *no_z_derivatives, &no_z_residual));
+
+  // A bad system with a non-empty z should throw.
+  Eigen::VectorXd bad_residual(5);
+  EXPECT_THROW(bad_continuous_system.CalcImplicitTimeDerivativesResidual(
+                   *bad_context, *bad_derivatives, &bad_residual),
+               std::logic_error);
+
+  // A good system with a non-empty z should produce expected residuals.
+  // These are the derivatives computed up above.
+  const Eigen::VectorXd actual_derivatives =
+      good_derivatives->get_misc_continuous_state().CopyToVector();
+
+  Eigen::VectorXd proposed_derivatives(3);
+  proposed_derivatives << 7, 8, 9;
+  good_derivatives->get_mutable_misc_continuous_state().SetFromVector(
+      proposed_derivatives);
+  Eigen::VectorXd good_residual(3);
+  good_system.CalcImplicitTimeDerivativesResidual(
+      *good_context, *good_derivatives, &good_residual);
+
+  const Eigen::VectorXd expected_residual =
+      proposed_derivatives - actual_derivatives;
+  EXPECT_TRUE(CompareMatrices(good_residual, expected_residual, 1e-14));
+}
+
+// Tests the MultibodyTreeSystem constructor that passes a null tree (so that
+// the system builds its own multibody *tree*), but a non-zero misc continuous
+// state size. The constructed tree still gets the requested number of z-values.
+class NullTreeWithZSystem final : public MultibodyTreeSystem<double> {
+ public:
+  explicit NullTreeWithZSystem(int num_z)
+      : MultibodyTreeSystem<double>(systems::SystemScalarConverter{},
+                                    /* tree= */ nullptr,
+                                    /* is_discrete= */ false, num_z),
+        num_z_(num_z) {}
+
+  using MultibodyTreeSystem<double>::Finalize;
+
+ private:
+  void DoCalcMiscDerivatives(const systems::Context<double>&,
+                             systems::VectorBase<double>* zdot) const override {
+    DRAKE_DEMAND(zdot->size() == num_z_);
+    for (int i = 0; i < num_z_; ++i) {
+      zdot->SetAtIndex(i, 20.0 + i);
+    }
+  }
+
+  int num_z_{};
+};
+
+GTEST_TEST(MultibodyTreeSystem, NullTreeWithZSystem) {
+  NullTreeWithZSystem system(2);
+  system.Finalize();
+
+  auto context = system.CreateDefaultContext();
+  const ContinuousState<double>& xc = context->get_continuous_state();
+  EXPECT_EQ(xc.get_generalized_position().size(), 0);
+  EXPECT_EQ(xc.get_generalized_velocity().size(), 0);
+  EXPECT_EQ(xc.get_misc_continuous_state().size(), 2);
+
+  auto derivatives = system.AllocateTimeDerivatives();
+  DRAKE_EXPECT_NO_THROW(
+      system.CalcTimeDerivatives(*context, derivatives.get()));
+
+  EXPECT_EQ(derivatives->get_generalized_position().size(), 0);
+  EXPECT_EQ(derivatives->get_generalized_velocity().size(), 0);
+  ASSERT_EQ(derivatives->get_misc_continuous_state().size(), 2);
+  EXPECT_EQ(derivatives->get_misc_continuous_state().GetAtIndex(0), 20.0);
+  EXPECT_EQ(derivatives->get_misc_continuous_state().GetAtIndex(1), 21.0);
+}
+
 GTEST_TEST(MultibodyTree, BackwardsCompatibility) {
   auto owned_tree = std::make_unique<MultibodyTree<double>>();
   auto* tree = owned_tree.get();
@@ -369,7 +563,7 @@ class KukaIiwaModelTests : public ::testing::Test {
           false /* do not finalize model yet */, gravity_);
 
       // Keep pointers to the modeling elements.
-      end_effector_link_ = &tree->GetRigidBodyByName("iiwa_link_7");
+      end_effector_link_ = &tree->GetLinkByName("iiwa_link_7");
       joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
       joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
       joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
@@ -433,7 +627,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   Vector3<T> CalcEndEffectorVelocity(const MultibodyTree<T>& model_on_T,
                                      const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
-    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    model_on_T.CalcAllLinkSpatialVelocitiesInWorld(context_on_T, &V_WB_array);
     return V_WB_array[end_effector_link_->index()].translational();
   }
 
@@ -444,7 +638,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
-    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    model_on_T.CalcAllLinkSpatialVelocitiesInWorld(context_on_T, &V_WB_array);
     return V_WB_array[end_effector_link_->index()];
   }
 
@@ -457,7 +651,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     Vector3<T> p_WE;
     model_on_T.CalcPointsPositions(context_on_T, linkG_on_T.body_frame(),
                                    Vector3<T>::Zero(),  // position in frame G
-                                   model_on_T.world_body().body_frame(), &p_WE);
+                                   model_on_T.world_link().body_frame(), &p_WE);
     return p_WE;
   }
 
@@ -663,7 +857,8 @@ TEST_F(KukaIiwaModelTests, StateAccess) {
 //    respect to v.
 // In addition, we are testing methods:
 // - MultibodyTree::CalcPointsPositions()
-// - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
+// - MultibodyTree::CalcPointsVelocities()
+// - MultibodyTree::CalcAllLinkSpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
@@ -745,6 +940,49 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   EXPECT_TRUE(CompareMatrices(Jv_WE_times_v, v_WE, kTolerance,
                               MatrixCompareType::relative));
 
+  // Verify CalcPointsVelocities() matches v_WE = Jv_WE * v.
+  Vector3<double> v_WEo_W;  // Quantity to be calculated.
+  tree().CalcPointsVelocities(*context_, frame_E, p_EoGo_E, frame_W, frame_W,
+                              &v_WEo_W);
+  EXPECT_TRUE(
+      CompareMatrices(v_WEo_W, v_WE, kTolerance, MatrixCompareType::relative));
+
+  // Create a set of points to further test CalcPointsVelocities().
+  constexpr int num_position_vectors = 4;
+  MatrixX<double> p_EoEi_E(3, num_position_vectors);
+  p_EoEi_E.col(0) = Vector3<double>(0, 0, 0);
+  p_EoEi_E.col(1) = Vector3<double>(1, 2, 3);
+  p_EoEi_E.col(2) = Vector3<double>(-3, 2, -1.23);
+  p_EoEi_E.col(3) = Vector3<double>(-0.2, std::sqrt(2), -3.14);
+
+  // Verify CalcPointsVelocities() expressed-in-frame: v_WEi_E = Jv_WEi_E * v.
+  MatrixX<double> v_WEi_E(3, num_position_vectors);  // Quantity to calculate.
+  tree().CalcPointsVelocities(*context_, frame_E, p_EoEi_E, frame_W, frame_E,
+                              &v_WEi_E);
+  Matrix3X<double> Jv_WEi_E(3, tree().num_velocities());
+  for (int i = 0; i < num_position_vectors; ++i) {
+    tree().CalcJacobianTranslationalVelocity(*context_, JacobianWrtVariable::kV,
+                                             frame_E, frame_E, p_EoEi_E.col(i),
+                                             frame_W, frame_E, &Jv_WEi_E);
+    EXPECT_TRUE(CompareMatrices(v_WEi_E.col(i), Jv_WEi_E * v, kTolerance,
+                                MatrixCompareType::relative));
+  }
+
+  // Verify CalcPointsVelocities() measured-in-frame: v_WEo_E = Jv_WEo_E * v.
+  const RigidBody<double>& link3 = tree().GetLinkByName("iiwa_link_3");
+  const Frame<double>& frame_M = link3.body_frame();  // Measured-in frame.
+  Matrix3X<double> v_MEi_M(3, num_position_vectors);  // Quantity to calculate.
+  tree().CalcPointsVelocities(*context_, frame_E, p_EoEi_E, frame_M, frame_M,
+                              &v_MEi_M);
+  Matrix3X<double> Jv_MEi_M(3, tree().num_velocities());
+  for (int i = 0; i < num_position_vectors; ++i) {
+    tree().CalcJacobianTranslationalVelocity(*context_, JacobianWrtVariable::kV,
+                                             frame_E, frame_E, p_EoEi_E.col(i),
+                                             frame_M, frame_M, &Jv_MEi_M);
+    EXPECT_TRUE(CompareMatrices(v_MEi_M.col(i), Jv_MEi_M * v, kTolerance,
+                                MatrixCompareType::relative));
+  }
+
   // Verify that MultibodyTree::CalcPointsPositions() computes the same value
   // of p_WE. Even both code paths resolve to CalcPointsPositions(), here we
   // call this method explicitly to provide unit testing for this API.
@@ -782,7 +1020,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
 //    respect to v.
 // In addition, this also tests the methods:
 // - MultibodyTree::CalcPointsPositions()
-// - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
+// - MultibodyTree::CalcAllLinkSpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
@@ -980,11 +1218,11 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
 
   // Spatial velocity of the end effector in the world frame.
   const SpatialVelocity<double>& V_WE =
-      tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+      tree().EvalLinkSpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector in the world frame.
   const RigidTransform<double>& X_WE(
-      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
+      tree().EvalLinkPoseInWorld(*context_, *end_effector_link_));
 
   // Independent benchmark solution.
   const SpatialKinematicsPVA<double> MG_kinematics =
@@ -1031,11 +1269,11 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityA) {
 
   // Spatial velocity of the end effector.
   const SpatialVelocity<double>& V_WE =
-      tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+      tree().EvalLinkSpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector.
   const math::RigidTransformd& X_WE(
-      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
+      tree().EvalLinkPoseInWorld(*context_, *end_effector_link_));
 
   // Position of a frame F measured and expressed in frame E.
   const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);
@@ -1097,6 +1335,21 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityD) {
   //   b) the Jacobian should be exactly zero.
   EXPECT_EQ(p_WP_out, p_WP_set);
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(3 * npoints, nv));
+
+  // For each point P, calculate v_WP_W (P's velocity measured in World W,
+  // expressed in world W.  Note: This test case calculates velocities measured
+  // in world for points that are attached to world.
+  Matrix3X<double> v_WP_W(3, npoints);  // Calculated quantities.
+  tree().CalcPointsVelocities(*context_, frame_W, p_WP_set, frame_W, frame_W,
+                              &v_WP_W);
+  EXPECT_EQ(v_WP_W, MatrixX<double>::Zero(3, npoints));
+
+  // Since v_WP_W = 0, v_WP_link3 should also be zero.
+  const Frame<double>& link3 = tree().GetFrameByName("iiwa_link_3");
+  Matrix3X<double> v_WP_link3(3, npoints);  // Calculated quantities.
+  tree().CalcPointsVelocities(*context_, frame_W, p_WP_set, frame_W, link3,
+                              &v_WP_link3);
+  EXPECT_EQ(v_WP_link3, MatrixX<double>::Zero(3, npoints));
 }
 
 // Verify that even when the input set of points and/or the Jacobian might
@@ -1118,7 +1371,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityB) {
   // Therefore we do not set it.
   const Frame<double>& frame_W = tree().world_frame();
   tree().CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
-                                     tree().world_body().body_frame(), p_WoWp_W,
+                                     tree().world_link().body_frame(), p_WoWp_W,
                                      frame_W, frame_W, &Jv_WWp);
 
   // Since in this case we are querying for the world frame, the Jacobian should
@@ -1155,26 +1408,26 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
   }
 
   // Three arbitrary frames on the robot.
-  const RigidBody<double>& link3 = tree().GetRigidBodyByName("iiwa_link_3");
-  const RigidBody<double>& link5 = tree().GetRigidBodyByName("iiwa_link_5");
-  const RigidBody<double>& link7 = tree().GetRigidBodyByName("iiwa_link_7");
+  const RigidBody<double>& link3 = tree().GetLinkByName("iiwa_link_3");
+  const RigidBody<double>& link5 = tree().GetLinkByName("iiwa_link_5");
+  const RigidBody<double>& link7 = tree().GetLinkByName("iiwa_link_7");
 
   // An arbitrary point Q in the end effector link 7.
   const Vector3d p_L7Q = Vector3d(0.2, -0.1, 0.5);
 
   // Link 3 kinematics.
   const RigidTransform<double>& X_WL3 =
-      tree().EvalBodyPoseInWorld(*context_, link3);
+      tree().EvalLinkPoseInWorld(*context_, link3);
   const RotationMatrix<double>& R_WL3 = X_WL3.rotation();
 
   // link 5 kinematics.
   const RigidTransform<double>& X_WL5 =
-      tree().EvalBodyPoseInWorld(*context_, link5);
+      tree().EvalLinkPoseInWorld(*context_, link5);
   const RotationMatrix<double>& R_WL5 = X_WL5.rotation();
 
   // link 7 kinematics.
   const RigidTransform<double>& X_WL7 =
-      tree().EvalBodyPoseInWorld(*context_, link7);
+      tree().EvalLinkPoseInWorld(*context_, link7);
   const RotationMatrix<double>& R_WL7 = X_WL7.rotation();
 
   // Position of Q in L3, expressed in world.
@@ -1188,11 +1441,11 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
 
   // Spatial velocity of L3 shifted to Q.
   const SpatialVelocity<double> V_WL3q =
-      tree().EvalBodySpatialVelocityInWorld(*context_, link3).Shift(p_L3Q_W);
+      tree().EvalLinkSpatialVelocityInWorld(*context_, link3).Shift(p_L3Q_W);
 
   // Spatial velocity of L7 shifted to Q.
   const SpatialVelocity<double> V_WL7q =
-      tree().EvalBodySpatialVelocityInWorld(*context_, link7).Shift(p_L7Q_W);
+      tree().EvalLinkSpatialVelocityInWorld(*context_, link7).Shift(p_L7Q_W);
 
   // Relative spatial velocity V_L3L7q_L5 of L7q in L3, expressed in L5.
   const SpatialVelocity<double> V_L3L7q_L5 =
@@ -1266,11 +1519,11 @@ class WeldMobilizerTest : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<MultibodyTree<double>>();
 
-    body1_ = &model->AddRigidBody("body1", M_B);
-    body2_ = &model->AddRigidBody("body2", M_B);
+    body1_ = &model->AddLink("body1", M_B);
+    body2_ = &model->AddLink("body2", M_B);
 
     model->AddJoint(std::make_unique<WeldJoint<double>>(
-        "weld0", model->world_body().body_frame(), body1_->body_frame(),
+        "weld0", model->world_link().body_frame(), body1_->body_frame(),
         X_WB1_));
 
     // Add a weld joint between bodies 1 and 2 by welding together inboard
@@ -1323,11 +1576,43 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  std::vector<math::RigidTransformd> body_poses;
-  tree().CalcAllBodyPosesInWorld(*context_, &body_poses);
+  std::vector<math::RigidTransformd> link_poses;
+  tree().CalcAllLinkPosesInWorld(*context_, &link_poses);
 
-  EXPECT_TRUE(body_poses[body1_->index()].IsNearlyEqualTo(X_WB1_, kTolerance));
-  EXPECT_TRUE(body_poses[body2_->index()].IsNearlyEqualTo(X_WB2_, kTolerance));
+  EXPECT_TRUE(link_poses[body1_->index()].IsNearlyEqualTo(X_WB1_, kTolerance));
+  EXPECT_TRUE(link_poses[body2_->index()].IsNearlyEqualTo(X_WB2_, kTolerance));
+}
+
+// Verify proper operation of the Joint internal use only method for generating
+// unique frame names.
+GTEST_TEST(JointTest, UniqueFrameName) {
+  // Spatial inertia for each body. The actual value is not important for
+  // these tests since they are all kinematic.
+  const auto M_B = SpatialInertia<double>::Zero();
+
+  // Create an empty model.
+  auto model = std::make_unique<MultibodyTree<double>>();
+
+  const RigidBody<double>& body1 = model->AddLink("body1", M_B);
+  const RigidBody<double>& body2 = model->AddLink("body2", M_B);
+
+  const auto& frame1 = model->AddFrame<FixedOffsetFrame>(
+      "frame1", body1, RigidTransform<double>());
+  const auto& frame2 = model->AddFrame<FixedOffsetFrame>(
+      "frame2", body2, RigidTransform<double>());
+
+  const Joint<double>& joint0 =
+      model->AddJoint(std::make_unique<WeldJoint<double>>(
+          "joint0", frame1, frame2, RigidTransform<double>()));
+
+  EXPECT_EQ(joint0.MakeUniqueOffsetFrameName(frame1, "foo"),
+            "joint0_frame1_foo");
+
+  // Verify that disambiguation works in case of a name collision.
+  model->AddFrame<FixedOffsetFrame>("joint0_frame2_foo", body2,
+                                    RigidTransform<double>());
+  EXPECT_EQ(joint0.MakeUniqueOffsetFrameName(frame2, "foo"),
+            "_joint0_frame2_foo");
 }
 
 }  // namespace

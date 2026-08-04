@@ -108,7 +108,7 @@ std::vector<std::pair<Vector3<int>, GridData<T>>>
 MockSparseGrid<T>::GetGridData() const {
   std::vector<std::pair<Vector3<int>, GridData<T>>> result;
   for (const auto& [node, data] : grid_data_) {
-    result.emplace_back(node, data);
+    if (data.m > 0.0) result.emplace_back(node, data);
   }
   return result;
 }
@@ -125,6 +125,42 @@ MassAndMomentum<T> MockSparseGrid<T>::ComputeTotalMassAndMomentum() const {
     }
   }
   return result;
+}
+
+template <typename T>
+void MockSparseGrid<T>::IterateGrid(
+    const std::function<void(GridData<T>*)>& func) {
+  for (auto& [_, data] : grid_data_) {
+    func(&data);
+  }
+}
+
+template <typename T>
+void MockSparseGrid<T>::IterateGrid(
+    const std::function<void(const GridData<T>&)>& func) const {
+  for (const auto& [_, data] : grid_data_) {
+    func(data);
+  }
+}
+
+template <typename T>
+math::internal::VertexPartialPermutation MockSparseGrid<T>::SetNodeIndices() {
+  std::vector<int> participating_nodes;
+  int node_index = 0;
+  int participating_node_index = 0;
+  auto index_grid = [&](GridData<T>* data) {
+    if (data->m > 0.0) {
+      if (data->index_or_flag.is_flag()) {
+        participating_nodes.push_back(participating_node_index++);
+      } else {
+        participating_nodes.push_back(-1);
+      }
+      data->index_or_flag.set_index(node_index++);
+    }
+  };
+  IterateGrid(index_grid);
+  return math::internal::VertexPartialPermutation(
+      std::move(participating_nodes));
 }
 
 }  // namespace internal

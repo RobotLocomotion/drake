@@ -1,12 +1,11 @@
 #pragma once
 
-#include <ostream>
 #include <stdexcept>
 #include <string>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 
 namespace drake {
 namespace perception {
@@ -49,8 +48,7 @@ class DescriptorType final {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DescriptorType);
 
   constexpr DescriptorType(int size, const char* name)
-      : size_(size),
-        name_(name) {}
+      : size_(size), name_(name) {}
 
   int size() const { return size_; }
   std::string name() const { return name_; }
@@ -88,8 +86,7 @@ class Fields {
   /// @throws std::exception if `base_fields` is not composed of valid
   /// `BaseField`s.
   Fields(BaseFieldT base_fields, DescriptorType descriptor_type)
-      : base_fields_(base_fields),
-        descriptor_type_(descriptor_type) {}
+      : base_fields_(base_fields), descriptor_type_(descriptor_type) {}
 
   /// @throws std::exception if `base_fields` is not composed of valid
   /// `BaseField`s.
@@ -107,36 +104,31 @@ class Fields {
   BaseFieldT base_fields() const { return base_fields_; }
 
   /// Returns whether there are any base fields contained by this set of fields.
-  bool has_base_fields() const {
-    return base_fields_ != kNone;
-  }
+  bool has_base_fields() const { return base_fields_ != kNone; }
 
   /// Returns the contained descriptor type.
   const DescriptorType& descriptor_type() const { return descriptor_type_; }
 
   /// Returns whether there is a descriptor contained by this set of fields.
-  bool has_descriptor() const {
-    return descriptor_type_ != kDescriptorNone;
-  }
+  bool has_descriptor() const { return descriptor_type_ != kDescriptorNone; }
 
   /// Provides in-place union.
   /// @throws std::exception if multiple non-None `DescriptorType`s are
   /// specified.
   Fields& operator|=(const Fields& rhs) {
     base_fields_ = base_fields_ | rhs.base_fields_;
-    if (has_descriptor())
+    if (has_descriptor()) {
       throw std::runtime_error(
           "Cannot have multiple Descriptor flags. "
           "Can only add flags iff (!rhs.has_descriptor()).");
+    }
     descriptor_type_ = rhs.descriptor_type_;
     return *this;
   }
 
   /// Provides union.
   /// @see operator|= for preconditions.
-  Fields operator|(const Fields& rhs) const {
-    return Fields(*this) |= rhs;
-  }
+  Fields operator|(const Fields& rhs) const { return Fields(*this) |= rhs; }
 
   /// Provides in-place intersection.
   Fields& operator&=(const Fields& rhs) {
@@ -148,37 +140,29 @@ class Fields {
   }
 
   /// Provides intersection.
-  Fields operator&(const Fields& rhs) const {
-    return Fields(*this) &= rhs;
-  }
+  Fields operator&(const Fields& rhs) const { return Fields(*this) &= rhs; }
 
   /// Returns whether both value types (BaseField + DescriptorType) are none.
-  bool empty() const {
-    return !has_base_fields() && !has_descriptor();
-  }
+  bool empty() const { return !has_base_fields() && !has_descriptor(); }
 
   /// Returns whether this set of fields contains (is a superset of) `rhs`.
-  bool contains(const Fields& rhs) const {
-    return (*this & rhs) == rhs;
-  }
+  bool contains(const Fields& rhs) const { return (*this & rhs) == rhs; }
 
   bool operator==(const Fields& rhs) const {
-    return (base_fields_ == rhs.base_fields_
-            && descriptor_type_ == rhs.descriptor_type_);
+    return (base_fields_ == rhs.base_fields_ &&
+            descriptor_type_ == rhs.descriptor_type_);
   }
 
-  bool operator!=(const Fields& rhs) const {
-    return !(*this == rhs);
-  }
-
-  /// Provides human-readable output.
-  friend std::ostream& operator<<(std::ostream& os, const Fields& rhs);
+  bool operator!=(const Fields& rhs) const { return !(*this == rhs); }
 
  private:
   // TODO(eric.cousineau): Use `optional` to avoid the need for `none` objects?
   BaseFieldT base_fields_{kNone};
   DescriptorType descriptor_type_{kDescriptorNone};
 };
+
+/// Provides a human-readable description of `fields`.
+std::string to_string(const Fields& fields);
 
 // Do not use implicit conversion because it becomes ambiguous.
 /// Makes operator| compatible for `BaseField` + `DescriptorType`.
@@ -201,10 +185,6 @@ inline Fields operator|(const DescriptorType& lhs, const Fields& rhs) {
 }  // namespace perception
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::perception::pc_flags::Fields>
-    : drake::ostream_formatter {};
-}  // namespace fmt
-
+DRAKE_FORMATTER_AS(, drake::perception::pc_flags, DescriptorType, x, x.name())
+DRAKE_FORMATTER_AS(, drake::perception::pc_flags, Fields, x,
+                   drake::perception::pc_flags::to_string(x))

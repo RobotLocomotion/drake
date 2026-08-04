@@ -1,0 +1,26 @@
+Disable vtkXOpenGLRenderWindow::EnsureGLX
+
+We want Drake's logic to load GLX and open a Display, so that we can
+directly manage the lifetime for our needs without relying on VTK's
+global atomic variables.
+
+--- Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx
++++ Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx
+@@ -1437,6 +1437,9 @@ bool vtkXOpenGLRenderWindow::EnsureDisplay()
+ 
+ bool vtkXOpenGLRenderWindow::EnsureGLX()
+ {
++#if 1  // Drake handles GLX and Display setup directly.
++  return true;
++#else
+   if (!::GLADGLXLibraryDisplayOpened.exchange(true))
+   {
+     ::GLADGLXLibraryDisplay = vtkXOpenDisplay(static_cast<char*>(nullptr));
+@@ -1464,6 +1467,7 @@ bool vtkXOpenGLRenderWindow::EnsureGLX()
+   {
+     return (::GLXVersion > 0);
+   }
++#endif
+ }
+ 
+ // Get this RenderWindow's parent X window id.

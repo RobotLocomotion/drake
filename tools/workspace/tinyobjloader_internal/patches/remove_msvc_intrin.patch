@@ -1,0 +1,23 @@
+[tinyobjloader] Remove MSVC-only intrinsics header
+
+The position of this header in the middle of the implementation breaks Drake's
+vendoring parsing logic. Since it's MSVC-only, which is not a platform
+supported by Drake, we can just remove it instead of moving it atop the file.
+
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
+--- tiny_obj_loader.h
++++ tiny_obj_loader.h
+@@ -11212,12 +11212,6 @@ static bool opt_parseLine(OptCommand *command, const char *p, size_t p_len,
+
+ #ifdef TINYOBJLOADER_USE_SIMD
+
+-// Include <intrin.h> for _BitScanForward on MSVC. Placed here (not at the top)
+-// because it's only needed when TINYOBJLOADER_USE_SIMD is enabled.
+-#if defined(_MSC_VER)
+-#include <intrin.h>
+-#endif
+-
+ // Portable count-trailing-zeros for SIMD bitmask extraction
+ static inline unsigned int tinyobj_ctz(unsigned int x) {
+ #if defined(_MSC_VER)

@@ -33,7 +33,95 @@ namespace sensors {
 
  The values are only checked when the configuration is operated on: during
  serialization, after deserialization, and when applying the configuration (see
- ApplyCameraConfig().) */
+ ApplyCameraConfig().)
+
+ <h3>Cameras and RenderEngines</h3>
+
+ @anchor camera_config_render_properties
+
+ Every camera is supported by a geometry::render::RenderEngine instance. These
+ properties configure the render engine for this camera.
+
+ RenderEngines are uniquely identified by their name (as specified by
+ `renderer_name`) and configured by `renderer_class`. Each RenderEngine instance
+ must have a unique name. Rendering will be more efficient if multiple cameras
+ share the same RenderEngine instance. To share RenderEngine instances, cameras
+ must have _same_ value for `renderer_name`.
+
+ Each camera can also provide the configuration of its supporting RenderEngine
+ (`renderer_class`). However, it is an error for two cameras to specify the same
+ `renderer_name` but provide _conflicting_ renderer configurations. It is the
+ _user's_ responsibility to make sure that for every shared `renderer_name`
+ value in a set of %CameraConfig instances that the corresponding
+ `renderer_class` values are compatible. How that is achieved depends on the
+ medium of specification. While there are multiple possible mechanisms, these
+ examples consist of the simplest.
+
+ <h4>Configuring compatible `renderer_class` in YAML</h4>
+
+ The simplest solution in YAML is to use the merge operator (`<<:`) to guarantee
+ that multiple cameras use the exact same `renderer_class`. This terse example
+ shows how that might be done.
+
+ @code{.yaml}
+ cameras:
+   - &BaseCamera:
+     name: base_camera
+     rgb: true
+     depth: true
+     label: true
+     renderer_name: common_renderer
+     renderer_class: !RenderEngineVtk
+       exposure: 0.4
+       cast_shadows: true
+   - &DepthOnlyCamera
+     <<: *BaseCamera
+     name: depth_camera
+     rgb: false
+     label: false
+ @endcode
+
+ In this example, we've defined two cameras named, `base_camera` and
+ `depth_camera`. Both share a RenderEngineVtk instance named `common_renderer`.
+ The merge operator guarantees that `depth_camera` has exactly duplicated
+ `base_camera`'s `renderer_class` value. However, it tweaks the camera
+ definition by disabling the rgb and label images. Edits to the
+ `RenderEngineVtk` parameters in a single location are kept in sync across all
+ cameras that are supposed to share.
+
+ <h4>Configuring compatible `renderer_class` in C++</h4>
+
+ The same trick for coordinating multiple %CameraConfig instances in yaml will
+ also work in C++. Simply instantiate a single set of RenderEngine parameters
+ and assign it to every instance.
+
+ In C++ there are other options available. If you have control over the order
+ that %CameraConfig instances get applied, you can simply define the
+ `renderer_class` value for the first instance and leave it blank in subsequent
+ instances which share the same `renderer_name`. It is important to configure
+ the RenderEngine on the _first_ appearance of a `renderer_name` value.
+
+ @anchor camera_config_compatible_renderer
+ <h4>Rules for compatible `renderer_class` values</h4>
+
+ Assume we have two %CameraConfig instances that have a common `renderer_name`
+ value (and both have well-formed `renderer_class` values). When we apply the
+ first config instance, we will add a RenderEngine. When we attempt to apply
+ the second config instance, we already have a RenderEngine with the specified
+ name. Compatibility now depends on the `renderer_class` value stored in the
+ second config instance. It will be compatible in the following cases:
+
+   - The second config instance's `renderer_class` value is the empty string.
+   - The second config instance's `renderer_class` value is the *class name* of
+     the RenderEngine instance that was already created.
+   - The second config instance's `renderer_class` contains the appropriate
+     parameters type for the type of RenderEngine instance that was already
+     created _and_ the parameter values _exactly_ match those in the
+     instantiated engine.
+
+ Every other `renderer_class` value in the second config instance (e.g., naming
+ a different type of RenderEngine, or specifying different parameters) is
+ considered a conflicting specification and will give rise to runtime errors. */
 struct CameraConfig {
   /** Passes this object to an Archive.
    Refer to @ref yaml_serialization "YAML Serialization" for background. */
@@ -239,64 +327,44 @@ struct CameraConfig {
 
   //@}
 
-  /** @name Renderer properties
-
-   Every camera is supported by a geometry::render::RenderEngine
-   instance. These properties configure the render engine for this camera. */
+  /** @name Renderer properties */
   //@{
 
   /** The name of the geometry::render::RenderEngine that this camera
-   uses. Generally, it is more efficient for multiple cameras to share a single
-   render engine instance; they should, therefore, share a common renderer_name
-   value.
+   uses.
    @pre `renderer_name` is not empty. */
   std::string renderer_name{"default"};
 
-  /** The choice of render engine implementation to use. It can be specified
-   simply by providing a `string` containing the class _name_ of the
-   RenderEngine to use (i.e., `"RenderEngineVtk"`, `"RenderEngineGl"`, or
-   `"RenderEngineGltfClient"`). Or, it can be specified by providing parameters
-   for one of those engines: RenderEngineVtkParams, RenderEngineGlParams, or
-   RenderEngineGltfClientParams.
+  /** The configuration of the camera's supporting RenderEngine.
 
-   If a `string` containing the render engine class _name_ is provided, the
-   engine instantiated will use the default parameters -- equivalent to passing
-   the set of default parameters.
+   The value can be one of:
+      - An empty string.
+      - A string containing the class name of the RenderEngine to use (i.e.,
+        `"RenderEngineVtk"`, `"RenderEngineGl"`, or `"RenderEngineGltfClient"`).
+      - The struct of parameters for a supported engine, i.e.,
+        RenderEngineVtkParams, RenderEngineGlParams, or
+        RenderEngineGltfClientParams.
 
-   It is possible for multiple cameras to reference the same `renderer_name`
-   but configure the renderer differently. This would be a configuration error.
-   The following rules will help prevent problematic configurations:
+   For config instances which have a unique `renderer_name` value (one that has
+   not yet been added to the diagram), the various possible `renderer_class`
+   values will instantiate a new RenderEngine and associate it with a camera
+   according to the following rules.
 
-     - Multiple cameras can reference the same value for `renderer_name`.
-     - If multiple cameras reference the same value for `renderer_name`, only
-       the *first* can use the engine parameters to specify it. Attempting to
-       do so with a later camera will produce an error.
-       - The later cameras can use engine class _name_.
-       - If a later camera names a *different* engine class, that will result
-         in an error.
+      - Empty string: a RenderEngine of the _default_ type (RenderEngineVtk)
+        will be instantiated with _default_ parameters.
+      - Class name string: a RenderEngine of the _named_ type will be
+        instantiated with _default_ parameters.
+      - Parameter struct: a RenderEngine of the type compatible with the struct
+        will be instantiated, with those parameter values.
 
-   In YAML, it can be a bit trickier. Depending on how a collection of cameras
-   is articulated, the concept of "first" may be unclear. In
-   `examples/hardware_sim/scenario.h` the collection is a map. So, the camera
-   configurations are not necessarily processed in the order they appear in the
-   YAML file. Instead, the processing order depends on the mnemonic camera key.
-   So, be aware, if you use a similar mapping, you may have to massage the key
-   names to achieve the requisite processing order. Alternatively, a vector of
-   %CameraConfig in your own scenario file, would guarantee that processing
-   order is the same as file order.
+   If, however, the `renderer_name` is not unique, as documented
+   @ref camera_config_compatible_renderer "above", the values of
+   `renderer_class` must be _compatible_ with each other.
 
-   We intend to relax these restrictions in time, allowing equivalent, redundant
-   specifications of a render engine (and throwing only on inconsistent
-   specifications).
-
-   Passing the empty string is equivalent to saying, "I don't care". If a render
-   engine with that name has already been configured, the camera will use it
-   (regardless of type). If the name doesn't already exist, the default, slower,
-   more portable, and more robust RenderEngineVtk will be instantiated.
-   RenderEngineGl can be selected if you are on Ubuntu and need the improved
-   performance (at the *possible* cost of lesser image fidelity). In YAML,
-   omitting `renderer_class` from the camera specification is equivalent to
-   "passing the empty string".
+   Note: RenderEngineVtk is the default RenderEngine type. It is slower, but
+   portable and robust. RenderEngineGl is an option if you are on Ubuntu and
+   need the improved performance (at the *possible* cost of lesser image
+   fidelity).
 
    <h4>Configuring in YAML</h4>
 
@@ -338,7 +406,8 @@ struct CameraConfig {
      cleanup: false
    @endcode
 
-   6. Explicitly request Drake's default render engine.
+   6. Explicitly request Drake's default render engine or previously configured
+      RenderEngine based on shared `renderer_name`.
    @code{yaml}
    renderer_class: ""
    @endcode

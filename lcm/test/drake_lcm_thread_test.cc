@@ -2,10 +2,11 @@
 #include <chrono>
 #include <mutex>
 #include <stdexcept>
+#include <string>
 #include <thread>
 
-#include "lcm/lcm-cpp.hpp"
 #include <gtest/gtest.h>
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm.h"

@@ -1,5 +1,8 @@
 #include "drake/geometry/optimization/geodesic_convexity.h"
 
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -480,6 +483,25 @@ GTEST_TEST(GeodesicConvexityTest, ComputePairwiseIntersections2) {
       EXPECT_TRUE(sets[index_b]->PointInSet(h_first->Center() + offset, 1e-6));
     }
   }
+}
+
+GTEST_TEST(GeodesicConvexityTest, ContainsNullptrTest) {
+  Hyperrectangle h(Vector1d(0.0), Vector1d(1.0));
+  ConvexSets sets_ok = MakeConvexSets(h, h);
+  ConvexSets sets_nullptr =
+      MakeConvexSets(h, copyable_unique_ptr<ConvexSet>(nullptr));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ComputePairwiseIntersections(sets_nullptr, std::vector<int>{}, true,
+                                   Parallelism::None()),
+      ".*nullptr.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ComputePairwiseIntersections(sets_ok, sets_nullptr, std::vector<int>{},
+                                   true, Parallelism::None()),
+      ".*nullptr.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ComputePairwiseIntersections(sets_nullptr, sets_ok, std::vector<int>{},
+                                   true, Parallelism::None()),
+      ".*nullptr.*");
 }
 
 }  // namespace optimization

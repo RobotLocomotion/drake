@@ -97,7 +97,7 @@ class BezierCurve final : public trajectories::Trajectory<T> {
            trajectory will silently be evaluated at the closest valid value of
            time to `time`. For example, `value(-1)` will return `value(0)` for
            a trajectory defined over [0, 1]. */
-  MatrixX<T> value(const T& t) const final {
+  MatrixX<T> value(const T& t) const {
     // We shadowed the base class to add documentation, not to change logic.
     return Trajectory<T>::value(t);
   }

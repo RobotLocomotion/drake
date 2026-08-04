@@ -1,0 +1,25 @@
+# vtk DataFile Version 3.0
+Unit Cube Tet Mesh
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS 8 double
+-0.5 -0.5 -0.5
+ 0.5 -0.5 -0.5
+ 0.5  0.5 -0.5
+-0.5  0.5 -0.5
+-0.5 -0.5  0.5
+ 0.5 -0.5  0.5
+ 0.5  0.5  0.5
+-0.5  0.5  0.5
+CELLS 5 25
+4 0 1 3 4
+4 1 2 3 6
+4 1 4 5 6
+4 3 4 6 7
+4 1 3 4 6
+CELL_TYPES 5
+10
+10
+10
+10
+10

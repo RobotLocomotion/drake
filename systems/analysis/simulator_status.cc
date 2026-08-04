@@ -12,9 +12,8 @@ namespace systems {
 std::string SimulatorStatus::FormatMessage() const {
   if (reason() == kReachedBoundaryTime) {
     DRAKE_DEMAND(return_time() == boundary_time());
-    return fmt::format(
-        "Simulator successfully reached the boundary time ({}).",
-        boundary_time());
+    return fmt::format("Simulator successfully reached the boundary time ({}).",
+                       boundary_time());
   }
 
   // Equality is unlikely but allowed in case a termination request happens
@@ -27,11 +26,11 @@ std::string SimulatorStatus::FormatMessage() const {
   // "MultibodyPlant<double> System 'my_plant'".
   const std::string system_id =
       system() == nullptr
-      ? "System"
-      : fmt::format(
-          "{} System '{}'",
-          NiceTypeName::RemoveNamespaces(system()->GetSystemType()),
-          system()->GetSystemPathname());
+          ? "System"
+          : fmt::format(
+                "{} System '{}'",
+                NiceTypeName::RemoveNamespaces(system()->GetSystemType()),
+                system()->GetSystemPathname());
 
   if (reason() == kReachedTerminationCondition) {
     return fmt::format(
@@ -49,5 +48,3 @@ std::string SimulatorStatus::FormatMessage() const {
 
 }  // namespace systems
 }  // namespace drake
-
-

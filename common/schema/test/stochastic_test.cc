@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -11,9 +12,9 @@
 #include "drake/common/yaml/yaml_io.h"
 
 using drake::symbolic::Expression;
-using drake::symbolic::test::ExprEqual;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
+using drake::symbolic::test::ExprEqual;
 using drake::yaml::LoadYamlString;
 using drake::yaml::SaveYamlString;
 
@@ -56,8 +57,8 @@ void CheckUniformSymbolic(const Expression& e, double min, double max) {
   EXPECT_PRED2(ExprEqual, e, min + (max - min) * v);
 }
 
-void CheckUniformDiscreteSymbolic(
-    const Expression& e, std::vector<double> values) {
+void CheckUniformDiscreteSymbolic(const Expression& e,
+                                  std::vector<double> values) {
   const Variables vars{e.GetVariables()};
   ASSERT_EQ(vars.size(), 1);
   const Variable& v{*(vars.begin())};
@@ -85,8 +86,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   EXPECT_EQ(g.Mean(), 2.);
   CheckGaussianSymbolic(g.ToSymbolic(), g.mean, g.stddev);
   EXPECT_FALSE(IsDeterministic(variants.vec[1]));
-  EXPECT_THROW(GetDeterministicValue(variants.vec[1]),
-               std::logic_error);
+  EXPECT_THROW(GetDeterministicValue(variants.vec[1]), std::logic_error);
 
   const Uniform& u = std::get<Uniform>(variants.vec[2]);
   EXPECT_EQ(u.min, 1.);
@@ -97,13 +97,12 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   EXPECT_EQ(u.Mean(), 3.);
   CheckUniformSymbolic(u.ToSymbolic(), u.min, u.max);
   EXPECT_FALSE(IsDeterministic(variants.vec[2]));
-  EXPECT_THROW(GetDeterministicValue(variants.vec[2]),
-               std::logic_error);
+  EXPECT_THROW(GetDeterministicValue(variants.vec[2]), std::logic_error);
 
   const UniformDiscrete& ub = std::get<UniformDiscrete>(variants.vec[3]);
-  EXPECT_NE(std::find(ub.values.begin(), ub.values.end(),
-                      ub.Sample(&generator)),
-            ub.values.end());
+  EXPECT_NE(
+      std::find(ub.values.begin(), ub.values.end(), ub.Sample(&generator)),
+      ub.values.end());
   EXPECT_EQ(ub.Mean(), 1.5);
   CheckUniformDiscreteSymbolic(ub.ToSymbolic(), ub.values);
   EXPECT_EQ(ub.ToSymbolic().to_string(),
@@ -111,8 +110,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
             "(if ((3 * random_uniform_0) < 2) then 1.5 else "
             "2))");
   EXPECT_FALSE(IsDeterministic(variants.vec[3]));
-  EXPECT_THROW(GetDeterministicValue(variants.vec[3]),
-               std::logic_error);
+  EXPECT_THROW(GetDeterministicValue(variants.vec[3]), std::logic_error);
 
   EXPECT_EQ(std::get<double>(variants.vec[4]), 3.2);
   EXPECT_EQ(Sample(variants.vec[4], &generator), 3.2);
@@ -209,12 +207,11 @@ GTEST_TEST(StochasticTest, VectorTest) {
 
   RandomGenerator generator;
 
-  EXPECT_TRUE(CompareMatrices(
-      ToDistributionVector(variants.vector)->Sample(&generator),
-      Eigen::Vector3d(1., 2., 3.)));
-  EXPECT_TRUE(CompareMatrices(
-      ToDistributionVector(variants.vector)->Mean(),
-      Eigen::Vector3d(1., 2., 3.)));
+  EXPECT_TRUE(
+      CompareMatrices(ToDistributionVector(variants.vector)->Sample(&generator),
+                      Eigen::Vector3d(1., 2., 3.)));
+  EXPECT_TRUE(CompareMatrices(ToDistributionVector(variants.vector)->Mean(),
+                              Eigen::Vector3d(1., 2., 3.)));
   auto symbolic_vector = ToDistributionVector(variants.vector)->ToSymbolic();
   ASSERT_EQ(symbolic_vector.size(), 3);
   EXPECT_PRED2(ExprEqual, symbolic_vector(0), 1.);
@@ -224,31 +221,29 @@ GTEST_TEST(StochasticTest, VectorTest) {
   EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.deterministic)->Sample(&generator),
       Eigen::Vector3d(3., 4., 5.)));
-  EXPECT_TRUE(CompareMatrices(
-      ToDistributionVector(variants.deterministic)->Mean(),
-      Eigen::Vector3d(3., 4., 5.)));
+  EXPECT_TRUE(
+      CompareMatrices(ToDistributionVector(variants.deterministic)->Mean(),
+                      Eigen::Vector3d(3., 4., 5.)));
   symbolic_vector = ToDistributionVector(variants.deterministic)->ToSymbolic();
   ASSERT_EQ(symbolic_vector.size(), 3);
   EXPECT_PRED2(ExprEqual, symbolic_vector(0), 3.);
   EXPECT_PRED2(ExprEqual, symbolic_vector(1), 4.);
   EXPECT_PRED2(ExprEqual, symbolic_vector(2), 5.);
 
-  EXPECT_EQ(
-      ToDistributionVector(variants.gaussian1)->Sample(&generator).size(), 3);
-  EXPECT_TRUE(CompareMatrices(
-      ToDistributionVector(variants.gaussian1)->Mean(),
-      Eigen::Vector3d(1.1, 1.2, 1.3)));
+  EXPECT_EQ(ToDistributionVector(variants.gaussian1)->Sample(&generator).size(),
+            3);
+  EXPECT_TRUE(CompareMatrices(ToDistributionVector(variants.gaussian1)->Mean(),
+                              Eigen::Vector3d(1.1, 1.2, 1.3)));
   symbolic_vector = ToDistributionVector(variants.gaussian1)->ToSymbolic();
   ASSERT_EQ(symbolic_vector.size(), 3);
   CheckGaussianSymbolic(symbolic_vector(0), 1.1, 0.1);
   CheckGaussianSymbolic(symbolic_vector(1), 1.2, 0.2);
   CheckGaussianSymbolic(symbolic_vector(2), 1.3, 0.3);
 
-  EXPECT_EQ(
-      ToDistributionVector(variants.gaussian2)->Sample(&generator).size(), 4);
-  EXPECT_TRUE(CompareMatrices(
-      ToDistributionVector(variants.gaussian2)->Mean(),
-      Eigen::Vector4d(2.1, 2.2, 2.3, 2.4)));
+  EXPECT_EQ(ToDistributionVector(variants.gaussian2)->Sample(&generator).size(),
+            4);
+  EXPECT_TRUE(CompareMatrices(ToDistributionVector(variants.gaussian2)->Mean(),
+                              Eigen::Vector4d(2.1, 2.2, 2.3, 2.4)));
   symbolic_vector = ToDistributionVector(variants.gaussian2)->ToSymbolic();
   ASSERT_EQ(symbolic_vector.size(), 4);
   CheckGaussianSymbolic(symbolic_vector(0), 2.1, 1.0);
@@ -257,31 +252,25 @@ GTEST_TEST(StochasticTest, VectorTest) {
   CheckGaussianSymbolic(symbolic_vector(3), 2.4, 1.0);
 
   EXPECT_TRUE(IsDeterministic(variants.vector));
-  EXPECT_TRUE(CompareMatrices(
-      GetDeterministicValue(variants.vector),
-      Eigen::Vector3d(1., 2., 3.)));
+  EXPECT_TRUE(CompareMatrices(GetDeterministicValue(variants.vector),
+                              Eigen::Vector3d(1., 2., 3.)));
 
   EXPECT_TRUE(IsDeterministic(variants.deterministic));
-  EXPECT_TRUE(CompareMatrices(
-      GetDeterministicValue(variants.deterministic),
-      Eigen::Vector3d(3., 4., 5.)));
+  EXPECT_TRUE(CompareMatrices(GetDeterministicValue(variants.deterministic),
+                              Eigen::Vector3d(3., 4., 5.)));
 
   EXPECT_FALSE(IsDeterministic(variants.gaussian1));
-  EXPECT_THROW(GetDeterministicValue(variants.gaussian1),
-               std::logic_error);
+  EXPECT_THROW(GetDeterministicValue(variants.gaussian1), std::logic_error);
 
   EXPECT_FALSE(IsDeterministic(variants.gaussian2));
-  EXPECT_THROW(GetDeterministicValue(variants.gaussian2),
-               std::logic_error);
+  EXPECT_THROW(GetDeterministicValue(variants.gaussian2), std::logic_error);
 
   EXPECT_FALSE(IsDeterministic(variants.uniform));
-  EXPECT_THROW(GetDeterministicValue(variants.uniform),
-               std::logic_error);
+  EXPECT_THROW(GetDeterministicValue(variants.uniform), std::logic_error);
 
   EXPECT_TRUE(IsDeterministic(variants.deterministic_scalar));
   EXPECT_TRUE(CompareMatrices(
-      GetDeterministicValue(variants.deterministic_scalar),
-      Vector1d(19.5)));
+      GetDeterministicValue(variants.deterministic_scalar), Vector1d(19.5)));
 
   EXPECT_FALSE(IsDeterministic(variants.gaussian_scalar));
   EXPECT_THROW(GetDeterministicValue(variants.gaussian_scalar),
@@ -298,16 +287,15 @@ GTEST_TEST(StochasticTest, VectorTest) {
   EXPECT_GE(11, uniform(0));
   EXPECT_LE(20, uniform(1));
   EXPECT_GE(22, uniform(1));
-  EXPECT_TRUE(CompareMatrices(
-      ToDistributionVector(variants.uniform)->Mean(),
-      Eigen::Vector2d(10.5, 21.0)));
+  EXPECT_TRUE(CompareMatrices(ToDistributionVector(variants.uniform)->Mean(),
+                              Eigen::Vector2d(10.5, 21.0)));
   symbolic_vector = ToDistributionVector(variants.uniform)->ToSymbolic();
   ASSERT_EQ(symbolic_vector.size(), 2);
   CheckUniformSymbolic(symbolic_vector(0), 10, 11);
   CheckUniformSymbolic(symbolic_vector(1), 20, 22);
 
   Eigen::VectorXd deterministic_scalar =
-        ToDistributionVector(variants.deterministic_scalar)->Sample(&generator);
+      ToDistributionVector(variants.deterministic_scalar)->Sample(&generator);
   ASSERT_EQ(deterministic_scalar.size(), 1);
   EXPECT_EQ(deterministic_scalar(0), 19.5);
   EXPECT_TRUE(CompareMatrices(
@@ -318,8 +306,7 @@ GTEST_TEST(StochasticTest, VectorTest) {
       ToDistributionVector(variants.gaussian_scalar)->Sample(&generator);
   ASSERT_EQ(gaussian_scalar.size(), 1);
   EXPECT_TRUE(CompareMatrices(
-      ToDistributionVector(variants.gaussian_scalar)->Mean(),
-      Vector1d(5.0)));
+      ToDistributionVector(variants.gaussian_scalar)->Mean(), Vector1d(5.0)));
 
   Eigen::VectorXd uniform_scalar =
       ToDistributionVector(variants.uniform_scalar)->Sample(&generator);
@@ -327,8 +314,7 @@ GTEST_TEST(StochasticTest, VectorTest) {
   EXPECT_LE(1, uniform_scalar(0));
   EXPECT_GE(2, uniform_scalar(0));
   EXPECT_TRUE(CompareMatrices(
-      ToDistributionVector(variants.uniform_scalar)->Mean(),
-      Vector1d(1.5)));
+      ToDistributionVector(variants.uniform_scalar)->Mean(), Vector1d(1.5)));
 
   // Confirm that writeback works for every possible type.
   EXPECT_EQ(SaveYamlString(variants, "root"), R"""(root:
@@ -365,24 +351,20 @@ GTEST_TEST(StochasticTest, ZeroSizeRandomRanges) {
   DistributionVectorVariantX uniform_scalar = Uniform(1.5, 1.5);
 
   EXPECT_TRUE(IsDeterministic(gaussian));
-  EXPECT_TRUE(CompareMatrices(
-      GetDeterministicValue(gaussian),
-      Eigen::VectorXd::Constant(3, 4.5)));
+  EXPECT_TRUE(CompareMatrices(GetDeterministicValue(gaussian),
+                              Eigen::VectorXd::Constant(3, 4.5)));
 
   EXPECT_TRUE(IsDeterministic(uniform));
-  EXPECT_TRUE(CompareMatrices(
-      GetDeterministicValue(uniform),
-      Eigen::VectorXd::Constant(2, 1.5)));
+  EXPECT_TRUE(CompareMatrices(GetDeterministicValue(uniform),
+                              Eigen::VectorXd::Constant(2, 1.5)));
 
   EXPECT_TRUE(IsDeterministic(gaussian_scalar));
-  EXPECT_TRUE(CompareMatrices(
-      GetDeterministicValue(gaussian_scalar),
-      Eigen::VectorXd::Constant(1, 4.5)));
+  EXPECT_TRUE(CompareMatrices(GetDeterministicValue(gaussian_scalar),
+                              Eigen::VectorXd::Constant(1, 4.5)));
 
   EXPECT_TRUE(IsDeterministic(uniform_scalar));
-  EXPECT_TRUE(CompareMatrices(
-      GetDeterministicValue(uniform_scalar),
-      Eigen::VectorXd::Constant(1, 1.5)));
+  EXPECT_TRUE(CompareMatrices(GetDeterministicValue(uniform_scalar),
+                              Eigen::VectorXd::Constant(1, 1.5)));
 }
 
 struct FixedSize2 {

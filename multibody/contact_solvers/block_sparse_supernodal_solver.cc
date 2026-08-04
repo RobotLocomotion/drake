@@ -75,7 +75,7 @@ BlockSparseSuperNodalSolver::BlockSparseSuperNodalSolver(
       sparsity[j].emplace_back(i);
     }
   }
-  H_ = std::make_unique<BlockSparseSymmetricMatrix>(
+  H_ = std::make_unique<BlockSparseSymmetricMatrixXd>(
       BlockSparsityPattern(std::move(block_sizes), std::move(sparsity)));
   /* The solver analyzes the sparsity pattern of the H_ (currently a zero
    matrix) so that subsequent updates to the matrix can use UpdateMatrix()

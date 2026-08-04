@@ -1,7 +1,9 @@
 #include "drake/systems/framework/basic_vector.h"
 
 #include <cmath>
+#include <memory>
 #include <sstream>
+#include <string>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -234,27 +236,23 @@ using DefaultScalars =
     ::testing::Types<double, AutoDiffXd, symbolic::Expression>;
 TYPED_TEST_SUITE(TypedBasicVectorTest, DefaultScalars);
 
-// Tests ability to stream a BasicVector into a string.
-TYPED_TEST(TypedBasicVectorTest, StringStream) {
+// Tests string representation of a BasicVector.
+TYPED_TEST(TypedBasicVectorTest, ToStringFmtFormatter) {
   using T = TypeParam;
   BasicVector<T> vec(3);
   vec.get_mutable_value() << 1.0, 2.2, 3.3;
-  std::stringstream s;
-  s << "hello " << vec << " world";
   const std::string expected =
       fmt::format("hello {} world", fmt_eigen(vec.value().transpose()));
-  EXPECT_EQ(s.str(), expected);
+  EXPECT_EQ(fmt::format("hello {} world", vec), expected);
 }
 
-// Tests ability to stream a BasicVector of size zero into a string.
-TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
+// Tests string representation of a BasicVector of size zero.
+TYPED_TEST(TypedBasicVectorTest, ZeroLengthVectorToStringFmtFormatter) {
   using T = TypeParam;
   BasicVector<T> vec(0);
-  std::stringstream s;
-  s << "foo [" << vec << "] bar";
   const std::string expected =
       fmt::format("foo [{}] bar", fmt_eigen(vec.value().transpose()));
-  EXPECT_EQ(s.str(), expected);
+  EXPECT_EQ(fmt::format("foo [{}] bar", vec), expected);
 }
 
 // Tests the default set of bounds (empty).

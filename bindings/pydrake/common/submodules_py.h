@@ -12,13 +12,13 @@ namespace internal {
 // For simplicity, these declarations are listed in alphabetical order.
 
 /* Defines `pydrake.common.eigen_geometry` bindings per eigen_geometry_py.cc. */
-void DefineModuleEigenGeometry(py::module m);
+void DefineModuleEigenGeometry(py::module_ m);
 
 /* Defines `pydrake.common.schema` bindings per schema_py.cc. */
-void DefineModuleSchema(py::module m);
+void DefineModuleSchema(py::module_ m);
 
 /* Defines `pydrake.common.value` bindings per value_py.cc. */
-void DefineModuleValue(py::module m);
+void DefineModuleValue(py::module_ m);
 
 }  // namespace internal
 }  // namespace pydrake

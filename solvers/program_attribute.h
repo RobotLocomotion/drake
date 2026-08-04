@@ -1,10 +1,9 @@
 #pragma once
 
-#include <ostream>
 #include <string>
 #include <unordered_set>
 
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -53,9 +52,8 @@ bool AreRequiredAttributesSupported(const ProgramAttributes& required,
                                     std::string* unsupported_message = nullptr);
 
 std::string to_string(const ProgramAttribute&);
-std::ostream& operator<<(std::ostream&, const ProgramAttribute&);
+
 std::string to_string(const ProgramAttributes&);
-std::ostream& operator<<(std::ostream&, const ProgramAttributes&);
 
 /**
  * A coarse categorization of the optimization problem based on the type of
@@ -95,18 +93,13 @@ enum class ProgramType {
 };
 
 std::string to_string(const ProgramType&);
-std::ostream& operator<<(std::ostream&, const ProgramType&);
+
 }  // namespace solvers
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::solvers::ProgramAttribute> : drake::ostream_formatter {
-};
-template <>
-struct formatter<drake::solvers::ProgramAttributes> : drake::ostream_formatter {
-};
-template <>
-struct formatter<drake::solvers::ProgramType> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::solvers, ProgramAttribute, x,
+                   drake::solvers::to_string(x))
+DRAKE_FORMATTER_AS(, drake::solvers, ProgramAttributes, x,
+                   drake::solvers::to_string(x))
+DRAKE_FORMATTER_AS(, drake::solvers, ProgramType, x,
+                   drake::solvers::to_string(x))

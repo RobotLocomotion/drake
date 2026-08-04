@@ -12,6 +12,10 @@ a way to model kinematic loops. It shows:
   Refer to README.md for more details on how to run and modify this example.
 */
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <fmt/format.h>
 #include <gflags/gflags.h>
 

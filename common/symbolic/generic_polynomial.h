@@ -1,13 +1,12 @@
 #pragma once
 
 #include <map>
-#include <ostream>
+#include <string>
 
 #include <Eigen/Core>
-#include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/symbolic/chebyshev_basis_element.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/monomial_basis_element.h"
@@ -503,20 +502,7 @@ GenericPolynomialEnable<BasisElement> pow(
 }
 
 template <typename BasisElement>
-std::ostream& operator<<(std::ostream& os,
-                         const GenericPolynomial<BasisElement>& p) {
-  const typename GenericPolynomial<BasisElement>::MapType& map{
-      p.basis_element_to_coefficient_map()};
-  if (map.empty()) {
-    return os << 0;
-  }
-  auto it = map.begin();
-  os << it->second << "*" << it->first;
-  for (++it; it != map.end(); ++it) {
-    os << " + " << it->second << "*" << it->first;
-  }
-  return os;
-}
+std::string to_string(const GenericPolynomial<BasisElement>& p);
 
 extern template class GenericPolynomial<MonomialBasisElement>;
 extern template class GenericPolynomial<ChebyshevBasisElement>;
@@ -548,7 +534,9 @@ struct NumTraits<
     drake::symbolic::GenericPolynomial<drake::symbolic::MonomialBasisElement>>
     : GenericNumTraits<drake::symbolic::GenericPolynomial<
           drake::symbolic::MonomialBasisElement>> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 template <>
@@ -556,14 +544,13 @@ struct NumTraits<
     drake::symbolic::GenericPolynomial<drake::symbolic::ChebyshevBasisElement>>
     : GenericNumTraits<drake::symbolic::GenericPolynomial<
           drake::symbolic::ChebyshevBasisElement>> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename BasisElement>
-struct formatter<drake::symbolic::GenericPolynomial<BasisElement>>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename BasisElement, drake::symbolic,
+                   GenericPolynomial<BasisElement>, x,
+                   drake::symbolic::to_string(x))

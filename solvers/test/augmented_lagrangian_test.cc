@@ -1,6 +1,8 @@
 #include "drake/solvers/augmented_lagrangian.h"
 
 #include <limits>
+#include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

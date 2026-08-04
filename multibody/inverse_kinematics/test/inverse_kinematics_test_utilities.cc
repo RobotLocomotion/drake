@@ -41,8 +41,8 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   plant_context_ =
       &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 
-  plant_autodiff_ = systems::System<double>::ToAutoDiffXd(
-      *ConstructIiwaPlant(iiwa_url, 0.1));
+  plant_autodiff_ =
+      systems::System<double>::ToAutoDiffXd(*ConstructIiwaPlant(iiwa_url, 0.1));
   plant_context_autodiff_ = plant_autodiff_->CreateDefaultContext();
 }
 

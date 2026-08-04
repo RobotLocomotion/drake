@@ -12,3 +12,5 @@ WORKSPACE diff=bazel
 *.svg -diff
 # Rust crate auto-generated files.
 /tools/workspace/crate_universe/lock/details/** -diff
+# Auto-generated docstrings.
+/bindings/generated_docstrings/*.h -diff

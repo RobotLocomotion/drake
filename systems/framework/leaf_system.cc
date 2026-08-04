@@ -781,12 +781,9 @@ std::unique_ptr<AbstractValue> LeafSystem<T>::DoAllocateInput(
 }
 
 template <typename T>
-std::map<PeriodicEventData, std::vector<const Event<T>*>,
-         PeriodicEventDataComparator>
+std::map<PeriodicEventData, std::vector<const Event<T>*>>
 LeafSystem<T>::DoMapPeriodicEventsByTiming(const Context<T>&) const {
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
-      periodic_events_map;
+  std::map<PeriodicEventData, std::vector<const Event<T>*>> periodic_events_map;
 
   // Build a mapping from (offset,period) to the periodic events sharing
   // that trigger. There are three lists of different types in a
@@ -1077,6 +1074,15 @@ void LeafSystem<T>::MaybeDeclareVectorBaseInequalityConstraint(
       },
       {constraint_lower_bound, constraint_upper_bound},
       kind + " of type " + NiceTypeName::Get(model_vector));
+}
+
+template <typename T>
+void LeafSystem<T>::ThrowNonPositiveEventPeriod(
+    double period_sec, const std::type_info& event_type) const {
+  throw std::logic_error(fmt::format(
+      "A periodic event of type '{}' was declared with a non-positive period "
+      "{}. Consider using a per-step event instead.",
+      NiceTypeName::Get(event_type), period_sec));
 }
 
 }  // namespace systems

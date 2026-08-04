@@ -7,6 +7,9 @@ selects.config_setting_group(
         ":enabled_via_flag",
         ":enabled_via_define",
     ],
+    visibility = [
+        "//solvers:__pkg__",
+    ],
 )
 
 config_setting(
@@ -21,8 +24,11 @@ config_setting(
 )
 
 exports_files([
+    "drake_dlopen_mosek.cc",
     "drake_mosek_redistribution.txt",
     "LICENSE.third_party",
 ])
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_extra_srcs = ["drake_dlopen_mosek.cc"],
+)

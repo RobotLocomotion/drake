@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/scene_graph.h"
@@ -17,8 +16,8 @@ namespace pendulum {
 namespace {
 
 using geometry::FramePoseVector;
-using math::RotationMatrixd;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 
 math::RigidTransformd ExtractSinglePose(
     const geometry::FramePoseVector<double>& pose_vector) {
@@ -41,10 +40,10 @@ GTEST_TEST(PendulumGeometryTest, AcceptanceTest) {
   // Finish the diagram and create a context.
   auto diagram = builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context = diagram->GetMutableSubsystemContext(
-      *plant, diagram_context.get());
-  auto& geom_context = diagram->GetMutableSubsystemContext(
-      *geom, diagram_context.get());
+  auto& plant_context =
+      diagram->GetMutableSubsystemContext(*plant, diagram_context.get());
+  auto& geom_context =
+      diagram->GetMutableSubsystemContext(*geom, diagram_context.get());
 
   // Zero the pendulum input, but set a non-zero initial state.
   const double theta = 0.2;

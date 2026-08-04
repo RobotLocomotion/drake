@@ -112,28 +112,33 @@ enumerate_filegroup(
 drake_py_binary(
     name = "pages",
     srcs = ["pages.py"],
-    add_test_rule = 1,
     data = [
         ":pages_input",
         ":pages_input.txt",
     ],
-    test_rule_args = ["--out_dir=<test>"],
-    test_rule_tags = DEFAULT_TEST_TAGS,
     deps = [
         ":defs",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_tags = DEFAULT_TEST_TAGS,
 )
 
 drake_py_binary(
     name = "build",
     srcs = ["build.py"],
-    add_test_rule = 1,
     data = [
         ":pages",
         "//doc/doxygen_cxx:build",
         "//doc/pydrake:build",
         "//doc/styleguide:build",
+        "//doc/tutorials:build",
     ],
+    deps = [
+        ":defs",
+        "@rules_python//python/runfiles",
+    ],
+    add_test_rule = True,
     test_rule_args = [
         "--out_dir=<test>",
         # Only generate some modules, so that the test provides quick feedback.
@@ -143,12 +148,9 @@ drake_py_binary(
         "pydrake.math",
         "sitemap",
         "styleguide",
+        "tutorials.solver_parameters",
     ],
     test_rule_tags = DEFAULT_TEST_TAGS,
-    deps = [
-        ":defs",
-        "@rules_python//python/runfiles",
-    ],
 )
 
 # This rule is used by our CI scripts as a single point of entry to ensure that
@@ -162,6 +164,7 @@ test_suite(
         "//doc/doxygen_cxx:build_test",
         "//doc/pydrake:build_test",
         "//doc/styleguide:build_test",
+        "//doc/tutorials:build_test",
     ],
 )
 

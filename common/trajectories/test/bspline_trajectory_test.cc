@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
+#include <memory>
+#include <vector>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>

@@ -186,8 +186,30 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
                                 std::move(surface_vertices));
 }
 
+template <class T>
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+    const VolumeMesh<T>& volume, std::vector<int>* boundary_vertices_out,
+    std::vector<int>* tri_to_tet_map) {
+  DRAKE_THROW_UNLESS(boundary_vertices_out != nullptr);
+  DRAKE_THROW_UNLESS(tri_to_tet_map != nullptr);
+  std::vector<TetFace> tet_faces;
+  TriangleSurfaceMesh<T> mesh = ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+      volume, boundary_vertices_out, &tet_faces);
+  tri_to_tet_map->clear();
+  tri_to_tet_map->reserve(tet_faces.size());
+  for (const TetFace& face : tet_faces) {
+    tri_to_tet_map->push_back(face.tet_index);
+  }
+  return mesh;
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ConvertVolumeToSurfaceMeshWithBoundaryVertices<T>));
+    (static_cast<TriangleSurfaceMesh<T> (*)(
+         const VolumeMesh<T>&, std::vector<int>*, std::vector<TetFace>*)>(
+         &ConvertVolumeToSurfaceMeshWithBoundaryVertices<T>),
+     static_cast<TriangleSurfaceMesh<T> (*)(
+         const VolumeMesh<T>&, std::vector<int>*, std::vector<int>*)>(
+         &ConvertVolumeToSurfaceMeshWithBoundaryVertices<T>)));
 
 }  // namespace internal
 }  // namespace geometry

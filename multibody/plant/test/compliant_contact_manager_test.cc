@@ -1,6 +1,10 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
 #include <algorithm>
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -51,8 +55,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-constexpr double kEps = std::numeric_limits<double>::epsilon();
-
 // Friend class used to provide access to a selection of private functions in
 // SapDriver for testing purposes.
 // TODO(amcastro-tri): Consider how to split SapDriver tests from
@@ -75,6 +77,16 @@ class SapDriverTest {
                                     contact_results);
   }
 };
+
+namespace {
+
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
+#pragma GCC diagnostic push
+
+constexpr double kEps = std::numeric_limits<double>::epsilon();
 
 // Tests that in SetDiscreteUpdateManager, a non-empty DeformableModel will
 // cause a DeformableDriver to be instantiated in the manager.
@@ -270,10 +282,6 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
   // In the functions below we use CompliantContactManagerTester to provide
   // access to private functions for unit testing.
 
-  const internal::MultibodyTreeTopology& topology() const {
-    return CompliantContactManagerTester::topology(*contact_manager_);
-  }
-
   const GeometryContactData<double>& EvalGeometryContactData(
       const Context<double>& context) const {
     return CompliantContactManagerTester::EvalGeometryContactData(
@@ -389,48 +397,48 @@ TEST_F(SpheresStackTest, CalcDiscreteContactPairs) {
 // Unit test to verify discrete contact pairs computed by the manager for
 // different combinations of compliance.
 TEST_F(SpheresStackTest, VerifyDiscreteContactPairs) {
-  ContactParameters soft_point_contact{1.0e3, std::nullopt, 0.01, 1.0};
+  ContactParameters compliant_point_contact{1.0e3, std::nullopt, 0.01, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
-  // Hard sphere 1/soft sphere 2.
-  VerifyDiscreteContactPairs(hard_point_contact, soft_point_contact);
+  // Hard sphere 1/compliant sphere 2.
+  VerifyDiscreteContactPairs(hard_point_contact, compliant_point_contact);
 
-  // Equally soft spheres.
-  VerifyDiscreteContactPairs(soft_point_contact, soft_point_contact);
+  // Equally compliant spheres.
+  VerifyDiscreteContactPairs(compliant_point_contact, compliant_point_contact);
 
-  // Soft sphere 1/hard sphere 2.
-  VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
+  // Compliant sphere 1/hard sphere 2.
+  VerifyDiscreteContactPairs(compliant_point_contact, hard_point_contact);
 }
 
 TEST_F(SpheresStackTest, RelaxationTimeIsNotRequired) {
-  ContactParameters soft_point_contact{
+  ContactParameters compliant_point_contact{
       1.0e3, std::nullopt,
       std::nullopt /* Dissipation not included in ProximityProperties */, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
-  // Hard sphere 1/soft sphere 2.
-  VerifyDiscreteContactPairs(hard_point_contact, soft_point_contact);
+  // Hard sphere 1/compliant sphere 2.
+  VerifyDiscreteContactPairs(hard_point_contact, compliant_point_contact);
 
-  // Equally soft spheres.
-  VerifyDiscreteContactPairs(soft_point_contact, soft_point_contact);
+  // Equally compliant spheres.
+  VerifyDiscreteContactPairs(compliant_point_contact, compliant_point_contact);
 
   // Soft sphere 1/hard sphere 2.
-  VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
+  VerifyDiscreteContactPairs(compliant_point_contact, hard_point_contact);
 }
 
 TEST_F(SpheresStackTest, RelaxationTimeMustBePositive) {
-  ContactParameters soft_point_contact{
+  ContactParameters compliant_point_contact{
       1.0e3, std::nullopt, -1.0 /* Negative dissipation timescale */, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
-  // Hard sphere 1/soft sphere 2.
-  VerifyDiscreteContactPairs(hard_point_contact, soft_point_contact);
+  // Hard sphere 1/compliant sphere 2.
+  VerifyDiscreteContactPairs(hard_point_contact, compliant_point_contact);
 
-  // Equally soft spheres.
-  VerifyDiscreteContactPairs(soft_point_contact, soft_point_contact);
+  // Equally compliant spheres.
+  VerifyDiscreteContactPairs(compliant_point_contact, compliant_point_contact);
 
   // Soft sphere 1/hard sphere 2.
-  VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
+  VerifyDiscreteContactPairs(compliant_point_contact, hard_point_contact);
 }
 
 // Unit test to verify discrete contact pairs computed by the manager for
@@ -536,10 +544,10 @@ TEST_F(SpheresStackTest, DoCalcDiscreteValues) {
 
   // In this simple setup only positions change since there is no angular
   // velocities nor external torques.
-  plant_->SetFreeBodyPoseInWorldFrame(next_context.get(), *sphere1_,
-                                      RigidTransformd(p_WS1));
-  plant_->SetFreeBodyPoseInWorldFrame(next_context.get(), *sphere2_,
-                                      RigidTransformd(p_WS2));
+  plant_->SetFloatingBaseBodyPoseInWorldFrame(next_context.get(), *sphere1_,
+                                              RigidTransformd(p_WS1));
+  plant_->SetFloatingBaseBodyPoseInWorldFrame(next_context.get(), *sphere2_,
+                                              RigidTransformd(p_WS2));
   plant_->SetFreeBodySpatialVelocity(next_context.get(), *sphere1_, V_WS);
   plant_->SetFreeBodySpatialVelocity(next_context.get(), *sphere2_, V_WS);
 
@@ -686,7 +694,7 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
   // projections onto the friction cone are accurate to machine epsilon and
   // therefore no error is expected.
   const double kRelativeSlipTolerance =
-      config.contact_solver == DiscreteContactSolver::kTamsi ? 2.0e-6 : 0.0;
+      config.contact_solver == kDiscreteContactSolverTamsi ? 2.0e-6 : 0.0;
 
   if (config.point_contact) {
     // Test point contact.
@@ -751,15 +759,15 @@ std::vector<ContactTestConfig> MakeTestCases() {
        .contact_solver = DiscreteContactSolver::kSap},
       {.description = "HydroelasticContactWithFallback_TAMSI",
        .point_contact = false,
-       .contact_solver = DiscreteContactSolver::kTamsi},
+       .contact_solver = kDiscreteContactSolverTamsi},
       {.description = "HydroelasticContactOnly_TAMSI",
        .point_contact = false,
        // We verify that the test passes with hydroelastic only.
        .contact_model = ContactModel::kHydroelastic,
-       .contact_solver = DiscreteContactSolver::kTamsi},
+       .contact_solver = kDiscreteContactSolverTamsi},
       {.description = "PointContact_TAMSI",
        .point_contact = true,
-       .contact_solver = DiscreteContactSolver::kTamsi},
+       .contact_solver = kDiscreteContactSolverTamsi},
   };
 }
 
@@ -768,6 +776,7 @@ INSTANTIATE_TEST_SUITE_P(CompliantContactManagerTests,
                          testing::ValuesIn(MakeTestCases()),
                          testing::PrintToStringParamName());
 
+}  // namespace
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

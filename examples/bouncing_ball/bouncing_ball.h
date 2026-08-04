@@ -32,8 +32,8 @@ class BouncingBall final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BouncingBall);
 
-  BouncingBall() : systems::LeafSystem<T>(
-      systems::SystemTypeTag<BouncingBall>{}) {
+  BouncingBall()
+      : systems::LeafSystem<T>(systems::SystemTypeTag<BouncingBall>{}) {
     // Two state variables: q and v.
     auto state_index = this->DeclareContinuousState(1, 1, 0);
 
@@ -104,8 +104,8 @@ class BouncingBall final : public systems::LeafSystem<T> {
   // Updates the velocity discontinuously to reverse direction. This method
   // is called by the Simulator when the signed distance witness function
   // triggers.
-  systems::EventStatus HandleImpact(
-      const systems::Context<T>& context, systems::State<T>* next_state) const {
+  systems::EventStatus HandleImpact(const systems::Context<T>& context,
+                                    systems::State<T>* next_state) const {
     systems::VectorBase<T>& next_cstate =
         next_state->get_mutable_continuous_state().get_mutable_vector();
 
@@ -126,18 +126,16 @@ class BouncingBall final : public systems::LeafSystem<T> {
     //
     // [Stronge 1991]  W. J. Stronge. Unraveling paradoxical theories for rigid
     //                 body collisions. J. Appl. Mech., 58:1049-1055, 1991.
-    next_cstate.SetAtIndex(
-        1, cstate.GetAtIndex(1) * restitution_coef_ * -1.);
+    next_cstate.SetAtIndex(1, cstate.GetAtIndex(1) * restitution_coef_ * -1.);
 
     return systems::EventStatus::Succeeded();
   }
 
   // The signed distance witness function is always active and, hence, always
   // returned.
-  void DoGetWitnessFunctions(
-      const systems::Context<T>&,
-      std::vector<const systems::WitnessFunction<T>*>* witnesses)
-      const override {
+  void DoGetWitnessFunctions(const systems::Context<T>&,
+                             std::vector<const systems::WitnessFunction<T>*>*
+                                 witnesses) const override {
     witnesses->push_back(signed_distance_witness_.get());
   }
 

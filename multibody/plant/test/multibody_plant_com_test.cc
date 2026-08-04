@@ -2,7 +2,9 @@
 #include "drake/multibody/plant/multibody_plant.h"
 /* clang-format on */
 
+#include <limits>
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

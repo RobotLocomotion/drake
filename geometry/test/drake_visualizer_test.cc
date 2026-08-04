@@ -390,14 +390,16 @@ class DrakeVisualizerTest : public ::testing::Test {
     const std::string kSupportingPngAsMemory(
         "fully_textured_pyramid_normal.png");
 
+    // Apply a non-uniform scale, so we can observe it in the LCM message.
+    const Vector3d scale(2, 3, 4);
     if (in_memory) {
       InMemoryMesh mesh_data = ReadGltfToMemory(fs::path(gltf_path));
       mesh_data.supporting_files[kSupportingPngAsMemory] =
           MemoryFile::Make(std::get<fs::path>(
               mesh_data.supporting_files[kSupportingPngAsMemory]));
-      mesh = make_unique<MeshType>(std::move(mesh_data));
+      mesh = make_unique<MeshType>(std::move(mesh_data), scale);
     } else {
-      mesh = make_unique<MeshType>(gltf_path);
+      mesh = make_unique<MeshType>(gltf_path, scale);
     }
 
     SCOPED_TRACE(fmt::format("{} {} shape with {} role",
@@ -480,6 +482,10 @@ class DrakeVisualizerTest : public ::testing::Test {
       EXPECT_TRUE(CompareMatrices(X_PC.GetAsMatrix34(),
                                   X_PG_test.GetAsMatrix34(), 1e-7));
     } else {
+      EXPECT_FALSE(geo_message.float_data.empty());
+      EXPECT_EQ(geo_message.float_data[0], scale.x());
+      EXPECT_EQ(geo_message.float_data[1], scale.y());
+      EXPECT_EQ(geo_message.float_data[2], scale.z());
       if (in_memory) {
         EXPECT_FALSE(geo_message.string_data.empty());
         nlohmann::json json_root =
@@ -1023,8 +1029,8 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
       simulator.AdvanceTo(t);
       results = this->ProcessMessages(role);
       EXPECT_EQ(results.num_load, modified_role == role ? 1 : 0)
-          << "For visualized role '" << role << "' and modified role '" << role
-          << "'\n";
+          << fmt::format("For visualized role '{}' and modified role '{}'\n",
+                         role, modified_role);
       EXPECT_EQ(results.num_draw, 1);
       EXPECT_EQ(results.num_deformable, 1);
     }
@@ -1118,16 +1124,16 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeDeformableGeometry) {
  representation. This test focuses on:
 
  - Rigid shapes are serialized as mesh with data (not path).
- - Soft shapes are serialized as mesh with data (not path).
+ - Compliant shapes are serialized as mesh with data (not path).
  - Rigid HalfSpace does not get replaced.
- - Soft HalfSpace does not get replaced.
+ - Compliant HalfSpace does not get replaced.
  - Geometry w/o hydroelastic representation is preserved.
 
  We'll test this by evaluating a single load message with a SceneGraph populated
  with:
   - a rigid cube
-  - a soft sphere
-  - rigid and soft half spaces
+  - a compliant sphere
+  - rigid and compliant half spaces
   - an ellipsoid with no hydro representation.
 
  In the case where hydroelastic mesh geometry is sent, we also explicitly test
@@ -1182,11 +1188,11 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   props.AddProperty(internal::kHydroGroup, internal::kSlabThickness, 5.0);
   props.AddProperty(internal::kHydroGroup, internal::kElastic, 5.0);
   props.UpdateProperty(internal::kHydroGroup, internal::kComplianceType,
-                       HydroelasticType::kSoft);
+                       HydroelasticType::kCompliant);
   const RigidTransformd X_PSphere{RotationMatrixd::MakeZRotation(0.3),
                                   Vector3d{2.5, 1.25, -3.75}};
   add_geometry(make_unique<Sphere>(1), "sphere", props, X_PSphere);
-  add_geometry(make_unique<HalfSpace>(), "soft_half_space", props);
+  add_geometry(make_unique<HalfSpace>(), "compliant_half_space", props);
 
   this->pose_source_->SetPoses(std::move(poses));
 
@@ -1251,7 +1257,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
       EXPECT_TRUE(is_visualizer_color(geo_message));
       EXPECT_TRUE(pose_matches(X_PSphere, geo_message));
     } else if (link_message.name ==
-               fmt::format("{}::soft_half_space", this->kPoseSourceName)) {
+               fmt::format("{}::compliant_half_space", this->kPoseSourceName)) {
       /* In drake_visualizer, half spaces are big, flat boxes. */
       EXPECT_EQ(geo_message.type, geo_message.BOX);
     } else if (link_message.name ==

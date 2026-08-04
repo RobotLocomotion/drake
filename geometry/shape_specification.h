@@ -6,9 +6,8 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/geometry/lazy_shared.h"
 #include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
@@ -158,19 +157,19 @@ class Box final : public Shape {
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
    respectively.
-   @throws std::exception if `width`, `depth` or `height` are not strictly
-   positive. */
+   @throws std::exception if any measure is not finite positive. */
   Box(double width, double depth, double height);
 
   /** Constructs a box with a vector of measures: width, depth, and height --
    the box's dimensions along the canonical x-, y-, and z-axes, respectively.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit Box(const Vector3<double>& measures);
 
   ~Box() final;
 
   /** Constructs a cube with the given `edge_size` for its width, depth, and
-   height. */
+   height.
+   @throw std::exception if edge_size is not finite positive. */
   static Box MakeCube(double edge_size);
 
   /** Returns the box's dimension along the x axis. */
@@ -207,12 +206,12 @@ class Capsule final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule);
 
   /** Constructs a capsule with the given `radius` and `length`.
-   @throws std::exception if `radius` or `length` are not strictly positive.
+   @throws std::exception if any measure is not finite positive.
    */
   Capsule(double radius, double length);
 
   /** Constructs a capsule with a vector of measures: radius and length.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit Capsule(const Vector2<double>& measures);
 
   ~Capsule() final;
@@ -249,9 +248,6 @@ class Convex final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex);
 
-  // TODO(SeanCurtis-TRI): WHen scale is Vector3, make it clear that mirroring
-  // meshes can reverse winding, leading to a permutation of per-face ordering.
-
   /** Constructs a convex shape specification from the file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
 
@@ -269,6 +265,9 @@ class Convex final : public Shape {
                                 considering revisiting the model itself. */
   explicit Convex(const std::filesystem::path& filename, double scale = 1.0);
 
+  /** File variant that allows for specification of non-uniform scale. */
+  Convex(const std::filesystem::path& filename, const Vector3<double>& scale3);
+
   /** Constructs a convex shape specification from the contents of a
    Drake-supported mesh file type.
 
@@ -283,11 +282,19 @@ class Convex final : public Shape {
    @param scale       An optional scale to coordinates. */
   explicit Convex(InMemoryMesh mesh_data, double scale = 1.0);
 
+  /** Mesh-contents variant that allows for specification of non-uniform scale.
+   */
+  Convex(InMemoryMesh mesh_data, const Vector3<double>& scale3);
+
   /** Constructs a convex shape specification from the given `source`.
 
    @param source   The source for the mesh data.
    @param scale    An optional scale to coordinates. */
   explicit Convex(MeshSource source, double scale = 1.0);
+
+  /** Mesh-source variant that allows for specification of non-uniform scale.
+   */
+  Convex(MeshSource source, const Vector3<double>& scale3);
 
   /** Constructs an in-memory convex shape specification from the given points.
 
@@ -303,8 +310,12 @@ class Convex final : public Shape {
 
    @throws std::exception       if label contains newlines.
    @throws std::exception       if |scale| < 1e-8. */
-  explicit Convex(const Eigen::Matrix3X<double>& points,
-                  const std::string& label, double scale = 1.0);
+  Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
+         double scale = 1.0);
+
+  /** Point variant that allows for specification of non-uniform scale. */
+  Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
+         const Vector3<double>& scale3);
 
   ~Convex() final;
 
@@ -313,17 +324,9 @@ class Convex final : public Shape {
    %Convex is that the convex hull is always used in place of whatever
    underlying mesh declaration is provided. For all functional geometric
    usage, exclusively use the convex hull returned by GetConvexHull(). */
-  const MeshSource& source() const { return source_; }
-
-  /** Returns the filename passed to the constructor.
-   @throws std::exception if `this` %Convex was constructed using in-memory file
-                          contents.
-   @see source().is_path(). */
-  DRAKE_DEPRECATED(
-      "2025-04-01",
-      "Convex shapes can be defined from a file path or in memory data. Use "
-      "Convex::source() to determine if a filename is available.")
-  std::string filename() const;
+  const MeshSource& source() const {
+    return source_ != nullptr ? *source_ : MeshSource::Empty();
+  }
 
   /** Returns the extension of the underlying input mesh -- all lower case and
    including the dot. If `this` is constructed from a file path, the extension
@@ -333,9 +336,14 @@ class Convex final : public Shape {
 
    If `this` is constructed using in-memory file contents, it is the extension
    of the MemoryFile passed to the constructor. */
-  const std::string& extension() const { return source_.extension(); }
+  const std::string& extension() const { return source().extension(); }
 
-  double scale() const { return scale_; }
+  /** Returns a single scale representing the _uniform_ scale factor.
+   @throws if the scale is not uniform in all directions. */
+  double scale() const;
+
+  /** Returns general scale factors for this mesh. */
+  const Vector3<double>& scale3() const { return scale_; }
 
   /** Reports the convex hull of the named mesh.
 
@@ -355,10 +363,9 @@ class Convex final : public Shape {
   std::string do_to_string() const final;
   VariantShapeConstPtr get_variant_this() const final;
 
-  MeshSource source_;
-  double scale_{};
-  // Allows the deferred computation of the hull on an otherwise const Convex.
-  mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
+  std::shared_ptr<const MeshSource> source_;
+  Vector3<double> scale_;
+  internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
 };
 
 /** Definition of a cylinder. It is centered in its canonical frame with the
@@ -368,12 +375,11 @@ class Cylinder final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder);
 
   /** Constructs a cylinder with the given `radius` and `length`.
-   @throws std::exception if `radius` or `length` are not strictly positive.
-   */
+   @throws std::exception if any measure is not finite positive. */
   Cylinder(double radius, double length);
 
   /** Constructs a cylinder with a vector of measures: radius and length.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit Cylinder(const Vector2<double>& measures);
 
   ~Cylinder() final;
@@ -408,14 +414,13 @@ class Ellipsoid final : public Shape {
   /** Constructs an ellipsoid with the given lengths of its principal
    semi-axes, with a, b, and c measured along the x-, y-, and z- axes of the
    canonical frame, respectively.
-   @throws std::exception if `a`, `b`, or `c` are not strictly positive.
-   */
+   @throws std::exception if any measure is not finite positive. */
   Ellipsoid(double a, double b, double c);
 
   /** Constructs an ellipsoid with a vector of measures: the lengths of its
    principal semi-axes, with a, b, and c measured along the x-, y-, and z- axes
    of the canonical frame, respectively.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit Ellipsoid(const Vector3<double>& measures);
 
   ~Ellipsoid() final;
@@ -503,7 +508,21 @@ class HalfSpace final : public Shape {
 
  The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
  loading it in SceneGraph it can be scaled around the origin of C by a given
- `scale` amount. */
+ `scale` amount.
+
+ Note: a negative scale can be applied. This can be useful in mirroring the
+ geometry (e.g., using a right hand mesh for a left hand). Mirroring the
+ geometry will typically change the "winding" of the mesh elements. By
+ convention, Drake looks at the _ordering_ of the vertices that form mesh
+ elements (triangles and tetrahedra) and derives the notion of "inside" and
+ "outside" relative to that element. In order to preserve the input mesh's
+ definition of "inside" and "outside", when the mesh gets mirrored Drake may
+ perturb the ordering of the vertex indices. For example, a triangle originally
+ referencing vertices `[0 1 2]`, when mirrored may change to `[2 1 0]`, so don't
+ be surprised if you introspect the details of the loaded mesh and you see such
+ a change. An analogous change can affect the vertex ordering of tetrahedra in
+ a volume mesh (i.e., a perturbation of the original vertex index list
+ `[0 1 2 3]` to `[2 1 0 3]`). */
 class Mesh final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh);
@@ -527,6 +546,9 @@ class Mesh final : public Shape {
                                 considering revisiting the model itself. */
   explicit Mesh(const std::filesystem::path& filename, double scale = 1.0);
 
+  /** Mesh-file variant that allows for specification of non-uniform scale. */
+  Mesh(const std::filesystem::path& filename, const Vector3<double>& scale3);
+
   /** Constructs a mesh shape specification from the contents of a
    Drake-supported mesh file type.
 
@@ -540,26 +562,26 @@ class Mesh final : public Shape {
    @param scale       An optional scale to coordinates. */
   explicit Mesh(InMemoryMesh mesh_data, double scale = 1.0);
 
+  /** Mesh-contents variant that allows for specification of non-uniform scale.
+   */
+  Mesh(InMemoryMesh mesh_data, const Vector3<double>& scale3);
+
   /** Constructs a mesh shape specification from the given `source`.
 
    @param source   The source for the mesh data.
    @param scale    An optional scale to coordinates. */
   explicit Mesh(MeshSource source, double scale = 1.0);
 
+  /** Mesh-source variant that allows for specification of non-uniform scale.
+   */
+  Mesh(MeshSource source, const Vector3<double>& scale3);
+
   ~Mesh() final;
 
   /** Returns the source for this specification's mesh data. */
-  const MeshSource& source() const { return source_; }
-
-  /** Returns the filename passed to the constructor.
-   @throws std::exception if `this` %Mesh was constructed using in-memory file
-                          contents.
-   @see source().is_path(). */
-  DRAKE_DEPRECATED(
-      "2025-04-01",
-      "Meshes can be defined from a file path or in memory data. Use "
-      "Mesh::source() to determine if a filename is available.")
-  std::string filename() const;
+  const MeshSource& source() const {
+    return source_ != nullptr ? *source_ : MeshSource::Empty();
+  }
 
   /** Returns the extension of the mesh type -- all lower case and including
    the dot. If `this` is constructed from a file path, the extension is
@@ -569,9 +591,14 @@ class Mesh final : public Shape {
 
    If `this` is constructed using in-memory file contents, it is the extension
    of the MemoryFile passed to the constructor. */
-  const std::string& extension() const { return source_.extension(); }
+  const std::string& extension() const { return source().extension(); }
 
-  double scale() const { return scale_; }
+  /** Returns a single scale representing the _uniform_ scale factor.
+   @throws if the scale is not uniform in all directions. */
+  double scale() const;
+
+  /** Returns general scale factors for this mesh.*/
+  const Vector3<double>& scale3() const { return scale_; }
 
   /** Reports the convex hull of the named mesh.
 
@@ -592,10 +619,9 @@ class Mesh final : public Shape {
   VariantShapeConstPtr get_variant_this() const final;
 
   // NOTE: Cannot be const to support default copy/move semantics.
-  MeshSource source_;
-  double scale_{};
-  // Allows the deferred computation of the hull on an otherwise const Mesh.
-  mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
+  std::shared_ptr<const MeshSource> source_;
+  Vector3<double> scale_;
+  internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
 };
 
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the
@@ -604,7 +630,7 @@ class Mesh final : public Shape {
  direction of the frame's +z axis. Or, more formally: a finite section of a
  Lorentz cone (aka "second-order cone"), defined by
 
-      sqrt(x²/a² + y²/b²) ≤ z;  z ∈ [0, height],
+      sqrt(x²/a² + y²/b²) ≤ z/height;  z ∈ [0, height],
 
  where `a` and `b` are the lengths of the principal semi-axes of the horizontal
  section at `z=height()`.
@@ -617,13 +643,12 @@ class MeshcatCone final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshcatCone);
 
   /** Constructs the parameterized cone.
-   @throws std::exception if `height`, `a`, or `b` are not strictly positive.
-   */
+   @throws std::exception if any measure is not finite positive. */
   explicit MeshcatCone(double height, double a = 1.0, double b = 1.0);
 
   /** Constructs a cone with a vector of measures: height and principal
    semi-axes.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit MeshcatCone(const Vector3<double>& measures);
 
   ~MeshcatCone() final;
@@ -651,8 +676,8 @@ class Sphere final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere);
 
   /** Constructs a sphere with the given `radius`.
-   @throws std::exception if `radius` is negative. Note that a zero radius is
-   considered valid. */
+   @throws std::exception if `radius` is not finite *non-negative*. Note that a
+                              zero radius is considered valid. */
   explicit Sphere(double radius);
 
   ~Sphere() final;

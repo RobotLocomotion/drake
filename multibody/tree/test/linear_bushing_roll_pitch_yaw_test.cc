@@ -1,5 +1,9 @@
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -63,7 +67,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
 
     // Before adding a rigid link C to the model, form a spatial inertia that
     // contains C's mass and inertia properties about Ccm, expressed in C.
-    // Note: Point Co (C's origin) is coincident with CCm (C's center of mass).
+    // Note: Point Co (C's origin) is coincident with Ccm (C's center of mass).
     const RotationalInertia<double> I_CCcm_C(Ixx_, Iyy_, Izz_, Ixy_, Ixz_,
                                              Iyz_);
     const SpatialInertia<double> M_CCo_C =
@@ -72,8 +76,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Assign the two bodies (links) that are attached to the bushing.
     // Designate frameA as the frame of bodyA (world) connected to the bushing.
     // Designate frameC as the frame of bodyC (body)  connected to the bushing.
-    bodyA_ = &(model->world_body());
-    bodyC_ = &(model->AddRigidBody("BodyC", M_CCo_C));
+    bodyA_ = &(model->world_link());
+    bodyC_ = &(model->AddLink("BodyC", M_CCo_C));
     const Frame<double>& frameA = bodyA_->body_frame();
     const Frame<double>& frameC = bodyC_->body_frame();
 

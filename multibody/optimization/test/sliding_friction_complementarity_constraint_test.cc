@@ -22,8 +22,8 @@ void CompareAutoDiff(const AutoDiffXd& x1, const AutoDiffXd& x2, double tol) {
 
 void CompareAutoDiff(const Eigen::Ref<const AutoDiffVecXd>& x1,
                      const Eigen::Ref<const AutoDiffVecXd>& x2, double tol) {
-  EXPECT_TRUE(CompareMatrices(math::ExtractValue(x1),
-                              math::ExtractValue(x2), tol));
+  EXPECT_TRUE(
+      CompareMatrices(math::ExtractValue(x1), math::ExtractValue(x2), tol));
   EXPECT_TRUE(CompareMatrices(math::ExtractGradient(x1),
                               math::ExtractGradient(x2), tol));
 }
@@ -115,8 +115,7 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
     x_grad(i, 0) = 2 * i + 1;
     x_grad(i, 1) = 0.3 * std::sin(i) - 0.2;
   }
-  const AutoDiffVecXd x_autodiff =
-      math::InitializeAutoDiff(x_val, x_grad);
+  const AutoDiffVecXd x_autodiff = math::InitializeAutoDiff(x_val, x_grad);
 
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);

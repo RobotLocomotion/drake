@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/manipulation_schunk_wsg.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/manipulation/schunk_wsg/build_schunk_wsg_control.h"
@@ -9,6 +9,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h"
 
 namespace drake {
 namespace pydrake {
@@ -17,13 +18,14 @@ namespace internal {
 using systems::Diagram;
 using systems::LeafSystem;
 
-void DefineManipulationSchunkWsg(py::module m) {
-  constexpr auto& doc = pydrake_doc.drake.manipulation.schunk_wsg;
+void DefineManipulationSchunkWsg(py::module_ m) {
+  constexpr auto& doc =
+      pydrake_doc_manipulation_schunk_wsg.drake.manipulation.schunk_wsg;
 
   {
     using Class = manipulation::schunk_wsg::SchunkWsgPositionController;
     constexpr auto& cls_doc = doc.SchunkWsgPositionController;
-    py::class_<Class, Diagram<double>>(
+    class_<Class, Diagram<double>>(
         m, "SchunkWsgPositionController", cls_doc.doc)
         .def(py::init<double, double, double, double, double, double>(),
             py::arg("time_step") = 0.05, py::arg("kp_command") = 200.,
@@ -48,7 +50,7 @@ void DefineManipulationSchunkWsg(py::module m) {
   {
     using Class = manipulation::schunk_wsg::SchunkWsgController;
     constexpr auto& cls_doc = doc.SchunkWsgController;
-    py::class_<Class, Diagram<double>>(m, "SchunkWsgController", cls_doc.doc)
+    class_<Class, Diagram<double>>(m, "SchunkWsgController", cls_doc.doc)
         .def(py::init<double, double, double>(), py::arg("kp") = 2000.,
             py::arg("ki") = 0., py::arg("kd") = 5., cls_doc.ctor.doc);
   }
@@ -56,7 +58,7 @@ void DefineManipulationSchunkWsg(py::module m) {
   {
     using Class = manipulation::schunk_wsg::SchunkWsgCommandReceiver;
     constexpr auto& cls_doc = doc.SchunkWsgCommandReceiver;
-    py::class_<Class, LeafSystem<double>>(
+    class_<Class, LeafSystem<double>>(
         m, "SchunkWsgCommandReceiver", cls_doc.doc)
         .def(py::init<double, double>(), py::arg("initial_position") = 0.02,
             py::arg("initial_force") = 40., cls_doc.ctor.doc)
@@ -70,8 +72,7 @@ void DefineManipulationSchunkWsg(py::module m) {
   {
     using Class = manipulation::schunk_wsg::SchunkWsgCommandSender;
     constexpr auto& cls_doc = doc.SchunkWsgCommandSender;
-    py::class_<Class, LeafSystem<double>>(
-        m, "SchunkWsgCommandSender", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "SchunkWsgCommandSender", cls_doc.doc)
         .def(py::init<double>(), py::arg("default_force_limit") = 40.0,
             cls_doc.ctor.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
@@ -85,8 +86,7 @@ void DefineManipulationSchunkWsg(py::module m) {
   {
     using Class = manipulation::schunk_wsg::SchunkWsgStatusReceiver;
     constexpr auto& cls_doc = doc.SchunkWsgStatusReceiver;
-    py::class_<Class, LeafSystem<double>>(
-        m, "SchunkWsgStatusReceiver", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "SchunkWsgStatusReceiver", cls_doc.doc)
         .def(py::init(), cls_doc.ctor.doc)
         .def("get_status_input_port", &Class::get_status_input_port,
             py_rvp::reference_internal, cls_doc.get_status_input_port.doc)
@@ -99,8 +99,7 @@ void DefineManipulationSchunkWsg(py::module m) {
   {
     using Class = manipulation::schunk_wsg::SchunkWsgStatusSender;
     constexpr auto& cls_doc = doc.SchunkWsgStatusSender;
-    py::class_<Class, LeafSystem<double>>(
-        m, "SchunkWsgStatusSender", cls_doc.doc)
+    class_<Class, LeafSystem<double>>(m, "SchunkWsgStatusSender", cls_doc.doc)
         .def(py::init(), cls_doc.ctor.doc)
         .def("get_state_input_port", &Class::get_state_input_port,
             py_rvp::reference_internal, cls_doc.get_state_input_port.doc)
@@ -109,9 +108,30 @@ void DefineManipulationSchunkWsg(py::module m) {
   }
 
   {
+    using Class = manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
+    constexpr auto& cls_doc = doc.SchunkWsgTrajectoryGenerator;
+    class_<Class, LeafSystem<double>>(
+        m, "SchunkWsgTrajectoryGenerator", cls_doc.doc)
+        .def(py::init<int, int, bool>(), py::arg("input_size"),
+            py::arg("position_index"), py::arg("use_force_limit") = true,
+            cls_doc.ctor.doc)
+        .def("get_desired_position_input_port",
+            &Class::get_desired_position_input_port, py_rvp::reference_internal,
+            cls_doc.get_desired_position_input_port.doc)
+        .def("get_force_limit_input_port", &Class::get_force_limit_input_port,
+            py_rvp::reference_internal, cls_doc.get_force_limit_input_port.doc)
+        .def("get_state_input_port", &Class::get_state_input_port,
+            py_rvp::reference_internal, cls_doc.get_state_input_port.doc)
+        .def("get_target_output_port", &Class::get_target_output_port,
+            py_rvp::reference_internal, cls_doc.get_target_output_port.doc)
+        .def("get_max_force_output_port", &Class::get_max_force_output_port,
+            py_rvp::reference_internal, cls_doc.get_max_force_output_port.doc);
+  }
+
+  {
     using Class = manipulation::schunk_wsg::SchunkWsgDriver;
     constexpr auto& cls_doc = doc.SchunkWsgDriver;
-    py::class_<Class> cls(m, "SchunkWsgDriver", cls_doc.doc);
+    class_<Class> cls(m, "SchunkWsgDriver", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);

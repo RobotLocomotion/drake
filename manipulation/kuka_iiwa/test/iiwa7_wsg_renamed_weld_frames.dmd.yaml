@@ -1,0 +1,28 @@
+directives:
+- add_model:
+    name: iiwa7
+    file: package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf
+- add_model:
+    name: schunk_wsg
+    file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+# Weld iiwa7 to the world frame.
+- add_weld:
+    parent: world
+    child: iiwa7::iiwa_link_0
+- add_frame:
+    name: hand_parent
+    X_PF:
+      base_frame: iiwa7::iiwa_link_7
+      translation: [0, 0, 0.114]
+      rotation: !Rpy { deg: [90, 0, 90] }
+# Weld schunk_wsg to iiwa7.
+- add_weld:
+    parent: hand_parent
+    child: schunk_wsg::body
+# Add `grasp_frame` to schunk_wsg model.
+- add_frame:
+    name: schunk_wsg::grasp_frame
+    X_PF:
+      base_frame: schunk_wsg::body_frame
+      translation: [0.0, 0.11, 0.0]
+      rotation: !Rpy { deg: [0, 0, 0] }

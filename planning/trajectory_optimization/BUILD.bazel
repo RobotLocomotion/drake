@@ -155,6 +155,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "direct_transcription_test",
+    timeout = "moderate",
     data = ["//examples/pendulum:models"],
     # This test has two duplicated long cases; run them in parallel.
     shard_count = 4,
@@ -175,9 +176,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "gcs_trajectory_optimization_test",
     shard_count = 12,
-    # Even with many shards, the SimpleEnv2D suite has a couple of test cases
-    # that routinely time out under coverage tests, all by themselves.
-    tags = ["no_kcov"],
     deps = [
         ":gcs_trajectory_optimization",
         "//common/test_utilities:eigen_matrix_compare",

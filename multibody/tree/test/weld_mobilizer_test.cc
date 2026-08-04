@@ -1,5 +1,8 @@
 #include "drake/multibody/tree/weld_mobilizer.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -18,6 +21,7 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using math::RigidTransformd;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -30,7 +34,7 @@ class WeldMobilizerTest : public MobilizerTester {
   void SetUp() override {
     weld_body_to_world_ = &AddJointAndFinalize<WeldJoint, WeldMobilizer>(
         std::make_unique<WeldJoint<double>>("joint0",
-                                            tree().world_body().body_frame(),
+                                            tree().world_link().body_frame(),
                                             body_->body_frame(), X_WB_));
   }
 
@@ -55,6 +59,16 @@ TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
       weld_body_to_world_->CalcAcrossMobilizerTransform(*context_));
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(), X_WB_.GetAsMatrix34(),
                               kTolerance, MatrixCompareType::relative));
+
+  // Now check the fast inline methods.
+  const double q_dummy{};
+  RigidTransformd fast_X_FM = weld_body_to_world_->calc_X_FM(&q_dummy);
+  EXPECT_TRUE(fast_X_FM.IsExactlyIdentity());
+  weld_body_to_world_->update_X_FM(&q_dummy, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsExactlyIdentity());
+
+  TestApplyR_FM(X_FM, *weld_body_to_world_);
+  TestPrePostMultiplyByX_FM(X_FM, *weld_body_to_world_);
 }
 
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
@@ -100,6 +114,8 @@ TEST_F(WeldMobilizerTest, KinematicMapping) {
   MatrixX<double> N(0, 0);
   weld_body_to_world_->CalcNMatrix(*context_, &N);
   weld_body_to_world_->CalcNplusMatrix(*context_, &N);
+  weld_body_to_world_->CalcNDotMatrix(*context_, &N);
+  weld_body_to_world_->CalcNplusDotMatrix(*context_, &N);
 }
 
 // Since the functions involved are no-ops, MapUsesN and MapUsesNPlus

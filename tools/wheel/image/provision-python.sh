@@ -11,7 +11,7 @@ set -eu -o pipefail
 # (needed to download the sources). Otherwise, the version should be a valid
 # suffix of 'python'. Unspecified is treated as '3'.
 if [[ "${1%:*}" == "build" ]]; then
-    readonly PREFIX=/opt/drake-python
+    readonly PREFIX=/tmp/drake-wheel-build/python-dist
     readonly PYTHON=python$(echo ${1#*:} | cut -d. -f1-2)
 
     cd "$(dirname "${BASH_SOURCE}")"
@@ -21,9 +21,8 @@ else
     readonly PYTHON=python${1:-3}
 
     # Set up Python environment and install Python prerequisites.
-    apt-get -y update
-    apt-get -y install --no-install-recommends \
-        ${PYTHON}-dev lib${PYTHON}-dev ${PYTHON}-venv
+    dnf -y install --setopt=install_weak_deps=False \
+        ${PYTHON}-devel
 fi
 
 ${PREFIX}/bin/${PYTHON} -m venv /usr/local

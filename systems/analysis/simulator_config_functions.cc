@@ -5,11 +5,15 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
+#include <variant>
 
-#include "drake/common/drake_throw.h"
+#include <fmt/format.h>
+
+#include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/cenic/make_cenic_integrator.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -25,20 +29,21 @@ namespace drake {
 namespace systems {
 namespace {
 
+using multibody::MakeCenicIntegrator;
 using std::function;
 using std::pair;
 using std::string;
 using std::vector;
 
-// A functor that implements ResetIntegrator.
+// A functor that implements ConfigureIntegrator.
 template <typename T>
-using ResetIntegratorFunc =
-    function<IntegratorBase<T>*(Simulator<T>*, const T& /* max_step_size */)>;
+using ConfigureIntegratorFunc = function<
+    std::variant<IntegratorBase<T>*, std::unique_ptr<IntegratorBase<T>>>(
+        Simulator<T>*, const System<T>&, const T& /* max_step_size */)>;
 
-// Returns (scheme, functor) pair that implements ResetIntegrator.
+// Returns (scheme, functor) pair that implements ConfigureIntegrator.
 template <typename T>
-using NamedResetIntegratorFunc =
-    pair<string, ResetIntegratorFunc<T>>;
+using NamedConfigureIntegratorFunc = pair<string, ConfigureIntegratorFunc<T>>;
 
 // Converts the class name of the `Integrator` template argument into a string
 // name for the scheme, e.g., FooBarIntegrator<double> becomes "foo_bar".
@@ -64,7 +69,9 @@ string GetIntegratorName() {
   string result;
   for (char ch : camel_name) {
     if (std::isupper(ch)) {
-      if (!result.empty()) { result.push_back('_'); }
+      if (!result.empty()) {
+        result.push_back('_');
+      }
       result.push_back(std::tolower(ch));
     } else {
       result.push_back(ch);
@@ -84,89 +91,153 @@ class DummySystem final : public LeafSystem<T> {
 template <typename T>
 string GetIntegrationSchemeName(const IntegratorBase<T>& integrator) {
   const string current_type = NiceTypeName::Get(integrator);
+  if (current_type.starts_with("drake::multibody::CenicIntegrator")) {
+    // The loop immediately below cannot handle this case.
+    return "cenic";
+  }
   Simulator<T> dummy_simulator(std::make_unique<DummySystem<T>>());
   for (const auto& scheme : GetIntegrationSchemes()) {
+    if (scheme == "cenic") {
+      // Already handled above; also requires a MultibodyPlant, so trying the
+      // DummySystem would fail.
+      continue;
+    }
     ResetIntegratorFromFlags(&dummy_simulator, scheme, T(0.001));
     if (NiceTypeName::Get(dummy_simulator.get_integrator()) == current_type) {
       return scheme;
     }
   }
-  throw std::runtime_error(
-      "Unrecognized integration scheme " + current_type);
+  throw std::runtime_error("Unrecognized integration scheme " + current_type);
 }
 
-// Returns (scheme, functor) pair to implement reset for this `Integrator`.
-// This would be much simpler if all integrators accepted a max_step_size.
+// Returns the (scheme, functor) configurator pair for this integrator type.
+// The functor is null if the scheme does not support the scalar type T.
+// The functor returns IntegratorBase<T>* if the parameter `simulator` is
+// provided, returns std::unique_ptr<IntegratorBase<T>> otherwise.
 template <typename T, template <typename> class Integrator>
-NamedResetIntegratorFunc<T> MakeResetter() {
-  constexpr bool is_fixed_step = std::is_constructible_v<
-      Integrator<T>,
-      const System<T>&, T, Context<T>*>;
-  constexpr bool is_error_controlled = std::is_constructible_v<
-      Integrator<T>,
-      const System<T>&, Context<T>*>;
+NamedConfigureIntegratorFunc<T> MakeConfigurator() {
+  constexpr bool is_fixed_step =
+      std::is_constructible_v<Integrator<T>, const System<T>&, T, Context<T>*>;
+  constexpr bool is_error_controlled =
+      std::is_constructible_v<Integrator<T>, const System<T>&, Context<T>*>;
   static_assert(is_fixed_step ^ is_error_controlled);
-  return NamedResetIntegratorFunc<T>(
-      GetIntegratorName<Integrator>(),
-      [](Simulator<T>* simulator, const T& max_step_size) {
-        if constexpr (is_fixed_step) {
-          IntegratorBase<T>& result =
-              simulator->template reset_integrator<Integrator<T>>(
-                  max_step_size);
-          return &result;
-        } else {
-          IntegratorBase<T>& result =
-              simulator->template reset_integrator<Integrator<T>>();
-          result.set_maximum_step_size(max_step_size);
-          return &result;
-        }
-      });
+
+  // Among currently-existing set of integrators, all fixed-step
+  // integrators support all default scalars; all error-controlled
+  // integrators support only default nonsymbolic scalars.
+  if constexpr (std::is_same_v<T, symbolic::Expression> && !is_fixed_step) {
+    return NamedConfigureIntegratorFunc<T>(GetIntegratorName<Integrator>(),
+                                           nullptr);
+  } else {
+    return NamedConfigureIntegratorFunc<T>(
+        GetIntegratorName<Integrator>(),
+        [](Simulator<T>* simulator, const System<T>& system,
+           const T& max_step_size)
+            -> std::variant<IntegratorBase<T>*,
+                            std::unique_ptr<IntegratorBase<T>>> {
+          // The functor returns the integrator owned by the simulator if
+          // simulator is non-null.
+          if (simulator != nullptr) {
+            if constexpr (is_fixed_step) {
+              IntegratorBase<T>& result =
+                  simulator->template reset_integrator<Integrator<T>>(
+                      max_step_size);
+              return &result;
+            } else {
+              IntegratorBase<T>& result =
+                  simulator->template reset_integrator<Integrator<T>>();
+              result.set_maximum_step_size(max_step_size);
+              return &result;
+            }
+          }
+          // The functor returns a new integrator if simulator is null.
+          if constexpr (is_fixed_step) {
+            auto result =
+                std::make_unique<Integrator<T>>(system, max_step_size, nullptr);
+            return result;
+          } else {
+            auto result = std::make_unique<Integrator<T>>(system, nullptr);
+            result->set_maximum_step_size(max_step_size);
+            return result;
+          }
+        });
+  }
+}
+
+template <typename T>
+NamedConfigureIntegratorFunc<T> MakeCenicConfigurator() {
+  NamedConfigureIntegratorFunc<T> named_function;
+  named_function.first = "cenic";
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    named_function.second = [](Simulator<T>* simulator, const System<T>& system,
+                               const T& max_step_size)
+        -> std::variant<IntegratorBase<T>*,
+                        std::unique_ptr<IntegratorBase<T>>> {
+      Context<T>* const context =
+          (simulator != nullptr) ? &simulator->get_mutable_context() : nullptr;
+      auto owned = MakeCenicIntegrator<T>(system, context);
+      owned->set_maximum_step_size(max_step_size);
+      if (simulator != nullptr) {
+        auto* unowned = owned.get();
+        simulator->reset_integrator(std::move(owned));
+        return unowned;
+      } else {
+        return owned;
+      }
+    };
+  }
+  return named_function;
 }
 
 // Returns the full list of supported (scheme, functor) pairs.  N.B. The list
 // here must be kept in sync with the help string in simulator_gflags.cc.
 template <typename T>
-const vector<NamedResetIntegratorFunc<T>>& GetAllNamedResetIntegratorFuncs() {
-  static const never_destroyed<vector<NamedResetIntegratorFunc<T>>> result{
-    std::initializer_list<NamedResetIntegratorFunc<T>>{
-      // Keep this list sorted alphabetically.
-      MakeResetter<T, BogackiShampine3Integrator>(),
-      MakeResetter<T, ExplicitEulerIntegrator>(),
-      MakeResetter<T, ImplicitEulerIntegrator>(),
-      MakeResetter<T, Radau1Integrator>(),
-      MakeResetter<T, Radau3Integrator>(),
-      MakeResetter<T, RungeKutta2Integrator>(),
-      MakeResetter<T, RungeKutta3Integrator>(),
-      MakeResetter<T, RungeKutta5Integrator>(),
-      MakeResetter<T, SemiExplicitEulerIntegrator>(),
-      MakeResetter<T, VelocityImplicitEulerIntegrator>(),
-  }};
+const vector<NamedConfigureIntegratorFunc<T>>&
+GetAllNamedConfigureIntegratorFuncs() {
+  static const never_destroyed<vector<NamedConfigureIntegratorFunc<T>>> result{
+      std::initializer_list<NamedConfigureIntegratorFunc<T>>{
+          // Keep this list sorted alphabetically.
+          MakeConfigurator<T, BogackiShampine3Integrator>(),
+          MakeCenicConfigurator<T>(),
+          MakeConfigurator<T, ExplicitEulerIntegrator>(),
+          MakeConfigurator<T, ImplicitEulerIntegrator>(),
+          MakeConfigurator<T, Radau1Integrator>(),
+          MakeConfigurator<T, Radau3Integrator>(),
+          MakeConfigurator<T, RungeKutta2Integrator>(),
+          MakeConfigurator<T, RungeKutta3Integrator>(),
+          MakeConfigurator<T, RungeKutta5Integrator>(),
+          MakeConfigurator<T, SemiExplicitEulerIntegrator>(),
+          MakeConfigurator<T, VelocityImplicitEulerIntegrator>(),
+      }};
   return result.access();
 }
 
 }  // namespace
 
 template <typename T>
-IntegratorBase<T>& ResetIntegratorFromFlags(
-    Simulator<T>* simulator,
-    const string& scheme,
-    const T& max_step_size) {
+IntegratorBase<T>& ResetIntegratorFromFlags(Simulator<T>* simulator,
+                                            const string& scheme,
+                                            const T& max_step_size) {
+  static_assert(
+      !std::is_same_v<T, symbolic::Expression>,
+      "Simulator<T> does not support symbolic::Expression scalar type");
   DRAKE_THROW_UNLESS(simulator != nullptr);
 
-  const auto& name_func_pairs = GetAllNamedResetIntegratorFuncs<T>();
+  const auto& name_func_pairs = GetAllNamedConfigureIntegratorFuncs<T>();
   for (const auto& [one_name, one_func] : name_func_pairs) {
     if (scheme == one_name) {
-      return *one_func(simulator, max_step_size);
+      return *std::get<IntegratorBase<T>*>(
+          one_func(simulator, simulator->get_system(), max_step_size));
     }
   }
-  throw std::runtime_error(fmt::format(
-      "Unknown integration scheme: {}", scheme));
+  throw std::runtime_error(
+      fmt::format("Unknown integration scheme: {}", scheme));
 }
 
 const vector<string>& GetIntegrationSchemes() {
   static const never_destroyed<vector<string>> result{[]() {
     vector<string> names;
-    const auto& name_func_pairs = GetAllNamedResetIntegratorFuncs<double>();
+    const auto& name_func_pairs = GetAllNamedConfigureIntegratorFuncs<double>();
     for (const auto& [one_name, one_func] : name_func_pairs) {
       names.push_back(one_name);
       unused(one_func);
@@ -177,9 +248,8 @@ const vector<string>& GetIntegrationSchemes() {
 }
 
 template <typename T>
-void ApplySimulatorConfig(
-    const SimulatorConfig& config,
-    Simulator<T>* simulator) {
+void ApplySimulatorConfig(const SimulatorConfig& config,
+                          Simulator<T>* simulator) {
   DRAKE_THROW_UNLESS(simulator != nullptr);
   IntegratorBase<T>& integrator = ResetIntegratorFromFlags(
       simulator, config.integration_scheme, T(config.max_step_size));
@@ -189,11 +259,8 @@ void ApplySimulatorConfig(
   if (!integrator.get_fixed_step_mode()) {
     integrator.set_target_accuracy(config.accuracy);
   }
+  simulator->get_mutable_context().SetTime(config.start_time);
   simulator->set_target_realtime_rate(config.target_realtime_rate);
-  // It is almost always the case we want these two next flags to be either both
-  // true or both false. Otherwise we could miss the first publish at t = 0.
-  simulator->set_publish_at_initialization(config.publish_every_time_step);
-  simulator->set_publish_every_time_step(config.publish_every_time_step);
 }
 
 template <typename T>
@@ -213,17 +280,56 @@ SimulatorConfig ExtractSimulatorConfig(const Simulator<T>& simulator) {
     result.use_error_control = false;
     result.accuracy = 0.0;
   }
+  result.start_time = ExtractDoubleOrThrow(simulator.get_context().get_time());
   result.target_realtime_rate =
       ExtractDoubleOrThrow(simulator.get_target_realtime_rate());
-  result.publish_every_time_step = simulator.get_publish_every_time_step();
   return result;
 }
 
+template <typename T>
+std::unique_ptr<IntegratorBase<T>> CreateIntegratorFromConfig(
+    const System<T>* system, const SimulatorConfig& config) {
+  DRAKE_THROW_UNLESS(system != nullptr);
+  const auto& name_func_pairs = GetAllNamedConfigureIntegratorFuncs<T>();
+  for (const auto& [one_name, one_func] : name_func_pairs) {
+    if (config.integration_scheme == one_name) {
+      if (!one_func) {
+        throw std::logic_error(fmt::format(
+            "Integration scheme '{}' does not support scalar type {}", one_name,
+            NiceTypeName::Get<T>()));
+      }
+      auto integrator = std::get<std::unique_ptr<IntegratorBase<T>>>(
+          one_func(nullptr, *system, config.max_step_size));
+      if (integrator->supports_error_estimation()) {
+        integrator->set_fixed_step_mode(!config.use_error_control);
+        integrator->set_target_accuracy(config.accuracy);
+      }
+      return integrator;
+    }
+  }
+  throw std::runtime_error(
+      fmt::format("Unknown integration scheme: {}", config.integration_scheme));
+}
+
+template <typename T>
+bool IsScalarTypeSupportedByIntegrator(std::string_view integration_scheme) {
+  const auto& name_func_pairs = GetAllNamedConfigureIntegratorFuncs<T>();
+  for (const auto& [one_name, one_func] : name_func_pairs) {
+    if (integration_scheme == one_name) {
+      return one_func != nullptr;
+    }
+  }
+  throw std::runtime_error(
+      fmt::format("Unknown integration scheme: {}", integration_scheme));
+}
+
 // We can't support T=symbolic::Expression because Simulator doesn't support it.
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-      &ResetIntegratorFromFlags<T>,
-      &ApplySimulatorConfig<T>,
-      &ExtractSimulatorConfig<T>
-));
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&ResetIntegratorFromFlags<T>, &ApplySimulatorConfig<T>,
+     &ExtractSimulatorConfig<T>));
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&CreateIntegratorFromConfig<T>, &IsScalarTypeSupportedByIntegrator<T>));
+
 }  // namespace systems
 }  // namespace drake

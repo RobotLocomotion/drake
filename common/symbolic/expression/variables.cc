@@ -8,9 +8,12 @@
 #include <iterator>
 #include <numeric>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
+
+#include <fmt/ranges.h>
 
 #include "drake/common/hash.h"
 
@@ -19,7 +22,6 @@ using std::initializer_list;
 using std::inserter;
 using std::less;
 using std::ostream;
-using std::ostream_iterator;
 using std::ostringstream;
 using std::set;
 using std::set_intersection;
@@ -36,9 +38,7 @@ Variables::Variables(const Eigen::Ref<const VectorX<Variable>>& vec)
 Variables::~Variables() = default;
 
 string Variables::to_string() const {
-  ostringstream oss;
-  oss << *this;
-  return oss.str();
+  return fmt::format("{{{}}}", fmt::join(vars_, ", "));
 }
 
 Variables::size_type Variables::erase(const Variables& vars) {
@@ -139,18 +139,6 @@ Variables intersect(const Variables& vars1, const Variables& vars2) {
                    inserter(intersection, intersection.begin()),
                    less<Variable>{});
   return Variables{std::move(intersection)};
-}
-
-ostream& operator<<(ostream& os, const Variables& vars) {
-  os << "{";
-  if (!vars.vars_.empty()) {
-    // output 1st ... N-1th elements by adding ", " at the end
-    copy(vars.begin(), prev(vars.end()), ostream_iterator<Variable>(os, ", "));
-    // output the last one (without ",").
-    os << *(vars.rbegin());
-  }
-  os << "}";
-  return os;
 }
 
 }  // namespace symbolic

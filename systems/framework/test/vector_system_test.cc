@@ -1,6 +1,8 @@
 #include "drake/systems/framework/vector_system.h"
 
+#include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <Eigen/Dense>

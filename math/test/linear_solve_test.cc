@@ -3,8 +3,8 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -12,6 +12,9 @@
 namespace drake {
 namespace math {
 namespace {
+
+using internal::ColPivHouseholderQR;
+using internal::PartialPivLU;
 
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
@@ -180,20 +183,6 @@ class LinearSolveTest : public ::testing::Test {
     const symbolic::Variable sym_u("u");
     const symbolic::Variable sym_v("v");
     b_sym_ << sym_u, 1, sym_v, -sym_u + sym_v, 3, 2;
-
-    for (int i = 0; i < 2; ++i) {
-      for (int j = 0; j < 2; ++j) {
-        A_ad_fixed_der_size_(i, j).value() = A_ad_(i, j).value();
-        A_ad_fixed_der_size_(i, j).derivatives() = A_ad_(i, j).derivatives();
-      }
-    }
-    for (int i = 0; i < 2; ++i) {
-      for (int j = 0; j < 3; ++j) {
-        b_ad_fixed_der_size_(i, j).value() = b_mat_ad_(i, j).value();
-        b_ad_fixed_der_size_(i, j).derivatives() =
-            b_mat_ad_(i, j).derivatives();
-      }
-    }
   }
 
  protected:
@@ -205,23 +194,18 @@ class LinearSolveTest : public ::testing::Test {
   Eigen::Matrix<AutoDiffXd, 2, 3> b_mat_ad_;
   Eigen::Matrix<symbolic::Expression, 2, 2> A_sym_;
   Eigen::Matrix<symbolic::Expression, 2, 3> b_sym_;
-  // Use fixed-sized AutoDiffScalar.
-  Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector3d>, 2, 2>
-      A_ad_fixed_der_size_;
-  Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector3d>, 2, 3>
-      b_ad_fixed_der_size_;
 };
 
 TEST_F(LinearSolveTest, TestDoubleAandb) {
   // Both A and b are double matrices.
   TestSolveLinearSystem<Eigen::LLT>(A_val_, b_vec_val_);
   TestSolveLinearSystem<Eigen::LDLT>(A_val_, b_vec_val_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_val_, b_vec_val_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_val_, b_vec_val_);
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_val_, b_vec_val_);
+  TestSolveLinearSystem<PartialPivLU>(A_val_, b_vec_val_);
   TestSolveLinearSystem<Eigen::LLT>(A_val_, b_mat_val_);
   TestSolveLinearSystem<Eigen::LDLT>(A_val_, b_mat_val_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_val_, b_mat_val_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_val_, b_mat_val_);
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_val_, b_mat_val_);
+  TestSolveLinearSystem<PartialPivLU>(A_val_, b_mat_val_);
 }
 
 template <template <typename, int...> typename LinearSolverType,
@@ -255,24 +239,24 @@ TEST_F(LinearSolveTest, TestAutoDiffAandDoubleB) {
   // A contains AutoDiffXd and b contains double.
   TestSolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_val_);
   TestSolveLinearSystem<Eigen::LDLT>(A_ad_, b_vec_val_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_ad_, b_vec_val_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_ad_, b_vec_val_);
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_ad_, b_vec_val_);
+  TestSolveLinearSystem<PartialPivLU>(A_ad_, b_vec_val_);
   TestSolveLinearSystem<Eigen::LLT>(A_ad_, b_mat_val_);
   TestSolveLinearSystem<Eigen::LDLT>(A_ad_, b_mat_val_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_ad_, b_mat_val_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_ad_, b_mat_val_);
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_ad_, b_mat_val_);
+  TestSolveLinearSystem<PartialPivLU>(A_ad_, b_mat_val_);
 }
 
 TEST_F(LinearSolveTest, TestDoubleAandAutoDiffB) {
   // A contains double and b contains AutoDiffXd.
   TestSolveLinearSystem<Eigen::LLT>(A_val_, b_vec_ad_);
   TestSolveLinearSystem<Eigen::LDLT>(A_val_, b_vec_ad_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_val_, b_vec_ad_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_val_, b_vec_ad_);
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_val_, b_vec_ad_);
+  TestSolveLinearSystem<PartialPivLU>(A_val_, b_vec_ad_);
   TestSolveLinearSystem<Eigen::LLT>(A_val_, b_mat_ad_);
   TestSolveLinearSystem<Eigen::LDLT>(A_val_, b_mat_ad_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_val_, b_mat_ad_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_val_, b_mat_ad_);
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_val_, b_mat_ad_);
+  TestSolveLinearSystem<PartialPivLU>(A_val_, b_mat_ad_);
 }
 
 TEST_F(LinearSolveTest, TestNoGrad) {
@@ -288,16 +272,14 @@ TEST_F(LinearSolveTest, TestBwithGrad) {
   // contains meaningful gradient.
   TestSolveLinearSystem<Eigen::LLT>(A_val_.cast<AutoDiffXd>(), b_vec_ad_);
   TestSolveLinearSystem<Eigen::LDLT>(A_val_.cast<AutoDiffXd>(), b_vec_ad_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_val_.cast<AutoDiffXd>(),
-                                                    b_vec_ad_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_val_.cast<AutoDiffXd>(),
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_val_.cast<AutoDiffXd>(),
                                              b_vec_ad_);
+  TestSolveLinearSystem<PartialPivLU>(A_val_.cast<AutoDiffXd>(), b_vec_ad_);
   TestSolveLinearSystem<Eigen::LLT>(A_val_.cast<AutoDiffXd>(), b_mat_ad_);
   TestSolveLinearSystem<Eigen::LDLT>(A_val_.cast<AutoDiffXd>(), b_mat_ad_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_val_.cast<AutoDiffXd>(),
-                                                    b_mat_ad_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_val_.cast<AutoDiffXd>(),
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_val_.cast<AutoDiffXd>(),
                                              b_mat_ad_);
+  TestSolveLinearSystem<PartialPivLU>(A_val_.cast<AutoDiffXd>(), b_mat_ad_);
 }
 
 TEST_F(LinearSolveTest, TestAwithGrad) {
@@ -305,56 +287,26 @@ TEST_F(LinearSolveTest, TestAwithGrad) {
   // no gradient.
   TestSolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_val_.cast<AutoDiffXd>());
   TestSolveLinearSystem<Eigen::LDLT>(A_ad_, b_vec_val_.cast<AutoDiffXd>());
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(
-      A_ad_, b_vec_val_.cast<AutoDiffXd>());
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_ad_,
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_ad_,
                                              b_vec_val_.cast<AutoDiffXd>());
+  TestSolveLinearSystem<PartialPivLU>(A_ad_, b_vec_val_.cast<AutoDiffXd>());
   TestSolveLinearSystem<Eigen::LLT>(A_ad_, b_mat_val_.cast<AutoDiffXd>());
   TestSolveLinearSystem<Eigen::LDLT>(A_ad_, b_mat_val_.cast<AutoDiffXd>());
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(
-      A_ad_, b_mat_val_.cast<AutoDiffXd>());
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_ad_,
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_ad_,
                                              b_mat_val_.cast<AutoDiffXd>());
-}
-
-TEST_F(LinearSolveTest, TestFixedDerivativeSize) {
-  // Test SolveLinearSystem with either or both A and b containing
-  // AutoDiffScalar, The AutoDiffScalar has a fixed derivative size.
-
-  // Both A and B contain AutoDiffScalar.
-  TestSolveLinearSystem<Eigen::LLT>(A_ad_fixed_der_size_, b_ad_fixed_der_size_);
-  TestSolveLinearSystem<Eigen::LDLT>(A_ad_fixed_der_size_,
-                                     b_ad_fixed_der_size_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_ad_fixed_der_size_,
-                                                    b_ad_fixed_der_size_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_ad_fixed_der_size_,
-                                             b_ad_fixed_der_size_);
-
-  // Only b contains AutoDiffScalar, A contains double.
-  TestSolveLinearSystem<Eigen::LLT>(A_val_, b_ad_fixed_der_size_);
-  TestSolveLinearSystem<Eigen::LDLT>(A_val_, b_ad_fixed_der_size_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_val_,
-                                                    b_ad_fixed_der_size_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_val_, b_ad_fixed_der_size_);
-
-  // Only A contains AutoDiffScalar, b contains double.
-  TestSolveLinearSystem<Eigen::LLT>(A_ad_fixed_der_size_, b_mat_val_);
-  TestSolveLinearSystem<Eigen::LDLT>(A_ad_fixed_der_size_, b_mat_val_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_ad_fixed_der_size_,
-                                                    b_mat_val_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_ad_fixed_der_size_, b_mat_val_);
+  TestSolveLinearSystem<PartialPivLU>(A_ad_, b_mat_val_.cast<AutoDiffXd>());
 }
 
 TEST_F(LinearSolveTest, TestAbWithGrad) {
   // Test SolveLinearSystem with both A and b containing gradient.
   TestSolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_);
   TestSolveLinearSystem<Eigen::LDLT>(A_ad_, b_vec_ad_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_ad_, b_vec_ad_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_ad_, b_vec_ad_);
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_ad_, b_vec_ad_);
+  TestSolveLinearSystem<PartialPivLU>(A_ad_, b_vec_ad_);
   TestSolveLinearSystem<Eigen::LLT>(A_ad_, b_mat_ad_);
   TestSolveLinearSystem<Eigen::LDLT>(A_ad_, b_mat_ad_);
-  TestSolveLinearSystem<Eigen::ColPivHouseholderQR>(A_ad_, b_mat_ad_);
-  TestSolveLinearSystem<Eigen::PartialPivLU>(A_ad_, b_mat_ad_);
+  TestSolveLinearSystem<ColPivHouseholderQR>(A_ad_, b_mat_ad_);
+  TestSolveLinearSystem<PartialPivLU>(A_ad_, b_mat_ad_);
 }
 
 TEST_F(LinearSolveTest, TestAbWithMaybeEmptyGrad) {
@@ -427,8 +379,8 @@ TEST_F(LinearSolveTest, GetLinearSolver) {
   // Check double-valued A matrix.
   CheckGetLinearSolver<Eigen::LLT>(A_val_);
   CheckGetLinearSolver<Eigen::LDLT>(A_val_);
-  CheckGetLinearSolver<Eigen::PartialPivLU>(A_val_);
-  CheckGetLinearSolver<Eigen::ColPivHouseholderQR>(A_val_);
+  CheckGetLinearSolver<PartialPivLU>(A_val_);
+  CheckGetLinearSolver<ColPivHouseholderQR>(A_val_);
 
   // Check symbolic::Expression-valued A matrix.
   CheckGetLinearSolver<Eigen::LLT>(A_sym_);
@@ -436,8 +388,8 @@ TEST_F(LinearSolveTest, GetLinearSolver) {
   // Check AutoDiffXd-valued A matrix.
   CheckGetLinearSolver<Eigen::LLT>(A_ad_);
   CheckGetLinearSolver<Eigen::LDLT>(A_ad_);
-  CheckGetLinearSolver<Eigen::PartialPivLU>(A_ad_);
-  CheckGetLinearSolver<Eigen::ColPivHouseholderQR>(A_ad_);
+  CheckGetLinearSolver<PartialPivLU>(A_ad_);
+  CheckGetLinearSolver<ColPivHouseholderQR>(A_ad_);
 }
 }  // namespace
 }  // namespace math

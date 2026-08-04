@@ -1,12 +1,9 @@
 #include "drake/geometry/proximity/boxes_overlap.h"
 
+#include <memory>
 #include <string>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include "hwy/tests/hwy_gtest.h"
-#pragma GCC diagnostic pop
-
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 

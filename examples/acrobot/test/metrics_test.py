@@ -32,22 +32,44 @@ class TestMetrics(unittest.TestCase):
         # Verify that the deviation is 0 at the upright equilibrium.
         self.assertTrue(
             np.linalg.norm(
-                deviation_from_upright_equilibrium(self.x_equilibrium)) == 0)
+                deviation_from_upright_equilibrium(self.x_equilibrium)
+            )
+            == 0
+        )
         # Verify that the deviation is 0 if we add or subtract 2 * pi
         self.assertTrue(
             np.linalg.norm(
-                deviation_from_upright_equilibrium(self.x_wrapped_equilibrium))
-            == 0)
+                deviation_from_upright_equilibrium(self.x_wrapped_equilibrium)
+            )
+            == 0
+        )
         # Verify a few other values.
-        self.assertTrue((deviation_from_upright_equilibrium(
-            [np.pi, np.pi / 2, 0, 0]) == np.array([0, np.pi / 2, 0, 0])).all())
-        self.assertTrue((deviation_from_upright_equilibrium(
-            [np.pi, 0, 1, 0]) == np.array([0, 0, 1, 0])).all())
-        self.assertTrue((deviation_from_upright_equilibrium(
-            [np.pi, 0, 0, 1]) == np.array([0, 0, 0, 1])).all())
-        self.assertTrue(np.allclose(deviation_from_upright_equilibrium(
-            [3 * np.pi + 0.01, -2 * np.pi - 0.02, 0.03, -0.04]),
-                                    np.array([0.01, -0.02, 0.03, -0.04])))
+        self.assertTrue(
+            (
+                deviation_from_upright_equilibrium([np.pi, np.pi / 2, 0, 0])
+                == np.array([0, np.pi / 2, 0, 0])
+            ).all()
+        )
+        self.assertTrue(
+            (
+                deviation_from_upright_equilibrium([np.pi, 0, 1, 0])
+                == np.array([0, 0, 1, 0])
+            ).all()
+        )
+        self.assertTrue(
+            (
+                deviation_from_upright_equilibrium([np.pi, 0, 0, 1])
+                == np.array([0, 0, 0, 1])
+            ).all()
+        )
+        self.assertTrue(
+            np.allclose(
+                deviation_from_upright_equilibrium(
+                    [3 * np.pi + 0.01, -2 * np.pi - 0.02, 0.03, -0.04]
+                ),
+                np.array([0.01, -0.02, 0.03, -0.04]),
+            )
+        )
 
     def test_final_state_cost(self):
         # Verify that tapes ending at equilibrium have zero cost.
@@ -69,9 +91,11 @@ class TestMetrics(unittest.TestCase):
             self.assertFalse(is_success(x_tape))
 
     def test_success_rate(self):
-        self.assertEqual(success_rate(self.nonequilibrium_tapes), 0.)
+        self.assertEqual(success_rate(self.nonequilibrium_tapes), 0.0)
         self.assertEqual(
-            success_rate(self.nonequilibrium_tapes
-                         + (self.equilibrium_tapes * 3)),
-            0.5)
-        self.assertEqual(success_rate(self.equilibrium_tapes), 1.)
+            success_rate(
+                self.nonequilibrium_tapes + (self.equilibrium_tapes * 3)
+            ),
+            0.5,
+        )
+        self.assertEqual(success_rate(self.equilibrium_tapes), 1.0)

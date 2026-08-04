@@ -94,6 +94,10 @@ class Saturation final : public LeafSystem<T> {
   /// @p min_value and @p max_value.
   Saturation(const VectorX<T>& min_value, const VectorX<T>& max_value);
 
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Saturation(const Saturation<U>&);
+
   /// Returns the input port.
   const InputPort<T>& get_input_port() const {
     return System<T>::get_input_port(input_port_index_);
@@ -117,6 +121,13 @@ class Saturation final : public LeafSystem<T> {
   // saturation limits are reached.
 
  private:
+  template <typename>
+  friend class Saturation;
+
+  // Constructors' implementation.
+  Saturation(bool min_max_ports_enabled, int input_size,
+             const VectorX<T>& min_value, const VectorX<T>& max_value);
+
   void CalcSaturatedOutput(const Context<T>& context,
                            BasicVector<T>* output_vector) const;
 
@@ -125,8 +136,8 @@ class Saturation final : public LeafSystem<T> {
   int max_value_port_index_{};
   const bool min_max_ports_enabled_{false};
   const int input_size_{};
-  const VectorX<T> max_value_;
   const VectorX<T> min_value_;
+  const VectorX<T> max_value_;
 };
 
 }  // namespace systems

@@ -36,7 +36,7 @@ struct VertexAttrib {
   int byte_offset{};
   /* The byte distance between subsequent elements. Zero is a valid value;
    OpenGL will assume compact representation and use a stride equal to
-   `components_per_element * sizeof("value_type"). */
+   `components_per_element * sizeof("value_type")`. */
   int stride{};
   /* The numeric type of the single values (e.g., GL_INT, GL_FLOAT, etc.). */
   int numeric_type{};
@@ -52,7 +52,7 @@ struct VertexSpec {
   VertexAttrib uvs;
 };
 
-/* @group Frames, Geometries, and Instances
+/* @name Frames, Geometries, and Instances
 
  There are a number of frames relating to how geometries are handled in
  RenderEngineGl. What they are and how they relate can be confusing. This

@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,7 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/math/autodiff.h"
@@ -238,9 +239,9 @@ class EvaluatorBase {
 };
 
 /**
- * Print out the evaluator.
+ * Returns the string representation of the evaluator.
  */
-std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e);
+std::string to_string(const EvaluatorBase& e);
 
 /**
  * Implements an evaluator of the form P(x, y...) where P is a multivariate
@@ -412,11 +413,14 @@ class VisualizationCallback : public EvaluatorBase {
 }  // namespace solvers
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+// Specialize fmt::formatter for all derived types.
 namespace fmt {
 template <typename T>
-struct formatter<
-    T,
-    std::enable_if_t<std::is_base_of_v<drake::solvers::EvaluatorBase, T>, char>>
-    : drake::ostream_formatter {};
+  requires std::derived_from<T, drake::solvers::EvaluatorBase>
+struct formatter<T> : formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const T& x, FormatContext& ctx) const {
+    return formatter<std::string>::format(drake::solvers::to_string(x), ctx);
+  }
+};
 }  // namespace fmt

@@ -21,7 +21,7 @@ namespace test {
 /// drake::multibody::benchmarks::free_body::FreeBody.
 ///
 /// @tparam_double_only
-template<typename T>
+template <typename T>
 class AxiallySymmetricFreeBodyPlant {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant);

@@ -1,0 +1,14 @@
+# vtk DataFile Version 2.0
+Single‑tet test mesh
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS 4 double
+-10 -10 -10
+10 0 0
+0 10 0
+0 0 10
+CELLS 1 5
+4  0 1 2 3
+CELL_TYPES 1
+10
+

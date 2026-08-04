@@ -4,7 +4,7 @@
 
 #include <Eigen/Sparse>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -52,7 +52,6 @@ class MinCliqueCoverSolverBase {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinCliqueCoverSolverBase);
   MinCliqueCoverSolverBase() = default;
 
- private:
   virtual std::vector<std::set<int>> DoSolveMinCliqueCover(
       const Eigen::SparseMatrix<bool>& adjacency_matrix,
       bool partition = false) = 0;

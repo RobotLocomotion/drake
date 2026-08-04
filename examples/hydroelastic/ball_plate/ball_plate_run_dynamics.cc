@@ -64,10 +64,10 @@ namespace examples {
 namespace ball_plate {
 namespace {
 
-using Eigen::Vector3d;
 using drake::math::RigidTransformd;
 using drake::multibody::CoulombFriction;
 using drake::multibody::SpatialVelocity;
+using Eigen::Vector3d;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -82,15 +82,14 @@ int do_main() {
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
 
   // Ball's parameters.
-  const double radius = 0.05;   // m
-  const double mass = 0.1;      // kg
+  const double radius = 0.05;  // m
+  const double mass = 0.1;     // kg
   AddBallPlateBodies(
       radius, mass, FLAGS_hydroelastic_modulus, FLAGS_dissipation,
-      CoulombFriction<double>{
-          // static friction (unused in discrete systems)
-          FLAGS_friction_coefficient,
-          // dynamic friction
-          FLAGS_friction_coefficient},
+      CoulombFriction<double>{// static friction (unused in discrete systems)
+                              FLAGS_friction_coefficient,
+                              // dynamic friction
+                              FLAGS_friction_coefficient},
       FLAGS_resolution_hint_factor, &plant);
 
   plant.Finalize();
@@ -135,7 +134,6 @@ rigid-compliant, compliant-compliant, and rigid-compliant respectively. The
 hydroelastic contact model can work with non-convex shapes accurately without
 resorting to their convex hulls. Launch meldis before running this example.
 See the README.md file for more information.)""");
-  FLAGS_simulator_publish_every_time_step = true;
   FLAGS_simulator_target_realtime_rate = 0.1;
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::ball_plate::do_main();

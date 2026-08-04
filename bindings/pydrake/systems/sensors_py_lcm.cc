@@ -1,5 +1,7 @@
+#include <string>
+
+#include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/lcm_image_array_to_images.h"
@@ -10,15 +12,15 @@ namespace internal {
 
 using systems::LeafSystem;
 
-void DefineSensorsLcm(py::module m) {
+void DefineSensorsLcm(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   {
     using Class = LcmImageArrayToImages;
     constexpr auto& cls_doc = doc.LcmImageArrayToImages;
-    py::class_<Class, LeafSystem<double>> cls(
+    class_<Class, LeafSystem<double>> cls(
         m, "LcmImageArrayToImages", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
@@ -35,7 +37,7 @@ void DefineSensorsLcm(py::module m) {
   {
     using Class = ImageToLcmImageArrayT;
     constexpr auto& cls_doc = doc.ImageToLcmImageArrayT;
-    py::class_<Class, LeafSystem<double>> cls(
+    class_<Class, LeafSystem<double>> cls(
         m, "ImageToLcmImageArrayT", cls_doc.doc);
     cls  // BR
         .def(py::init<const std::string&, const std::string&,

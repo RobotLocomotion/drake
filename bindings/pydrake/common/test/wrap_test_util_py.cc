@@ -1,3 +1,6 @@
+#include <memory>
+#include <string>
+
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/copyable_unique_ptr.h"
@@ -33,9 +36,10 @@ struct TypeConversionExample {
 // Wrapper for TypeConversionExample.
 struct wrapper_type_conversion_exaple {
   using Type = TypeConversionExample;
-  static constexpr auto original_name = py::detail::_("TypeConversionExample");
+  static constexpr auto original_name =
+      py::detail::const_name("TypeConversionExample");
   using WrappedType = std::string;
-  static constexpr auto wrapped_name = py::detail::_("str");
+  static constexpr auto wrapped_name = py::detail::const_name("str");
 
   static TypeConversionExample unwrap(const std::string& value) {
     return TypeConversionExample{value};
@@ -87,18 +91,18 @@ struct type_caster<drake::pydrake::TypeConversionExample>
 
 namespace drake {
 namespace pydrake {
-PYBIND11_MODULE(wrap_test_util, m) {
-  py::class_<MyValue>(m, "MyValue")
+PYDRAKE_MODULE(wrap_test_util, m) {
+  class_<MyValue>(m, "MyValue")
       .def(py::init<double>(), py::arg("value"))
-      .def_readwrite("value", &MyValue::value, py_rvp::reference_internal);
+      .def_rw("value", &MyValue::value, py_rvp::reference_internal);
 
-  py::class_<MyContainerRawPtr> my_container(m, "MyContainerRawPtr");
+  class_<MyContainerRawPtr> my_container(m, "MyContainerRawPtr");
   my_container  // BR
       .def(py::init());
   DefReadWriteKeepAlive(&my_container, "member", &MyContainerRawPtr::member,
       "MyContainerRawPtr doc");
 
-  py::class_<MyContainerUniquePtr> my_unique(m, "MyContainerUniquePtr");
+  class_<MyContainerUniquePtr> my_unique(m, "MyContainerUniquePtr");
   my_unique.def(py::init<MyValue, MyValue>(), py::arg("member"),
       py::arg("copyable_member"));
   DefReadUniquePtr(&my_unique, "member", &MyContainerUniquePtr::member,
@@ -112,7 +116,7 @@ PYBIND11_MODULE(wrap_test_util, m) {
   m.def("CheckTypeConversionExample", &CheckTypeConversionExample,
       py::arg("obj"));
 
-  py::class_<NotCopyable>(m, "NotCopyable")  // BR
+  class_<NotCopyable>(m, "NotCopyable")  // BR
       .def(py::init());
 
   // Using WrapCallbacks() -> Good.

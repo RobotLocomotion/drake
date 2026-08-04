@@ -10,7 +10,6 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_googlebench_binary(
     name = "framework_benchmarks",
     srcs = ["framework_benchmarks.cc"],
-    add_test_rule = True,
     deps = [
         "//common:add_text_logging_gflags",
         "//systems/framework:diagram_builder",
@@ -19,6 +18,7 @@ drake_cc_googlebench_binary(
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(
@@ -29,13 +29,13 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "multilayer_perceptron_benchmark",
     srcs = ["multilayer_perceptron_benchmark.cc"],
-    add_test_rule = True,
     deps = [
         "//common:add_text_logging_gflags",
         "//systems/primitives:multilayer_perceptron",
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(

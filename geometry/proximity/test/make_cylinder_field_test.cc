@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/make_cylinder_field.h"
 
 #include <limits>
+#include <vector>
 
 #include <gtest/gtest.h>
 

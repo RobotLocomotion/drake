@@ -44,15 +44,6 @@ MinCliqueCoverSolverViaGreedy::MinCliqueCoverSolverViaGreedy(
   DRAKE_THROW_UNLESS(max_clique_solver_ != nullptr);
 }
 
-// Deprecated 2025-05-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-MinCliqueCoverSolverViaGreedy::MinCliqueCoverSolverViaGreedy(
-    const MaxCliqueSolverBase& max_clique_solver, int min_clique_size)
-    : MinCliqueCoverSolverViaGreedy(max_clique_solver.Clone(),
-                                    min_clique_size) {}
-#pragma GCC diagnostic pop
-
 std::vector<std::set<int>> MinCliqueCoverSolverViaGreedy::DoSolveMinCliqueCover(
     const Eigen::SparseMatrix<bool>& original_matrix, bool partition) {
   Eigen::SparseMatrix<bool> adjacency_matrix = original_matrix;

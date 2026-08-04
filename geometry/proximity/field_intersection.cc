@@ -389,7 +389,7 @@ std::vector<int> VolumeIntersector<MeshBuilder, BvType>::CalcContactPolygon(
   }
   // The normal points in the direction of increasing field_0 and decreasing
   // field_1.
-  Vector3<T> polygon_nhat_M = equilibrium_plane_M.normal();
+  Vector3<T> polygon_nhat_M = equilibrium_plane_M.unit_normal();
   if (!IsPlaneNormalAlongPressureGradient(polygon_nhat_M, tet0, field0_M)) {
     return {};
   }
@@ -429,9 +429,9 @@ std::vector<int> VolumeIntersector<MeshBuilder, BvType>::CalcContactPolygon(
 
 template <class MeshBuilder>
 void HydroelasticVolumeIntersector<MeshBuilder>::IntersectCompliantVolumes(
-    GeometryId id_M, const hydroelastic::SoftMesh& compliant_M,
+    GeometryId id_M, const hydroelastic::CompliantMesh& compliant_M,
     const math::RigidTransform<T>& X_WM, GeometryId id_N,
-    const hydroelastic::SoftMesh& compliant_N,
+    const hydroelastic::CompliantMesh& compliant_N,
     const math::RigidTransform<T>& X_WN,
     std::unique_ptr<ContactSurface<T>>* contact_surface_W,
     const bool use_surfaces) {
@@ -499,9 +499,9 @@ void HydroelasticVolumeIntersector<MeshBuilder>::IntersectCompliantVolumes(
 
 template <typename T>
 std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
-    GeometryId id_M, const hydroelastic::SoftMesh& compliant_M,
+    GeometryId id_M, const hydroelastic::CompliantMesh& compliant_M,
     const math::RigidTransform<T>& X_WM, GeometryId id_N,
-    const hydroelastic::SoftMesh& compliant_N,
+    const hydroelastic::CompliantMesh& compliant_N,
     const math::RigidTransform<T>& X_WN,
     HydroelasticContactRepresentation representation) {
   std::unique_ptr<ContactSurface<T>> contact_surface_W;

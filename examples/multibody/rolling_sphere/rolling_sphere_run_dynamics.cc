@@ -1,5 +1,6 @@
 #include <chrono>
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -87,10 +88,6 @@ namespace multibody {
 namespace bouncing_ball {
 namespace {
 
-using Eigen::AngleAxisd;
-using Eigen::Matrix3d;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
 using drake::geometry::SceneGraph;
 using drake::geometry::SourceId;
 using drake::lcm::DrakeLcm;
@@ -99,6 +96,10 @@ using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::ContactModel;
 using drake::multibody::CoulombFriction;
 using drake::multibody::SpatialVelocity;
+using Eigen::AngleAxisd;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -107,10 +108,10 @@ int do_main() {
       AddMultibodyPlantSceneGraph(&builder, FLAGS_mbp_dt);
 
   // Plant's parameters.
-  const double radius = 0.05;   // m
-  const double mass = 0.1;      // kg
-  const double g = 9.81;        // m/s^2
-  const double z0 = FLAGS_z0;        // Initial height.
+  const double radius = 0.05;  // m
+  const double mass = 0.1;     // kg
+  const double g = 9.81;       // m/s^2
+  const double z0 = FLAGS_z0;  // Initial height.
   const CoulombFriction<double> coulomb_friction(
       FLAGS_friction_coefficient /* static friction */,
       FLAGS_friction_coefficient /* dynamic friction */);
@@ -124,8 +125,7 @@ int do_main() {
     const RigidTransformd X_WB(Vector3d{-0.5, 0, 0});
     geometry::ProximityProperties prox_prop;
     geometry::AddContactMaterial({} /* dissipation */, {} /* point stiffness */,
-                                 CoulombFriction<double>(),
-                                 &prox_prop);
+                                 CoulombFriction<double>(), &prox_prop);
     geometry::AddCompliantHydroelasticProperties(0.1, 1e8, &prox_prop);
     plant.RegisterCollisionGeometry(plant.world_body(), X_WB, wall,
                                     "wall_collision", std::move(prox_prop));
@@ -143,8 +143,10 @@ int do_main() {
     plant.set_contact_surface_representation(
         geometry::HydroelasticContactRepresentation::kPolygon);
   } else {
-    throw std::runtime_error("Invalid choice of contact-surface representation "
-                             "for hydroelastics '" + FLAGS_hydro_rep + "'.");
+    throw std::runtime_error(
+        "Invalid choice of contact-surface representation "
+        "for hydroelastics '" +
+        FLAGS_hydro_rep + "'.");
   }
 
   // Set contact model and parameters.
@@ -184,13 +186,12 @@ int do_main() {
   math::RotationMatrixd R_WB(math::RollPitchYawd(
       M_PI / 180.0 * Vector3<double>(FLAGS_roll, FLAGS_pitch, FLAGS_yaw)));
   math::RigidTransformd X_WB(R_WB, Vector3d(0.0, 0.0, z0));
-  plant.SetFreeBodyPose(
-      &plant_context, plant.GetBodyByName("Ball"), X_WB);
+  plant.SetFreeBodyPose(&plant_context, plant.GetBodyByName("Ball"), X_WB);
 
   const SpatialVelocity<double> V_WB(Vector3d(FLAGS_wx, FLAGS_wy, FLAGS_wz),
                                      Vector3d(FLAGS_vx, FLAGS_vy, FLAGS_vz));
-  plant.SetFreeBodySpatialVelocity(
-      &plant_context, plant.GetBodyByName("Ball"), V_WB);
+  plant.SetFreeBodySpatialVelocity(&plant_context, plant.GetBodyByName("Ball"),
+                                   V_WB);
 
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));

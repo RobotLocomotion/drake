@@ -6,6 +6,9 @@
 
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 
+#include <memory>
+#include <string>
+
 #include <benchmark/benchmark.h>
 
 #include "drake/multibody/parsing/parser.h"

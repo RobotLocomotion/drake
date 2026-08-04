@@ -26,7 +26,7 @@ drake_py_library(
     ],
     deps = [
         "//bindings/pydrake/systems",
-        "@gymnasium_py",
+        "@gymnasium_py_internal//:gymnasium_py",
     ],
 )
 

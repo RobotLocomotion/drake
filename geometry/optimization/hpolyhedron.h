@@ -145,11 +145,13 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedrons in `intersecting_polytopes`.  Regardless of the value of this
   parameter, the intersections may be reduced by the affine transformation step
   if `do_affine_transformation` is true.
-  @param intersection_padding is a distance by which each hyperplane is
-  translated back outward after satisfing intersection constraints, subject to
-  not surpassing the original hyperplane position.  In the case where
-  `keep_whole_intersection` is false, using a non-zero value for this parameter
-  prevents intersections from being single points.
+  @param intersection_padding limits how much the intersection between the
+  inbody and each polytope in `intersection_polytopes` can be reduced. For each
+  polytope in `intersecting_polytopes`, there is a ball fully contained in the
+  inbody, of radius `intersection_padding`, whose center is contained in the
+  intersecting polytope.  In the case where `keep_whole_intersection` is false,
+  using a non-zero value for this parameter prevents intersections from being
+  single points.
   @param random_seed is a seed for a random number generator used to shuffle
   the ordering of hyperplanes in between iterations.
   @pre `min_volume_ratio` > 0.
@@ -161,7 +163,8 @@ class HPolyhedron final : public ConvexSet {
   [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
       double min_volume_ratio = 0.1, bool do_affine_transformation = true,
       int max_iterations = 10,
-      const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& points_to_contain =
+          Eigen::MatrixXd(),
       const std::vector<drake::geometry::optimization::HPolyhedron>&
           intersecting_polytopes = std::vector<HPolyhedron>(),
       bool keep_whole_intersection = false, double intersection_padding = 1e-4,
@@ -184,9 +187,14 @@ class HPolyhedron final : public ConvexSet {
   @returns the transformed polyhedron, t + TX.
 
   @param circumbody is an HPolyhedron that must contain the returned inbody.
+  @pre `this` is bounded. If `check_bounded` is true, this condition is
+  checked and an exception is thrown if it is not satisfied. If `check_bounded`
+  is set to false, then it is the user's responsibility to ensure that `this` is
+  bounded and the result is not necessarily to be trusted if the precondition is
+  not satisfied.
   @throws std::exception if the solver fails to solve the problem.*/
   [[nodiscard]] HPolyhedron MaximumVolumeInscribedAffineTransformation(
-      const HPolyhedron& circumbody) const;
+      const HPolyhedron& circumbody, bool check_bounded = true) const;
 
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
   also known as the inner Löwner-John ellipsoid. From Section 8.4.2 in Boyd and

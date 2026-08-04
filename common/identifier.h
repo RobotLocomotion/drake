@@ -1,13 +1,12 @@
 #pragma once
 
 #include <cstdint>
-#include <ostream>
 #include <string>
 #include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -228,16 +227,6 @@ class Identifier {
   int64_t value_{};
 };
 
-/** Streaming output operator.   This is considered invalid for invalid ids and
- is strictly enforced in Debug builds.
- @relates Identifier
- */
-template <typename Tag>
-std::ostream& operator<<(std::ostream& out, const Identifier<Tag>& id) {
-  out << id.get_value();
-  return out;
-}
-
 /** Enables use of identifiers with to_string. It requires ADL to work. So,
  it should be invoked as: `to_string(id);` and should be preceded by
  `using std::to_string`.*/
@@ -258,8 +247,4 @@ struct hash<drake::Identifier<Tag>> : public drake::DefaultHash {};
 
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename Tag>
-struct formatter<drake::Identifier<Tag>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename Tag, drake, Identifier<Tag>, x, drake::to_string(x))

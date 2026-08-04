@@ -10,13 +10,15 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/multibody/math/spatial_vector.h"
 
 namespace drake {
 namespace multibody {
 
 // Forward declaration to define dot product with a spatial velocity.
-template <typename T> class SpatialVelocity;
+template <typename T>
+class SpatialVelocity;
 
 /// This class represents a _spatial momentum_ L and has 6 elements with an
 /// angular (rotational) momentum 𝐡 (3-element vector) on top of a translational
@@ -77,7 +79,8 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// Constructs a spatial momentum L from an angular momentum 𝐡
   /// and a translational momentum 𝐥.
   SpatialMomentum(const Eigen::Ref<const Vector3<T>>& h,
-                  const Eigen::Ref<const Vector3<T>>& l) : Base(h, l) {}
+                  const Eigen::Ref<const Vector3<T>>& l)
+      : Base(h, l) {}
 
   /// Constructs a spatial momentum L from an Eigen expression that represents
   /// a 6-element vector, i.e., a 3-element angular momentum 𝐡 and a
@@ -196,3 +199,6 @@ inline SpatialMomentum<T> operator-(const SpatialMomentum<T>& L1_E,
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::SpatialMomentum);
+
+DRAKE_FORMATTER_AS(typename T, drake::multibody, SpatialMomentum<T>, x,
+                   drake::multibody::to_string(x))

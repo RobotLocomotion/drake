@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/selector.h"
 
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

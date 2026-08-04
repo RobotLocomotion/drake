@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <map>
+#include <string>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -392,8 +395,12 @@ GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
       ".*use PopulateFromRosPackagePath.*");
 }
 
-// Tests that PackageMap's streaming to-string operator works.
-GTEST_TEST(PackageMapTest, TestStreamingToString) {
+// Tests that PackageMap can be converted to a string using its fmt formatter.
+GTEST_TEST(PackageMapTest, ToStringFmtFormatter) {
+  // Test the empty PackageMap case.
+  EXPECT_EQ(fmt::to_string(PackageMap().MakeEmpty()),
+            "PackageMap:\n  [EMPTY!]\n");
+
   fs::create_directory("package_foo");
   fs::create_directory("package_bar");
   map<string, string> expected_packages = {{"package_foo", "package_foo"},
@@ -407,9 +414,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
   package_map.AddRemote("remote",
                         {.urls = {url}, .sha256 = std::string(64u, '0')});
 
-  std::stringstream string_buffer;
-  string_buffer << package_map;
-  const std::string resulting_string = string_buffer.str();
+  const std::string resulting_string{fmt::to_string(package_map)};
 
   // The following simply tests that the package names and their relative paths
   // exist in the resulting string. It does not check the literal path since

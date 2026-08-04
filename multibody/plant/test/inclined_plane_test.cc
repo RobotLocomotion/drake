@@ -1,5 +1,6 @@
 #include <limits>
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -132,7 +133,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
       RotationMatrix<double>::MakeYRotation(inclined_plane_angle);
   const Vector3<double> p_WoBo_W_initial = R_WA * p_WoBo_A_initial;
   const RigidTransform<double> X_WB_initial(p_WoBo_W_initial);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -144,7 +145,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
   integrator.set_maximum_step_size(1e-3);  // Reasonable for this problem.
   integrator.set_target_accuracy(target_accuracy);
-  simulator.set_publish_every_time_step(true);
+
   simulator.Initialize();
 
   // Prior to simulating, dynamics output ports should be filled with zeros.

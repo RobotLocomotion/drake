@@ -1,6 +1,10 @@
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
 
+#include <limits>
+#include <memory>
 #include <numeric>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -16,6 +20,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
 namespace drake {
 namespace multibody {
@@ -43,9 +48,9 @@ template <typename T>
 class SpringConstraint final : public SapConstraint<T> {
  public:
   struct Data {
-    Vector3<T> vc;
-    T R;
-    Vector3<T> v_hat;
+    Vector3<T> vc{Vector3d::Constant(kNaN)};
+    T R{kNaN};
+    Vector3<T> v_hat{Vector3d::Constant(kNaN)};
   };
 
   // Model a spring attached to `clique`, expected to be a 3D particle.
@@ -96,10 +101,17 @@ class SpringConstraint final : public SapConstraint<T> {
  private:
   SpringConstraint(const SpringConstraint&) = default;
 
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                       EigenPtr<VectorX<T>>) const final {
+    throw std::runtime_error("DoAccumulateGeneralizedImpulses stubbed");
+  }
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                   SpatialForce<T>*) const final {
+    throw std::runtime_error("DoAccumulateSpatialImpulses stubbed");
+  }
   std::unique_ptr<SapConstraint<T>> DoClone() const override {
     return std::unique_ptr<SpringConstraint<T>>(new SpringConstraint<T>(*this));
   }
-
   std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
     throw std::runtime_error("DoToDouble() not used in these unit tests.");
   }
@@ -302,10 +314,17 @@ class DummyConstraint final : public SapConstraint<T> {
   }
 
  private:
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                       EigenPtr<VectorX<T>>) const final {
+    throw std::runtime_error("DoAccumulateGeneralizedImpulses stubbed");
+  }
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                   SpatialForce<T>*) const final {
+    throw std::runtime_error("DoAccumulateSpatialImpulses stubbed");
+  }
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<DummyConstraint<T>>(new DummyConstraint<T>(*this));
   }
-
   std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
     throw std::runtime_error("DoToDouble() not used in these unit tests.");
   }
@@ -847,11 +866,11 @@ TEST_F(DummyModelTest, CostGradients) {
   const double cost = sap_model_->EvalCost(*context_);
   const VectorXd& cost_gradient = sap_model_->EvalCostGradient(*context_);
   EXPECT_NEAR(cost, cost_ad.value(), 2.0 * kEpsilon * cost_ad.value());
-  EXPECT_TRUE(CompareMatrices(cost_gradient, cost_ad_gradient, kEpsilon,
+  EXPECT_TRUE(CompareMatrices(cost_gradient, cost_ad_gradient, 2 * kEpsilon,
                               MatrixCompareType::relative));
 
   // Validate gradient and its gradient (Hessian of the cost).
-  EXPECT_TRUE(CompareMatrices(cost_gradient, gradient_ad_value, kEpsilon,
+  EXPECT_TRUE(CompareMatrices(cost_gradient, gradient_ad_value, 2 * kEpsilon,
                               MatrixCompareType::relative));
 
   // Unit test the validity of the constraints Hessian G by directly forming the

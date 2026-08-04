@@ -1,11 +1,10 @@
 #pragma once
 
 #include <functional>
-#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/reset_after_move.h"
 
@@ -55,7 +54,8 @@ class SolverId {
 
 bool operator==(const SolverId&, const SolverId&);
 bool operator!=(const SolverId&, const SolverId&);
-std::ostream& operator<<(std::ostream&, const SolverId&);
+
+std::string to_string(const SolverId&);
 
 }  // namespace solvers
 }  // namespace drake
@@ -74,8 +74,4 @@ template <>
 struct hash<drake::solvers::SolverId> : public drake::DefaultHash {};
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::solvers::SolverId> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::solvers, SolverId, x, drake::solvers::to_string(x))

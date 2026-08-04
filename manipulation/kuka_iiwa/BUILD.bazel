@@ -10,6 +10,13 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "test_models",
+    testonly = True,
+    srcs = glob(["test/**/*.yaml"]),
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_package_library(
     name = "kuka_iiwa",
     visibility = ["//visibility:public"],
@@ -90,6 +97,7 @@ drake_cc_library(
     srcs = ["iiwa_driver.cc"],
     hdrs = ["iiwa_driver.h"],
     deps = [
+        ":iiwa_constants",
         "//common:essential",
         "//common:name_value",
     ],
@@ -119,7 +127,7 @@ drake_cc_library(
     srcs = ["sim_iiwa_driver.cc"],
     hdrs = ["sim_iiwa_driver.h"],
     deps = [
-        ":iiwa_constants",
+        ":iiwa_driver",
         "//common:essential",
         "//multibody/plant",
         "//systems/controllers:inverse_dynamics_controller",
@@ -128,6 +136,8 @@ drake_cc_library(
         "//systems/primitives:demultiplexer",
         "//systems/primitives:discrete_derivative",
         "//systems/primitives:first_order_low_pass_filter",
+        "//systems/primitives:saturation",
+        "//systems/primitives:sparse_matrix_gain",
     ],
 )
 
@@ -138,6 +148,7 @@ drake_cc_library(
     deps = [
         ":iiwa_command_receiver",
         ":iiwa_constants",
+        ":iiwa_driver",
         ":iiwa_status_sender",
         ":sim_iiwa_driver",
         "//multibody/plant",
@@ -214,6 +225,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "iiwa_driver_functions_test",
     data = [
+        ":test_models",
         "//manipulation/util:test_directives",
         "@drake_models//:iiwa_description",
         "@drake_models//:wsg_50_description",
@@ -241,8 +253,10 @@ drake_cc_googletest(
     deps = [
         ":iiwa_constants",
         ":sim_iiwa_driver",
+        "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",
+        "//systems/analysis:simulator",
         "//systems/framework/test_utilities:scalar_conversion",
     ],
 )

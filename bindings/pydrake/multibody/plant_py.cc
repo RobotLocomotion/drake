@@ -1,13 +1,20 @@
+#include <limits>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/multibody_plant.h"
+#include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
-#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/common/eigen_types.h"
@@ -58,11 +65,11 @@ int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
  * @param T Template.
  */
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_plant.drake.multibody;
   // PointPairContactInfo
   {
     using Class = PointPairContactInfo<T>;
@@ -103,6 +110,28 @@ void DoScalarDependentDefinitions(py::module m, T) {
     AddValueInstantiation<Class>(m);
   }
 
+  // DeformableContactInfo
+  {
+    using Class = DeformableContactInfo<T>;
+    constexpr auto& cls_doc = doc.DeformableContactInfo;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "DeformableContactInfo", param, cls_doc.doc);
+    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+      cls  // BR
+          .def(py::init<geometry::GeometryId, geometry::GeometryId,
+                   geometry::PolygonSurfaceMesh<T>, SpatialForce<T>>(),
+              py::arg("id_A"), py::arg("id_B"), py::arg("contact_mesh_W"),
+              py::arg("F_Ac_W"), cls_doc.ctor.doc)
+          .def("id_A", &Class::id_A, cls_doc.id_A.doc)
+          .def("id_B", &Class::id_B, cls_doc.id_B.doc)
+          .def("contact_mesh", &Class::contact_mesh, py_rvp::reference_internal,
+              cls_doc.contact_mesh.doc)
+          .def("F_Ac_W", &Class::F_Ac_W, cls_doc.F_Ac_W.doc);
+    }
+    DefCopyAndDeepCopy(&cls);
+    AddValueInstantiation<Class>(m);
+  }
+
   // ContactResults
   {
     using Class = ContactResults<T>;
@@ -119,6 +148,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_hydroelastic_contacts.doc)
         .def("hydroelastic_contact_info", &Class::hydroelastic_contact_info,
             py::arg("i"), cls_doc.hydroelastic_contact_info.doc)
+        .def("num_deformable_contacts", &Class::num_deformable_contacts,
+            cls_doc.num_deformable_contacts.doc)
+        .def("deformable_contact_info", &Class::deformable_contact_info,
+            py::arg("i"), py_rvp::reference_internal,
+            cls_doc.deformable_contact_info.doc)
         .def("plant", &Class::plant, py_rvp::reference, cls_doc.plant.doc)
         .def("SelectHydroelastic", &Class::SelectHydroelastic,
             py::arg("selector"), cls_doc.SelectHydroelastic.doc);
@@ -139,14 +173,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
-            cls_doc.dynamic_friction.doc)
-        .def(py::pickle(
-            [](const Class& self) {
-              return std::pair(self.static_friction(), self.dynamic_friction());
-            },
-            [](std::pair<T, T> frictions) {
-              return Class(frictions.first, frictions.second);
-            }));
+            cls_doc.dynamic_friction.doc);
+    DefPickle(
+        &cls,
+        [](const Class& self) {
+          return std::pair(self.static_friction(), self.dynamic_friction());
+        },
+        [](Class* self, std::pair<T, T> frictions) {
+          new (self) Class(frictions.first, frictions.second);
+        });
     DefCopyAndDeepCopy(&cls);
 
     AddValueInstantiation<CoulombFriction<T>>(m);
@@ -201,6 +236,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<int, ModelInstanceIndex>(
                 &Class::num_velocities),
             py::arg("model_instance"), cls_doc.num_velocities.doc_1args)
+        .def("num_misc_continuous_states", &Class::num_misc_continuous_states,
+            cls_doc.num_misc_continuous_states.doc)
         .def("num_multibody_states",
             overload_cast_explicit<int>(&Class::num_multibody_states),
             cls_doc.num_multibody_states.doc_0args)
@@ -235,6 +272,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.AddJointActuator.doc)
         .def("RemoveJointActuator", &Class::RemoveJointActuator,
             py::arg("actuator"), cls_doc.RemoveJointActuator.doc)
+        .def("RemoveAllJointActuatorEffortLimits",
+            &Class::RemoveAllJointActuatorEffortLimits,
+            cls_doc.RemoveAllJointActuatorEffortLimits.doc)
         .def(
             "AddFrame",
             [](Class* self, const Frame<T>& frame) {
@@ -293,6 +333,23 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("stiffness") = std::numeric_limits<double>::infinity(),
             py::arg("damping") = 0.0, py_rvp::reference_internal,
             cls_doc.AddDistanceConstraint.doc)
+        .def("GetDefaultDistanceConstraintParams",
+            &Class::GetDefaultDistanceConstraintParams,
+            cls_doc.GetDefaultDistanceConstraintParams.doc)
+        .def("GetDistanceConstraintParams",
+            overload_cast_explicit<const std::map<MultibodyConstraintId,
+                                       DistanceConstraintParams>&,
+                const Context<T>&>(&Class::GetDistanceConstraintParams),
+            py::arg("context"), cls_doc.GetDistanceConstraintParams.doc_1args)
+        .def("GetDistanceConstraintParams",
+            overload_cast_explicit<const DistanceConstraintParams&,
+                const Context<T>&, MultibodyConstraintId>(
+                &Class::GetDistanceConstraintParams),
+            py::arg("context"), py::arg("id"),
+            cls_doc.GetDistanceConstraintParams.doc_2args)
+        .def("SetDistanceConstraintParams", &Class::SetDistanceConstraintParams,
+            py::arg("context"), py::arg("id"), py::arg("params"),
+            cls_doc.SetDistanceConstraintParams.doc)
         .def("AddBallConstraint", &Class::AddBallConstraint, py::arg("body_A"),
             py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ") = std::nullopt,
             py_rvp::reference_internal, cls_doc.AddBallConstraint.doc)
@@ -307,7 +364,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("damping") = std::nullopt, py_rvp::reference_internal,
             cls_doc.AddTendonConstraint.doc)
         .def("RemoveConstraint", &Class::RemoveConstraint, py::arg("id"),
-            cls_doc.RemoveConstraint.doc);
+            cls_doc.RemoveConstraint.doc)
+        .def("SetBaseBodyJointType", &Class::SetBaseBodyJointType,
+            py::arg("joint_type"), py::arg("model_instance") = std::nullopt)
+        .def("GetBaseBodyJointType", &Class::GetBaseBodyJointType,
+            py::arg("model_instance") = std::nullopt);
     // Mathy bits
     cls  // BR
         .def(
@@ -323,6 +384,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
             py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
+    cls  // BR
+        .def(
+            "CalcPointsVelocities",
+            [](const Class* self, const Context<T>& context,
+                const Frame<T>& frame_B,
+                const Eigen::Ref<const MatrixX<T>>& p_BQi,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              MatrixX<T> v_AQi_E(p_BQi.rows(), p_BQi.cols());
+              self->CalcPointsVelocities(
+                  context, frame_B, p_BQi, frame_A, frame_E, &v_AQi_E);
+              return v_AQi_E;
+            },
+            py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
+            py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcPointsVelocities.doc);
     cls  // BR
         .def("CalcTotalMass",
             overload_cast_explicit<T, const Context<T>&>(&Class::CalcTotalMass),
@@ -413,11 +489,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [](const Class* self, const Context<T>& context,
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
                 const Frame<T>& frame_E) {
-              Matrix3X<T> Js_v_ACcm_E(
+              Matrix3X<T> Js_v_AScm_E(
                   3, GetVariableSize<T>(*self, with_respect_to));
               self->CalcJacobianCenterOfMassTranslationalVelocity(
-                  context, with_respect_to, frame_A, frame_E, &Js_v_ACcm_E);
-              return Js_v_ACcm_E;
+                  context, with_respect_to, frame_A, frame_E, &Js_v_AScm_E);
+              return Js_v_AScm_E;
             },
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
@@ -428,55 +504,91 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const std::vector<ModelInstanceIndex>& model_instances,
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
                 const Frame<T>& frame_E) {
-              Matrix3X<T> Js_v_ACcm_E(
+              Matrix3X<T> Js_v_AScm_E(
                   3, GetVariableSize<T>(*self, with_respect_to));
               self->CalcJacobianCenterOfMassTranslationalVelocity(context,
                   model_instances, with_respect_to, frame_A, frame_E,
-                  &Js_v_ACcm_E);
-              return Js_v_ACcm_E;
+                  &Js_v_AScm_E);
+              return Js_v_AScm_E;
             },
             py::arg("context"), py::arg("model_instances"),
             py::arg("with_respect_to"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_6args)
+        .def("GetFloatingBaseBodies", &Class::GetFloatingBaseBodies,
+            cls_doc.GetFloatingBaseBodies.doc)
+        .def("SetDefaultFloatingBaseBodyPose",
+            &Class::SetDefaultFloatingBaseBodyPose, py::arg("body"),
+            py::arg("X_WB"), cls_doc.SetDefaultFloatingBaseBodyPose.doc)
+        .def("GetDefaultFloatingBaseBodyPose",
+            &Class::GetDefaultFloatingBaseBodyPose, py::arg("body"),
+            cls_doc.GetDefaultFloatingBaseBodyPose.doc)
+        .def("SetFloatingBaseBodyPoseInWorldFrame",
+            &Class::SetFloatingBaseBodyPoseInWorldFrame, py::arg("context"),
+            py::arg("body"), py::arg("X_WB"),
+            cls_doc.SetFloatingBaseBodyPoseInWorldFrame.doc)
+        .def("SetFloatingBaseBodyPoseInAnchoredFrame",
+            &Class::SetFloatingBaseBodyPoseInAnchoredFrame, py::arg("context"),
+            py::arg("frame_F"), py::arg("body"), py::arg("X_FB"),
+            cls_doc.SetFloatingBaseBodyPoseInAnchoredFrame.doc)
+        .def("GetUniqueFloatingBaseBodyOrThrow",
+            &Class::GetUniqueFloatingBaseBodyOrThrow, py::arg("model_instance"),
+            py_rvp::reference_internal,
+            cls_doc.GetUniqueFloatingBaseBodyOrThrow.doc)
+        .def("HasUniqueFloatingBaseBody", &Class::HasUniqueFloatingBaseBody,
+            py::arg("model_instance"), cls_doc.HasUniqueFloatingBaseBody.doc)
         .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
             py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
-            py::arg("context"), py::arg("body"), py::arg("X_PB"),
+            py::arg("context"), py::arg("body"), py::arg("X_JpJc"),
             cls_doc.SetFreeBodyPose.doc_3args)
-        .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
-            py::arg("body"), py::arg("X_PB"),
-            cls_doc.SetDefaultFreeBodyPose.doc)
-        .def("GetDefaultFreeBodyPose", &Class::GetDefaultFreeBodyPose,
-            py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc)
+        .def("SetFreeBodySpatialVelocity",
+            overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
+                const SpatialVelocity<T>&>(&Class::SetFreeBodySpatialVelocity),
+            py::arg("context"), py::arg("body"), py::arg("V_JpJc"),
+            cls_doc.SetFreeBodySpatialVelocity.doc_3args)
         .def("GetActuationFromArray", &Class::GetActuationFromArray,
             py::arg("model_instance"), py::arg("u"),
-            cls_doc.GetActuationFromArray.doc)
-        .def("SetActuationInArray", &Class::SetActuationInArray,
-            py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
-            cls_doc.SetActuationInArray.doc)
+            cls_doc.GetActuationFromArray.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetActuationInArray", &Class::SetActuationInArray,
+              py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
+              cls_doc.SetActuationInArray.doc);
+    }
+    cls  // BR
         .def("GetPositionsFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetPositionsFromArray),
             py::arg("model_instance"), py::arg("q"),
-            cls_doc.GetPositionsFromArray.doc_2args)
-        .def("SetPositionsInArray", &Class::SetPositionsInArray,
-            py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
-            cls_doc.SetPositionsInArray.doc)
+            cls_doc.GetPositionsFromArray.doc_2args);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetPositionsInArray", &Class::SetPositionsInArray,
+              py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
+              cls_doc.SetPositionsInArray.doc);
+    }
+    cls  // BR
         .def("GetVelocitiesFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetVelocitiesFromArray),
             py::arg("model_instance"), py::arg("v"),
-            cls_doc.GetVelocitiesFromArray.doc_2args)
-        .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
-            py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
-            cls_doc.SetVelocitiesInArray.doc)
-        // TODO(eric.cousineau): Ensure all of these return either references,
-        // or copies, consistently. At present, `GetX(context)` returns a
-        // reference, while `GetX(context, model_instance)` returns a copy.
+            cls_doc.GetVelocitiesFromArray.doc_2args);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
+              py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
+              cls_doc.SetVelocitiesInArray.doc);
+    }
+    cls  // TODO(eric.cousineau): Ensure all of these return either references,
+         // or copies, consistently. At present, `GetX(context)` returns a
+         // reference, while `GetX(context, model_instance)` returns a copy.
         .def(
             "GetPositions",
             [](const Class* self, const Context<T>& context) {
@@ -513,20 +625,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("model_instance"),
             cls_doc.GetVelocities.doc_2args)
-        .def(
-            "SetFreeBodySpatialVelocity",
-            [](const Class* self, const RigidBody<T>& body,
-                const SpatialVelocity<T>& V_WB, Context<T>* context) {
-              self->SetFreeBodySpatialVelocity(context, body, V_WB);
-            },
-            py::arg("body"), py::arg("V_PB"), py::arg("context"),
-            cls_doc.SetFreeBodySpatialVelocity.doc_3args)
-        .def("HasUniqueFreeBaseBody", &Class::HasUniqueFreeBaseBody,
-            py::arg("model_instance"), cls_doc.HasUniqueFreeBaseBody.doc)
-        .def("GetUniqueFreeBaseBodyOrThrow",
-            &Class::GetUniqueFreeBaseBodyOrThrow, py::arg("model_instance"),
-            py_rvp::reference_internal,
-            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc)
         .def(
             "EvalBodyPoseInWorld",
             [](const Class* self, const Context<T>& context,
@@ -984,8 +1082,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("coulomb_friction"),
             cls_doc.RegisterCollisionGeometry
                 .doc_5args_body_X_BG_shape_name_coulomb_friction)
-        .def("GetFloatingBaseBodies", &Class::GetFloatingBaseBodies,
-            cls_doc.GetFloatingBaseBodies.doc)
         .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_rvp::reference_internal,
@@ -1106,7 +1202,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 ModelInstanceIndex>(
                 &Class::get_generalized_contact_forces_output_port),
             py_rvp::reference_internal, py::arg("model_instance"),
-            cls_doc.get_generalized_contact_forces_output_port.doc);
+            cls_doc.get_generalized_contact_forces_output_port.doc)
+        .def("get_surface_speeds_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&>(
+                &Class::get_surface_speeds_input_port),
+            py_rvp::reference_internal,
+            cls_doc.get_surface_speeds_input_port.doc)
+        .def("get_surface_displacements_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_surface_displacements_output_port),
+            py_rvp::reference_internal,
+            cls_doc.get_surface_displacements_output_port.doc);
     // Property accessors.
     cls  // BR
         .def("world_body", &Class::world_body, py_rvp::reference_internal,
@@ -1169,20 +1275,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_stiction_tolerance", &Class::set_stiction_tolerance,
             py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc)
         .def(
-            "GetPositions",
-            [](const MultibodyPlant<T>* self, const Context<T>& context)
-                -> VectorX<T> { return self->GetPositions(context); },
-            py_rvp::reference, py::arg("context"),
-            cls_doc.GetPositions.doc_1args)
-        .def(
-            "GetPositions",
-            [](const MultibodyPlant<T>* self, const Context<T>& context,
-                ModelInstanceIndex model_instance) -> VectorX<T> {
-              return self->GetPositions(context, model_instance);
-            },
-            py_rvp::reference, py::arg("context"), py::arg("model_instance"),
-            cls_doc.GetPositions.doc_2args)
-        .def(
             "SetPositions",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 const Eigen::Ref<const VectorX<T>>& q) {
@@ -1226,20 +1318,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("model_instance"), py::arg("q_instance"),
             cls_doc.SetDefaultPositions.doc_2args)
-        .def(
-            "GetVelocities",
-            [](const MultibodyPlant<T>* self, const Context<T>& context)
-                -> VectorX<T> { return self->GetVelocities(context); },
-            py_rvp::reference, py::arg("context"),
-            cls_doc.GetVelocities.doc_1args)
-        .def(
-            "GetVelocities",
-            [](const MultibodyPlant<T>* self, const Context<T>& context,
-                ModelInstanceIndex model_instance) -> VectorX<T> {
-              return self->GetVelocities(context, model_instance);
-            },
-            py_rvp::reference, py::arg("context"), py::arg("model_instance"),
-            cls_doc.GetVelocities.doc_2args)
         .def(
             "SetVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
@@ -1343,7 +1421,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 bool>(&Class::GetActuatorNames),
             py::arg("model_instance"),
             py::arg("add_model_instance_prefix") = false,
-            cls_doc.GetActuatorNames.doc_2args);
+            cls_doc.GetActuatorNames.doc_2args)
+        .def("SetSurfaceVelocityAxis", &Class::SetSurfaceVelocityAxis,
+            py::arg("body"), py::arg("axis_B"),
+            cls_doc.SetSurfaceVelocityAxis.doc)
+        .def("GetSurfaceVelocityAxis", &Class::GetSurfaceVelocityAxis,
+            py::arg("body"), cls_doc.GetSurfaceVelocityAxis.doc);
   }
 
   {
@@ -1377,10 +1460,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         "AddMultibodyPlantSceneGraph",
         [result_to_tuple](systems::DiagramBuilder<T>* builder,
             MultibodyPlant<T>& plant, SceneGraph<T>* scene_graph) {
-          // The C++ method doesn't offer a bare-pointer overload, only
-          // shared_ptr. Because object lifetimes are already handled by the
-          // ref_cycle annotations above, we can pass the systems via unowned
-          // shared_ptr.
+          // The plant is already owned by Python. The scene_graph is either
+          // nullptr or already owned by Python. Therefore, both can be passed
+          // into C++ via an unowned shared_ptr.
           auto pair =
               multibody::internal::AddMultibodyPlantSceneGraphFromShared<T>(
                   builder, make_unowned_shared_ptr_from_raw(&plant),
@@ -1395,15 +1477,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         "AddMultibodyPlantSceneGraph",
         [result_to_tuple](systems::DiagramBuilder<T>* builder, double time_step,
             SceneGraph<T>* scene_graph) {
-          // The C++ method doesn't offer a bare-pointer overload, only
-          // shared_ptr. Because object lifetimes are already handled by the
-          // ref_cycle annotations above, we can pass the systems via unowned
-          // shared_ptr.
+          // The newly-minted plant will be owned by C++. The scene_graph is
+          // either nullptr or already owned by Python, so it can be passed
+          // into C++ via an unowned shared_ptr.
           auto pair =
               multibody::internal::AddMultibodyPlantSceneGraphFromShared<T>(
-                  builder,
-                  make_unowned_shared_ptr_from_raw(
-                      new MultibodyPlant<T>(time_step)),
+                  builder, std::make_unique<MultibodyPlant<T>>(time_step),
                   make_unowned_shared_ptr_from_raw(scene_graph));
           return result_to_tuple(builder, pair);
         },
@@ -1448,10 +1527,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "ExternallyAppliedSpatialForce", param, cls_doc.doc);
     cls  // BR
         .def(py::init<>())
-        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
-        .def_readwrite("p_BoBq_B", &Class::p_BoBq_B,
+        .def_rw("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_rw("p_BoBq_B", &Class::p_BoBq_B,
             return_value_policy_for_scalar_type<T>(), cls_doc.p_BoBq_B.doc)
-        .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
+        .def_rw("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -1539,21 +1618,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 }  // namespace
 
-PYBIND11_MODULE(plant, m) {
+PYDRAKE_MODULE(plant, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
   m.doc() = "Bindings for MultibodyPlant and related classes.";
 
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.fem");
-  py::module::import("pydrake.multibody.math");
-  py::module::import("pydrake.multibody.tree");
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.geometry");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.fem");
+  py::module_::import_("pydrake.multibody.math");
+  py::module_::import_("pydrake.multibody.tree");
+  py::module_::import_("pydrake.systems.framework");
 
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_plant.drake.multibody;
 
   using T = double;
 
@@ -1561,7 +1640,7 @@ PYBIND11_MODULE(plant, m) {
   {
     using Class = ContactResultsToLcmSystem<T>;
     constexpr auto& cls_doc = doc.ContactResultsToLcmSystem;
-    py::class_<Class, systems::LeafSystem<T>>(
+    class_<Class, systems::LeafSystem<T>>(
         m, "ContactResultsToLcmSystem", cls_doc.doc)
         .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
             cls_doc.ctor.doc)
@@ -1598,60 +1677,109 @@ PYBIND11_MODULE(plant, m) {
   {
     using Class = PropellerInfo;
     constexpr auto& cls_doc = doc.PropellerInfo;
-    py::class_<Class> cls(m, "PropellerInfo", cls_doc.doc);
+    class_<Class> cls(m, "PropellerInfo", cls_doc.doc);
     cls  // BR
         .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
                  double, double>(),
             py::arg("body_index"),
             py::arg("X_BP") = math::RigidTransform<double>::Identity(),
             py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
-        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
-        .def_readwrite("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
-        .def_readwrite(
-            "thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
-        .def_readwrite(
-            "moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
+        .def_rw("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_rw("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
+        .def_rw("thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
+        .def_rw("moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = DistanceConstraintParams;
+    constexpr auto& cls_doc = doc.DistanceConstraintParams;
+    class_<Class> cls(m, "DistanceConstraintParams", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<BodyIndex, Vector3<double>&, BodyIndex, Vector3<double>&,
+                 double, double, double>(),
+            py::arg("bodyA"), py::arg("p_AP"), py::arg("bodyB"),
+            py::arg("p_BQ"), py::arg("distance"), py::arg("stiffness"),
+            py::arg("damping"), cls_doc.ctor.doc_7args)
+        .def("bodyA", &Class::bodyA, cls_doc.bodyA.doc)
+        .def("bodyB", &Class::bodyB, cls_doc.bodyB.doc)
+        .def("p_AP", &Class::p_AP, cls_doc.p_AP.doc)
+        .def("p_BQ", &Class::p_BQ, cls_doc.p_BQ.doc)
+        .def("distance", &Class::distance, cls_doc.distance.doc)
+        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc)
+        .def("damping", &Class::damping, cls_doc.damping.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = ContactModel;
     constexpr auto& cls_doc = doc.ContactModel;
-    py::enum_<Class>(m, "ContactModel", cls_doc.doc)
+    py::enum_<Class> cls(m, "ContactModel", cls_doc.doc);
+    cls  // BR
         .value("kHydroelastic", Class::kHydroelastic, cls_doc.kHydroelastic.doc)
         .value("kPoint", Class::kPoint, cls_doc.kPoint.doc)
         .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
-            cls_doc.kHydroelasticWithFallback.doc)
-        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
-        .value("kHydroelasticsOnly", Class::kHydroelasticsOnly,
-            cls_doc.kHydroelasticsOnly.doc)
-        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
-        .value("kPointContactOnly", Class::kPointContactOnly,
-            cls_doc.kPointContactOnly.doc);
+            cls_doc.kHydroelasticWithFallback.doc);
+    // Legacy aliases. TODO(jwnimmer-tri) Deprecate these constants.
+    cls.attr("kHydroelasticsOnly") = cls.attr("kHydroelastic");
+    cls.attr("kPointContactOnly") = cls.attr("kPoint");
   }
 
   {
+    // Note that due to a bug in the docstring generation, the TAMSI deprecation
+    // warning ends up being attached to the enum class overview doc, instead of
+    // the kTamsi enum field. This is fine, but does make the 'doc_deprecated'
+    // uses below slightly confusing on first glance.
     using Class = DiscreteContactSolver;
     constexpr auto& cls_doc = doc.DiscreteContactSolver;
-    py::enum_<Class>(m, "DiscreteContactSolver", cls_doc.doc)
-        .value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc)
-        .value("kSap", Class::kSap, cls_doc.kSap.doc);
+    py::enum_<Class> cls(m, "DiscreteContactSolver", cls_doc.doc_deprecated);
+    // Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc);
+#pragma GCC diagnostic pop
+    cls.value("kSap", Class::kSap, cls_doc.kSap.doc);
   }
 
   {
+    // Note that due to a bug in the docstring generation, the TAMSI deprecation
+    // warning ends up being attached to the enum class overview doc, instead of
+    // the kTamsi enum field. This is fine, but does make the 'doc_deprecated'
+    // uses below slightly confusing on first glance.
     using Class = DiscreteContactApproximation;
     constexpr auto& cls_doc = doc.DiscreteContactApproximation;
-    py::enum_<Class>(m, "DiscreteContactApproximation", cls_doc.doc)
-        .value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc)
+    py::enum_<Class> cls(
+        m, "DiscreteContactApproximation", cls_doc.doc_deprecated);
+    // Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc);
+#pragma GCC diagnostic pop
+    cls  // BR
         .value("kSap", Class::kSap, cls_doc.kSap.doc)
         .value("kSimilar", Class::kSimilar, cls_doc.kSimilar.doc)
         .value("kLagged", Class::kLagged, cls_doc.kLagged.doc);
   }
 
   {
+    // This enum comes from a MultibodyTree header but for historical
+    // reasons we've bound it in plant.
+    using Class = BaseBodyJointType;
+    constexpr auto& tree_doc = pydrake_doc_multibody_tree.drake.multibody;
+    constexpr auto& cls_doc = tree_doc.BaseBodyJointType;
+    py::enum_<Class> cls(m, "BaseBodyJointType", cls_doc.doc);
+    cls.value("kQuaternionFloatingJoint", Class::kQuaternionFloatingJoint,
+           cls_doc.kQuaternionFloatingJoint.doc)
+        .value("kRpyFloatingJoint", Class::kRpyFloatingJoint,
+            cls_doc.kRpyFloatingJoint.doc)
+        .value("kWeldJoint", Class::kWeldJoint, cls_doc.kWeldJoint.doc);
+  }
+
+  {
     using Class = MultibodyPlantConfig;
     constexpr auto& cls_doc = doc.MultibodyPlantConfig;
-    py::class_<Class> cls(m, "MultibodyPlantConfig", cls_doc.doc);
+    class_<Class> cls(m, "MultibodyPlantConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -1663,22 +1791,15 @@ PYBIND11_MODULE(plant, m) {
   {
     using Class = PhysicalModel<T>;
     constexpr auto& cls_doc = doc.PhysicalModel;
-    auto cls = py::class_<Class>(m, "PhysicalModel", cls_doc.doc);
-  }
-
-  // Deformable identifier.
-  {
-    BindIdentifier<DeformableBodyId>(
-        m, "DeformableBodyId", doc.DeformableBodyId.doc);
+    auto cls = class_<Class>(m, "PhysicalModel", cls_doc.doc);
   }
 
   // DeformableModel
   {
     using Class = DeformableModel<double>;
     constexpr auto& cls_doc = doc.DeformableModel;
-    py::class_<Class, PhysicalModel<T>> cls(m, "DeformableModel", cls_doc.doc);
+    class_<Class, PhysicalModel<T>> cls(m, "DeformableModel", cls_doc.doc);
     cls  // BR
-        .def(py::init<MultibodyPlant<T>*>(), cls_doc.ctor.doc)
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
         .def(
             "RegisterDeformableBody",
@@ -1691,26 +1812,125 @@ PYBIND11_MODULE(plant, m) {
                   config, resolution_hint);
             },
             py::arg("geometry_instance"), py::arg("config"),
-            py::arg("resolution_hint"), cls_doc.RegisterDeformableBody.doc)
+            py::arg("resolution_hint"),
+            cls_doc.RegisterDeformableBody.doc_3args)
+        .def(
+            "RegisterDeformableBody",
+            [](Class& self, const geometry::GeometryInstance& geometry_instance,
+                ModelInstanceIndex model_instance,
+                const fem::DeformableBodyConfig<T>& config,
+                double resolution_hint) {
+              return self.RegisterDeformableBody(
+                  std::make_unique<geometry::GeometryInstance>(
+                      geometry_instance),
+                  model_instance, config, resolution_hint);
+            },
+            py::arg("geometry_instance"), py::arg("model_instance"),
+            py::arg("config"), py::arg("resolution_hint"),
+            cls_doc.RegisterDeformableBody.doc_4args)
         .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
             py::arg("id"), py::arg("p_WQ"), py::arg("n_W"),
             cls_doc.SetWallBoundaryCondition.doc)
         .def("AddFixedConstraint", &Class::AddFixedConstraint,
             py::arg("body_A_id"), py::arg("body_B"), py::arg("X_BA"),
-            py::arg("shape"), py::arg("X_BG"), cls_doc.AddFixedConstraint.doc)
+            py::arg("shape_G"), py::arg("X_BG"), cls_doc.AddFixedConstraint.doc)
         .def("GetDiscreteStateIndex", &Class::GetDiscreteStateIndex,
             py::arg("id"), cls_doc.GetDiscreteStateIndex.doc)
+        .def("SetPositions", &Class::SetPositions, py::arg("context"),
+            py::arg("id"), py::arg("q"), cls_doc.SetPositions.doc)
+        .def("GetPositions", &Class::GetPositions, py::arg("context"),
+            py::arg("id"), cls_doc.GetPositions.doc)
+        .def("SetVelocities", &Class::SetVelocities, py::arg("context"),
+            py::arg("id"), py::arg("v"), cls_doc.SetVelocities.doc)
+        .def("GetVelocities", &Class::GetVelocities, py::arg("context"),
+            py::arg("id"), cls_doc.GetVelocities.doc)
+        .def("SetPositionsAndVelocities", &Class::SetPositionsAndVelocities,
+            py::arg("context"), py::arg("id"), py::arg("q"), py::arg("v"),
+            cls_doc.SetPositionsAndVelocities.doc)
+        .def("GetPositionsAndVelocities", &Class::GetPositionsAndVelocities,
+            py::arg("context"), py::arg("id"),
+            cls_doc.GetPositionsAndVelocities.doc)
+        .def(
+            "AddExternalForce",
+            [](Class& self, const ForceDensityFieldBase<T>& external_force) {
+              self.AddExternalForce(external_force.Clone());
+            },
+            py::arg("external_force"), cls_doc.AddExternalForce.doc)
+        .def("GetExternalForces", &Class::GetExternalForces, py::arg("id"),
+            py_rvp::reference_internal, cls_doc.GetExternalForces.doc)
+        .def("Disable", &Class::Disable, py::arg("id"), py::arg("context"),
+            cls_doc.Disable.doc)
+        .def("Enable", &Class::Enable, py::arg("id"), py::arg("context"),
+            cls_doc.Enable.doc)
+        .def("is_enabled", &Class::is_enabled, py::arg("id"),
+            py::arg("context"), cls_doc.is_enabled.doc)
+        // TODO(xuchenhan-tri): Bind GetFemModel or make it internal.
         .def("GetReferencePositions", &Class::GetReferencePositions,
             py::arg("id"), py_rvp::reference_internal,
             cls_doc.GetReferencePositions.doc)
-        .def("GetGeometryId", &Class::GetGeometryId, py::arg("id"),
-            cls_doc.GetGeometryId.doc)
+        .def(
+            "GetBodyId",
+            [](const Class* self, DeformableBodyIndex index) {
+              return self->GetBodyId(index);
+            },
+            py::arg("index"), cls_doc.GetBodyId.doc_1args_index)
         .def(
             "GetBodyId",
             [](const Class* self, geometry::GeometryId geometry_id) {
               return self->GetBodyId(geometry_id);
             },
-            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id);
+            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id)
+        .def("GetBody",
+            overload_cast_explicit<const DeformableBody<T>&, DeformableBodyId>(
+                &Class::GetBody),
+            py::arg("id"), py_rvp::reference_internal,
+            cls_doc.GetBody.doc_1args_id)
+        .def("GetBody",
+            overload_cast_explicit<const DeformableBody<T>&,
+                DeformableBodyIndex>(&Class::GetBody),
+            py::arg("index"), py_rvp::reference_internal,
+            cls_doc.GetBody.doc_1args_index)
+        .def("GetMutableBody", &Class::GetMutableBody, py::arg("id"),
+            py_rvp::reference_internal, cls_doc.GetMutableBody.doc)
+        .def(
+            "HasBodyNamed",
+            [](const Class* self, const std::string& name) {
+              return self->HasBodyNamed(name);
+            },
+            py::arg("name"), cls_doc.HasBodyNamed.doc_1args)
+        .def(
+            "HasBodyNamed",
+            [](const Class* self, const std::string& name,
+                ModelInstanceIndex model_instance) {
+              return self->HasBodyNamed(name, model_instance);
+            },
+            py::arg("name"), py::arg("model_instance"),
+            cls_doc.HasBodyNamed.doc_2args)
+        .def("GetBodyByName",
+            overload_cast_explicit<const DeformableBody<T>&,
+                const std::string&>(&Class::GetBodyByName),
+            py::arg("name"), py_rvp::reference_internal,
+            cls_doc.GetBodyByName.doc_1args)
+        .def("GetBodyByName",
+            overload_cast_explicit<const DeformableBody<T>&, const std::string&,
+                ModelInstanceIndex>(&Class::GetBodyByName),
+            py::arg("name"), py::arg("model_instance"),
+            py_rvp::reference_internal, cls_doc.GetBodyByName.doc_2args)
+        .def("GetBodyIds", &Class::GetBodyIds, py::arg("model_instance"),
+            cls_doc.GetBodyIds.doc)
+        .def("GetBodyIndex", &Class::GetBodyIndex, py::arg("id"),
+            cls_doc.GetBodyIndex.doc)
+        .def("GetGeometryId", &Class::GetGeometryId, py::arg("id"),
+            cls_doc.GetGeometryId.doc)
+        .def("HasConstraint", &Class::HasConstraint, py::arg("id"),
+            cls_doc.HasConstraint.doc)
+        .def("is_empty", &Class::is_empty, cls_doc.is_empty.doc)
+        /* The parallelism configuration is for internal-use only and thus the
+         naming choice. This will go away when we figure out a more principled
+         way of using threads in a single deformable sim. */
+        .def("_set_parallelism", &Class::SetParallelism, py::arg("parallelism"),
+            cls_doc.SetParallelism.doc)
+        .def("_parallelism", &Class::parallelism, cls_doc.parallelism.doc);
   }
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

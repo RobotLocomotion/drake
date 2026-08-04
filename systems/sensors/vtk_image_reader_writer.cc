@@ -5,14 +5,15 @@
 #include <variant>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
-#include <vtkCommand.h>            // vtkCommonCore
-#include <vtkJPEGReader.h>         // vtkIOImage
-#include <vtkJPEGWriter.h>         // vtkIOImage
-#include <vtkPNGReader.h>          // vtkIOImage
-#include <vtkPNGWriter.h>          // vtkIOImage
-#include <vtkTIFFReader.h>         // vtkIOImage
-#include <vtkTIFFWriter.h>         // vtkIOImage
-#include <vtkUnsignedCharArray.h>  // vtkCommonCore
+#include <vtkCommand.h>               // vtkCommonCore
+#include <vtkJPEGReader.h>            // vtkIOImage
+#include <vtkJPEGWriter.h>            // vtkIOImage
+#include <vtkMemoryResourceStream.h>  // vtkIOCore
+#include <vtkPNGReader.h>             // vtkIOImage
+#include <vtkPNGWriter.h>             // vtkIOImage
+#include <vtkTIFFReader.h>            // vtkIOImage
+#include <vtkTIFFWriter.h>            // vtkIOImage
+#include <vtkUnsignedCharArray.h>     // vtkCommonCore
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"
@@ -54,8 +55,9 @@ vtkSmartPointer<vtkImageReader2> MakeReader(ImageFileFormat format,
 vtkSmartPointer<vtkImageReader2> MakeReader(ImageFileFormat format,
                                             const void* input, size_t size) {
   vtkSmartPointer<vtkImageReader2> reader = MakeReaderObject(format);
-  reader->SetMemoryBuffer(input);
-  reader->SetMemoryBufferLength(size);
+  vtkNew<vtkMemoryResourceStream> stream;
+  stream->SetBuffer(input, size);
+  reader->SetStream(stream);
   return reader;
 }
 

@@ -617,8 +617,8 @@ class MixedIntegerBranchAndBound {
   /**
    * Branch on a node, solves the optimization, and update the best lower and
    * upper bounds.
-   * @param node. The node to be branched.
-   * @param branching_variable. Branch on this variable in the node.
+   * @param node The node to be branched.
+   * @param branching_variable Branch on this variable in the node.
    */
   void BranchAndUpdate(MixedIntegerBranchAndBoundNode* node,
                        const symbolic::Variable& branching_variable);
@@ -626,8 +626,8 @@ class MixedIntegerBranchAndBound {
   /**
    * Update the solutions (solutions_) and the best upper bound, with an
    * integral solution and its cost.
-   * @param solution. The integral solution.
-   * @param cost. The cost evaluated at this integral solution.
+   * @param solution The integral solution.
+   * @param cost The cost evaluated at this integral solution.
    */
   void UpdateIntegralSolution(const Eigen::Ref<const Eigen::VectorXd>& solution,
                               double cost);

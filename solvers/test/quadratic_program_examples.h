@@ -192,7 +192,7 @@ void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver);
  * Test nonconvex QP.
  */
 void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
-                     double tol = 1E-5);
+                     double tol = 1E-5, SolverOptions* options = nullptr);
 
 /**
  Test formulating a QP where adding costs or constraints where the `vars` vector

@@ -1,7 +1,9 @@
+#include <string>
+
+#include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/pixel_types.h"
@@ -12,10 +14,10 @@ namespace internal {
 
 using Eigen::Map;
 
-void DefineSensorsImage(py::module m) {
+void DefineSensorsImage(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   // Note: for this module's C++ enums we choose not to bind the C++ `to_string`
   // functions as `__str__` in Python. The `enum.Enum` class already provides a
@@ -57,7 +59,7 @@ void DefineSensorsImage(py::module m) {
 
       // Add traits. Note that we choose not to bind kPixelScalar because the
       // ChannelType already makes the same information easily available.
-      py::class_<ImageTraitsT> traits(
+      class_<ImageTraitsT> traits(
           m, TemporaryClassName<ImageTraitsT>().c_str());
       traits.attr("ChannelType") = GetPyParam<T>()[0];
       traits.attr("kNumChannels") = int{ImageTraitsT::kNumChannels};
@@ -90,7 +92,7 @@ void DefineSensorsImage(py::module m) {
         return array;
       };
 
-      py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
+      class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
       AddTemplateClass(m, "Image", image, py_param);
       image  // BR
           .def(py::init<>(), doc.Image.ctor.doc_0args)
@@ -105,9 +107,9 @@ void DefineSensorsImage(py::module m) {
           .def("at", at, py::arg("x"), py::arg("y"), py_rvp::reference_internal,
               doc.Image.at.doc_2args_x_y_nonconst)
           // Non-C++ properties. Make them Pythonic.
-          .def_property_readonly("shape", get_shape)
-          .def_property_readonly("data", get_data)
-          .def_property_readonly("mutable_data", get_mutable_data);
+          .def_prop_ro("shape", get_shape)
+          .def_prop_ro("data", get_data)
+          .def_prop_ro("mutable_data", get_mutable_data);
       // Constants.
       image.attr("Traits") = traits;
       // - Do not duplicate aliases (e.g. `kNumChannels`) for now.

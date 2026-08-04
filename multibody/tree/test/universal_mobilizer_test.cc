@@ -1,5 +1,8 @@
 #include "drake/multibody/tree/universal_mobilizer.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -35,7 +38,7 @@ class UniversalMobilizerTest : public MobilizerTester {
   void SetUp() override {
     mobilizer_ = &AddJointAndFinalize<UniversalJoint, UniversalMobilizer>(
         std::make_unique<UniversalJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame()));
+            "joint0", tree().world_link().body_frame(), body_->body_frame()));
     mutable_mobilizer_ = const_cast<UniversalMobilizer<double>*>(mobilizer_);
   }
 
@@ -148,10 +151,10 @@ TEST_F(UniversalMobilizerTest, RandomState) {
 }
 
 TEST_F(UniversalMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
   const Vector2d angles(1, 0.5);
   mobilizer_->SetAngles(context_.get(), angles);
-  const RigidTransformd X_FM(
-      mobilizer_->CalcAcrossMobilizerTransform(*context_));
+  RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
   const RotationMatrixd R_FI = RotationMatrixd::MakeXRotation(angles[0]);
   const RotationMatrixd R_IM = RotationMatrixd::MakeYRotation(angles[1]);
@@ -163,6 +166,18 @@ TEST_F(UniversalMobilizerTest, CalcAcrossMobilizerTransform) {
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
                               X_FM_expected.GetAsMatrix34(), kTolerance,
                               MatrixCompareType::relative));
+
+  // Now check the fast inline methods.
+  RigidTransformd fast_X_FM = mobilizer_->calc_X_FM(angles.data());
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const Vector2d new_angles(2, 1.5);
+  mobilizer_->SetAngles(context_.get(), new_angles);
+  X_FM = mobilizer_->CalcAcrossMobilizerTransform(*context_);
+  mobilizer_->update_X_FM(new_angles.data(), &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  TestApplyR_FM(X_FM, *mobilizer_);
+  TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
 }
 
 TEST_F(UniversalMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
@@ -252,6 +267,16 @@ TEST_F(UniversalMobilizerTest, KinematicMapping) {
   MatrixX<double> Nplus(2, 2);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus, Matrix2d::Identity());
+
+  // Ensure Ṅ(q,q̇) = 2x2 zero matrix.
+  MatrixX<double> NDot(2, 2);
+  mobilizer_->CalcNDotMatrix(*context_, &NDot);
+  EXPECT_EQ(NDot, Matrix2d::Zero());
+
+  // Ensure Ṅ⁺(q,q̇) = 2x2 zero matrix.
+  MatrixX<double> NplusDot(2, 2);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_EQ(NplusDot, Matrix2d::Zero());
 }
 
 TEST_F(UniversalMobilizerTest, MapUsesN) {

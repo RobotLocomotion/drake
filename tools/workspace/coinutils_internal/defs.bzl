@@ -117,12 +117,11 @@ def coin_cc_library(
             x.replace("src/", "drake_src/")
             for x in includes_private
         ],
+        isystem = True,
         vendor_tool_args = vendor_tool_args,
         linkstatic = True,
         copts = [
             "-w",
-            # On Clang 12, "-w" doesn't suppress this for some reason.
-            "-Wno-register",
             # The Coin family of software uses NDEBUG for gross things, not
             # just controlling <cassert> but actually inserting huge swaths
             # of debugging code, some of which is not thread-safe. Even in
@@ -150,6 +149,7 @@ def coin_cc_library(
             x.replace("src/", "drake_hdr/")
             for x in includes_public
         ],
+        isystem = True,
         vendor_tool_args = vendor_tool_args,
         linkstatic = True,
         deps = deps + [

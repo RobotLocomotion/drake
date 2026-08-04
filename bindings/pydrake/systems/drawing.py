@@ -2,10 +2,10 @@
 Provides general visualization utilities. This is NOT related to `rendering`.
 """
 
+import os
 from tempfile import NamedTemporaryFile
 
 from pydrake.common import temp_directory
-
 
 # TODO(eric.cousineau): Move `plot_graphviz` to something more accessible to
 # `call_python_client`.
@@ -17,10 +17,9 @@ try:
     # IPython module may not be available; in which case, we're definitely
     # *not* running as a notebook.
     from IPython import get_ipython
-    from IPython.display import SVG, display
-    running_as_notebook = (
-        get_ipython() and hasattr(get_ipython(), "kernel")
-    )
+    from IPython.display import SVG, Image, display
+
+    running_as_notebook = get_ipython() and hasattr(get_ipython(), "kernel")
 except ModuleNotFoundError:
     running_as_notebook = False
 
@@ -33,9 +32,10 @@ def _plt():
     result = None
     try:
         import matplotlib.pyplot as __plt
+
         result = __plt
     except ImportError as e:
-        if e.name == 'tkinter':
+        if e.name == "tkinter":
             result = None
         else:
             raise
@@ -44,13 +44,15 @@ def _plt():
             "On Ubuntu when using the default pyplot configuration (i.e.,"
             " the TkAgg backend) you must 'sudo apt install python3-tk' to"
             " obtain Tk support. Alternatively, you may set MPLBACKEND to"
-            " something else (e.g., Qt5Agg).")
+            " something else (e.g., Qt5Agg)."
+        )
     return result
 
 
 def _pydot():
     """Deferred import of pyplot, so pydrake.all importing doesn't bomb out."""
     import pydot as __pydot
+
     return __pydot
 
 
@@ -70,12 +72,14 @@ def plot_graphviz(dot_text):
         # Handle this case for now.
         assert len(g) == 1
         g = g[0]
-    if running_as_notebook:
+    if "DRAKE_IS_BUILDING_DOCUMENTATION" in os.environ:
+        return display(Image(g.create_png()))
+    elif running_as_notebook:
         return display(SVG(g.create_svg()))
     else:
-        f = NamedTemporaryFile(suffix='.png', dir=temp_directory())
+        f = NamedTemporaryFile(suffix=".png", dir=temp_directory())
         g.write_png(f.name)
-        plt.axis('off')
+        plt.axis("off")
 
         return plt.imshow(plt.imread(f.name), aspect="equal")
 

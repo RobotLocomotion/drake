@@ -538,3 +538,5 @@ filegroup(
         "wonik_allegro/assets/*.stl",
     ]),
 )
+
+exports_files(["drake_repository_metadata.json"])

@@ -1,11 +1,10 @@
+#include <memory>
 #include <string>
 
-#include "pybind11/eval.h"
-
+#include "drake/bindings/generated_docstrings/common.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/submodules_py.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
 namespace drake {
@@ -38,7 +37,7 @@ class PyObjectValue : public drake::Value<Object> {
 
 // Add instantiations of primitive types on an as-needed basis; please be
 // conservative.
-void AddPrimitiveValueInstantiations(py::module m) {
+void AddPrimitiveValueInstantiations(py::module_ m) {
   AddValueInstantiation<std::string>(m);            // Value[str]
   AddValueInstantiation<bool>(m);                   // Value[bool]
   AddValueInstantiation<double>(m);                 // Value[float]
@@ -47,8 +46,8 @@ void AddPrimitiveValueInstantiations(py::module m) {
 
 }  // namespace
 
-void DefineModuleValue(py::module m) {
-  constexpr auto& doc = pydrake_doc.drake;
+void DefineModuleValue(py::module_ m) {
+  constexpr auto& doc = pydrake_doc_common.drake;
 
   // `AddValueInstantiation` will define methods specific to `T` for
   // `Value<T>`. Since Python is nominally dynamic, these methods are
@@ -66,7 +65,7 @@ void DefineModuleValue(py::module m) {
     };
   };
 
-  py::class_<AbstractValue> abstract_value(m, "AbstractValue");
+  class_<AbstractValue> abstract_value(m, "AbstractValue");
   DefClone(&abstract_value);
   abstract_value  // BR
       .def("SetFrom", &AbstractValue::SetFrom, doc.AbstractValue.SetFrom.doc)

@@ -55,7 +55,8 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
       systems::ContinuousState<T>* derivatives) const override;
 
   // Allow different specializations to access each other's private data.
-  template <typename> friend class QuadrotorPlant;
+  template <typename>
+  friend class QuadrotorPlant;
 
   // TODO(naveenoid): Declare these as parameters in the context.
   const double g_;           // Gravitational acceleration (m/s^2).
@@ -79,4 +80,3 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::examples::quadrotor::QuadrotorPlant);
-

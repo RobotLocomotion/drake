@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 
+#include <memory>
+#include <unordered_set>
 #include <utility>
 
 #include <fcl/fcl.h>

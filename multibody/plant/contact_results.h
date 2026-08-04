@@ -6,7 +6,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 #include "drake/multibody/plant/deformable_contact_info.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"

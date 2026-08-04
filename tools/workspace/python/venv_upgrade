@@ -1,23 +1,37 @@
 #!/bin/bash
 #
-# Drake script to upgrade our requirements lockfile.
-# - Users should make edits to pyproject.toml, and then
-# - run this script to compile pyproject.toml to pdm.lock.
+# Drake script to upgrade our requirements lock files.
+#
+# - Users can make edits to drake/setup/python/pyproject.toml, and then
+#   run this script to compile it to drake/setup/python/pdm.lock.
+#
+# - Users can make edits to drake/setup/python/mypy/requirements.in, and then
+#   run this script to compile it to drake/setup/python/mypy/requirements.txt.
+#
+# - Users can make edits to drake/setup/python/lief/requirements.in, and then
+#   run this script to compile it to drake/setup/python/lief/requirements.txt.
 #
 # The --reuse option may be given to apply changes to pyproject.toml while
 # attempting to preserve existing version pins.
+#
+# The --commit option may be given to automatically commit the changes.
 #
 # This script should also be run periodically to update pinned Python packages
 # to the latest available versions.
 
 set -eux -o pipefail
 
+# When changing this, see drake/tools/workspace/python/README.md.
+readonly python_versions=( 3.12 3.13 3.14 )
+
+purge=1
 commit=
 files_to_commit=()
 lock_args=()
 while [ "${1:-}" != "" ]; do
     case "$1" in
         --reuse)
+            purge=
             lock_args+=( --update-reuse )
             ;;
         --commit)
@@ -46,7 +60,7 @@ check_working_tree() {
 
 update_requirements() {
     # Use PDM to generate a lock file for itself.
-    "${venv_pdm}/bin/pdm" lock -p "${project_pdm}"
+    "${venv_pdm}/bin/pdm" lock -p "${project_pdm}" --exclude-newer=1w
     sed $'/will be generated/{s/will be/is/\nq\n}' < "$1.in" > "$1"
     "${venv_pdm}/bin/pdm" export -p "${project_pdm}" | grep -vE '^#' >> "$1"
 }
@@ -64,7 +78,11 @@ readonly workspace="$(pwd)/tools/workspace/python"
 [ -z "${commit}" ] || check_working_tree
 
 # Ensure venv exists.
-bazel fetch @python --force
+bazel fetch @python//:all --force
+if [ ! -f "${venv_pdm}/bin/pdm" ]; then
+    echo "PDM not found; please run this script on a supported platform." >&2
+    exit 1
+fi
 
 # Create a temporary project used to pin PDM itself.
 readonly project_pdm="$(mktemp -d)"
@@ -87,7 +105,7 @@ files_to_commit+=( "$(git diff --name-only HEAD -- "${requirements}")" )
 
 if [ ${#files_to_commit[@]} -gt 0 ]; then
     # PDM needs to be updated.
-    bazel fetch @python
+    bazel fetch @python//:all
 
     # Update the PDM lock files (again). This probably won't do anything, but
     # we do it just in case the newer PDM produces different pins.
@@ -96,14 +114,38 @@ fi
 
 # Update the Drake lock file.
 readonly lockfile="./setup/python/pdm.lock"
+if [ -n "${purge}" ]; then
+    rm "$lockfile"
+fi
 lock_args+=( -d -p "${project_drake}" -L "${lockfile}" )
-"${venv_pdm}/bin/pdm" lock "${lock_args[@]}"
+lock_args+=( --append --exclude-newer=1w )
+for py in "${python_versions[@]}"; do
+    "${venv_pdm}/bin/pdm" lock "${lock_args[@]}" --python ${py}
+done
 
-# Check for changes to the lock file.
+# Check for changes to the pdm lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
+
+# Upgrade the mypy lock file.
+readonly mypy_requirements="./setup/python/mypy/requirements.txt"
+bazel run //setup/python/mypy:lock.update
+files_to_commit+=( "$(git diff --name-only HEAD -- "${mypy_requirements}")" )
+
+# Upgrade the lief lock file.
+readonly lief_requirements="./setup/python/lief/requirements.txt"
+bazel run //setup/python/lief:lock.update
+files_to_commit+=( "$(git diff --name-only HEAD -- "${lief_requirements}")" )
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then
+    # If any of the lock files didn't have changes, omit the empty entries
+    # from our files list.
+    for i in "${!files_to_commit[@]}"; do
+        if [[ -z "${files_to_commit[i]}" ]]; then
+            unset "files_to_commit[i]"
+        fi
+    done
+
     if [ ${#files_to_commit[@]} == 0 ]; then
         set +x
         echo

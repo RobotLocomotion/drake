@@ -1,10 +1,8 @@
-/* clang-format off to disable clang-format-includes */
-#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_python_internal.h"
-/* clang-format on */
 
 #include <gtest/gtest.h>
 
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {

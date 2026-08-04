@@ -7,9 +7,9 @@ import os.path
 from pathlib import Path
 import sys
 import urllib.parse
+import xml.etree.ElementTree as ET
 
 from python import runfiles
-import xml.etree.ElementTree as ET
 
 from doc.defs import check_call, main
 
@@ -28,22 +28,32 @@ def _build(*, out_dir, temp_dir, quick, modules):
     pages_build = manifest.Rlocation("drake/doc/pages")
     styleguide_build = manifest.Rlocation("drake/doc/styleguide/build")
     pydrake_build = manifest.Rlocation("drake/doc/pydrake/build")
+    tutorials_build = manifest.Rlocation("drake/doc/tutorials/build")
     doxygen_build = manifest.Rlocation("drake/doc/doxygen_cxx/build")
-    for item in [pages_build, styleguide_build, pydrake_build, doxygen_build]:
+    for item in [
+        pages_build,
+        styleguide_build,
+        pydrake_build,
+        tutorials_build,
+        doxygen_build,
+    ]:
         assert item and os.path.exists(item), item
 
     # Figure out which modules to ask for from each helper tool.
     do_pages = True
     do_styleguide = True
     do_pydrake = True
+    do_tutorials = True
     do_doxygen = True
     do_sitemap = True
     pydrake_modules = []
     doxygen_modules = []
+    tutorials_modules = []
     if modules:
         do_pages = False
         do_styleguide = False
         do_pydrake = False
+        do_tutorials = False
         do_doxygen = False
         do_sitemap = False
     for module in modules:
@@ -60,6 +70,9 @@ def _build(*, out_dir, temp_dir, quick, modules):
         elif module.startswith("pydrake."):
             do_pydrake = True
             pydrake_modules.append(module)
+        elif module.startswith("tutorials."):
+            do_tutorials = True
+            tutorials_modules.append(module)
         elif module.startswith("drake."):
             do_doxygen = True
             doxygen_modules.append(module)
@@ -73,12 +86,21 @@ def _build(*, out_dir, temp_dir, quick, modules):
     if do_styleguide:
         check_call([styleguide_build, f"--out_dir={out_dir}/styleguide"])
     if do_pydrake:
-        check_call([pydrake_build, f"--out_dir={out_dir}/pydrake"]
-                   + pydrake_modules)
+        check_call(
+            [pydrake_build, f"--out_dir={out_dir}/pydrake"] + pydrake_modules
+        )
+    if do_tutorials:
+        check_call(
+            [tutorials_build, f"--out_dir={out_dir}/tutorials"]
+            + tutorials_modules
+        )
     if do_doxygen:
         maybe_quick = ["--quick"] if quick else []
-        check_call([doxygen_build, f"--out_dir={out_dir}/doxygen_cxx"]
-                   + doxygen_modules + maybe_quick)
+        check_call(
+            [doxygen_build, f"--out_dir={out_dir}/doxygen_cxx"]
+            + doxygen_modules
+            + maybe_quick
+        )
     if do_sitemap:
         _build_sitemap(out_dir)
 
@@ -88,6 +110,7 @@ def _build(*, out_dir, temp_dir, quick, modules):
     result.append("styleguide/cppguide.html") if do_styleguide else None
     result.append("styleguide/pyguide.html") if do_styleguide else None
     result.append("pydrake/") if do_pydrake else None
+    result.append("tutorials/") if do_tutorials else None
     result.append("doxygen_cxx/") if do_doxygen else None
     return result
 
@@ -113,8 +136,9 @@ def _build_sitemap(site_dir: str) -> None:
 
     print("Building sitemap.xml...")
     root_path = Path(site_dir)
-    assert root_path.is_absolute(), \
+    assert root_path.is_absolute(), (
         "Path to generated website is not an absolute path"
+    )
     paths = root_path.glob("**/*.html")
 
     XML_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -129,17 +153,25 @@ def _build_sitemap(site_dir: str) -> None:
             relative_location = relative_path.parent.as_posix() + "/"
         else:
             relative_location = relative_path.as_posix()
-        location = urllib.parse.urljoin(ROOT_URL,
-                                        urllib.parse.quote(relative_location))
+        location = urllib.parse.urljoin(
+            ROOT_URL, urllib.parse.quote(relative_location)
+        )
         loc = ET.SubElement(url, "loc")
         loc.text = location
     sitemap = ET.ElementTree(urlset)
     ET.indent(sitemap)
-    sitemap.write(os.path.join(site_dir, "sitemap.xml"),
-                  encoding="utf-8",
-                  xml_declaration=True)
+    sitemap.write(
+        os.path.join(site_dir, "sitemap.xml"),
+        encoding="utf-8",
+        xml_declaration=True,
+    )
 
 
-if __name__ == '__main__':
-    main(build=_build, subdir="", description=__doc__.strip(),
-         supports_modules=True, supports_quick=True)
+if __name__ == "__main__":
+    main(
+        build=_build,
+        subdir="",
+        description=__doc__.strip(),
+        supports_modules=True,
+        supports_quick=True,
+    )

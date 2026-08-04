@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
+  <model name='deformable'>
+    <link name='teddy'>
+      <pose>-0.17 0 0 1.5707 0 -1.5707</pose>
+      <collision name='collision'>
+        <geometry>
+          <mesh>
+            <uri>package://drake/examples/multibody/deformable/models/teddy.vtk</uri>
+            <scale>0.15 0.15 0.15</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.9</drake:mu_dynamic>
+        </drake:proximity_properties>
+      </collision>
+      <visual name='visual'>
+        <geometry>
+          <empty/>
+        </geometry>
+        <material>
+          <diffuse>0.82 0.71 0.55 1</diffuse>
+        </material>
+      </visual>
+      <drake:deformable_properties>
+        <drake:youngs_modulus>5e4</drake:youngs_modulus>
+        <drake:poissons_ratio>0.45</drake:poissons_ratio>
+        <drake:stiffness_damping>0.05</drake:stiffness_damping>
+        <drake:mass_density>1000.0</drake:mass_density>
+      </drake:deformable_properties>
+    </link>
+  </model>
+</sdf>

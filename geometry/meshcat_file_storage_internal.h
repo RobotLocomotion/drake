@@ -63,8 +63,8 @@ class FileStorage final {
       const Sha256& sha256) const;
 
   /* Returns the entire database. All of the returned handles are non-null. */
-  [[nodiscard]] std::vector<std::shared_ptr<const MemoryFile>>
-  DumpEverything() const;
+  [[nodiscard]] std::vector<std::shared_ptr<const MemoryFile>> DumpEverything()
+      const;
 
   /* Returns the number of files (i.e., MemoryFile instances) being stored. */
   [[nodiscard]] size_t size() const;

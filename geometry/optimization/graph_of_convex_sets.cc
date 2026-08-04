@@ -638,16 +638,13 @@ void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
   DRAKE_THROW_UNLESS(vertex != nullptr);
   VertexId vertex_id = vertex->id();
   DRAKE_THROW_UNLESS(vertices_.contains(vertex_id));
-  for (auto it = edges_.begin(); it != edges_.end();) {
-    if (it->second->u().id() == vertex_id) {
-      it->second->v().RemoveIncomingEdge(it->second.get());
-      it = edges_.erase(it);
-    } else if (it->second->v().id() == vertex_id) {
-      it->second->u().RemoveOutgoingEdge(it->second.get());
-      it = edges_.erase(it);
-    } else {
-      ++it;
-    }
+  for (const auto uv : vertex->incoming_edges_) {
+    uv->u().RemoveOutgoingEdge(uv);
+    edges_.erase(uv->id());
+  }
+  for (const auto vw : vertex->outgoing_edges_) {
+    vw->v().RemoveIncomingEdge(vw);
+    edges_.erase(vw->id());
   }
   vertices_.erase(vertex_id);
 }
@@ -743,7 +740,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
   graphviz << "digraph GraphOfConvexSets {\n";
   graphviz << "labelloc=t;\n";
   for (const auto& [v_id, v] : vertices_) {
-    graphviz << "v" << v_id << " [label=\"" << v->name();
+    graphviz << "v" << to_string(v_id) << " [label=\"" << v->name();
     if (result) {
       if (options.show_vars) {
         std::optional<VectorXd> x = v->GetSolution(*result);
@@ -762,7 +759,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
   }
   for (const auto& [e_id, e] : edges_) {
     unused(e_id);
-    graphviz << "v" << e->u().id() << " -> v" << e->v().id();
+    graphviz << "v" << to_string(e->u().id()) << " -> v"
+             << to_string(e->v().id());
     graphviz << " [label=\"" << e->name();
     if (result) {
       if (options.show_costs) {
@@ -788,8 +786,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
         graphviz << "\"";
         // Note: This must be last, because it also sets the color parameter
         // of the edge (and hence must close the name within quote-marks)
-        graphviz << ", color="
-                 << "\"#000000" << floatToHex(result->GetSolution(e->phi()));
+        graphviz << ", color=" << "\"#000000"
+                 << floatToHex(result->GetSolution(e->phi()));
       }
     }
     graphviz << "\"];\n";
@@ -797,7 +795,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
 
   if (active_path) {
     for (const auto& e : *active_path) {
-      graphviz << "v" << e->u().id() << " -> v" << e->v().id();
+      graphviz << "v" << to_string(e->u().id()) << " -> v"
+               << to_string(e->v().id());
       graphviz << " [label=\"" << e->name() << " = active\"";
       graphviz << ", color="
                << "\"#ff0000\"";

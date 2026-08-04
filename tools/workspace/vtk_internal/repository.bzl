@@ -153,10 +153,17 @@ _vtk_internal_repository_impl = repository_rule(
     attrs = {
         # These are the attributes for setup_github_repository.
         "repository": attr.string(),
+        "upgrade_type": attr.string(),
+        # VTK's master branch will pretty much never have no commits in any
+        # default cooldown number of days, so we'll skip that rule here and
+        # always take the HEAD.
+        "upgrade_cooldown_days": attr.int(default = 0),
         "commit": attr.string(),
         "sha256": attr.string(),
         "build_file": attr.label(),
         "patches": attr.label_list(),
+        "patch_tool": attr.string(default = "patch"),
+        "patch_args": attr.string_list(default = ["-p0"]),
         "extra_strip_prefix": attr.string(),
         "mirrors": attr.string_list_dict(),
         # This attribute is specific to our rule, not setup_github_repository.
@@ -181,30 +188,36 @@ def vtk_internal_repository(
         name,
         local_repository_override = None,
         repository = "Kitware/VTK",
-        # TODO(jwnimmer-tri) Once there's a tagged release with support for
-        # VTK_ABI_NAMESPACE, we should switch to an official version number
-        # here. That probably means waiting for the VTK 10 release.
-        commit = "d236d27dde52f1f14eb919adacf0d355af6a440a",
-        sha256 = "349aa9da6b2be0b21d522695af116219c0fd43fe62902508f21eb59251303185",  # noqa
+        upgrade_type = "commit",
+        commit = "1f3a18f848cf5ccebb1c50bdeaccec152f00e2e5",
+        sha256 = "90ced21e07a0167ed35020df9a801ba8623d249132c8a7b8ffc41bf6048a3330",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/upstream/common_core_rm_iostream.patch",
-            ":patches/upstream/scaled_albedo_for_ibl.patch",
-            ":patches/upstream/vtkpugixml_global_ctor.patch",
+            # Drake's conventions for VTK patches are:
+            # - All "patches/upstream/" come first; these are the changes that
+            #   will be upstreamed into VTK itself, so they should be the first
+            #   changes applied to reduce merge conflict churn.
+            # - Patch file names should begin with the name of the module being
+            #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
+            # - Use alphabetical order within a directory when listing patches.
+            ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
-            ":patches/disable_static_destructors.patch",
+            ":patches/common_datamodel_no_pegtl.patch",
+            ":patches/common_executionmodel_disable_static_destructors.patch",
+            ":patches/io_geometry_no_mime_type_warning.patch",
             ":patches/io_image_formats.patch",
-            ":patches/nerf_pegtl.patch",
-            ":patches/preserve_direct_light_specular_reflections.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
-            ":patches/vtkdoubleconversion_hidden.patch",
+            ":patches/rendering_opengl2_no_global_display_counter.patch",
+            ":patches/rendering_opengl2_no_global_x11_counter.patch",
+            ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
+            ":patches/utilities_x11_dlsym.patch",
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
+            ":patches/vtkscn_hidden.patch",
             ":patches/vtksys_hidden.patch",
-            ":patches/gltf_scenes_vector.patch",
         ],
         settings_bzl = ":settings.bzl",
         **kwargs):
@@ -233,6 +246,7 @@ def vtk_internal_repository(
         _vtk_internal_repository_impl(
             name = name,
             repository = repository,
+            upgrade_type = upgrade_type,
             commit = commit,
             sha256 = sha256,
             build_file = build_file,

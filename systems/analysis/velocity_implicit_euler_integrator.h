@@ -326,8 +326,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   }
 
   void DoResetCachedJacobianRelatedMatrices() final {
-      Jy_vie_.resize(0, 0);
-      iteration_matrix_vie_ = {};
+    Jy_vie_.resize(0, 0);
+    iteration_matrix_vie_ = {};
   }
 
   void DoResetImplicitIntegratorStatistics() final;
@@ -339,6 +339,9 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   void DoInitialize() final;
 
   bool DoImplicitIntegratorStep(const T& h) final;
+
+  std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
+      const final;
 
   // Steps the system forward by a single step of h using the velocity-implicit
   // Euler method.
@@ -451,8 +454,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   void ComputeAutoDiffVelocityJacobian(const T& t, const T& h,
                                        const VectorX<T>& y,
                                        const VectorX<T>& qk,
-                                       const VectorX<T>& qn,
-                                       MatrixX<T>* Jy);
+                                       const VectorX<T>& qn, MatrixX<T>* Jy);
 
   // Computes necessary matrices (Jacobian and iteration matrix) for
   // Newton-Raphson (NR) iterations, as necessary. This method is based off of
@@ -582,7 +584,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                          const VectorX<T>& qn, const T& h,
                          BasicVector<T>* qdot) {
     return this->ComputeLOfY(t, y, qk, qn, h, qdot, this->get_system(),
-        this->get_mutable_context());
+                             this->get_mutable_context());
   }
 
   // This helper method evaluates ℓ(y), defined as the following:
@@ -613,9 +615,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @post context is set to (tⁿ⁺¹, qⁿ + h N(qₖ) v, y).
   template <typename U>
   VectorX<U> ComputeLOfY(const T& t, const VectorX<U>& y, const VectorX<T>& qk,
-                         const VectorX<T>& qn, const T& h,
-                         BasicVector<U>* qdot, const System<U>& system,
-                         Context<U>* context);
+                         const VectorX<T>& qn, const T& h, BasicVector<U>* qdot,
+                         const System<U>& system, Context<U>* context);
 
   // The last computed iteration matrix and factorization.
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_vie_;
@@ -633,8 +634,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   std::unique_ptr<BasicVector<T>> qdot_;
   // The following will help avoid repeated heap allocations when computing a
   // velocity Jacobian using automatic differentiation.
-  std::unique_ptr<System<AutoDiffXd>>      system_ad_;
-  std::unique_ptr<Context<AutoDiffXd>>     context_ad_;
+  std::unique_ptr<System<AutoDiffXd>> system_ad_;
+  std::unique_ptr<Context<AutoDiffXd>> context_ad_;
   std::unique_ptr<BasicVector<AutoDiffXd>> qdot_ad_;
 
   // The last computed velocity+misc Jacobian matrix.
@@ -657,14 +658,14 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 // Note: must be declared inline because it's specialized and located in the
 // header file (to avoid multiple definition errors).
 template <>
-inline void VelocityImplicitEulerIntegrator<AutoDiffXd>::
-    ComputeAutoDiffVelocityJacobian(const AutoDiffXd&, const AutoDiffXd&,
-                                    const VectorX<AutoDiffXd>&,
-                                    const VectorX<AutoDiffXd>&,
-                                    const VectorX<AutoDiffXd>&,
-                                    MatrixX<AutoDiffXd>*) {
-  throw std::runtime_error("AutoDiff'd Jacobian not supported for "
-                           "AutoDiff'd VelocityImplicitEulerIntegrator");
+inline void
+VelocityImplicitEulerIntegrator<AutoDiffXd>::ComputeAutoDiffVelocityJacobian(
+    const AutoDiffXd&, const AutoDiffXd&, const VectorX<AutoDiffXd>&,
+    const VectorX<AutoDiffXd>&, const VectorX<AutoDiffXd>&,
+    MatrixX<AutoDiffXd>*) {
+  throw std::runtime_error(
+      "AutoDiff'd Jacobian not supported for "
+      "AutoDiff'd VelocityImplicitEulerIntegrator");
 }
 
 }  // namespace systems

@@ -2,7 +2,10 @@
 #include "drake/multibody/topology/graph.h"
 /* clang-format on */
 
+#include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -95,14 +98,14 @@ GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
 
   // Repeat for Modeling Options.
   const auto use_fixed_base = ForestBuildingOptions::kUseFixedBase;
-  const auto combine_links = ForestBuildingOptions::kMergeLinkComposites;
+  const auto combine_links = ForestBuildingOptions::kFuseWeldedLinksAssemblies;
   auto forest_building_options = use_fixed_base | combine_links;
   static_assert(
       std::is_same_v<decltype(forest_building_options), ForestBuildingOptions>);
   EXPECT_EQ(forest_building_options & use_fixed_base,
             ForestBuildingOptions::kUseFixedBase);
   EXPECT_EQ(forest_building_options & combine_links,
-            ForestBuildingOptions::kMergeLinkComposites);
+            ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_FALSE(static_cast<bool>(forest_building_options &
                                  ForestBuildingOptions::kUseRpyFloatingJoints));
   EXPECT_EQ(
@@ -126,7 +129,7 @@ GTEST_TEST(LinkJointGraph, SpecifyForestBuildingOptions) {
 
   const ForestBuildingOptions default_options = ForestBuildingOptions::kDefault;
   const ForestBuildingOptions two_options =
-      ForestBuildingOptions::kMergeLinkComposites |
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies |
       ForestBuildingOptions::kUseRpyFloatingJoints;
 
   // If we haven't said anything, global and all ModelInstance options are
@@ -272,8 +275,8 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
 
   EXPECT_FALSE(graph.forest_is_valid());
 
-  // With no forest built, there are no composites.
-  EXPECT_TRUE(graph.link_composites().empty());
+  // With no forest built, there are no assemblies.
+  EXPECT_TRUE(graph.welded_links_assemblies().empty());
   // These "Calc" functions don't require a forest.
   EXPECT_EQ(graph.CalcSubgraphsOfWeldedLinks(),
             std::vector<std::set<LinkIndex>>{{world_link_index}});
@@ -301,11 +304,15 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   // "Find" and "Get" methods require that the forest is valid.
   EXPECT_TRUE(graph.world_link().is_anchored());
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
-  EXPECT_EQ(ssize(graph.link_composites()), 1);
-  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
-            world_link_index);
-  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
+  EXPECT_EQ(ssize(graph.welded_links_assemblies()), 1);
+  EXPECT_EQ(
+      ssize(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links()),
+      1);
+  EXPECT_EQ(
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links()[0],
+      world_link_index);
+  EXPECT_FALSE(
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless());
 
   EXPECT_EQ(graph.FindPathFromWorld(world_link_index),
             std::vector<LinkIndex>{world_link_index});  // Just World.
@@ -509,7 +516,7 @@ GTEST_TEST(LinkJoinGraph, LinkAPITest) {
   EXPECT_EQ(link5.primary_link(), link5.index());
   EXPECT_FALSE(link5.mobod_index().is_valid());
   EXPECT_FALSE(link5.inboard_joint_index().is_valid());
-  EXPECT_FALSE(link5.composite().has_value());
+  EXPECT_FALSE(link5.welded_links_assembly().has_value());
 }
 
 // Check operation of the public members of the Joint subclass.
@@ -545,9 +552,10 @@ GTEST_TEST(LinkJointGraph, JointAPITest) {
 }
 
 // Verify that we can define a serial chain, some static and floating links,
-// and some simple composites, and correctly reject improper attempts. We're
-// mostly testing the LinkJointGraph API here; see spanning_forest_test.cc
-// for validation of the generated forest for a similar graph.
+// and some simple welded links assemblies, and correctly reject improper
+// attempts. We're mostly testing the LinkJointGraph API here; see
+// spanning_forest_test.cc for validation of the generated forest for a similar
+// graph.
 GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   LinkJointGraph graph;
 
@@ -677,14 +685,20 @@ GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
       "to itself.");
 
   // Sanity check sizes.
-  EXPECT_EQ(ssize(graph.links()), 6);  // This includes the world Link.
-  EXPECT_EQ(ssize(graph.joints()), 5);
+  EXPECT_EQ(graph.num_links(), 6);  // This includes the world Link.
+  EXPECT_EQ(graph.num_joints(), 5);
 
   // Verify we can get bodies/joints.
   EXPECT_EQ(graph.link_by_index(LinkIndex(3)).name(), "link3");
   EXPECT_EQ(graph.joint_by_index(JointIndex(3)).name(), "pin4");
   EXPECT_THROW((void)graph.link_by_index(LinkIndex(9)), std::exception);
   EXPECT_THROW((void)graph.joint_by_index(JointIndex(9)), std::exception);
+
+  // Check that index to ordinal mappings work in the easy case where nothing
+  // has been removed. (We can't remove Links yet; Joint removal is tested
+  // below.)
+  EXPECT_EQ(graph.index_to_ordinal(LinkIndex(3)), LinkOrdinal(3));
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(3)), JointOrdinal(3));
 
   // Verify we can query if a Link/Joint is in the graph.
   const ModelInstanceIndex kInvalidModelInstance(666);
@@ -775,6 +789,11 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
   //       0                 1           ordinals
   EXPECT_EQ(graph.joint_by_index(JointIndex(0)).ordinal(), 0);
   EXPECT_EQ(graph.joint_by_index(JointIndex(2)).ordinal(), 1);
+
+  // Check that index->ordinal mapping works across joint removal.
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(0)), 0);
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(2)), 1);
+
   EXPECT_EQ(ssize(graph.joints()), 2);
   EXPECT_EQ(graph.num_user_joints(), 2);
   EXPECT_FALSE(graph.has_joint(JointIndex(1)));
@@ -810,6 +829,10 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
   EXPECT_EQ(graph.joint_by_index(JointIndex(0)).ordinal(), 0);
   EXPECT_EQ(graph.joint_by_index(JointIndex(2)).ordinal(), 1);
   EXPECT_EQ(graph.joint_by_index(JointIndex(3)).ordinal(), 2);
+
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(0)), 0);
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(2)), 1);
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(3)), 2);
 
   EXPECT_EQ(ssize(graph.joints()), 3);
   EXPECT_EQ(graph.num_user_joints(), 3);
@@ -864,6 +887,9 @@ GTEST_TEST(LinkJointGraph, RemoveJoint) {
   EXPECT_TRUE(graph.joint_is_ephemeral(JointIndex(5)));
   EXPECT_EQ(graph.joint_by_index(JointIndex(4)).ordinal(), 2);
   EXPECT_EQ(graph.joint_by_index(JointIndex(5)).ordinal(), 3);
+
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(4)), 2);
+  EXPECT_EQ(graph.index_to_ordinal(JointIndex(5)), 3);
 
   // Test the case of removing the highest-index user joint (3 in this case),
   // then build the forest, then make sure that no ephemeral joint gets that

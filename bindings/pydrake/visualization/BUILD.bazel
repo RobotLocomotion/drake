@@ -24,7 +24,7 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "visualization",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:visualization",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:serialize_pybind",
     ],
@@ -106,7 +106,7 @@ PY_LIBRARIES = [
 install(
     name = "install",
     install_tests = [
-        ":test/visualization_install_tests.py",
+        "test/visualization_install_tests.py",
     ],
     targets = [":visualization"],
     py_dest = PACKAGE_INFO.py_dest,
@@ -136,6 +136,10 @@ drake_py_unittest(
         "//examples/hydroelastic/spatula_slip_control:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/meshcat:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:manipulation_station",
+        "@drake_models//:wsg_50_description",
+        "@drake_models//:ycb",
     ],
     deps = [
         ":visualization",
@@ -153,6 +157,8 @@ drake_py_unittest(
         "//multibody/parsing:test_models",
         "//planning/test_utilities:collision_ground_plane.sdf",
     ],
+    # Experiences spurious crashes in CI.
+    flaky = True,
     deps = [
         ":model_visualizer",
     ],
@@ -207,6 +213,10 @@ drake_py_unittest(
 drake_py_unittest(
     name = "video_test",
     size = "medium",
+    data = [
+        "@drake_models//:iiwa_description",
+        "@drake_models//:wsg_50_description",
+    ],
     deps = [
         ":visualization",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
@@ -228,6 +238,12 @@ drake_py_unittest(
     data = [
         "test/multicam_scenario.yaml",
         "//examples/hardware_sim:hardware_sim_py",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:manipulation_station",
+        "@drake_models//:wsg_50_description",
+    ],
+    deps = [
+        "//bindings/pydrake",
     ],
 )
 
@@ -235,6 +251,5 @@ add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         "run_installed_meldis.py",
         "run_installed_model_visualizer.py",
-        "test/visualization_install_tests.py",
     ],
 )

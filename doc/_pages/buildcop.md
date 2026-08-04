@@ -47,12 +47,14 @@ fix the failure within 60 minutes, the build cop will merge the pull request to
 revert the commits and verify that the continuous builds triggered by that merge
 pass.
 
-In the case of failures in a ``dev`` directory, the build cop should disable the
-failing test instead of reverting the entire commit. To disable the test, add a
-``tags = []`` attribute to its BUILD rule. If it only fails in certain
-configurations, you can add tags for just those, e.g., `"no_asan"`. If it fails in
-the default configuration or in too many configurations to list one by one, use
-the tag "manual" to disable the test under all configurations.
+In the case of failures in an ``experimental`` or ``dev`` directory, the build
+cop should disable the failing test instead of reverting the entire commit. To
+disable the test in certain configurations, add ``opt_out_conditions = []`` to
+its BUILD rule. If it fails in the default configuration or in too many
+configurations to list one by one, use `tags = ["manual"]` to universally
+disable the test. If the failure is during build instead of test, disable
+part(s) of the build until everything is working again. If possible, ping the
+code's author / maintainer in your pull request that disables it.
 
 In the case of intermittent failures of unclear origin or which cannot
 reasonably be prevented (for example, network failures of remotely hosted
@@ -72,12 +74,12 @@ change, every CI failure should result in an issue, comment on an existing
 issue, revert PR, or fix-forward PR.  There will of course be exceptions to
 this rule.
 
-Use the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+Use the [DrakeDevelopers Slack channel #ci](https://drakedevelopers.slack.com/archives/C270MN28G)
 to discuss build issues with your partner build cop and other Drake
 contributors.
 
 At the end of each rotation, the build cop should
-notify the next build cop on the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/).
+notify the next build cop on the [DrakeDevelopers Slack channel #ci](https://drakedevelopers.slack.com/archives/C270MN28G).
 
 # Revert Template
 
@@ -161,16 +163,15 @@ color of the previous build.
 Note that CDash pages may take a minute to populate.
 
 In addition, check the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
-to confirm that the latest commit has a green circle, not a red x.
+to confirm that the latest commit has a green check mark, not a red x.
 
-## Monitor the Cache Servers
+## Monitor the Cache Server
 
-Check once per week that caching is still enabled, there are currently two cache
-servers that need to be confirmed.  Open each of the following jobs and search
-for ``REMOTE_CACHE_KEY`` and confirm it has a value:
+Check once per week that caching is still enabled for Linux and macOS builds.
+Open the following jobs and search for ``REMOTE_CACHE_KEY`` and confirm it has a value:
 
-- [https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-release/lastBuild/consoleFull)
-- [https://drake-jenkins.csail.mit.edu/job/mac-arm-sonoma-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/mac-arm-sonoma-clang-bazel-continuous-release/lastBuild/consoleFull)
+- [https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-everything-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-everything-release/lastBuild/consoleFull)
+- [https://drake-jenkins.csail.mit.edu/job/mac-arm-sequoia-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/mac-arm-sequoia-clang-bazel-continuous-release/lastBuild/consoleFull)
 
 Message indicating a problem:
 
@@ -182,8 +183,8 @@ Message indicating success:
 
 The exact key hash is not important, it's just important that it's non-empty.
 
-If there is an issue with either cache server, post the details on the
-[#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+If there is an issue with the cache server, post the details on the
+[#ci](https://drakedevelopers.slack.com/archives/C270MN28G/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
 
 ## Monitor the Build Queue
@@ -194,8 +195,22 @@ infrastructure issues that prevent nodes from launching. In this case, as the
 jobs never fail, build cops are not notified via email.
 
 If jobs seems to be stuck, report the issue by tagging `@betsymcphail` on the
-[#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+[#ci](https://drakedevelopers.slack.com/archives/C270MN28G/)
 channel on Slack.
+
+## Monitor the Website
+
+Check once per week that the website looks healthy when viewed from your web
+browser (i.e., beyond what automated CI can test for):
+
+- Does the [Python API](/pydrake/index.html) appear normal? The site has a full
+  list of modules?
+- Does the [C++ API](/doxygen_cxx/index.html) appear normal? The site has a full
+  list of topics and classes?
+- Do all of the [tutorials](/tutorials/index.html) display correctly?
+
+On a weekly basis, just do a quick skim. Once a month, the release manager will
+do a more thorough investigation.
 
 ## Respond to Breakage
 
@@ -259,14 +274,16 @@ After you identify one, create a rollback by clicking "Revert" in the
 GitHub UI. Use the [template message](/buildcop.html#revert-template) to communicate
 with the author, and proceed as specified in that message.
 
+In general, if a test is known to be flaky, avoid re-running builds when that
+test failure was the only issue.
+
 ## Restarting Mac Nightly Builds
 
 Occasionally there will be flaky tests or timeouts in the Mac nightly builds.
 While it is tempting to restart these builds to clear the errors, Mac resources
 are limited and restarting the long-running nightly builds may tie up resources
-needed for continuous builds. In addition, too many simultaneous Mac builds
-will increase the chances of timeouts and other flakes. Build cops should use
-their best judgement, keeping in mind the following guidelines:
+needed for continuous builds. Build cops should use their best judgement,
+keeping in mind the following guidelines:
 
 * If the nightly job is mirrored by a continuous job, don't re-run.
 * If the test passed last build, don't re-run.
@@ -290,21 +307,16 @@ exercise changes to the CI scripts themselves.
 ## Infrastructure Flake
 
 The machinery of the CI system itself sometimes fails for reasons unrelated to
-any code change. The most common infrastructure flakes include:
-
-* Unable to obtain a Gurobi license.
-* Broken connection to a Mac build agent.
+any code change. For example, download errors from GitHub, `apt`, etc. are
+somewhat common.
 
 Infrastructure flakes will be red in Jenkins. If you believe you are looking at
-an infrastructure flake, run the build manually at HEAD. If it passes, you are
-definitely looking at an infrastructure flake, and no further action is
-required. If you believe the rate of a particular infrastructure flake has
-increased, alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`.
+an infrastructure flake, run the build manually at `HEAD`; if it passes, you
+are definitely looking at an infrastructure flake. If the build failed early
+on, you can try restarting it to see if infrastructure has been restored.
 
-Note that "slow read" warnings during Bazel builds are due to the relative
-slowness of the remote storage used by the CI infrastructure when compared to
-storage connected to the local bus on a local developer workstation build and
-can be safely ignored.
+If you believe the rate of a particular infrastructure flake has increased,
+alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`.
 
 If you see "All nodes of label <label> are offline", this should disappear
 eventually and the build should run, once Jenkins gets a node booted up.
@@ -312,7 +324,7 @@ eventually and the build should run, once Jenkins gets a node booted up.
 ## Infrastructure Collapse
 
 Occasionally, some piece of CI infrastructure completely stops working. For
-instance, GitHub, AWS, or MacStadium could have an outage, or our Jenkins server
+instance, GitHub or AWS could have an outage, or our Jenkins server
 could crash or become wedged.  During infrastructure collapses, lots of builds
 will turn red and stay red.
 
@@ -320,14 +332,17 @@ Attempt to figure out what infrastructure collapsed. If it's under our control,
 alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`. If it's under a
 vendor's control, spread the news and simply wait it out.
 
+You can try to periodically restart any failed builds to check if things are
+back online. When infrastructure has been restored, restart all the red builds.
+
 ## Drake External Examples
 
 Details of failures in the [drake-external-examples](https://github.com/RobotLocomotion/drake-external-examples/)
 repository, which may be denoted by red "build failing" icons at the top of the build
-dashboard on Jenkins, should be posted to the [#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+dashboard on Jenkins, should be posted to the [#ci](https://drakedevelopers.slack.com/archives/C270MN28G/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
 
 ## Documentation Repo Failures
 If the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
-fails, post in [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/),
+fails, post in [DrakeDevelopers Slack channel #ci](https://drakedevelopers.slack.com/archives/C270MN28G/),
 and try to locate the offensive Drake commit. Each commit in the documentation repo is associated with a matching Drake commit.

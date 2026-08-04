@@ -3,11 +3,19 @@
  queries, and the query result types as well. They can be found in the
  pydrake.geometry module. */
 
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/geometry.h"
+#include "drake/bindings/generated_docstrings/geometry_query_results.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
+#include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/scene_graph.h"
@@ -22,16 +30,19 @@ using systems::LeafSystem;
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::geometry;
-constexpr auto& doc = pydrake_doc.drake.geometry;
+constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
+constexpr auto& doc_query_results =
+    pydrake_doc_geometry_query_results.drake.geometry;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // HydroelasticContactRepresentation enumeration
   {
     using Class = HydroelasticContactRepresentation;
-    constexpr auto& cls_doc = doc.HydroelasticContactRepresentation;
+    constexpr auto& cls_doc =
+        doc_query_results.HydroelasticContactRepresentation;
     py::enum_<Class>(m, "HydroelasticContactRepresentation", cls_doc.doc)
         .value("kTriangle", Class::kTriangle, cls_doc.kTriangle.doc)
         .value("kPolygon", Class::kPolygon, cls_doc.kPolygon.doc);
@@ -40,7 +51,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = geometry::DefaultProximityProperties;
     constexpr auto& cls_doc = doc.DefaultProximityProperties;
-    py::class_<Class> cls(m, "DefaultProximityProperties", cls_doc.doc);
+    class_<Class> cls(m, "DefaultProximityProperties", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -51,7 +62,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = geometry::SceneGraphConfig;
     constexpr auto& cls_doc = doc.SceneGraphConfig;
-    py::class_<Class> cls(m, "SceneGraphConfig", cls_doc.doc);
+    class_<Class> cls(m, "SceneGraphConfig", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
@@ -61,7 +72,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-void DefineSceneGraphInspector(py::module m, T) {
+void DefineSceneGraphInspector(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   //  SceneGraphInspector
   {
@@ -87,12 +98,17 @@ void DefineSceneGraphInspector(py::module m, T) {
             py::arg("role") = std::nullopt, cls_doc.GetGeometryIds.doc)
         .def("NumGeometriesWithRole", &Class::NumGeometriesWithRole,
             py::arg("role"), cls_doc.NumGeometriesWithRole.doc)
+        .def("NumDeformableGeometriesWithRole",
+            &Class::NumDeformableGeometriesWithRole, py::arg("role"),
+            cls_doc.NumGeometriesWithRole.doc)
         .def("NumDynamicGeometries", &Class::NumDynamicGeometries,
             cls_doc.NumDynamicGeometries.doc)
         .def("NumAnchoredGeometries", &Class::NumAnchoredGeometries,
             cls_doc.NumAnchoredGeometries.doc)
         .def("GetCollisionCandidates", &Class::GetCollisionCandidates,
             cls_doc.GetCollisionCandidates.doc)
+        .def("geometry_version", &Class::geometry_version,
+            py_rvp::reference_internal, cls_doc.geometry_version.doc)
         // Sources and source-related data.
         .def("SourceIsRegistered", &Class::SourceIsRegistered,
             py::arg("source_id"), cls_doc.SourceIsRegistered.doc)
@@ -121,6 +137,8 @@ void DefineSceneGraphInspector(py::module m, T) {
                 &Class::GetName),
             py_rvp::reference_internal, py::arg("frame_id"),
             cls_doc.GetName.doc_1args_frame_id)
+        .def("GetParentFrame", &Class::GetParentFrame, py::arg("frame_id"),
+            cls_doc.GetParentFrame.doc)
         .def("GetFrameGroup", &Class::GetFrameGroup, py::arg("frame_id"),
             cls_doc.GetFrameGroup.doc)
         .def("NumGeometriesForFrame", &Class::NumGeometriesForFrame,
@@ -170,18 +188,27 @@ void DefineSceneGraphInspector(py::module m, T) {
         .def("GetPerceptionProperties", &Class::GetPerceptionProperties,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPerceptionProperties.doc)
+        .def("GetReferenceMesh", &Class::GetReferenceMesh,
+            py_rvp::reference_internal, py::arg("geometry_id"),
+            cls_doc.GetReferenceMesh.doc)
+        .def("IsDeformableGeometry", &Class::IsDeformableGeometry,
+            py::arg("geometry_id"), cls_doc.IsDeformableGeometry.doc)
+        .def("GetAllDeformableGeometryIds", &Class::GetAllDeformableGeometryIds,
+            cls_doc.GetAllDeformableGeometryIds.doc)
+        .def("GetConvexHull", &Class::GetConvexHull, py_rvp::reference_internal,
+            py::arg("geometry_id"), cls_doc.GetConvexHull.doc)
+        .def("GetObbInGeometryFrame", &Class::GetObbInGeometryFrame,
+            py::arg("geometry_id"), cls_doc.GetObbInGeometryFrame.doc)
         .def("CollisionFiltered", &Class::CollisionFiltered,
             py::arg("geometry_id1"), py::arg("geometry_id2"),
             cls_doc.CollisionFiltered.doc)
         .def("CloneGeometryInstance", &Class::CloneGeometryInstance,
-            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc)
-        .def("geometry_version", &Class::geometry_version,
-            py_rvp::reference_internal, cls_doc.geometry_version.doc);
+            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc);
   }
 }
 
 template <typename T>
-void DefineSceneGraph(py::module m, T) {
+void DefineSceneGraph(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   //  SceneGraph
   {
@@ -263,6 +290,31 @@ void DefineSceneGraph(py::module m, T) {
             },
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def(
+            "RegisterDeformableGeometry",
+            [](Class& self, SourceId source_id, FrameId frame_id,
+                const GeometryInstance& geometry, double resolution_hint) {
+              // Ditto the comment on RegisterGeometry, above.
+              return self.RegisterDeformableGeometry(source_id, frame_id,
+                  std::make_unique<GeometryInstance>(geometry),
+                  resolution_hint);
+            },
+            py::arg("source_id"), py::arg("frame_id"), py::arg("geometry"),
+            py::arg("resolution_hint"),
+            cls_doc.RegisterDeformableGeometry.doc_4args)
+        .def(
+            "RegisterDeformableGeometry",
+            [](Class& self, systems::Context<T>* context, SourceId source_id,
+                FrameId frame_id, const GeometryInstance& geometry,
+                double resolution_hint) {
+              // Ditto the comment on RegisterGeometry, above.
+              return self.RegisterDeformableGeometry(context, source_id,
+                  frame_id, std::make_unique<GeometryInstance>(geometry),
+                  resolution_hint);
+            },
+            py::arg("context"), py::arg("source_id"), py::arg("frame_id"),
+            py::arg("geometry"), py::arg("resolution_hint"),
+            cls_doc.RegisterDeformableGeometry.doc_5args)
         .def("RenameGeometry", &Class::RenameGeometry, py::arg("geometry_id"),
             py::arg("name"), cls_doc.RenameGeometry.doc)
         .def("ChangeShape",
@@ -338,6 +390,15 @@ void DefineSceneGraph(py::module m, T) {
                 const std::string&>(&Class::GetRendererTypeName),
             py::arg("context"), py::arg("name"),
             cls_doc.GetRendererTypeName.doc_2args)
+        .def("GetRendererParameterYaml",
+            overload_cast_explicit<std::string, const std::string&>(
+                &Class::GetRendererParameterYaml),
+            py::arg("name"), cls_doc.GetRendererParameterYaml.doc_1args)
+        .def("GetRendererParameterYaml",
+            overload_cast_explicit<std::string, const systems::Context<T>&,
+                const std::string&>(&Class::GetRendererParameterYaml),
+            py::arg("context"), py::arg("name"),
+            cls_doc.GetRendererParameterYaml.doc_2args)
         // - Begin: AssignRole Overloads.
         // - - Proximity.
         .def(
@@ -444,7 +505,7 @@ void DefineSceneGraph(py::module m, T) {
 }
 
 template <typename T>
-void DefineFramePoseVector(py::module m, T) {
+void DefineFramePoseVector(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = FramePoseVector<T>;
@@ -473,7 +534,38 @@ void DefineFramePoseVector(py::module m, T) {
 }
 
 template <typename T>
-void DefineQueryObject(py::module m, T) {
+void DefineGeometryConfigurationVector(py::module_ m, T) {
+  py::tuple param = GetPyParam<T>();
+  {
+    using Class = GeometryConfigurationVector<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "GeometryConfigurationVector", param, doc.KinematicsVector.doc);
+    cls  // BR
+        .def(py::init<>(), doc.KinematicsVector.ctor.doc_0args)
+        .def("clear", &GeometryConfigurationVector<T>::clear,
+            doc.KinematicsVector.clear.doc)
+        .def(
+            "set_value",
+            [](Class* self, GeometryId id, const Eigen::VectorX<T>& value) {
+              self->set_value(id, value);
+            },
+            py::arg("id"), py::arg("value"), doc.KinematicsVector.set_value.doc)
+        .def("size", &GeometryConfigurationVector<T>::size,
+            doc.KinematicsVector.size.doc)
+        // This intentionally copies the value to avoid segfaults from accessing
+        // the result after clear() is called. (see #11583)
+        .def("value", &GeometryConfigurationVector<T>::value, py::arg("id"),
+            doc.KinematicsVector.value.doc)
+        .def("has_id", &GeometryConfigurationVector<T>::has_id, py::arg("id"),
+            doc.KinematicsVector.has_id.doc)
+        .def("ids", &GeometryConfigurationVector<T>::ids,
+            doc.KinematicsVector.ids.doc);
+    AddValueInstantiation<GeometryConfigurationVector<T>>(m);
+  }
+}
+
+template <typename T>
+void DefineQueryObject(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = QueryObject<T>;
@@ -496,6 +588,13 @@ void DefineQueryObject(py::module m, T) {
                 &Class::GetPoseInWorld),
             py::arg("geometry_id"), py_rvp::reference_internal,
             cls_doc.GetPoseInWorld.doc_1args_geometry_id)
+        .def("GetConfigurationsInWorld", &Class::GetConfigurationsInWorld,
+            py::arg("deformable_geometry_id"), py_rvp::copy,
+            cls_doc.GetConfigurationsInWorld.doc)
+        .def("ComputeAabbInWorld", &Class::ComputeAabbInWorld,
+            py::arg("geometry_id"), cls_doc.ComputeAabbInWorld.doc)
+        .def("ComputeObbInWorld", &Class::ComputeObbInWorld,
+            py::arg("geometry_id"), cls_doc.ComputeObbInWorld.doc)
         .def("ComputeSignedDistancePairwiseClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),
@@ -580,86 +679,78 @@ void DefineQueryObject(py::module m, T) {
 }
 
 template <typename T>
-void DefineSignedDistancePair(py::module m, T) {
+void DefineSignedDistancePair(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = SignedDistancePair<T>;
+    constexpr auto& cls_doc = doc_query_results.SignedDistancePair;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SignedDistancePair", param, doc.SignedDistancePair.doc);
+        m, "SignedDistancePair", param, cls_doc.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.SignedDistancePair.ctor.doc)
-        .def_readwrite("id_A", &SignedDistancePair<T>::id_A,
-            doc.SignedDistancePair.id_A.doc)
-        .def_readwrite("id_B", &SignedDistancePair<T>::id_B,
-            doc.SignedDistancePair.id_B.doc)
-        .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistancePair.p_ACa.doc)
-        .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistancePair.p_BCb.doc)
-        .def_readwrite("distance", &SignedDistancePair<T>::distance,
-            doc.SignedDistancePair.distance.doc)
-        .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistancePair.nhat_BA_W.doc);
+        .def(ParamInit<Class>(), cls_doc.ctor.doc)
+        .def_rw("id_A", &SignedDistancePair<T>::id_A, cls_doc.id_A.doc)
+        .def_rw("id_B", &SignedDistancePair<T>::id_B, cls_doc.id_B.doc)
+        .def_rw("p_ACa", &SignedDistancePair<T>::p_ACa,
+            return_value_policy_for_scalar_type<T>(), cls_doc.p_ACa.doc)
+        .def_rw("p_BCb", &SignedDistancePair<T>::p_BCb,
+            return_value_policy_for_scalar_type<T>(), cls_doc.p_BCb.doc)
+        .def_rw(
+            "distance", &SignedDistancePair<T>::distance, cls_doc.distance.doc)
+        .def_rw("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
+            return_value_policy_for_scalar_type<T>(), cls_doc.nhat_BA_W.doc);
   }
 }
 
 template <typename T>
-void DefineSignedDistanceToPoint(py::module m, T) {
+void DefineSignedDistanceToPoint(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = SignedDistanceToPoint<T>;
+    constexpr auto& cls_doc = doc_query_results.SignedDistanceToPoint;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SignedDistanceToPoint", param, doc.SignedDistanceToPoint.doc);
+        m, "SignedDistanceToPoint", param, cls_doc.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.SignedDistanceToPoint.ctor.doc)
-        .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
-            doc.SignedDistanceToPoint.id_G.doc)
-        .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistanceToPoint.p_GN.doc)
-        .def_readwrite("distance", &SignedDistanceToPoint<T>::distance,
-            doc.SignedDistanceToPoint.distance.doc)
-        .def_readwrite("grad_W", &SignedDistanceToPoint<T>::grad_W,
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistanceToPoint.grad_W.doc);
+        .def(ParamInit<Class>(), cls_doc.ctor.doc)
+        .def_rw("id_G", &SignedDistanceToPoint<T>::id_G, cls_doc.id_G.doc)
+        .def_rw("p_GN", &SignedDistanceToPoint<T>::p_GN,
+            return_value_policy_for_scalar_type<T>(), cls_doc.p_GN.doc)
+        .def_rw("distance", &SignedDistanceToPoint<T>::distance,
+            cls_doc.distance.doc)
+        .def_rw("grad_W", &SignedDistanceToPoint<T>::grad_W,
+            return_value_policy_for_scalar_type<T>(), cls_doc.grad_W.doc);
   }
 }
 
 template <typename T>
-void DefinePenetrationAsPointPair(py::module m, T) {
+void DefinePenetrationAsPointPair(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = PenetrationAsPointPair<T>;
+    constexpr auto& cls_doc = doc_query_results.PenetrationAsPointPair;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "PenetrationAsPointPair", param, doc.PenetrationAsPointPair.doc);
+        m, "PenetrationAsPointPair", param, cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>())
-        .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
-            doc.PenetrationAsPointPair.id_A.doc)
-        .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,
-            doc.PenetrationAsPointPair.id_B.doc)
-        .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa,
-            py::return_value_policy::copy, doc.PenetrationAsPointPair.p_WCa.doc)
-        .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb,
-            py::return_value_policy::copy, doc.PenetrationAsPointPair.p_WCb.doc)
-        .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
-            doc.PenetrationAsPointPair.nhat_BA_W.doc)
-        .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
-            doc.PenetrationAsPointPair.depth.doc);
+        .def_rw("id_A", &PenetrationAsPointPair<T>::id_A, cls_doc.id_A.doc)
+        .def_rw("id_B", &PenetrationAsPointPair<T>::id_B, cls_doc.id_B.doc)
+        .def_rw("p_WCa", &PenetrationAsPointPair<T>::p_WCa, py_rvp::copy,
+            cls_doc.p_WCa.doc)
+        .def_rw("p_WCb", &PenetrationAsPointPair<T>::p_WCb, py_rvp::copy,
+            cls_doc.p_WCb.doc)
+        .def_rw("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
+            cls_doc.nhat_BA_W.doc)
+        .def_rw("depth", &PenetrationAsPointPair<T>::depth, cls_doc.depth.doc);
   }
 }
 
 template <typename T>
-void DefineContactSurface(py::module m, T) {
+void DefineContactSurface(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   // Currently we do not bind the constructor because users do not need to
   // construct it directly yet. We can get it from ComputeContactSurface*().
   if constexpr (scalar_predicate<T>::is_bool) {
     using Class = ContactSurface<T>;
-    constexpr auto& cls_doc = doc.ContactSurface;
+    constexpr auto& cls_doc = doc_query_results.ContactSurface;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ContactSurface", param, cls_doc.doc);
     cls  // BR
@@ -701,13 +792,14 @@ void DefineContactSurface(py::module m, T) {
 }
 }  // namespace
 
-void DefineGeometrySceneGraph(py::module m) {
-  py::module::import("pydrake.systems.framework");
+void DefineGeometrySceneGraph(py::module_ m) {
+  py::module_::import_("pydrake.systems.framework");
   DoScalarIndependentDefinitions(m);
   type_visit(
       [m](auto dummy) {
         // This list must remain in topological dependency order.
         DefineFramePoseVector(m, dummy);
+        DefineGeometryConfigurationVector(m, dummy);
         DefineContactSurface(m, dummy);
         DefinePenetrationAsPointPair(m, dummy);
         DefineSignedDistancePair(m, dummy);

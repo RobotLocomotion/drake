@@ -20,7 +20,7 @@ namespace hydroelastic {
  @pre The geometries are not *both* half spaces.  */
 template <typename T>
 std::unique_ptr<ContactSurface<T>> CalcRigidCompliant(
-    const SoftGeometry& soft, const math::RigidTransform<T>& X_WS,
+    const CompliantGeometry& compliant, const math::RigidTransform<T>& X_WS,
     GeometryId id_S, const RigidGeometry& rigid,
     const math::RigidTransform<T>& X_WR, GeometryId id_R,
     HydroelasticContactRepresentation representation);
@@ -30,8 +30,8 @@ std::unique_ptr<ContactSurface<T>> CalcRigidCompliant(
  @pre None of the geometries are half spaces. */
 template <typename T>
 std::unique_ptr<ContactSurface<T>> CalcCompliantCompliant(
-    const SoftGeometry& compliant_F, const math::RigidTransform<T>& X_WF,
-    GeometryId id_F, const SoftGeometry& compliant_G,
+    const CompliantGeometry& compliant_F, const math::RigidTransform<T>& X_WF,
+    GeometryId id_F, const CompliantGeometry& compliant_G,
     const math::RigidTransform<T>& X_WG, GeometryId id_G,
     HydroelasticContactRepresentation representation);
 
@@ -90,13 +90,7 @@ class ContactCalculator {
   ContactCalculator(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs,
       const Geometries* geometries,
-      HydroelasticContactRepresentation representation)
-      : X_WGs_(*X_WGs),
-        geometries_(*geometries),
-        representation_(representation) {
-    DRAKE_DEMAND(X_WGs != nullptr);
-    DRAKE_DEMAND(geometries != nullptr);
-  }
+      HydroelasticContactRepresentation representation);
 
   struct MaybeMakeContactSurfaceResult {
     ContactSurfaceResult result;

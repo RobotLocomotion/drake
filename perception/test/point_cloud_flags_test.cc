@@ -1,6 +1,5 @@
 #include "drake/perception/point_cloud_flags.h"
 
-#include <sstream>
 #include <stdexcept>
 
 #include <gtest/gtest.h>
@@ -14,19 +13,16 @@ namespace pcf = pc_flags;
 
 namespace {
 
-GTEST_TEST(PointCloudFlagsTest, Formatting) {
-  // Check human-friendly formatting.
-  {
-    std::ostringstream os;
-    os << (pcf::kXYZs | pcf::kDescriptorCurvature);
-    EXPECT_EQ("(kXYZs | kDescriptorCurvature)", os.str());
-  }
-  // Ensure it works for multiple types.
-  {
-    std::ostringstream os;
-    os << (pcf::kXYZs | pcf::kRGBs | pcf::kDescriptorCurvature);
-    EXPECT_EQ("(kXYZs | kRGBs | kDescriptorCurvature)", os.str());
-  }
+GTEST_TEST(PointCloudFlagsTest, DescriptorTypeToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(pcf::kDescriptorNone), "kDescriptorNone");
+}
+
+GTEST_TEST(PointCloudFlagsTest, FieldsToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(pcf::Fields(pcf::kDescriptorNone)), "()");
+  EXPECT_EQ(fmt::to_string(pcf::kXYZs | pcf::kDescriptorNone), "(kXYZs)");
+  EXPECT_EQ(fmt::to_string(pcf::kXYZs | pcf::kNormals | pcf::kRGBs |
+                           pcf::kDescriptorCurvature),
+            "(kXYZs | kNormals | kRGBs | kDescriptorCurvature)");
 }
 
 GTEST_TEST(PointCloudFlagsTest, Basic) {

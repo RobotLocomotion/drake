@@ -70,6 +70,17 @@ std::optional<T> GetChildElementValue(
   return value_pair.first;
 }
 
+std::optional<double> ReadDoubleFromSdfElement(
+    const SDFormatDiagnostic& diagnostic,
+    const sdf::ElementConstPtr& parent_element,
+    const char* child_element_name) {
+  if (parent_element->FindElement(child_element_name) != nullptr) {
+    return GetChildElementValue<double>(diagnostic, parent_element,
+                                        child_element_name);
+  }
+  return std::nullopt;
+}
+
 }  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
@@ -169,24 +180,29 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       // parsing should handle the case of this missing.
       DRAKE_DEMAND(mesh_uri.has_value());
       if (!mesh_uri.has_value()) return nullptr;
+      // Note: if the sdf hasn't specified a URI for the <mesh> tag, SDFormat
+      // provides "__default__".
+      if (*mesh_uri == "__default__") {
+        // Note: this is tested in detail_sdf_parser_test.cc in the
+        // AutoInertiaForMeshBadData test.
+        std::optional<int> line_number_maybe = mesh_element->LineNumber();
+        diagnostic.Error(
+            mesh_element,
+            fmt::format(
+                "The <mesh> tag{} is missing the required 'uri' attribute.",
+                line_number_maybe
+                    ? fmt::format(" on line {}", *line_number_maybe)
+                    : std::string()));
+        return nullptr;
+      }
       const std::string file_name = resolve_filename(diagnostic, *mesh_uri);
-      double scale = 1.0;
+      Vector3d scale(1, 1, 1);
       if (mesh_element->HasElement("scale")) {
-        std::optional<gz::math::Vector3d> scale_vector =
+        std::optional<gz::math::Vector3d> gz_scale =
             GetChildElementValue<gz::math::Vector3d>(diagnostic, mesh_element,
                                                      "scale");
-        if (!scale_vector.has_value()) return nullptr;
-        // geometry::Mesh only supports isotropic scaling and therefore we
-        // enforce it.
-        if (!(scale_vector->X() == scale_vector->Y() &&
-              scale_vector->X() == scale_vector->Z())) {
-          std::string message =
-              "Drake meshes only support isotropic scaling. Therefore all "
-              "three scaling factors must be exactly equal.";
-          diagnostic.Error(mesh_element, std::move(message));
-          return nullptr;
-        }
-        scale = scale_vector->X();
+        if (!gz_scale.has_value()) return nullptr;
+        scale = Vector3d(gz_scale->X(), gz_scale->Y(), gz_scale->Z());
       }
       // TODO(amcastro-tri): Fix the given path to be an absolute path.
       if (mesh_element->HasElement("drake:declare_convex")) {
@@ -592,14 +608,8 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
     CheckSupportedElements(diagnostic, drake_element,
                            supported_proximity_elements);
 
-    auto read_double = [drake_element, &diagnostic](
-                           const char* element_name) -> std::optional<double> {
-      std::optional<double> result;
-      if (drake_element->FindElement(element_name) != nullptr) {
-        result = GetChildElementValue<double>(diagnostic, drake_element,
-                                              element_name);
-      }
-      return result;
+    auto read_double = [&diagnostic, &drake_element](const char* element_name) {
+      return ReadDoubleFromSdfElement(diagnostic, drake_element, element_name);
     };
 
     const bool is_rigid = drake_element->HasElement("drake:rigid_hydroelastic");
@@ -703,6 +713,67 @@ std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
   if (!dynamic_friction.has_value()) return std::nullopt;
 
   return CoulombFriction<double>(*static_friction, *dynamic_friction);
+}
+
+std::optional<geometry::ProximityProperties>
+MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
+                                    const sdf::Collision& collision) {
+  // Allowed child tags of <collision> for our mini‑parser.
+  sdf::ElementPtr collision_element = collision.Element();
+  CheckSupportedElements(diagnostic, collision_element,
+                         {"geometry", "drake:proximity_properties"});
+
+  const sdf::ElementPtr drake_element =
+      collision_element->FindElement("drake:proximity_properties");
+  if (!drake_element) return std::nullopt;  // no properties specified.
+
+  CheckSupportedElements(diagnostic, drake_element,
+                         {"drake:mu_dynamic", "drake:hunt_crossley_dissipation",
+                          "drake:relaxation_time"});
+
+  geometry::ProximityProperties props;
+
+  auto read_double = [&diagnostic, &drake_element](const char* element_name) {
+    return ReadDoubleFromSdfElement(diagnostic, drake_element, element_name);
+  };
+
+  const std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
+  if (mu_dynamic.has_value()) {
+    if (*mu_dynamic < 0) {
+      diagnostic.Error(drake_element, "drake:mu_dynamic must be non‑negative");
+      return std::nullopt;
+    } else {
+      props.AddProperty("material", "coulomb_friction",
+                        CoulombFriction<double>(*mu_dynamic, *mu_dynamic));
+    }
+  } else {
+    // If no value is specified, we use the default value.
+    props.AddProperty("material", "coulomb_friction", default_friction());
+  }
+
+  const std::optional<double> hunt_crossley_dissipation =
+      read_double("drake:hunt_crossley_dissipation");
+  if (hunt_crossley_dissipation.has_value()) {
+    if (*hunt_crossley_dissipation < 0) {
+      diagnostic.Error(drake_element,
+                       "drake:hunt_crossley_dissipation must be non‑negative");
+      return std::nullopt;
+    }
+    props.AddProperty("material", "hunt_crossley_dissipation",
+                      *hunt_crossley_dissipation);
+  }
+
+  const std::optional<double> relaxation_time =
+      read_double("drake:relaxation_time");
+  if (relaxation_time.has_value()) {
+    if (*relaxation_time < 0) {
+      diagnostic.Error(drake_element,
+                       "drake:relaxation_time must be non‑negative");
+      return std::nullopt;
+    }
+    props.AddProperty("material", "relaxation_time", *relaxation_time);
+  }
+  return props;
 }
 
 }  // namespace internal

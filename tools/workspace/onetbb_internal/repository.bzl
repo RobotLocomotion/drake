@@ -6,6 +6,7 @@ def onetbb_internal_repository(
     github_archive(
         name = name,
         repository = "oneapi-src/oneTBB",
+        upgrade_type = "release",
         commit = "v2021.8.0",
         # TODO(jwnimmer-tri) We are using the TBB headers from this repository,
         # but the TBB library from MOSEK's binary release. We'll probably need

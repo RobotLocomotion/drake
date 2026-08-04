@@ -3,7 +3,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(eigen_pybind_test_util, m) {
+PYDRAKE_MODULE(eigen_pybind_test_util, m) {
   m.doc() = "Example bindings that use drake::EigenPtr types, for testing.";
 
   using T = double;

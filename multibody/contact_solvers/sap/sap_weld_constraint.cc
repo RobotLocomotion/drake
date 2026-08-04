@@ -107,7 +107,7 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
   // this setting, once the constraint velocity vc and cost ℓ(vc) are defined,
   // impulses follow from:
   //  γ = -dℓ/dvc
-  // and the mulitbody spatial forces modeled by this cost are inferred from the
+  // and the multibody spatial forces modeled by this cost are inferred from the
   // optimality conditions (the momentum balance), see
   // DoAccumulateSpatialImpulses().
   //
@@ -121,7 +121,7 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
   // rotational contribution ℓᵣ(vc)
   //   ℓₜ(vc) = 1/2||p_PQ(t) + δt⋅v_AmBm||ₜ²,  ||x||ₜ² = Rₜ||x||²
   //   ℓᵣ(vc) = 1/2||a_PQ(t) + δt⋅w_AB||ᵣ²  ,  ||x||ᵣ² = Rᵣ||x||²
-  // were a_PQ is the axis-angle vector and, Rₜ and Rᵣ the regularization
+  // where a_PQ is the axis-angle vector and, Rₜ and Rᵣ the regularization
   // parameters determined by the SAP formulation in the "near-rigid" regime,
   // see SapHolonomicConstraint.
   // We can show (see below), that this formulation is an approximation to
@@ -138,7 +138,7 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
   //   γₜ = -dℓ/dvcₜ = -Rₜ(p_PQ(t) + δt⋅v_AmBm)
   // We show below that:
   //  p_PQ(t+δt) = p_PQ(t) + δt⋅v_AmBm + O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
-  // and therefore this models a linear spring on p_PQ(t+δt) (heavilty
+  // and therefore this models a linear spring on p_PQ(t+δt) (heavily
   // overdamped given the time scale introduced by SAP's choice of Rₜ cannot
   // be resolved by the discrete time step δt).
   //
@@ -149,8 +149,8 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
   //          = v_W_PQ + p_PQ_W×(w_WA + w_WB)/2
   // And therefore we arrive to the conclusion that:
   //   p_PQ(t) + δt⋅v_AmBm ≈ p_PQ(t+δt)
-  //                       = p_PQ(t) + δt⋅ᵂd(p_PQ)/t + O(δt²)
-  //                       = p_PQ(t) + O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
+  //                       = p_PQ(t) + δt⋅ᵂd(p_PQ)/dt + O(δt²)
+  //                       = p_PQ(t) + O(δt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
   // and thus the cost ℓₜ(vc) penalizes a first order approximation to
   // p_PQ(t+δt).
   // We show conservation of angular momentum in DoAccumulateSpatialImpulses().
@@ -159,7 +159,7 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
   //   γᵣ = -dℓ/dvcᵣ = -Rᵣ(a_PQ(t) + δt⋅w_AB)
   // We show below that for small values of θ = ||a_PQ(t)||, we have that
   //  a_PQ(t) + δt⋅w_AB ≈ a_PQ(t+δt)
-  // and therefore this cost models a linear torsionial spring that oposes
+  // and therefore this cost models a linear torsional spring that opposes
   // deviations of a_PQ from zero.
   //
   // To show this we start with:

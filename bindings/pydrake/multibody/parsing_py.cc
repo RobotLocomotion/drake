@@ -1,8 +1,11 @@
+#include <string>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/multibody_parsing.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
@@ -16,23 +19,23 @@ using std::string;
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(parsing, m) {
+PYDRAKE_MODULE(parsing, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "SDF and URDF parsing for MultibodyPlant and SceneGraph.";
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc_multibody_parsing.drake.multibody;
 
-  py::module::import("pydrake.common.schema");
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.tree");
+  py::module_::import_("pydrake.common.schema");
+  py::module_::import_("pydrake.geometry");
+  py::module_::import_("pydrake.multibody.tree");
 
   // CollisionFilterGroups
   {
     using Class = CollisionFilterGroups;
     constexpr auto& cls_doc = doc.CollisionFilterGroups;
-    auto cls = py::class_<Class>(m, "CollisionFilterGroups", cls_doc.doc);
+    auto cls = class_<Class>(m, "CollisionFilterGroups", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("AddGroup", &Class::AddGroup, py::arg("name"), py::arg("members"),
@@ -50,11 +53,11 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = PackageMap;
     constexpr auto& cls_doc = doc.PackageMap;
-    py::class_<Class> cls(m, "PackageMap", cls_doc.doc);
+    class_<Class> cls(m, "PackageMap", cls_doc.doc);
     {
       using Nested = PackageMap::RemoteParams;
       constexpr auto& nested_doc = cls_doc.RemoteParams;
-      py::class_<Nested> nested(cls, "RemoteParams", nested_doc.doc);
+      class_<Nested> nested(cls, "RemoteParams", nested_doc.doc);
       nested.def(ParamInit<Nested>());
       nested.def("ToJson", &Nested::ToJson, nested_doc.ToJson.doc);
       DefAttributesUsingSerialize(&nested, nested_doc);
@@ -109,7 +112,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = Parser;
     constexpr auto& cls_doc = doc.Parser;
-    auto cls = py::class_<Class>(m, "Parser", cls_doc.doc);
+    auto cls = class_<Class>(m, "Parser", cls_doc.doc);
     cls  // BR
         .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*,
                  std::string_view>(),
@@ -121,7 +124,7 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.ctor.doc_2args_plant_model_name_prefix)
         .def(py::init<systems::DiagramBuilder<double>*, MultibodyPlant<double>*,
                  geometry::SceneGraph<double>*, std::string_view>(),
-            py::arg("builder"), py::arg("plant") = nullptr,
+            py::arg("builder").none(), py::arg("plant") = nullptr,
             py::arg("scene_graph") = nullptr, py::arg("model_name_prefix") = "",
             cls_doc.ctor.doc_4args_builder_plant_scene_graph_model_name_prefix)
         .def("builder", &Class::builder, py_rvp::reference, cls_doc.builder.doc)
@@ -130,15 +133,8 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.scene_graph.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
-        .def(
-            "AddModels",
-            // Pybind11 won't implicitly convert strings to
-            // std::filesystem::path, but C++ will. Use a lambda to avoid wider
-            // disruptions in python bindings.
-            [](Parser& self, const std::string& file_name) {
-              return self.AddModels(file_name);
-            },
-            py::arg("file_name"), cls_doc.AddModels.doc)
+        .def("AddModels", &Class::AddModels, py::arg("file_name"),
+            cls_doc.AddModels.doc)
         .def("AddModelsFromUrl", &Class::AddModelsFromUrl, py::arg("url"),
             cls_doc.AddModelsFromUrl.doc)
         .def("AddModelsFromString", &Class::AddModelsFromString,
@@ -165,7 +161,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::AddWeld;
     constexpr auto& cls_doc = doc.parsing.AddWeld;
-    py::class_<Class> cls(m, "AddWeld", cls_doc.doc);
+    class_<Class> cls(m, "AddWeld", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -175,7 +171,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::AddModel;
     constexpr auto& cls_doc = doc.parsing.AddModel;
-    py::class_<Class> cls(m, "AddModel", cls_doc.doc);
+    class_<Class> cls(m, "AddModel", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -185,7 +181,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::AddModelInstance;
     constexpr auto& cls_doc = doc.parsing.AddModelInstance;
-    py::class_<Class> cls(m, "AddModelInstance", cls_doc.doc);
+    class_<Class> cls(m, "AddModelInstance", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -195,7 +191,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::AddFrame;
     constexpr auto& cls_doc = doc.parsing.AddFrame;
-    py::class_<Class> cls(m, "AddFrame", cls_doc.doc);
+    class_<Class> cls(m, "AddFrame", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -205,7 +201,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::AddCollisionFilterGroup;
     constexpr auto& cls_doc = doc.parsing.AddCollisionFilterGroup;
-    py::class_<Class> cls(m, "AddCollisionFilterGroup", cls_doc.doc);
+    class_<Class> cls(m, "AddCollisionFilterGroup", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -215,7 +211,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::AddDirectives;
     constexpr auto& cls_doc = doc.parsing.AddDirectives;
-    py::class_<Class> cls(m, "AddDirectives", cls_doc.doc);
+    class_<Class> cls(m, "AddDirectives", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -225,7 +221,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::ModelDirective;
     constexpr auto& cls_doc = doc.parsing.ModelDirective;
-    py::class_<Class> cls(m, "ModelDirective", cls_doc.doc);
+    class_<Class> cls(m, "ModelDirective", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -235,7 +231,7 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::ModelDirectives;
     constexpr auto& cls_doc = doc.parsing.ModelDirectives;
-    py::class_<Class> cls(m, "ModelDirectives", cls_doc.doc);
+    class_<Class> cls(m, "ModelDirectives", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -253,15 +249,15 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = parsing::ModelInstanceInfo;
     constexpr auto& cls_doc = doc.parsing.ModelInstanceInfo;
-    py::class_<Class>(m, "ModelInstanceInfo", cls_doc.doc)
-        .def_readonly("model_name", &Class::model_name, cls_doc.model_name.doc)
-        .def_readonly("model_path", &Class::model_path, cls_doc.model_path.doc)
-        .def_readonly("parent_frame_name", &Class::parent_frame_name,
+    class_<Class>(m, "ModelInstanceInfo", cls_doc.doc)
+        .def_ro("model_name", &Class::model_name, cls_doc.model_name.doc)
+        .def_ro("model_path", &Class::model_path, cls_doc.model_path.doc)
+        .def_ro("parent_frame_name", &Class::parent_frame_name,
             cls_doc.parent_frame_name.doc)
-        .def_readonly("child_frame_name", &Class::child_frame_name,
+        .def_ro("child_frame_name", &Class::child_frame_name,
             cls_doc.child_frame_name.doc)
-        .def_readonly("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
-        .def_readonly("model_instance", &Class::model_instance,
+        .def_ro("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
+        .def_ro("model_instance", &Class::model_instance,
             cls_doc.model_instance.doc);
   }
 
@@ -298,9 +294,8 @@ PYBIND11_MODULE(parsing, m) {
       [&m]<typename T>(T) {
         m.def("GetScopedFrameByName",
             overload_cast_explicit<const Frame<T>&, const MultibodyPlant<T>&,
-                const std::string&>(&parsing::GetScopedFrameByName),
-            py::arg("plant"), py::arg("full_name"),
-            py::return_value_policy::reference,
+                std::string_view>(&parsing::GetScopedFrameByName),
+            py::arg("plant"), py::arg("full_name"), py_rvp::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
             doc.parsing.GetScopedFrameByName.doc);
       },
@@ -310,9 +305,8 @@ PYBIND11_MODULE(parsing, m) {
       [&m]<typename T>(T) {
         m.def("GetScopedFrameByNameMaybe",
             overload_cast_explicit<const Frame<T>*, const MultibodyPlant<T>&,
-                const std::string&>(&parsing::GetScopedFrameByNameMaybe),
-            py::arg("plant"), py::arg("full_name"),
-            py::return_value_policy::reference,
+                std::string_view>(&parsing::GetScopedFrameByNameMaybe),
+            py::arg("plant"), py::arg("full_name"), py_rvp::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
             doc.parsing.GetScopedFrameByNameMaybe.doc);
       },

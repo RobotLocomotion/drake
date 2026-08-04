@@ -7,7 +7,7 @@
 namespace drake {
 namespace multibody {
 
-// RigidBodyFrame function definitions.
+// RigidBodyFrame (a.k.a. LinkFrame) function definitions.
 
 template <typename T>
 RigidBodyFrame<T>::~RigidBodyFrame() = default;
@@ -17,7 +17,7 @@ template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> RigidBodyFrame<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
   const RigidBody<ToScalar>& body_clone =
-      tree_clone.get_body(this->body().index());
+      tree_clone.get_link(this->body().index());
   // RigidBodyFrame's constructor cannot be called from std::make_unique since
   // it is private and therefore we use "new".
   return std::unique_ptr<RigidBodyFrame<ToScalar>>(
@@ -57,9 +57,31 @@ RigidBody<T>::~RigidBody() = default;
 
 template <typename T>
 ScopedName RigidBody<T>::scoped_name() const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   return ScopedName(
       this->get_parent_tree().GetModelInstanceName(this->model_instance()),
       name_);
+}
+
+template <typename T>
+void RigidBody<T>::Lock(systems::Context<T>* context) const {
+  ThrowIfNotFinalized(__func__);
+  if (!is_floating_base_body()) {
+    throw std::logic_error(fmt::format(
+        "Attempted to call Lock() on non-floating-base rigid body {}", name()));
+  }
+  mobilizer().Lock(context);
+}
+
+template <typename T>
+void RigidBody<T>::Unlock(systems::Context<T>* context) const {
+  ThrowIfNotFinalized(__func__);
+  if (!is_floating_base_body()) {
+    throw std::logic_error(fmt::format(
+        "Attempted to call Unlock() on non-floating-base rigid body {}",
+        name()));
+  }
+  mobilizer().Unlock(context);
 }
 
 template <typename T>
@@ -67,7 +89,7 @@ RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
     : MultibodyElement<T>(default_model_instance()),
       name_(internal::DeprecateWhenEmptyName(body_name, "RigidBody")),
-      body_frame_(*this),
+      link_frame_(*this),
       default_spatial_inertia_(M) {}
 
 template <typename T>
@@ -76,8 +98,57 @@ RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
     : MultibodyElement<T>(model_instance),
       name_(internal::DeprecateWhenEmptyName(body_name, "RigidBody")),
-      body_frame_(*this),
+      link_frame_(*this),
       default_spatial_inertia_(M) {}
+
+template <typename T>
+void RigidBody<T>::DoSetTopology() {
+  DRAKE_DEMAND(mobilizer_ == nullptr);
+  const internal::MultibodyTree<T>& tree = this->get_parent_tree();
+  const internal::SpanningForest& forest = tree.forest();
+  const internal::LinkJointGraph::Link& link = forest.link_by_index(index());
+  mobilizer_ = &tree.get_mobilizer(link.mobod_index());
+
+  // Is this RigidBody the active link on its Mobod?
+  const bool is_active_link =
+      link.ordinal() == forest.mobods(link.mobod_index()).active_link_ordinal();
+  is_floating_base_body_ =
+      is_active_link && mobilizer_->is_floating_base_mobilizer();
+}
+
+template <typename T>
+void RigidBody<T>::DoDeclareParameters(
+    internal::MultibodyTreeSystem<T>* tree_system) {
+  // Sets model values to dummy values to indicate that the model values are
+  // not used. This class stores the the default values of the parameters.
+  // 10 numeric values are used to store mass, center of mass, moments and
+  // products of inertia packed into one basic vector.
+  spatial_inertia_parameter_index_ =
+      this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(10));
+}
+
+template <typename T>
+void RigidBody<T>::DoSetDefaultParameters(
+    systems::Parameters<T>* parameters) const {
+  // Set the default spatial inertia.
+  systems::BasicVector<T>& spatial_inertia_parameter =
+      parameters->get_mutable_numeric_parameter(
+          spatial_inertia_parameter_index_);
+  spatial_inertia_parameter.SetFrom(
+      internal::parameter_conversion::ToBasicVector<T>(
+          default_spatial_inertia_.template cast<T>()));
+}
+
+template <typename T>
+void RigidBody<T>::ThrowIfNotFinalized(const char* source_method) const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
+  if (!this->get_parent_tree().is_finalized()) {
+    throw std::runtime_error(
+        "From '" + std::string(source_method) +
+        "'. The model to which this rigid body belongs must be finalized. "
+        "See MultibodyPlant::Finalize().");
+  }
+}
 
 template <typename T>
 void RigidBody<T>::SetCenterOfMassInBodyFrameNoModifyInertia(
@@ -160,6 +231,7 @@ void RigidBody<T>::AddInForce(const systems::Context<T>& context,
                               const Frame<T>& frame_E,
                               MultibodyForces<T>* forces) const {
   DRAKE_THROW_UNLESS(forces != nullptr);
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_THROW_UNLESS(
       forces->CheckHasRightSizeForModel(this->get_parent_tree()));
   const math::RotationMatrix<T> R_WE =

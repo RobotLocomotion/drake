@@ -15,6 +15,10 @@ controller operates the robot, without extra hassle.
 Drake maintainers should keep this file in sync with hardware_sim.py. */
 
 #include <fstream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <gflags/gflags.h>
 
@@ -23,6 +27,7 @@ Drake maintainers should keep this file in sync with hardware_sim.py. */
 #include "drake/manipulation/kuka_iiwa/iiwa_driver_functions.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 #include "drake/manipulation/util/apply_driver_configs.h"
+#include "drake/manipulation/util/named_positions_functions.h"
 #include "drake/manipulation/util/zero_force_driver_functions.h"
 #include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -35,16 +40,19 @@ Drake maintainers should keep this file in sync with hardware_sim.py. */
 #include "drake/visualization/visualization_config_functions.h"
 
 DEFINE_string(scenario_file, "",
-    "Scenario filename, e.g., "
-    "drake/examples/hardware_sim/example_scenarios.yaml");
-DEFINE_string(scenario_name, "",
+              "Scenario filename, e.g., "
+              "drake/examples/hardware_sim/example_scenarios.yaml");
+DEFINE_string(
+    scenario_name, "",
     "Scenario name within the scenario_file, e.g., Demo in the "
     "example_scenarios.yaml; scenario names appears as the keys of the "
     "YAML document's top-level mapping item");
-DEFINE_string(scenario_text, "{}",
+DEFINE_string(
+    scenario_text, "{}",
     "Additional YAML scenario text to load, in order to override values "
     "in the scenario_file, e.g., timeouts");
-DEFINE_string(graphviz, "",
+DEFINE_string(
+    graphviz, "",
     "Dump the Simulator's Diagram to this file in Graphviz format as a "
     "debugging aid");
 
@@ -68,8 +76,7 @@ using visualization::ApplyVisualizationConfig;
 /* Class that holds the configuration and data of a simulation. */
 class Simulation {
  public:
-  explicit Simulation(const Scenario& scenario)
-      : scenario_(scenario) {}
+  explicit Simulation(const Scenario& scenario) : scenario_(scenario) {}
 
   /* Performs all of the initial setup of the simulation diagram and context. */
   void Setup();
@@ -98,6 +105,10 @@ void Simulation::Setup() {
   // Add model directives.
   std::vector<ModelInstanceInfo> added_models;
   ProcessModelDirectives({scenario_.directives}, &sim_plant, &added_models);
+
+  // Override or supplement initial positions.
+  manipulation::ApplyNamedPositionsAsDefaults(scenario_.initial_position,
+                                              &sim_plant);
 
   // Now the plant is complete.
   sim_plant.Finalize();

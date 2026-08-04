@@ -1,6 +1,8 @@
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
+#include <algorithm>
 #include <memory>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

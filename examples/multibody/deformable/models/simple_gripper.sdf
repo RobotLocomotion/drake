@@ -9,8 +9,7 @@
 
        The frame of the gripper, G, has its x-axis pointing to the right
        of the gripper, its y-axis pointing "forward" (towards the fingers
-       side) and, the z-axis pointing upwards. This file only defines visual
-       geometry but not contact geometry.
+       side) and, the z-axis pointing upwards.
   -->
   <model name="simple_gripper">
     <pose>0 0.06 0.08 -1.57 0 1.57</pose>
@@ -63,17 +62,29 @@
         </inertia>
       </inertial>
       <visual name="visual">
-        <pose>0 0.0 0.0 1.57 0 0</pose>
         <geometry>
-          <capsule>
-            <radius>0.01</radius>
-            <length>0.08</length>
-          </capsule>
+          <box>
+            <size>0.007 0.081 0.028</size>
+          </box>
         </geometry>
         <material>
           <diffuse>0.3 0.3 0.3 0.9</diffuse>
         </material>
       </visual>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.007 0.081 0.028</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>1.5</drake:mu_dynamic>
+          <drake:mu_static>1.5</drake:mu_static>
+          <drake:hydroelastic_modulus>1e6</drake:hydroelastic_modulus>
+          <drake:hunt_crossley_dissipation>5</drake:hunt_crossley_dissipation>
+          <drake:compliant_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
     </link>
     <link name="right_finger">
       <!-- Each finger is positioned along the x-axis such that at q=0 the pads
@@ -92,17 +103,29 @@
         </inertia>
       </inertial>
       <visual name="visual">
-        <pose>0 0.0 0.0 1.57 0 0</pose>
         <geometry>
-          <capsule>
-            <radius>0.01</radius>
-            <length>0.08</length>
-          </capsule>
+          <box>
+            <size>0.007 0.081 0.028</size>
+          </box>
         </geometry>
         <material>
           <diffuse>0.3 0.3 0.3 0.9</diffuse>
         </material>
       </visual>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.007 0.081 0.028</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>1.5</drake:mu_dynamic>
+          <drake:mu_static>1.5</drake:mu_static>
+          <drake:hydroelastic_modulus>1e6</drake:hydroelastic_modulus>
+          <drake:hunt_crossley_dissipation>5</drake:hunt_crossley_dissipation>
+          <drake:compliant_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
     </link>
     <joint name="left_slider" type="prismatic">
       <parent>body</parent>
