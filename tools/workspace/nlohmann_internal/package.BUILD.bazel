@@ -14,6 +14,10 @@ cc_library(
         "single_include/nlohmann/json_fwd.hpp",
     ],
     defines = [
+        # Use a drake_vendor hidden namespace instead of JSON's default ABI
+        # namespace based on its version number. This prevents ODR violations
+        # in case downstream code also links to json.
+        "'NLOHMANN_JSON_NAMESPACE_BEGIN=namespace nlohmann { inline namespace drake_vendor __attribute__((visibility(\"hidden\"))) {'",
         # The nlohmann/json code has logic that tries to infer whether or not
         # the compiler toolchain supports the spaceship operator (<=>).
         # However, something it does is not quite correct and ends up failing
