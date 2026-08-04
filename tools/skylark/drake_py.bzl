@@ -207,7 +207,11 @@ def drake_py_test(
         package_name = native.package_name()
         test_alt_binder = any([
             package_name.startswith(x)
-            for x in ["bindings/pydrake", "examples", "tutorials"]
+            for x in [
+                "bindings/pydrake",
+                "examples",
+                "tutorials",
+            ]
         ])
     if test_alt_binder:
         alt_target_compatible_with, _ = combine_conditions(

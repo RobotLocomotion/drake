@@ -441,10 +441,12 @@ def _rename_callable(f, scope, name, cls=None):
         qualname = name
     # Native functions (built-in or nanobind-bound) don't allowing resetting the
     # metadata unless we wrap them in Python first.
-    if (isinstance(f, types.BuiltinMethodType)
-          or isinstance(f, types.BuiltinFunctionType)
-          or f.__class__.__name__ == "nb_method"
-          or f.__class__.__name__ == "nb_func"):
+    if (
+        isinstance(f, types.BuiltinMethodType)
+        or isinstance(f, types.BuiltinFunctionType)
+        or f.__class__.__name__ == "nb_method"
+        or f.__class__.__name__ == "nb_func"
+    ):
         orig = f
 
         def f(*args, **kwargs):

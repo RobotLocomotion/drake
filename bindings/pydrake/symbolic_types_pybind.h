@@ -89,8 +89,8 @@ struct type_caster<drake::symbolic::Variable::Id> {
       return false;
     }
 
-    // N.B. "value" is a magic variable declared by pybind11 where we're
-    // supposed to put the loaded result.
+    // N.B. "value" is a magic variable declared by the ..._TYPE_CASTER macro
+    // where we're supposed to put the loaded result.
     value = *maybe_result;
     return true;
   }

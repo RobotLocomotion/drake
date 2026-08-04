@@ -10,9 +10,9 @@ def sdformat_internal_repository(
         # of this cohort should be updated at the same time.
         repository = "gazebosim/sdformat",
         upgrade_type = "tag",
-        commit = "sdformat16_16.0.1",
+        commit = "sdformat16_16.1.0",
         build_file = ":package.BUILD.bazel",
-        sha256 = "4fac898700afb2953af5f8ac6b0221e4d9bc1e460aac6d4b7a5c3699c456126c",  # noqa
+        sha256 = "f9ef71787b0055f7ee35a3b52f42a9d6397f0c2f21f9572957bc3f456e2ca674",  # noqa
         patches = [
             ":patches/upstream/never_destroyed.patch",
             ":patches/upstream/no_density_not_a_problem.patch",

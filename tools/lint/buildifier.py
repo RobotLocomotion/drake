@@ -21,7 +21,7 @@ def _make_buildifier_command():
     """Returns a list starting with the buildifier executable, followed by any
     required default arguments."""
     manifest = runfiles.Create()
-    resource_path = "buildifier_prebuilt/buildifier/buildifier"
+    resource_path = "buildifier_prebuilt/buildifier/buildifier.bash"
     buildifier = manifest.Rlocation(resource_path)
     tables = manifest.Rlocation("drake/tools/lint/buildifier-tables.json")
     assert buildifier is not None

@@ -45,7 +45,7 @@ class ColorizeLabelImage final : public systems::LeafSystem<T> {
   }
 
   /** Colorizes the `input` into `output`, without using any System port
-  conections nor any Context. */
+  connections nor any Context. */
   void Calc(const systems::sensors::ImageLabel16I& input,
             systems::sensors::ImageRgba8U* output) const;
 

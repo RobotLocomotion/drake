@@ -133,9 +133,9 @@ rust_library(
     version = "0.2.126",
     deps = [
         "@crate__bumpalo-3.20.3//:bumpalo",
-        "@crate__proc-macro2-1.0.106//:proc_macro2",
-        "@crate__quote-1.0.46//:quote",
-        "@crate__syn-2.0.118//:syn",
+        "@crate__proc-macro2-1.0.107//:proc_macro2",
+        "@crate__quote-1.0.47//:quote",
+        "@crate__syn-2.0.119//:syn",
         "@crate__wasm-bindgen-shared-0.2.126//:wasm_bindgen_shared",
     ],
 )

@@ -73,8 +73,8 @@ namespace drake {
 /// Drake developers should prefer any aliases defined here over their full
 /// spellings in `pybind11` or `nanobind`.
 ///
-/// `namespace py` is a shorthand alias for consistency. (This symbol cannot be
-/// exposed directly in Doxygen.)
+/// `namespace py` is a shorthand alias to either `pybind11` or `nanobind`, for
+/// consistency. (This symbol cannot be exposed directly in Doxygen.)
 ///
 /// @note Downstream users should avoid `using namespace drake::pydrake`, as
 /// this may create ambiguous aliases (especially for GCC). Instead, consider
@@ -324,9 +324,10 @@ struct __attribute__((visibility("hidden"))) ParamInit
       new (self) CppClass();
       py::object py_obj = py::cast(self, py_rvp::reference);
 
-      // Nanobind wouldn't have known the c++ instance is ready yet, but we
-      // have to mark it ready to allow all of the setattr machinery to work
-      // before init returns.
+      // Nanobind wouldn't have known the C++ instance is ready yet, but we have
+      // to mark it ready to allow all of the setattr machinery to work before
+      // init returns. This also set the object's `destruct` flag to true, so
+      // that if the _setattr_kwargs raises, `self`'s C++ destructor will run.
       py::inst_mark_ready(py_obj);
 
       py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
@@ -449,4 +450,4 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
   } while (0)
 #define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) \
   NB_OVERRIDE_PURE(__VA_ARGS__)
-#endif
+#endif  // PYDRAKE_USE_PYBIND11

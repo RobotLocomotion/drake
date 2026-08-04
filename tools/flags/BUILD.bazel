@@ -240,15 +240,16 @@ string_flag(
     ],
 )
 
-# TODO(jwnimmer-tri) Deprecate this flag. We cannot reasonably force Drake's
-# choice of zlib down into all BCR modules that will eventually need it.
-#
-# The :zlib_repo flag configures where Drake obtains @zlib from.
-# The public dependency alias is `@drake//tools/workspace/zlib` or use the
-# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+# -----------------------------------------------------------------------------
+# Deprecated flags.
+
+# The (deprecated) :zlib_repo flag configures where Drake obtains @zlib from.
 string_flag(
     name = "zlib_repo",
     build_setting_default = "default",
+    deprecation = "DRAKE DEPRECATED: The zlib_repo flag is deprecated for removal; the future default will be 'source'. If you want to build zlib from source as a Bazel module, no action is necessary (that will be the future default). If you want to keep using 'hardcoded', you must either use --override_module on the command line or local_path_override in MODULE.bazel. The deprecated code will be removed from Drake on or after 2026-12-01.",
+    # Avoid deprecation warning during `bazel build //...`.
+    tags = ["manual"],
     values = [
         # The default is based on :private_runtime_repo_default -- "internal"
         # maps to "source" and "external" maps to "hardcoded".
@@ -429,5 +430,25 @@ string_flag(
 )
 
 # -----------------------------------------------------------------------------
+
+# Internal use only. These must appear here to avoid deprecation warnings.
+
+# Remove on 2026-12-01 along with deprecation.
+config_setting(
+    name = "flag_zlib_repo_hardcoded",
+    flag_values = {
+        ":zlib_repo": "hardcoded",
+    },
+    visibility = ["//tools/workspace/zlib:__pkg__"],
+)
+
+# Remove on 2026-12-01 along with deprecation.
+config_setting(
+    name = "flag_zlib_repo_default",
+    flag_values = {
+        ":zlib_repo": "default",
+    },
+    visibility = ["//tools/workspace/zlib:__pkg__"],
+)
 
 add_lint_tests()

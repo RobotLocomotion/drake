@@ -87,7 +87,7 @@ class RegisteredType {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RegisteredType);
   RegisteredType() = default;
-  virtual ~RegisteredType() {}
+  virtual ~RegisteredType() = default;
 };
 // Completely unregistered type.
 class UnregisteredType {};
@@ -300,12 +300,7 @@ void InitLowLevelModules(py::module_ m) {
           return py::bytes(contents.c_str(), contents.size());
         },
         [](Class& self, const py::bytes& contents) {
-          self = MemoryFile{
-#ifdef PYDRAKE_USE_PYBIND11
-              py::cast<std::string>(contents),
-#else  // PYDRAKE_USE_NANOBIND
-              std::string{contents.c_str(), contents.size()},
-#endif
+          self = MemoryFile{std::string{contents.c_str(), contents.size()},
               self.extension(), self.filename_hint()};
         });
     cls.def_prop_rw(
