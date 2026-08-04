@@ -32,7 +32,6 @@ class_<Class, drake::AbstractValue> AddValueInstantiation(py::module_ scope) {
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
   py::tuple param = GetPyParam<T>();
-  py::gil_scoped_acquire guard;
   AddTemplateClass(py_common, "Value", py_class, param);
   // Only use copy (clone) construction.
   // Ownership with `unique_ptr<T>` has some annoying caveats, and some are
