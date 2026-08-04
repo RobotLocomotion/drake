@@ -95,11 +95,11 @@ GTEST_TEST(DistanceConstraintsPool, Data) {
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(data.distance_constraints_data().num_constraints(), 0);
 
   // At this point there should be no distance constraints.
   EXPECT_EQ(model.num_distance_constraints(), 0);
   EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(data.distance_constraints_data().num_constraints(), 0);
 
   // Add distance constraints.
   AddDistanceConstraints(&model);
@@ -189,13 +189,13 @@ GTEST_TEST(DistanceConstraintsPool, Data) {
 testing distance constraints. Body 0 is the world (anchored), bodies 1-3 are
 dynamic with 6 DOFs each. */
 template <typename T>
-void MakeModelForDistance(IcfModel<T>* model, double time_step = 0.01) {
+void MakeModelForDistance(IcfModel<T>* model) {
   const int nv = 18;
 
   std::unique_ptr<IcfParameters<T>> params = model->ReleaseParameters();
   ASSERT_TRUE(params != nullptr);
 
-  params->time_step = time_step;
+  params->time_step = 0.01;
   params->v0 = VectorX<T>::LinSpaced(nv, -1.0, 1.0);
 
   // Sparse mass matrix with three cliques of size 6.
@@ -204,7 +204,7 @@ void MakeModelForDistance(IcfModel<T>* model, double time_step = 0.01) {
   const Matrix6<T> A3 = 1.5 * Matrix6<T>::Identity();
 
   MatrixX<T>& M0 = params->M0;
-  M0 = MatrixX<T>::Identity(nv, nv);
+  M0 = MatrixX<T>::Zero(nv, nv);
   M0.template block<6, 6>(0, 0) = A1;
   M0.template block<6, 6>(6, 6) = A2;
   M0.template block<6, 6>(12, 12) = A3;

@@ -89,9 +89,9 @@ class DistanceConstraintsPool
   const EigenPool<Vector3<T>>& p_hat_W() const { return p_hat_W_; }
 
  private:
-  EigenPool<Vector3<T>> p_AP_W_;   // Position of P in A, expressed in W.
-  EigenPool<Vector3<T>> p_BQ_W_;   // Position of Q in B, expressed in W.
-  EigenPool<Vector3<T>> p_hat_W_;  // Unit vector P→Q, expressed in W.
+  EigenPool<Vector3<T>> p_AP_W_;
+  EigenPool<Vector3<T>> p_BQ_W_;
+  EigenPool<Vector3<T>> p_hat_W_;
 };
 static_assert(IsAbstractConstraintsPool<DistanceConstraintsPool>);
 static_assert(IsHolonomicConstraintsDerived<DistanceConstraintsPool>);

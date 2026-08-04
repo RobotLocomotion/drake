@@ -7,7 +7,6 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/extract_double.h"
 #include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rotation_matrix.h"
@@ -615,7 +614,7 @@ void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
       model->distance_constraints_pool();
 
   int index = 0;
-  for (const auto& [id, params] : params_map) {
+  for (const auto& [_, params] : params_map) {
     const RigidBody<T>& body_A = plant_.get_body(params.bodyA());
     const RigidBody<T>& body_B = plant_.get_body(params.bodyB());
 
@@ -628,11 +627,10 @@ void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
     //  that it fails as fast as possible. Currently, the earliest this can
     //  happen is in MbP::Finalize() after the topology has been finalized.
     if (A_anchored && B_anchored) {
-      const std::string msg = fmt::format(
+      throw std::logic_error(fmt::format(
           "Creating a distance constraint between bodies '{}' and '{}' where "
           "both are welded to the world is not allowed.",
-          body_A.name(), body_B.name());
-      throw std::logic_error(msg);
+          body_A.name(), body_B.name()));
     }
 
     // If B is anchored but A is not, swap roles so that the "B" body in the
@@ -661,14 +659,14 @@ void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
     const double length = params.distance();  // The free length ℓ > 0.
 
     // When P and Q are (nearly) coincident, p̂ is undefined. The free length ℓ
-    // is strictly positive (enforced by DistanceConstraintParams), so there
+    // is strictly positive (enforced by DistanceConstraintParams), so
     // g₀ = d₀ − ℓ < 0 and the constraint pushes the points apart; any unit
     // vector serves to seed the direction for the first step, after which
     // d₀ > 0 makes p̂ well defined. This lets CENIC resolve an initial
     // condition with coincident points rather than rejecting it. The threshold
     // is purely a divide-by-zero guard for the normalization below.
     constexpr double kMinimumDistance = 1.0e-14;
-    const Vector3<T> p_hat_W = ExtractDoubleOrThrow(d0) < kMinimumDistance
+    const Vector3<T> p_hat_W = d0 < kMinimumDistance
                                    ? Vector3<T>(Vector3<T>::UnitX())
                                    : Vector3<T>(p_PQ_W / d0);
 

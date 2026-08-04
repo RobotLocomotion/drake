@@ -145,7 +145,7 @@ GTEST_TEST(DistanceConstraintSimulation, CompliantSpring) {
 
   const double distance = SimulateAndGetFinalDistance(kStiffness, kDamping);
   const double expected_distance = kFreeLength + kMass * kGravity / kStiffness;
-  EXPECT_NEAR(distance, expected_distance, 2e-3);
+  EXPECT_NEAR(distance, expected_distance, 1e-3);
 }
 
 }  // namespace
