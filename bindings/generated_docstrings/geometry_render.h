@@ -12,6 +12,7 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
+// #include "drake/geometry/render/colorize_image.h"
 // #include "drake/geometry/render/light_parameter.h"
 // #include "drake/geometry/render/render_camera.h"
 // #include "drake/geometry/render/render_engine.h"
@@ -133,6 +134,29 @@ Whether or not the image is able to be displayed depends on the
 specific render engine and its configuration.)""";
           } show_window;
         } ColorRenderCamera;
+        // Symbol: drake::geometry::render::ColorizeLabelImage
+        struct /* ColorizeLabelImage */ {
+          // Source: drake/geometry/render/colorize_image.h
+          const char* doc =
+R"""(Colorizes an input label image into an output color image using a
+fixed palette. Non-reserved labels (user-assigned values) are mapped
+to colors from a built-in palette. Reserved labels (empty, don't care,
+etc.) are mapped to ``background_color``.
+
+Parameter ``input``:
+    The input label image.
+
+Parameter ``output``:
+    The image the colorized image will be written to. It will be
+    resized to match ``input`` as necessary and its contents will be
+    completely overwritten.
+
+Parameter ``background_color``:
+    The color to use for all reserved label values.
+
+Precondition:
+    ``output != nullptr``.)""";
+        } ColorizeLabelImage;
         // Symbol: drake::geometry::render::DepthRange
         struct /* DepthRange */ {
           // Source: drake/geometry/render/render_camera.h

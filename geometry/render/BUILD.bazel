@@ -19,12 +19,25 @@ drake_cc_package_library(
     name = "render",
     visibility = ["//visibility:public"],
     deps = [
+        ":colorize_image",
         ":light_parameter",
         ":render_camera",
         ":render_engine",
         ":render_label",
         ":render_material",
         ":render_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "colorize_image",
+    srcs = ["colorize_image.cc"],
+    hdrs = ["colorize_image.h"],
+    deps = [
+        ":render_label",
+        "//common:essential",
+        "//geometry:rgba",
+        "//systems/sensors:image",
     ],
 )
 
@@ -146,6 +159,14 @@ filegroup(
         "test/meshes/*",
         "test/*.png",
     ]),
+)
+
+drake_cc_googletest(
+    name = "colorize_image_test",
+    deps = [
+        ":colorize_image",
+        "//systems/sensors/test_utilities:image_compare",
+    ],
 )
 
 drake_cc_googletest(
