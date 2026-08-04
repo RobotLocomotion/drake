@@ -15,9 +15,11 @@ from pydrake.geometry import (
     EquirectangularMap,
     LightParameter,
     MeshcatCone,
+    RenderEngineGlParams,
     RenderEngineVtkParams,
     Rgba,
     StartMeshcat,
+    kHasRenderEngineGl,
 )
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
@@ -67,6 +69,10 @@ class ModelVisualizer:
 
     # Note: this class uses C++ method names to ease future porting.
 
+    _SUPPORTED_RGBD_RENDERERS = (
+        ("vtk", "gl") if kHasRenderEngineGl else ("vtk",)
+    )
+
     def __init__(
         self,
         *,
@@ -75,7 +81,7 @@ class ModelVisualizer:
         triad_radius=0.005,
         triad_opacity=0.9,
         publish_contacts=True,
-        show_rgbd_sensor=False,
+        show_rgbd_sensor: bool | str = False,
         browser_new=False,
         pyplot=False,
         meshcat=None,
@@ -92,10 +98,11 @@ class ModelVisualizer:
           triad_radius: the radius of visualization triads.
           triad_opacity: the opacity of visualization triads.
           publish_contacts: a flag for VisualizationConfig.
-          show_rgbd_sensor: when True, adds an RgbdSensor to the scene and pops
-             up a local preview window of the rgb image. At the moment, the
-             image display uses a native window so will not work in a remote or
-             cloud runtime environment.
+          show_rgbd_sensor: when ``True``, ``"vtk"``, or ``"gl"``, adds an
+             RgbdSensor to the scene and pops up a local preview window of the
+             rgb image. ``True`` selects RenderEngineVtk; ``False`` disables
+             the sensor. At the moment, the image display uses a native window
+             so will not work in a remote or cloud runtime environment.
           environment_map: Meshcat environment map filename.
           no_lights: optionally disable the lights in the render engine and
              meshcat. This is useful when using an environment map to assess
@@ -122,6 +129,21 @@ class ModelVisualizer:
         self._triad_radius = triad_radius
         self._triad_opacity = triad_opacity
         self._publish_contacts = publish_contacts
+        if show_rgbd_sensor is True:
+            show_rgbd_sensor = "vtk"
+        if (
+            show_rgbd_sensor is not False
+            and show_rgbd_sensor not in self._SUPPORTED_RGBD_RENDERERS
+        ):
+            if show_rgbd_sensor == "gl":
+                raise ValueError(
+                    "show_rgbd_sensor='gl' requires "
+                    "pydrake.geometry.kHasRenderEngineGl to be True"
+                )
+            choices = ", ".join(repr(x) for x in self._SUPPORTED_RGBD_RENDERERS)
+            raise ValueError(
+                f"show_rgbd_sensor must be bool or one of: {choices}"
+            )
         self._show_rgbd_sensor = show_rgbd_sensor
         self._browser_new = browser_new
         self._pyplot = pyplot
@@ -224,6 +246,54 @@ class ModelVisualizer:
         # It's safe to let the user change the package map. We'll make a copy
         # of it during Finalize().
         return self._builder.parser().package_map()
+
+    def _make_rgbd_sensor_config(self):
+        """Returns the configuration for the preview camera, assuming we want
+        to display an interactive window."""
+        assert self._show_rgbd_sensor in self._SUPPORTED_RGBD_RENDERERS
+        camera_config = CameraConfig(width=1440, height=1080)
+        camera_config.name = "preview"
+        camera_config.X_PB.base_frame = "$rgbd_sensor_body"
+        camera_config.z_far = 3  # Show 3m of frustum.
+        camera_config.fps = 1.0  # Ignored -- we're not simulating.
+        # The meshcat default field of view is 75 degrees. We want the two
+        # images to match.
+        camera_config.focal = CameraConfig.FovDegrees(y=75)
+        # Don't pop up a native window during unit tests.
+        is_unit_test = "TEST_SRCDIR" in os.environ
+        camera_config.show_rgb = not is_unit_test
+
+        # An empty list causes the render engine to revert to default lighting.
+        lights = []
+        if self._no_lights:
+            # We can only disable *all* lights by creating a light with zero
+            # intensity.
+            lights = [LightParameter(intensity=0)]
+
+        if self._show_rgbd_sensor == "gl":
+            # Note: RenderEngineGL doesn't have full feature parity with
+            # RenderEngineVtk. So, it does initialization work that is not yet
+            # necessary for RenderEngineGl.
+            camera_config.renderer_class = RenderEngineGlParams(lights=lights)
+            return camera_config
+
+        vtk_params = RenderEngineVtkParams(
+            exposure=1,
+            lights=lights,
+        )
+        if self._environment_map.is_file():
+            vtk_params.environment_map = EnvironmentMap(
+                skybox=True,
+                texture=EquirectangularMap(path=str(self._environment_map)),
+            )
+        if camera_config.show_rgb and sys.platform != "darwin":
+            # Note: GLX requires an X display (even if we're not showing the
+            # window). We don't always have an X display (e.g., unit tests), so
+            # we'll simply stay away from GLX unless we're showing the render
+            # window.
+            vtk_params.backend = "GLX"
+        camera_config.renderer_class = vtk_params
+        return camera_config
 
     def parser(self):
         """
@@ -417,37 +487,7 @@ class ModelVisualizer:
         # sensor is affixed to the world frame and we'll modify that pose
         # below.
         if self._show_rgbd_sensor:
-            camera_config = CameraConfig(width=1440, height=1080)
-            camera_config.name = "preview"
-            camera_config.X_PB.base_frame = "$rgbd_sensor_body"
-            camera_config.z_far = 3  # Show 3m of frustum.
-            camera_config.fps = 1.0  # Ignored -- we're not simulating.
-            # The meshcat default field of view is 75 degrees. We want the two
-            # images to match.
-            camera_config.focal = CameraConfig.FovDegrees(y=75)
-            is_unit_test = "TEST_SRCDIR" in os.environ
-            if not is_unit_test:
-                # Pop up a local window.
-                camera_config.show_rgb = True
-                camera_config.renderer_class = RenderEngineVtkParams()
-                camera_config.renderer_class.exposure = 1
-                if self._environment_map.is_file():
-                    camera_config.renderer_class.environment_map = (
-                        EnvironmentMap(
-                            skybox=True,
-                            texture=EquirectangularMap(
-                                path=str(self._environment_map)
-                            ),
-                        )
-                    )
-                if self._no_lights:
-                    # We can only disable *all* lights by creating a light with
-                    # zero intensity.
-                    camera_config.renderer_class.lights = [
-                        LightParameter(intensity=0)
-                    ]
-                if "darwin" not in sys.platform:
-                    camera_config.renderer_class.backend = "GLX"
+            camera_config = self._make_rgbd_sensor_config()
             ApplyCameraConfig(
                 config=camera_config, builder=self._builder.builder()
             )

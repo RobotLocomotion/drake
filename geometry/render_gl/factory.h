@@ -17,12 +17,9 @@ extern const bool kHasRenderEngineGl;
 
  @note %RenderEngineGl behaves a bit differently from other RenderEngine
  implementations (e.g., RenderEngineVtk) with respect to displayed images.
- First, %RenderEngineGl can only display a *single* image type at a time. So,
- if a shown window has been requested for both label and color images, the
- images will alternate in the same window. Second, the window display draws all
- images *flipped vertically*. The image produced will be compatible with the
- Drake ecosystem, only the visualization will be upside down. This has been
- documented in https://github.com/RobotLocomotion/drake/issues/14254.
+ %RenderEngineGl can only display a *single* image type at a time. So, if
+ `show_window` has been requested for both label and color images, the images
+ will alternate quickly (flickering) in the shared window.
 
  <b> Using RenderEngineGl in multiple threads </b>
 
