@@ -2,7 +2,6 @@
 #include <string>
 
 #include "drake/bindings/generated_docstrings/lcm.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/lcm/drake_lcm.h"

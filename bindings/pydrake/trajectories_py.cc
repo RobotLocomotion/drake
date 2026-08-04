@@ -7,7 +7,6 @@
 
 #include "drake/bindings/generated_docstrings/common_trajectories.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
@@ -136,7 +135,7 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   // that we biject to C++'s convention of vector-of-matrix-of-coeffs storage.
   cls->def_prop_rw(
       "_polynomials",
-      [](const Class& self) -> py::array_t<double> {
+      [](const Class& self) {
         Archive archive;
         const_cast<Class&>(self).Serialize(&archive);
         const Polynomials& polynomials = archive.polynomials;
@@ -146,7 +145,6 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
         const int num_coeffs = (num_rows == 0 || num_cols == 0)
                                    ? 0
                                    : polynomials.at(0)(0, 0).size();
-        const std::vector<int> shape{num_poly, num_rows, num_cols, num_coeffs};
         std::vector<double> buffer;
         for (int i = 0; i < num_poly; ++i) {
           for (int j = 0; j < num_rows; ++j) {
@@ -157,29 +155,61 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
             }
           }
         }
+#ifdef PYDRAKE_USE_PYBIND11
+        const std::vector<int> shape{num_poly, num_rows, num_cols, num_coeffs};
         return py::array_t<double>(shape, buffer.data());
+#else
+        const std::initializer_list<size_t> shape{static_cast<size_t>(num_poly),
+            static_cast<size_t>(num_rows), static_cast<size_t>(num_cols),
+            static_cast<size_t>(num_coeffs)};
+        return py::ndarray<double, py::ndim<4>, py::numpy>(buffer.data(), shape)
+            .cast();
+#endif
       },
-      [](Class& self, const py::array_t<double>& polynomials) {
+      [](Class& self,
+#ifdef PYDRAKE_USE_PYBIND11
+          const py::array_t<double>& polynomials
+#else  // PYDRAKE_USE_NANOBIND
+          std::variant<py::ndarray<double, py::shape<0>>,
+              py::ndarray<double, py::ndim<4>, py::numpy>>
+              polynomials_union
+#endif
+      ) {
         Polynomials cxx_poly;
-        if (polynomials.size() > 0) {
-          DRAKE_THROW_UNLESS(polynomials.ndim() == 4);
-          const int num_poly = polynomials.shape(0);
-          const int num_rows = polynomials.shape(1);
-          const int num_cols = polynomials.shape(2);
-          const int num_coeffs = polynomials.shape(3);
-          cxx_poly.resize(num_poly);
-          for (int i = 0; i < num_poly; ++i) {
-            cxx_poly[i].resize(num_rows, num_cols);
-            for (int j = 0; j < num_rows; ++j) {
-              for (int k = 0; k < num_cols; ++k) {
-                cxx_poly[i](j, k).resize(num_coeffs);
-                for (int c = 0; c < num_coeffs; ++c) {
-                  cxx_poly[i](j, k)(c) = polynomials.at(i, j, k, c);
+#ifdef PYDRAKE_USE_NANOBIND
+        std::visit(
+            [&cxx_poly](auto&& polynomials) {
+              if constexpr (std::is_same_v<std::decay_t<decltype(polynomials)>,
+                                py::ndarray<double, py::ndim<4>, py::numpy>>) {
+#endif  //  PYDRAKE_USE_NANOBIND
+                if (polynomials.size() > 0) {
+                  DRAKE_THROW_UNLESS(polynomials.ndim() == 4);
+                  const int num_poly = polynomials.shape(0);
+                  const int num_rows = polynomials.shape(1);
+                  const int num_cols = polynomials.shape(2);
+                  const int num_coeffs = polynomials.shape(3);
+                  cxx_poly.resize(num_poly);
+                  for (int i = 0; i < num_poly; ++i) {
+                    cxx_poly[i].resize(num_rows, num_cols);
+                    for (int j = 0; j < num_rows; ++j) {
+                      for (int k = 0; k < num_cols; ++k) {
+                        cxx_poly[i](j, k).resize(num_coeffs);
+                        for (int c = 0; c < num_coeffs; ++c) {
+#ifdef PYDRAKE_USE_PYBIND11
+                          cxx_poly[i](j, k)(c) = polynomials.at(i, j, k, c);
+#else
+                  cxx_poly[i](j, k)(c) = polynomials(i, j, k, c);
+#endif
+                        }
+                      }
+                    }
+                  }
                 }
+#ifdef PYDRAKE_USE_NANOBIND
               }
-            }
-          }
-        }
+            },
+            polynomials_union);
+#endif  //  PYDRAKE_USE_NANOBIND
         Archive archive{
             .set_polynomials = true, .polynomials = std::move(cxx_poly)};
         self.Serialize(&archive);
