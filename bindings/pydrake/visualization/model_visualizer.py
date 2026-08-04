@@ -44,6 +44,9 @@ from pydrake.common import configure_logging as _configure_logging
 from pydrake.visualization._model_visualizer import (
     ModelVisualizer as _ModelVisualizer,
 )
+from pydrake.visualization._model_visualizer import (
+    _get_supported_rgbd_renderers,
+)
 
 
 def _main():
@@ -119,6 +122,22 @@ def _main():
         "--show_rgbd_sensor is enabled, the sensor will have no visible "
         "lights. This should be used in conjunction with --environment_map.",
     )
+    assert defaults["rgbd_renderer"] == "vtk"
+    rgbd_renderers = _get_supported_rgbd_renderers()
+    rgbd_renderer_help = (
+        "Render engine for --show_rgbd_sensor (default: %(default)s)."
+    )
+    if "gl" not in rgbd_renderers:
+        rgbd_renderer_help += (
+            " The 'gl' renderer is only available when "
+            "pydrake.geometry.kHasRenderEngineGl is True."
+        )
+    args_parser.add_argument(
+        "--rgbd_renderer",
+        choices=rgbd_renderers,
+        default=defaults["rgbd_renderer"],
+        help=rgbd_renderer_help,
+    )
     args_parser.add_argument(
         "--compliance_type",
         default=defaults["compliance_type"],
@@ -187,6 +206,7 @@ def _main():
         pyplot=args.pyplot,
         environment_map=args.environment_map,
         no_lights=args.no_lights,
+        rgbd_renderer=args.rgbd_renderer,
         compliance_type=args.compliance_type,
     )
     package_map = visualizer.package_map()

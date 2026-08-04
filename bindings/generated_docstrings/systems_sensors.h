@@ -1214,8 +1214,8 @@ displayed depends on the specific render engine and its configuration
 Note: This flag is intended for quick debug use during development
 instead of serving as an image viewer. Currently, there are known
 issues, e.g., flickering windows when multiple cameras share the same
-renderer or upside-down images if RenderEngineGl is set. See issue
-#18862 for the proposal to visualize images via Meldis.)""";
+renderer. See issue #18862 for the proposal to visualize images via
+Meldis.)""";
           } show_rgb;
           // Symbol: drake::systems::sensors::CameraConfig::width
           struct /* width */ {
