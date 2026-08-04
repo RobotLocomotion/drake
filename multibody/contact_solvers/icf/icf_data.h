@@ -22,16 +22,20 @@ namespace internal {
 allows call sites to use named fields, avoiding positional-argument confusion as
 the number of constraint types grows. */
 struct ResizeParams {
-  int num_bodies{};
-  int num_velocities{};
-  int max_clique_size{};
-  int num_ball_constraints{};
-  int num_couplers{};
-  int num_distance_constraints{};
-  int num_welds{};
-  std::span<const int> gain_sizes;
-  std::span<const int> limit_sizes;
-  std::span<const int> patch_sizes;
+  int num_bodies{};            // Total number of bodies in the model.
+  int num_velocities{};        // Total number of generalized velocities.
+  int max_clique_size{};       // Maximum number of velocities in any clique.
+  int num_ball_constraints{};  // Number of ball constraints.
+  int num_couplers{};          // Number of coupler constraints.
+  int num_distance_constraints{};  // Number of distance constraints.
+  int num_welds{};                 // Number of weld constraints.
+  std::span<const int>
+      gain_sizes;  // Number of velocities for each gain constraint.
+  std::span<const int>
+      limit_sizes;  // Number of velocities for each limit constraint.
+  std::span<const int>
+      patch_sizes;  // Number of contact pairs for each patch constraint, of
+                    // size equal to the number of patches.
 };
 
 /* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
