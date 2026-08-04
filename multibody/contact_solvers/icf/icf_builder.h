@@ -131,6 +131,14 @@ class IcfBuilder {
   void SetBallConstraints(const systems::Context<T>& context,
                           IcfModel<T>* model) const;
 
+  /* Resizes the model to accommodate distance constraints. */
+  void AllocateDistanceConstraints(IcfModel<T>* model) const;
+
+  /* Sets distance constraints in the model.
+  @pre AllocateDistanceConstraints() has already been called. */
+  void SetDistanceConstraints(const systems::Context<T>& context,
+                              IcfModel<T>* model) const;
+
   /* Resizes the model to accommodate limit constraints. */
   void AllocateLimitConstraints(IcfModel<T>* model) const;
 

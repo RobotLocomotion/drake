@@ -7,6 +7,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/extract_double.h"
 #include "drake/multibody/contact_solvers/icf/ball_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/distance_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
@@ -323,7 +324,7 @@ void HolonomicConstraintsPool<T, N, Derived>::ReduceInto(
 
     // If only body A's clique survives, flip A/B to keep "B is dynamic". The
     // derived flips its own geometry so the constraint velocity vc stays the
-    // same; g₀ negates or not per Derived::kFlipNegatesG0().
+    // same; g₀ negates or not per Derived::FlipNegatesG0().
     const bool need_flip = (r_num_cliques == 1 && have_r_c_A);
     if (need_flip) {
       reduced_pool->body_pairs_.emplace_back(body_b, body_a);
@@ -356,6 +357,10 @@ template class HolonomicConstraintsPool<AutoDiffXd, 6,
 template class HolonomicConstraintsPool<double, 3, BallConstraintsPool<double>>;
 template class HolonomicConstraintsPool<AutoDiffXd, 3,
                                         BallConstraintsPool<AutoDiffXd>>;
+template class HolonomicConstraintsPool<double, 1,
+                                        DistanceConstraintsPool<double>>;
+template class HolonomicConstraintsPool<AutoDiffXd, 1,
+                                        DistanceConstraintsPool<AutoDiffXd>>;
 
 }  // namespace internal
 }  // namespace icf

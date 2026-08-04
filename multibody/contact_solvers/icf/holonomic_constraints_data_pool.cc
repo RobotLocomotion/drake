@@ -21,6 +21,8 @@ template class HolonomicConstraintsDataPool<double, 6>;
 template class HolonomicConstraintsDataPool<AutoDiffXd, 6>;
 template class HolonomicConstraintsDataPool<double, 3>;
 template class HolonomicConstraintsDataPool<AutoDiffXd, 3>;
+template class HolonomicConstraintsDataPool<double, 1>;
+template class HolonomicConstraintsDataPool<AutoDiffXd, 1>;
 
 }  // namespace internal
 }  // namespace icf

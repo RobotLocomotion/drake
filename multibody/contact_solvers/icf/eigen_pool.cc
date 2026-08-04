@@ -168,6 +168,12 @@ template class EigenPoolDynamicSizeStorage<MatrixX<double>>;
 template class EigenPool<MatrixX<AutoDiffXd>>;
 template class EigenPoolDynamicSizeStorage<MatrixX<AutoDiffXd>>;
 
+// Vector1
+template class EigenPool<Vector1<double>>;
+template class EigenPoolFixedSizeStorage<Vector1<double>>;
+template class EigenPool<Vector1<AutoDiffXd>>;
+template class EigenPoolFixedSizeStorage<Vector1<AutoDiffXd>>;
+
 // Vector3
 template class EigenPool<Vector3<double>>;
 template class EigenPoolFixedSizeStorage<Vector3<double>>;
