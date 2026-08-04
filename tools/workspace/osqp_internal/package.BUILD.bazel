@@ -130,8 +130,8 @@ cc_library(
     isystem = True,
     linkstatic = 1,
     deps = [
+        "@module_suitesparse//:amd",
         "@qdldl_internal//:qdldl",
-        "@suitesparse_internal//:amd",
     ],
 )
 

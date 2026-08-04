@@ -55,8 +55,8 @@ cc_library(
     deps = [
         "@blas",
         "@lapack",
+        "@module_suitesparse//:amd",
         "@qdldl_internal//:qdldl",
-        "@suitesparse_internal//:amd",
     ],
 )
 
