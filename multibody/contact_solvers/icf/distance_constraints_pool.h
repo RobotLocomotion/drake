@@ -47,9 +47,6 @@ class DistanceConstraintsPool
       : HolonomicConstraintsPool<T, 1, DistanceConstraintsPool<T>>(
             parent_model) {}
 
-  /* The scalar constraint function g₀ = d − ℓ is symmetric under swapping the
-  points P and Q, so (unlike the weld/ball) it does not negate on an A/B flip
-  during model reduction. See HolonomicConstraintsPool::kFlipNegatesG0(). */
   static constexpr bool FlipNegatesG0() { return false; }
 
   /* Sets the k-th distance constraint.
@@ -68,54 +65,19 @@ class DistanceConstraintsPool
            const Vector3<T>& p_BQ_W, const Vector3<T>& p_hat_W, const T& g0,
            const T& stiffness, const T& damping);
 
-  /* Hooks required by HolonomicConstraintsPool (CRTP). */
-
-  /* Computes the constraint velocity vc ∈ ℝᴺ of the k-th constraint, given the
-  body spatial velocities V_WB and V_WA.
-  @param k The index of the constraint within the pool.
-  @param[in] V_WB The spatial velocity of body B, expressed in world.
-  @param[in] V_WA The spatial velocity of body A, expressed in world.
-  @returns The constraint velocity vc.
-  N.B. V_WA is null when body A is anchored. */
+  /* Hooks required by HolonomicConstraintsPool (CRTP). See that class for the
+  documentation of each hook. */
   Vector1<T> CalcConstraintVelocity(int k, const Vector6<T>& V_WB,
                                     const Vector6<T>* V_WA) const;
-
-  /* Calculates the spatial impulses at the body origins from the generalized
-  impulse `gamma` for the k-th distance constraint.
-  @param k The index of the constraint within the pool.
-  @param gamma The generalized impulse for the k-th constraint.
-  @param[out] Gamma_Bo The spatial impulse on body B at its origin.
-  @param[out] Gamma_Ao The spatial impulse on body A at its origin.
-  N.B Gamma_Ao is null when body A is anchored. */
   void CalcSpatialImpulses(int k, const Vector1<T>& gamma, Vector6<T>* Gamma_Bo,
                            Vector6<T>* Gamma_Ao) const;
-
-  /* Builds the body-space Hessian blocks G_Xp = Φ(p_X)ᵀ⋅G⋅Φ(p_X) of the k-th
-  distance constraint.
-  @param k The index of the constraint within the pool.
-  @param R_inv The inverse of the regularization R for the k-th constraint.
-  @param[out] G_Bp The Hessian block for body B.
-  @param[out] G_Ap The Hessian block for body A.
-  @param[out] G_cross The Hessian block for the cross term.
-  N.B. G_Ap and G_cross are either both non-null (A dynamic) or both null (A
-  anchored). */
   void CalcHessianBlocks(int k, const T& R_inv, Matrix6<T>* G_Bp,
                          Matrix6<T>* G_Ap, Matrix6<T>* G_cross) const;
-
-  /* Returns the data pool for the distance constraints. */
   const DistanceConstraintsDataPool<T>& GetDataPool(
       const IcfData<T>& data) const {
     return data.distance_constraints_data();
   }
-
-  /* Resizes the geometry pools to accommodate the given number of constraints.
-   */
   void ResizeGeometry(int num_constraints);
-
-  /* Reduces the geometry of the k-th constraint into the given reduced pool.
-  @param reduced The reduced distance constraints pool.
-  @param k The index of the constraint within the current pool.
-  @param flip Whether to flip the roles of bodies A and B. */
   void ReduceGeometryInto(DistanceConstraintsPool<T>* reduced, int k,
                           bool flip) const;
 

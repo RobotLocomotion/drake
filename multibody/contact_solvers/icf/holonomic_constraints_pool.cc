@@ -324,7 +324,7 @@ void HolonomicConstraintsPool<T, N, Derived>::ReduceInto(
 
     // If only body A's clique survives, flip A/B to keep "B is dynamic". The
     // derived flips its own geometry so the constraint velocity vc stays the
-    // same; g₀ negates or not per Derived::kFlipNegatesG0().
+    // same; g₀ negates or not per Derived::FlipNegatesG0().
     const bool need_flip = (r_num_cliques == 1 && have_r_c_A);
     if (need_flip) {
       reduced_pool->body_pairs_.emplace_back(body_b, body_a);
