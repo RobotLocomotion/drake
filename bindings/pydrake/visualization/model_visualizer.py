@@ -96,12 +96,22 @@ def _main():
         help="Visualize the frames as triads for all links.",
     )
     assert defaults["show_rgbd_sensor"] is False
+    rgbd_renderers = _ModelVisualizer._SUPPORTED_RGBD_RENDERERS
+    show_rgbd_renderer_help = (
+        "Add and show an RgbdSensor using the indicated render engine "
+        "type. At the moment, the image display uses a native window so will "
+        "not work in a remote or cloud runtime environment."
+    )
+    if "gl" not in rgbd_renderers:
+        show_rgbd_renderer_help += (
+            " The 'gl' option is not available because "
+            "pydrake.geometry.kHasRenderEngineGl is False."
+        )
     args_parser.add_argument(
         "--show_rgbd_sensor",
-        action="store_true",
-        help="Add and show an RgbdSensor. At the moment, the image display "
-        "uses a native window so will not work in a remote or cloud "
-        "runtime environment.",
+        choices=rgbd_renderers,
+        default=False,
+        help=show_rgbd_renderer_help,
     )
     assert defaults["environment_map"] == Path()
     args_parser.add_argument(

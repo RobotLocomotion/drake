@@ -2419,8 +2419,10 @@ void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
     glBlitNamedFramebuffer(target.frame_buffer, 0,
                            // Src bounds.
                            0, 0, intrinsics.width(), intrinsics.height(),
-                           // Dest bounds.
-                           0, 0, intrinsics.width(), intrinsics.height(),
+                           // Dest bounds. The render target uses upper-left
+                           // image coordinates, while the native window's
+                           // default framebuffer is presented bottom-up.
+                           0, intrinsics.height(), intrinsics.width(), 0,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
     opengl_context_->UpdateWindow();
   } else {
