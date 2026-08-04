@@ -1,0 +1,29 @@
+load("@drake//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
+load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+# N.B. Most of SuiteSparse is GPL/LGPL licensed. Do NOT add any of those
+# libraries here. We must only use the BSD components of SuiteSparse.
+
+cc_static_hidden_library(
+    name = "amd",
+    visibility = ["//visibility:public"],
+    deps = ["@module_suitesparse//:amd"],
+)
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/suitesparse",
+    files = ["@module_suitesparse//:AMD/Doc/License.txt"],
+    allowed_externals = ["@module_suitesparse//:AMD/Doc/License.txt"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()

@@ -131,7 +131,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         "@qdldl_internal//:qdldl",
-        "@suitesparse_internal//:amd",
+        "@suitesparse//:amd",
     ],
 )
 
