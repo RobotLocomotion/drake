@@ -2254,13 +2254,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap).
-  MultibodyConstraintId AddTendonConstraint(std::vector<JointIndex> joints,
-                                            std::vector<double> a,
-                                            std::optional<double> offset,
-                                            std::optional<double> lower_limit,
-                                            std::optional<double> upper_limit,
-                                            std::optional<double> stiffness,
-                                            std::optional<double> damping);
+  MultibodyConstraintId AddTendonConstraint(
+      std::vector<JointIndex> joints, std::vector<double> a,
+      std::optional<double> offset = std::nullopt,
+      std::optional<double> lower_limit = std::nullopt,
+      std::optional<double> upper_limit = std::nullopt,
+      std::optional<double> stiffness = std::nullopt,
+      std::optional<double> damping = std::nullopt);
 
   /// Removes the constraint `id` from the plant. Note that this will _not_
   /// remove constraints registered directly with DeformableModel.
