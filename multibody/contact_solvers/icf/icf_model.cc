@@ -98,14 +98,17 @@ Eigen::VectorBlock<VectorX<T>> IcfModel<T>::mutable_clique_segment(
 
 template <typename T>
 void IcfModel<T>::ResizeData(IcfData<T>* data) const {
-  data->Resize(num_bodies_, num_velocities_, max_clique_size_,
-               ball_constraints_pool_.num_constraints(),
-               coupler_constraints_pool_.num_constraints(),
-               distance_constraints_pool_.num_constraints(),
-               weld_constraints_pool_.num_constraints(),
-               gain_constraints_pool_.constraint_sizes(),
-               limit_constraints_pool_.constraint_sizes(),
-               patch_constraints_pool_.patch_sizes());
+  data->Resize(
+      {.num_bodies = num_bodies_,
+       .num_velocities = num_velocities_,
+       .max_clique_size = max_clique_size_,
+       .num_ball_constraints = ball_constraints_pool_.num_constraints(),
+       .num_couplers = coupler_constraints_pool_.num_constraints(),
+       .num_distance_constraints = distance_constraints_pool_.num_constraints(),
+       .num_welds = weld_constraints_pool_.num_constraints(),
+       .gain_sizes = gain_constraints_pool_.constraint_sizes(),
+       .limit_sizes = limit_constraints_pool_.constraint_sizes(),
+       .patch_sizes = patch_constraints_pool_.patch_sizes()});
 }
 
 template <typename T>

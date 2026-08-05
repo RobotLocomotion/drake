@@ -258,18 +258,13 @@ single_version_override(
 )
 
 bazel_dep(
-    name = "toolchains_llvm",
-    version = "1.8.0",
-    dev_dependency = True,
-)
-
-llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
-
-llvm(
     name = "llvm",
+    version = "0.8.16",
     dev_dependency = True,
-    llvm_versions = {"": "22.1.7"},
 )
+# N.B. We must NOT register llvm's toolchain here. We want to use the
+# auto-detecting toolchain, above ("local_config_cc"). We only use llvm
+# for linting (clang-format) and testing (llvm-objdump).
 
 bazel_dep(
     name = "ruff_prebuilt",
