@@ -226,7 +226,11 @@ PYDRAKE_MODULE(optimization, m) {
             py::arg("constraint_frame"), py::arg("lower_limit"),
             py::arg("upper_limit"),
             py::arg("discretization") = ToppraDiscretization::kInterpolation,
-            cls_doc.AddFrameAccelerationLimit.doc_trajectory);
+            cls_doc.AddFrameAccelerationLimit.doc_trajectory)
+        .def("set_constraint_relaxation", &Class::set_constraint_relaxation,
+            py::arg("relaxation"), cls_doc.set_constraint_relaxation.doc)
+        .def("constraint_relaxation", &Class::constraint_relaxation,
+            cls_doc.constraint_relaxation.doc);
   }
 }
 }  // namespace

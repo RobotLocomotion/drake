@@ -62,7 +62,6 @@ filegroup(
         "@stable_baselines3_internal//:drake_repository_metadata.json",
         "@stduuid_internal//:drake_repository_metadata.json",
         "@styleguide_internal//:drake_repository_metadata.json",
-        "@suitesparse_internal//:drake_repository_metadata.json",
         "@sympy_py_internal//:drake_repository_metadata.json",
         "@tinygltf_internal//:drake_repository_metadata.json",
         "@tinyobjloader_internal//:drake_repository_metadata.json",
@@ -202,7 +201,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "sdformat_internal",
     "spral_internal",
     "stduuid_internal",
-    "suitesparse_internal",
     "tinygltf_internal",
     "tinyobjloader_internal",
     "tinyxml2_internal",
@@ -223,6 +221,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "opencl",
     # N.B. The robin_map install is handled by the nanobind install.
     "spdlog",
+    "suitesparse",
     "zlib",
 ]] + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],
