@@ -262,6 +262,10 @@ bazel_dep(
     version = "0.8.16",
     dev_dependency = True,
 )
+# N.B. We must NOT register llvm's toolchain here. We want to use the
+# auto-detecting toolchain, above ("local_config_cc"). We only use llvm
+# for linting (clang-format) and testing (llvm-objdump).
+
 bazel_dep(
     name = "ruff_prebuilt",
     version = "0.16.0.1",
