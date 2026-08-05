@@ -2,6 +2,10 @@
 
 """Upgrade Drake's Rust dependencies and regenerate their repository names."""
 
+# noqa: shebang
+# We suppress shebang lint checking because we have a magic trampoline atop our
+# main function that allows us to re-execute ourselves using Bazel.
+
 import json
 import os
 from pathlib import Path

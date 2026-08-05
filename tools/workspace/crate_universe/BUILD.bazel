@@ -20,7 +20,4 @@ drake_py_binary(
     deps = ["@rules_python//python/runfiles"],
 )
 
-add_lint_tests(
-    python_lint_exclude = [":upgrade.py"],
-    python_lint_extra_srcs = ["upgrade.py"],
-)
+add_lint_tests()
