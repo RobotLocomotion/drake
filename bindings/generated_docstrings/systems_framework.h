@@ -7594,21 +7594,6 @@ R"""(Sets the time after zero when this event should first occur.)""";
 R"""(Sets the period with which this event should recur.)""";
         } set_period_sec;
       } PeriodicEventData;
-      // Symbol: drake::systems::PeriodicEventDataComparator
-      struct /* PeriodicEventDataComparator */ {
-        // Source: drake/systems/framework/event.h
-        const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use the built-in spaceship operator instead. This will be removed
-    from Drake on or after 2026-09-01.)""";
-        // Symbol: drake::systems::PeriodicEventDataComparator::operator()
-        struct /* operator_call */ {
-          // Source: drake/systems/framework/event.h
-          const char* doc = R"""()""";
-        } operator_call;
-      } PeriodicEventDataComparator;
       // Symbol: drake::systems::PortBase
       struct /* PortBase */ {
         // Source: drake/systems/framework/port_base.h

@@ -18,14 +18,6 @@ using drake::systems::Context;
 using drake::systems::Simulator;
 using Eigen::VectorXd;
 
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
-constexpr auto kDiscreteContactApproximationTamsi =
-    DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
-
 template <typename T>
 class CompliantContactManagerScalarConversionTest : public ::testing::Test {};
 
@@ -64,25 +56,11 @@ TYPED_TEST(CompliantContactManagerScalarConversionTest, ToSymbolic) {
 constexpr double kTimeStep = 0.001;
 
 // Constructs a plant with a free rigid body and uses the SAP solver.
-// The argument `solver_type` allows to exercise the TAMSI and SAP solver
-// pipelines.
 template <typename T>
-std::unique_ptr<MultibodyPlant<T>> MakePlant(
-    DiscreteContactSolver solver_type) {
+std::unique_ptr<MultibodyPlant<T>> MakePlant() {
   auto plant = std::make_unique<MultibodyPlant<T>>(kTimeStep);
   plant->AddRigidBody("Body", SpatialInertia<double>::MakeUnitary());
-  // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-  // arbitrarily choose two model approximations to accomplish this.
-  switch (solver_type) {
-    case kDiscreteContactSolverTamsi:
-      plant->set_discrete_contact_approximation(
-          kDiscreteContactApproximationTamsi);
-      break;
-    case DiscreteContactSolver::kSap:
-      plant->set_discrete_contact_approximation(
-          DiscreteContactApproximation::kSap);
-      break;
-  }
+  plant->set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   plant->Finalize();
   return plant;
 }
@@ -91,8 +69,8 @@ std::unique_ptr<MultibodyPlant<T>> MakePlant(
 // conversion from T to U, and that simulations results for models without
 // constraints stay the same.
 template <typename T, typename U>
-void TestPlantConversionAndSimulate(DiscreteContactSolver solver_type) {
-  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>(solver_type);
+void TestPlantConversionAndSimulate() {
+  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>();
   auto source_context = source_plant->CreateDefaultContext();
   const VectorX<T> initial_state =
       source_plant->GetPositionsAndVelocities(*source_context);
@@ -117,22 +95,13 @@ void TestPlantConversionAndSimulate(DiscreteContactSolver solver_type) {
 }
 
 GTEST_TEST(ScalarConvertAndSimulateTest, PlantWithSap) {
-  TestPlantConversionAndSimulate<double, AutoDiffXd>(
-      DiscreteContactSolver::kSap);
-  TestPlantConversionAndSimulate<AutoDiffXd, double>(
-      DiscreteContactSolver::kSap);
-}
-
-GTEST_TEST(ScalarConvertAndSimulateTest, PlantWithTamsi) {
-  TestPlantConversionAndSimulate<double, AutoDiffXd>(
-      kDiscreteContactSolverTamsi);
-  TestPlantConversionAndSimulate<AutoDiffXd, double>(
-      kDiscreteContactSolverTamsi);
+  TestPlantConversionAndSimulate<double, AutoDiffXd>();
+  TestPlantConversionAndSimulate<AutoDiffXd, double>();
 }
 
 template <typename T, typename U>
-void TestPlantConversion(DiscreteContactSolver solver_type) {
-  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>(solver_type);
+void TestPlantConversion() {
+  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>();
   // Scalar convert to U. Verify the conversion is successful.
   EXPECT_NO_THROW(systems::System<T>::template ToScalarType<U>(*source_plant));
 }
@@ -141,16 +110,10 @@ void TestPlantConversion(DiscreteContactSolver solver_type) {
 // discrete updates are not for specific solvers.
 GTEST_TEST(ScalarConvertTest, ConversionToAndFromSymbolic) {
   // Conversion from double to symbolic.
-  TestPlantConversion<double, symbolic::Expression>(
-      kDiscreteContactSolverTamsi);
-  TestPlantConversion<double, symbolic::Expression>(
-      DiscreteContactSolver::kSap);
+  TestPlantConversion<double, symbolic::Expression>();
 
   // Conversion from symbolic to double.
-  TestPlantConversion<symbolic::Expression, double>(
-      kDiscreteContactSolverTamsi);
-  TestPlantConversion<symbolic::Expression, double>(
-      DiscreteContactSolver::kSap);
+  TestPlantConversion<symbolic::Expression, double>();
 }
 
 }  // namespace
