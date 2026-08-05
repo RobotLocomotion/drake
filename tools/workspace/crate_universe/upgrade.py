@@ -47,7 +47,7 @@ def main() -> None:
     lockfile = script_dir / "lock/Cargo.lock"
     packages = tomllib.loads(lockfile.read_text(encoding="utf-8"))["package"]
     names = sorted(
-        f"crate__{package['name']}-{package['version']}".replace("+", "-")
+        f"{package['name']}-{package['version']}".replace("+", "-")
         for package in packages
         if package.get("source")
     )

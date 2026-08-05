@@ -13,8 +13,8 @@ load(":lock/repo_names.bzl", "REPO_NAMES")
 [
     install_crate_license(
         name = "install_{}".format(name),
-        crate = "@crates//:{}".format(name.removeprefix("crate__")),
-        doc_dest = "share/doc/{}".format(name),
+        crate = "@crates//:{}".format(name),
+        doc_dest = "share/doc/crate_universe/{}".format(name),
         tags = ["install"],
     )
     for name in REPO_NAMES
