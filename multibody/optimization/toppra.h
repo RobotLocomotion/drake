@@ -267,6 +267,27 @@ class Toppra {
                             ToppraDiscretization discretization =
                                 ToppraDiscretization::kInterpolation);
 
+  /**
+   * Sets the tolerance used to slightly relax the forward pass linear
+   * constraints. This is a problem tolerance, not a solver tolerance, meaning
+   * it slightly relaxes the physical problem bounds. This is useful for
+   * numerically difficult trajectories where the backward pass solver finds a
+   * solution on the boundary of the feasible set, causing the forward pass to
+   * fail due to solver precision limits. A typical value is `1e-4` or `1e-5`.
+   * If 0.0, no relaxation is applied. The default is 0.0 (no relaxation).
+   * @throws std::exception if relaxation is negative or not finite.
+   */
+  void set_constraint_relaxation(double relaxation) {
+    DRAKE_THROW_UNLESS(std::isfinite(relaxation));
+    DRAKE_THROW_UNLESS(relaxation >= 0.0);
+    constraint_relaxation_ = relaxation;
+  }
+
+  /**
+   * Returns the problem relaxation tolerance used in the forward pass.
+   */
+  double constraint_relaxation() const { return constraint_relaxation_; }
+
  private:
   /*
    * Performs the backward pass step of TOPPRA, returning the controllable set,
@@ -368,6 +389,9 @@ class Toppra {
   // backward_lin_constraint_.
   std::unordered_map<Binding<LinearConstraint>, ToppraLinearConstraint>
       forward_lin_constraint_;
+
+  // Problem tolerance to relax forward pass linear constraints.
+  double constraint_relaxation_{0.0};
 };
 }  // namespace multibody
 }  // namespace drake
