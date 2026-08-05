@@ -54,9 +54,6 @@ class TestCommon(unittest.TestCase):
         copy.copy(not_empty)
         copy.deepcopy(not_empty)
 
-    @unittest.skipIf(
-        mut._binder == "nanobind", "TODO(#21572) Fix MemoryFile bindings."
-    )
     def test_memory_file(self):
         content_bytes = b"Some string"
         hint = "hint"
@@ -101,9 +98,6 @@ class TestCommon(unittest.TestCase):
         )
         self.assertEqual(file.extension(), ".urdf")
 
-    @unittest.skipIf(
-        mut._binder == "nanobind", "TODO(#21572) Fix MemoryFile bindings."
-    )
     def test_memory_file_yaml_serialization(self):
         """Confirms that this can be serialized appropriately. The
         serialization work (with all of its nuances) gets tested elsewhere.

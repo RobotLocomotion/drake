@@ -1,5 +1,6 @@
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "drake/bindings/generated_docstrings/common.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
@@ -176,18 +177,16 @@ void InitLowLevelModules(py::module_ m) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def_static(
             "Checksum",
-            [](py::bytes data) {
-              return Class::Checksum(
-#ifdef PYDRAKE_USE_PYBIND11
-                  py::cast<std::string_view>(data)
-#else  // PYDRAKE_USE_NANOBIND
-                  std::string_view(data.c_str(), data.size())
-#endif
-              );
+            [](std::variant<py::bytes, std::string_view> data_union) {
+              if (data_union.index() == 0) {
+                const auto& as_bytes = std::get<py::bytes>(data_union);
+                const std::string_view data(as_bytes.c_str(), as_bytes.size());
+                return Class::Checksum(data);
+              } else {
+                const auto& data = std::get<std::string_view>(data_union);
+                return Class::Checksum(data);
+              }
             },
-            py::arg("data"), cls_doc.Checksum.doc_1args_data)
-        .def_static("Checksum",
-            py::overload_cast<std::string_view>(&Class::Checksum),
             py::arg("data"), cls_doc.Checksum.doc_1args_data)
         .def_static("Parse", &Class::Parse, cls_doc.Parse.doc)
         .def("to_string", &Class::to_string, cls_doc.to_string.doc)
@@ -209,24 +208,26 @@ void InitLowLevelModules(py::module_ m) {
     constexpr auto& cls_doc = doc.MemoryFile;
     class_<Class> cls(m, "MemoryFile", cls_doc.doc);
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
+            // We only bind the three-argument constructor (skipping the default
+            // constructor), but we give it defaulted arguments consistent with
+            // the default constructor. This improves the pydrake documentation.
             "__init__",
-            [](Class* self, py::bytes contents, std::string extension,
-                std::string filename_hint) {
-              new (self) Class(
-#ifdef PYDRAKE_USE_PYBIND11
-                  py::cast<std::string>(contents),
-#else  // PYDRAKE_USE_NANOBIND
-                  std::string(contents.c_str(), contents.size()),
-#endif
-                  extension, filename_hint);
+            [](Class* self, std::variant<py::bytes, std::string> contents_union,
+                std::string extension, std::string filename_hint) {
+              std::string contents;
+              if (contents_union.index() == 0) {
+                const auto& as_bytes = std::get<py::bytes>(contents_union);
+                contents = std::string(as_bytes.c_str(), as_bytes.size());
+              } else {
+                contents = std::move(std::get<std::string>(contents_union));
+              }
+              new (self) Class(std::move(contents), std::move(extension),
+                  std::move(filename_hint));
             },
-            py::arg("contents"), py::arg("extension"), py::arg("filename_hint"),
-            cls_doc.ctor.doc_3args)
-        .def(py::init<std::string, std::string, std::string>(),
-            py::arg("contents"), py::arg("extension"), py::arg("filename_hint"),
-            cls_doc.ctor.doc_3args)
+            py::arg("contents") = std::string(),
+            py::arg("extension") = std::string(),
+            py::arg("filename_hint") = std::string(), cls_doc.ctor.doc_3args)
         .def(
             "contents",
             [](const Class& self) {
