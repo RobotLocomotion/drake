@@ -534,7 +534,7 @@ indicate what can and cannot be done with hydroelastic contact.
 
 @subsection hug_dissipation_and_solver Current dissipation models
 
-- The TAMSI (DiscreteContactApproximation::kTamsi), Similar
+- The Similar
   (DiscreteContactApproximation::kSimilar), and Lagged
   (DiscreteContactApproximation::kLagged) model approximations use a
   Hunt-Crossley model of dissipation, parameterized by
@@ -544,7 +544,7 @@ indicate what can and cannot be done with hydroelastic contact.
   Kelvin–Voigt model of dissipation parameterized by `relaxation_time`, for both
   point and hydroelastic contact. The Hunt-Crossley dissipation parameter is
   ignored by this approximation.
-- We allow the user to specify both `hunt_crossley_dissipation` (TAMSI, Similar
+- We allow the user to specify both `hunt_crossley_dissipation` (Similar
   and Lagged discrete approximations as well as continuous plant model) and
   `relaxation_time` (SAP approximation specific parameter) on the model, but the
   parameter may be ignored depending on your plant configuration. See the

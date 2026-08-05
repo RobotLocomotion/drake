@@ -26,12 +26,15 @@ using systems::DiagramBuilder;
 namespace multibody {
 namespace {
 
+// TODO(jwnimmer-tri) This test program is mis-named.
+// We are testing the SAP solver, not TAMSI.
+//
 // Tests that we can do discrete updates even when the model has no DOFs.
 // Relates to #12066.
-GTEST_TEST(MbpWithTamsiSolver, FixedWorld) {
+GTEST_TEST(MbpWithDiscreteSolver, FixedWorld) {
   systems::DiagramBuilder<double> builder;
 
-  // We create a discrete model that uses the TAMSI solver for contact.
+  // We create a discrete model that uses the SAP solver for contact.
   const double discrete_update_period = 1.0e-3;
   auto items = AddMultibodyPlantSceneGraph(
       &builder,

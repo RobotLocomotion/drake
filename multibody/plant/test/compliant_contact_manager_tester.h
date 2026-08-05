@@ -52,13 +52,6 @@ class CompliantContactManagerTester {
     return *manager.sap_driver_;
   }
 
-  template <typename T>
-  static const TamsiDriver<T>& tamsi_driver(
-      const CompliantContactManager<T>& manager) {
-    DRAKE_DEMAND(manager.tamsi_driver_ != nullptr);
-    return *manager.tamsi_driver_;
-  }
-
   // Returns the Jacobian J_AcBc_C. This method takes the Jacobian blocks
   // evaluated with EvalContactJacobianCache() and assembles them into a dense
   // Jacobian matrix.

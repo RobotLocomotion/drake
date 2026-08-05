@@ -607,10 +607,6 @@ TEST_P(ActuatedModelsTest, ActuationMatchesAppliedGeneralizedForces) {
 // forces using the actuation input port. We also verify the reported
 // net_actuation output.
 TEST_P(ActuatedModelsTest, PdControlMatchesActuation) {
-  // TAMSI doesn't support PD control
-  if (param_.discrete_contact_approximation == "tamsi") {
-    return;
-  }
   // TODO(jwnimmer-tri) Ideally we would check SAP's PD dynamics here as well,
   // but computing the expected PD actuation for a complicated plant like ours
   // is too difficult, because SAP applies the PD constraint to the solved-for
@@ -754,26 +750,23 @@ std::vector<TestParam> MakeAllParams() {
   std::vector<TestParam> result;
   int param_index = 0;
   for (const double time_step : {0.01, 0.0}) {
-    for (const auto& discrete_contact_approximation :
-         (time_step > 0.0) ? std::vector<std::string>{"sap", "tamsi"}
-                           : std::vector<std::string>{""}) {
-      for (const bool remove_joint_actuators : {false, true}) {
-        for (int pd_case = 0; pd_case < 3; ++pd_case) {
-          const bool use_pd_control = pd_case >= 1;
-          const bool full_pd_control = pd_case >= 2;
-          for (const bool use_joint_locking : {false, true}) {
-            result.push_back(TestParam{
-                .param_index = param_index,
-                .time_step = time_step,
-                .discrete_contact_approximation =
-                    discrete_contact_approximation,
-                .remove_joint_actuators = remove_joint_actuators,
-                .use_pd_control = use_pd_control,
-                .full_pd_control = full_pd_control,
-                .use_joint_locking = use_joint_locking,
-            });
-            ++param_index;
-          }
+    const std::string discrete_contact_approximation =
+        (time_step > 0.0) ? "sap" : "";
+    for (const bool remove_joint_actuators : {false, true}) {
+      for (int pd_case = 0; pd_case < 3; ++pd_case) {
+        const bool use_pd_control = pd_case >= 1;
+        const bool full_pd_control = pd_case >= 2;
+        for (const bool use_joint_locking : {false, true}) {
+          result.push_back(TestParam{
+              .param_index = param_index,
+              .time_step = time_step,
+              .discrete_contact_approximation = discrete_contact_approximation,
+              .remove_joint_actuators = remove_joint_actuators,
+              .use_pd_control = use_pd_control,
+              .full_pd_control = full_pd_control,
+              .use_joint_locking = use_joint_locking,
+          });
+          ++param_index;
         }
       }
     }

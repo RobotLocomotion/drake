@@ -553,8 +553,7 @@ This is our preferred model of dissipation for several reasons:
    discretized.
 
 The Hunt & Crossley model is supported by the
-drake::multibody::DiscreteContactApproximation::kTamsi,
-drake::multibody::DiscreteContactApproximation::kSimilar, and
+drake::multibody::DiscreteContactApproximation::kSimilar and
 drake::multibody::DiscreteContactApproximation::kLagged model approximations. In
 particular, drake::multibody::DiscreteContactApproximation::kSimilar and
 drake::multibody::DiscreteContactApproximation::kLagged are convex
