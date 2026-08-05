@@ -12,6 +12,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/ball_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/distance_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
@@ -164,8 +165,9 @@ class IcfModel {
   /* Returns the total number of constraints of any type in the problem. */
   int num_constraints() const {
     return num_ball_constraints() + num_coupler_constraints() +
-           num_gain_constraints() + num_limit_constraints() +
-           num_patch_constraints() + num_weld_constraints();
+           num_distance_constraints() + num_gain_constraints() +
+           num_limit_constraints() + num_patch_constraints() +
+           num_weld_constraints();
   }
 
   /* Provides const access to the pool of all ball constraints. */
@@ -186,6 +188,16 @@ class IcfModel {
   /* Provides mutable access to the pool of all coupler constraints. */
   CouplerConstraintsPool<T>& coupler_constraints_pool() {
     return coupler_constraints_pool_;
+  }
+
+  /* Provides const access to the pool of all distance constraints. */
+  const DistanceConstraintsPool<T>& distance_constraints_pool() const {
+    return distance_constraints_pool_;
+  }
+
+  /* Provides mutable access to the pool of all distance constraints. */
+  DistanceConstraintsPool<T>& distance_constraints_pool() {
+    return distance_constraints_pool_;
   }
 
   /* Provides const access to the pool of all gain (e.g., actuation)
@@ -236,6 +248,10 @@ class IcfModel {
 
   int num_coupler_constraints() const {
     return coupler_constraints_pool_.num_constraints();
+  }
+
+  int num_distance_constraints() const {
+    return distance_constraints_pool_.num_constraints();
   }
 
   int num_gain_constraints() const {
@@ -510,6 +526,7 @@ class IcfModel {
   // Fixed set of constraints.
   BallConstraintsPool<T> ball_constraints_pool_;
   CouplerConstraintsPool<T> coupler_constraints_pool_;
+  DistanceConstraintsPool<T> distance_constraints_pool_;
   GainConstraintsPool<T> gain_constraints_pool_;
   LimitConstraintsPool<T> limit_constraints_pool_;
   PatchConstraintsPool<T> patch_constraints_pool_;

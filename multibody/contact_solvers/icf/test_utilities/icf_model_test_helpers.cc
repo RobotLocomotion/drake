@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/icf/test_utilities/icf_model_test_helpers.h"
 
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -399,10 +400,44 @@ void AddBallConstraints(IcfModel<T>* model) {
   }
 }
 
+template <typename T>
+void AddDistanceConstraints(IcfModel<T>* model) {
+  DRAKE_DEMAND(model != nullptr);
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+
+  DistanceConstraintsPool<T>& distance_constraints =
+      model->distance_constraints_pool();
+  distance_constraints.Resize(2);
+
+  // Distance 0: world (body 0, anchored) to body 1. Rigid (infinite stiffness).
+  {
+    const Vector3<T> p_AP_W(0.1, 0.0, 0.0);
+    const Vector3<T> p_BQ_W(0.0, 0.0, 0.0);
+    const Vector3<T> p_hat_W(1.0, 0.0, 0.0);
+    const T g0(0.05);  // Current distance minus free length.
+    distance_constraints.Set(0, /*bodyA=*/0, /*bodyB=*/1, p_AP_W, p_BQ_W,
+                             p_hat_W, g0, /*stiffness=*/T(kInf),
+                             /*damping=*/T(0.0));
+  }
+
+  // Distance 1: body 2 to body 3 (cross-clique in multi-clique case).
+  // Compliant (finite stiffness and damping) to exercise the spring path.
+  {
+    const Vector3<T> p_AP_W(0.1, 0.2, 0.3);
+    const Vector3<T> p_BQ_W(0.0, 0.1, 0.0);
+    const Vector3<T> p_hat_W = Vector3<T>(0.2, -0.1, 0.3).normalized();
+    const T g0(0.02);
+    distance_constraints.Set(1, /*bodyA=*/2, /*bodyB=*/3, p_AP_W, p_BQ_W,
+                             p_hat_W, g0, /*stiffness=*/T(1000.0),
+                             /*damping=*/T(5.0));
+  }
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeUnconstrainedModel<T>, &MakeModelReducible<T>, &AddBallConstraints<T>,
+    (&MakeUnconstrainedModel<T>, &MakeModelReducible<T>,
      &AddCouplerConstraint<T>, &AddGainConstraints<T>, &AddLimitConstraints<T>,
-     &AddPatchConstraints<T>, &AddWeldConstraints<T>));
+     &AddPatchConstraints<T>, &AddWeldConstraints<T>, &AddBallConstraints<T>,
+     &AddDistanceConstraints<T>));
 
 }  // namespace internal
 }  // namespace icf

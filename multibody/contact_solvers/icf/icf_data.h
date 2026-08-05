@@ -48,7 +48,8 @@ class IcfData {
   struct Scratch {
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
-                int num_ball_constraints, int num_couplers, int num_welds,
+                int num_ball_constraints, int num_couplers,
+                int num_distance_constraints, int num_welds,
                 std::span<const int> gain_sizes,
                 std::span<const int> limit_sizes,
                 std::span<const int> patch_sizes);
@@ -78,6 +79,7 @@ class IcfData {
     // Scratch data pools for CalcCostAlongLine.
     BallConstraintsDataPool<T> ball_constraints_data;
     CouplerConstraintsDataPool<T> coupler_constraints_data;
+    DistanceConstraintsDataPool<T> distance_constraints_data;
     GainConstraintsDataPool<T> gain_constraints_data;
     LimitConstraintsDataPool<T> limit_constraints_data;
     PatchConstraintsDataPool<T> patch_constraints_data;
@@ -111,6 +113,7 @@ class IcfData {
   @param max_clique_size Maximum number of velocities in any clique.
   @param num_ball_constraints Number of ball constraints.
   @param num_couplers Number of coupler constraints.
+  @param num_distance_constraints Number of distance constraints.
   @param num_welds Number of weld constraints.
   @param gain_sizes Number of velocities for each gain constraint.
   @param limit_sizes Number of velocities for each limit constraint.
@@ -120,7 +123,8 @@ class IcfData {
   //  constraint types. Consider switching to a parameter struct which would
   //  let us use named fields at the call sites.
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
-              int num_ball_constraints, int num_couplers, int num_welds,
+              int num_ball_constraints, int num_couplers,
+              int num_distance_constraints, int num_welds,
               std::span<const int> gain_sizes, std::span<const int> limit_sizes,
               std::span<const int> patch_sizes);
 
@@ -177,6 +181,14 @@ class IcfData {
     return coupler_constraints_data_;
   }
 
+  /* Returns the data pool for distance constraints. */
+  const DistanceConstraintsDataPool<T>& distance_constraints_data() const {
+    return distance_constraints_data_;
+  }
+  DistanceConstraintsDataPool<T>& mutable_distance_constraints_data() {
+    return distance_constraints_data_;
+  }
+
   /* Returns the data pool for external gain (e.g., actuation) constraints. */
   const GainConstraintsDataPool<T>& gain_constraints_data() const {
     return gain_constraints_data_;
@@ -224,6 +236,7 @@ class IcfData {
   // Type-specific constraint pools.
   BallConstraintsDataPool<T> ball_constraints_data_;
   CouplerConstraintsDataPool<T> coupler_constraints_data_;
+  DistanceConstraintsDataPool<T> distance_constraints_data_;
   GainConstraintsDataPool<T> gain_constraints_data_;
   LimitConstraintsDataPool<T> limit_constraints_data_;
   PatchConstraintsDataPool<T> patch_constraints_data_;

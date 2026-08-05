@@ -7,7 +7,6 @@
 
 #include "drake/bindings/generated_docstrings/common_trajectories.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
@@ -171,6 +170,9 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
 #ifdef PYDRAKE_USE_PYBIND11
           const py::array_t<double>& polynomials
 #else  // PYDRAKE_USE_NANOBIND
+       // For nanobind we must explicitly communicate that we accept either a
+       // zero-dimensional array or a four-dimensional array. The type_caster
+       // for a four-dimensional array does not accept an empty array.
           std::variant<py::ndarray<double, py::shape<0>>,
               py::ndarray<double, py::ndim<4>, py::numpy>>
               polynomials_union
@@ -178,10 +180,16 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
       ) {
         Polynomials cxx_poly;
 #ifdef PYDRAKE_USE_NANOBIND
+        // To accomodate the two types of polynomials_union, we need std::visit.
+        // Only the four-dimensional array actually gets copied into `cxx_poly`.
+        // If `visit_polynomials` is zero-dimensional, the visit is a no-op.
         std::visit(
-            [&cxx_poly](auto&& polynomials) {
-              if constexpr (std::is_same_v<std::decay_t<decltype(polynomials)>,
+            [&cxx_poly](auto&& visited_polynomials) {
+              if constexpr (std::is_same_v<
+                                std::decay_t<decltype(visited_polynomials)>,
                                 py::ndarray<double, py::ndim<4>, py::numpy>>) {
+                const py::ndarray<double, py::ndim<4>, py::numpy>& polynomials =
+                    visited_polynomials;
 #endif  //  PYDRAKE_USE_NANOBIND
                 if (polynomials.size() > 0) {
                   DRAKE_THROW_UNLESS(polynomials.ndim() == 4);
@@ -196,10 +204,17 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
                       for (int k = 0; k < num_cols; ++k) {
                         cxx_poly[i](j, k).resize(num_coeffs);
                         for (int c = 0; c < num_coeffs; ++c) {
+                          cxx_poly[i](j, k)(c) =
 #ifdef PYDRAKE_USE_PYBIND11
-                          cxx_poly[i](j, k)(c) = polynomials.at(i, j, k, c);
+                              // The type of `polynomials` is `pybind11::array`,
+                              // which spells its element accessor as
+                              // `const T& at(Index... index)`.
+                              polynomials.at(i, j, k, c);
 #else
-                  cxx_poly[i](j, k)(c) = polynomials(i, j, k, c);
+                      // The type of `polynomials` is `nanobind::ndarray`,
+                      // which spells its element accessor as
+                      // `Scalar& operator()(Index...index)`.
+                      polynomials(i, j, k, c);
 #endif
                         }
                       }
