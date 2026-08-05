@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from pydrake.common import _binder, pretty_class_name
+from pydrake.common import pretty_class_name
 from pydrake.common.cpp_param import List
 from pydrake.common.test.value_test_util import (
     CustomType,

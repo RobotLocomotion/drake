@@ -63,7 +63,8 @@ class TestWrapPybind(unittest.TestCase):
 
     @unittest.skipIf(
         _binder == "nanobind",  # TODO(#21572) Remove this opt-out.
-        "nanobind aborts instead of raises")
+        "nanobind aborts instead of raises",
+    )
     def test_wrap_callbacks_lack_detected(self):
         call_count = 0
 
