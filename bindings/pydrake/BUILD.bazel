@@ -415,6 +415,11 @@ drake_py_binary(
     ],
 )
 
+# TODO(#21572) When using pybind11, DRAKE_PYBIND11_CHECK_SIGNATURE_INFECTION
+# finds errors with missing bindings. When using nanobind, we haven't done
+# anything explicit yet to accomplish the same result. It's not clear that the
+# extra checks are still necessary; we need to investigate further.
+#
 # TODO(jwnimmer-tri): It would be convenient if this could be automatically
 # generated. For now, we have stubgen.py that will fail-fast when this goes
 # out of date.
