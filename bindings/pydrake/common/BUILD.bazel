@@ -794,8 +794,6 @@ drake_py_unittest(
     data = [
         "//common/yaml:test/yaml_io_test_input_1.yaml",
     ],
-    # TODO(#21572) Remove this opt-out.
-    test_alt_binder = False,
     deps = [
         ":common",
         ":serialize_test_util_py",
