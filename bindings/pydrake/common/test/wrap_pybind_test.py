@@ -61,7 +61,9 @@ class TestWrapPybind(unittest.TestCase):
         result = MakeTypeConversionExampleRefRvp()
         self.assertEqual(result, "hello")
 
-    @unittest.skipIf(_binder == "nanobind", "nanobind aborts instead of raises")
+    @unittest.skipIf(
+        _binder == "nanobind",  # TODO(#21572) Remove this opt-out.
+        "nanobind aborts instead of raises")
     def test_wrap_callbacks_lack_detected(self):
         call_count = 0
 

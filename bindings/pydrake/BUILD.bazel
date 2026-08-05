@@ -333,7 +333,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "forward_diff_test",
-    test_alt_binder = True,
     deps = [
         ":forwarddiff_py",
         "//bindings/pydrake/common/test_utilities",
@@ -342,7 +341,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "lcm_test",
-    test_alt_binder = True,
     deps = [
         ":lcm_py",
     ],
@@ -357,7 +355,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "polynomial_test",
-    test_alt_binder = True,
     deps = [
         ":polynomial_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
@@ -367,7 +364,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectories_test",
-    test_alt_binder = True,
     deps = [
         ":trajectories_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",

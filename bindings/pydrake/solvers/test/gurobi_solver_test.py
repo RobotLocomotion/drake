@@ -83,7 +83,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(os.path.exists(ilp_file_name))
 
     @unittest.skipIf(
-        _binder == "nanobind",  # XXX porting
+        _binder == "nanobind",  # TODO(#21572) Remove this opt-out.
         "Critical nanobind error: nanobind::detail::nb_type_put('pydrake.solvers.MathematicalProgram'): attempted to copy an instance that is not copy-constructible!",  # noqa
     )
     def test_callback(self):
