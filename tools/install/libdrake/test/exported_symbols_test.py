@@ -1,4 +1,5 @@
 import bisect
+import os
 import struct
 import subprocess
 import unittest
@@ -249,7 +250,7 @@ class ExportedSymbolsTest(unittest.TestCase):
         manifest = runfiles.Create()
         objdump_all = subprocess.check_output(
             [
-                manifest.Rlocation("llvm/bin/llvm-objdump"),
+                manifest.Rlocation(os.environ["LLVM_OBJDUMP_RLOCATIONPATH"]),
                 LIBDRAKE,
                 "-Mintel",
                 "--no-addresses",

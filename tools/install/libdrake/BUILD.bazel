@@ -494,8 +494,11 @@ drake_py_unittest(
     timeout = "moderate",
     data = [
         ":libdrake.so",
-        "@llvm//:bin/llvm-objdump",
+        "@llvm//tools:llvm-objdump",
     ],
+    env = {
+        "LLVM_OBJDUMP_RLOCATIONPATH": "$(rlocationpath @llvm//tools:llvm-objdump)",
+    },
     deps = [
         "@rules_python//python/runfiles",
         lief_requirement("lief"),
