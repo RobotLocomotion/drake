@@ -10,7 +10,7 @@ namespace internal {
 
 // This struct stores the results from a computation performed with
 // a discrete contact solver. For instance, we can store the results from
-// TamsiSolver in this class.
+// SapSolver in this class.
 // We denote `nv` the size of the vector of generalized velocities and `nc` the
 // number of contact points.
 template <class T>

@@ -847,15 +847,14 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         s.id_M(), std::numeric_limits<double>::infinity(), inspector);
     const T hydro_modulus_N = GetHydroelasticModulus(
         s.id_N(), std::numeric_limits<double>::infinity(), inspector);
-    // Hunt & Crossley dissipation. Used by the Tamsi, Lagged, and Similar
-    // contact models. Ignored by Sap. See
-    // multibody::DiscreteContactApproximation for details about these contact
-    // models.
+    // Hunt & Crossley dissipation. Used by the Lagged and Similar contact
+    // models. Ignored by Sap. See multibody::DiscreteContactApproximation for
+    // details about these contact models.
     const T d = GetCombinedHuntCrossleyDissipation(
         s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N,
         default_contact_dissipation(), inspector);
-    // Dissipation time scale. Used by Sap contact model. Ignored by Tamsi,
-    // Lagged, and Similar contact model. See
+    // Dissipation time scale. Used by Sap contact model. Ignored by
+    // Lagged and Similar contact models. See
     // multibody::DiscreteContactApproximation for details about these contact
     // models.
     const double default_dissipation_time_constant = 0.1;

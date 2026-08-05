@@ -122,8 +122,6 @@ drake_cc_library(
         "text_logging.h",
         "text_logging_impl_spdlog.h",
         "text_logging_level.h",
-        # Remove with deprecation on 2026-09-01.
-        "ssize.h",
     ],
     deps = [
         ":fmt",
