@@ -214,6 +214,7 @@ def drake_py_test(
                 "bindings/pydrake/autodiffutils",
                 "bindings/pydrake/common",
                 "bindings/pydrake/math",
+                "bindings/pydrake/solvers",
                 "bindings/pydrake/symbolic",
             ]
         ])
