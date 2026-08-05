@@ -118,8 +118,42 @@ struct type_caster_wrapped {
 };
 #else   // PYDRAKE_USE_NANOBIND
 template <typename Wrapper>
-struct type_caster_wrapped {
-  // TODO(#21572) Implement me.
+struct __attribute__((visibility("hidden"))) type_caster_wrapped {
+  using Type = typename Wrapper::Type;
+  using WrappedType = typename Wrapper::WrappedType;
+  using WrappedTypeCaster = py::detail::type_caster<WrappedType>;
+
+  using Value = Type;
+  template <typename U>
+  using Cast = Value;
+
+  static constexpr auto Name = Wrapper::wrapped_name;
+
+  bool from_python(py::handle src, uint8_t flags,
+      py::detail::cleanup_list* cleanup) noexcept {
+    return caster_.from_python(src, flags, cleanup);
+  }
+
+  template <typename U>
+  static py::handle from_cpp(
+      U&& value, py_rvp policy, py::detail::cleanup_list* cleanup) noexcept {
+    py::object out = steal(WrappedTypeCaster::from_cpp(
+        Wrapper::wrap(std::forward<U>(value)), policy, cleanup));
+    return out.release();
+  }
+
+  template <typename U>
+  bool can_cast() const noexcept {
+    return caster_.template can_cast<U>();
+  }
+
+  explicit operator Value() {
+    return Value(
+        Wrapper::unwrap(caster_.operator py::detail::cast_t<WrappedType>()));
+  }
+
+ private:
+  WrappedTypeCaster caster_;
 };
 #endif  // PYDRAKE_USE_PYBIND11
 
