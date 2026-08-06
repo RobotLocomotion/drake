@@ -13,8 +13,14 @@ install(
 drake_py_binary(
     name = "upgrade",
     srcs = ["upgrade.py"],
-    data = ["@rules_rust//tools/upstream_wrapper:cargo"],
+    data = [
+        "@crate_licenses//:Cargo.lock",
+        "@crate_licenses//:Cargo.toml",
+        "@crate_licenses//:src/lib.rs",
+        "@rules_rust//tools/upstream_wrapper:cargo",
+    ],
     env = {
+        "DRAKE_CARGO_MANIFEST_RLOCATIONPATH": "$(rlocationpath @crate_licenses//:Cargo.toml)",
         "DRAKE_CARGO_RLOCATIONPATH": "$(rlocationpath @rules_rust//tools/upstream_wrapper:cargo)",
     },
     deps = ["@rules_python//python/runfiles"],

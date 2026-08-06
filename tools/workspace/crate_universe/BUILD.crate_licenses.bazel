@@ -10,6 +10,12 @@ load(
 )
 load(":lock/repo_names.bzl", "REPO_NAMES")
 
+exports_files([
+    "Cargo.lock",
+    "Cargo.toml",
+    "src/lib.rs",
+])
+
 [
     install_crate_license(
         name = "install_{}".format(name),
