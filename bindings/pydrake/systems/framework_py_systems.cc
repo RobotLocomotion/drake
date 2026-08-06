@@ -60,6 +60,43 @@ constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
 
+// This helper provides an efficient C++ downcast from an instance of the bound
+// class to its derived alias class. The alias class (also called the
+// trampoline class) provides forwarding to python virtual method overrides.
+//
+// With pybind11, it was possible to name the alias class in argument lists and
+// get correct type resolution. With nanobind, only the bound class can be used
+// in argument lists, but often, the alias class instance is needed in binding
+// implementations. In both cases, the alias instance is guaranteed (by init
+// implementations) to be what is actually constructed and passed.
+//
+// @tparam PyClass the pydrake::class_ type used to bind Class.
+// @tparam Class the class being bound.
+template <typename PyClass>
+using py_class_alias_t =
+#ifdef PYDRAKE_USE_PYBIND11
+    PyClass::type_alias;
+#else
+    PyClass::Alias;
+#endif
+template <typename PyClass, typename Class>
+py_class_alias_t<PyClass>* GetAlias(Class* self) {
+  // This implementation makes the following assumption, important for bound
+  // classes that also have bound subclasses that permit further python
+  // subclassing: py_class_alias_t<PyClass> has no material *runtime*
+  // differences from Class.
+  //
+  // Typically this means that the alias class implements the following sorts
+  // of allowable changes w.r.t. the bound class:
+  // * fiddling with access specifiers (e.g. make private methods public)
+  // * overriding virtual methods
+  //
+  // The reason for these limitations is that neither bound subclasses nor their
+  // aliases are derived from the base bound class's alias. Thus, dynamic_cast
+  // to the alias class will not work
+  return static_cast<py_class_alias_t<PyClass>*>(self);
+}
+
 // This helper function works around a peculiarity of pybind11 wrapping of
 // python bound methods for calls from C++. It is possible to end up with
 // distinct call wrappers of the same method, with independent memory, but that
@@ -97,8 +134,13 @@ template <typename... Args>
 using EventCallback = std::function<EventSignature<Args...>>;
 // Declare the handler signature as a python function object with compile-time
 // readable type signature.
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename... Args>
 using PyEventCallback = py::typing::Callable<EventSignature<Args...>>;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename... Args>
+using PyEventCallback = py::typed<py::callable, EventSignature<Args...>>;
+#endif  // PYDRAKE_USE_PYBIND11
 
 // Declare the various callback types that will appear as parameters of
 // bindings, such that automatic documentation has correct type signatures.
@@ -726,10 +768,12 @@ Note: The above is for the C++ documentation. For Python, use
 
   static void DefineLeafSystem(py::module_ m) {
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
-    auto leaf_system_cls =
+    using Class = LeafSystem<T>;
+    auto cls =
         DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
             m, "LeafSystem", GetPyParam<T>(), doc.LeafSystem.doc);
-    leaf_system_cls  // BR
+    using PyClass = decltype(cls);
+    cls  // BR
         .def(py::init<>(), doc.LeafSystem.ctor.doc_0args)
         // TODO(eric.cousineau): It'd be nice if we did not need the user to
         // propagate scalar conversion information. Ideally, if we could
@@ -741,9 +785,10 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.ctor.doc_1args)
         .def(
             "DeclareAbstractInputPort",
-            [](PyLeafSystem* self, const std::string& name,
+            [](Class* self, const std::string& name,
                 const AbstractValue& model_value) -> const InputPort<T>& {
-              return self->DeclareAbstractInputPort(name, model_value);
+              return GetAlias<PyClass>(self)->DeclareAbstractInputPort(
+                  name, model_value);
             },
             // Use a ref_cycle (rather than the implicit keep-alive of
             // reference_internal) to avoid immortality hazards like #22515.
@@ -756,11 +801,11 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
         .def(
             "DeclareAbstractOutputPort",
-            [](PyLeafSystem* self, const std::string& name, py::callable alloc,
+            [](Class* self, const std::string& name, py::callable alloc,
                 std::function<void(py::object, py::object)> calc,
                 const std::set<DependencyTicket>& prerequisites_of_calc)
                 -> const OutputPort<T>& {
-              return self->DeclareAbstractOutputPort(name,
+              return GetAlias<PyClass>(self)->DeclareAbstractOutputPort(name,
                   MakeCppCompatibleAllocateCallback(std::move(alloc)),
                   MakeCppCompatibleCalcCallback(std::move(calc)),
                   prerequisites_of_calc);
@@ -775,11 +820,11 @@ Note: The above is for the C++ documentation. For Python, use
                 .doc_4args_name_alloc_calc_prerequisites_of_calc)
         .def(
             "DeclareVectorInputPort",
-            [](PyLeafSystem* self, std::string name,
+            [](Class* self, std::string name,
                 const BasicVector<T>& model_vector,
                 std::optional<RandomDistribution> random_type)
                 -> InputPort<T>& {
-              return self->DeclareVectorInputPort(
+              return GetAlias<PyClass>(self)->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },
             // Use a ref_cycle (rather than the implicit keep-alive of
@@ -789,10 +834,11 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareVectorInputPort.doc_3args_model_vector)
         .def(
             "DeclareVectorInputPort",
-            [](PyLeafSystem* self, std::string name, int size,
+            [](Class* self, std::string name, int size,
                 std::optional<RandomDistribution> random_type)
                 -> InputPort<T>& {
-              return self->DeclareVectorInputPort(name, size, random_type);
+              return GetAlias<PyClass>(self)->DeclareVectorInputPort(
+                  name, size, random_type);
             },
             // Use a ref_cycle (rather than the implicit keep-alive of
             // reference_internal) to avoid immortality hazards like #22515.
@@ -801,11 +847,12 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareVectorInputPort.doc_3args_size)
         .def("DeclareVectorOutputPort",
             WrapCallbacks(
-                [](PyLeafSystem* self, const std::string& name,
+                [](Class* self, const std::string& name,
                     const BasicVector<T>& arg1, CalcVectorCallback arg2,
                     const std::set<DependencyTicket>& arg3)
                     -> const OutputPort<T>& {
-                  return self->DeclareVectorOutputPort(name, arg1, arg2, arg3);
+                  return GetAlias<PyClass>(self)->DeclareVectorOutputPort(
+                      name, arg1, arg2, arg3);
                 }),
             // Use a ref_cycle (rather than the implicit keep-alive of
             // reference_internal) to avoid immortality hazards like #22515.
@@ -816,11 +863,11 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareVectorOutputPort.doc_4args_model_vector)
         .def("DeclareVectorOutputPort",
             WrapCallbacks(
-                [](PyLeafSystem* self, const std::string& name, int size,
+                [](Class* self, const std::string& name, int size,
                     CalcVectorCallback calc,
                     const std::set<DependencyTicket>& prerequisites_of_calc)
                     -> const OutputPort<T>& {
-                  return self->DeclareVectorOutputPort(
+                  return GetAlias<PyClass>(self)->DeclareVectorOutputPort(
                       name, size, calc, prerequisites_of_calc);
                 }),
             // Use a ref_cycle (rather than the implicit keep-alive of
@@ -860,47 +907,51 @@ Note: The above is for the C++ documentation. For Python, use
         // instead of implementing them here.
         .def(
             "DeclareInitializationPublishEvent",
-            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+            [](Class* self, PyPublishCallback<T> py_publish) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_publish);
-              self->DeclareInitializationEvent(MakePublishEvent<T>(
-                  TriggerType::kInitialization, py_publish.ptr()));
+              GetAlias<PyClass>(self)->DeclareInitializationEvent(
+                  MakePublishEvent<T>(
+                      TriggerType::kInitialization, py_publish.ptr()));
             },
             py::arg("publish"),
             doc.LeafSystem.DeclareInitializationPublishEvent.doc)
         .def(
             "DeclareInitializationDiscreteUpdateEvent",
-            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+            [](Class* self, PyDiscreteUpdateCallback<T> py_update) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_update);
-              self->DeclareInitializationEvent(MakeDiscreteUpdateEvent<T>(
-                  TriggerType::kInitialization, py_update.ptr()));
+              GetAlias<PyClass>(self)->DeclareInitializationEvent(
+                  MakeDiscreteUpdateEvent<T>(
+                      TriggerType::kInitialization, py_update.ptr()));
             },
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationDiscreteUpdateEvent.doc)
         .def(
             "DeclareInitializationUnrestrictedUpdateEvent",
-            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+            [](Class* self, PyUnrestrictedUpdateCallback<T> py_update) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_update);
-              self->DeclareInitializationEvent(MakeUnrestrictedUpdateEvent<T>(
-                  TriggerType::kInitialization, py_update.ptr()));
+              GetAlias<PyClass>(self)->DeclareInitializationEvent(
+                  MakeUnrestrictedUpdateEvent<T>(
+                      TriggerType::kInitialization, py_update.ptr()));
             },
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationUnrestrictedUpdateEvent.doc)
         .def(
             "DeclareInitializationEvent",
-            [](PyLeafSystem* self, const Event<T>& event) {
-              self->DeclareInitializationEvent(event);
+            [](Class* self, const Event<T>& event) {
+              GetAlias<PyClass>(self)->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
         .def(
             "DeclarePeriodicPublishEvent",
-            [](PyLeafSystem* self, double period_sec, double offset_sec,
+            [](Class* self, double period_sec, double offset_sec,
                 PyPublishCallback<T> py_publish) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_publish);
-              self->DeclarePeriodicEvent(period_sec, offset_sec,
+              GetAlias<PyClass>(self)->DeclarePeriodicEvent(period_sec,
+                  offset_sec,
                   MakePublishEvent<T>(
                       TriggerType::kPeriodic, py_publish.ptr()));
             },
@@ -908,11 +959,12 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclarePeriodicPublishEvent.doc)
         .def(
             "DeclarePeriodicDiscreteUpdateEvent",
-            [](PyLeafSystem* self, double period_sec, double offset_sec,
+            [](Class* self, double period_sec, double offset_sec,
                 PyDiscreteUpdateCallback<T> py_update) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_update);
-              self->DeclarePeriodicEvent(period_sec, offset_sec,
+              GetAlias<PyClass>(self)->DeclarePeriodicEvent(period_sec,
+                  offset_sec,
                   MakeDiscreteUpdateEvent<T>(
                       TriggerType::kPeriodic, py_update.ptr()));
             },
@@ -920,11 +972,12 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclarePeriodicDiscreteUpdateEvent.doc)
         .def(
             "DeclarePeriodicUnrestrictedUpdateEvent",
-            [](PyLeafSystem* self, double period_sec, double offset_sec,
+            [](Class* self, double period_sec, double offset_sec,
                 PyUnrestrictedUpdateCallback<T> py_update) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_update);
-              self->DeclarePeriodicEvent(period_sec, offset_sec,
+              GetAlias<PyClass>(self)->DeclarePeriodicEvent(period_sec,
+                  offset_sec,
                   MakeUnrestrictedUpdateEvent<T>(
                       TriggerType::kPeriodic, py_update.ptr()));
             },
@@ -932,85 +985,92 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclarePeriodicUnrestrictedUpdateEvent.doc)
         .def(
             "DeclarePeriodicEvent",
-            [](PyLeafSystem* self, double period_sec, double offset_sec,
+            [](Class* self, double period_sec, double offset_sec,
                 const Event<T>& event) {
-              self->DeclarePeriodicEvent(period_sec, offset_sec, event);
+              GetAlias<PyClass>(self)->DeclarePeriodicEvent(
+                  period_sec, offset_sec, event);
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
             doc.LeafSystem.DeclarePeriodicEvent.doc)
         .def(
             "DeclarePerStepPublishEvent",
-            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+            [](Class* self, PyPublishCallback<T> py_publish) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_publish);
-              self->DeclarePerStepEvent(
+              GetAlias<PyClass>(self)->DeclarePerStepEvent(
                   MakePublishEvent<T>(TriggerType::kPerStep, py_publish.ptr()));
             },
             py::arg("publish"), doc.LeafSystem.DeclarePerStepPublishEvent.doc)
         .def(
             "DeclarePerStepDiscreteUpdateEvent",
-            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+            [](Class* self, PyDiscreteUpdateCallback<T> py_update) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_update);
-              self->DeclarePerStepEvent(MakeDiscreteUpdateEvent<T>(
-                  TriggerType::kPerStep, py_update.ptr()));
+              GetAlias<PyClass>(self)->DeclarePerStepEvent(
+                  MakeDiscreteUpdateEvent<T>(
+                      TriggerType::kPerStep, py_update.ptr()));
             },
             py::arg("update"),
             doc.LeafSystem.DeclarePerStepDiscreteUpdateEvent.doc)
         .def(
             "DeclarePerStepUnrestrictedUpdateEvent",
-            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+            [](Class* self, PyUnrestrictedUpdateCallback<T> py_update) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_update);
-              self->DeclarePerStepEvent(MakeUnrestrictedUpdateEvent<T>(
-                  TriggerType::kPerStep, py_update.ptr()));
+              GetAlias<PyClass>(self)->DeclarePerStepEvent(
+                  MakeUnrestrictedUpdateEvent<T>(
+                      TriggerType::kPerStep, py_update.ptr()));
             },
             py::arg("update"),
             doc.LeafSystem.DeclarePerStepUnrestrictedUpdateEvent.doc)
         .def(
             "DeclarePerStepEvent",
-            [](PyLeafSystem* self, const Event<T>& event) {
-              self->DeclarePerStepEvent(event);
+            [](Class* self, const Event<T>& event) {
+              GetAlias<PyClass>(self)->DeclarePerStepEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
         .def(
             "DeclareForcedPublishEvent",
-            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+            [](Class* self, PyPublishCallback<T> py_publish) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_publish);
-              self->get_mutable_forced_publish_events().AddEvent(
-                  MakePublishEvent<T>(TriggerType::kForced, py_publish.ptr()));
+              GetAlias<PyClass>(self)
+                  ->get_mutable_forced_publish_events()
+                  .AddEvent(MakePublishEvent<T>(
+                      TriggerType::kForced, py_publish.ptr()));
             },
             py::arg("publish"), doc.LeafSystem.DeclareForcedPublishEvent.doc)
         .def(
             "DeclareForcedDiscreteUpdateEvent",
-            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+            [](Class* self, PyDiscreteUpdateCallback<T> py_update) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_update);
-              self->get_mutable_forced_discrete_update_events().AddEvent(
-                  MakeDiscreteUpdateEvent<T>(
+              GetAlias<PyClass>(self)
+                  ->get_mutable_forced_discrete_update_events()
+                  .AddEvent(MakeDiscreteUpdateEvent<T>(
                       TriggerType::kForced, py_update.ptr()));
             },
             py::arg("update"),
             doc.LeafSystem.DeclareForcedDiscreteUpdateEvent.doc)
         .def(
             "DeclareForcedUnrestrictedUpdateEvent",
-            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+            [](Class* self, PyUnrestrictedUpdateCallback<T> py_update) {
               py::object py_self = py::cast(self, py_rvp::reference);
               EnsureCallbackLifetime(py_self, py_update);
-              self->get_mutable_forced_unrestricted_update_events().AddEvent(
-                  MakeUnrestrictedUpdateEvent<T>(
+              GetAlias<PyClass>(self)
+                  ->get_mutable_forced_unrestricted_update_events()
+                  .AddEvent(MakeUnrestrictedUpdateEvent<T>(
                       TriggerType::kForced, py_update.ptr()));
             },
             py::arg("update"),
             doc.LeafSystem.DeclareForcedUnrestrictedUpdateEvent.doc)
         .def("MakeWitnessFunction",
-            WrapCallbacks([](PyLeafSystem* self, const std::string& description,
+            WrapCallbacks([](Class* self, const std::string& description,
                               const WitnessFunctionDirection& direction_type,
                               std::function<std::optional<T>(const Context<T>&)>
                                   calc) -> std::unique_ptr<WitnessFunction<T>> {
-              return self->MakeWitnessFunction(description, direction_type,
-                  [calc](const Context<T>& context) -> T {
+              return GetAlias<PyClass>(self)->MakeWitnessFunction(description,
+                  direction_type, [calc](const Context<T>& context) -> T {
                     const std::optional<T> result = calc(context);
                     if (!result.has_value()) {
                       // Give a good error message in case the user forgot to
@@ -1027,11 +1087,11 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.MakeWitnessFunction.doc_3args)
         .def("MakeWitnessFunction",
             WrapCallbacks(
-                [](PyLeafSystem* self, const std::string& description,
+                [](Class* self, const std::string& description,
                     const WitnessFunctionDirection& direction_type,
                     std::function<T(const Context<T>&)> calc,
                     const Event<T>& e) -> std::unique_ptr<WitnessFunction<T>> {
-                  return self->MakeWitnessFunction(
+                  return GetAlias<PyClass>(self)->MakeWitnessFunction(
                       description, direction_type, calc, e);
                 }),
             py_rvp::reference_internal, py::arg("description"),

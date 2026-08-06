@@ -217,6 +217,15 @@ GTEST_TEST(NiceTypeNameTest, RemoveNamespaces) {
   EXPECT_EQ(NiceTypeName::RemoveNamespaces("blah::blah2::"), "blah::blah2::");
 }
 
+GTEST_TEST(NiceTypeNameTest, TypeInfoAlias) {
+  // With nothing registered, the type comes back as itself.
+  EXPECT_EQ(internal::GetTypeInfoAlias(&typeid(Derived)), &typeid(Derived));
+
+  // Register an alias and retrieve it.
+  internal::AddTypeInfoAlias(typeid(Derived), &typeid(Base));
+  EXPECT_EQ(internal::GetTypeInfoAlias(&typeid(Derived)), &typeid(Base));
+}
+
 // This test must be last.
 GTEST_TEST(NiceTypeNameTest, Override) {
   internal::SetNiceTypeNamePtrOverride(

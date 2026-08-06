@@ -618,8 +618,16 @@ PYDRAKE_MODULE(primitives, m) {
         .def(
             "data",
             [](const VectorLog<T>* self) {
-              // Reference.
-              return CopyIfNotPodType(self->data());
+              // Our implementation here is the same as CopyIfNotPodType, but
+              // nanobind (as of 2.13) can't cast the Eigen::Block return type
+              // so we also need to convert the Block to a Map.
+              if constexpr (std::is_same_v<T, double>) {
+                const auto& block = self->data();
+                return Eigen::Map<const MatrixXd>(
+                    block.data(), block.rows(), block.cols());
+              } else {
+                return MatrixX<T>(self->data());
+              }
             },
             return_value_policy_for_scalar_type<T>(), doc.VectorLog.data.doc)
         .def("Clear", &VectorLog<T>::Clear, doc.VectorLog.Clear.doc)

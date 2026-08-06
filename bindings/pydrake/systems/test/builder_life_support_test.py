@@ -27,7 +27,7 @@ class TestBuilderLifeSupport(unittest.TestCase):
     def test_wrong_type(self, T):
         DiagramBuilderTestAdversary = DiagramBuilderTestAdversary_[T]
         adversary = DiagramBuilderTestAdversary()
-        with self.assertRaisesRegex(RuntimeError, "Unable to cast.*"):
+        with self.assertRaisesRegex(RuntimeError, ".*cast.*"):
             adversary.StashWrongType(Arbitrary())
 
     @numpy_compare.check_all_types

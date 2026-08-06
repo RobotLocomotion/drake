@@ -216,6 +216,7 @@ def drake_py_test(
                 "bindings/pydrake/math",
                 "bindings/pydrake/solvers",
                 "bindings/pydrake/symbolic",
+                "bindings/pydrake/systems",
             ]
         ])
     if test_alt_binder:
