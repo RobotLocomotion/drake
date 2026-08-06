@@ -213,16 +213,10 @@ drake_py_library(
 
 drake_cc_library(
     name = "builder_life_support_pybind",
-    # XXX porting The *.o file for this *.cc file is probably being copied
-    # multiple times (into every *.so that uses this).
-    srcs = ["builder_life_support_pybind.cc"],
     hdrs = ["builder_life_support_pybind.h"],
     declare_installed_headers = False,
     visibility = ["//bindings/pydrake:__subpackages__"],
-    deps = [
-        "//:drake_shared_library",
-        "//bindings/pydrake:pydrake_pybind",
-    ],
+    deps = ["//bindings/pydrake:pydrake_pybind"],
 )
 
 drake_cc_library(
