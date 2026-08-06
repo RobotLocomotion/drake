@@ -50,8 +50,13 @@ struct ref_cycle {};
 
 /* This function is used in the template below to select peers by call/return
  index. */
+#ifdef PYDRAKE_USE_PYBIND11
 void ref_cycle_impl(size_t peer0, size_t peer1,
     const py::detail::function_call& call, py::handle ret);
+#else  // PYDRAKE_USE_NANOBIND
+void ref_cycle_impl(
+    size_t peer0, size_t peer1, PyObject** args, size_t nargs, py::handle ret);
+#endif
 
 /* This function constructs a reference cycle from arbitrary handles. It may be
  needed in special cases where the ordinary call-policy annotations won't work.
@@ -67,16 +72,54 @@ void make_arbitrary_ref_cycle(
 void make_arbitrary_ref_link(
     py::handle p0, py::handle p1, const std::string& location_hint);
 
+#ifdef PYDRAKE_USE_NANOBIND
+// TODO(rpoyner-tri): figure out if this feature can capture the function name
+// for use in error messages.
+
+// Returns true if either template parameter denotes the return value.
+template <size_t Peer0, size_t Peer1>
+static constexpr bool needs_return_value() {
+  return Peer0 == 0 || Peer1 == 0;
+}
+
+template <size_t NArgs, size_t Peer0, size_t Peer1>
+NB_INLINE void process_precall(PyObject** args,
+    std::integral_constant<size_t, NArgs>, nanobind::detail::cleanup_list*,
+    ref_cycle<Peer0, Peer1>*) {
+  if constexpr (!needs_return_value<Peer0, Peer1>()) {
+    ref_cycle_impl(Peer0, Peer1, args, NArgs, nanobind::handle());
+  }
+}
+
+template <size_t NArgs, size_t Peer0, size_t Peer1>
+void process_postcall(PyObject** args, std::integral_constant<size_t, NArgs>,
+    PyObject* result, ref_cycle<Peer0, Peer1>*) {
+  if constexpr (drake::pydrake::internal::needs_return_value<Peer0, Peer1>()) {
+    // result_guard avoids leaking a reference to the return object if postcall
+    // throws an exception.
+    py::object result_guard = py::steal(result);
+    ref_cycle_impl(Peer0, Peer1, args, NArgs, result);
+    result_guard.release();
+  }
+}
+
+template <typename F, size_t Peer0, size_t Peer1>
+NB_INLINE void func_extra_apply(F& f, ref_cycle<Peer0, Peer1>, size_t&) {
+  f.flags |=
+      static_cast<uint32_t>(nanobind::detail::func_flags::can_mutate_args);
+}
+#endif  // PYDRAKE_USE_NANOBIND
+
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
 
-namespace pybind11 {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 
-// Provide a specialization of the pybind11 internal process_attribute
-// template; this allows writing an annotation that works seamlessly in
-// bindings definitions.
+// Provide specializations of the internal templates for call policies; this
+// allows writing an annotation that works seamlessly in bindings definitions.
+#ifdef PYDRAKE_USE_PYBIND11
 template <size_t Peer0, size_t Peer1>
 class process_attribute<drake::pydrake::internal::ref_cycle<Peer0, Peer1>>
     : public process_attribute_default<
@@ -104,6 +147,13 @@ class process_attribute<drake::pydrake::internal::ref_cycle<Peer0, Peer1>>
     return Peer0 == 0 || Peer1 == 0;
   }
 };
+#else   // PYDRAKE_USE_NANOBIND
+template <size_t Peer0, size_t Peer1, typename... Ts>
+struct func_extra_info<drake::pydrake::internal::ref_cycle<Peer0, Peer1>, Ts...>
+    : func_extra_info<Ts...> {
+  static constexpr bool pre_post_hooks = true;
+};
+#endif  // PYDRAKE_USE_PYBIND11
 
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace PYDRAKE_BINDER_NAMESPACE

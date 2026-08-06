@@ -94,6 +94,7 @@ drake_pybind_library(
         "_common_extra.py",
         "_eigen_geometry_extra.py",
         "_value_extra.py",
+        "alias_registry.py",
         "all.py",
         "compatibility.py",
         "containers.py",
@@ -545,8 +546,6 @@ drake_pybind_library(
 
 drake_py_unittest(
     name = "ref_cycle_test",
-    # TODO(#21572) Remove this opt-out.
-    test_alt_binder = False,
     deps = [
         ":common",
         ":ref_cycle_test_util_py",

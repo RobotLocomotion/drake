@@ -65,7 +65,7 @@ struct BuilderLifeSupport {
 };
 
 /* pydrake::internal::builder_life_support_stash is a custom call policy for
-  pybind11.
+  pybind11 or nanobind.
 
   For an overview of other call policies, See
   https://pybind11.readthedocs.io/en/stable/advanced/functions.html#additional-call-policies
@@ -87,13 +87,19 @@ struct builder_life_support_stash {};
 
 template <typename T>
 void builder_life_support_stash_impl(size_t builder_index,
-    const py::detail::function_call& call, py::handle ret) {
+#ifdef PYDRAKE_USE_PYBIND11
+    const py::detail::function_call& call,
+#else   // PYDRAKE_USE_NANOBIND
+    PyObject** args, size_t nargs,
+#endif  // PYDRAKE_USE_PYBIND11
+    py::handle ret) {
   // Returns the handle selected by the given index. Throws if the index is
   // invalid.
   auto get_arg = [&](size_t n) -> py::handle {
     if (n == 0) {
       return ret;
     }
+#ifdef PYDRAKE_USE_PYBIND11
     if (n == 1 && call.init_self) {
       return call.init_self;
     }
@@ -104,6 +110,16 @@ void builder_life_support_stash_impl(size_t builder_index,
         fmt::format("Could not activate builder_life_support_stash: index {} "
                     "is invalid for function '{}'",
             n, call.func.name));
+#else   // PYDRAKE_USE_NANOBIND
+    if (n <= nargs) {
+      return args[n - 1];
+    }
+    // TODO(rpoyner-tri) Figure out if builder_life_support_stash can capture
+    // the function name for use in error messages.
+    throw std::runtime_error(fmt::format(
+        "Could not activate builder_life_support_stash: index {} is invalid",
+        n));
+#endif  // PYDRAKE_USE_PYBIND11
   };
   py::handle builder_handle = get_arg(builder_index);
   if (builder_handle.is_none()) {
@@ -112,6 +128,12 @@ void builder_life_support_stash_impl(size_t builder_index,
   }
   // Convert the handle to a strong reference for later stashing.
   py::object py_builder = py::cast<py::object>(builder_handle);
+#ifdef PYDRAKE_USE_NANOBIND
+  // For nanobind init annotations, we must ensure the ready bit is set before
+  // casting to c++.
+  py::inst_set_state(
+      builder_handle, true, py::inst_state(builder_handle).second);
+#endif
   // Recover the c++ pointer; pybind11 will throw if the cast can't work.
   systems::DiagramBuilder<T>* cc_builder =
       py::cast<systems::DiagramBuilder<T>*>(py_builder);
@@ -122,16 +144,45 @@ void builder_life_support_stash_impl(size_t builder_index,
       .emplace(BuilderLifeSupport<T>::kKey, py_builder);
 }
 
+// For nanobind annotations, we must provide ADL hooks for func_extra_info.
+#ifdef PYDRAKE_USE_NANOBIND
+template <size_t NArgs, typename T, size_t Builder>
+NB_INLINE void process_precall(PyObject**,
+    std::integral_constant<size_t, NArgs>, nanobind::detail::cleanup_list*,
+    builder_life_support_stash<T, Builder>*) {
+  // Do nothing. If the call is a builder initializer, this stage is too early
+  // in nanobind's initializer processing to do anything.
+}
+
+template <size_t NArgs, typename T, size_t Builder>
+void process_postcall(PyObject** args, std::integral_constant<size_t, NArgs>,
+    PyObject* result, builder_life_support_stash<T, Builder>*) {
+  // result_guard avoids leaking a reference to the return object if postcall
+  // throws an exception.
+  py::object result_guard = py::steal(result);
+  builder_life_support_stash_impl<T>(Builder, args, NArgs, result);
+  result_guard.release();
+}
+
+template <typename F, typename T, size_t Builder>
+NB_INLINE void func_extra_apply(
+    F& f, builder_life_support_stash<T, Builder>, size_t&) {
+  f.flags |=
+      static_cast<uint32_t>(nanobind::detail::func_flags::can_mutate_args);
+}
+#endif  // PYDRAKE_USE_NANOBIND
+
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
 
-namespace pybind11 {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 
-// Provide a specialization of the pybind11 internal process_attribute
-// template; this allows writing an annotation that works seamlessly in
-// bindings definitions.
+// Provide a specialization of the pybind11 internal process_attribute template
+// or nanobind func_extra_info template; this allows writing an annotation that
+// works seamlessly in bindings definitions.
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename T, size_t Builder>
 class process_attribute<
     drake::pydrake::internal::builder_life_support_stash<T, Builder>>
@@ -144,6 +195,14 @@ class process_attribute<
         Builder, call, ret);
   }
 };
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T, size_t Builder, typename... Ts>
+struct func_extra_info<
+    drake::pydrake::internal::builder_life_support_stash<T, Builder>, Ts...>
+    : func_extra_info<Ts...> {
+  static constexpr bool pre_post_hooks = true;
+};
+#endif  // PYDRAKE_USE_PYBIND11
 
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace PYDRAKE_BINDER_NAMESPACE

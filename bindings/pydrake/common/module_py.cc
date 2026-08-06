@@ -24,7 +24,6 @@
 #include "drake/common/sha256.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/unused.h"
 
 namespace drake {
 namespace pydrake {
@@ -47,13 +46,16 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
   auto py_type_info = py::detail::get_type_info(ptr.info);
   return py::detail::get_object_handle(ptr.raw, py_type_info);
 #else
-  // TODO(#21572) Use is_polymorphic for nanobind (or remove it from the struct,
-  // if we change our mind and end up not needing it).
-  unused(ptr.is_polymorphic);
   bool is_new{false};
   PyObject* result{};
-  result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
-      py_rvp::reference, nullptr, &is_new);
+  auto bound_type = internal::AliasRegistry::Unalias(&ptr.info);
+  if (ptr.is_polymorphic) {
+    result = py::detail::nb_type_put_p(bound_type, &ptr.info,
+        const_cast<void*>(ptr.raw), py_rvp::reference, nullptr, &is_new);
+  } else {
+    result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
+        py_rvp::reference, nullptr, &is_new);
+  }
   if (is_new) {
     py::object delete_me = py::steal(result);
     return py::handle();

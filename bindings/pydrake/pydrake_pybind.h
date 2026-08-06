@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <type_traits>
+#include <typeindex>
+#include <unordered_map>
 #include <utility>
 
 // Here we include a lot of the pybind11 (or nanobind) API, to ensure that all
@@ -60,6 +62,7 @@
 #pragma GCC diagnostic pop
 
 #include "drake/bindings/pydrake/numpy_object_pybind.h"
+#include "drake/bindings/pydrake/reference_wrapper_pybind.h"
 #endif  // PYDRAKE_USE_NANOBIND
 
 namespace drake {
@@ -95,6 +98,39 @@ using py_rvp = py::rv_policy;
 using py::class_;
 #else   // PYDRAKE_USE_NANOBIND
 namespace internal {
+// XXX need locking?
+class AliasRegistry {
+ public:
+  static void AddAlias(
+      const ::std::type_info& alias_type, const ::std::type_info& bound_type) {
+    (*TheMap())[std::type_index(alias_type)] = &bound_type;
+  }
+
+  static const std::type_info* Unalias(const std::type_info* query) {
+    auto& unalias = *TheMap();
+    auto it = unalias.find(std::type_index(*query));
+    if (it == unalias.end()) {
+      return query;
+    }
+    return it->second;
+  }
+
+ private:
+  using UnaliasMap = std::unordered_map<std::type_index, const std::type_info*>;
+  static UnaliasMap* TheMap() {
+    py::module_ m = py::module_::import_("pydrake.common.alias_registry");
+    py::capsule py_map = m.attr("_unalias_map");
+    UnaliasMap* cpp_map{};
+    if (py_map.is_none()) {
+      // Purposefully never destroyed; no cleanup routine is provided.
+      py_map = py::capsule(new UnaliasMap);
+      m.attr("_unalias_map") = py_map;
+    }
+    cpp_map = static_cast<UnaliasMap*>(py_map.data());
+    return cpp_map;
+  }
+};
+
 // We use partial template specialiation of a traits-like type to drop the
 // shared_ptr holder type annotation on py::class_ declarations. Only pybind11
 // uses holder types in the class_ template argument list.
@@ -119,6 +155,7 @@ struct PyClassRemoveSharedPtrHolderAnnotation<T, Base1, Base2, Holder, Ts...> {
       py::class_<T, Base1, Base2, Ts...>,
       py::class_<T, Base1, Base2, Holder, Ts...> >;
 };
+
 }  // namespace internal
 
 template <typename T, typename... Ts>
@@ -128,7 +165,12 @@ class __attribute__((visibility("hidden"))) class_
   using Base = internal::PyClassRemoveSharedPtrHolderAnnotation<T, Ts...>::type;
   explicit class_(auto&&... args)
       : Base(std::forward<decltype(args)>(args)...,
-            py::is_weak_referenceable()) {}
+            py::is_weak_referenceable()) {
+    if constexpr (!std::is_same_v<T, typename Base::Alias>) {
+      internal::AliasRegistry::AddAlias(
+          typeid(typename Base::Alias), typeid(T));
+    }
+  }
 };
 #endif  // PYDRAKE_USE_PYBIND11
 
@@ -372,15 +414,6 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 #define PYDRAKE_BINDER_NAMESPACE pybind11
 #define PYDRAKE_OVERRIDE PYBIND11_OVERRIDE
 #define PYDRAKE_OVERRIDE_PURE PYBIND11_OVERRIDE_PURE
-#else  // PYDRAKE_USE_NANOBIND
-#define PYDRAKE_MODULE NB_MODULE
-#define PYDRAKE_BINDER_NAMESPACE nanobind
-#define PYDRAKE_OVERRIDE(unused1, unused2, ...) NB_OVERRIDE(__VA_ARGS__)
-#define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) \
-  NB_OVERRIDE_PURE(__VA_ARGS__)
-#endif
-
-#ifdef PYDRAKE_USE_PYBIND11
 // This is an implementation of nanobind's NB_TRAMPOLINE macro for pybind11.
 // https://nanobind.readthedocs.io/en/latest/classes.html#overriding-virtual-functions-in-python
 // In particular, `size` should match how many PYDRAKE_OVERRIDE{,_PURE} are used
@@ -389,4 +422,32 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
   static_assert(size >= 0);       \
   using NBBase = base;            \
   using NBBase::NBBase
+#else  // PYDRAKE_USE_NANOBIND
+#define PYDRAKE_MODULE NB_MODULE
+#define PYDRAKE_BINDER_NAMESPACE nanobind
+#define PYDRAKE_OVERRIDE(unused1, unused2, func, ...)                         \
+  do {                                                                        \
+    try {                                                                     \
+      NB_OVERRIDE(func, __VA_ARGS__);                                         \
+    } catch (const py::builtin_exception& e) {                                \
+      /* In case the method was not overridden, nanobind might erroneously */ \
+      /* throw instead of using the base class implementation. This will */   \
+      /* happen when the C++ base class method isn't bound in pydrake. */     \
+      /* We'll check for that exact failure mode and handle it here. */       \
+      if (e.type() == py::exception_type::runtime_error) {                    \
+        const std::string_view what = e.what();                               \
+        if (what.starts_with("nanobind::detail::get_trampoline('") &&         \
+            what.ends_with("'): lookup failed!")) {                           \
+          { /* Flush the failure from PyObject_GetAttr. */                    \
+            py::gil_scoped_acquire guard;                                     \
+            PyErr_Clear();                                                    \
+          }                                                                   \
+          return NBBase::func(__VA_ARGS__);                                   \
+        }                                                                     \
+      }                                                                       \
+      throw;                                                                  \
+    }                                                                         \
+  } while (0)
+#define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) \
+  NB_OVERRIDE_PURE(__VA_ARGS__)
 #endif  // PYDRAKE_USE_PYBIND11
