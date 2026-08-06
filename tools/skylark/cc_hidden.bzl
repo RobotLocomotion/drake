@@ -1,16 +1,44 @@
 load("@with_cfg.bzl", "with_cfg")
 load("//tools/skylark:cc.bzl", "cc_library")
 
-# cc_static_hidden_library is a cc_library rule that recompiles the libraries
-# listed in its `deps` adding `copts = ["-fvisibilty=hidden"]` and using only
-# static linking.
-#
-# This is useful when linking third-party C libraries into libdrake.so when we
-# don't control the BUILD files (so can't directly set copts or linkstatic).
 _builder = with_cfg(cc_library)
-_builder.extend("copt", ["-fvisibility=hidden"])
+_builder.extend("conlyopt", ["-fvisibility=hidden"])
 _builder.extend("features", ["-supports_dynamic_linker"])
-cc_static_hidden_library, _ = _builder.build()
+_cc_static_hidden_library, _ = _builder.build()
+
+def cc_static_hidden_library(
+        name,
+        *,
+        deps,
+        visibility = ["//visibility:private"]):
+    """Recompiles the libraries listed in `deps` adding
+    `conlyopts = ["-fvisibilty=hidden"]` and using only static linking.
+
+    This is useful when linking third-party C/C++ libraries into libdrake.so
+    when we don't control the BUILD files (so can't directly set copts or
+    linkstatic).
+    """
+
+    if not deps:
+        fail("cc_static_hidden_library is intended to wrap another library as listed in `deps`.")
+
+    # Add upstream build flags for individual third-party libraries. These are
+    # set here as the one source of truth (as opposed to each external's
+    # callsite) so that if drake's third-party dependencies have transitive
+    # dependencies on each other, only one copy is built using the same flags.
+    defines = [
+        # Use a drake_vendor hidden namespace instead of nlohmann_json's
+        # default ABI namespace based on its version number. This prevents ODR
+        # violations in case downstream code also links to nlohmann_json.
+        "'NLOHMANN_JSON_NAMESPACE_BEGIN=namespace nlohmann { inline namespace drake_vendor __attribute__((visibility(\"hidden\"))) {'",
+    ]
+
+    _cc_static_hidden_library(
+        name = name,
+        defines = defines,
+        deps = deps,
+        visibility = visibility,
+    )
 
 def cc_wrap_static_archive_hidden(
         name,

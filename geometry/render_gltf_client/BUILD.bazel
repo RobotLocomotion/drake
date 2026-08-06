@@ -152,7 +152,7 @@ drake_cc_optional_library(
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann//:singleheader-json",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonMath",
         "@vtk_internal//:vtkIOExport",
@@ -171,7 +171,7 @@ drake_cc_optional_library(
         "//common:essential",
         "//common:find_resource",
         "//geometry:mesh_source",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann//:singleheader-json",
     ],
 )
 
@@ -293,7 +293,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//geometry:scene_graph",
         "//systems/sensors/test_utilities:image_compare",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann//:singleheader-json",
         "@vtk_internal//:vtkCommonMath",
         "@vtk_internal//:vtkRenderingCore",
     ],
@@ -432,7 +432,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann//:singleheader-json",
     ],
 )
 
