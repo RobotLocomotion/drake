@@ -6,8 +6,10 @@
 #error "Should only be used when the binder is nanobind!"
 #endif
 
-/* @file
-This file provides the PYDRAKE_NUMPY_OBJECT_DTYPE macro. */
+/* This file provides the PYDRAKE_NUMPY_OBJECT_DTYPE macro, which defines
+type_caster<> specializations between C++ Eigen matrices and Python numpy arrays
+where the numpy dtype=object, i.e., the Eigen::Scalar type is not a primitive
+type. */
 
 namespace nanobind {
 namespace detail {
