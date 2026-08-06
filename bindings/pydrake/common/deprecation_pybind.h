@@ -138,16 +138,6 @@ auto py_init_deprecated(std::string message) {
 #endif
 }
 
-/// Deprecated wrapping of `py::init(factory)`.
-template <typename Func>
-auto py_init_deprecated(std::string message, Func&& func) {
-#ifdef PYDRAKE_USE_PYBIND11
-  return py::init(WrapDeprecated(std::move(message), std::forward<Func>(func)));
-#else  // PYDRAKE_USE_NANOBIND
-  return internal::PyInitDeprecatedCustomImpl<Func>(message, std::move(func));
-#endif
-}
-
 /// The deprecated flavor of ParamInit<>.
 #ifdef PYDRAKE_USE_PYBIND11
 template <typename Class>
