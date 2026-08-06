@@ -22,6 +22,7 @@ def main() -> None:
             ["bazel", "run", "//tools/workspace/crate_universe:upgrade"],
         )
 
+    # This import only works when run via Bazel, so must come after the re-exec.
     from python import runfiles
 
     manifest = runfiles.Create()
