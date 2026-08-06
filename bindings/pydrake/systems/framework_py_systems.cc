@@ -73,28 +73,28 @@ constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 // @tparam PyClass the pydrake::class_ type used to bind Class.
 // @tparam Class the class being bound.
 template <typename PyClass>
-using _Alias =
+using py_class_alias_t =
 #ifdef PYDRAKE_USE_PYBIND11
     PyClass::type_alias;
 #else
     PyClass::Alias;
 #endif
 template <typename PyClass, typename Class>
-_Alias<PyClass>* GetAlias(Class* self) {
+py_class_alias_t<PyClass>* GetAlias(Class* self) {
   // This implementation makes the following assumption, important for bound
   // classes that also have bound subclasses that permit further python
-  // subclassing:
-  // * _Alias<PyClass> has no material *runtime* differences from Class.
+  // subclassing: py_class_alias_t<PyClass> has no material *runtime*
+  // differences from Class.
   //
   // Typically this means that the alias class implements the following sorts
   // of allowable changes w.r.t. the bound class:
   // * fiddling with access specifiers (e.g. make private methods public)
   // * overriding virtual methods
   //
-  // The reason for these limitations is that bound subclasses, nor their
-  // aliases are derived from the base bound class' alias. Thus, dynamic_cast
-  // to the alias class will not work
-  return static_cast<_Alias<PyClass>*>(self);
+  // The reason for these limitations is that neither bound subclasses nor their
+  // aliases are derived from the base bound class' alias. Thus, dynamic_cast to
+  // the alias class will not work
+  return static_cast<py_class_alias_t<PyClass>*>(self);
 }
 
 // This helper function works around a peculiarity of pybind11 wrapping of

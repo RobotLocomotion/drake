@@ -42,6 +42,7 @@ drake_py_library(
 drake_pybind_library(
     name = "framework_py",
     cc_deps = [
+        ":builder_life_support_pybind",
         "//bindings/generated_docstrings:systems_framework",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
@@ -50,7 +51,6 @@ drake_pybind_library(
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
-        "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_srcs = [
         "framework_py.cc",
@@ -394,6 +394,7 @@ drake_py_binary(
     ],
     add_test_rule = True,
     test_rule_timeout = "moderate",
+    test_rule_test_alt_binder = False,
 )
 
 drake_jupyter_py_binary(
@@ -565,7 +566,8 @@ drake_py_unittest(
         ":planar_scenegraph_visualizer_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/geometry",
-        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 

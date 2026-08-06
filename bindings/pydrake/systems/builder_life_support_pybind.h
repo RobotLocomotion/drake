@@ -65,7 +65,7 @@ struct BuilderLifeSupport {
 };
 
 /* pydrake::internal::builder_life_support_stash is a custom call policy for
-  pybind11.
+  pybind11 or nanobind.
 
   For an overview of other call policies, See
   https://pybind11.readthedocs.io/en/stable/advanced/functions.html#additional-call-policies
@@ -90,9 +90,6 @@ template <typename T>
 void builder_life_support_stash_impl(size_t builder_index,
     const py::detail::function_call& call, py::handle ret);
 #else   // PYDRAKE_USE_NANOBIND
-// TODO(rpoyner-tri): figure out if this feature can capture the function name
-// for use in error messages.
-
 template <typename T>
 void builder_life_support_stash_impl(
     size_t builder_index, PyObject** args, size_t nargs, py::handle ret);
@@ -152,6 +149,9 @@ class process_attribute<
 namespace nanobind {
 namespace detail {
 
+// Provide a specialization of the nanobind func_extra_info template; this
+// allows writing an annotation that works seamlessly in bindings definitions,
+// in concert with the process_{precall,postcall} functions above.
 template <typename T, size_t Builder, typename... Ts>
 struct func_extra_info<
     drake::pydrake::internal::builder_life_support_stash<T, Builder>, Ts...>
