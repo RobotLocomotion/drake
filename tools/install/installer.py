@@ -78,12 +78,6 @@ def _patchelf_path() -> Path:
     return Path(manifest.Rlocation("patchelf/patchelf"))
 
 
-@functools.cache
-def _install_name_tool_path() -> Path:
-    manifest = runfiles.Create()
-    return next(manifest.root().glob("llvm*/bin/llvm-install-name-tool"))
-
-
 class Installer:
     def __init__(self):
         # Stored from command-line.
@@ -405,11 +399,7 @@ def main(args):
     parser.add_argument(
         "--install_name_tool",
         type=str,
-        default=(
-            str(_install_name_tool_path())
-            if sys.platform == "darwin"
-            else "install_name_tool"
-        ),
+        default="install_name_tool",
         help="install_name_tool program",
     )
     parser.add_argument(

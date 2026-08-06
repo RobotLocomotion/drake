@@ -404,8 +404,8 @@ use_repo(crate_universe, "crate_licenses")
 
 crate = use_extension("@rules_rs//rs:extensions.bzl", "crate")
 crate.from_cargo(
-    cargo_lock = "//tools/workspace/crate_universe:lock/Cargo.lock",
-    cargo_toml = "//tools/workspace/crate_universe:lock/Cargo.toml",
+    cargo_lock = "@crate_licenses//:Cargo.lock",
+    cargo_toml = "@crate_licenses//:Cargo.toml",
     platform_triples = [
         "aarch64-apple-darwin",
         "aarch64-unknown-linux-gnu",

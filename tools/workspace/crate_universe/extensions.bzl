@@ -1,5 +1,11 @@
 def _crate_licenses_repository_impl(repo_ctx):
     my_dir = "@drake//tools/workspace/crate_universe"
+    manifest = repo_ctx.path(
+        Label("@clarabel_cpp_internal//:rust_wrapper/Cargo.toml"),
+    )
+    repo_ctx.symlink(manifest, "Cargo.toml")
+    repo_ctx.symlink(manifest.dirname.get_child("src"), "src")
+    repo_ctx.symlink(Label(my_dir + ":lock/Cargo.lock"), "Cargo.lock")
     repo_ctx.symlink(
         Label(my_dir + ":BUILD.crate_licenses.bazel"),
         "BUILD.bazel",

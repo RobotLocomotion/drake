@@ -39,10 +39,7 @@ exports_files(
 drake_py_binary(
     name = "installer",
     srcs = ["installer.py"],
-    data = ["@patchelf"] + select({
-        "//tools/cc_toolchain:apple": ["@llvm//tools:llvm-install-name-tool"],
-        "//conditions:default": [],
-    }),
+    data = ["@patchelf"],
     deps = [
         ":otool",
         "@rules_python//python/runfiles",

@@ -26,6 +26,10 @@ def main() -> None:
 
     manifest = runfiles.Create()
     cargo = manifest.Rlocation(cargo_runfile)
+    cargo_toml = manifest.Rlocation(
+        os.environ["DRAKE_CARGO_MANIFEST_RLOCATIONPATH"]
+    )
+    workspace = Path(cargo_toml).parent
     script_dir = (
         Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
         / "tools/workspace/crate_universe"
@@ -35,13 +39,15 @@ def main() -> None:
             cargo,
             "update",
             "--manifest-path",
-            "lock/Cargo.toml",
+            cargo_toml,
         ],
-        cwd=script_dir,
+        cwd=workspace,
         check=True,
-        env=os.environ
-        | manifest.EnvVars()
-        | {"BUILD_WORKING_DIRECTORY": str(script_dir)},
+        env=(
+            os.environ
+            | manifest.EnvVars()
+            | {"BUILD_WORKING_DIRECTORY": str(workspace)}
+        ),
     )
 
     lockfile = script_dir / "lock/Cargo.lock"
