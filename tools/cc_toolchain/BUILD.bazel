@@ -104,29 +104,6 @@ config_setting(
     values = {"compilation_mode": "dbg"},
 )
 
-# (Internal use only.)  When this is set to True, some Drake builds may use the
-# mold linker, primarily for its improved handling of DWARF debug
-# information. It should be False (the default) for all builds initiated via
-# Drake's CMake wrappers. See the other "mold_linker" settings below and issue
-# #21836.
-bool_flag(
-    name = "allow_mold_linker",
-    build_setting_default = False,
-)
-
-config_setting(
-    name = "mold_linker_allowed",
-    flag_values = {":allow_mold_linker": "True"},
-)
-
-selects.config_setting_group(
-    name = "use_mold_linker",
-    match_all = [
-        ":debug",
-        ":mold_linker_allowed",
-    ],
-)
-
 # (Internal use only.) This captures whether --config=openmp was specified.
 bool_flag(
     name = "with_openmp",

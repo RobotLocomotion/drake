@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from pydrake.common import temp_directory
+from pydrake.common import _binder, temp_directory
 from pydrake.solvers import (
     GurobiSolver,
     MathematicalProgram,
@@ -82,6 +82,10 @@ class TestMathematicalProgram(unittest.TestCase):
         solver.Solve(prog, None, options)
         self.assertTrue(os.path.exists(ilp_file_name))
 
+    @unittest.skipIf(
+        _binder == "nanobind",  # TODO(#21572) Remove this opt-out.
+        "Critical nanobind error: nanobind::detail::nb_type_put('pydrake.solvers.MathematicalProgram'): attempted to copy an instance that is not copy-constructible!",  # noqa
+    )
     def test_callback(self):
         prog = MathematicalProgram()
         b = prog.NewBinaryVariables(4)

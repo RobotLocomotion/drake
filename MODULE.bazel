@@ -7,22 +7,23 @@
 module(
     name = "drake",
     # This version number should match MINIMUM_BAZEL_VERSION in CMakeLists.txt.
-    bazel_compatibility = [">=8.4.0"],
+    bazel_compatibility = [">=8.5.0"],
 )
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "2.5.4")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "bazel_features", version = "1.47.1")
-bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "apple_support", version = "2.8.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "bazel_features", version = "1.51.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "platforms", version = "1.1.0")
-bazel_dep(name = "rules_cc", version = "0.2.19")
-bazel_dep(name = "rules_java", version = "9.6.1")
-bazel_dep(name = "rules_jvm_external", version = "7.0")
+bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_java", version = "9.7.0")
+bazel_dep(name = "rules_jvm_external", version = "7.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "2.0.2")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rust", version = "0.70.0")
+bazel_dep(name = "rules_python", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_rust", version = "0.71.2")  # When upgrading, locally test that crate vendoring still works via `tools/workspace/crate_universe/upgrade.sh && bazel test //tools/install/libdrake/...`.
 bazel_dep(name = "rules_shell", version = "0.8.0")
+bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 
 # Configure the C++ toolchain.
 
@@ -32,7 +33,7 @@ cc_configure = use_extension(
 )
 use_repo(cc_configure, "local_config_cc")
 
-# Add C++ dependencies that are part of our public API.
+# Add C/C++ dependencies that are part of our public API.
 #
 # We declare these dependencies twice -- as modules (bazel_dep) and repository
 # rules using pkgconfig in `internal_repositories`. The choice of whether module
@@ -50,24 +51,16 @@ use_repo(cc_configure, "local_config_cc")
 # For first-party Bazel builds (by Drake Developers), the pkgconfig flavor is
 # used by default but can be changed using the Bazel flags.
 
-bazel_dep(name = "eigen", version = "5.0.1.bcr.1", repo_name = "module_eigen")
-bazel_dep(name = "fmt", version = "12.1.0", repo_name = "module_fmt")
+bazel_dep(name = "eigen", version = "5.0.1.bcr.2", repo_name = "module_eigen")
+bazel_dep(name = "fmt", version = "12.2.0", repo_name = "module_fmt")
 bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # noqa
 
-single_version_override(
-    module_name = "eigen",
-    patch_strip = 1,
-    patches = [
-        "//tools/workspace:eigen/patches/upstream/cherry-picks.patch",
-    ],
-)
-
-# Add C++ module dependencies that are NOT used by Drake's public API, but are
-# used by Drake's implementation. Builds have the option to opt-out of these
-# dependencies by providing a replacement:
+# Add replaceable C/C++ module dependencies that are NOT used by Drake's public
+# API, but are used by Drake's implementation. Builds have the option to opt-out
+# of these dependencies by providing a replacement:
 #
 # For our CMake builds from source, the "WITH_USER_..." CMake options find a
-# user-supplied library are converted into a module override.
+# user-supplied library and are converted into a module override.
 #
 # For wheel builds, the module flavor is always used.
 #
@@ -76,7 +69,15 @@ single_version_override(
 # For first-party Bazel builds (by Drake Developers), the non-module flavor
 # is used by default.
 
-bazel_dep(name = "glib", version = "2.82.2.bcr.8", repo_name = "module_glib")
+bazel_dep(name = "glib", version = "2.82.2.bcr.9", repo_name = "module_glib")
+
+# Add non-replaceable C/C++ module dependencies that are used by Drake's
+# implementation.
+
+bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
+bazel_dep(name = "nanobind", version = "2.13.0", repo_name = "module_nanobind")
+bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
+bazel_dep(name = "suitesparse", version = "7.12.3", repo_name = "module_suitesparse")
 bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
 
 # Add additional modules we use at build-time (not runtime dependencies).
@@ -124,6 +125,17 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 use_repo(pip, "drake_mypy")
 
+[
+    pip.parse(
+        hub_name = "drake_lief",
+        python_version = python_version,
+        requirements_lock = "//setup:python/lief/requirements.txt",
+    )
+    for python_version in PYTHON_VERSIONS
+]
+
+use_repo(pip, "drake_lief")
+
 # Load dependencies which are "public", i.e., made available to downstream
 # projects.
 #
@@ -141,20 +153,26 @@ drake_dep_repositories = use_extension(
 use_repo(
     drake_dep_repositories,
     #
-    # Aliases for C++ dependencies that are part of our public API.
+    # Aliases for C/C++ dependencies that are part of our public API.
     # What these refer to is configurable; see above.
     #
     "eigen",
     "fmt",
     "spdlog",
     #
-    # Aliases for C++ dependencies that are used by our implementation.
+    # Aliases for C/C++ dependencies that are used by our implementation.
     # What these refer to is configurable; see above.
     #
     "blas",
     "glib",
     "lapack",
     "opencl",
+    #
+    # Aliases for C/C++ dependencies that are used by our implementation,
+    # but (unlike the prior group) these are not configurable.
+    #
+    "libjpeg",
+    "suitesparse",
     "zlib",
     #
     # First-party dependencies (i.e., drake-maintained).
@@ -198,12 +216,12 @@ use_repo(maven, "drake_maven_internal")
 
 bazel_dep(
     name = "buildifier_prebuilt",
-    version = "8.5.1.2",
+    version = "8.5.1.3",
     dev_dependency = True,
 )
 bazel_dep(
     name = "gflags",
-    version = "2.2.2.bcr.1",
+    version = "2.3.1",
     dev_dependency = True,
 )
 
@@ -218,6 +236,7 @@ bazel_dep(
 single_version_override(
     module_name = "googletest",
     patches = [
+        "//tools/workspace/googletest:patches/upstream/character_conversion_casting.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/exception_shadowing.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/param_iterator_interface.patch",  # noqa
         "//tools/workspace/googletest:patches/add_printers.patch",
@@ -241,22 +260,17 @@ single_version_override(
 )
 
 bazel_dep(
-    name = "toolchains_llvm",
-    version = "1.7.0",
-    dev_dependency = True,
-)
-
-llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
-
-llvm(
     name = "llvm",
+    version = "0.8.16",
     dev_dependency = True,
-    llvm_versions = {"": "21.1.8"},
 )
+# N.B. We must NOT register llvm's toolchain here. We want to use the
+# auto-detecting toolchain, above ("local_config_cc"). We only use llvm
+# for linting (clang-format) and testing (llvm-objdump).
 
 bazel_dep(
     name = "ruff_prebuilt",
-    version = "0.15.12.1",
+    version = "0.16.0.1",
     dev_dependency = True,
     repo_name = "ruff",
 )
@@ -291,7 +305,6 @@ use_repo(
     "ipopt_internal",
     "lapack_internal",
     "lcm_internal",
-    "libjpeg_turbo_internal",
     "libpng_internal",
     "libtiff_internal",
     "libzip_internal",
@@ -317,7 +330,6 @@ use_repo(
     "sdformat_internal",
     "spral_internal",
     "stduuid_internal",
-    "suitesparse_internal",
     "tinygltf_internal",
     "tinyobjloader_internal",
     "tinyxml2_internal",
@@ -379,6 +391,11 @@ use_repo(
     "crate__paste-1.0.15",
     "crate_licenses",
 )
+
+# Incorporate Drake-specific patches to modules. The list of patches lives in a
+# separate file so that our cmake/MODULE.bazel.in can also include it.
+
+include("//:patches.MODULE.bazel")
 
 # Add CLion support repository used by `tools/clion/bazel_wrapper`.
 

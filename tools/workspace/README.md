@@ -21,7 +21,7 @@ module extension to incorporate the external. Either way, our `MODULE.bazel`
 file lists every external that we directly use; refer to its comments for more
 details.
 
-Drake also offers configuration flags to govern the externals, e.g., to:
+Drake also offers configuration flags to govern some externals, e.g., to:
 - select where (groups of) externals come from, or
 - opt-in to (or opt-out) of a specific external.
 Refer to the documentation in `tools/flags/BUILD.bazel` for details. Note that
@@ -40,6 +40,9 @@ drake_dep_repositories = use_extension(
 )
 use_repo(drake_dep_repositories, "eigen")
 ```
+
+Drake also offers an alias when the external is a Bazel Central Registry module
+but we customize its build flags using transitions.
 
 ## CMake interface
 
@@ -191,6 +194,36 @@ If an external required non-trivial changes, even if you were able to make the
 changes yourself, consider separating that external into its own pull request
 and assigning it to the associated feature owner.
 
+## Python
+
+As part of the monthly upgrades process, the pinned Python packages used on
+platforms for which Drake relies on a virtual environment should be updated.
+This is the reminder that the `new_release` tool prints for "python".
+
+The accompanying script to perform the upgrade can only be invoked on a system
+where Drake actually uses a virtual environment, which is currently only macOS.
+(Drake uses a venv when building Python wheels on Linux also, but inside a
+Docker container. Running the script inside a container adds complications and
+is not recommended.)
+
+On a supported platform, run the script:
+
+```
+./tools/workspace/python/venv_upgrade [--commit]
+```
+
+Always push these changes to a separate branch from the regular monthly
+upgrades. Like the other upgrades, it can be tagged
+`status: single reviewer ok`, and typically assigned to the on-call platform
+reviewer in absence of any failures.
+
+For further details, see:
+
+* `//tools/workspace/python/venv_upgrade` for the upgrade script;
+* `//setup/python/pyproject.toml` for the TOML file; and
+* `//setup/python/{hub}/requirements.in` for the requirements files managed by
+  `uv` via `rules_python`.
+
 ## drake-external-examples
 
 The
@@ -330,10 +363,11 @@ software's license is acceptable to use within Drake.
 
 When adding a new external, decide whether it will be covered by our
 [Stability Guidelines](https://drake.mit.edu/stable.html). Broadly speaking,
-dependencies that come from the host operating system can be covered as
-stable, but dependencies that we compile from source code should be internal.
-If the new dependency should be in internal, name it like "foo_internal" (not
-just "foo") throughout all of the below.
+dependencies that come from the host operating system or the Bazel Central
+Registry can be covered as stable, but dependencies that we compile from source
+code using our own package.BUILD.bazel files should be internal. If the new
+dependency should be in internal, name it like "foo_internal" (not just "foo")
+throughout all of the below.
 
 When the software is available in the
 [Bazel Central Registry](https://registry.bazel.build/), we generally prefer to

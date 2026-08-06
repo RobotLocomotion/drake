@@ -325,18 +325,12 @@ Co-Author: Mmanu Chaturvedi <mmanu.chaturvedi@kitware.com>
  
  public:
      bool load(handle src, bool convert) {
-@@ -494,6 +632,17 @@ public:
+@@ -494,6 +632,11 @@ public:
          bool need_copy = !isinstance<Array>(src);
  
          EigenConformable<props::row_major> fits;
 +        constexpr bool is_pyobject = is_pyobject_dtype<Scalar>::value;
-+        // TODO(eric.cousineau): Make this compile-time once Drake does not use this in any code
-+        // for scalar types.
-+        // static_assert(!(is_pyobject && need_writeable), "dtype=object cannot provide writeable
-+        // references");
-+        if (is_pyobject && need_writeable) {
-+            throw cast_error("dtype=object cannot provide writeable references");
-+        }
++        static_assert(!(is_pyobject && need_writeable), "dtype=object cannot provide writeable references");
 +        if (is_pyobject) {
 +            need_copy = true;
 +        }

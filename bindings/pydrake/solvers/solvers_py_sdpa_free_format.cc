@@ -19,7 +19,16 @@ void DefineSolversSdpaFreeFormat(py::module_ m) {
       .value("kTwoSlackVariables", RemoveFreeVariableMethod::kTwoSlackVariables,
           doc.RemoveFreeVariableMethod.kTwoSlackVariables.doc)
       .value("kLorentzConeSlack", RemoveFreeVariableMethod::kLorentzConeSlack,
-          doc.RemoveFreeVariableMethod.kLorentzConeSlack.doc);
+          doc.RemoveFreeVariableMethod.kLorentzConeSlack.doc)
+#ifdef PYDRAKE_USE_NANOBIND
+      // We need to allow passing this enum to SetSolverOption (which only
+      // accepts primitive types), even though it's not an IntEnum.
+      .def("__int__",
+          [](RemoveFreeVariableMethod value) {
+            return static_cast<int64_t>(value);
+          })
+#endif
+      ;  // NOLINT(whitespace/semicolon)
 
   m.def("GenerateSDPA", &solvers::GenerateSDPA, py::arg("prog"),
       py::arg("file_name"),

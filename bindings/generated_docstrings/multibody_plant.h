@@ -1524,7 +1524,7 @@ Raises:
     RuntimeError if ``stiffness`` is not strictly positive.
 
 Raises:
-    RuntimeError if ``damping`` is not positive or zero.)""";
+    RuntimeError if ``damping`` is not positive nor zero.)""";
         } ctor;
         // Symbol: drake::multibody::DistanceConstraintParams::bodyA
         struct /* bodyA */ {
@@ -1703,6 +1703,7 @@ concepts/notation.
     - <em style="color:gray">model_instance_name[i]</em>_actuation
     - <em style="color:gray">model_instance_name[i]</em>_desired_state
     - <span style="color:green">geometry_query</span>
+    - surface_speeds
     output_ports:
     - state
     - body_poses
@@ -1718,6 +1719,7 @@ concepts/notation.
     - <em style="color:gray">model_instance_name[i]</em>_net_actuation
     - <span style="color:green">geometry_pose</span>
     - <span style="color:green">deformable_body_configuration</span>
+    - surface_displacements
 
 The ports whose names begin with <em style="color:gray">
 model_instance_name[i]</em> represent groups of ports, one for each of
@@ -2680,10 +2682,10 @@ Raises:
     RuntimeError if ``distance`` is not strictly positive.
 
 Raises:
-    RuntimeError if ``stiffness`` is not positive or zero.
+    RuntimeError if ``stiffness`` is not strictly positive.
 
 Raises:
-    RuntimeError if ``damping`` is not positive or zero.
+    RuntimeError if ``damping`` is not positive nor zero.
 
 Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
@@ -3752,7 +3754,7 @@ method computes:
 where ``M(q)`` is the model's mass matrix (including rigid body mass
 properties and reflected_inertia "reflected inertias"), ``C(q, v)v``
 is the bias term for Coriolis and gyroscopic effects and ``tau_app``
-consists of a vector applied generalized forces. The last term is a
+consists of a vector of applied generalized forces. The last term is a
 summation over all bodies in the model where ``Fapp_Bo_W`` is an
 applied spatial force on body B at ``Bo`` which gets projected into
 the space of generalized forces with the transpose of ``Jv_V_WB(q)``
@@ -5011,7 +5013,7 @@ be used by Finalize(); post-finalize it returns the joint type that
 *was* used if there were any base bodies in need of a joint.
 
 See also:
-    SetBaseBodyJointType(), Finalize())""";
+    SetBaseBodyJointType(), GetFuseWeldedLinks(), Finalize())""";
         } GetBaseBodyJointType;
         // Symbol: drake::multibody::MultibodyPlant::GetBodiesKinematicallyAffectedBy
         struct /* GetBodiesKinematicallyAffectedBy */ {
@@ -5393,6 +5395,24 @@ Raises:
 Raises:
     RuntimeError if ``body`` is not a free body.)""";
         } GetFreeBodyPose;
+        // Symbol: drake::multibody::MultibodyPlant::GetFuseWeldedLinks
+        struct /* GetFuseWeldedLinks */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Returns the global or a model_instance
+setting for whether or not to fuse welded Link (RigidBody) elements.
+
+Note:
+    This function can be called pre-Finalize() or post-Finalize().
+
+Parameter ``model_instance``:
+    (optional). If this argument is missing or not recognized, returns
+    the global setting. Otherwise returns the setting for this
+    specific model_instance.
+
+See also:
+    SetFuseWeldedLinks(), GetBaseBodyJointType(), Finalize())""";
+        } GetFuseWeldedLinks;
         // Symbol: drake::multibody::MultibodyPlant::GetJointActuatorByName
         struct /* GetJointActuatorByName */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -5759,6 +5779,16 @@ Raises:
     RuntimeError if the plant is not finalized or if the
     ``model_instance`` is invalid.)""";
         } GetStateNames;
+        // Symbol: drake::multibody::MultibodyPlant::GetSurfaceVelocityAxis
+        struct /* GetSurfaceVelocityAxis */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the surface-velocity axis for ``body`` expressed in the body
+frame B, or ``std∷nullopt`` if ``body`` has not been registered. Works
+both before and after Finalize(). The returned vector is not
+necessarily the same as was passed to SetSurfaceVelocityAxis(); we
+store the normalized version of that vector.)""";
+        } GetSurfaceVelocityAxis;
         // Symbol: drake::multibody::MultibodyPlant::GetTopologyGraphvizString
         struct /* GetTopologyGraphvizString */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6641,7 +6671,7 @@ Raises:
     RuntimeError if called after Finalize().
 
 See also:
-    GetBaseBodyJointType(), Finalize())""";
+    GetBaseBodyJointType(), SetFuseWeldedLinks(), Finalize())""";
         } SetBaseBodyJointType;
         // Symbol: drake::multibody::MultibodyPlant::SetConstraintActiveStatus
         struct /* SetConstraintActiveStatus */ {
@@ -7033,6 +7063,48 @@ given ``state`` rather than directly to the Context.
 Precondition:
     ``state`` comes from this MultibodyPlant.)""";
         } SetFreeBodySpatialVelocity;
+        // Symbol: drake::multibody::MultibodyPlant::SetFuseWeldedLinks
+        struct /* SetFuseWeldedLinks */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Controls whether Link (RigidBody) elements
+that are welded to each other are to be fused onto a single mobilized
+body (a "fused mobod") in the generated model. If so, those weld
+joints will not be modeled (i.e. will have no corresponding mobilizer)
+in the post-Finalize() model; there will be fewer mobilized bodies and
+modeled joints in the generated model than in the user's specification
+of links and joints. Regardless of whether ``fuse`` is true or false,
+results for calculations (e.g., positions & velocities) involving
+individual links can still be obtained by name or LinkIndex
+(BodyIndex). However, no results (e.g., no reaction forces) are
+available for fused weld joints on a mobod.
+
+The ``fuse`` flag can be set globally or on a per-model instance
+basis. If SetFuseWeldedLinks() is called with a model instance then
+that setting is used for elements in that model instance; otherwise,
+the global setting is used.
+
+You will be able to override this setting for individual weld joints,
+for example to model a force/torque sensor (not available yet).
+
+The default global setting for Drake is *not* to combine welded
+RigidBody elements.
+
+Parameter ``fuse``:
+    Whether to fuse welded-together bodies. This only affects a
+    particular model instance if the ``model_instance`` argument is
+    also provided, otherwise it sets the global value.
+
+Parameter ``model_instance``:
+    (optional) if present, specifies a particular model instance to
+    which the ``fuse`` argument applies.
+
+Raises:
+    RuntimeError if called after Finalize().
+
+See also:
+    GetFuseWeldedLinks(), SetBaseBodyJointType(), Finalize())""";
+        } SetFuseWeldedLinks;
         // Symbol: drake::multibody::MultibodyPlant::SetPositions
         struct /* SetPositions */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -7114,15 +7186,43 @@ MultibodyPlant∷num_positions() or ``q_instance`` is not of size
         struct /* SetRandomState */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Assigns random values to all elements of the state, by drawing samples
-independently for each joint/free body (coming soon: and then solving
-a mathematical program to "project" these samples onto the registered
-system constraints). If a random distribution is not specified for a
-joint/free body, the default state is used.
+R"""(Assigns random values to all elements of the state that support random
+values, by drawing samples independently for each joint/free body
+(coming soon: and then solving a mathematical program to "project"
+these samples onto the registered system constraints). If a random
+distribution is not specified for a joint/free body, the default state
+is used.
 
 See also:
     stochastic_systems)""";
         } SetRandomState;
+        // Symbol: drake::multibody::MultibodyPlant::SetSurfaceVelocityAxis
+        struct /* SetSurfaceVelocityAxis */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Sets the surface-velocity axis for ``body`` to ``axis_B``, expressed
+in the body frame B. If ``axis_B`` is ``std∷nullopt``, any existing
+registration for ``body`` is cleared. May be called any number of
+times before Finalize(); a subsequent call overwrites any prior
+registration. A nonzero ``axis_B`` is normalized before storage.
+
+Parameter ``body``:
+    The rigid body (link).
+
+Parameter ``axis_B``:
+    A nonzero vector giving the rotation-axis direction in the body
+    frame B, or ``std∷nullopt`` to clear.
+
+Raises:
+    RuntimeError if called after Finalize().
+
+Raises:
+    RuntimeError if ``axis_B`` has a value and ``body`` is the world
+    body.
+
+Raises:
+    RuntimeError if ``axis_B`` has a value and can't be normalized.)""";
+        } SetSurfaceVelocityAxis;
         // Symbol: drake::multibody::MultibodyPlant::SetUseSampledOutputPorts
         struct /* SetUseSampledOutputPorts */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -7883,6 +7983,35 @@ Raises:
 Raises:
     RuntimeError if the model instance does not exist.)""";
         } get_state_output_port;
+        // Symbol: drake::multibody::MultibodyPlant::get_surface_displacements_output_port
+        struct /* get_surface_displacements_output_port */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns a constant reference to the ``"surface_displacements"`` output
+port, which carries a systems∷BusValue whose signals report the
+cumulative surface displacement (in meters) for each body registered
+via SetSurfaceVelocityAxis(). Each signal's name is the body's scoped
+name (i.e., RigidBody∷scoped_name()). The displacement is initialized
+to zero and integrated from the ``"surface_speeds"`` input port.
+
+Precondition:
+    Finalize() was already called on ``this`` plant.)""";
+        } get_surface_displacements_output_port;
+        // Symbol: drake::multibody::MultibodyPlant::get_surface_speeds_input_port
+        struct /* get_surface_speeds_input_port */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns a constant reference to the ``"surface_speeds"`` input port,
+which carries a systems∷BusValue whose signals set the surface speed
+for each body registered via SetSurfaceVelocityAxis(). Each signal's
+name is the body's (link's) scoped name (i.e.,
+RigidBody∷scoped_name()) and its value is a finite ``double`` speed in
+m/s. If the port is not connected, or a body's (link's) signal is
+absent, that body's speed is treated as zero.
+
+Precondition:
+    Finalize() was already called on ``this`` plant.)""";
+        } get_surface_speeds_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_tendon_constraint_specs
         struct /* get_tendon_constraint_specs */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -8103,6 +8232,16 @@ R"""(Returns the number of joints in the model.
 See also:
     AddJoint().)""";
         } num_joints;
+        // Symbol: drake::multibody::MultibodyPlant::num_misc_continuous_states
+        struct /* num_misc_continuous_states */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the size of the continuous miscellaneous state vector z for
+this model.
+
+Raises:
+    RuntimeError if called pre-finalize.)""";
+        } num_misc_continuous_states;
         // Symbol: drake::multibody::MultibodyPlant::num_model_instances
         struct /* num_model_instances */ {
           // Source: drake/multibody/plant/multibody_plant.h

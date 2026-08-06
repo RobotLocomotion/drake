@@ -945,19 +945,40 @@ class MultibodyTree {
     return link_joint_graph_.forest();
   }
 
+  // Returns a const reference to the LinkJointGraph that is owned by this
+  // MultibodyTree.
   [[nodiscard]] const LinkJointGraph& graph() const {
     return link_joint_graph_;
   }
 
+  // Returns a mutable reference to the LinkJointGraph that is owned by this
+  // MultibodyTree.
   [[nodiscard]] LinkJointGraph& mutable_graph() { return link_joint_graph_; }
 
+  // Returns a reference to this MultibodyTree's SpanningForest.
+  // @pre The forest is valid, i.e. we have called Finalize().
   [[nodiscard]] const SpanningForest& forest() const {
     DRAKE_ASSERT(graph().forest_is_valid());
     return graph().forest();
   }
 
+  // Returns a Mobod from this MultibodyTree's SpanningForest.
+  // @pre The forest is valid, i.e. we have called Finalize().
   [[nodiscard]] const SpanningForest::Mobod& get_mobod(MobodIndex index) const {
     return forest().mobods(index);
+  }
+
+  // Every mobod has a unique "active link", the link that connects it to
+  // its parent mobod (or the world link in the case of the world mobod).
+  // This returns a reference to the Drake Link corresponding to the active
+  // link of the given mobod.
+  // @pre Finalize() has been called.
+  [[nodiscard]] const Link<T>& get_active_link(MobodIndex index) const {
+    const SpanningForest::Mobod& mobod = get_mobod(index);
+    const LinkOrdinal active_link_ordinal = mobod.active_link_ordinal();
+    const LinkIndex active_link_index =
+        forest().links(active_link_ordinal).index();
+    return get_link(active_link_index);
   }
 
   // See MultibodyPlant API.
@@ -966,7 +987,15 @@ class MultibodyTree {
       std::optional<ModelInstanceIndex> model_instance = {});
 
   // See MultibodyPlant API.
+  void SetFuseWeldedLinks(
+      bool fuse, std::optional<ModelInstanceIndex> model_instance = {});
+
+  // See MultibodyPlant API.
   BaseBodyJointType GetBaseBodyJointType(
+      std::optional<ModelInstanceIndex> model_instance = {}) const;
+
+  // See MultibodyPlant API.
+  bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
   // Finalize() must be called after all user-defined elements in the plant
@@ -1403,6 +1432,8 @@ class MultibodyTree {
   void CalcJointDamping(const systems::Context<T>& context,
                         VectorX<T>* joint_damping) const;
 
+  // After all frame pose and mass property parameters have values, calculates
+  // and caches the state-independent results in the FrameBodyPoseCache.
   void CalcFrameBodyPoses(const systems::Context<T>& context,
                           FrameBodyPoseCache<T>* frame_body_poses) const;
 

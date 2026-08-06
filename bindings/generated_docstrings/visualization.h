@@ -268,7 +268,7 @@ default, black with 0% alpha).)""";
           // Source: drake/visualization/colorize_label_image.h
           const char* doc =
 R"""(Colorizes the ``input`` into ``output``, without using any System port
-conections nor any Context.)""";
+connections nor any Context.)""";
         } Calc;
         // Symbol: drake::visualization::ColorizeLabelImage::ColorizeLabelImage<T>
         struct /* ctor */ {

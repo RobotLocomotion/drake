@@ -2,10 +2,6 @@
 
 #include <string>
 
-// Remove ostream with deprecation 2026-07-01.
-#include <ostream>
-
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 
 namespace drake {
@@ -33,12 +29,6 @@ struct LoadYamlOptions {
 };
 
 std::string to_string(const LoadYamlOptions& options);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream&, const LoadYamlOptions&);
 
 }  // namespace yaml
 }  // namespace drake

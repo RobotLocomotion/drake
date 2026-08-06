@@ -2,15 +2,21 @@
 
 #include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/value.h"
+#include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/shape_specification.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/systems/framework/bus_value.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -41,6 +47,98 @@ constexpr char kRobotXml[] = R"""(
     </worldbody>
   </mujoco>
   )""";
+
+class IcfBuilderSurfaceVelocityTest
+    : public testing::TestWithParam<ContactModel> {};
+
+/* Verifies that IcfBuilder supplies each point or hydroelastic contact pair
+with the combined surface-velocity bias from both bodies. The bodies and their
+surface-velocity axes are rotated relative to world so that this also checks
+the frame transformations and normal sign conventions. */
+TEST_P(IcfBuilderSurfaceVelocityTest, BuildsSurfaceVelocityBias) {
+  constexpr double kHalfSize = 0.1;
+  constexpr double kPenetration = 1e-3;
+  constexpr double kStiffness = 1e5;
+  constexpr double kHydroModulus = 1e6;
+  constexpr double kSpeed = 1.0;
+
+  systems::DiagramBuilder<double> diagram_builder;
+  auto [plant, scene_graph] =
+      AddMultibodyPlantSceneGraph(&diagram_builder, 0.0);
+  plant.set_contact_model(GetParam());
+
+  geometry::ProximityProperties material;
+  geometry::AddContactMaterial(0.0, kStiffness,
+                               CoulombFriction<double>(1.0, 1.0), &material);
+  geometry::ProximityProperties rigid(material);
+  geometry::AddRigidHydroelasticProperties(&rigid);
+  geometry::ProximityProperties compliant(material);
+  geometry::AddCompliantHydroelasticProperties(kHalfSize, kHydroModulus,
+                                               &compliant);
+
+  const math::RollPitchYawd Rz_90(0.0, 0.0, M_PI_2);
+
+  const RigidBody<double>& ground =
+      plant.AddRigidBody("ground", SpatialInertia<double>::MakeUnitary());
+  plant.WeldFrames(plant.world_frame(), ground.body_frame(),
+                   RigidTransformd(Rz_90, Vector3d::Zero()));
+  // Making the ground rigid guarantees the contact normal will always be Wz.
+  plant.RegisterCollisionGeometry(ground, RigidTransformd(Vector3d(0, 0, -0.5)),
+                                  geometry::Box(10.0, 10.0, 1.0), "ground",
+                                  rigid);
+  plant.SetSurfaceVelocityAxis(ground, Vector3d(1, 0, 0));
+
+  const RigidBody<double>& box = plant.AddRigidBody(
+      "box", SpatialInertia<double>::SolidBoxWithMass(
+                 1.0, 2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize));
+  plant.RegisterCollisionGeometry(
+      box, RigidTransformd::Identity(),
+      geometry::Box(2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize), "box",
+      compliant);
+  plant.SetSurfaceVelocityAxis(box, Vector3d(0, -1, 0));
+
+  plant.Finalize();
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  plant.SetFloatingBaseBodyPoseInWorldFrame(
+      &plant_context, box,
+      RigidTransformd(Rz_90, Vector3d(0, 0, kHalfSize - kPenetration)));
+
+  systems::BusValue bus;
+  bus.Set(ground.scoped_name().to_string(), Value<double>(kSpeed));
+  bus.Set(box.scoped_name().to_string(), Value<double>(kSpeed));
+  plant.get_surface_speeds_input_port().FixValue(&plant_context, bus);
+
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
+
+  const PatchConstraintsPool<double>& pool = model.patch_constraints_pool();
+  ASSERT_EQ(pool.num_patches(), 1);
+  if (GetParam() == ContactModel::kPoint) {
+    ASSERT_EQ(pool.total_num_pairs(), 1);
+  } else {
+    ASSERT_GT(pool.total_num_pairs(), 1);
+  }
+
+  // The box surface moves in +Wy and the ground surface moves in +Wx, so the
+  // physical velocity of the box surface relative to the ground surface is
+  // v_b_W = v_box_ss_W - v_ground_ss_W = (-1, 1, 0).
+  const Vector3d expected_v_b_W(-kSpeed, kSpeed, 0.0);
+  for (int pair = 0; pair < pool.total_num_pairs(); ++pair) {
+    SCOPED_TRACE(fmt::format("pair {}", pair));
+    EXPECT_TRUE(CompareMatrices(pool.v_b_W()[pair], expected_v_b_W, 1e-13));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    PointAndHydroelastic, IcfBuilderSurfaceVelocityTest,
+    testing::Values(ContactModel::kPoint, ContactModel::kHydroelastic),
+    [](const testing::TestParamInfo<ContactModel>& stuff) {
+      return multibody::internal::GetStringFromContactModel(stuff.param);
+    });
 
 GTEST_TEST(IcfBuilder, Limits) {
   systems::DiagramBuilder<double> diagram_builder;
@@ -321,38 +419,193 @@ GTEST_TEST(IcfBuilder, RetryStep) {
   }
 }
 
-GTEST_TEST(IcfBuilder, BallConstraintUnsupported) {
+GTEST_TEST(IcfBuilder, BallConstraint) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
-  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
-
-  plant.AddBallConstraint(plant.get_body(BodyIndex(0)), Vector3d::Zero(),
-                          plant.get_body(BodyIndex(1)));
-
+  Parser(&plant, "Pendulum1").AddModelsFromString(kRobotXml, "xml");
+  Parser(&plant, "Pendulum2").AddModelsFromString(kRobotXml, "xml");
+  plant.AddBallConstraint(plant.get_body(BodyIndex(1)), Vector3d::Zero(),
+                          plant.get_body(BodyIndex(2)), Vector3d::Zero());
   plant.Finalize();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(&plant),
-                              ".*not.*support.*1 ball constraint.*");
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  EXPECT_EQ(model.num_cliques(), 2);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  ASSERT_EQ(model.num_ball_constraints(), 1);
+
+  // Check the ball constraint produced.
+  const auto& pool = model.ball_constraints_pool();
+  EXPECT_EQ(pool.num_constraints(), 1);
+  EXPECT_EQ(pool.body_pairs()[0].first, 1);
+  EXPECT_EQ(pool.body_pairs()[0].second, 2);
 }
 
-GTEST_TEST(IcfBuilder, DistanceConstraintUnsupported) {
+GTEST_TEST(IcfBuilder, NoBallBetweenAnchoredBodies) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  const auto M_B = SpatialInertia<double>::MakeUnitary();
+
+  plant.AddRigidBody("free_body", M_B);  // Need something that can move.
+  const RigidBody<double>& body1 = plant.AddRigidBody("body1", M_B);
+  const RigidBody<double>& body2 = plant.AddRigidBody("body2", M_B);
+  plant.AddJoint<WeldJoint>("weld1", plant.world_body(), RigidTransformd(),
+                            body1, RigidTransformd(), RigidTransformd());
+  plant.AddJoint<WeldJoint>("weld2", plant.world_body(), RigidTransformd(),
+                            body2, RigidTransformd(), RigidTransformd());
+  plant.AddBallConstraint(body1, Vector3d::Zero(), body2, Vector3d::Zero());
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> icf_builder(&plant);
+  IcfModel<double> model;
+  DRAKE_EXPECT_THROWS_MESSAGE(icf_builder.UpdateModel(plant_context, time_step,
+                                                      nullptr, nullptr, &model),
+                              ".*ball constraint.*body1.*body2.*both are "
+                              "welded to the world.*not allowed.*");
+}
+
+GTEST_TEST(IcfBuilder, DistanceConstraint) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
-  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
-
-  plant.AddDistanceConstraint(plant.get_body(BodyIndex(0)), Vector3d::Zero(),
-                              plant.get_body(BodyIndex(1)), Vector3d::Zero(),
-                              0.01);
+  Parser(&plant, "Pendulum1").AddModelsFromString(kRobotXml, "xml");
+  Parser(&plant, "Pendulum2").AddModelsFromString(kRobotXml, "xml");
+  // A rigid (default, infinite-stiffness) distance constraint and a compliant
+  // (finite stiffness/damping) one, between body 1 and body 2. The attachment
+  // points are offset so the two constrained points are not coincident.
+  plant.AddDistanceConstraint(plant.get_body(BodyIndex(1)),
+                              Vector3d(0.5, 0.0, 0.0),
+                              plant.get_body(BodyIndex(2)), Vector3d::Zero(),
+                              /*distance=*/0.1);
+  plant.AddDistanceConstraint(
+      plant.get_body(BodyIndex(1)), Vector3d(0.0, 0.5, 0.0),
+      plant.get_body(BodyIndex(2)), Vector3d::Zero(), /*distance=*/0.1,
+      /*stiffness=*/1000.0, /*damping=*/5.0);
   plant.Finalize();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(&plant),
-                              ".*not.*support.*1 distance constraint\\(s\\).*");
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  EXPECT_EQ(model.num_cliques(), 2);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  ASSERT_EQ(model.num_distance_constraints(), 2);
+
+  // Check the distance constraints produced. Both connect body 1 to body 2.
+  const auto& pool = model.distance_constraints_pool();
+  EXPECT_EQ(pool.num_constraints(), 2);
+  for (int k = 0; k < 2; ++k) {
+    EXPECT_EQ(pool.body_pairs()[k].first, 1);
+    EXPECT_EQ(pool.body_pairs()[k].second, 2);
+  }
+}
+
+// A distance constraint whose two attachment points start coincident (d₀ = 0)
+// must still assemble: the constraint direction p̂ is undefined there, so
+// IcfBuilder seeds it with an arbitrary unit vector for the first step (after
+// which d₀ > 0 makes p̂ well defined). Bodies 1 and 2 share an origin in the
+// default configuration, so points at each body's origin map to the same world
+// location, giving d₀ = 0.
+GTEST_TEST(IcfBuilder, DistanceConstraintCoincidentPoints) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum1").AddModelsFromString(kRobotXml, "xml");
+  Parser(&plant, "Pendulum2").AddModelsFromString(kRobotXml, "xml");
+  const double kFreeLength = 0.1;
+  plant.AddDistanceConstraint(plant.get_body(BodyIndex(1)), Vector3d::Zero(),
+                              plant.get_body(BodyIndex(2)), Vector3d::Zero(),
+                              kFreeLength);
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  // Assembly must not throw despite the coincident (singular) configuration.
+  EXPECT_NO_THROW(
+      builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model));
+  ASSERT_EQ(model.num_distance_constraints(), 1);
+
+  // The seeded direction is a valid unit vector, and g₀ = d₀ − ℓ = −ℓ (d₀ = 0).
+  const auto& pool = model.distance_constraints_pool();
+  EXPECT_NEAR(pool.p_hat_W()[0].norm(), 1.0, 1e-14);
+  EXPECT_NEAR(pool.g0()[0](0), -kFreeLength, 1e-14);
+}
+
+// The pool requires body B to be dynamic. When a constraint's body B is
+// anchored (but A is not), the builder swaps the roles and the attachment
+// points so the pool's body B is the dynamic body.
+GTEST_TEST(IcfBuilder, DistanceConstraintAnchoredBodyB) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  const auto M = SpatialInertia<double>::MakeUnitary();
+  const RigidBody<double>& dynamic_body = plant.AddRigidBody("dynamic", M);
+  const RigidBody<double>& anchored_body = plant.AddRigidBody("anchored", M);
+  plant.AddJoint<WeldJoint>("weld", plant.world_body(), RigidTransformd(),
+                            anchored_body, RigidTransformd(),
+                            RigidTransformd());
+  // Pass the anchored body as B (second). The points are distinct so we can
+  // confirm they get swapped along with the bodies. Both bodies are at the
+  // world origin (identity pose), so the world-frame points are unrotated.
+  const Vector3d p_AP(0.1, 0.0, 0.0);
+  const Vector3d p_BQ(0.2, 0.0, 0.0);
+  plant.AddDistanceConstraint(dynamic_body, p_AP, anchored_body, p_BQ,
+                              /* distance= */ 0.1);
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, time_step, nullptr, nullptr, &model);
+  ASSERT_EQ(model.num_distance_constraints(), 1);
+
+  // Roles are swapped: the pool's body B is the dynamic body and body A is the
+  // anchored one, with the attachment points swapped to match.
+  const auto& pool = model.distance_constraints_pool();
+  EXPECT_EQ(pool.body_pairs()[0].first, anchored_body.index());
+  EXPECT_EQ(pool.body_pairs()[0].second, dynamic_body.index());
+  EXPECT_TRUE(CompareMatrices(pool.p_AP_W()[0], p_BQ));
+  EXPECT_TRUE(CompareMatrices(pool.p_BQ_W()[0], p_AP));
 }
 
 GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {

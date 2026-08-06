@@ -397,6 +397,10 @@ class TestToppra(unittest.TestCase):
         gridpoints = Toppra.CalcGridPoints(path, CalcGridPointsOptions())
         toppra = Toppra(path=path, plant=plant, gridpoints=gridpoints)
 
+        # Test basic constraint relaxation API.
+        toppra.set_constraint_relaxation(relaxation=1e-3)
+        self.assertEqual(toppra.constraint_relaxation(), 1e-3)
+
         # Joint constraints
         upper_limit = np.arange(7)
         lower_limit = -upper_limit

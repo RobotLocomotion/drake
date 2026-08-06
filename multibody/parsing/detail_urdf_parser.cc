@@ -85,6 +85,7 @@ class UrdfParser {
   void ParseBushing(XMLElement* node);
   void ParseLinearSpringDamper(XMLElement* node);
   void ParseBallConstraint(XMLElement* node);
+  void ParseDistanceConstraint(XMLElement* node);
   void ParseTendonConstraint(XMLElement* node);
   void ParseFrame(XMLElement* node);
   void ParseTransmission(const JointEffortLimits& joint_effort_limits,
@@ -255,6 +256,29 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
           body, geometry_instance->pose(), geometry_instance->shape(),
           geometry_instance->name(),
           std::move(*geometry_instance->mutable_proximity_properties()));
+    }
+  }
+
+  // Parse link-level surface velocity axis (if present) and register.
+  const XMLElement* sv_node =
+      node->FirstChildElement("drake:surface_velocity_axis");
+  if (sv_node != nullptr) {
+    if (body_pointer == &w_.plant->world_body()) {
+      Warning(*node,
+              "A URDF file declared the \"world\" link and then"
+              " attempted to assign surface velocity (via the "
+              "<drake:surface_velocity_axis> tag). Only geometries, "
+              "<collision> and <visual>, can be assigned to the world link. "
+              "The <drake:surface_velocity_axis> tag is being ignored.");
+    } else {
+      Eigen::Vector3d axis_B;
+      if (!ParseVectorAttribute(sv_node, "axis", &axis_B)) {
+        Error(*sv_node,
+              "Failed to parse 'axis' attribute of "
+              "<drake:surface_velocity_axis>; ignoring.");
+      } else {
+        w_.plant->SetSurfaceVelocityAxis(*body_pointer, axis_B);
+      }
     }
   }
 }
@@ -587,6 +611,18 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     }
   };
 
+  // Helps avoid making extra, redundant frames via the X_PF argument of
+  // MultibodyPlant::AddJoint. If P and [F] are coincident, we won't create a
+  // new frame for [F], but use frame P directly. We indicate that by passing a
+  // nullopt.
+  auto elide_identity_frame =
+      [](const RigidTransformd& X_PF) -> std::optional<RigidTransformd> {
+    if (X_PF.IsExactlyIdentity()) {
+      return std::nullopt;
+    }
+    return X_PF;
+  };
+
   auto plant = w_.plant;
   std::optional<JointIndex> index{};
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
@@ -596,11 +632,11 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // Frame M is Frame B. Frame F and Frame M are coincident at the zero state
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
-    index =
-        plant
-            ->AddJoint<RevoluteJoint>(name, *parent_body, X_PF, *child_body,
-                                      std::nullopt, axis, lower, upper, damping)
-            .index();
+    index = plant
+                ->AddJoint<RevoluteJoint>(
+                    name, *parent_body, elide_identity_frame(X_PF), *child_body,
+                    std::nullopt, axis, lower, upper, damping)
+                .index();
     Joint<double>& joint = plant->get_mutable_joint(*index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
     joint.set_acceleration_limits(Vector1d(-acceleration),
@@ -611,7 +647,8 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<WeldJoint>(name, *parent_body, X_PF, *child_body,
+                ->AddJoint<WeldJoint>(name, *parent_body,
+                                      elide_identity_frame(X_PF), *child_body,
                                       std::nullopt, RigidTransformd::Identity())
                 .index();
   } else if (type.compare("prismatic") == 0) {
@@ -622,9 +659,9 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<PrismaticJoint>(name, *parent_body, X_PF,
-                                           *child_body, std::nullopt, axis,
-                                           lower, upper, damping)
+                ->AddJoint<PrismaticJoint>(
+                    name, *parent_body, elide_identity_frame(X_PF), *child_body,
+                    std::nullopt, axis, lower, upper, damping)
                 .index();
     Joint<double>& joint = plant->get_mutable_joint(*index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
@@ -643,8 +680,9 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<BallRpyJoint>(name, *parent_body, X_PF, *child_body,
-                                         std::nullopt, damping)
+                ->AddJoint<BallRpyJoint>(name, *parent_body,
+                                         elide_identity_frame(X_PF),
+                                         *child_body, std::nullopt, damping)
                 .index();
   } else if (type.compare("planar") == 0) {
     // Permit both the standard 'joint' and custom 'drake:joint' spellings
@@ -674,7 +712,8 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     const RigidTransformd X_PM = X_PB * X_BM;
     const RigidTransformd& X_PF = X_PM;
     index = plant
-                ->AddJoint<PlanarJoint>(name, *parent_body, X_PF, *child_body,
+                ->AddJoint<PlanarJoint>(name, *parent_body,
+                                        elide_identity_frame(X_PF), *child_body,
                                         X_BM, damping_vec)
                 .index();
   } else if (type.compare("screw") == 0) {
@@ -686,9 +725,9 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<ScrewJoint>(name, *parent_body, X_PF, *child_body,
-                                       std::nullopt, axis, screw_thread_pitch,
-                                       damping)
+                ->AddJoint<ScrewJoint>(
+                    name, *parent_body, elide_identity_frame(X_PF), *child_body,
+                    std::nullopt, axis, screw_thread_pitch, damping)
                 .index();
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
@@ -698,7 +737,8 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // of the joint. See Joint class documentation.
     const RigidTransformd& X_PF = X_PB;
     index = plant
-                ->AddJoint<UniversalJoint>(name, *parent_body, X_PF,
+                ->AddJoint<UniversalJoint>(name, *parent_body,
+                                           elide_identity_frame(X_PF),
                                            *child_body, std::nullopt, damping)
                 .index();
   } else if (type.compare("curvilinear") == 0) {
@@ -734,11 +774,11 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
         breaks, turning_rates, initial_tangent, plane_normal, Vector3d::Zero(),
         is_periodic);
     const RigidTransformd& X_PF = X_PB;
-    index =
-        plant
-            ->AddJoint<CurvilinearJoint>(name, *parent_body, X_PF, *child_body,
-                                         std::nullopt, trajectory, damping)
-            .index();
+    index = plant
+                ->AddJoint<CurvilinearJoint>(
+                    name, *parent_body, elide_identity_frame(X_PF), *child_body,
+                    std::nullopt, trajectory, damping)
+                .index();
   } else {
     Error(*node,
           fmt::format("Joint '{}' has unrecognized type: '{}'", name, type));
@@ -1253,6 +1293,89 @@ void UrdfParser::ParseBallConstraint(XMLElement* node) {
   internal::ParseBallConstraint(read_vector, read_body, w_.plant);
 }
 
+void UrdfParser::ParseDistanceConstraint(XMLElement* node) {
+  auto read_vector = [node, this](const char* element_name) -> Eigen::Vector3d {
+    const XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node != nullptr) {
+      Eigen::Vector3d value;
+      if (ParseVectorAttribute(value_node, "value", &value)) {
+        return value;
+      }
+      Error(*node, fmt::format("Unable to read the 'value' attribute for the"
+                               " <{}> tag",
+                               element_name));
+      return Eigen::Vector3d::Zero();
+    }
+    Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+    return Eigen::Vector3d::Zero();
+  };
+
+  auto read_body =
+      [node, this](const char* element_name) -> const RigidBody<double>* {
+    XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node == nullptr) {
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return {};
+    }
+
+    std::string body_name;
+    auto* plant = w_.plant;
+    if (!ParseStringAttribute(value_node, "name", &body_name)) {
+      Error(*value_node,
+            fmt::format("Unable to read the 'name' attribute for the <{}> tag",
+                        element_name));
+      return {};
+    }
+    if (!plant->HasBodyNamed(body_name, model_instance_)) {
+      Error(*value_node,
+            fmt::format("Body: {} specified for <{}> does not exist in the "
+                        "model.",
+                        body_name, element_name));
+      return {};
+    }
+    return &plant->GetBodyByName(body_name, model_instance_);
+  };
+
+  auto read_double = [node,
+                      this](const char* element_name) -> std::optional<double> {
+    const XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node == nullptr) {
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return {};
+    }
+
+    double value{};
+    if (!ParseScalarAttribute(value_node, "value", &value)) {
+      Error(*node,
+            fmt::format("Unable to read the 'value' attribute for the <{}> tag",
+                        element_name));
+      return {};
+    }
+    const std::string element_name_string(element_name);
+    if ((element_name_string == "drake:distance_constraint_distance" ||
+         element_name_string == "drake:distance_constraint_stiffness") &&
+        value <= 0) {
+      Error(*value_node,
+            fmt::format("The 'value' attribute for the <{}> tag must be "
+                        "strictly positive.",
+                        element_name));
+      return {};
+    }
+    if (element_name_string == "drake:distance_constraint_damping" &&
+        value < 0) {
+      Error(*value_node,
+            fmt::format("The 'value' attribute for the <{}> tag must be "
+                        "non-negative.",
+                        element_name));
+      return {};
+    }
+    return value;
+  };
+
+  internal::ParseDistanceConstraint(read_vector, read_body, read_double,
+                                    w_.plant);
+}
+
 void UrdfParser::ParseTendonConstraint(XMLElement* node) {
   auto read_double = [node,
                       this](const char* element_name) -> std::optional<double> {
@@ -1432,6 +1555,15 @@ std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
        ball_constraint_node =
            ball_constraint_node->NextSiblingElement("drake:ball_constraint")) {
     ParseBallConstraint(ball_constraint_node);
+  }
+
+  // Parses the model's custom Drake distance constraint tags.
+  for (XMLElement* distance_constraint_node =
+           node->FirstChildElement("drake:distance_constraint");
+       distance_constraint_node;
+       distance_constraint_node = distance_constraint_node->NextSiblingElement(
+           "drake:distance_constraint")) {
+    ParseDistanceConstraint(distance_constraint_node);
   }
 
   // Parses the model's custom Drake tendon constraint tags.

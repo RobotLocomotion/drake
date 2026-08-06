@@ -237,6 +237,22 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const GeometryContactData<T>& EvalGeometryContactData(
       const systems::Context<T>& context) const;
 
+  /* Computes a bias to the relative velocity between bodies A and B due to the
+   addition of surface velocity (on either body).
+
+   @param context The context of the owning MultibodyPlant.
+   @param bodyA_index The index of the first body in contact.
+   @param bodyB_index The index of the second body in contact.
+   @param nhat_BA_W The unit normal vector pointing from body B to body A,
+                    expressed in the world frame.
+   @param[out] v_AcBc_W The bias is added to this velocity.
+   @pre nhat_BA_W is a unit vector.
+   @pre v_AcBc_W is not null. */
+  void AddSurfaceVelocityBias(const systems::Context<T>& context,
+                              BodyIndex bodyA_index, BodyIndex bodyB_index,
+                              const Vector3<T>& nhat_BA_W,
+                              Vector3<T>* v_AcBc_W) const;
+
   double default_contact_stiffness() const;
   double default_contact_dissipation() const;
 

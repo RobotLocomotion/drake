@@ -485,9 +485,16 @@ MODULE_SETTINGS = {
     },
     "VTK::RenderingCore": {
         "visibility": ["//visibility:public"],
+        "srcs_glob_exclude": [
+            # Avoid the dependency on jsoncpp.
+            "Rendering/Core/vtkRenderMaterialLibrary.*",
+        ],
         "copts_extra": [
             # Match the VTK defaults.
             "-DVTK_OPENGL2",
+        ],
+        "module_deps_ignore": [
+            "VTK::jsoncpp",
         ],
     },
     "VTK::RenderingOpenGL2": {
@@ -523,6 +530,7 @@ MODULE_SETTINGS = {
         ],
         "srcs_glob_exclude": [
             # Avoid the dependency on freetype.
+            "**/vtkOpenGLBatchedLabeledDataMapper*",
             "**/vtkFastLabeledDataMapper*",
             # This is configure-time setup code, not library code.
             "**/vtkProbe*",
@@ -580,6 +588,7 @@ MODULE_SETTINGS = {
             "VTK::IOXML",
             "VTK::RenderingFreeType",
             "VTK::RenderingHyperTreeGrid",
+            "VTK::RenderingLabel",
         ],
     },
     "VTK::RenderingUI": {
@@ -591,7 +600,7 @@ MODULE_SETTINGS = {
         ],
     },
 
-    # Third, we'll configure dependencies that come from Drake's WORKSPACE.
+    # Third, we'll configure dependencies that come from Drake's MODULE.bazel.
     "VTK::fmt": {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_VTK_fmt=1",
@@ -608,7 +617,7 @@ MODULE_SETTINGS = {
             "ThirdParty/jpeg/vtkjpeg/**",
         ],
         "deps_extra": [
-            "@libjpeg_turbo_internal//:jpeg",
+            "@libjpeg",
         ],
     },
     "VTK::nlohmannjson": {

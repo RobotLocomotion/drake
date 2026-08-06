@@ -1,0 +1,26 @@
+load("@drake//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
+load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+cc_static_hidden_library(
+    name = "libjpeg",
+    visibility = ["//visibility:public"],
+    deps = ["@module_libjpeg//:jpeg"],
+)
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/libjpeg",
+    files = ["@module_libjpeg//:LICENSE.md"],
+    allowed_externals = ["@module_libjpeg//:LICENSE.md"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()

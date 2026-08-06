@@ -1,20 +1,42 @@
 #pragma once
 
+#include <span>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/holonomic_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
-#include "drake/multibody/contact_solvers/icf/weld_constraints_data_pool.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
+
+/* Parameters for IcfData::Resize and IcfData::Scratch::Resize. Using a struct
+allows call sites to use named fields, avoiding positional-argument confusion as
+the number of constraint types grows. */
+struct ResizeParams {
+  int num_bodies{};            // Total number of bodies in the model.
+  int num_velocities{};        // Total number of generalized velocities.
+  int max_clique_size{};       // Maximum number of velocities in any clique.
+  int num_ball_constraints{};  // Number of ball constraints.
+  int num_couplers{};          // Number of coupler constraints.
+  int num_distance_constraints{};  // Number of distance constraints.
+  int num_welds{};                 // Number of weld constraints.
+  std::span<const int>
+      gain_sizes;  // Number of velocities for each gain constraint.
+  std::span<const int>
+      limit_sizes;  // Number of velocities for each limit constraint.
+  std::span<const int>
+      patch_sizes;  // Number of contact pairs for each patch constraint, of
+                    // size equal to the number of patches.
+};
 
 /* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
 
@@ -33,6 +55,7 @@ Note that mutable getters should only be used for setting values, not for
 resizing.
 
 @tparam_nonsymbolic_scalar */
+
 template <typename T>
 class IcfData {
  public:
@@ -47,11 +70,7 @@ class IcfData {
   this class. Calling code must ensure that scratch space is used safely. */
   struct Scratch {
     /* Resizes the scratch space, allocating memory as needed. */
-    void Resize(int num_bodies, int num_velocities, int max_clique_size,
-                int num_couplers, int num_welds,
-                std::span<const int> gain_sizes,
-                std::span<const int> limit_sizes,
-                std::span<const int> patch_sizes);
+    void Resize(const ResizeParams& params);
 
     // Scratch space for CalcMomentumTerms. Holds at most one vector of size
     // IcfModel::num_velocities().
@@ -76,7 +95,9 @@ class IcfData {
     EigenPool<VectorX<T>> Gw_limit;
 
     // Scratch data pools for CalcCostAlongLine.
+    BallConstraintsDataPool<T> ball_constraints_data;
     CouplerConstraintsDataPool<T> coupler_constraints_data;
+    DistanceConstraintsDataPool<T> distance_constraints_data;
     GainConstraintsDataPool<T> gain_constraints_data;
     LimitConstraintsDataPool<T> limit_constraints_data;
     PatchConstraintsDataPool<T> patch_constraints_data;
@@ -103,24 +124,9 @@ class IcfData {
   ~IcfData();
 
   /* Resizes the data to accommodate the given problem, typically called at the
-  beginning of each solve/time step.
-
-  @param num_bodies Total number of bodies in the model.
-  @param num_velocities Total number of generalized velocities.
-  @param max_clique_size Maximum number of velocities in any clique.
-  @param num_couplers Number of coupler constraints.
-  @param num_welds Number of weld constraints.
-  @param gain_sizes Number of velocities for each gain constraint.
-  @param limit_sizes Number of velocities for each limit constraint.
-  @param patch_sizes Number of contact pairs for each patch constraint, of size
-                     equal to the number of patches. */
-  // TODO(sherm1) This argument list will get out of hand as we add more
-  //  constraint types. Consider switching to a parameter struct which would
-  //  let us use named fields at the call sites.
-  void Resize(int num_bodies, int num_velocities, int max_clique_size,
-              int num_couplers, int num_welds, std::span<const int> gain_sizes,
-              std::span<const int> limit_sizes,
-              std::span<const int> patch_sizes);
+  beginning of each solve/time step. See ResizeParams for documentation of
+  individual fields. */
+  void Resize(const ResizeParams& params);
 
   /* Returns the number of generalized velocities in the system. */
   int num_velocities() const { return v_.size(); }
@@ -159,12 +165,28 @@ class IcfData {
   const VectorX<T>& gradient() const { return gradient_; }
   VectorX<T>& mutable_gradient() { return gradient_; }
 
+  /* Returns the data pool for ball constraints. */
+  const BallConstraintsDataPool<T>& ball_constraints_data() const {
+    return ball_constraints_data_;
+  }
+  BallConstraintsDataPool<T>& mutable_ball_constraints_data() {
+    return ball_constraints_data_;
+  }
+
   /* Returns the data pool for coupler constraints. */
   const CouplerConstraintsDataPool<T>& coupler_constraints_data() const {
     return coupler_constraints_data_;
   }
   CouplerConstraintsDataPool<T>& mutable_coupler_constraints_data() {
     return coupler_constraints_data_;
+  }
+
+  /* Returns the data pool for distance constraints. */
+  const DistanceConstraintsDataPool<T>& distance_constraints_data() const {
+    return distance_constraints_data_;
+  }
+  DistanceConstraintsDataPool<T>& mutable_distance_constraints_data() {
+    return distance_constraints_data_;
   }
 
   /* Returns the data pool for external gain (e.g., actuation) constraints. */
@@ -212,7 +234,9 @@ class IcfData {
   VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
 
   // Type-specific constraint pools.
+  BallConstraintsDataPool<T> ball_constraints_data_;
   CouplerConstraintsDataPool<T> coupler_constraints_data_;
+  DistanceConstraintsDataPool<T> distance_constraints_data_;
   GainConstraintsDataPool<T> gain_constraints_data_;
   LimitConstraintsDataPool<T> limit_constraints_data_;
   PatchConstraintsDataPool<T> patch_constraints_data_;

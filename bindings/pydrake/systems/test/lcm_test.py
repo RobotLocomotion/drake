@@ -205,12 +205,16 @@ class TestSystemsLcm(unittest.TestCase):
             lcm.Publish("TEST_LOOP", message.encode())
             for attempt in range(10):
                 new_count = sub.WaitForMessage(
-                    old_message_count, value, timeout=0.02
+                    old_message_count=old_message_count,
+                    message=value,
+                    timeout=0.02,
                 )
                 if new_count > old_message_count:
                     break
                 lcm.HandleSubscriptions(0)
             self.assertEqual(value.get_value().utime, old_message_count + 1)
+        # Omitting the message= output argument shouldn't crash.
+        sub.WaitForMessage(old_message_count=3, timeout=1e-6)
 
     def _fix_and_publish(self, dut, value):
         context = dut.CreateDefaultContext()
@@ -261,6 +265,17 @@ class TestSystemsLcm(unittest.TestCase):
             publish_offset=0.01,
             publish_triggers={TriggerType.kPeriodic},
         )
+        # Passing None for the SerializerInterface / LcmInterfaceSystem doesn't
+        # crash. (We can't read back the message, though.)
+        dut = mut.LcmPublisherSystem.Make(
+            channel="TEST_CHANNEL",
+            lcm_type=lcmt_quaternion,
+            lcm=None,
+            publish_period=0.1,
+            publish_offset=0.01,
+        )
+        self._fix_and_publish(dut, Value(model_message))
+        lcm.HandleSubscriptions(0)
 
     def test_publisher_cpp(self):
         lcm = DrakeLcm()

@@ -8,9 +8,6 @@
 #include <utility>
 #include <vector>
 
-// Remove with deprecation 2026-07-01.
-#include <ostream>
-
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
@@ -32,13 +29,6 @@ enum class DifferentialInverseKinematicsStatus {
 };
 
 std::string_view to_string(DifferentialInverseKinematicsStatus value);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& os,
-                         const DifferentialInverseKinematicsStatus value);
 
 struct DifferentialInverseKinematicsResult {
   std::optional<VectorX<double>> joint_velocities{};

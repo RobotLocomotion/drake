@@ -101,9 +101,13 @@ drake_pybind_library(
         "cpp_template.py",
         "deprecation.py",
         "jupyter.py",
-        "pybind11_version.py",
         "yaml.py",
-    ],
+    ] + select({
+        "//tools/workspace/nanobind:enabled": [],
+        "//conditions:default": [
+            "pybind11_version.py",
+        ],
+    }),
     visibility = [
         "//bindings/pydrake:__pkg__",
     ],
@@ -474,6 +478,8 @@ drake_py_unittest(
     name = "deprecation_test",
     # kcov messes with module ref counts.
     opt_out_conditions = ["//tools/kcov:enabled"],
+    # TODO(#21572) Remove this opt-out.
+    test_alt_binder = False,
     deps = [
         ":common",
         ":deprecation_example",
@@ -484,6 +490,8 @@ drake_py_unittest(
 # See source for an explanation why this is separate from `deprecation_test`.
 drake_py_unittest(
     name = "deprecation_autocomplete_test",
+    # TODO(#21572) Remove this opt-out.
+    test_alt_binder = False,
     deps = [
         ":common",
         ":deprecation_example",
@@ -493,6 +501,8 @@ drake_py_unittest(
 # Provides a unittest for high-level deprecation API.
 drake_py_unittest(
     name = "deprecation_utility_test",
+    # TODO(#21572) Remove this opt-out.
+    test_alt_binder = False,
     deps = [
         ":deprecation_example",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
@@ -518,6 +528,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "pybind11_version_test",
+    opt_out_conditions = ["//tools/workspace/nanobind:enabled"],
     deps = [
         ":common",
     ],
@@ -534,6 +545,8 @@ drake_pybind_library(
 
 drake_py_unittest(
     name = "ref_cycle_test",
+    # TODO(#21572) Remove this opt-out.
+    test_alt_binder = False,
     deps = [
         ":common",
         ":ref_cycle_test_util_py",
@@ -758,6 +771,8 @@ drake_pybind_library(
 
 drake_py_unittest(
     name = "wrap_pybind_test",
+    # TODO(#21572) Remove this opt-out.
+    test_alt_binder = False,
     deps = [
         ":wrap_test_util_py",
     ],

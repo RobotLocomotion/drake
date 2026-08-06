@@ -12,6 +12,12 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
+// TODO(#23765): consider taking more advantage of the structure of external
+// systems:
+// * account for sparsity in the linearization
+// * allow users to opt out of linearization or provide custom derivatives for
+//   complicated systems
+
 /* Helper class that linearizes external generalized forces with respect to
 generalized velocities. The linearization is approximate because it only keeps
 diagonal terms and forces them to be non-negative, so that the ICF problem

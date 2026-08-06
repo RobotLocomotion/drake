@@ -607,12 +607,12 @@ unless there is already an explicit weld; we'll check that.
 
 WeldedLinksAssemblies are always computed and consist of subgraphs of links that
 are mutually welded together (directly or indirectly). Depending on forest
-building options, we may use a single Mobod for a WeldedLinksAssembly (an
-"optimized assembly"), or we may use a Mobod for each of those welded-together
-links (an "unoptimized assembly"). In the latter case we also
+building options, we may use a single Mobod for a WeldedLinksAssembly (a
+"fused assembly"), or we may use a Mobod for each of those welded-together
+links (an "unfused assembly"). In the latter case we also
 compute "welded Mobod" groups consisting of Mobods that are mutually
 interconnected by weld mobilizers (directly or indirectly). When we're
-optimizing (modeling each WeldedLinksAssembly with just one Mobod), there won't
+fusing (modeling each WeldedLinksAssembly with just one Mobod), there won't
 be any welded-together Mobods. By convention, there will still be one welded
 Mobod group, consisting just of the World Mobod.
 
@@ -635,7 +635,7 @@ The LinkJointGraph
     * link10 would be the preferred base link but link 11 "base11" is marked
       "must be base link" so we have to use a reversed mobilizer there
 
-SerialChain 1 (don't optimize WeldedLinkAssemblies)
+SerialChain 1 (don't fuse WeldedLinkAssemblies)
 ---------------------------------------------------
   ≡> added weld joint       [mobods]
   6> added floating joint   {links}
@@ -846,7 +846,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   EXPECT_FALSE(forest.mobods(MobodIndex(3)).is_base_body());  // Generic case
   EXPECT_EQ(find_outv(3), pair(3, 2));
 
-  /* SerialChain 2 (optimize WeldedLinksAssemblies)
+  /* SerialChain 2 (fuse WeldedLinksAssemblies)
   -------------------------------------------------
   If instead we ask to merge welded Links we should get a much smaller
   forest:
@@ -863,11 +863,10 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
 
   graph.ResetForestBuildingOptions();  // Restore default options.
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   graph.SetForestBuildingOptions(
-      static_model_instance,
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
-          ForestBuildingOptions::kStatic);
+      static_model_instance, ForestBuildingOptions::kFuseWeldedLinksAssemblies |
+                                 ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
 
@@ -896,7 +895,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
                    LinkIndex(1), LinkIndex(2), LinkIndex(3), LinkIndex(4),
                    LinkIndex(5), LinkIndex(11), LinkIndex(10), LinkIndex(9)}));
 
-  /* SerialChain 3 (optimize WeldedLinksAssemblies except for 10 & 11)
+  /* SerialChain 3 (fuse WeldedLinksAssemblies except for 10 & 11)
   --------------------------------------------------------------------
   We can optionally insist that a weld joint within an assembly that would
   otherwise be ignored is actually modeled with a weld mobilizer (useful if
@@ -937,7 +936,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   const std::vector<MobodIndex> now_expected{MobodIndex(6), MobodIndex(7)};
   EXPECT_EQ(forest.welded_mobods(WeldedMobodsIndex(1)), now_expected);
 
-  /* SerialChain 4 (optimize WeldedLinksAssemblies and use a fixed base)
+  /* SerialChain 4 (fuse WeldedLinksAssemblies and use a fixed base)
   ----------------------------------------------------------------------
   Finally, we'll restore joint 10-11 to its default setting and build again but
   this time with the kUseFixedBase option for model_instance.
@@ -955,16 +954,15 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   graph.ChangeJointFlags(joint_10_11_index, JointFlags::kDefault);
   graph.ResetForestBuildingOptions();  // Back to defaults.
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   // Caution: we must specify all the forest building options we want for
   // a model instance; it won't inherit any of the global ones if set.
   graph.SetForestBuildingOptions(
-      model_instance, ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
+      model_instance, ForestBuildingOptions::kFuseWeldedLinksAssemblies |
                           ForestBuildingOptions::kUseFixedBase);
   graph.SetForestBuildingOptions(
-      static_model_instance,
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
-          ForestBuildingOptions::kStatic);
+      static_model_instance, ForestBuildingOptions::kFuseWeldedLinksAssemblies |
+                                 ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
 
@@ -1018,7 +1016,7 @@ a base body; it gets floating joint 15.
 
 There are three loops in this graph: {7-2-11}, {13-1-4}, and {10-6-8}. The
 forest-building algorithm will encounter them in that order. The last two loops
-are formed entirely of welds. When modeling in the unoptimized mode where every
+are formed entirely of welds. When modeling in the unfused mode where every
 Joint gets a Mobod all of these must be broken by adding shadow links. In each
 case the loop joint will be between two bodies at the same level in their tree,
 so the choice of which one to split should be made so that the parent->child
@@ -1028,7 +1026,7 @@ levels in the forest diagram below.) As a result, Link {11} will be split with
 shadow link {14*} on Joint 8, Link {1} gets shadow {15*} on weld Joint 1, and
 Link {8} gets shadow {16*} on weld Joint 6.
 
-Therefore we expect the following unoptimized WeldedLinksAssemblies, with the
+Therefore we expect the following unfused WeldedLinksAssemblies, with the
 World Assembly first:
   links            joints
   {0, 5, 7, 12}    12 11 13
@@ -1084,7 +1082,7 @@ like this:
 
 In this case we don't need to split the all-Weld loops since they are now
 just assemblies. Note that processing by level proceeds until we reach a new
-Mobod, so all the joints in an optimized assembly are processed together. Thus
+Mobod, so all the joints in a fused assembly are processed together. Thus
 the joint ordering is different than the previous case.
   links       joints
   {0 5 7 12}  12 11 13
@@ -1331,9 +1329,9 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
       EXPECT_EQ(forest.welded_mobods(w)[mobod], expected_mobods[w][mobod]);
   }
 
-  // Now optimize WeldedLinkAssemblies so they get a single Mobod.
+  // Now fuse WeldedLinkAssemblies so they get a single Mobod.
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
 
@@ -1842,7 +1840,7 @@ GTEST_TEST(SpanningForest, WorldAssemblyComesFirst) {
 
   // Remodel making single Mobods for WeldedLinksAssemblies (optimizing).
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
   EXPECT_EQ(ssize(forest.mobods()), 3);  // Because we're merging.
@@ -2128,7 +2126,7 @@ GTEST_TEST(SpanningForest, LoopWithAssemblies) {
   EXPECT_TRUE(graph.BuildForest());
 
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   const SpanningForest& forest = graph.forest();
   EXPECT_NO_THROW(forest.SanityCheckForest());
@@ -2211,7 +2209,7 @@ GTEST_TEST(SpanningForest, LoopWithAssemblies) {
   EXPECT_NO_THROW(graph_copy.forest().SanityCheckForest());  // Empty but OK.
 }
 
-/* Make sure massless, optimized assemblies are working correctly. They are
+/* Make sure massless, fused assemblies are working correctly. They are
 supposed to behave the same way as individual massless bodies:
   - They should use only a single Mobod, and be treated as a single level
     along a branch for branch-length minimization purposes.
@@ -2221,11 +2219,11 @@ supposed to behave the same way as individual massless bodies:
   - We should not break a loop in a way that leaves a branch with a
     terminal massless assembly. (Test 3 below)
 */
-GTEST_TEST(SpanningForest, MasslessOptimizedAssemblies) {
+GTEST_TEST(SpanningForest, MasslessFusedAssemblies) {
   LinkJointGraph graph;
   const SpanningForest& forest = graph.forest();
   graph.SetGlobalForestBuildingOptions(
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   graph.RegisterJointType("revolute", 1, 1);
   const ModelInstanceIndex model_instance(19);
 
@@ -2368,10 +2366,10 @@ GTEST_TEST(SpanningForest, MasslessOptimizedAssemblies) {
 
 /* A joint connects a parent link to a child link. In general, the joint,
 parent, and child can each be in different model instances. Each of those
-model instances can specify whether we should optimize link assemblies to use
+model instances can specify whether we should fuse link assemblies to use
 a single Mobod or whether parent and child must each have their own Mobod.
 Our policy is that when a joint is a weld, we look only at that joint's
-model instance to determine whether that joint will optimize parent and child
+model instance to determine whether that joint will fuse parent and child
 onto a single Mobod.
 
 A few nuances:
@@ -2418,30 +2416,25 @@ GTEST_TEST(SpanningForest, CheckMergingPolicy) {
   // Only I5 should determine whether we merge {1} and {2}. Set the merge
   // flag on everything else and verify it makes no difference.
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(1),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ModelInstanceIndex(1), ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(2),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ModelInstanceIndex(2), ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(4),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ModelInstanceIndex(4), ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_EQ(ssize(forest.mobods()), 4);
 
   // If I5 says merge, we should have one fewer Mobod.
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(5),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
+      ModelInstanceIndex(5), ForestBuildingOptions::kFuseWeldedLinksAssemblies);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_EQ(ssize(forest.mobods()), 3);
 
   // We're still getting a Mobod for the static link {3}. Let's merge that
   // with World now.
   graph.SetForestBuildingOptions(
-      ModelInstanceIndex(3),
-      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
-          ForestBuildingOptions::kStatic);
+      ModelInstanceIndex(3), ForestBuildingOptions::kFuseWeldedLinksAssemblies |
+                                 ForestBuildingOptions::kStatic);
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_EQ(ssize(forest.mobods()), 2);
 

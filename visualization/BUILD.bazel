@@ -129,6 +129,7 @@ drake_cc_googletest(
     name = "colorize_label_image_test",
     deps = [
         ":colorize_label_image",
+        "//geometry/render:colorize_image",
         "//systems/sensors/test_utilities:image_compare",
     ],
 )

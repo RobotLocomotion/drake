@@ -389,32 +389,40 @@ g₁, ..., gₙ}``, where D is the set of dynamic geometries and A is the
 set of anchored geometries (by definition ``D ⋂ A = ∅``). `Gₚ ⊂ G` is
 the subset of geometries that have a proximity role (with an analogous
 interpretation of ``Dₚ`` and ``Aₚ``). Many proximity queries operate
-on pairs of geometries (e.g., (gᵢ, gⱼ)). The set of proximity
+on pairs of geometries (e.g., {gᵢ, gⱼ}). The set of proximity
 candidate pairs for such queries is initially defined as ``C = (Gₚ ×
-Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ``, where:
+Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ - Nₚ*``, where:
 
-- ``Gₚ × Gₚ = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ Gₚ`` is the Cartesian product of the set
+- ``Gₚ × Gₚ = {{gᵢ, gⱼ}}, ∀ gᵢ, gⱼ ∈ Gₚ`` is the Cartesian product of the set
 of SceneGraph proximity geometries.
 - ``Aₚ × Aₚ`` represents all pairs consisting only of anchored geometries;
 an anchored geometry is never tested against another anchored geometry.
-- ``Fₚ = {(gᵢ, gⱼ)} ∀ i, j``, such that ``gᵢ, gⱼ ∈ Dₚ`` and
+- ``Fₚ = {{gᵢ, gⱼ}} ∀ i, j``, such that ``gᵢ, gⱼ ∈ Dₚ`` and
 ``frame(gᵢ) == frame(gⱼ)``; the pairs where both geometries are rigidly
 affixed to the same frame.
-- ``Iₚ = {(g, g)}, ∀ g ∈ Gₚ`` is the set of all pairs consisting of a
+- ``Iₚ = {{g, g}}, ∀ g ∈ Gₚ`` is the set of all pairs consisting of a
 geometry with itself; there is no meaningful proximity query on a
 geometry with itself.
+- ``Nₚ* = {{g, x}}, ∀ g ∈ Nₚ, x ∈ Gₚ, g ≠ x``, where ``Nₚ ⊂ Gₚ`` is the set of
+*inactive* geometries (see Deactivate()). An inactive geometry forms no
+candidate pair with any other geometry. Unlike the other terms, ``Nₚ*`` is
+evaluated against the *live* set ``Gₚ``: a geometry registered after ``g`` was
+deactivated still forms no pair with ``g``. Membership in ``Nₚ`` is edited
+directly by Deactivate() and Activate(); the declaration-based Apply() APIs
+edit pairs, not active status.
 
 Only pairs contained in C will be included in pairwise proximity
 operations.
 
-The manager provides an interface to modify the set C. Changes to C
-are articulated with CollisionFilterDeclaration. Once a change has
-been *declared* it is applied via the manager's API to change the
-configuration of C.
+The manager provides an interface to modify the set C. Pairwise
+changes are articulated with CollisionFilterDeclaration; once a change
+has been *declared* it is applied via Apply() (or ApplyTransient()) to
+change the configuration of C. Active status (the set ``Nₚ``) is
+changed directly via Deactivate() and Activate().
 
 There are limits to how C can be modified.
 
-- ``∀ (gᵢ, gⱼ) ∈ C``, both gᵢ and gⱼ must be registered with SceneGraph; you
+- ``∀ {gᵢ, gⱼ} ∈ C``, both gᵢ and gⱼ must be registered with SceneGraph; you
 can't inject arbitrary ids. Attempting to do so will result in an error.
 - No pairs in ``Aₚ × Aₚ``, `Fₚ`, or ``Iₚ`` can ever be added to C. Excluding
 those pairs is a SceneGraph invariant. Attempts to do so will be ignored.
@@ -444,7 +452,12 @@ Warning:
     role is subsequently assigned, those geometries will *still* not
     be part of any user-declared collision filters. - In general,
     adding collisions and assigning proximity roles should happen
-    prior to collision filter configuration.
+    prior to collision filter configuration. - It's worth emphasizing
+    that the inactive set ``Nₚ`` is unique. It is not affected by
+    declarations and doesn't have the same limited scope that
+    declarations have. No collision is allowed between an inactive
+    geometry and any other geometry, regardless of whether the other
+    geometry was added before or after the deactivation.
 
 **Transient vs Persistent changes**
 
@@ -536,6 +549,18 @@ to remove the declaration from the history sequence).
 
 Attempting to change the persistent configuration when there are
 active transient declarations in the history will throw an exception.)""";
+        // Symbol: drake::geometry::CollisionFilterManager::Activate
+        struct /* Activate */ {
+          // Source: drake/geometry/collision_filter_manager.h
+          const char* doc =
+R"""(Marks every geometry in ``geometry_set`` *active*. The inverse of
+calling Deactivate(). Activating an already-active geometry is a
+no-op. For more information, see the
+collision_filter_manager_activation "Activation" documentation.
+
+Raises:
+    RuntimeError if ``geometry_set`` references invalid ids.)""";
+        } Activate;
         // Symbol: drake::geometry::CollisionFilterManager::Apply
         struct /* Apply */ {
           // Source: drake/geometry/collision_filter_manager.h
@@ -569,6 +594,18 @@ collision filter configuration. The declaration must be considered
           // Source: drake/geometry/collision_filter_manager.h
           const char* doc = R"""()""";
         } ctor;
+        // Symbol: drake::geometry::CollisionFilterManager::Deactivate
+        struct /* Deactivate */ {
+          // Source: drake/geometry/collision_filter_manager.h
+          const char* doc =
+R"""(Marks every geometry in ``geometry_set`` *inactive*. The inverse of
+calling Activate(). Deactivating an already-inactive geometry is a
+no-op. For more information, see the
+collision_filter_manager_activation "Activation" documentation.
+
+Raises:
+    RuntimeError if ``geometry_set`` references invalid ids.)""";
+        } Deactivate;
         // Symbol: drake::geometry::CollisionFilterManager::IsActive
         struct /* IsActive */ {
           // Source: drake/geometry/collision_filter_manager.h
@@ -3752,26 +3789,6 @@ https://beej.us/blog/data/javascript-gamepad/.)""";
           const char* doc =
 R"""((Advanced) Returns the number of currently-open websocket connections.)""";
         } GetNumActiveConnections;
-        // Symbol: drake::geometry::Meshcat::GetObjectDrag
-        struct /* GetObjectDrag */ {
-          // Source: drake/geometry/meshcat.h
-          const char* doc =
-R"""(Returns the current mouse-drag state if a user is presently dragging
-an object in a connected Meshcat browser, or std∷nullopt otherwise.
-
-A drag is initiated in the browser by holding the <kbd>Ctrl</kbd> key
-and pressing the left mouse button down on an object, then moving the
-mouse (while still holding <kbd>Ctrl</kbd> and the mouse button). The
-orbit/pan camera controls are suspended for the duration of the drag.
-Releasing the mouse button ends the drag.
-
-A downstream system (see multibody∷meshcat∷MeshcatMouseSpring) can
-read this state and convert it into a force applied to the simulated
-body, letting users drag objects with the cursor.
-
-If multiple browsers are connected and more than one initiates a drag,
-the returned value reflects the most recently received drag message.)""";
-        } GetObjectDrag;
         // Symbol: drake::geometry::Meshcat::GetPackedObject
         struct /* GetPackedObject */ {
           // Source: drake/geometry/meshcat.h
@@ -3845,6 +3862,20 @@ std∷nullopt is returned if:
 connected.
 - The meshcat session transmitting has an orthographic camera.)""";
         } GetTrackedCameraPose;
+        // Symbol: drake::geometry::Meshcat::GetVirtualSpringKinematics
+        struct /* GetVirtualSpringKinematics */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(Returns the current mouse-drag state if a user is presently dragging
+an object in a connected Meshcat browser, or std∷nullopt otherwise.
+
+A downstream system (see multibody∷meshcat∷MeshcatMouseSpring) can
+read this state and convert it into a force applied to a simulated
+body, letting users drag objects with the cursor.
+
+If multiple browsers report drags concurrently, the returned value
+reflects the most recently received message.)""";
+        } GetVirtualSpringKinematics;
         // Symbol: drake::geometry::Meshcat::HasPath
         struct /* HasPath */ {
           // Source: drake/geometry/meshcat.h
@@ -3883,39 +3914,6 @@ Raises:
           const char* doc_1args_params =
 R"""(Constructs the Meshcat instance using the given ``params``.)""";
         } ctor;
-        // Symbol: drake::geometry::Meshcat::ObjectDrag
-        struct /* ObjectDrag */ {
-          // Source: drake/geometry/meshcat.h
-          const char* doc =
-R"""(The state of an in-progress mouse drag of a scene object, as reported
-by a Meshcat browser. See GetObjectDrag().)""";
-          // Symbol: drake::geometry::Meshcat::ObjectDrag::anchor_in_world
-          struct /* anchor_in_world */ {
-            // Source: drake/geometry/meshcat.h
-            const char* doc =
-R"""(The current position of the drag's *attachment point* -- the point on
-the object where the drag began. The browser keeps this point rigidly
-attached to the object, so as the object moves (e.g., under simulated
-physics) this value tracks the world-frame location of that material
-point. Expressed in Drake's z-up world frame (p_WA).)""";
-          } anchor_in_world;
-          // Symbol: drake::geometry::Meshcat::ObjectDrag::path
-          struct /* path */ {
-            // Source: drake/geometry/meshcat.h
-            const char* doc =
-R"""(The "/"-delimited Meshcat path of the object being dragged (e.g.,
-"/drake/visualizer/my_model/my_body/my_geometry").)""";
-          } path;
-          // Symbol: drake::geometry::Meshcat::ObjectDrag::target_in_world
-          struct /* target_in_world */ {
-            // Source: drake/geometry/meshcat.h
-            const char* doc =
-R"""(The current position of the cursor's drag *target*. As the user moves
-the mouse, the cursor is projected into the scene to form this point.
-A virtual spring should pull ``anchor_in_world`` toward this point.
-Expressed in Drake's z-up world frame (p_WT).)""";
-          } target_in_world;
-        } ObjectDrag;
         // Symbol: drake::geometry::Meshcat::OrthographicCamera
         struct /* OrthographicCamera */ {
           // Source: drake/geometry/meshcat.h
@@ -4721,6 +4719,49 @@ You can also use your browser to download this file, by typing
 R"""(Sets a flag to pause/stop recording. When stopped, publish events will
 not add frames to the animation.)""";
         } StopRecording;
+        // Symbol: drake::geometry::Meshcat::VirtualSpringKinematics
+        struct /* VirtualSpringKinematics */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(The geometry of a virtual, interactive spring. This spring connects
+the point F (a point fixed on the body B -- named by ``path``) with an
+immovable target point T. Both points are measured and expressed in
+the world frame. This definition is for kinematics only: the spring's
+stiffness, damping, and resultant forces are not defined here.)""";
+          // Symbol: drake::geometry::Meshcat::VirtualSpringKinematics::body_point_in_world
+          struct /* body_point_in_world */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The current position of F affixed to body B. Note: in an interactive
+scenario with active dynamics, this position will change as the body B
+moves.
+
+Note: This is expressed in Drake's z-up world frame (not Meshcat's
+y-up frame).)""";
+          } body_point_in_world;
+          // Symbol: drake::geometry::Meshcat::VirtualSpringKinematics::path
+          struct /* path */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The "/"-delimited Meshcat path of the object being dragged (e.g.,
+"/drake/visualizer/my_model/my_body/my_geometry").
+
+This could be any valid Meshcat path, including for either a body or a
+geometry. Whether it has any effect depends on the caller's treatment.)""";
+          } path;
+          // Symbol: drake::geometry::Meshcat::VirtualSpringKinematics::target_point_in_world
+          struct /* target_point_in_world */ {
+            // Source: drake/geometry/meshcat.h
+            const char* doc =
+R"""(The current position of the fixed target point T. The target point is
+solely determined by the interactive Meshcat application. From Drake's
+perspective it is a point with a prescribed position in the world
+frame.
+
+Note: This is expressed in Drake's z-up world frame (not Meshcat's
+y-up frame).)""";
+          } target_point_in_world;
+        } VirtualSpringKinematics;
         // Symbol: drake::geometry::Meshcat::get_mutable_recording
         struct /* get_mutable_recording */ {
           // Source: drake/geometry/meshcat.h
@@ -7813,6 +7854,8 @@ Raises:
           const char* doc =
 R"""(Reports true if the two geometries with given ids ``geometry_id1`` and
 ``geometry_id2``, define a collision pair that has been filtered out.
+See CollisionFilterManager for the definition of what would consider a
+pair to be considered "filtered out".
 
 Raises:
     RuntimeError if either id does not map to a registered geometry or

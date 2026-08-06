@@ -19,7 +19,7 @@ class DrakePythonDirInstallTest(unittest.TestCase):
                 venv_pythonpath = item
 
         cmake_content = """
-            cmake_minimum_required(VERSION 3.20...4.3)
+            cmake_minimum_required(VERSION 3.20...4.4)
             project(drake_python_dir_install_test)
             set(CMAKE_PREFIX_PATH {cmake_prefix_path})
             find_package(drake CONFIG REQUIRED)

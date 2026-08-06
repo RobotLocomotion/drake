@@ -1,3 +1,4 @@
+load("//tools/flags/internal:multi_config.bzl", "py_test_with_alt_binder")
 load(
     "//tools/skylark:kwargs.bzl",
     "amend",
@@ -20,102 +21,12 @@ def drake_py_library(
         **kwargs
     )
 
-def _redirect_test_impl(ctx):
-    info = dict(
-        bad_target = ctx.attr.bad_target,
-        good_target = ctx.attr.good_target,
-    )
-    content = """#!/bin/bash
-echo "ERROR: Please use\n    {good_target}\n  The label\n    {bad_target}\n" \
-     " does not exist." >&2
-exit 1
-""".format(**info)
-    ctx.actions.write(
-        output = ctx.outputs.executable,
-        content = content,
-    )
-    return [DefaultInfo()]
-
-# Defines a test which will fail when run via `bazel run` or `bazel test`,
-# redirecting the user to the correct binary to use. This should typically have
-# a "manual" tag.
-_redirect_test = rule(
-    attrs = {
-        "bad_target": attr.string(mandatory = True),
-        "good_target": attr.string(mandatory = True),
-    },
-    test = True,
-    implementation = _redirect_test_impl,
-)
-
-def _py_target_isolated(
-        name,
-        py_target = None,
-        srcs = None,
-        main = None,
-        isolate = True,
-        visibility = None,
-        legacy_create_init = False,
-        **kwargs):
-    # See #8041 for more details.
-    # TODO(eric.cousineau): See if we can remove these shims once we stop
-    # supporting Python 2 (#10606).
-    if py_target == None:
-        fail("Must supply macro function for defining `py_target`.")
-
-    # Targets that are already isolated (with a `py/` prefix) don't require any
-    # additional work. This can happen when linting tests (isolated by
-    # definition) are invoked for isolated Python targets. Otherwise, they get
-    # "doubly isolated" as `py/py/{name}`.
-    prefix = "py/"
-    if isolate and not name.startswith(prefix):
-        actual = prefix + name
-
-        # Preserve original functionality.
-        if not main:
-            main = name + ".py"
-        if not srcs:
-            srcs = [name + ".py"]
-        py_target(
-            name = actual,
-            srcs = srcs,
-            main = main,
-            visibility = visibility,
-            legacy_create_init = legacy_create_init,
-            **kwargs
-        )
-
-        # Disable and redirect original name.
-        package_prefix = "//" + native.package_name() + ":"
-
-        # N.B. Make sure that a test (visible to both `bazel run` and
-        # `bazel test`) with the original name redirects to the isolated
-        # instantiation so users unfamiliar with isolation that use the
-        # "obvious" spelling will be properly informed.
-        _redirect_test(
-            name = name,
-            good_target = package_prefix + actual,
-            bad_target = package_prefix + name,
-            tags = ["manual"],
-            visibility = visibility,
-        )
-    else:
-        py_target(
-            name = name,
-            srcs = srcs,
-            main = main,
-            visibility = visibility,
-            legacy_create_init = legacy_create_init,
-            **kwargs
-        )
-
 def drake_py_binary(
         name,
         srcs = None,
         main = None,
         data = [],
         deps = None,
-        isolate = False,
         tags = [],
         add_test_rule = False,
         test_rule_args = [],
@@ -125,20 +36,14 @@ def drake_py_binary(
         test_rule_timeout = None,
         test_rule_flaky = False,
         test_rule_rendering = False,
+        test_rule_test_alt_binder = "auto",
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
-
-    @param isolate (optional, default is False)
-        If True, the binary will be placed in a folder isolated from the
-        library code. This prevents submodules from leaking in as top-level
-        submodules. For more detail, see #8041.
     """
     if main == None and len(srcs) == 1:
         main = srcs[0]
-    _py_target_isolated(
+    py_binary(
         name = name,
-        py_target = py_binary,
-        isolate = isolate,
         srcs = srcs,
         main = main,
         data = data,
@@ -160,7 +65,6 @@ def drake_py_binary(
             # files from their build actions and bazel would error out because
             # of the malformed BUILD file.
             precompile = "disabled",
-            isolate = isolate,
             args = test_rule_args,
             data = data + test_rule_data,
             size = test_rule_size,
@@ -171,6 +75,7 @@ def drake_py_binary(
                 "//tools/kcov:enabled",
             ],
             rendering = test_rule_rendering,
+            test_alt_binder = test_rule_test_alt_binder,
             tags = (test_rule_tags or []) + ["nolint"],
             # The added test rule isn't going to `import unittest`, but test
             # dependencies such as numpy(!!) do so unconditionally.  We should
@@ -217,7 +122,6 @@ def drake_py_test(
         size = None,
         srcs = None,
         deps = None,
-        isolate = True,
         allow_import_unittest = False,
         allow_network = None,
         display = False,
@@ -225,13 +129,9 @@ def drake_py_test(
         opt_in_condition = None,
         opt_out_conditions = None,
         rendering = False,
+        test_alt_binder = "auto",
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
-
-    @param isolate (optional, default is True)
-        If True, the test binary will be placed in a folder isolated from the
-        library code. This prevents submodules from leaking in as top-level
-        submodules. For more detail, see #8041.
 
     @param allow_import_unittest (optional, default is False)
         If False, this test (and anything it imports) is prevented from doing
@@ -257,6 +157,9 @@ def drake_py_test(
         See drake/tools/skylark/README.md for details.
 
     @param rendering (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
+    @param test_alt_binder (optional, default is "auto")
         See drake/tools/skylark/README.md for details.
 
     By default, sets test size to "small" to indicate a unit test. Adds the tag
@@ -288,10 +191,8 @@ def drake_py_test(
         opt_in_condition = opt_in_condition,
         opt_out_conditions = opt_out_conditions,
     )
-    _py_target_isolated(
+    py_test(
         name = name,
-        py_target = py_test,
-        isolate = isolate,
         size = size,
         srcs = srcs,
         deps = deps,
@@ -300,26 +201,60 @@ def drake_py_test(
         srcs_version = "PY3",
         **kwargs
     )
+    if test_alt_binder not in (True, False, "auto"):
+        fail("test_alt_binder must be set to True, False, or \"auto\"")
+    if test_alt_binder == "auto":
+        # TODO(#21572) Eventually "auto" should enable relevant tests (i.e.,
+        # "bindings/pydrake", "examples", and "tutorials"). For now, only a
+        # selected subset of those will pass.
+        package_name = native.package_name()
+        test_alt_binder = any([
+            package_name.startswith(x)
+            for x in [
+                "bindings/pydrake/autodiffutils",
+                "bindings/pydrake/common",
+                "bindings/pydrake/math",
+                "bindings/pydrake/solvers",
+                "bindings/pydrake/symbolic",
+            ]
+        ])
+    if test_alt_binder:
+        alt_target_compatible_with, _ = combine_conditions(
+            name = "alt_binder/" + name,
+            opt_in_condition = opt_in_condition,
+            opt_out_conditions = (opt_out_conditions or []) + [
+                # Sanitizers and memcheck use `test_lang_filters` to opt-out of
+                # py_tests, but for some reason that filter doesn't work on the
+                # alt_binder tests, so we need to skip them explicitly.
+                "//tools:using_sanitizer",
+                "//tools/valgrind:enabled",
+                # Python coverage tests are allowed in `test_lang_filters`, but
+                # we actually only want coverage of the primary binder.
+                "//tools/kcov:enabled",
+            ],
+        )
+        py_test_with_alt_binder(
+            name = "alt_binder/" + name,
+            main = kwargs.pop("main", None) or "{}.py".format(name),
+            size = size,
+            srcs = srcs,
+            deps = deps,
+            target_compatible_with = alt_target_compatible_with,
+            python_version = "PY3",
+            srcs_version = "PY3",
+            **kwargs
+        )
 
-def py_test_isolated(
+def py_linter_test(
         name,
         **kwargs):
-    """Provides a directory-isolated Python test, robust against shadowing
-    (#8041).
-    """
-    if "lint" in (kwargs.get("tags") or []):
-        # Skip lint tests in coverage builds.
+    """Wrapper for py_test, to be used for running a linter."""
+    py_test(
+        name = name,
         target_compatible_with = select({
+            # Skip lint tests in coverage builds.
             "@drake//tools/kcov:enabled": ["@platforms//:incompatible"],
             "//conditions:default": [],
-        })
-    else:
-        target_compatible_with = None
-
-    _py_target_isolated(
-        name = name,
-        py_target = py_test,
-        isolate = True,
-        target_compatible_with = target_compatible_with,
+        }),
         **kwargs
     )

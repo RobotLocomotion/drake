@@ -27,8 +27,6 @@ _ALLOWED_DEFINES = [
     "SPDLOG_COMPILED_LIB",
     "SPDLOG_FMT_EXTERNAL",
     "SPDLOG_SHARED_LIB",
-    # Remove with deprecation 2026-07-01.
-    "HAVE_SPDLOG",
 ]
 
 def _cc_check_allowed_headers_impl(ctx):

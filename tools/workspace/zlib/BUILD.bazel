@@ -4,6 +4,7 @@ load("//tools/install:check_is_cc_import.bzl", "check_is_cc_import")
 load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_library")
+load("//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
 
 # ---- Logic for choosing which zlib to use. ---
 
@@ -14,18 +15,9 @@ cc_library(
     visibility = ["@zlib//:__subpackages__"],
 )
 
-config_setting(
-    name = "flag_zlib_repo_hardcoded",
-    flag_values = {
-        "//tools/flags:zlib_repo": "hardcoded",
-    },
-)
-
-config_setting(
-    name = "flag_zlib_repo_default",
-    flag_values = {
-        "//tools/flags:zlib_repo": "default",
-    },
+cc_static_hidden_library(
+    name = "module_zlib_static_hidden",
+    deps = ["@module_zlib//:zlib"],
 )
 
 config_setting(
@@ -38,7 +30,7 @@ config_setting(
 selects.config_setting_group(
     name = "flag_zlib_repo_default_hardcoded",
     match_all = [
-        ":flag_zlib_repo_default",
+        "//tools/flags:flag_zlib_repo_default",
         ":flag_private_runtime_repo_default_external",
     ],
 )
@@ -46,7 +38,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "use_hardcoded",
     match_any = [
-        ":flag_zlib_repo_hardcoded",
+        "//tools/flags:flag_zlib_repo_hardcoded",
         ":flag_zlib_repo_default_hardcoded",
     ],
 )
@@ -55,7 +47,7 @@ alias(
     name = "zlib",
     actual = select({
         ":use_hardcoded": ":hardcoded",
-        "//conditions:default": "@module_zlib//:zlib",
+        "//conditions:default": ":module_zlib_static_hidden",
     }),
     visibility = ["//visibility:public"],
 )

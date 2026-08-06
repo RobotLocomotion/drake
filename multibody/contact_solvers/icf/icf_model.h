@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -9,7 +10,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/ball_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/distance_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
@@ -112,6 +115,10 @@ class IcfModel {
   using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
   using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
 
+  /* The near-rigid time scale factor β.  See [Castro et al., 2022], section
+  V.B. */
+  static constexpr double kBeta = 0.1;
+
   /* Constructs an empty model. */
   IcfModel();
 
@@ -157,9 +164,20 @@ class IcfModel {
 
   /* Returns the total number of constraints of any type in the problem. */
   int num_constraints() const {
-    return num_coupler_constraints() + num_gain_constraints() +
+    return num_ball_constraints() + num_coupler_constraints() +
+           num_distance_constraints() + num_gain_constraints() +
            num_limit_constraints() + num_patch_constraints() +
            num_weld_constraints();
+  }
+
+  /* Provides const access to the pool of all ball constraints. */
+  const BallConstraintsPool<T>& ball_constraints_pool() const {
+    return ball_constraints_pool_;
+  }
+
+  /* Provides mutable access to the pool of all ball constraints. */
+  BallConstraintsPool<T>& ball_constraints_pool() {
+    return ball_constraints_pool_;
   }
 
   /* Provides const access to the pool of all coupler constraints. */
@@ -170,6 +188,16 @@ class IcfModel {
   /* Provides mutable access to the pool of all coupler constraints. */
   CouplerConstraintsPool<T>& coupler_constraints_pool() {
     return coupler_constraints_pool_;
+  }
+
+  /* Provides const access to the pool of all distance constraints. */
+  const DistanceConstraintsPool<T>& distance_constraints_pool() const {
+    return distance_constraints_pool_;
+  }
+
+  /* Provides mutable access to the pool of all distance constraints. */
+  DistanceConstraintsPool<T>& distance_constraints_pool() {
+    return distance_constraints_pool_;
   }
 
   /* Provides const access to the pool of all gain (e.g., actuation)
@@ -214,8 +242,16 @@ class IcfModel {
     return weld_constraints_pool_;
   }
 
+  int num_ball_constraints() const {
+    return ball_constraints_pool_.num_constraints();
+  }
+
   int num_coupler_constraints() const {
     return coupler_constraints_pool_.num_constraints();
+  }
+
+  int num_distance_constraints() const {
+    return distance_constraints_pool_.num_constraints();
   }
 
   int num_gain_constraints() const {
@@ -236,6 +272,16 @@ class IcfModel {
 
   /* Returns the time step δt. */
   const T& time_step() const { return params().time_step; }
+
+  /* Returns the effective time step for computing near-rigid parameters for
+  constraints. At very small actual time steps, the effective time step will be
+  limited to some minimum value to avoid unreasonable stiffness and dissipation
+  effects.
+  */
+  T effective_time_step() const {
+    using std::max;
+    return max(time_step(), static_cast<T>(kHMin));
+  }
 
   /* Returns the initial generalized velocities v₀. */
   const VectorX<T>& v0() const { return params().v0; }
@@ -448,6 +494,12 @@ class IcfModel {
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_WB) const;
 
+  // Minimum time scale for constraints.
+  // For δt ≥ kHMin, constraint calculations follow the near-rigid model;
+  // for δt < kHMin, stiffness and dissipation are capped at
+  // near-rigid values determined with kHMin as the time scale.
+  static constexpr double kHMin = 1e-4;  // [s]
+
   // Core parameters that define the optimization problem.
   std::unique_ptr<IcfParameters<T>> params_;
 
@@ -472,7 +524,9 @@ class IcfModel {
       sparsity_pattern_;
 
   // Fixed set of constraints.
+  BallConstraintsPool<T> ball_constraints_pool_;
   CouplerConstraintsPool<T> coupler_constraints_pool_;
+  DistanceConstraintsPool<T> distance_constraints_pool_;
   GainConstraintsPool<T> gain_constraints_pool_;
   LimitConstraintsPool<T> limit_constraints_pool_;
   PatchConstraintsPool<T> patch_constraints_pool_;

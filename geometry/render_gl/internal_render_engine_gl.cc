@@ -1106,8 +1106,11 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
   // the front buffer; reversing the order means the image we've just rendered
   // wouldn't be visible.
   SetWindowVisibility(camera.core(), camera.show_window(), render_target);
-  glGetTextureImage(render_target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                    color_image_out->size(), color_image_out->at(0, 0));
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glReadPixels(0, 0, color_image_out->width(), color_image_out->height(),
+               GL_RGBA, GL_UNSIGNED_BYTE, color_image_out->at(0, 0));
 }
 
 void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
@@ -1139,9 +1142,11 @@ void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
     shader_program.Unuse();
   }
 
-  glGetTextureImage(render_target.value_texture, 0, GL_RED, GL_FLOAT,
-                    depth_image_out->size() * sizeof(GLfloat),
-                    depth_image_out->at(0, 0));
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glReadPixels(0, 0, depth_image_out->width(), depth_image_out->height(),
+               GL_RED, GL_FLOAT, depth_image_out->at(0, 0));
 }
 
 void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
@@ -1182,7 +1187,7 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
   // buffer texture consisting of a single-channel, 16-bit, signed int (to match
   // the underlying RenderLabel value). Doing so would allow us to render labels
   // directly and eliminate this additional pass.
-  GetLabelImage(label_image_out, render_target);
+  GetLabelImage(label_image_out);
 }
 
 std::string RenderEngineGl::DoGetParameterYaml() const {
@@ -2268,11 +2273,13 @@ RenderTarget RenderEngineGl::CreateRenderTarget(const RenderCameraCore& camera,
   return target;
 }
 
-void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out,
-                                   const RenderTarget& target) const {
+void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out) const {
   ImageRgba8U image(label_image_out->width(), label_image_out->height());
-  glGetTextureImage(target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                    image.size() * sizeof(GLubyte), image.at(0, 0));
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glReadPixels(0, 0, image.width(), image.height(), GL_RGBA, GL_UNSIGNED_BYTE,
+               image.at(0, 0));
   for (int y = 0; y < image.height(); ++y) {
     for (int x = 0; x < image.width(); ++x) {
       *label_image_out->at(x, y) = RenderEngine::MakeLabelFromRgb(
@@ -2412,8 +2419,10 @@ void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
     glBlitNamedFramebuffer(target.frame_buffer, 0,
                            // Src bounds.
                            0, 0, intrinsics.width(), intrinsics.height(),
-                           // Dest bounds.
-                           0, 0, intrinsics.width(), intrinsics.height(),
+                           // Dest bounds. The render target uses upper-left
+                           // image coordinates, while the native window's
+                           // default framebuffer is presented bottom-up.
+                           0, intrinsics.height(), intrinsics.width(), 0,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
     opengl_context_->UpdateWindow();
   } else {
@@ -2448,13 +2457,6 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
   // geometry.
   DRAKE_DEMAND(data.has_value());
   return *data;
-}
-
-void RenderEngineGl::SetDefaultLightPosition(const Vector3<double>& p_DL) {
-  DRAKE_DEMAND(fallback_lights_.size() == 1);
-  // This is a stopgap solution until we can completely eliminate this method.
-  // p_DC = (0, 0, 1). position = p_CL, so P_CL = p_DL - p_DC.
-  fallback_lights_[0].position = p_DL - Vector3<double>{0, 0, 1};
 }
 
 void RenderEngineGl::ConfigureLights() {

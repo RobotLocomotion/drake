@@ -27,7 +27,6 @@ load("//tools/workspace/implib_so_internal:repository.bzl", "implib_so_internal_
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
 load("//tools/workspace/lcm_internal:repository.bzl", "lcm_internal_repository")
-load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
 load("//tools/workspace/libzip_internal:repository.bzl", "libzip_internal_repository")  # noqa
@@ -63,7 +62,6 @@ load("//tools/workspace/spral_internal:repository.bzl", "spral_internal_reposito
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
 load("//tools/workspace/styleguide_internal:repository.bzl", "styleguide_internal_repository")  # noqa
-load("//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
 load("//tools/workspace/sympy_py_internal:repository.bzl", "sympy_py_internal_repository")  # noqa
 load("//tools/workspace/tinygltf_internal:repository.bzl", "tinygltf_internal_repository")  # noqa
 load("//tools/workspace/tinyobjloader_internal:repository.bzl", "tinyobjloader_internal_repository")  # noqa
@@ -105,7 +103,6 @@ def _add_internal_repositories():
     ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)
     lapack_internal_repository(name = "lapack_internal", mirrors = mirrors)
     lcm_internal_repository(name = "lcm_internal", mirrors = mirrors)
-    libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
     libpng_internal_repository(name = "libpng_internal", mirrors = mirrors)
     libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)
     libzip_internal_repository(name = "libzip_internal", mirrors = mirrors)
@@ -136,7 +133,6 @@ def _add_internal_repositories():
     stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
     stduuid_internal_repository(name = "stduuid_internal", mirrors = mirrors)
     styleguide_internal_repository(name = "styleguide_internal", mirrors = mirrors)  # noqa
-    suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
     sympy_py_internal_repository(name = "sympy_py_internal", mirrors = mirrors)
     tinygltf_internal_repository(name = "tinygltf_internal", mirrors = mirrors)
     tinyobjloader_internal_repository(name = "tinyobjloader_internal", mirrors = mirrors)  # noqa
@@ -165,8 +161,10 @@ def _drake_dep_repositories_impl(module_ctx):
         "fmt",
         "glib",
         "lapack",
+        "libjpeg",
         "opencl",
         "spdlog",
+        "suitesparse",
         "zlib",
     ]
     for name in ALIAS_REPOSITORIES:
@@ -175,6 +173,11 @@ def _drake_dep_repositories_impl(module_ctx):
         if name == "glib":
             # We provide @glib//glib to match bzlmod glib's package structure.
             aliases.update({"//glib:glib": actual})
+        if name == "suitesparse":
+            # We only provide @suitesparse//:amd since it's the only library in
+            # suitesparse Drake needs (and can reasonably obtain, for licensing
+            # reasons).
+            aliases = {"amd": actual + ":amd"}
         alias_repository(
             name = name,
             aliases = aliases,

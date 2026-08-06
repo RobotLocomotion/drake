@@ -24,6 +24,11 @@ namespace internal {
 template <typename T>
 class IcfModel;
 
+// TODO(#23741): Consider sorting patches by body pair, to improve locality of
+// access of Jacobians.
+// TODO(#23742): Consider moving to a single flat index for patches and pairs,
+// as a step toward parallelization.
+
 /* A pool of contact constraints organized by patches. Each patch involves two
 bodies A and B, with one or more contact pairs per patch. We can think of each
 patch as corresponding to a physical "contact surface" between the two bodies.
@@ -136,6 +141,11 @@ class PatchConstraintsPool {
   @param normal_W Contact normal, from A into B by convention.
   @param fn0 The previous-step normal contact force (lagged for convexity.)
   @param stiffness Contact stiffness, in N/m. See [Masterjohn et al., 2022].
+  @param v_b_W The surface-velocity bias at the contact point, expressed in the
+         world frame. The physical relative contact velocity is
+         v_AcBc_W = J⋅v + v_b_W, with the sign convention
+         v_b_W = v_B_ss - v_A_ss. Nonzero only for bodies with a declared
+         surface velocity, e.g., an imaginary conveyor belt.
 
   @note As required by SetPatch(), body B is always dynamic (not anchored).
         Therefore we provide the position of the contact point relative to B
@@ -143,7 +153,8 @@ class PatchConstraintsPool {
         provided to SetPatch(). */
   void SetPair(const int patch_index, const int pair_index,
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
-               const T& fn0, const T& stiffness);
+               const T& fn0, const T& stiffness,
+               const Vector3<T>& v_b_W = Vector3<T>::Zero());
 
   /* Computes the sparsity pattern for the pool. That is, clique i is connected
   to clique j > i iff sparsity[i] contains j. */
@@ -183,6 +194,7 @@ class PatchConstraintsPool {
   /* Testing only access to per-pair data. */
   const EigenPool<Vector3<T>>& p_BC_W() const { return p_BC_W_; }
   const EigenPool<Vector3<T>>& normal_W() const { return normal_W_; }
+  const EigenPool<Vector3<T>>& v_b_W() const { return v_b_W_; }
   const std::vector<T>& stiffness() const { return stiffness_; }
   const std::vector<T>& fe0() const { return fe0_; }
   const std::vector<T>& fn0() const { return fn0_; }
@@ -255,7 +267,11 @@ class PatchConstraintsPool {
   // Data per pair. Indexed by patch_pair_index(p, k).
   EigenPool<Vector3<T>> p_BC_W_;    // Position of contact point from body B.
   EigenPool<Vector3<T>> normal_W_;  // Contact normals.
-  std::vector<T> stiffness_;        // Linear stiffness, N/m.
+  // Surface-velocity bias v_b_W (world frame) such that the physical relative
+  // contact velocity is v_AcBc_W = J⋅v + v_b_W. Zero unless a body in the pair
+  // declares a surface velocity (e.g., a conveyor belt).
+  EigenPool<Vector3<T>> v_b_W_;
+  std::vector<T> stiffness_;  // Linear stiffness, N/m.
   // Elastic component of the normal force at the previous step, in N.
   std::vector<T> fe0_;
   // Normal force (elastic and damping) at the previous step, in N.

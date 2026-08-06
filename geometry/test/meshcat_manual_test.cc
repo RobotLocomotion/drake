@@ -719,7 +719,8 @@ Ignore those for now; we'll need to circle back and fix them later.
                                          /* hydroelastic_modulus */ 1.0e8,
                                          &box_props);
       plant.RegisterCollisionGeometry(body, RigidTransformd(), Box(s, s, s),
-                                      name + "_collision", std::move(box_props));
+                                      name + "_collision",
+                                      std::move(box_props));
       plant.RegisterVisualGeometry(body, RigidTransformd(), Box(s, s, s),
                                    name + "_visual", colors[i]);
     }
@@ -727,7 +728,7 @@ Ignore those for now; we'll need to circle back and fix them later.
 
     MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat);
     multibody::meshcat::MeshcatMouseSpring::AddToBuilder(
-        &builder, &plant, meshcat, /* stiffness */ 100.0);
+        &builder, &plant, scene_graph, meshcat, /* stiffness */ 100.0);
 
     auto diagram = builder.Build();
     auto context = diagram->CreateDefaultContext();

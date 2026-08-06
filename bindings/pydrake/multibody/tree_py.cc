@@ -6,8 +6,6 @@
 #include <string>
 #include <utility>
 
-#include "pybind11/eval.h"
-
 #include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
@@ -84,12 +82,14 @@ void BindMultibodyElementMixin(PyClass* pcls) {
       .def("index", &Class::index)
       .def("model_instance", &Class::model_instance)
       .def("is_ephemeral", &Class::is_ephemeral)
-      .def("GetParentPlant",
+      .def(
+          "GetParentPlant",
           [](const Class& self) -> const multibody::MultibodyPlant<T>& {
             return self.GetParentPlant();
-          })
+          },
+          py_rvp::reference_internal)
       .def("__repr__", [](const Class& self) {
-        py::str cls_name = internal::PrettyClassName(py::cast(&self).type());
+        py::str cls_name(internal::PrettyClassName(py::cast(&self).type()));
         const int index = self.index();
         const int model_instance = self.model_instance();
         if constexpr (has_name_func<Class>::value) {
@@ -518,14 +518,15 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("set_random_angles_distribution",
             &Class::set_random_angles_distribution, py::arg("angles"),
             cls_doc.set_random_angles_distribution.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("get_default_angles", &Class::get_default_angles,
             cls_doc.get_default_angles.doc)
@@ -552,23 +553,26 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("p_FoMo_F"), cls_doc.set_translation.doc)
+            py::arg("p_FoMo_F"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_rotation", &Class::get_rotation, py::arg("context"),
             cls_doc.get_rotation.doc)
         .def("set_rotation", &Class::set_rotation, py::arg("context"),
-            py::arg("theta"), cls_doc.set_rotation.doc)
+            py::arg("theta"), py_rvp::reference_internal,
+            cls_doc.set_rotation.doc)
         .def("set_pose", &Class::set_pose, py::arg("context"),
-            py::arg("p_FoMo_F"), py::arg("theta"), cls_doc.set_pose.doc)
+            py::arg("p_FoMo_F"), py::arg("theta"), py_rvp::reference_internal,
+            cls_doc.set_pose.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FoMo_F"),
+            py::arg("context"), py::arg("v_FoMo_F"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
             py::arg("context"), py::arg("theta_dot"),
-            cls_doc.set_angular_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_angular_velocity.doc)
         .def("get_default_translation", &Class::get_default_translation,
             cls_doc.get_default_translation.doc)
         .def("set_default_translation", &Class::set_default_translation,
@@ -623,12 +627,13 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("translation"), cls_doc.set_translation.doc)
+            py::arg("translation"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_translation_rate", &Class::get_translation_rate,
             py::arg("context"), cls_doc.get_translation_rate.doc)
         .def("set_translation_rate", &Class::set_translation_rate,
             py::arg("context"), py::arg("translation_dot"),
-            cls_doc.set_translation_rate.doc)
+            py_rvp::reference_internal, cls_doc.set_translation_rate.doc)
         .def("get_default_translation", &Class::get_default_translation,
             cls_doc.get_default_translation.doc)
         .def("set_default_translation", &Class::set_default_translation,
@@ -672,18 +677,21 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("SetQuaternion", &Class::SetQuaternion, py::arg("context"),
-            py::arg("q_FM"), cls_doc.SetQuaternion.doc)
+            py::arg("q_FM"), py_rvp::reference_internal,
+            cls_doc.SetQuaternion.doc)
         .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R"), cls_doc.SetOrientation.doc)
+            py::arg("R"), py_rvp::reference_internal,
+            cls_doc.SetOrientation.doc)
         .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.SetTranslation.doc)
+            py::arg("p_FM"), py_rvp::reference_internal,
+            cls_doc.SetTranslation.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
-            cls_doc.SetPose.doc)
+            py_rvp::reference_internal, cls_doc.SetPose.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FM"),
+            py::arg("context"), py::arg("v_FM"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("set_random_translation_distribution",
             &Class::set_random_translation_distribution, py::arg("translation"),
@@ -744,14 +752,15 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_angle", &Class::get_angle, py::arg("context"),
             cls_doc.get_angle.doc)
         .def("set_angle", &Class::set_angle, py::arg("context"),
-            py::arg("angle"), cls_doc.set_angle.doc)
+            py::arg("angle"), py_rvp::reference_internal, cls_doc.set_angle.doc)
         .def("set_random_angle_distribution",
             &Class::set_random_angle_distribution, py::arg("angle"),
             cls_doc.set_random_angle_distribution.doc)
         .def("get_angular_rate", &Class::get_angular_rate, py::arg("context"),
             cls_doc.get_angular_rate.doc)
         .def("set_angular_rate", &Class::set_angular_rate, py::arg("context"),
-            py::arg("angle"), cls_doc.set_angular_rate.doc)
+            py::arg("angle"), py_rvp::reference_internal,
+            cls_doc.set_angular_rate.doc)
         .def("get_default_angle", &Class::get_default_angle,
             cls_doc.get_default_angle.doc)
         .def("set_default_angle", &Class::set_default_angle, py::arg("angle"),
@@ -784,26 +793,29 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("SetOrientation", &Class::SetOrientation, py::arg("context"),
-            py::arg("R_FM"), cls_doc.SetOrientation.doc)
+            py::arg("R_FM"), py_rvp::reference_internal,
+            cls_doc.SetOrientation.doc)
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("SetTranslation", &Class::SetTranslation, py::arg("context"),
-            py::arg("p_FM"), cls_doc.SetTranslation.doc)
+            py::arg("p_FM"), py_rvp::reference_internal,
+            cls_doc.SetTranslation.doc)
         .def(
             "GetPose", &Class::GetPose, py::arg("context"), cls_doc.GetPose.doc)
         .def("SetPose", &Class::SetPose, py::arg("context"), py::arg("X_FM"),
-            cls_doc.SetPose.doc)
+            py_rvp::reference_internal, cls_doc.SetPose.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
-            py::arg("context"), py::arg("w_FM"),
+            py::arg("context"), py::arg("w_FM"), py_rvp::reference_internal,
             cls_doc.set_angular_velocity.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
-            py::arg("context"), py::arg("v_FM"),
+            py::arg("context"), py::arg("v_FM"), py_rvp::reference_internal,
             cls_doc.set_translational_velocity.doc)
         .def("set_random_angles_distribution",
             &Class::set_random_angles_distribution, py::arg("angles"),
@@ -854,19 +866,20 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_translation", &Class::get_translation, py::arg("context"),
             cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("translation"), cls_doc.set_translation.doc)
+            py::arg("translation"), py_rvp::reference_internal,
+            cls_doc.set_translation.doc)
         .def("get_translational_velocity", &Class::get_translational_velocity,
             py::arg("context"), cls_doc.get_translational_velocity.doc)
         .def("set_translational_velocity", &Class::set_translational_velocity,
             py::arg("context"), py::arg("translation_dot"),
-            cls_doc.set_translational_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_translational_velocity.doc)
         .def("get_rotation", &Class::get_rotation, py::arg("context"),
             cls_doc.get_rotation.doc)
         .def("get_angular_velocity", &Class::get_angular_velocity,
             py::arg("context"), cls_doc.get_angular_velocity.doc)
         .def("set_angular_velocity", &Class::set_angular_velocity,
             py::arg("context"), py::arg("theta_dot"),
-            cls_doc.set_angular_velocity.doc)
+            py_rvp::reference_internal, cls_doc.set_angular_velocity.doc)
         .def("set_random_pose_distribution",
             &Class::set_random_pose_distribution, py::arg("theta"),
             cls_doc.set_random_pose_distribution.doc)
@@ -894,11 +907,13 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("get_angles", &Class::get_angles, py::arg("context"),
             cls_doc.get_angles.doc)
         .def("set_angles", &Class::set_angles, py::arg("context"),
-            py::arg("angles"), cls_doc.set_angles.doc)
+            py::arg("angles"), py_rvp::reference_internal,
+            cls_doc.set_angles.doc)
         .def("get_angular_rates", &Class::get_angular_rates, py::arg("context"),
             cls_doc.get_angular_rates.doc)
         .def("set_angular_rates", &Class::set_angular_rates, py::arg("context"),
-            py::arg("theta_dot"), cls_doc.set_angular_rates.doc)
+            py::arg("theta_dot"), py_rvp::reference_internal,
+            cls_doc.set_angular_rates.doc)
         .def("get_default_angles", &Class::get_default_angles,
             cls_doc.get_default_angles.doc)
         .def("set_default_angles", &Class::set_default_angles,
@@ -940,10 +955,15 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             [](const Class& self, const VectorX<T>& u) -> VectorX<T> {
               return self.get_actuation_vector(u);
             },
-            py::arg("u"), cls_doc.get_actuation_vector.doc)
-        .def("set_actuation_vector", &Class::set_actuation_vector,
-            py::arg("u_actuator"), py::arg("u"),
-            cls_doc.set_actuation_vector.doc)
+            py::arg("u"), cls_doc.get_actuation_vector.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("set_actuation_vector", &Class::set_actuation_vector,
+              py::arg("u_actuator"), py::arg("u"),
+              cls_doc.set_actuation_vector.doc);
+    }
+    cls  // BR
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
         .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc)
@@ -1211,17 +1231,21 @@ class ForceDensityFieldPublic : public ForceDensityField<T> {
         plant, name, model_vector);
   }
 
+  using ForceDensityField<T>::DoDeclareCacheEntries;
+  using ForceDensityField<T>::DoDeclareInputPorts;
+
  protected:
   explicit ForceDensityFieldPublic(ForceDensityType density_type)
       : ForceDensityField<T>(density_type) {}
 };
 
 template <typename T>
-class DelegatedForceDensityField final : public ForceDensityField<T> {
+class DelegatedForceDensityField final : public ForceDensityFieldPublic<T> {
  public:
   explicit DelegatedForceDensityField(
       std::shared_ptr<ForceDensityField<T>> impl)
-      : ForceDensityField<T>(impl->density_type()), impl_(std::move(impl)) {
+      : ForceDensityFieldPublic<T>(impl->density_type()),
+        impl_(std::move(impl)) {
     DRAKE_THROW_UNLESS(impl_ != nullptr);
   }
 
@@ -1235,77 +1259,55 @@ class DelegatedForceDensityField final : public ForceDensityField<T> {
     return impl_->Clone();
   }
 
+  void DoDeclareCacheEntries(MultibodyPlant<T>* plant) final {
+    // We need a static_cast to get around protected access.
+    auto* impl = static_cast<ForceDensityFieldPublic<T>*>(impl_.get());
+    impl->DoDeclareCacheEntries(plant);
+  }
+
+  void DoDeclareInputPorts(MultibodyPlant<T>* plant) final {
+    // We need a static_cast to get around protected access.
+    auto* impl = static_cast<ForceDensityFieldPublic<T>*>(impl_.get());
+    impl->DoDeclareInputPorts(plant);
+  }
+
   std::shared_ptr<ForceDensityField<T>> impl_;
 };
 
 template <typename T>
 class PyForceDensityField : public ForceDensityFieldPublic<T> {
  public:
+  NB_TRAMPOLINE(ForceDensityFieldPublic<T>, 3);
+
   explicit PyForceDensityField(ForceDensityType density_type)
       : ForceDensityFieldPublic<T>(density_type) {}
 
   Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
       const Vector3<T>& p_WQ) const override {
-    py::gil_scoped_acquire gil;
-    py::function override = py::get_override(
-        static_cast<const ForceDensityField<T>*>(this), "DoEvaluateAt");
-    if (!override) {
-      throw std::logic_error(
-          "Python class derived from ForceDensityField<T> must implement "
-          "DoEvaluateAt().");
-    }
-    // Call Python-side DoEvaluateAt.
-    py::object result_obj =
-        override(py::cast(context, py_rvp::reference), py::cast(p_WQ));
-    try {
-      return py::cast<Vector3<T>>(result_obj);
-    } catch (const py::cast_error& e) {
-      throw std::logic_error(
-          "DoEvaluateAt() must return a 3-element list or NumPy array that can "
-          "be converted to Vector3<T>. Got " +
-          py::cast<std::string>(py::str(result_obj)) + ".");
-    }
+    PYDRAKE_OVERRIDE_PURE(Vector3<T>, ForceDensityField<T>, DoEvaluateAt,
+        std::cref(context), p_WQ);
   }
 
   std::unique_ptr<ForceDensityFieldBase<T>> DoClone() const override {
+    // Our required unique_ptr return type cannot be directly fulfilled by a
+    // PYDRAKE_OVERRIDE_PURE; we need to ask the override for a shared_ptr and
+    // then wrap it in a decorator to obtain the necessary C++ signature.
     py::gil_scoped_acquire gil;
-    py::function override = py::get_override(
-        static_cast<const ForceDensityField<T>*>(this), "DoClone");
-    if (!override) {
-      throw std::logic_error(
-          "Python class derived from ForceDensityField<T> must implement "
-          "DoClone().");
-    }
-    // Call Python-side DoClone.
-    py::object result_obj = override();
-    std::shared_ptr<ForceDensityField<T>> cloned;
-    try {
-      cloned = py::cast<std::shared_ptr<ForceDensityField<T>>>(result_obj);
-    } catch (const py::cast_error& e) {
-      throw std::logic_error(
-          "DoClone() must return a `ForceDensityField<T>`. Got " +
-          py::cast<std::string>(py::str(result_obj.type())) +
-          " Make sure your DoClone() returns a new instance of the same "
-          "Python class, e.g., `return MyForceDensityField(...)`.");
-    }
-    if (cloned.get() == nullptr) {
-      throw std::logic_error(
-          "DoClone() must not return None. Did you forget to return a new "
-          "instance of your class, e.g., `return MyForceDensityField(...)`.");
-    } else if (cloned.get() == this) {
-      throw std::logic_error(
-          "DoClone() must return a clone, not itself. Return a new instance of "
-          "your class, e.g., `return MyForceDensityField(...)`.");
-    }
-    return std::make_unique<DelegatedForceDensityField<T>>(std::move(cloned));
+    const ForceDensityField<T>* const self = this;
+    py::object result_py = py::cast(self).attr("DoClone")();
+    auto result_cxx =
+        py::cast<std::shared_ptr<ForceDensityField<T>>>(result_py);
+    DRAKE_THROW_UNLESS(result_cxx != nullptr);
+    return std::make_unique<DelegatedForceDensityField<T>>(
+        std::move(result_cxx));
   }
 
   void DoDeclareCacheEntries(MultibodyPlant<T>* plant) override {
-    PYBIND11_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareCacheEntries, plant);
   }
 
   void DoDeclareInputPorts(MultibodyPlant<T>* plant) override {
-    PYBIND11_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
+    PYDRAKE_OVERRIDE(void, ForceDensityField<T>, DoDeclareInputPorts, plant);
   }
 };
 

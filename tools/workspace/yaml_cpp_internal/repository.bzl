@@ -12,6 +12,8 @@ def yaml_cpp_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/pr1398.patch",
+            ":patches/upstream/pr1469.patch",
+            ":patches/upstream/pr1471.patch",
             ":patches/emit-local-tag.patch",
         ],
         mirrors = mirrors,

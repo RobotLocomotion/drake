@@ -3,12 +3,8 @@
 #include <stdexcept>
 #include <string>
 
-// TODO(2026-07-01): Remove ostream header when `operator<<` is removed.
-#include <ostream>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 
 namespace drake {
@@ -167,13 +163,6 @@ class Fields {
 
 /// Provides a human-readable description of `fields`.
 std::string to_string(const Fields& fields);
-
-/// Provides human-readable output.
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& os, const Fields& rhs);
 
 // Do not use implicit conversion because it becomes ambiguous.
 /// Makes operator| compatible for `BaseField` + `DescriptorType`.

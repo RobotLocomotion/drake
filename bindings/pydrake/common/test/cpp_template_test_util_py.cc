@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "pybind11/eval.h"
-
 #include "drake/common/nice_type_name.h"
 
 using std::string;
@@ -80,7 +78,7 @@ PYDRAKE_MODULE(cpp_template_test_util, m) {
   BindTemplateWithDefault<double>(m);
   BindTemplateWithDefault<int>(m);
 
-  m.def("simple_func", [](const SimpleTemplate<int>&) {});
+  m.def("simple_func", [](const SimpleTemplate<int>&) {}, py::arg("x"));
 
   // Add dummy constructors to check __call__ pseudo-deduction.
   {

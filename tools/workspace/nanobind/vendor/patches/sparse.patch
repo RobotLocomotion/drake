@@ -1,0 +1,29 @@
+Allow use of nanobind/eigen/sparse.h without nanobind/eigen/dense.h
+
+This allows projects to use the sparse caster while writing their own
+dense caster.
+
+https://github.com/wjakob/nanobind/pull/1389 has been merged upstream,
+so we can drop this patch once we upgrade to nanobind > 2.13. Note that
+this `sparse.patch` file must always exist, but we can replace the patch
+content with a no-op edit instead.
+
+--- include/nanobind/eigen/sparse.h
++++ include/nanobind/eigen/sparse.h
+@@ -10,7 +10,6 @@
+ #pragma once
+ 
+ #include <nanobind/ndarray.h>
+-#include <nanobind/eigen/dense.h>
+ #include <Eigen/SparseCore>
+ 
+ #include <memory>
+@@ -23,7 +22,7 @@ NAMESPACE_BEGIN(detail)
+ 
+ /// Detect Eigen::SparseMatrix
+ template <typename T> constexpr bool is_eigen_sparse_matrix_v =
+-    is_eigen_sparse_v<T> &&
++    is_base_of_template_v<T, Eigen::SparseMatrixBase> &&
+     !std::is_base_of_v<Eigen::SparseMapBase<T, Eigen::ReadOnlyAccessors>, T>;
+ 
+ 

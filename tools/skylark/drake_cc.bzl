@@ -137,13 +137,7 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     })
 
 # The BASE_LINKOPTS are used for all drake_cc_{binary,library,test} rules.
-BASE_LINKOPTS = select({
-    "@drake//tools/cc_toolchain:use_mold_linker": [
-        "-fuse-ld=mold",
-        "-Wl,--compress-debug-sections=zlib",
-    ],
-    "//conditions:default": [],
-})
+BASE_LINKOPTS = []
 
 def _check_library_deps_blacklist(name, deps):
     """Report an error if a library should not use something from deps."""
@@ -788,8 +782,11 @@ def drake_cc_binary(
         **kwargs
     )
 
-    if "@googletest//:gtest_main" in deps:
-        fail("Use drake_cc_googletest to declare %s as a test" % name)
+    # Reject misuse of cc_binary for a drake_cc_googletest (but we can only
+    # perform the check if the deps are iterable, i.e., not a `select()`).
+    if type(deps) in (type([]), type(())):
+        if "@googletest//:gtest_main" in deps:
+            fail("Use drake_cc_googletest to declare %s as a test" % name)
 
     if add_test_rule:
         drake_cc_test(

@@ -236,6 +236,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             overload_cast_explicit<int, ModelInstanceIndex>(
                 &Class::num_velocities),
             py::arg("model_instance"), cls_doc.num_velocities.doc_1args)
+        .def("num_misc_continuous_states", &Class::num_misc_continuous_states,
+            cls_doc.num_misc_continuous_states.doc)
         .def("num_multibody_states",
             overload_cast_explicit<int>(&Class::num_multibody_states),
             cls_doc.num_multibody_states.doc_0args)
@@ -354,6 +356,13 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("AddWeldConstraint", &Class::AddWeldConstraint, py::arg("body_A"),
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
             py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc)
+        .def("AddTendonConstraint", &Class::AddTendonConstraint,
+            py::arg("joints"), py::arg("a"), py::arg("offset") = std::nullopt,
+            py::arg("lower_limit") = std::nullopt,
+            py::arg("upper_limit") = std::nullopt,
+            py::arg("stiffness") = std::nullopt,
+            py::arg("damping") = std::nullopt, py_rvp::reference_internal,
+            cls_doc.AddTendonConstraint.doc)
         .def("RemoveConstraint", &Class::RemoveConstraint, py::arg("id"),
             cls_doc.RemoveConstraint.doc)
         .def("SetBaseBodyJointType", &Class::SetBaseBodyJointType,
@@ -541,31 +550,45 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             cls_doc.SetFreeBodySpatialVelocity.doc_3args)
         .def("GetActuationFromArray", &Class::GetActuationFromArray,
             py::arg("model_instance"), py::arg("u"),
-            cls_doc.GetActuationFromArray.doc)
-        .def("SetActuationInArray", &Class::SetActuationInArray,
-            py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
-            cls_doc.SetActuationInArray.doc)
+            cls_doc.GetActuationFromArray.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetActuationInArray", &Class::SetActuationInArray,
+              py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
+              cls_doc.SetActuationInArray.doc);
+    }
+    cls  // BR
         .def("GetPositionsFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetPositionsFromArray),
             py::arg("model_instance"), py::arg("q"),
-            cls_doc.GetPositionsFromArray.doc_2args)
-        .def("SetPositionsInArray", &Class::SetPositionsInArray,
-            py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
-            cls_doc.SetPositionsInArray.doc)
+            cls_doc.GetPositionsFromArray.doc_2args);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetPositionsInArray", &Class::SetPositionsInArray,
+              py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
+              cls_doc.SetPositionsInArray.doc);
+    }
+    cls  // BR
         .def("GetVelocitiesFromArray",
             overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
                 const Eigen::Ref<const VectorX<T>>&>(
                 &Class::GetVelocitiesFromArray),
             py::arg("model_instance"), py::arg("v"),
-            cls_doc.GetVelocitiesFromArray.doc_2args)
-        .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
-            py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
-            cls_doc.SetVelocitiesInArray.doc)
-        // TODO(eric.cousineau): Ensure all of these return either references,
-        // or copies, consistently. At present, `GetX(context)` returns a
-        // reference, while `GetX(context, model_instance)` returns a copy.
+            cls_doc.GetVelocitiesFromArray.doc_2args);
+    if constexpr (std::is_same_v<T, double>) {
+      // Mutable EigenPtr doesn't work with dtype=object.
+      cls  // BR
+          .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
+              py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
+              cls_doc.SetVelocitiesInArray.doc);
+    }
+    cls  // TODO(eric.cousineau): Ensure all of these return either references,
+         // or copies, consistently. At present, `GetX(context)` returns a
+         // reference, while `GetX(context, model_instance)` returns a copy.
         .def(
             "GetPositions",
             [](const Class* self, const Context<T>& context) {
@@ -1179,7 +1202,17 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 ModelInstanceIndex>(
                 &Class::get_generalized_contact_forces_output_port),
             py_rvp::reference_internal, py::arg("model_instance"),
-            cls_doc.get_generalized_contact_forces_output_port.doc);
+            cls_doc.get_generalized_contact_forces_output_port.doc)
+        .def("get_surface_speeds_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&>(
+                &Class::get_surface_speeds_input_port),
+            py_rvp::reference_internal,
+            cls_doc.get_surface_speeds_input_port.doc)
+        .def("get_surface_displacements_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_surface_displacements_output_port),
+            py_rvp::reference_internal,
+            cls_doc.get_surface_displacements_output_port.doc);
     // Property accessors.
     cls  // BR
         .def("world_body", &Class::world_body, py_rvp::reference_internal,
@@ -1388,7 +1421,12 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
                 bool>(&Class::GetActuatorNames),
             py::arg("model_instance"),
             py::arg("add_model_instance_prefix") = false,
-            cls_doc.GetActuatorNames.doc_2args);
+            cls_doc.GetActuatorNames.doc_2args)
+        .def("SetSurfaceVelocityAxis", &Class::SetSurfaceVelocityAxis,
+            py::arg("body"), py::arg("axis_B"),
+            cls_doc.SetSurfaceVelocityAxis.doc)
+        .def("GetSurfaceVelocityAxis", &Class::GetSurfaceVelocityAxis,
+            py::arg("body"), cls_doc.GetSurfaceVelocityAxis.doc);
   }
 
   {
@@ -1677,17 +1715,15 @@ PYDRAKE_MODULE(plant, m) {
   {
     using Class = ContactModel;
     constexpr auto& cls_doc = doc.ContactModel;
-    py::enum_<Class>(m, "ContactModel", cls_doc.doc)
+    py::enum_<Class> cls(m, "ContactModel", cls_doc.doc);
+    cls  // BR
         .value("kHydroelastic", Class::kHydroelastic, cls_doc.kHydroelastic.doc)
         .value("kPoint", Class::kPoint, cls_doc.kPoint.doc)
         .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
-            cls_doc.kHydroelasticWithFallback.doc)
-        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
-        .value("kHydroelasticsOnly", Class::kHydroelasticsOnly,
-            cls_doc.kHydroelasticsOnly.doc)
-        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
-        .value("kPointContactOnly", Class::kPointContactOnly,
-            cls_doc.kPointContactOnly.doc);
+            cls_doc.kHydroelasticWithFallback.doc);
+    // Legacy aliases. TODO(jwnimmer-tri) Deprecate these constants.
+    cls.attr("kHydroelasticsOnly") = cls.attr("kHydroelastic");
+    cls.attr("kPointContactOnly") = cls.attr("kPoint");
   }
 
   {

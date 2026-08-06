@@ -126,9 +126,9 @@ class LimitConstraintsPool {
   const EigenPool<VectorX<T>>& ql() const { return ql_; }
   const EigenPool<VectorX<T>>& qu() const { return qu_; }
   const EigenPool<VectorX<T>>& q0() const { return q0_; }
-  const EigenPool<VectorX<T>>& gl_hat() const { return gl_hat_; }
-  const EigenPool<VectorX<T>>& gu_hat() const { return gu_hat_; }
-  const EigenPool<VectorX<T>>& R() const { return R_; }
+  const EigenPool<VectorX<T>>& gl0() const { return gl0_; }
+  const EigenPool<VectorX<T>>& gu0() const { return gu0_; }
+  const EigenPool<VectorX<T>>& R_fragment() const { return R_fragment_; }
 
  private:
   /* Computes cost, gradient, and Hessian contribution for a single limit
@@ -153,9 +153,25 @@ class LimitConstraintsPool {
   EigenPool<VectorX<T>> ql_;          // Lower limit.
   EigenPool<VectorX<T>> qu_;          // Upper limit.
   EigenPool<VectorX<T>> q0_;          // Initial configuration.
-  EigenPool<VectorX<T>> gl_hat_;  // Lower bound velocity target scaled by dt.
-  EigenPool<VectorX<T>> gu_hat_;  // Upper bound velocity target scaled by dt.
-  EigenPool<VectorX<T>> R_;       // Near-rigid regularization parameter.
+
+  // Initial constraint violation at t0 per constraint, of size
+  // num_constrains(). Used to compute the bias term in CalcData().
+  EigenPool<VectorX<T>> gl0_;
+  EigenPool<VectorX<T>> gu0_;
+
+  // Near-rigid regularization [Castro et al., 2022], per constraint, of size
+  // num_constraints(). For a single DoF, the regularization is:
+  //  R = 1 / K·dt·(dt + τd), where
+  //  K = 4π²/(β²·dt_eff²·w) is the effective stiffness, and
+  //  τd = β·dt_eff/π is the effective dissipation time scale.
+  // Thus
+  //  R = β²·dt_eff²·w / (4π²·dt·(dt + τd)).
+  //
+  // R_fragment_ only stores the time-step-independent portion of this formula:
+  //  R_fragment_[k](i) = β²·w / (4π²)
+  // The full R is computed in CalcData() using the current time step and
+  // effective time step.
+  EigenPool<VectorX<T>> R_fragment_;
 };
 static_assert(IsAbstractConstraintsPool<LimitConstraintsPool>);
 

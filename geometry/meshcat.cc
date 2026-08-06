@@ -1901,7 +1901,8 @@ class Meshcat::Impl {
     return gamepad_;
   }
 
-  std::optional<Meshcat::ObjectDrag> GetObjectDrag() const {
+  std::optional<Meshcat::VirtualSpringKinematics> GetVirtualSpringKinematics()
+      const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     std::lock_guard<std::mutex> lock(controls_mutex_);
@@ -2463,11 +2464,11 @@ class Meshcat::Impl {
     }
     if (data.type == "mouse_drag") {
       if (data.drag_anchor.size() == 3 && data.drag_target.size() == 3) {
-        Meshcat::ObjectDrag drag;
+        Meshcat::VirtualSpringKinematics drag;
         drag.path = std::move(data.name);
-        drag.anchor_in_world = Eigen::Vector3d(
+        drag.body_point_in_world = Eigen::Vector3d(
             data.drag_anchor[0], data.drag_anchor[1], data.drag_anchor[2]);
-        drag.target_in_world = Eigen::Vector3d(
+        drag.target_point_in_world = Eigen::Vector3d(
             data.drag_target[0], data.drag_target[1], data.drag_target[2]);
         mouse_drag_source_ = ws;
         mouse_drag_ = std::move(drag);
@@ -2575,7 +2576,7 @@ class Meshcat::Impl {
   // The socket for the browser that is sending object-drag events, along with
   // the most recently received drag state (nullopt when not dragging).
   WebSocket* mouse_drag_source_{};
-  std::optional<Meshcat::ObjectDrag> mouse_drag_;
+  std::optional<Meshcat::VirtualSpringKinematics> mouse_drag_;
 
   // These variables should only be accessed in the main thread, where "main
   // thread" is the thread in which this class was constructed.
@@ -3003,8 +3004,9 @@ Meshcat::Gamepad Meshcat::GetGamepad() const {
   return impl().GetGamepad();
 }
 
-std::optional<Meshcat::ObjectDrag> Meshcat::GetObjectDrag() const {
-  return impl().GetObjectDrag();
+std::optional<Meshcat::VirtualSpringKinematics>
+Meshcat::GetVirtualSpringKinematics() const {
+  return impl().GetVirtualSpringKinematics();
 }
 
 std::string Meshcat::StaticHtml() const {

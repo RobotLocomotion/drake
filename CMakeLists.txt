@@ -9,12 +9,43 @@
 # similar to what governs our minimum Bazel version (see MODULE.bazel).
 # When changing this, tools/install/libdrake/drake-config.cmake.in and its
 # corresponding tests should also be updated.
-cmake_minimum_required(VERSION 3.20...4.3)
+cmake_minimum_required(VERSION 3.20...4.4)
+
+# The build types that Drake's CMake build supports. This is the single source
+# of truth.
+set(SUPPORTED_BUILD_TYPES Release RelWithDebInfo Debug MinSizeRel)
+
+# Record which configuration-specific C compiler flags the user explicitly
+# provided before project() runs, so that we can tell them apart from the
+# compiler defaults that project() is about to seed below.
+set(_USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES)
+foreach(_config IN LISTS SUPPORTED_BUILD_TYPES)
+  string(TOUPPER "${_config}" _config_upper)
+  if(DEFINED CMAKE_C_FLAGS_${_config_upper})
+    list(APPEND _USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES ${_config_upper})
+  endif()
+endforeach()
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
   LANGUAGES C
 )
+
+# CMake build type flag transcriptions are handled in cmake/bazel.rc.in. CMake's
+# modules otherwise seed configuration-specific C flags which we'd forward to
+# Bazel, thus overriding its --compilation_mode; e.g., the default -O3 from
+# CMAKE_C_FLAGS_RELEASE would be inconsistent with CXX at -O2 from
+# --compilation_mode=opt. Clear CMake's defaults in favor of the transcriptions
+# there. Any flags the user specified via CMAKE_C_FLAGS_<config> are preserved
+# (and still propagated to Bazel).
+foreach(_config IN LISTS SUPPORTED_BUILD_TYPES)
+  string(TOUPPER "${_config}" _config_upper)
+  if(NOT _config_upper IN_LIST _USER_CUSTOMIZED_C_FLAGS_BUILD_TYPES)
+    set(CMAKE_C_FLAGS_${_config_upper} "" CACHE STRING
+      "Flags used by the C compiler during ${_config} builds." FORCE
+    )
+  endif()
+endforeach()
 
 # The primary build system for Drake is Bazel (https://bazel.build/). For CMake,
 # our objective is to accept configuration options using their standard spelling
@@ -59,7 +90,7 @@ if(APPLE)
 endif()
 
 # This version number should match bazel_compatibility in MODULE.bazel.
-set(MINIMUM_BAZEL_VERSION 8.4.0)
+set(MINIMUM_BAZEL_VERSION 8.5.0)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
 if(NOT Bazel_FOUND)
   set(Bazel_EXECUTABLE "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py")
@@ -137,7 +168,7 @@ get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTI_CONFIG)
   message(FATAL_ERROR "Drake does not support multi-config generators")
 endif()
-set(SUPPORTED_BUILD_TYPES Release RelWithDebInfo Debug MinSizeRel)
+
 string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
   "${SUPPORTED_BUILD_TYPES}"
 )
@@ -169,11 +200,26 @@ endif()
 # corresponding comment in bazel.rc.in above the
 # `build @BAZEL_USER_COMPILE_FLAGS@` line for more details.
 set(BAZEL_USER_COMPILE_FLAGS)
-separate_arguments(_user_c_flags UNIX_COMMAND
-  "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UPPER}}"
+
+# Collect the tokenized flags from each named CMAKE_*_FLAGS variable that is set
+# and non-empty. We must guard on emptiness because the CMAKE_CXX_FLAGS*
+# variables are not initialized (Drake's project() enables only C, not CXX);
+# referencing them unconditionally would trip -Wuninitialized.
+function(_collect_user_flags _out_var)
+  set(_result)
+  foreach(_flag_var IN LISTS ARGN)
+    if(${_flag_var})
+      separate_arguments(_tokens UNIX_COMMAND "${${_flag_var}}")
+      list(APPEND _result ${_tokens})
+    endif()
+  endforeach()
+  set(${_out_var} ${_result} PARENT_SCOPE)
+endfunction()
+_collect_user_flags(_user_c_flags
+  CMAKE_C_FLAGS CMAKE_C_FLAGS_${BUILD_TYPE_UPPER}
 )
-separate_arguments(_user_cxx_flags UNIX_COMMAND
-  "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE_UPPER}}"
+_collect_user_flags(_user_cxx_flags
+  CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_${BUILD_TYPE_UPPER}
 )
 # Entries in the .bazelrc file are tokenized according to the same rules as the
 # Bourne shell. See https://bazel.build/run/bazelrc#bazelrc-syntax-semantics
@@ -224,14 +270,6 @@ set(DRAKE_BAZEL_BUILD_DIR "${CMAKE_BINARY_DIR}/drake_build_cwd")
 file(MAKE_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}")
 
 set(BAZEL_REPO_ENV)
-
-# Put this patch where `cmake/MODULE.bazel.in` expects it during its call to
-# `single_version_override`.
-file(CREATE_LINK
-  "${PROJECT_SOURCE_DIR}/tools/workspace/eigen/patches/upstream/cherry-picks.patch"
-  "${DRAKE_BAZEL_BUILD_DIR}/eigen-cherry-picks.patch"
-  SYMBOLIC
-)
 
 if(NOT APPLE)
   # N.B. Bazel does its own compiler-chasing with Xcode, which we shouldn't
@@ -696,16 +734,9 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
-option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." OFF)
-
-if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
-  message(WARNING "Setting DRAKE_USE_EIGEN_LEGACY_AUTODIFF=ON is deprecated "
-    "and will be removed from Drake on or after 2026-07-01."
-  )
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
-else()
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
-endif()
+set(DRAKE_PYTHON_BINDER "pybind11" CACHE STRING "Binding library to use for pydrake." )
+set_property(CACHE DRAKE_PYTHON_BINDER PROPERTY STRINGS "pybind11" "nanobind")
+string(APPEND BAZEL_CONFIG " --@drake//tools/flags:python_binder=${DRAKE_PYTHON_BINDER}")
 
 if(BUILD_TYPE_UPPER STREQUAL DEBUG)
   string(APPEND BAZEL_CONFIG " --config=Debug")
@@ -777,6 +808,31 @@ configure_file(cmake/MODULE.bazel.in "${DRAKE_BAZEL_BUILD_DIR}/MODULE.bazel" @ON
 configure_file(cmake/BUILD.bazel.in "${DRAKE_BAZEL_BUILD_DIR}/BUILD.bazel" @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" "${DRAKE_BAZEL_BUILD_DIR}/.bazeliskrc" SYMBOLIC)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" "${DRAKE_BAZEL_BUILD_DIR}/.bazelversion" SYMBOLIC)
+
+# Bazel only supports module patching in the root module, so we need to forward
+# the drake/patches.MODULE.bazel to be usable by our cmake/MODULE.bazel.in.
+file(CREATE_LINK
+  "${PROJECT_SOURCE_DIR}/patches.MODULE.bazel"
+  "${DRAKE_BAZEL_BUILD_DIR}/patches.MODULE.bazel"
+  SYMBOLIC)
+file(STRINGS
+  "${PROJECT_SOURCE_DIR}/patches.MODULE.bazel"
+  _drake_module_patches)
+foreach(_line IN LISTS _drake_module_patches)
+  # Match lines that look like this:
+  #         "//:path/to/something.patch"
+  # For all matches, symlink the patch from the source dir to the build dir.
+  if(_line MATCHES " *\"//:([^\"]+)\"")
+    set(_patch "${CMAKE_MATCH_1}")
+    cmake_path(GET _patch PARENT_PATH _patch_dir)
+    file(MAKE_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}/${_patch_dir}")
+    file(CREATE_LINK
+      "${PROJECT_SOURCE_DIR}/${_patch}"
+      "${DRAKE_BAZEL_BUILD_DIR}/${_patch}"
+      SYMBOLIC
+    )
+  endif()
+endforeach()
 
 find_package(Git)
 

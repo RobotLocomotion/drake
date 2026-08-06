@@ -12,8 +12,11 @@ class TestCenic(unittest.TestCase):
         builder = RobotDiagramBuilder_[T](time_step=0.0)
         diagram = builder.Build()
 
-        # Create the device under test.
+        # The context argument is not required.
         CenicIntegrator = mut.CenicIntegrator_[T]
+        CenicIntegrator(system=diagram)
+
+        # Create the device under test.
         dut = CenicIntegrator(system=diagram, context=None)
 
         # Confirm parameter operations.

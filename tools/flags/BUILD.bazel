@@ -146,9 +146,16 @@ string_flag(
 
 # The :private_runtime_repo_default configures what happens when a specific
 # :foobar_repo flag is set to "default". When "external" is selected, the
-# dependency is provided outisde of Bazel (e.g., via pkg-config or other OS-
+# dependency is provided outside of Bazel (e.g., via pkg-config or other OS-
 # specific logic). When "internal" is selected, the dependency is provided with
 # Bazel mechanisms (e.g., "bazel_dep", module extension, etc.).
+#
+# Note that only a limited number of private runtime dependencies have :foo_repo
+# flags that are responsive to this default. Most private dependencies will be
+# unconditionally built from source. Only libraries that are closely associated
+# with the operating system or hardware environment offer these flags, e.g.,
+# BLAS / LAPACK / OpenCL. (We also offer a flag for glib because its copyleft
+# license sometimes requires special handling.)
 string_flag(
     name = "private_runtime_repo_default",
     build_setting_default = "internal",
@@ -233,15 +240,16 @@ string_flag(
     ],
 )
 
-# TODO(jwnimmer-tri) There is an "libx11" module in BCR, but I haven't been able
-# to get it to work yet, so for the moment we don't offer it as a module option.
+# -----------------------------------------------------------------------------
+# Deprecated flags.
 
-# The :zlib_repo flag configures where Drake obtains @zlib from.
-# The public dependency alias is `@drake//tools/workspace/zlib` or use the
-# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+# The (deprecated) :zlib_repo flag configures where Drake obtains @zlib from.
 string_flag(
     name = "zlib_repo",
     build_setting_default = "default",
+    deprecation = "DRAKE DEPRECATED: The zlib_repo flag is deprecated for removal; the future default will be 'source'. If you want to build zlib from source as a Bazel module, no action is necessary (that will be the future default). If you want to keep using 'hardcoded', you must either use --override_module on the command line or local_path_override in MODULE.bazel. The deprecated code will be removed from Drake on or after 2026-12-01.",
+    # Avoid deprecation warning during `bazel build //...`.
+    tags = ["manual"],
     values = [
         # The default is based on :private_runtime_repo_default -- "internal"
         # maps to "source" and "external" maps to "hardcoded".
@@ -377,12 +385,16 @@ bool_flag(
 # -----------------------------------------------------------------------------
 # Configuration for Drake features.
 
-# When True, Drake uses <unsupported/Eigen/AutoDiff> for its autodiff support.
-# When False, Drake uses a custom re-implementation. Using "True" is deprecated
-# and will be removed from Drake on or after 2026-07-01.
-bool_flag(
-    name = "use_eigen_legacy_autodiff",
-    build_setting_default = False,
+# When set to 'pybind11', uses pybind11 to provide pydrake bindings.
+# When set to 'nanobind', uses nanobind to provide pydrake bindings.
+# (Support for 'nanobind' is currently experimental / unstable.)
+string_flag(
+    name = "python_binder",
+    build_setting_default = "pybind11",
+    values = [
+        "pybind11",
+        "nanobind",
+    ],
 )
 
 # -----------------------------------------------------------------------------
@@ -418,5 +430,25 @@ string_flag(
 )
 
 # -----------------------------------------------------------------------------
+
+# Internal use only. These must appear here to avoid deprecation warnings.
+
+# Remove on 2026-12-01 along with deprecation.
+config_setting(
+    name = "flag_zlib_repo_hardcoded",
+    flag_values = {
+        ":zlib_repo": "hardcoded",
+    },
+    visibility = ["//tools/workspace/zlib:__pkg__"],
+)
+
+# Remove on 2026-12-01 along with deprecation.
+config_setting(
+    name = "flag_zlib_repo_default",
+    flag_values = {
+        ":zlib_repo": "default",
+    },
+    visibility = ["//tools/workspace/zlib:__pkg__"],
+)
 
 add_lint_tests()

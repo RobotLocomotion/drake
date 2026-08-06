@@ -255,8 +255,6 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
                          const geometry::internal::RenderMaterial& material,
                          const RegistrationData& data);
 
-  void SetDefaultLightPosition(const Vector3<double>& p_DL) override;
-
   // Configures the render engine to require all materials to use PBR
   // interpolation. This can be mindlessly called repeatedly without harm.
   // It should be invoked any time a necessary condition is encountered to

@@ -18,9 +18,6 @@
 #include <utility>
 #include <vector>
 
-// Remove with deprecation 2026-07-01.
-#include <ostream>
-
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
@@ -684,12 +681,6 @@ Expression uninterpreted_function(std::string name,
                                   std::vector<Expression> arguments);
 void swap(Expression& a, Expression& b);
 
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& os, const Expression& e);
-
 /** Checks if @p e is a constant expression. */
 inline bool is_constant(const Expression& e) {
   return e.boxed_.is_constant();
@@ -1043,16 +1034,6 @@ inline bool operator!=(
   return !(lhs == rhs);
 }
 
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Removed without replacement; you can format d.a() and d.b() one by one. "
-    "Refer to GitHub issue #17742 for more information.")
-inline std::ostream& operator<<(
-    std::ostream& os,
-    const uniform_real_distribution<drake::symbolic::Expression>& d) {
-  return os << fmt::format("{} {}", d.a(), d.b());
-}
-
 /// Provides std::normal_distribution, N(μ, σ), for symbolic expressions.
 ///
 /// When operator() is called, it returns a symbolic expression `μ + σ * v`
@@ -1188,16 +1169,6 @@ inline bool operator!=(
   return !(lhs == rhs);
 }
 
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Removed without replacement; you can format d.mean() and d.stddev() one "
-    "by one. Refer to GitHub issue #17742 for more information.")
-inline std::ostream& operator<<(
-    std::ostream& os,
-    const normal_distribution<drake::symbolic::Expression>& d) {
-  return os << fmt::format("{} {}", d.mean(), d.stddev());
-}
-
 /// Provides std::exponential_distribution, Exp(λ), for symbolic expressions.
 ///
 /// When operator() is called, it returns a symbolic expression `v / λ` where v
@@ -1288,16 +1259,6 @@ inline bool operator!=(
     const exponential_distribution<drake::symbolic::Expression>& lhs,
     const exponential_distribution<drake::symbolic::Expression>& rhs) {
   return !(lhs == rhs);
-}
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Removed without replacement; you can format d.lambda() instead. "
-    "Refer to GitHub issue #17742 for more information.")
-inline std::ostream& operator<<(
-    std::ostream& os,
-    const exponential_distribution<drake::symbolic::Expression>& d) {
-  return os << fmt::to_string(d.lambda());
 }
 
 }  // namespace std

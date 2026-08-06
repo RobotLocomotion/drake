@@ -37,7 +37,6 @@ filegroup(
         "@ipopt_internal//:drake_repository_metadata.json",
         "@lapack_internal//:drake_repository_metadata.json",
         "@lcm_internal//:drake_repository_metadata.json",
-        "@libjpeg_turbo_internal//:drake_repository_metadata.json",
         "@libpng_internal//:drake_repository_metadata.json",
         "@libtiff_internal//:drake_repository_metadata.json",
         "@libzip_internal//:drake_repository_metadata.json",
@@ -63,7 +62,6 @@ filegroup(
         "@stable_baselines3_internal//:drake_repository_metadata.json",
         "@stduuid_internal//:drake_repository_metadata.json",
         "@styleguide_internal//:drake_repository_metadata.json",
-        "@suitesparse_internal//:drake_repository_metadata.json",
         "@sympy_py_internal//:drake_repository_metadata.json",
         "@tinygltf_internal//:drake_repository_metadata.json",
         "@tinyobjloader_internal//:drake_repository_metadata.json",
@@ -203,7 +201,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "sdformat_internal",
     "spral_internal",
     "stduuid_internal",
-    "suitesparse_internal",
     "tinygltf_internal",
     "tinyobjloader_internal",
     "tinyxml2_internal",
@@ -219,9 +216,12 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "glib",
     "highway_internal",
     "lapack",
-    "libjpeg_turbo_internal",
+    "libjpeg",
+    # N.B. The nanobind install is handled by //bindings/pydrake:install.
     "opencl",
+    # N.B. The robin_map install is handled by the nanobind install.
     "spdlog",
+    "suitesparse",
     "zlib",
 ]] + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],

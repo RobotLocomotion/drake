@@ -80,7 +80,13 @@ void DoScalarDependentDefinitions(py::module_ m) {
       .def(py::init<VectorX<T>>(), py::arg("data"),
           doc.BasicVector.ctor.doc_1args_vec)
       .def(
-          py::init<int>(), py::arg("size"), doc.BasicVector.ctor.doc_1args_size)
+          "__init__",
+          [](BasicVector<T>* self, int size) {
+            // N.B. We can't use the simple py::init<int> sugar here, because
+            // nanobind calls the std::initializer_list overload in that case.
+            new (self) BasicVector<T>(size);
+          },
+          py::arg("size"), doc.BasicVector.ctor.doc_1args_size)
       .def(
           "set_value",
           [](BasicVector<T>* self, const Eigen::Ref<const VectorX<T>>& value) {
@@ -101,17 +107,19 @@ void DoScalarDependentDefinitions(py::module_ m) {
           py_rvp::reference_internal, doc.BasicVector.get_value.doc)
       // TODO(eric.cousineau): Remove this once `get_value` is changed, or
       // reference semantics are changed for custom dtypes.
-      .def("_get_value_copy",
-          [](const BasicVector<T>* self) -> VectorX<T> {
-            return self->get_value();
-          })
-      .def(
-          "get_mutable_value",
-          [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
-            return self->get_mutable_value();
-          },
-          py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc);
-
+      .def("_get_value_copy", [](const BasicVector<T>* self) -> VectorX<T> {
+        return self->get_value();
+      });
+  if constexpr (std::is_same_v<T, double>) {
+    // Mutable Eigen::Ref return value doesn't work with dtype=object.
+    basic_vector  // BR
+        .def(
+            "get_mutable_value",
+            [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
+              return self->get_mutable_value();
+            },
+            py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc);
+  }
   DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
       m, "Supervector", GetPyParam<T>(), doc.Supervector.doc);
 
@@ -174,7 +182,7 @@ void DefineBusValue(py::module_ m) {
           [](py::object self, py::str key) -> py::object {
             py::object result = self.attr("Find")(key);
             if (result.is_none()) {
-              throw py::key_error(py::cast<std::string>(key));
+              throw py::key_error(key.c_str());
             }
             return result;
           },

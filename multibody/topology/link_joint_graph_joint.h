@@ -185,7 +185,7 @@ class LinkJointGraph::Joint {
   // - monostate: not yet processed
   // - MobodIndex: modeled directly by a mobilizer
   // - WeldedLinksAssemblyIndex: not modeled because this is a weld interior to
-  //     the indicated assembly and we are optimizing so that one Mobod serves
+  //     the indicated assembly and we are fusing so that one Mobod serves
   //     the whole assembly.
   std::variant<std::monostate, MobodIndex, WeldedLinksAssemblyIndex>
       how_modeled_;

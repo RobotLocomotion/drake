@@ -157,6 +157,34 @@ TEST_F(UrdfParserTest, ModelRenameWithColons) {
   EXPECT_EQ(plant_.GetModelInstanceName(*index), "left::robot");
 }
 
+TEST_F(UrdfParserTest, SurfaceVelocityAxis) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='belt_model' xmlns:drake='https://drake.mit.edu'>
+      <link name='world'>
+        <!-- This should dispatch a warning. -->
+        <drake:surface_velocity_axis axis='0 0 3'/>
+      </link>
+      <link name='has_velocity'>
+        <drake:surface_velocity_axis axis='0 0 3'/>
+      </link>
+      <link name='no_velocity'/>
+    </robot>)""",
+                                   ""),
+            std::nullopt);
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(".*<drake:surface_velocity_axis> tag is being ignored.*"));
+
+  const auto& has_velocity = plant_.GetBodyByName("has_velocity");
+  const std::optional<Vector3d> axis_B =
+      plant_.GetSurfaceVelocityAxis(has_velocity);
+  ASSERT_TRUE(axis_B.has_value());
+  EXPECT_TRUE(CompareMatrices(*axis_B, Vector3d(0, 0, 1)));
+
+  const auto& no_velocity = plant_.GetBodyByName("no_velocity");
+  EXPECT_EQ(plant_.GetSurfaceVelocityAxis(no_velocity), std::nullopt);
+}
+
 TEST_F(UrdfParserTest, ObsoleteLoopJoint) {
   EXPECT_NE(AddModelFromUrdfString("<robot name='a'><loop_joint/></robot>", ""),
             std::nullopt);
@@ -843,7 +871,7 @@ TEST_F(UrdfParserTest, DoublePendulum) {
   plant_.Finalize();
 
   EXPECT_EQ(plant_.num_bodies(), 4);
-  EXPECT_EQ(plant_.num_frames(), 10);
+  EXPECT_EQ(plant_.num_frames(), 9);
 
   ASSERT_TRUE(plant_.HasFrameNamed("frame_on_link1"));
   ASSERT_TRUE(plant_.HasFrameNamed("frame_on_link2"));
@@ -929,6 +957,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<RevoluteJoint>("revolute_joint"));
   const RevoluteJoint<double>& revolute_joint =
       plant_.GetJointByName<RevoluteJoint>("revolute_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("revolute_joint_parent"));
   EXPECT_EQ(revolute_joint.name(), "revolute_joint");
   EXPECT_EQ(revolute_joint.parent_body().name(), "link1");
   EXPECT_EQ(revolute_joint.child_body().name(), "link2");
@@ -957,6 +986,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<PrismaticJoint>("prismatic_joint"));
   const PrismaticJoint<double>& prismatic_joint =
       plant_.GetJointByName<PrismaticJoint>("prismatic_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("prismatic_joint_parent"));
   EXPECT_EQ(prismatic_joint.name(), "prismatic_joint");
   EXPECT_EQ(prismatic_joint.parent_body().name(), "link2");
   EXPECT_EQ(prismatic_joint.child_body().name(), "link3");
@@ -980,6 +1010,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<BallRpyJoint>("ball_joint"));
   const BallRpyJoint<double>& ball_joint =
       plant_.GetJointByName<BallRpyJoint>("ball_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("ball_joint_parent"));
   EXPECT_EQ(ball_joint.name(), "ball_joint");
   EXPECT_EQ(ball_joint.parent_body().name(), "link3");
   EXPECT_EQ(ball_joint.child_body().name(), "link4");
@@ -999,6 +1030,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   // Limitless revolute joint
   const Joint<double>& no_limit_joint =
       plant_.GetJointByName("revolute_joint_no_limits");
+  EXPECT_FALSE(plant_.HasFrameNamed("revolute_joint_no_limits_parent"));
   const Vector1d inf(std::numeric_limits<double>::infinity());
   const Vector1d neg_inf(-std::numeric_limits<double>::infinity());
 
@@ -1021,6 +1053,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<UniversalJoint>("universal_joint"));
   const UniversalJoint<double>& universal_joint =
       plant_.GetJointByName<UniversalJoint>("universal_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("universal_joint_parent"));
   EXPECT_EQ(universal_joint.name(), "universal_joint");
   EXPECT_EQ(universal_joint.parent_body().name(), "link5");
   EXPECT_EQ(universal_joint.child_body().name(), "link6");
@@ -1040,6 +1073,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<PlanarJoint>("planar_joint"));
   const PlanarJoint<double>& planar_joint =
       plant_.GetJointByName<PlanarJoint>("planar_joint");
+  EXPECT_TRUE(plant_.HasFrameNamed("planar_joint_parent"));
   EXPECT_EQ(planar_joint.name(), "planar_joint");
   EXPECT_EQ(planar_joint.parent_body().name(), "link6");
   EXPECT_EQ(planar_joint.child_body().name(), "link7");
@@ -1055,6 +1089,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<RevoluteJoint>("continuous_joint"));
   const RevoluteJoint<double>& continuous_joint =
       plant_.GetJointByName<RevoluteJoint>("continuous_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("continuous_joint_parent"));
   EXPECT_EQ(continuous_joint.name(), "continuous_joint");
   EXPECT_EQ(continuous_joint.parent_body().name(), "link7");
   EXPECT_EQ(continuous_joint.child_body().name(), "link8");
@@ -1074,6 +1109,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<ScrewJoint>("screw_joint"));
   const ScrewJoint<double>& screw_joint =
       plant_.GetJointByName<ScrewJoint>("screw_joint");
+  EXPECT_FALSE(plant_.HasFrameNamed("screw_joint_parent"));
   EXPECT_EQ(screw_joint.name(), "screw_joint");
   EXPECT_EQ(screw_joint.parent_body().name(), "link8");
   EXPECT_EQ(screw_joint.child_body().name(), "link9");
@@ -1133,6 +1169,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_periodic"));
   const CurvilinearJoint<double>& curvilinear_joint =
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_periodic");
+  EXPECT_TRUE(plant_.HasFrameNamed("curvilinear_periodic_parent"));
   EXPECT_EQ(curvilinear_joint.name(), "curvilinear_periodic");
   EXPECT_EQ(curvilinear_joint.parent_body().name(), "link12");
   EXPECT_EQ(curvilinear_joint.child_body().name(), "link13");
@@ -1177,6 +1214,7 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_aperiodic"));
   const CurvilinearJoint<double>& curvilinear_joint2 =
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_aperiodic");
+  EXPECT_TRUE(plant_.HasFrameNamed("curvilinear_aperiodic_parent"));
   const PiecewiseConstantCurvatureTrajectory<double> joint2_curve =
       curvilinear_joint2.get_trajectory();
   EXPECT_EQ(curvilinear_joint2.name(), "curvilinear_aperiodic");
@@ -2337,6 +2375,160 @@ TEST_F(BallConstraintTest, InvalidBody) {
       "INVALID", "B", Vector3d(1, 2, 3), Vector3d(4, 5, 6),
       ".*Body: INVALID specified for <drake:ball_constraint_body_A> does not"
       " exist in the model.");
+}
+
+class DistanceConstraintTest : public UrdfParserTest {
+ public:
+  enum class Field {
+    kNone = -1,
+    kBodyA,
+    kPointAP,
+    kBodyB,
+    kPointBQ,
+    kDistance,
+    kStiffness,
+    kDamping,
+  };
+
+  DistanceConstraintTest() {
+    plant_.set_discrete_contact_approximation(
+        DiscreteContactApproximation::kLagged);
+  }
+
+  std::string MakeModel(Field field = Field::kNone,
+                        const std::string& replacement = std::string{}) const {
+    std::vector<std::string> child_elements{
+        R"(<drake:distance_constraint_body_A name="A"/>)",
+        R"(<drake:distance_constraint_p_AP value="1 2 3"/>)",
+        R"(<drake:distance_constraint_body_B name="B"/>)",
+        R"(<drake:distance_constraint_p_BQ value="4 5 6"/>)",
+        R"(<drake:distance_constraint_distance value="7"/>)",
+        R"(<drake:distance_constraint_stiffness value="8"/>)",
+        R"(<drake:distance_constraint_damping value="9"/>)",
+    };
+    if (field != Field::kNone) {
+      child_elements.at(static_cast<int>(field)) = replacement;
+    }
+    std::string constraint_contents;
+    for (const std::string& child_element : child_elements) {
+      constraint_contents += child_element;
+    }
+    return fmt::format(kTestString, constraint_contents);
+  }
+
+  void ProvokeError(Field field, const std::string& replacement,
+                    const std::string& error_pattern) {
+    EXPECT_NE(AddModelFromUrdfString(MakeModel(field, replacement), ""),
+              std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
+  }
+
+ protected:
+  static constexpr const char* kTestString = R"""(
+    <robot name="distance_constraint_test">
+      <link name="A"/>
+      <link name="B"/>
+      <drake:distance_constraint>
+        {}
+      </drake:distance_constraint>
+    </robot>)""";
+};
+
+TEST_F(DistanceConstraintTest, AllParameters) {
+  EXPECT_NE(AddModelFromUrdfString(MakeModel(), ""), std::nullopt);
+
+  EXPECT_EQ(plant_.num_distance_constraints(), 1);
+  const auto& distance_constraints =
+      plant_.GetDefaultDistanceConstraintParams();
+  ASSERT_EQ(ssize(distance_constraints), 1);
+  const DistanceConstraintParams& parameters =
+      distance_constraints.begin()->second;
+  EXPECT_EQ(parameters.bodyA(), plant_.GetBodyByName("A").index());
+  EXPECT_EQ(parameters.p_AP(), Vector3d(1, 2, 3));
+  EXPECT_EQ(parameters.bodyB(), plant_.GetBodyByName("B").index());
+  EXPECT_EQ(parameters.p_BQ(), Vector3d(4, 5, 6));
+  EXPECT_EQ(parameters.distance(), 7);
+  EXPECT_EQ(parameters.stiffness(), 8);
+  EXPECT_EQ(parameters.damping(), 9);
+}
+
+TEST_F(DistanceConstraintTest, MissingBodyA) {
+  ProvokeError(Field::kBodyA, "",
+               ".*Unable to find the <drake:distance_constraint_body_A> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingBodyB) {
+  ProvokeError(Field::kBodyB, "",
+               ".*Unable to find the <drake:distance_constraint_body_B> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingPoint) {
+  ProvokeError(Field::kPointAP, "",
+               ".*Unable to find the <drake:distance_constraint_p_AP> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingPointValueAttribute) {
+  ProvokeError(Field::kPointAP, R"(<drake:distance_constraint_p_AP/>)",
+               ".*Unable to read the 'value' attribute for the "
+               "<drake:distance_constraint_p_AP> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingDistance) {
+  ProvokeError(Field::kDistance, "",
+               ".*Unable to find the <drake:distance_constraint_distance> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingDistanceValueAttribute) {
+  ProvokeError(Field::kDistance,
+               R"(<drake:distance_constraint_distance not_value="7"/>)",
+               ".*Unable to read the 'value' attribute for the "
+               "<drake:distance_constraint_distance> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingStiffness) {
+  ProvokeError(
+      Field::kStiffness, "",
+      ".*Unable to find the <drake:distance_constraint_stiffness> tag");
+}
+
+TEST_F(DistanceConstraintTest, MissingDamping) {
+  ProvokeError(Field::kDamping, "",
+               ".*Unable to find the <drake:distance_constraint_damping> tag");
+}
+
+TEST_F(DistanceConstraintTest, InvalidBody) {
+  ProvokeError(
+      Field::kBodyA, R"(<drake:distance_constraint_body_A name="INVALID"/>)",
+      ".*Body: INVALID specified for <drake:distance_constraint_body_A> does "
+      "not exist in the model.");
+}
+
+TEST_F(DistanceConstraintTest, InvalidBodyNameAttribute) {
+  ProvokeError(Field::kBodyA,
+               R"(<drake:distance_constraint_body_A not_name="A"/>)",
+               ".*Unable to read the 'name' attribute for the "
+               "<drake:distance_constraint_body_A> tag");
+}
+
+TEST_F(DistanceConstraintTest, NonpositiveDistance) {
+  ProvokeError(
+      Field::kDistance, R"(<drake:distance_constraint_distance value="0"/>)",
+      ".*The 'value' attribute for the "
+      "<drake:distance_constraint_distance> tag must be strictly positive.");
+}
+
+TEST_F(DistanceConstraintTest, NonpositiveStiffness) {
+  ProvokeError(
+      Field::kStiffness, R"(<drake:distance_constraint_stiffness value="0"/>)",
+      ".*The 'value' attribute for the "
+      "<drake:distance_constraint_stiffness> tag must be strictly positive.");
+}
+
+TEST_F(DistanceConstraintTest, NegativeDamping) {
+  ProvokeError(Field::kDamping,
+               R"(<drake:distance_constraint_damping value="-1"/>)",
+               ".*The 'value' attribute for the "
+               "<drake:distance_constraint_damping> tag must be non-negative.");
 }
 
 class TendonConstraintTest : public UrdfParserTest {

@@ -41,7 +41,8 @@
     // Hold Ctrl and drag an object with the left mouse button to grab the point
     // under the cursor. The grabbed point and the cursor target are streamed
     // back to the Drake server (in Drake's z-up world frame); see
-    // Meshcat::GetObjectDrag() and multibody::meshcat::MeshcatMouseSpring.
+    // Meshcat::GetVirtualSpringKinematics() and
+    // multibody::meshcat::MeshcatMouseSpring.
     const THREE = MeshCat.THREE;
     const drakeDrag = {
       active: false,

@@ -401,8 +401,8 @@ Polynomial::Polynomial(const Expression& e) : Polynomial{e, e.GetVariables()} {
 }
 
 Polynomial::Polynomial(const Expression& e, Variables indeterminates)
-    : monomial_to_coefficient_map_{DecomposePolynomialVisitor{}.Decompose(
-          e, indeterminates)},
+    : monomial_to_coefficient_map_{
+          DecomposePolynomialVisitor{}.Decompose(e, indeterminates)},
       indeterminates_{std::move(indeterminates)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   DRAKE_ASSERT_VOID(CheckInvariant());
@@ -1264,10 +1264,6 @@ string to_string(const Polynomial& p) {
     result.append(fmt::format(" + {}*{}", it->second, it->first));
   }
   return result;
-}
-
-ostream& operator<<(ostream& os, const Polynomial& p) {
-  return os << fmt::to_string(p);
 }
 }  // namespace symbolic
 }  // namespace drake

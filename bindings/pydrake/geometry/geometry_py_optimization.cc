@@ -1136,8 +1136,8 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
   // python.
   class PyImplicitGraphOfConvexSets : public ImplicitGraphOfConvexSets {
    public:
+    NB_TRAMPOLINE(ImplicitGraphOfConvexSets, 1);
     using Base = ImplicitGraphOfConvexSets;
-    using Base::Base;
     using Base::mutable_gcs;
 
     PyImplicitGraphOfConvexSets() : Base() {}
@@ -1145,7 +1145,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
     // Trampoline virtual methods.
 
     void Expand(GraphOfConvexSets::Vertex* v) override {
-      PYBIND11_OVERLOAD_PURE(void, ImplicitGraphOfConvexSets, Expand, v);
+      PYDRAKE_OVERRIDE_PURE(void, ImplicitGraphOfConvexSets, Expand, v);
     }
   };
 

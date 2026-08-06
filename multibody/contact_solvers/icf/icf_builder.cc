@@ -15,6 +15,8 @@
 #include "drake/multibody/topology/graph.h"
 
 using drake::multibody::CalcContactFrictionFromSurfaceProperties;
+using drake::multibody::DistanceConstraintParams;
+using drake::multibody::internal::BallConstraintSpec;
 using drake::multibody::internal::CouplerConstraintSpec;
 using drake::multibody::internal::GetCombinedHuntCrossleyDissipation;
 using drake::multibody::internal::GetCombinedPointContactStiffness;
@@ -236,6 +238,14 @@ void IcfBuilder<T>::UpdateModel(
   AllocateWeldConstraints(model);
   SetWeldConstraints(context, model);
 
+  // Ball constraints
+  AllocateBallConstraints(model);
+  SetBallConstraints(context, model);
+
+  // Distance constraints
+  AllocateDistanceConstraints(model);
+  SetDistanceConstraints(context, model);
+
   // Limit constraints
   AllocateLimitConstraints(model);
   SetLimitConstraints(context, model);
@@ -300,14 +310,14 @@ void IcfBuilder<T>::ValidatePlant() {
 
   // Revisit this condition as constraints are implemented. See issues #23759,
   // #23760, #23762, #23763.
-  if (plant_.num_constraints() - plant_.num_coupler_constraints() -
+  if (plant_.num_constraints() - plant_.num_ball_constraints() -
+          plant_.num_coupler_constraints() - plant_.num_distance_constraints() -
           plant_.num_weld_constraints() >
       0) {
     throw std::logic_error(fmt::format(
         "The CENIC integrator does not yet support some constraints, but "
-        "they are present in the given MultibodyPlant: {} distance "
-        "constraint(s), {} ball constraint(s), {} tendon constraint(s)",
-        plant_.num_distance_constraints(), plant_.num_ball_constraints(),
+        "they are present in the given MultibodyPlant: {} tendon "
+        "constraint(s)",
         plant_.num_tendon_constraints()));
   }
 }
@@ -509,6 +519,168 @@ void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
 }
 
 template <typename T>
+void IcfBuilder<T>::AllocateBallConstraints(IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  const std::map<MultibodyConstraintId, BallConstraintSpec>& specs_map =
+      plant_.get_ball_constraint_specs();
+  BallConstraintsPool<T>& ball_constraints = model->ball_constraints_pool();
+  ball_constraints.Resize(specs_map.size());
+}
+
+template <typename T>
+void IcfBuilder<T>::SetBallConstraints(const systems::Context<T>& context,
+                                       IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  using drake::math::RigidTransform;
+
+  const std::map<MultibodyConstraintId, BallConstraintSpec>& specs_map =
+      plant_.get_ball_constraint_specs();
+
+  BallConstraintsPool<T>& ball_constraints = model->ball_constraints_pool();
+
+  int index = 0;
+  for (const auto& [id, spec] : specs_map) {
+    // p_BQ is optional pre-Finalize; on a finalized plant it must be set.
+    DRAKE_DEMAND(spec.p_BQ.has_value());
+
+    const RigidBody<T>& body_A = plant_.get_body(spec.body_A);
+    const RigidBody<T>& body_B = plant_.get_body(spec.body_B);
+
+    // By convention in the ICF ball constraint pool, body B must not be
+    // anchored. If body A is anchored, that's fine.
+    const bool A_anchored = plant_.IsAnchored(body_A);
+    const bool B_anchored = plant_.IsAnchored(body_B);
+
+    // TODO(sherm1): Move this exception up to the plant level so
+    //  that it fails as fast as possible. Currently, the earliest this can
+    //  happen is in MbP::Finalize() after the topology has been finalized.
+    if (A_anchored && B_anchored) {
+      const std::string msg = fmt::format(
+          "Creating a ball constraint between bodies '{}' and '{}' where "
+          "both are welded to the world is not allowed.",
+          body_A.name(), body_B.name());
+      throw std::logic_error(msg);
+    }
+
+    // If B is anchored but A is not, swap roles so that the "B" body in the
+    // pool is always the dynamic one.
+    const RigidBody<T>& pool_bodyA = B_anchored ? body_B : body_A;
+    const RigidBody<T>& pool_bodyB = B_anchored ? body_A : body_B;
+    const Vector3<double>& p_AP_spec =
+        B_anchored ? spec.p_BQ.value() : spec.p_AP;
+    const Vector3<double>& p_BQ_spec =
+        B_anchored ? spec.p_AP : spec.p_BQ.value();
+
+    const RigidTransform<T>& X_WA = pool_bodyA.EvalPoseInWorld(context);
+    const RigidTransform<T>& X_WB = pool_bodyB.EvalPoseInWorld(context);
+
+    // Constraint point positions in world.
+    const Vector3<T> p_WP = X_WA * p_AP_spec.template cast<T>();
+    const Vector3<T> p_WQ = X_WB * p_BQ_spec.template cast<T>();
+
+    // Positions of P in A and Q in B, expressed in world.
+    const Vector3<T> p_AP_W = X_WA.rotation() * p_AP_spec.template cast<T>();
+    const Vector3<T> p_BQ_W = X_WB.rotation() * p_BQ_spec.template cast<T>();
+
+    // Relative translation p_PQ in world.
+    const Vector3<T> p_PQ_W = p_WQ - p_WP;
+
+    ball_constraints.Set(index, pool_bodyA.index(), pool_bodyB.index(), p_AP_W,
+                         p_BQ_W, p_PQ_W);
+    ++index;
+  }
+}
+
+template <typename T>
+void IcfBuilder<T>::AllocateDistanceConstraints(IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  DistanceConstraintsPool<T>& distance_constraints =
+      model->distance_constraints_pool();
+  distance_constraints.Resize(plant_.num_distance_constraints());
+}
+
+template <typename T>
+void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
+                                           IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  using drake::math::RigidTransform;
+
+  // Distance constraint parameters are context-dependent (runtime-mutable),
+  // unlike ball/weld specs; read the current values from the context.
+  const std::map<MultibodyConstraintId, DistanceConstraintParams>& params_map =
+      plant_.GetDistanceConstraintParams(context);
+
+  DistanceConstraintsPool<T>& distance_constraints =
+      model->distance_constraints_pool();
+
+  int index = 0;
+  for (const auto& [_, params] : params_map) {
+    const RigidBody<T>& body_A = plant_.get_body(params.bodyA());
+    const RigidBody<T>& body_B = plant_.get_body(params.bodyB());
+
+    // By convention in the ICF distance constraint pool, body B must not be
+    // anchored. If body A is anchored, that's fine.
+    const bool A_anchored = plant_.IsAnchored(body_A);
+    const bool B_anchored = plant_.IsAnchored(body_B);
+
+    // TODO(sherm1): Move this exception up to the plant level so
+    //  that it fails as fast as possible. Currently, the earliest this can
+    //  happen is in MbP::Finalize() after the topology has been finalized.
+    if (A_anchored && B_anchored) {
+      throw std::logic_error(fmt::format(
+          "Creating a distance constraint between bodies '{}' and '{}' where "
+          "both are welded to the world is not allowed.",
+          body_A.name(), body_B.name()));
+    }
+
+    // If B is anchored but A is not, swap roles so that the "B" body in the
+    // pool is always the dynamic one.
+    const RigidBody<T>& pool_bodyA = B_anchored ? body_B : body_A;
+    const RigidBody<T>& pool_bodyB = B_anchored ? body_A : body_B;
+    const Vector3<double>& p_AP_spec =
+        B_anchored ? params.p_BQ() : params.p_AP();
+    const Vector3<double>& p_BQ_spec =
+        B_anchored ? params.p_AP() : params.p_BQ();
+
+    const RigidTransform<T>& X_WA = pool_bodyA.EvalPoseInWorld(context);
+    const RigidTransform<T>& X_WB = pool_bodyB.EvalPoseInWorld(context);
+
+    // Constraint point positions in world.
+    const Vector3<T> p_WP = X_WA * p_AP_spec.template cast<T>();
+    const Vector3<T> p_WQ = X_WB * p_BQ_spec.template cast<T>();
+
+    // Positions of P in A and Q in B, expressed in world.
+    const Vector3<T> p_AP_W = X_WA.rotation() * p_AP_spec.template cast<T>();
+    const Vector3<T> p_BQ_W = X_WB.rotation() * p_BQ_spec.template cast<T>();
+
+    // Current distance d₀ = ‖p_WQ − p_WP‖ and unit direction p̂ from P to Q.
+    const Vector3<T> p_PQ_W = p_WQ - p_WP;
+    const T d0 = p_PQ_W.norm();
+    const double length = params.distance();  // The free length ℓ > 0.
+
+    // When P and Q are (nearly) coincident, p̂ is undefined. The free length ℓ
+    // is strictly positive (enforced by DistanceConstraintParams), so
+    // g₀ = d₀ − ℓ < 0 and the constraint pushes the points apart; any unit
+    // vector serves to seed the direction for the first step, after which
+    // d₀ > 0 makes p̂ well defined. This lets CENIC resolve an initial
+    // condition with coincident points rather than rejecting it. The threshold
+    // is purely a divide-by-zero guard for the normalization below.
+    constexpr double kMinimumDistance = 1.0e-14;
+    const Vector3<T> p_hat_W = d0 < kMinimumDistance
+                                   ? Vector3<T>(Vector3<T>::UnitX())
+                                   : Vector3<T>(p_PQ_W / d0);
+
+    // Constraint function g₀ = d₀ − ℓ.
+    const T g0 = d0 - length;
+
+    distance_constraints.Set(index, pool_bodyA.index(), pool_bodyB.index(),
+                             p_AP_W, p_BQ_W, p_hat_W, g0, T(params.stiffness()),
+                             T(params.damping()));
+    ++index;
+  }
+}
+
+template <typename T>
 void IcfBuilder<T>::AllocateLimitConstraints(IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
@@ -621,11 +793,15 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
     const Vector3<T> nhat_AB_W = sorted.bodyB == bodyN ? -nhat_NM_W : nhat_NM_W;
     const T fn0 = k * point_pair.depth;
 
+    // Surface-velocity bias at the contact point.
+    const Vector3<T> v_b_W = CalcSurfaceVelocityBias(context, *sorted.bodyA,
+                                                     *sorted.bodyB, nhat_AB_W);
+
     // For point contact we add single-pair patches.
     patches.SetPatch(point_pair_index, sorted.bodyA->index(),
                      sorted.bodyB->index(), d, mu.static_friction(),
                      mu.dynamic_friction(), p_AB_W);
-    patches.SetPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k);
+    patches.SetPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k, v_b_W);
   }
 }
 
@@ -715,9 +891,24 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
       // ensure that the problem is always convex.
       const T k = max(Ae * g, 0.0);
 
-      patches.SetPair(patch_index, face, p_BoC_W, nhat_AB_W, fn0, k);
+      // Surface-velocity bias at this face's contact point, world frame.
+      // Computed per face because each face's normal can differ.
+      const Vector3<T> v_b_W = CalcSurfaceVelocityBias(
+          context, *sorted.bodyA, *sorted.bodyB, nhat_AB_W);
+
+      patches.SetPair(patch_index, face, p_BoC_W, nhat_AB_W, fn0, k, v_b_W);
     }
   }
+}
+
+template <typename T>
+Vector3<T> IcfBuilder<T>::CalcSurfaceVelocityBias(
+    const systems::Context<T>& context, const RigidBody<T>& bodyA,
+    const RigidBody<T>& bodyB, const Vector3<T>& nhat_AB_W) const {
+  Vector3<T> v_b_W = Vector3<T>::Zero();
+  MultibodyPlantIcfAttorney<T>::AddSurfaceVelocityBias(
+      plant_, context, bodyA.index(), bodyB.index(), -nhat_AB_W, &v_b_W);
+  return v_b_W;
 }
 
 template <typename T>

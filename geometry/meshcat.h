@@ -903,43 +903,46 @@ class Meshcat {
   gamepad is working), see https://beej.us/blog/data/javascript-gamepad/. */
   Gamepad GetGamepad() const;
 
-  /** The state of an in-progress mouse drag of a scene object, as reported by a
-  Meshcat browser. See GetObjectDrag(). */
-  struct ObjectDrag {
+  /** The geometry of a virtual, interactive spring. This spring connects the
+  point F (a point fixed on the body B -- named by `path`) with an immovable
+  target point T. Both points are measured and expressed in the world frame.
+  This definition is for kinematics only: the spring's stiffness, damping, and
+  resultant forces are not defined here. */
+  struct VirtualSpringKinematics {
     /** The "/"-delimited Meshcat path of the object being dragged (e.g.,
-    "/drake/visualizer/my_model/my_body/my_geometry"). */
+    "/drake/visualizer/my_model/my_body/my_geometry").
+
+    This could be any valid Meshcat path, including for either a body or a
+    geometry. Whether it has any effect depends on the caller's treatment. */
     std::string path;
 
-    /** The current position of the drag's *attachment point* -- the point on
-    the object where the drag began. The browser keeps this point rigidly
-    attached to the object, so as the object moves (e.g., under simulated
-    physics) this value tracks the world-frame location of that material point.
-    Expressed in Drake's z-up world frame (p_WA). */
-    Eigen::Vector3d anchor_in_world;
+    /** The current position of F affixed to body B. Note: in an
+    interactive scenario with active dynamics, this position will change as the
+    body B moves.
 
-    /** The current position of the cursor's drag *target*. As the user moves
-    the mouse, the cursor is projected into the scene to form this point. A
-    virtual spring should pull `anchor_in_world` toward this point. Expressed in
-    Drake's z-up world frame (p_WT). */
-    Eigen::Vector3d target_in_world;
+    Note: This is expressed in Drake's z-up world frame (not Meshcat's y-up
+    frame). */
+    Eigen::Vector3d body_point_in_world;
+
+    /** The current position of the fixed target point T. The target point is
+    solely determined by the interactive Meshcat application. From Drake's
+    perspective it is a point with a prescribed position in the world frame.
+
+    Note: This is expressed in Drake's z-up world frame (not Meshcat's y-up
+    frame). */
+    Eigen::Vector3d target_point_in_world;
   };
 
   /** Returns the current mouse-drag state if a user is presently dragging an
   object in a connected Meshcat browser, or std::nullopt otherwise.
 
-  A drag is initiated in the browser by holding the <kbd>Ctrl</kbd> key and
-  pressing the left mouse button down on an object, then moving the mouse (while
-  still holding <kbd>Ctrl</kbd> and the mouse button). The orbit/pan camera
-  controls are suspended for the duration of the drag. Releasing the mouse
-  button ends the drag.
-
   A downstream system (see multibody::meshcat::MeshcatMouseSpring) can read this
-  state and convert it into a force applied to the simulated body, letting users
+  state and convert it into a force applied to a simulated body, letting users
   drag objects with the cursor.
 
-  If multiple browsers are connected and more than one initiates a drag, the
-  returned value reflects the most recently received drag message. */
-  std::optional<ObjectDrag> GetObjectDrag() const;
+  If multiple browsers report drags concurrently, the returned value reflects
+  the most recently received message. */
+  std::optional<VirtualSpringKinematics> GetVirtualSpringKinematics() const;
 
   //@}
 

@@ -115,7 +115,8 @@ int DoMain() {
 
   auto meshcat = std::make_shared<geometry::Meshcat>();
   MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat);
-  MeshcatMouseSpring::AddToBuilder(&builder, &plant, meshcat, FLAGS_stiffness);
+  MeshcatMouseSpring::AddToBuilder(&builder, &plant, scene_graph, meshcat,
+                                   FLAGS_stiffness);
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();

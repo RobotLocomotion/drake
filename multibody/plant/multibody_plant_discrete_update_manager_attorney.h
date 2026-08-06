@@ -48,6 +48,16 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalGeometryContactData(context);
   }
 
+  static void AddSurfaceVelocityBias(const MultibodyPlant<T>& plant,
+                                     const systems::Context<T>& context,
+                                     BodyIndex bodyA_index,
+                                     BodyIndex bodyB_index,
+                                     const Vector3<T>& nhat_BA_W,
+                                     Vector3<T>* v_AcBc_W) {
+    plant.AddSurfaceVelocityBias(context, bodyA_index, bodyB_index, nhat_BA_W,
+                                 v_AcBc_W);
+  }
+
   static void AddJointLimitsPenaltyForces(const MultibodyPlant<T>& plant,
                                           const systems::Context<T>& context,
                                           MultibodyForces<T>* forces) {

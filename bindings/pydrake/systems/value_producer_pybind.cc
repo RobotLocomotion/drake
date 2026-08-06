@@ -7,7 +7,7 @@ namespace drake {
 namespace pydrake {
 
 std::function<std::unique_ptr<AbstractValue>()>
-MakeCppCompatibleAllocateCallback(py::function allocate) {
+MakeCppCompatibleAllocateCallback(py::callable allocate) {
   return [allocate = std::move(allocate)]() -> std::unique_ptr<AbstractValue> {
     py::gil_scoped_acquire guard;
 

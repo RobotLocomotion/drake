@@ -8,11 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-// Remove with deprecation 2026-07-01.
-#include <ostream>
-
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/random.h"
@@ -148,12 +144,6 @@ class Environment {
  *  random variables in @p variables using @p random_generator. */
 Environment PopulateRandomVariables(Environment env, const Variables& variables,
                                     RandomGenerator* random_generator);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream& os, const Environment& env);
 
 }  // namespace symbolic
 }  // namespace drake

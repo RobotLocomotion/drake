@@ -23,8 +23,15 @@ void DefinePlanningDofMask(py::module_ m) {
     constexpr auto& cls_doc = doc.DofMask;
     class_<Class>(m, "DofMask", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_default)
-        .def(py::init<int, bool>(), py::arg("size"), py::arg("value"),
-            cls_doc.ctor.doc_by_size)
+        .def(
+            "__init__",
+            // N.B. We can't use the simple py::init<int, bool> sugar here,
+            // because nanobind calls the std::initializer_list overload in
+            // that case (converting the `int` to a `bool`).
+            [](Class* self, int size, bool value) {
+              new (self) Class(size, value);
+            },
+            py::arg("size"), py::arg("value"), cls_doc.ctor.doc_by_size)
         .def(py::init<std::vector<bool>>(), py::arg("values"),
             cls_doc.ctor.doc_vector_bool)
         .def_static("MakeFromModel",

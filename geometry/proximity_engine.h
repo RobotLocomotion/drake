@@ -86,6 +86,30 @@ class ProximityEngine {
   /* Provides access to the mutable collision filter this engine uses. */
   CollisionFilter& collision_filter();
 
+  /* Updates the engine's broadphase culling of inactive dynamic geometries to
+   reflect the given net change to the collision filter's inactive set (see
+   CollisionFilterManager::Deactivate()) -- a mechanism to resolve issue #24607.
+
+   @pre change.empty() == false.
+   @pre Every geometry in `change` is dynamic and its active status change is
+        consistent with the engine's current understanding. */
+  // TODO(xuchen-han): Only dynamic geometries are culled. We are not optimizing
+  // for anchored geometries yet. Do that when there's a use where it brings
+  // noticeable performance improvement.
+  void ApplyActiveStatusChange(
+      const CollisionFilter::ActiveStatusChange& change);
+
+  /* (Introspection) Reports whether the dynamic geometry with the given `id`
+   is currently inactive and thus culled from the filter-respecting broadphase.
+   See ApplyActiveStatusChange(). This accessor exists so tests can confirm the
+   bookkeeping. */
+  bool IsInactiveDynamic(GeometryId id) const;
+
+  /* (Introspection) Reports the number of currently culled (inactive) dynamic
+   geometries. Inactive anchored or deformable geometries are not counted; see
+   ApplyActiveStatusChange(). */
+  int num_inactive_dynamic() const;
+
   /* @name Topology management */
   //@{
 
@@ -188,11 +212,12 @@ class ProximityEngine {
 
   //@}
 
-  /* Updates the poses for all of the _dynamic_ geometries in the engine.
-   @param X_WGs     The poses of each geometry `G` measured and expressed in the
-                    world frame `W` (including geometries which may *not* be
-                    registered with the proximity engine or may not be
-                    dynamic).
+  /* Updates the poses for all active dynamic geometries in the engine.
+   @param X_WGs     The poses of each active dynamic geometry `G` measured and
+                    expressed in the world frame `W` (the map can include
+                    poses for other geometries as well (e.g., anchored
+                    geometries, unregistered geometries, inactive geometries,
+                    etc.)
   */
   // TODO(SeanCurtis-TRI): I could do things here differently a number of ways:
   //  1. I could make this move semantics (or swap semantics).
@@ -344,6 +369,9 @@ class ProximityEngine {
   // Reports the pose (X_WG) of the geometry with the given id.
   const math::RigidTransform<double> GetX_WG(GeometryId id,
                                              bool is_dynamic) const;
+
+  // Reports whether the inactive-geometry cache is currently marked stale.
+  bool is_inactive_dynamic_stale() const;
 
   ////////////////////////////////////////////////////////////////////////////
 

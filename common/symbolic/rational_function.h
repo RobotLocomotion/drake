@@ -2,12 +2,8 @@
 
 #include <string>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/symbolic/polynomial.h"
-
-// Remove with deprecation 2026-07-01.
-#include <ostream>
 
 namespace drake {
 namespace symbolic {
@@ -206,12 +202,6 @@ RationalFunction operator/(RationalFunction f, double c);
 RationalFunction operator/(double c, const RationalFunction& f);
 RationalFunction operator/(const Monomial& m, RationalFunction f);
 RationalFunction operator/(RationalFunction f, const Monomial& m);
-
-DRAKE_DEPRECATED(
-    "2026-07-01",
-    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
-    "fmt::print()). Refer to GitHub issue #17742 for more information.")
-std::ostream& operator<<(std::ostream&, const RationalFunction& f);
 
 std::string to_string(const RationalFunction& f);
 

@@ -12,6 +12,10 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
 
         cc_content_drake = """
             #include <drake/common/symbolic/expression.h>
+            #include <drake/version.h>
+            // Confirm the installed drake/version.h is includable and that its
+            // macros are usable in a constant expression.
+            static_assert(DRAKE_VERSION_AT_LEAST(0, 0, 0, 0) || true);
             int main() {
               drake::symbolic::Environment environment;
               return 0;
@@ -26,7 +30,7 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
         cmake_prefix_path = install_test_helper.get_install_dir()
 
         cmake_content = f"""
-            cmake_minimum_required(VERSION 3.20...4.3)
+            cmake_minimum_required(VERSION 3.20...4.4)
             project(find_package_drake_install_test)
             set(CMAKE_PREFIX_PATH {cmake_prefix_path})
             find_package(drake CONFIG REQUIRED)
