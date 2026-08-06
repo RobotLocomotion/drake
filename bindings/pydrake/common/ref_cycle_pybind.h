@@ -50,32 +50,16 @@ struct ref_cycle {};
 
 /* This function is used in the template below to select peers by call/return
  index. */
-#ifdef PYDRAKE_USE_PYBIND11
 void ref_cycle_impl(size_t peer0, size_t peer1,
-    const py::detail::function_call& call, py::handle ret);
-#else  // PYDRAKE_USE_NANOBIND
-void ref_cycle_impl(
-    size_t peer0, size_t peer1, PyObject** args, size_t nargs, py::handle ret);
-#endif
+#ifdef PYDRAKE_USE_PYBIND11
+    const py::detail::function_call& call,
+#else   // PYDRAKE_USE_NANOBIND
+    PyObject** args, size_t nargs,
+#endif  // PYDRAKE_USE_PYBIND11
+    py::handle ret);
 
-/* This function constructs a reference cycle from arbitrary handles. It may be
- needed in special cases where the ordinary call-policy annotations won't work.
- The `location_hint` will appear in any exception messages; it should help
- developers locate where and why this function was called. */
-void make_arbitrary_ref_cycle(
-    py::handle p0, py::handle p1, const std::string& location_hint);
-
-/* This function constructs a one-way reference from handle p0 to p1. It may be
- needed in special cases where the ordinary call-policy annotations won't work.
- The `location_hint` will appear in any exception messages; it should help
- developers locate where and why this function was called. */
-void make_arbitrary_ref_link(
-    py::handle p0, py::handle p1, const std::string& location_hint);
-
+// For nanobind annotations, we must provide ADL hooks for func_extra_info.
 #ifdef PYDRAKE_USE_NANOBIND
-// TODO(rpoyner-tri): figure out if this feature can capture the function name
-// for use in error messages.
-
 // Returns true if either template parameter denotes the return value.
 template <size_t Peer0, size_t Peer1>
 static constexpr bool needs_return_value() {
@@ -94,7 +78,7 @@ NB_INLINE void process_precall(PyObject** args,
 template <size_t NArgs, size_t Peer0, size_t Peer1>
 void process_postcall(PyObject** args, std::integral_constant<size_t, NArgs>,
     PyObject* result, ref_cycle<Peer0, Peer1>*) {
-  if constexpr (drake::pydrake::internal::needs_return_value<Peer0, Peer1>()) {
+  if constexpr (needs_return_value<Peer0, Peer1>()) {
     // result_guard avoids leaking a reference to the return object if postcall
     // throws an exception.
     py::object result_guard = py::steal(result);
@@ -109,6 +93,20 @@ NB_INLINE void func_extra_apply(F& f, ref_cycle<Peer0, Peer1>, size_t&) {
       static_cast<uint32_t>(nanobind::detail::func_flags::can_mutate_args);
 }
 #endif  // PYDRAKE_USE_NANOBIND
+
+/* This function constructs a reference cycle from arbitrary handles. It may be
+ needed in special cases where the ordinary call-policy annotations won't work.
+ The `location_hint` will appear in any exception messages; it should help
+ developers locate where and why this function was called. */
+void make_arbitrary_ref_cycle(
+    py::handle p0, py::handle p1, const std::string& location_hint);
+
+/* This function constructs a one-way reference from handle p0 to p1. It may be
+ needed in special cases where the ordinary call-policy annotations won't work.
+ The `location_hint` will appear in any exception messages; it should help
+ developers locate where and why this function was called. */
+void make_arbitrary_ref_link(
+    py::handle p0, py::handle p1, const std::string& location_hint);
 
 }  // namespace internal
 }  // namespace pydrake

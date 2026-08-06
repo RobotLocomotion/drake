@@ -179,9 +179,8 @@ NB_INLINE void func_extra_apply(
 namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 
-// Provide a specialization of the pybind11 internal process_attribute template
-// or nanobind func_extra_info template; this allows writing an annotation that
-// works seamlessly in bindings definitions.
+// Provide specializations of the internal templates for call policies; this
+// allows writing an annotation that works seamlessly in bindings definitions.
 #ifdef PYDRAKE_USE_PYBIND11
 template <typename T, size_t Builder>
 class process_attribute<

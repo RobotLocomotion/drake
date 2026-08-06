@@ -92,8 +92,8 @@ py_class_alias_t<PyClass>* GetAlias(Class* self) {
   // * overriding virtual methods
   //
   // The reason for these limitations is that neither bound subclasses nor their
-  // aliases are derived from the base bound class' alias. Thus, dynamic_cast to
-  // the alias class will not work
+  // aliases are derived from the base bound class's alias. Thus, dynamic_cast
+  // to the alias class will not work
   return static_cast<py_class_alias_t<PyClass>*>(self);
 }
 

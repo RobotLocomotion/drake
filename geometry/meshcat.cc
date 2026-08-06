@@ -1901,6 +1901,14 @@ class Meshcat::Impl {
     return gamepad_;
   }
 
+  std::optional<Meshcat::VirtualSpringKinematics> GetVirtualSpringKinematics()
+      const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    // TODO(vincekurtz): read virtual spring kinematics from mouse drags.
+    return std::nullopt;
+  }
+
   // This function is for use by the websocket thread. The Meshcat::StaticHtml()
   // and Meshcat::StaticZip() outer functions call into here using appropriate
   // deferred handling.
@@ -2966,6 +2974,11 @@ void Meshcat::DeleteAddedControls() {
 
 Meshcat::Gamepad Meshcat::GetGamepad() const {
   return impl().GetGamepad();
+}
+
+std::optional<Meshcat::VirtualSpringKinematics>
+Meshcat::GetVirtualSpringKinematics() const {
+  return impl().GetVirtualSpringKinematics();
 }
 
 std::string Meshcat::StaticHtml() const {

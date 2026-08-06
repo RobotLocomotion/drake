@@ -101,16 +101,27 @@ void check_and_make_ref_cycle(size_t peer0, handle p0, size_t peer1, handle p1,
 
 }  // namespace
 
+void ref_cycle_impl(size_t peer0, size_t peer1,
 #ifdef PYDRAKE_USE_PYBIND11
-
-void ref_cycle_impl(
-    size_t peer0, size_t peer1, const function_call& call, handle ret) {
+    const function_call& call,
+#else   // PYDRAKE_USE_NANOBIND
+    PyObject** args, size_t nargs,
+#endif  // PYDRAKE_USE_PYBIND11
+    handle ret) {
+#ifdef PYDRAKE_USE_PYBIND11
+  const char* const function_name = call.func.name;
+#else   // PYDRAKE_USE_NANOBIND
+  // TODO(rpoyner-tri) Figure out if builder_life_support_stash can capture the
+  // function name for use in error messages.
+  const char* const function_name = "<unknown_function>";
+#endif  // PYDRAKE_USE_PYBIND11
   // Returns the handle selected by the given index. Throws if the index is
   // invalid.
   auto get_arg = [&](size_t n) -> handle {
     if (n == 0) {
       return ret;
     }
+#ifdef PYDRAKE_USE_PYBIND11
     if (n == 1 && call.init_self) {
       return call.init_self;
     }
@@ -119,51 +130,28 @@ void ref_cycle_impl(
     }
     py::pybind11_fail(fmt::format(
         "Could not activate ref_cycle: index {} is invalid for function '{}'",
-        n, call.func.name));
+        n, function_name));
+#else   // PYDRAKE_USE_NANOBIND
+    if (n <= nargs) {
+      return args[n - 1];
+    }
+    throw std::runtime_error(fmt::format(
+        "Could not activate ref_cycle: index {} is invalid for function '{}'",
+        n, function_name));
+#endif  // PYDRAKE_USE_PYBIND11
   };
   handle p0 = get_arg(peer0);
   handle p1 = get_arg(peer1);
 
-  auto not_gc_error = [&call](size_t n) -> std::string {
+  auto not_gc_error = [&function_name](size_t n) -> std::string {
     return fmt::format(
         "Could not activate ref_cycle: object type at index {} for binding at "
         "'{}' is not tracked by garbage collection.  Was the object defined "
         "with `pybind11::class_<...>(... pybind11::dynamic_attr())`?",
-        n, call.func.name);
+        n, function_name);
   };
   check_and_make_ref_cycle(peer0, p0, peer1, p1, not_gc_error);
 }
-
-#else  // PYDRAKE_USE_NANOBIND
-
-void ref_cycle_impl(
-    size_t peer0, size_t peer1, PyObject** args, size_t nargs, handle ret) {
-  // Returns the handle selected by the given index. Throws if the index is
-  // invalid.
-  auto get_arg = [&args, &nargs, &ret](size_t n) -> handle {
-    if (n == 0) {
-      return ret;
-    }
-    if (n <= nargs) {
-      return args[n - 1];
-    }
-    throw std::runtime_error(
-        fmt::format("Could not activate ref_cycle: index {} is invalid", n));
-  };
-  handle p0 = get_arg(peer0);
-  handle p1 = get_arg(peer1);
-
-  auto not_gc_error = [](size_t n) -> std::string {
-    return fmt::format(
-        "Could not activate ref_cycle: object type at index {} for binding at "
-        "'WTF' is not tracked by garbage collection.  Was the object defined "
-        "`py::class_<...>(... py::dynamic_attr())`?",
-        n);
-  };
-  check_and_make_ref_cycle(peer0, p0, peer1, p1, not_gc_error);
-}
-
-#endif  // PYDRAKE_USE_PYBIND11
 
 void make_arbitrary_ref_link(
     handle p0, handle p1, const std::string& location_hint) {

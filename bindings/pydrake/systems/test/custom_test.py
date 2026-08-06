@@ -428,7 +428,7 @@ class TestCustom(unittest.TestCase):
 
     @unittest.skipIf(
         _binder == "nanobind",  # TODO(#21572) Remove this opt-out.
-        "Missing init detection not done",
+        "Missing init detection is not implemented yet.",
     )
     def test_leaf_system_issue13792(self):
         """

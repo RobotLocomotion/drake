@@ -67,6 +67,12 @@
 
 namespace drake {
 
+namespace internal {
+// We'll repeat this declaration from drake/common/nice_type_name_override.h,
+// because we can't #include its header here. Refer to that file for details.
+void AddTypeInfoAlias(const std::type_info&, const std::type_info*);
+}  // namespace internal
+
 /// For more high-level information, see the @ref python_bindings
 /// "Python Bindings" technical notes.
 ///
@@ -167,8 +173,8 @@ class __attribute__((visibility("hidden"))) class_
       : Base(std::forward<decltype(args)>(args)...,
             py::is_weak_referenceable()) {
     if constexpr (!std::is_same_v<T, typename Base::Alias>) {
-      internal::AliasRegistry::AddAlias(
-          typeid(typename Base::Alias), typeid(T));
+      drake::internal::AddTypeInfoAlias(
+          typeid(typename Base::Alias), &typeid(T));
     }
   }
 };

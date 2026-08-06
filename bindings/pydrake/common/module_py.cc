@@ -48,7 +48,7 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
 #else
   bool is_new{false};
   PyObject* result{};
-  auto bound_type = internal::AliasRegistry::Unalias(&ptr.info);
+  auto* bound_type = drake::internal::GetTypeInfoAlias(&ptr.info);
   if (ptr.is_polymorphic) {
     result = py::detail::nb_type_put_p(bound_type, &ptr.info,
         const_cast<void*>(ptr.raw), py_rvp::reference, nullptr, &is_new);
