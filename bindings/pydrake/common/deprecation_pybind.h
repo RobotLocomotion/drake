@@ -162,14 +162,23 @@ struct DRAKE_NO_EXPORT DeprecatedParamInit
       : message_(std::move(message)) {}
   template <typename Class, typename... Extra>
   void execute(Class& cl, const Extra&...) {
-    cl.def("__init__", WrapDeprecated(std::move(message_),
-                           [](CppClass* self, py::kwargs kwargs) {
-                             new (self) Class();
-                             py::object py_obj =
-                                 py::cast(self, py_rvp::reference);
-                             py::module_::import_("pydrake").attr(
-                                 "_setattr_kwargs")(py_obj, kwargs);
-                           }));
+    cl.def(          // BR
+        "__init__",  // BR
+        WrapDeprecated(
+            std::move(message_), [](CppClass* self, py::kwargs kwargs) {
+              new (self) Class();
+              py::object py_obj = py::cast(self, py_rvp::reference);
+
+              // Nanobind wouldn't have known the C++ instance is ready yet,
+              // but we have to mark it ready to allow all of the setattr
+              // machinery to work before init returns. This also set the
+              // object's `destruct` flag to true, so that if the
+              // _setattr_kwargs raises, `self`'s C++ destructor will run.
+              py::inst_mark_ready(py_obj);
+
+              py::module_::import_("pydrake").attr("_setattr_kwargs")(
+                  py_obj, kwargs);
+            }));
   }
   std::string message_;
 };
