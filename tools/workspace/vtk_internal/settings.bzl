@@ -625,7 +625,7 @@ MODULE_SETTINGS = {
             "VTK_MODULE_USE_EXTERNAL_vtknlohmannjson=1",
         ],
         "deps_extra": [
-            "@nlohmann_internal//:nlohmann",
+            "@nlohmann//:json",
         ],
     },
     "VTK::png": {

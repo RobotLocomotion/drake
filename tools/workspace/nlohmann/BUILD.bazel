@@ -1,0 +1,32 @@
+load("@drake//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
+load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+cc_static_hidden_library(
+    name = "json",
+    visibility = ["//visibility:public"],
+    deps = ["@module_nlohmann//:json"],
+)
+
+cc_static_hidden_library(
+    name = "singleheader-json",
+    visibility = ["//visibility:public"],
+    deps = ["@module_nlohmann//:singleheader-json"],
+)
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/nlohmann",
+    files = ["@module_nlohmann//:LICENSE.MIT"],
+    allowed_externals = ["@module_nlohmann//:LICENSE.MIT"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()

@@ -37,7 +37,6 @@ load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menagerie_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
-load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("//tools/workspace/onetbb_internal:repository.bzl", "onetbb_internal_repository")  # noqa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
@@ -111,7 +110,6 @@ def _add_internal_repositories():
     msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)
     mujoco_menagerie_internal_repository(name = "mujoco_menagerie_internal", mirrors = mirrors)  # noqa
     nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
-    nlohmann_internal_repository(name = "nlohmann_internal", mirrors = mirrors)
     nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
     osqp_internal_repository(name = "osqp_internal", mirrors = mirrors)
@@ -162,6 +160,7 @@ def _drake_dep_repositories_impl(module_ctx):
         "glib",
         "lapack",
         "libjpeg",
+        "nlohmann",
         "opencl",
         "spdlog",
         "suitesparse",
@@ -178,6 +177,13 @@ def _drake_dep_repositories_impl(module_ctx):
             # suitesparse Drake needs (and can reasonably obtain, for licensing
             # reasons).
             aliases = {"amd": actual + ":amd"}
+        if name == "nlohmann":
+            # We provide both aliases, since Drake first-party only needs
+            # :singleheader-json but third-party (VTK) needs :json.
+            aliases = {
+                "json": actual + ":json",
+                "singleheader-json": actual + ":singleheader-json",
+            }
         alias_repository(
             name = name,
             aliases = aliases,
