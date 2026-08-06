@@ -60,9 +60,16 @@
 #pragma GCC diagnostic pop
 
 #include "drake/bindings/pydrake/numpy_object_pybind.h"
+#include "drake/bindings/pydrake/reference_wrapper_pybind.h"
 #endif  // PYDRAKE_USE_NANOBIND
 
 namespace drake {
+
+namespace internal {
+// We'll repeat this declaration from drake/common/nice_type_name_override.h,
+// because we can't #include its header here. Refer to that file for details.
+void AddTypeInfoAlias(const std::type_info&, const ::std::type_info*);
+}  // namespace internal
 
 /// For more high-level information, see the @ref python_bindings
 /// "Python Bindings" technical notes.
@@ -128,7 +135,12 @@ class __attribute__((visibility("hidden"))) class_
   using Base = internal::PyClassRemoveSharedPtrHolderAnnotation<T, Ts...>::type;
   explicit class_(auto&&... args)
       : Base(std::forward<decltype(args)>(args)...,
-            py::is_weak_referenceable()) {}
+            py::is_weak_referenceable()) {
+    if constexpr (!std::is_same_v<T, typename Base::Alias>) {
+      drake::internal::AddTypeInfoAlias(
+          typeid(typename Base::Alias), &typeid(T));
+    }
+  }
 };
 #endif  // PYDRAKE_USE_PYBIND11
 
@@ -372,15 +384,6 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 #define PYDRAKE_BINDER_NAMESPACE pybind11
 #define PYDRAKE_OVERRIDE PYBIND11_OVERRIDE
 #define PYDRAKE_OVERRIDE_PURE PYBIND11_OVERRIDE_PURE
-#else  // PYDRAKE_USE_NANOBIND
-#define PYDRAKE_MODULE NB_MODULE
-#define PYDRAKE_BINDER_NAMESPACE nanobind
-#define PYDRAKE_OVERRIDE(unused1, unused2, ...) NB_OVERRIDE(__VA_ARGS__)
-#define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) \
-  NB_OVERRIDE_PURE(__VA_ARGS__)
-#endif
-
-#ifdef PYDRAKE_USE_PYBIND11
 // This is an implementation of nanobind's NB_TRAMPOLINE macro for pybind11.
 // https://nanobind.readthedocs.io/en/latest/classes.html#overriding-virtual-functions-in-python
 // In particular, `size` should match how many PYDRAKE_OVERRIDE{,_PURE} are used
@@ -389,4 +392,32 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
   static_assert(size >= 0);       \
   using NBBase = base;            \
   using NBBase::NBBase
+#else  // PYDRAKE_USE_NANOBIND
+#define PYDRAKE_MODULE NB_MODULE
+#define PYDRAKE_BINDER_NAMESPACE nanobind
+#define PYDRAKE_OVERRIDE(unused1, unused2, func, ...)                         \
+  do {                                                                        \
+    try {                                                                     \
+      NB_OVERRIDE(func, __VA_ARGS__);                                         \
+    } catch (const py::builtin_exception& e) {                                \
+      /* In case the method was not overridden, nanobind might erroneously */ \
+      /* throw instead of using the base class implementation. This will */   \
+      /* happen when the C++ base class method isn't bound in pydrake. */     \
+      /* We'll check for that exact failure mode and handle it here. */       \
+      if (e.type() == py::exception_type::runtime_error) {                    \
+        const std::string_view what = e.what();                               \
+        if (what.starts_with("nanobind::detail::get_trampoline('") &&         \
+            what.ends_with("'): lookup failed!")) {                           \
+          { /* Flush the failure from PyObject_GetAttr. */                    \
+            py::gil_scoped_acquire guard;                                     \
+            PyErr_Clear();                                                    \
+          }                                                                   \
+          return NBBase::func(__VA_ARGS__);                                   \
+        }                                                                     \
+      }                                                                       \
+      throw;                                                                  \
+    }                                                                         \
+  } while (0)
+#define PYDRAKE_OVERRIDE_PURE(unused1, unused2, ...) \
+  NB_OVERRIDE_PURE(__VA_ARGS__)
 #endif  // PYDRAKE_USE_PYBIND11
