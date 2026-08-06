@@ -16,6 +16,7 @@ def cc_wrap_static_archive_hidden(
         name,
         *,
         static_archive_name,
+        defines = [],
         visibility = ["//visibility:private"]):
     """Wraps a static library (an `*.a` file) to use hidden linker visibility,
     i.e., the library does not export any public symbols. On Linux, we can do
@@ -60,6 +61,7 @@ def cc_wrap_static_archive_hidden(
                 osx_archive_name,
             ],
         }),
+        defines = defines,
         deps = select({
             "@drake//tools/cc_toolchain:linux": [
                 ":{}".format(static_archive_name),

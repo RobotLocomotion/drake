@@ -299,7 +299,7 @@ drake_cc_googletest(
         "//systems/sensors:image_io",
         "//systems/sensors/test_utilities:image_compare",
         "@gflags",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann//:singleheader-json",
         "@tinygltf_internal//:tinygltf",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",

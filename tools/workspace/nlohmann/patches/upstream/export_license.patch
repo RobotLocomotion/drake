@@ -1,0 +1,12 @@
+BCR nlohmann_json does not export the project's LICENSE.
+
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -1,5 +1,7 @@
+ load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
++exports_files(["LICENSE.MIT"])
++
+ cc_library(
+     name = "json",
+     hdrs = [

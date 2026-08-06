@@ -1,0 +1,44 @@
+load("@drake//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
+load("//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+cc_static_hidden_library(
+    name = "json",
+    defines = [
+        # Use a drake_vendor hidden namespace instead of JSON's default ABI
+        # namespace based on its version number. This prevents ODR violations
+        # in case downstream code also links to json.
+        "'NLOHMANN_JSON_NAMESPACE_BEGIN=namespace nlohmann { inline namespace drake_vendor __attribute__((visibility(\"hidden\"))) {'",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@module_nlohmann//:json"],
+)
+
+cc_static_hidden_library(
+    name = "singleheader-json",
+    defines = [
+        # Use a drake_vendor hidden namespace instead of JSON's default ABI
+        # namespace based on its version number. This prevents ODR violations
+        # in case downstream code also links to json.
+        "'NLOHMANN_JSON_NAMESPACE_BEGIN=namespace nlohmann { inline namespace drake_vendor __attribute__((visibility(\"hidden\"))) {'",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@module_nlohmann//:singleheader-json"],
+)
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/nlohmann",
+    files = ["@module_nlohmann//:LICENSE.MIT"],
+    allowed_externals = ["@module_nlohmann//:LICENSE.MIT"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()

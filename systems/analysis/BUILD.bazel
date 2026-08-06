@@ -436,7 +436,7 @@ drake_cc_library(
         ":implicit_integrator",
         ":integrator_base",
         "@fmt",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann//:singleheader-json",
     ],
 )
 
