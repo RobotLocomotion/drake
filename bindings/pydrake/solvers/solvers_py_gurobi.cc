@@ -1,5 +1,6 @@
 #include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/solvers/solvers_pybind.h"
@@ -54,9 +55,10 @@ void DefineSolversGurobi(py::module_ m) {
           doc.GurobiSolver.SolveStatusInfo.feasible_solutions_count.doc);
 
   cls  // BR
-      .def("AddMipNodeCallback", &GurobiSolver::AddMipNodeCallback,
-          py::arg("callback"), doc.GurobiSolver.AddMipNodeCallback.doc)
-      .def("AddMipSolCallback", &GurobiSolver::AddMipSolCallback,
+      .def("AddMipNodeCallback",
+          WrapCallbacks(&GurobiSolver::AddMipNodeCallback), py::arg("callback"),
+          doc.GurobiSolver.AddMipNodeCallback.doc)
+      .def("AddMipSolCallback", WrapCallbacks(&GurobiSolver::AddMipSolCallback),
           py::arg("callback"), doc.GurobiSolver.AddMipSolCallback.doc);
 }
 
