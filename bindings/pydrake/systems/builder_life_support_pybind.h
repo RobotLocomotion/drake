@@ -85,17 +85,21 @@ struct BuilderLifeSupport {
 template <typename T, size_t Builder>
 struct builder_life_support_stash {};
 
-#ifdef PYDRAKE_USE_PYBIND11
-
 template <typename T>
 void builder_life_support_stash_impl(size_t builder_index,
-    const py::detail::function_call& call, py::handle ret) {
+#ifdef PYDRAKE_USE_PYBIND11
+    const py::detail::function_call& call,
+#else   // PYDRAKE_USE_NANOBIND
+    PyObject** args, size_t nargs,
+#endif  // PYDRAKE_USE_PYBIND11
+    py::handle ret) {
   // Returns the handle selected by the given index. Throws if the index is
   // invalid.
   auto get_arg = [&](size_t n) -> py::handle {
     if (n == 0) {
       return ret;
     }
+#ifdef PYDRAKE_USE_PYBIND11
     if (n == 1 && call.init_self) {
       return call.init_self;
     }
@@ -106,6 +110,16 @@ void builder_life_support_stash_impl(size_t builder_index,
         fmt::format("Could not activate builder_life_support_stash: index {} "
                     "is invalid for function '{}'",
             n, call.func.name));
+#else   // PYDRAKE_USE_NANOBIND
+    if (n <= nargs) {
+      return args[n - 1];
+    }
+    // TODO(rpoyner-tri) Figure out if builder_life_support_stash can capture
+    // the function name for use in error messages.
+    throw std::runtime_error(fmt::format(
+        "Could not activate builder_life_support_stash: index {} is invalid",
+        n));
+#endif  // PYDRAKE_USE_PYBIND11
   };
   py::handle builder_handle = get_arg(builder_index);
   if (builder_handle.is_none()) {
@@ -114,6 +128,12 @@ void builder_life_support_stash_impl(size_t builder_index,
   }
   // Convert the handle to a strong reference for later stashing.
   py::object py_builder = py::cast<py::object>(builder_handle);
+#ifdef PYDRAKE_USE_NANOBIND
+  // For nanobind init annotations, we must ensure the ready bit is set before
+  // casting to c++.
+  py::inst_set_state(
+      builder_handle, true, py::inst_state(builder_handle).second);
+#endif
   // Recover the c++ pointer; pybind11 will throw if the cast can't work.
   systems::DiagramBuilder<T>* cc_builder =
       py::cast<systems::DiagramBuilder<T>*>(py_builder);
@@ -124,49 +144,8 @@ void builder_life_support_stash_impl(size_t builder_index,
       .emplace(BuilderLifeSupport<T>::kKey, py_builder);
 }
 
-#else   // PYDRAKE_USE_NANOBIND
-
-// TODO(rpoyner-tri) Figure out if builder_life_support_stash can capture the
-// function name for use in error messages.
-
-template <typename T>
-void builder_life_support_stash_impl(
-    size_t builder_index, PyObject** args, size_t nargs, py::handle ret) {
-  // Returns the handle selected by the given index. Throws if the index is
-  // invalid.
-  auto get_arg = [&args, &nargs, &ret](size_t n) -> py::handle {
-    if (n == 0) {
-      return ret;
-    }
-    if (n <= nargs) {
-      return args[n - 1];
-    }
-    throw std::runtime_error(
-        fmt::format("Could not activate builder_life_support_stash: index {} "
-                    "is invalid",
-            n));
-  };
-  py::handle builder_handle = get_arg(builder_index);
-  if (builder_handle.is_none()) {
-    // Nothing useful to stash.
-    return;
-  }
-  // Convert the handle to a strong reference for later stashing.
-  py::object py_builder = py::cast<py::object>(builder_handle);
-  // For nanobind init annotations, we must ensure the ready bit is set before
-  // casting to c++.
-  py::inst_set_state(
-      builder_handle, true, py::inst_state(builder_handle).second);
-  // Recover the c++ pointer; nanobind will throw if the cast can't work.
-  systems::DiagramBuilder<T>* cc_builder =
-      py::cast<systems::DiagramBuilder<T>*>(py_builder);
-  DRAKE_ASSERT(cc_builder != nullptr);
-  // Do the equivalent of stash(); we don't use the method since we've already
-  // had to recover the python and c++ objects in a different order.
-  BuilderLifeSupport<T>::attrs(cc_builder)
-      .emplace(BuilderLifeSupport<T>::kKey, py_builder);
-}
-
+// For nanobind annotations, we must provide ADL hooks for func_extra_info.
+#ifdef PYDRAKE_USE_NANOBIND
 template <size_t NArgs, typename T, size_t Builder>
 NB_INLINE void process_precall(PyObject**,
     std::integral_constant<size_t, NArgs>, nanobind::detail::cleanup_list*,
@@ -191,7 +170,7 @@ NB_INLINE void func_extra_apply(
   f.flags |=
       static_cast<uint32_t>(nanobind::detail::func_flags::can_mutate_args);
 }
-#endif  // PYDRAKE_USE_PYBIND11
+#endif  // PYDRAKE_USE_NANOBIND
 
 }  // namespace internal
 }  // namespace pydrake
