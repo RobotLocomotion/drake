@@ -47,6 +47,7 @@ void DefinePlanningIrisNp2(py::module_ m) {
   iris_np2_options  // BR
       .def(py::init<>())
       .def_prop_rw("solver_options",
+#ifdef PYDRAKE_USE_PYBIND11
           py::cpp_function(
               [](IrisNp2Options& self) { return &(self.solver_options); },
               py_rvp::reference_internal),
@@ -54,6 +55,13 @@ void DefinePlanningIrisNp2(py::module_ m) {
               [](IrisNp2Options& self, solvers::SolverOptions solver_options) {
                 self.solver_options = std::move(solver_options);
               }),
+#else   // PYDRAKE_USE_NANOBIND
+          [](IrisNp2Options& self) { return &(self.solver_options); },
+          [](IrisNp2Options& self, solvers::SolverOptions solver_options) {
+            self.solver_options = std::move(solver_options);
+          },
+          py::for_getter(py_rvp::reference_internal),
+#endif  // PYDRAKE_USE_PYBIND11
           cls_doc.solver_options.doc)
       .def_rw("sampled_iris_options", &IrisNp2Options::sampled_iris_options,
           cls_doc.sampled_iris_options.doc)

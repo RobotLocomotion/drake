@@ -204,19 +204,13 @@ def drake_py_test(
     if test_alt_binder not in (True, False, "auto"):
         fail("test_alt_binder must be set to True, False, or \"auto\"")
     if test_alt_binder == "auto":
-        # TODO(#21572) Eventually "auto" should enable relevant tests (i.e.,
-        # "bindings/pydrake", "examples", and "tutorials"). For now, only a
-        # selected subset of those will pass.
         package_name = native.package_name()
         test_alt_binder = any([
             package_name.startswith(x)
             for x in [
-                "bindings/pydrake/autodiffutils",
-                "bindings/pydrake/common",
-                "bindings/pydrake/math",
-                "bindings/pydrake/solvers",
-                "bindings/pydrake/symbolic",
-                "bindings/pydrake/systems",
+                "bindings/pydrake",
+                "examples",
+                "tutorials",
             ]
         ])
     if test_alt_binder:
