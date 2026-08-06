@@ -2,15 +2,21 @@
 
 #include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/value.h"
+#include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/shape_specification.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/systems/framework/bus_value.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -41,6 +47,98 @@ constexpr char kRobotXml[] = R"""(
     </worldbody>
   </mujoco>
   )""";
+
+class IcfBuilderSurfaceVelocityTest
+    : public testing::TestWithParam<ContactModel> {};
+
+/* Verifies that IcfBuilder supplies each point or hydroelastic contact pair
+with the combined surface-velocity bias from both bodies. The bodies and their
+surface-velocity axes are rotated relative to world so that this also checks
+the frame transformations and normal sign conventions. */
+TEST_P(IcfBuilderSurfaceVelocityTest, BuildsSurfaceVelocityBias) {
+  constexpr double kHalfSize = 0.1;
+  constexpr double kPenetration = 1e-3;
+  constexpr double kStiffness = 1e5;
+  constexpr double kHydroModulus = 1e6;
+  constexpr double kSpeed = 1.0;
+
+  systems::DiagramBuilder<double> diagram_builder;
+  auto [plant, scene_graph] =
+      AddMultibodyPlantSceneGraph(&diagram_builder, 0.0);
+  plant.set_contact_model(GetParam());
+
+  geometry::ProximityProperties material;
+  geometry::AddContactMaterial(0.0, kStiffness,
+                               CoulombFriction<double>(1.0, 1.0), &material);
+  geometry::ProximityProperties rigid(material);
+  geometry::AddRigidHydroelasticProperties(&rigid);
+  geometry::ProximityProperties compliant(material);
+  geometry::AddCompliantHydroelasticProperties(kHalfSize, kHydroModulus,
+                                               &compliant);
+
+  const math::RollPitchYawd Rz_90(0.0, 0.0, M_PI_2);
+
+  const RigidBody<double>& ground =
+      plant.AddRigidBody("ground", SpatialInertia<double>::MakeUnitary());
+  plant.WeldFrames(plant.world_frame(), ground.body_frame(),
+                   RigidTransformd(Rz_90, Vector3d::Zero()));
+  // Making the ground rigid guarantees the contact normal will always be Wz.
+  plant.RegisterCollisionGeometry(ground, RigidTransformd(Vector3d(0, 0, -0.5)),
+                                  geometry::Box(10.0, 10.0, 1.0), "ground",
+                                  rigid);
+  plant.SetSurfaceVelocityAxis(ground, Vector3d(1, 0, 0));
+
+  const RigidBody<double>& box = plant.AddRigidBody(
+      "box", SpatialInertia<double>::SolidBoxWithMass(
+                 1.0, 2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize));
+  plant.RegisterCollisionGeometry(
+      box, RigidTransformd::Identity(),
+      geometry::Box(2 * kHalfSize, 2 * kHalfSize, 2 * kHalfSize), "box",
+      compliant);
+  plant.SetSurfaceVelocityAxis(box, Vector3d(0, -1, 0));
+
+  plant.Finalize();
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  plant.SetFloatingBaseBodyPoseInWorldFrame(
+      &plant_context, box,
+      RigidTransformd(Rz_90, Vector3d(0, 0, kHalfSize - kPenetration)));
+
+  systems::BusValue bus;
+  bus.Set(ground.scoped_name().to_string(), Value<double>(kSpeed));
+  bus.Set(box.scoped_name().to_string(), Value<double>(kSpeed));
+  plant.get_surface_speeds_input_port().FixValue(&plant_context, bus);
+
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  builder.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model);
+
+  const PatchConstraintsPool<double>& pool = model.patch_constraints_pool();
+  ASSERT_EQ(pool.num_patches(), 1);
+  if (GetParam() == ContactModel::kPoint) {
+    ASSERT_EQ(pool.total_num_pairs(), 1);
+  } else {
+    ASSERT_GT(pool.total_num_pairs(), 1);
+  }
+
+  // The box surface moves in +Wy and the ground surface moves in +Wx, so the
+  // physical velocity of the box surface relative to the ground surface is
+  // v_b_W = v_box_ss_W - v_ground_ss_W = (-1, 1, 0).
+  const Vector3d expected_v_b_W(-kSpeed, kSpeed, 0.0);
+  for (int pair = 0; pair < pool.total_num_pairs(); ++pair) {
+    SCOPED_TRACE(fmt::format("pair {}", pair));
+    EXPECT_TRUE(CompareMatrices(pool.v_b_W()[pair], expected_v_b_W, 1e-13));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    PointAndHydroelastic, IcfBuilderSurfaceVelocityTest,
+    testing::Values(ContactModel::kPoint, ContactModel::kHydroelastic),
+    [](const testing::TestParamInfo<ContactModel>& stuff) {
+      return multibody::internal::GetStringFromContactModel(stuff.param);
+    });
 
 GTEST_TEST(IcfBuilder, Limits) {
   systems::DiagramBuilder<double> diagram_builder;
