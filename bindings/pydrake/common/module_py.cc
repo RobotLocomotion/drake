@@ -349,10 +349,10 @@ deterministic given the C++ random seed (see drake issue #12632 for the
 discussion), use e.g.
 
 .. code-block:: python
-
+    
    generator = pydrake.common.RandomGenerator()
    random_state = numpy.random.RandomState(generator())
-
+   
    my_random_value = random_state.uniform()
    ...
 

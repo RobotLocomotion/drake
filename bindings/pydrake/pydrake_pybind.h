@@ -2,8 +2,6 @@
 
 #include <memory>
 #include <type_traits>
-#include <typeindex>
-#include <unordered_map>
 #include <utility>
 
 // Here we include a lot of the pybind11 (or nanobind) API, to ensure that all
@@ -104,39 +102,6 @@ using py_rvp = py::rv_policy;
 using py::class_;
 #else   // PYDRAKE_USE_NANOBIND
 namespace internal {
-// XXX need locking?
-class AliasRegistry {
- public:
-  static void AddAlias(
-      const ::std::type_info& alias_type, const ::std::type_info& bound_type) {
-    (*TheMap())[std::type_index(alias_type)] = &bound_type;
-  }
-
-  static const std::type_info* Unalias(const std::type_info* query) {
-    auto& unalias = *TheMap();
-    auto it = unalias.find(std::type_index(*query));
-    if (it == unalias.end()) {
-      return query;
-    }
-    return it->second;
-  }
-
- private:
-  using UnaliasMap = std::unordered_map<std::type_index, const std::type_info*>;
-  static UnaliasMap* TheMap() {
-    py::module_ m = py::module_::import_("pydrake.common.alias_registry");
-    py::capsule py_map = m.attr("_unalias_map");
-    UnaliasMap* cpp_map{};
-    if (py_map.is_none()) {
-      // Purposefully never destroyed; no cleanup routine is provided.
-      py_map = py::capsule(new UnaliasMap);
-      m.attr("_unalias_map") = py_map;
-    }
-    cpp_map = static_cast<UnaliasMap*>(py_map.data());
-    return cpp_map;
-  }
-};
-
 // We use partial template specialiation of a traits-like type to drop the
 // shared_ptr holder type annotation on py::class_ declarations. Only pybind11
 // uses holder types in the class_ template argument list.
@@ -161,7 +126,6 @@ struct PyClassRemoveSharedPtrHolderAnnotation<T, Base1, Base2, Holder, Ts...> {
       py::class_<T, Base1, Base2, Ts...>,
       py::class_<T, Base1, Base2, Holder, Ts...> >;
 };
-
 }  // namespace internal
 
 template <typename T, typename... Ts>
