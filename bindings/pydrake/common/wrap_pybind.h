@@ -105,10 +105,9 @@ struct type_caster_wrapped {
   bool loaded_{false};
   Type value_;
 };
-#else  // PYDRAKE_USE_NANOBIND
-#pragma GCC visibility push(hidden)
+#else   // PYDRAKE_USE_NANOBIND
 template <typename Wrapper>
-struct type_caster_wrapped {
+struct __attribute__((visibility("hidden"))) type_caster_wrapped {
   using Type = typename Wrapper::Type;
   using WrappedType = typename Wrapper::WrappedType;
   using WrappedTypeCaster = py::detail::type_caster<WrappedType>;
@@ -145,7 +144,6 @@ struct type_caster_wrapped {
  private:
   WrappedTypeCaster caster_;
 };
-#pragma GCC visibility pop
 #endif  // PYDRAKE_USE_PYBIND11
 
 }  // namespace internal
