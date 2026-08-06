@@ -545,8 +545,6 @@ drake_pybind_library(
 
 drake_py_unittest(
     name = "ref_cycle_test",
-    # TODO(#21572) Remove this opt-out.
-    test_alt_binder = False,
     deps = [
         ":common",
         ":ref_cycle_test_util_py",
