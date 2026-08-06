@@ -94,7 +94,6 @@ drake_pybind_library(
         "_common_extra.py",
         "_eigen_geometry_extra.py",
         "_value_extra.py",
-        "alias_registry.py",
         "all.py",
         "compatibility.py",
         "containers.py",
