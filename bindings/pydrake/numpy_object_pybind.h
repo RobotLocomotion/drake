@@ -14,7 +14,8 @@ type. */
 namespace nanobind {
 namespace detail {
 
-/* Base class for PYDRAKE_NUMPY_OBJECT_DTYPE casters. */
+/* Base class for PYDRAKE_NUMPY_OBJECT_DTYPE casters.
+@tparam T is the Eigen matrix type (e.g., MatrixX<AutoDiffXd>)*/
 template <typename T>
 struct pydrake_numpy_dtype_object_type_caster {
   using Scalar = typename T::Scalar;
@@ -43,7 +44,7 @@ struct pydrake_numpy_dtype_object_type_caster {
       return false;
     }
 
-    // Avoid converting np.array(dtype=np.float64) to AutoDiff prematurely.
+    // Avoid converting np.array(dtype=np.float64) to AutoDiffXd prematurely.
     // Only accept autodiff conversions as a last resort.
     const bool convert = flags & (uint8_t)cast_flags::convert;
     if (!convert) {
