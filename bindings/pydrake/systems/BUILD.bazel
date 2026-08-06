@@ -388,7 +388,6 @@ drake_py_binary(
     ],
     add_test_rule = True,
     test_rule_timeout = "moderate",
-    test_rule_test_alt_binder = False,
 )
 
 drake_jupyter_py_binary(
