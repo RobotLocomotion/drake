@@ -9,6 +9,7 @@ from math import pi
 import unittest
 import weakref
 
+from pydrake.common import _binder
 from pydrake.math import RigidTransform
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.sensors import (
@@ -110,7 +111,10 @@ class TestRenderEngineSubclass(unittest.TestCase):
 
         color_only = ColorOnlyEngine()
         color_only.RenderColorImage(color_cam, color_image)
-        pure_virtual_error_regex = ".+pure virtual function.+"
+        if _binder == "nanobind":
+            pure_virtual_error_regex = ".+trampoline.+lookup failed!"
+        else:
+            pure_virtual_error_regex = ".+pure virtual function.+"
         with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
             color_only.RenderDepthImage(depth_cam, depth_image)
         with self.assertRaisesRegex(RuntimeError, pure_virtual_error_regex):
