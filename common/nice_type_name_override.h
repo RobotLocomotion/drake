@@ -31,5 +31,17 @@ void SetNiceTypeNamePtrOverride(NiceTypeNamePtrOverride new_ptr_override);
 // Gets the override. If unset, it will be an empty function<> object.
 const NiceTypeNamePtrOverride& GetNiceTypeNamePtrOverride();
 
+// Adds an entry to the (global) type alias dictionary for use by pydrake
+// bindings during the NiceTypeNamePtrOverride callback (for details, see
+// bindings/pydrake/common/module_py.cc). The `bound_type` is retained by
+// the dictionary and must survive indefinitely.
+void AddTypeInfoAlias(const std::type_info& alias_type,
+                      const ::std::type_info* bound_type);
+
+// If `query` was previously passed as an `alias_type` to AddTypeInfoAlias,
+// then returns its corresponding `bound_type`. Otherwise, returns `query`.
+// The `query` must not be null, and the return value is never null.
+const std::type_info* GetTypeInfoAlias(const std::type_info* query);
+
 }  // namespace internal
 }  // namespace drake
