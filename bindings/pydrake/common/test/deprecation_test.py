@@ -281,6 +281,11 @@ class TestDeprecation(unittest.TestCase):
             with self.subTest("DeprecatedParamInit"):
                 obj = cc_example.ExampleCppStruct()
 
+            with self.subTest("DeprecatedParamInit"):
+                obj = cc_example.ExampleCppStruct(i=5, j=10)
+                self.assertEqual(obj.i, 5)
+                self.assertEqual(obj.j, 10)
+
             with self.subTest("py_init_deprecated"):
                 cc_example.ExampleCppClass(0)
                 cc_example.ExampleCppClass(0.0)

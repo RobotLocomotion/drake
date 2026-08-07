@@ -285,23 +285,33 @@ auto ParamInit() {
   });
 }
 #else   // PYDRAKE_USE_NANOBIND
+namespace internal {
+
+template <typename CppClass>
+auto ParamInitImpl() {
+  return [](CppClass* self, py::kwargs kwargs) {
+    new (self) CppClass();
+    py::object py_obj = py::cast(self, py_rvp::reference);
+
+    // Nanobind wouldn't have known the C++ instance is ready yet, but we
+    // have to mark it ready to allow all of the setattr machinery to work
+    // before init returns. This also set the object's `destruct` flag to
+    // true, so that if the _setattr_kwargs raises, `self`'s C++ destructor
+    // will run.
+    py::inst_mark_ready(py_obj);
+
+    py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+  };
+}
+
+}  // namespace internal
+
 template <typename CppClass>
 struct __attribute__((visibility("hidden"))) ParamInit
     : py::def_visitor<ParamInit<CppClass> > {
   template <typename PyClass, typename... Extra>
   void execute(PyClass& cl, const Extra&...) {
-    cl.def("__init__", [](CppClass* self, py::kwargs kwargs) {
-      new (self) CppClass();
-      py::object py_obj = py::cast(self, py_rvp::reference);
-
-      // Nanobind wouldn't have known the C++ instance is ready yet, but we have
-      // to mark it ready to allow all of the setattr machinery to work before
-      // init returns. This also set the object's `destruct` flag to true, so
-      // that if the _setattr_kwargs raises, `self`'s C++ destructor will run.
-      py::inst_mark_ready(py_obj);
-
-      py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
-    });
+    cl.def("__init__", internal::ParamInitImpl<CppClass>());
   }
 };
 #endif  // PYDRAKE_USE_PYBIND11
