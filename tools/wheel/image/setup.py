@@ -110,6 +110,13 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
         )
     },
     python_requires=">=3.12",
+    options=(
+        {
+            "bdist_wheel": {"py_limited_api": "cp312"},
+        }
+        if DRAKE_VERSION.endswith("+nb")
+        else {}
+    ),
     install_requires=python_required,
     # Ensure the wheel is not platform-agnostic.
     ext_modules=[

@@ -2,6 +2,7 @@
 # //tools/wheel:builder for the user interface.
 
 import argparse
+from enum import Enum
 import gzip
 import io
 import locale
@@ -34,6 +35,13 @@ wheelhouse = os.path.join(wheel_root, "wheelhouse")
 resource_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
+class PythonBinder(Enum):
+    _value_: str
+
+    NANOBIND = "nanobind"
+    PYBIND11 = "pybind11"
+
+
 def gripe(message):
     """
     Prints a message to stderr.
@@ -54,8 +62,9 @@ def wheel_name(python_version, wheel_version, wheel_platform):
     Determines the complete name of the Drake wheel, given various individual
     bits such as the Drake version, Python version, and Python wheel platform.
     """
-    vm = f"cp{python_version}"
-    return f"drake-{wheel_version}-{vm}-{vm}-{wheel_platform}.whl"
+    cpNN = f"cp{python_version}"
+    abi = "abi3" if wheel_version.endswith("+nb") else cpNN
+    return f"drake-{wheel_version}-{cpNN}-{abi}-{wheel_platform}.whl"
 
 
 def _check_version(version):
