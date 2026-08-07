@@ -1847,6 +1847,34 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
+  /// (Internal use only for now) Controls whether Finalize() will automatically
+  /// model systems whose bodies and joints form one or more closed kinematic
+  /// loops (a "closed topology"). When enabled, Finalize() breaks each loop by
+  /// introducing a "shadow" body and a loop-closure constraint, using the
+  /// automatic loop-breaking already performed by Drake's internal topology
+  /// analysis. When disabled, Finalize() throws if the model contains any such
+  /// loops.
+  ///
+  /// Unlike SetFuseWeldedLinks() and SetBaseBodyJointType(), this is a single
+  /// global setting (a kinematic loop can span multiple model instances) and
+  /// therefore does not take a model instance argument.
+  ///
+  /// The default setting for Drake is _not_ to model looped systems
+  /// automatically.
+  ///
+  /// @param[in] allow Whether Finalize() should automatically model closed
+  ///   kinematic loops rather than throwing.
+  /// @throws std::exception if called after Finalize().
+  /// @see GetAllowLoopTopology(), Finalize()
+  void SetAllowLoopTopology(bool allow);
+
+  /// (Internal use only for now) Returns the current setting for whether
+  /// Finalize() will automatically model closed-topology (looped) systems.
+  ///
+  /// @note This function can be called pre-Finalize() or post-Finalize().
+  /// @see SetAllowLoopTopology(), Finalize()
+  bool GetAllowLoopTopology() const;
+
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any
   /// computations are performed.

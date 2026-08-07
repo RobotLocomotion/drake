@@ -998,6 +998,12 @@ class MultibodyTree {
   bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
+  // See MultibodyPlant API.
+  void SetAllowLoopTopology(bool allow);
+
+  // See MultibodyPlant API.
+  bool GetAllowLoopTopology() const { return allow_loop_topology_; }
+
   // Finalize() must be called after all user-defined elements in the plant
   // (joints, bodies, force elements, constraints, etc.) have been added and
   // before any computations are performed. It compiles all the necessary
@@ -2573,7 +2579,25 @@ class MultibodyTree {
   // Takes ownership of `link` and adds it to this MultibodyTree. Returns a
   // constant reference to the link just added, which will remain valid for the
   // lifetime of this MultibodyTree. Public members AddLink() end up here.
-  const Link<T>& AddLinkImpl(std::unique_ptr<Link<T>> link);
+  // If `is_ephemeral` is true this Link was created during modeling (e.g. a
+  // shadow link used to break a loop) and is therefore already present in the
+  // LinkJointGraph, so we don't register it again there.
+  const Link<T>& AddLinkImpl(std::unique_ptr<Link<T>> link,
+                             bool is_ephemeral = false);
+
+  // (Internal use only) Adds a shadow RigidBody (Link) corresponding to a
+  // shadow link that the LinkJointGraph created during modeling to break a
+  // loop (such links are "ephemeral"). `M_BBo_B` is the shadow's user-facing
+  // default spatial inertia, which the caller sets to the primary link's share
+  // of the even mass split. Note that this default is informational only: the
+  // effective runtime inertia is (re)computed in CalcFrameBodyPoses() by
+  // dividing the primary link's parameterized inertia, so the shadow's own
+  // inertia is never read by the dynamics. The new body's index is guaranteed
+  // to match the graph's shadow link index provided ephemeral links are added
+  // in graph order immediately after all user links.
+  const RigidBody<T>& AddEphemeralLink(const std::string& name,
+                                       ModelInstanceIndex model_instance,
+                                       const SpatialInertia<double>& M_BBo_B);
 
   const Joint<T>& GetJointByNameImpl(std::string_view,
                                      std::optional<ModelInstanceIndex>) const;
@@ -2924,6 +2948,16 @@ class MultibodyTree {
       BodyIndex, std::variant<JointIndex, std::pair<Eigen::Quaternion<double>,
                                                     Vector3<double>>>>
       default_body_poses_;
+
+  // If true, Finalize() will model closed-topology (looped) systems by making
+  // use of the shadow links and loop constraints produced automatically by the
+  // underlying LinkJointGraph/SpanningForest. If false (the default),
+  // Finalize() throws when the graph contains loops. Loop breaking is a
+  // whole-graph policy so this is a single global setting rather than a
+  // per-model-instance option.
+  // TODO(sherm1) Remove this option and always model loops once the feature is
+  //  mature.
+  bool allow_loop_topology_{false};
 
   // Back pointer to the owning MultibodyTreeSystem.
   const MultibodyTreeSystem<T>* tree_system_{};
