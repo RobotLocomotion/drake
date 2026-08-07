@@ -4851,6 +4851,39 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
   }
 }
 
+// Verify that SetEnableLoopTopology() properly sets its setting and that it
+// cannot be used post-Finalize(). Verify that when enabled, there is proper
+// scalar conversion (which clones the underlying MultibodyTree).
+GTEST_TEST(MultibodyPlantTest, EnableLoopTopologyOption) {
+  MultibodyPlant<double> plant(0.0);
+
+  // Verify the default setting is disabled (for now).
+  EXPECT_FALSE(plant.GetEnableLoopTopology());
+
+  // Verify that pre-Finalize(), the setting can be enabled and/or disabled.
+  plant.SetEnableLoopTopology(true);
+  EXPECT_TRUE(plant.GetEnableLoopTopology());
+  plant.SetEnableLoopTopology(false);
+  EXPECT_FALSE(plant.GetEnableLoopTopology());
+
+  // Leave it enabled and finalize a simple (loop-free) model.
+  plant.SetEnableLoopTopology(true);
+  plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  plant.Finalize();
+  EXPECT_TRUE(plant.GetEnableLoopTopology());
+
+  // Verify that post-Finalize(), cannot _call_ SetEnableLoopTopology().
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.SetEnableLoopTopology(false),
+                              ".*is_finalized.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.SetEnableLoopTopology(true),
+                              ".*is_finalized.*");
+
+  // The setting survives scalar conversion, which clones the tree.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> ad_plant =
+      systems::System<double>::ToAutoDiffXd(plant);
+  EXPECT_TRUE(ad_plant->GetEnableLoopTopology());
+}
+
 GTEST_TEST(SetRandomTest, QuaternionFloatingBody) {
   // Create a model that contains a single body B.
   MultibodyPlant<double> plant(0.0);

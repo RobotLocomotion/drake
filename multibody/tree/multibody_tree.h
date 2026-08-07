@@ -998,6 +998,12 @@ class MultibodyTree {
   bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
+  // See MultibodyPlant API.
+  void SetEnableLoopTopology(bool enable);
+
+  // See MultibodyPlant API.
+  bool GetEnableLoopTopology() const { return enable_loop_topology_; }
+
   // Finalize() must be called after all user-defined elements in the plant
   // (joints, bodies, force elements, constraints, etc.) have been added and
   // before any computations are performed. It compiles all the necessary
@@ -2573,7 +2579,34 @@ class MultibodyTree {
   // Takes ownership of `link` and adds it to this MultibodyTree. Returns a
   // constant reference to the link just added, which will remain valid for the
   // lifetime of this MultibodyTree. Public members AddLink() end up here.
-  const Link<T>& AddLinkImpl(std::unique_ptr<Link<T>> link);
+  // If `is_ephemeral` is true this Link was auto-created (not user-created),
+  // that is, a shadow link used to break a kinematic loop. If auto-created, the
+  // Link is already in the LinkJointGraph, so don't register it again there.
+  const Link<T>& AddLinkImpl(std::unique_ptr<Link<T>> link,
+                             bool is_ephemeral = false);
+
+  // (Internal use only) Add a shadow Link (RigidBody) that is auto-created
+  // when dealing with a kinematic loop (such links are called "ephemeral").
+  //
+  // @param[in] name is the shadow link's name, which is based on the name
+  //     of its primary link. For example, if the primary link is named Fred
+  //     then the first shadow link would be called Fred$1.
+  // @param[in] model_instance The index of the model instance.
+  // @param[in] M_BBo_B is the shadow link's default spatial inertia, which
+  //     (at best) is informational ONLY. For internal computational purposes,
+  //     the actual spatial inertia of the shadow link is computed in
+  //     CalcFrameBodyPoses() by dividing the primary link's parameterized
+  //     spatial inertia and assigning an appropriate amount to the shadow link.
+  // @returns A constant reference to the new shadow link just added. Its
+  //     LinkIndex will match the graph's shadow link index provided
+  //     ephemeral links are added in graph order immediately after all user
+  //     links.
+  // @throws std::exception if model_instance is not a valid index.
+  // TODO(sherm1) Consider making the inertia NaN here and forbidding anyone
+  //  from asking about it, since it is never used.
+  const RigidBody<T>& AddEphemeralLink(const std::string& name,
+                                       ModelInstanceIndex model_instance,
+                                       const SpatialInertia<double>& M_BBo_B);
 
   const Joint<T>& GetJointByNameImpl(std::string_view,
                                      std::optional<ModelInstanceIndex>) const;
@@ -2924,6 +2957,15 @@ class MultibodyTree {
       BodyIndex, std::variant<JointIndex, std::pair<Eigen::Quaternion<double>,
                                                     Vector3<double>>>>
       default_body_poses_;
+
+  // If true, Finalize() will deal with kinematic loops (closed topologies)
+  // by automatically creating shadow links and loop constraints via the
+  // underlying LinkJointGraph/SpanningForest. If false (the default),
+  // Finalize() throws when the graph contains loops. Dealing with kinematic
+  // loops is a whole-graph policy, hence a single global setting rather
+  // than a per-model-instance option.
+  // TODO(sherm1) Set the default setting to true when this feature matures.
+  bool enable_loop_topology_{false};
 
   // Back pointer to the owning MultibodyTreeSystem.
   const MultibodyTreeSystem<T>* tree_system_{};

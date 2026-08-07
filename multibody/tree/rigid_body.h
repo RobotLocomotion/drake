@@ -440,10 +440,18 @@ class RigidBody : public MultibodyElement<T> {
   /// Gets this %RigidBody's (%Link's) mass from the given context.
   /// @param[in] context contains the state of the multibody system.
   /// @pre the context makes sense for use by this %RigidBody.
+  // TODO(sherm1) Consider disallowing mass property inquiries for shadow links
+  //  and instead attributing all the mass to the primary link.
   const T& get_mass(const systems::Context<T>& context) const {
-    const systems::BasicVector<T>& spatial_inertia_parameter =
-        context.get_numeric_parameter(spatial_inertia_parameter_index_);
-    return internal::parameter_conversion::GetMass(spatial_inertia_parameter);
+    // Sourced from the FrameBodyPoseCache rather than directly from the
+    // parameter so that links split to break a kinematic loop (a primary and
+    // its shadows) report their share of the even mass split. For an ordinary
+    // (unsplit) link this equals the parameter value. See
+    // CalcSpatialInertiaInBodyFrame() for details.
+    return this->get_parent_tree()
+        .EvalFrameBodyPoses(context)
+        .get_M_LLo_L(this->ordinal())
+        .get_mass();
   }
 
   /// Returns the pose `X_WB` of this %RigidBody (%Link) B in the world frame W
@@ -535,10 +543,13 @@ class RigidBody : public MultibodyElement<T> {
   /// @pre the context makes sense for use by this %RigidBody.
   Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const {
-    const systems::BasicVector<T>& spatial_inertia_parameter =
-        context.get_numeric_parameter(spatial_inertia_parameter_index_);
-    return internal::parameter_conversion::GetCenterOfMass(
-        spatial_inertia_parameter);
+    // Sourced from the FrameBodyPoseCache; see get_mass() and
+    // CalcSpatialInertiaInBodyFrame(). (A mass split changes only the mass, not
+    // the center of mass, but we go through the same cache for uniformity.)
+    return this->get_parent_tree()
+        .EvalFrameBodyPoses(context)
+        .get_M_LLo_L(this->ordinal())
+        .get_com();
   }
 
   /// Calculates %RigidBody (%Link) B's center of mass Bcm's translational
@@ -568,10 +579,36 @@ class RigidBody : public MultibodyElement<T> {
   /// the position vector from Bo to Bcm (B's center of mass), and G_BBo_B
   /// (B's unit inertia about Bo expressed in B).
   /// @pre the context makes sense for use by this %RigidBody.
+  // TODO(sherm1) Consider disallowing mass property inquiries for shadow links
+  //  and instead attributing all the mass to the primary link.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
+      const systems::Context<T>& context) const {
+    // Sourced from the FrameBodyPoseCache (its per-link M_LLo_L), NOT directly
+    // from the spatial-inertia parameter. This matters for links that were
+    // split to break a kinematic loop: a primary link and each of its shadows
+    // carry an even share (mass/(N+1)) of the primary's parameterized inertia,
+    // and the cache is what holds those shares. For an ordinary (unsplit) link
+    // the cached value is exactly the parameter value. Ephemeral shadow links
+    // have no parameter of their own, so this cache-based accessor is the only
+    // way to query their (split) inertia. The cache itself is built in
+    // CalcFrameBodyPoses() from each primary's parameter, read via
+    // CalcSpatialInertiaInBodyFrameFromParameters().
+    return this->get_parent_tree().EvalFrameBodyPoses(context).get_M_LLo_L(
+        this->ordinal());
+  }
+
+  // (Internal use only) Returns this link's spatial inertia M_BBo_B taken
+  // directly from the Context parameter (the user-set value), WITHOUT the
+  // even mass-split applied to loop-broken links. This is the authoritative
+  // source from which CalcFrameBodyPoses() builds the FrameBodyPoseCache; every
+  // other caller should use CalcSpatialInertiaInBodyFrame() (which returns the
+  // split-adjusted value). Only valid for links that own a spatial-inertia
+  // parameter, i.e. non-ephemeral links (ephemeral shadow links have none).
+  SpatialInertia<T> CalcSpatialInertiaInBodyFrameFromParameters(
       const systems::Context<T>& context) const {
     // TODO(joemasterjohn): Speed this up when we can store a reference to a
     //  SpatialInertia<T> as an abstract parameter.
+    DRAKE_ASSERT(!this->is_ephemeral());
     const systems::BasicVector<T>& spatial_inertia_parameter =
         context.get_numeric_parameter(spatial_inertia_parameter_index_);
     return internal::parameter_conversion::ToSpatialInertia(
@@ -586,8 +623,12 @@ class RigidBody : public MultibodyElement<T> {
   /// I_BBo_B (B's rotational inertia about Bo, expressed in B).
   /// @pre the context makes sense for use by this RigidBody.
   /// @throws std::exception if context is null.
+  /// @throws std::exception if this is an ephemeral shadow link (its mass
+  /// properties are not independently settable; see
+  /// CalcSpatialInertiaInBodyFrame()).
   void SetMass(systems::Context<T>* context, const T& mass) const {
     DRAKE_THROW_UNLESS(context != nullptr);
+    ThrowIfEphemeralInertia(__func__);
     systems::BasicVector<T>& spatial_inertia_parameter =
         context->get_mutable_numeric_parameter(
             spatial_inertia_parameter_index_);
@@ -644,6 +685,7 @@ class RigidBody : public MultibodyElement<T> {
   void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
                                     const SpatialInertia<T>& M_Bo_B) const {
     DRAKE_THROW_UNLESS(context != nullptr);
+    ThrowIfEphemeralInertia(__func__);
     systems::BasicVector<T>& spatial_inertia_parameter =
         context->get_mutable_numeric_parameter(
             spatial_inertia_parameter_index_);
@@ -785,6 +827,12 @@ class RigidBody : public MultibodyElement<T> {
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
 
+  // Helper for the mass-property setters: throws if this is an ephemeral shadow
+  // link, which has no spatial-inertia parameter of its own (its mass
+  // properties mirror its primary link and are managed internally). The
+  // invoking method should pass its name for the error message.
+  void ThrowIfEphemeralInertia(const char* source_method) const;
+
   // For this RigidBody B, set its center of mass position stored in context
   // to center_of_mass_position, but does not modify other inertia properties.
   // @param[in, out] context contains the state of the multibody system.
@@ -820,8 +868,11 @@ class RigidBody : public MultibodyElement<T> {
   std::unique_ptr<RigidBody<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const {
     unused(tree_clone);
-    return std::make_unique<RigidBody<ToScalar>>(this->name(),
-                                                 default_spatial_inertia_);
+    auto clone = std::make_unique<RigidBody<ToScalar>>(
+        this->name(), default_spatial_inertia_);
+    // Preserve the ephemeral flag (e.g. for shadow links added to break loops).
+    clone->set_is_ephemeral(this->is_ephemeral());
+    return clone;
   }
 
   // MultibodyTree has access to the mutable LinkFrame through LinkAttorney.
