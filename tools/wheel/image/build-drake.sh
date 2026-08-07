@@ -19,7 +19,7 @@ cat > /tmp/drake-wheel-build/drake-build/drake.bazelrc << EOF
 build --disk_cache=/var/cache/bazel/disk_cache
 build --repository_cache=/var/cache/bazel/repository_cache
 build --repo_env=DRAKE_WHEEL=1
-# Enable MOSEK lazy loading. Right now this is only done for Linux builds.
+# Enable MOSEK lazy loading.
 build --@drake//solvers:mosek_lazy_load=True
 EOF
 
