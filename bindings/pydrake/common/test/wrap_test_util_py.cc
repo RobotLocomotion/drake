@@ -34,10 +34,8 @@ struct TypeConversionExample {
 };
 
 // Wrapper for TypeConversionExample.
-struct wrapper_type_conversion_exaple {
+struct wrapper_type_conversion_example {
   using Type = TypeConversionExample;
-  static constexpr auto original_name =
-      py::detail::const_name("TypeConversionExample");
   using WrappedType = std::string;
   static constexpr auto wrapped_name = py::detail::const_name("str");
 
@@ -80,18 +78,28 @@ CallbackNeedsWrapping FunctionNeedsWrapCallbacks(
 }  // namespace pydrake
 }  // namespace drake
 
-namespace pybind11 {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 template <>
 struct type_caster<drake::pydrake::TypeConversionExample>
     : public drake::pydrake::internal::type_caster_wrapped<
-          drake::pydrake::wrapper_type_conversion_exaple> {};
+          drake::pydrake::wrapper_type_conversion_example> {};
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace PYDRAKE_BINDER_NAMESPACE
 
 namespace drake {
 namespace pydrake {
 PYDRAKE_MODULE(wrap_test_util, m) {
+  // Repeat the export of _binder from module_py.cc here because
+  // the wrap_pybind unit test can't import pydrake.common.
+#ifdef PYDRAKE_USE_PYBIND11
+  m.attr("_binder") = "pybind11";
+#elif PYDRAKE_USE_NANOBIND
+  m.attr("_binder") = "nanobind";
+#else
+#error "Unknown binder!"
+#endif
+
   class_<MyValue>(m, "MyValue")
       .def(py::init<double>(), py::arg("value"))
       .def_rw("value", &MyValue::value, py_rvp::reference_internal);
@@ -111,7 +119,7 @@ PYDRAKE_MODULE(wrap_test_util, m) {
       &MyContainerUniquePtr::copyable_member, "MyContainerUniquePtr doc");
 
   m.def("MakeTypeConversionExample", &MakeTypeConversionExample);
-  m.def("MakeTypeConversionExampleBadRvp", &MakeTypeConversionExample,
+  m.def("MakeTypeConversionExampleRefRvp", &MakeTypeConversionExample,
       py_rvp::reference);
   m.def("CheckTypeConversionExample", &CheckTypeConversionExample,
       py::arg("obj"));
@@ -120,8 +128,8 @@ PYDRAKE_MODULE(wrap_test_util, m) {
       .def(py::init());
 
   // Using WrapCallbacks() -> Good.
-  m.def(
-      "FunctionNeedsWrapCallbacks", WrapCallbacks(&FunctionNeedsWrapCallbacks));
+  m.def("FunctionNeedsWrapCallbacks",
+      WrapCallbacks(&FunctionNeedsWrapCallbacks), py::arg("callback").none());
   // No use of WrapCallbacks() -> Bad.
   m.def("FunctionNeedsWrapCallbacks_Bad", &FunctionNeedsWrapCallbacks);
 }

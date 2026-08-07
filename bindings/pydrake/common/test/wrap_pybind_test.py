@@ -6,11 +6,12 @@ from pydrake.common.test.wrap_test_util import (
     FunctionNeedsWrapCallbacks,
     FunctionNeedsWrapCallbacks_Bad,
     MakeTypeConversionExample,
-    MakeTypeConversionExampleBadRvp,
+    MakeTypeConversionExampleRefRvp,
     MyContainerRawPtr,
     MyContainerUniquePtr,
     MyValue,
     NotCopyable,
+    _binder,
 )
 
 
@@ -54,14 +55,17 @@ class TestWrapPybind(unittest.TestCase):
         value = MakeTypeConversionExample()
         self.assertIsInstance(value, str)
         self.assertEqual(value, "hello")
-        with self.assertRaises(RuntimeError) as cm:
-            MakeTypeConversionExampleBadRvp()
-        self.assertEqual(
-            str(cm.exception), "Can only pass TypeConversionExample by value."
-        )
         self.assertTrue(CheckTypeConversionExample(obj=value))
 
-    def test_wrap_callbacks(self):
+    def test_type_caster_wrapped_ref_policy(self):
+        result = MakeTypeConversionExampleRefRvp()
+        self.assertEqual(result, "hello")
+
+    @unittest.skipIf(
+        _binder == "nanobind",  # TODO(#21572) Remove this opt-out.
+        "nanobind aborts instead of raises",
+    )
+    def test_wrap_callbacks_lack_detected(self):
         call_count = 0
 
         def callback(value):
@@ -74,6 +78,14 @@ class TestWrapPybind(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             FunctionNeedsWrapCallbacks_Bad(callback)
         self.assertIn("non-copyable", str(cm.exception))
+
+    def test_wrap_callbacks(self):
+        call_count = 0
+
+        def callback(value):
+            nonlocal call_count
+            call_count += 1
+            self.assertIsInstance(value, NotCopyable)
 
         # Using the function with WrapCallbacks() should function as intended.
         loopback = FunctionNeedsWrapCallbacks(callback)

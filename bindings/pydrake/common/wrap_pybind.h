@@ -97,17 +97,6 @@ struct type_caster_wrapped {
   // C++ to Python.
   template <typename TType>
   static py::handle cast(TType&& src, py::rv_policy policy, py::handle parent) {
-    if (policy == py_rvp::reference || policy == py_rvp::reference_internal) {
-      // N.B. We must declare a local `static constexpr` here to prevent
-      // linking errors. This does not appear achievable with
-      // `constexpr char[]`, so we use `py::detail::descr`.
-      // See `pybind11/pybind11.h`, `cpp_function::initialize(...)` for an
-      // example.
-      static constexpr auto original_name = Wrapper::original_name;
-      throw py::cast_error(
-          fmt::format("Can only pass {} by value.", original_name.text)
-              .c_str());
-    }
     return WrappedTypeCaster::cast(
         Wrapper::wrap(std::forward<TType>(src)), policy, parent);
   }
