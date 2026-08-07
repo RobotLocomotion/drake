@@ -5305,6 +5305,19 @@ See also:
 Raises:
     RuntimeError if called pre-finalize.)""";
         } GetEffortUpperLimits;
+        // Symbol: drake::multibody::MultibodyPlant::GetEnableLoopTopology
+        struct /* GetEnableLoopTopology */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Returns the current setting for whether
+Finalize() automatically deals with closed-topology (looped) systems.
+
+Note:
+    This function can be called pre-Finalize() or post-Finalize().
+
+See also:
+    SetEnableLoopTopology(), Finalize())""";
+        } GetEnableLoopTopology;
         // Symbol: drake::multibody::MultibodyPlant::GetFloatingBaseBodies
         struct /* GetFloatingBaseBodies */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6817,6 +6830,38 @@ Raises:
     if params.bodyA() or params.bodyB() do not correspond to rigid
     bodies in ``this`` MultibodyPlant.)""";
         } SetDistanceConstraintParams;
+        // Symbol: drake::multibody::MultibodyPlant::SetEnableLoopTopology
+        struct /* SetEnableLoopTopology */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) For systems whose links and joints form
+one or more kinematic loops (a "closed topology"), controls whether
+Finalize() should deal with those automatically. The default setting
+is *not* to deal with kinematic loops (if one is encountered, an
+exception is thrown).
+
+Note:
+    This feature is in development and is not yet functional.
+
+To deal with loops automatically requires modifying the system's
+topology so that it is structured as a tree of links and joints, plus
+constraints needed to enforce loop closure. Breaking a loop is done by
+splitting a link within that loop. Mass properties are divided between
+the original ("primary") link and the new ("shadow") link. Then a weld
+constraint is added between the primary and shadow links to enforce
+loop closure. When the weld constraint is satisfied, the original
+physics is restored.
+
+Parameter ``enable``:
+    Whether Finalize() should automatically model closed kinematic
+    loops rather than throwing.
+
+Raises:
+    RuntimeError if called after Finalize().
+
+See also:
+    GetEnableLoopTopology(), Finalize())""";
+        } SetEnableLoopTopology;
         // Symbol: drake::multibody::MultibodyPlant::SetFloatingBaseBodyPoseInAnchoredFrame
         struct /* SetFloatingBaseBodyPoseInAnchoredFrame */ {
           // Source: drake/multibody/plant/multibody_plant.h
