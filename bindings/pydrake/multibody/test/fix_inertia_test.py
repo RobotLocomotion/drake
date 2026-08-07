@@ -579,7 +579,9 @@ class TestFixInertiaProcess(FileHandlingFixture):
     def test_sdf_unicode(self):
         # Contains unicode characters in comments; tests the proper use
         # of byte (vs. string) indexing for file edits.
-        self.do_test_model("drake/examples/multibody/four_bar/four_bar.sdf")
+        self.do_test_model(
+            "drake/examples/multibody/four_bar/four_bar_with_bushing.sdf"
+        )
 
     def test_urdf_unicode(self):
         # Contains unicode characters in comments; tests the proper use

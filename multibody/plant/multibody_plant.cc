@@ -1520,15 +1520,34 @@ void MultibodyPlant<T>::Finalize() {
 
   // At Finalize(), multibody tree may create shadow links (when loop
   // topology is allowed), which don't come through AddRigidBody() and so have
-  // no entries in the per-body geometry arrays yet. A shadow never carries any
-  // geometry of its own -- it's an internal modeling artifact that coincides
-  // with its primary link -- but these arrays are indexed by BodyIndex and so
-  // must stay dense over num_bodies(); see GetVisualGeometriesForBody(). Note
-  // that shadows deliberately get no SceneGraph frame: body_index_to_frame_id_
-  // is map-keyed and is documented to tolerate bodies with no frame.
-  // TODO(sherm1) Give shadows a SceneGraph frame for visualization purposes.
+  // no entries in the per-body geometry arrays yet. First, the per-body
+  // geometry arrays: a shadow never carries any geometry of its own -- it's an
+  // internal modeling artifact -- but these arrays are indexed by BodyIndex and
+  // so must stay dense over num_bodies(); see GetVisualGeometriesForBody().
   visual_geometries_.resize(num_bodies());
   collision_geometries_.resize(num_bodies());
+
+  // Second, a SceneGraph frame per shadow. A shadow coincides with its primary
+  // link only to the extent that the loop-closing weld constraint is satisfied;
+  // an unassembled model can start far from that, so a shadow's pose is worth
+  // reporting in its own right. Without a frame there is also nothing for a
+  // consumer to hang a shadow's visualization on -- the inertia visualizer, for
+  // one, has to skip any body it can't find a frame for. Since a shadow carries
+  // no geometry, all this publishes is its pose.
+  for (BodyIndex index(0); index < num_bodies(); ++index) {
+    const RigidBody<T>& body = get_body(index);
+    if (body.is_ephemeral()) {
+      RegisterRigidBodyWithSceneGraph(body);  // A no-op if no SceneGraph.
+    }
+  }
+
+  // Finalizing the tree may also have broken closed kinematic loops by
+  // splitting a link into a primary and one or more shadows. Nothing holds
+  // those copies together yet; that's what these ephemeral weld constraints
+  // are for. This must happen before FinalizePlantOnly() below, whose
+  // DeclareParameters() builds the constraint active status map by walking the
+  // constraint specs.
+  AddEphemeralLoopConstraints();
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
@@ -1634,6 +1653,31 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
         "the plant in discrete-time mode, which does support joint limits. "
         "Joints that specify limits are: " +
         joint_names_with_limits;
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::AddEphemeralLoopConstraints() {
+  // A shadow link's link frame is coincident with its primary's by
+  // construction, so the constrained frames P and Q are just the two body
+  // frames and both offsets are the identity. The graph documents that the
+  // primary link is always the parent, which sets the sign convention for the
+  // constraint multipliers.
+  // N.B. We add the spec directly rather than calling AddWeldConstraint(),
+  // which is a pre-finalize-only API.
+  for (const internal::LinkJointGraph::LoopConstraint& loop_constraint :
+       internal_tree().graph().loop_constraints()) {
+    const MultibodyConstraintId id = MultibodyConstraintId::get_new_id();
+    internal::WeldConstraintSpec spec{
+        .body_A = loop_constraint.primary_link(),
+        .X_AP = math::RigidTransform<double>::Identity(),
+        .body_B = loop_constraint.shadow_link(),
+        .X_BQ = math::RigidTransform<double>::Identity(),
+        .id = id,
+        .is_ephemeral = true};
+    // A shadow link is by definition distinct from its primary.
+    DRAKE_DEMAND(spec.IsValid());
+    weld_constraints_specs_[id] = spec;
   }
 }
 
@@ -3467,12 +3511,32 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
   // TODO(#23759,#23760,#23762,#23763,#23992): revisit this check and error
   // message as constraints are implemented for CENIC.
   if (num_constraints() > 0) {
-    throw std::logic_error(
+    // Loop constraints are not the user's doing -- Finalize() added them to
+    // close the kinematic loops in the model -- so say where they came from
+    // rather than leaving the user hunting for constraints they never added.
+    const int num_loops = num_loop_constraints();
+    const char* s = num_constraints() == 1 ? "" : "s";
+    std::string constraints;
+    if (num_loops == 0) {
+      constraints = fmt::format("{} constraint{}", num_constraints(), s);
+    } else if (num_loops == num_constraints()) {
+      constraints = fmt::format(
+          "{} constraint{}, which Finalize() added in order to close the "
+          "kinematic loops in this model (see SetEnableLoopTopology())",
+          num_loops, s);
+    } else {
+      constraints = fmt::format(
+          "{} constraint{}, {} of which Finalize() added in order to close the "
+          "kinematic loops in this model (see SetEnableLoopTopology())",
+          num_constraints(), s, num_loops);
+    }
+    throw std::logic_error(fmt::format(
         "Currently this MultibodyPlant is set to use continuous time. "
-        "Continuous time does not support constraints. Use a discrete time "
-        "model and set_discrete_contact_approximation() to set a model "
-        "approximation that uses the SAP solver instead (kSap, kSimilar, or "
-        "kLagged).");
+        "Continuous time does not support constraints, but this model has {}. "
+        "Use a discrete time model and set_discrete_contact_approximation() to "
+        "set a model approximation that uses the SAP solver instead (kSap, "
+        "kSimilar, or kLagged).",
+        constraints));
   }
 
   // TODO(#24061): consider rejecting models with joint limits here, once CENIC
