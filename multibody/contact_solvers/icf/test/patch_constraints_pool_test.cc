@@ -89,6 +89,7 @@ GTEST_TEST(PatchConstraintsPool, Reduce) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddPatchConstraints(&model);
+  model.SetSparsityPattern();
   model.patch_constraints_pool().set_stiction_tolerance(1.1e-4);
 
   IcfData<double> data;
@@ -232,10 +233,12 @@ GTEST_TEST(PatchConstraintsPool, CalcDataWithSurfaceVelocityBias) {
   const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   IcfData<double> data_ref;
+  model_ref.SetSparsityPattern();
   model_ref.ResizeData(&data_ref);
   model_ref.CalcData(v, &data_ref);
 
   IcfData<double> data_bias;
+  model_bias.SetSparsityPattern();
   model_bias.ResizeData(&data_bias);
   model_bias.CalcData(v, &data_bias);
 

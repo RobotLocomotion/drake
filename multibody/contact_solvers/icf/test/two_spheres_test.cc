@@ -135,7 +135,7 @@ TEST_P(TwoSpheres, MakeData) {
   {
     // TODO(#23912): Consider reducing heap traffic, to improve performance.
     drake::test::LimitMalloc guard({
-        .max_num_allocations = 352,
+        .max_num_allocations = 356,
         .min_num_allocations = 0,
         .ignore_realloc_noops = true,
     });
