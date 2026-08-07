@@ -9,9 +9,11 @@ import subprocess
 import tempfile
 
 from .common import (
+    PythonBinder,
     build_root,
     create_snopt_tgz,
     die,
+    edit_wheel_version_for_binder,
     find_tests,
     resource_root,
     test_root,
@@ -25,7 +27,7 @@ from .macos_types import PythonTarget
 # On macOS (unlike Linux), this is just the set of Python versions targeted.
 #
 # These should be kept in sync with `setup/mac/Brewfile-developer`.
-python_targets = (
+PYTHON_TARGETS = (
     # NOTE: adding or removing a python version?  Please also check the
     # following locations for updates:
     # * the artifact tallies in doc/_pages/release_playbook.md (search
@@ -38,8 +40,9 @@ python_targets = (
     # * the Python versions supported by MOSEK, in tools/wheel/setup.py. If
     #   there is any Python version supported by Drake, but not MOSEK, a note
     #   should be added to the aforementioned installation documentation.
-    PythonTarget(3, 13),
-    PythonTarget(3, 14),
+    PythonTarget(PythonBinder.NANOBIND, 3, 13),
+    PythonTarget(PythonBinder.PYBIND11, 3, 13),
+    PythonTarget(PythonBinder.PYBIND11, 3, 14),
 )
 
 
@@ -115,7 +118,7 @@ def build(options):
 
     # Collect set of wheels to be built.
     targets_to_build = []
-    for t in python_targets:
+    for t in PYTHON_TARGETS:
         if t.tag in options.python_versions:
             targets_to_build.append(t)
 
@@ -167,9 +170,14 @@ def build(options):
 
     # Build the wheel(s).
     for python_target in targets_to_build:
+        version = edit_wheel_version_for_binder(
+            python_target.python_binder, options.version
+        )
+        environment["DRAKE_PYTHON_BINDER"] = python_target.python_binder.value
+
         build_script = os.path.join(resource_root, "macos", "build-wheel.sh")
         build_command = ["bash", build_script]
-        build_command.append(options.version)
+        build_command.append(version)
         build_command.append(python_target.version)
 
         subprocess.check_call(build_command, env=environment)
@@ -177,7 +185,7 @@ def build(options):
         # Find the built wheel and, if requested, test and/or extract it.
         wheel = _find_wheel(
             path=wheelhouse,
-            version=options.version,
+            version=version,
             python_target=python_target,
         )
 
@@ -219,7 +227,7 @@ def add_selection_arguments(parser):
         "--python",
         dest="python_versions",
         metavar="VERSIONS",
-        default=",".join(sorted([t.tag for t in python_targets])),
+        default=",".join(sorted(set([t.tag for t in PYTHON_TARGETS]))),
         help=(
             "python version(s) to build; "
             "separate with ',' (default: %(default)s)"

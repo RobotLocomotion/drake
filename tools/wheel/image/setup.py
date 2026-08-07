@@ -7,6 +7,8 @@ from setuptools import find_packages, glob, setup
 
 DRAKE_VERSION = os.environ.get("DRAKE_VERSION", "0.0.0")
 
+is_abi3_wheel = DRAKE_VERSION.endswith("a1") or "a1+" in DRAKE_VERSION
+
 # Required python packages that will be pip installed along with pydrake
 python_required = [
     "matplotlib",
@@ -110,6 +112,13 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
         )
     },
     python_requires=">=3.12",
+    options=(
+        {
+            "bdist_wheel": {"py_limited_api": "cp312"},
+        }
+        if is_abi3_wheel
+        else {}
+    ),
     install_requires=python_required,
     # Ensure the wheel is not platform-agnostic.
     ext_modules=[

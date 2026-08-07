@@ -2,6 +2,7 @@
 # //tools/wheel:builder for the user interface.
 
 import argparse
+from enum import Enum
 import gzip
 import io
 import locale
@@ -34,6 +35,13 @@ wheelhouse = os.path.join(wheel_root, "wheelhouse")
 resource_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
+class PythonBinder(Enum):
+    _value_: str
+
+    NANOBIND = "nanobind"
+    PYBIND11 = "pybind11"
+
+
 def gripe(message):
     """
     Prints a message to stderr.
@@ -49,13 +57,33 @@ def die(message, result=1):
     sys.exit(result)
 
 
+def edit_wheel_version_for_binder(
+    python_binder: PythonBinder, wheel_version: str
+) -> str:
+    if python_binder == PythonBinder.PYBIND11:
+        return wheel_version
+    else:
+        assert python_binder == PythonBinder.NANOBIND
+        # Insert "a1" before the plus (or with no plus, at the end).
+        if "+" in wheel_version:
+            (prefix, suffix) = wheel_version.split("+")
+            return prefix + "a1+" + suffix
+        else:
+            return wheel_version + "a1"
+
+
+def is_abi3_wheel(wheel_version: str):
+    return wheel_version.endswith("a1") or "a1+" in wheel_version
+
+
 def wheel_name(python_version, wheel_version, wheel_platform):
     """
     Determines the complete name of the Drake wheel, given various individual
     bits such as the Drake version, Python version, and Python wheel platform.
     """
-    vm = f"cp{python_version}"
-    return f"drake-{wheel_version}-{vm}-{vm}-{wheel_platform}.whl"
+    cpNN = f"cp{python_version}"
+    abi = "abi3" if is_abi3_wheel(wheel_version) else cpNN
+    return f"drake-{wheel_version}-{cpNN}-{abi}-{wheel_platform}.whl"
 
 
 def _check_version(version):
