@@ -177,7 +177,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def(
             "multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            py::arg("other").noconvert(), "RigidTransform multiplication")
+            py::arg("other"), "RigidTransform multiplication")
         .def(
             "multiply",
             [](const Class& self, const Vector3<T>& position) {
