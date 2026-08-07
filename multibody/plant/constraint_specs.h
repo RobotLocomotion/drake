@@ -82,6 +82,14 @@ struct WeldConstraintSpec {
   BodyIndex body_B;                   // Index of body B.
   math::RigidTransform<double> X_BQ;  // Pose of frame Q in B's body frame.
   MultibodyConstraintId id;           // Id of this constraint in the plant.
+
+  // Whether this constraint was added by MultibodyPlant::Finalize() rather than
+  // by the user; currently that means it is closing a topological loop that was
+  // broken by splitting a link into a primary and a shadow. Analogous to
+  // MultibodyElement::is_ephemeral().
+  // TODO(sherm1) When the constraint specs acquire a common base class (see
+  //  #21415), move this flag and `id` there.
+  bool is_ephemeral{false};
 };
 
 // Struct to store the specification for a fixed constraint between vertices of
