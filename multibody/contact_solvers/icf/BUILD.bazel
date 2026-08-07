@@ -217,6 +217,7 @@ drake_cc_library(
     deps = [
         ":eigen_pool",
         ":icf_data",
+        ":icf_partition",
         ":icf_search_direction_data",
         ":reduced_mapping",
         "//common:default_scalars",

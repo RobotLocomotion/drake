@@ -36,6 +36,7 @@ GTEST_TEST(GainConstraintsPool, LimitMallocOnCalcData) {
   EXPECT_EQ(model.num_gain_constraints(), 2);
 
   IcfData<double> data;
+  model.SetSparsityPattern();
   model.ResizeData(&data);
   EXPECT_EQ(data.gain_constraints_data().num_constraints(), 2);
 
@@ -179,6 +180,7 @@ GTEST_TEST(GainConstraintsPool, Reduce) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddGainConstraints(&model);
+  model.SetSparsityPattern();
 
   IcfData<double> data;
   model.ResizeData(&data);
