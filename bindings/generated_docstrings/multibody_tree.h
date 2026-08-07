@@ -7164,6 +7164,11 @@ Returns:
 Precondition:
     the context makes sense for use by this RigidBody.)""";
         } CalcSpatialInertiaInBodyFrame;
+        // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrameFromParameters
+        struct /* CalcSpatialInertiaInBodyFrameFromParameters */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc = R"""()""";
+        } CalcSpatialInertiaInBodyFrameFromParameters;
         // Symbol: drake::multibody::RigidBody::CloneToScalar
         struct /* CloneToScalar */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7354,7 +7359,12 @@ Precondition:
     the context makes sense for use by this RigidBody.
 
 Raises:
-    RuntimeError if context is null.)""";
+    RuntimeError if context is null.
+
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable; see
+    CalcSpatialInertiaInBodyFrame()).)""";
         } SetMass;
         // Symbol: drake::multibody::RigidBody::SetSpatialInertiaInBodyFrame
         struct /* SetSpatialInertiaInBodyFrame */ {
