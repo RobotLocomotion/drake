@@ -43,7 +43,6 @@ drake_cc_package_library(
         ":multibody_plant_core",
         ":propeller",
         ":slicing_and_indexing",
-        ":tamsi_solver",
         ":wing",
     ],
 )
@@ -81,18 +80,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "tamsi_solver",
-    srcs = ["tamsi_solver.cc"],
-    hdrs = ["tamsi_solver.h"],
-    deps = [
-        "//common:default_scalars",
-        "//common:extract_double",
-        "//math:gradient",
-        "//math:linear_solve",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
         "compliant_contact_manager.cc",
@@ -110,7 +97,6 @@ drake_cc_library(
         "physical_model_collection.cc",
         "sap_driver.cc",
         "scalar_convertible_component.cc",
-        "tamsi_driver.cc",
     ],
     hdrs = [
         "compliant_contact_manager.h",
@@ -130,7 +116,6 @@ drake_cc_library(
         "physical_model_collection.h",
         "sap_driver.h",
         "scalar_convertible_component.h",
-        "tamsi_driver.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -144,7 +129,6 @@ drake_cc_library(
         ":externally_applied_spatial_force",
         ":multibody_plant_config",
         ":slicing_and_indexing",
-        ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
         "//common:parallelism",
@@ -318,16 +302,6 @@ drake_cc_library(
         "//math",
         "//multibody/math",
         "//multibody/triangle_quadrature",
-    ],
-)
-
-drake_cc_library(
-    name = "tamsi_solver_test_util",
-    testonly = 1,
-    hdrs = ["test/tamsi_solver_test_util.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        "//math:gradient",
     ],
 )
 
@@ -591,13 +565,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "tamsi_driver_test",
-    deps = [
-        "//multibody/plant/test_utilities:rigid_body_on_compliant_ground",
-    ],
-)
-
-drake_cc_googletest(
     name = "hydroelastic_contact_info_test",
     deps = [
         ":contact_results",
@@ -616,16 +583,6 @@ drake_cc_googletest(
         "//math:autodiff",
         "//math:gradient",
         "//multibody/parsing",
-    ],
-)
-
-drake_cc_googletest(
-    name = "tamsi_solver_test",
-    deps = [
-        ":tamsi_solver",
-        ":tamsi_solver_test_util",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -748,7 +705,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "multibody_plant_tamsi_test",
+    name = "multibody_plant_no_dofs_test",
     data = [
         "//examples/kuka_iiwa_arm/models",
         "//examples/simple_gripper:models",
