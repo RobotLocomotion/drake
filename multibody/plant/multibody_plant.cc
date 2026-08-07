@@ -1469,6 +1469,11 @@ void MultibodyPlant<T>::SetFuseWeldedLinks(
 }
 
 template <typename T>
+void MultibodyPlant<T>::SetAllowLoopTopology(bool allow) {
+  mutable_tree().SetAllowLoopTopology(allow);
+}
+
+template <typename T>
 BaseBodyJointType MultibodyPlant<T>::GetBaseBodyJointType(
     std::optional<ModelInstanceIndex> model_instance) const {
   return internal_tree().GetBaseBodyJointType(model_instance);
@@ -1478,6 +1483,11 @@ template <typename T>
 bool MultibodyPlant<T>::GetFuseWeldedLinks(
     std::optional<ModelInstanceIndex> model_instance) const {
   return internal_tree().GetFuseWeldedLinks(model_instance);
+}
+
+template <typename T>
+bool MultibodyPlant<T>::GetAllowLoopTopology() const {
+  return internal_tree().GetAllowLoopTopology();
 }
 
 template <typename T>

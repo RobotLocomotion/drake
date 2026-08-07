@@ -998,6 +998,12 @@ class MultibodyTree {
   bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
+  // See MultibodyPlant API.
+  void SetAllowLoopTopology(bool allow);
+
+  // See MultibodyPlant API.
+  bool GetAllowLoopTopology() const { return allow_loop_topology_; }
+
   // Finalize() must be called after all user-defined elements in the plant
   // (joints, bodies, force elements, constraints, etc.) have been added and
   // before any computations are performed. It compiles all the necessary
@@ -2924,6 +2930,15 @@ class MultibodyTree {
       BodyIndex, std::variant<JointIndex, std::pair<Eigen::Quaternion<double>,
                                                     Vector3<double>>>>
       default_body_poses_;
+
+  // If true, Finalize() will model closed-topology (looped) systems by making
+  // use of the shadow links and loop constraints produced automatically by the
+  // underlying LinkJointGraph/SpanningForest. If false (the default), Finalize()
+  // throws when the graph contains loops. Loop breaking is a whole-graph policy
+  // so this is a single global setting rather than a per-model-instance option.
+  // TODO(sherm1) Remove this option and always model loops once the feature is
+  //  mature.
+  bool allow_loop_topology_{false};
 
   // Back pointer to the owning MultibodyTreeSystem.
   const MultibodyTreeSystem<T>* tree_system_{};
