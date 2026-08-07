@@ -12,7 +12,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
 from pydrake.common.cpp_param import List
 from pydrake.common.eigen_geometry import AngleAxis_, Isometry3_, Quaternion_
-import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import Value
 from pydrake.math import BarycentricMesh, wrap_to

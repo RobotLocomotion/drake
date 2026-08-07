@@ -6,7 +6,7 @@ import pickle
 
 import numpy as np
 
-import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.common.test_utilities import numpy_compare
 
 
 def _assert_equal(test, a, b):

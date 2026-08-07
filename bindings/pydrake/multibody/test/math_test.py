@@ -7,7 +7,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.cpp_param import List
-import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import Value
 from pydrake.math import RotationMatrix_

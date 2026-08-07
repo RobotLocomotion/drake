@@ -236,9 +236,7 @@ def _build(*, out_dir, temp_dir, modules, quick):
     # we're building all of the C++ documentation.
     check_for_errors = len(modules) == 0
     with open(f"{temp_dir}/doxygen.log", encoding="utf-8") as f:
-        lines = [
-            line.strip().replace(f"{temp_dir}/", "") for line in f.readlines()
-        ]
+        lines = [line.strip().replace(f"{temp_dir}/", "") for line in f]
     _postprocess_doxygen_log(lines, check_for_errors)
 
     extra_perl_statements = [

@@ -85,33 +85,27 @@ def _add_extraneous_repr_functions():
         # and space, along with the parameter name and its value.
         supporting_string = ""
         if mesh.supporting_files:
-            supporting_string = (
-                f", supporting_files={repr(mesh.supporting_files)}"
-            )
-        return (
-            f"InMemoryMesh(mesh_file={repr(mesh.mesh_file)}{supporting_string})"
-        )
+            supporting_string = f", supporting_files={mesh.supporting_files!r}"
+        return f"InMemoryMesh(mesh_file={mesh.mesh_file!r}{supporting_string})"
 
     InMemoryMesh.__repr__ = in_memory_mesh_repr
 
     def mesh_source_repr(source):
         if source.is_path():
-            param_str = f"path={repr(str(source.path()))}"
+            param_str = f"path={str(source.path())!r}"
         else:
-            param_str = f"mesh={repr(source.in_memory())}"
+            param_str = f"mesh={source.in_memory()!r}"
         return f"MeshSource({param_str})"
 
     MeshSource.__repr__ = mesh_source_repr
 
     def mesh_or_convex_repr(mesh, type_name):
         if mesh.source().is_path():
-            data_param = f"filename={repr(str(mesh.source().path()))}"
+            data_param = f"filename={str(mesh.source().path())!r}"
         else:
-            data_param = f"mesh_data={repr(mesh.source().in_memory())}"
+            data_param = f"mesh_data={mesh.source().in_memory()!r}"
         # Convert array to list to ease converting repr to mesh type.
-        return (
-            f"{type_name}({data_param}, scale3={repr(mesh.scale3().tolist())})"
-        )
+        return f"{type_name}({data_param}, scale3={mesh.scale3().tolist()!r})"
 
     Mesh.__repr__ = lambda x: mesh_or_convex_repr(x, "Mesh")
     Convex.__repr__ = lambda x: mesh_or_convex_repr(x, "Convex")

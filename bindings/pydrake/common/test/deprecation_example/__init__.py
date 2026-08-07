@@ -14,7 +14,7 @@ def _handler(name):
         raise AttributeError()
 
 
-__all__ = ["value", "sub_module"]
+__all__ = ["sub_module", "value"]
 ModuleShim._install(__name__, _handler)
 
 

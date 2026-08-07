@@ -161,7 +161,7 @@ class InstallPrereqsActor:
         try:
             self._process.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            logging.warn("install_prereqs timeout expired")
+            logging.warning("install_prereqs timeout expired")
             self._process.terminate()
         self._process.wait()
         self.stdout = self._process.stdout.read()

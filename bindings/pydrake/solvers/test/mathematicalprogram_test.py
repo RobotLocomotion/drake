@@ -453,7 +453,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIsInstance(result.EvalBinding(costs[0]), np.ndarray)
 
         # Bindings for `Eval`.
-        x_list = (float(1.0), AutoDiffXd(1.0), sym.Variable("x"))
+        x_list = (1.0, AutoDiffXd(1.0), sym.Variable("x"))
         T_y_list = (float, AutoDiffXd, sym.Expression)
         evaluator = costs[0].evaluator()
         for x_i, T_y_i in zip(x_list, T_y_list):
