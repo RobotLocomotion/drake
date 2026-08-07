@@ -1,0 +1,251 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="supply_cabinet">
+    <link name="base_link">
+      <inertial>
+        <mass>40.000000</mass>
+        <pose>0.001585003 -0.013326964 0.39294396 0 0 0</pose>
+        <inertia>
+          <ixx>1.193783e+00</ixx>
+          <iyy>4.788058e+00</iyy>
+          <izz>4.581910e+00</izz>
+          <ixy>-1.091011e-02</ixy>
+          <ixz>2.774969e-04</ixz>
+          <iyz>1.411000e-03</iyz>
+        </inertia>
+      </inertial>
+      <collision name="body">
+        <pose>0 -0.0143251 0.3978681 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1.09979800 0.37892200 0.44084340</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>205000000</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.18946100</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="lower_sheet">
+        <pose>0 -0.0161735 0.0905716 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1.05820900 0.33271200 0.00369680</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>2000000</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.00184840</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="shelf_side_px">
+        <pose>0.540657 -0.0152493 0.0896474 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02772600 0.37614940 0.02772600</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.01386300</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="shelf_side_nx">
+        <pose>-0.540657 -0.0152493 0.0896474 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02772600 0.37614940 0.02772600</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.01386300</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="shelf_front">
+        <pose>0 0.1635834 0.0896474 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1.09610120 0.02772600 0.02772600</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.01386300</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="shelf_back">
+        <pose>0 -0.1931578 0.0896474 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1.09610120 0.02772600 0.02772600</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.01386300</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="foot_px_py">
+        <pose>0.5369602 0.166356 0.087799 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02772600 0.02402920 0.17559800</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.01201460</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="foot_nx_py">
+        <pose>-0.5388086 0.166356 0.087799 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02772600 0.02402920 0.17559800</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.01201460</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="foot_px_ny">
+        <pose>0.5369602 -0.1931578 0.087799 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02772600 0.02402920 0.17559800</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.01201460</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="foot_nx_ny">
+        <pose>-0.5388086 -0.1931578 0.087799 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.02772600 0.02402920 0.17559800</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.01201460</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="front_left_vert">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/supply_cabinet/assets/supply_cabinet_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>0.92420000 0.92420000 0.92420000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="front_right_mid">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/supply_cabinet/assets/supply_cabinet_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>0.92420000 0.92420000 0.92420000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="front_right_top">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/supply_cabinet/assets/supply_cabinet_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>0.92420000 0.92420000 0.92420000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="front_low_left">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/supply_cabinet/assets/supply_cabinet_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>0.92420000 0.92420000 0.92420000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="front_low_right">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/furniture/supply_cabinet/assets/supply_cabinet_cf_4.obj</uri>
+            <drake:declare_convex />
+            <scale>0.92420000 0.92420000 0.92420000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.4</drake:mu_dynamic>
+          <drake:mu_static>0.4</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
