@@ -17,7 +17,7 @@ class TestPathUtils(unittest.TestCase):
 
     def _remove_prefix(self, path, prefix):
         """Calls the pathutils.bzl function of the same name."""
-        expression = f"_remove_prefix({repr(path)}, {repr(prefix)})"
+        expression = f"_remove_prefix({path!r}, {prefix!r})"
         return eval(expression, self.bzl_globals)
 
     def test_remove_prefix(self):

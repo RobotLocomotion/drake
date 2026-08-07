@@ -122,7 +122,7 @@ def _setup_user_environment():
         (python_version, python_version_content),
         (bazelrc, bazelrc_content),
     ):
-        logging.info(f"Writing {str(path)} ...")
+        logging.info(f"Writing {path!s} ...")
         logging.debug(f" content={content!r}")
         path.write_text(content, encoding="utf-8")
 

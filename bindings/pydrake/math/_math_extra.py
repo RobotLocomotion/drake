@@ -119,9 +119,9 @@ def _indented_repr(o):
 def _roll_pitch_yaw_repr(rpy):
     return (
         f"{_pretty_class_name(type(rpy))}("
-        f"roll={repr(rpy.roll_angle())}, "
-        f"pitch={repr(rpy.pitch_angle())}, "
-        f"yaw={repr(rpy.yaw_angle())})"
+        f"roll={rpy.roll_angle()!r}, "
+        f"pitch={rpy.pitch_angle()!r}, "
+        f"yaw={rpy.yaw_angle()!r})"
     )
 
 

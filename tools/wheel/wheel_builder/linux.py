@@ -2,7 +2,7 @@
 # //tools/wheel:builder for the user interface.
 
 import atexit
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import os
 import platform
 import subprocess
@@ -401,7 +401,7 @@ def build(options):
 
     # Generate a unique identifier for this build.
     salt = os.urandom(8).hex()
-    time = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    time = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     identifier = f"{time}-{salt}"
 
     # Provide the SNOPT source archive as a dependency.

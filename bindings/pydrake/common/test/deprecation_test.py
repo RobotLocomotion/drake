@@ -58,7 +58,7 @@ class TestDeprecation(unittest.TestCase):
         self.assertEqual(example.value, 11)
         example.something_new = 10
         self.assertEqual(example.something_new, 10)
-        self.assertEqual(example.__all__, ["value", "sub_module"])
+        self.assertEqual(example.__all__, ["sub_module", "value"])
         self.assertTrue(
             str(example).startswith("<module 'deprecation_example' from")
         )
@@ -289,7 +289,7 @@ class TestDeprecation(unittest.TestCase):
 
             with self.subTest("DeprecateAttribute"):
                 obj.DeprecatedMethod()
-                obj.DeprecatedMethod(int())
+                obj.DeprecatedMethod(0)
 
             with self.subTest("WrapDeprecated"):
                 obj.overload(0)
@@ -318,7 +318,7 @@ class TestDeprecation(unittest.TestCase):
             ),
             (lambda: obj.DeprecatedMethod(), "Do not use DeprecatedMethod"),
             (
-                lambda: obj.DeprecatedMethod(int()),
+                lambda: obj.DeprecatedMethod(0),
                 "Do not use DeprecatedMethod",
             ),
             (lambda: obj.overload(0), "Do not use overload(int)"),
