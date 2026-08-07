@@ -103,6 +103,10 @@ inline const LinkJointGraph::LoopConstraint& LinkJointGraph::loop_constraints(
   return loop_constraints().at(loop_constraint_index);
 }
 
+inline int LinkJointGraph::num_loop_constraints() const {
+  return std::ssize(loop_constraints());
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
