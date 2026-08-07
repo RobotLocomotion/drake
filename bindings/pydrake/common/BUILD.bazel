@@ -478,8 +478,6 @@ drake_py_unittest(
     name = "deprecation_test",
     # kcov messes with module ref counts.
     opt_out_conditions = ["//tools/kcov:enabled"],
-    # TODO(#21572) Remove this opt-out.
-    test_alt_binder = False,
     deps = [
         ":common",
         ":deprecation_example",
@@ -490,8 +488,6 @@ drake_py_unittest(
 # See source for an explanation why this is separate from `deprecation_test`.
 drake_py_unittest(
     name = "deprecation_autocomplete_test",
-    # TODO(#21572) Remove this opt-out.
-    test_alt_binder = False,
     deps = [
         ":common",
         ":deprecation_example",
@@ -501,8 +497,6 @@ drake_py_unittest(
 # Provides a unittest for high-level deprecation API.
 drake_py_unittest(
     name = "deprecation_utility_test",
-    # TODO(#21572) Remove this opt-out.
-    test_alt_binder = False,
     deps = [
         ":deprecation_example",
         "//bindings/pydrake/common/test_utilities:deprecation_py",

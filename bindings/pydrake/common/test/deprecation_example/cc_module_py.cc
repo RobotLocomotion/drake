@@ -61,13 +61,12 @@ PYDRAKE_MODULE(cc_module, m) {
 
     // Example: A C++ constructor overload has been deprecated, and was
     // originally bound using custom factory constructors. We must reflect this
-    // in the bindings.
-    // See also:
-    // https://pybind11.readthedocs.io/en/stable/advanced/classes.html#custom-constructors
+    // in the bindings. Just use WrapDeprecated().
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def(py_init_deprecated(cls_doc.ctor.doc_deprecated_deprecated_1args_y,
-                [](double arg) { return Class(arg); }),
+    cls.def("__init__",
+        WrapDeprecated(cls_doc.ctor.doc_deprecated_deprecated_1args_y,
+            [](Class* self, double arg) { new (self) Class(arg); }),
         py::arg("y"), cls_doc.ctor.doc_deprecated_deprecated_1args_y);
 #pragma GCC diagnostic pop
 
