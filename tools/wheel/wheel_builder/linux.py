@@ -19,15 +19,7 @@ from .common import (
     wheel_name,
     wheelhouse,
 )
-from .linux_types import (
-    BUILD,
-    TEST,
-    Platform,
-    PythonBinder,
-    PythonManager,
-    Role,
-    Target,
-)
+from .linux_types import BUILD, TEST, Platform, PythonManager, Role, Target
 
 # Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
 _files_to_remove = []
@@ -57,20 +49,6 @@ targets = {
     "x86_64": (
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.NANOBIND,
-            test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble"),
-                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
-                # TODO(jwnimmer-tri) We should test this same abi3 wheel on all
-                # newer Python versions (so 3.13, 3.14, etc.).
-            ),
-            python_version_tuple=(3, 12, 8),
-            python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
-        ),
-        Target(
-            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
@@ -81,7 +59,6 @@ targets = {
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
@@ -92,7 +69,6 @@ targets = {
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
@@ -103,10 +79,8 @@ targets = {
         ),
     ),
     "aarch64": (
-        # TODO(jwnimmer-tri) We should add a nanobind (abi3) target here.
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
@@ -117,7 +91,6 @@ targets = {
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
@@ -128,7 +101,6 @@ targets = {
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
@@ -247,9 +219,7 @@ def _tagname(
     Iff the role is the TEST role, then the test_index must be provided.
     """
     platform = target.platform(role, test_index).alias
-    python_tag = target.python_tag
-    python_binder = target.python_binder.value
-    return f"{tag_base}:{tag_prefix}-{platform}-py{python_tag}-{python_binder}"
+    return f"{tag_base}:{tag_prefix}-{platform}-py{target.python_tag}"
 
 
 def _build_stage(target, args, tag_prefix, stage=None):
@@ -283,11 +253,10 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
     python_manager = target.platform(role, test_index).python_manager
     python_version = target.python_version
 
-    if role == BUILD:
+    if role == BUILD and target.python_sha is not None:
         python_args = [
             "--build-arg", f"PYTHON=build:{target.python_version_full}",
             "--build-arg", f"PYTHON_SHA={target.python_sha}",
-            "--build-arg", f"DRAKE_PYTHON_BINDER={target.python_binder.value}",
         ]  # fmt: skip
     else:
         python_args = [
@@ -300,12 +269,12 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
     ] + python_args  # fmt: skip
 
 
-def _build_image(target, identifier, version, options):
+def _build_image(target, identifier, options):
     """
     Runs the build for a target and (optionally) extract the wheel.
     """
     args = [
-        "--build-arg", f"DRAKE_VERSION={version}",
+        "--build-arg", f"DRAKE_VERSION={options.version}",
         "--build-arg", f"DRAKE_GIT_SHA={_git_sha(resource_root)}",
     ] + _target_args(target, BUILD)  # fmt: skip
     if not options.keep_containers:
@@ -346,14 +315,14 @@ def _build_image(target, identifier, version, options):
             _docker("rm", container_name)
 
 
-def _test_wheel(target, identifier, version, options):
+def _test_wheel(target, identifier, options):
     """
     Runs the test script for the wheel matching the specified target.
     """
     glibc = glibc_versions[target.platform(BUILD).alias]
     wheel = wheel_name(
         python_version=target.python_tag,
-        wheel_version=version,
+        wheel_version=options.version,
         wheel_platform=f"manylinux_{glibc}_{ARCH}",
     )
 
@@ -447,16 +416,10 @@ def build(options):
 
     # Build the requested wheels.
     for t in targets_to_build:
-        # Mark the local version component for nanobind.
-        if t.python_binder == PythonBinder.NANOBIND:
-            version = f"{options.version}+nb"
-        else:
-            version = options.version
-
-        _build_image(t, identifier, version, options)
+        _build_image(t, identifier, options)
 
         if options.test:
-            _test_wheel(t, identifier, version, options)
+            _test_wheel(t, identifier, options)
 
 
 def add_build_arguments(parser):
@@ -494,7 +457,7 @@ def add_selection_arguments(parser):
         default=",".join(sorted(set([t.python_tag for t in targets]))),
         help=(
             "python version(s) to build; separate with ','"
-            " (default: %(default)s)"
+            " (default: %(default)s)",
         ),
     )
 

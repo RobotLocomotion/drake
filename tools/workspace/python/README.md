@@ -14,7 +14,7 @@ version on macOS), the following files need attention:
 - `drake/setup/python/lief/BUILD.bazel` near `--python-version`,
 - `drake/setup/python/mypy/BUILD.bazel` near `--python-version`,
 - `drake/setup/python/pyproject.toml` near `requires-python`,
-- `drake/tools/wheel/image/setup.py` near `python_requires` and `py_limited_api`,
+- `drake/tools/wheel/image/setup.py` near `python_requires`,
 - `drake/tools/wheel/wheel_builder/linux.py` near `targets`,
 - `drake/tools/wheel/wheel_builder/macos.py` near `targets`,
 - `drake/tools/workspace/nanobind/defs.bzl` near `LIMITED_API_DEFINES`.
