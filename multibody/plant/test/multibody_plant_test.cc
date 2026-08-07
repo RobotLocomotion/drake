@@ -4851,6 +4851,40 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
   }
 }
 
+// Verify that the (opt-in, default off) EnableLoopTopology setting can be set
+// and read back, that it is rejected post-Finalize(), and that it survives
+// scalar conversion (which clones the underlying MultibodyTree). Note: this
+// only exercises the option plumbing on a loop-free model; automatic modeling
+// of looped systems is not implemented yet (see the TODO in
+// MultibodyTree::Finalize()).
+GTEST_TEST(MultibodyPlantTest, EnableLoopTopologyOption) {
+  MultibodyPlant<double> plant(0.0);
+
+  // The default is off.
+  EXPECT_FALSE(plant.GetEnableLoopTopology());
+
+  // We can turn it on and back off pre-Finalize().
+  plant.SetEnableLoopTopology(true);
+  EXPECT_TRUE(plant.GetEnableLoopTopology());
+  plant.SetEnableLoopTopology(false);
+  EXPECT_FALSE(plant.GetEnableLoopTopology());
+
+  // Leave it enabled and finalize a simple (loop-free) model.
+  plant.SetEnableLoopTopology(true);
+  plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  plant.Finalize();
+  EXPECT_TRUE(plant.GetEnableLoopTopology());
+
+  // The setting cannot be changed post-Finalize().
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.SetEnableLoopTopology(false),
+                              ".*is_finalized.*");
+
+  // The setting survives scalar conversion, which clones the tree.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> ad_plant =
+      systems::System<double>::ToAutoDiffXd(plant);
+  EXPECT_TRUE(ad_plant->GetEnableLoopTopology());
+}
+
 GTEST_TEST(SetRandomTest, QuaternionFloatingBody) {
   // Create a model that contains a single body B.
   MultibodyPlant<double> plant(0.0);
