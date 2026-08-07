@@ -4999,6 +4999,19 @@ Raises:
     RuntimeError if the plant is not finalized or if the
     ``model_instance`` is invalid.)""";
         } GetActuatorNames;
+        // Symbol: drake::multibody::MultibodyPlant::GetAllowLoopTopology
+        struct /* GetAllowLoopTopology */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Returns the current setting for whether
+Finalize() will automatically model closed-topology (looped) systems.
+
+Note:
+    This function can be called pre-Finalize() or post-Finalize().
+
+See also:
+    SetAllowLoopTopology(), Finalize())""";
+        } GetAllowLoopTopology;
         // Symbol: drake::multibody::MultibodyPlant::GetBaseBodyJointType
         struct /* GetBaseBodyJointType */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6628,6 +6641,35 @@ Raises:
     RuntimeError if the size of ``u_instance`` is not equal to the
     number of actuation inputs for the joints of ``model_instance``.)""";
         } SetActuationInArray;
+        // Symbol: drake::multibody::MultibodyPlant::SetAllowLoopTopology
+        struct /* SetAllowLoopTopology */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Controls whether Finalize() will
+automatically model systems whose bodies and joints form one or more
+closed kinematic loops (a "closed topology"). When enabled, Finalize()
+breaks each loop by introducing a "shadow" body and a loop-closure
+constraint, using the automatic loop-breaking already performed by
+Drake's internal topology analysis. When disabled, Finalize() throws
+if the model contains any such loops.
+
+Unlike SetFuseWeldedLinks() and SetBaseBodyJointType(), this is a
+single global setting (a kinematic loop can span multiple model
+instances) and therefore does not take a model instance argument.
+
+The default setting for Drake is *not* to model looped systems
+automatically.
+
+Parameter ``allow``:
+    Whether Finalize() should automatically model closed kinematic
+    loops rather than throwing.
+
+Raises:
+    RuntimeError if called after Finalize().
+
+See also:
+    GetAllowLoopTopology(), Finalize())""";
+        } SetAllowLoopTopology;
         // Symbol: drake::multibody::MultibodyPlant::SetBaseBodyJointType
         struct /* SetBaseBodyJointType */ {
           // Source: drake/multibody/plant/multibody_plant.h
