@@ -7164,6 +7164,11 @@ Returns:
 Precondition:
     the context makes sense for use by this RigidBody.)""";
         } CalcSpatialInertiaInBodyFrame;
+        // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrameFromParameters
+        struct /* CalcSpatialInertiaInBodyFrameFromParameters */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc = R"""()""";
+        } CalcSpatialInertiaInBodyFrameFromParameters;
         // Symbol: drake::multibody::RigidBody::CloneToScalar
         struct /* CloneToScalar */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7299,6 +7304,10 @@ Precondition:
 Raises:
     RuntimeError if context is null.
 
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable).
+
 Warning:
     Do not use this function unless it is needed (think twice).)""";
         } SetCenterOfMassInBodyFrame;
@@ -7331,7 +7340,11 @@ Precondition:
     the context makes sense for use by this RigidBody.
 
 Raises:
-    RuntimeError if context is null.)""";
+    RuntimeError if context is null.
+
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable).)""";
         } SetCenterOfMassInBodyFrameAndPreserveCentralInertia;
         // Symbol: drake::multibody::RigidBody::SetMass
         struct /* SetMass */ {
@@ -7354,7 +7367,11 @@ Precondition:
     the context makes sense for use by this RigidBody.
 
 Raises:
-    RuntimeError if context is null.)""";
+    RuntimeError if context is null.
+
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable).)""";
         } SetMass;
         // Symbol: drake::multibody::RigidBody::SetSpatialInertiaInBodyFrame
         struct /* SetSpatialInertiaInBodyFrame */ {
@@ -7376,7 +7393,11 @@ Precondition:
     the context makes sense for use by this RigidBody.
 
 Raises:
-    RuntimeError if context is null.)""";
+    RuntimeError if context is null.
+
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable).)""";
         } SetSpatialInertiaInBodyFrame;
         // Symbol: drake::multibody::RigidBody::Unlock
         struct /* Unlock */ {
