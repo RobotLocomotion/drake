@@ -600,6 +600,20 @@ R"""(Which LCM URL to use.
 See also:
     drake∷systems∷lcm∷LcmBuses)""";
         } lcm_bus;
+        // Symbol: drake::visualization::VisualizationConfig::mouse_interaction_stiffness
+        struct /* mouse_interaction_stiffness */ {
+          // Source: drake/visualization/visualization_config.h
+          const char* doc =
+R"""(The mass-normalized stiffness (in 1/s²) of the interactive mouse
+spring that lets a user drag bodies with the mouse in Meshcat. In a
+connected Meshcat browser, holding Ctrl and dragging a body with the
+left mouse button applies a virtual spring force that pulls the body
+toward the cursor (see multibody∷meshcat∷MeshcatMouseSpring).
+
+Setting this to std∷nullopt disables mouse interaction. It also has no
+effect for Meldis/LCM, and is skipped if the plant's
+applied-spatial-force input port is already connected.)""";
+        } mouse_interaction_stiffness;
         // Symbol: drake::visualization::VisualizationConfig::publish_contacts
         struct /* publish_contacts */ {
           // Source: drake/visualization/visualization_config.h
@@ -638,6 +652,7 @@ point; see drake#15021 for details.))""";
             std::make_pair("enable_meshcat_creation", enable_meshcat_creation.doc),
             std::make_pair("initial_proximity_alpha", initial_proximity_alpha.doc),
             std::make_pair("lcm_bus", lcm_bus.doc),
+            std::make_pair("mouse_interaction_stiffness", mouse_interaction_stiffness.doc),
             std::make_pair("publish_contacts", publish_contacts.doc),
             std::make_pair("publish_illustration", publish_illustration.doc),
             std::make_pair("publish_inertia", publish_inertia.doc),
