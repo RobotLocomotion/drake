@@ -140,6 +140,14 @@ class TestVendorCxx(unittest.TestCase):
         ]
         self._check(content, content)
 
+    def test_nowrap_directory(self):
+        """No namespaces are added when opted-out."""
+        content = [
+            "#include <unrelated/thing.h>",
+            "struct forward_declared_c_type; // vendor_cxx: nowrap",
+        ]
+        self._check(content, content)
+
 
 assert __name__ == "__main__"
 unittest.main()

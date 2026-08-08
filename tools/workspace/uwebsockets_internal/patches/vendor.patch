@@ -1,0 +1,15 @@
+Add a hint for vendor_cxx not to namespace a forward declaration
+
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
+--- src/LoopData.h
++++ src/LoopData.h
+@@ -29,7 +29,7 @@
+ #include "PerMessageDeflate.h"
+ #include "MoveOnlyFunction.h"
+ 
+-struct us_timer_t;
++struct us_timer_t;  // vendor_cxx: nowrap
+ 
+ namespace uWS {
+ 

@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/name_value.h"
 #include "drake/common/timer.h"
 #include "drake/geometry/meshcat_animation.h"
@@ -1072,7 +1073,7 @@ class Meshcat {
 
  private:
   // Provides PIMPL encapsulation of websocket types.
-  class Impl;
+  class DRAKE_NO_EXPORT Impl;
 
   // Safe accessors for the PIMPL object.
   Impl& impl();

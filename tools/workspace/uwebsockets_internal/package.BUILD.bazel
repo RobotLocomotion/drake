@@ -2,17 +2,22 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 
 licenses(["notice"])  # Apache 2.0
 
 package(default_visibility = ["//visibility:public"])
 
-# TODO(#17231) Use an inline hidden namespace to hide the uWS symbols.
+_HDRS = glob(["src/*.h"])
 
-cc_library(
+cc_library_vendored(
     name = "uwebsockets",
-    hdrs = glob(["src/*.h"]),
-    includes = ["src"],
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("src/", "drake_hdr/src/")
+        for x in _HDRS
+    ],
+    includes = ["drake_hdr/src"],
     isystem = True,
     linkopts = ["-pthread"],
     linkstatic = 1,
