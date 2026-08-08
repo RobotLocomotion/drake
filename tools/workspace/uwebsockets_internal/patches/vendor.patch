@@ -1,0 +1,34 @@
+Add hints for vendor_cxx
+
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
+--- src/LoopData.h
++++ src/LoopData.h
+@@ -29,7 +29,7 @@
+ #include "PerMessageDeflate.h"
+ #include "MoveOnlyFunction.h"
+ 
+-struct us_timer_t;
++struct us_timer_t;  // vendor_cxx: nowrap
+ 
+ namespace uWS {
+ 
+--- src/MoveOnlyFunction.h
++++ src/MoveOnlyFunction.h
+@@ -372,14 +372,16 @@
+ }  // namespace ofats
+ 
++// vendor_cxx: nowrap
+ /* We, uWebSockets define our own type */
+ namespace uWS {
+   template <class T>
+   using MoveOnlyFunction = ofats::any_invocable<T>;
+ }
+ 
+ #else // !defined(__cpp_lib_move_only_function) || __cpp_lib_move_only_function < 202110L
+ 
++// vendor_cxx: nowrap
+ namespace uWS {
+   template <class T>
+   using MoveOnlyFunction = std::move_only_function<T>;
+ }
