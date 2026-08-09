@@ -41,7 +41,6 @@ StorageVec StorageVec::Allocate(int size) {
 
 StorageVec::StorageVec(const StorageVec& other) noexcept {
   DRAKE_ASSERT(0 <= other.size_ && other.size_ <= INT32_MAX);
-  StorageVec result;
   if (other.size_ > 0) {
     size_ = other.size_;
     data_ = new double[size_];
@@ -164,31 +163,32 @@ void Partials::AddScaled(double scale, const Partials& other) {
   }
   ThrowIfDifferentSize(other);
 
+  // Unlikely: non-finite scale; zero partials in `other` must not be scaled.
+  if (!std::isfinite(scale)) [[unlikely]] {
+    for (int i = 0; i < size(); ++i) {
+      const double this_datum = coeff_ * storage_.data()[i];
+      const double other_datum = other.coeff_ * other.storage_.data()[i];
+      if ((other_datum < 0) || (other_datum > 0)) {
+        storage_.mutable_data()[i] = this_datum + other_datum * scale;
+      } else {
+        storage_.mutable_data()[i] = this_datum;
+      }
+    }
+    coeff_ = 1.0;
+    return;
+  }
+
   // Common case: perform the linear combination.
   //
   // TODO(jwnimmer-tri) Profile whether it's worth avoiding the multiplies in
   // the special case(s) where one or both of the `coeff_` factors are exactly
   // 0.0 or 1.0. So far, it doesn't benchmark faster in any suites we have, but
   // maybe it will in the future.
-  if (std::isfinite(scale)) [[likely]] {
-    // N.B. Using a single Eigen expression for the following line is crucial
-    // for performance. It compiles this better than a hand-written for-loop.
-    mutable_storage_view().noalias() =
-        coeff_ * storage_view() + (scale * other.coeff_) * other.storage_view();
-    coeff_ = 1.0;
-    return;
-  }
-
-  // Unlikely: non-finite scale; zero partials in `other` must not be scaled.
-  for (int i = 0; i < size(); ++i) {
-    const double this_datum = coeff_ * storage_.data()[i];
-    const double other_datum = other.coeff_ * other.storage_.data()[i];
-    if ((other_datum < 0) || (other_datum > 0)) {
-      storage_.mutable_data()[i] = this_datum + other_datum * scale;
-    } else {
-      storage_.mutable_data()[i] = this_datum;
-    }
-  }
+  //
+  // N.B. Using a single Eigen expression for the following line is crucial
+  // for performance. It compiles this better than a hand-written for-loop.
+  mutable_storage_view().noalias() =
+      coeff_ * storage_view() + (scale * other.coeff_) * other.storage_view();
   coeff_ = 1.0;
 }
 
