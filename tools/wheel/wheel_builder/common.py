@@ -68,6 +68,11 @@ def is_abi3_wheel(wheel_version: str):
 def edit_wheel_version_for_binder(
     python_binder: PythonBinder, wheel_version: str
 ) -> str:
+    """Amends the user-supplied `wheel_version` to reflect the given choice of
+    python binder (if necessary), returning the modified version string. Wheels
+    that use `nanobind` instead of `pybind11` are marked as "alpha release",
+    e.g., `0.0.20260810a1` or `0.0.20260810a1+git0123abcd`.
+    """
     if python_binder == PythonBinder.PYBIND11:
         return wheel_version
     else:
@@ -86,12 +91,12 @@ def wheel_name(python_version, wheel_version, wheel_platform):
     bits such as the Drake version, Python version, and Python wheel platform.
     """
     if is_abi3_wheel(wheel_version):
-        cpNN = "cp312"  # Per Py_LIMITED_API pin at //tools/workspace/nanobind.
-        abi = "abi3"
+        # The cp312 here must match the Py_LIMITED_API definition at
+        # //tools/workspace/nanobind.
+        python_tag = "cp312-abi3"
     else:
-        cpNN = f"cp{python_version}"
-        abi = cpNN
-    return f"drake-{wheel_version}-{cpNN}-{abi}-{wheel_platform}.whl"
+        python_tag = f"cp{python_version}-cp{python_version}"
+    return f"drake-{wheel_version}-{python_tag}-{wheel_platform}.whl"
 
 
 def _check_version(version):
