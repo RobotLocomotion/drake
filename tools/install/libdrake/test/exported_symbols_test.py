@@ -64,7 +64,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "MessageHandler",
     "N3uWS",
     "N5ofats10any_detail",
-    "Realpath",
     "WindowsError",
     "action",
     "alternativeEnvironment",
