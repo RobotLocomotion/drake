@@ -13,6 +13,7 @@ class PythonTarget:
         PythonTarget(PythonBinder.NANOBIND, 3, 2, 1)
 
     Members:
+        python_binder: Which binder to use.
         version_tuple: Target version as a tuple, e.g. (3, 2, 1)
         version_full: Target full version as a string, e.g. '3.2.1'
         version: Target major/minor version as a string, e.g. '3.2'
