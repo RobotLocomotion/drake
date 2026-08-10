@@ -64,6 +64,7 @@ def _os_codename() -> str:
     raise NotImplementedError(platform.system())
 
 
+@functools.cache
 def _check_sudo() -> None:
     """Checks that 'sudo' has sufficient credentials."""
     # If sudo is already usable, then we're done.
@@ -348,6 +349,33 @@ def _prefetch_bazel():
     _run(args=["bazel", "version"], cwd=_workspace_dir(), quiet=True)
 
 
+def _maybe_fix_gcc(*, yes: bool):
+    """Corrects a common GCC installation mistake. On Noble, Drake doesn't
+    install anything related to GCC 14, but if the user has chosen to install
+    some GCC 14 libraries but has failed to install all of them correctly as a
+    group, Drake's documentation header file parser (run during linting) will
+    fail with a libclang-related complaint. Therefore, we'll help the developer
+    clean up their mess, to avoid apparent Drake linter errors.
+    """
+    if not _is_ubuntu():
+        return
+    if _os_codename() == "noble":
+        packages = ["libgcc-14-dev", "libstdc++-14-dev", "libgfortran-14-dev"]
+        missing = [
+            package_name
+            for package_name, version in _get_dpkg_versions(packages).items()
+            if version is None
+        ]
+        if len(missing) == len(packages):
+            # No action required. Nothing from the group is installed yet.
+            pass
+        elif len(missing) == 0:
+            # No action required. The whole group is already installed.
+            pass
+        else:
+            _apt_install(package_names=missing, yes=yes)
+
+
 def main():
     # Log at INFO, not just WARNING.
     logging.basicConfig(
@@ -397,6 +425,7 @@ def main():
     # Anything not set up here was already setup by install_prereqs.sh.
     if _is_ubuntu() and args.developer:
         _install_downloaded_debs(yes=args.yes)
+        _maybe_fix_gcc(yes=args.yes)
     if args.developer or args.user_environment_only:
         _setup_user_environment()
     if args.developer:
