@@ -16,6 +16,7 @@ from .common import (
     edit_wheel_version_for_binder,
     find_tests,
     gripe,
+    is_abi3_wheel,
     resource_root,
     strip_tar_metadata,
     wheel_name,
@@ -310,9 +311,11 @@ def _build_image(target, identifier, version, options):
     """
     Runs the build for a target and (optionally) extract the wheel.
     """
+    drake_is_abi3_wheel = "1" if is_abi3_wheel(version) else "0"
     args = [
         "--build-arg", f"DRAKE_VERSION={version}",
         "--build-arg", f"DRAKE_GIT_SHA={_git_sha(resource_root)}",
+        "--build-arg", f"DRAKE_IS_ABI3_WHEEL={drake_is_abi3_wheel}",
     ] + _target_args(target, BUILD)  # fmt: skip
     if not options.keep_containers:
         args.append("--force-rm")

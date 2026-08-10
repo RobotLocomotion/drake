@@ -7,8 +7,7 @@ from setuptools import find_packages, glob, setup
 
 DRAKE_VERSION = os.environ.get("DRAKE_VERSION", "0.0.0")
 
-# Either 'N.N.Na1' or 'N.N.Na1+gitNNNNNNNN' indicates an abi3 wheel.
-is_abi3_wheel = DRAKE_VERSION.endswith("a1") or "a1+" in DRAKE_VERSION
+DRAKE_IS_ABI3_WHEEL = bool(int(os.environ["DRAKE_IS_ABI3_WHEEL"]))
 
 # Required python packages that will be pip installed along with pydrake
 python_required = [
@@ -115,9 +114,10 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
     python_requires=">=3.12",
     options=(
         {
+            # This matches the Py_LIMITED_API pin at //tools/workspace/nanobind.
             "bdist_wheel": {"py_limited_api": "cp312"},
         }
-        if is_abi3_wheel
+        if DRAKE_IS_ABI3_WHEEL
         else {}
     ),
     install_requires=python_required,
