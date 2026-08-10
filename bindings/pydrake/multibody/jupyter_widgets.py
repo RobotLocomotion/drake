@@ -88,7 +88,7 @@ class JointSliders(VectorSystem):
             joint = robot.get_joint(JointIndex(i))
             low = joint.position_lower_limits()
             upp = joint.position_upper_limits()
-            for j in range(0, joint.num_positions()):
+            for j in range(joint.num_positions()):
                 index = joint.position_start() + j
                 description = joint.name()
                 if joint.num_positions() > 1:
@@ -146,7 +146,7 @@ class JointSliders(VectorSystem):
 
     def DoCalcVectorOutput(self, context, unused, unused2, output):
         output[:] = self._default_position
-        for i in range(0, len(self._slider)):
+        for i in range(len(self._slider)):
             output[self._slider_position_start[i]] = self._slider[i].value
 
 

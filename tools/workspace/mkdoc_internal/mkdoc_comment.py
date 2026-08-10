@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #  Derived from https://github.com/pybind/pybind11/
 #
@@ -92,19 +91,16 @@ def remove_cpp_comment_syntax(s):
     leading_spaces = float("inf")
     for line in s.expandtabs(tabsize=4).splitlines():
         line = line.strip()
-        if line.startswith("/*!"):
-            line = line[3:]
+        line = line.removeprefix("/*!")
         if line.startswith("/*"):
             line = line[2:].lstrip("*")
         if line.endswith("*/"):
             line = line[:-2].rstrip("*")
         # http://www.doxygen.nl/manual/docblocks.html#memberdoc
-        if line.startswith("///<"):
-            line = line[4:]
-        if line.startswith("///") or line.startswith("//!"):
-            line = line[3:]
-        if line.startswith("*"):
-            line = line[1:]
+        line = line.removeprefix("///<")
+        line = line.removeprefix("///")
+        line = line.removeprefix("//!")
+        line = line.removeprefix("*")
         if len(line) > 0:
             leading_spaces = min(leading_spaces, len(line) - len(line.lstrip()))
         result += line + "\n"

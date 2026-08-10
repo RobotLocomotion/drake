@@ -336,7 +336,7 @@ class RenderRequest:
             temp_path.rename(scene_path)
 
             if self.verbose:
-                print(f"Saving scene file: {str(scene_path)}")
+                print(f"Saving scene file: {scene_path!s}")
             return scene_path
         except RenderError as re:
             raise re from None  # Forward the exception.
@@ -480,7 +480,7 @@ def root():
             f"{indent}<hr>\n"
             f"{indent}<p>\n"
             f"{indent}  This is a development server.  The server cache\n"
-            f"{indent}  lives here: <tt>{str(TMP_DIR)}</tt>\n"
+            f"{indent}  lives here: <tt>{TMP_DIR!s}</tt>\n"
             f"{indent}</p>\n"
         )
     else:
@@ -502,7 +502,7 @@ def render_endpoint():
             render_request = RenderRequest(request)
             output_image = Path(render_callback(render_request))
             if render_request.verbose:
-                print(f"Rendering image: {str(output_image)}")
+                print(f"Rendering image: {output_image!s}")
 
             # Now that the image is rendered, it is safe to delete the scene.
             if CLEANUP:
@@ -545,7 +545,7 @@ def render_endpoint():
                 with open(output_image, "rb") as f:
                     buffer = BytesIO(f.read())
                 if render_request.verbose:
-                    print(f"Deleting rendered image: {str(output_image)}")
+                    print(f"Deleting rendered image: {output_image!s}")
                 output_image.unlink(missing_ok=True)
                 return send_file(buffer, mimetype=mime_type)
         except RenderError as re:

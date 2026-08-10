@@ -17,8 +17,8 @@ BOOLEAN = Variable.Type.BOOLEAN
 
 class TestSympy(unittest.TestCase):
     def test_round_trip(self):
-        x, y, z = [Variable(name) for name in "x y z".split()]
-        q, r = [Variable(name, BOOLEAN) for name in "q r".split()]
+        x, y, z = [Variable(name) for name in ["x", "y", "z"]]
+        q, r = [Variable(name, BOOLEAN) for name in ["q", "r"]]
         inputs = [
             # Constants.
             1,

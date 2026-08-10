@@ -25,7 +25,7 @@ def _wrapped_trajectory_repr(wrapped_trajectory):
 def _add_repr_functions():
     for param in _WrappedTrajectory_.param_list:
         cls = _WrappedTrajectory_[param]
-        setattr(cls, "__repr__", _wrapped_trajectory_repr)
+        cls.__repr__ = _wrapped_trajectory_repr
 
 
 _add_repr_functions()

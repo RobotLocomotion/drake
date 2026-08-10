@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import copy
 import itertools
 import pickle
@@ -691,7 +689,7 @@ class TestSymbolicExpression(unittest.TestCase):
             )
             op_reverse = operators_reverse[op]
             for lhs, rhs in operand_combinatorics_iter:
-                hint_for_error = f"{op.__doc__}: {repr(lhs)}, {repr(rhs)}"
+                hint_for_error = f"{op.__doc__}: {lhs!r}, {rhs!r}"
                 with numpy_compare.soft_sub_test(hint_for_error):
                     value = op(lhs, rhs)
                     assert_nontrivial_formula(value)

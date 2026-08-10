@@ -20,14 +20,14 @@ import websockets
 if not hasattr(umsgpack, "Hashable"):
     import collections
 
-    setattr(umsgpack.collections, "Hashable", collections.abc.Hashable)
+    umsgpack.collections.Hashable = collections.abc.Hashable
 
 
 def print_recursive_comparison(d1, d2, level="root"):
     if type(d1) is not type(d2):
         print(f"{level:<20} Type mismatch")
-        print(f"{level:<20}    {type(d1)}: {repr(d1)}")
-        print(f"{level:<20}    {type(d2)}: {repr(d2)}")
+        print(f"{level:<20}    {type(d1)}: {d1!r}")
+        print(f"{level:<20}    {type(d2)}: {d2!r}")
 
     if isinstance(d1, dict) and isinstance(d2, dict):
         if d1.keys() != d2.keys():
@@ -51,7 +51,7 @@ def print_recursive_comparison(d1, d2, level="root"):
 
     else:
         if d1 != d2:
-            print(f"{level:<20} {repr(d1)} != {repr(d2)}")
+            print(f"{level:<20} {d1!r} != {d2!r}")
 
 
 async def socket_operations_async(args):

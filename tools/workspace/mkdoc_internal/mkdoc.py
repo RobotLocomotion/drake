@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #  Derived from https://github.com/pybind/pybind11/
 #
@@ -749,7 +748,7 @@ def main():
             include_paths.append(param[2:])
     # Use longest include directories first to get shortest include file
     # overall.
-    include_paths = list(sorted(include_paths, key=len))[::-1]
+    include_paths = sorted(include_paths, key=len)[::-1]
     include_files = []
     # Create mapping from filename to include file.
     include_file_map = FileDict()

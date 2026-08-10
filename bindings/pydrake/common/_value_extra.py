@@ -25,4 +25,4 @@ AbstractValue.Make = _AbstractValue_Make
 
 # Adjust how type inference works for Value(some_value). We want to use the
 # precise semantics of AbstractValue.Make, not the anything-goes TemplateBase.
-setattr(Value, "_call_internal", _AbstractValue_Make)
+Value._call_internal = _AbstractValue_Make

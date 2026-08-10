@@ -8,7 +8,7 @@ from subprocess import STDOUT, check_output
 import sys
 import unittest
 
-import tools.install.installer as installer
+from tools.install import installer
 
 # TODO(eric.cousineau): Expand on these tests, especially for nuanced things
 # like Python C extensions.
