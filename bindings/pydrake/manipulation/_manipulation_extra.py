@@ -40,7 +40,7 @@ def ApplyDriverConfigs(
     )
     for model_instance_name, driver_config in driver_configs.items():
         module = _inspect.getmodule(driver_config)
-        apply_function = getattr(module, "ApplyDriverConfig")
+        apply_function = module.ApplyDriverConfig
         apply_function(
             driver_config,
             model_instance_name,

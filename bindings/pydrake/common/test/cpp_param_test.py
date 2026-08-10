@@ -26,12 +26,8 @@ class TemplateOnFloat:
     """Pretends to be a class template instanation named Template[float]."""
 
 
-setattr(
-    TemplateOnFloat,
-    "__name__",
-    "Template{}float{}".format(
-        _MangledName.UNICODE_LEFT_BRACKET, _MangledName.UNICODE_RIGHT_BRACKET
-    ),
+TemplateOnFloat.__name__ = "Template{}float{}".format(
+    _MangledName.UNICODE_LEFT_BRACKET, _MangledName.UNICODE_RIGHT_BRACKET
 )
 globals()[TemplateOnFloat.__name__] = TemplateOnFloat
 

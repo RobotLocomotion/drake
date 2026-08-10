@@ -6,7 +6,7 @@ from unittest.mock import patch
 import numpy as np
 import umsgpack
 
-import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import (
     Meshcat,
     RenderEngineGlParams,

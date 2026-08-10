@@ -122,7 +122,7 @@ def _check_for_rtld_global_usages():
     using_rtld_global = getattr(torch, "USE_RTLD_GLOBAL_WITH_LIBTORCH", True)
     if not using_rtld_global:
         return False
-    init_file = getattr(torch, "__file__")
+    init_file = torch.__file__
     if init_file.endswith(".pyc"):
         init_file = init_file[:-1]
     if not init_file.endswith(".py"):

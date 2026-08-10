@@ -30,8 +30,8 @@ def _check_preamble(name, contents):
             # work, we must ignore trailing commas.
             continue
         print(f"{name}:{i + 1}:1: preamble is incorrect:", file=sys.stderr)
-        print(f"   actual: {repr(actual_line)}", file=sys.stderr)
-        print(f" expected: {repr(expected_line)}", file=sys.stderr)
+        print(f"   actual: {actual_line!r}", file=sys.stderr)
+        print(f" expected: {expected_line!r}", file=sys.stderr)
         return 1
     return 0
 

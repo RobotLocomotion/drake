@@ -231,7 +231,7 @@ class TestDiffIkSystems(unittest.TestCase):
             if isinstance(expected_value, dict):
                 # If the attribute is a dictionary, we're assuming it is a
                 # cartesian mask and explicitly test for it.
-                for joint_name, dof_selector_expected in params[key].items():
+                for joint_name, dof_selector_expected in expected_value.items():
                     self.assertIn(joint_name, dut_value)
                     np.testing.assert_array_equal(
                         dut_value[joint_name], dof_selector_expected

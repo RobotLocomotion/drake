@@ -460,10 +460,10 @@ def main(args):
     if installer.strip:
         # Match the output of the CMake install/strip target
         # (https://git.io/fpdzK).
-        print("Installing the project stripped...", sep="")
+        print("Installing the project stripped...")
     else:
         # Match the output of the CMake install target (https://git.io/fpdzo).
-        print("Install the project...", sep="")
+        print("Install the project...")
 
     # Execute the install actions.
     # TODO(jwnimmer-tri) Executing arbitrary Python code from the actions file
