@@ -6653,6 +6653,9 @@ constraint, using the automatic loop-breaking already performed by
 Drake's internal topology analysis. When disabled, Finalize() throws
 if the model contains any such loops.
 
+Note:
+    This feature is in development and is not yet functional.
+
 Unlike SetFuseWeldedLinks() and SetBaseBodyJointType(), this is a
 single global setting (a kinematic loop can span multiple model
 instances) and therefore does not take a model instance argument.

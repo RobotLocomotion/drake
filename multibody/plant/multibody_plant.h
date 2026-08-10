@@ -1823,6 +1823,29 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void SetFuseWeldedLinks(
       bool fuse, std::optional<ModelInstanceIndex> model_instance = {});
 
+  /// (Internal use only for now) Controls whether Finalize() will automatically
+  /// model systems whose bodies and joints form one or more closed kinematic
+  /// loops (a "closed topology"). When enabled, Finalize() breaks each loop by
+  /// introducing a "shadow" body and a loop-closure constraint, using the
+  /// automatic loop-breaking already performed by Drake's internal topology
+  /// analysis. When disabled, Finalize() throws if the model contains any such
+  /// loops.
+  ///
+  /// @note This feature is in development and is not yet functional.
+  ///
+  /// Unlike SetFuseWeldedLinks() and SetBaseBodyJointType(), this is a single
+  /// global setting (a kinematic loop can span multiple model instances) and
+  /// therefore does not take a model instance argument.
+  ///
+  /// The default setting for Drake is _not_ to model looped systems
+  /// automatically.
+  ///
+  /// @param[in] allow Whether Finalize() should automatically model closed
+  ///   kinematic loops rather than throwing.
+  /// @throws std::exception if called after Finalize().
+  /// @see GetAllowLoopTopology(), Finalize()
+  void SetAllowLoopTopology(bool allow);
+
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
   /// If a model instance is provided for which no explicit choice has been
@@ -1846,27 +1869,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see SetFuseWeldedLinks(), GetBaseBodyJointType(), Finalize()
   bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
-
-  /// (Internal use only for now) Controls whether Finalize() will automatically
-  /// model systems whose bodies and joints form one or more closed kinematic
-  /// loops (a "closed topology"). When enabled, Finalize() breaks each loop by
-  /// introducing a "shadow" body and a loop-closure constraint, using the
-  /// automatic loop-breaking already performed by Drake's internal topology
-  /// analysis. When disabled, Finalize() throws if the model contains any such
-  /// loops.
-  ///
-  /// Unlike SetFuseWeldedLinks() and SetBaseBodyJointType(), this is a single
-  /// global setting (a kinematic loop can span multiple model instances) and
-  /// therefore does not take a model instance argument.
-  ///
-  /// The default setting for Drake is _not_ to model looped systems
-  /// automatically.
-  ///
-  /// @param[in] allow Whether Finalize() should automatically model closed
-  ///   kinematic loops rather than throwing.
-  /// @throws std::exception if called after Finalize().
-  /// @see GetAllowLoopTopology(), Finalize()
-  void SetAllowLoopTopology(bool allow);
 
   /// (Internal use only for now) Returns the current setting for whether
   /// Finalize() will automatically model closed-topology (looped) systems.
