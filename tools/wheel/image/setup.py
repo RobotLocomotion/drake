@@ -7,6 +7,7 @@ from setuptools import find_packages, glob, setup
 
 DRAKE_VERSION = os.environ.get("DRAKE_VERSION", "0.0.0")
 
+# Either 'N.N.Na1' or 'N.N.Na1+gitNNNNNNNN' indicates an abi3 wheel.
 is_abi3_wheel = DRAKE_VERSION.endswith("a1") or "a1+" in DRAKE_VERSION
 
 # Required python packages that will be pip installed along with pydrake

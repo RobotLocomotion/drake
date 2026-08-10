@@ -57,6 +57,14 @@ def die(message, result=1):
     sys.exit(result)
 
 
+def is_abi3_wheel(wheel_version: str):
+    """Returns true if the given version string refers to an abi3 wheel. We
+    designate abi3 wheels using the alpha-release marker 'a1'.
+    """
+    # Either 'N.N.Na1' or 'N.N.Na1+gitNNNNNNNN'.
+    return wheel_version.endswith("a1") or "a1+" in wheel_version
+
+
 def edit_wheel_version_for_binder(
     python_binder: PythonBinder, wheel_version: str
 ) -> str:
@@ -72,17 +80,13 @@ def edit_wheel_version_for_binder(
             return wheel_version + "a1"
 
 
-def is_abi3_wheel(wheel_version: str):
-    return wheel_version.endswith("a1") or "a1+" in wheel_version
-
-
 def wheel_name(python_version, wheel_version, wheel_platform):
     """
     Determines the complete name of the Drake wheel, given various individual
     bits such as the Drake version, Python version, and Python wheel platform.
     """
     if is_abi3_wheel(wheel_version):
-        cpNN = "cp312"
+        cpNN = "cp312"  # Per Py_LIMITED_API pin at //tools/workspace/nanobind.
         abi = "abi3"
     else:
         cpNN = f"cp{python_version}"
