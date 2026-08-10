@@ -49,7 +49,7 @@ class TestSerializePybind(unittest.TestCase):
             self.assertEqual(inspect.getdoc(MyData1.quux), "(self) -> float")
 
         # Test fields.
-        fields = getattr(MyData1, "__fields__")
+        fields = MyData1.__fields__
         self.assertSequenceEqual(
             [(x.name, x.type) for x in fields], (("quux", float),)
         )
@@ -105,7 +105,7 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(dut.some_variant, 80.0)
 
         # Check all field types.
-        fields = getattr(MyData2, "__fields__")
+        fields = MyData2.__fields__
         self.assertSequenceEqual(
             [(x.name, x.type) for x in fields],
             (

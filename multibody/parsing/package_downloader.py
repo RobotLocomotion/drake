@@ -25,8 +25,8 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
+from urllib import request
 import urllib.parse
-import urllib.request as request
 
 
 def _fail(message):

@@ -33,7 +33,7 @@ from pydrake.systems.test.test_util import call_build_from_cpp
 if not hasattr(umsgpack, "Hashable"):
     import collections
 
-    setattr(umsgpack.collections, "Hashable", collections.abc.Hashable)
+    umsgpack.collections.Hashable = collections.abc.Hashable
 
 
 class TestGeometryVisualizers(unittest.TestCase):

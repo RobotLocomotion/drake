@@ -129,7 +129,7 @@ class PyPlotVisualizer(LeafSystem):
     def get_recording_as_animation(self, **kwargs):
         # We defer this import to this call site to prevent the import
         # from hanging. See #18323.
-        import matplotlib.animation as animation
+        from matplotlib import animation
 
         ani = animation.FuncAnimation(
             fig=self.fig,
@@ -167,7 +167,7 @@ class PyPlotVisualizer(LeafSystem):
 
         # We defer this import to this call site to prevent the import
         # from hanging. See #18323.
-        import matplotlib.animation as animation
+        from matplotlib import animation
 
         ani = animation.FuncAnimation(
             fig=self.fig,

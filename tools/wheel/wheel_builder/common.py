@@ -139,8 +139,7 @@ def create_snopt_tgz(*, snopt_path, output):
             # 'foo.orig', we should skip 'foo' and add 'foo.orig' as 'foo'.
             if os.path.isfile(full_file + ".orig"):
                 continue
-            if tgz_file.endswith(".orig"):
-                tgz_file = tgz_file[: -len(".orig")]
+            tgz_file = tgz_file.removesuffix(".orig")
             # Add the file.
             tar_writer.add(
                 full_file, tgz_file, recursive=False, filter=strip_tar_metadata

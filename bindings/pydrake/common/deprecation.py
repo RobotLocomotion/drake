@@ -128,8 +128,6 @@ class DrakeDeprecationWarning(DeprecationWarning):
     """Extends `DeprecationWarning` to permit Drake-specific warnings to
     be filtered by default, without having side effects on other libraries."""
 
-    pass
-
 
 def _format_deprecation_message(message, *, date=None):
     assert isinstance(message, str), repr(message)
@@ -137,7 +135,7 @@ def _format_deprecation_message(message, *, date=None):
         assert isinstance(date, str), repr(date)
         assert date != "None"
         assert _date_pattern.fullmatch(date) is not None, (
-            f"Date does not match YYYY-MM-DD pattern: {repr(date)}"
+            f"Date does not match YYYY-MM-DD pattern: {date!r}"
         )
         # N.B. This follows the formatting in `mkdoc.py`.
         message = (
