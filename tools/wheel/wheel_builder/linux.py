@@ -362,6 +362,7 @@ def _test_wheel(target, identifier, version, options):
     """
     glibc = glibc_versions[target.platform(BUILD).alias]
     wheel = wheel_name(
+        python_binder=target.python_binder,
         python_version=target.python_tag,
         wheel_version=version,
         wheel_platform=f"manylinux_{glibc}_{ARCH}",

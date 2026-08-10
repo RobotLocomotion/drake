@@ -53,6 +53,7 @@ def _find_wheel(path, version, python_target):
     accessible and is very non-trivial to replicate.
     """
     pattern = wheel_name(
+        python_binder=python_target.python_binder,
         python_version=python_target.tag,
         wheel_version=version,
         wheel_platform="*",
