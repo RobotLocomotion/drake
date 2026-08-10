@@ -15,7 +15,6 @@ from .common import (
     die,
     edit_wheel_version_for_binder,
     find_tests,
-    is_abi3_wheel,
     resource_root,
     test_root,
     wheel_name,
@@ -176,7 +175,7 @@ def build(options):
         )
         environment["DRAKE_PYTHON_BINDER"] = python_target.python_binder.value
         environment["DRAKE_IS_ABI3_WHEEL"] = (
-            "1" if is_abi3_wheel(version) else "0"
+            "1" if python_target.python_binder == PythonBinder.NANOBIND else "0"
         )
 
         build_script = os.path.join(resource_root, "macos", "build-wheel.sh")
