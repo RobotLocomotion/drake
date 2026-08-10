@@ -2579,7 +2579,25 @@ class MultibodyTree {
   // Takes ownership of `link` and adds it to this MultibodyTree. Returns a
   // constant reference to the link just added, which will remain valid for the
   // lifetime of this MultibodyTree. Public members AddLink() end up here.
-  const Link<T>& AddLinkImpl(std::unique_ptr<Link<T>> link);
+  // If `is_ephemeral` is true this Link was created during modeling (e.g. a
+  // shadow link used to break a loop) and is therefore already present in the
+  // LinkJointGraph, so we don't register it again there.
+  const Link<T>& AddLinkImpl(std::unique_ptr<Link<T>> link,
+                             bool is_ephemeral = false);
+
+  // (Internal use only) Adds a shadow RigidBody (Link) corresponding to a
+  // shadow link that the LinkJointGraph created during modeling to break a
+  // loop (such links are "ephemeral"). `M_BBo_B` is the shadow's user-facing
+  // default spatial inertia, which the caller sets to the primary link's share
+  // of the even mass split. Note that this default is informational only: the
+  // effective runtime inertia is (re)computed in CalcFrameBodyPoses() by
+  // dividing the primary link's parameterized inertia, so the shadow's own
+  // inertia is never read by the dynamics. The new body's index is guaranteed
+  // to match the graph's shadow link index provided ephemeral links are added
+  // in graph order immediately after all user links.
+  const RigidBody<T>& AddEphemeralLink(const std::string& name,
+                                       ModelInstanceIndex model_instance,
+                                       const SpatialInertia<double>& M_BBo_B);
 
   const Joint<T>& GetJointByNameImpl(std::string_view,
                                      std::optional<ModelInstanceIndex>) const;
