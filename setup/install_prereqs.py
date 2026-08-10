@@ -1,12 +1,9 @@
 """
 Drake setup program to install necessary prerequisites.
-
-We are in the process of migrating our bash setup code into this file.
-At the moment, this file is not usable as a stand-alone script.
-Always run `drake/setup/install_prereqs`, instead.
 """
 
 import argparse
+import enum
 import functools
 import hashlib
 import json
@@ -16,15 +13,38 @@ from pathlib import Path
 import platform
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
 import textwrap
+import time
 import urllib.parse
 import urllib.request
 
 _MY_DIR: Path = Path(__file__).parent
 """The directory containing this script, used to locate our data assets."""
+
+
+class Flavor(enum.Enum):
+    """Drake users (and developers) can choose a particular flavor of
+    prerequisites to install, depending on which operations they need to
+    accomplish."""
+
+    # These are listed in order from narrowest to widest prerequisites.
+    # Each flavor adds more prerequisites atop the prior flavor(s).
+    BINARY = "to run a precompiled binary release"
+    BUILD = "to build and install using CMake and GCC"
+    DEVELOPER = "to develop Drake with Bazel"
+
+    def __init__(self, description):
+        self.description = description
+
+    def __ge__(self, other):
+        everything = list(Flavor)
+        lhs = everything.index(self)
+        rhs = everything.index(other)
+        return lhs >= rhs
 
 
 def _warn(message: str) -> None:
@@ -75,18 +95,31 @@ def _check_sudo() -> None:
     subprocess.check_call(["sudo", "-v"])
 
 
+def _maybe_warn_conda() -> None:
+    """Warns if conda is on the $PATH."""
+    if shutil.which("conda") is None:
+        return
+    _warn(
+        """Conda was detected on your $PATH. Drake is not tested regularly with
+        Anaconda, so you may experience compatibility hiccups; when asking for
+        help, be sure to mention that Conda is involved."""
+    )
+
+
 def _run(
     *,
     args: list,
     cwd: Path | None = None,
     check: bool = True,
     superuser: bool = False,
+    flaky: bool = False,
     quiet: bool = False,
     interactive: bool = False,
 ) -> subprocess.CompletedProcess:
     """Runs a subprocess command given by `args`. When `check` is true, failure
     of the command is an `_error`. When `superuser` is true, the command will
-    be run under 'sudo' unless the euid is already root. When `quiet` is
+    be run under 'sudo' unless the euid is already root. When `flaky` is true,
+    the command will be retried a couple times when it fails. When `quiet` is
     true, the command line will not be printed by default. When `interactive`
     is true, input is allowed and output is unbuffered. Returns the completed
     process object."""
@@ -98,15 +131,22 @@ def _run(
         msg=f"Running: {shlex.join(args)} ...",
         level=logging.DEBUG if quiet else logging.INFO,
     )
-    process = subprocess.run(
-        args,
-        cwd=cwd,
-        stdin=subprocess.DEVNULL if not interactive else None,
-        stdout=subprocess.PIPE if not interactive else None,
-        stderr=subprocess.STDOUT if not interactive else None,
-        text=True,
-    )
-    problem = check and (process.returncode != 0)
+    num_attempts = 3 if flaky else 1
+    for i in range(num_attempts):
+        if i > 0:
+            logging.info("... failed; waiting 30 sec before trying again ...")
+            time.sleep(30)
+        process = subprocess.run(
+            args,
+            cwd=cwd,
+            stdin=subprocess.DEVNULL if not interactive else None,
+            stdout=subprocess.PIPE if not interactive else None,
+            stderr=subprocess.STDOUT if not interactive else None,
+            text=True,
+        )
+        problem = check and (process.returncode != 0)
+        if not problem:
+            break
     if process.stdout is not None:
         for line in process.stdout.splitlines():
             logging.log(
@@ -146,6 +186,12 @@ def _get_dpkg_versions(package_names: list[str]) -> dict[str, str | None]:
             result[name] = version
     logging.debug(f"dpkg_versions = {result!r}")
     return result
+
+
+def _get_dpkg_version(package_name: str) -> str:
+    """Like _get_dpkg_versions but for a single package."""
+    assert package_name
+    return _get_dpkg_versions([package_name])[package_name]
 
 
 def _apt_install(*, package_names: list[str], yes: bool) -> None:
@@ -348,6 +394,166 @@ def _prefetch_bazel():
     _run(args=["bazel", "version"], cwd=_workspace_dir(), quiet=True)
 
 
+@functools.cache
+def _apt_update() -> None:
+    """Runs 'apt-get update' to refresh available packages."""
+    process = _run(
+        args=["apt-get", "update"],
+        superuser=True,
+        flaky=True,
+    )
+    if process.returncode == 0:
+        return
+    _error(
+        """Drake is unable to run 'sudo apt-get update', probably because this
+        computer contains incorrect entries in its sources.list files, or
+        possibly because an internet service is down. Run 'sudo apt-get update'
+        and try to resolve whatever problems it reports. Do not try to set up
+        Drake until that command succeeds. This is not a bug in Drake. Do not
+        contact the Drake team for help."""
+    )
+
+
+def _apt_install(*, package_names: list[str], yes: bool) -> None:
+    """Installs the given packages using 'apt-get'.
+    The `yes` flag is passed along to apt as `--yes`."""
+    assert package_names
+    _apt_update()
+    args = [
+        "apt-get",
+        "install",
+        "--no-install-recommends",
+    ]
+    if yes:
+        args.append("--yes")
+    args.extend(package_names)
+    process = _run(args=args, superuser=True, check=yes)
+    if process.returncode == 0:
+        return
+    # We can only reach here when yes=False (i.e., check=False). The apt-get
+    # command didn't work, and the most likely reason is it needs Y/n input
+    # from the user, so we'll try it again allowing for user input.
+    _run(args=args, superuser=True, interactive=True, quiet=True)
+
+
+def _apt_install_flavor(*, flavor: Flavor, yes: bool) -> None:
+    """Installs the apt packages from Ubuntu required for the given `flavor`
+    and all of its antecedent flavors. The `yes` flag is passed along to apt
+    as `--yes`."""
+    assert isinstance(flavor, Flavor)
+    distribution = platform.freedesktop_os_release()["ID"]
+    codename = _os_codename()
+    packages = []
+    for item in Flavor:
+        txt_file = (
+            _MY_DIR
+            / distribution
+            / f"packages-{codename}-{item.name.lower()}.txt"
+        )
+        if not txt_file.exists():
+            description = platform.freedesktop_os_release().get(
+                "PRETTY_NAME", "<unknown>"
+            )
+            _warn(f"No such file {str(txt_file)}.")
+            _error(f"This script does not support {description}.")
+        logging.debug(f"Reading {txt_file}.")
+        for line in txt_file.read_text(encoding="utf-8").splitlines():
+            line = line.split("#")[0].strip()
+            if not line:
+                continue
+            packages.append(line)
+        if item == flavor:
+            break
+    packages = sorted(packages)
+    installed = _get_dpkg_versions(packages)
+    missing_packages = [
+        name for name, version in installed.items() if version is None
+    ]
+    if missing_packages:
+        _apt_install(package_names=missing_packages, yes=yes)
+    else:
+        logging.debug("All selected packages-*.txt are already installed.")
+
+
+def _setup_usr_bin_python(*, yes):
+    """Ensure that /usr/bin/python exists. The `yes` flag is passed along to
+    apt as `--yes`."""
+    if Path("/usr/bin/python").exists():
+        logging.debug("/usr/bin/python is already installed")
+        return
+    _apt_install(package_names=["python-is-python3"], yes=yes)
+
+
+def _setup_locales():
+    """Ensures that we have available a locale that supports UTF-8 for
+    generating a C++ header containing Python API documentation during
+    the build."""
+    required_locale = "en_US.utf8"
+    for line in _run(args=["locale", "-a"], quiet=True).stdout.splitlines():
+        if line.strip() == required_locale:
+            logging.debug(f"The {required_locale} locale already exists.")
+            return
+    _run(
+        args=["locale-gen", required_locale],
+        superuser=True,
+    )
+
+
+def _maybe_setup_gcc12(*, yes: bool):
+    """Corrects a common gcc12 installation mistake.
+    On Jammy, Drake doesn't install anything related to GCC 12, but if the user
+    has chosen to install some GCC 12 libraries but has failed to install all
+    of them correctly as a group, Drake's documentation header file parser will
+    fail with a libclang-related complaint. Therefore, we'll help the user
+    clean up their mess, to avoid apparent Drake build errors."""
+    if not (_is_ubuntu() and _os_codename() == "jammy"):
+        # This fixup is only necessary on Jammy.
+        return
+    if _get_dpkg_version("libgcc-12-dev") is None:
+        # GCC 12 is not installed, so we don't need to fix anything.
+        return
+    for package in ["libstdc++-12-dev", "libgfortran-12-dev"]:
+        if _get_dpkg_version(package) is not None:
+            continue
+        _apt_install(package_names=[package], yes=yes)
+
+
+def _read_flavor_cookie(*, flavor_lookup) -> str:
+    """Returns the most recently-installed flavor cookie (reading from disk),
+    or None when unknown."""
+    workspace_dir = _workspace_dir()
+    cookie = workspace_dir / "gen/install_prereqs.flavor"
+    try:
+        text = cookie.read_text(encoding="utf-8").strip()
+    except OSError:
+        logging.debug("No flavor cookie found.")
+        return None
+    # Confirm the prior text is still a valid flavor.
+    if text not in flavor_lookup:
+        logging.warning(f"Ignoring no-longer-valid flavor '{text}'")
+        return None
+    logging.info(f"Assuming --flavor={text} per most recent run.")
+    return text
+
+
+def _update_flavor_cookie(*, flavor: Flavor) -> None:
+    """Updates (on disk) the most recently-installed flavor cookie.
+    For developers this writes a cookie file with the selected flavor.
+    For users, this deletes the cookie."""
+    workspace_dir = _workspace_dir()
+    cookie = workspace_dir / "gen/install_prereqs.flavor"
+    if flavor >= Flavor.DEVELOPER:
+        logging.debug(f"Writing flavor cookie to {cookie}")
+        flavor_lower = flavor.name.lower()
+        cookie.write_text(f"{flavor_lower}\n", encoding="utf-8")
+    else:
+        try:
+            cookie.unlink()
+            logging.debug(f"Removed flavor cookie {cookie}")
+        except OSError:
+            pass
+
+
 def main():
     # Log at INFO, not just WARNING.
     logging.basicConfig(
@@ -355,9 +561,32 @@ def main():
         format="%(levelname)s: %(message)s",
     )
 
+    # Decide which flavors to offer.
+    if _MY_DIR.name == "setup":
+        # We are in the source tree; all flavors are valid.
+        flavor_lookup = dict((item.name.lower(), item) for item in Flavor)
+        default_flavor = "build"
+    else:
+        # Not the source tree. We're a binary package install.
+        flavor_lookup = {"binary": Flavor.BINARY}
+        default_flavor = "binary"
+
+    # Create the help string for flavors.
+    help_details = ""
+    if len(flavor_lookup) > 1:
+        help_details = "\nThe available flavors of prerequisites are:\n"
+        help_details += "\n".join(
+            [
+                f"- {name}: {value.description}."
+                for name, value in flavor_lookup.items()
+            ]
+        )
+        help_details += "\n\n"
+        help_details += "Each flavor also incoroporates all prior flavors."
+
     # Initialize argparse.
     parser = argparse.ArgumentParser(
-        description=__doc__,
+        description=__doc__ + help_details,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
@@ -373,6 +602,7 @@ def main():
             "but don't install any system-wide packages."
         ),
     )
+    # TODO(jwnimmer-tri) Add --without-update option.
     parser.add_argument(
         "--without-update",
         action="store_true",
@@ -389,18 +619,77 @@ def main():
         action="store_true",
         help="Enable verbosity.",
     )
+    parser.add_argument(
+        "--flavor",
+        choices=flavor_lookup.keys(),
+        default=None,
+        help=(
+            "Which set of prerequisites to install. See descriptions above."
+            if len(flavor_lookup) > 1
+            else argparse.SUPPRESS
+        ),
+    )
+    for lower in flavor_lookup:
+        parser.add_argument(
+            f"--{lower}",
+            action="store_const",
+            const=lower,
+            dest="flavor",
+            help=(
+                f"Shortcut for --flavor={lower}."
+                if len(flavor_lookup) > 1
+                else argparse.SUPPRESS
+            ),
+        )
     args = parser.parse_args()
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    # We are in the process of migrating our bash setup code into this file.
-    # Anything not set up here was already setup by install_prereqs.sh.
-    if _is_ubuntu() and args.developer:
+    # Choose which flavor to install:
+    # (1) The command line always takes priority.
+    # (2) When not given on the command line, and not running as root, and
+    #     not running from a binary install, a per-user cookie file is used
+    #     for developers to make the choice be "sticky".
+    # (3) Otherwise, a nominal value is selected.
+    is_root = os.geteuid() == 0
+    flavor_lower = args.flavor
+    if flavor_lower is None and not is_root and len(flavor_lookup) > 1:
+        flavor_lower = _read_flavor_cookie(flavor_lookup=flavor_lookup)
+    if flavor_lower is None:
+        logging.info(f"Using default --flavor={default_flavor}.")
+        flavor_lower = default_flavor
+    args.flavor = flavor_lookup[flavor_lower]
+
+    # Prepare for installation.
+    _maybe_warn_conda()
+    if args.flavor >= Flavor.DEVELOPER and is_root:
+        _warn(
+            """Do NOT run install_prereqs as root or under sudo when using
+            --flavor=developer or greater."""
+        )
+
+    # Install the prerequisites.
+    _apt_install_flavor(
+        flavor=args.flavor,
+        yes=args.yes,
+    )
+    if _is_ubuntu() and args.flavor >= Flavor.DEVELOPER:
         _install_downloaded_debs(yes=args.yes)
-    if args.developer or args.user_environment_only:
+
+    # Configure the prerequisites.
+    if args.flavor >= Flavor.BUILD:
+        _setup_usr_bin_python(yes=args.yes)
+        _setup_locales()
+        _maybe_setup_gcc12(yes=args.yes)
+    if args.flavor >= Flavor.DEVELOPER or args.user_environment_only:
         _setup_user_environment()
-    if args.developer:
+    if args.flavor >= Flavor.DEVELOPER:
         _prefetch_bazel()
+
+    # Finished.
+    if not is_root:
+        _update_flavor_cookie(flavor=args.flavor)
+    logging.info(f"Successfully installed --flavor={flavor_lower} prereqs.")
 
 
 if __name__ == "__main__":
