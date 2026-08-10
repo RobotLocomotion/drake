@@ -1168,6 +1168,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
 template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetVisualGeometriesForBody(const RigidBody<T>& body) const {
+  // This array must be dense over num_bodies(); anything that adds a body
+  // without extending it (e.g. ephemeral links materialized during Finalize())
+  // would turn the lookup below into an out-of-range read.
+  DRAKE_ASSERT(ssize(visual_geometries_) == num_bodies());
+  DRAKE_ASSERT(body.index() < num_bodies());
   return visual_geometries_[body.index()];
 }
 
@@ -1209,6 +1214,10 @@ template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetCollisionGeometriesForBody(
     const RigidBody<T>& body) const {
+  // See the comment in GetVisualGeometriesForBody(); checking the index against
+  // num_bodies() alone is not enough, since it is exactly the array-vs-body
+  // count agreement that a newly added body can break.
+  DRAKE_ASSERT(ssize(collision_geometries_) == num_bodies());
   DRAKE_ASSERT(body.index() < num_bodies());
   return collision_geometries_[body.index()];
 }
@@ -1510,6 +1519,18 @@ void MultibodyPlant<T>::Finalize() {
 
   // After finalizing the base class, the tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
+
+  // Finalizing the tree may have materialized ephemeral shadow links (when loop
+  // topology is allowed), which don't come through AddRigidBody() and so have
+  // no entries in the per-body geometry arrays yet. A shadow never carries any
+  // geometry of its own -- it's an internal modeling artifact that coincides
+  // with its primary link -- but these arrays are indexed by BodyIndex and so
+  // must stay dense over num_bodies(); see GetVisualGeometriesForBody(). Note
+  // that shadows deliberately get no SceneGraph frame: body_index_to_frame_id_
+  // is map-keyed and is documented to tolerate bodies with no frame, and
+  // registering a frame would publish a spurious duplicate to SceneGraph.
+  visual_geometries_.resize(num_bodies());
+  collision_geometries_.resize(num_bodies());
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();

@@ -460,6 +460,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "closed_topology_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "fused_welds_test",
     deps = [
         ":plant",
