@@ -140,7 +140,7 @@ class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
         for param in self.object.param_list:
             # TODO(eric.cousineau): Use attribute aliasing already present in
             # autodoc.
-            rst = ":class:`{}`".format(self.object._instantiation_name(param))
+            rst = f":class:`{self.object._instantiation_name(param)}`"
             names.append(rst)
         self.add_line(
             "   Instantiations: {}".format(", ".join(names)), sourcename
@@ -201,8 +201,8 @@ def patch_class_add_directive_header(original, self, sig):
             return
         bases = [
             b.__module__ in ("__builtin__", "builtins")
-            and ":class:`%s`" % b.__name__
-            or ":class:`%s.%s`" % (b.__module__, b.__name__)
+            and f":class:`{b.__name__}`"
+            or f":class:`{b.__module__}.{b.__name__}`"
             for b in bases
             if b.__name__ != "pybind11_object"
         ]

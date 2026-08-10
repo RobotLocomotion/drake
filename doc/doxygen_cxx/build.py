@@ -86,7 +86,7 @@ def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
             "--output",
             output_filename,
         ]
-        + ["-D%s=%s" % (key, value) for key, value in definitions.items()]
+        + [f"-D{key}={value}" for key, value in definitions.items()]
     )
     assert os.path.exists(output_filename)
     return output_filename
