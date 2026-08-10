@@ -41,12 +41,12 @@ def _help(command):
     head = re.sub(r"\[(files\.\.\.)\]", r"<\1 | --all>", lines.pop(0))
     for line in [head] + lines:
         print(line)
-    print("")
+    print()
     print("=== Drake-specific additions ===")
-    print("")
+    print()
     print("If the --all flag is given, buildifier operates on every BUILD,")
     print("*.BUILD, *.bazel, and *.bzl file in the tree except third_party.")
-    print("")
+    print()
     print("Without '--all', 'files...' are required; stdin cannot be used.")
     return process.returncode
 

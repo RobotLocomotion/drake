@@ -58,7 +58,7 @@ def _check_header_disallowed_includes(filename):
     )
     if filename.endswith(".h"):
         with open(filename, mode="r", encoding="utf-8") as file:
-            for line in file.readlines():
+            for line in file:
                 matched = forbidden_re.match(line)
                 if matched is not None:
                     if "// drakelint: ignore" in line:

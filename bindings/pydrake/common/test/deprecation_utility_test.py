@@ -46,7 +46,7 @@ class TestDeprecationExample(unittest.TestCase):
         with mut.catch_drake_warnings(expected_count=2) as w:
             obj.DeprecatedMethod()
             self.assertIn("Do not use DeprecatedMethod", str(w[0].message))
-            obj.DeprecatedMethod(int())
+            obj.DeprecatedMethod(0)
             self.assertEqual(str(w[0].message), str(w[1].message))
 
     def test_cc_wrap_deprecated_for_overload(self):

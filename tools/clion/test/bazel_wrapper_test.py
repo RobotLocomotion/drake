@@ -25,7 +25,7 @@ class Mock:
 class TestBazelWrapper(unittest.TestCase):
     def setUp(self):
         # Collect what the DUT prints to stderr.
-        self._stderr = bytes()
+        self._stderr = b""
         # Provide a mock Popen of the bazel subprocess.
         self._bazel_subprocess_actions = []
         self._bazel_subprocess_mock = Mock()
