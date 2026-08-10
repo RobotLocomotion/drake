@@ -18,7 +18,6 @@ class PythonTarget:
         version_full: Target full version as a string, e.g. '3.2.1'
         version: Target major/minor version as a string, e.g. '3.2'
         tag: Target major/minor version without separators, e.g. '32'
-
     """
 
     def __init__(self, python_binder: PythonBinder, *version_parts):
