@@ -1,6 +1,8 @@
 #!/bin/bash
 #
-# Install Drake prerequisites.
+# Install Drake prerequisites. This script is a small bash trampoline which
+# first installs Python (if missing) and then uses Python for the remainder of
+# the installation.
 
 set -euo pipefail
 
@@ -15,8 +17,8 @@ if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
   exit 1
 fi
 
-# While we're halfway through rewriting our setup scripts to Python, the command
-# line arguments need to go to specific helper scripts.
+# ============================ Command line options ============================
+
 sh_args=()
 py_args=()
 user_environment_only=0
@@ -37,18 +39,33 @@ while [ "${1:-}" != "" ]; do
   shift
 done
 
-# Call the helper scripts. The first one bootstraps Python if necessary; the
-# second one uses the Python installed by the first one.
-if [[ "$(uname)" == "Darwin" ]]; then
-  # N.B. We need `${var:0}` throughout this section because macOS's older
-  # version of bash does not seem to be able to cope with an empty array.
-  if [[ "${user_environment_only}" -eq 0 ]]; then
+# =============================== Install Python ===============================
+
+if [[ "${user_environment_only}" -eq 0 ]]; then
+  if [[ "$(uname)" == "Darwin" ]]; then
     /bin/bash "${BASH_SOURCE%/*}/mac/install_prereqs.sh" "${sh_args[@]:0}"
+  else
+    if ! command -v python3 > /dev/null; then
+      echo "Installing python3 ..." >&2
+      maybe_sudo=
+      if [[ "${EUID}" -ne 0 ]]; then
+        maybe_sudo=sudo
+      fi
+      # XXX Obey --without-update.
+      if ! ${maybe_sudo} apt-get -y install python3; then
+        ${maybe_sudo} apt-get update || (sleep 30; apt-get update)
+        ${maybe_sudo} apt-get -y install python3
+      fi
+    fi
   fi
-  $(brew --prefix)/bin/python3.14 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]:0}"
+fi
+
+# ============================= Hand over to Python ============================
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  # N.B. We need `${var:0}` here because macOS's older version of bash does not
+  # seem to be able to cope with an empty array.
+  exec $(brew --prefix)/bin/python3.14 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]:0}"
 else
-  if [[ "${user_environment_only}" -eq 0 ]]; then
-    /bin/bash "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" "${sh_args[@]}"
-  fi
-  /usr/bin/python3 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]}"
+  exec /usr/bin/python3 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]}"
 fi
