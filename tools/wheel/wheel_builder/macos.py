@@ -231,7 +231,7 @@ def add_selection_arguments(parser):
         "--python",
         dest="python_versions",
         metavar="VERSIONS",
-        default=",".join(sorted(set([t.tag for t in PYTHON_TARGETS]))),
+        default=",".join(sorted({t.tag for t in PYTHON_TARGETS})),
         help=(
             "python version(s) to build; "
             "separate with ',' (default: %(default)s)"

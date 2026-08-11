@@ -1349,12 +1349,12 @@ class TestMathematicalProgram(unittest.TestCase):
         # we should not presume how variables map into indices.
         guess = np.ndarray(count)
         guess.fill(np.nan)
-        self.assertTrue(all([np.isnan(i) for i in guess]))
+        self.assertTrue(all(np.isnan(i) for i in guess))
         prog.SetDecisionVariableValueInVector(x[0], x0[0], guess)
-        self.assertFalse(all([np.isnan(i) for i in guess]))
-        self.assertTrue(any([np.isnan(i) for i in guess]))
+        self.assertFalse(all(np.isnan(i) for i in guess))
+        self.assertTrue(any(np.isnan(i) for i in guess))
         prog.SetDecisionVariableValueInVector(x_matrix, x0_matrix, guess)
-        self.assertFalse(any([np.isnan(i) for i in guess]))
+        self.assertFalse(any(np.isnan(i) for i in guess))
 
     def test_quadratic_constraint(self):
         prog = mp.MathematicalProgram()
@@ -1565,9 +1565,9 @@ class TestMathematicalProgram(unittest.TestCase):
             dut.options,
             {
                 "dummy": expected_dummy,
-                "Drake": dict(
-                    (key.name, value) for key, value in expected_common.items()
-                ),
+                "Drake": {
+                    key.name: value for key, value in expected_common.items()
+                },
             },
         )
         self.assertTrue(dut == dut)
@@ -1855,7 +1855,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         results = mp.SolveInParallel(
             progs=progs,
@@ -1866,7 +1866,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         results = mp.SolveInParallel(
             progs=progs,
@@ -1877,7 +1877,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         results = mp.SolveInParallel(
             progs=progs,
@@ -1888,7 +1888,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         # Finally, interleave None into initial_guesses, solver_options, and
         # solver_ids.
@@ -1904,7 +1904,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         # Now we test the overload
         results = mp.SolveInParallel(
@@ -1916,7 +1916,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         results = mp.SolveInParallel(
             progs=progs,
@@ -1927,7 +1927,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         # Ensure that all options being None does not cause ambiguity.
         results = mp.SolveInParallel(
@@ -1939,12 +1939,12 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         # Ensure default arguments do not cause ambiguity.
         results = mp.SolveInParallel(progs=progs)
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
     def test_cost_binding(self):
         prog = mp.MathematicalProgram()

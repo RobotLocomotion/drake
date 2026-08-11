@@ -784,7 +784,7 @@ class TestSymbolicExpression(unittest.TestCase):
             bool(e_x == e_x)
         message = str(cm.exception)
         self.assertTrue(
-            all([s in message for s in ["__nonzero__", "EqualToDict"]]), message
+            all(s in message for s in ["__nonzero__", "EqualToDict"]), message
         )
         # Ensure that compound formulas fail (#8536).
         with self.assertRaises(RuntimeError):
