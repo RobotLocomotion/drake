@@ -5,34 +5,25 @@
 
 set -eu -o pipefail
 
-# The Python version is either e.g. '3.10' or 'build:3.10.0' (or is not
-# specified). The 'build:3.x.y' form indicates that we should build our own
-# Python rather than using system packages, and requires a complete version
-# (needed to download the sources). Otherwise, the version should be a valid
-# suffix of 'python'. Unspecified is treated as '3'.
-if [[ "${1%:*}" == "build" ]]; then
-    readonly PREFIX=/tmp/drake-wheel-build/python-dist
-    readonly PYTHON=python$(echo ${1#*:} | cut -d. -f1-2)
+readonly PYTHON_VERSION="${1-}"
 
-    cd "$(dirname "${BASH_SOURCE}")"
-    ./build-python.sh ${1#*:} ${PREFIX} $2
-else
-    readonly PREFIX=/usr
-    readonly PYTHON=python${1:-3}
-
-    # Set up Python environment and install Python prerequisites.
-    dnf -y install --setopt=install_weak_deps=False \
-        ${PYTHON}-devel
+if [ -z "${PYTHON_VERSION}" ]; then
+  echo "Usage: $0 <python version>" >&2
+  exit 1
+fi
+if [[ ! "$PYTHON_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Expected Python version in the form 'x.y.z'" >&2
+  exit 1
 fi
 
-${PREFIX}/bin/${PYTHON} -m venv /usr/local
+readonly PYTHON_MAJORMINOR="${PYTHON_VERSION%.*}"
+readonly PYTHON=python${PYTHON_MAJORMINOR}
 
-# Python 3.11 venv creates an empty directory here, which prevents us creating
-# a symlink to the real directory, so remove it if present.
-rmdir /usr/local/include/${PYTHON} || true
+wget -qO- https://astral.sh/uv/install.sh | sh
+${HOME}/.local/bin/uv venv --allow-existing /usr/local --python ${PYTHON}
+readonly PREFIX=$(realpath $(dirname $(${HOME}/.local/bin/uv python find ${PYTHON}))/../)
 
 ln -s ${PREFIX}/bin/${PYTHON}-config /usr/bin/python3-config
 ln -s ${PREFIX}/bin/${PYTHON}-config /usr/local/bin/python-config
 ln -s ${PREFIX}/include/${PYTHON} /usr/local/include/
-ln -s ${PREFIX}/include/${PYTHON}m /usr/local/include/
 ln -s /usr/local/bin/python /usr/bin/python

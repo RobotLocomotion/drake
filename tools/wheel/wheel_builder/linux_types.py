@@ -32,8 +32,7 @@ class Target:
     build_platform: Platform
     python_binder: PythonBinder
     test_platforms: tuple[Platform]
-    python_version_tuple: tuple[int]
-    python_sha: str
+    python_version_tuple: tuple[int, int, int]
 
     def __post_init__(self):
         assert isinstance(self.test_platforms, tuple)
