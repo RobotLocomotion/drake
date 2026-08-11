@@ -30,8 +30,8 @@ class TestGtestMain(unittest.TestCase):
         self.assertEqual(
             returncode,
             expected_returncode,
-            "Expected returncode %r from %r but got %r with output %r"
-            % (expected_returncode, args, returncode, output),
+            f"Expected returncode {expected_returncode!r} from {args!r} but "
+            f"got {returncode!r} with output {output!r}",
         )
         return output.decode("utf8")
 
