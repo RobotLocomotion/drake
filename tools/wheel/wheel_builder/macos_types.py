@@ -20,7 +20,7 @@ class PythonTarget:
         tag: Target major/minor version without separators, e.g. '32'
     """
 
-    def __init__(self, python_binder: PythonBinder, *version_parts):
+    def __init__(self, python_binder: PythonBinder, *version_parts: int):
         self.python_binder = python_binder
         pv_parts = tuple(map(str, version_parts))
         self.version_tuple = tuple(version_parts)
