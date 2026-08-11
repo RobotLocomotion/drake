@@ -2580,7 +2580,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
           "CalcSpatialInertia(): contains an invalid BodyIndex (LinkIndex).");
     }
 
-    // If link L is a unfused body (one-link Mobod), use the Mobod's cached
+    // If link L is an unfused body (one-link Mobod), use the Mobod's cached
     // value for M_LLo_W (a more efficient way to do this calculation).
     const MobodIndex mobod_index = get_link(link_index).mobod_index();
     if (!get_mobod(mobod_index).is_fused()) {
@@ -2924,7 +2924,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
       throw std::logic_error(message);
     }
 
-    // If link L is a unfused body (one-link Mobod), use the Mobod's cached
+    // If link L is an unfused body (one-link Mobod), use the Mobod's cached
     // value for M_LLo_W (a more efficient way to do this calculation).
     const MobodIndex mobod_index = get_link(link_index).mobod_index();
     if (!get_mobod(mobod_index).is_fused()) {
