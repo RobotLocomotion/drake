@@ -50,13 +50,6 @@ readonly workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../.." && pwd)"
 packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-build.txt")
 ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
-# We need a working /usr/bin/python (of any version).
-if [[ ! -e /usr/bin/python ]]; then
-  ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends python-is-python3
-else
-  echo "/usr/bin/python is already installed"
-fi
-
 # ============================== Developer prereqs =============================
 
 if [[ "${developer}" -eq 1 ]]; then
