@@ -2556,7 +2556,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
                                                      link_indexes.end());
   if (link_indexes.size() != without_duplicate_bodies.size()) {
     throw std::logic_error(
-        "CalcSpatialInertia(): contains a repeated LinkIndex.");
+        "CalcSpatialInertia(): contains a repeated BodyIndex (LinkIndex).");
   }
 
   // For the set S of links contained in link_indexes, return S's
@@ -2577,7 +2577,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     // Ensure MultibodyPlant method contains a valid link_index.
     if (link_index >= num_links()) {
       throw std::logic_error(
-          "CalcSpatialInertia(): contains an invalid LinkIndex.");
+          "CalcSpatialInertia(): contains an invalid BodyIndex (LinkIndex).");
     }
 
     // If link L is a unfused body (one-link Mobod), use the Mobod's cached

@@ -425,6 +425,10 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
     // Verify system's spatial momentum does not depend on fused links.
     L_WUP_W = unfused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
         *unfused_model.context, p_WoP_W);
+    L_WFP_W = fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
+        *fused_model.context, p_WoP_W);
+    EXPECT_TRUE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
+                                kTolerance, MatrixCompareType::relative));
 
     // Ensure that individual link spatial inertias and spatial momentum are
     // accurately calculated, regardless of whether they were fused.
