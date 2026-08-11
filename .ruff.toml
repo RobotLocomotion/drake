@@ -7,6 +7,9 @@ target-version = "py312"
 [lint]
 
 ignore = [
+    # f-string checks for str.format calls that can be replaced with f-strings.
+    # In many cases this is a good idea, but not universally.
+    "UP032",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
     # upgrade. Either re-enable them or comment why we're keeping them off.
     "B004",
@@ -65,12 +68,6 @@ ignore = [
     "TRY002",
     "TRY004",
     "TRY201",
-    "UP007",
-    "UP022",
-    "UP030",
-    "UP031",
-    "UP032",
-    "UP045",
 ]
 
 # Enable import sorting.

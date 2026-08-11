@@ -314,7 +314,7 @@ class TestSymbolicVariables(unittest.TestCase):
     def test_to_string_1(self):
         vars = sym.Variables([x, y, z])
         self.assertEqual(vars.to_string(), "{x, y, z}")
-        self.assertEqual("{}".format(vars), "{x, y, z}")
+        self.assertEqual(f"{vars}", "{x, y, z}")
 
     def test_repr(self):
         vars = sym.Variables([x, y, z])
@@ -1087,7 +1087,7 @@ class TestSymbolicFormula(unittest.TestCase):
     def test_to_string(self):
         f = x > y
         self.assertEqual(f.to_string(), "(x > y)")
-        self.assertEqual("{}".format(f), "(x > y)")
+        self.assertEqual(f"{f}", "(x > y)")
 
     def test_equality_inequality_hash(self):
         f1 = x > y

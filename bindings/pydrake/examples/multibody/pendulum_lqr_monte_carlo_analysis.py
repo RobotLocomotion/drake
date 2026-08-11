@@ -135,9 +135,8 @@ def main():
     )
 
     print(
-        "Monte-Carlo estimated performance across %d samples: "
-        "%.2f%% +/- %0.2f%%"
-        % (num_samples, passing_ratio * 100, passing_ratio_var * 100)
+        f"Monte-Carlo estimated performance across {num_samples} samples: "
+        f"{passing_ratio * 100:.2f}% +/- {passing_ratio_var * 100:0.2f}%"
     )
 
     # Analytically compute the best possible ROA, for comparison, but
@@ -156,9 +155,8 @@ def main():
 
     roa_as_fraction_of_state_space = roa_half_width / np.pi
     print(
-        "Max possible ROA = %0.2f%% of state space, which should"
-        " match with the above estimate."
-        % (100 * roa_as_fraction_of_state_space)
+        f"Max possible ROA = {100 * roa_as_fraction_of_state_space:0.2f}% of "
+        f"state space, which should match with the above estimate."
     )
 
 
