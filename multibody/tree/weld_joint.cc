@@ -77,27 +77,26 @@ std::unique_ptr<internal::Mobilizer<T>> WeldJoint<T>::MakeMobilizerForJoint(
     const internal::SpanningForest::Mobod& mobod,
     internal::MultibodyTree<T>* tree) const {
   DRAKE_DEMAND(tree != nullptr);
-  const Frame<T>& Jp = this->frame_on_parent();
-  const Frame<T>& Jc = this->frame_on_child();
-  const bool X_JpJc_is_identity = X_JpJc_.IsExactlyIdentity();
+  const bool reverse = mobod.is_reversed();
+  // These are the joint's parent and child frames, but adjusted for reversal
+  // to locate them on the inboard and outboard bodies. Reversed means
+  // outboard==parent and inboard==child; normally outboard==child and
+  // inboard==parent.
+  const auto [Jin, Jout] = this->tree_frames(reverse);
+  // The offset from the inboard frame to the outboard one, which is X_JcJp =
+  // (X_JpJc)⁻¹ in the reversed case.
+  const math::RigidTransform<double> X_JinJout =
+      reverse ? X_JpJc_.inverse() : X_JpJc_;
 
-  const Frame<T>* F{};
-  const Frame<T>* M{};
-  if (mobod.is_reversed()) {
-    M = &Jp;  // The reversed case: outboard==parent, inboard==child.
-    F = X_JpJc_is_identity
-            ? &Jc
-            : &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
-                  this->MakeUniqueOffsetFrameName(Jc, "F"), Jc,
-                  X_JpJc_.inverse(), this->model_instance()));
-  } else {
-    M = &Jc;  // The normal case: outboard==child, inboard==parent.
-    F = X_JpJc_is_identity
-            ? &Jp
-            : &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
-                  this->MakeUniqueOffsetFrameName(Jp, "F"), Jp, X_JpJc_,
-                  this->model_instance()));
-  }
+  // M is the outboard frame; F is colocated with the outboard frame but fixed
+  // to the inboard body, so that X_FM is the identity (see above).
+  const Frame<T>* M = Jout;
+  const Frame<T>* F =
+      X_JpJc_.IsExactlyIdentity()
+          ? Jin
+          : &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
+                this->MakeUniqueOffsetFrameName(*Jin, "F"), *Jin, X_JinJout,
+                this->model_instance()));
 
   auto weld_mobilizer =
       std::make_unique<internal::WeldMobilizer<T>>(mobod, *F, *M);
