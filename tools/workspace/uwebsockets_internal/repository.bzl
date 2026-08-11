@@ -15,6 +15,7 @@ def uwebsockets_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/max_fallback_size.patch",
+            ":patches/vendor.patch",
         ],
         mirrors = mirrors,
     )

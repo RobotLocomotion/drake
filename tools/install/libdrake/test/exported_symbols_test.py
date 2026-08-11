@@ -50,7 +50,6 @@ _GOOD_SYMBOLS_SUBSTR = [
 # Any symbols whose name contains one of these are undesirable, but for now
 # will not cause this test to fail.
 _KNOWN_BAD_SYMBOLS_SUBSTR = [
-    "3tbb6detail",  # TODO(#20898): This line should be removed eventually.
     "8rules_cc2cc8runfiles",
     "Ampl",
     "BitVector128",
@@ -62,8 +61,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "GLXEW",
     "Idiot",
     "MessageHandler",
-    "N3uWS",
-    "N5ofats10any_detail",
     "WindowsError",
     "action",
     "alternativeEnvironment",

@@ -43,6 +43,11 @@ def _designate_wrapped_lines(lines):
     i = 0
     while i < len(lines):
         line = lines[i]
+        # We allow custom comments to disable wrapping.
+        if "vendor_cxx: nowrap" in line:
+            flags[i] = Flag.NO_WRAP
+            i += 1
+            continue
         # When the prior line has continuation, this line inherits its Flag.
         if i > 0 and lines[i - 1].endswith("\\"):
             flags[i] = flags[i - 1]

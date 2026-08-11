@@ -139,6 +139,7 @@ drake_py_binary(
         "@tinygltf_internal//:__subpackages__",
         "@tinyobjloader_internal//:__subpackages__",
         "@yaml_cpp_internal//:__subpackages__",
+        "@uwebsockets_internal//:__subpackages__",
     ],
     deps = [":module_py"],
 )
