@@ -95,6 +95,7 @@ class InstallPrereqsActor:
             "bazel",
             "dpkg",
             "dpkg-query",
+            "locale",
             "sudo",
         ]
         for program in allowed:
@@ -108,6 +109,9 @@ class InstallPrereqsActor:
         # The list of currently-installed packages to report to install_prereqs;
         # a mapping of name => version number.
         self.installed_packages = {}
+
+        # The list of currently-generated locales to report to install_prereqs.
+        self.locales = []
 
     def _set_up_source(self) -> Path:
         """Prepares a source-tree-like writable temporary directory that
@@ -280,6 +284,16 @@ class InstallPrereqsActor:
         package_names = [arg for arg in argv[3:] if not arg.startswith("-")]
         return package_names
 
+    def expect_locale_query(self):
+        stdout = ""
+        for x in self.locales:
+            stdout += f"{x}\n"
+        self.expect_call(["locale", "-a"], stdout=stdout)
+
+    def expect_locale_gen(self):
+        self.expect_sudo_check()
+        self.expect_call(["sudo", "locale-gen", "en_US.UTF-8"])
+
 
 class InstallPrereqsTest(unittest.TestCase):
     def setUp(self):
@@ -323,6 +337,9 @@ class InstallPrereqsTest(unittest.TestCase):
             if _is_ubuntu_distro("noble"):
                 # The DUT should check if GCC 14 is installed (it's not).
                 dut.expect_dpkg_query()
+            # The DUT should check locales and then generate what's missing.
+            dut.expect_locale_query()
+            dut.expect_locale_gen()
 
         # The DUT prefetches bazel.
         dut.expect_call(["bazel", "version"])
@@ -349,6 +366,7 @@ class InstallPrereqsTest(unittest.TestCase):
             "libgcc-14-dev": "14.x.x",
             # N.B. No "libstdc++-14-dev" nor "libgfortran-14-dev".
         }
+        dut.locales = ["fr_FR.utf8"]
         dut.start(args=["--developer", "-y"])
 
         if sys.platform != "darwin":
@@ -369,6 +387,9 @@ class InstallPrereqsTest(unittest.TestCase):
                     set(dut.expect_apt_install()),
                     {"libstdc++-14-dev", "libgfortran-14-dev"},
                 )
+            # The DUT should check locales and then generate what's missing.
+            dut.expect_locale_query()
+            dut.expect_locale_gen()
 
         # The DUT prefetches bazel.
         dut.expect_call(["bazel", "version"])
@@ -388,6 +409,7 @@ class InstallPrereqsTest(unittest.TestCase):
             "libstdc++-14-dev": "14.x.x",
             "libgfortran-14-dev": "14.x.x",
         }
+        dut.locales = ["en_US.utf8"]
         dut.start(args=["--developer", "-y"])
 
         if sys.platform != "darwin":
@@ -398,6 +420,8 @@ class InstallPrereqsTest(unittest.TestCase):
                 # The DUT confirms that GCC 14 is already fully installed, and
                 # doesn't install anything further.
                 dut.expect_dpkg_query()
+            # The DUT should check the locale we need is already there.
+            dut.expect_locale_query()
 
         # The DUT prefetches bazel.
         dut.expect_call(["bazel", "version"])

@@ -318,6 +318,24 @@ def _maybe_fix_gcc(*, yes: bool) -> None:
     _apt_install(package_names=missing, yes=yes)
 
 
+def _generate_locales():
+    """Ensures that we have available a locale that supports UTF-8 for
+    generating a C++ header containing Python API documentation during
+    the build."""
+    # The canonical name is used when setting a locale, in error messages, etc.
+    canonical = "en_US.UTF-8"
+    # The alias name is what is reported by the `locale -a` directory lookup.
+    alias = "en_US.utf8"
+    for line in _run(args=["locale", "-a"], quiet=True).stdout.splitlines():
+        if line.strip() == alias:
+            logging.debug(f"The {canonical} locale already exists.")
+            return
+    _run(
+        args=["locale-gen", canonical],
+        superuser=True,
+    )
+
+
 def _setup_user_environment():
     """Update user-specific config snippets needed only by Drake Developers."""
     # Compute the bazel python version snippet.
@@ -423,6 +441,7 @@ def main():
     if _is_ubuntu() and args.developer:
         _install_downloaded_debs(yes=args.yes)
         _maybe_fix_gcc(yes=args.yes)
+        _generate_locales()
     if args.developer or args.user_environment_only:
         _setup_user_environment()
     if args.developer:
