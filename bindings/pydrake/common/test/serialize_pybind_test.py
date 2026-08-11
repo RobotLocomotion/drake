@@ -1,5 +1,4 @@
 import inspect
-import typing
 import unittest
 
 import numpy as np
@@ -116,10 +115,10 @@ class TestSerializePybind(unittest.TestCase):
                 ("some_double", float),
                 ("some_string", str),
                 ("some_eigen", np.ndarray),
-                ("some_optional", typing.Optional[float]),
+                ("some_optional", float | None),
                 ("some_vector", list[float]),
                 ("some_map", dict[str, float]),
-                ("some_variant", typing.Union[float, MyData1]),
+                ("some_variant", float | MyData1),
             ),
         )
 
