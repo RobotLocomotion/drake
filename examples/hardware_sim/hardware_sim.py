@@ -77,15 +77,15 @@ class Scenario:
     simulation_duration: float = math.inf
 
     # Simulator configuration (integrator and publisher parameters).
-    simulator_config: SimulatorConfig = SimulatorConfig(
+    simulator_config: SimulatorConfig = SimulatorConfig(  # noqa: RUF009
         max_step_size=1e-3, accuracy=1.0e-2, target_realtime_rate=1.0
     )
 
     # Plant configuration (time step and contact parameters).
-    plant_config: MultibodyPlantConfig = MultibodyPlantConfig()
+    plant_config: MultibodyPlantConfig = MultibodyPlantConfig()  # noqa: RUF009
 
     # SceneGraph configuration.
-    scene_graph_config: SceneGraphConfig = SceneGraphConfig()
+    scene_graph_config: SceneGraphConfig = SceneGraphConfig()  # noqa: RUF009
 
     # All of the fully deterministic elements of the simulation.
     directives: list[ModelDirective] = dc.field(default_factory=list)
@@ -109,7 +109,7 @@ class Scenario:
     # Diagram artifacts.
     cameras: typing.Mapping[str, CameraConfig] = dc.field(default_factory=dict)
 
-    visualization: VisualizationConfig = VisualizationConfig()
+    visualization: VisualizationConfig = VisualizationConfig()  # noqa: RUF009
 
     # A map-of-maps {model_instance_name: {joint_name: np.ndarray}} that
     # defines the initial state of some joints in the scene. Joints not
@@ -142,7 +142,7 @@ def run(*, scenario, graphviz=None):
     builder = DiagramBuilder()
 
     # Create the multibody plant and scene graph.
-    sim_plant, scene_graph = AddMultibodyPlant(
+    sim_plant, _scene_graph = AddMultibodyPlant(
         plant_config=scenario.plant_config,
         scene_graph_config=scenario.scene_graph_config,
         builder=builder,

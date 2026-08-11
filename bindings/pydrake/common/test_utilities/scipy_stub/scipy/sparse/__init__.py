@@ -3,6 +3,8 @@ to support unit testing the Drake APIs that return Eigen::Sparse matrices.
 The pybind11 type caster for Eigen::Sparse maps it to scipy.sparse.
 """
 
+import itertools
+
 import numpy as np
 
 
@@ -67,7 +69,7 @@ class csc_matrix:
         ind_ends = list(self.indptr[1:]) + [-1]
         for ind_start, ind_end in zip(ind_starts, ind_ends):
             values = self.indices[ind_start:ind_end]
-            is_sorted = all([a < b for a, b in zip(values, values[1:])])
+            is_sorted = all([a < b for a, b in itertools.pairwise(values)])
             if not is_sorted:
                 return False
         return True

@@ -4,12 +4,24 @@ line-length = 80
 # Per our oldest supported platform (currently Ubuntu 24.04 "Noble").
 target-version = "py312"
 
+[per-file-target-version]
+
+# This is run using Apple Python, so must retain its antiquated spellings.
+"multibody/parsing/package_downloader.py" = "py39"
+
 [lint]
 
 ignore = [
     # f-string checks for str.format calls that can be replaced with f-strings.
     # In many cases this is a good idea, but not universally.
     "UP032",
+    # "[Finds code] which can be replaced by next(iter(...))". Nearly all cases
+    # are in unit tests, where the next(...) spelling is harder to read.
+    "RUF015",
+    # "Checks for noqa directives that are no longer applicable." We can't use
+    # this because we have more linters than just `ruff`, and their noqa marks
+    # confuse this check.
+    "RUF100",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
     # upgrade. Either re-enable them or comment why we're keeping them off.
     "B004",
@@ -48,14 +60,7 @@ ignore = [
     "PLW1507",
     "PLW1510",
     "PYI041",
-    "RUF007",
-    "RUF009",
     "RUF012",
-    "RUF013",
-    "RUF015",
-    "RUF051",
-    "RUF059",
-    "RUF100",
     "S102",
     "S110",
     "SIM101",

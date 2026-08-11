@@ -34,8 +34,7 @@ class InstallTest(unittest.TestCase):
         # should be inherited.
         env = dict(os.environ)
         for key in ["RUNFILES_MANIFEST_FILE", "RUNFILES_DIR", "TEST_SRCDIR"]:
-            if key in env:
-                del env[key]
+            env.pop(key, None)
         env["PYTHONPATH"] = ":".join(sys.path)
 
         # Execute the test_command.

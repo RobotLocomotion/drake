@@ -10,7 +10,7 @@ from pydrake.symbolic import Variable
 
 class TestMatplotlibUtil(unittest.TestCase):
     def test_plot_sublevelset_quadratic(self):
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
 
         A = np.diag([1.0, 2.0])
         b = [3.0, 4.0]
@@ -30,7 +30,7 @@ class TestMatplotlibUtil(unittest.TestCase):
         self.assertEqual(polys[0].get_facecolor(), facecolor)
 
     def test_plot_sublevelset_expression_degree_two(self):
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
 
         x = np.array([Variable("x0"), Variable("x1")])
         A = np.diag([1.0, 2.0])
@@ -58,7 +58,7 @@ class TestMatplotlibUtil(unittest.TestCase):
         A2 = A1 @ np.array([[-1, 0], [0, 1]])  # mirror about y-axis
         V = x.dot(A1.T.dot(A1.dot(x))) * x.dot(A2.T.dot(A2.dot(x)))
 
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         polys = mut.plot_sublevelset_expression(ax, V, 11)
         xys = polys[0].get_xy()
         for i in range(np.size(xys, 0)):

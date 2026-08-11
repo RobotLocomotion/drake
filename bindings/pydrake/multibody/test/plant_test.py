@@ -2284,7 +2284,7 @@ class TestPlant(unittest.TestCase):
         )
         # Use floating base to effectively add a quaternion in the generalized
         # quaternion.
-        (iiwa_model,) = Parser(plant_f).AddModels(url=iiwa_sdf_url)
+        (_iiwa_model,) = Parser(plant_f).AddModels(url=iiwa_sdf_url)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
@@ -3883,7 +3883,7 @@ class TestPlant(unittest.TestCase):
 
     def _check_hydroelastic_contact_results(self, time_step):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, time_step)
         Parser(plant).AddModels(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"
@@ -3979,14 +3979,14 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_model_empty_model(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
         dut = plant.deformable_model()
         self.assertEqual(dut.num_bodies(), 0)
         self.assertTrue(dut.is_empty())
 
     def test_deformable_model_registration_and_query(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
         dut = plant.mutable_deformable_model()
 
         config = DeformableBodyConfig_[float]()
@@ -4050,7 +4050,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_model_constraints_and_lookup(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
         dut = plant.mutable_deformable_model()
 
         # Register one body
@@ -4078,7 +4078,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_model_parallelism(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
         dut = plant.mutable_deformable_model()
 
         # Switch to 2 threads
@@ -4090,7 +4090,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_model_simulation_and_positions(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
         dut = plant.mutable_deformable_model()
 
         # Register one body
@@ -4160,7 +4160,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_model_external_force(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
         dut = plant.mutable_deformable_model()
 
         # Register one body
@@ -4185,7 +4185,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_model_disable_enable(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
         dut = plant.deformable_model()
 
         # Register one body
@@ -4214,7 +4214,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_body_creation_and_metadata(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(
             builder=builder, time_step=0.01
         )
         deformable_model = plant.mutable_deformable_model()
@@ -4268,7 +4268,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_body_boundary_and_constraints(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(
             builder=builder, time_step=0.01
         )
         deformable_model = plant.mutable_deformable_model()
@@ -4308,7 +4308,7 @@ class TestPlant(unittest.TestCase):
 
     def test_deformable_body_state_methods(self):
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(
             builder=builder, time_step=0.01
         )
         deformable_model = plant.mutable_deformable_model()
