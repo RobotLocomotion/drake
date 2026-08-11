@@ -3,7 +3,8 @@ MultibodyPlant::SetEnableLoopTopology(). When enabled, Finalize() breaks each
 kinematic loop using the shadow links and loop constraints produced by the
 underlying LinkJointGraph/SpanningForest. This file tests that adding shadow
 links splits mass properties properly among the primary link and all of its
-shadows.
+shadows, and that the loop joint is retargeted from the primary link onto its
+shadow.
 
 Most tests use a planar four-bar linkage (three moving links -- driver, coupler,
 rocker -- plus World, connected by four revolute joints) which forms a single
@@ -24,12 +25,17 @@ shadows. */
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/internal_geometry_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/shadow_frame.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -228,9 +234,10 @@ GTEST_TEST(ClosedTopologyTest, ShadowLinkFramesAreEphemeral) {
   EXPECT_TRUE(shadow.body_frame().is_ephemeral());
 
   // Since shadow links are auto-created (not user-created), every frame
-  // fixed to a shadow link is auto-created during Finalize(). For now, that
-  // is just the shadow's own link frame; when loop joints get retargeted
-  // onto the shadow they will bring their mobilizer frames along too.
+  // fixed to a shadow link is auto-created during Finalize(). That includes
+  // the shadow link's own link frame, and a joint frame that was originally
+  // on the primary link. A mobilizer implementing the joint may also add
+  // an ephemeral frame of its own, but doesn't in this case.
   int num_shadow_frames = 0;
   for (FrameIndex index(0); index < plant->num_frames(); ++index) {
     const Frame<double>& frame = plant->get_frame(index);
@@ -238,7 +245,7 @@ GTEST_TEST(ClosedTopologyTest, ShadowLinkFramesAreEphemeral) {
     ++num_shadow_frames;
     EXPECT_TRUE(frame.is_ephemeral()) << frame.name();
   }
-  EXPECT_GE(num_shadow_frames, 1);
+  EXPECT_GE(num_shadow_frames, 2);
 
   // The user's links keep non-ephemeral link frames.
   EXPECT_FALSE(plant->world_body().body_frame().is_ephemeral());
@@ -574,6 +581,207 @@ GTEST_TEST(ClosedTopologyTest, OneLinkCanHaveTwoShadows) {
   EXPECT_NEAR(plant.CalcTotalMass(*context), 18.0, kTol);
 }
 
+/* Loop breaking retargets exactly one end of exactly one joint onto a shadow
+link (in general, one per shadow link). Identifies that joint by looking for a
+substituted frame, and reports which end was moved. */
+struct RetargetedJoint {
+  const Joint<double>* joint{};
+  bool moved_parent{};  // Which end of the joint got moved to the shadow.
+};
+
+RetargetedJoint GetSoleRetargetedJoint(const MultibodyPlant<double>& plant) {
+  std::vector<RetargetedJoint> found;
+  for (JointIndex index : plant.GetJointIndices()) {
+    const Joint<double>& joint = plant.get_joint(index);
+    const bool moved_parent =
+        &joint.effective_frame_on_parent() != &joint.frame_on_parent();
+    const bool moved_child =
+        &joint.effective_frame_on_child() != &joint.frame_on_child();
+    // A joint has at most one end on any one link, so at most one of its ends
+    // can have been moved to a given shadow of that link.
+    EXPECT_FALSE(moved_parent && moved_child) << joint.name();
+    if (moved_parent || moved_child) found.push_back({&joint, moved_parent});
+  }
+  EXPECT_EQ(found.size(), 1);
+  return found.empty() ? RetargetedJoint{} : found.front();
+}
+
+/* Loop breaking cuts the coupler into a primary and a shadow link, which means
+one of the two joints attached to the coupler must be re-aimed at the shadow.
+The forest reaches the primary through the driver, so it is the coupler end of
+the "coupler_rocker" joint that has to move; its mobilizer must then take its
+outboard frame from the shadow link rather than from the coupler.
+
+We check that structurally rather than by comparing poses. On this model the
+substitution is numerically a no-op: a shadow's link frame coincides with its
+primary's, and neither the coupler nor its shadow is fused into a welded
+composite, so the substituted frame's pose in its body frame is identical to
+the user frame's. Only the structure -- which link the mobilizer's frame is
+fixed to -- distinguishes a retargeted joint from one that was left pointing at
+the primary. (In a debug build BodyNodeImpl also asserts this invariant,
+frame_M.body() == body_B, but we want a check that holds in every build.) */
+GTEST_TEST(ClosedTopologyTest, LoopJointIsRetargetedToTheShadowLink) {
+  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
+  const Link<double>& coupler = plant->GetBodyByName("coupler");
+  const Link<double>& rocker = plant->GetBodyByName("rocker");
+  const Link<double>& shadow = GetSoleShadowLink(*plant);
+
+  // It is the coupler_rocker joint's parent (coupler) end that got moved.
+  const RetargetedJoint retargeted = GetSoleRetargetedJoint(*plant);
+  ASSERT_NE(retargeted.joint, nullptr);
+  const Joint<double>& loop_joint = *retargeted.joint;
+  EXPECT_EQ(loop_joint.name(), "coupler_rocker");
+  EXPECT_TRUE(retargeted.moved_parent);
+
+  // The user's view of the joint is unaffected: it still connects the coupler
+  // to the rocker, through the frames the parser created on those links.
+  EXPECT_EQ(loop_joint.parent_body().index(), coupler.index());
+  EXPECT_EQ(loop_joint.child_body().index(), rocker.index());
+  EXPECT_EQ(loop_joint.frame_on_parent().body().index(), coupler.index());
+  EXPECT_EQ(loop_joint.frame_on_child().body().index(), rocker.index());
+
+  // The substitute frame is an ephemeral ShadowFrame fixed to the shadow link,
+  // with the user's frame on the primary as its source (so it has no
+  // independent pose of its own; see the next test).
+  const auto* shadow_frame = dynamic_cast<const internal::ShadowFrame<double>*>(
+      &loop_joint.effective_frame_on_parent());
+  ASSERT_NE(shadow_frame, nullptr);
+  EXPECT_EQ(shadow_frame->body().index(), shadow.index());
+  EXPECT_EQ(&shadow_frame->source_frame(), &loop_joint.frame_on_parent());
+  EXPECT_TRUE(shadow_frame->is_ephemeral());
+
+  // The mobilizer modeling this joint moves the shadow link, not the coupler.
+  // The shadow is reached through the rocker, so this mobilizer is reversed
+  // with respect to its joint: the rocker is inboard and the shadow outboard.
+  // Note that the mobilizer's own frames need not be the joint's frames -- a
+  // revolute joint inserts an offset frame when it has to align its axis with a
+  // mobilizer axis, as the reversal here forces it to -- so what matters is
+  // that the outboard frame ends up fixed to the shadow link, which it does
+  // because it chains off the ShadowFrame.
+  const internal::Mobilizer<double>& mobilizer = loop_joint.GetMobilizerInUse();
+  EXPECT_EQ(mobilizer.inboard_body().index(), rocker.index());
+  EXPECT_EQ(mobilizer.outboard_body().index(), shadow.index());
+  EXPECT_EQ(mobilizer.outboard_frame().body().index(), shadow.index());
+
+  // Nothing else is touched: the remaining joints, including the coupler's
+  // other joint (driver_coupler, which stays on the primary), keep the frames
+  // and bodies the user gave them. GetSoleRetargetedJoint() already checked
+  // that no other joint has a substituted frame; check the bodies too.
+  for (const char* name : {"world_driver", "world_rocker", "driver_coupler"}) {
+    const Joint<double>& joint = plant->GetJointByName(name);
+    EXPECT_EQ(joint.frame_on_parent().body().index(),
+              joint.parent_body().index());
+    EXPECT_EQ(joint.frame_on_child().body().index(),
+              joint.child_body().index());
+  }
+  EXPECT_EQ(plant->GetJointByName("driver_coupler").child_body().index(),
+            coupler.index());
+}
+
+/* The substitute frame on the shadow link has no pose parameter of its own; it
+delegates to the user's frame on the primary link. So moving the user's frame at
+runtime must carry the shadow-side frame along with it -- had we instead
+snapshotted the offset during Finalize(), the two would silently disagree and
+the joint would no longer connect what the user asked it to. This is a
+parameter-level relationship, so we can see it without evaluating kinematics. */
+GTEST_TEST(ClosedTopologyTest, MovingThePrimaryFrameMovesTheShadowFrame) {
+  constexpr double kTol = 1e-14;
+  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
+  auto context = plant->CreateDefaultContext();
+
+  const Link<double>& shadow = GetSoleShadowLink(*plant);
+  const Joint<double>& loop_joint = plant->GetJointByName("coupler_rocker");
+  // The parser materialized this joint's frame on the coupler as a
+  // FixedOffsetFrame, whose offset is a Context parameter we can change.
+  const auto& Jp = dynamic_cast<const FixedOffsetFrame<double>&>(
+      loop_joint.frame_on_parent());
+
+  // Anchor the checks below to frames that really are on the shadow link;
+  // otherwise a missing substitution would leave us comparing the user's frame
+  // to itself and everything would agree vacuously.
+  const Frame<double>& shadow_frame = loop_joint.effective_frame_on_parent();
+  ASSERT_EQ(shadow_frame.body().index(), shadow.index());
+  // The mobilizer's outboard frame chains off the shadow frame, so it must
+  // track the change too.
+  const Frame<double>& frame_M =
+      loop_joint.GetMobilizerInUse().outboard_frame();
+  ASSERT_EQ(frame_M.body().index(), shadow.index());
+
+  // The shadow-side frame starts out coincident with the user's frame. Each
+  // pose is measured in its own link frame, and those two link frames coincide,
+  // so coincident frames have equal poses.
+  const math::RigidTransformd X_CJp = Jp.CalcPoseInBodyFrame(*context);
+  EXPECT_TRUE(CompareMatrices(
+      shadow_frame.CalcPoseInBodyFrame(*context).GetAsMatrix34(),
+      X_CJp.GetAsMatrix34(), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(frame_M.CalcPoseInBodyFrame(*context).translation(),
+                      X_CJp.translation(), kTol));
+
+  // Move the user's frame on the primary coupler to a new offset.
+  const math::RigidTransformd X_PJp_new(math::RollPitchYawd(0.1, -0.2, 0.3),
+                                        Vector3<double>(3.5, 0.25, -0.75));
+  Jp.SetPoseInParentFrame(context.get(), X_PJp_new);
+  const math::RigidTransformd X_CJp_new = Jp.CalcPoseInBodyFrame(*context);
+  ASSERT_FALSE(
+      CompareMatrices(X_CJp_new.GetAsMatrix34(), X_CJp.GetAsMatrix34(), kTol))
+      << "the test moved the frame nowhere";
+
+  // With no re-finalization, both the shadow frame and the mobilizer frame
+  // chained off it report the new offset.
+  EXPECT_TRUE(CompareMatrices(
+      shadow_frame.CalcPoseInBodyFrame(*context).GetAsMatrix34(),
+      X_CJp_new.GetAsMatrix34(), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(frame_M.CalcPoseInBodyFrame(*context).translation(),
+                      X_CJp_new.translation(), kTol));
+}
+
+/* Scalar conversion clones the mobilizers and the shadow-side frames rather
+than rebuilding them (it does not re-run the joint-modeling step), so the
+converted plant must come out modeling the broken loop the same way, with the
+delegation intact. */
+GTEST_TEST(ClosedTopologyTest, RetargetingSurvivesScalarConversion) {
+  constexpr double kTol = 1e-14;
+  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(*plant);
+
+  const Link<AutoDiffXd>& shadow_ad = plant_ad->GetBodyByName("coupler$1");
+  EXPECT_TRUE(shadow_ad.is_ephemeral());
+
+  const Joint<AutoDiffXd>& loop_joint_ad =
+      plant_ad->GetJointByName("coupler_rocker");
+  const auto* shadow_frame_ad =
+      dynamic_cast<const internal::ShadowFrame<AutoDiffXd>*>(
+          &loop_joint_ad.effective_frame_on_parent());
+  ASSERT_NE(shadow_frame_ad, nullptr);
+  EXPECT_EQ(shadow_frame_ad->body().index(), shadow_ad.index());
+  // The clone's source frame is the clone's own frame_on_parent(), not an
+  // alias back into the double plant.
+  EXPECT_EQ(&shadow_frame_ad->source_frame(), &loop_joint_ad.frame_on_parent());
+  EXPECT_EQ(&loop_joint_ad.effective_frame_on_child(),
+            &loop_joint_ad.frame_on_child());
+
+  const internal::Mobilizer<AutoDiffXd>& mobilizer_ad =
+      loop_joint_ad.GetMobilizerInUse();
+  EXPECT_EQ(mobilizer_ad.outboard_body().index(), shadow_ad.index());
+  EXPECT_EQ(mobilizer_ad.outboard_frame().body().index(), shadow_ad.index());
+
+  // The cloned frame still delegates rather than holding a copy of the offset.
+  auto context_ad = plant_ad->CreateDefaultContext();
+  const auto& Jp_ad = dynamic_cast<const FixedOffsetFrame<AutoDiffXd>&>(
+      loop_joint_ad.frame_on_parent());
+  Jp_ad.SetPoseInParentFrame(
+      context_ad.get(),
+      math::RigidTransform<AutoDiffXd>(Vector3<AutoDiffXd>(3.5, 0.25, -0.75)));
+  EXPECT_TRUE(CompareMatrices(
+      math::ExtractValue(
+          shadow_frame_ad->CalcPoseInBodyFrame(*context_ad).GetAsMatrix34()),
+      math::ExtractValue(
+          Jp_ad.CalcPoseInBodyFrame(*context_ad).GetAsMatrix34()),
+      kTol));
+}
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
