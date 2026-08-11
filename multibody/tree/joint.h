@@ -767,6 +767,32 @@ class Joint : public MultibodyElement<T> {
       const internal::SpanningForest::Mobod& mobod,
       internal::MultibodyTree<T>* tree);
 
+  // (Internal use only) When loop breaking moves one end of this joint from a
+  // user link onto one of that link's ephemeral shadow links, MultibodyTree
+  // calls one of these (before Build()) with a substitute frame fixed to the
+  // shadow and coincident with the user's frame on the primary link. The
+  // user-visible frame_on_parent()/frame_on_child() and parent_body()/
+  // child_body() continue to report the user's own frames and links; only the
+  // mobilizer sees the substitution, via tree_frames().
+  void set_effective_frame_on_parent(const Frame<T>& frame) {
+    effective_frame_on_parent_ = &frame;
+  }
+  void set_effective_frame_on_child(const Frame<T>& frame) {
+    effective_frame_on_child_ = &frame;
+  }
+
+  // (Internal use only) Returns the frame this joint's mobilizer should use on
+  // the parent (child) side: the substitute frame on a shadow link if loop
+  // breaking installed one, otherwise the user's own frame.
+  const Frame<T>& effective_frame_on_parent() const {
+    return effective_frame_on_parent_ != nullptr ? *effective_frame_on_parent_
+                                                 : frame_on_parent_;
+  }
+  const Frame<T>& effective_frame_on_child() const {
+    return effective_frame_on_child_ != nullptr ? *effective_frame_on_child_
+                                                : frame_on_child_;
+  }
+
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   // be created. This method is intended to be called by
   // MultibodyTree::CloneToScalar().
@@ -776,6 +802,16 @@ class Joint : public MultibodyElement<T> {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
     DRAKE_DEMAND(mobilizer_ != nullptr);
     joint_clone->mobilizer_ = &tree_clone->get_mutable_variant(*mobilizer_);
+    // Cloning doesn't re-run Build(), so carry over any shadow-link frame
+    // substitutions rather than leaving the clone reporting the user frames.
+    if (effective_frame_on_parent_ != nullptr) {
+      joint_clone->effective_frame_on_parent_ =
+          &tree_clone->get_variant(*effective_frame_on_parent_);
+    }
+    if (effective_frame_on_child_ != nullptr) {
+      joint_clone->effective_frame_on_child_ =
+          &tree_clone->get_variant(*effective_frame_on_child_);
+    }
     return joint_clone;
   }
 
@@ -952,11 +988,18 @@ class Joint : public MultibodyElement<T> {
   /// inboard/outboard frames for a tree in the spanning forest, given
   /// whether they should be reversed from the parent/child frames that are
   /// members of this Joint object.
+  ///
+  /// These are the joint's _effective_ frames: if loop breaking moved one end
+  /// of this joint onto an ephemeral shadow link, the frame for that end is
+  /// the substitute frame on the shadow rather than the user's frame on the
+  /// primary link. Concrete joints should always build their mobilizer from
+  /// these frames, so that they need not know that shadow links exist.
   std::pair<const Frame<T>*, const Frame<T>*> tree_frames(
       bool use_reversed_mobilizer) const {
-    return use_reversed_mobilizer
-               ? std::make_pair(&frame_on_child(), &frame_on_parent())
-               : std::make_pair(&frame_on_parent(), &frame_on_child());
+    return use_reversed_mobilizer ? std::make_pair(&effective_frame_on_child(),
+                                                   &effective_frame_on_parent())
+                                  : std::make_pair(&effective_frame_on_parent(),
+                                                   &effective_frame_on_child());
   }
 
   /// (Internal use only) Returns the mobilizer implementing this joint,
@@ -1058,6 +1101,12 @@ class Joint : public MultibodyElement<T> {
   std::string name_;
   const Frame<T>& frame_on_parent_;  // Frame Jp.
   const Frame<T>& frame_on_child_;   // Frame Jc.
+
+  // Substitute frames on an ephemeral shadow link, installed by MultibodyTree
+  // during Finalize() when loop breaking retargets an end of this joint. Null
+  // unless substituted; see set_effective_frame_on_parent().
+  const Frame<T>* effective_frame_on_parent_{nullptr};
+  const Frame<T>* effective_frame_on_child_{nullptr};
 
   VectorX<double> damping_;
 
