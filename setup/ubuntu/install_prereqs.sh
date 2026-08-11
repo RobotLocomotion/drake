@@ -50,11 +50,6 @@ readonly workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../.." && pwd)"
 packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-build.txt")
 ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
-# Ensure that we have available a locale that supports UTF-8 for generating a
-# C++ header containing Python API documentation during the build.
-${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends locales
-${maybe_sudo} locale-gen en_US.UTF-8
-
 # We need a working /usr/bin/python (of any version).
 if [[ ! -e /usr/bin/python ]]; then
   ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends python-is-python3
