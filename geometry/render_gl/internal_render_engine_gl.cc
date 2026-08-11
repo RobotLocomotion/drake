@@ -386,6 +386,9 @@ uniform vec4 diffuse_color;
 out vec4 color;
 
 void main() {
+  if (diffuse_color.a == 0.0) {
+    discard;
+  }
   color = GetIlluminatedColor(diffuse_color);
 })""";
 };
@@ -505,6 +508,9 @@ void main() {
     uv.y = 1.0 - uv.y;
   }
   vec4 map_rgba = texture(diffuse_map, uv);
+  if (map_rgba.a == 0.0) {
+    discard;
+  }
   color = GetIlluminatedColor(map_rgba);
 })""";
 };
