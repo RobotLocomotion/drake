@@ -15,9 +15,14 @@ single kinematic loop. See examples/multibody/four_bar/dev/four_bar_loop.sdf. */
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/scene_graph.h"
+#include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/internal_geometry_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -161,6 +166,27 @@ std::unique_ptr<MultibodyPlant<double>> MakeFourBarPlant() {
   auto plant = std::make_unique<MultibodyPlant<double>>(0.0 /* continuous */);
   plant->SetAllowLoopTopology(true);
   Parser(plant.get()).AddModelsFromString(kFourBarLoopSdf, "sdf");
+  plant->Finalize();
+  return plant;
+}
+
+/* As above, but registers the plant as a geometry source for `scene_graph` and
+gives the driver and the coupler (the link we know gets split; see
+CouplerIsSplit) one visual and one collision geometry apiece. */
+std::unique_ptr<MultibodyPlant<double>> MakeFourBarPlantWithGeometry(
+    geometry::SceneGraph<double>* scene_graph) {
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.0 /* continuous */);
+  plant->SetAllowLoopTopology(true);
+  plant->RegisterAsSourceForSceneGraph(scene_graph);
+  Parser(plant.get()).AddModelsFromString(kFourBarLoopSdf, "sdf");
+  for (const std::string name : {"driver", "coupler"}) {
+    const Link<double>& link = plant->GetBodyByName(name);
+    plant->RegisterVisualGeometry(link, math::RigidTransformd(),
+                                  geometry::Sphere(0.1), name + "_visual");
+    plant->RegisterCollisionGeometry(link, math::RigidTransformd(),
+                                     geometry::Sphere(0.1), name + "_collision",
+                                     CoulombFriction<double>(1.0, 1.0));
+  }
   plant->Finalize();
   return plant;
 }
@@ -320,6 +346,86 @@ GTEST_TEST(ClosedTopologyTest, RuntimeMassChangeReSplitsAndShadowIsReadOnly) {
   // The shadow's mass properties are not independently settable.
   DRAKE_EXPECT_THROWS_MESSAGE(shadow.SetMass(context.get(), 1.0),
                               ".*coupler\\$1.*ephemeral shadow link.*");
+}
+
+/* A shadow link carries no geometry of its own -- it is an internal modeling
+artifact coincident with its primary -- but it must still have an (empty) entry
+in the plant's per-body geometry arrays, which are indexed by BodyIndex and so
+must stay dense over num_bodies(). Shadow links are created inside
+MultibodyTree::Finalize() rather than by MultibodyPlant::AddRigidBody() (which
+is what normally extends those arrays), so Finalize() has to extend them. */
+GTEST_TEST(ClosedTopologyTest, ShadowLinkHasEmptyGeometryEntries) {
+  geometry::SceneGraph<double> scene_graph;
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeFourBarPlantWithGeometry(&scene_graph);
+
+  const Link<double>& coupler = plant->GetBodyByName("coupler");
+  const Link<double>& shadow = plant->GetBodyByName("coupler$1");
+
+  // The primary keeps the geometry registered on it ...
+  EXPECT_EQ(plant->GetVisualGeometriesForBody(coupler).size(), 1);
+  EXPECT_EQ(plant->GetCollisionGeometriesForBody(coupler).size(), 1);
+
+  // ... and its shadow has an entry, which is empty. Without that entry these
+  // two lookups would read past the end of the per-body arrays.
+  EXPECT_TRUE(plant->GetVisualGeometriesForBody(shadow).empty());
+  EXPECT_TRUE(plant->GetCollisionGeometriesForBody(shadow).empty());
+
+  // Breaking the loop doesn't invent geometry: driver and coupler, one visual
+  // and one collision geometry each.
+  EXPECT_EQ(plant->num_visual_geometries(), 2);
+  EXPECT_EQ(plant->num_collision_geometries(), 2);
+
+  // A shadow gets no SceneGraph frame of its own; reporting a pose for it would
+  // publish a spurious duplicate of its primary. That's safe precisely because
+  // the frame id table is map-keyed and documented to tolerate bodies with no
+  // frame -- unlike the dense per-body arrays checked above.
+  EXPECT_TRUE(plant->GetBodyFrameIdIfExists(coupler.index()).has_value());
+  EXPECT_FALSE(plant->GetBodyFrameIdIfExists(shadow.index()).has_value());
+
+  // The per-body arrays are copied wholesale during scalar conversion, so the
+  // converted plant must agree with the tree it carries as well.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(*plant);
+  EXPECT_EQ(plant_ad->num_bodies(), plant->num_bodies());
+  EXPECT_TRUE(
+      plant_ad->GetVisualGeometriesForBody(plant_ad->GetBodyByName("coupler$1"))
+          .empty());
+  EXPECT_TRUE(
+      plant_ad
+          ->GetCollisionGeometriesForBody(plant_ad->GetBodyByName("coupler$1"))
+          .empty());
+}
+
+/* Several post-finalize consumers (visualization helpers in particular) walk
+every BodyIndex in [0, num_bodies()) and ask the plant for that body's
+geometry. Before shadow links were given per-body geometry entries, those walks
+read past the end of the arrays once a loop had been broken. Note that the
+out-of-range read is undefined behavior rather than an exception, so this test
+earns its keep in debug builds (where the density assertions in the accessors
+fire) and under the memory sanitizers. */
+GTEST_TEST(ClosedTopologyTest, WalkingEveryBodyForGeometryStaysInRange) {
+  geometry::SceneGraph<double> scene_graph;
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeFourBarPlantWithGeometry(&scene_graph);
+
+  // Summing per-body counts over all bodies (shadows included) must reproduce
+  // the plant-wide totals -- i.e. every body has an entry and no geometry is
+  // counted twice.
+  int num_visual = 0;
+  int num_collision = 0;
+  for (BodyIndex i(0); i < plant->num_bodies(); ++i) {
+    const Link<double>& link = plant->get_body(i);
+    num_visual += ssize(plant->GetVisualGeometriesForBody(link));
+    num_collision += ssize(plant->GetCollisionGeometriesForBody(link));
+  }
+  EXPECT_EQ(num_visual, plant->num_visual_geometries());
+  EXPECT_EQ(num_collision, plant->num_collision_geometries());
+
+  // GeometryNames performs exactly that walk; it is the path taken by contact
+  // visualization (see also ContactResultsToLcmSystem).
+  internal::GeometryNames geometry_names;
+  EXPECT_NO_THROW(geometry_names.ResetBasic(*plant));
 }
 
 }  // namespace
