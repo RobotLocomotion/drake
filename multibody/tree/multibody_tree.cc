@@ -25,6 +25,7 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/multibody/tree/rpy_floating_mobilizer.h"
+#include "drake/multibody/tree/shadow_frame.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -1103,6 +1104,50 @@ void MultibodyTree<T>::Finalize() {
     const RigidBody<T>& shadow = AddEphemeralLink(
         graph_link.name(), graph_link.model_instance(), M_shadow);
     DRAKE_DEMAND(shadow.index() == graph_link.index());
+
+    /* BuildForest() broke the loop by retargeting one of a joint's ends from
+    the primary link onto this shadow. That joint's frame for that end was
+    authored on the primary, so we give the joint a substitute frame that is
+    fixed to the shadow and coincident with the user's frame. We can use a
+    coincident frame because a shadow's link frame coincides with its
+    primary's. A ShadowFrame has no pose parameter of its own; it delegates to
+    the user's frame, which stays the single source of truth.
+
+    Joints and mobilizers thus stay shadow-ignorant:
+    CreateJointImplementations() runs after this loop and Joint::Build() picks
+    up the substitution through Joint::tree_frames(). The joint's user-visible
+    frame_on_parent()/ frame_on_child() and parent_body()/child_body() are
+    unchanged. */
+    const LinkJointGraph::Link& primary = graph.link_by_index(primary_index);
+    const std::vector<LinkIndex>& shadows = primary.shadow_links();
+    const auto shadow_iter =
+        std::find(shadows.begin(), shadows.end(), graph_link.index());
+    DRAKE_DEMAND(shadow_iter != shadows.end());
+    // The retargeted joints are ordered to match the shadow links.
+    const JointIndex joint_index = primary.joints_moved_to_shadow_links().at(
+        shadow_iter - shadows.begin());
+    const LinkJointGraph::Joint& graph_joint =
+        graph.joint_by_index(joint_index);
+    Joint<T>& joint = joints_.get_mutable_element(joint_index);
+
+    // Exactly one end of the joint should have been moved to this shadow.
+    const bool moved_child =
+        graph_joint.effective_child_link_index() == graph_link.index();
+    DRAKE_DEMAND(moved_child || graph_joint.effective_parent_link_index() ==
+                                    graph_link.index());
+    const Frame<T>& source_frame =
+        moved_child ? joint.frame_on_child() : joint.frame_on_parent();
+
+    const Frame<T>& shadow_frame =
+        AddEphemeralFrame(std::make_unique<ShadowFrame<T>>(
+            joint.MakeUniqueOffsetFrameName(source_frame, "shadow"), shadow,
+            source_frame, joint.model_instance()));
+
+    if (moved_child) {
+      joint.set_effective_frame_on_child(shadow_frame);
+    } else {
+      joint.set_effective_frame_on_parent(shadow_frame);
+    }
   }
 
   /* Add the ephemeral Joints. */
