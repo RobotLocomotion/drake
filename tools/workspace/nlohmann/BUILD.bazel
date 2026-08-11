@@ -1,17 +1,31 @@
-load("@drake//tools/skylark:cc_hidden.bzl", "cc_static_hidden_library")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 
-cc_static_hidden_library(
+_DEFINES = [
+    # Use a drake_vendor hidden namespace instead of nlohmann_json's default ABI
+    # namespace based on its version number. This prevents ODR violations in
+    # case downstream code also links to nlohmann_json. We must quote it because
+    # Bazel always tokenizes `defines = ...` and we don't want that here.
+    "'NLOHMANN_JSON_NAMESPACE_BEGIN=namespace nlohmann { inline namespace drake_vendor __attribute__((visibility(\"hidden\"))) {'",
+]
+
+# N.B. Unlike most of our externals, using cc_static_hidden_library is not
+# necessary here because the nlohmann_json library (1) is header-only, and
+# (2) doesn't `deps = ...` on any other Bazel modules.
+
+cc_library(
     name = "json",
+    defines = _DEFINES,
     visibility = ["//visibility:public"],
     deps = ["@module_nlohmann//:json"],
 )
 
-cc_static_hidden_library(
+cc_library(
     name = "singleheader-json",
+    defines = _DEFINES,
     visibility = ["//visibility:public"],
     deps = ["@module_nlohmann//:singleheader-json"],
 )
