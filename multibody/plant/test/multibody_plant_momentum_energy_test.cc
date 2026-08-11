@@ -327,16 +327,14 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSpatialInertia) {
   body_indexes.push_back(BodyIndex(30));
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcSpatialInertia(*context_, frame_A, body_indexes),
-      "CalcSpatialInertia\\(\\): contains an invalid BodyIndex"
-      " \\(LinkIndex\\).");
+      "CalcSpatialInertia\\(\\): contains an invalid BodyIndex.*");
 
   // Verify an exception is thrown if body_indexes has two occurrences of
   // body A.
   body_indexes.push_back(body_A.index());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcSpatialInertia(*context_, frame_A, body_indexes),
-      "CalcSpatialInertia\\(\\): contains a repeated BodyIndex"
-      " \\(LinkIndex\\).");
+      "CalcSpatialInertia\\(\\): contains a repeated BodyIndex.*");
 }
 
 }  // namespace

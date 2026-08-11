@@ -2915,10 +2915,14 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
 
   // Add contributions from each link Li.
   for (LinkIndex link_index : link_indexes) {
-    if (link_index == 0) continue;  // No contribution from the world link.
+    if (link_index == world_index()) continue;  // World link adds zero.
 
     // Ensure MultibodyPlant method contains a valid link_index.
-    DRAKE_DEMAND(link_index < num_links());
+    if (link_index >= num_links()) {
+      std::string message = fmt::format(
+          "{}() was passed an invalid BodyIndex (LinkIndex).", __func__);
+      throw std::logic_error(message);
+    }
 
     // If link L is a unfused body (one-link Mobod), use the Mobod's cached
     // value for M_LLo_W (a more efficient way to do this calculation).
@@ -2947,9 +2951,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
 
       // Form current link L's spatial momentum in W about Lo, expressed in W.
       // Shift L_WLLo_W from "about Lo" to "about Wo", and accumulate the sum.
-      const Link<T>& link = get_link(link_index);
-      const SpatialVelocity<T>& V_WLo_W =
-          link.EvalSpatialVelocityInWorld(context);
+      const SpatialVelocity<T>& V_WLo_W = vc.get_V_WL(link_ordinal);
       const Vector3<T>& p_WoLo_W = X_WL.translation();
       const SpatialMomentum<T> L_WLWo_W = (M_LLo_W * V_WLo_W).Shift(-p_WoLo_W);
       L_WSWo_W += L_WLWo_W;

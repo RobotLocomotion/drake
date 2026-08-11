@@ -462,7 +462,6 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
                                     MatrixCompareType::relative));
 
         // Link4's spatial momentum should always be zero (welded to ground).
-        // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
         EXPECT_TRUE(CompareMatrices(L_WFP_W.get_coeffs(),
                                     Vector6<double>::Zero(), kTolerance,
                                     MatrixCompareType::relative));
