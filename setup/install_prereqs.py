@@ -105,6 +105,7 @@ def _run(
         stdout=subprocess.PIPE if not interactive else None,
         stderr=subprocess.STDOUT if not interactive else None,
         text=True,
+        check=False,
     )
     problem = check and (process.returncode != 0)
     if process.stdout is not None:

@@ -660,4 +660,4 @@ def main(argv):
 if __name__ == "__main__":
     good = main(sys.argv[1:])
     if not good:
-        exit(1)
+        sys.exit(1)

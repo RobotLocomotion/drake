@@ -23,6 +23,7 @@ def add_library_paths(parameters=None):
             ["xcrun", "--find", "clang"],
             stdout=subprocess.PIPE,
             encoding="utf-8",
+            check=False,
         )
         if completed_process.returncode == 0:
             toolchain_dir = os.path.dirname(
@@ -33,6 +34,7 @@ def add_library_paths(parameters=None):
             ["xcrun", "--show-sdk-path"],
             stdout=subprocess.PIPE,
             encoding="utf-8",
+            check=False,
         )
         if parameters is not None and completed_process.returncode == 0:
             sdkroot = completed_process.stdout.strip()
