@@ -2564,7 +2564,8 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
   // For efficiency, evaluate all mobods' spatial inertia and pose.
   const std::vector<SpatialInertia<T>>& M_BiBo_W =
       EvalSpatialInertiaInWorldCache(context);
-  const FrameBodyPoseCache<T>& fbpc = EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   // Add each link L's spatial inertia in the world frame W to this system
@@ -2595,12 +2596,14 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     } else {
       // For a link_L on a Mobod that has multiple follower links, M_LLo_W
       // (L's spatial inertia about Lo expressed in world W) needs to be
-      // calculated as M_LLo_W is not cached (and perhaps no need for one).
+      // calculated since M_LLo_W is not cached. Note: the benefits of caching
+      // M_LLo_W for this special case are questionable.
       // Get M_LLo_L (link L's spatial inertia about its origin Lo, expressed
       // in link L), then re-express M_LLo_L in world W to form M_LLo_W.
       const LinkOrdinal link_ordinal =
           graph().link_by_index(link_index).ordinal();
-      const SpatialInertia<T>& M_LLo_L = fbpc.get_M_LLo_L(link_ordinal);
+      const SpatialInertia<T>& M_LLo_L =
+          frame_body_pose_cache.get_M_LLo_L(link_ordinal);
       const RigidTransform<T>& X_WL = pc.get_X_WL(link_ordinal);
       const RotationMatrix<T>& R_WL = X_WL.rotation();
       const SpatialInertia<T> M_LLo_W = M_LLo_L.ReExpress(R_WL);
@@ -2907,7 +2910,8 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
       EvalSpatialInertiaInWorldCache(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-  const FrameBodyPoseCache<T>& fbpc = EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
 
   // Accumulate each body's spatial momentum in world W to this system S's
   // spatial momentum in W about Wo (the origin of W), expressed in W.
@@ -2920,7 +2924,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     // Ensure MultibodyPlant method contains a valid link_index.
     if (link_index >= num_links()) {
       std::string message = fmt::format(
-          "{}() was passed an invalid BodyIndex (LinkIndex).", __func__);
+          "{}() contains an invalid BodyIndex (LinkIndex).", __func__);
       throw std::logic_error(message);
     }
 
@@ -2939,12 +2943,14 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     } else {
       // For a link_L on a Mobod that has multiple follower links, M_LLo_W
       // (L's spatial inertia about Lo expressed in world W) needs to be
-      // calculated as M_LLo_W is not cached (and perhaps no need for one).
+      // calculated since M_LLo_W is not cached. Note: the benefits of caching
+      // M_LLo_W for this special case are questionable.
       // Get M_LLo_L (link L's spatial inertia about its origin Lo, expressed
       // in link L), then re-express M_LLo_L in world W to form M_LLo_W.
       const LinkOrdinal link_ordinal =
           graph().link_by_index(link_index).ordinal();
-      const SpatialInertia<T>& M_LLo_L = fbpc.get_M_LLo_L(link_ordinal);
+      const SpatialInertia<T>& M_LLo_L =
+          frame_body_pose_cache.get_M_LLo_L(link_ordinal);
       const RigidTransform<T>& X_WL = pc.get_X_WL(link_ordinal);
       const RotationMatrix<T>& R_WL = X_WL.rotation();
       const SpatialInertia<T> M_LLo_W = M_LLo_L.ReExpress(R_WL);
