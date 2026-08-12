@@ -5,7 +5,6 @@ should NOT be called directly by anything else.
 
 import argparse
 from importlib.machinery import SourceFileLoader
-import io
 import os
 from pathlib import Path
 import re
@@ -66,7 +65,7 @@ def _unittest_main(*, module, argv, testRunner):
     assert len(shard_tests) > 0
     print(f"info: Shard {shard_index + 1} / {total_shards} has these tests:")
     for shard_test in shard_tests:
-        print(f"info: - {str(shard_test)}")
+        print(f"info: - {shard_test!s}")
     sys.stdout.flush()
     shard_suite = unittest.TestSuite(shard_tests)
     result = testRunner.run(shard_suite)
@@ -93,13 +92,12 @@ def main():
         runfiles + "_main/" + test_package + "test/" + test_basename
     )
     if not os.path.exists(runfiles_test_filename):
-        raise RuntimeError("Could not find {} at {}".format(
-            test_basename, runfiles_test_filename))
+        raise RuntimeError(f"Could not find {test_basename} at {runfiles_test_filename}")
 
     # Check the test's source code for a (misleading) __main__.
     realpath_test_filename = os.path.realpath(runfiles_test_filename)
-    with io.open(realpath_test_filename, "r", encoding="utf8") as infile:
-        for line in infile.readlines():
+    with open(realpath_test_filename, "r", encoding="utf8") as infile:
+        for line in infile:
             if any([line.startswith("if __name__ =="),
                     line.strip().startswith("unittest.main")]):
                 print(f"error: {test_basename} appears to have a main "

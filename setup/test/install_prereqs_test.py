@@ -3,6 +3,7 @@ import logging
 import os
 from pathlib import Path
 import pickle
+import platform
 import re
 import subprocess
 import sys
@@ -15,6 +16,12 @@ from python import runfiles
 
 EXPECTED_BAZELISK = "1.29.0"
 EXPECTED_KCOV = "43+dfsg-1"
+
+
+def _is_ubuntu_distro(codename: str) -> bool:
+    if sys.platform == "darwin":
+        return False
+    return platform.freedesktop_os_release()["VERSION_CODENAME"] == codename
 
 
 class InstallPrereqsActor:
@@ -88,6 +95,7 @@ class InstallPrereqsActor:
             "bazel",
             "dpkg",
             "dpkg-query",
+            "locale",
             "sudo",
         ]
         for program in allowed:
@@ -98,12 +106,12 @@ class InstallPrereqsActor:
         self.returncode = None
         self.stdout = None
 
-        # Track whether the setup program has performed these actions yet.
-        self._did_sudo_check = False
-
         # The list of currently-installed packages to report to install_prereqs;
         # a mapping of name => version number.
         self.installed_packages = {}
+
+        # The list of currently-generated locales to report to install_prereqs.
+        self.locales = []
 
     def _set_up_source(self) -> Path:
         """Prepares a source-tree-like writable temporary directory that
@@ -131,8 +139,8 @@ class InstallPrereqsActor:
         setup.mkdir()
         result = self._source / "setup/install_prereqs.py"
         result.symlink_to(install_prereqs)
-        for platform in ["mac", "ubuntu"]:
-            (setup / platform).symlink_to(install_prereqs.parent / platform)
+        for distro in ["mac", "ubuntu"]:
+            (setup / distro).symlink_to(install_prereqs.parent / distro)
         return result
 
     def source(self) -> Path:
@@ -176,7 +184,7 @@ class InstallPrereqsActor:
         try:
             self._process.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            logging.warn("install_prereqs timeout expired")
+            logging.warning("install_prereqs timeout expired")
             self._process.terminate()
         self._process.wait()
         self.stdout = self._process.stdout.read()
@@ -251,12 +259,6 @@ class InstallPrereqsActor:
 
         return actual_argv
 
-    def expect_sudo_check_if_not_yet_checked(self):
-        if self._did_sudo_check:
-            return
-        self.expect_call(["sudo", "-n", "/bin/true"])
-        self._did_sudo_check = True
-
     def expect_dpkg_query(self):
         def _reply(argv):
             stdout = ""
@@ -271,13 +273,26 @@ class InstallPrereqsActor:
 
         self.expect_call(["dpkg-query", "--show", "..."], stdout=_reply)
 
+    def expect_sudo_check(self):
+        self.expect_call(["sudo", "-n", "/bin/true"])
+
     def expect_apt_install(self):
-        self.expect_sudo_check_if_not_yet_checked()
+        self.expect_sudo_check()
         argv = self.expect_call(
             ["sudo", "apt-get", "install", "--no-install-recommends", "..."]
         )
         package_names = [arg for arg in argv[3:] if not arg.startswith("-")]
         return package_names
+
+    def expect_locale_query(self):
+        stdout = ""
+        for x in self.locales:
+            stdout += f"{x}\n"
+        self.expect_call(["locale", "-a"], stdout=stdout)
+
+    def expect_locale_gen(self):
+        self.expect_sudo_check()
+        self.expect_call(["sudo", "locale-gen", "en_US.UTF-8"])
 
 
 class InstallPrereqsTest(unittest.TestCase):
@@ -301,8 +316,8 @@ class InstallPrereqsTest(unittest.TestCase):
         self.assertEqual(dut.returncode, 0)
 
     @staticmethod
-    def _extract_debian_package_names_from_paths(paths: list[str]):
-        """Given a list of filenames, e.g., ["/path/to/foo_arch.deb"], returns
+    def _extract_debian_package_names_from_paths(paths: set[str]):
+        """Given a set of filenames, e.g., {"/path/to/foo_arch.deb"}, returns
         the set of package names, e.g., {"foo"}."""
         filenames = sorted([x.split("/")[-1] for x in paths])
         return set([re.split("[-_]", x)[0] for x in filenames])
@@ -319,6 +334,12 @@ class InstallPrereqsTest(unittest.TestCase):
             paths = dut.expect_apt_install()
             names = self._extract_debian_package_names_from_paths(paths)
             self.assertIn(names, ({"bazelisk"}, {"bazelisk", "kcov"}))
+            if _is_ubuntu_distro("noble"):
+                # The DUT should check if GCC 14 is installed (it's not).
+                dut.expect_dpkg_query()
+            # The DUT should check locales and then generate what's missing.
+            dut.expect_locale_query()
+            dut.expect_locale_gen()
 
         # The DUT prefetches bazel.
         dut.expect_call(["bazel", "version"])
@@ -342,7 +363,10 @@ class InstallPrereqsTest(unittest.TestCase):
         dut.installed_packages = {
             "bazelisk": "0.0.0",
             "kcov": EXPECTED_KCOV,
+            "libgcc-14-dev": "14.x.x",
+            # N.B. No "libstdc++-14-dev" nor "libgfortran-14-dev".
         }
+        dut.locales = ["fr_FR.utf8"]
         dut.start(args=["--developer", "-y"])
 
         if sys.platform != "darwin":
@@ -356,6 +380,16 @@ class InstallPrereqsTest(unittest.TestCase):
             paths = dut.expect_apt_install()
             names = self._extract_debian_package_names_from_paths(paths)
             self.assertEqual(names, {"bazelisk"})
+            if _is_ubuntu_distro("noble"):
+                # The DUT should finish installing GCC 14.
+                dut.expect_dpkg_query()
+                self.assertEqual(
+                    set(dut.expect_apt_install()),
+                    {"libstdc++-14-dev", "libgfortran-14-dev"},
+                )
+            # The DUT should check locales and then generate what's missing.
+            dut.expect_locale_query()
+            dut.expect_locale_gen()
 
         # The DUT prefetches bazel.
         dut.expect_call(["bazel", "version"])
@@ -371,13 +405,23 @@ class InstallPrereqsTest(unittest.TestCase):
         dut.installed_packages = {
             "bazelisk": EXPECTED_BAZELISK,
             "kcov": EXPECTED_KCOV,
+            "libgcc-14-dev": "14.x.x",
+            "libstdc++-14-dev": "14.x.x",
+            "libgfortran-14-dev": "14.x.x",
         }
+        dut.locales = ["en_US.utf8"]
         dut.start(args=["--developer", "-y"])
 
         if sys.platform != "darwin":
             # The DUT confirms that bazelisk (etc) is already installed, and
             # doesn't install anything further.
             dut.expect_dpkg_query()
+            if _is_ubuntu_distro("noble"):
+                # The DUT confirms that GCC 14 is already fully installed, and
+                # doesn't install anything further.
+                dut.expect_dpkg_query()
+            # The DUT should check the locale we need is already there.
+            dut.expect_locale_query()
 
         # The DUT prefetches bazel.
         dut.expect_call(["bazel", "version"])

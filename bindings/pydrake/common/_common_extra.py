@@ -306,8 +306,8 @@ def _add_extraneous_repr_functions():
         return (
             f"MemoryFile("
             f"contents={repr_contents}, "
-            f"extension={repr(file.extension())}, "
-            f"filename_hint={repr(file.filename_hint())})"
+            f"extension={file.extension()!r}, "
+            f"filename_hint={file.filename_hint()!r})"
         )
 
     MemoryFile.__repr__ = mem_file_repr

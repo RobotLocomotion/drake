@@ -74,6 +74,7 @@ cmake "$git_root" \
     -DWITH_USER_ZLIB=OFF \
     -DDRAKE_INSTALL_JAVA=OFF \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
+    -DDRAKE_PYTHON_BINDER="${DRAKE_PYTHON_BINDER}" \
     -DCMAKE_INSTALL_PREFIX="/tmp/drake-wheel-build/drake-dist" \
     -DPython_EXECUTABLE="$python_executable"
 make install

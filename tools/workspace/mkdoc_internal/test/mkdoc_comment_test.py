@@ -304,7 +304,6 @@ Version:
 """.rstrip()
         self.assertEqual(process_comment("@version 1.0"), output)
 
-    #
     def test_details(self):
         input = """\
 /// @details Vitae sapien pellentesque habitant morbi tristique senectus.

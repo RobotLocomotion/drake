@@ -293,6 +293,49 @@ def _install_downloaded_debs(*, yes: bool) -> None:
             _apt_install(package_names=paths, yes=yes)
 
 
+def _maybe_fix_gcc(*, yes: bool) -> None:
+    """Corrects a common GCC installation mistake. On Noble, Drake doesn't
+    install anything related to GCC 14, but if the user has chosen to install
+    some GCC 14 libraries but has failed to install all of them correctly as a
+    group, Drake's documentation header file parser (run during linting) will
+    fail with a libclang-related complaint. Therefore, we'll help the developer
+    clean up their mess, to avoid apparent Drake linter errors.
+    """
+    if _os_codename() != "noble":
+        return
+    packages = ["libgcc-14-dev", "libstdc++-14-dev", "libgfortran-14-dev"]
+    missing = [
+        package_name
+        for package_name, version in _get_dpkg_versions(packages).items()
+        if version is None
+    ]
+    if len(missing) == len(packages):
+        # No action required. Nothing from the group is installed yet.
+        return
+    if len(missing) == 0:
+        # No action required. The whole group is already installed.
+        return
+    _apt_install(package_names=missing, yes=yes)
+
+
+def _generate_locales():
+    """Ensures that we have available a locale that supports UTF-8 for
+    generating a C++ header containing Python API documentation during
+    the build."""
+    # The canonical name is used when setting a locale, in error messages, etc.
+    canonical = "en_US.UTF-8"
+    # The alias name is what is reported by the `locale -a` directory lookup.
+    alias = "en_US.utf8"
+    for line in _run(args=["locale", "-a"], quiet=True).stdout.splitlines():
+        if line.strip() == alias:
+            logging.debug(f"The {canonical} locale already exists.")
+            return
+    _run(
+        args=["locale-gen", canonical],
+        superuser=True,
+    )
+
+
 def _setup_user_environment():
     """Update user-specific config snippets needed only by Drake Developers."""
     # Compute the bazel python version snippet.
@@ -332,7 +375,7 @@ def _setup_user_environment():
         (python_version, python_version_content),
         (bazelrc, bazelrc_content),
     ):
-        logging.info(f"Writing {str(path)} ...")
+        logging.info(f"Writing {path!s} ...")
         logging.debug(f" content={content!r}")
         path.write_text(content, encoding="utf-8")
 
@@ -397,6 +440,8 @@ def main():
     # Anything not set up here was already setup by install_prereqs.sh.
     if _is_ubuntu() and args.developer:
         _install_downloaded_debs(yes=args.yes)
+        _maybe_fix_gcc(yes=args.yes)
+        _generate_locales()
     if args.developer or args.user_environment_only:
         _setup_user_environment()
     if args.developer:

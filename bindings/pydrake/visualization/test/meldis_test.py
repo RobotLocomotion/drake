@@ -86,7 +86,7 @@ import pydrake.visualization.meldis
 if not hasattr(umsgpack, "Hashable"):
     import collections
 
-    setattr(umsgpack.collections, "Hashable", collections.abc.Hashable)
+    umsgpack.collections.Hashable = collections.abc.Hashable
 
 
 class TestMeldis(unittest.TestCase):

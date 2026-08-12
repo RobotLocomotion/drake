@@ -152,6 +152,31 @@ using PyDiscreteUpdateCallback =
 template <typename T>
 using PyUnrestrictedUpdateCallback =
     PyEventCallback<const Context<T>*, State<T>*>;
+#ifdef PYDRAKE_USE_PYBIND11
+template <typename T>
+using PyCalcVectorCallback =
+    py::typing::Callable<void(const Context<T>*, BasicVector<T>*)>;
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T>
+using PyCalcVectorCallback =
+    py::typed<py::callable, void(const Context<T>*, BasicVector<T>*)>;
+#endif  // PYDRAKE_USE_PYBIND11
+
+// Constructs a vector-output calculation callback.
+// @param callback_ptr a callable expecting a context and an output vector.
+// Aliased; its lifetime must be guaranteed elsewhere.
+template <typename T>
+typename LeafOutputPort<T>::CalcVectorCallback MakeCalcVectorCallback(
+    PyObject* callback_ptr) {
+  return [callback_ptr](const Context<T>& context, BasicVector<T>* output) {
+    py::gil_scoped_acquire guard;
+    py::handle py_callback_from_ptr = callback_ptr;
+    auto callback =
+        py::cast<std::function<void(const Context<T>*, BasicVector<T>*)>>(
+            py_callback_from_ptr);
+    callback(&context, output);
+  };
+}
 
 // Constructs a publish event for bound Declare*Event methods.
 // @param trigger_type the trigger type.
@@ -767,7 +792,6 @@ Note: The above is for the C++ documentation. For Python, use
   }
 
   static void DefineLeafSystem(py::module_ m) {
-    using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
     using Class = LeafSystem<T>;
     auto cls =
         DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
@@ -845,15 +869,19 @@ Note: The above is for the C++ documentation. For Python, use
             internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
             py::arg("size"), py::arg("random_type") = std::nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args_size)
-        .def("DeclareVectorOutputPort",
-            WrapCallbacks(
-                [](Class* self, const std::string& name,
-                    const BasicVector<T>& arg1, CalcVectorCallback arg2,
-                    const std::set<DependencyTicket>& arg3)
-                    -> const OutputPort<T>& {
-                  return GetAlias<PyClass>(self)->DeclareVectorOutputPort(
-                      name, arg1, arg2, arg3);
-                }),
+        .def(
+            "DeclareVectorOutputPort",
+            [](Class* self, const std::string& name,
+                const BasicVector<T>& model_value,
+                PyCalcVectorCallback<T> py_calc,
+                const std::set<DependencyTicket>& prerequisites_of_calc)
+                -> const OutputPort<T>& {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_calc);
+              return GetAlias<PyClass>(self)->DeclareVectorOutputPort(name,
+                  model_value, MakeCalcVectorCallback<T>(py_calc.ptr()),
+                  prerequisites_of_calc);
+            },
             // Use a ref_cycle (rather than the implicit keep-alive of
             // reference_internal) to avoid immortality hazards like #22515.
             internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
@@ -861,15 +889,18 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareVectorOutputPort.doc_4args_model_vector)
-        .def("DeclareVectorOutputPort",
-            WrapCallbacks(
-                [](Class* self, const std::string& name, int size,
-                    CalcVectorCallback calc,
-                    const std::set<DependencyTicket>& prerequisites_of_calc)
-                    -> const OutputPort<T>& {
-                  return GetAlias<PyClass>(self)->DeclareVectorOutputPort(
-                      name, size, calc, prerequisites_of_calc);
-                }),
+        .def(
+            "DeclareVectorOutputPort",
+            [](Class* self, const std::string& name, int size,
+                PyCalcVectorCallback<T> py_calc,
+                const std::set<DependencyTicket>& prerequisites_of_calc)
+                -> const OutputPort<T>& {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_calc);
+              return GetAlias<PyClass>(self)->DeclareVectorOutputPort(name,
+                  size, MakeCalcVectorCallback<T>(py_calc.ptr()),
+                  prerequisites_of_calc);
+            },
             // Use a ref_cycle (rather than the implicit keep-alive of
             // reference_internal) to avoid immortality hazards like #22515.
             internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
