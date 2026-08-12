@@ -2,6 +2,7 @@
 # //tools/wheel:builder for the user interface.
 
 import argparse
+from enum import Enum
 import gzip
 import io
 import locale
@@ -34,6 +35,13 @@ wheelhouse = os.path.join(wheel_root, "wheelhouse")
 resource_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
+class PythonBinder(Enum):
+    _value_: str
+
+    NANOBIND = "nanobind"
+    PYBIND11 = "pybind11"
+
+
 def gripe(message):
     """
     Prints a message to stderr.
@@ -49,13 +57,39 @@ def die(message, result=1):
     sys.exit(result)
 
 
-def wheel_name(python_version, wheel_version, wheel_platform):
+def edit_wheel_version_for_binder(
+    python_binder: PythonBinder, wheel_version: str
+) -> str:
+    """Amends the user-supplied `wheel_version` to reflect the given choice of
+    python binder (if necessary), returning the modified version string. Wheels
+    that use `nanobind` instead of `pybind11` are marked as "alpha release",
+    e.g., `0.0.20260810a1` or `0.0.20260810a1+git0123abcd`.
+    """
+    if python_binder == PythonBinder.PYBIND11:
+        return wheel_version
+    else:
+        assert python_binder == PythonBinder.NANOBIND
+        # Insert "a1" before the plus (or with no plus, at the end).
+        if "+" in wheel_version:
+            (prefix, suffix) = wheel_version.split("+")
+            return prefix + "a1+" + suffix
+        else:
+            return wheel_version + "a1"
+
+
+def wheel_name(python_binder, python_version, wheel_version, wheel_platform):
     """
     Determines the complete name of the Drake wheel, given various individual
     bits such as the Drake version, Python version, and Python wheel platform.
     """
-    vm = f"cp{python_version}"
-    return f"drake-{wheel_version}-{vm}-{vm}-{wheel_platform}.whl"
+    if python_binder == PythonBinder.NANOBIND:
+        # The cp312 here must match the Py_LIMITED_API definition at
+        # //tools/workspace/nanobind.
+        python_tag = "cp312-abi3"
+    else:
+        assert python_binder == PythonBinder.PYBIND11
+        python_tag = f"cp{python_version}-cp{python_version}"
+    return f"drake-{wheel_version}-{python_tag}-{wheel_platform}.whl"
 
 
 def _check_version(version):
