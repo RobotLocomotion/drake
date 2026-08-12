@@ -420,6 +420,7 @@ class DefaultTextureColorShader final : public LightingShader {
     glUniform1i(diffuse_map_loc_, 0);  // This texture is GL_TEXTURE0.
     const auto& my_data = data.value().get_value<InstanceData>();
     glBindTexture(GL_TEXTURE_2D, my_data.texture_id);
+    glUniform4fv(diffuse_color_loc_, 1, my_data.diffuse_color.data());
     glUniform2fv(diffuse_scale_loc_, 1, my_data.texture_scale.data());
     glUniform1i(texture_flip_loc_, my_data.flip_y);
   }
@@ -427,6 +428,7 @@ class DefaultTextureColorShader final : public LightingShader {
  private:
   void DoConfigureMoreUniforms() final {
     diffuse_map_loc_ = GetUniformLocation("diffuse_map");
+    diffuse_color_loc_ = GetUniformLocation("diffuse_color");
     diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
     texture_flip_loc_ = GetUniformLocation("texture_flip_y");
   }
@@ -437,6 +439,7 @@ class DefaultTextureColorShader final : public LightingShader {
 
   struct InstanceData {
     GLuint texture_id{};
+    Vector4<float> diffuse_color;
     Vector2<float> texture_scale;
     bool flip_y{};
   };
@@ -454,19 +457,25 @@ class DefaultTextureColorShader final : public LightingShader {
     // In constructing the material with a texture map, the UVs have already
     // been validated.
 
+    const Rgba diffuse =
+        properties.GetPropertyOrDefault("phong", "diffuse", Rgba(1, 1, 1));
     const auto& scale = properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d(1, 1));
     const bool flip_y =
         properties.GetPropertyOrDefault("texture", "flip", false);
-    return ShaderProgramData{shader_id(),
-                             AbstractValue::Make(InstanceData{
-                                 *texture_id, scale.cast<float>(), flip_y})};
+    return ShaderProgramData{
+        shader_id(), AbstractValue::Make(
+                         InstanceData{*texture_id, diffuse.rgba().cast<float>(),
+                                      scale.cast<float>(), flip_y})};
   }
 
   std::shared_ptr<TextureLibrary> library_{};
 
   // The location of the "diffuse_map" uniform in the shader.
   GLint diffuse_map_loc_{};
+
+  // The location of the "diffuse_color" uniform in the shader.
+  GLint diffuse_color_loc_{};
 
   // The location of the "diffuse_scale" uniform in the shader.
   GLint diffuse_scale_loc_{};
@@ -486,10 +495,11 @@ void main() {
   tex_coord = tex_coord_in;
 })""";
 
-  // We define the diffuse color by looking up the diffuse_map and then simply
-  // illuminate it.
+  // We define the diffuse color by modulating the diffuse_map with the material
+  // color and then illuminate it.
   static constexpr char kFragmentShader[] = R"""(
 uniform sampler2D diffuse_map;
+uniform vec4 diffuse_color;
 uniform vec2 diffuse_map_scale;
 uniform bool texture_flip_y;
 in vec2 tex_coord;
@@ -501,17 +511,15 @@ void main() {
   //  unsightly visual artifacts when a texture is supposed to exactly align
   //  with a triangle edge, but there are floating point errors in interpolation
   //  which cause the texture to be sampled on the other side.
-  // TODO(20234): To get parity with our other renderings, the diffuse *color*
-  // should modulate the texture for the final diffuse color.
   vec2 uv = fract(tex_coord * diffuse_map_scale);
   if (texture_flip_y) {
     uv.y = 1.0 - uv.y;
   }
-  vec4 map_rgba = texture(diffuse_map, uv);
-  if (map_rgba.a == 0.0) {
+  vec4 rgba = diffuse_color * texture(diffuse_map, uv);
+  if (rgba.a == 0.0) {
     discard;
   }
-  color = GetIlluminatedColor(map_rgba);
+  color = GetIlluminatedColor(rgba);
 })""";
 };
 
