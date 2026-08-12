@@ -427,7 +427,7 @@ def render_callback(render_request: RenderRequest) -> str:
 
     # Call the render backend, including capturing any errors.
     try:
-        proc = subprocess.run(proc_args, capture_output=True)
+        proc = subprocess.run(proc_args, capture_output=True, check=False)
         if proc.returncode != 0:
             message = f"backend exited with code {proc.returncode}."
             stdout = proc.stdout.decode("utf-8")

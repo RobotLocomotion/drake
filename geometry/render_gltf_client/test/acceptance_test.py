@@ -51,6 +51,7 @@ class TestGltfRenderBinary(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
+            check=False,
         )
         if result.returncode != 0:
             # This is just to print the stdout conveniently.
@@ -123,7 +124,7 @@ class TestGltfRenderBinary(unittest.TestCase):
         server_demo = self.runfiles.Rlocation(
             "drake/geometry/render_gltf_client/server_demo"
         )
-        subprocess.run([server_demo, "--acceptance_test"])
+        self._check_call([server_demo, "--acceptance_test"])
 
     def test_client_demo_client(self):
         """A minimal smoke test to run the client demo that launches a Drake

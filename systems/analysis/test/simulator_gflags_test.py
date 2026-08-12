@@ -24,5 +24,6 @@ class TestSimulatorGflags(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
+            check=True,
         )
         self.assertIn("integration_scheme: implicit_euler", result.stdout)

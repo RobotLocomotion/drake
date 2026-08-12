@@ -1,4 +1,3 @@
-import copy
 import os
 from pathlib import Path
 import subprocess
@@ -18,7 +17,7 @@ class TestGurobiSolverLicenseRetention(unittest.TestCase):
             f.write(license_file_content)
 
         # Override the built-in license file.
-        env = copy.copy(os.environ)
+        env = os.environ.copy()
         env["GRB_LICENSE_FILE"] = str(license_file)
 
         # Run the helper and return the pointer use_count.

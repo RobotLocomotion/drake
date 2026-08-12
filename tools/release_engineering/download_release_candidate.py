@@ -107,7 +107,9 @@ def _check_urls(*, urls):
     missing_urls: list[tuple[str, str]] = []
     for u in urls:
         print(f"+ Verify URL: {u}", file=sys.stderr)
-        proc = subprocess.run(["wget", "--spider", u], capture_output=True)
+        proc = subprocess.run(
+            ["wget", "--spider", u], capture_output=True, check=False
+        )
         if proc.returncode != 0:
             missing_urls.append((u, proc.stderr.decode("utf-8")))
 
