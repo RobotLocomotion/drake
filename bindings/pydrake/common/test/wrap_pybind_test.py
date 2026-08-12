@@ -64,16 +64,16 @@ class TestWrapPybind(unittest.TestCase):
         self.assertTrue(CheckTypeConversionExample(obj=value))
 
     @unittest.skipIf(
-        _binder == "nanobind",  # TODO(#21572) Remove this opt-out.
-        "nanobind aborts instead of raises",
+        _binder == "nanobind",
+        "When WrapCallbacks is missed when writing a binding, nanobind aborts "
+        "instead of raises like pybind11 did. Therefore, we can't easily write "
+        "a unit test that checks the behavior. That's probably okay, since in "
+        "either case the binding's unit test would fail, just more loudly with "
+        "nanobind.",
     )
     def test_wrap_callbacks_lack_detected(self):
-        call_count = 0
-
         def callback(value):
-            nonlocal call_count
-            call_count += 1
-            self.assertIsInstance(value, NotCopyable)
+            self.fail()
 
         # If we call our test function via a binding that does not
         # use WrapCallbacks(), we get an error about non-copyable types.
