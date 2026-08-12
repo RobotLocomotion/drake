@@ -24,6 +24,7 @@
 @drake-jenkins-bot mac-arm-sequoia-clang-cmake-experimental-everything-release please
 @drake-jenkins-bot mac-arm-sequoia-clang-cmake-experimental-packaging please
 @drake-jenkins-bot mac-arm-sequoia-clang-cmake-experimental-release please
+@drake-jenkins-bot mac-arm-sequoia-clang-cmake-otherbinder-experimental-packaging please
 @drake-jenkins-bot mac-arm-sequoia-clang-wheel-experimental-release please
 @drake-jenkins-bot mac-arm-tahoe-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot mac-arm-tahoe-clang-bazel-experimental-release please
@@ -34,13 +35,16 @@
 @drake-jenkins-bot linux-amd64v1-resolute-unprovisioned-gcc-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-amd64v1-resolute-unprovisioned-gcc-bazel-experimental-release please
 @drake-jenkins-bot linux-amd64v1-resolute-unprovisioned-gcc-cmake-experimental-packaging please
+@drake-jenkins-bot linux-amd64v1-resolute-unprovisioned-gcc-cmake-otherbinder-experimental-packaging please
 @drake-jenkins-bot linux-arm64-noble-unprovisioned-gcc-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-arm64-noble-unprovisioned-gcc-bazel-experimental-release please
 @drake-jenkins-bot linux-arm64-noble-unprovisioned-gcc-cmake-experimental-packaging please
+@drake-jenkins-bot linux-arm64-noble-unprovisioned-gcc-cmake-otherbinder-experimental-packaging please
 @drake-jenkins-bot linux-arm64-noble-unprovisioned-gcc-wheel-experimental-release please
 @drake-jenkins-bot linux-arm64-resolute-unprovisioned-gcc-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-arm64-resolute-unprovisioned-gcc-bazel-experimental-release please
 @drake-jenkins-bot linux-arm64-resolute-unprovisioned-gcc-cmake-experimental-packaging please
+@drake-jenkins-bot linux-arm64-resolute-unprovisioned-gcc-cmake-otherbinder-experimental-packaging please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-debug please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-everything-release please
@@ -56,5 +60,7 @@
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-everything-release please
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-packaging please
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-release please
+@drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-otherbinder-experimental-packaging please
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-wheel-experimental-release please
 @drake-jenkins-bot linux-resolute-unprovisioned-gcc-cmake-experimental-packaging please
+@drake-jenkins-bot linux-resolute-unprovisioned-gcc-cmake-otherbinder-experimental-packaging please
