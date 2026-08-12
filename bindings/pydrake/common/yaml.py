@@ -225,14 +225,14 @@ def _enumerate_field_types(schema):
 
     # Dataclasses offer a public API for introspection.
     if dataclasses.is_dataclass(schema):
-        return dict(
-            [(field.name, field.type) for field in dataclasses.fields(schema)]
-        )
+        return {
+            field.name: field.type for field in dataclasses.fields(schema)
+        }
 
     # Drake's DefAttributesUsingSerialize offers (hidden) introspection.
     fields = getattr(schema, "__fields__", None)
     if fields is not None:
-        return dict([(field.name, field.type) for field in fields])
+        return {field.name: field.type for field in fields}
 
     # Detect when the user forgot to use DefAttributesUsingSerialize.
     schema_type_name = getattr(type(schema), "__name__", None)
@@ -581,13 +581,11 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict, target, target_schema):
     assert target is not None
     static_field_map = _enumerate_field_types(target_schema)
     schema_names = list(static_field_map.keys())
-    schema_optionals = set(
-        [
+    schema_optionals = {
             name
             for name, sub_schema in static_field_map.items()
             if _get_nested_optional_type(sub_schema) is not None
-        ]
-    )
+    }
     yaml_names = list(yaml_dict.keys())
     extra_yaml_names = [name for name in yaml_names if name not in schema_names]
     missing_yaml_names = [

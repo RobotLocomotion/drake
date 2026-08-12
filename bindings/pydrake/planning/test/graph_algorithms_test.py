@@ -116,7 +116,7 @@ class TestGraphAlgorithms(unittest.TestCase):
 
             def DoSolveMinCliqueCover(self, adjacency_matrix, partition):
                 # returns all points are in a clique
-                return [set(i for i in range(adjacency_matrix.shape[0]))]
+                return [set(range(adjacency_matrix.shape[0]))]
 
         name = "dummy"
         solver = DummyMinCliqueCoverSolver(name=name)
@@ -124,7 +124,7 @@ class TestGraphAlgorithms(unittest.TestCase):
         self.assertEqual(name, solver.name)
         self.assertEqual(
             solver.SolveMinCliqueCover(adjacency_matrix=graph),
-            [set(i for i in range(5))],
+            [set(range(5))],
         )
 
     def test_min_clique_cover_solver_via_greedy_methods(self):

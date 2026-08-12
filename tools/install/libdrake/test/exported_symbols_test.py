@@ -416,7 +416,7 @@ class ExportedSymbolsTest(unittest.TestCase):
             return f"unknown_symbol@0x{vma:x}"
 
         bad_symbol_names = sorted(
-            set([lookup_symbol(vma) for vma in atexit_call_vmas])
+            {lookup_symbol(vma) for vma in atexit_call_vmas}
         )
 
         # Apply the "known bad" allow-list.

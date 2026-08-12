@@ -7,7 +7,12 @@ target-version = "py312"
 [lint]
 
 ignore = [
-    # f-string checks for str.format calls that can be replaced with f-strings.
+    # "Checks for unnecessary dict(), list() or tuple() calls that can be
+    # rewritten as empty literals." If it were only empty ones that got dinged,
+    # that would be fine, but it also rewrites `dict(a=1)` to `{"a": 1}` which
+    # is sometimes less readable.
+    "C408",
+    # "Checks for str.format calls that can be replaced with f-strings."
     # In many cases this is a good idea, but not universally.
     "UP032",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
@@ -22,16 +27,6 @@ ignore = [
     "B023",
     "B026",
     "BLE001",
-    "C401",
-    "C402",
-    "C403",
-    "C404",
-    "C405",
-    "C408",
-    "C409",
-    "C410",
-    "C414",
-    "C419",
     "DTZ005",
     "EXE002",
     "FLY002",
