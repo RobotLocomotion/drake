@@ -6,7 +6,7 @@ from pydrake.common.test.wrap_test_util import (
     FunctionNeedsWrapCallbacks,
     FunctionNeedsWrapCallbacks_Bad,
     MakeTypeConversionExample,
-    MakeTypeConversionExampleRefRvp,
+    MakeTypeConversionExampleBadRvp,
     MyContainerRawPtr,
     MyContainerUniquePtr,
     MyValue,
@@ -55,11 +55,13 @@ class TestWrapPybind(unittest.TestCase):
         value = MakeTypeConversionExample()
         self.assertIsInstance(value, str)
         self.assertEqual(value, "hello")
+        with self.assertRaises((RuntimeError, TypeError)) as cm:
+            MakeTypeConversionExampleBadRvp()
+        self.assertEqual(
+            str(cm.exception),
+            "Can only pass TypeConversionExample by value.",
+        )
         self.assertTrue(CheckTypeConversionExample(obj=value))
-
-    def test_type_caster_wrapped_ref_policy(self):
-        result = MakeTypeConversionExampleRefRvp()
-        self.assertEqual(result, "hello")
 
     @unittest.skipIf(
         _binder == "nanobind",  # TODO(#21572) Remove this opt-out.

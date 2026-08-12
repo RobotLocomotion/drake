@@ -36,6 +36,8 @@ struct TypeConversionExample {
 // Wrapper for TypeConversionExample.
 struct wrapper_type_conversion_example {
   using Type = TypeConversionExample;
+  static constexpr auto original_name =
+      py::detail::const_name("TypeConversionExample");
   using WrappedType = std::string;
   static constexpr auto wrapped_name = py::detail::const_name("str");
 
@@ -119,7 +121,7 @@ PYDRAKE_MODULE(wrap_test_util, m) {
       &MyContainerUniquePtr::copyable_member, "MyContainerUniquePtr doc");
 
   m.def("MakeTypeConversionExample", &MakeTypeConversionExample);
-  m.def("MakeTypeConversionExampleRefRvp", &MakeTypeConversionExample,
+  m.def("MakeTypeConversionExampleBadRvp", &MakeTypeConversionExample,
       py_rvp::reference);
   m.def("CheckTypeConversionExample", &CheckTypeConversionExample,
       py::arg("obj"));
