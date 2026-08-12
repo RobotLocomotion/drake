@@ -2596,8 +2596,8 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     } else {
       // For a link_L on a Mobod that has multiple follower links, M_LLo_W
       // (L's spatial inertia about Lo expressed in world W) needs to be
-      // calculated since M_LLo_W is not cached. Note: the benefits of caching
-      // M_LLo_W for this special case are questionable.
+      // calculated since M_LLo_W is not cached. Note: Caching M_LLo_W for this
+      // special case is likely not worthwhile.
       // Get M_LLo_L (link L's spatial inertia about its origin Lo, expressed
       // in link L), then re-express M_LLo_L in world W to form M_LLo_W.
       const LinkOrdinal link_ordinal =
@@ -2943,8 +2943,8 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     } else {
       // For a link_L on a Mobod that has multiple follower links, M_LLo_W
       // (L's spatial inertia about Lo expressed in world W) needs to be
-      // calculated since M_LLo_W is not cached. Note: the benefits of caching
-      // M_LLo_W for this special case are questionable.
+      // calculated since M_LLo_W is not cached. Note: Caching M_LLo_W for this
+      // special case is likely not worthwhile.
       // Get M_LLo_L (link L's spatial inertia about its origin Lo, expressed
       // in link L), then re-express M_LLo_L in world W to form M_LLo_W.
       const LinkOrdinal link_ordinal =
