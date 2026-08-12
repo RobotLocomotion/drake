@@ -7,7 +7,7 @@
 module(
     name = "drake",
     # This version number should match MINIMUM_BAZEL_VERSION in CMakeLists.txt.
-    bazel_compatibility = [">=8.5.0"],
+    bazel_compatibility = [">=8.6.0"],
 )
 
 # Add starlark rules.
@@ -246,7 +246,7 @@ bazel_dep(
 
 bazel_dep(
     name = "googletest",
-    version = "1.17.0.bcr.2",
+    version = "1.18.0",
     # Ideally we could set dev_dependency = True here, but that would prevent
     # downstream projects from re-using our //common/test_utilities library.
     # Even though that library is not Stable API, historically downstream
@@ -255,7 +255,6 @@ bazel_dep(
 single_version_override(
     module_name = "googletest",
     patches = [
-        "//tools/workspace/googletest:patches/upstream/character_conversion_casting.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/exception_shadowing.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/param_iterator_interface.patch",  # noqa
         "//tools/workspace/googletest:patches/add_printers.patch",
