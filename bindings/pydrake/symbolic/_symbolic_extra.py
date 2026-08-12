@@ -35,7 +35,7 @@ _symbolic_sympy_defer = None
 def to_sympy(
     x: float | int | bool | Variable | Expression | Formula,
     *,
-    memo: dict = None,
+    memo: dict | None = None,
 ) -> typing.Union[float, int, bool, "sympy.Expr"]:
     """Converts a pydrake object to the corresponding SymPy Expr.
 
@@ -66,7 +66,7 @@ def to_sympy(
 
 
 def from_sympy(
-    x: typing.Union[float, int, bool, "sympy.Expr"], *, memo: dict = None
+    x: typing.Union[float, int, bool, "sympy.Expr"], *, memo: dict | None = None
 ) -> float | int | bool | Variable | Expression | Formula:
     """Converts a SymPy Expr to the corresponding pydrake object.
 
