@@ -11,11 +11,11 @@ package(
 
 cc_library_vendored(
     name = "tinygltf",
-    srcs = ["tiny_gltf.cc"],
+    srcs = ["attic/tiny_gltf.cc"],
     srcs_vendored = ["drake_vendor/tiny_gltf.cc"],
     hdrs = [
-        "tiny_gltf.h",
-        "tinygltf_json.h",
+        "attic/tiny_gltf.h",
+        "attic/tinygltf_json.h",
     ],
     hdrs_vendored = [
         "drake_vendor/tiny_gltf.h",
