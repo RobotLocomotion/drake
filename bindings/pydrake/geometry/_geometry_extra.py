@@ -28,6 +28,7 @@ def _restart_nginx_service():
         encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        check=False,
     )
     if proc.returncode == 0:
         return

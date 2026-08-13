@@ -904,13 +904,9 @@ class TestGeometryOptimization(unittest.TestCase):
             filename=temp_file_name, child_name="test"
         )
         self.assertEqual(iris_regions.keys(), loaded_regions.keys())
-        for k in iris_regions.keys():
-            np.testing.assert_array_equal(
-                iris_regions[k].A(), loaded_regions[k].A()
-            )
-            np.testing.assert_array_equal(
-                iris_regions[k].b(), loaded_regions[k].b()
-            )
+        for name, region in iris_regions.items():
+            np.testing.assert_array_equal(region.A(), loaded_regions[name].A())
+            np.testing.assert_array_equal(region.b(), loaded_regions[name].b())
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()
