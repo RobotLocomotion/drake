@@ -143,7 +143,7 @@ class TestCost(unittest.TestCase):
             spies.append(weakref.finalize(cost, lambda: None))
             return binding, spies
 
-        keeper, spies = make_object_graph()
+        _keeper, spies = make_object_graph()
         self.assertTrue(all(spy.alive for spy in spies))
 
     def test_to_latex(self):
@@ -393,7 +393,7 @@ class TestConstraints(unittest.TestCase):
             spies.append(weakref.finalize(constraint, lambda: None))
             return cast_binding, spies
 
-        keeper, spies = make_object_graph()
+        _keeper, spies = make_object_graph()
         self.assertTrue(all(spy.alive for spy in spies))
 
     def test_binding_constraint_python_wrapper_lost(self):
@@ -417,7 +417,7 @@ class TestConstraints(unittest.TestCase):
             spies.append(weakref.finalize(constraint, lambda: None))
             return constraint_binding, spies
 
-        keeper, spies = make_object_graph()
+        _keeper, spies = make_object_graph()
         self.assertTrue(all(spy.alive for spy in spies))
 
     def test_binding_eq(self):

@@ -312,7 +312,7 @@ directives:
         LoadModelDirectivesFromString(model_directives=str)
 
     def test_flatten_model_directives(self):
-        (plant, parser, directives) = self._make_plant_parser_directives()
+        (_plant, parser, directives) = self._make_plant_parser_directives()
         ProcessModelDirectives(directives=directives, parser=parser)
         flat_directives = FlattenModelDirectives(
             directives=directives, package_map=parser.package_map()

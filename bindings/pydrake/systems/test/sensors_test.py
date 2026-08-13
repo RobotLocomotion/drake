@@ -70,7 +70,7 @@ image_type_aliases = [
 class TestSensors(unittest.TestCase):
     def _make_single_body_scene(self):
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
         scene_yaml = textwrap.dedent("""
             directives:
@@ -355,7 +355,7 @@ class TestSensors(unittest.TestCase):
     def test_camera_config_lcm_buses(self):
         """Calls ApplyCameraConfig using LcmBuses."""
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        _plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         system_count = len(builder.GetSystems())
 
         # We'll call the Apply function using lcm_buses= instead of lcm=.
@@ -372,7 +372,7 @@ class TestSensors(unittest.TestCase):
     def test_camera_config_lcm_interface_system(self):
         """Calls ApplyCameraConfig using LcmInterfaceSystem."""
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        _plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         lcm = builder.AddSystem(LcmInterfaceSystem(lcm=DrakeLcm()))
         config = mut.CameraConfig()
         system_count = len(builder.GetSystems())
@@ -655,7 +655,7 @@ class TestSensors(unittest.TestCase):
 
     def test_rgbd_sensor_async(self):
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        _plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         camera_core = self._make_render_camera_core()
         color_camera = ColorRenderCamera(camera_core)
         depth_camera = DepthRenderCamera(camera_core, DepthRange(0.1, 5.5))

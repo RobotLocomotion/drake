@@ -215,7 +215,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
             spies.append(weakref.finalize(con, lambda: None))
             return dircol, spies
 
-        keeper, spies = make_object_graph()
+        _keeper, spies = make_object_graph()
         self.assertTrue(all(spy.alive for spy in spies))
 
     def test_direct_transcription(self):
@@ -299,7 +299,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
             return trajopt, spies
 
-        keeper, spies = make_object_graph()
+        _keeper, spies = make_object_graph()
         self.assertTrue(all(spy.alive for spy in spies))
 
     def test_kinematic_trajectory_optimization(self):

@@ -28,7 +28,7 @@ def parse_model_and_create_context(file):
     """Tests a model by loading parsing it with a SceneGraph connected,
     building the relevant diagram, and allocating its default context."""
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+    plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
     Parser(plant).AddModels(file)
     plant.Finalize()
     diagram = builder.Build()

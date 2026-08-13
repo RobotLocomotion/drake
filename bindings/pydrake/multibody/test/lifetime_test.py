@@ -38,7 +38,7 @@ class TestAddSystemWrappers(unittest.TestCase):
             # Use a nested function to ensure that all locals get garbage
             # collected quickly.
             builder = DiagramBuilder()
-            plant, scene_graph = add_plant_wrapper(builder)
+            plant, _scene_graph = add_plant_wrapper(builder)
             plant.Finalize()
             diagram = self.call_build_from(builder, call_build_from_language)
             return diagram
