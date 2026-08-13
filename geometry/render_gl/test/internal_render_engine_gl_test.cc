@@ -933,13 +933,23 @@ TEST_F(RenderEngineGlTest, FullyTransparentGeometryDoesNotOccludeColor) {
       GeometryId::get_new_id(), Box(2, 2, 0.1), transparent_material,
       RigidTransformd(Vector3d(0, 0, 1.5)), false /* needs update */);
 
-  // Exercises the "texture" shader.
+  // Exercises the "texture" shader - transparency from texture.
   PerceptionProperties transparent_texture_material;
   transparent_texture_material.AddProperty("label", "id", RenderLabel(1));
   transparent_texture_material.AddProperty(
       "phong", "diffuse_map",
       FindResourceOrThrow(
           "drake/geometry/render/test/meshes/fully_transparent.png"));
+  renderer_->RegisterVisual(
+      GeometryId::get_new_id(), Box(2, 2, 0.1), transparent_texture_material,
+      RigidTransformd(Vector3d(0, 0, 1.5)), false /* needs update */);
+
+  // Exercises the "texture" shader - transparency from phong diffuse.
+  transparent_texture_material.AddProperty("phong", "diffuse",
+                                           Rgba(1, 0, 0, 0));
+  transparent_texture_material.UpdateProperty(
+      "phong", "diffuse_map",
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"));
   renderer_->RegisterVisual(
       GeometryId::get_new_id(), Box(2, 2, 0.1), transparent_texture_material,
       RigidTransformd(Vector3d(0, 0, 1.5)), false /* needs update */);
@@ -1969,18 +1979,33 @@ TEST_F(RenderEngineGlTest, MultiMaterialObj) {
   struct Face {
     // The expected *illuminated* material color. The simple illumination model
     // guarantees that the rendered color should be that of the material --
-    // either the given Kd value *or* the map color at the test location.
-    // TODO(20234): this will change to product of diffuse color and texture.
+    // either the given Kd value or the product of Kd and the map color at the
+    // test location.
     Rgba rendered_color;
     RotationMatrixd rotation;
     std::string name;
   };
   Init(X_WR_, true);
 
-  const std::string filename =
+  const fs::path obj_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj");
-
-  Mesh mesh(filename);
+  const fs::path mtl_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.mtl");
+  const fs::path png_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/rainbow_stripes.png");
+  std::string mtl_contents = MemoryFile::Make(mtl_path).contents();
+  const std::string original_kd = "Kd 0.800000 0.800000 0.800000";
+  const size_t kd_pos = mtl_contents.find(original_kd);
+  DRAKE_DEMAND(kd_pos != std::string::npos);
+  const Rgba texture_tint(0.8, 0.7, 0.6);
+  mtl_contents.replace(kd_pos, original_kd.size(),
+                       fmt::format("Kd {} {} {}", texture_tint.r(),
+                                   texture_tint.g(), texture_tint.b()));
+  Mesh mesh(InMemoryMesh{
+      MemoryFile::Make(obj_path),
+      {{"rainbow_box.mtl",
+        MemoryFile(std::move(mtl_contents), ".mtl", mtl_path.string())},
+       {"rainbow_stripes.png", MemoryFile::Make(png_path)}}});
   expected_label_ = RenderLabel(3);
   // Note: Passing diffuse color or texture to mesh with materials spawns a
   // warning.
@@ -1990,17 +2015,18 @@ TEST_F(RenderEngineGlTest, MultiMaterialObj) {
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
                             true /* needs update */);
 
+  // We already know alpha is included based on the FullyTransparent... test.
   const std::vector<Face> faces{
-      {.rendered_color = Rgba(0.016, 0.945, 0.129),
+      {.rendered_color = texture_tint * Rgba(0.016, 0.945, 0.129),
        .rotation = RotationMatrixd(),
        .name = "green"},
       {.rendered_color = Rgba(0.8, 0.359, 0.023),
        .rotation = RotationMatrixd::MakeXRotation(M_PI / 2),
        .name = "orange"},
-      {.rendered_color = Rgba(0.945, 0.016, 0.016),
+      {.rendered_color = texture_tint * Rgba(0.945, 0.016, 0.016),
        .rotation = RotationMatrixd::MakeXRotation(M_PI),
        .name = "red"},
-      {.rendered_color = Rgba(0.098, 0.016, 0.945),
+      {.rendered_color = texture_tint * Rgba(0.098, 0.016, 0.945),
        .rotation = RotationMatrixd::MakeXRotation(-M_PI / 2),
        .name = "blue"},
       {.rendered_color = Rgba(0.799, 0.8, 0),
