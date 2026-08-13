@@ -17,6 +17,12 @@ Drake maintainers should keep this file in sync with both hardware_sim.cc and
 scenario.h.
 """
 
+# ruff: noqa: RUF009
+#
+# We disable a ruff warning about dataclass mutability because when a dataclass
+# is only ever changed via yaml_load_typed, its nested structures are always
+# deepcopied before changing them.
+
 import argparse
 import dataclasses as dc
 import math
@@ -142,7 +148,7 @@ def run(*, scenario, graphviz=None):
     builder = DiagramBuilder()
 
     # Create the multibody plant and scene graph.
-    sim_plant, scene_graph = AddMultibodyPlant(
+    sim_plant, _scene_graph = AddMultibodyPlant(
         plant_config=scenario.plant_config,
         scene_graph_config=scenario.scene_graph_config,
         builder=builder,

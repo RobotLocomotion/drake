@@ -25,7 +25,7 @@ def AddFrameTriadIllustration(
     frame_index: FrameIndex = None,
     frame_id: FrameId = None,
     plant: MultibodyPlant = None,
-    name: str = None,
+    name: str | None = None,
     length: float = 0.3,
     radius: float = 0.005,
     opacity: float = 0.9,
