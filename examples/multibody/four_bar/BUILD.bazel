@@ -18,8 +18,58 @@ filegroup(
 )
 
 drake_cc_binary(
-    name = "passive_simulation",
-    srcs = ["passive_simulation.cc"],
+    name = "four_bar",
+    srcs = ["four_bar.cc"],
+    data = [":models"],
+    deps = [
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "//visualization:visualization_config_functions",
+        "@fmt",
+        "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--nointeractive",
+    ],
+)
+
+drake_cc_binary(
+    name = "four_bar_auto",
+    srcs = ["four_bar_auto.cc"],
+    deps = [
+        "//geometry:geometry_instance",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "//visualization:visualization_config_functions",
+        "@fmt",
+        "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--nointeractive",
+        # Long enough to exercise the replay, short enough not to slow the test.
+        "--assembly_playback_time=0.2",
+    ],
+)
+
+drake_cc_binary(
+    name = "four_bar_with_bushing",
+    srcs = ["four_bar_with_bushing.cc"],
     data = [":models"],
     deps = [
         "//multibody/parsing",

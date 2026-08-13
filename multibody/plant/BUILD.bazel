@@ -460,7 +460,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "closed_topology_test",
+    name = "auto_closed_topology_test",
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",

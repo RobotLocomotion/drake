@@ -1,5 +1,5 @@
 /* Tests for automatic modeling of closed-topology (looped) systems, enabled via
-MultibodyPlant::SetAllowLoopTopology(). When enabled, Finalize() breaks each
+MultibodyPlant::SetEnableLoopTopology(). When enabled, Finalize() breaks each
 kinematic loop using the shadow links and loop constraints produced by the
 underlying LinkJointGraph/SpanningForest. This file covers the ephemeral shadow
 links (including their evenly-split mass properties), the retargeting of a loop
@@ -8,9 +8,11 @@ shadow link to the link it is a copy of.
 
 The test model is a planar four-bar linkage (three moving links -- driver,
 coupler, rocker -- plus World, connected by four revolute joints) which forms a
-single kinematic loop. See examples/multibody/four_bar/dev/four_bar_loop.sdf. */
+single kinematic loop. See examples/multibody/four_bar for runnable examples of
+the same mechanism. */
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -19,6 +21,7 @@ single kinematic loop. See examples/multibody/four_bar/dev/four_bar_loop.sdf. */
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff.h"
@@ -30,6 +33,7 @@ single kinematic loop. See examples/multibody/four_bar/dev/four_bar_loop.sdf. */
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/shadow_frame.h"
 #include "drake/systems/framework/context.h"
@@ -40,129 +44,110 @@ namespace multibody {
 namespace {
 
 /* A planar four-bar linkage described with no spanning tree specified, i.e. as
-a raw loop. Taken from examples/multibody/four_bar/dev/four_bar_loop.sdf.
-There are three moving links (driver, coupler, rocker) plus World and four
-revolute joints; all revolute axes point in +z (out of the page). Below, the
-links are drawn unassembled and lined up with the World axes; "*" marks the
-connection points and the attached frames are named.
+a raw loop. There are three moving links (driver, coupler, rocker) plus World
+and four revolute joints; the linkage moves in the World x-z plane (so the
+default -z gravity lies in its plane of motion) and all four revolute axes point
+in +y, into the page as drawn below.
 
-                                                        * Rc
-                                                        |
-                                                        |
-                             coupler C                  |
-       Co *------------------------------------------------------* Cr
-                              4.8m 1kg                  |
-          * Dc                                          |
-          |                                    rocker R | 2m
-          |                                             | 2kg
-      1m  | driver D                                    |
-      1kg |                                             |      Wy
-          |                                             |      |
-          * Do                                       Ro *      |
-                                                               +----- Wx
-          *====================== Wo ===================*     /
-         Wd         2m          world2 W      2m        Wr    Wz
-                                 ###
-                                World
+The linkage is a parallelogram: the driver and the rocker are the same length,
+so the coupler stays parallel to the ground and every pose in the file below is
+exact. Note that this model is _assembled_ as written -- it has to be, since an
+SDF joint has a single joint frame from which both of Drake's joint frames (on
+parent and on child) are derived, making a parsed model loop-consistent at q = 0
+by construction. Watching a loop close from an unassembled start needs the C++
+API; see examples/multibody/four_bar.
 
-In parent-child order the joints connect Wd-Do, Wr-Ro, Dc-Co, Cr-Rc. link
-mass centers are at their midpoints; inertias are those of thin rods
-(ML²/12). link masses: driver 1 kg, coupler 1 kg, rocker 2 kg.
+Each link's frame origin is at its inboard pivot; each mass center is at the
+link's midpoint, with the rotational inertia of a thin rod (mL^2/12).
 
-One change from the source SDF lets this parse standalone: rather than
-attaching the World-fixed frames Wd/Wr directly to "world" (which
-libsdformat's frame graph won't resolve for a bare model), we add a "world2"
-link welded to World and attach the frames to "world2" instead. */
+      Dc,Co *==============================* Cr,Rc
+            |          coupler C           |
+            |           2m, 1kg            |
+   driver D |                              | rocker R
+    1m, 1kg |                              | 1m, 2kg
+            |                              |
+      Wd,Do *------------- Wo -------------* Wr,Ro          Wz
+                      World 2m                              |  Wy
+                                                            | /
+                                                            +----- Wx
+
+In parent-child order the joints connect World-Do, World-Ro, Dc-Co, Cr-Rc. Each
+label pair above marks a pivot, where the two named frames coincide in this
+assembled configuration; Wd and Wr are the World-fixed pivots, which need no
+frames of their own -- because each child link's origin sits at its pivot,
+naming <parent>world</parent> puts the joint's World-side frame at the child
+origin. */
 constexpr char kFourBarLoopSdf[] = R"""(
 <?xml version="1.0"?>
 <sdf version="1.7">
   <model name="four_bar_loop">
-    <link name="world2">
-      <!-- Explicit zero mass properties so this parse-helper link (welded to
-      World) contributes nothing to system-wide mass aggregates in the tests.
-      Without an <inertial> block sdformat would default it to 1 kg. -->
-      <inertial>
-        <mass>0</mass>
-        <inertia>
-          <ixx>0</ixx> <iyy>0</iyy> <izz>0</izz>
-          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
-        </inertia>
-      </inertial>
-    </link>
-    <joint name="world2_weld" type="fixed">
-      <parent>world</parent>
-      <child>world2</child>
-    </joint>
-    <frame name="Wd" attached_to="world2">
-      <pose relative_to="world2">-2 0 0 0 0 0</pose>
-    </frame>
-    <frame name="Wr" attached_to="world2">
-      <pose relative_to="world2">2 0 0 0 0 0</pose>
-    </frame>
     <link name="driver">
+      <pose>-1 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 0.5 0 0 0 0</pose>
+        <pose>0 0 0.5 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.0833333333333333</ixx>
-          <iyy>0</iyy>
-          <izz>0.0833333333333333</izz>
+          <iyy>0.0833333333333333</iyy>
+          <izz>0</izz>
           <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
         </inertia>
       </inertial>
     </link>
     <frame name="Dc" attached_to="driver">
-      <pose relative_to="driver">0 1 0 0 0 0</pose>
+      <pose relative_to="driver">0 0 1 0 0 0</pose>
     </frame>
     <link name="rocker">
+      <pose>1 0 0 0 0 0</pose>
       <inertial>
-        <pose>0 1 0 0 0 0</pose>
+        <pose>0 0 0.5 0 0 0</pose>
         <mass>2</mass>
         <inertia>
-          <ixx>0.6666666666666667</ixx>
-          <iyy>0</iyy>
-          <izz>0.6666666666666667</izz>
+          <ixx>0.1666666666666667</ixx>
+          <iyy>0.1666666666666667</iyy>
+          <izz>0</izz>
           <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
         </inertia>
       </inertial>
     </link>
     <frame name="Rc" attached_to="rocker">
-      <pose relative_to="rocker">0 2 0 0 0 0</pose>
+      <pose relative_to="rocker">0 0 1 0 0 0</pose>
     </frame>
     <link name="coupler">
+      <pose>-1 0 1 0 0 0</pose>
       <inertial>
-        <pose>2.4 0 0 0 0 0</pose>
+        <pose>1 0 0 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0</ixx>
-          <iyy>1.92</iyy>
-          <izz>1.92</izz>
+          <iyy>0.3333333333333333</iyy>
+          <izz>0.3333333333333333</izz>
           <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
         </inertia>
       </inertial>
     </link>
     <frame name="Cr" attached_to="coupler">
-      <pose relative_to="coupler">4.8 0 0 0 0 0</pose>
+      <pose relative_to="coupler">2 0 0 0 0 0</pose>
     </frame>
     <joint name="world_driver" type="revolute">
-      <parent>Wd</parent>
+      <parent>world</parent>
       <child>driver</child>
-      <axis><xyz expressed_in="__model__">0 0 1</xyz></axis>
+      <axis><xyz expressed_in="__model__">0 1 0</xyz></axis>
     </joint>
     <joint name="world_rocker" type="revolute">
-      <parent>Wr</parent>
+      <parent>world</parent>
       <child>rocker</child>
-      <axis><xyz expressed_in="__model__">0 0 1</xyz></axis>
+      <axis><xyz expressed_in="__model__">0 1 0</xyz></axis>
     </joint>
     <joint name="driver_coupler" type="revolute">
       <parent>Dc</parent>
       <child>coupler</child>
-      <axis><xyz expressed_in="__model__">0 0 1</xyz></axis>
+      <axis><xyz expressed_in="__model__">0 1 0</xyz></axis>
     </joint>
     <joint name="coupler_rocker" type="revolute">
       <parent>Cr</parent>
       <child>Rc</child>
-      <axis><xyz expressed_in="__model__">0 0 1</xyz></axis>
+      <axis><xyz expressed_in="__model__">0 1 0</xyz></axis>
     </joint>
   </model>
 </sdf>
@@ -180,7 +165,7 @@ class FourBar {
   explicit FourBar(double time_step = 0.0 /* continuous */) {
     plant_ = &AddMultibodyPlantSceneGraph(&builder_, time_step).plant;
     MultibodyPlant<double>& plant = *plant_;
-    plant.SetAllowLoopTopology(true);
+    plant.SetEnableLoopTopology(true);
     Parser(&plant).AddModelsFromString(kFourBarLoopSdf, "sdf");
     for (const std::string name : {"driver", "coupler"}) {
       const Link<double>& link = plant.GetBodyByName(name);
@@ -223,8 +208,8 @@ GTEST_TEST(ClosedTopologyTest, CouplerIsSplit) {
   MultibodyPlant<double>& plant = four_bar.plant();
   plant.Finalize();
 
-  // World + world2 + driver + coupler + rocker + the coupler's shadow.
-  EXPECT_EQ(plant.num_bodies(), 6);
+  // World + driver + coupler + rocker + the coupler's shadow.
+  EXPECT_EQ(plant.num_bodies(), 5);
 
   // There is exactly one shadow, and it is the coupler's.
   const Link<double>& shadow = GetSoleShadowLink(plant);
@@ -232,7 +217,7 @@ GTEST_TEST(ClosedTopologyTest, CouplerIsSplit) {
   EXPECT_TRUE(shadow.is_ephemeral());
 
   // Every user-defined link remains non-ephemeral.
-  for (const char* name : {"world2", "driver", "coupler", "rocker"}) {
+  for (const char* name : {"driver", "coupler", "rocker"}) {
     EXPECT_FALSE(plant.GetBodyByName(name).is_ephemeral());
   }
 }
@@ -262,7 +247,7 @@ GTEST_TEST(ClosedTopologyTest, ShadowLinkFramesAreEphemeral) {
 
   // The user's links keep non-ephemeral link frames.
   EXPECT_FALSE(plant.world_body().body_frame().is_ephemeral());
-  for (const char* name : {"world2", "driver", "coupler", "rocker"}) {
+  for (const char* name : {"driver", "coupler", "rocker"}) {
     EXPECT_FALSE(plant.GetBodyByName(name).body_frame().is_ephemeral());
   }
 
@@ -370,8 +355,7 @@ GTEST_TEST(ClosedTopologyTest, ShadowHasNoIndependentInertiaParameter) {
 
   // The aggregate must count the coupler's mass exactly once (0.5 primary +
   // 0.5 shadow = 1 kg), not double-count the shadow. The physical mass is
-  // driver 1 + rocker 2 + coupler 1 = 4 kg (the world2 helper link is
-  // massless).
+  // driver 1 + rocker 2 + coupler 1 = 4 kg.
   EXPECT_NEAR(plant.CalcTotalMass(*context), 4.0, kTol);
 }
 
@@ -391,8 +375,7 @@ GTEST_TEST(ClosedTopologyTest, RuntimeMassChangeReSplitsAndShadowIsReadOnly) {
 
   // Set the coupler's (physical) mass to 3 kg; the split follows to 1.5 kg on
   // each of the coupler and its shadow, and the total tracks accordingly
-  // (driver 1 + rocker 2 + coupler 3 = 6 kg; the world2 helper link is
-  // massless).
+  // (driver 1 + rocker 2 + coupler 3 = 6 kg).
   coupler.SetMass(context.get(), 3.0);
   EXPECT_NEAR(coupler.get_mass(*context), 1.5, kTol);
   EXPECT_NEAR(shadow.get_mass(*context), 1.5, kTol);
@@ -431,13 +414,6 @@ GTEST_TEST(ClosedTopologyTest, ShadowLinkHasEmptyGeometryEntries) {
   EXPECT_EQ(plant.num_visual_geometries(), 2);
   EXPECT_EQ(plant.num_collision_geometries(), 2);
 
-  // A shadow gets no SceneGraph frame of its own; reporting a pose for it would
-  // publish a spurious duplicate of its primary. That's safe precisely because
-  // the frame id table is map-keyed and documented to tolerate bodies with no
-  // frame -- unlike the dense per-body arrays checked above.
-  EXPECT_TRUE(plant.GetBodyFrameIdIfExists(coupler.index()).has_value());
-  EXPECT_FALSE(plant.GetBodyFrameIdIfExists(shadow.index()).has_value());
-
   // The per-body arrays are copied wholesale during scalar conversion, so the
   // converted plant must agree with the tree it carries as well.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
@@ -450,6 +426,62 @@ GTEST_TEST(ClosedTopologyTest, ShadowLinkHasEmptyGeometryEntries) {
       plant_ad
           ->GetCollisionGeometriesForBody(plant_ad->GetBodyByName("coupler$1"))
           .empty());
+}
+
+/* A shadow link does, however, get a SceneGraph frame of its own. It is a body
+like any other: it has a pose, which agrees with its primary's only to the
+extent that the loop-closing weld constraint is satisfied -- an unassembled
+model can start far from that. Nothing hangs geometry on that frame (a shadow
+carries none, per the test above), but SceneGraph is where a body's pose is
+published, and a consumer that walks the bodies looking for something to draw
+has nothing to attach to without it. Like the geometry arrays above, this is
+bookkeeping that AddRigidBody() would normally do, so Finalize() has to. */
+GTEST_TEST(ClosedTopologyTest, ShadowLinkHasItsOwnSceneGraphFrame) {
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
+
+  const std::optional<geometry::FrameId> shadow_frame =
+      plant.GetBodyFrameIdIfExists(shadow.index());
+  ASSERT_TRUE(shadow_frame.has_value());
+
+  // It is the shadow's own frame, not a second reference to its primary's ...
+  const geometry::FrameId coupler_frame =
+      plant.GetBodyFrameIdOrThrow(coupler.index());
+  EXPECT_NE(*shadow_frame, coupler_frame);
+
+  // ... and it maps back to the shadow link.
+  EXPECT_EQ(plant.GetBodyFromFrameId(*shadow_frame), &shadow);
+
+  // The pose port reports that frame, with a pose that really is the shadow's
+  // own. To be sure we aren't just looking at a copy of the primary's pose, we
+  // move the loop's two branches independently: the driver carries the primary
+  // coupler, while the rocker carries the shadow.
+  std::unique_ptr<systems::Context<double>> context =
+      plant.CreateDefaultContext();
+  plant.GetJointByName<RevoluteJoint>("world_driver")
+      .set_angle(context.get(), 0.3);
+  plant.GetJointByName<RevoluteJoint>("world_rocker")
+      .set_angle(context.get(), -0.4);
+
+  const geometry::FramePoseVector<double>& poses =
+      plant.get_geometry_pose_output_port()
+          .Eval<geometry::FramePoseVector<double>>(*context);
+  ASSERT_TRUE(poses.has_id(*shadow_frame));
+  EXPECT_TRUE(
+      poses.value(*shadow_frame)
+          .IsExactlyEqualTo(plant.EvalBodyPoseInWorld(*context, shadow)));
+  EXPECT_FALSE(poses.value(*shadow_frame)
+                   .IsNearlyEqualTo(poses.value(coupler_frame), 1e-10));
+
+  // Frame ids are copied wholesale during scalar conversion (where Finalize()
+  // does not re-run), so the shadow keeps the frame it was given here.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  EXPECT_EQ(plant_ad->GetBodyFrameIdIfExists(shadow.index()), shadow_frame);
 }
 
 /* Several post-finalize consumers (visualization helpers in particular) walk
@@ -571,8 +603,7 @@ GTEST_TEST(ClosedTopologyTest, LoopJointIsRetargetedToTheShadowLink) {
   // other joint (driver_coupler, which stays on the primary), keep the frames
   // and bodies the user gave them. GetSoleRetargetedJoint() already checked
   // that no other joint has a substituted frame; check the bodies too.
-  for (const char* name :
-       {"world2_weld", "world_driver", "world_rocker", "driver_coupler"}) {
+  for (const char* name : {"world_driver", "world_rocker", "driver_coupler"}) {
     const Joint<double>& joint = plant.GetJointByName(name);
     EXPECT_EQ(joint.frame_on_parent().body().index(),
               joint.parent_body().index());

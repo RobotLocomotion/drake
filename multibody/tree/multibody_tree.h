@@ -999,10 +999,10 @@ class MultibodyTree {
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
   // See MultibodyPlant API.
-  void SetAllowLoopTopology(bool allow);
+  void SetEnableLoopTopology(bool enable);
 
   // See MultibodyPlant API.
-  bool GetAllowLoopTopology() const { return allow_loop_topology_; }
+  bool GetEnableLoopTopology() const { return enable_loop_topology_; }
 
   // Finalize() must be called after all user-defined elements in the plant
   // (joints, bodies, force elements, constraints, etc.) have been added and
@@ -2957,7 +2957,7 @@ class MultibodyTree {
   // per-model-instance option.
   // TODO(sherm1) Remove this option and always model loops once the feature is
   //  mature.
-  bool allow_loop_topology_{false};
+  bool enable_loop_topology_{false};
 
   // Back pointer to the owning MultibodyTreeSystem.
   const MultibodyTreeSystem<T>* tree_system_{};

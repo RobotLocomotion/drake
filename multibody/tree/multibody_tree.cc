@@ -1019,9 +1019,9 @@ bool MultibodyTree<T>::GetFuseWeldedLinks(
 }
 
 template <typename T>
-void MultibodyTree<T>::SetAllowLoopTopology(bool allow) {
+void MultibodyTree<T>::SetEnableLoopTopology(bool enable) {
   DRAKE_THROW_UNLESS(!is_finalized());
-  allow_loop_topology_ = allow;
+  enable_loop_topology_ = enable;
 }
 
 template <typename T>
@@ -1066,13 +1066,13 @@ void MultibodyTree<T>::Finalize() {
   // flag (default off). When disabled we reject looped graphs as before; when
   // enabled we make use of the shadow links and loop constraints that
   // BuildForest() already produced for us.
-  if (!allow_loop_topology_ && !graph.loop_constraints().empty()) {
+  if (!enable_loop_topology_ && !graph.loop_constraints().empty()) {
     link_joint_graph_.InvalidateForest();
     throw std::runtime_error(fmt::format(
         "The bodies and joints of this system form one or "
         "more loops in the system graph. Automatic modeling of such systems "
         "is disabled by default; you can enable it by calling "
-        "MultibodyPlant::SetAllowLoopTopology(true) before Finalize(). "
+        "MultibodyPlant::SetEnableLoopTopology(true) before Finalize(). "
         "Alternatively, they can be modeled with some input changes. See "
         "https://drake.mit.edu/troubleshooting.html"
         "#mbp-loops-in-graph for advice on how to model systems with loops."));
@@ -4579,11 +4579,11 @@ std::unique_ptr<MultibodyTree<ToScalar>> MultibodyTree<T>::CloneToScalar()
   // The graph and its forest model are scalar type-independent.
   tree_clone->link_joint_graph_ = this->link_joint_graph_;
 
-  // Copy the loop-topology opt-in flag so GetAllowLoopTopology() reports the
+  // Copy the loop-topology opt-in flag so GetEnableLoopTopology() reports the
   // same value on the clone. Since cloning only occurs post-finalize, this
   // flag no longer affects anything about the cloned system (the forest is
   // already built); we carry it along purely for reporting consistency.
-  tree_clone->allow_loop_topology_ = this->allow_loop_topology_;
+  tree_clone->enable_loop_topology_ = this->enable_loop_topology_;
 
   // Fill the `frame_` collection with nulls. We'll be cloning the frames out
   // of order, so we can't just append them to the end like we do with the

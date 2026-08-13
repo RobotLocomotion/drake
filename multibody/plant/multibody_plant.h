@@ -1838,11 +1838,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// The default setting for Drake is _not_ to model looped systems
   /// automatically.
   ///
-  /// @param[in] allow Whether Finalize() should automatically model closed
+  /// @param[in] enable Whether Finalize() should automatically model closed
   ///   kinematic loops rather than throwing.
   /// @throws std::exception if called after Finalize().
-  /// @see GetAllowLoopTopology(), Finalize()
-  void SetAllowLoopTopology(bool allow);
+  /// @see GetEnableLoopTopology(), Finalize()
+  void SetEnableLoopTopology(bool enable);
 
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
@@ -1872,8 +1872,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Finalize() will automatically model closed-topology (looped) systems.
   ///
   /// @note This function can be called pre-Finalize() or post-Finalize().
-  /// @see SetAllowLoopTopology(), Finalize()
-  bool GetAllowLoopTopology() const;
+  /// @see SetEnableLoopTopology(), Finalize()
+  bool GetEnableLoopTopology() const;
 
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any
@@ -1948,7 +1948,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the number of ephemeral weld constraints that Finalize() added in
   /// order to close topological loops. Each of these welds a shadow link to the
-  /// link it is a copy of; see SetAllowLoopTopology(). These are included in
+  /// link it is a copy of; see SetEnableLoopTopology(). These are included in
   /// num_constraints() and num_weld_constraints(), and are indistinguishable
   /// from user-added welds to the constraint solvers. Returns zero prior to
   /// Finalize().

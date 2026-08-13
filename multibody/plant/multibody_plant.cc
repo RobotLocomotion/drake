@@ -1478,8 +1478,8 @@ void MultibodyPlant<T>::SetFuseWeldedLinks(
 }
 
 template <typename T>
-void MultibodyPlant<T>::SetAllowLoopTopology(bool allow) {
-  mutable_tree().SetAllowLoopTopology(allow);
+void MultibodyPlant<T>::SetEnableLoopTopology(bool enable) {
+  mutable_tree().SetEnableLoopTopology(enable);
 }
 
 template <typename T>
@@ -1495,8 +1495,8 @@ bool MultibodyPlant<T>::GetFuseWeldedLinks(
 }
 
 template <typename T>
-bool MultibodyPlant<T>::GetAllowLoopTopology() const {
-  return internal_tree().GetAllowLoopTopology();
+bool MultibodyPlant<T>::GetEnableLoopTopology() const {
+  return internal_tree().GetEnableLoopTopology();
 }
 
 template <typename T>
@@ -1521,16 +1521,27 @@ void MultibodyPlant<T>::Finalize() {
   internal::MultibodyTreeSystem<T>::Finalize();
 
   // Finalizing the tree may have materialized ephemeral shadow links (when loop
-  // topology is allowed), which don't come through AddRigidBody() and so have
-  // no entries in the per-body geometry arrays yet. A shadow never carries any
-  // geometry of its own -- it's an internal modeling artifact that coincides
-  // with its primary link -- but these arrays are indexed by BodyIndex and so
-  // must stay dense over num_bodies(); see GetVisualGeometriesForBody(). Note
-  // that shadows deliberately get no SceneGraph frame: body_index_to_frame_id_
-  // is map-keyed and is documented to tolerate bodies with no frame, and
-  // registering a frame would publish a spurious duplicate to SceneGraph.
+  // topology is allowed), which don't come through AddRigidBody() and so are
+  // missing the bookkeeping that does. First, the per-body geometry arrays: a
+  // shadow never carries any geometry of its own -- it's an internal modeling
+  // artifact -- but these arrays are indexed by BodyIndex and so must stay
+  // dense over num_bodies(); see GetVisualGeometriesForBody().
   visual_geometries_.resize(num_bodies());
   collision_geometries_.resize(num_bodies());
+
+  // Second, a SceneGraph frame per shadow. A shadow coincides with its primary
+  // link only to the extent that the loop-closing weld constraint is satisfied;
+  // an unassembled model can start far from that, so a shadow's pose is worth
+  // reporting in its own right. Without a frame there is also nothing for a
+  // consumer to hang a shadow's visualization on -- the inertia visualizer, for
+  // one, has to skip any body it can't find a frame for. Since a shadow carries
+  // no geometry, all this publishes is its pose.
+  for (BodyIndex index(0); index < num_bodies(); ++index) {
+    const RigidBody<T>& body = get_body(index);
+    if (body.is_ephemeral()) {
+      RegisterRigidBodyWithSceneGraph(body);  // A no-op if no SceneGraph.
+    }
+  }
 
   // Finalizing the tree may also have broken closed kinematic loops by
   // splitting a link into a primary and one or more shadows. Nothing holds
@@ -3513,12 +3524,12 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
     } else if (num_loops == num_constraints()) {
       constraints = fmt::format(
           "{} constraint{}, which Finalize() added in order to close the "
-          "kinematic loops in this model (see SetAllowLoopTopology())",
+          "kinematic loops in this model (see SetEnableLoopTopology())",
           num_loops, s);
     } else {
       constraints = fmt::format(
           "{} constraint{}, {} of which Finalize() added in order to close the "
-          "kinematic loops in this model (see SetAllowLoopTopology())",
+          "kinematic loops in this model (see SetEnableLoopTopology())",
           num_constraints(), s, num_loops);
     }
     throw std::logic_error(fmt::format(
