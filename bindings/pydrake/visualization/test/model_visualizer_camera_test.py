@@ -1,12 +1,18 @@
 import pydrake.visualization as mut  # ruff: isort: skip
 
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import umsgpack
 
-import pydrake.common.test_utilities.numpy_compare as numpy_compare
-from pydrake.geometry import Meshcat
+from pydrake.common.test_utilities import numpy_compare
+from pydrake.geometry import (
+    Meshcat,
+    RenderEngineGlParams,
+    RenderEngineVtkParams,
+    kHasRenderEngineGl,
+)
 from pydrake.math import (
     RigidTransform,
     RollPitchYaw,
@@ -78,4 +84,40 @@ class TestModelVisualizerCamera(unittest.TestCase):
 
         numpy_compare.assert_allclose(
             X_WB.GetAsMatrix34(), X_WB_expected.GetAsMatrix34(), atol=1e-15
+        )
+
+    def test_rgbd_renderer_configuration(self):
+        """Checks that the preview camera gets the selected renderer."""
+
+        vtk_config = mut.ModelVisualizer(
+            show_rgbd_sensor=True
+        )._make_rgbd_sensor_config()
+        self.assertIsInstance(vtk_config.renderer_class, RenderEngineVtkParams)
+
+        vtk_config = mut.ModelVisualizer(
+            show_rgbd_sensor="vtk"
+        )._make_rgbd_sensor_config()
+        self.assertIsInstance(vtk_config.renderer_class, RenderEngineVtkParams)
+
+        # Note: we're not instantiating the render engine, just configuring
+        # one. So, we can safely "lie" about the availability.
+        with patch.object(
+            mut.ModelVisualizer,
+            "_SUPPORTED_RGBD_RENDERERS",
+            ("vtk", "gl"),
+        ):
+            gl_config = mut.ModelVisualizer(
+                show_rgbd_sensor="gl"
+            )._make_rgbd_sensor_config()
+        self.assertIsInstance(gl_config.renderer_class, RenderEngineGlParams)
+
+        with self.assertRaisesRegex(ValueError, "show_rgbd_sensor"):
+            mut.ModelVisualizer(show_rgbd_sensor="bad")
+
+    def test_show_rgbd_sensor_availability_messaging(self):
+        """Checks that RenderEngineGl is offered only when available. This test
+        runs in CI contexts where kHasRenderEngineGl is False and True."""
+        self.assertEqual(
+            "gl" in mut.ModelVisualizer._SUPPORTED_RGBD_RENDERERS,
+            kHasRenderEngineGl,
         )

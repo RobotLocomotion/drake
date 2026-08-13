@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import copy
 import itertools
 import pickle
@@ -316,7 +314,7 @@ class TestSymbolicVariables(unittest.TestCase):
     def test_to_string_1(self):
         vars = sym.Variables([x, y, z])
         self.assertEqual(vars.to_string(), "{x, y, z}")
-        self.assertEqual("{}".format(vars), "{x, y, z}")
+        self.assertEqual(f"{vars}", "{x, y, z}")
 
     def test_repr(self):
         vars = sym.Variables([x, y, z])
@@ -691,7 +689,7 @@ class TestSymbolicExpression(unittest.TestCase):
             )
             op_reverse = operators_reverse[op]
             for lhs, rhs in operand_combinatorics_iter:
-                hint_for_error = f"{op.__doc__}: {repr(lhs)}, {repr(rhs)}"
+                hint_for_error = f"{op.__doc__}: {lhs!r}, {rhs!r}"
                 with numpy_compare.soft_sub_test(hint_for_error):
                     value = op(lhs, rhs)
                     assert_nontrivial_formula(value)
@@ -1089,7 +1087,7 @@ class TestSymbolicFormula(unittest.TestCase):
     def test_to_string(self):
         f = x > y
         self.assertEqual(f.to_string(), "(x > y)")
-        self.assertEqual("{}".format(f), "(x > y)")
+        self.assertEqual(f"{f}", "(x > y)")
 
     def test_equality_inequality_hash(self):
         f1 = x > y
@@ -2163,7 +2161,7 @@ class TestDecomposeAffineExpression(unittest.TestCase):
         # value, and must be a valid enum in the range [0..7]; adding 8 makes it
         # invalid.
         variable_id += 8 << 64
-        with self.assertRaisesRegex(ValueError, "Ill-formed Variable::Id"):
+        with self.assertRaisesRegex(TypeError, "incompatible function arg"):
             sym.DecomposeAffineExpression(e, {variable_id: 0})
 
 

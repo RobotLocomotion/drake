@@ -33,7 +33,7 @@ from pydrake.systems.test.test_util import call_build_from_cpp
 if not hasattr(umsgpack, "Hashable"):
     import collections
 
-    setattr(umsgpack.collections, "Hashable", collections.abc.Hashable)
+    umsgpack.collections.Hashable = collections.abc.Hashable
 
 
 class TestGeometryVisualizers(unittest.TestCase):
@@ -216,9 +216,17 @@ class TestGeometryVisualizers(unittest.TestCase):
         copy.copy(params)
 
     def test_meshcat(self):
-        port = 7051
-        params = mut.MeshcatParams(port=port)
-        meshcat = mut.Meshcat(params=params)
+        # We must specify the port to check that setting it via the Params is
+        # effective, but that means we need to scan for an open port ourselves.
+        for port in range(7051, 7100):
+            try:
+                params = mut.MeshcatParams(port=port)
+                meshcat = mut.Meshcat(params=params)
+                break
+            except RuntimeError:
+                continue
+        else:
+            self.fail("Meshcat constructor failure")
         self.assertEqual(meshcat.port(), port)
         self.assertIn("host", repr(params))
         copy.copy(params)

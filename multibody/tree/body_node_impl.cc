@@ -62,10 +62,12 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
   const math::RigidTransform<T>& X_WP = pc->get_X_WB(inboard_mobod_index());
 
   // Output (updating a cache entry):
-  // - X_FM(q_B)
-  // - X_PB(q_B)
-  // - X_WB(q(W:P), q_B)
-  // - p_PoBo_W(q_B)
+  // - X_FM(qm)  (qm are the coordinates of body B's mobilizer)
+  // - X_PB(qm)
+  // - X_WB(q(W:P), qm)
+  // - X_WL(q(W:P), qm)      (for all links L following mobod B)
+  // - p_BoLo_W(q(W:P), qm)  (for all links L following mobod B)
+  // - p_PoBo_W(qm)
   math::RigidTransform<T>& X_FM = pc->get_mutable_X_FM(mobod_index());
   math::RigidTransform<T>& X_PB = pc->get_mutable_X_PB(mobod_index());
   math::RigidTransform<T>& X_WB = pc->get_mutable_X_WB(mobod_index());
@@ -117,19 +119,25 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
   // L coincides with the mobod frame B (X_BL = Identity), so X_WL = X_WB.
   const SpanningForest::Mobod& mobod = mobilizer_->mobod();
   pc->SetX_WL(mobod.active_link_ordinal(), X_WB);
+  // p_BoLo_W for the active link is always zero (set during allocation).
 
-  // For fused mobods, also set X_WL for each follower (non-active)
-  // link Lₒ. Because Lₒ is rigidly offset from B by X_BLₒ (pre-computed in
-  // frame_body_pose_cache during CalcFrameBodyPoses), its world pose is simply:
-  //   X_WLₒ = X_WB * X_BLₒ
+  // For fused mobods, also set X_WLᵢ and p_BoLᵢo_W for each follower
+  // (non-active) link Lᵢ. Because Lᵢ is rigidly offset from B by X_BLᵢ
+  // (pre-computed in frame_body_pose_cache during CalcFrameBodyPoses()), its
+  // world pose is simply: X_WLᵢ = X_WB * X_BLᵢ.
   if (mobod.is_fused()) {
     const auto& followers = mobod.follower_link_ordinals();
+    const math::RotationMatrix<T>& R_WB = X_WB.rotation();
     // followers[0] is the active link (already handled above); start at 1.
     for (int i = 1; i < ssize(followers); ++i) {
       const LinkOrdinal follower_ordinal = followers[i];
       const math::RigidTransform<T>& X_BL =
           frame_body_pose_cache.get_X_BL(follower_ordinal);
-      pc->SetX_WL(follower_ordinal, X_WB * X_BL);
+      const Vector3<T> p_BoLo_W = R_WB * X_BL.translation();
+      pc->Set_p_BoLo_W(follower_ordinal, p_BoLo_W);
+      pc->SetX_WL(follower_ordinal,
+                  math::RigidTransform<T>(R_WB * X_BL.rotation(),
+                                          X_WB.translation() + p_BoLo_W));
     }
   }
 
@@ -214,6 +222,57 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   }
 }
 
+// Notation:
+//  - B body frame associated with this node.
+//  - P ("parent") body frame associated with this node's parent.
+//  - F mobilizer inboard frame attached to body P.
+//  - M mobilizer outboard frame attached to body B.
+//
+// Outputs (updating cache entry vc):
+// - V_FM(qm, vm) across-mobilizer spatial velocity of M in F.
+// - V_PB_W(qm, vm) B's spatial velocity in P, expressed in W.
+// - V_WB(q(W:P), qm, vm) B's spatial velocity in W, expressed in W.
+// - V_WL(q(W:P), qm, vm) For each link L that follows body B, L's
+//   spatial velocity in W, expressed in W (for point Lo, the link frame's
+//   origin).
+//
+// Inputs
+// - the already-calculated position kinematics in pc.
+// - V_WP (parent's spatial velocity in World, already calculated since we
+//   are in a base-to-tip recursion).
+// - this mobilizer's generalized velocities vm.
+//
+// V_WB is calculated by the recursive relation:
+//   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)                 (1)
+// where Pb is a frame aligned with P but with its origin shifted from Po to B's
+// origin Bo. Then V_WPb is the spatial velocity of frame Pb, measured and
+// expressed in the world frame W. Since V_PB's translational component is also
+// for the point Bo, we can add these spatial velocities. Therefore we need to
+// develop expressions for the two terms (V_WPb and V_PB_W) in Eq. (1).
+//
+// Computation of V_PB_W:
+// Let Mb be a frame aligned rigidly with M but with its origin at Bo.
+// For rigid bodies (which we always have here)
+//   V_PB_W = V_FMb_W                                                      (2)
+// which can be computed from the spatial velocity measured in frame F (as
+// provided by mobilizer's methods)
+//   V_FMb_W = R_WF * V_FMb = R_WF * V_FM.Shift(p_MoBo_F)                  (3)
+// arriving at the desired result:
+//   V_PB_W = R_WF * V_FM.Shift(p_MoBo_F)                                  (4)
+//
+// V_FM = H_FM * vm is immediately available via an efficient operator provided
+// by this node's mobilizer. H_FM(q) is the mobilizer's hinge matrix, and vm
+// this mobilizer's generalized velocities.
+//
+// Computation of V_WPb:
+// This can be computed by a simple shift operation from V_WP:
+//   V_WPb = V_WP.Shift(p_PoBo_W)                                          (5)
+//
+// Note:
+// It is very common to find treatments in which the body frame B is coincident
+// with the outboard frame M, that is B ≡ M, leading to slightly simpler
+// recursive relations (for instance, see Section 3.3.2 in Jain (2010)) where
+// p_MoBo_F = 0 and thus V_PB_W = V_FM_W.
 template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
     const T* positions, const PositionKinematicsCache<T>& pc,
@@ -223,59 +282,16 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   DRAKE_ASSERT(mobod_index() != world_mobod_index());
   DRAKE_ASSERT(vc != nullptr);
 
-  // As a guideline for developers, a summary of the computations performed in
-  // this method is provided:
-  // Notation:
-  //  - B body frame associated with this node.
-  //  - P ("parent") body frame associated with this node's parent.
-  //  - F mobilizer inboard frame attached to body P.
-  //  - M mobilizer outboard frame attached to body B.
-  // The goal is computing the spatial velocity V_WB of body B measured in the
-  // world frame W. The calculation is recursive and assumes the spatial
-  // velocity V_WP of the inboard body P is already computed. These spatial
-  // velocities are related by the recursive relation:
-  //   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)              (1)
-  // where Pb is a frame aligned with P but with its origin shifted from Po
-  // to B's origin Bo. Then V_WPb is the spatial velocity of frame Pb,
-  // measured and expressed in the world frame W. Since V_PB's
-  // translational component is also for the point Bo, we can add these
-  // spatial velocities. Therefore we need to develop expressions for the two
-  // terms (V_WPb and V_PB_W) in Eq. (1).
-  //
-  // Computation of V_PB_W:
-  // Let Mb be a frame aligned rigidly with M but with its origin at Bo.
-  // For rigid bodies (which we always have here)
-  //   V_PB_W = V_FMb_W                                                   (2)
-  // which can be computed from the spatial velocity measured in frame F (as
-  // provided by mobilizer's methods)
-  //   V_FMb_W = R_WF * V_FMb = R_WF * V_FM.Shift(p_MoBo_F)               (3)
-  // arriving at the desired result:
-  //   V_PB_W = R_WF * V_FM.Shift(p_MoBo_F)                               (4)
-  //
-  // V_FM = H_FM * vm is immediately available from this node's mobilizer where
-  // H_FM is the mobilizer's hinge matrix, and vm this mobilizer's generalized
-  // velocities.
-  //
-  // Computation of V_WPb:
-  // This can be computed by a simple shift operation from V_WP:
-  //   V_WPb = V_WP.Shift(p_PoBo_W)                                       (5)
-  //
-  // Note:
-  // It is very common to find treatments in which the body frame B is
-  // coincident with the outboard frame M, that is B ≡ M, leading to slightly
-  // simpler recursive relations (for instance, see Section 3.3.2 in
-  // Jain (2010)) where p_MoBo_F = 0 and thus V_PB_W = V_FM_W.
-
-  // Generalized coordinates local to this node's mobilizer.
-  const T* q_B = get_q(positions);
-  const T* v_B = get_v(velocities);
+  // This node's mobilizer's generalized coordinates and velocities.
+  const T* qm = get_q(positions);
+  const T* vm = get_v(velocities);
 
   // =========================================================================
   // Computation of V_PB_W in Eq. (1). See summary at the top of this method.
 
   // Update V_FM using the operator V_FM = H_FM * vm:
   SpatialVelocity<T>& V_FM = get_mutable_V_FM(vc);
-  V_FM = mobilizer_->calc_V_FM(q_B, v_B);
+  V_FM = mobilizer_->calc_V_FM(qm, vm);
 
   // Compute V_PB_W = R_WF * V_FM.Shift(p_MoBo_F), Eq. (4).
   // Side note to developers: in operator form for rigid bodies this would be
@@ -288,7 +304,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
     // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵛ with nv ∈ [0; 6] the
     // number of mobilities for this node.
     const auto H_PB_W = get_H(H_PB_W_cache);  // 6 x kNv fixed-size Map.
-    const Eigen::Map<const VVector<T>> v(v_B);
+    const Eigen::Map<const VVector<T>> v(vm);
     V_PB_W.get_coeffs() = H_PB_W * v;
   } else {
     V_PB_W.get_coeffs().setZero();
@@ -297,23 +313,30 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   // =========================================================================
   // Computation of V_WPb in Eq. (1). See summary at the top of this method.
 
-  // Shift vector between the parent body P and this node's body B,
-  // expressed in the world frame W.
-  const Vector3<T>& p_PB_W = get_p_PoBo_W(pc);
+  // Shift vector between the parent body's origin Po and the origin Bo of this
+  // node's body B, expressed in the world frame W.
+  const Vector3<T>& p_PoBo_W = get_p_PoBo_W(pc);
 
   // Since we are in a base-to-tip recursion the parent body P's spatial
   // velocity is already available in the cache.
   const SpatialVelocity<T>& V_WP = get_V_WP(*vc);
 
   // =========================================================================
-  // Update velocity V_WB of this node's body B in the world frame. Using the
+  // Update velocity V_WB of this node's body B in the world frame using the
   // recursive Eq. (1). See summary at the top of this method.
   SpatialVelocity<T>& V_WB = get_mutable_V_WB(vc);
-  V_WB = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W);
+  V_WB = V_WP.ComposeWithMovingFrameVelocity(p_PoBo_W, V_PB_W);
 
-  // TODO(sherm1) Calculate V_WL for composites. Currently we don't make
-  //  composites so V_WL = V_WB if L is the link on B.
-  vc->SetV_WL(mobilizer_->mobod().active_link_ordinal(), V_WB);
+  // We have V_WB, now fill in V_WLᵢ for all links Lᵢ following body B.
+  const SpanningForest::Mobod& mobod_B = this->mobod();
+  const std::vector<LinkOrdinal>& followers = mobod_B.follower_link_ordinals();
+  // The active link L₀ is always the first follower and L₀=B.
+  vc->SetV_WL(followers[0], V_WB);
+  for (size_t i = 1; i < followers.size(); ++i) {
+    const LinkOrdinal link_ordinal = followers[i];
+    const Vector3<T>& p_BoLo_W = pc.get_p_BoLo_W(link_ordinal);
+    vc->SetV_WL(link_ordinal, V_WB.Shift(p_BoLo_W));
+  }
 }
 
 // As a guideline for developers, a summary of the computations performed in

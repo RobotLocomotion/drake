@@ -578,10 +578,10 @@ const Link<T>& MultibodyTree<T>::AddLinkImpl(std::unique_ptr<Link<T>> link) {
 
   link->set_parent_tree(this, link_index);
   // MultibodyTree can access selected private methods in RigidBody through its
-  // RigidBodyAttorney.
+  // LinkAttorney.
   // - Register link frame.
   Frame<T>* link_frame =
-      &internal::RigidBodyAttorney<T>::get_mutable_link_frame(link.get());
+      &internal::LinkAttorney<T>::get_mutable_link_frame(link.get());
   const FrameIndex link_frame_index(num_frames());
   link_frame->set_parent_tree(this, link_frame_index);
   DRAKE_DEMAND(link_frame->name() == link->name());
@@ -889,7 +889,7 @@ void MultibodyTree<T>::FinalizeInternals() {
   for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
-    if (RigidBodyAttorney<T>::is_floating_base_body_pre_finalize(body)) {
+    if (LinkAttorney<T>::is_floating_base_body_pre_finalize(body)) {
       DRAKE_DEMAND(joint.is_ephemeral());
       const auto [quaternion, translation] =
           GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
@@ -1523,7 +1523,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // If the model has zero dofs we simply set all spatial velocities to zero and
   // return since there is no work to be done.
   if (num_velocities() == 0) {
-    vc->InitializeToZero();
+    vc->SetToZero();
     return;
   }
 
@@ -1757,10 +1757,10 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
         const RigidTransform<T>& X_BL =
             frame_body_poses->get_X_BL(link_ordinal);
         const math::RotationMatrix<T>& R_BL = X_BL.rotation();
-        const Vector3<T>& p_BoLo_B = X_BL.translation();
         const Vector3<T> p_BoLcm_B = X_BL * p_LoLcm_L;
         frame_body_poses->Set_p_BoLcm_B(link_ordinal, p_BoLcm_B);
         if (!is_world_mobod) {
+          const Vector3<T>& p_BoLo_B = X_BL.translation();
           const SpatialInertia<T> M_LLo_B = M_LLo_L.ReExpress(R_BL);
           const SpatialInertia<T> M_LBo_B = M_LLo_B.Shift(-p_BoLo_B);
           frame_body_poses->AddToM_BBo_B(mobod.index(), M_LBo_B);
@@ -2549,64 +2549,66 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
 template <typename T>
 SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     const systems::Context<T>& context, const Frame<T>& frame_F,
-    const std::vector<BodyIndex>& body_indexes) const {
-  // Check if there are repeated BodyIndex in body_indexes by converting the
+    const std::vector<LinkIndex>& link_indexes) const {
+  // Check if there are repeated LinkIndex in link_indexes by converting the
   // vector to a set (to eliminate duplicates) and see if their sizes differ.
-  const std::set<BodyIndex> without_duplicate_bodies(body_indexes.begin(),
-                                                     body_indexes.end());
-  if (body_indexes.size() != without_duplicate_bodies.size()) {
+  const std::set<LinkIndex> without_duplicate_bodies(link_indexes.begin(),
+                                                     link_indexes.end());
+  if (link_indexes.size() != without_duplicate_bodies.size()) {
     throw std::logic_error(
-        "CalcSpatialInertia(): contains a repeated BodyIndex.");
+        "CalcSpatialInertia(): contains a repeated BodyIndex (LinkIndex).");
   }
 
-  // For the set S of bodies contained in body_indexes, return S's
+  // For the set S of links contained in link_indexes, return S's
   // spatial inertia about Fo (frame_F's origin), expressed in frame F.
-  // For efficiency, evaluate all bodies' spatial inertia and pose.
-  const std::vector<SpatialInertia<T>>& M_Bi_W =
+  // For efficiency, evaluate all mobods' spatial inertia and pose.
+  const std::vector<SpatialInertia<T>>& M_BiBo_W =
       EvalSpatialInertiaInWorldCache(context);
-  const FrameBodyPoseCache<T>& frame_body_poses = EvalFrameBodyPoses(context);
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
-  // Add each body's spatial inertia in the world frame W to this system
-  // S's spatial inertia in W about Wo (the origin of W), expressed in W.
+  // Add each link L's spatial inertia in the world frame W to this system
+  // S's spatial inertia in W about Wo (world origin), expressed in W.
   SpatialInertia<T> M_SWo_W = SpatialInertia<T>::Zero();
 
-  for (BodyIndex body_index : body_indexes) {
-    if (body_index == world_index()) continue;  // World inertia does not add.
+  for (LinkIndex link_index : link_indexes) {
+    if (link_index == world_index()) continue;  // World inertia does not add.
 
-    // Ensure MultibodyPlant method contains a valid body_index.
-    if (body_index >= num_links()) {
+    // Ensure MultibodyPlant method contains a valid link_index.
+    if (link_index >= num_links()) {
       throw std::logic_error(
-          "CalcSpatialInertia(): contains an invalid BodyIndex.");
+          "CalcSpatialInertia(): contains an invalid BodyIndex (LinkIndex).");
     }
 
-    // Get the current body B's spatial inertia about Bo (body B's origin),
-    // expressed in the world frame W. Start the calculation with a cached value
-    // for M_BBo_W if B is not a fused body (i.e., it is a one-link Mobod).
-    const MobodIndex mobod_index = get_link(body_index).mobod_index();
+    // If link L is an unfused body (one-link Mobod), use the Mobod's cached
+    // value for M_LLo_W (a more efficient way to do this calculation).
+    const MobodIndex mobod_index = get_link(link_index).mobod_index();
     if (!get_mobod(mobod_index).is_fused()) {
-      const SpatialInertia<T>& M_BBo_W = M_Bi_W[mobod_index];
+      // Get the Mobod's cached value for the current link L's spatial inertia
+      // about Lo (link L's origin), expressed in world frame W.
+      const SpatialInertia<T>& M_BBo_W = M_BiBo_W[mobod_index];
 
       // Shift M_BBo_W from about-point Bo to about-point Wo and add to the sum.
       const RigidTransform<T>& X_WB = pc.get_X_WB(mobod_index);
       const Vector3<T>& p_WoBo_W = X_WB.translation();
       M_SWo_W += M_BBo_W.Shift(-p_WoBo_W);  // Shift from Bo to Wo by p_BoWo_W.
     } else {
-      // For a composite body (having more than one link), need to calculate
-      // the individual link's spatial inertia about Wo expressed in W since
-      // there is no cached value (and perhaps no need for one).
+      // For a link_L on a Mobod that has multiple follower links, M_LLo_W
+      // (L's spatial inertia about Lo expressed in world W) needs to be
+      // calculated since M_LLo_W is not cached. Note: Caching M_LLo_W for this
+      // special case is likely not worthwhile.
+      // Get M_LLo_L (link L's spatial inertia about its origin Lo, expressed
+      // in link L), then re-express M_LLo_L in world W to form M_LLo_W.
       const LinkOrdinal link_ordinal =
-          graph().link_by_index(body_index).ordinal();
-
-      // M_LLo_L: inertia of link L about its origin Lo, expressed in L.
+          graph().link_by_index(link_index).ordinal();
       const SpatialInertia<T>& M_LLo_L =
-          frame_body_poses.get_M_LLo_L(link_ordinal);
-
-      // X_WL: pose of L's frame relative to world frame W.
+          frame_body_pose_cache.get_M_LLo_L(link_ordinal);
       const RigidTransform<T>& X_WL = pc.get_X_WL(link_ordinal);
+      const RotationMatrix<T>& R_WL = X_WL.rotation();
+      const SpatialInertia<T> M_LLo_W = M_LLo_L.ReExpress(R_WL);
 
-      // Re-express M_LLo to world W, shift that to world origin, add to sum.
-      const SpatialInertia<T> M_LLo_W = M_LLo_L.ReExpress(X_WL.rotation());
+      // Shift M_LLo_W from about Lo to about Wo (world origin), add to sum.
       const Vector3<T>& p_WoLo_W = X_WL.translation();
       M_SWo_W += M_LLo_W.Shift(-p_WoLo_W);  // Shift from Lo to Wo by p_LoWo_W.
     }
@@ -2904,38 +2906,65 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     const systems::Context<T>& context,
     const std::vector<LinkIndex>& link_indexes) const {
   // Efficiently evaluate all mobods' spatial inertias, poses, and velocities.
-  const std::vector<SpatialInertia<T>>& M_Bi_W =
+  const std::vector<SpatialInertia<T>>& M_BiBo_W =
       EvalSpatialInertiaInWorldCache(context);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
 
   // Accumulate each body's spatial momentum in world W to this system S's
   // spatial momentum in W about Wo (the origin of W), expressed in W.
-  SpatialMomentum<T> L_WS_W = SpatialMomentum<T>::Zero();
+  SpatialMomentum<T> L_WSWo_W = SpatialMomentum<T>::Zero();
 
-  // Add contributions from each link Bi.
+  // Add contributions from each link Li.
   for (LinkIndex link_index : link_indexes) {
-    if (link_index == 0) continue;  // No contribution from the world link.
+    if (link_index == world_index()) continue;  // World link adds zero.
 
     // Ensure MultibodyPlant method contains a valid link_index.
-    DRAKE_DEMAND(link_index < num_links());
+    if (link_index >= num_links()) {
+      std::string message = fmt::format(
+          "{}() contains an invalid BodyIndex (LinkIndex).", __func__);
+      throw std::logic_error(message);
+    }
 
-    // Form the current link's spatial momentum in W about Bo, expressed in W.
+    // If link L is an unfused body (one-link Mobod), use the Mobod's cached
+    // value for M_LLo_W (a more efficient way to do this calculation).
     const MobodIndex mobod_index = get_link(link_index).mobod_index();
-    const SpatialInertia<T>& M_BBo_W = M_Bi_W[mobod_index];
-    const SpatialVelocity<T>& V_WBo_W = vc.get_V_WB(mobod_index);
-    SpatialMomentum<T> L_WBo_W = M_BBo_W * V_WBo_W;
+    if (!get_mobod(mobod_index).is_fused()) {
+      // Form mobod B's spatial momentum in W about Bo, expressed in W, then
+      // shift L_WBBo_W from "about Bo" to "about Wo", and accumulate the sum.
+      const SpatialInertia<T>& M_BBo_W = M_BiBo_W[mobod_index];
+      const SpatialVelocity<T>& V_WBo_W = vc.get_V_WB(mobod_index);
+      const RigidTransform<T>& X_WB = pc.get_X_WB(mobod_index);
+      const Vector3<T>& p_WoBo_W = X_WB.translation();
+      const SpatialMomentum<T> L_WBWo_W = (M_BBo_W * V_WBo_W).Shift(-p_WoBo_W);
+      L_WSWo_W += L_WBWo_W;
+    } else {
+      // For a link_L on a Mobod that has multiple follower links, M_LLo_W
+      // (L's spatial inertia about Lo expressed in world W) needs to be
+      // calculated since M_LLo_W is not cached. Note: Caching M_LLo_W for this
+      // special case is likely not worthwhile.
+      // Get M_LLo_L (link L's spatial inertia about its origin Lo, expressed
+      // in link L), then re-express M_LLo_L in world W to form M_LLo_W.
+      const LinkOrdinal link_ordinal =
+          graph().link_by_index(link_index).ordinal();
+      const SpatialInertia<T>& M_LLo_L =
+          frame_body_pose_cache.get_M_LLo_L(link_ordinal);
+      const RigidTransform<T>& X_WL = pc.get_X_WL(link_ordinal);
+      const RotationMatrix<T>& R_WL = X_WL.rotation();
+      const SpatialInertia<T> M_LLo_W = M_LLo_L.ReExpress(R_WL);
 
-    // Shift L_WBo_W from about Bo to about Wo and accumulate the sum.
-    const RigidTransform<T>& X_WB = pc.get_X_WB(mobod_index);
-    const Vector3<T>& p_WoBo_W = X_WB.translation();
-    // After ShiftInPlace, L_WBo_W is changed to L_WBWo_W, which is B's
-    // spatial momentum about point Wo, measured and expressed in frame W.
-    L_WBo_W.ShiftInPlace(-p_WoBo_W);  // After this, L_WBo_W is now L_WBWo_W.
-    L_WS_W += L_WBo_W;                // Actually is `L_WS_W += L_WBWo_W`.
+      // Form current link L's spatial momentum in W about Lo, expressed in W.
+      // Shift L_WLLo_W from "about Lo" to "about Wo", and accumulate the sum.
+      const SpatialVelocity<T>& V_WLo_W = vc.get_V_WL(link_ordinal);
+      const Vector3<T>& p_WoLo_W = X_WL.translation();
+      const SpatialMomentum<T> L_WLWo_W = (M_LLo_W * V_WLo_W).Shift(-p_WoLo_W);
+      L_WSWo_W += L_WLWo_W;
+    }
   }
 
-  return L_WS_W;
+  return L_WSWo_W;
 }
 
 template <typename T>
@@ -4525,10 +4554,10 @@ RigidBody<T>* MultibodyTree<T>::CloneBodyAndAdd(
   auto body_clone = body.CloneToScalar(*this);
   body_clone->set_parent_tree(this, body_index);
   body_clone->set_model_instance(body.model_instance());
-  // MultibodyTree can access selected private methods in RigidBody through
-  // its RigidBodyAttorney.
+  // MultibodyTree can access selected private methods in RigidBody through its
+  // LinkAttorney.
   Frame<T>* body_frame_clone =
-      &internal::RigidBodyAttorney<T>::get_mutable_link_frame(body_clone.get());
+      &internal::LinkAttorney<T>::get_mutable_link_frame(body_clone.get());
   body_frame_clone->set_parent_tree(this, body_frame_index);
   body_frame_clone->set_model_instance(body.model_instance());
 

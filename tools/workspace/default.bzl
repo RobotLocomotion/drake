@@ -37,7 +37,6 @@ load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menagerie_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
-load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("//tools/workspace/onetbb_internal:repository.bzl", "onetbb_internal_repository")  # noqa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
@@ -62,7 +61,6 @@ load("//tools/workspace/spral_internal:repository.bzl", "spral_internal_reposito
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
 load("//tools/workspace/styleguide_internal:repository.bzl", "styleguide_internal_repository")  # noqa
-load("//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
 load("//tools/workspace/sympy_py_internal:repository.bzl", "sympy_py_internal_repository")  # noqa
 load("//tools/workspace/tinygltf_internal:repository.bzl", "tinygltf_internal_repository")  # noqa
 load("//tools/workspace/tinyobjloader_internal:repository.bzl", "tinyobjloader_internal_repository")  # noqa
@@ -112,7 +110,6 @@ def _add_internal_repositories():
     msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)
     mujoco_menagerie_internal_repository(name = "mujoco_menagerie_internal", mirrors = mirrors)  # noqa
     nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
-    nlohmann_internal_repository(name = "nlohmann_internal", mirrors = mirrors)
     nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
     osqp_internal_repository(name = "osqp_internal", mirrors = mirrors)
@@ -134,7 +131,6 @@ def _add_internal_repositories():
     stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
     stduuid_internal_repository(name = "stduuid_internal", mirrors = mirrors)
     styleguide_internal_repository(name = "styleguide_internal", mirrors = mirrors)  # noqa
-    suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
     sympy_py_internal_repository(name = "sympy_py_internal", mirrors = mirrors)
     tinygltf_internal_repository(name = "tinygltf_internal", mirrors = mirrors)
     tinyobjloader_internal_repository(name = "tinyobjloader_internal", mirrors = mirrors)  # noqa
@@ -164,8 +160,10 @@ def _drake_dep_repositories_impl(module_ctx):
         "glib",
         "lapack",
         "libjpeg",
+        "nlohmann_json",
         "opencl",
         "spdlog",
+        "suitesparse",
         "zlib",
     ]
     for name in ALIAS_REPOSITORIES:
@@ -174,6 +172,18 @@ def _drake_dep_repositories_impl(module_ctx):
         if name == "glib":
             # We provide @glib//glib to match bzlmod glib's package structure.
             aliases.update({"//glib:glib": actual})
+        if name == "nlohmann_json":
+            # We provide both aliases, since Drake first-party only needs
+            # :singleheader-json but third-party (VTK) needs :json.
+            aliases = {
+                "json": actual + ":json",
+                "singleheader-json": actual + ":singleheader-json",
+            }
+        if name == "suitesparse":
+            # We only provide @suitesparse//:amd since it's the only library in
+            # suitesparse Drake needs (and can reasonably obtain, for licensing
+            # reasons).
+            aliases = {"amd": actual + ":amd"}
         alias_repository(
             name = name,
             aliases = aliases,

@@ -47,7 +47,6 @@ filegroup(
         "@msgpack_internal//:drake_repository_metadata.json",
         "@mujoco_menagerie_internal//:drake_repository_metadata.json",
         "@nanoflann_internal//:drake_repository_metadata.json",
-        "@nlohmann_internal//:drake_repository_metadata.json",
         "@nlopt_internal//:drake_repository_metadata.json",
         "@onetbb_internal//:drake_repository_metadata.json",
         "@osqp_internal//:drake_repository_metadata.json",
@@ -62,7 +61,6 @@ filegroup(
         "@stable_baselines3_internal//:drake_repository_metadata.json",
         "@stduuid_internal//:drake_repository_metadata.json",
         "@styleguide_internal//:drake_repository_metadata.json",
-        "@suitesparse_internal//:drake_repository_metadata.json",
         "@sympy_py_internal//:drake_repository_metadata.json",
         "@tinygltf_internal//:drake_repository_metadata.json",
         "@tinyobjloader_internal//:drake_repository_metadata.json",
@@ -140,6 +138,7 @@ drake_py_binary(
         "@tinygltf_internal//:__subpackages__",
         "@tinyobjloader_internal//:__subpackages__",
         "@yaml_cpp_internal//:__subpackages__",
+        "@uwebsockets_internal//:__subpackages__",
     ],
     deps = [":module_py"],
 )
@@ -193,7 +192,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "metis_internal",
     "msgpack_internal",
     "nanoflann_internal",
-    "nlohmann_internal",
     "nlopt_internal",
     "picosha2_internal",
     "poisson_disk_sampling_internal",
@@ -202,7 +200,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "sdformat_internal",
     "spral_internal",
     "stduuid_internal",
-    "suitesparse_internal",
     "tinygltf_internal",
     "tinyobjloader_internal",
     "tinyxml2_internal",
@@ -220,9 +217,11 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lapack",
     "libjpeg",
     # N.B. The nanobind install is handled by //bindings/pydrake:install.
+    "nlohmann_json",
     "opencl",
     # N.B. The robin_map install is handled by the nanobind install.
     "spdlog",
+    "suitesparse",
     "zlib",
 ]] + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],

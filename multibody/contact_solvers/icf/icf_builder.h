@@ -107,6 +107,17 @@ class IcfBuilder {
   void SetPatchConstraintsForHydroelasticContact(
       const systems::Context<T>& context, IcfModel<T>* model) const;
 
+  /* Computes the surface-velocity bias v_b_W (world frame) at a contact point
+  between bodyA and bodyB, following the sign convention v_b = v_B_ss - v_A_ss
+  used by PatchConstraintsPool. Returns the zero vector when neither body
+  declares a surface velocity.
+
+  @param nhat_AB_W The contact normal pointing from bodyA into bodyB. */
+  Vector3<T> CalcSurfaceVelocityBias(const systems::Context<T>& context,
+                                     const RigidBody<T>& bodyA,
+                                     const RigidBody<T>& bodyB,
+                                     const Vector3<T>& nhat_AB_W) const;
+
   /* Resizes the model to accommodate coupler constraints. */
   void AllocateCouplerConstraints(IcfModel<T>* model) const;
 
@@ -130,6 +141,14 @@ class IcfBuilder {
   @pre AllocateBallConstraints() has already been called. */
   void SetBallConstraints(const systems::Context<T>& context,
                           IcfModel<T>* model) const;
+
+  /* Resizes the model to accommodate distance constraints. */
+  void AllocateDistanceConstraints(IcfModel<T>* model) const;
+
+  /* Sets distance constraints in the model.
+  @pre AllocateDistanceConstraints() has already been called. */
+  void SetDistanceConstraints(const systems::Context<T>& context,
+                              IcfModel<T>* model) const;
 
   /* Resizes the model to accommodate limit constraints. */
   void AllocateLimitConstraints(IcfModel<T>* model) const;

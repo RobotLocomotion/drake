@@ -6,6 +6,7 @@ import weakref
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import _binder
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression
@@ -425,6 +426,12 @@ class TestCustom(unittest.TestCase):
         ):
             system.CreateDefaultContext()
 
+    @unittest.skipIf(
+        # TODO(#21572) Remove this opt-out. Once wjakob/nanobind#1210 is fixed
+        # and we upgrade, hopefully it works without more effort on our part.
+        _binder == "nanobind",
+        "Missing init detection is not implemented yet.",
+    )
     def test_leaf_system_issue13792(self):
         """
         Ensures that users get a better error when forgetting to explicitly

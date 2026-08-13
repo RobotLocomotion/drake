@@ -12,7 +12,7 @@ import zipfile
 # We'll mock out the internet-touching methods. We don't want our unit test
 # touching the internet. See setUp and tearDown below for details.
 assert hasattr(mut, "request")
-setattr(mut, "request", None)
+mut.request = None
 
 
 class TestDownloader(unittest.TestCase):

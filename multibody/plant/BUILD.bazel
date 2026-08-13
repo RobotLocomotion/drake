@@ -1309,10 +1309,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "surface_velocity_test",
+    shard_count = 2,
     deps = [
         ":plant",
         "//common:value",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/cenic:cenic_integrator",
         "//systems/analysis:simulator",
         "//systems/framework:bus_value",
     ],

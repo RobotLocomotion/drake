@@ -58,6 +58,18 @@ struct ScalarBinaryOpTraits<double, drake::ad::AutoDiff, BinOp> {
   using ReturnType = drake::ad::AutoDiff;
 };
 
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+namespace internal {
+// Identically zero means that both value and derivatives are zero/empty.
+template <>
+struct is_identically_zero_impl<drake::ad::AutoDiff> {
+  static bool run(const drake::ad::AutoDiff& s) {
+    return s.value() == 0.0 && (s.derivatives().array() == 0.0).all();
+  }
+};
+}  // namespace internal
+#endif
+
 }  // namespace Eigen
 
 #endif  // DRAKE_DOXYGEN_CXX

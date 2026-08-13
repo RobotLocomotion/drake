@@ -1,4 +1,5 @@
 import bisect
+import os
 import struct
 import subprocess
 import unittest
@@ -49,7 +50,6 @@ _GOOD_SYMBOLS_SUBSTR = [
 # Any symbols whose name contains one of these are undesirable, but for now
 # will not cause this test to fail.
 _KNOWN_BAD_SYMBOLS_SUBSTR = [
-    "3tbb6detail",  # TODO(#20898): This line should be removed eventually.
     "8rules_cc2cc8runfiles",
     "Ampl",
     "BitVector128",
@@ -61,9 +61,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "GLXEW",
     "Idiot",
     "MessageHandler",
-    "N3uWS",
-    "N5ofats10any_detail",
-    "Realpath",
     "WindowsError",
     "action",
     "alternativeEnvironment",
@@ -96,9 +93,6 @@ LIBDRAKE = "tools/install/libdrake/libdrake.so"
 
 def _is_known_bad_ctor_or_dtor(*, filename, function_name):
     is_snake_case = filename == filename.lower()
-    if "drake_vendor::YAML" in function_name:
-        # TODO(#24446) Fix YAML's static regexes to be never_destroyed.
-        return True
     if filename.startswith("vtk") and not is_snake_case:
         # TODO(#24447) Fix VTK to remove globals.
         return True
@@ -252,7 +246,7 @@ class ExportedSymbolsTest(unittest.TestCase):
         manifest = runfiles.Create()
         objdump_all = subprocess.check_output(
             [
-                manifest.Rlocation("llvm/bin/llvm-objdump"),
+                manifest.Rlocation(os.environ["LLVM_OBJDUMP_RLOCATIONPATH"]),
                 LIBDRAKE,
                 "-Mintel",
                 "--no-addresses",

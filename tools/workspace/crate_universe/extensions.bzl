@@ -1,10 +1,11 @@
-load(
-    "//tools/workspace/crate_universe/lock/details:crates.bzl",
-    "crate_repositories",
-)
-
 def _crate_licenses_repository_impl(repo_ctx):
     my_dir = "@drake//tools/workspace/crate_universe"
+    manifest = repo_ctx.path(
+        Label("@clarabel_cpp_internal//:rust_wrapper/Cargo.toml"),
+    )
+    repo_ctx.symlink(manifest, "Cargo.toml")
+    repo_ctx.symlink(manifest.dirname.get_child("src"), "src")
+    repo_ctx.symlink(Label(my_dir + ":lock/Cargo.lock"), "Cargo.lock")
     repo_ctx.symlink(
         Label(my_dir + ":BUILD.crate_licenses.bazel"),
         "BUILD.bazel",
@@ -20,11 +21,8 @@ crate_licenses_repository = repository_rule(
 
 def _impl(module_ctx):
     crate_licenses_repository(name = "crate_licenses")
-    root_module_direct_deps = ["crate_licenses"]
-    direct_deps = crate_repositories()
-    root_module_direct_deps.extend([repo.repo for repo in direct_deps])
     return module_ctx.extension_metadata(
-        root_module_direct_deps = root_module_direct_deps,
+        root_module_direct_deps = ["crate_licenses"],
         root_module_direct_dev_deps = [],
     )
 

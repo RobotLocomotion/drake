@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/name_value.h"
 #include "drake/common/timer.h"
 #include "drake/geometry/meshcat_animation.h"
@@ -903,6 +904,47 @@ class Meshcat {
   gamepad is working), see https://beej.us/blog/data/javascript-gamepad/. */
   Gamepad GetGamepad() const;
 
+  /** The geometry of a virtual, interactive spring. This spring connects the
+  point F (a point fixed on the body B -- named by `path`) with an immovable
+  target point T. Both points are measured and expressed in the world frame.
+  This definition is for kinematics only: the spring's stiffness, damping, and
+  resultant forces are not defined here. */
+  struct VirtualSpringKinematics {
+    /** The "/"-delimited Meshcat path of the object being dragged (e.g.,
+    "/drake/visualizer/my_model/my_body/my_geometry").
+
+    This could be any valid Meshcat path, including for either a body or a
+    geometry. Whether it has any effect depends on the caller's treatment. */
+    std::string path;
+
+    /** The current position of F affixed to body B. Note: in an
+    interactive scenario with active dynamics, this position will change as the
+    body B moves.
+
+    Note: This is expressed in Drake's z-up world frame (not Meshcat's y-up
+    frame). */
+    Eigen::Vector3d body_point_in_world;
+
+    /** The current position of the fixed target point T. The target point is
+    solely determined by the interactive Meshcat application. From Drake's
+    perspective it is a point with a prescribed position in the world frame.
+
+    Note: This is expressed in Drake's z-up world frame (not Meshcat's y-up
+    frame). */
+    Eigen::Vector3d target_point_in_world;
+  };
+
+  /** Returns the current mouse-drag state if a user is presently dragging an
+  object in a connected Meshcat browser, or std::nullopt otherwise.
+
+  A downstream system (see multibody::meshcat::MeshcatMouseSpring) can read this
+  state and convert it into a force applied to a simulated body, letting users
+  drag objects with the cursor.
+
+  If multiple browsers report drags concurrently, the returned value reflects
+  the most recently received message. */
+  std::optional<VirtualSpringKinematics> GetVirtualSpringKinematics() const;
+
   //@}
 
   /** Returns an HTML string that can be saved to a file for a snapshot of the
@@ -1031,7 +1073,7 @@ class Meshcat {
 
  private:
   // Provides PIMPL encapsulation of websocket types.
-  class Impl;
+  class DRAKE_NO_EXPORT Impl;
 
   // Safe accessors for the PIMPL object.
   Impl& impl();

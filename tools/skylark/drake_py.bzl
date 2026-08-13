@@ -204,8 +204,15 @@ def drake_py_test(
     if test_alt_binder not in (True, False, "auto"):
         fail("test_alt_binder must be set to True, False, or \"auto\"")
     if test_alt_binder == "auto":
-        # TODO(#21572) Eventually "auto" should enable relevant tests.
-        test_alt_binder = False
+        package_name = native.package_name()
+        test_alt_binder = any([
+            package_name.startswith(x)
+            for x in [
+                "bindings/pydrake",
+                "examples",
+                "tutorials",
+            ]
+        ])
     if test_alt_binder:
         alt_target_compatible_with, _ = combine_conditions(
             name = "alt_binder/" + name,

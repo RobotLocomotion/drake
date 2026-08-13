@@ -1,6 +1,7 @@
 #include "drake/geometry/render_gl/internal_render_engine_gl.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <unordered_set>
@@ -19,6 +20,7 @@
 #include "drake/common/unused.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/geometry/render/colorize_image.h"
 
 namespace drake {
 namespace geometry {
@@ -384,6 +386,9 @@ uniform vec4 diffuse_color;
 out vec4 color;
 
 void main() {
+  if (diffuse_color.a == 0.0) {
+    discard;
+  }
   color = GetIlluminatedColor(diffuse_color);
 })""";
 };
@@ -503,6 +508,9 @@ void main() {
     uv.y = 1.0 - uv.y;
   }
   vec4 map_rgba = texture(diffuse_map, uv);
+  if (map_rgba.a == 0.0) {
+    discard;
+  }
   color = GetIlluminatedColor(map_rgba);
 })""";
 };
@@ -603,20 +611,18 @@ class DefaultLabelShader final : public ShaderProgram {
 
   /* Constructs the label shader with the given `label_encoder`.
 
-   @param label_encoder  A function that extracts an encoded color (Vector4f)
-                         from a set of PerceptionProperties representing the
-                         color-encoded RenderLabel. If such a color can't be
+   @param label_encoder  A function that extracts the RenderLabel value from a
+                         set of PerceptionProperties. If such a label can't be
                          defined, the function should throw.
   */
   explicit DefaultLabelShader(
-      std::function<Vector4<float>(const PerceptionProperties&)> label_encoder)
+      std::function<GLint(const PerceptionProperties&)> label_encoder)
       : ShaderProgram(), label_encoder_(std::move(label_encoder)) {
     LoadFromSources(kVertexShader, kFragmentShader);
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
-    glUniform4fv(encoded_label_loc_, 1,
-                 data.value().get_value<Vector4<float>>().data());
+    glUniform1i(encoded_label_loc_, data.value().get_value<GLint>());
   }
 
  private:
@@ -634,7 +640,7 @@ class DefaultLabelShader final : public ShaderProgram {
                              AbstractValue::Make(label_encoder_(properties))};
   }
 
-  std::function<Vector4<float>(const PerceptionProperties&)> label_encoder_;
+  std::function<GLint(const PerceptionProperties&)> label_encoder_;
 
   GLint encoded_label_loc_{};
 
@@ -653,14 +659,13 @@ void main() {
   gl_Position = T_DC * p_CV;
 })""";
 
-  // For each fragment from a geometry, it simply colors the fragment with the
-  // provided label encoded as an RGBA color.
+  // For each fragment from a geometry, it simply writes the provided label.
   static constexpr char kFragmentShader[] = R"""(
 #version 330
-out vec4 color;
-uniform vec4 encoded_label;
+layout(location = 0) out int label;
+uniform int encoded_label;
 void main() {
-  color = encoded_label;
+  label = encoded_label;
 })""";
 };
 
@@ -717,11 +722,10 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
   // Label shaders -- a single shader that accepts all geometry (unless it has
   // an invalid RenderLabel -- see RenderEngine::GetLabelOrThrow).
   // Extracts the label from properties (with error checking) and returns the
-  // r,g,b,a color to represent it.
+  // integer value to represent it.
   auto label_encoder = [this](const PerceptionProperties& props) {
     const RenderLabel& label = this->GetRenderLabelOrThrow(props);
-    const Rgba color = RenderEngine::MakeRgbFromLabel(label);
-    return Vector4<float>(color.r(), color.g(), color.b(), 1.0f);
+    return static_cast<GLint>(static_cast<RenderLabel::ValueType>(label));
   };
   AddShader(make_unique<DefaultLabelShader>(label_encoder), RenderType::kLabel);
 }
@@ -1106,8 +1110,11 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
   // the front buffer; reversing the order means the image we've just rendered
   // wouldn't be visible.
   SetWindowVisibility(camera.core(), camera.show_window(), render_target);
-  glGetTextureImage(render_target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                    color_image_out->size(), color_image_out->at(0, 0));
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glReadPixels(0, 0, color_image_out->width(), color_image_out->height(),
+               GL_RGBA, GL_UNSIGNED_BYTE, color_image_out->at(0, 0));
 }
 
 void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
@@ -1139,9 +1146,11 @@ void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
     shader_program.Unuse();
   }
 
-  glGetTextureImage(render_target.value_texture, 0, GL_RED, GL_FLOAT,
-                    depth_image_out->size() * sizeof(GLfloat),
-                    depth_image_out->at(0, 0));
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glReadPixels(0, 0, depth_image_out->width(), depth_image_out->height(),
+               GL_RED, GL_FLOAT, depth_image_out->at(0, 0));
 }
 
 void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
@@ -1150,13 +1159,10 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
 
   const RenderTarget render_target =
       GetRenderTarget(camera.core(), RenderType::kLabel);
-  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a member.
-  const Rgba empty_color = RenderEngine::MakeRgbFromLabel(RenderLabel::kEmpty);
-  float clear_color[4] = {static_cast<float>(empty_color.r()),
-                          static_cast<float>(empty_color.g()),
-                          static_cast<float>(empty_color.b()), 1.0f};
-  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
-                            &clear_color[0]);
+  const GLint empty_label = static_cast<GLint>(
+      static_cast<RenderLabel::ValueType>(RenderLabel::kEmpty));
+  glClearNamedFramebufferiv(render_target.frame_buffer, GL_COLOR, 0,
+                            &empty_label);
   glClear(GL_DEPTH_BUFFER_BIT);
 
   // Matrix mapping a geometry vertex from the camera frame C to the device
@@ -1173,16 +1179,31 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
     shader_program.Unuse();
   }
 
-  // Note: SetWindowVisibility must be called *after* the rendering; setting the
-  // visibility is responsible for taking the target buffer and bringing it to
-  // the front buffer; reversing the order means the image we've just rendered
-  // wouldn't be visible.
-  SetWindowVisibility(camera.core(), camera.show_window(), render_target);
-  // TODO(SeanCurtis-TRI): Apparently, we *should* be able to create a frame
-  // buffer texture consisting of a single-channel, 16-bit, signed int (to match
-  // the underlying RenderLabel value). Doing so would allow us to render labels
-  // directly and eliminate this additional pass.
-  GetLabelImage(label_image_out, render_target);
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glReadPixels(0, 0, label_image_out->width(), label_image_out->height(),
+               GL_RED_INTEGER, GL_SHORT, label_image_out->at(0, 0));
+
+  // Label images render into an integer color buffer, which can't be blitted
+  // to the default RGBA window buffer. For show_window only, colorize the
+  // already-read labels with the human-readable palette.
+  if (camera.show_window()) {
+    ImageRgba8U display_image(label_image_out->width(),
+                              label_image_out->height());
+    render::ColorizeLabelImage(*label_image_out, &display_image);
+
+    const RenderTarget display_target =
+        GetRenderTarget(camera.core(), RenderType::kColor);
+    glBindTexture(GL_TEXTURE_2D, display_target.value_texture);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, display_image.width(),
+                    display_image.height(), GL_RGBA, GL_UNSIGNED_BYTE,
+                    display_image.at(0, 0));
+    glBindTexture(GL_TEXTURE_2D, 0);
+    SetWindowVisibility(camera.core(), true, display_target);
+  } else {
+    opengl_context_->HideWindow();
+  }
 }
 
 std::string RenderEngineGl::DoGetParameterYaml() const {
@@ -2205,8 +2226,7 @@ std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(
     case RenderType::kColor:
       return std::make_tuple(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
     case RenderType::kLabel:
-      // TODO(SeanCurtis-TRI): Ultimately, this should be a 16-bit, signed int.
-      return std::make_tuple(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
+      return std::make_tuple(GL_R16I, GL_RED_INTEGER, GL_SHORT);
     case RenderType::kDepth:
       return std::make_tuple(GL_R32F, GL_RED, GL_FLOAT);
     case RenderType::kTypeCount:
@@ -2266,19 +2286,6 @@ RenderTarget RenderEngineGl::CreateRenderTarget(const RenderCameraCore& camera,
   glNamedFramebufferDrawBuffers(target.frame_buffer, 1, &buffer);
 
   return target;
-}
-
-void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out,
-                                   const RenderTarget& target) const {
-  ImageRgba8U image(label_image_out->width(), label_image_out->height());
-  glGetTextureImage(target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                    image.size() * sizeof(GLubyte), image.at(0, 0));
-  for (int y = 0; y < image.height(); ++y) {
-    for (int x = 0; x < image.width(); ++x) {
-      *label_image_out->at(x, y) = RenderEngine::MakeLabelFromRgb(
-          image.at(x, y)[0], image.at(x, y)[1], image.at(x, y)[2]);
-    }
-  }
 }
 
 RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
@@ -2412,8 +2419,10 @@ void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
     glBlitNamedFramebuffer(target.frame_buffer, 0,
                            // Src bounds.
                            0, 0, intrinsics.width(), intrinsics.height(),
-                           // Dest bounds.
-                           0, 0, intrinsics.width(), intrinsics.height(),
+                           // Dest bounds. The render target uses upper-left
+                           // image coordinates, while the native window's
+                           // default framebuffer is presented bottom-up.
+                           0, intrinsics.height(), intrinsics.width(), 0,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
     opengl_context_->UpdateWindow();
   } else {

@@ -219,11 +219,6 @@ Vector4<int> RgbaVector(const ImageRgba8U::T* data) {
       │                       │
       └───────────────────────┘
 
- N.B. If you set `show_window` to true in the camera settings, the camera will
- be flipped vertically (the cylinder and capsule will change positions). This
- is a documented property of how `show_window` works with RenderEngineGl (see
- render_gl/factory.h).
-
  To test the correctness of the rendered image, we'll sample the color on
  each shape. The rendered images are saved to the test outputs.
 

@@ -16,8 +16,8 @@
 using std::string;
 
 namespace drake {
-
 namespace {
+
 enum class Color { Red, Green, Blue };
 
 // Tests enumeration types.
@@ -33,17 +33,9 @@ class Base {
 };
 class Derived : public Base {};
 
-// Types to have their NiceTypeName be overridden via
-// `SetNiceTypeNamePtrOverride`.
-class OverrideName {};
-class OverrideNameDerived : public Base {};
-
 // Test the Identifier pattern.
 using AId = Identifier<class ATag>;
 
-}  // namespace
-
-namespace {
 // Can't test much of NiceTypeName::Demangle because its behavior is compiler-
 // and platform-specific. Everyone should agree on simple types though.
 GTEST_TEST(NiceTypeNameTest, Demangle) {
@@ -217,7 +209,22 @@ GTEST_TEST(NiceTypeNameTest, RemoveNamespaces) {
   EXPECT_EQ(NiceTypeName::RemoveNamespaces("blah::blah2::"), "blah::blah2::");
 }
 
-// This test must be last.
+GTEST_TEST(NiceTypeNameTest, TypeInfoAlias) {
+  // With nothing registered, the type comes back as itself.
+  EXPECT_EQ(internal::GetTypeInfoAlias(&typeid(Derived)), &typeid(Derived));
+
+  // Register an alias and retrieve it.
+  internal::AddTypeInfoAlias(typeid(Derived), &typeid(Base));
+  EXPECT_EQ(internal::GetTypeInfoAlias(&typeid(Derived)), &typeid(Base));
+}
+
+// Types to have their NiceTypeName overridden via `SetNiceTypeNamePtrOverride`.
+class OverrideName {};
+class OverrideNameDerived : public Base {};
+
+// This test uses SetNiceTypeNamePtrOverride (changing global behavior), so it
+// should remain the last test in the file. In practice it's unlikely that it
+// would matter, but better safe than sorry.
 GTEST_TEST(NiceTypeNameTest, Override) {
   internal::SetNiceTypeNamePtrOverride(
       [](const internal::type_erased_ptr& ptr) -> std::string {

@@ -40,13 +40,22 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   const int max_clique_size = 6;
   const int num_ball_constraints = 4;
   const int num_couplers = 2;
+  const int num_distance_constraints = 5;
   const int num_welds = 3;
   const std::vector<int> gain_sizes = {3, 2};
   const std::vector<int> limit_sizes = {5, 4, 3};
   const std::vector<int> patch_sizes = {8, 6, 4, 2};
 
-  data.Resize(num_bodies, num_velocities, max_clique_size, num_ball_constraints,
-              num_couplers, num_welds, gain_sizes, limit_sizes, patch_sizes);
+  data.Resize({.num_bodies = num_bodies,
+               .num_velocities = num_velocities,
+               .max_clique_size = max_clique_size,
+               .num_ball_constraints = num_ball_constraints,
+               .num_couplers = num_couplers,
+               .num_distance_constraints = num_distance_constraints,
+               .num_welds = num_welds,
+               .gain_sizes = gain_sizes,
+               .limit_sizes = limit_sizes,
+               .patch_sizes = patch_sizes});
 
   // Main data elements
   EXPECT_EQ(data.num_velocities(), num_velocities);
@@ -68,6 +77,8 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
             num_ball_constraints);
   EXPECT_EQ(data.scratch().coupler_constraints_data.num_constraints(),
             num_couplers);
+  EXPECT_EQ(data.scratch().distance_constraints_data.num_constraints(),
+            num_distance_constraints);
   EXPECT_EQ(data.scratch().gain_constraints_data.num_constraints(),
             ssize(gain_sizes));
   EXPECT_EQ(data.scratch().limit_constraints_data.num_constraints(),
@@ -98,17 +109,28 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
   const int max_clique_size = 7;
   const int num_ball_constraints = 2;
   const int num_couplers = 2;
+  const int num_distance_constraints = 3;
   const int num_welds = 1;
   const std::vector<int> gain_sizes = {3};
   const std::vector<int> limit_sizes = {4};
   const std::vector<int> patch_sizes = {5};
 
-  data.Resize(num_bodies, num_velocities, max_clique_size, num_ball_constraints,
-              num_couplers, num_welds, gain_sizes, limit_sizes, patch_sizes);
+  data.Resize({.num_bodies = num_bodies,
+               .num_velocities = num_velocities,
+               .max_clique_size = max_clique_size,
+               .num_ball_constraints = num_ball_constraints,
+               .num_couplers = num_couplers,
+               .num_distance_constraints = num_distance_constraints,
+               .num_welds = num_welds,
+               .gain_sizes = gain_sizes,
+               .limit_sizes = limit_sizes,
+               .patch_sizes = patch_sizes});
 
   // Clearing pools changes size but shouldn't change capacity.
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
-  data.scratch().Resize(0, 0, 0, 0, 0, 0, gain_sizes, limit_sizes, patch_sizes);
+  data.scratch().Resize({.gain_sizes = gain_sizes,
+                         .limit_sizes = limit_sizes,
+                         .patch_sizes = patch_sizes});
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
 
   VectorX<double> v = VectorX<double>::LinSpaced(num_velocities, 1.0, 11.0);
@@ -116,9 +138,16 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
     // Restoring the data to the original size and setting velocities should not
     // cause any new allocations.
     drake::test::LimitMalloc guard;
-    data.Resize(num_bodies, num_velocities, max_clique_size,
-                num_ball_constraints, num_couplers, num_welds, gain_sizes,
-                limit_sizes, patch_sizes);
+    data.Resize({.num_bodies = num_bodies,
+                 .num_velocities = num_velocities,
+                 .max_clique_size = max_clique_size,
+                 .num_ball_constraints = num_ball_constraints,
+                 .num_couplers = num_couplers,
+                 .num_distance_constraints = num_distance_constraints,
+                 .num_welds = num_welds,
+                 .gain_sizes = gain_sizes,
+                 .limit_sizes = limit_sizes,
+                 .patch_sizes = patch_sizes});
     data.set_v(v);
   }
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);

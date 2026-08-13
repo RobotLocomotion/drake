@@ -32,7 +32,7 @@ command line.
 
 import argparse
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 import getpass
 import hashlib
@@ -189,7 +189,7 @@ def _is_commit_too_recent(
     cooldown_days = (
         _DEFAULT_COOLDOWN_DAYS if cooldown_days is None else cooldown_days
     )
-    if date > datetime.now(timezone.utc) - timedelta(days=cooldown_days):
+    if date > datetime.now(UTC) - timedelta(days=cooldown_days):
         # This is a bleeding-edge release; ignore it (as potential for
         # malware), but log it for the user to check.
         warn(f"Skipping too-recent {commit} for {workspace}")

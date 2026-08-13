@@ -11,6 +11,7 @@ libclang-20-dev
 libclang-rt-21-dev
 libomp-21-dev
 llvm-21
+locales
 node-uglify
 patchutils
 python3-boto3

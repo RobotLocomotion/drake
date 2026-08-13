@@ -181,7 +181,9 @@ void SapContactProblem<T>::ExpandContactSolverResults(
   results->vc.setZero();
   results->j.setZero();
 
-  // Set vc to vc* for known DoFs. Unknown DoFs will be overwritten below.
+  // Initialize constraint velocities using the free-motion generalized
+  // velocities, vc = J * v_star + v_b. Values for participating constraints
+  // will be overwritten from the reduced_results below.
   for (int i = 0; i < num_constraints(); ++i) {
     const SapConstraint<T>& c = get_constraint(i);
 
@@ -199,6 +201,7 @@ void SapContactProblem<T>::ExpandContactSolverResults(
                              num_velocities(c.second_clique())),
           &vc_segment);
     }
+    vc_segment += c.GetBiasVelocity();
   }
 
   // Copy v and j for participating velocities.
@@ -210,6 +213,8 @@ void SapContactProblem<T>::ExpandContactSolverResults(
   // Copy gamma and vc for participating constraints.
   reduced_mapping.constraint_equation_permutation.ApplyInverse(
       reduced_results.gamma, &results->gamma);
+  // Note: for participating constraints, the velocity bias has already been
+  // added in SapSolver::PackSapSolverResults().
   reduced_mapping.constraint_equation_permutation.ApplyInverse(
       reduced_results.vc, &results->vc);
 }

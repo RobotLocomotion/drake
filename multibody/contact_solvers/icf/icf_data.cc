@@ -9,60 +9,51 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
-                                 int max_clique_size, int num_ball_constraints,
-                                 int num_couplers, int num_welds,
-                                 std::span<const int> gain_sizes,
-                                 std::span<const int> limit_sizes,
-                                 std::span<const int> patch_sizes) {
-  Av_minus_r.Resize(1, num_velocities, 1);
+void IcfData<T>::Scratch::Resize(const ResizeParams& params) {
+  Av_minus_r.Resize(1, params.num_velocities, 1);
 
-  V_WB_alpha.Resize(num_bodies, 6, 1);
-  U_AbB_W.Resize(ssize(patch_sizes), 6, 1);
-  v_alpha.Resize(1, num_velocities, 1);
+  V_WB_alpha.Resize(params.num_bodies, 6, 1);
+  U_AbB_W.Resize(ssize(params.patch_sizes), 6, 1);
+  v_alpha.Resize(1, params.num_velocities, 1);
 
-  Gw_gain.Resize(1, max_clique_size, 1);
-  Gw_limit.Resize(1, max_clique_size, 1);
+  Gw_gain.Resize(1, params.max_clique_size, 1);
+  Gw_limit.Resize(1, params.max_clique_size, 1);
 
-  ball_constraints_data.Resize(num_ball_constraints);
-  coupler_constraints_data.Resize(num_couplers);
-  gain_constraints_data.Resize(gain_sizes);
-  limit_constraints_data.Resize(limit_sizes);
-  patch_constraints_data.Resize(patch_sizes);
-  weld_constraints_data.Resize(num_welds);
+  ball_constraints_data.Resize(params.num_ball_constraints);
+  coupler_constraints_data.Resize(params.num_couplers);
+  distance_constraints_data.Resize(params.num_distance_constraints);
+  gain_constraints_data.Resize(params.gain_sizes);
+  limit_constraints_data.Resize(params.limit_sizes);
+  patch_constraints_data.Resize(params.patch_sizes);
+  weld_constraints_data.Resize(params.num_welds);
 
-  H_cc_pool.Resize(1, max_clique_size, max_clique_size);
+  H_cc_pool.Resize(1, params.max_clique_size, params.max_clique_size);
 
-  H_BB_pool.Resize(1, max_clique_size, max_clique_size);
-  H_AA_pool.Resize(1, max_clique_size, max_clique_size);
-  H_AB_pool.Resize(1, max_clique_size, max_clique_size);
-  H_BA_pool.Resize(1, max_clique_size, max_clique_size);
-  GJa_pool.Resize(1, 6, max_clique_size);
-  GJb_pool.Resize(1, 6, max_clique_size);
+  H_BB_pool.Resize(1, params.max_clique_size, params.max_clique_size);
+  H_AA_pool.Resize(1, params.max_clique_size, params.max_clique_size);
+  H_AB_pool.Resize(1, params.max_clique_size, params.max_clique_size);
+  H_BA_pool.Resize(1, params.max_clique_size, params.max_clique_size);
+  GJa_pool.Resize(1, 6, params.max_clique_size);
+  GJb_pool.Resize(1, 6, params.max_clique_size);
 }
 
 template <typename T>
 IcfData<T>::~IcfData() = default;
 
 template <typename T>
-void IcfData<T>::Resize(int num_bodies, int num_velocities, int max_clique_size,
-                        int num_ball_constraints, int num_couplers,
-                        int num_welds, std::span<const int> gain_sizes,
-                        std::span<const int> limit_sizes,
-                        std::span<const int> patch_sizes) {
-  v_.resize(num_velocities);
-  V_WB_.Resize(num_bodies, 6, 1);
-  Av_.resize(num_velocities);
-  gradient_.resize(num_velocities);
-  ball_constraints_data_.Resize(num_ball_constraints);
-  coupler_constraints_data_.Resize(num_couplers);
-  gain_constraints_data_.Resize(gain_sizes);
-  limit_constraints_data_.Resize(limit_sizes);
-  patch_constraints_data_.Resize(patch_sizes);
-  weld_constraints_data_.Resize(num_welds);
-  scratch_.Resize(num_bodies, num_velocities, max_clique_size,
-                  num_ball_constraints, num_couplers, num_welds, gain_sizes,
-                  limit_sizes, patch_sizes);
+void IcfData<T>::Resize(const ResizeParams& params) {
+  v_.resize(params.num_velocities);
+  V_WB_.Resize(params.num_bodies, 6, 1);
+  Av_.resize(params.num_velocities);
+  gradient_.resize(params.num_velocities);
+  ball_constraints_data_.Resize(params.num_ball_constraints);
+  coupler_constraints_data_.Resize(params.num_couplers);
+  distance_constraints_data_.Resize(params.num_distance_constraints);
+  gain_constraints_data_.Resize(params.gain_sizes);
+  limit_constraints_data_.Resize(params.limit_sizes);
+  patch_constraints_data_.Resize(params.patch_sizes);
+  weld_constraints_data_.Resize(params.num_welds);
+  scratch_.Resize(params);
 }
 
 template <typename T>

@@ -22,7 +22,7 @@ class SapDistanceConstraint;
  To be more precise, consider a point P on an object A and point Q on an object
  B. With d the distance between points P and Q and ḋ its rate of change, this
  SAP constraint models the constraint impulse as γ ∈ ℝ:
-   γ = −k⋅(d−ℓ) − c⋅ḋ
+   γ = δt⋅(−k⋅(d−ℓ) − c⋅ḋ)
  where ℓ is the "free length" of the constraint, and k and c are the stiffness
  and damping coefficients respectively.
 

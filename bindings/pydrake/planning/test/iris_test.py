@@ -283,7 +283,7 @@ class TestOptionsPrinting(unittest.TestCase):
 
     def check_fields(self, options, fields, printed):
         for field in fields:
-            substring = f"{field}={str(getattr(options, field))}"
+            substring = f"{field}={getattr(options, field)!s}"
             self.assertTrue(substring in printed, substring)
 
     def check_sampled_iris_options(self, options, printed):

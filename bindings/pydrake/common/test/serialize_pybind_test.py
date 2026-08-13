@@ -1,9 +1,9 @@
 import inspect
-import typing
 import unittest
 
 import numpy as np
 
+from pydrake.common import _binder
 from pydrake.common.test.serialize_test_util import (
     MyData1,
     MyData2,
@@ -41,10 +41,14 @@ class TestSerializePybind(unittest.TestCase):
 
         # No docs.
         self.assertEqual(dut.quux, -1.0)
-        self.assertEqual(inspect.getdoc(MyData1.quux), "")
+        if _binder == "pybind11":
+            self.assertEqual(inspect.getdoc(MyData1.quux), "")
+        else:
+            # Nanobind adds doc itself.
+            self.assertEqual(inspect.getdoc(MyData1.quux), "(self) -> float")
 
         # Test fields.
-        fields = getattr(MyData1, "__fields__")
+        fields = MyData1.__fields__
         self.assertSequenceEqual(
             [(x.name, x.type) for x in fields], (("quux", float),)
         )
@@ -100,7 +104,7 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(dut.some_variant, 80.0)
 
         # Check all field types.
-        fields = getattr(MyData2, "__fields__")
+        fields = MyData2.__fields__
         self.assertSequenceEqual(
             [(x.name, x.type) for x in fields],
             (
@@ -111,10 +115,10 @@ class TestSerializePybind(unittest.TestCase):
                 ("some_double", float),
                 ("some_string", str),
                 ("some_eigen", np.ndarray),
-                ("some_optional", typing.Optional[float]),
+                ("some_optional", float | None),
                 ("some_vector", list[float]),
                 ("some_map", dict[str, float]),
-                ("some_variant", typing.Union[float, MyData1]),
+                ("some_variant", float | MyData1),
             ),
         )
 

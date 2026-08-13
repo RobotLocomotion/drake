@@ -218,9 +218,14 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
 
   // Finally compute the relative velocity of Frame Aq relative to Frame Bq,
   // expressed in the world frame, and then the translational component of this
-  // velocity.
+  // velocity, including any surface velocity contributions.
   const SpatialVelocity<T> V_BqAq_W = V_WAq - V_WBq;
-  const Vector3<T>& v_BqAq_W = V_BqAq_W.translational();
+  Vector3<T> v_BqAq_W = V_BqAq_W.translational();
+
+  // If a function has been provided, use it to apply surface velocity bias.
+  if (data.add_surface_velocity_bias != nullptr) {
+    data.add_surface_velocity_bias(nhat_W, &v_BqAq_W);
+  }
 
   // Get the velocity along the normal to the contact surface. Note that a
   // positive value indicates that bodies are separating at Q while a negative

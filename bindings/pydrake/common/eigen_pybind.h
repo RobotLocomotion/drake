@@ -74,19 +74,14 @@ inline py::object WrapToMatchInputShape(py::handle func) {
 }  // namespace pydrake
 }  // namespace drake
 
-namespace pybind11 {
+namespace PYDRAKE_BINDER_NAMESPACE {
 namespace detail {
 
 /**
-Provides pybind11 `type_caster`s for drake::EigenPtr.
-
+Provides `type_caster`s for drake::EigenPtr.
 Uses `type_caster<Eigen::Ref>` internally to avoid code duplication.
-See http://pybind11.readthedocs.io/en/stable/advanced/cast/custom.html for
-more details on custom type casters.
-
-TODO(eric.cousineau): Place all logic inside of `drake` namespace once our
-pybind11 fork includes PYBIND11_TYPE_CASTER macro w/ fully qualified symbols.
 */
+#ifdef PYDRAKE_USE_PYBIND11
 template <typename T>
 struct type_caster<drake::EigenPtr<T>> {
   using PtrType = drake::EigenPtr<T>;
@@ -126,6 +121,82 @@ struct type_caster<drake::EigenPtr<T>> {
  private:
   InnerCaster inner_caster;
 };
+#else   // PYDRAKE_USE_NANOBIND
+template <typename T>
+struct type_caster<drake::EigenPtr<T>> {
+  using PtrType = drake::EigenPtr<T>;
+  using RefType = Eigen::Ref<T>;
+  using InnerCaster = type_caster<RefType>;
+  using Value = PtrType;
+
+  template <typename U>
+  using Cast = Value;
+
+  static constexpr auto Name =
+      const_name("Optional[") + InnerCaster::Name + const_name("]");
+
+  bool from_python(handle src, uint8_t flags, cleanup_list* cleanup) noexcept {
+    if (src.ptr() == Py_None) {
+      value = Value(nullptr);
+      return true;
+    }
+
+    bool success = inner_caster.from_python(src, flags, cleanup);
+    if (success) {
+      auto ref = inner_caster.operator cast_t<RefType>();
+      value = Value(&ref);
+    }
+
+    if (!success) {
+      // Work-around for https://github.com/wjakob/nanobind/issues/1397. Remove
+      // this after upgrading to a version of nanobind with that bug fixed.
+      if constexpr (T::RowsAtCompileTime == Eigen::Dynamic &&
+                    T::ColsAtCompileTime == Eigen::Dynamic) {
+        if (hasattr(src, "shape") && cast<int>(src.attr("shape")[0]) == 1) {
+          using T2 = Eigen::Matrix<typename T::Scalar, Eigen::Dynamic,
+              Eigen::Dynamic, Eigen::RowMajor>;
+          type_caster<Eigen::Map<T2>> row_maj_caster;
+          bool row_maj_success =
+              row_maj_caster.from_python(src, flags, cleanup);
+          if (row_maj_success) {
+            Eigen::Map<T2> row_maj_map =
+                row_maj_caster.operator Eigen::Map<T2>();
+            if (row_maj_map.rows() == 1) {
+              Eigen::Map<T> col_maj_map(
+                  row_maj_map.data(), 1, row_maj_map.cols());
+              value = Value(&col_maj_map);
+              success = true;
+            }
+          }
+        }
+      }
+    }
+
+    return success;
+  }
+
+  template <typename U>
+  static handle from_cpp(
+      U&& value, rv_policy policy, cleanup_list* cleanup) noexcept {
+    if (value == nullptr) {
+      return Py_None;
+    } else {
+      RefType ref = *value;
+      return InnerCaster::from_cpp(ref, policy, cleanup);
+    }
+  }
+
+  template <typename U>
+  bool can_cast() const noexcept {
+    return inner_caster.template can_cast<U>();
+  }
+
+  explicit operator Value() { return value; }
+
+  Value value;
+  InnerCaster inner_caster;
+};
+#endif  // PYDRAKE_USE_PYBIND11
 
 }  // namespace detail
-}  // namespace pybind11
+}  // namespace PYDRAKE_BINDER_NAMESPACE
