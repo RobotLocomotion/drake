@@ -1,16 +1,20 @@
 from collections.abc import Callable
+import hashlib
+import json
 import logging
 import os
 from pathlib import Path
 import pickle
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import textwrap
 import time
 import unittest
+import urllib.parse
 
 from python import runfiles
 
@@ -41,6 +45,22 @@ class InstallPrereqsActor:
         self._source.mkdir()
         self._script = self._set_up_source()
 
+        # Stub out 'urllib' to not actually download anything. Instead, return
+        # an empty payload, no matter the URL.
+        self._pythonpath = base / "pythonpath"
+        stub_urllib = self._pythonpath / "urllib"
+        stub_urllib.mkdir(parents=True)
+        (stub_urllib / "__init__.py").write_text("", encoding="utf-8")
+        (stub_urllib / "parse.py").symlink_to(urllib.parse.__file__)
+        (stub_urllib / "request.py").write_text(
+            textwrap.dedent("""
+            import io
+            def urlopen(*, url, timeout):
+                return io.BytesIO(b"")
+        """),
+            encoding="utf-8",
+        )
+
         # Create `cwd`, which will be the (empty) current working directory
         # while running install_prereqs.
         self._cwd = base / "cwd"
@@ -70,7 +90,10 @@ class InstallPrereqsActor:
             encoding="utf-8",
             data=textwrap.dedent(f"""\
             #!/usr/bin/python3
-            import pathlib, pickle, sys, time
+            import sys
+            # We only want stdlib paths; remove Bazel paths.
+            sys.path[:] = [x for x in sys.path if "/execroot/" not in x]
+            import pathlib, pickle, time
             io = pathlib.Path("{self._io}")
             (io / "argv.pkl").write_bytes(pickle.dumps(sys.argv))
             for _ in range(100):
@@ -139,8 +162,23 @@ class InstallPrereqsActor:
         setup.mkdir()
         result = self._source / "setup/install_prereqs.py"
         result.symlink_to(install_prereqs)
-        for distro in ["mac", "ubuntu"]:
-            (setup / distro).symlink_to(install_prereqs.parent / distro)
+        for distro in ("mac", "ubuntu"):
+            old_distro_dir = install_prereqs.parent / distro
+            new_distro_dir = setup / distro
+            new_distro_dir.mkdir()
+            for path in old_distro_dir.iterdir():
+                if path.suffix not in (".json", ".txt"):
+                    continue
+                shutil.copy(path, new_distro_dir / path.name)
+            if distro == "ubuntu":
+                # Replace checksums with dummies.
+                json_filename = new_distro_dir / "packages.json"
+                data = json.loads(json_filename.read_text(encoding="utf-8"))
+                for item in data:
+                    if "sha256" in item:
+                        item["sha256"] = hashlib.sha256().hexdigest()
+                json_filename.write_text(json.dumps(data), encoding="utf-8")
+
         return result
 
     def source(self) -> Path:
@@ -163,6 +201,7 @@ class InstallPrereqsActor:
         full_args = [sys.executable, self._script] + args
         env = {
             "PATH": str(self._path),
+            "PYTHONPATH": str(self._pythonpath),
         }
         self._process = subprocess.Popen(
             args=full_args,
