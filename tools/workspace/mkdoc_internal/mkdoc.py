@@ -455,7 +455,7 @@ def choose_doc_var_names(symbols):
                 # overload naming set.
                 result[i] = None
                 continue
-            elif any([symbols[i].comment == x.comment for x in symbols[:i]]):
+            elif any(symbols[i].comment == x.comment for x in symbols[:i]):
                 # If a subsequent overload's API comment *exactly* matches a
                 # prior overload's comment, the first overload's name wins.
                 # This is important because when a function has separate

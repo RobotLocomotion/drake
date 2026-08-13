@@ -69,7 +69,7 @@ class csc_matrix:
         ind_ends = list(self.indptr[1:]) + [-1]
         for ind_start, ind_end in zip(ind_starts, ind_ends):
             values = self.indices[ind_start:ind_end]
-            is_sorted = all([a < b for a, b in itertools.pairwise(values)])
+            is_sorted = all(a < b for a, b in itertools.pairwise(values))
             if not is_sorted:
                 return False
         return True

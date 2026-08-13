@@ -23,7 +23,7 @@ class InstallTest(unittest.TestCase):
     def test_basic_paths(self):
         # Verify install directory content.
         content = set(os.listdir(self._installation_folder))
-        self.assertSetEqual(set(["bin", "include", "lib", "share"]), content)
+        self.assertSetEqual({"bin", "include", "lib", "share"}, content)
 
     def _run_one_command(self, test_command):
         assert test_command.endswith(".py")

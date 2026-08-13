@@ -408,7 +408,7 @@ class TestMeldis(unittest.TestCase):
         png_filename.touch()
         hasher = mut._meldis._GeometryFileHasher()
         hasher.on_viewer_load_robot(message)
-        hashed_names = set([x.name for x in hasher._paths])
+        hashed_names = {x.name for x in hasher._paths}
         self.assertSetEqual(
             hashed_names,
             {
@@ -480,7 +480,7 @@ class TestMeldis(unittest.TestCase):
             )
         hasher = mut._meldis._GeometryFileHasher()
         hasher.on_viewer_load_robot(message)
-        hashed_names = set([x.name for x in hasher._paths])
+        hashed_names = {x.name for x in hasher._paths}
         self.assertSetEqual(
             hashed_names,
             {

@@ -81,7 +81,7 @@ class AllScalarsStruct:
 
 @dc.dataclass
 class ListStruct:
-    value: list[float] = dc.field(default_factory=lambda: list((nan,)))
+    value: list[float] = dc.field(default_factory=lambda: [nan])
     __eq__ = _dataclass_eq
 
 
@@ -177,7 +177,7 @@ class PrimitiveVariantStruct:
 @dc.dataclass
 class ListVariantStruct:
     value: list[str | float | FloatStruct | NumpyStruct] = dc.field(
-        default_factory=lambda: list([nan])
+        default_factory=lambda: [nan]
     )
     __eq__ = _dataclass_eq
 

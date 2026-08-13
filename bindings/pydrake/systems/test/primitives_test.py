@@ -393,7 +393,7 @@ class TestGeneral(unittest.TestCase):
         dut.GetInputPort("vec").FixValue(context, value=np.ones(2))
         dut.GetInputPort("u1").FixValue(context, value=np.zeros(2))
         dut.GetInputPort("abst").FixValue(context, value="hello")
-        dut.GetInputPort("u3").FixValue(context, value=tuple([1, 2, 3]))
+        dut.GetInputPort("u3").FixValue(context, value=(1, 2, 3))
         output = dut.get_output_port().Eval(context)
         self.assertIsInstance(output.Find("vec"), BasicVector_[T])
         self.assertIsInstance(output.Find("u1"), BasicVector_[T])
@@ -414,7 +414,7 @@ class TestGeneral(unittest.TestCase):
         vec = np.ones(2)
         y1 = np.zeros(2)
         abst = "hello"
-        y3 = tuple([1, 2, 3])
+        y3 = (1, 2, 3)
         input_bus.Set("vec", Value(BasicVector_[T](vec)))
         input_bus.Set("y1", Value(BasicVector_[T](y1)))
         input_bus.Set("abst", Value("hello"))
