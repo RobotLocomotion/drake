@@ -493,14 +493,14 @@ def add_selection_arguments(parser):
     parser.add_argument(
         "--platform",
         dest="platforms",
-        default=",".join(set([t.platform(BUILD).name for t in targets])),
+        default=",".join({t.platform(BUILD).name for t in targets}),
         help="platform(s) to build; separate with ',' (default: %(default)s)",
     )
     parser.add_argument(
         "--python",
         dest="python_versions",
         metavar="VERSIONS",
-        default=",".join(sorted(set([t.python_tag for t in targets]))),
+        default=",".join(sorted({t.python_tag for t in targets})),
         help=(
             "python version(s) to build; separate with ','"
             " (default: %(default)s)"

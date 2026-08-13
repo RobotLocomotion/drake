@@ -140,7 +140,7 @@ class TestSympy(unittest.TestCase):
             return
 
         # Create a handy dictionary of Variable Id => Variable.
-        drake_vars = dict([(var.get_id(), var) for var in item.GetVariables()])
+        drake_vars = {var.get_id(): var for var in item.GetVariables()}
         if not drake_vars:
             # Skip this case. Evaluation is not particularly interesting.
             return

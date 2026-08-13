@@ -67,6 +67,7 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
             ],
             stderr=subprocess.PIPE,
             text=True,
+            check=False,
         )
 
         # If the model is handled as expected, the visualizer script prints a

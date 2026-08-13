@@ -35,9 +35,9 @@ def ApplyDriverConfigs(
     # function of the same name. Due to the peculiarities of std::variant
     # and argument-dependent lookup, it's easier to re-implement it rather
     # than bind it via pybind11.
-    models_from_directives_map = dict(
-        [(info.model_name, info) for info in models_from_directives]
-    )
+    models_from_directives_map = {
+        info.model_name: info for info in models_from_directives
+    }
     for model_instance_name, driver_config in driver_configs.items():
         module = _inspect.getmodule(driver_config)
         apply_function = module.ApplyDriverConfig

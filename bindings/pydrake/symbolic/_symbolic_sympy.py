@@ -141,7 +141,7 @@ def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: dict):
 def _to_sympy(
     x: float | int | bool | Variable | Expression | Formula,
     *,
-    memo: dict = None,
+    memo: dict | None = None,
 ) -> float | int | bool | sympy.Expr:
     """This is the private implementation of pydrake.symbolic.to_sympy().
     Refer to that module-level function for the full docstring.
@@ -238,7 +238,7 @@ def _lambdify(*, expr, args):
 
 
 def _from_sympy(
-    x: float | int | bool | sympy.Expr, *, memo: dict = None
+    x: float | int | bool | sympy.Expr, *, memo: dict | None = None
 ) -> float | int | bool | Variable | Expression | Formula:
     """This is the private implementation of pydrake.symbolic.from_sympy().
     Refer to that module-level function for the full docstring.

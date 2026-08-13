@@ -224,7 +224,7 @@ class TestKukaIiwa(unittest.TestCase):
 
     def test_kuka_iiwa_sim_driver_lifetime_init(self):
         def make_diagram():
-            builder, plant, controller_plant = (
+            _builder, _plant, controller_plant = (
                 self.make_builder_plant_controller_plant()
             )
             # `dut` is a diagram; its init() promises to keep

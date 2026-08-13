@@ -4,10 +4,30 @@ line-length = 80
 # Per our oldest supported platform (currently Ubuntu 24.04 "Noble").
 target-version = "py312"
 
+[per-file-target-version]
+
+# This is run using Apple Python, so must retain its antiquated spellings.
+"multibody/parsing/package_downloader.py" = "py39"
+
 [lint]
 
 ignore = [
-    # f-string checks for str.format calls that can be replaced with f-strings.
+    # "Checks for unnecessary dict(), list() or tuple() calls that can be
+    # rewritten as empty literals." If it were only empty ones that got dinged,
+    # that would be fine, but it also rewrites `dict(a=1)` to `{"a": 1}` which
+    # is sometimes less readable.
+    "C408",
+    # "Checks for operations that compare a name to itself." Some of our types
+    # overide equality, so our unit tests do a self-comparison frequently.
+    "PLR0124",
+    # "[Finds code] which can be replaced by next(iter(...))". Typical cases
+    # are in unit tests, where the next(...) spelling is harder to read.
+    "RUF015",
+    # "Checks for noqa directives that are no longer applicable." We can't use
+    # this because we have more linters than just `ruff`, and their noqa marks
+    # confuse this check.
+    "RUF100",
+    # "Checks for str.format calls that can be replaced with f-strings."
     # In many cases this is a good idea, but not universally.
     "UP032",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
@@ -22,16 +42,6 @@ ignore = [
     "B023",
     "B026",
     "BLE001",
-    "C401",
-    "C402",
-    "C403",
-    "C404",
-    "C405",
-    "C408",
-    "C409",
-    "C410",
-    "C414",
-    "C419",
     "DTZ005",
     "EXE002",
     "FLY002",
@@ -42,20 +52,8 @@ ignore = [
     "PERF102",
     "PERF402",
     "PIE810",
-    "PLC0206",
-    "PLR0124",
-    "PLR1722",
-    "PLW1507",
-    "PLW1510",
     "PYI041",
-    "RUF007",
-    "RUF009",
     "RUF012",
-    "RUF013",
-    "RUF015",
-    "RUF051",
-    "RUF059",
-    "RUF100",
     "S102",
     "S110",
     "SIM101",

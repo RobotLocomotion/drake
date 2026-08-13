@@ -152,7 +152,7 @@ def _build(*, out_dir, temp_dir, modules):
                     modules_to_document.add(y)
 
     # Generate tables of contents.
-    for name in sorted(list(modules_to_document)):
+    for name in sorted(modules_to_document):
         if name == "pydrake":
             rst_name = "index.rst"
         else:

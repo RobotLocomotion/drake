@@ -126,7 +126,7 @@ def _object_generation(o) -> int | None:
     """
     for gen in range(3):
         gen_list = gc.get_objects(generation=gen)
-        if any([x is o for x in gen_list]):
+        if any(x is o for x in gen_list):
             return gen
     return None
 
@@ -324,7 +324,7 @@ def _repeat(*, dut: callable, count: int):
         gc.collect()
         if VERBOSE:
             _report_sentinels(sentinels, "after collect")
-        leaks += any([sentinel.finalizer.alive for sentinel in sentinels])
+        leaks += any(sentinel.finalizer.alive for sentinel in sentinels)
     return leaks
 
 

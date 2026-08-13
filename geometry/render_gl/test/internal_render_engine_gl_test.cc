@@ -918,6 +918,42 @@ TEST_F(RenderEngineGlTest, TransparentSphereTest) {
       << "\n  Found " << at_pixel;
 }
 
+// A fully transparent fragment must not write to the depth buffer while
+// rendering a color image. Otherwise, it can invisibly occlude geometry drawn
+// after it. This should be the case whether the transparent geometry has a
+// texture or not.
+TEST_F(RenderEngineGlTest, FullyTransparentGeometryDoesNotOccludeColor) {
+  Init(X_WR_);
+
+  // Exercises the "color" shader.
+  PerceptionProperties transparent_material;
+  transparent_material.AddProperty("label", "id", RenderLabel(1));
+  transparent_material.AddProperty("phong", "diffuse", Rgba(1, 0, 0, 0));
+  renderer_->RegisterVisual(
+      GeometryId::get_new_id(), Box(2, 2, 0.1), transparent_material,
+      RigidTransformd(Vector3d(0, 0, 1.5)), false /* needs update */);
+
+  // Exercises the "texture" shader.
+  PerceptionProperties transparent_texture_material;
+  transparent_texture_material.AddProperty("label", "id", RenderLabel(1));
+  transparent_texture_material.AddProperty(
+      "phong", "diffuse_map",
+      FindResourceOrThrow(
+          "drake/geometry/render/test/meshes/fully_transparent.png"));
+  renderer_->RegisterVisual(
+      GeometryId::get_new_id(), Box(2, 2, 0.1), transparent_texture_material,
+      RigidTransformd(Vector3d(0, 0, 1.5)), false /* needs update */);
+
+  // Register the sphere second so that it is drawn after the transparent box.
+  // The box lies between the camera and sphere and covers the center pixel.
+  PopulateSphereTest(renderer_.get());
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+  renderer_->RenderColorImage(camera, &color_);
+
+  EXPECT_TRUE(CompareColor(kDefaultVisualColor, color_,
+                           GetInlier(camera.core().intrinsics())));
+}
+
 // Performs the shape-centered-in-the-image test with a deformable mesh. In
 // particular, we register a deformable geometry with a single mesh (with or
 // without texture) and update the vertex positions and normals with some
