@@ -909,13 +909,18 @@ void MultibodyTree<T>::FinalizeInternals() {
   for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
-    if (LinkAttorney<T>::is_floating_base_body_pre_finalize(body)) {
-      DRAKE_DEMAND(joint.is_ephemeral());
-      const auto [quaternion, translation] =
-          GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
-      joint.SetDefaultPosePair(quaternion, translation);
-      default_body_poses_[body.index()] = joint.index();
-    }
+    if (!LinkAttorney<T>::is_floating_base_body_pre_finalize(body)) continue;
+    // A floating base body is mobilized by the ephemeral floating joint the
+    // forest added for it, but it can be a _user_ joint's child link as well:
+    // when a closed kinematic loop has no joint to World, the forest still has
+    // to choose one of the loop's links to serve as a base body, and that link
+    // is already named as a child by one of the loop's own joints. Only the
+    // ephemeral joint actually mobilizes the body, so skip any other.
+    if (!joint.is_ephemeral()) continue;
+    const auto [quaternion, translation] =
+        GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
+    joint.SetDefaultPosePair(quaternion, translation);
+    default_body_poses_[body.index()] = joint.index();
   }
 
   is_finalized_ = true;

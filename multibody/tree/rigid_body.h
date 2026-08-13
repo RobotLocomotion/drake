@@ -307,6 +307,13 @@ class RigidBody : public MultibodyElement<T> {
   /// mobilized by an automatically-added (ephemeral) floating (6 dof) joint
   /// to World.
   ///
+  /// @note A %Link can be a floating base body even though a user-defined joint
+  /// names it as a child link, if that joint does not connect it to World: when
+  /// a closed kinematic loop has no joint to World at all, one of the loop's
+  /// links must still serve as a base body. What this flag reports is that the
+  /// %Link is mobilized by an ephemeral floating joint, not that the user left
+  /// it jointless.
+  ///
   /// @note A floating base body is not necessarily modeled with a quaternion
   /// mobilizer, see has_quaternion_dofs(). Alternative options include a
   /// roll-pitch-yaw (rpy) parametrization of rotations, see

@@ -1936,11 +1936,24 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// MultibodyConstraintManager class to consolidate constraint management. -->
   /// @{
 
-  /// Returns the total number of constraints specified by the user.
+  /// Returns the total number of constraints in this model. Prior to
+  /// Finalize() these are just the constraints specified by the user.
+  /// Finalize() may add "ephemeral" constraints of its own; see
+  /// num_loop_constraints().
   int num_constraints() const {
     return num_coupler_constraints() + num_distance_constraints() +
            num_ball_constraints() + num_weld_constraints() +
            num_tendon_constraints();
+  }
+
+  /// Returns the number of ephemeral weld constraints that Finalize() added in
+  /// order to close topological loops. Each of these welds a shadow link to the
+  /// link it is a copy of; see SetAllowLoopTopology(). These are included in
+  /// num_constraints() and num_weld_constraints(), and are indistinguishable
+  /// from user-added welds to the constraint solvers. Returns zero prior to
+  /// Finalize().
+  int num_loop_constraints() const {
+    return internal_tree().graph().num_loop_constraints();
   }
 
   /// Returns a list of all constraint identifiers. The returned vector becomes
@@ -6290,6 +6303,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // corresponds to the largest penalty parameter (smaller violation errors)
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
+
+  // Adds an ephemeral weld constraint for each loop constraint the modeler
+  // introduced when it broke a closed kinematic loop by splitting a link into
+  // a primary link and a shadow link. Called during Finalize(), after the tree
+  // (and hence the shadow links) has been finalized, but before
+  // FinalizePlantOnly() declares the constraint parameters.
+  void AddEphemeralLoopConstraints();
 
   // Some constraints support std::optional specs, which implies that the
   // kinematics should be used to compute values such that the constraint is

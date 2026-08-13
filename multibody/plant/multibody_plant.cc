@@ -1532,6 +1532,14 @@ void MultibodyPlant<T>::Finalize() {
   visual_geometries_.resize(num_bodies());
   collision_geometries_.resize(num_bodies());
 
+  // Finalizing the tree may also have broken closed kinematic loops by
+  // splitting a link into a primary and one or more shadows. Nothing holds
+  // those copies together yet; that's what these ephemeral weld constraints
+  // are for. This must happen before FinalizePlantOnly() below, whose
+  // DeclareParameters() builds the constraint active status map by walking the
+  // constraint specs.
+  AddEphemeralLoopConstraints();
+
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
   }
@@ -1636,6 +1644,31 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
         "the plant in discrete-time mode, which does support joint limits. "
         "Joints that specify limits are: " +
         joint_names_with_limits;
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::AddEphemeralLoopConstraints() {
+  // A shadow link's link frame is coincident with its primary's by
+  // construction, so the constrained frames P and Q are just the two body
+  // frames and both offsets are the identity. The graph documents that the
+  // primary link is always the parent, which sets the sign convention for the
+  // constraint multipliers.
+  // N.B. We add the spec directly rather than calling AddWeldConstraint(),
+  // which is a pre-finalize-only API.
+  for (const internal::LinkJointGraph::LoopConstraint& loop_constraint :
+       internal_tree().graph().loop_constraints()) {
+    const MultibodyConstraintId id = MultibodyConstraintId::get_new_id();
+    internal::WeldConstraintSpec spec{
+        .body_A = loop_constraint.primary_link(),
+        .X_AP = math::RigidTransform<double>::Identity(),
+        .body_B = loop_constraint.shadow_link(),
+        .X_BQ = math::RigidTransform<double>::Identity(),
+        .id = id,
+        .is_ephemeral = true};
+    // A shadow link is by definition distinct from its primary.
+    DRAKE_DEMAND(spec.IsValid());
+    weld_constraints_specs_[id] = spec;
   }
 }
 
@@ -3469,12 +3502,32 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
   // TODO(#23759,#23760,#23762,#23763,#23992): revisit this check and error
   // message as constraints are implemented for CENIC.
   if (num_constraints() > 0) {
-    throw std::logic_error(
+    // Loop constraints are not the user's doing -- Finalize() added them to
+    // close the kinematic loops in the model -- so say where they came from
+    // rather than leaving the user hunting for constraints they never added.
+    const int num_loops = num_loop_constraints();
+    const char* s = num_constraints() == 1 ? "" : "s";
+    std::string constraints;
+    if (num_loops == 0) {
+      constraints = fmt::format("{} constraint{}", num_constraints(), s);
+    } else if (num_loops == num_constraints()) {
+      constraints = fmt::format(
+          "{} constraint{}, which Finalize() added in order to close the "
+          "kinematic loops in this model (see SetAllowLoopTopology())",
+          num_loops, s);
+    } else {
+      constraints = fmt::format(
+          "{} constraint{}, {} of which Finalize() added in order to close the "
+          "kinematic loops in this model (see SetAllowLoopTopology())",
+          num_constraints(), s, num_loops);
+    }
+    throw std::logic_error(fmt::format(
         "Currently this MultibodyPlant is set to use continuous time. "
-        "Continuous time does not support constraints. Use a discrete time "
-        "model and set_discrete_contact_approximation() to set a model "
-        "approximation that uses the SAP solver instead (kSap, kSimilar, or "
-        "kLagged).");
+        "Continuous time does not support constraints, but this model has {}. "
+        "Use a discrete time model and set_discrete_contact_approximation() to "
+        "set a model approximation that uses the SAP solver instead (kSap, "
+        "kSimilar, or kLagged).",
+        constraints));
   }
 
   // TODO(#24061): consider rejecting models with joint limits here, once CENIC

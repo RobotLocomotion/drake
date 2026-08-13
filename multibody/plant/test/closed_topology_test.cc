@@ -2,8 +2,9 @@
 MultibodyPlant::SetAllowLoopTopology(). When enabled, Finalize() breaks each
 kinematic loop using the shadow links and loop constraints produced by the
 underlying LinkJointGraph/SpanningForest. This file covers the ephemeral shadow
-links (including their evenly-split mass properties) and the retargeting of a
-loop joint onto a shadow link.
+links (including their evenly-split mass properties), the retargeting of a loop
+joint onto a shadow link, and the ephemeral weld constraints that hold each
+shadow link to the link it is a copy of.
 
 The test model is a planar four-bar linkage (three moving links -- driver,
 coupler, rocker -- plus World, connected by four revolute joints) which forms a
@@ -24,6 +25,7 @@ single kinematic loop. See examples/multibody/four_bar/dev/four_bar_loop.sdf. */
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/internal_geometry_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
@@ -31,6 +33,7 @@ single kinematic loop. See examples/multibody/four_bar/dev/four_bar_loop.sdf. */
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/shadow_frame.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace multibody {
@@ -165,36 +168,36 @@ constexpr char kFourBarLoopSdf[] = R"""(
 </sdf>
 )""";
 
-/* Builds the four-bar loop plant with automatic loop modeling enabled and
-finalizes it. */
-std::unique_ptr<MultibodyPlant<double>> MakeFourBarPlant() {
-  auto plant = std::make_unique<MultibodyPlant<double>>(0.0 /* continuous */);
-  plant->SetAllowLoopTopology(true);
-  Parser(plant.get()).AddModelsFromString(kFourBarLoopSdf, "sdf");
-  plant->Finalize();
-  return plant;
-}
-
-/* As above, but registers the plant as a geometry source for `scene_graph` and
-gives the driver and the coupler (the link we know gets split; see
-CouplerIsSplit) one visual and one collision geometry apiece. */
-std::unique_ptr<MultibodyPlant<double>> MakeFourBarPlantWithGeometry(
-    geometry::SceneGraph<double>* scene_graph) {
-  auto plant = std::make_unique<MultibodyPlant<double>>(0.0 /* continuous */);
-  plant->SetAllowLoopTopology(true);
-  plant->RegisterAsSourceForSceneGraph(scene_graph);
-  Parser(plant.get()).AddModelsFromString(kFourBarLoopSdf, "sdf");
-  for (const std::string name : {"driver", "coupler"}) {
-    const Link<double>& link = plant->GetBodyByName(name);
-    plant->RegisterVisualGeometry(link, math::RigidTransformd(),
-                                  geometry::Sphere(0.1), name + "_visual");
-    plant->RegisterCollisionGeometry(link, math::RigidTransformd(),
-                                     geometry::Sphere(0.1), name + "_collision",
-                                     CoulombFriction<double>(1.0, 1.0));
+/* A four-bar loop model with automatic loop modeling enabled: a MultibodyPlant
+and a SceneGraph, with the driver and the coupler (the link we know gets split;
+see CouplerIsSplit) each given one visual and one collision geometry. The plant
+is left _unfinalized_, since Finalize() is what does the loop modeling these
+tests are about; each test finalizes when it is ready. The DiagramBuilder is
+kept only to own the two systems -- the tests work with the plant and its
+Context directly rather than building a diagram. */
+class FourBar {
+ public:
+  explicit FourBar(double time_step = 0.0 /* continuous */) {
+    plant_ = &AddMultibodyPlantSceneGraph(&builder_, time_step).plant;
+    MultibodyPlant<double>& plant = *plant_;
+    plant.SetAllowLoopTopology(true);
+    Parser(&plant).AddModelsFromString(kFourBarLoopSdf, "sdf");
+    for (const std::string name : {"driver", "coupler"}) {
+      const Link<double>& link = plant.GetBodyByName(name);
+      plant.RegisterVisualGeometry(link, math::RigidTransformd(),
+                                   geometry::Sphere(0.1), name + "_visual");
+      plant.RegisterCollisionGeometry(
+          link, math::RigidTransformd(), geometry::Sphere(0.1),
+          name + "_collision", CoulombFriction<double>(1.0, 1.0));
+    }
   }
-  plant->Finalize();
-  return plant;
-}
+
+  MultibodyPlant<double>& plant() { return *plant_; }
+
+ private:
+  systems::DiagramBuilder<double> builder_;
+  MultibodyPlant<double>* plant_{};
+};
 
 /* Returns the single ephemeral (shadow) link in `plant`. We'll hunt for it here
 and then verify below that it meets our expectations (which is that the coupler
@@ -216,19 +219,21 @@ yielding two length-2 branches. We therefore know a priori that primary =
 coupler and shadow = coupler$1, and the tests below rely on that so we verify
 here. */
 GTEST_TEST(ClosedTopologyTest, CouplerIsSplit) {
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
 
   // World + world2 + driver + coupler + rocker + the coupler's shadow.
-  EXPECT_EQ(plant->num_bodies(), 6);
+  EXPECT_EQ(plant.num_bodies(), 6);
 
   // There is exactly one shadow, and it is the coupler's.
-  const Link<double>& shadow = GetSoleShadowLink(*plant);
+  const Link<double>& shadow = GetSoleShadowLink(plant);
   EXPECT_EQ(shadow.name(), "coupler$1");
   EXPECT_TRUE(shadow.is_ephemeral());
 
   // Every user-defined link remains non-ephemeral.
   for (const char* name : {"world2", "driver", "coupler", "rocker"}) {
-    EXPECT_FALSE(plant->GetBodyByName(name).is_ephemeral());
+    EXPECT_FALSE(plant.GetBodyByName(name).is_ephemeral());
   }
 }
 
@@ -237,16 +242,18 @@ MultibodyElement::is_ephemeral() contract -- including the frames, which is
 easy to overlook because a link frame is created as a side effect of creating
 its link rather than by an explicit "add frame" call. */
 GTEST_TEST(ClosedTopologyTest, ShadowLinkFramesAreEphemeral) {
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
-  const Link<double>& shadow = GetSoleShadowLink(*plant);
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  const Link<double>& shadow = GetSoleShadowLink(plant);
   EXPECT_TRUE(shadow.body_frame().is_ephemeral());
 
   // Every frame fixed to the shadow link was created during Finalize(): the
   // shadow's own link frame, plus the frames the retargeted loop joint's
   // mobilizer needed on the shadow side.
   int num_shadow_frames = 0;
-  for (FrameIndex index(0); index < plant->num_frames(); ++index) {
-    const Frame<double>& frame = plant->get_frame(index);
+  for (FrameIndex index(0); index < plant.num_frames(); ++index) {
+    const Frame<double>& frame = plant.get_frame(index);
     if (frame.body().index() != shadow.index()) continue;
     ++num_shadow_frames;
     EXPECT_TRUE(frame.is_ephemeral()) << frame.name();
@@ -254,15 +261,15 @@ GTEST_TEST(ClosedTopologyTest, ShadowLinkFramesAreEphemeral) {
   EXPECT_GE(num_shadow_frames, 2);
 
   // The user's links keep non-ephemeral link frames.
-  EXPECT_FALSE(plant->world_body().body_frame().is_ephemeral());
+  EXPECT_FALSE(plant.world_body().body_frame().is_ephemeral());
   for (const char* name : {"world2", "driver", "coupler", "rocker"}) {
-    EXPECT_FALSE(plant->GetBodyByName(name).body_frame().is_ephemeral());
+    EXPECT_FALSE(plant.GetBodyByName(name).body_frame().is_ephemeral());
   }
 
   // Scalar conversion must carry the flags over; unlike the pre-finalize path,
   // it creates the shadow's link frame by cloning rather than by adding a link.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
-      systems::System<double>::ToAutoDiffXd(*plant);
+      systems::System<double>::ToAutoDiffXd(plant);
   const Link<AutoDiffXd>& shadow_ad = plant_ad->GetBodyByName("coupler$1");
   EXPECT_TRUE(shadow_ad.is_ephemeral());
   EXPECT_TRUE(shadow_ad.body_frame().is_ephemeral());
@@ -282,11 +289,13 @@ share; the effective (split) inertia checked here is what drives the dynamics.
 The unsplit links (driver and rocker) are unaffected. */
 GTEST_TEST(ClosedTopologyTest, ShadowMassIsSplitEvenly) {
   constexpr double kTol = 1e-14;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
-  auto context = plant->CreateDefaultContext();
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
 
-  const Link<double>& coupler = plant->GetBodyByName("coupler");
-  const Link<double>& shadow = plant->GetBodyByName("coupler$1");
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
 
   // The user-facing (model default) mass of the coupler is untouched (its full
   // declared 1 kg). The shadow's default mass properties reflect its share of
@@ -333,8 +342,8 @@ GTEST_TEST(ClosedTopologyTest, ShadowMassIsSplitEvenly) {
       kTol));
 
   // The unsplit links keep their full mass (driver 1 kg, rocker 2 kg).
-  EXPECT_NEAR(M_LLo_L(plant->GetBodyByName("driver")).get_mass(), 1.0, kTol);
-  EXPECT_NEAR(M_LLo_L(plant->GetBodyByName("rocker")).get_mass(), 2.0, kTol);
+  EXPECT_NEAR(M_LLo_L(plant.GetBodyByName("driver")).get_mass(), 1.0, kTol);
+  EXPECT_NEAR(M_LLo_L(plant.GetBodyByName("rocker")).get_mass(), 2.0, kTol);
 }
 
 /* A shadow link has no spatial-inertia parameter of its own; its effective mass
@@ -345,11 +354,13 @@ aggregates (which loop over all links, shadows included) count the physical mass
 exactly once rather than double-counting the shadow. */
 GTEST_TEST(ClosedTopologyTest, ShadowHasNoIndependentInertiaParameter) {
   constexpr double kTol = 1e-14;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
-  auto context = plant->CreateDefaultContext();
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
 
-  const Link<double>& coupler = plant->GetBodyByName("coupler");
-  const Link<double>& shadow = plant->GetBodyByName("coupler$1");
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
 
   // The context accessor reports each copy's split share (0.5 kg), not the
   // coupler's full declared 1 kg. (default_mass() still reports the declared
@@ -361,7 +372,7 @@ GTEST_TEST(ClosedTopologyTest, ShadowHasNoIndependentInertiaParameter) {
   // 0.5 shadow = 1 kg), not double-count the shadow. The physical mass is
   // driver 1 + rocker 2 + coupler 1 = 4 kg (the world2 helper link is
   // massless).
-  EXPECT_NEAR(plant->CalcTotalMass(*context), 4.0, kTol);
+  EXPECT_NEAR(plant.CalcTotalMass(*context), 4.0, kTol);
 }
 
 /* Because the split is recomputed in the FrameBodyPoseCache from the primary's
@@ -370,11 +381,13 @@ automatically -- the primary is the single source of truth. Setting mass on the
 shadow directly is disallowed. */
 GTEST_TEST(ClosedTopologyTest, RuntimeMassChangeReSplitsAndShadowIsReadOnly) {
   constexpr double kTol = 1e-14;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
-  auto context = plant->CreateDefaultContext();
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
 
-  const Link<double>& coupler = plant->GetBodyByName("coupler");
-  const Link<double>& shadow = plant->GetBodyByName("coupler$1");
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
 
   // Set the coupler's (physical) mass to 3 kg; the split follows to 1.5 kg on
   // each of the coupler and its shadow, and the total tracks accordingly
@@ -383,7 +396,7 @@ GTEST_TEST(ClosedTopologyTest, RuntimeMassChangeReSplitsAndShadowIsReadOnly) {
   coupler.SetMass(context.get(), 3.0);
   EXPECT_NEAR(coupler.get_mass(*context), 1.5, kTol);
   EXPECT_NEAR(shadow.get_mass(*context), 1.5, kTol);
-  EXPECT_NEAR(plant->CalcTotalMass(*context), 6.0, kTol);
+  EXPECT_NEAR(plant.CalcTotalMass(*context), 6.0, kTol);
 
   // The shadow's mass properties are not independently settable.
   DRAKE_EXPECT_THROWS_MESSAGE(shadow.SetMass(context.get(), 1.0),
@@ -397,39 +410,39 @@ must stay dense over num_bodies(). Shadow links are created inside
 MultibodyTree::Finalize() rather than by MultibodyPlant::AddRigidBody() (which
 is what normally extends those arrays), so Finalize() has to extend them. */
 GTEST_TEST(ClosedTopologyTest, ShadowLinkHasEmptyGeometryEntries) {
-  geometry::SceneGraph<double> scene_graph;
-  std::unique_ptr<MultibodyPlant<double>> plant =
-      MakeFourBarPlantWithGeometry(&scene_graph);
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
 
-  const Link<double>& coupler = plant->GetBodyByName("coupler");
-  const Link<double>& shadow = plant->GetBodyByName("coupler$1");
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& shadow = plant.GetBodyByName("coupler$1");
 
   // The primary keeps the geometry registered on it ...
-  EXPECT_EQ(plant->GetVisualGeometriesForBody(coupler).size(), 1);
-  EXPECT_EQ(plant->GetCollisionGeometriesForBody(coupler).size(), 1);
+  EXPECT_EQ(plant.GetVisualGeometriesForBody(coupler).size(), 1);
+  EXPECT_EQ(plant.GetCollisionGeometriesForBody(coupler).size(), 1);
 
   // ... and its shadow has an entry, which is empty. Without that entry these
   // two lookups would read past the end of the per-body arrays.
-  EXPECT_TRUE(plant->GetVisualGeometriesForBody(shadow).empty());
-  EXPECT_TRUE(plant->GetCollisionGeometriesForBody(shadow).empty());
+  EXPECT_TRUE(plant.GetVisualGeometriesForBody(shadow).empty());
+  EXPECT_TRUE(plant.GetCollisionGeometriesForBody(shadow).empty());
 
   // Breaking the loop doesn't invent geometry: driver and coupler, one visual
   // and one collision geometry each.
-  EXPECT_EQ(plant->num_visual_geometries(), 2);
-  EXPECT_EQ(plant->num_collision_geometries(), 2);
+  EXPECT_EQ(plant.num_visual_geometries(), 2);
+  EXPECT_EQ(plant.num_collision_geometries(), 2);
 
   // A shadow gets no SceneGraph frame of its own; reporting a pose for it would
   // publish a spurious duplicate of its primary. That's safe precisely because
   // the frame id table is map-keyed and documented to tolerate bodies with no
   // frame -- unlike the dense per-body arrays checked above.
-  EXPECT_TRUE(plant->GetBodyFrameIdIfExists(coupler.index()).has_value());
-  EXPECT_FALSE(plant->GetBodyFrameIdIfExists(shadow.index()).has_value());
+  EXPECT_TRUE(plant.GetBodyFrameIdIfExists(coupler.index()).has_value());
+  EXPECT_FALSE(plant.GetBodyFrameIdIfExists(shadow.index()).has_value());
 
   // The per-body arrays are copied wholesale during scalar conversion, so the
   // converted plant must agree with the tree it carries as well.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
-      systems::System<double>::ToAutoDiffXd(*plant);
-  EXPECT_EQ(plant_ad->num_bodies(), plant->num_bodies());
+      systems::System<double>::ToAutoDiffXd(plant);
+  EXPECT_EQ(plant_ad->num_bodies(), plant.num_bodies());
   EXPECT_TRUE(
       plant_ad->GetVisualGeometriesForBody(plant_ad->GetBodyByName("coupler$1"))
           .empty());
@@ -447,27 +460,27 @@ out-of-range read is undefined behavior rather than an exception, so this test
 earns its keep in debug builds (where the density assertions in the accessors
 fire) and under the memory sanitizers. */
 GTEST_TEST(ClosedTopologyTest, WalkingEveryBodyForGeometryStaysInRange) {
-  geometry::SceneGraph<double> scene_graph;
-  std::unique_ptr<MultibodyPlant<double>> plant =
-      MakeFourBarPlantWithGeometry(&scene_graph);
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
 
   // Summing per-body counts over all bodies (shadows included) must reproduce
   // the plant-wide totals -- i.e. every body has an entry and no geometry is
   // counted twice.
   int num_visual = 0;
   int num_collision = 0;
-  for (BodyIndex i(0); i < plant->num_bodies(); ++i) {
-    const Link<double>& link = plant->get_body(i);
-    num_visual += ssize(plant->GetVisualGeometriesForBody(link));
-    num_collision += ssize(plant->GetCollisionGeometriesForBody(link));
+  for (BodyIndex i(0); i < plant.num_bodies(); ++i) {
+    const Link<double>& link = plant.get_body(i);
+    num_visual += ssize(plant.GetVisualGeometriesForBody(link));
+    num_collision += ssize(plant.GetCollisionGeometriesForBody(link));
   }
-  EXPECT_EQ(num_visual, plant->num_visual_geometries());
-  EXPECT_EQ(num_collision, plant->num_collision_geometries());
+  EXPECT_EQ(num_visual, plant.num_visual_geometries());
+  EXPECT_EQ(num_collision, plant.num_collision_geometries());
 
   // GeometryNames performs exactly that walk; it is the path taken by contact
   // visualization (see also ContactResultsToLcmSystem).
   internal::GeometryNames geometry_names;
-  EXPECT_NO_THROW(geometry_names.ResetBasic(*plant));
+  EXPECT_NO_THROW(geometry_names.ResetBasic(plant));
 }
 
 /* Loop breaking retargets exactly one end of exactly one joint onto a shadow
@@ -510,13 +523,15 @@ fixed to -- distinguishes a retargeted joint from one that was left pointing at
 the primary. (In a debug build BodyNodeImpl also asserts this invariant,
 frame_M.body() == body_B, but we want a check that holds in every build.) */
 GTEST_TEST(ClosedTopologyTest, LoopJointIsRetargetedToTheShadowLink) {
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
-  const Link<double>& coupler = plant->GetBodyByName("coupler");
-  const Link<double>& rocker = plant->GetBodyByName("rocker");
-  const Link<double>& shadow = GetSoleShadowLink(*plant);
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& rocker = plant.GetBodyByName("rocker");
+  const Link<double>& shadow = GetSoleShadowLink(plant);
 
   // It is the coupler_rocker joint's parent (coupler) end that got moved.
-  const RetargetedJoint retargeted = GetSoleRetargetedJoint(*plant);
+  const RetargetedJoint retargeted = GetSoleRetargetedJoint(plant);
   ASSERT_NE(retargeted.joint, nullptr);
   const Joint<double>& loop_joint = *retargeted.joint;
   EXPECT_EQ(loop_joint.name(), "coupler_rocker");
@@ -558,13 +573,13 @@ GTEST_TEST(ClosedTopologyTest, LoopJointIsRetargetedToTheShadowLink) {
   // that no other joint has a substituted frame; check the bodies too.
   for (const char* name :
        {"world2_weld", "world_driver", "world_rocker", "driver_coupler"}) {
-    const Joint<double>& joint = plant->GetJointByName(name);
+    const Joint<double>& joint = plant.GetJointByName(name);
     EXPECT_EQ(joint.frame_on_parent().body().index(),
               joint.parent_body().index());
     EXPECT_EQ(joint.frame_on_child().body().index(),
               joint.child_body().index());
   }
-  EXPECT_EQ(plant->GetJointByName("driver_coupler").child_body().index(),
+  EXPECT_EQ(plant.GetJointByName("driver_coupler").child_body().index(),
             coupler.index());
 }
 
@@ -576,11 +591,13 @@ the joint would no longer connect what the user asked it to. This is a
 parameter-level relationship, so we can see it without evaluating kinematics. */
 GTEST_TEST(ClosedTopologyTest, MovingThePrimaryFrameMovesTheShadowFrame) {
   constexpr double kTol = 1e-14;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
-  auto context = plant->CreateDefaultContext();
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
 
-  const Link<double>& shadow = GetSoleShadowLink(*plant);
-  const Joint<double>& loop_joint = plant->GetJointByName("coupler_rocker");
+  const Link<double>& shadow = GetSoleShadowLink(plant);
+  const Joint<double>& loop_joint = plant.GetJointByName("coupler_rocker");
   // The parser materialized this joint's frame on the coupler as a
   // FixedOffsetFrame, whose offset is a Context parameter we can change.
   const auto& Jp = dynamic_cast<const FixedOffsetFrame<double>&>(
@@ -633,9 +650,11 @@ converted plant must come out modeling the broken loop the same way, with the
 delegation intact. */
 GTEST_TEST(ClosedTopologyTest, RetargetingSurvivesScalarConversion) {
   constexpr double kTol = 1e-14;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeFourBarPlant();
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
-      systems::System<double>::ToAutoDiffXd(*plant);
+      systems::System<double>::ToAutoDiffXd(plant);
 
   const Link<AutoDiffXd>& shadow_ad = plant_ad->GetBodyByName("coupler$1");
   EXPECT_TRUE(shadow_ad.is_ephemeral());
@@ -671,6 +690,239 @@ GTEST_TEST(ClosedTopologyTest, RetargetingSurvivesScalarConversion) {
       math::ExtractValue(
           Jp_ad.CalcPoseInBodyFrame(*context_ad).GetAsMatrix34()),
       kTol));
+}
+
+/* Returns the sole ephemeral weld constraint spec in `plant`, i.e. the one
+Finalize() added to close the loop. */
+const internal::WeldConstraintSpec& GetSoleLoopConstraintSpec(
+    const MultibodyPlant<double>& plant) {
+  std::vector<const internal::WeldConstraintSpec*> found;
+  for (const auto& [id, spec] : plant.get_weld_constraint_specs()) {
+    EXPECT_EQ(spec.id, id);
+    if (spec.is_ephemeral) found.push_back(&spec);
+  }
+  EXPECT_EQ(found.size(), 1);
+  static const internal::WeldConstraintSpec kEmpty;
+  return found.empty() ? kEmpty : *found.front();
+}
+
+/* Breaking the loop leaves the coupler and its shadow as two disconnected
+copies of the same link; a weld constraint between them is what actually closes
+the loop. The user didn't ask for that constraint, so it is marked ephemeral,
+and because both copies share a link frame it welds the two body frames
+directly (no offsets). */
+GTEST_TEST(ClosedTopologyTest, LoopIsClosedByAnEphemeralWeldConstraint) {
+  // Nothing exists before Finalize(): the loop constraints are a product of
+  // forest building, and the user added no constraints of their own.
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  EXPECT_EQ(plant.num_loop_constraints(), 0);
+  EXPECT_EQ(plant.num_constraints(), 0);
+
+  plant.Finalize();
+
+  // The single loop of the four-bar costs a single weld constraint, which is
+  // reported by the plant-wide count like any other.
+  EXPECT_EQ(plant.num_loop_constraints(), 1);
+  EXPECT_EQ(plant.num_weld_constraints(), 1);
+  EXPECT_EQ(plant.num_constraints(), 1);
+  EXPECT_EQ(plant.GetConstraintIds().size(), 1);
+
+  const internal::WeldConstraintSpec& spec = GetSoleLoopConstraintSpec(plant);
+  EXPECT_EQ(plant.GetConstraintIds().at(0), spec.id);
+
+  // The primary link is body A (the parent), which fixes the sign convention
+  // for the constraint's multipliers.
+  const Link<double>& coupler = plant.GetBodyByName("coupler");
+  const Link<double>& shadow = GetSoleShadowLink(plant);
+  EXPECT_EQ(spec.body_A, coupler.index());
+  EXPECT_EQ(spec.body_B, shadow.index());
+
+  // The welded frames are the two body frames themselves: a shadow's link
+  // frame coincides with its primary's by construction, so both offsets are
+  // the identity.
+  EXPECT_TRUE(spec.X_AP.IsExactlyIdentity());
+  EXPECT_TRUE(spec.X_BQ.IsExactlyIdentity());
+}
+
+/* An ephemeral loop constraint is an ordinary weld constraint in every respect
+except that the user didn't add it, so it has to coexist with -- and be
+distinguishable from -- the user's own weld constraints. */
+GTEST_TEST(ClosedTopologyTest, LoopConstraintCoexistsWithUserConstraints) {
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  const MultibodyConstraintId user_id = plant.AddWeldConstraint(
+      plant.GetBodyByName("driver"), math::RigidTransformd(),
+      plant.GetBodyByName("rocker"), math::RigidTransformd());
+  EXPECT_EQ(plant.num_weld_constraints(), 1);
+  plant.Finalize();
+
+  // The user's weld plus the loop-closing weld.
+  EXPECT_EQ(plant.num_weld_constraints(), 2);
+  EXPECT_EQ(plant.num_constraints(), 2);
+  EXPECT_EQ(plant.num_loop_constraints(), 1);
+
+  // The user's constraint is untouched and is not confused for an ephemeral
+  // one; GetSoleLoopConstraintSpec() checks the converse, that exactly one of
+  // the two is ephemeral.
+  EXPECT_FALSE(plant.get_weld_constraint_specs(user_id).is_ephemeral);
+  EXPECT_NE(GetSoleLoopConstraintSpec(plant).id, user_id);
+}
+
+/* Loop constraints are created by Finalize(), which a scalar-converted plant
+does not re-run: it copies the constraint specs and finalizes only the plant
+itself. So the converted plant must come out with the same constraints, under
+the same ids (which the Context's active status map is keyed on). */
+GTEST_TEST(ClosedTopologyTest, LoopConstraintSurvivesScalarConversion) {
+  FourBar four_bar;
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+
+  // In particular, no second copy of the loop weld was added on the way.
+  EXPECT_EQ(plant_ad->num_weld_constraints(), 1);
+  EXPECT_EQ(plant_ad->num_constraints(), 1);
+
+  // The graph (and hence the loop constraint count, which is sourced from it)
+  // is cloned along with the tree.
+  EXPECT_EQ(plant_ad->num_loop_constraints(), 1);
+
+  const internal::WeldConstraintSpec& spec = GetSoleLoopConstraintSpec(plant);
+  const auto& specs_ad = plant_ad->get_weld_constraint_specs();
+  ASSERT_TRUE(specs_ad.contains(spec.id));
+  const internal::WeldConstraintSpec& spec_ad = specs_ad.at(spec.id);
+  EXPECT_TRUE(spec_ad.is_ephemeral);
+  EXPECT_EQ(spec_ad.body_A, spec.body_A);
+  EXPECT_EQ(spec_ad.body_B, spec.body_B);
+}
+
+/* A loop constraint has to reach the solver like any other constraint. That
+requires it to be in place before Finalize() declares the constraint
+parameters, since the solver looks up each constraint's active status by id as
+it builds its model. It is a live constraint in that model, so its status is
+also settable -- deactivating it re-opens the loop, which is useful for
+debugging assembly problems, at the cost of leaving the shadow link dangling
+(with its share of the split mass) on the loop joint. */
+GTEST_TEST(ClosedTopologyTest, LoopConstraintReachesTheDiscreteSolver) {
+  FourBar four_bar(0.01 /* discrete, SAP */);
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  EXPECT_EQ(plant.get_discrete_contact_solver(), DiscreteContactSolver::kSap);
+  auto context = plant.CreateDefaultContext();
+
+  const MultibodyConstraintId id = GetSoleLoopConstraintSpec(plant).id;
+
+  // Like any constraint it starts out active, and the discrete update -- which
+  // is where SAP consults that status and assembles the constraint -- runs.
+  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, id));
+  auto state = plant.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(
+      plant.CalcForcedDiscreteVariableUpdate(*context, state.get()));
+
+  // Deactivating it is allowed, and SAP then skips it.
+  plant.SetConstraintActiveStatus(context.get(), id, false);
+  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, id));
+  EXPECT_NO_THROW(
+      plant.CalcForcedDiscreteVariableUpdate(*context, state.get()));
+}
+
+/* Continuous time (with anything but the CENIC integrator, which computes its
+dynamics by a different route) does not support constraints -- and a looped
+model has them whether or not the user asked for any. So the complaint has to
+say where they came from; otherwise it tells the user to go remove constraints
+they never added. */
+GTEST_TEST(ClosedTopologyTest, ContinuousDynamicsSaysWhereLoopConstraintsCame) {
+  FourBar four_bar;  // Continuous.
+  MultibodyPlant<double>& plant = four_bar.plant();
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  ASSERT_EQ(plant.num_constraints(), plant.num_loop_constraints());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.EvalTimeDerivatives(*context),
+      ".*does not support constraints, but this model has 1 constraint, which "
+      "Finalize\\(\\) added in order to close the kinematic loops.*");
+
+  // With constraints from both sources, the message accounts for both.
+  FourBar mixed_four_bar;
+  MultibodyPlant<double>& mixed_plant = mixed_four_bar.plant();
+  mixed_plant.AddWeldConstraint(
+      mixed_plant.GetBodyByName("driver"), math::RigidTransformd(),
+      mixed_plant.GetBodyByName("rocker"), math::RigidTransformd());
+  mixed_plant.Finalize();
+  auto mixed_context = mixed_plant.CreateDefaultContext();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mixed_plant.EvalTimeDerivatives(*mixed_context),
+      ".*this model has 2 constraints, 1 of which Finalize\\(\\) added in "
+      "order to close the kinematic loops.*");
+}
+
+/* A closed loop need not be anchored to World at all -- think of a linkage
+floating in space. The forest then has to choose one of the loop's own links to
+serve as a base body and give it an ephemeral floating joint, even though that
+link is already named as a child by one of the loop's joints. This case
+previously caused a bug; here we verify it works properly.
+
+The model is the simplest possible loop: three links in a cycle, nothing welded
+to World. */
+GTEST_TEST(ClosedTopologyTest, UnanchoredLoopGetsAFloatingBaseBody) {
+  MultibodyPlant<double> plant(0.0 /* continuous */);
+  plant.SetEnableLoopTopology(true);
+  const Link<double>& link_a = plant.AddRigidBody(
+      "a", SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1));
+  const Link<double>& link_b = plant.AddRigidBody(
+      "b", SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1));
+  const Link<double>& link_c = plant.AddRigidBody(
+      "c", SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1));
+  const Vector3<double> axis = Vector3<double>::UnitZ();
+  plant.AddJoint<RevoluteJoint>("a_b", link_a, {}, link_b, {}, axis);
+  plant.AddJoint<RevoluteJoint>("b_c", link_b, {}, link_c, {}, axis);
+  plant.AddJoint<RevoluteJoint>("c_a", link_c, {}, link_a, {}, axis);
+
+  EXPECT_NO_THROW(plant.Finalize());
+
+  // The loop was broken the usual way, and the assembly floats: 6 dofs for the
+  // floating base plus one per revolute joint.
+  EXPECT_EQ(plant.num_loop_constraints(), 1);
+  // Which of the three links the forest chooses to split is not what this test
+  // is about, so just check that one of them was.
+  const std::string shadow_name = GetSoleShadowLink(plant).name();
+  EXPECT_TRUE(shadow_name == "a$1" || shadow_name == "b$1" ||
+              shadow_name == "c$1");
+  EXPECT_EQ(plant.num_velocities(), 6 + 3);
+
+  // Exactly one of the loop's links is the floating base body, and it is the
+  // child of a user joint (which is what used to trigger the bug).
+  std::vector<BodyIndex> floating;
+  for (const Link<double>* link : {&link_a, &link_b, &link_c}) {
+    if (link->is_floating_base_body()) floating.push_back(link->index());
+  }
+  ASSERT_EQ(floating.size(), 1);
+  const Link<double>& base = plant.get_body(floating.at(0));
+  // It is also the child link of one of the loop's user joints -- precisely the
+  // situation that used to trip the DRAKE_DEMAND.
+  int user_joints_naming_base_as_child = 0;
+  for (const char* name : {"a_b", "b_c", "c_a"}) {
+    if (plant.GetJointByName(name).child_body().index() == base.index()) {
+      ++user_joints_naming_base_as_child;
+    }
+  }
+  EXPECT_EQ(user_joints_naming_base_as_child, 1);
+
+  // The default pose of that body must route through its ephemeral floating
+  // joint -- that routing is exactly what the repaired loop sets up.
+  const math::RigidTransformd X_WB(math::RollPitchYawd(0.1, 0.2, 0.3),
+                                   Vector3<double>(1.0, 2.0, 3.0));
+  plant.SetDefaultFloatingBaseBodyPose(base, X_WB);
+  EXPECT_TRUE(CompareMatrices(
+      plant.GetDefaultFloatingBaseBodyPose(base).GetAsMatrix34(),
+      X_WB.GetAsMatrix34(), 1e-14));
+  auto context = plant.CreateDefaultContext();
+  EXPECT_TRUE(
+      CompareMatrices(plant.EvalBodyPoseInWorld(*context, base).GetAsMatrix34(),
+                      X_WB.GetAsMatrix34(), 1e-14));
 }
 
 }  // namespace
