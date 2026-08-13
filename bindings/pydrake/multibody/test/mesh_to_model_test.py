@@ -35,7 +35,7 @@ from pydrake.systems.framework import (
 )
 
 
-def _parse_model_no_throw(sdf_file: Path, package_xml: Path = None):
+def _parse_model_no_throw(sdf_file: Path, package_xml: Path | None = None):
     """
     Simply attempts to parse the given file, expecting no errors. This
     should be invoked for every interesting variation of an _expected_

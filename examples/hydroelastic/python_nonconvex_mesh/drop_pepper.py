@@ -27,7 +27,7 @@ from pydrake.visualization import AddDefaultVisualization
 
 def make_pepper_bowl_table(contact_model, time_step):
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlant(
+    plant, _scene_graph = AddMultibodyPlant(
         MultibodyPlantConfig(
             time_step=time_step,
             contact_model=contact_model,

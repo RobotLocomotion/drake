@@ -652,7 +652,7 @@ Kd 1 1 0
         dut = mut.Meldis()
         lcm = dut._lcm
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
         parser.AddModels(url=url)
         plant.Finalize()

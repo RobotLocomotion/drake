@@ -741,7 +741,7 @@ class InertiaFixer:
         self,
         *,
         input_file: Path,
-        output_file: Path = None,
+        output_file: Path | None = None,
         in_place: bool = False,
         geom_inertia_role_order: list[Role] = GEOM_INERTIA_ROLE_ORDER_DEFAULT,
     ):

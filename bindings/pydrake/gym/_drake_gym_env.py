@@ -40,8 +40,8 @@ class DrakeGymEnv(gym.Env):
         observation_port_id: OutputPortIndex | str = None,
         render_rgb_port_id: OutputPortIndex | str = None,
         render_mode: str = "human",
-        reset_handler: Callable[[Simulator, Context], None] = None,
-        info_handler: Callable[[Simulator], dict] = None,
+        reset_handler: Callable[[Simulator, Context], None] | None = None,
+        info_handler: Callable[[Simulator], dict] | None = None,
         hardware: bool = False,
     ):
         """
