@@ -46,10 +46,8 @@ def _cull_skipped_headers(*, temp_dir, modules):
     for dirpath, _, filenames in (temp_dir / Path("drake")).walk():
         subdir = dirpath.relative_to(temp_dir)
         is_wanted = any(
-            [
-                str(subdir).startswith(str(module_path))
-                for module_path in module_paths
-            ]
+            str(subdir).startswith(str(module_path))
+            for module_path in module_paths
         )
         if is_wanted:
             continue

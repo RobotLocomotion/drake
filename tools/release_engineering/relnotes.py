@@ -345,7 +345,7 @@ def _update(args, notes_filename, gh, drake, target_commit):
             (number,) = match.groups()
             pr_numbers.add(number)
             one_line = one_line[match.end(0) :]
-    pr_links = [_format_ref_pr_link(n) + "\n" for n in sorted(list(pr_numbers))]
+    pr_links = [_format_ref_pr_link(n) + "\n" for n in sorted(pr_numbers)]
     lines[begin + 1 : end] = pr_links
 
     # Rewrite the notes file.

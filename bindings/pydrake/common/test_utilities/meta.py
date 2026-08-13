@@ -106,7 +106,7 @@ def _make_test_pairs(values):
     pairs = [[_choose_test_suffix(kwargs), kwargs] for kwargs in values]
     # Uniquify any duplicate (or missing) suffix names.
     counter = collections.Counter([x for x, _ in pairs])
-    bad_names = set([x for x, count in counter.items() if count > 1 or not x])
+    bad_names = {x for x, count in counter.items() if count > 1 or not x}
     return [
         (x if x not in bad_names else f"{x}_iter{i}", kwargs)
         for i, (x, kwargs) in enumerate(pairs)
