@@ -79,7 +79,7 @@ class TestControllers(unittest.TestCase):
         options.input_port_index = InputPortSelection.kUseFirstInputIfItExists
         options.assume_non_continuous_states_are_fixed = False
 
-        policy, cost_to_go = FittedValueIteration(
+        _policy, _cost_to_go = FittedValueIteration(
             simulator,
             quadratic_regulator_cost,
             state_grid,

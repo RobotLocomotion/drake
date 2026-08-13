@@ -339,7 +339,9 @@ class ModelVisualizer:
             self._meshcat = StartMeshcat()
         return self._meshcat
 
-    def AddModels(self, filename: Path = None, *, url: str = None):
+    def AddModels(
+        self, filename: Path | None = None, *, url: str | None = None
+    ):
         """
         Adds all models found in an input file (or url).
 
@@ -380,7 +382,9 @@ class ModelVisualizer:
         if self._added_models is not None:
             self._added_models.append(kwargs)
 
-    def _wrap_gltf_as_visual(self, *, filename: Path = None, url: str = None):
+    def _wrap_gltf_as_visual(
+        self, *, filename: Path | None = None, url: str | None = None
+    ):
         """Given a filename xor url that refers to a glTF mesh, returns a dict
         of kwargs to Parser.AddModels which will load it as visual-only (i.e.,
         without collision geometry)"""

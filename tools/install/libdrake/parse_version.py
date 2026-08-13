@@ -36,7 +36,7 @@ def _parse_stamp(stamp_file):
     # Read input.
     for line in stamp_file:
         if line.startswith(VERSION_TAG):
-            tag, version_full, git_sha = line.strip().split()
+            tag, version_full, _git_sha = line.strip().split()
             assert tag == VERSION_TAG
 
             # Check version format and extract numerical components.
