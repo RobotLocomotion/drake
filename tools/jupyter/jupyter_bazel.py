@@ -52,7 +52,7 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
         print("Running notebook interactively")
         notebook_path = os.path.realpath(notebook_path)
         sys.argv = ["jupyter", "notebook", notebook_path]
-        exit(_jupyter_main())
+        sys.exit(_jupyter_main())
     else:
         print("Running notebook as a test (non-interactive)")
         tmp_dir = os.environ.get("TEST_TMPDIR")

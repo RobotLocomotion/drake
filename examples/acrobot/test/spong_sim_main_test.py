@@ -22,6 +22,7 @@ class TestRunSpongControlledAcrobot(unittest.TestCase):
             [self.dut, "--help"],
             capture_output=True,
             encoding="utf-8",
+            check=False,
         )
         self.assertEqual(result.stderr, "")
         self.assertIn("spong-controlled acrobot", result.stdout)

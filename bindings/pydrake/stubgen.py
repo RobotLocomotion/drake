@@ -128,6 +128,7 @@ def _wrapper_main():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             env=env,
+            check=False,
         )
         if completed.returncode != 0:
             sys.stderr.write(completed.stdout)

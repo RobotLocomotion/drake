@@ -15,7 +15,6 @@ and to actually change the CPU configuration.
 
 import argparse
 import contextlib
-import copy
 import os
 import re
 import shlex
@@ -206,7 +205,7 @@ will be invalid. Supported methods are:
     ]
     command = ["taskset", "--cpu-list", str(args.cputask)]
     command += [args.binary] + default_args + args.extra_args
-    env = copy.copy(os.environ)
+    env = os.environ.copy()
     env["DRAKE_GOOGLEBENCH_SUPPRESS_SCALING_WARNING"] = "1"
     with open(f"{args.output_dir}/summary.txt", "wb") as summary:
         with cpu_speed_settings.scope(governor="performance", boost=False):

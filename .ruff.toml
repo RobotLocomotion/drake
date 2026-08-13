@@ -7,6 +7,9 @@ target-version = "py312"
 [lint]
 
 ignore = [
+    # "Checks for operations that compare a name to itself." Some of our types
+    # overide equality, so our unit tests do a self-comparison frequently.
+    "PLR0124",
     # f-string checks for str.format calls that can be replaced with f-strings.
     # In many cases this is a good idea, but not universally.
     "UP032",
@@ -42,11 +45,6 @@ ignore = [
     "PERF102",
     "PERF402",
     "PIE810",
-    "PLC0206",
-    "PLR0124",
-    "PLR1722",
-    "PLW1507",
-    "PLW1510",
     "PYI041",
     "RUF007",
     "RUF009",
