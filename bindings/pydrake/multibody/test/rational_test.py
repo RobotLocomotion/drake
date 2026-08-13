@@ -93,11 +93,9 @@ class TestRationalForwardKinematics(unittest.TestCase):
         ]
         self.assertTrue(
             all(
-                [
-                    q_recomputed_elt.EqualTo(q_expected_elt)
-                    for q_recomputed_elt, q_expected_elt in zip(
-                        q_recomputed, q_expected
-                    )
-                ]
+                q_recomputed_elt.EqualTo(q_expected_elt)
+                for q_recomputed_elt, q_expected_elt in zip(
+                    q_recomputed, q_expected
+                )
             )
         )

@@ -320,7 +320,7 @@ class InstallPrereqsTest(unittest.TestCase):
         """Given a set of filenames, e.g., {"/path/to/foo_arch.deb"}, returns
         the set of package names, e.g., {"foo"}."""
         filenames = sorted([x.split("/")[-1] for x in paths])
-        return set([re.split("[-_]", x)[0] for x in filenames])
+        return {re.split("[-_]", x)[0] for x in filenames}
 
     def test_developer_bootstrap(self):
         """Checks --developer with nothing installed yet."""
