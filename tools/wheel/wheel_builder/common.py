@@ -94,7 +94,7 @@ def wheel_name(python_binder, python_version, wheel_version, wheel_platform):
 
 def _check_version(version):
     """
-    Returns True iff the given version string matches PEP 440.
+    Returns True iff the given version string conforms to PEP 440.
     """
     return (
         re.match(
