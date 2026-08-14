@@ -32,11 +32,11 @@ class Target:
     build_platform: Platform
     python_binder: PythonBinder
     test_platforms: tuple[Platform]
-    python_version_tuple: tuple[int]
-    python_sha: str
+    python_version_tuple: tuple[int, int, int]
 
     def __post_init__(self):
         assert isinstance(self.test_platforms, tuple)
+        assert len(self.python_version_tuple) == 3, self.python_version_tuple
         pv_parts = tuple(map(str, self.python_version_tuple))
         self.python_version_full = ".".join(pv_parts)
         self.python_version = ".".join(pv_parts[:2])

@@ -59,8 +59,7 @@ targets = {
                 # TODO(jwnimmer-tri) We should test this same abi3 wheel on all
                 # newer Python versions (so 3.13, 3.14, etc.).
             ),
-            python_version_tuple=(3, 12, 8),
-            python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
+            python_version_tuple=(3, 12, 13),
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
@@ -70,8 +69,7 @@ targets = {
                 Platform("ubuntu", "24.04", "noble"),
                 Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
-            python_version_tuple=(3, 12, 8),
-            python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
+            python_version_tuple=(3, 12, 13),
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
@@ -81,8 +79,7 @@ targets = {
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
                 Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
-            python_version_tuple=(3, 13, 0),
-            python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
+            python_version_tuple=(3, 13, 15),
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
@@ -92,8 +89,7 @@ targets = {
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
                 Platform("ubuntu", "26.04", "resolute"),
             ),
-            python_version_tuple=(3, 14, 0),
-            python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa
+            python_version_tuple=(3, 14, 7),
         ),
     ),
     "aarch64": (
@@ -107,8 +103,7 @@ targets = {
                 # TODO(jwnimmer-tri) We should test this same abi3 wheel on all
                 # newer Python versions (so 3.13, 3.14, etc.).
             ),
-            python_version_tuple=(3, 12, 8),
-            python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
+            python_version_tuple=(3, 12, 13),
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
@@ -118,8 +113,7 @@ targets = {
                 Platform("ubuntu", "24.04", "noble"),
                 Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
-            python_version_tuple=(3, 12, 8),
-            python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
+            python_version_tuple=(3, 12, 13),
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
@@ -129,8 +123,7 @@ targets = {
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
                 Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
-            python_version_tuple=(3, 13, 0),
-            python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
+            python_version_tuple=(3, 13, 15),
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
@@ -140,8 +133,7 @@ targets = {
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
                 Platform("ubuntu", "26.04", "resolute"),
             ),
-            python_version_tuple=(3, 14, 0),
-            python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa
+            python_version_tuple=(3, 14, 7),
         ),
     ),
 }[ARCH]
@@ -284,25 +276,21 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
     Returns the Docker build arguments for the specified platform target.
     Iff the role is the TEST role, then the test_index must be provided.
     """
-    platform_name = target.platform(role, test_index).name
-    platform_version = target.platform(role, test_index).version
-    python_manager = target.platform(role, test_index).python_manager
-    python_version = target.python_version
+    platform = target.platform(role, test_index)
 
     if role == BUILD:
         python_args = [
-            "--build-arg", f"PYTHON=build:{target.python_version_full}",
-            "--build-arg", f"PYTHON_SHA={target.python_sha}",
+            "--build-arg", f"PYTHON={target.python_version_full}",
             "--build-arg", f"DRAKE_PYTHON_BINDER={target.python_binder.value}",
         ]  # fmt: skip
     else:
         python_args = [
-            "--build-arg", f"PYTHON={python_version}",
-            "--build-arg", f"PYTHON_MANAGER={python_manager.value}",
+            "--build-arg", f"PYTHON={target.python_version}",
+            "--build-arg", f"PYTHON_MANAGER={platform.python_manager.value}",
         ]  # fmt: skip
 
     return [
-        "--build-arg", f"PLATFORM={platform_name}:{platform_version}",
+        "--build-arg", f"PLATFORM={platform.name}:{platform.version}",
     ] + python_args  # fmt: skip
 
 
