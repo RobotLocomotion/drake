@@ -112,8 +112,6 @@ _AUTOCONF_UNDEFINES = [
     # This is actually used by the C++ code, but autoconf_configure_file can't
     # handle it. We'll use _CONFIG_PRIVATE_DEFINES for this instead, below.
     "F77_FUNC",
-    # hacks.
-    "DEBUG",
 ]
 
 _CONFIG_PRIVATE_DEFINES = [
