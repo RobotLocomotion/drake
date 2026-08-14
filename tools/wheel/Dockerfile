@@ -23,11 +23,10 @@ RUN /image/provision-build.sh
 FROM base AS clean
 
 ARG PYTHON=3
-ARG PYTHON_SHA=
 
-ADD image/provision-python.sh image/build-python.sh /image/
+ADD image/provision-python.sh /image/
 
-RUN /image/provision-python.sh ${PYTHON} ${PYTHON_SHA}
+RUN /image/provision-python.sh ${PYTHON}
 
 # -----------------------------------------------------------------------------
 # Inject the primary build scripts.
