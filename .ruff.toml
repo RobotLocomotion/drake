@@ -63,9 +63,6 @@ ignore = [
     "SIM117",
     "SIM118",
     "SIM201",
-    "TRY002",
-    "TRY004",
-    "TRY201",
 ]
 
 # Enable import sorting.

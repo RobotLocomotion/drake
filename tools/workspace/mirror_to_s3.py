@@ -51,7 +51,7 @@ def main(argv):
                     transformed_value["object_key"] = url[len(BUCKET_URL) :]
                 elif not url.startswith(CLOUDFRONT_URL):
                     if "url" in transformed_value:
-                        raise Exception(
+                        raise RuntimeError(
                             f"Multiple non-mirror urls for @{key}. Verify "
                             f"BUCKET_URL {BUCKET_URL} and CLOUDFRONT_URL "
                             f"{CLOUDFRONT_URL} are correct and check for "
@@ -59,13 +59,13 @@ def main(argv):
                         )
                     transformed_value["url"] = url
             if "object_key" not in transformed_value:
-                raise Exception(
+                raise RuntimeError(
                     f"Could NOT determine S3 object key for @{key}. Verify "
                     f"BUCKET_URL {BUCKET_URL} is correct and check for "
                     f"missing url value with prefix {BUCKET_URL}."
                 )
             if "url" not in transformed_value:
-                raise Exception(
+                raise RuntimeError(
                     f"Missing non-mirror url for @{key}. Verify BUCKET_URL "
                     f"{BUCKET_URL} is correct and check for missing url value "
                     f"with prefix {BUCKET_URL}."
@@ -113,7 +113,7 @@ def main(argv):
                             buffer = file_object.read(CHUNK_SIZE)
                     hexdigest = hash_object.hexdigest()
                     if hexdigest != sha256:
-                        raise Exception(
+                        raise RuntimeError(
                             f"Expected SHA-256 checksum of file {filename} to "
                             f"be {sha256}, but actual checksum was computed "
                             f"to be {hexdigest}"

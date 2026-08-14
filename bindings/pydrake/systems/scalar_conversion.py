@@ -156,7 +156,7 @@ class TemplateSystem(TemplateClass):
         # Check that the user has not defined `__init__`, and has defined
         # `_construct` and `_construct_copy`.
         if not issubclass(cls, LeafSystem_[T]):
-            raise RuntimeError(
+            raise TypeError(
                 f"{pretty_class_name(cls)} must inherit from {LeafSystem_[T]}"
             )
 

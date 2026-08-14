@@ -75,7 +75,7 @@ class ModuleShim:
                 value = self._handler(name)
             except AttributeError as e:
                 if str(e):
-                    raise e
+                    raise
                 else:
                     raise AttributeError(
                         f"'module' object has no attribute '{name}'"
