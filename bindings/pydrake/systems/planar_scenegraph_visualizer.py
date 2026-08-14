@@ -65,16 +65,16 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self,
         scene_graph,
         draw_period=None,
-        T_VW=np.array(
+        T_VW=np.array(  # noqa: B008
             [
                 [1.0, 0.0, 0.0, 0.0],  # BR
                 [0.0, 0.0, 1.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0],
             ]
         ),
-        xlim=[-1.0, 1],
-        ylim=[-1, 1],
-        facecolor=[1, 1, 1],
+        xlim=(-1.0, 1),
+        ylim=(-1, 1),
+        facecolor=(1, 1, 1),
         use_random_colors=False,
         substitute_collocated_mesh_files=True,
         ax=None,

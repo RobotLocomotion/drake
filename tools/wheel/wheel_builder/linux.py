@@ -190,7 +190,7 @@ def _git_root(path):
     return raw.decode(sys.stdout.encoding).rsplit("\n", maxsplit=1)[0]
 
 
-def _add_to_tar(tar, name, parent_path, root_path, exclude=[]):
+def _add_to_tar(tar, name, parent_path, root_path, exclude=None):
     """
     Adds files or directories to the specified tar file.
     """
@@ -199,7 +199,7 @@ def _add_to_tar(tar, name, parent_path, root_path, exclude=[]):
 
     if os.path.isdir(full_path):
         for f in sorted(os.listdir(full_path)):
-            if f in exclude:
+            if exclude is not None and f in exclude:
                 continue
 
             _add_to_tar(tar, f, os.path.join(parent_path, name), root_path)

@@ -45,10 +45,10 @@ class PoseSliders(LeafSystem):
 
     def __init__(
         self,
-        visible=Visible(),
-        min_range=MinRange(),
-        max_range=MaxRange(),
-        value=Value(),
+        visible=Visible(),  # noqa: B008
+        min_range=MinRange(),  # noqa: B008
+        max_range=MaxRange(),  # noqa: B008
+        value=Value(),  # noqa: B008
     ):
         """
         Args:

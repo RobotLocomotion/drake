@@ -274,12 +274,12 @@ class TestParsing(unittest.TestCase):
 
     def test_model_instance_info(self):
         """Checks that ModelInstanceInfo bindings exist."""
-        ModelInstanceInfo.model_name
-        ModelInstanceInfo.model_path
-        ModelInstanceInfo.parent_frame_name
-        ModelInstanceInfo.child_frame_name
-        ModelInstanceInfo.X_PC
-        ModelInstanceInfo.model_instance
+        ModelInstanceInfo.model_name  # noqa: B018
+        ModelInstanceInfo.model_path  # noqa: B018
+        ModelInstanceInfo.parent_frame_name  # noqa: B018
+        ModelInstanceInfo.child_frame_name  # noqa: B018
+        ModelInstanceInfo.X_PC  # noqa: B018
+        ModelInstanceInfo.model_instance  # noqa: B018
 
     @numpy_compare.check_all_types
     def test_scoped_frame_names(self, T):
