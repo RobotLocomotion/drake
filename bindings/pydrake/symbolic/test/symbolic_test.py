@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import copy
 import itertools
 import pickle
@@ -316,7 +314,7 @@ class TestSymbolicVariables(unittest.TestCase):
     def test_to_string_1(self):
         vars = sym.Variables([x, y, z])
         self.assertEqual(vars.to_string(), "{x, y, z}")
-        self.assertEqual("{}".format(vars), "{x, y, z}")
+        self.assertEqual(f"{vars}", "{x, y, z}")
 
     def test_repr(self):
         vars = sym.Variables([x, y, z])
@@ -691,7 +689,7 @@ class TestSymbolicExpression(unittest.TestCase):
             )
             op_reverse = operators_reverse[op]
             for lhs, rhs in operand_combinatorics_iter:
-                hint_for_error = f"{op.__doc__}: {repr(lhs)}, {repr(rhs)}"
+                hint_for_error = f"{op.__doc__}: {lhs!r}, {rhs!r}"
                 with numpy_compare.soft_sub_test(hint_for_error):
                     value = op(lhs, rhs)
                     assert_nontrivial_formula(value)
@@ -786,7 +784,7 @@ class TestSymbolicExpression(unittest.TestCase):
             bool(e_x == e_x)
         message = str(cm.exception)
         self.assertTrue(
-            all([s in message for s in ["__nonzero__", "EqualToDict"]]), message
+            all(s in message for s in ["__nonzero__", "EqualToDict"]), message
         )
         # Ensure that compound formulas fail (#8536).
         with self.assertRaises(RuntimeError):
@@ -1089,7 +1087,7 @@ class TestSymbolicFormula(unittest.TestCase):
     def test_to_string(self):
         f = x > y
         self.assertEqual(f.to_string(), "(x > y)")
-        self.assertEqual("{}".format(f), "(x > y)")
+        self.assertEqual(f"{f}", "(x > y)")
 
     def test_equality_inequality_hash(self):
         f1 = x > y
@@ -2141,7 +2139,7 @@ class TestExtractVariablesFromExpression(unittest.TestCase):
 class TestDecomposeAffineExpression(unittest.TestCase):
     def test_basic(self):
         e = 2 * x + 3 * y + 4
-        variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
+        _variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
         coeffs, constant_term = sym.DecomposeAffineExpression(
             e, map_var_to_index
         )
@@ -2211,7 +2209,7 @@ class TestDecomposeQuadraticPolynomial(unittest.TestCase):
         y = sym.Variable("y")
         e = x * x + 2 * y * y + 4 * x * y + 3 * x + 2 * y + 4
         poly = sym.Polynomial(e, [x, y])
-        variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
+        _variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
         Q, b, c = sym.DecomposeQuadraticPolynomial(poly, map_var_to_index)
         self.assertEqual(c, 4)
         x_idx = map_var_to_index[x.get_id()]
@@ -2342,7 +2340,7 @@ class TestUnapplyExpression(unittest.TestCase):
                 self._check_one_composite(e)
 
     def _check_one_composite(self, e):
-        ctor, args = e.Unapply()
+        _ctor, args = e.Unapply()
         self.assertGreater(len(args), 0)
         for arg in args:
             self.assertIsInstance(arg, (sym.Expression, float))
@@ -2413,7 +2411,7 @@ class TestUnapplyFormula(unittest.TestCase):
                 self._check_one_relational(f)
 
     def _check_one_relational(self, f):
-        ctor, args = f.Unapply()
+        _ctor, args = f.Unapply()
         self.assertEqual(len(args), 2)
         self.assertIsInstance(args[0], sym.Expression)
         self.assertIsInstance(args[1], sym.Expression)
@@ -2425,7 +2423,7 @@ class TestUnapplyFormula(unittest.TestCase):
                 self._check_one_compound(f)
 
     def _check_one_compound(self, f):
-        ctor, args = f.Unapply()
+        _ctor, args = f.Unapply()
         self.assertGreaterEqual(len(args), 1)
         for arg in args:
             self.assertIsInstance(arg, sym.Formula)

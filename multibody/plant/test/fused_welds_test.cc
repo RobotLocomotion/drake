@@ -84,11 +84,16 @@ TestModel MakeModel(bool fuse_welded_links) {
   const SpatialInertia<double> M =
       SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1);
 
-  // Add the four links.
-  m.link1 = &m.plant->AddRigidBody("Link1", M);
-  m.link2 = &m.plant->AddRigidBody("Link2", M);
-  m.link3 = &m.plant->AddRigidBody("Link3", M);
-  m.link4 = &m.plant->AddRigidBody("Link4", M);
+  // Add the four links, each in its own model instance so that
+  // link->model_instance() uniquely identifies a single link.
+  const ModelInstanceIndex inst1 = m.plant->AddModelInstance("Link1");
+  const ModelInstanceIndex inst2 = m.plant->AddModelInstance("Link2");
+  const ModelInstanceIndex inst3 = m.plant->AddModelInstance("Link3");
+  const ModelInstanceIndex inst4 = m.plant->AddModelInstance("Link4");
+  m.link1 = &m.plant->AddRigidBody("Link1", inst1, M);
+  m.link2 = &m.plant->AddRigidBody("Link2", inst2, M);
+  m.link3 = &m.plant->AddRigidBody("Link3", inst3, M);
+  m.link4 = &m.plant->AddRigidBody("Link4", inst4, M);
 
   // Revolute joint (z-axis): World to Link1, with Link1 frame at world frame.
   m.revolute = &m.plant->AddJoint<RevoluteJoint>(
@@ -414,9 +419,16 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
              fused_model.link2->model_instance(),
              fused_model.link3->model_instance()},
             p_WoP_W);
-    // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
-    EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
-                                 kTolerance, MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
+                                kTolerance, MatrixCompareType::relative));
+
+    // Verify system's spatial momentum does not depend on fused links.
+    L_WUP_W = unfused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
+        *unfused_model.context, p_WoP_W);
+    L_WFP_W = fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
+        *fused_model.context, p_WoP_W);
+    EXPECT_TRUE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
+                                kTolerance, MatrixCompareType::relative));
 
     // Ensure that individual link spatial inertias and spatial momentum are
     // accurately calculated, regardless of whether they were fused.
@@ -436,9 +448,8 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
           *unfused_model.context, {unfused_linki->model_instance()}, p_WoP_W);
       L_WFP_W = fused_model.plant->CalcSpatialMomentumInWorldAboutPoint(
           *fused_model.context, {fused_linki->model_instance()}, p_WoP_W);
-      // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
-      EXPECT_FALSE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
-                                   kTolerance, MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(L_WUP_W.get_coeffs(), L_WFP_W.get_coeffs(),
+                                  kTolerance, MatrixCompareType::relative));
 
       // Since link4 is welded to world, special-case calculations are used. For
       // this special case, also compare link4 results to an analytical value.
@@ -451,10 +462,9 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
                                     MatrixCompareType::relative));
 
         // Link4's spatial momentum should always be zero (welded to ground).
-        // TODO(Mitiguy) EXPECT_FALSE is wrong!  Should be EXPECT_TRUE!
-        EXPECT_FALSE(CompareMatrices(L_WFP_W.get_coeffs(),
-                                     Vector6<double>::Zero(), kTolerance,
-                                     MatrixCompareType::relative));
+        EXPECT_TRUE(CompareMatrices(L_WFP_W.get_coeffs(),
+                                    Vector6<double>::Zero(), kTolerance,
+                                    MatrixCompareType::relative));
       }
     }
 

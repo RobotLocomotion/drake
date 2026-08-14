@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #  Derived from https://github.com/pybind/pybind11/
 #
@@ -206,7 +205,7 @@ def sanitize_name(name):
     """
     name = re.sub(r"type-parameter-0-([0-9]+)", r"T\1", name)
     for k, v in CPP_OPERATORS.items():
-        name = name.replace("operator%s" % k, "operator_%s" % v)
+        name = name.replace(f"operator{k}", f"operator_{v}")
     name = re.sub("<.*>", "", name)
     name = name.replace("::", "_")
     name = "".join([ch if ch.isalnum() else "_" for ch in name])
@@ -277,9 +276,9 @@ def extract_comment(cursor, deprecations):
 
     # Append the deprecation text.
     result += (
-        r" (Deprecated.) \deprecated {} "
-        "This will be removed from Drake on or after {}."
-    ).format(message, removal_date)
+        rf" (Deprecated.) \deprecated {message} "
+        f"This will be removed from Drake on or after {removal_date}."
+    )
 
     return result
 
@@ -456,7 +455,7 @@ def choose_doc_var_names(symbols):
                 # overload naming set.
                 result[i] = None
                 continue
-            elif any([symbols[i].comment == x.comment for x in symbols[:i]]):
+            elif any(symbols[i].comment == x.comment for x in symbols[:i]):
                 # If a subsequent overload's API comment *exactly* matches a
                 # prior overload's comment, the first overload's name wins.
                 # This is important because when a function has separate
@@ -534,7 +533,7 @@ def choose_doc_var_names(symbols):
     ]
 
     # The argument count might be sufficient to disambiguate.
-    result = ["doc_{}args".format(len(types)) for types in overload_arg_types]
+    result = [f"doc_{len(types)}args" for types in overload_arg_types]
     specialize_well_known_doc_var_names()
     if is_unique(result):
         return result
@@ -597,11 +596,11 @@ def print_symbols(f, name, node, level=0):
     name_var = sanitize_name(name_var)
     # We may get empty symbols if `libclang` produces warnings.
     assert len(name_var) > 0, node.first_symbol.sorting_key()
-    iprint("// Symbol: {}".format(full_name))
+    iprint(f"// Symbol: {full_name}")
     modifier = ""
     if level == 0:
         modifier = "constexpr "
-    iprint("{}struct /* {} */ {{".format(modifier, name_var))
+    iprint(f"{modifier}struct /* {name_var} */ {{")
 
     # Print documentation items.
     symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
@@ -615,7 +614,7 @@ def print_symbols(f, name, node, level=0):
         delim = "\n"
         if "\n" not in comment and len(comment) < 40:
             delim = " "
-        iprint("  // Source: {}".format(symbol.include))
+        iprint(f"  // Source: {symbol.include}")
         iprint(
             '  const char* {} ={}R"""({})""";'.format(
                 doc_var, delim, comment.strip()
@@ -651,7 +650,7 @@ def print_symbols(f, name, node, level=0):
                 iprint(f'      std::make_pair("{x}", {x}.doc),')
             iprint("    };")
             iprint("  }")
-    iprint("}} {};".format(name_var))
+    iprint(f"}} {name_var};")
 
 
 class FileDict:
@@ -711,10 +710,7 @@ def main():
     parameters.append(std)
 
     if output_filename is None or len(filenames) == 0:
-        eprint(
-            "Syntax: %s -output=<file> [.. a list of header files ..]"
-            % sys.argv[0]
-        )
+        eprint("Syntax: mkdoc -output=<file> [.. a list of header files ..]")
         sys.exit(1)
 
     f = open(output_filename, "w", encoding="utf-8")
@@ -724,7 +720,7 @@ def main():
     f.write(
         """#pragma once
 
-// {0} {1}
+// {} {}
 // This file contains docstrings for the Python bindings that were
 // automatically extracted by mkdoc.py.
 
@@ -749,7 +745,7 @@ def main():
             include_paths.append(param[2:])
     # Use longest include directories first to get shortest include file
     # overall.
-    include_paths = list(sorted(include_paths, key=len))[::-1]
+    include_paths = sorted(include_paths, key=len)[::-1]
     include_files = []
     # Create mapping from filename to include file.
     include_file_map = FileDict()
@@ -761,9 +757,7 @@ def main():
                 break
         else:
             raise RuntimeError(
-                "Filename not incorporated into -I includes: {}".format(
-                    filename
-                )
+                f"Filename not incorporated into -I includes: {filename}"
             )
         for p in ignore_patterns:
             if fnmatch(include_file, p):
@@ -785,7 +779,7 @@ def main():
         glue_f.write("#include <optional>\n")
         # Add the includes to the glue, and as comments in the output.
         for include_file in sorted(include_files):
-            line = '#include "{}"'.format(include_file)
+            line = f'#include "{include_file}"'
             glue_f.write(line + "\n")
             f.write("// " + line + "\n")
         f.write("\n")
@@ -846,12 +840,12 @@ def main():
     except UnicodeEncodeError as e:
         # User-friendly error for #9903.
         print(
-            """
-Encountered unicode error: {}
+            f"""
+Encountered unicode error: {e}
 If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
     sudo apt-get install --no-install-recommends  locales
     sudo locale-gen en_US.UTF-8
-""".format(e),
+""",
             file=sys.stderr,
         )
         sys.exit(1)

@@ -100,6 +100,7 @@ class TestIntegration(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
+            check=False,
         )
         if result.returncode != 0:
             for line in result.stdout.splitlines():

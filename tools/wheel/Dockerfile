@@ -23,11 +23,10 @@ RUN /image/provision-build.sh
 FROM base AS clean
 
 ARG PYTHON=3
-ARG PYTHON_SHA=
 
-ADD image/provision-python.sh image/build-python.sh /image/
+ADD image/provision-python.sh /image/
 
-RUN /image/provision-python.sh ${PYTHON} ${PYTHON_SHA}
+RUN /image/provision-python.sh ${PYTHON}
 
 # -----------------------------------------------------------------------------
 # Inject the primary build scripts.
@@ -45,9 +44,13 @@ FROM clean AS wheel
 
 ARG DRAKE_VERSION
 ARG DRAKE_GIT_SHA
+ARG DRAKE_PYTHON_BINDER
+ARG DRAKE_IS_ABI3_WHEEL
 
 ENV DRAKE_VERSION=${DRAKE_VERSION}
 ENV DRAKE_GIT_SHA=${DRAKE_GIT_SHA}
+ENV DRAKE_PYTHON_BINDER=${DRAKE_PYTHON_BINDER}
+ENV DRAKE_IS_ABI3_WHEEL=${DRAKE_IS_ABI3_WHEEL}
 ENV SNOPT_PATH=/tmp/drake-wheel-build/snopt/snopt.tar.gz
 
 RUN --mount=type=cache,target=/var/cache/bazel \

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #  Derived from https://github.com/pybind/pybind11/
 #
@@ -92,19 +91,16 @@ def remove_cpp_comment_syntax(s):
     leading_spaces = float("inf")
     for line in s.expandtabs(tabsize=4).splitlines():
         line = line.strip()
-        if line.startswith("/*!"):
-            line = line[3:]
+        line = line.removeprefix("/*!")
         if line.startswith("/*"):
             line = line[2:].lstrip("*")
         if line.endswith("*/"):
             line = line[:-2].rstrip("*")
         # http://www.doxygen.nl/manual/docblocks.html#memberdoc
-        if line.startswith("///<"):
-            line = line[4:]
-        if line.startswith("///") or line.startswith("//!"):
-            line = line[3:]
-        if line.startswith("*"):
-            line = line[1:]
+        line = line.removeprefix("///<")
+        line = line.removeprefix("///")
+        line = line.removeprefix("//!")
+        line = line.removeprefix("*")
         if len(line) > 0:
             leading_spaces = min(leading_spaces, len(line) - len(line.lstrip()))
         result += line + "\n"
@@ -162,7 +158,7 @@ def markdown_to_restructuredtext(s):
 
 def replace_with_header(pattern, token, s, **kwargs):
     def repl(match):
-        return "\n{}\n{}\n".format(match.group(1), token * len(match.group(1)))
+        return f"\n{match.group(1)}\n{token * len(match.group(1))}\n"
 
     return re.sub(pattern, repl, s, **kwargs)
 
@@ -235,21 +231,21 @@ def process_doxygen_commands(s):
     cpp_group = r"([\w:*()]+)"
     param_group = r"([\[\w,\]]+)"
 
-    s = re.sub(r"[@\\][cp]\s+%s" % cpp_group, r"``\1``", s)
-    s = re.sub(r"[@\\](?:a|e|em)\s+%s" % cpp_group, r"*\1*", s)
-    s = re.sub(r"[@\\]b\s+%s" % cpp_group, r"**\1**", s)
+    s = re.sub(rf"[@\\][cp]\s+{cpp_group}", r"``\1``", s)
+    s = re.sub(rf"[@\\](?:a|e|em)\s+{cpp_group}", r"*\1*", s)
+    s = re.sub(rf"[@\\]b\s+{cpp_group}", r"**\1**", s)
     s = re.sub(
-        r"[@\\]param%s?\s+%s" % (param_group, cpp_group),
+        rf"[@\\]param{param_group}?\s+{cpp_group}",
         r"\n\n$Parameter ``\2``:\n\n",
         s,
     )
     s = re.sub(
-        r"[@\\]tparam%s?\s+%s" % (param_group, cpp_group),
+        rf"[@\\]tparam{param_group}?\s+{cpp_group}",
         r"\n\n$Template parameter ``\2``:\n\n",
         s,
     )
     # TODO (betsymcphail): Not tested
-    s = re.sub(r"[@\\]retval\s+%s" % cpp_group, r"\n\n$Returns ``\1``:\n\n", s)
+    s = re.sub(rf"[@\\]retval\s+{cpp_group}", r"\n\n$Returns ``\1``:\n\n", s)
 
     # Ordering is significant for command names with a common prefix.
     for in_, out_ in (
@@ -281,7 +277,7 @@ def process_doxygen_commands(s):
         ("version", "Version"),
         ("warning", "Warning"),
     ):
-        s = re.sub(r"[@\\]%s\s*" % in_, r"\n\n$%s:\n\n" % out_, s)
+        s = re.sub(rf"[@\\]{in_}\s*", rf"\n\n${out_}:\n\n", s)
 
     s = re.sub(r"[@\\]details\s*", r"\n\n", s)
     s = re.sub(r"[@\\](?:brief|short)\s*", r"", s)
@@ -298,7 +294,7 @@ def process_doxygen_commands(s):
     #  ```
     for start_, end_ in (("code", "endcode"), ("verbatim", "endverbatim")):
         s = re.sub(
-            r"[@\\]%s(?:\{\.(\w+)\})?\s?(.*?)\s?[@\\]%s" % (start_, end_),
+            rf"[@\\]{start_}(?:\{{\.(\w+)\}})?\s?(.*?)\s?[@\\]{end_}",
             r"```\1\n\2\n```\n",
             s,
             flags=re.DOTALL,
@@ -380,7 +376,7 @@ def process_doxygen_commands(s):
         "static",
         "tableofcontents",
     ):
-        s = re.sub(r"[@\\]%s\s+" % cmd_, r"", s)
+        s = re.sub(rf"[@\\]{cmd_}\s+", r"", s)
 
     # Remove these commands and their one optional single-word argument.
     # TODO (betsymcphail): Not tested
@@ -388,7 +384,7 @@ def process_doxygen_commands(s):
         "dir",
         "file",
     ]:
-        s = re.sub(r"[@\\]%s( +[\w:./]+)?\s+" % cmd_, r"", s)
+        s = re.sub(rf"[@\\]{cmd_}( +[\w:./]+)?\s+", r"", s)
 
     # Remove these commands and their one optional single-line argument.
     # TODO (betsymcphail): Not tested
@@ -396,7 +392,7 @@ def process_doxygen_commands(s):
         "mainpage",
         "nameoverload",
     ]:
-        s = re.sub(r"[@\\]%s( +.*)?\s+" % cmd_, r"", s)
+        s = re.sub(rf"[@\\]{cmd_}( +.*)?\s+", r"", s)
 
     # Remove these commands and their one single-word argument. Ordering is
     # significant for command names with a common prefix.
@@ -426,7 +422,7 @@ def process_doxygen_commands(s):
         "relates",
         "verbinclude",
     ]:
-        s = re.sub(r"[@\\]%s\s+[\w:.]+\s+" % cmd_, r"", s)
+        s = re.sub(rf"[@\\]{cmd_}\s+[\w:.]+\s+", r"", s)
 
     # Remove these commands and their one single-line argument. Ordering is
     # significant for command names with a common prefix.
@@ -442,7 +438,7 @@ def process_doxygen_commands(s):
         "until",
         "var",
     ]:
-        s = re.sub(r"[@\\]%s\s+.*\s+" % cmd_, r"", s)
+        s = re.sub(rf"[@\\]{cmd_}\s+.*\s+", r"", s)
 
     # Remove this command and its one single-word argument and one
     # optional single-word argument.
@@ -456,7 +452,7 @@ def process_doxygen_commands(s):
         "addtogroup",
         "weakgroup",
     ]:
-        s = re.sub(r"[@\\]%s\s+[\w:.]( +.*)?\s+" % cmd_, r"", s)
+        s = re.sub(rf"[@\\]{cmd_}\s+[\w:.]( +.*)?\s+", r"", s)
 
     # Remove these commands and their one single-word argument and one
     # single-line argument. Ordering is significant for command names with a
@@ -467,7 +463,7 @@ def process_doxygen_commands(s):
         "snippetlineno",
         "snippet",
     ]:
-        s = re.sub(r"[@\\]%s\s+[\w:.]\s+.*\s+" % cmd_, r"", s)
+        s = re.sub(rf"[@\\]{cmd_}\s+[\w:.]\s+.*\s+", r"", s)
 
     # Remove these commands and their one single-word argument and two
     # optional single-word arguments.
@@ -479,7 +475,7 @@ def process_doxygen_commands(s):
         "struct",
         "union",
     ]:
-        s = re.sub(r"[@\\]%s\s+[\w:.]+( +[\w:.]+){0,2}\s+" % cmd_, r"", s)
+        s = re.sub(rf"[@\\]{cmd_}\s+[\w:.]+( +[\w:.]+){{0,2}}\s+", r"", s)
 
     # Remove these commands and their one single-word argument, one optional
     # quoted argument, and one optional single-word arguments.
@@ -490,7 +486,7 @@ def process_doxygen_commands(s):
         "mscfile",
     ]:
         s = re.sub(
-            r'[@\\]%s\s+[\w:.]+(\s+".*?")?(\s+[\w:.]+=[\w:.]+)?s+' % cmd_,
+            rf'[@\\]{cmd_}\s+[\w:.]+(\s+".*?")?(\s+[\w:.]+=[\w:.]+)?s+',
             r"",
             s,
         )
@@ -510,7 +506,7 @@ def process_doxygen_commands(s):
         ("xmlonly", "endxmlonly"),
     ):
         s = re.sub(
-            r"[@\\]%s\s?(.*?)\s?[@\\]%s" % (start_, end_),
+            rf"[@\\]{start_}\s?(.*?)\s?[@\\]{end_}",
             r"",
             s,
             flags=re.DOTALL,
@@ -518,8 +514,8 @@ def process_doxygen_commands(s):
 
         # Some command pairs may bridge multiple comment blocks, so individual
         # start and end commands may appear alone.
-        s = re.sub(r"[@\\]%s\s+" % start_, r"", s)
-        s = re.sub(r"[@\\]%s\s+" % end_, r"", s)
+        s = re.sub(rf"[@\\]{start_}\s+", r"", s)
+        s = re.sub(rf"[@\\]{end_}\s+", r"", s)
 
     # Remove auto-linking character. Be sure to remove only leading % signs.
     # TODO (betsymcphail): Not tested
@@ -546,7 +542,7 @@ def process_doxygen_commands(s):
         "@",
         r"\\",
     ):
-        s = re.sub(r"[@\\](%s)" % escaped_, r"\1", s)
+        s = re.sub(rf"[@\\]({escaped_})", r"\1", s)
 
     return s
 

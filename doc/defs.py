@@ -83,10 +83,18 @@ def check_call(args, *, cwd=None):
     echo = "+ " + " ".join([shlex.quote(x) for x in args])
     if verbose():
         print(echo, flush=True)
-        proc = subprocess.run(args, cwd=cwd, env=env, stderr=STDOUT)
+        proc = subprocess.run(
+            args, cwd=cwd, env=env, stderr=STDOUT, check=False
+        )
     else:
         proc = subprocess.run(
-            args, cwd=cwd, env=env, stderr=STDOUT, stdout=PIPE, encoding="utf-8"
+            args,
+            cwd=cwd,
+            env=env,
+            stderr=STDOUT,
+            stdout=PIPE,
+            encoding="utf-8",
+            check=False,
         )
         if proc.returncode != 0:
             print(echo, flush=True)

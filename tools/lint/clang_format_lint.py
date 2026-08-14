@@ -9,21 +9,23 @@ import tools.lint.clang_format as clang_format_lib
 # Keep this list in sync with cpplint.bzl.
 _SOURCE_EXTENSIONS = [
     source_ext
-    for source_ext in """
-.c
-.cc
-.cpp
-.cxx
-.c++
-.C
-.h
-.hh
-.hpp
-.hxx
-.inc
-.inl
-.H
-""".split("\n")
+    for source_ext in [
+        "",
+        ".c",
+        ".cc",
+        ".cpp",
+        ".cxx",
+        ".c++",
+        ".C",
+        ".h",
+        ".hh",
+        ".hpp",
+        ".hxx",
+        ".inc",
+        ".inl",
+        ".H",
+        "",
+    ]
     if len(source_ext)
 ]
 

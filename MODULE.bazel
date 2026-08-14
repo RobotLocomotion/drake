@@ -7,7 +7,7 @@
 module(
     name = "drake",
     # This version number should match MINIMUM_BAZEL_VERSION in CMakeLists.txt.
-    bazel_compatibility = [">=8.5.0"],
+    bazel_compatibility = [">=8.6.0"],
 )
 
 # Add starlark rules.
@@ -21,9 +21,26 @@ bazel_dep(name = "rules_java", version = "9.7.0")
 bazel_dep(name = "rules_jvm_external", version = "7.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rust", version = "0.71.2")  # When upgrading, locally test that crate vendoring still works via `tools/workspace/crate_universe/upgrade.sh && bazel test //tools/install/libdrake/...`.
+bazel_dep(name = "rules_rs", version = "0.0.102")
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
+
+# Configure the Rust toolchain.
+
+rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
+use_repo(rules_rust, "rules_rust")
+
+rust_toolchains = use_extension(
+    "@rules_rs//rs/toolchains:module_extension.bzl",
+    "toolchains",
+)
+rust_toolchains.toolchain(
+    edition = "2021",
+    version = "1.96.0",
+)
+use_repo(rust_toolchains, "default_rust_toolchains")
+
+register_toolchains("@default_rust_toolchains//:all")
 
 # Configure the C++ toolchain.
 
@@ -75,7 +92,8 @@ bazel_dep(name = "glib", version = "2.82.2.bcr.9", repo_name = "module_glib")
 # implementation.
 
 bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
-bazel_dep(name = "nanobind", version = "2.13.0", repo_name = "module_nanobind")
+bazel_dep(name = "nanobind", version = "2.14.0", repo_name = "module_nanobind")
+bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2", repo_name = "module_nlohmann_json")
 bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
 bazel_dep(name = "suitesparse", version = "7.12.3", repo_name = "module_suitesparse")
 bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
@@ -172,6 +190,7 @@ use_repo(
     # but (unlike the prior group) these are not configurable.
     #
     "libjpeg",
+    "nlohmann_json",
     "suitesparse",
     "zlib",
     #
@@ -227,7 +246,7 @@ bazel_dep(
 
 bazel_dep(
     name = "googletest",
-    version = "1.17.0.bcr.2",
+    version = "1.18.0",
     # Ideally we could set dev_dependency = True here, but that would prevent
     # downstream projects from re-using our //common/test_utilities library.
     # Even though that library is not Stable API, historically downstream
@@ -236,7 +255,6 @@ bazel_dep(
 single_version_override(
     module_name = "googletest",
     patches = [
-        "//tools/workspace/googletest:patches/upstream/character_conversion_casting.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/exception_shadowing.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/param_iterator_interface.patch",  # noqa
         "//tools/workspace/googletest:patches/add_printers.patch",
@@ -311,7 +329,6 @@ use_repo(
     "metis_internal",
     "msgpack_internal",
     "nanoflann_internal",
-    "nlohmann_internal",
     "nlopt_internal",
     "onetbb_internal",
     "osqp_internal",
@@ -383,14 +400,26 @@ crate_universe = use_extension(
     "//tools/workspace/crate_universe:extensions.bzl",
     "crate_universe",
 )
-use_repo(
-    crate_universe,
-    "crate",
-    "crate__cfg-if-1.0.4",
-    "crate__clarabel-0.11.1",
-    "crate__paste-1.0.15",
-    "crate_licenses",
+use_repo(crate_universe, "crate_licenses")
+
+crate = use_extension("@rules_rs//rs:extensions.bzl", "crate")
+crate.from_cargo(
+    cargo_lock = "@crate_licenses//:Cargo.lock",
+    cargo_toml = "@crate_licenses//:Cargo.toml",
+    platform_triples = [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+    ],
 )
+crate.annotation(
+    crate = "clarabel",
+    patches = [
+        "//tools/workspace/crate_universe:patches/clarabel_blas.patch",
+    ],
+)
+use_repo(crate, "crates")
 
 # Incorporate Drake-specific patches to modules. The list of patches lives in a
 # separate file so that our cmake/MODULE.bazel.in can also include it.

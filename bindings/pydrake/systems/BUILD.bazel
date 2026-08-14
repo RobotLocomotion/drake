@@ -388,8 +388,6 @@ drake_py_binary(
     ],
     add_test_rule = True,
     test_rule_timeout = "moderate",
-    # TODO(#21572) Remove this opt-out.
-    test_rule_test_alt_binder = False,
 )
 
 drake_jupyter_py_binary(
@@ -521,6 +519,13 @@ drake_py_unittest(
         ":analysis_py",
         ":primitives_py",
         "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "output_port_gc_test",
+    deps = [
+        ":framework_py",
     ],
 )
 

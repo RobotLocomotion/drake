@@ -184,7 +184,7 @@ def _setup_definitions(args):
     cmakelist_keys = set()
     for filename in args.cmakelists:
         with open(filename, "r") as cmakelist:
-            for line in cmakelist.readlines():
+            for line in cmakelist:
                 definition = _extract_definition(line, result)
                 result.update(definition)
                 cmakelist_keys.update(definition.keys())
@@ -224,7 +224,7 @@ def main():
     for input_path, output_path in zip(args.input, args.output):
         with open(input_path, "r") as input_file:
             with open(output_path + ".tmp", "w") as output_file:
-                for input_line in input_file.readlines():
+                for input_line in input_file:
                     try:
                         output_line, used_vars = transformer(
                             line=input_line,

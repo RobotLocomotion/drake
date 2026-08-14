@@ -23,8 +23,8 @@ def _matmul_dtype_pairs():
     """
     types = (float, AutoDiffXd, Variable, Expression, Monomial, Polynomial)
     for T1, T2 in itertools.product(types, types):
-        any_autodiff = any([T in (AutoDiffXd,) for T in (T1, T2)])
-        all_nonsymbolic = all([T in (float, AutoDiffXd) for T in (T1, T2)])
+        any_autodiff = any(T in (AutoDiffXd,) for T in (T1, T2))
+        all_nonsymbolic = all(T in (float, AutoDiffXd) for T in (T1, T2))
         if any_autodiff and not all_nonsymbolic:
             continue
         yield dict(T1=T1, T2=T2)

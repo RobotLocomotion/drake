@@ -19,7 +19,7 @@ import abc
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-import xml.parsers.expat as expat
+from xml.parsers import expat
 
 import numpy as np
 
@@ -217,9 +217,7 @@ def adjusted_element_end_index(input_bytes: bytes, facts: ElementFacts) -> int:
         # Empty, synthetic, "pseudo" element.
         return facts.end.index
 
-    if input_bytes[facts.end.index :].startswith(
-        f"</{facts.name}".encode("utf-8")
-    ):
+    if input_bytes[facts.end.index :].startswith(f"</{facts.name}".encode()):
         # Typical case:
         # `<inertial>...</inertial>`.
         #               ^                # Raw index points here.
@@ -338,25 +336,23 @@ class UrdfDriver(FormatDriver):
 {d(1)}{inertia_output}
 {d(1)}<mass value="{gfmt(mass)}"/>
 {d(1)}<origin rpy="{rpy_output}" xyz="{xyz_output}"/>
-{d(0)}</inertial>{coda()}""".encode("utf-8")
+{d(0)}</inertial>{coda()}""".encode()
 
         maybe_synthesize_children(inertial_facts, ["origin", "mass", "inertia"])
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
-        output = bytes()
+        output = b""
         index = inertial_facts.start.index
         for facts in inertial_facts.children:
             output += input_bytes[index : facts.start.index]
             d, coda = make_format_helpers(facts)
             if facts.name == "inertia":
-                output += f"{inertia_output}{coda()}".encode("utf-8")
+                output += f"{inertia_output}{coda()}".encode()
             if facts.name == "mass":
-                output += f'<mass value="{gfmt(mass)}"/>{coda()}'.encode(
-                    "utf-8"
-                )
+                output += f'<mass value="{gfmt(mass)}"/>{coda()}'.encode()
             if facts.name == "origin":
                 output += f"""\
-<origin rpy="{rpy_output}" xyz="{xyz_output}"/>{coda()}""".encode("utf-8")
+<origin rpy="{rpy_output}" xyz="{xyz_output}"/>{coda()}""".encode()
             index = adjusted_element_end_index(input_bytes, facts)
         output += input_bytes[index:end]
         return output
@@ -424,12 +420,12 @@ class SdformatDriver(FormatDriver):
 {d(1)}</inertia>
 {d(1)}<mass>{gfmt(mass)}</mass>
 {d(1)}<pose>{pose_output}</pose>
-{d(0)}</inertial>{coda()}""".encode("utf-8")
+{d(0)}</inertial>{coda()}""".encode()
 
         maybe_synthesize_children(inertial_facts, ["pose", "mass", "inertia"])
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
-        output = bytes()
+        output = b""
         index = inertial_facts.start.index
         for facts in inertial_facts.children:
             output += input_bytes[index : facts.start.index]
@@ -443,11 +439,11 @@ class SdformatDriver(FormatDriver):
 {d(1)}<iyy>{gfmt(moments[1])}</iyy>
 {d(1)}<iyz>{gfmt(products[2])}</iyz>
 {d(1)}<izz>{gfmt(moments[2])}</izz>
-{d(0)}</inertia>{coda()}""".encode("utf-8")
+{d(0)}</inertia>{coda()}""".encode()
             if facts.name == "mass":
-                output += f"<mass>{gfmt(mass)}</mass>{coda()}".encode("utf-8")
+                output += f"<mass>{gfmt(mass)}</mass>{coda()}".encode()
             if facts.name == "pose":
-                output += f"<pose>{pose_output}</pose>{coda()}".encode("utf-8")
+                output += f"<pose>{pose_output}</pose>{coda()}".encode()
             index = adjusted_element_end_index(input_bytes, facts)
         end = adjusted_element_end_index(input_bytes, inertial_facts)
         output += input_bytes[index:end]
@@ -564,7 +560,7 @@ class XmlInertiaMapper:
                and whose values are a tuple of the body's spatial inertia and
                6D inertial pose as [x, y, z, r, p, y].
         """
-        output = bytes()
+        output = b""
         input_bytes = self._input_bytes
         input_bytes_index = 0
         for body_index, new_inertia in sorted(new_inertias_mapping.items()):
@@ -745,7 +741,7 @@ class InertiaFixer:
         self,
         *,
         input_file: Path,
-        output_file: Path = None,
+        output_file: Path | None = None,
         in_place: bool = False,
         geom_inertia_role_order: list[Role] = GEOM_INERTIA_ROLE_ORDER_DEFAULT,
     ):

@@ -106,7 +106,5 @@ to its default value, and once with the flag set to its alternative value.
 When False, the test is run just once, with the //tools/flags:python_binder set
 to its default value.
 
-When "auto", the test's package name is used to choose True vs False.
-TODO(#21572) Eventually "auto" should imply True in //bindings/pydrake/...,
-//tutorials/..., and //examples/... and False everywhere else -- but for now
-it only implies True in a selected subset of those packages.
+When "auto", uses True in //bindings/pydrake/..., //tutorials/..., and
+//examples/... and False everywhere else.

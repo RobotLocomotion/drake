@@ -7,6 +7,8 @@ from setuptools import find_packages, glob, setup
 
 DRAKE_VERSION = os.environ.get("DRAKE_VERSION", "0.0.0")
 
+DRAKE_IS_ABI3_WHEEL = bool(int(os.environ["DRAKE_IS_ABI3_WHEEL"]))
+
 # Required python packages that will be pip installed along with pydrake
 python_required = [
     "matplotlib",
@@ -55,7 +57,7 @@ def _actually_find_packages():
 
 
 # Generate a source file we can use to produce an extension library (which we
-# do to force the wheel to not be platform-agnostic. We need this because
+# do to force the wheel to not be platform-agnostic). We need this because
 # trying to build an extension module with no sources is not reliable.
 with open("dummy.c", "wt", encoding="utf-8") as f:
     f.write("void not_used() {}")
@@ -110,6 +112,14 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
         )
     },
     python_requires=">=3.12",
+    options=(
+        {
+            # This matches the Py_LIMITED_API pin at //tools/workspace/nanobind.
+            "bdist_wheel": {"py_limited_api": "cp312"},
+        }
+        if DRAKE_IS_ABI3_WHEEL
+        else {}
+    ),
     install_requires=python_required,
     # Ensure the wheel is not platform-agnostic.
     ext_modules=[

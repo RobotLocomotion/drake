@@ -17,8 +17,8 @@ BOOLEAN = Variable.Type.BOOLEAN
 
 class TestSympy(unittest.TestCase):
     def test_round_trip(self):
-        x, y, z = [Variable(name) for name in "x y z".split()]
-        q, r = [Variable(name, BOOLEAN) for name in "q r".split()]
+        x, y, z = [Variable(name) for name in ["x", "y", "z"]]
+        q, r = [Variable(name, BOOLEAN) for name in ["q", "r"]]
         inputs = [
             # Constants.
             1,
@@ -140,7 +140,7 @@ class TestSympy(unittest.TestCase):
             return
 
         # Create a handy dictionary of Variable Id => Variable.
-        drake_vars = dict([(var.get_id(), var) for var in item.GetVariables()])
+        drake_vars = {var.get_id(): var for var in item.GetVariables()}
         if not drake_vars:
             # Skip this case. Evaluation is not particularly interesting.
             return

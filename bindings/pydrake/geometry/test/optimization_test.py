@@ -215,7 +215,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertFalse(hpoly.MaybeGetFeasiblePoint() is None)
         self.assertTrue(hpoly.PointInSet(hpoly.MaybeGetFeasiblePoint()))
         self.assertFalse(hpoly.IsBounded())
-        new_vars, new_constraints = hpoly.AddPointInSetConstraints(
+        new_vars, _new_constraints = hpoly.AddPointInSetConstraints(
             self.prog, self.x
         )
         self.assertEqual(new_vars.size, 0)
@@ -539,7 +539,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(vpoly.ambient_dimension(), 2)
         np.testing.assert_array_equal(vpoly.vertices(), vertices)
         self.assertTrue(vpoly.PointInSet(x=[1.0, 5.0], tol=1e-8))
-        new_vars, new_constraints = vpoly.AddPointInSetConstraints(
+        new_vars, _new_constraints = vpoly.AddPointInSetConstraints(
             self.prog, self.x[0:2]
         )
         self.assertEqual(new_vars.size, vertices.shape[1])
@@ -854,7 +854,7 @@ class TestGeometryOptimization(unittest.TestCase):
   </joint>
 </robot>"""
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         Parser(plant).AddModelsFromString(limits_urdf, "urdf")
         plant.Finalize()
         diagram = builder.Build()
@@ -904,13 +904,9 @@ class TestGeometryOptimization(unittest.TestCase):
             filename=temp_file_name, child_name="test"
         )
         self.assertEqual(iris_regions.keys(), loaded_regions.keys())
-        for k in iris_regions.keys():
-            np.testing.assert_array_equal(
-                iris_regions[k].A(), loaded_regions[k].A()
-            )
-            np.testing.assert_array_equal(
-                iris_regions[k].b(), loaded_regions[k].b()
-            )
+        for name, region in iris_regions.items():
+            np.testing.assert_array_equal(region.A(), loaded_regions[name].A())
+            np.testing.assert_array_equal(region.b(), loaded_regions[name].b())
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()

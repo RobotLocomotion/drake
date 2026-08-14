@@ -14,9 +14,11 @@ running. In other words, it is safe for two downloaders to be running at the
 same time with the same arguments.
 """
 
+from __future__ import annotations
+
 # N.B. The ONLY packages we're allowed to use here are the Python standard
-# library. This program is run using the host OS's built-in Python interpreter,
-# which might not offer anything more.
+# library as of Python 3.9. This program is run using the host OS's built-in
+# Python interpreter, which might not offer anything more.
 import hashlib
 import json
 import logging
@@ -25,8 +27,8 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
+from urllib import request
 import urllib.parse
-import urllib.request as request
 
 
 def _fail(message):
@@ -40,8 +42,8 @@ def _run(
     urls: list[str],
     sha256: str,
     output_dir: Path,
-    archive_type: str = None,
-    strip_prefix: str = None,
+    archive_type: str | None = None,
+    strip_prefix: str | None = None,
 ):
     """Runs the download and extract logic, assuming already-validated args.
 

@@ -427,7 +427,9 @@ class TestCustom(unittest.TestCase):
             system.CreateDefaultContext()
 
     @unittest.skipIf(
-        _binder == "nanobind",  # TODO(#21572) Remove this opt-out.
+        # TODO(#21572) Remove this opt-out. Once wjakob/nanobind#1210 is fixed
+        # and we upgrade, hopefully it works without more effort on our part.
+        _binder == "nanobind",
         "Missing init detection is not implemented yet.",
     )
     def test_leaf_system_issue13792(self):
@@ -547,13 +549,13 @@ class TestCustom(unittest.TestCase):
                     "noop",
                     BasicVector(1),
                     noop,
-                    prerequisites_of_calc=set([self.nothing_ticket()]),
+                    prerequisites_of_calc={self.nothing_ticket()},
                 )
                 self.DeclareVectorOutputPort(
                     "noop2",
                     1,
                     noop,
-                    prerequisites_of_calc=set([self.nothing_ticket()]),
+                    prerequisites_of_calc={self.nothing_ticket()},
                 )
                 self.witness = self.MakeWitnessFunction(
                     "witness",
@@ -1154,7 +1156,7 @@ class TestCustom(unittest.TestCase):
                         "out",
                         lambda: Value(default_value),
                         self.DoCalcAbstractOutput,
-                        prerequisites_of_calc=set([self.input_port.ticket()]),
+                        prerequisites_of_calc={self.input_port.ticket()},
                     )
 
                 def DoCalcAbstractOutput(self, context, y_data):

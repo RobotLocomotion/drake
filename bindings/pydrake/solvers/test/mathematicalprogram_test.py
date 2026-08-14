@@ -453,7 +453,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIsInstance(result.EvalBinding(costs[0]), np.ndarray)
 
         # Bindings for `Eval`.
-        x_list = (float(1.0), AutoDiffXd(1.0), sym.Variable("x"))
+        x_list = (1.0, AutoDiffXd(1.0), sym.Variable("x"))
         T_y_list = (float, AutoDiffXd, sym.Expression)
         evaluator = costs[0].evaluator()
         for x_i, T_y_i in zip(x_list, T_y_list):
@@ -690,13 +690,13 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_add_sos_constraint(self):
         prog = mp.MathematicalProgram()
         (x0,) = prog.NewIndeterminates(1, "x")
-        Q = prog.AddSosConstraint(
+        prog.AddSosConstraint(
             p=sym.Polynomial(x0**2 + 1),
             monomial_basis=[sym.Monomial(x0)],
             type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
             gram_name="Q",
         )
-        Q, m = prog.AddSosConstraint(
+        _Q, _m = prog.AddSosConstraint(
             p=sym.Polynomial(x0**2 + 2),
             type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
             gram_name="Q",
@@ -713,15 +713,15 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
         self.assertEqual(prog.indeterminates_index()[x[0].get_id()], 0)
-        poly = prog.NewFreePolynomial(sym.Variables(x), 1)
-        (poly, binding) = prog.NewSosPolynomial(
+        prog.NewFreePolynomial(sym.Variables(x), 1)
+        (_poly, _binding) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=2, gram_name="M0"
         )
         prog.NewEvenDegreeFreePolynomial(sym.Variables(x), 2)
         prog.NewOddDegreeFreePolynomial(sym.Variables(x), 3)
         y = prog.NewIndeterminates(1, "y")
         self.assertEqual(prog.indeterminates_index()[y[0].get_id()], 1)
-        (poly, binding) = prog.NewSosPolynomial(
+        (poly, _binding) = prog.NewSosPolynomial(
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])),
             gram_name="M1",
         )
@@ -735,13 +735,13 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
         result.GetSolution(poly)
 
-        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeSosPolynomial(
+        (_poly, _Q_oo, _Q_ee) = prog.NewEvenDegreeSosPolynomial(
             indeterminates=sym.Variables(x), degree=2
         )
-        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeSdsosPolynomial(
+        (_poly, _Q_oo, _Q_ee) = prog.NewEvenDegreeSdsosPolynomial(
             indeterminates=sym.Variables(x), degree=2
         )
-        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeDsosPolynomial(
+        (_poly, _Q_oo, _Q_ee) = prog.NewEvenDegreeDsosPolynomial(
             indeterminates=sym.Variables(x), degree=2
         )
 
@@ -799,7 +799,7 @@ class TestMathematicalProgram(unittest.TestCase):
         for i in range(3):
             pt = pts[i, :]
             prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
-        linear_cost, log_det_t, log_det_Z = prog.AddMaximizeLogDeterminantCost(
+        _linear_cost, log_det_t, log_det_Z = prog.AddMaximizeLogDeterminantCost(
             X=X
         )
         self.assertEqual(log_det_t.shape, (2,))
@@ -810,7 +810,7 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_log_determinant_lower(self):
         prog = mp.MathematicalProgram()
         X = prog.NewSymmetricContinuousVariables(2)
-        linear_constraint, t, Z = prog.AddLogDeterminantLowerBoundConstraint(
+        _linear_constraint, t, Z = prog.AddLogDeterminantLowerBoundConstraint(
             X=X, lower=1
         )
         self.assertEqual(t.shape, (2,))
@@ -1058,7 +1058,7 @@ class TestMathematicalProgram(unittest.TestCase):
             constraint_binding = prog.AddConstraint(constraint, vars=x)
             return [cost_binding, constraint_binding], spies
 
-        keepers, spies = make_object_graph()
+        _keepers, spies = make_object_graph()
         self.assertTrue(all(spy.alive for spy in spies))
 
     def get_different_scalar_type(self, T):
@@ -1246,7 +1246,7 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_add_l2norm_cost_using_conic_constraint(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        s, linear_cost, lorentz_cone_constraint = (
+        _s, _linear_cost, _lorentz_cone_constraint = (
             prog.AddL2NormCostUsingConicConstraint(
                 A=np.array([[1, 2.0], [3.0, 4]]), b=np.array([1.0, 2.0]), vars=x
             )
@@ -1258,7 +1258,7 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_add_l1norm_cost_in_epigraph_form(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        s, linear_cost, linear_constraint = prog.AddL1NormCostInEpigraphForm(
+        _s, _linear_cost, _linear_constraint = prog.AddL1NormCostInEpigraphForm(
             A=np.array([[1, 2.0], [3.0, 4]]), b=np.array([1.0, 2.0]), vars=x
         )
         self.assertEqual(len(prog.linear_costs()), 1)
@@ -1349,12 +1349,12 @@ class TestMathematicalProgram(unittest.TestCase):
         # we should not presume how variables map into indices.
         guess = np.ndarray(count)
         guess.fill(np.nan)
-        self.assertTrue(all([np.isnan(i) for i in guess]))
+        self.assertTrue(all(np.isnan(i) for i in guess))
         prog.SetDecisionVariableValueInVector(x[0], x0[0], guess)
-        self.assertFalse(all([np.isnan(i) for i in guess]))
-        self.assertTrue(any([np.isnan(i) for i in guess]))
+        self.assertFalse(all(np.isnan(i) for i in guess))
+        self.assertTrue(any(np.isnan(i) for i in guess))
         prog.SetDecisionVariableValueInVector(x_matrix, x0_matrix, guess)
-        self.assertFalse(any([np.isnan(i) for i in guess]))
+        self.assertFalse(any(np.isnan(i) for i in guess))
 
     def test_quadratic_constraint(self):
         prog = mp.MathematicalProgram()
@@ -1565,9 +1565,9 @@ class TestMathematicalProgram(unittest.TestCase):
             dut.options,
             {
                 "dummy": expected_dummy,
-                "Drake": dict(
-                    (key.name, value) for key, value in expected_common.items()
-                ),
+                "Drake": {
+                    key.name: value for key, value in expected_common.items()
+                },
             },
         )
         self.assertTrue(dut == dut)
@@ -1855,7 +1855,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         results = mp.SolveInParallel(
             progs=progs,
@@ -1866,7 +1866,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         results = mp.SolveInParallel(
             progs=progs,
@@ -1877,7 +1877,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         results = mp.SolveInParallel(
             progs=progs,
@@ -1888,7 +1888,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         # Finally, interleave None into initial_guesses, solver_options, and
         # solver_ids.
@@ -1904,7 +1904,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         # Now we test the overload
         results = mp.SolveInParallel(
@@ -1916,7 +1916,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         results = mp.SolveInParallel(
             progs=progs,
@@ -1927,7 +1927,7 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         # Ensure that all options being None does not cause ambiguity.
         results = mp.SolveInParallel(
@@ -1939,12 +1939,12 @@ class TestMathematicalProgram(unittest.TestCase):
             dynamic_schedule=False,
         )
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
         # Ensure default arguments do not cause ambiguity.
         results = mp.SolveInParallel(progs=progs)
         self.assertEqual(len(results), len(progs))
-        self.assertTrue(all([r.is_success() for r in results]))
+        self.assertTrue(all(r.is_success() for r in results))
 
     def test_cost_binding(self):
         prog = mp.MathematicalProgram()

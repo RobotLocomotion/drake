@@ -2661,16 +2661,16 @@ class MultibodyTree {
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       std::vector<SpatialAcceleration<T>>* AsBias_WB_all) const;
 
-  // This method returns the spatial momentum of a list of bodies in the
+  // This method returns the spatial momentum of a list of links in the
   // world frame W, about the world origin Wo, expressed in the world frame W.
   // @param[in] context Contains the state of the model.
-  // @param[in] body_indexes Array of selected bodies.  This method does not
+  // @param[in] link_indexes Array of selected links.  This method does not
   //  distinguish between welded bodies, joint-connected bodies,
   //  floating bodies, the world_body(), or repeated bodies.
-  // @throws std::exception if body_indexes contains an invalid BodyIndex.
+  // @throws std::exception if link_indexes contains an invalid LinkIndex.
   SpatialMomentum<T> CalcBodiesSpatialMomentumInWorldAboutWo(
       const systems::Context<T>& context,
-      const std::vector<BodyIndex>& body_indexes) const;
+      const std::vector<LinkIndex>& link_indexes) const;
 
   // Helper method to access the mobilizer of a free body (that is, a
   // body connected to its parent by a 6-dof joint). If `body` is free, this

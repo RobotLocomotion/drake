@@ -3,8 +3,8 @@ Remove static destructors (run upon program exit) for local variables
 This patch should be upstreamed, but upstream has disabled pull
 requests, so *shrug*.
 
---- tiny_gltf.h
-+++ tiny_gltf.h
+--- attic/tiny_gltf.h
++++ attic/tiny_gltf.h
 @@ -334,19 +334,15 @@ class Value {
  
    // Lookup value from an array

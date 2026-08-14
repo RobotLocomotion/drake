@@ -9,6 +9,7 @@ package(default_visibility = ["//visibility:private"])
 PREREQUISITES_DATA = glob([
     "**/Brewfile*",
     "**/*.lock",
+    "**/*.json",
     "**/*.toml",
     "**/*.txt",
 ])

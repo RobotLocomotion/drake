@@ -124,9 +124,7 @@ class TestNamedView(unittest.TestCase):
         view[:] = 3.0
         np.testing.assert_equal(value, [3.0, 3.0])
         self.assertEqual(str(view), "MyView(a=3.0, b=3.0)")
-        self.assertEqual(
-            repr(view), f"<MyView(a={repr(view.a)}, b={repr(view.b)})>"
-        )
+        self.assertEqual(repr(view), f"<MyView(a={view.a!r}, b={view.b!r})>")
         with self.assertRaisesRegex(AttributeError, ".*('a', 'b').*"):
             view.c = 42
 

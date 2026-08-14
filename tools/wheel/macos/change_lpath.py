@@ -32,7 +32,10 @@ def _chlpath(path, replacements):
 
         # Determine if the library needs to be re-signed.
         signature = subprocess.run(
-            ["codesign", "--verify", path], capture_output=True, text=True
+            ["codesign", "--verify", path],
+            capture_output=True,
+            text=True,
+            check=False,
         )
         if not signature.stderr:
             pass  # The existing signature is valid.

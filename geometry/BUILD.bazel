@@ -160,7 +160,7 @@ drake_cc_library(
         "//lcmtypes:lcmtypes_drake_cc",
         "//systems/lcm:lcm_system_graphviz",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann_json//:singleheader-json",
     ],
 )
 
@@ -336,7 +336,7 @@ drake_cc_library(
         "//common:file_source",
         "//common:memory_file",
         "//common:string_container",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann_json//:singleheader-json",
     ],
 )
 
@@ -630,7 +630,7 @@ drake_cc_library(
         "//systems/analysis:realtime_rate_calculator",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@msgpack_internal//:msgpack",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann_json//:singleheader-json",
         "@stduuid_internal//:stduuid",
         "@uwebsockets_internal//:uwebsockets",
     ],
@@ -720,7 +720,7 @@ drake_cc_googletest(
         ":scene_graph",
         ":shape_specification",
         "//math:geometric_transform",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann_json//:singleheader-json",
     ],
 )
 
@@ -969,7 +969,7 @@ drake_cc_googletest(
         "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@nlohmann_internal//:nlohmann",
+        "@nlohmann_json//:singleheader-json",
     ],
 )
 

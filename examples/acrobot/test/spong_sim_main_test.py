@@ -20,9 +20,9 @@ class TestRunSpongControlledAcrobot(unittest.TestCase):
     def test_help(self):
         result = subprocess.run(
             [self.dut, "--help"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             encoding="utf-8",
+            check=False,
         )
         self.assertEqual(result.stderr, "")
         self.assertIn("spong-controlled acrobot", result.stdout)
