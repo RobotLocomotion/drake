@@ -11,6 +11,7 @@ import tarfile
 
 from .common import (
     PythonBinder,
+    PythonTarget,
     create_snopt_tgz,
     die,
     edit_wheel_version_for_binder,
@@ -50,8 +51,8 @@ targets = {
     #   should be added to the aforementioned installation documentation.
     "x86_64": (
         Target(
+            python=PythonTarget(PythonBinder.NANOBIND, 3, 12, 13),
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.NANOBIND,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
@@ -59,43 +60,39 @@ targets = {
                 # TODO(jwnimmer-tri) We should test this same abi3 wheel on all
                 # newer Python versions (so 3.13, 3.14, etc.).
             ),
-            python_version_tuple=(3, 12, 13),
         ),
         Target(
+            python=PythonTarget(PythonBinder.PYBIND11, 3, 12, 13),
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
                 Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
-            python_version_tuple=(3, 12, 13),
         ),
         Target(
+            python=PythonTarget(PythonBinder.PYBIND11, 3, 13, 15),
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
                 Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
-            python_version_tuple=(3, 13, 15),
         ),
         Target(
+            python=PythonTarget(PythonBinder.PYBIND11, 3, 14, 7),
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
                 Platform("ubuntu", "26.04", "resolute"),
             ),
-            python_version_tuple=(3, 14, 7),
         ),
     ),
     "aarch64": (
         Target(
+            python=PythonTarget(PythonBinder.NANOBIND, 3, 12, 13),
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.NANOBIND,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
@@ -103,37 +100,33 @@ targets = {
                 # TODO(jwnimmer-tri) We should test this same abi3 wheel on all
                 # newer Python versions (so 3.13, 3.14, etc.).
             ),
-            python_version_tuple=(3, 12, 13),
         ),
         Target(
+            python=PythonTarget(PythonBinder.PYBIND11, 3, 12, 13),
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
                 Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
-            python_version_tuple=(3, 12, 13),
         ),
         Target(
+            python=PythonTarget(PythonBinder.PYBIND11, 3, 13, 15),
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
                 Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
-            python_version_tuple=(3, 13, 15),
         ),
         Target(
+            python=PythonTarget(PythonBinder.PYBIND11, 3, 14, 7),
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            python_binder=PythonBinder.PYBIND11,
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
                 Platform("ubuntu", "26.04", "resolute"),
             ),
-            python_version_tuple=(3, 14, 7),
         ),
     ),
 }[ARCH]
@@ -245,8 +238,8 @@ def _tagname(
     Iff the role is the TEST role, then the test_index must be provided.
     """
     platform = target.platform(role, test_index).alias
-    python_tag = target.python_tag
-    python_binder = target.python_binder.value
+    python_tag = target.python.tag
+    python_binder = target.python.binder.value
     return f"{tag_base}:{tag_prefix}-{platform}-py{python_tag}-{python_binder}"
 
 
@@ -280,12 +273,12 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
 
     if role == BUILD:
         python_args = [
-            "--build-arg", f"PYTHON={target.python_version_full}",
-            "--build-arg", f"DRAKE_PYTHON_BINDER={target.python_binder.value}",
+            "--build-arg", f"PYTHON={target.python.version_full}",
+            "--build-arg", f"DRAKE_PYTHON_BINDER={target.python.binder.value}",
         ]  # fmt: skip
     else:
         python_args = [
-            "--build-arg", f"PYTHON={target.python_version}",
+            "--build-arg", f"PYTHON={target.python.version}",
             "--build-arg", f"PYTHON_MANAGER={platform.python_manager.value}",
         ]  # fmt: skip
 
@@ -299,7 +292,7 @@ def _build_image(target, identifier, version, options):
     Runs the build for a target and (optionally) extract the wheel.
     """
     drake_is_abi3_wheel = (
-        "1" if target.python_binder == PythonBinder.NANOBIND else "0"
+        "1" if target.python.binder == PythonBinder.NANOBIND else "0"
     )
     args = [
         "--build-arg", f"DRAKE_VERSION={version}",
@@ -350,8 +343,8 @@ def _test_wheel(target, identifier, version, options):
     """
     glibc = glibc_versions[target.platform(BUILD).alias]
     wheel = wheel_name(
-        python_binder=target.python_binder,
-        python_version=target.python_tag,
+        python_binder=target.python.binder,
+        python_version=target.python.tag,
         wheel_version=version,
         wheel_platform=f"manylinux_{glibc}_{ARCH}",
     )
@@ -419,7 +412,7 @@ def build(options):
     targets_to_build = []
     for t in targets:
         if t.platform(BUILD).name in options.platforms:
-            if t.python_tag in options.python_versions:
+            if t.python.tag in options.python_versions:
                 targets_to_build.append(t)
 
     # Check if there is anything to do.
@@ -447,7 +440,7 @@ def build(options):
     # Build the requested wheels.
     for t in targets_to_build:
         version = edit_wheel_version_for_binder(
-            t.python_binder, options.version
+            t.python.binder, options.version
         )
 
         _build_image(t, identifier, version, options)
@@ -488,7 +481,7 @@ def add_selection_arguments(parser):
         "--python",
         dest="python_versions",
         metavar="VERSIONS",
-        default=",".join(sorted({t.python_tag for t in targets})),
+        default=",".join(sorted({t.python.tag for t in targets})),
         help=(
             "python version(s) to build; separate with ','"
             " (default: %(default)s)"

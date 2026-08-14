@@ -10,6 +10,7 @@ import tempfile
 
 from .common import (
     PythonBinder,
+    PythonTarget,
     build_root,
     create_snopt_tgz,
     die,
@@ -20,7 +21,6 @@ from .common import (
     wheel_name,
     wheelhouse,
 )
-from .macos_types import PythonTarget
 
 # This is the complete set of defined targets (i.e. potential wheels). By
 # default, all targets are built, but the user may down-select from this set.
@@ -53,7 +53,7 @@ def _find_wheel(path, version, python_target):
     accessible and is very non-trivial to replicate.
     """
     pattern = wheel_name(
-        python_binder=python_target.python_binder,
+        python_binder=python_target.binder,
         python_version=python_target.tag,
         wheel_version=version,
         wheel_platform="*",
@@ -172,11 +172,11 @@ def build(options):
     # Build the wheel(s).
     for python_target in targets_to_build:
         version = edit_wheel_version_for_binder(
-            python_target.python_binder, options.version
+            python_target.binder, options.version
         )
-        environment["DRAKE_PYTHON_BINDER"] = python_target.python_binder.value
+        environment["DRAKE_PYTHON_BINDER"] = python_target.binder.value
         environment["DRAKE_IS_ABI3_WHEEL"] = (
-            "1" if python_target.python_binder == PythonBinder.NANOBIND else "0"
+            "1" if python_target.binder == PythonBinder.NANOBIND else "0"
         )
 
         build_script = os.path.join(resource_root, "macos", "build-wheel.sh")
