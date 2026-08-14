@@ -131,7 +131,7 @@ def create_snopt_tgz(*, snopt_path, output):
 
     print("[-] Creating SNOPT archive...", flush=True)
     tar_buffer = io.BytesIO()
-    tar_writer = tarfile.open(mode="w", fileobj=tar_buffer)
+    tar_writer = tarfile.open(mode="w", fileobj=tar_buffer)  # noqa: SIM115
 
     # Ask Bazel where it keeps its externals.
     command = ["bazel", "info", "output_base"]
@@ -220,7 +220,7 @@ def do_main(args, platform):
 
     # Ensure we and any subprocesses are speaking UTF-8.
     locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
-    locale_keys = [k for k in os.environ.keys() if k.startswith("LC_")]
+    locale_keys = [k for k in os.environ if k.startswith("LC_")]
     for k in locale_keys:
         os.environ.pop(k)
     os.environ["LC_ALL"] = "en_US.UTF-8"
@@ -292,9 +292,8 @@ def do_main(args, platform):
         print(f"Version '{options.version}' conforms to PEP 440")
         return
 
-    if options.snopt_path != "git":
-        if not os.path.exists(options.snopt_path):
-            die(f"The snopt-file path '{options.snopt_path}' does not exist")
+    if options.snopt_path != "git" and not os.path.exists(options.snopt_path):
+        die(f"The snopt-file path '{options.snopt_path}' does not exist")
 
     if platform is not None:
         platform.build(options)

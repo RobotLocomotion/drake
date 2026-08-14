@@ -10,7 +10,7 @@ from pydrake.common.test_utilities import numpy_compare
 
 
 def _assert_equal(test, a, b):
-    if isinstance(a, np.ndarray) or isinstance(a, list):
+    if isinstance(a, (np.ndarray, list)):
         numpy_compare.assert_equal(a, b)
     elif isinstance(a, dict):
         test.assertEqual(a.keys(), b.keys())

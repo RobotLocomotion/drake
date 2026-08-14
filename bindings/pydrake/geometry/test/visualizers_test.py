@@ -461,12 +461,12 @@ class TestGeometryVisualizers(unittest.TestCase):
             meshcat.web_url() + "/favicon.ico",
         ]
         for good_url in good_urls:
-            with self.subTest(url=good_url):
+            with self.subTest(url=good_url):  # noqa: SIM117
                 with urllib.request.urlopen(good_url) as response:
                     self.assertTrue(response.read(1))
 
         bad_url = f"{good_url}/no_such_file"
-        with self.assertRaisesRegex(Exception, "HTTP.*404"):
+        with self.assertRaisesRegex(Exception, "HTTP.*404"):  # noqa: SIM117
             with urllib.request.urlopen(bad_url) as response:
                 response.read(1)
 

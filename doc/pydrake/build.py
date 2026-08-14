@@ -21,7 +21,7 @@ from pydrake.common import _MangledName
 def _get_submodules(name):
     prefix = name + "."
     result = []
-    for s_name in sys.modules.keys():
+    for s_name in sys.modules:
         if not s_name.startswith(prefix):
             continue
         sub = s_name[len(prefix) :]

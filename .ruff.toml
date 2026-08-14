@@ -27,6 +27,10 @@ ignore = [
     # this because we have more linters than just `ruff`, and their noqa marks
     # confuse this check.
     "RUF100",
+    # "Checks for if statements that can be replaced with bool." We have a
+    # handful of uses of these in our code, and all of them are written out
+    # longhand for clarity.
+    "SIM103",
     # "Checks for str.format calls that can be replaced with f-strings."
     # In many cases this is a good idea, but not universally.
     "UP032",
@@ -56,13 +60,6 @@ ignore = [
     "RUF012",
     "S102",
     "S110",
-    "SIM101",
-    "SIM102",
-    "SIM103",
-    "SIM115",
-    "SIM117",
-    "SIM118",
-    "SIM201",
     "TRY002",
     "TRY004",
     "TRY201",

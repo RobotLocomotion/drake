@@ -151,7 +151,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         # bodies and patches in the same order.
         self._body_fill_dict = {}
         X_WB_initial = RigidTransform.Identity()
-        for full_name in self._patch_Blist.keys():
+        for full_name in self._patch_Blist:
             patch_Wlist, view_colors = self._get_view_patches(
                 full_name, X_WB_initial
             )
@@ -373,7 +373,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             color = iter(
                 plt_cm.rainbow(np.linspace(0, 1, len(self._patch_Blist_colors)))
             )
-            for name in self._patch_Blist_colors.keys():
+            for name in self._patch_Blist_colors:
                 this_color = next(color)
                 patch_count = len(self._patch_Blist[name])
                 self._patch_Blist_colors[name] = [this_color] * patch_count

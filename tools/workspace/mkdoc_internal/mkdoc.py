@@ -713,7 +713,7 @@ def main():
         eprint("Syntax: mkdoc -output=<file> [.. a list of header files ..]")
         sys.exit(1)
 
-    f = open(output_filename, "w", encoding="utf-8")
+    f = open(output_filename, "w", encoding="utf-8")  # noqa: SIM115
 
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
     # otherwise Reviewable gets confused.
@@ -796,21 +796,23 @@ def main():
             raise RuntimeError("Parsing headers using the clang library failed")
         # If there is an error on line 1, that means the C++ standard library
         # include paths are broken.
-        if translation_unit.diagnostics:
-            if translation_unit.diagnostics[0].location.line == 1:
-                try:
-                    # Use '###' to dump Clang's include paths to stdout.
-                    index.parse("foo", parameters + ["-###"])
-                except Exception:
-                    pass
-                raise RuntimeError(
-                    "The operating system's C++ standard library is not "
-                    "installed correctly or is only partially installed. For "
-                    "example, libgcc-??-dev is installed but libstdc++-??-dev "
-                    "is not installed (the ?? indicates a version number). "
-                    "Try re-running Drake's install_prereqs, or maybe check "
-                    "your system and install anything that's missing by hand."
-                )
+        if (
+            translation_unit.diagnostics
+            and translation_unit.diagnostics[0].location.line == 1
+        ):
+            try:
+                # Use '###' to dump Clang's include paths to stdout.
+                index.parse("foo", parameters + ["-###"])
+            except Exception:
+                pass
+            raise RuntimeError(
+                "The operating system's C++ standard library is not "
+                "installed correctly or is only partially installed. For "
+                "example, libgcc-??-dev is installed but libstdc++-??-dev "
+                "is not installed (the ?? indicates a version number). "
+                "Try re-running Drake's install_prereqs, or maybe check "
+                "your system and install anything that's missing by hand."
+            )
         severities = [
             diagnostic.severity
             for diagnostic in translation_unit.diagnostics

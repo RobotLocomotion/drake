@@ -212,7 +212,7 @@ def _create_source_tar(path):
     Creates a tarball of the repository working tree.
     """
     print("[-] Creating source archive", end="", flush=True)
-    out = tarfile.open(path, "w")
+    out = tarfile.open(path, "w")  # noqa: SIM115
 
     # Walk the git root and archive almost every file we find.
     repo_dir = _git_root(resource_root)
@@ -313,10 +313,13 @@ def _build_image(target, identifier, version, options):
     if options.tag_stages:
         # Inspect Dockerfile, find stages, and build them.
         dockerfile = os.path.join(resource_root, "Dockerfile")
-        for line in open(dockerfile, encoding="utf-8"):
-            if line.startswith("FROM"):
-                stage = line.strip().split()[-1]
-                tag = _build_stage(target, args, tag_prefix=stage, stage=stage)
+        with open(dockerfile, encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("FROM"):
+                    stage = line.strip().split()[-1]
+                    tag = _build_stage(
+                        target, args, tag_prefix=stage, stage=stage
+                    )
     else:
         tag = _build_stage(target, args, tag_prefix=identifier)
         _images_to_remove.append(tag)
@@ -418,9 +421,11 @@ def build(options):
     # Collect set of wheels to be built.
     targets_to_build = []
     for t in targets:
-        if t.platform(BUILD).name in options.platforms:
-            if t.python_tag in options.python_versions:
-                targets_to_build.append(t)
+        if (
+            t.platform(BUILD).name in options.platforms
+            and t.python_tag in options.python_versions
+        ):
+            targets_to_build.append(t)
 
     # Check if there is anything to do.
     if not len(targets_to_build):

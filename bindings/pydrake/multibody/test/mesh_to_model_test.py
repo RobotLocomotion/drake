@@ -536,7 +536,10 @@ class TestMeshToModelProcess(unittest.TestCase):
         )
 
     def assert_files_equal(self, dut_path, ref_path):
-        self.assertEqual(open(dut_path).read(), open(ref_path).read())
+        self.assertEqual(
+            dut_path.read_text(encoding="utf-8"),
+            ref_path.read_text(encoding="utf-8"),
+        )
 
     def test_default_parameters(self):
         # Providing no command-line parameters should be equivalent to the
