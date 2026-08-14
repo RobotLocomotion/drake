@@ -231,13 +231,21 @@ def _create_tar_gz(*, git_sha, tmp_dir: str, version: str):
     output_path = f"{tmp_dir}/{output_name}"
     drake_root = Path(__file__).resolve().parent.parent.parent
     assert (drake_root / "MODULE.bazel").exists()
+    prefix = f"drake-{version[1:]}/"
+    package_version_filepath = (
+        f"{prefix}tools/install/libdrake/PACKAGE_VERSION.TXT"
+    )
+    add_virtual_file = (
+        f"--add-virtual-file={package_version_filepath}:{version[1:]} {git_sha}"
+    )
     subprocess.check_call(
         [
             "git",
             "archive",
             "--format=tar.gz",
             f"--output={output_path}",
-            f"--prefix=drake-{version[1:]}/",
+            f"--prefix={prefix}",
+            add_virtual_file,
             git_sha,
         ],
         cwd=drake_root,

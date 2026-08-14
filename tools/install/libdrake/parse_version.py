@@ -21,51 +21,62 @@ def _check_version(version):
     )
 
 
-# Extract full version and version parts from version stamp file.
-#
-# If a version is specified, the input file should contain a line starting with
+# Validate a full version identifier and split it into four integer parts,
+# padding to four. Any pre-release, 'dev', 'post', and/or local identifier (the
+# portion following a '+') is discarded. Raises ValueError if the version is
+# invalid or carries an (unsupported) epoch.
+def _split_version(version_full):
+    if not _check_version(version_full):
+        raise ValueError(f"Version {version_full} is not valid")
+    if re.match(r"^[1-9][0-9]*!", version_full):
+        raise ValueError(
+            f"Version {version_full} contains an epoch,"
+            " which is not supported at this time"
+        )
+
+    m = re.match(r"^[0-9.]+", version_full)
+    assert m
+
+    # Note: user and continuous builds may have more than three parts.
+    version_parts = m.group(0).split(".")
+    if len(version_parts) < 4:
+        if len(version_parts) == 3:
+            version_parts.append(0)
+        else:
+            raise ValueError(
+                f"Version {version_full} does not have enough parts"
+            )
+
+    return tuple(map(int, version_parts))
+
+
+# Extract full version and version parts from a version stamp file. If a
+# version is specified, the input file should contain a line starting with
 # 'STABLE_VERSION', which should be three space-separated words; the tag, the
-# full version, and the git SHA.
-#
-# This extracts the (full) version identifier, as well as the individual
-# numeric parts (separated by '.') of the version. Any pre-release, 'dev',
-# 'post', and/or local identifier (i.e. portion following a '+') is discarded
-# when extracting the version parts. If version information is not found,
-# this returns (None, None).
+# full version, and the git SHA. If version information is not found, this
+# returns (None, None).
 def _parse_stamp(stamp_file):
-    # Read input.
     for line in stamp_file:
         if line.startswith(VERSION_TAG):
             tag, version_full, _git_sha = line.strip().split()
             assert tag == VERSION_TAG
-
-            # Check version format and extract numerical components.
-            if not _check_version(version_full):
-                raise ValueError(f"Version {version_full} is not valid")
-            if re.match(r"^[1-9][0-9]*!", version_full):
-                raise ValueError(
-                    f"Version {version_full} contains an epoch,"
-                    " which is not supported at this time"
-                )
-
-            m = re.match(r"^[0-9.]+", version_full)
-            assert m
-
-            # Check for sufficient version parts (note: user and continuous
-            # builds may have more than three parts) and pad to ensure we
-            # always have four.
-            version_parts = m.group(0).split(".")
-            if len(version_parts) < 4:
-                if len(version_parts) == 3:
-                    version_parts.append(0)
-                else:
-                    raise ValueError(
-                        f"Version {version_full} does not have enough parts"
-                    )
-
-            return version_full, tuple(map(int, version_parts))
+            return version_full, _split_version(version_full)
 
     return None, None
+
+
+# Extract full version and version parts from a source archive's
+# PACKAGE_VERSION.TXT, which holds a single "<version> <sha>" line. Used only
+# when the stamp is absent (an unstamped Bazel build from a tarball). Returns
+# (None, None) if the file is absent or empty.
+def _parse_package_version(package_version_file):
+    if package_version_file is None:
+        return None, None
+    content = package_version_file.read().strip()
+    if not content:
+        return None, None
+    version_full = content.split()[0]
+    return version_full, _split_version(version_full)
 
 
 # Write version information to CMake cache-style script.
@@ -97,9 +108,21 @@ def main():
     parser.add_argument(
         "output", type=argparse.FileType("w"), help="Path to output file."
     )
+    parser.add_argument(
+        "--package_version_file",
+        type=argparse.FileType("r"),
+        default=None,
+        help="Path to a source archive's PACKAGE_VERSION.TXT, used only when "
+        "the stamp is absent (i.e. an unstamped Bazel build from a tarball).",
+    )
     args = parser.parse_args()
 
-    _write_version_info(args.output, *_parse_stamp(args.input))
+    version_full, version_parts = _parse_stamp(args.input)
+    if version_full is None:
+        version_full, version_parts = _parse_package_version(
+            args.package_version_file
+        )
+    _write_version_info(args.output, version_full, version_parts)
 
     return 0
 
