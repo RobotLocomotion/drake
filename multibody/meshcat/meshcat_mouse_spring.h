@@ -38,12 +38,27 @@ output_ports:
 The `body_poses` and `body_spatial_velocities` inputs come from the same-named
 MultibodyPlant output ports.
 
-With `m` the dragged body's mass, the applied force (in the world frame) is
-`m * stiffness * (target - anchor) - m * sqrt(stiffness) * v_anchor`, where
-`anchor` is the grabbed point on the body, `target` is the cursor position, and
-`v_anchor` is the world velocity of the grabbed point. Scaling by `m` makes the
-translational response frequency `sqrt(stiffness)` and damping ratio independent
-of the body's mass.
+With `m` the dragged body's mass, the applied force is `f = m⋅a`, where:
+  - `a = stiffness * d - sqrt(stiffness) * v_anchor`,
+  - `d` is the spring's displacement `target - anchor`, with its magnitude
+    capped at `max_displacement` (see below),
+  - `anchor` is the grabbed point on the body,
+  - `target` is the cursor position, and
+  - `v_anchor` is the world velocity of the grabbed point.
+All spatial quantities are measured and expressed in the world frame.
+
+Dragging in the UI can easily lead to massive values for |target - anchor|;
+the browser goes on tracking the cursor when it leaves the viewport. So, the
+spring component can get arbitrarily large (accelerating the body to extreme
+speeds). These extreme speeds confound the contact solver, leading to tunneling
+and NaNs.
+
+We cap the spring's *displacement* instead of the overall acceleration, because
+we can realize a zero acceleration at arbitrarily high speeds -- it just
+requires the damping term to be equal in magnitude to the spring term. So, we'd
+still get tunneling and NaNs. Limiting the spring's displacement limits the
+impulse implied by the drag. And as it is capped, there is a natural equilibrium
+for the drag term that ultimately limits the acceleration.
 
 When no drag is in progress the output is empty. Any body with geometry
 published to Meshcat by a geometry::MeshcatVisualizer can be dragged; the world
@@ -55,7 +70,13 @@ class MeshcatMouseSpring final : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatMouseSpring);
 
   /** The default mass-normalized spring stiffness, in 1/s². */
-  static constexpr double kDefaultStiffness = 1000.0;
+  static constexpr double kDefaultStiffness = 100.0;
+
+  /** The default cap on the spring's displacement, in m. At #kDefaultStiffness,
+  it is invisible during ordinary dragging (where the body tracks the cursor
+  closely) and engages only when the cursor is flung far from the manipulated
+  body. */
+  static constexpr double kDefaultMaxDisplacement = 1.0;
 
   /** Constructs a %MeshcatMouseSpring for the given `plant`.
 
@@ -74,13 +95,18 @@ class MeshcatMouseSpring final : public systems::LeafSystem<double> {
   @param stiffness The mass-normalized spring stiffness, in 1/s²; see the class
   overview for the force it produces.
 
+  @param max_displacement The cap on the spring's displacement magnitude, in
+  m; see the class overview.
+
   @pre plant->is_finalized() is true.
   @pre plant is registered as a geometry source with scene_graph.
-  @pre finite stiffness >= 0. */
+  @pre finite stiffness >= 0.
+  @pre finite max_displacement > 0. */
   MeshcatMouseSpring(std::shared_ptr<geometry::Meshcat> meshcat,
                      const MultibodyPlant<double>* plant,
                      const geometry::SceneGraph<double>& scene_graph,
-                     double stiffness = kDefaultStiffness);
+                     double stiffness = kDefaultStiffness,
+                     double max_displacement = kDefaultMaxDisplacement);
 
   ~MeshcatMouseSpring() final;
 
@@ -116,7 +142,8 @@ class MeshcatMouseSpring final : public systems::LeafSystem<double> {
       const MultibodyPlant<double>* plant,
       const geometry::SceneGraph<double>& scene_graph,
       std::shared_ptr<geometry::Meshcat> meshcat,
-      double stiffness = kDefaultStiffness);
+      double stiffness = kDefaultStiffness,
+      double max_displacement = kDefaultMaxDisplacement);
 
  private:
   friend class MeshcatMouseSpringTester;
@@ -141,6 +168,7 @@ class MeshcatMouseSpring final : public systems::LeafSystem<double> {
   std::shared_ptr<geometry::Meshcat> meshcat_;
   const MultibodyPlant<double>& plant_;
   const double stiffness_;
+  const double max_displacement_;
 
   // Maps each (non-world) body's scoped frame name as it appears in the Meshcat
   // scene tree (e.g. "my_model/my_body", or just "my_body" for the default

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cctype>
+#include <cmath>
 #include <exception>
 #include <fstream>
 #include <functional>
@@ -70,6 +71,13 @@ template <typename Mapping>
       fmt::format("Meshcat does not have any {} named {}."
                   " The registered {} names are ({}).",
                   thing, name, thing, fmt::join(keys, ", ")));
+}
+
+// Don't trust the message over the wire to not contain NaNs.
+bool AreAllFinite(const std::vector<double>& values) {
+  return std::all_of(values.begin(), values.end(), [](double value) {
+    return std::isfinite(value);
+  });
 }
 
 constexpr static bool kSsl = false;
@@ -2330,13 +2338,13 @@ class Meshcat::Impl {
     DRAKE_DEMAND(new_count >= 0);
     DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
     if (ws == camera_pose_source_ || ws == mouse_drag_source_) {
+      // Clear out any state related to controls signals.
       std::lock_guard<std::mutex> lock(controls_mutex_);
       if (ws == camera_pose_source_) {
         camera_pose_source_ = nullptr;
         camera_pose_ = std::nullopt;
       }
       if (ws == mouse_drag_source_) {
-        // If a browser disconnects mid-drag, don't leave the drag "stuck on".
         mouse_drag_source_ = nullptr;
         mouse_drag_ = std::nullopt;
       }
@@ -2463,7 +2471,8 @@ class Meshcat::Impl {
       return;
     }
     if (data.type == "mouse_drag") {
-      if (data.drag_anchor.size() == 3 && data.drag_target.size() == 3) {
+      if (data.drag_anchor.size() == 3 && data.drag_target.size() == 3 &&
+          AreAllFinite(data.drag_anchor) && AreAllFinite(data.drag_target)) {
         Meshcat::VirtualSpringKinematics drag;
         drag.path = std::move(data.name);
         drag.body_point_in_world = Eigen::Vector3d(
@@ -2473,7 +2482,12 @@ class Meshcat::Impl {
         mouse_drag_source_ = ws;
         mouse_drag_ = std::move(drag);
       } else {
-        // An empty payload signals the end of a drag (e.g., mouse release).
+        // TODO(SeanCurtis-TRI): We end up here for more than intended "drag
+        // ended" messages (malformed messages). Consider providing some
+        // feedback about "bad" messages if that seems to be a real problem.
+
+        // An empty payload (e.g., mouse release) and malformed messages signal
+        // the end of a drag.
         mouse_drag_source_ = nullptr;
         mouse_drag_ = std::nullopt;
       }

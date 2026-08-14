@@ -407,13 +407,27 @@ connections.
 The ``body_poses`` and ``body_spatial_velocities`` inputs come from
 the same-named MultibodyPlant output ports.
 
-With ``m`` the dragged body's mass, the applied force (in the world
-frame) is ``m * stiffness * (target - anchor) - m * sqrt(stiffness) *
-v_anchor``, where ``anchor`` is the grabbed point on the body,
-``target`` is the cursor position, and ``v_anchor`` is the world
-velocity of the grabbed point. Scaling by ``m`` makes the
-translational response frequency ``sqrt(stiffness)`` and damping ratio
-independent of the body's mass.
+With ``m`` the dragged body's mass, the applied force is ``f = m⋅a``,
+where: - ``a = stiffness * d - sqrt(stiffness) * v_anchor``, - `d` is
+the spring's displacement ``target - anchor``, with its magnitude
+capped at ``max_displacement`` (see below), - ``anchor`` is the
+grabbed point on the body, - ``target`` is the cursor position, and -
+``v_anchor`` is the world velocity of the grabbed point. All spatial
+quantities are measured and expressed in the world frame.
+
+Dragging in the UI can easily lead to massive values for |target -
+anchor|; the browser goes on tracking the cursor when it leaves the
+viewport. So, the spring component can get arbitrarily large
+(accelerating the body to extreme speeds). These extreme speeds
+confound the contact solver, leading to tunneling and NaNs.
+
+We cap the spring's *displacement* instead of the overall
+acceleration, because we can realize a zero acceleration at
+arbitrarily high speeds -- it just requires the damping term to be
+equal in magnitude to the spring term. So, we'd still get tunneling
+and NaNs. Limiting the spring's displacement limits the impulse
+implied by the drag. And as it is capped, there is a natural
+equilibrium for the drag term that ultimately limits the acceleration.
 
 When no drag is in progress the output is empty. Any body with
 geometry published to Meshcat by a geometry∷MeshcatVisualizer can be
@@ -463,6 +477,10 @@ Parameter ``stiffness``:
     The mass-normalized spring stiffness, in 1/s²; see the class
     overview for the force it produces.
 
+Parameter ``max_displacement``:
+    The cap on the spring's displacement magnitude, in m; see the
+    class overview.
+
 Precondition:
     plant->is_finalized() is true.
 
@@ -470,7 +488,10 @@ Precondition:
     plant is registered as a geometry source with scene_graph.
 
 Precondition:
-    finite stiffness >= 0.)""";
+    finite stiffness >= 0.
+
+Precondition:
+    finite max_displacement > 0.)""";
           } ctor;
           // Symbol: drake::multibody::meshcat::MeshcatMouseSpring::get_applied_spatial_force_output_port
           struct /* get_applied_spatial_force_output_port */ {
