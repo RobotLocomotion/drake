@@ -2346,6 +2346,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///  - **Surface displacement always initializes to zero**. This state is
   ///    just a visualization affordance; there is no value in setting it to a
   ///    non-zero value (even in the context of state randomization).
+  ///
+  /// #### Visualization
+  ///
+  /// Surface velocity can be visualized to a limited degree. The moving
+  /// surface will _not_ be visible in the systems::sensors::RgbdSensor
+  /// (geometry::RenderEngine does not currently support it). However, it will
+  /// be visible when visualized with geometry::MeshcatVisualizer. See its
+  /// documentation for more details.
   /// @{
 
   /// Sets the surface-velocity axis for `body` to `axis_B`, expressed in the
