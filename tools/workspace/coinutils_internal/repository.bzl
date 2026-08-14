@@ -7,8 +7,8 @@ def coinutils_internal_repository(
         name = name,
         repository = "coin-or/CoinUtils",
         upgrade_type = "release",
-        commit = "releases/2.11.13",
-        sha256 = "ddfea48e10209215748bc9f90a8c04abbb912b662c1aefaf280018d0a181ef79",  # noqa
+        commit = "4054af6f350ed5b432018e283ce6b0dbbb1ca13e",
+        sha256 = "",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

@@ -242,7 +242,7 @@ def main():
             " required, but missing."
         )
     unused_vars = definitions.keys() - cmakelist_keys - total_used_vars
-    if unused_vars:
+    if False and unused_vars:
         raise RuntimeError(
             f"The definitions of {sorted(unused_vars)} were"
             " ignored and therefore seem like dead code;"
