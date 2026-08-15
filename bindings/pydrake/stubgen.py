@@ -8,8 +8,6 @@ import subprocess
 import sys
 import tempfile
 
-from mypy import stubgen
-
 
 def _pydrake_modules():
     """Returns the list[str] of all pydrake module names."""
@@ -98,17 +96,52 @@ def _actual_main():
         if source.endswith(".py"):
             native_modules.remove(name)
 
-    # Run stubgen. It writes junk in the current directory, so we need to run
-    # it from a safe place.
-    with tempfile.TemporaryDirectory(prefix="drake_stubgen_") as temp:
-        os.chdir(temp)
-        args = ["--output=."] + [f"--module={name}" for name in native_modules]
-        returncode = stubgen.main(args=args) or 0
-        assert returncode == 0, returncode
+    binder = sys.modules["pydrake.common"]._binder
+    if binder == "pybind11":
+        from mypy import stubgen
 
-        # The generation was successful. Copy the *.pyi files to output.
-        pyi_generated = _pyi_generated(Path(temp))
-        _copy_pyi(pyi_generated, output_root, pyi_outputs)
+        # Run MyPy stubgen. It writes junk in the current directory, so we need
+        # to run it from a safe place.
+        with tempfile.TemporaryDirectory(prefix="drake_stubgen_") as temp:
+            os.chdir(temp)
+            args = ["--output=."] + [
+                f"--module={name}" for name in native_modules
+            ]
+            returncode = stubgen.main(args=args) or 0
+            assert returncode == 0, returncode
+
+            # The generation was successful. Copy the *.pyi files to output.
+            pyi_generated = _pyi_generated(Path(temp))
+            _copy_pyi(pyi_generated, output_root, pyi_outputs)
+    else:
+        from nanobind.stubgen import StubGen
+
+        # Run Nanobind stubgen. For consistency with _copy_pyi, it's easiest
+        # to use a temp directory. After we drop pybind11 we can simplify this.
+        with tempfile.TemporaryDirectory(prefix="drake_stubgen_") as temp:
+            for name in native_modules:
+                module = sys.modules[name]
+                stubgen = StubGen(module=module)
+                stubgen.put(module)
+                content = stubgen.get()
+                if name in {
+                    "pydrake.common",
+                    "pydrake.geometry",
+                    "pydrake.multibody.benchmarks",
+                    "pydrake.planning",
+                }:
+                    relative_path = name.replace(".", "/") + "/__init__.pyi"
+                else:
+                    relative_path = name.replace(".", "/") + ".pyi"
+                print(f"Creating at {relative_path}")
+                output_path = Path(temp) / relative_path
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(content, encoding="utf-8")
+
+            # The generation was successful. Copy the *.pyi files to output.
+            os.chdir(temp)
+            pyi_generated = _pyi_generated(Path(temp))
+            _copy_pyi(pyi_generated, output_root, pyi_outputs)
 
 
 def _wrapper_main():

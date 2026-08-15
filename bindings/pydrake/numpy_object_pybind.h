@@ -30,7 +30,7 @@ struct pydrake_numpy_dtype_object_type_caster {
 
   NB_TYPE_CASTER(
       T, const_name("numpy.ndarray[") +
-             concat_maybe(const_name("dtype=") + PlainScalarCaster::Name,
+             concat_maybe(const_name("dtype=object"),
                  const_name<kCompileTime1D>(shape<kCompileTime1DShape>::name,
                      shape<T::RowsAtCompileTime, T::ColsAtCompileTime>::name),
                  dtype_const_name<Scalar>::name) +

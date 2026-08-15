@@ -408,6 +408,7 @@ drake_py_binary(
         ":all_py",
         "@stable_baselines3_internal//:stable_baselines3",
         mypy_requirement("mypy"),
+        "@module_nanobind//:stubgen_lib",
     ],
 )
 

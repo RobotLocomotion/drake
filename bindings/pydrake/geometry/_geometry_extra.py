@@ -108,8 +108,14 @@ def _add_extraneous_repr_functions():
         # Convert array to list to ease converting repr to mesh type.
         return f"{type_name}({data_param}, scale3={mesh.scale3().tolist()!r})"
 
-    Mesh.__repr__ = lambda x: mesh_or_convex_repr(x, "Mesh")
-    Convex.__repr__ = lambda x: mesh_or_convex_repr(x, "Convex")
+    def mesh_repr(mesh):
+        return mesh_or_convex_repr(mesh, "Mesh")
+
+    def convex_repr(convex):
+        return mesh_or_convex_repr(convex, "Convex")
+
+    Mesh.__repr__ = mesh_repr
+    Convex.__repr__ = convex_repr
 
 
 _add_extraneous_repr_functions()
