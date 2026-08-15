@@ -137,6 +137,19 @@ struct __attribute__((visibility("hidden"))) type_caster_wrapped {
   template <typename U>
   static py::handle from_cpp(
       U&& value, py_rvp policy, py::detail::cleanup_list* cleanup) noexcept {
+    if (policy == py_rvp::reference || policy == py_rvp::reference_internal) {
+      // N.B. We must declare a local `static constexpr` here to prevent
+      // linking errors. This does not appear achievable with
+      // `constexpr char[]`, so we use `py::detail::descr`.
+      // See `pybind11/pybind11.h`, `cpp_function::initialize(...)` for an
+      // example.
+      static constexpr auto original_name = Wrapper::original_name;
+      PyErr_SetString(PyExc_TypeError,
+          fmt::format("Can only pass {} by value.", original_name.text)
+              .c_str());
+
+      return py::handle();
+    }
     py::object out = steal(WrappedTypeCaster::from_cpp(
         Wrapper::wrap(std::forward<U>(value)), policy, cleanup));
     return out.release();
