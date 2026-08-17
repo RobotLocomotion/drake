@@ -1,0 +1,16 @@
+[workspace] Use host Xcode SDK when building rust code
+
+We don't want the hermetic sdkroot. It might differ from the host.
+
+We should discuss with upstream to find a better solution.
+
+--- rust/private/rust.bzl
++++ rust/private/rust.bzl
+@@ -786,7 +786,6 @@ _COMMON_ATTRS = {
+     "macos_sdkroot": attr.label(
+         doc = "Optional macOS SDK root to expose to rustc as SDKROOT when linking macOS targets.",
+         allow_files = True,
+-        default = Label("//rust/private:default_macos_sdkroot"),
+     ),
+     "deps": attr.label_list(
+         doc = dedent("""\
