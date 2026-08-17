@@ -1,29 +1,24 @@
 # This file contains data types used by the macOS-specific build logic. See
 # //tools/wheel:builder for the user interface.
 
-from .common import PythonBinder
+from dataclasses import dataclass
+
+from .common import PythonBinder, PythonTarget
 
 
-class PythonTarget:
+@dataclass
+class Target:
     """
-    A representation of a Python target, constructed from the binder and Python
-    version number tuple.
+    A representation of a build target, constructed from the binder and Python
+    target.
 
     Example:
-        PythonTarget(PythonBinder.NANOBIND, 3, 2, 1)
+        Target(PythonBinder.NANOBIND, PythonTarget(3, 2, 1))
 
     Members:
         python_binder: Which binder to use.
-        version_tuple: Target version as a tuple, e.g. (3, 2, 1)
-        version_full: Target full version as a string, e.g. '3.2.1'
-        version: Target major/minor version as a string, e.g. '3.2'
-        tag: Target major/minor version without separators, e.g. '32'
+        python: Which version of Python to use.
     """
 
-    def __init__(self, python_binder: PythonBinder, *version_parts: int):
-        self.python_binder = python_binder
-        pv_parts = tuple(map(str, version_parts))
-        self.version_tuple = tuple(version_parts)
-        self.version_full = ".".join(pv_parts)
-        self.version = ".".join(pv_parts[:2])
-        self.tag = "".join(pv_parts[:2])
+    python_binder: PythonBinder
+    python: PythonTarget
