@@ -260,7 +260,9 @@ drake_cc_library(
         ":detail_sdf_diagnostic",
         ":detail_sdf_geometry",
         ":detail_urdf_parser",
+        "//geometry:proximity_properties",
         "//multibody/plant",
+        "@fmt",
         "@sdformat_internal//:sdformat",
     ],
 )
@@ -624,6 +626,7 @@ drake_cc_googletest(
         ":detail_sdf_parser",
         "//common:find_resource",
         "//common/test_utilities",
+        "//geometry:make_mesh_for_deformable",
     ],
 )
 

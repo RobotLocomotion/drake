@@ -162,14 +162,20 @@ requirements that must be satisfied:
 
 - **Exactly one `<collision>` element**: The `<collision>` tag must be present,
   but more than one `<collision>` tag is forbidden.
-- **Geometry restriction**: the `<collision>/<geometry>` must contain a single
-  `<mesh>` whose URI points to a `.vtk` file that specifies a tetrahedral mesh;
-  primitive shapes are not yet supported.  The geometry is used for both
-  collision and dynamics.
+- **Geometry restriction**: the `<collision>/<geometry>` must contain either a
+  single `<mesh>` whose URI points to a `.vtk` file that specifies a
+  tetrahedral mesh, or a single `<sphere>`. Other primitive shapes are not yet
+  supported. The geometry is used for both collision and dynamics.
+- **Resolution hint**: a primitive shape is tetrahedralized when it is
+  registered, so its `<collision>` must specify a positive
+  `<drake:mesh_resolution_hint>` (see @ref tag_drake_mesh_resolution_hint) to
+  control the resolution of the resulting mesh. Omitting it is an error.
+  Conversely, a `<mesh>` already *is* the tetrahedral mesh and is used as
+  given, so a hint specified alongside one is ignored with a warning.
 - **Limited proximity properties**: inside `<collision>`, the only Drake
-  proximity tag recognized are `<drake:mu_dynamic>`,
-  `<drake:hunt_crossley_dissipation>`, and `drake:relaxation_time>`.
-  All other tags are not allowed.
+  proximity tags recognized are `<drake:mu_dynamic>`,
+  `<drake:hunt_crossley_dissipation>`, `<drake:relaxation_time>`, and
+  `<drake:mesh_resolution_hint>`. All other tags are not allowed.
 - **At most one `<visual>` element**: The default visual representation of the
   deformable body is the surface of the simulated tetrahedral mesh. However,
   a single `<visual>` element may be present to provide an alternative visual
@@ -1449,6 +1455,13 @@ generated from geometric primitives (sphere, cylinder, capsule, etc.). The
 exact semantics depend on the geometry being generated. Within some practical
 limits, smaller values will select shorter edge lengths and a finer mesh, larger
 values will select longer edge lengths and a coarser mesh.
+
+This tag serves the same purpose for a deformable link (see
+@ref tag_deformable_link_requirements), selecting the resolution of the
+tetrahedral mesh generated for a primitive shape. Note that for a deformable
+body that mesh is also the FEM discretization, so the value affects the
+dynamics and not merely contact. It is required for a primitive shape, rather
+than defaulted.
 
 @see @ref tag_drake_proximity_properties, @ref hug_properties
 
