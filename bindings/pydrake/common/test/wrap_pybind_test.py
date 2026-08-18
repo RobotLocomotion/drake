@@ -11,6 +11,7 @@ from pydrake.common.test.wrap_test_util import (
     MyContainerUniquePtr,
     MyValue,
     NotCopyable,
+    _binder,
 )
 
 
@@ -54,12 +55,30 @@ class TestWrapPybind(unittest.TestCase):
         value = MakeTypeConversionExample()
         self.assertIsInstance(value, str)
         self.assertEqual(value, "hello")
-        with self.assertRaises(RuntimeError) as cm:
+        with self.assertRaises((RuntimeError, TypeError)) as cm:
             MakeTypeConversionExampleBadRvp()
         self.assertEqual(
             str(cm.exception), "Can only pass TypeConversionExample by value."
         )
         self.assertTrue(CheckTypeConversionExample(obj=value))
+
+    @unittest.skipIf(
+        _binder == "nanobind",
+        "When WrapCallbacks is missed when writing a binding, nanobind aborts "
+        "instead of raises like pybind11 did. Therefore, we can't easily write "
+        "a unit test that checks the behavior. That's probably okay, since in "
+        "either case the binding's unit test would fail, just more loudly with "
+        "nanobind.",
+    )
+    def test_wrap_callbacks_lack_detected(self):
+        def callback(value):
+            self.fail()
+
+        # If we call our test function via a binding that does not
+        # use WrapCallbacks(), we get an error about non-copyable types.
+        with self.assertRaises(RuntimeError) as cm:
+            FunctionNeedsWrapCallbacks_Bad(callback)
+        self.assertIn("non-copyable", str(cm.exception))
 
     def test_wrap_callbacks(self):
         call_count = 0
@@ -68,12 +87,6 @@ class TestWrapPybind(unittest.TestCase):
             nonlocal call_count
             call_count += 1
             self.assertIsInstance(value, NotCopyable)
-
-        # If we call our test function via a binding that does not
-        # use WrapCallbacks(), we get an error about non-copyable types.
-        with self.assertRaises(RuntimeError) as cm:
-            FunctionNeedsWrapCallbacks_Bad(callback)
-        self.assertIn("non-copyable", str(cm.exception))
 
         # Using the function with WrapCallbacks() should function as intended.
         loopback = FunctionNeedsWrapCallbacks(callback)
