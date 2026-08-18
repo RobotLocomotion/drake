@@ -212,7 +212,10 @@ Adjusting open-source dependencies:
 * `DRAKE_PYTHON_BINDER` (default `pybind11`). Can be set to either `pybind11`
   or `nanobind` to choose which binding library to use when compiling `pydrake`
   bindings.
-  (Support for `nanobind` is currently experimental / unstable.)
+  * Drake's default will change to `nanobind` around 2026-12-01.
+  * Using `pybind11` is deprecated and will be removed from Drake on or after
+    2027-03-01. For help, see our
+    [porting guide](https://github.com/RobotLocomotion/drake/issues/21572#porting-guide).
 
 Adjusting closed-source (commercial) software dependencies:
 
