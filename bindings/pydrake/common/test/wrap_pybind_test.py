@@ -58,8 +58,7 @@ class TestWrapPybind(unittest.TestCase):
         with self.assertRaises((RuntimeError, TypeError)) as cm:
             MakeTypeConversionExampleBadRvp()
         self.assertEqual(
-            str(cm.exception),
-            "Can only pass TypeConversionExample by value.",
+            str(cm.exception), "Can only pass TypeConversionExample by value."
         )
         self.assertTrue(CheckTypeConversionExample(obj=value))
 
