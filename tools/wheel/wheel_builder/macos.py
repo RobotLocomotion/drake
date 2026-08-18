@@ -10,6 +10,7 @@ import tempfile
 
 from .common import (
     PythonBinder,
+    PythonTarget,
     build_root,
     create_snopt_tgz,
     die,
@@ -20,14 +21,14 @@ from .common import (
     wheel_name,
     wheelhouse,
 )
-from .macos_types import PythonTarget
+from .macos_types import Target
 
 # This is the complete set of defined targets (i.e. potential wheels). By
 # default, all targets are built, but the user may down-select from this set.
 # On macOS (unlike Linux), this is just the set of Python versions targeted.
 #
 # These should be kept in sync with `setup/mac/Brewfile-developer`.
-PYTHON_TARGETS = (
+TARGETS = (
     # NOTE: adding or removing a python version?  Please also check the
     # following locations for updates:
     # * the artifact tallies in doc/_pages/release_playbook.md (search
@@ -40,21 +41,21 @@ PYTHON_TARGETS = (
     # * the Python versions supported by MOSEK, in tools/wheel/setup.py. If
     #   there is any Python version supported by Drake, but not MOSEK, a note
     #   should be added to the aforementioned installation documentation.
-    PythonTarget(PythonBinder.NANOBIND, 3, 13),
-    PythonTarget(PythonBinder.PYBIND11, 3, 13),
-    PythonTarget(PythonBinder.PYBIND11, 3, 14),
+    Target(PythonBinder.NANOBIND, PythonTarget(3, 13)),
+    Target(PythonBinder.PYBIND11, PythonTarget(3, 13)),
+    Target(PythonBinder.PYBIND11, PythonTarget(3, 14)),
 )
 
 
-def _find_wheel(path, version, python_target):
+def _find_wheel(path, version, target):
     """
     Returns name of built wheel. Uses `glob` to find it, since trying to
     replicate the logic which determines the macOS platform name is not
     accessible and is very non-trivial to replicate.
     """
     pattern = wheel_name(
-        python_binder=python_target.python_binder,
-        python_version=python_target.tag,
+        python_binder=target.python_binder,
+        python_version=target.python.tag,
         wheel_version=version,
         wheel_platform="*",
     )
@@ -79,7 +80,7 @@ def _assert_isdir(path, name):
         die(f"{name} '{path}' is not a valid directory")
 
 
-def _test_wheel(wheel, python_target, env):
+def _test_wheel(wheel, target, env):
     """
     Runs the test script on `wheel`.
     """
@@ -87,12 +88,12 @@ def _test_wheel(wheel, python_target, env):
         resource_root, "macos", "provision-test-python.sh"
     )
     subprocess.check_call(
-        ["bash", setup_script, python_target.version], env=env
+        ["bash", setup_script, target.python.version], env=env
     )
 
     test_python_venv = os.path.join(test_root, "python")
     os.symlink(
-        os.path.join(test_root, f"python{python_target.version}"),
+        os.path.join(test_root, f"python{target.python.version}"),
         test_python_venv,
     )
 
@@ -119,8 +120,8 @@ def build(options):
 
     # Collect set of wheels to be built.
     targets_to_build = []
-    for t in PYTHON_TARGETS:
-        if t.tag in options.python_versions:
+    for t in TARGETS:
+        if t.python.tag in options.python_versions:
             targets_to_build.append(t)
 
     # Check if there is anything to do.
@@ -170,19 +171,19 @@ def build(options):
     create_snopt_tgz(snopt_path=options.snopt_path, output=snopt_tgz)
 
     # Build the wheel(s).
-    for python_target in targets_to_build:
+    for target in targets_to_build:
         version = edit_wheel_version_for_binder(
-            python_target.python_binder, options.version
+            target.python_binder, options.version
         )
-        environment["DRAKE_PYTHON_BINDER"] = python_target.python_binder.value
+        environment["DRAKE_PYTHON_BINDER"] = target.python_binder.value
         environment["DRAKE_IS_ABI3_WHEEL"] = (
-            "1" if python_target.python_binder == PythonBinder.NANOBIND else "0"
+            "1" if target.python_binder == PythonBinder.NANOBIND else "0"
         )
 
         build_script = os.path.join(resource_root, "macos", "build-wheel.sh")
         build_command = ["bash", build_script]
         build_command.append(version)
-        build_command.append(python_target.version)
+        build_command.append(target.python.version)
 
         subprocess.check_call(build_command, env=environment)
 
@@ -190,11 +191,11 @@ def build(options):
         wheel = _find_wheel(
             path=wheelhouse,
             version=version,
-            python_target=python_target,
+            target=target,
         )
 
         if options.test:
-            _test_wheel(wheel, python_target=python_target, env=environment)
+            _test_wheel(wheel, target=target, env=environment)
 
         if options.extract:
             shutil.copy2(wheel, options.output_dir)
@@ -231,7 +232,7 @@ def add_selection_arguments(parser):
         "--python",
         dest="python_versions",
         metavar="VERSIONS",
-        default=",".join(sorted({t.tag for t in PYTHON_TARGETS})),
+        default=",".join(sorted({t.python.tag for t in TARGETS})),
         help=(
             "python version(s) to build; "
             "separate with ',' (default: %(default)s)"
