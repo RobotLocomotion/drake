@@ -48,13 +48,14 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
 #else
   bool is_new{false};
   PyObject* result{};
-  auto* bound_type = drake::internal::GetTypeInfoAlias(&ptr.info);
+  const std::type_info* bound_type =
+      drake::internal::GetTypeInfoAlias(&ptr.info);
   if (ptr.is_polymorphic) {
-    result = py::detail::nb_type_put_p(bound_type, &ptr.info,
+    result = py::detail::nb_type_put(bound_type, &ptr.info,
         const_cast<void*>(ptr.raw), py_rvp::reference, nullptr, &is_new);
   } else {
-    result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
-        py_rvp::reference, nullptr, &is_new);
+    result = py::detail::nb_type_put(&ptr.info, nullptr,
+        const_cast<void*>(ptr.raw), py_rvp::reference, nullptr, &is_new);
   }
   if (is_new) {
     py::object delete_me = py::steal(result);

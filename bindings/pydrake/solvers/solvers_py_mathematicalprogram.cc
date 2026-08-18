@@ -187,7 +187,7 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
 // pybind11 trampoline class to permit overriding virtual functions in Python.
 class PySolverInterface : public solvers::SolverInterface {
  public:
-  NB_TRAMPOLINE(solvers::SolverInterface, 6);
+  NB_TRAMPOLINE(solvers::SolverInterface);
   using Base = solvers::SolverInterface;
 
   PySolverInterface() : Base() {}

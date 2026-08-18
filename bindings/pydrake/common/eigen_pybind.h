@@ -135,7 +135,7 @@ struct type_caster<drake::EigenPtr<T>> {
   static constexpr auto Name =
       const_name("Optional[") + InnerCaster::Name + const_name("]");
 
-  bool from_python(handle src, uint8_t flags, cleanup_list* cleanup) noexcept {
+  bool from_python(handle src, uint32_t flags, cleanup_list* cleanup) noexcept {
     if (src.ptr() == Py_None) {
       value = Value(nullptr);
       return true;
