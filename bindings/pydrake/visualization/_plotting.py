@@ -10,7 +10,7 @@ from pydrake.solvers import MathematicalProgram, Solve
 from pydrake.symbolic import Evaluate, Jacobian, Polynomial
 
 
-def plot_sublevelset_quadratic(ax, A, b=[0, 0], c=0, vertices=51, **kwargs):
+def plot_sublevelset_quadratic(ax, A, b=(0, 0), c=0, vertices=51, **kwargs):
     """
     Plots the 2D ellipse representing x'Ax + b'x + c <= 1, e.g.
     the one sub-level set of a quadratic form.

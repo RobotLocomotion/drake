@@ -307,13 +307,13 @@ class TestGeneral(unittest.TestCase):
 
     def test_event_api(self):
         # TriggerType - existence check.
-        TriggerType.kUnknown
-        TriggerType.kInitialization
-        TriggerType.kForced
-        TriggerType.kTimed
-        TriggerType.kPeriodic
-        TriggerType.kPerStep
-        TriggerType.kWitness
+        TriggerType.kUnknown  # noqa: B018
+        TriggerType.kInitialization  # noqa: B018
+        TriggerType.kForced  # noqa: B018
+        TriggerType.kTimed  # noqa: B018
+        TriggerType.kPeriodic  # noqa: B018
+        TriggerType.kPerStep  # noqa: B018
+        TriggerType.kWitness  # noqa: B018
 
         # PublishEvent.
         # TODO(eric.cousineau): Test other event types when it is useful to
@@ -926,10 +926,10 @@ class TestGeneral(unittest.TestCase):
     def test_event_status(self):
         system = ZeroOrderHold(period_sec=0.1, vector_size=1)
         # Existence check.
-        EventStatus.Severity.kDidNothing
-        EventStatus.Severity.kSucceeded
-        EventStatus.Severity.kReachedTermination
-        EventStatus.Severity.kFailed
+        EventStatus.Severity.kDidNothing  # noqa: B018
+        EventStatus.Severity.kSucceeded  # noqa: B018
+        EventStatus.Severity.kReachedTermination  # noqa: B018
+        EventStatus.Severity.kFailed  # noqa: B018
 
         self.assertIsInstance(EventStatus.DidNothing(), EventStatus)
         self.assertIsInstance(EventStatus.Succeeded(), EventStatus)

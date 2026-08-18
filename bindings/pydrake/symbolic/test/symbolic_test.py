@@ -788,7 +788,7 @@ class TestSymbolicExpression(unittest.TestCase):
         )
         # Ensure that compound formulas fail (#8536).
         with self.assertRaises(RuntimeError):
-            (0 < e_y < e_y)
+            (0 < e_y < e_y)  # noqa: B015
         # Indication of #8135. Ideally, these would all be arrays of formulas.
         e_xv = np.array([e_x, e_x])
         e_yv = np.array([e_y, e_y])
@@ -796,14 +796,14 @@ class TestSymbolicExpression(unittest.TestCase):
         # comparison (e.g. `is`).
         # - All false.
         with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
-            (e_xv == e_yv)
+            (e_xv == e_yv)  # noqa: B015
         # - True + False.
         with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
             e_xyv = np.array([e_x, e_y])
-            (e_xv == e_xyv)
+            (e_xv == e_xyv)  # noqa: B015
         # - All true.
         with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
-            (e_xv == e_xv)
+            (e_xv == e_xv)  # noqa: B015
 
     def test_functions_with_float(self):
         # TODO(eric.cousineau): Use concrete values once vectorized methods are

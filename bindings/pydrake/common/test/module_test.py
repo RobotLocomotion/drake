@@ -171,14 +171,14 @@ class TestCommon(unittest.TestCase):
 
     def test_tolerance_type(self):
         # Simply test the spelling
-        mut.ToleranceType.kAbsolute
-        mut.ToleranceType.kRelative
+        mut.ToleranceType.kAbsolute  # noqa: B018
+        mut.ToleranceType.kRelative  # noqa: B018
 
     def test_random_distribution(self):
         # Simply test the spelling
-        mut.RandomDistribution.kUniform
-        mut.RandomDistribution.kGaussian
-        mut.RandomDistribution.kExponential
+        mut.RandomDistribution.kUniform  # noqa: B018
+        mut.RandomDistribution.kGaussian  # noqa: B018
+        mut.RandomDistribution.kExponential  # noqa: B018
 
     def test_logging(self):
         self.assertEqual(mut._set_log_level(level="unchanged"), "info")
