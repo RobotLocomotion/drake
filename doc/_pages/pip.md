@@ -56,9 +56,9 @@ Wheel packages for Linux and macOS are published nightly at a
 [https://drake-packages.csail.mit.edu/whl/nightly/](https://drake-packages.csail.mit.edu/whl/nightly/).
 
 - Nightly wheel version numbers are created as `0.0.YYYYMMDD`, e.g.,
-  `0.0.20260810` for August 10th, 2026.
+  `0.0.20260818` for August 18th, 2026.
   - Wheels that use `nanobind` instead of `pybind11` are marked as "alpha
-    release", e.g., `0.0.20260810a1`.
+    release", e.g., `0.0.20260818a1`.
 - Nightly wheel packages are retained for 56 days from their date of creation,
   and drop out of the index after 48 days.
 
