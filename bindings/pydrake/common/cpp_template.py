@@ -128,7 +128,7 @@ class TemplateBase:
                 return instantiation(*args, **kwargs)
             except TypeError as e:
                 if not _is_pybind11_type_error(e):
-                    raise e
+                    raise
 
     def get_module_name(self):
         """

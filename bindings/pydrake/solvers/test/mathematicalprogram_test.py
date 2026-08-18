@@ -1985,7 +1985,7 @@ class DummySolverInterface(SolverInterface):
     def _DoSolve(self, prog, initial_guess, solver_options, result):
         assert isinstance(result, mp.MathematicalProgramResult)
         if not self.can_solve:
-            raise Exception("Dummy solver cannot solve")
+            raise RuntimeError("Dummy solver cannot solve")
         # TODO(jwnimmer-tri) We should be setting the result here, but the
         # result class doesn't have any setters bound!  I'm not sure why we
         # have a Solve trampoline in the first place, if no solver can ever
