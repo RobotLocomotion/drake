@@ -402,6 +402,9 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
 
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
+    if (!plant_.GetConstraintActiveStatus(context, id)) {
+      continue;
+    }
     const Joint<T>& joint0 = plant_.get_joint(spec.joint0_index);
     const Joint<T>& joint1 = plant_.get_joint(spec.joint1_index);
 
@@ -435,6 +438,8 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
                  spec.offset);
     ++index;
   }
+  // Resize again to account for inactive constraints.
+  couplers.Resize(index);
 }
 
 template <typename T>
@@ -460,6 +465,9 @@ void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
 
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
+    if (!plant_.GetConstraintActiveStatus(context, id)) {
+      continue;
+    }
     const RigidBody<T>& body_A = plant_.get_body(spec.body_A);
     const RigidBody<T>& body_B = plant_.get_body(spec.body_B);
 
@@ -516,6 +524,8 @@ void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
               p_PoQo_W, a_PQ_W);
     ++index;
   }
+  // Resize again to account for inactive constraints.
+  welds.Resize(index);
 }
 
 template <typename T>
@@ -540,6 +550,9 @@ void IcfBuilder<T>::SetBallConstraints(const systems::Context<T>& context,
 
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
+    if (!plant_.GetConstraintActiveStatus(context, id)) {
+      continue;
+    }
     // p_BQ is optional pre-Finalize; on a finalized plant it must be set.
     DRAKE_DEMAND(spec.p_BQ.has_value());
 
@@ -589,6 +602,8 @@ void IcfBuilder<T>::SetBallConstraints(const systems::Context<T>& context,
                          p_BQ_W, p_PQ_W);
     ++index;
   }
+  // Resize again to account for inactive constraints.
+  ball_constraints.Resize(index);
 }
 
 template <typename T>
@@ -614,7 +629,10 @@ void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
       model->distance_constraints_pool();
 
   int index = 0;
-  for (const auto& [_, params] : params_map) {
+  for (const auto& [id, params] : params_map) {
+    if (!plant_.GetConstraintActiveStatus(context, id)) {
+      continue;
+    }
     const RigidBody<T>& body_A = plant_.get_body(params.bodyA());
     const RigidBody<T>& body_B = plant_.get_body(params.bodyB());
 
@@ -678,6 +696,8 @@ void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
                              T(params.damping()));
     ++index;
   }
+  // Resize again to account for inactive constraints.
+  distance_constraints.Resize(index);
 }
 
 template <typename T>
