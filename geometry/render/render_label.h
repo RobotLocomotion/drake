@@ -116,7 +116,7 @@ class RenderLabel {
 
    See class documentation on
    @ref reserved_render_label "reserved labels" for details.  */
-  //@{
+  ///@{
 
   /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kEmpty;
@@ -133,7 +133,7 @@ class RenderLabel {
   /** The largest value that a %RenderLabel can be instantiated on. */
   static const ValueType kMaxUnreserved;
 
-  //@}
+  ///@}
 
   /** Reports if the label is a reserved label.  */
   bool is_reserved() const { return value_ > kMaxUnreserved; }

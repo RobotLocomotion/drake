@@ -152,12 +152,14 @@ class ModelVisualizer:
                 f"show_rgbd_sensor must be bool or one of: {choices}"
             )
         self._show_rgbd_sensor = show_rgbd_sensor
-        if show_rgbd_sensor:
-            if sensor_image_type not in self._SUPPORTED_RGBD_IMAGE_TYPES:
-                choices = ", ".join(
-                    repr(x) for x in self._SUPPORTED_RGBD_IMAGE_TYPES
-                )
-                raise ValueError(f"sensor_image_type must be one of: {choices}")
+        if (
+            show_rgbd_sensor
+            and sensor_image_type not in self._SUPPORTED_RGBD_IMAGE_TYPES
+        ):
+            choices = ", ".join(
+                repr(x) for x in self._SUPPORTED_RGBD_IMAGE_TYPES
+            )
+            raise ValueError(f"sensor_image_type must be one of: {choices}")
         self._sensor_image_type = sensor_image_type
         self._browser_new = browser_new
         self._pyplot = pyplot

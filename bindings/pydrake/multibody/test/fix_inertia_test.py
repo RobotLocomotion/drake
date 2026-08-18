@@ -516,7 +516,7 @@ class TestFixInertiaProcess(FileHandlingFixture):
         added = set(os.environ.keys()) - set(self._old_env.keys())
         for k in added:
             del os.environ[k]
-        for k in self._old_env.keys():
+        for k in self._old_env:
             os.environ[k] = self._old_env[k]
         super().tearDown()
 

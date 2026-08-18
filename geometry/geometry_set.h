@@ -102,7 +102,7 @@ class GeometrySet {
    // etc.
    ```
    */
-  //@{
+  ///@{
 
   // TODO(SeanCurtis-TRI): The call sites would become even simpler if these
   // constructors were *implicit*. E.g.,:
@@ -158,7 +158,7 @@ class GeometrySet {
     Add(geometry_ids, frame_ids);
   }
 
-  //@}
+  ///@}
 
   /** @name    Methods for adding to the set
 
@@ -198,7 +198,7 @@ class GeometrySet {
    group.Add({g_7, g_8}, frame_set);
    ```
   */
-  //@{
+  ///@{
 
   void Add(GeometryId geometry_id) { geometry_ids_.insert(geometry_id); }
 
@@ -254,7 +254,7 @@ class GeometrySet {
                          other.geometry_ids_.end());
   }
 
-  //@}
+  ///@}
 
  private:
   // Provide access to the two entities that need access to the set's internals.

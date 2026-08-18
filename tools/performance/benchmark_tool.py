@@ -207,16 +207,18 @@ will be invalid. Supported methods are:
     command += [args.binary] + default_args + args.extra_args
     env = os.environ.copy()
     env["DRAKE_GOOGLEBENCH_SUPPRESS_SCALING_WARNING"] = "1"
-    with open(f"{args.output_dir}/summary.txt", "wb") as summary:
-        with cpu_speed_settings.scope(governor="performance", boost=False):
-            say("Run the experiment.")
-            print("Running: ", shlex.join(command))
-            popen = subprocess.Popen(command, stdout=subprocess.PIPE, env=env)
-            for line in popen.stdout:
-                summary.write(line)
-                print(line.decode("utf-8").strip(), flush=True)
-            if popen.wait() != 0:
-                raise RuntimeError("The profiled BINARY has failed")
+    with (
+        open(f"{args.output_dir}/summary.txt", "wb") as summary,
+        cpu_speed_settings.scope(governor="performance", boost=False),
+    ):
+        say("Run the experiment.")
+        print("Running: ", shlex.join(command))
+        popen = subprocess.Popen(command, stdout=subprocess.PIPE, env=env)
+        for line in popen.stdout:
+            summary.write(line)
+            print(line.decode("utf-8").strip(), flush=True)
+        if popen.wait() != 0:
+            raise RuntimeError("The profiled BINARY has failed")
 
 
 def main():

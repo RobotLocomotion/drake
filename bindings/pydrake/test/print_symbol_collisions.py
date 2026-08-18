@@ -21,7 +21,7 @@ def _get_all_var_names(m):
     # Represents names seen by `from m import *`.
     var_names = getattr(m, "__all__", None)
     if var_names is None:
-        var_names = [x for x in dir(m) if not x[0] == "_"]
+        var_names = [x for x in dir(m) if x[0] != "_"]
     return var_names
 
 

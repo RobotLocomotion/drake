@@ -81,7 +81,7 @@ class TriangleSurfaceMesh {
    and _barycentric coordinates_. For %TriangleSurfaceMesh, an element is a
    triangle.
    */
-  //@{
+  ///@{
 
   using ScalarType = T;
 
@@ -164,7 +164,7 @@ class TriangleSurfaceMesh {
    */
   int num_elements() const { return num_triangles(); }
 
-  //@}
+  ///@}
 
   /**
    Constructs a TriangleSurfaceMesh from triangles and vertices.

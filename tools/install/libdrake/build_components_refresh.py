@@ -126,7 +126,7 @@ def main():
     # Write the new version.
     new = args.output
     if new is None:
-        new = open(original_name, "w")
+        new = open(original_name, "w")  # noqa: SIM115
     with new:
         for one_line in header_lines:
             new.write(one_line)

@@ -208,7 +208,7 @@ R"""(Returns:
         // Symbol: drake::geometry::ContactSurface::area
         struct /* area */ {
           // Source: drake/geometry/query_results/contact_surface.h
-          const char* doc = R"""()""";
+          const char* doc = R"""(Reports the area of indexed face.)""";
         } area;
         // Symbol: drake::geometry::ContactSurface::centroid
         struct /* centroid */ {
@@ -218,7 +218,8 @@ R"""(Returns:
         // Symbol: drake::geometry::ContactSurface::face_normal
         struct /* face_normal */ {
           // Source: drake/geometry/query_results/contact_surface.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(Reports the normal for the indexed face.)""";
         } face_normal;
         // Symbol: drake::geometry::ContactSurface::id_M
         struct /* id_M */ {
@@ -244,12 +245,14 @@ and offered as convenient sugar.)""";
         // Symbol: drake::geometry::ContactSurface::num_faces
         struct /* num_faces */ {
           // Source: drake/geometry/query_results/contact_surface.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(Reports the number of faces -- triangles or polygons based on surface
+representation.)""";
         } num_faces;
         // Symbol: drake::geometry::ContactSurface::num_vertices
         struct /* num_vertices */ {
           // Source: drake/geometry/query_results/contact_surface.h
-          const char* doc = R"""()""";
+          const char* doc = R"""(Reports the number of vertices.)""";
         } num_vertices;
         // Symbol: drake::geometry::ContactSurface::poly_e_MN
         struct /* poly_e_MN */ {
@@ -281,7 +284,8 @@ exercised are related to this methods return value. See below.)""";
         // Symbol: drake::geometry::ContactSurface::total_area
         struct /* total_area */ {
           // Source: drake/geometry/query_results/contact_surface.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(Reports the total area across all faces.)""";
         } total_area;
         // Symbol: drake::geometry::ContactSurface::tri_e_MN
         struct /* tri_e_MN */ {

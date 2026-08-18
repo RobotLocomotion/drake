@@ -580,6 +580,11 @@ Precondition:
         // Symbol: drake::geometry::MeshFieldLinear::MeshFieldLinear<T, MeshType>
         struct /* ctor */ {
           // Source: drake/geometry/proximity/mesh_field_linear.h
+          const char* doc_move =
+R"""(@name Implements MoveConstructible, MoveAssignable
+
+To copy a MeshFieldLinear, use CloneAndSetMesh().)""";
+          // Source: drake/geometry/proximity/mesh_field_linear.h
           const char* doc_3args_values_mesh_gradient_mode =
 R"""(Constructs a MeshFieldLinear.
 
@@ -1147,7 +1152,13 @@ R"""((Internal use only) Reverses the ordering of all the faces' indices.)""";
         // Symbol: drake::geometry::PolygonSurfaceMesh::ScalarType
         struct /* ScalarType */ {
           // Source: drake/geometry/proximity/polygon_surface_mesh.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(@name Mesh type traits
+
+A collection of type traits to enable mesh consumers to be templated
+on mesh type. Each mesh type provides specific definitions of
+*element* and *barycentric coordinates*. For PolygonSurfaceMesh, an
+element is a polygon.)""";
         } ScalarType;
         // Symbol: drake::geometry::PolygonSurfaceMesh::SetAllPositions
         struct /* SetAllPositions */ {
@@ -1556,7 +1567,13 @@ indices -- see SurfaceTriangle∷ReverseWinding().)""";
         // Symbol: drake::geometry::TriangleSurfaceMesh::ScalarType
         struct /* ScalarType */ {
           // Source: drake/geometry/proximity/triangle_surface_mesh.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(@name Mesh type traits
+
+A collection of type traits to enable mesh consumers to be templated
+on mesh type. Each mesh type provides specific definitions of
+*vertex*, _element_, and *barycentric coordinates*. For
+TriangleSurfaceMesh, an element is a triangle.)""";
         } ScalarType;
         // Symbol: drake::geometry::TriangleSurfaceMesh::SetAllPositions
         struct /* SetAllPositions */ {
@@ -1874,7 +1891,13 @@ drake∷geometry∷promoted_numerical "promoted_numerical_t" for details.)""";
         // Symbol: drake::geometry::VolumeMesh::ScalarType
         struct /* ScalarType */ {
           // Source: drake/geometry/proximity/volume_mesh.h
-          const char* doc = R"""()""";
+          const char* doc =
+R"""(@name Mesh type traits
+
+A collection of type traits to enable mesh consumers to be templated
+on mesh type. Each mesh type provides specific definitions of
+*vertex*, _element_, and *barycentric coordinates*. For VolumeMesh, an
+element is a tetrahedron.)""";
         } ScalarType;
         // Symbol: drake::geometry::VolumeMesh::SetAllPositions
         struct /* SetAllPositions */ {
