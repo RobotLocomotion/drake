@@ -374,9 +374,9 @@ class TestAnalysis(unittest.TestCase):
         )
 
     def test_simulator_status(self):
-        SimulatorStatus.ReturnReason.kReachedBoundaryTime
-        SimulatorStatus.ReturnReason.kReachedTerminationCondition
-        SimulatorStatus.ReturnReason.kEventHandlerFailed
+        SimulatorStatus.ReturnReason.kReachedBoundaryTime  # noqa: B018
+        SimulatorStatus.ReturnReason.kReachedTerminationCondition  # noqa: B018
+        SimulatorStatus.ReturnReason.kEventHandlerFailed  # noqa: B018
 
         system = ConstantVectorSource([1.0])
         simulator = Simulator(system)

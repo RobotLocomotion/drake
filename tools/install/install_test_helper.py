@@ -119,7 +119,7 @@ def check_call(args, *extra_args, **kwargs):
         env = kwargs.pop("env")
     else:
         env = os.environ
-    return subprocess.check_call(args, cwd="/", env=env, *extra_args, **kwargs)
+    return subprocess.check_call(args, *extra_args, cwd="/", env=env, **kwargs)
 
 
 def check_output(*args, **kwargs):
@@ -134,7 +134,7 @@ def check_output(*args, **kwargs):
         env = kwargs.pop("env")
     else:
         env = os.environ
-    return subprocess.check_output(cwd="/", env=env, *args, **kwargs).decode(
+    return subprocess.check_output(*args, cwd="/", env=env, **kwargs).decode(
         "utf8"
     )
 
