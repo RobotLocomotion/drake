@@ -120,6 +120,11 @@ void InitLowLevelModules(py::module_ m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   constexpr auto& doc = pydrake_doc_common.drake;
 
+#ifdef PYDRAKE_USE_NANOBIND
+  // See https://nanobind.readthedocs.io/en/latest/refleaks.html#reference-leaks
+  nanobind::set_leak_warnings(false);
+#endif
+
   // Morph any DRAKE_ASSERT and DRAKE_DEMAND failures into SystemExit exceptions
   // instead of process aborts.  See RobotLocomotion/drake#5268.
   drake_set_assertion_failure_to_throw_exception();
@@ -349,10 +354,10 @@ deterministic given the C++ random seed (see drake issue #12632 for the
 discussion), use e.g.
 
 .. code-block:: python
-    
+
    generator = pydrake.common.RandomGenerator()
    random_state = numpy.random.RandomState(generator())
-   
+
    my_random_value = random_state.uniform()
    ...
 
