@@ -628,7 +628,7 @@ def _do_upgrade(
         if upgrade_type == UpgradeType.COMMIT:
             message = f"Update dependency {workspace_name} to latest commit"
         else:
-            release = new_commit.lstrip("releases/").lstrip("v")
+            release = new_commit.removeprefix("releases/").removeprefix("v")
             message = f"Update dependency {workspace_name} to {release}"
 
     # Copy the downloaded tarball into the repository cache.

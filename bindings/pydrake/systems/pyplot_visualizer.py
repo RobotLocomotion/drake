@@ -26,7 +26,7 @@ class PyPlotVisualizer(LeafSystem):
     def __init__(
         self,
         draw_period=None,
-        facecolor=[1, 1, 1],
+        facecolor=(1, 1, 1),
         figsize=None,
         ax=None,
         show=None,

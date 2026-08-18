@@ -28,9 +28,9 @@ class TestPlanner(unittest.TestCase):
     def test_api(self):
         # Test existence for enumeration.
         enum = mut.DifferentialInverseKinematicsStatus
-        enum.kSolutionFound
-        enum.kNoSolutionFound
-        enum.kStuck
+        enum.kSolutionFound  # noqa: B018
+        enum.kNoSolutionFound  # noqa: B018
+        enum.kStuck  # noqa: B018
 
         # Test results.
         results_cls = mut.DifferentialInverseKinematicsResult
@@ -44,22 +44,22 @@ class TestPlanner(unittest.TestCase):
         # Test existence.
         params.set_time_step(dt=0.2)
         self.assertEqual(params.get_time_step(), 0.2)
-        params.get_num_positions
-        params.get_nominal_joint_position
-        params.get_num_velocities
-        params.get_nominal_joint_position
-        params.set_nominal_joint_position
+        params.get_num_positions()
+        params.get_nominal_joint_position()
+        params.get_num_velocities()
+        params.get_nominal_joint_position()
+        params.set_nominal_joint_position  # noqa: B018
         params.set_joint_centering_gain(K=np.eye(2))
         np.testing.assert_equal(params.get_joint_centering_gain(), np.eye(2))
         flag_E = [False, True, True, False, False, True]
         params.set_end_effector_velocity_flag(flag_E)
         np.testing.assert_equal(params.get_end_effector_velocity_flag(), flag_E)
-        params.get_joint_position_limits
-        params.set_joint_position_limits
-        params.get_joint_velocity_limits
-        params.set_joint_velocity_limits
-        params.get_joint_acceleration_limits
-        params.set_joint_acceleration_limits
+        params.get_joint_position_limits()
+        params.set_joint_position_limits  # noqa: B018
+        params.get_joint_velocity_limits()
+        params.set_joint_velocity_limits  # noqa: B018
+        params.get_joint_acceleration_limits()
+        params.set_joint_acceleration_limits  # noqa: B018
         params.set_maximum_scaling_to_report_stuck(scaling=0.1)
         self.assertEqual(params.get_maximum_scaling_to_report_stuck(), 0.1)
         params.set_end_effector_angular_speed_limit(speed=0.12)

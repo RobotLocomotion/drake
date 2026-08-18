@@ -933,9 +933,9 @@ Kd 1 1 0
         # can override them and win (no errors).
         bad_host = MeshcatParams(host="8.8.8.8")
         bad_port = MeshcatParams(port=1)
-        with self.assertRaises(BaseException):
+        with self.assertRaises(BaseException):  # noqa: B017
             mut.Meldis(meshcat_params=bad_host)
-        with self.assertRaises(BaseException):
+        with self.assertRaises(BaseException):  # noqa: B017
             mut.Meldis(meshcat_params=bad_port)
         mut.Meldis(meshcat_params=bad_host, meshcat_host="localhost")
         mut.Meldis(meshcat_params=bad_port, meshcat_port=0)

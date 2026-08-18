@@ -106,12 +106,12 @@ class TestDrakeModels(unittest.TestCase, metaclass=ValueParameterizedTest):
         models in @drake_models.
         """
         if expect_errors:
-            with self.assertRaises(Exception):
+            with self.assertRaises(Exception):  # noqa: B017
                 self._parse(url=url, strict=False)
             return
         if expect_warnings:
             self._parse(url=url, strict=False)
-            with self.assertRaises(Exception):
+            with self.assertRaises(Exception):  # noqa: B017
                 self._parse(url=url, strict=True)
             return
         self._parse(url=url, strict=True)

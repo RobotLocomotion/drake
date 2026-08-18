@@ -520,9 +520,12 @@ class TestFixInertiaProcess(FileHandlingFixture):
             os.environ[k] = self._old_env[k]
         super().tearDown()
 
-    def subprocess_fix_inertia(self, input_path, output_path, *, extra_args=[]):
+    def subprocess_fix_inertia(
+        self, input_path, output_path, *, extra_args=None
+    ):
         subprocess.run(
-            [self._dut, input_path, output_path] + extra_args, check=True
+            [self._dut, input_path, output_path] + (extra_args or []),
+            check=True,
         )
 
     def do_test_model(

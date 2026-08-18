@@ -1399,8 +1399,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertTrue(lagrangian_options.ignore_redundant_C)
 
         # EllipsoidMarginCost
-        dut.EllipsoidMarginCost.kGeometricMean
-        dut.EllipsoidMarginCost.kSum
+        dut.EllipsoidMarginCost.kGeometricMean  # noqa: B018
+        dut.EllipsoidMarginCost.kSum  # noqa: B018
 
         # FindPolytopeGivenLagrangianOptions
         polytope_options = dut.FindPolytopeGivenLagrangianOptions()

@@ -56,7 +56,7 @@ class PointCloudConcatenation(LeafSystem):
         - point_cloud_FS
     """
 
-    def __init__(self, id_list, default_rgb=[255.0, 255.0, 255.0]):
+    def __init__(self, id_list, default_rgb=(255.0, 255.0, 255.0)):
         """
         A system that takes in N point clouds of points Si in frame Ci, and N
         RigidTransforms from frame Ci to F, to put each point cloud in a common

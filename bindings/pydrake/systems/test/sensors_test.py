@@ -193,10 +193,10 @@ class TestSensors(unittest.TestCase):
             self.assertIn(t.kPixelFormat, mut.PixelFormat.__members__.values())
 
         # Smoke test the pixel scalars.
-        mut.PixelScalar.k8U
-        mut.PixelScalar.k16I
-        mut.PixelScalar.k16U
-        mut.PixelScalar.k32F
+        mut.PixelScalar.k8U  # noqa: B018
+        mut.PixelScalar.k16I  # noqa: B018
+        mut.PixelScalar.k16U  # noqa: B018
+        mut.PixelScalar.k32F  # noqa: B018
 
     def test_image_types(self):
         # Test instantiations of Image<>.
@@ -716,9 +716,9 @@ class TestSensors(unittest.TestCase):
         dut.image_time_output_port()
 
     def test_image_file_format(self):
-        mut.ImageFileFormat.kJpeg
-        mut.ImageFileFormat.kPng
-        mut.ImageFileFormat.kTiff
+        mut.ImageFileFormat.kJpeg  # noqa: B018
+        mut.ImageFileFormat.kPng  # noqa: B018
+        mut.ImageFileFormat.kTiff  # noqa: B018
 
     def test_image_io_metadata(self):
         dut = mut.ImageIo.Metadata(width=640)
