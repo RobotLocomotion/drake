@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from .common import PythonBinder
+from .common import PythonBinder, PythonTarget
 
 
 class PythonManager(Enum):
@@ -29,18 +29,14 @@ class Platform:
 
 @dataclass
 class Target:
-    build_platform: Platform
     python_binder: PythonBinder
+    python: PythonTarget
+    build_platform: Platform
     test_platforms: tuple[Platform]
-    python_version_tuple: tuple[int, int, int]
 
     def __post_init__(self):
+        assert len(self.python.version_tuple) == 3, self.python.version_tuple
         assert isinstance(self.test_platforms, tuple)
-        assert len(self.python_version_tuple) == 3, self.python_version_tuple
-        pv_parts = tuple(map(str, self.python_version_tuple))
-        self.python_version_full = ".".join(pv_parts)
-        self.python_version = ".".join(pv_parts[:2])
-        self.python_tag = "".join(pv_parts[:2])
 
     def platform(self, role: Role, test_index: int | None = None) -> Platform:
         """Returns the Platform for the given `role`. For the test role, the
