@@ -48,7 +48,7 @@ class ValueParameterizedTest(type):
 
     def __new__(metacls, name, bases, namespace):
         # Find all of the unittest methods.
-        test_methods = [x for x in namespace.keys() if x.startswith("test")]
+        test_methods = [x for x in namespace if x.startswith("test")]
         assert len(test_methods) > 0
 
         # Find the unittest methods that used our decorator.

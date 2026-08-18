@@ -592,7 +592,7 @@ class CallPythonClient:
     def _get_file(self):
         # Gets file handle, opening if needed.
         if self._file is None:
-            self._file = open(self.filename, "rb")
+            self._file = open(self.filename, "rb")  # noqa: SIM115
         return self._file
 
     def _close_file(self):

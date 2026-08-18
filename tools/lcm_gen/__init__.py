@@ -692,9 +692,8 @@ class CppGen:
         self._size_variables = []
         for field in self._struct.fields:
             for dim in field.array_dims:
-                if isinstance(dim, str):
-                    if dim not in self._size_variables:
-                        self._size_variables.append(dim)
+                if isinstance(dim, str) and dim not in self._size_variables:
+                    self._size_variables.append(dim)
 
     def generate(self):
         """Returns the C++ text for the message provided in the constructor."""

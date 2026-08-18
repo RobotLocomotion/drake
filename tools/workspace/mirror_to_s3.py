@@ -95,12 +95,14 @@ def main(argv):
                         directory, os.path.basename(object_key)
                     )
                     print(f"Downloading from URL {url}...")
-                    with requests.get(url, stream=True) as response:
-                        with open(filename, "wb") as file_object:
-                            for chunk in response.iter_content(
-                                chunk_size=CHUNK_SIZE
-                            ):
-                                file_object.write(chunk)
+                    with (
+                        requests.get(url, stream=True) as response,
+                        open(filename, "wb") as file_object,
+                    ):
+                        for chunk in response.iter_content(
+                            chunk_size=CHUNK_SIZE
+                        ):
+                            file_object.write(chunk)
                     print(
                         f"Computing and verifying SHA-256 checksum of "
                         f"file {filename}..."

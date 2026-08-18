@@ -222,20 +222,22 @@ def main():
     total_used_vars = set()
     missing_vars = set()
     for input_path, output_path in zip(args.input, args.output):
-        with open(input_path, "r") as input_file:
-            with open(output_path + ".tmp", "w") as output_file:
-                for input_line in input_file:
-                    try:
-                        output_line, used_vars = transformer(
-                            line=input_line,
-                            definitions=definitions,
-                            strict=args.strict,
-                            atonly=args.atonly,
-                        )
-                        output_file.write(output_line)
-                        total_used_vars |= used_vars
-                    except KeyError as e:
-                        missing_vars.add(e.args[0])
+        with (
+            open(input_path, "r") as input_file,
+            open(output_path + ".tmp", "w") as output_file,
+        ):
+            for input_line in input_file:
+                try:
+                    output_line, used_vars = transformer(
+                        line=input_line,
+                        definitions=definitions,
+                        strict=args.strict,
+                        atonly=args.atonly,
+                    )
+                    output_file.write(output_line)
+                    total_used_vars |= used_vars
+                except KeyError as e:
+                    missing_vars.add(e.args[0])
     if missing_vars:
         raise RuntimeError(
             f"The definitions of {sorted(missing_vars)} were"

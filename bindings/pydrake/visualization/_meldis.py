@@ -320,16 +320,15 @@ class _ViewerApplet:
         hasher = _GeometryFileHasher()
         hasher.on_viewer_load_robot(message)
         mesh_checksum = hasher.value()
-        if self._load_message is not None:
-            if (
-                message.num_links == self._load_message.num_links
-                and message.encode() == self._load_message.encode()
-                and mesh_checksum == self._load_message_mesh_checksum
-            ):
-                _logger.info(
-                    f"Ignoring duplicate load message for {self._applet_name}."
-                )
-                return
+        if self._load_message is not None and (
+            message.num_links == self._load_message.num_links
+            and message.encode() == self._load_message.encode()
+            and mesh_checksum == self._load_message_mesh_checksum
+        ):
+            _logger.info(
+                f"Ignoring duplicate load message for {self._applet_name}."
+            )
+            return
 
         # The semantics of a load message is to reset the entire scene.
         self._meshcat.Delete(path=self._path)
