@@ -224,7 +224,7 @@ class TestAll(unittest.TestCase):
         )
 
         bad_imports = list()
-        for item in sys.modules.keys():
+        for item in sys.modules:
             for module_name in function_only_imports:
                 if item.startswith(module_name):
                     bad_imports.append(item)

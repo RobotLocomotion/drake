@@ -153,7 +153,7 @@ def _format_commit(gh, drake, commit):
     # If all files in the commit are in dev directories, return empty data to
     # indicate the commit is ineligible.
     committed_nondev_files = [
-        x for x in committed_files_weighted.keys() if "/dev/" not in x
+        x for x in committed_files_weighted if "/dev/" not in x
     ]
     if not committed_nondev_files:
         return [], ["none"], ""
@@ -467,12 +467,13 @@ def main():
         _create(args, notes_dir, notes_filename, gh, drake)
     else:
         assert args.action == "update"
-        if args.target_commit is not None:
-            if not re.match(r"^[0-9a-f]{40}$", args.target_commit):
-                parser.error(
-                    f"--target_commit={args.target_commit} is not a "
-                    f"40-character SHA1"
-                )
+        if args.target_commit is not None and not re.match(
+            r"^[0-9a-f]{40}$", args.target_commit
+        ):
+            parser.error(
+                f"--target_commit={args.target_commit} is not a "
+                f"40-character SHA1"
+            )
 
         _update(args, notes_filename, gh, drake, args.target_commit)
 

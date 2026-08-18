@@ -417,14 +417,16 @@ def _download(url: str, local_filename: str) -> str:
     that was there previously). Returns the sha256 checksum.
     """
     hasher = hashlib.sha256()
-    with open(local_filename, "wb") as f:
-        with urllib.request.urlopen(url) as response:
-            while True:
-                data = response.read(4096)
-                if not data:
-                    break
-                hasher.update(data)
-                f.write(data)
+    with (
+        open(local_filename, "wb") as f,
+        urllib.request.urlopen(url) as response,
+    ):
+        while True:
+            data = response.read(4096)
+            if not data:
+                break
+            hasher.update(data)
+            f.write(data)
     return hasher.hexdigest()
 
 
@@ -499,7 +501,7 @@ def _do_upgrade_github_release_attachments(
     # Download the new attachments.
     info("Downloading new attachments...")
     new_attachments = {}
-    for filename in old_attachments.keys():
+    for filename in old_attachments:
         new_url = (
             f"https://github.com/{repository}/"
             f"releases/download/{new_commit}/{filename}"

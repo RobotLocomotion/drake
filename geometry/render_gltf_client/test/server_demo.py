@@ -72,9 +72,8 @@ def compute_hash(path: Path) -> str:
 @atexit.register
 def delete_server_cache():
     """Deletes `TMP_DIR` upon exit, e.g., `ctrl+C`, when CLEANUP is True."""
-    if CLEANUP:
-        if TMP_DIR.is_dir():
-            shutil.rmtree(TMP_DIR, ignore_errors=True)
+    if CLEANUP and TMP_DIR.is_dir():
+        shutil.rmtree(TMP_DIR, ignore_errors=True)
 
 
 class RenderError(Exception):
