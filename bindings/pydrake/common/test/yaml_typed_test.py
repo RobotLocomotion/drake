@@ -409,7 +409,7 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         ]
         for value in cases:
             data = f"value: {value}"
-            with self.assertRaises(Exception):
+            with self.assertRaises(Exception):  # noqa: B017
                 yaml_load_typed(schema=PathStruct, data=data, **options)
 
     @run_with_multiple_values(_all_typed_read_options())

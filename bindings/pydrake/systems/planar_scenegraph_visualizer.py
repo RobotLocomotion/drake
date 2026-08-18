@@ -20,6 +20,15 @@ from pydrake.geometry import (
 from pydrake.math import RigidTransform
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 
+_T_VW_default = np.array(
+    [
+        [1.0] + [0.0, 0.0, 0.0],  # X axis is 1 (Y), no shift.
+        [0.0] + [0.0, 1.0, 0.0],  # Y axis is 0 (X), shift by y=1.
+        [0.0, 0.0, 0.0, 1.0],  # Orthographic.
+    ]
+)
+_T_VW_default.setflags(write=False)
+
 
 class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     """
@@ -65,16 +74,10 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self,
         scene_graph,
         draw_period=None,
-        T_VW=np.array(
-            [
-                [1.0, 0.0, 0.0, 0.0],  # BR
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        ),
-        xlim=[-1.0, 1],
-        ylim=[-1, 1],
-        facecolor=[1, 1, 1],
+        T_VW=_T_VW_default,
+        xlim=(-1.0, 1),
+        ylim=(-1, 1),
+        facecolor=(1, 1, 1),
         use_random_colors=False,
         substitute_collocated_mesh_files=True,
         ax=None,

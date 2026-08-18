@@ -21,11 +21,11 @@ class TestLcm(unittest.TestCase):
         dut.get_lcm_url()
         DrakeLcm(lcm_url="")
         # Test virtual function names.
-        dut.Publish
-        dut.Subscribe
-        dut.SubscribeMultichannel
-        dut.SubscribeAllChannels
-        dut.HandleSubscriptions
+        dut.Publish  # noqa: B018
+        dut.Subscribe  # noqa: B018
+        dut.SubscribeMultichannel  # noqa: B018
+        dut.SubscribeAllChannels  # noqa: B018
+        dut.HandleSubscriptions  # noqa: B018
 
     def test_params(self):
         dut = DrakeLcmParams()

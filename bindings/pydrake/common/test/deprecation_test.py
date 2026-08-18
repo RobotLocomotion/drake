@@ -192,10 +192,10 @@ class TestDeprecation(unittest.TestCase):
                 warnings.simplefilter("default", mut.DrakeDeprecationWarning)
             for _ in range(3):
                 base_deprecation()
-                example.ExampleClass.deprecated_method
-                example.ExampleClass.deprecated_method
-                example.ExampleClass.deprecated_prop
-                example.ExampleClass.deprecated_prop
+                example.ExampleClass.deprecated_method  # noqa: B018
+                example.ExampleClass.deprecated_method  # noqa: B018
+                example.ExampleClass.deprecated_prop  # noqa: B018
+                example.ExampleClass.deprecated_prop  # noqa: B018
             # Manually set this back to `once`.
             warnings.simplefilter("ignore", DeprecationWarning)
             warnings.simplefilter("once", mut.DrakeDeprecationWarning)
@@ -245,7 +245,7 @@ class TestDeprecation(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             obj = example.ExampleClass()
             obj.deprecated_method()
-            obj.deprecated_prop
+            obj.deprecated_prop  # noqa: B018
             example.deprecated_func(50)
 
             self.assertEqual(len(w), 0, "\n".join(map(str, w)))

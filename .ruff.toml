@@ -12,13 +12,17 @@ target-version = "py312"
 [lint]
 
 ignore = [
+    # "Checks for function definitions that use a loop variable." This is an
+    # easy bug to miss, but unfortunately the linter produces too many false
+    # positives in our unit tests that use a helper lambda inside a test loop.
+    "B023",
     # "Checks for unnecessary dict(), list() or tuple() calls that can be
     # rewritten as empty literals." If it were only empty ones that got dinged,
     # that would be fine, but it also rewrites `dict(a=1)` to `{"a": 1}` which
     # is sometimes less readable.
     "C408",
     # "Checks for operations that compare a name to itself." Some of our types
-    # overide equality, so our unit tests do a self-comparison frequently.
+    # override equality, so our unit tests do a self-comparison frequently.
     "PLR0124",
     # "[Finds code] which can be replaced by next(iter(...))". Typical cases
     # are in unit tests, where the next(...) spelling is harder to read.
@@ -32,15 +36,6 @@ ignore = [
     "UP032",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
     # upgrade. Either re-enable them or comment why we're keeping them off.
-    "B004",
-    "B005",
-    "B006",
-    "B008",
-    "B015",
-    "B017",
-    "B018",
-    "B023",
-    "B026",
     "BLE001",
     "DTZ005",
     "EXE002",

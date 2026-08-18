@@ -658,8 +658,8 @@ class FileDict:
     Provides a dictionary that hashes based on a file's true path.
     """
 
-    def __init__(self, items=[]):
-        self._d = {self._key(file): value for file, value in items}
+    def __init__(self):
+        self._d = {}
 
     def _key(self, file):
         return os.path.realpath(os.path.abspath(file))
