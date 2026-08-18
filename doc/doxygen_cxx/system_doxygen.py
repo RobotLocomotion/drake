@@ -29,9 +29,9 @@ def system_yaml_to_html(system_yaml):
     """
     try:
         y = yaml.load(system_yaml, Loader=yaml.SafeLoader)
-    except yaml.scanner.ScannerError as e:
+    except yaml.scanner.ScannerError:
         print(system_yaml, file=sys.stderr)
-        raise e
+        raise
 
     input_port_html = ""
     if "input_ports" in y:

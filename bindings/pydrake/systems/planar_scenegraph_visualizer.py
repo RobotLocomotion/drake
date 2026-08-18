@@ -282,13 +282,13 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                         # For both shape types, we replace it with its convex
                         # hull.
                         convex_hull = shape.GetConvexHull()
-                    except RuntimeError as shape_error:
+                    except RuntimeError:
                         known_suffixes = [".obj", ".vtk", ".gltf"]
 
                         if source.extension() in known_suffixes:
                             # The file was already of a known extension;
                             # failure offers no recourse.
-                            raise shape_error
+                            raise
 
                         if search_for_alternate:
                             # For a path to an unknown file type, we can look

@@ -77,7 +77,7 @@ def _passes_check_mode(args):
         REFORMAT_IS_NEEDED = 4
         if e.returncode == REFORMAT_IS_NEEDED:
             return False
-        raise e
+        raise
 
 
 def main():
