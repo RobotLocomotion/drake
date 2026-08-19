@@ -734,6 +734,9 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
+# Drake's default will change to "nanobind" around 2026-12-01. Using "pybind11"
+# is deprecated and will be removed from Drake on or after 2027-03-01. For help,
+# see https://github.com/RobotLocomotion/drake/issues/21572#porting-guide.
 set(DRAKE_PYTHON_BINDER "pybind11" CACHE STRING "Binding library to use for pydrake." )
 set_property(CACHE DRAKE_PYTHON_BINDER PROPERTY STRINGS "pybind11" "nanobind")
 string(APPEND BAZEL_CONFIG " --@drake//tools/flags:python_binder=${DRAKE_PYTHON_BINDER}")
