@@ -21,7 +21,15 @@ class Target:
     """
 
     python_binder: PythonBinder
-    python: PythonTarget
+    build_python: PythonTarget
+    test_pythons: tuple[PythonTarget]
 
     def __post_init__(self):
-        assert len(self.python.version_tuple) == 2, self.python.version_tuple
+        assert len(self.build_python.version_tuple) == 2, (
+            self.build_python.version_tuple
+        )
+        assert isinstance(self.test_pythons, tuple)
+        for test_python in self.test_pythons:
+            assert len(test_python.version_tuple) == 2, (
+                test_python.version_tuple
+            )

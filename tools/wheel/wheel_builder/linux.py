@@ -36,6 +36,7 @@ ARCH = platform.machine()
 # default, all targets matching the currently running architecture are built,
 # but the user may down-select from this set. The platform alias is used for
 # Docker tag names, and, when combined with the Python version, must be unique.
+# fmt: off
 targets = {
     # NOTE: adding or removing a python version?  Please also check the
     # following locations for updates:
@@ -52,92 +53,93 @@ targets = {
     "x86_64": (
         Target(
             python_binder=PythonBinder.NANOBIND,
-            python=PythonTarget(3, 12, 13),
-            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9", PythonTarget(3, 12, 13)),  # noqa
             test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble"),
-                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
-                # TODO(jwnimmer-tri) We should test this same abi3 wheel on all
-                # newer Python versions (so 3.13, 3.14, etc.).
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 12)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 12)),
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 12), PythonManager.UV),  # noqa
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 13)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 13), PythonManager.UV),  # noqa
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 13), PythonManager.UV),  # noqa
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 14)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 14), PythonManager.UV),  # noqa
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 14)),
             ),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
-            python=PythonTarget(3, 12, 13),
-            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9", PythonTarget(3, 12, 13)),  # noqa
             test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble"),
-                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 12)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 12)),
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 12), PythonManager.UV),  # noqa
             ),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
-            python=PythonTarget(3, 13, 15),
-            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9", PythonTarget(3, 13, 15)),  # noqa
             test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble", PythonManager.UV),
-                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 13)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 13), PythonManager.UV),  # noqa
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 13), PythonManager.UV),  # noqa
             ),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
-            python=PythonTarget(3, 14, 7),
-            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9", PythonTarget(3, 14, 7)),  # noqa
             test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble", PythonManager.UV),
-                Platform("ubuntu", "26.04", "resolute"),
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 14)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 14), PythonManager.UV),  # noqa
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 14)),
             ),
         ),
     ),
     "aarch64": (
         Target(
             python_binder=PythonBinder.NANOBIND,
-            python=PythonTarget(3, 12, 13),
-            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9", PythonTarget(3, 12, 13)),  # noqa
             test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble"),
-                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
-                # TODO(jwnimmer-tri) We should test this same abi3 wheel on all
-                # newer Python versions (so 3.13, 3.14, etc.).
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 12)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 12)),
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 12), PythonManager.UV),  # noqa
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 13)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 13), PythonManager.UV),  # noqa
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 13), PythonManager.UV),  # noqa
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 14)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 14), PythonManager.UV),  # noqa
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 14)),
             ),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
-            python=PythonTarget(3, 12, 13),
-            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9", PythonTarget(3, 12, 13)),  # noqa
             test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble"),
-                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 12)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 12)),
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 12), PythonManager.UV),  # noqa
             ),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
-            python=PythonTarget(3, 13, 15),
-            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9", PythonTarget(3, 13, 15)),  # noqa
             test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble", PythonManager.UV),
-                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 13)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 13), PythonManager.UV),  # noqa
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 13), PythonManager.UV),  # noqa
             ),
         ),
         Target(
             python_binder=PythonBinder.PYBIND11,
-            python=PythonTarget(3, 14, 7),
-            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9", PythonTarget(3, 14, 7)),  # noqa
             test_platforms=(
-                Platform("amazonlinux", "2023", "AL2023"),
-                Platform("ubuntu", "24.04", "noble", PythonManager.UV),
-                Platform("ubuntu", "26.04", "resolute"),
+                Platform("amazonlinux", "2023", "AL2023", PythonTarget(3, 14)),
+                Platform("ubuntu", "24.04", "noble", PythonTarget(3, 14), PythonManager.UV),  # noqa
+                Platform("ubuntu", "26.04", "resolute", PythonTarget(3, 14)),
             ),
         ),
     ),
 }[ARCH]
+# fmt: on
 glibc_versions = {
     "almalinux9": "2_34",
 }
@@ -246,7 +248,7 @@ def _tagname(
     Iff the role is the TEST role, then the test_index must be provided.
     """
     platform = target.platform(role, test_index).alias
-    python_tag = target.python.tag
+    python_tag = target.platform(BUILD).python.tag
     python_binder = target.python_binder.value
     return f"{tag_base}:{tag_prefix}-{platform}-py{python_tag}-{python_binder}"
 
@@ -280,19 +282,20 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
     platform = target.platform(role, test_index)
 
     if role == BUILD:
-        python_args = [
-            "--build-arg", f"PYTHON={target.python.version_full}",
+        role_args = [
             "--build-arg", f"DRAKE_PYTHON_BINDER={target.python_binder.value}",
         ]  # fmt: skip
     else:
-        python_args = [
-            "--build-arg", f"PYTHON={target.python.version}",
+        role_args = [
             "--build-arg", f"PYTHON_MANAGER={platform.python_manager.value}",
         ]  # fmt: skip
 
-    return [
+    platform_args = [
+        "--build-arg", f"PYTHON={platform.python.version_full}",
         "--build-arg", f"PLATFORM={platform.name}:{platform.version}",
-    ] + python_args  # fmt: skip
+    ]  # fmt: skip
+
+    return platform_args + role_args
 
 
 def _build_image(target, identifier, version, options):
@@ -355,7 +358,7 @@ def _test_wheel(target, identifier, version, options):
     glibc = glibc_versions[target.platform(BUILD).alias]
     wheel = wheel_name(
         python_binder=target.python_binder,
-        python_version=target.python.tag,
+        python_version=target.platform(BUILD).python.tag,
         wheel_version=version,
         wheel_platform=f"manylinux_{glibc}_{ARCH}",
     )
@@ -424,7 +427,7 @@ def build(options):
     for t in targets:
         if (
             t.platform(BUILD).name in options.platforms
-            and t.python.tag in options.python_versions
+            and t.platform(BUILD).python.tag in options.python_versions
         ):
             targets_to_build.append(t)
 
@@ -494,7 +497,9 @@ def add_selection_arguments(parser):
         "--python",
         dest="python_versions",
         metavar="VERSIONS",
-        default=",".join(sorted({t.python.tag for t in targets})),
+        default=",".join(
+            sorted({t.platform(BUILD).python.tag for t in targets})
+        ),
         help=(
             "python version(s) to build; separate with ','"
             " (default: %(default)s)"
