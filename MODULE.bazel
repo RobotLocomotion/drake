@@ -21,16 +21,13 @@ bazel_dep(name = "rules_java", version = "9.7.0")
 bazel_dep(name = "rules_jvm_external", version = "7.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rs", version = "0.0.102")
+bazel_dep(name = "rules_rs", version = "0.0.106")
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 
 # Configure the Rust toolchain.
 
 rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
-rules_rust.patch(
-    patches = ["//:tools/workspace/rules_rs/patches/no_default_macos_sdkroot.patch"],
-)
 use_repo(rules_rust, "rules_rust")
 
 rust_toolchains = use_extension(
@@ -43,7 +40,7 @@ rust_toolchains.toolchain(
 )
 use_repo(rust_toolchains, "default_rust_toolchains")
 
-register_toolchains("@default_rust_toolchains//:all")
+register_toolchains("@default_rust_toolchains//...")
 
 # Configure the C++ toolchain.
 
@@ -282,7 +279,7 @@ single_version_override(
 
 bazel_dep(
     name = "llvm",
-    version = "0.8.16",
+    version = "0.8.18",
     dev_dependency = True,
 )
 # N.B. We must NOT register llvm's toolchain here. We want to use the

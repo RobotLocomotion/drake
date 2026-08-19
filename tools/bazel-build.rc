@@ -34,6 +34,10 @@ build --strict_system_includes
 # Use the host Python interpreter by default.
 build --extra_toolchains=@python//:all
 
+# Use host Xcode SDK when building rust code (not hermetic SDK). This matches
+# our C++ toolchain which also comes from the host.
+build --@rules_rust//rust/settings:use_hermetic_macos_sdkroot=false
+
 # For background, see https://bazel.build/docs/bazel-and-java.
 # The java_runtime_version defaults to local_jdk, which is some uncontrolled
 # version from Ubuntu or Homebrew that can lead to build failures. Instead,
@@ -109,9 +113,11 @@ build:without_openmp --linkopt=-fno-openmp
 build:debug --compilation_mode=dbg
 # Provide a performance cushion for debug builds, 2x the default timeouts.
 build:debug --test_timeout=120,600,1800,7200
-# Enable split debug symbols (Linux only).
+# Enable split debug symbols (Linux only), but not for Rust code because it
+# requires the non-standard "nightly" rustc toolchain.
 build:linux --fission=dbg
 build:linux --features=per_object_debug_info
+build:linux --@rules_rust//rust/settings:skip_fission_for_rust=True
 
 ### A configuration that enables all optional dependencies. ###
 build:everything --@drake//tools/flags:with_gurobi=True
