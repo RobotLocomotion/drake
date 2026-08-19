@@ -20,7 +20,6 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer.h"
-#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -41,7 +40,6 @@ namespace {
 
 using common::MaybePauseForUser;
 using Eigen::Vector3d;
-using Eigen::Vector4d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
@@ -849,45 +847,8 @@ Ignore those for now; we'll need to circle back and fix them later.
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.01);
     plant.set_contact_model(multibody::ContactModel::kHydroelastic);
-
-    const multibody::CoulombFriction<double> friction(0.5, 0.5);
-
-    // Ground: a rigid hydroelastic slab whose top face lies at z = 0.
-    const double ground_size = 3.0;       // Edge length of the square slab.
-    const double ground_thickness = 0.1;  // Only its top face is in contact.
-    const Box ground_shape(ground_size, ground_size, ground_thickness);
-    const RigidTransformd X_WG(Vector3d{0, 0, -ground_thickness / 2});
-    ProximityProperties ground_props;
-    AddContactMaterial({}, {}, friction, &ground_props);
-    // The slab is flat, so even a coarse tessellation represents it exactly.
-    AddRigidHydroelasticProperties(/* resolution_hint */ ground_size,
-                                   &ground_props);
-    plant.RegisterCollisionGeometry(plant.world_body(), X_WG, ground_shape,
-                                    "ground", std::move(ground_props));
-    plant.RegisterVisualGeometry(plant.world_body(), X_WG, ground_shape,
-                                 "ground", Vector4d(0.5, 0.5, 0.5, 1.0));
-
-    // A row of free compliant hydroelastic boxes resting on the ground.
-    const Eigen::Vector4d colors[] = {
-        {0.9, 0.2, 0.2, 1.0}, {0.2, 0.7, 0.3, 1.0}, {0.2, 0.4, 0.9, 1.0}};
-    const int num_boxes = 3;
-    const double s = 0.1;  // Box edge length.
-    for (int i = 0; i < num_boxes; ++i) {
-      const std::string name = "box_" + std::to_string(i);
-      const auto& body = plant.AddRigidBody(
-          name, multibody::SpatialInertia<double>::SolidBoxWithDensity(
-                    1000.0, s, s, s));
-      ProximityProperties box_props;
-      AddContactMaterial({}, {}, friction, &box_props);
-      AddCompliantHydroelasticProperties(/* resolution_hint */ 0.05,
-                                         /* hydroelastic_modulus */ 1.0e8,
-                                         &box_props);
-      plant.RegisterCollisionGeometry(body, RigidTransformd(), Box(s, s, s),
-                                      name + "_collision",
-                                      std::move(box_props));
-      plant.RegisterVisualGeometry(body, RigidTransformd(), Box(s, s, s),
-                                   name + "_visual", colors[i]);
-    }
+    multibody::Parser(&plant).AddModels(
+        FindResourceOrThrow("drake/geometry/test/mouse_spring_demo.sdf"));
     plant.Finalize();
 
     MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat);
@@ -896,12 +857,6 @@ Ignore those for now; we'll need to circle back and fix them later.
 
     auto diagram = builder.Build();
     auto context = diagram->CreateDefaultContext();
-    auto& plant_context = plant.GetMyMutableContextFromRoot(context.get());
-    for (int i = 0; i < num_boxes; ++i) {
-      plant.SetFreeBodyPose(
-          &plant_context, plant.GetBodyByName("box_" + std::to_string(i)),
-          RigidTransformd(Vector3d((i - 1) * 0.3, 0.0, s / 2)));
-    }
 
     std::cout
         << "- Now you should see three boxes resting on the ground.\n"
@@ -925,8 +880,6 @@ Ignore those for now; we'll need to circle back and fix them later.
     });
     simulator.AdvanceTo(std::numeric_limits<double>::infinity());
     meshcat->DeleteButton("Stop Dragging Demo");
-
-    MaybePauseForUser();
   }
 
   std::cout << "Exiting..." << std::endl;

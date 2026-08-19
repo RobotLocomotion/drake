@@ -134,8 +134,10 @@ class MeshcatMouseSpring final : public systems::LeafSystem<double> {
   body-pose and body-spatial-velocity output ports and its applied-spatial-force
   input port. Returns a reference to the newly-added system.
 
+  Refer to the constructor documentation for additional requirements placed on
+  these arguments.
+
   @pre plant is part of builder and is finalized.
-  @pre plant is registered as a geometry source with scene_graph.
   @pre `plant`'s applied-spatial-force input port is not already connected. */
   static MeshcatMouseSpring& AddToBuilder(
       systems::DiagramBuilder<double>* builder,

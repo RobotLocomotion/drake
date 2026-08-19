@@ -78,8 +78,10 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
           builder, plant, meshcat,
           internal::ConvertVisualizationConfigToMeshcatContactParams(config));
     }
-    if (config.mouse_interaction_stiffness.has_value() &&
-        config.mouse_interaction_stiffness.value() > 0) {
+    if (config.mouse_interaction_stiffness.has_value()) {
+      DRAKE_THROW_UNLESS(config.mouse_interaction_stiffness.value() >= 0,
+                         config.mouse_interaction_stiffness.value());
+
       // MeshcatMouseSpring drives the plant's applied-spatial-force input port.
       // Only add it if that port is still available; otherwise (e.g., the user
       // has already connected their own external forces) skip it with a warning
@@ -88,7 +90,7 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
       // allow multiple sources of spatial forces to be applied to the plant.
       if (builder->IsConnectedOrExported(
               plant.get_applied_spatial_force_input_port())) {
-        log()->warn(
+        static const logging::Warn log_once(
             "VisualizationConfig.mouse_interaction_stiffness is set, but the "
             "plant's applied-spatial-force input port is already connected, so "
             "interactive mouse dragging will not be enabled.");

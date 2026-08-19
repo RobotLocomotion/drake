@@ -36,321 +36,309 @@
 
     const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
+    const THREE = MeshCat.THREE;
+
     // Interactive object dragging (a Drake extension to upstream meshcat).
     //
     // Hold Ctrl and drag an object with the left mouse button to grab the point
-    // under the cursor. The grabbed point and the cursor target define a
-    // virtual spring that can be used to interact with a simulation.
-    // 
+    // under the cursor.
+    //
     // See Meshcat::GetVirtualSpringKinematics() and
     // multibody::meshcat::MeshcatMouseSpring for further details.
-    const THREE = MeshCat.THREE;
-    const drakeDrag = {
-      // A non-null `object` *is* the "drag in progress" state; see
-      // isDrakeDragActive(). The remaining members are meaningful only while it
-      // is non-null, and get cleared alongside it in drakeDragEnd().
-      object: null,         // The grabbed THREE.Object3D (a leaf mesh).
-      pointerId: null,      // The captured pointer, released in drakeDragEnd().
-      path: "",             // The meshcat "/"-path of the grabbed object.
-      pickLocal: null,      // Grab point in the grabbed object's local frame.
-      marker: null,         // Sphere marking the grab point while dragging.
-      targetWorld: null,    // Current drag target, in three.js world coords.
-      plane: new THREE.Plane(),  // Drag plane (in three.js world coords).
-      raycaster: new THREE.Raycaster(),
-      line: null,           // THREE.Line visualizing the spring while dragging.
-    };
-
-    // True iff a drag is in progress.
-    function isDrakeDragActive() {
-      return drakeDrag.object !== null;
-    }
-
-    // True iff every component of the THREE.Vector3 `v` is finite (neither NaN
-    // nor infinite).
-    function isDrakeVectorFinite(v) {
-      return Number.isFinite(v.x) && Number.isFinite(v.y) &&
-             Number.isFinite(v.z);
-    }
-
-    // Reports the event's cursor position as a normalized device coordinate
-    // (NDC) in the range [-1, 1]², with the origin at the center of the canvas.
-    function drakeMouseNdc(event) {
-      const rect = viewer.renderer.domElement.getBoundingClientRect();
-      return new THREE.Vector2(
-        ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        -((event.clientY - rect.top) / rect.height) * 2 + 1);
-    }
-
-    // Reconstructs the absolute, meshcat, "/"-delimited path of `obj` (e.g.,
-    // /drake/visualizer/model/foo).
-    function drakeObjectPath(obj) {
-      const names = [];
-      let node = obj;
-      while (node && node !== viewer.scene) {
-        if (node.name) {
-          names.push(node.name);
+    class MouseDragController {
+      constructor(viewer) {
+        this.viewer = viewer;
+        // A non-null `object` *is* the "drag in progress" state; see
+        // isActive(). The members below it are meaningful only while it is
+        // non-null, and get cleared alongside it in end().
+        this.object = null;       // The grabbed THREE.Object3D (a leaf mesh).
+        this.pointerId = null;    // The captured pointer, released in end().
+        this.path = null;         // The meshcat "/"-path of the grabbed object.
+        this.pickLocal = null;    // Grab point in the grabbed object's frame.
+        this.targetWorld = null;  // Current drag target, in three.js world.
+        this.plane = new THREE.Plane();  // Drag plane (three.js world coords).
+        this.raycaster = new THREE.Raycaster();
+        // The line from the grab point to the cursor target, and the sphere
+        // marking the grab point. Both are shown only while dragging.
+        // TODO(vincekurtz): consider exposing colors/sizes as a user option.
+        this.line = new THREE.Line(
+          new THREE.BufferGeometry().setAttribute(
+            "position", new THREE.BufferAttribute(new Float32Array(6), 3)),
+          new THREE.LineBasicMaterial({color: 0x000000}));
+        this.marker = new THREE.Mesh(
+          new THREE.SphereGeometry(0.005, 16, 12),
+          new THREE.MeshBasicMaterial({color: 0x000000}));
+        for (const obj of [this.line, this.marker]) {
+          obj.frustumCulled = false;
+          obj.raycast = () => {};  // Don't let it be pickable.
+          obj.visible = false;
+          viewer.scene.add(obj);
         }
-        node = node.parent;
+
+        const domElement = viewer.renderer.domElement;
+        domElement.addEventListener(
+          "pointerdown", (event) => this.start(event), true);
+        domElement.addEventListener(
+          "pointermove", (event) => this.move(event), true);
+        // There are various triggers that should end a drag:
+        //   1. Simple pointer up/cancel.
+        //   2. Loss of the pointer capture, e.g., the browser or OS taking the
+        //      pointer away mid-drag.
+        //   3. Leaving the page entirely (Ctrl-Tab to another tab, Alt-Tab to
+        //      another window, minimizing, ...), which steals the eventual
+        //      pointer up so that no pointer event of any kind arrives. This is
+        //      handled by blur and visibilitychange.
+        domElement.addEventListener("pointerup", () => this.end(), true);
+        domElement.addEventListener("pointercancel", () => this.end(), true);
+        domElement.addEventListener(
+          "lostpointercapture", () => this.end(), true);
+        window.addEventListener("blur", () => this.end());
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) {
+            this.end();
+          }
+        });
+        // On some platforms Ctrl + left-click opens the context menu; suppress
+        // it so it doesn't interrupt a drag.
+        domElement.addEventListener("contextmenu", (event) => {
+          if (event.ctrlKey || this.isActive()) {
+            event.preventDefault();
+          }
+        }, true);
       }
-      names.reverse();
-      return "/" + names.join("/");
-    }
 
-    // The grab point's current location in three.js world coords (it follows
-    // the grabbed object as the object moves).
-    function drakeAnchorWorld() {
-      return drakeDrag.object.localToWorld(drakeDrag.pickLocal.clone());
-    }
+      // True iff a drag is in progress.
+      isActive() {
+        return this.object !== null;
+      }
 
-    // Performs ray intersection with the tree rooted at `rootObject`, but only
-    // includes objects that have a fully visible path to `rootObject`.
-    function intersectVisible(raycaster, rootObject, intersects = []) {
-      if (rootObject.visible === false) {
+      // True iff every component of the THREE.Vector3 `v` is finite (neither
+      // NaN nor infinite).
+      static isVectorFinite(v) {
+        return Number.isFinite(v.x) && Number.isFinite(v.y) &&
+               Number.isFinite(v.z);
+      }
+
+      // Reports the event's cursor position as a normalized device coordinate
+      // (NDC) in the range [-1, 1]², with the origin at the center of the
+      // canvas.
+      mouseNdc(event) {
+        const rect = this.viewer.renderer.domElement.getBoundingClientRect();
+        return new THREE.Vector2(
+          ((event.clientX - rect.left) / rect.width) * 2 - 1,
+          -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      }
+
+      // Reconstructs the absolute, meshcat, "/"-delimited path of `obj` (e.g.,
+      // /drake/visualizer/model/foo).
+      objectPath(obj) {
+        const names = [];
+        let node = obj;
+        while (node && node !== this.viewer.scene) {
+          if (node.name) {
+            names.push(node.name);
+          }
+          node = node.parent;
+        }
+        names.reverse();
+        return "/" + names.join("/");
+      }
+
+      // Performs ray intersection with the tree rooted at `rootObject`, but
+      // only includes objects that have a fully visible path to `rootObject`.
+      static intersectVisible(raycaster, rootObject, intersects = []) {
+        if (rootObject.visible === false) {
+          return intersects;
+        }
+        if (rootObject.isMesh) {
+          raycaster.intersectObject(rootObject, false, intersects);
+        }
+        for (let i = 0; i < rootObject.children.length; ++i) {
+          MouseDragController.intersectVisible(
+            raycaster, rootObject.children[i], intersects);
+        }
         return intersects;
       }
-      if (rootObject.isMesh) {
-          raycaster.intersectObject(rootObject, false, intersects);
-      }
-      for (let i = 0; i < rootObject.children.length; ++i) {
-          intersectVisible(raycaster, rootObject.children[i], intersects);
-      }
-      return intersects;
-    }
 
-    // Raycasts the cursor against the scene and returns the closest hit on a
-    // visible Drake-published object (under "/drake"), or null. This skips
-    // helpers like the grid, axes, and background, as well as any hidden
-    // geometry layer.
-    function drakeRaycast(event) {
-      // TODO(vincekurtz): consider allowing users to specify the subtree that
-      // is draggable, rather than hard-coding "/drake".
-      const drakeRoot = viewer.scene_tree.find(["drake"]);
-      drakeDrag.raycaster.setFromCamera(drakeMouseNdc(event), viewer.camera);
-      const hits = intersectVisible(drakeDrag.raycaster, drakeRoot.object, []);
-      return hits?.[0] ?? null;
-    }
+      // Raycasts the cursor against the scene and returns the closest hit on a
+      // visible Drake-published object (under "/drake"), or null. This skips
+      // helpers like the grid, axes, and background, as well as any hidden
+      // geometry layer.
+      raycast(event) {
+        // TODO(vincekurtz): consider allowing users to specify the subtree that
+        // is draggable, rather than hard-coding "/drake".
+        const root = this.viewer.scene_tree.find(["drake"]);
+        this.raycaster.setFromCamera(this.mouseNdc(event), this.viewer.camera);
+        const hits = MouseDragController.intersectVisible(
+          this.raycaster, root.object, []);
+        return hits?.[0] ?? null;
+      }
 
-    // Creates (lazily) and updates the line that visualizes the virtual spring
-    // between the grasped point `a` and the cursor target `b`. Both points are
-    // in Drake's z-up world frame (the local frame of the scene root, to which
-    // the line is parented).
-    function drakeUpdateSpringLine(a, b) {
-      if (!drakeDrag.line) {
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute(
-          "position", new THREE.BufferAttribute(new Float32Array(6), 3));
-        const material = new THREE.LineBasicMaterial({color: 0x000000});
-        drakeDrag.line = new THREE.Line(geometry, material);
-        drakeDrag.line.frustumCulled = false;
-        drakeDrag.line.raycast = () => {};  // Don't let the line be pickable.
-        viewer.scene.add(drakeDrag.line);
+      // Shows and updates the line drawn from the grasped point `a` to the
+      // cursor target `b`, along with the marker at the grab point. Both points
+      // are in Drake's z-up world frame (the local frame of the scene root, to
+      // which the line is parented).
+      updateVisualization(a, b) {
+        const position = this.line.geometry.attributes.position;
+        position.array[0] = a.x;
+        position.array[1] = a.y;
+        position.array[2] = a.z;
+        position.array[3] = b.x;
+        position.array[4] = b.y;
+        position.array[5] = b.z;
+        position.needsUpdate = true;
+        this.line.visible = true;
+        this.marker.position.set(a.x, a.y, a.z);
+        this.marker.visible = true;
+        this.viewer.set_dirty();
       }
-      const position = drakeDrag.line.geometry.attributes.position;
-      position.array[0] = a.x;
-      position.array[1] = a.y;
-      position.array[2] = a.z;
-      position.array[3] = b.x;
-      position.array[4] = b.y;
-      position.array[5] = b.z;
-      position.needsUpdate = true;
-      drakeDrag.line.visible = true;
-      // Mark the grab point with a small sphere at the line's anchor end.
-      if (!drakeDrag.marker) {
-        const geometry = new THREE.SphereGeometry(0.001, 16, 12);
-        // TODO(vincekurtz): consider exposing the line color as a user option.
-        const material = new THREE.MeshBasicMaterial({color: 0x000000});
-        drakeDrag.marker = new THREE.Mesh(geometry, material);
-        drakeDrag.marker.frustumCulled = false;
-        drakeDrag.marker.raycast = () => {};  // Don't let the marker be picked.
-        viewer.scene.add(drakeDrag.marker);
-      }
-      drakeDrag.marker.position.set(a.x, a.y, a.z);
-      drakeDrag.marker.visible = true;
-      viewer.set_dirty();
-    }
 
-    function drakeHideSpringLine() {
-      if (drakeDrag.line) {
-        drakeDrag.line.visible = false;
+      // Sends the current drag state to the server. While a drag is active this
+      // is called every animation frame, so that the attachment point keeps
+      // tracking the (possibly moving) object even when the mouse is still.
+      send() {
+        const conn = this.viewer.connection;
+        const connected = conn && conn.readyState == WebSocket.OPEN;
+        if (this.isActive()) {
+          // The attachment point follows the object; the target follows the
+          // cursor. Convert both into Drake's z-up world frame, which is the
+          // local frame of the (rotated) meshcat scene root.
+          const anchor = this.viewer.scene.worldToLocal(
+            this.object.localToWorld(this.pickLocal.clone()));
+          const target =
+            this.viewer.scene.worldToLocal(this.targetWorld.clone());
+          // Never report a non-finite endpoint; a NaN reaching the plant as a
+          // drag force poisons the simulation. move() keeps the target finite,
+          // so this generally means the anchor went bad, i.e., the grabbed
+          // object's own pose has diverged -- in which case there is nothing
+          // left to drag. End the drag, which sends the end-of-drag message
+          // below rather than leaving the last good drag in force.
+          if (!MouseDragController.isVectorFinite(anchor) ||
+              !MouseDragController.isVectorFinite(target)) {
+            console.warn("Meshcat: ending a drag of '" + this.path +
+                         "' because its endpoints are no longer finite; the " +
+                         "grabbed object's pose may have diverged.");
+            this.end();
+            return;
+          }
+          // Draw the drag locally and stream the endpoints to the server.
+          this.updateVisualization(anchor, target);
+          if (connected) {
+            conn.send(MeshCat.msgpack.encode({
+              type: "mouse_drag",
+              name: this.path,
+              drag_anchor: [anchor.x, anchor.y, anchor.z],
+              drag_target: [target.x, target.y, target.z],
+            }));
+          }
+        } else {
+          if (connected) {
+            // An empty payload tells the server the drag has ended.
+            conn.send(MeshCat.msgpack.encode(
+              {type: "mouse_drag", name: "", drag_anchor: [],
+               drag_target: []}));
+          }
+        }
       }
-      if (drakeDrag.marker) {
-        drakeDrag.marker.visible = false;
-      }
-      viewer.set_dirty();
-    }
 
-    // Sends the current drag state to the server. While a drag is active this
-    // is called every animation frame, so that the attachment point keeps
-    // tracking the (possibly moving) object even when the mouse is still.
-    function sendDrakeDrag() {
-      const conn = viewer.connection;
-      const connected = conn && conn.readyState == WebSocket.OPEN;
-      if (isDrakeDragActive()) {
-        // The attachment point follows the object; the target follows the
-        // cursor. Convert both into Drake's z-up world frame, which is the
-        // local frame of the (rotated) meshcat scene root.
-        const anchor = viewer.scene.worldToLocal(drakeAnchorWorld());
-        const target = viewer.scene.worldToLocal(drakeDrag.targetWorld.clone());
-        // Never report a non-finite endpoint; a NaN reaching the plant as a
-        // spring force poisons the simulation. drakeDragMove() keeps the
-        // target finite, so this generally means the anchor went bad, i.e.,
-        // the grabbed object's own pose has diverged -- in which case there is
-        // nothing left to drag. End the drag, which sends the end-of-drag
-        // message below rather than leaving the last good spring in force.
-        if (!isDrakeVectorFinite(anchor) || !isDrakeVectorFinite(target)) {
-          console.warn("Meshcat: ending a drag of '" + drakeDrag.path +
-                       "' because its endpoints are no longer finite; the " +
-                       "grabbed object's pose may have diverged.");
-          drakeDragEnd();
+      start(event) {
+        // A drag requires Ctrl + the left button, over a Drake object.
+        if (!event.ctrlKey || event.button !== 0) {
           return;
         }
-        // Draw the spring locally and stream the endpoints to the server.
-        drakeUpdateSpringLine(anchor, target);
-        if (connected) {
-          conn.send(MeshCat.msgpack.encode({
-            type: "mouse_drag",
-            name: drakeDrag.path,
-            drag_anchor: [anchor.x, anchor.y, anchor.z],
-            drag_target: [target.x, target.y, target.z],
-          }));
+        const hit = this.raycast(event);
+        if (!hit) {
+          return;  // Nothing grabbable under the cursor; let the controls
+                   // handle it.
         }
-      } else {
-        if (connected) {
-          // An empty payload tells the server the drag has ended.
-          conn.send(MeshCat.msgpack.encode(
-            {type: "mouse_drag", name: "", drag_anchor: [], drag_target: []}));
+        // Capture the pointer before committing any state, so that a failure
+        // needs no unwinding. This isn't expected to fail for a genuine
+        // pointerdown -- the pointer is active by construction and the canvas
+        // is in the document -- but without capture we could neither reliably
+        // track the cursor once it leaves the canvas nor see the release that
+        // ends the drag, so decline the drag rather than start a degraded one.
+        try {
+          this.viewer.renderer.domElement.setPointerCapture(event.pointerId);
+        } catch (e) {
+          return;  // Let the controls handle the event, as in the no-hit case.
         }
-      }
-    }
-
-    function drakeDragStart(event) {
-      // A drag requires Ctrl + the left button, over a Drake object.
-      if (!event.ctrlKey || event.button !== 0) {
-        return;
-      }
-      const hit = drakeRaycast(event);
-      if (!hit) {
-        return;  // Nothing grabbable under the cursor; let the controls handle it.
-      }
-      // Capture the pointer before committing any state, so that a failure
-      // needs no unwinding. This isn't expected to fail for a genuine
-      // pointerdown -- the pointer is active by construction and the canvas is
-      // in the document -- but without capture we could neither reliably track
-      // the cursor once it leaves the canvas nor see the release that ends the
-      // drag, so decline the drag rather than start a degraded one.
-      try {
-        viewer.renderer.domElement.setPointerCapture(event.pointerId);
-      } catch (e) {
-        return;  // Let the controls handle the event, as in the no-hit case.
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      drakeDrag.object = hit.object;
-      drakeDrag.pointerId = event.pointerId;
-      drakeDrag.path = drakeObjectPath(hit.object);
-      drakeDrag.pickLocal = hit.object.worldToLocal(hit.point.clone());
-      drakeDrag.targetWorld = hit.point.clone();
-      // The drag plane passes through the grab point and faces the camera, so
-      // the target tracks the cursor in the screen plane.
-      const normal = new THREE.Vector3();
-      viewer.camera.getWorldDirection(normal);
-      drakeDrag.plane.setFromNormalAndCoplanarPoint(normal, hit.point);
-      // Suspend orbit/pan controls for the duration of the drag.
-      viewer.controls.enabled = false;
-      viewer.renderer.domElement.style.cursor = "grabbing";
-      sendDrakeDrag();
-    }
-
-    function drakeDragMove(event) {
-      if (!isDrakeDragActive()) {
-        // Not dragging: when Ctrl is held, hint that the object under the
-        // cursor is grabbable by showing a hand ("grab") cursor.
-        const domElement = viewer.renderer.domElement;
-        if (event.ctrlKey && drakeRaycast(event)) {
-          domElement.style.cursor = "grab";
-        } else {
-          domElement.style.cursor = "";
-        }
-        return;
-      }
-      event.preventDefault();
-      drakeDrag.raycaster.setFromCamera(drakeMouseNdc(event), viewer.camera);
-      const target = new THREE.Vector3();
-      // With pointer capture, it is possible to create an adversarial plane
-      // intersection query that produces bad results. Only use the new value
-      // if it not NaNs (otherwise, use the old).
-      if (drakeDrag.raycaster.ray.intersectPlane(drakeDrag.plane, target) &&
-          isDrakeVectorFinite(target)) {
-        drakeDrag.targetWorld = target;
-      }
-      sendDrakeDrag();
-    }
-
-    // Ends an in-progress drag. Takes no arguments: it is called both from
-    // pointer event listeners (whose event it ignores) and from the
-    // focus/visibility listeners, which have no pointer to report.
-    function drakeDragEnd() {
-      if (!isDrakeDragActive()) {
-        return;
-      }
-      const pointerId = drakeDrag.pointerId;
-      // Clearing `object` first is what makes this idempotent: the
-      // releasePointerCapture() below dispatches lostpointercapture, which
-      // re-enters here and must take the early return above.
-      drakeDrag.object = null;
-      drakeDrag.path = "";
-      drakeDrag.pickLocal = null;
-      drakeDrag.targetWorld = null;
-      drakeDrag.pointerId = null;
-      viewer.controls.enabled = true;
-      viewer.renderer.domElement.style.cursor = "";
-      // pointerup and pointercancel release the capture automatically, so this
-      // is redundant on those paths. It is *not* redundant when the drag is
-      // ended by loss of focus or visibility: no pointer event is involved
-      // there, so nothing would otherwise release the capture and the canvas
-      // would go on receiving this pointer's events after the drag is over. The
-      // guard covers the paths where the capture is already gone (releasing a
-      // pointer that isn't captured throws).
-      if (viewer.renderer.domElement.hasPointerCapture(pointerId)) {
-        viewer.renderer.domElement.releasePointerCapture(pointerId);
-      }
-      sendDrakeDrag();
-      drakeHideSpringLine();
-    }
-
-    viewer.renderer.domElement.addEventListener(
-      "pointerdown", drakeDragStart, true);
-    viewer.renderer.domElement.addEventListener(
-      "pointermove", drakeDragMove, true);
-    // There are various triggers that should end a drag:
-    //   1. Simple pointer up/cancel.
-    //   2. Loss of the pointer capture, e.g., the browser or OS taking the
-    //      pointer away mid-drag.
-    //   3. Leaving the page entirely (Ctrl-Tab to another tab, Alt-Tab to
-    //      another window, minimizing, ...), which steals the eventual pointer
-    //      up so that no pointer event of any kind arrives. This is handled by
-    //      blur and visibilitychange.
-    viewer.renderer.domElement.addEventListener(
-      "pointerup", drakeDragEnd, true);
-    viewer.renderer.domElement.addEventListener(
-      "pointercancel", drakeDragEnd, true);
-    viewer.renderer.domElement.addEventListener(
-      "lostpointercapture", drakeDragEnd, true);
-    window.addEventListener("blur", () => {
-      drakeDragEnd();
-    });
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        drakeDragEnd();
-      }
-    });
-    // On some platforms Ctrl + left-click opens the context menu; suppress it
-    // so it doesn't interrupt a drag.
-    viewer.renderer.domElement.addEventListener("contextmenu", (event) => {
-      if (event.ctrlKey || isDrakeDragActive()) {
         event.preventDefault();
+        event.stopPropagation();
+        this.object = hit.object;
+        this.pointerId = event.pointerId;
+        this.path = this.objectPath(hit.object);
+        this.pickLocal = hit.object.worldToLocal(hit.point.clone());
+        this.targetWorld = hit.point.clone();
+        // The drag plane passes through the grab point and faces the camera, so
+        // the target tracks the cursor in the screen plane.
+        const normal = new THREE.Vector3();
+        this.viewer.camera.getWorldDirection(normal);
+        this.plane.setFromNormalAndCoplanarPoint(normal, hit.point);
+        // Suspend orbit/pan controls for the duration of the drag.
+        this.viewer.controls.enabled = false;
+        this.viewer.renderer.domElement.style.cursor = "grabbing";
+        this.send();
       }
-    }, true);
+
+      move(event) {
+        if (!this.isActive()) {
+          // Not dragging: when Ctrl is held, hint that the object under the
+          // cursor is grabbable by showing a hand ("grab") cursor.
+          const domElement = this.viewer.renderer.domElement;
+          if (event.ctrlKey && this.raycast(event)) {
+            domElement.style.cursor = "grab";
+          } else {
+            domElement.style.cursor = "";
+          }
+          return;
+        }
+        event.preventDefault();
+        this.raycaster.setFromCamera(this.mouseNdc(event), this.viewer.camera);
+        const target = new THREE.Vector3();
+        // With pointer capture, it is possible to create an adversarial plane
+        // intersection query that produces bad results. Only use the new value
+        // if it not NaNs (otherwise, use the old).
+        if (this.raycaster.ray.intersectPlane(this.plane, target) &&
+            MouseDragController.isVectorFinite(target)) {
+          this.targetWorld = target;
+        }
+        this.send();
+      }
+
+      // Ends an in-progress drag.
+      end() {
+        if (!this.isActive()) {
+          return;
+        }
+        const pointerId = this.pointerId;
+        // Clearing `object` first is what makes this idempotent: the
+        // releasePointerCapture() below dispatches lostpointercapture, which
+        // re-enters here and must take the early return above.
+        this.object = null;
+        this.pointerId = null;
+        this.path = null;
+        this.pickLocal = null;
+        this.targetWorld = null;
+        this.line.visible = false;
+        this.marker.visible = false;
+        this.viewer.controls.enabled = true;
+        this.viewer.renderer.domElement.style.cursor = "";
+        // pointerup and pointercancel release the capture automatically, so
+        // this is redundant on those paths. It is *not* redundant when the drag
+        // is ended by loss of focus or visibility: no pointer event is involved
+        // there, so nothing would otherwise release the capture and the canvas
+        // would go on receiving this pointer's events after the drag is over.
+        // The guard covers the paths where the capture is already gone
+        // (releasing a pointer that isn't captured throws).
+        if (this.viewer.renderer.domElement.hasPointerCapture(pointerId)) {
+          this.viewer.renderer.domElement.releasePointerCapture(pointerId);
+        }
+        this.viewer.set_dirty();
+        this.send();
+      }
+    }
+
+    const mouseDrag = new MouseDragController(viewer);
 
     // Gamepad support - first check if the gamepad feature is available.
     const gamepads_supported = !!navigator.getGamepads;
@@ -402,11 +390,11 @@
       if (gamepads_supported) {
         handle_gamepads();
       }
-      if (isDrakeDragActive()) {
+      if (mouseDrag.isActive()) {
         // Re-send every frame so the attachment point (and marker) keep
         // tracking the object as the simulation advances, even if the mouse is
         // stationary.
-        sendDrakeDrag();
+        mouseDrag.send();
       }
       requestAnimationFrame(animate);
     }

@@ -441,11 +441,11 @@ body-pose and body-spatial-velocity output ports and its
 applied-spatial-force input port. Returns a reference to the
 newly-added system.
 
-Precondition:
-    plant is part of builder and is finalized.
+Refer to the constructor documentation for additional requirements
+placed on these arguments.
 
 Precondition:
-    plant is registered as a geometry source with scene_graph.
+    plant is part of builder and is finalized.
 
 Precondition:
     `plant`'s applied-spatial-force input port is not already

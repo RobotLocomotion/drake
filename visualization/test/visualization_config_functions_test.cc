@@ -291,17 +291,6 @@ GTEST_TEST(VisualizationConfigFunctionsTest, MouseInteraction) {
   lcm_buses.Add("default", &drake_lcm);
   auto meshcat = std::make_shared<Meshcat>();
 
-  auto count_springs = [](const DiagramBuilder<double>& builder) {
-    int count = 0;
-    for (const auto* system : builder.GetSystems()) {
-      if (system->get_name().find("meshcat_mouse_spring") !=
-          std::string::npos) {
-        ++count;
-      }
-    }
-    return count;
-  };
-
   // Enabled by default.
   {
     DiagramBuilder<double> builder;
@@ -309,7 +298,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, MouseInteraction) {
     plant.Finalize();
     ApplyVisualizationConfig(VisualizationConfig{}, &builder, &lcm_buses,
                              &plant, &scene_graph, meshcat);
-    EXPECT_EQ(count_springs(builder), 1);
+    EXPECT_TRUE(builder.HasSubsystemNamed("meshcat_mouse_spring"));
   }
 
   // Disabled by clearing the stiffness.
@@ -321,7 +310,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, MouseInteraction) {
     config.mouse_interaction_stiffness = std::nullopt;
     ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
                              meshcat);
-    EXPECT_EQ(count_springs(builder), 0);
+    EXPECT_FALSE(builder.HasSubsystemNamed("meshcat_mouse_spring"));
   }
 
   // Skipped if the plant's applied-spatial-force input port is already in use.
@@ -332,7 +321,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, MouseInteraction) {
     builder.ExportInput(plant.get_applied_spatial_force_input_port());
     ApplyVisualizationConfig(VisualizationConfig{}, &builder, &lcm_buses,
                              &plant, &scene_graph, meshcat);
-    EXPECT_EQ(count_springs(builder), 0);
+    EXPECT_FALSE(builder.HasSubsystemNamed("meshcat_mouse_spring"));
   }
 }
 
