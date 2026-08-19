@@ -28,6 +28,9 @@ bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 # Configure the Rust toolchain.
 
 rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
+rules_rust.patch(
+    patches = ["//:tools/workspace/rules_rs/patches/no_default_macos_sdkroot.patch"],
+)
 use_repo(rules_rust, "rules_rust")
 
 rust_toolchains = use_extension(
