@@ -25,6 +25,7 @@
 #include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/make_mesh_for_deformable.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -5270,6 +5271,185 @@ TEST_F(SdfParserTest, ComposedPoseForDeformable) {
   // clang-format on
   EXPECT_TRUE(CompareMatrices(q_WB, q_WB_expected,
                               4.0 * std::numeric_limits<double>::epsilon()));
+}
+
+/* A deformable <collision> can be a primitive <sphere>; it gets tetrahedralized
+ using the resolution hint, exactly as the C++ API does. */
+TEST_F(SdfParserTest, DeformableSpherePrimitive) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <sphere><radius>0.15</radius></sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 0);
+  plant_.Finalize();
+  ASSERT_EQ(plant_.deformable_model().num_bodies(), 1);
+  const DeformableBodyId body_id =
+      plant_.deformable_model().GetBodyByName("body").body_id();
+  const VectorXd q_WB =
+      plant_.deformable_model().GetReferencePositions(body_id);
+
+  /* The registered mesh should be the one the geometry layer makes for this
+   shape and hint. */
+  const std::unique_ptr<geometry::VolumeMesh<double>> expected_mesh =
+      geometry::internal::MakeMeshForDeformable(geometry::Sphere(0.15), 0.1);
+  ASSERT_EQ(q_WB.size(), 3 * expected_mesh->num_vertices());
+  for (int v = 0; v < expected_mesh->num_vertices(); ++v) {
+    EXPECT_TRUE(CompareMatrices(q_WB.segment<3>(3 * v),
+                                expected_mesh->vertex(v),
+                                4.0 * std::numeric_limits<double>::epsilon()));
+  }
+}
+
+/* The resolution hint actually selects the resolution; a smaller hint gives a
+ finer mesh. */
+TEST_F(SdfParserTest, DeformableSphereResolutionHintIsUsed) {
+  AddSceneGraph();
+  auto sphere_with_hint = [](const char* name, const char* hint) {
+    return fmt::format(R"(
+  <model name='{}'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <sphere><radius>0.15</radius></sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>{}</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)",
+                       name, hint);
+  };
+
+  ParseTestString(sphere_with_hint("coarse", "0.2"));
+  ParseTestString(sphere_with_hint("fine", "0.05"));
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  const auto& model = plant_.deformable_model();
+  const int coarse_dofs =
+      model
+          .GetReferencePositions(
+              model
+                  .GetBodyByName("body",
+                                 plant_.GetModelInstanceByName("coarse"))
+                  .body_id())
+          .size();
+  const int fine_dofs =
+      model
+          .GetReferencePositions(
+              model.GetBodyByName("body", plant_.GetModelInstanceByName("fine"))
+                  .body_id())
+          .size();
+  EXPECT_GT(fine_dofs, coarse_dofs);
+}
+
+/* A primitive shape must say how finely to tetrahedralize it. */
+TEST_F(SdfParserTest, DeformableSphereMissingResolutionHint) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <sphere><radius>0.15</radius></sphere>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*must specify a positive "
+                                        ".drake:mesh_resolution_hint.*"));
+}
+
+/* The hint must be positive. */
+TEST_F(SdfParserTest, DeformableSphereNonPositiveResolutionHint) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <sphere><radius>0.15</radius></sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*mesh_resolution_hint must be positive.*"));
+}
+
+/* A <mesh> is already the tetrahedral mesh, so a hint is meaningless; it is
+ ignored with a warning rather than silently dropped. */
+TEST_F(SdfParserTest, DeformableMeshWithResolutionHint) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 1);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*hint is ignored.*"));
+}
+
+/* Primitives that the geometry layer can't tetrahedralize are rejected by the
+ parser (with file/line context) rather than throwing from deep inside geometry
+ registration. */
+TEST_F(SdfParserTest, DeformableUnsupportedPrimitive) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <box><size>1 1 1</size></box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*must be either a <mesh>.*or a "
+                                        "<sphere>; found <box>."));
 }
 
 /* Specifying a non-empty visual geometry when perception properties are turned

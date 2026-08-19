@@ -252,7 +252,15 @@ std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
 // the following children elements of <drake:proximity_properties>:
 //  - <drake:mu_dynamic>
 //  - <drake:hunt_crossley_dissipation>
-//  - <drake:relaxation_time>.
+//  - <drake:relaxation_time>
+//  - <drake:mesh_resolution_hint>
+//
+// If present, the value for <drake:mesh_resolution_hint> is stored as the
+// (kHydroGroup, kRezHint) property; for a deformable body it selects the
+// resolution of the tetrahedral mesh generated from a primitive shape. Its
+// value is *not* validated here, because whether a hint is required (or even
+// meaningful) depends on the collision geometry's shape; that is the caller's
+// business.
 //
 // Returns nullopt if nothing specified or on error.
 std::optional<geometry::ProximityProperties>
