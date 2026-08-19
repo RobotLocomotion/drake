@@ -44,8 +44,8 @@ to fork its Eigen type_caster to allow this.
          // We're in any case making a copy, so non-writable inputs area also okay
          using NDArrayConst = array_for_eigen_t<T, const typename T::Scalar>;
          make_caster<NDArrayConst> caster;
--        if (!caster.from_python(src, flags & ~(uint8_t)cast_flags::accepts_none, cleanup))
-+        bool success = caster.from_python(src, flags & ~(uint8_t)cast_flags::accepts_none, cleanup);
+-        if (!caster.from_python(src, flags & ~cast_flags::accepts_none, cleanup))
++        bool success = caster.from_python(src, flags & ~cast_flags::accepts_none, cleanup);
 +        // Drake-specific change: allow sequences (i.e., lists) to convert.
 +        if (!success && (flags & (uint8_t) cast_flags::convert) && cleanup) {
 +            object np_array = convert_to_numpy<ndim_v<T>>(src);
@@ -64,7 +64,7 @@ to fork its Eigen type_caster to allow this.
                  return true;
 +
 +            // Drake-specific change: allow sequences (i.e., lists) to convert.
-+            if ((flags & (uint8_t) cast_flags::convert) && cleanup) {
++            if ((flags & cast_flags::convert) && cleanup) {
 +                object np_array = convert_to_numpy<ndim_v<T>>(src);
 +                if (dcaster.from_python_(np_array, flags, cleanup)) {
 +                    cleanup->append(np_array.release().ptr());

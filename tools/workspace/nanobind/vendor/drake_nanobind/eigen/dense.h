@@ -160,11 +160,11 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
 
     NB_TYPE_CASTER(T, NDArrayCaster::Name)
 
-    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+    bool from_python(handle src, uint32_t flags, cleanup_list *cleanup) noexcept {
         // We're in any case making a copy, so non-writable inputs area also okay
         using NDArrayConst = array_for_eigen_t<T, const typename T::Scalar>;
         make_caster<NDArrayConst> caster;
-        bool success = caster.from_python(src, flags & ~(uint8_t)cast_flags::accepts_none, cleanup);
+        bool success = caster.from_python(src, flags & ~cast_flags::accepts_none, cleanup);
         // Drake-specific change: allow sequences (i.e., lists) to convert.
         if (!success && (flags & (uint8_t) cast_flags::convert) && cleanup) {
             object np_array = convert_to_numpy<ndim_v<T>>(src);
@@ -255,7 +255,7 @@ struct type_caster<T, enable_if_t<is_eigen_xpr_v<T> &&
     template <typename T_> static constexpr bool can_cast() { return true; }
 
     /// Generating an expression template from a Python object is, of course, not possible
-    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept = delete;
+    bool from_python(handle src, uint32_t flags, cleanup_list *cleanup) noexcept = delete;
 
     template <typename T2>
     static handle from_cpp(T2 &&v, rv_policy policy, cleanup_list *cleanup) noexcept {
@@ -287,13 +287,13 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
 
     NDArrayCaster caster;
 
-    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+    bool from_python(handle src, uint32_t flags, cleanup_list *cleanup) noexcept {
         // Disable implicit conversions
-        return from_python_(src, flags & ~(uint8_t)cast_flags::convert, cleanup);
+        return from_python_(src, flags & ~cast_flags::convert, cleanup);
     }
 
-    bool from_python_(handle src, uint8_t flags, cleanup_list* cleanup) noexcept {
-        if (!caster.from_python(src, flags & ~(uint8_t)cast_flags::accepts_none, cleanup))
+    bool from_python_(handle src, uint32_t flags, cleanup_list* cleanup) noexcept {
+        if (!caster.from_python(src, flags & ~cast_flags::accepts_none, cleanup))
             return false;
 
         // Check for memory layout compatibility of non-contiguous 'Map' types
@@ -302,7 +302,7 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
             if constexpr (StrideType::InnerStrideAtCompileTime != Eigen::Dynamic) {
                 // A compile-time stride of 0 implies "contiguous" ..
                 int64_t is_expected = StrideType::InnerStrideAtCompileTime == 0
-                                      ? 1 /*  .. and equals 1 for the inner stride */
+                                      ? 1 // .. and equals 1 for the inner stride
                                       : StrideType::InnerStrideAtCompileTime,
                         is_actual = caster.value.stride(
                             (ndim_v<T> != 1 && T::IsRowMajor) ? 1 : 0);
@@ -460,33 +460,33 @@ struct type_caster<Eigen::Ref<T, Options, StrideType>,
     struct Empty { };
     std::conditional_t<MaybeConvert, DMapCaster, Empty> dcaster;
 
-    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+    bool from_python(handle src, uint32_t flags, cleanup_list *cleanup) noexcept {
         // Try a direct cast without implicit conversion first
         if (caster.from_python(src, flags, cleanup))
             return true;
 
         // Potentially convert strides/dtype when casting constant references
         if constexpr (MaybeConvert) {
-            /* Generating an implicit copy requires some object to assume
-               ownership. During a function call, ``dcaster`` can serve that
-               role (this case is detected by checking whether ``flags`` has
-               the ``manual`` flag set). When used in other situations (e.g.
-               ``nb::cast()``), the created ``Eigen::Ref<..>`` must take
-               ownership of the copy. This is only guranteed to work if
-               DMapConstructorOwnsData.
+            // Generating an implicit copy requires some object to assume
+            // ownership. During a function call, ``dcaster`` can serve that
+            // role (this case is detected by checking whether ``flags`` has
+            // the ``manual`` flag set). When used in other situations (e.g.
+            // ``nb::cast()``), the created ``Eigen::Ref<..>`` must take
+            // ownership of the copy. This is only guranteed to work if
+            // DMapConstructorOwnsData.
+            //
+            // If neither of these is possible, we disable implicit
+            // conversions.
 
-               If neither of these is possible, we disable implicit
-               conversions. */
-
-            if ((flags & (uint8_t) cast_flags::manual) &&
+            if ((flags & cast_flags::manual) &&
                 !DMapConstructorOwnsData)
-                flags &= ~(uint8_t) cast_flags::convert;
+                flags &= ~cast_flags::convert;
 
             if (dcaster.from_python_(src, flags, cleanup))
                 return true;
 
             // Drake-specific change: allow sequences (i.e., lists) to convert.
-            if ((flags & (uint8_t) cast_flags::convert) && cleanup) {
+            if ((flags & cast_flags::convert) && cleanup) {
                 object np_array = convert_to_numpy<ndim_v<T>>(src);
                 if (dcaster.from_python_(np_array, flags, cleanup)) {
                     cleanup->append(np_array.release().ptr());
