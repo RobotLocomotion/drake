@@ -53,6 +53,9 @@ drake_pybind_library(
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = [
+        "framework_callback_lifetime.cc",
+        "framework_callback_lifetime.h",
+        "event_callback_types.h",
         "framework_py.cc",
         "framework_py_semantics.cc",
         "framework_py_semantics.h",
@@ -216,7 +219,10 @@ drake_cc_library(
     hdrs = ["builder_life_support_pybind.h"],
     declare_installed_headers = False,
     visibility = ["//bindings/pydrake:__subpackages__"],
-    deps = ["//bindings/pydrake:pydrake_pybind"],
+    deps = [
+        "//bindings/pydrake:pydrake_pybind",
+        "//bindings/pydrake/common:call_info_pybind",
+    ],
 )
 
 drake_cc_library(
