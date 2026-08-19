@@ -1,10 +1,26 @@
 ARG PLATFORM=ubuntu:24.04
 
-FROM ${PLATFORM}
+# -----------------------------------------------------------------------------
+# Create a base provisioned image.
+# -----------------------------------------------------------------------------
+
+FROM ${PLATFORM} AS base
+
+ARG PYTHON_MANAGER=pip
+
+ADD provision-base.sh /image/
+
+RUN /image/provision-base.sh ${PYTHON_MANAGER}
+
+# -----------------------------------------------------------------------------
+# Provision the requested Python version.
+# -----------------------------------------------------------------------------
+
+FROM base AS python
 
 ARG PYTHON=3
 ARG PYTHON_MANAGER=pip
 
-ADD provision.sh /image/
+ADD provision-python.sh /image/
 
-RUN /image/provision.sh ${PYTHON} ${PYTHON_MANAGER}
+RUN /image/provision-python.sh ${PYTHON} ${PYTHON_MANAGER}
