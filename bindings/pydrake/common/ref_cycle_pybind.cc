@@ -9,10 +9,6 @@ namespace pydrake {
 
 using py::handle;
 
-#ifdef PYDRAKE_USE_PYBIND11
-using py::detail::function_call;
-#endif
-
 namespace internal {
 
 namespace {
@@ -101,47 +97,12 @@ void check_and_make_ref_cycle(size_t peer0, handle p0, size_t peer1, handle p1,
 
 }  // namespace
 
-void ref_cycle_impl(size_t peer0, size_t peer1,
-#ifdef PYDRAKE_USE_PYBIND11
-    const function_call& call,
-#else   // PYDRAKE_USE_NANOBIND
-    PyObject** args, size_t nargs,
-#endif  // PYDRAKE_USE_PYBIND11
-    handle ret) {
-#ifdef PYDRAKE_USE_PYBIND11
-  const char* const function_name = call.func.name;
-#else   // PYDRAKE_USE_NANOBIND
-  // TODO(rpoyner-tri) Figure out if builder_life_support_stash can capture the
-  // function name for use in error messages.
-  const char* const function_name = "<unknown_function>";
-#endif  // PYDRAKE_USE_PYBIND11
-  // Returns the handle selected by the given index. Throws if the index is
-  // invalid.
-  auto get_arg = [&](size_t n) -> handle {
-    if (n == 0) {
-      return ret;
-    }
-#ifdef PYDRAKE_USE_PYBIND11
-    if (n == 1 && call.init_self) {
-      return call.init_self;
-    }
-    if (n <= call.args.size()) {
-      return call.args[n - 1];
-    }
-    py::pybind11_fail(fmt::format(
-        "Could not activate ref_cycle: index {} is invalid for function '{}'",
-        n, function_name));
-#else   // PYDRAKE_USE_NANOBIND
-    if (n <= nargs) {
-      return args[n - 1];
-    }
-    throw std::runtime_error(fmt::format(
-        "Could not activate ref_cycle: index {} is invalid for function '{}'",
-        n, function_name));
-#endif  // PYDRAKE_USE_PYBIND11
-  };
-  handle p0 = get_arg(peer0);
-  handle p1 = get_arg(peer1);
+void ref_cycle_impl(
+    size_t peer0, size_t peer1, const CallInfo& info, handle ret) {
+  const char* const policy = "ref_cycle";
+  handle p0 = GetArg(info, ret, peer0, policy);
+  handle p1 = GetArg(info, ret, peer1, policy);
+  const char* const function_name = FunctionName(info);
 
   auto not_gc_error = [&function_name](size_t n) -> std::string {
     return fmt::format(

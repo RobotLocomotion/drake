@@ -4,6 +4,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/bindings/pydrake/common/call_info_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/string_map.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -86,42 +87,10 @@ template <typename T, size_t Builder>
 struct builder_life_support_stash {};
 
 template <typename T>
-void builder_life_support_stash_impl(size_t builder_index,
-#ifdef PYDRAKE_USE_PYBIND11
-    const py::detail::function_call& call,
-#else   // PYDRAKE_USE_NANOBIND
-    PyObject** args, size_t nargs,
-#endif  // PYDRAKE_USE_PYBIND11
-    py::handle ret) {
-  // Returns the handle selected by the given index. Throws if the index is
-  // invalid.
-  auto get_arg = [&](size_t n) -> py::handle {
-    if (n == 0) {
-      return ret;
-    }
-#ifdef PYDRAKE_USE_PYBIND11
-    if (n == 1 && call.init_self) {
-      return call.init_self;
-    }
-    if (n <= call.args.size()) {
-      return call.args[n - 1];
-    }
-    py::pybind11_fail(
-        fmt::format("Could not activate builder_life_support_stash: index {} "
-                    "is invalid for function '{}'",
-            n, call.func.name));
-#else   // PYDRAKE_USE_NANOBIND
-    if (n <= nargs) {
-      return args[n - 1];
-    }
-    // TODO(rpoyner-tri) Figure out if builder_life_support_stash can capture
-    // the function name for use in error messages.
-    throw std::runtime_error(fmt::format(
-        "Could not activate builder_life_support_stash: index {} is invalid",
-        n));
-#endif  // PYDRAKE_USE_PYBIND11
-  };
-  py::handle builder_handle = get_arg(builder_index);
+void builder_life_support_stash_impl(
+    size_t builder_index, const CallInfo& info, py::handle ret) {
+  py::handle builder_handle =
+      GetArg(info, ret, builder_index, "builder_life_support_stash");
   if (builder_handle.is_none()) {
     // Nothing useful to stash.
     return;
@@ -160,7 +129,7 @@ void process_postcall(PyObject** args, std::integral_constant<size_t, NArgs>,
   // result_guard avoids leaking a reference to the return object if postcall
   // throws an exception.
   py::object result_guard = py::steal(result);
-  builder_life_support_stash_impl<T>(Builder, args, NArgs, result);
+  builder_life_support_stash_impl<T>(Builder, {args, NArgs}, result);
   result_guard.release();
 }
 
@@ -191,7 +160,7 @@ class process_attribute<
   // NOLINTNEXTLINE(runtime/references)
   static void postcall(function_call& call, handle ret) {
     drake::pydrake::internal::builder_life_support_stash_impl<T>(
-        Builder, call, ret);
+        Builder, {call}, ret);
   }
 };
 #else   // PYDRAKE_USE_NANOBIND
