@@ -66,6 +66,10 @@ class PythonTarget:
         self.version = ".".join(pv_parts[:2])
         self.tag = "".join(pv_parts[:2])
 
+    def validate(self, n_components: int) -> None:
+        """XXX"""
+        assert len(self.version_tuple) == n_components, self.version_tuple
+
 
 def gripe(message):
     """
