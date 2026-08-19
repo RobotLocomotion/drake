@@ -20,10 +20,10 @@ common --@drake//tools/flags:private_runtime_repo_default=internal
 common @BAZEL_REPO_ENV@
 
 # Transcriptions of CMake configs into their equivalent Bazel flags.
-build:Debug --config=debug --fission=no
+build:Debug --config=debug
 build:MinSizeRel --compilation_mode=opt --copt=-Os --host_copt=-Os
 build:Release --compilation_mode=opt
-build:RelWithDebInfo --compilation_mode=opt --fission=no --copt=-g --host_copt=-g
+build:RelWithDebInfo --compilation_mode=opt --copt=-g --host_copt=-g
 
 # Match CMAKE_BUILD_TYPE as well as the WITH_FOO customizations.
 build @BAZEL_CONFIG@

@@ -27,6 +27,12 @@ build:linux --linkopt=-Wl,--threads=2
 # end-user default in drake/CMakeLists.txt.
 build:linux --config=openmp
 
+# Enable split debug symbols (Linux only), but not for Rust code because it
+# requires the non-standard "nightly" rustc toolchain.
+build:linux --fission=dbg
+build:linux --features=per_object_debug_info
+build:linux --@rules_rust//rust/settings:skip_fission_for_rust=True
+
 # Local developer debug builds need separate .dwo debug symbols to enable
 # debugging sessions, but they are not retrieved from the cache by the default
 # --remote_download_outputs=toplevel (which applies to both disk and remote
