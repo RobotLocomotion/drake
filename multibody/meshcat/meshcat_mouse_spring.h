@@ -35,8 +35,8 @@ There are three ways to enable mouse dragging in a simulation:
   has a MultibodyPlant, a SceneGraph, and a geometry::MeshcatVisualizer, or
   construct it and connect its ports by hand.
 
-In every case the plant's applied-spatial-force input port must be otherwise
-unused.
+If mouse dragging is enabled, the plant's applied-spatial-force input port must
+be otherwise unused.
 
 This system reads the drag state from Meshcat (see
 geometry::Meshcat::GetVirtualSpringKinematics()) and outputs a corresponding
