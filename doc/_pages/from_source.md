@@ -79,14 +79,14 @@ Otherwise, you can run a build from source by hand like this:
 ```bash
 # Get the sources.
 git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git
+cd drake
 
 # Install the build dependencies.
-drake/setup/install_prereqs
+setup/install_prereqs
 
 # Build and install using standard CMake commands.
-mkdir drake-build
-cd drake-build
-cmake ../drake
+cmake -S . -B build
+cd build
 make install
 ```
 
