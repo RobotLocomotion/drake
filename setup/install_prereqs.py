@@ -1,12 +1,12 @@
 """
 Drake setup program to install necessary prerequisites.
-
-We are in the process of migrating our bash setup code into this file.
-At the moment, this file is not usable as a stand-alone script.
-Always run `drake/setup/install_prereqs`, instead.
 """
 
+# Note for maintainers: We are in the process of migrating our bash
+# setup code into this file.
+
 import argparse
+import enum
 import functools
 import hashlib
 import json
@@ -16,15 +16,42 @@ from pathlib import Path
 import platform
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
 import textwrap
+import time
 import urllib.parse
 import urllib.request
 
 _MY_DIR: Path = Path(__file__).parent
 """The directory containing this script, used to locate our data assets."""
+
+_ALLOW_UPDATE = True
+"""Whether apt-get update (or eventually, brew update) is allowed to be
+called."""
+
+
+class Flavor(enum.Enum):
+    """Drake users (and developers) can choose a particular flavor of
+    prerequisites to install, depending on which operations they need to
+    accomplish."""
+
+    # These are listed in order from narrowest to widest prerequisites.
+    # Each flavor adds more prerequisites atop the prior flavor(s).
+    BINARY = "to run a precompiled binary release"
+    BUILD = "to build and install using CMake and GCC"
+    DEVELOPER = "to develop Drake with Bazel"
+
+    def __init__(self, description):
+        self.description = description
+
+    def __ge__(self, other):
+        everything = list(Flavor)
+        lhs = everything.index(self)
+        rhs = everything.index(other)
+        return lhs >= rhs
 
 
 def _warn(message: str) -> None:
@@ -75,18 +102,31 @@ def _check_sudo() -> None:
     subprocess.check_call(["sudo", "-v"])
 
 
+def _maybe_warn_conda() -> None:
+    """Warns if conda is on the $PATH."""
+    if shutil.which("conda") is None:
+        return
+    _warn("""
+        Conda was detected on your $PATH. Drake is not tested regularly with
+        Anaconda, so you may experience compatibility hiccups; when asking for
+        help, be sure to mention that Conda is involved.
+    """)
+
+
 def _run(
     *,
     args: list,
     cwd: Path | None = None,
     check: bool = True,
     superuser: bool = False,
+    flaky: bool = False,
     quiet: bool = False,
     interactive: bool = False,
 ) -> subprocess.CompletedProcess:
     """Runs a subprocess command given by `args`. When `check` is true, failure
     of the command is an `_error`. When `superuser` is true, the command will
-    be run under 'sudo' unless the euid is already root. When `quiet` is
+    be run under 'sudo' unless the euid is already root. When `flaky` is true,
+    the command will be retried a couple times when it fails. When `quiet` is
     true, the command line will not be printed by default. When `interactive`
     is true, input is allowed and output is unbuffered. Returns the completed
     process object."""
@@ -98,16 +138,23 @@ def _run(
         msg=f"Running: {shlex.join(args)} ...",
         level=logging.DEBUG if quiet else logging.INFO,
     )
-    process = subprocess.run(
-        args,
-        cwd=cwd,
-        stdin=subprocess.DEVNULL if not interactive else None,
-        stdout=subprocess.PIPE if not interactive else None,
-        stderr=subprocess.STDOUT if not interactive else None,
-        text=True,
-        check=False,
-    )
-    problem = check and (process.returncode != 0)
+    num_attempts = 3 if flaky else 1
+    for i in range(num_attempts):
+        if i > 0:
+            logging.info("... failed; waiting 30 sec before trying again ...")
+            time.sleep(30)
+        process = subprocess.run(
+            args,
+            cwd=cwd,
+            stdin=subprocess.DEVNULL if not interactive else None,
+            stdout=subprocess.PIPE if not interactive else None,
+            stderr=subprocess.STDOUT if not interactive else None,
+            text=True,
+            check=False,
+        )
+        problem = check and (process.returncode != 0)
+        if not problem:
+            break
     if process.stdout is not None:
         for line in process.stdout.splitlines():
             logging.log(
@@ -149,10 +196,33 @@ def _get_dpkg_versions(package_names: list[str]) -> dict[str, str | None]:
     return result
 
 
+@functools.cache
+def _apt_update() -> None:
+    """Runs 'apt-get update' to refresh available packages."""
+    if not _ALLOW_UPDATE:
+        return
+    process = _run(
+        args=["apt-get", "update"],
+        superuser=True,
+        flaky=True,
+    )
+    if process.returncode == 0:
+        return
+    _error("""
+        Drake is unable to run 'sudo apt-get update', probably because this
+        computer contains incorrect entries in its sources.list files, or
+        possibly because an internet service is down. Run 'sudo apt-get update'
+        and try to resolve whatever problems it reports. Do not try to set up
+        Drake until that command succeeds. This is not a bug in Drake. Do not
+        contact the Drake team for help.
+    """)
+
+
 def _apt_install(*, package_names: list[str], yes: bool) -> None:
     """Installs the given packages using 'apt-get'.
     The `yes` flag is passed along to apt as `--yes`."""
     assert package_names
+    _apt_update()
     args = [
         "apt-get",
         "install",
@@ -392,6 +462,45 @@ def _prefetch_bazel():
     _run(args=["bazel", "version"], cwd=_workspace_dir(), quiet=True)
 
 
+def _apt_install_flavor(*, flavor: Flavor, yes: bool) -> None:
+    """Installs the apt packages from Ubuntu required for the given `flavor`
+    and all of its antecedent flavors. The `yes` flag is passed along to apt
+    as `--yes`."""
+    assert isinstance(flavor, Flavor)
+    distribution = platform.freedesktop_os_release()["ID"]
+    codename = _os_codename()
+    packages = []
+    for item in Flavor:
+        txt_file = (
+            _MY_DIR
+            / distribution
+            / f"packages-{codename}-{item.name.lower()}.txt"
+        )
+        if not txt_file.exists():
+            description = platform.freedesktop_os_release().get(
+                "PRETTY_NAME", "<unknown>"
+            )
+            _warn(f"No such file {txt_file!s}.")
+            _error(f"This script does not support {description}.")
+        logging.debug(f"Reading {txt_file}.")
+        for line in txt_file.read_text(encoding="utf-8").splitlines():
+            line = line.split("#")[0].strip()
+            if not line:
+                continue
+            packages.append(line)
+        if item == flavor:
+            break
+    packages = sorted(packages)
+    installed = _get_dpkg_versions(packages)
+    missing_packages = [
+        name for name, version in installed.items() if version is None
+    ]
+    if missing_packages:
+        _apt_install(package_names=missing_packages, yes=yes)
+    else:
+        logging.debug("All selected packages-*.txt are already installed.")
+
+
 def main():
     # Log at INFO, not just WARNING.
     logging.basicConfig(
@@ -406,7 +515,10 @@ def main():
     )
     parser.add_argument(
         "--developer",
-        action="store_true",
+        action="store_const",
+        dest="flavor",
+        default="build",
+        const="developer",
         help="Install prerequisites needed only by Drake Developers.",
     )
     parser.add_argument(
@@ -419,7 +531,8 @@ def main():
     )
     parser.add_argument(
         "--without-update",
-        action="store_true",
+        dest="allow_update",
+        action="store_false",
         help="Ignored for forwards compatibility.",
     )
     parser.add_argument(
@@ -437,16 +550,36 @@ def main():
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    # We are in the process of migrating our bash setup code into this file.
-    # Anything not set up here was already setup by install_prereqs.sh.
-    if _is_ubuntu() and args.developer:
+    # Choose which flavor to install.
+    flavor_lookup = {item.name.lower(): item for item in Flavor}
+    flavor_lower = args.flavor
+    args.flavor = flavor_lookup[flavor_lower]
+
+    # Prepare for installation.
+    global _ALLOW_UPDATE
+    _ALLOW_UPDATE = args.allow_update
+    _maybe_warn_conda()
+
+    # Install the prerequisites.
+    if _is_ubuntu() and not args.user_environment_only:
+        _apt_install_flavor(
+            flavor=args.flavor,
+            yes=args.yes,
+        )
+    if _is_ubuntu() and args.flavor >= Flavor.DEVELOPER:
         _install_downloaded_debs(yes=args.yes)
         _maybe_fix_gcc(yes=args.yes)
+
+    # Configure the prerequisites.
+    if _is_ubuntu() and args.flavor >= Flavor.DEVELOPER:
         _generate_locales()
-    if args.developer or args.user_environment_only:
+    if args.flavor >= Flavor.DEVELOPER or args.user_environment_only:
         _setup_user_environment()
-    if args.developer:
+    if args.flavor >= Flavor.DEVELOPER:
         _prefetch_bazel()
+
+    # Finished.
+    logging.info(f"Successfully installed --flavor={flavor_lower} prereqs.")
 
 
 if __name__ == "__main__":

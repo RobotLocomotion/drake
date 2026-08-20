@@ -129,6 +129,9 @@ class InstallPrereqsActor:
         self.returncode = None
         self.stdout = None
 
+        # Track whether the setup program has performed these action(s) yet.
+        self.did_apt_update = False
+
         # The list of currently-installed packages to report to install_prereqs;
         # a mapping of name => version number.
         self.installed_packages = {}
@@ -298,15 +301,15 @@ class InstallPrereqsActor:
 
         return actual_argv
 
-    def expect_dpkg_query(self):
+    def expect_dpkg_query(self, *, default_version=None):
         def _reply(argv):
             stdout = ""
             for arg in argv[1:]:
                 if arg.startswith("-"):
                     # Skip over flags.
                     continue
-                if arg in self.installed_packages:
-                    version = self.installed_packages[arg]
+                version = self.installed_packages.get(arg, default_version)
+                if version is not None:
                     stdout += f"{arg} ii {version}\n"
             return stdout
 
@@ -315,7 +318,15 @@ class InstallPrereqsActor:
     def expect_sudo_check(self):
         self.expect_call(["sudo", "-n", "/bin/true"])
 
+    def expect_apt_update_if_not_yet_updated(self):
+        if self.did_apt_update:
+            return
+        self.expect_sudo_check()
+        self.expect_call(["sudo", "apt-get", "update"])
+        self.did_apt_update = True
+
     def expect_apt_install(self):
+        self.expect_apt_update_if_not_yet_updated()
         self.expect_sudo_check()
         argv = self.expect_call(
             ["sudo", "apt-get", "install", "--no-install-recommends", "..."]
@@ -339,6 +350,16 @@ class InstallPrereqsTest(unittest.TestCase):
         self.maxDiff = None
         logging.info(f"\n\n=== Running {self.id()} === ")
 
+        # In the test cases below, we'll check that prereqs flavors install the
+        # correct number of packages from apt as a cross-check that the setup
+        # code is probably correct, without overly coupling the test cases to
+        # the specific package names of our dependencies.
+        self._min_num_apt_packages = {
+            "binary": 10,
+            "build": 35,
+            "developer": 70,
+        }
+
     def test_help(self):
         dut = InstallPrereqsActor(test_case=self)
         dut.start(args=["--help"]).finish()
@@ -354,6 +375,23 @@ class InstallPrereqsTest(unittest.TestCase):
         self.assertTrue((dut.source() / "gen/environment.bazelrc").exists())
         self.assertEqual(dut.returncode, 0)
 
+    @unittest.skipIf(sys.platform == "darwin", "Ubuntu only")
+    def test_ubuntu_build_bootstrap(self):
+        """Checks build-only prereqs with nothing installed yet."""
+        dut = InstallPrereqsActor(test_case=self)
+        dut.start(args=["-y"])
+
+        # The DUT should install many Ubuntu packages (after confirming that
+        # they are missing).
+        dut.expect_dpkg_query()
+        num_packages = len(dut.expect_apt_install())
+        self.assertTrue(dut.did_apt_update)
+        self.assertGreater(num_packages, self._min_num_apt_packages["build"])
+        self.assertLess(num_packages, self._min_num_apt_packages["developer"])
+
+        dut.finish()
+        self.assertEqual(dut.returncode, 0)
+
     @staticmethod
     def _extract_debian_package_names_from_paths(paths: set[str]):
         """Given a set of filenames, e.g., {"/path/to/foo_arch.deb"}, returns
@@ -367,6 +405,12 @@ class InstallPrereqsTest(unittest.TestCase):
         dut.start(args=["--developer", "-y"])
 
         if sys.platform != "darwin":
+            # The DUT should install many Ubuntu packages (after confirming
+            # that they are missing).
+            dut.expect_dpkg_query()
+            package_names = dut.expect_apt_install()
+            self.assertTrue(dut.did_apt_update)
+            self.assertGreater(len(package_names), 0)
             # The DUT should install bazelisk and maybe kcov (after confirming
             # that they are missing).
             dut.expect_dpkg_query()
@@ -397,9 +441,10 @@ class InstallPrereqsTest(unittest.TestCase):
 
     def test_developer_bump(self):
         """Checks --developer with some things already installed, but at too-old
-        versions."""
+        versions in some cases."""
         dut = InstallPrereqsActor(test_case=self)
         dut.installed_packages = {
+            "valgrind": "999",
             "bazelisk": "0.0.0",
             "kcov": EXPECTED_KCOV,
             "libgcc-14-dev": "14.x.x",
@@ -409,6 +454,14 @@ class InstallPrereqsTest(unittest.TestCase):
         dut.start(args=["--developer", "-y"])
 
         if sys.platform != "darwin":
+            # The DUT should install many Ubuntu packages (after confirming
+            # that they are missing), but not "valgrind" because it reported
+            # as already installed.
+            dut.expect_dpkg_query()
+            package_names = dut.expect_apt_install()
+            self.assertTrue(dut.did_apt_update)
+            self.assertGreater(len(package_names), 0)
+            self.assertNotIn("valgrind", package_names)
             # The DUT should install bazelisk (after confirming the current
             # version is too old).
             dut.expect_dpkg_query()
@@ -444,14 +497,14 @@ class InstallPrereqsTest(unittest.TestCase):
         dut.installed_packages = {
             "bazelisk": EXPECTED_BAZELISK,
             "kcov": EXPECTED_KCOV,
-            "libgcc-14-dev": "14.x.x",
-            "libstdc++-14-dev": "14.x.x",
-            "libgfortran-14-dev": "14.x.x",
         }
         dut.locales = ["en_US.utf8"]
         dut.start(args=["--developer", "-y"])
 
         if sys.platform != "darwin":
+            # The DUT should install many Ubuntu packages (after confirming
+            # that they are missing).
+            dut.expect_dpkg_query(default_version="999")
             # The DUT confirms that bazelisk (etc) is already installed, and
             # doesn't install anything further.
             dut.expect_dpkg_query()
@@ -466,6 +519,7 @@ class InstallPrereqsTest(unittest.TestCase):
         dut.expect_call(["bazel", "version"])
 
         dut.finish()
+        self.assertFalse(dut.did_apt_update)
         self._check_developer_stdout_and_source_results(dut=dut)
         self.assertEqual(dut.returncode, 0)
 
