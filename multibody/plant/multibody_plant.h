@@ -1823,6 +1823,28 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void SetFuseWeldedLinks(
       bool fuse, std::optional<ModelInstanceIndex> model_instance = {});
 
+  /// (Internal use only for now) For systems whose links and joints
+  /// form one or more kinematic loops (a "closed topology"), controls
+  /// whether Finalize() should deal with those automatically. The default
+  /// setting is _not_ to deal with kinematic loops (if one is encountered,
+  /// an exception is thrown).
+  ///
+  /// @note This feature is in development and is not yet functional.
+  ///
+  /// To deal with loops automatically requires modifying the system's topology
+  /// so that it is structured as a tree of links and joints, plus constraints
+  /// needed to enforce loop closure. Breaking a loop is done by splitting
+  /// a link within that loop. Mass properties are divided between the original
+  /// ("primary") link and the new ("shadow") link. Then a weld constraint is
+  /// added between the primary and shadow links to enforce loop closure. When
+  /// the weld constraint is satisfied, the original physics is restored.
+  ///
+  /// @param[in] enable Whether Finalize() should automatically model closed
+  ///   kinematic loops rather than throwing.
+  /// @throws std::exception if called after Finalize().
+  /// @see GetEnableLoopTopology(), Finalize()
+  void SetEnableLoopTopology(bool enable);
+
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
   /// If a model instance is provided for which no explicit choice has been
@@ -1846,6 +1868,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see SetFuseWeldedLinks(), GetBaseBodyJointType(), Finalize()
   bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
+
+  /// (Internal use only for now) Returns the current setting for whether
+  /// Finalize() automatically deals with closed-topology (looped) systems.
+  ///
+  /// @note This function can be called pre-Finalize() or post-Finalize().
+  /// @see SetEnableLoopTopology(), Finalize()
+  bool GetEnableLoopTopology() const;
 
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any

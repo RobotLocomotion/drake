@@ -65,6 +65,7 @@
 // #include "drake/multibody/tree/scoped_name.h"
 // #include "drake/multibody/tree/screw_joint.h"
 // #include "drake/multibody/tree/screw_mobilizer.h"
+// #include "drake/multibody/tree/shadow_frame.h"
 // #include "drake/multibody/tree/spatial_inertia.h"
 // #include "drake/multibody/tree/uniform_gravity_field_element.h"
 // #include "drake/multibody/tree/unit_inertia.h"
@@ -3815,6 +3816,16 @@ Note:
     Implementations must meet the styleguide requirements for
     snake_case accessor methods.)""";
         } do_set_default_positions;
+        // Symbol: drake::multibody::Joint::effective_frame_on_child
+        struct /* effective_frame_on_child */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc = R"""()""";
+        } effective_frame_on_child;
+        // Symbol: drake::multibody::Joint::effective_frame_on_parent
+        struct /* effective_frame_on_parent */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc = R"""()""";
+        } effective_frame_on_parent;
         // Symbol: drake::multibody::Joint::frame_on_child
         struct /* frame_on_child */ {
           // Source: drake/multibody/tree/joint.h
@@ -3988,6 +3999,16 @@ Raises:
     RuntimeError if the dimension of ``default_positions`` does not
     match num_positions().)""";
         } set_default_positions;
+        // Symbol: drake::multibody::Joint::set_effective_frame_on_child
+        struct /* set_effective_frame_on_child */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc = R"""()""";
+        } set_effective_frame_on_child;
+        // Symbol: drake::multibody::Joint::set_effective_frame_on_parent
+        struct /* set_effective_frame_on_parent */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc = R"""()""";
+        } set_effective_frame_on_parent;
         // Symbol: drake::multibody::Joint::set_position_limits
         struct /* set_position_limits */ {
           // Source: drake/multibody/tree/joint.h
@@ -4028,7 +4049,14 @@ Raises:
 R"""(Utility for concrete joint implementations to use to select the
 inboard/outboard frames for a tree in the spanning forest, given
 whether they should be reversed from the parent/child frames that are
-members of this Joint object.)""";
+members of this Joint object.
+
+These are the joint's *effective* frames: if loop breaking moved one
+end of this joint onto an ephemeral shadow link, the frame for that
+end is the substitute frame on the shadow rather than the user's frame
+on the primary link. Concrete joints should always build their
+mobilizer from these frames, so that they need not know that shadow
+links exist.)""";
         } tree_frames;
         // Symbol: drake::multibody::Joint::type_name
         struct /* type_name */ {
@@ -7164,6 +7192,11 @@ Returns:
 Precondition:
     the context makes sense for use by this RigidBody.)""";
         } CalcSpatialInertiaInBodyFrame;
+        // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrameFromParameters
+        struct /* CalcSpatialInertiaInBodyFrameFromParameters */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc = R"""()""";
+        } CalcSpatialInertiaInBodyFrameFromParameters;
         // Symbol: drake::multibody::RigidBody::CloneToScalar
         struct /* CloneToScalar */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7354,7 +7387,12 @@ Precondition:
     the context makes sense for use by this RigidBody.
 
 Raises:
-    RuntimeError if context is null.)""";
+    RuntimeError if context is null.
+
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable; see
+    CalcSpatialInertiaInBodyFrame()).)""";
         } SetMass;
         // Symbol: drake::multibody::RigidBody::SetSpatialInertiaInBodyFrame
         struct /* SetSpatialInertiaInBodyFrame */ {
