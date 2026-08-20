@@ -835,7 +835,7 @@ class TestSymbolicExpression(unittest.TestCase):
             sym.if_then_else(
                 sym.Expression(v_x) > sym.Expression(v_y), v_x, v_y
             ),
-            v_x if v_x > v_y else v_y,
+            v_x if v_x > v_y else v_y,  # noqa: FURB136
         )
 
     def test_non_method_jacobian(self):
