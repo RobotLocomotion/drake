@@ -20,6 +20,24 @@ namespace meshcat {
 mouse in a Meshcat browser, applying a virtual spring force that pulls the
 grabbed point toward the cursor.
 
+To drag a body, hold Ctrl and drag the body with the left mouse button. While
+Ctrl is held, the cursor becomes a hand over any body that can be grabbed.
+During a drag, Meshcat draws a line from the grabbed point to the cursor;
+releasing the button ends the drag and removes the force.
+
+There are three ways to enable mouse dragging in a simulation:
+- visualization::AddDefaultVisualization() adds a %MeshcatMouseSpring for you,
+  so dragging works without any extra setup.
+- With visualization::ApplyVisualizationConfig(), dragging is governed by
+  VisualizationConfig::mouse_interaction_stiffness; set that to std::nullopt to
+  disable dragging, or to another value to tune how strongly the spring pulls.
+- Otherwise, call AddToBuilder() to add this system to a diagram that already
+  has a MultibodyPlant, a SceneGraph, and a geometry::MeshcatVisualizer, or
+  construct it and connect its ports by hand.
+
+In every case the plant's applied-spatial-force input port must be otherwise
+unused.
+
 This system reads the drag state from Meshcat (see
 geometry::Meshcat::GetVirtualSpringKinematics()) and outputs a corresponding
 ExternallyAppliedSpatialForce on the dragged body. Connecting that

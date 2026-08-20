@@ -53,6 +53,7 @@
         // non-null, and get cleared alongside it in end().
         this.object = null;       // The grabbed THREE.Object3D (a leaf mesh).
         this.pointerId = null;    // The captured pointer, released in end().
+        this.connection = null;   // The websocket the drag was started on.
         this.path = null;         // The meshcat "/"-path of the grabbed object.
         this.pickLocal = null;    // Grab point in the grabbed object's frame.
         this.targetWorld = null;  // Current drag target, in three.js world.
@@ -110,6 +111,12 @@
       // True iff a drag is in progress.
       isActive() {
         return this.object !== null;
+      }
+
+      // True iff the viewer currently has an open connection to the server.
+      isConnected() {
+        const conn = this.viewer.connection;
+        return !!conn && conn.readyState === WebSocket.OPEN;
       }
 
       // True iff every component of the THREE.Vector3 `v` is finite (neither
@@ -197,8 +204,9 @@
       // is called every animation frame, so that the attachment point keeps
       // tracking the (possibly moving) object even when the mouse is still.
       send() {
-        const conn = this.viewer.connection;
-        const connected = conn && conn.readyState == WebSocket.OPEN;
+        // A drag is only ever started while connected (see start()), so
+        // `this.connection` is non-null on every path that reaches here.
+        const conn = this.connection;
         if (this.isActive()) {
           // The attachment point follows the object; the target follows the
           // cursor. Convert both into Drake's z-up world frame, which is the
@@ -223,27 +231,28 @@
           }
           // Draw the drag locally and stream the endpoints to the server.
           this.updateVisualization(anchor, target);
-          if (connected) {
-            conn.send(MeshCat.msgpack.encode({
-              type: "mouse_drag",
-              name: this.path,
-              drag_anchor: [anchor.x, anchor.y, anchor.z],
-              drag_target: [target.x, target.y, target.z],
-            }));
-          }
+          conn.send(MeshCat.msgpack.encode({
+            type: "mouse_drag",
+            name: this.path,
+            drag_anchor: [anchor.x, anchor.y, anchor.z],
+            drag_target: [target.x, target.y, target.z],
+          }));
         } else {
-          if (connected) {
-            // An empty payload tells the server the drag has ended.
-            conn.send(MeshCat.msgpack.encode(
-              {type: "mouse_drag", name: "", drag_anchor: [],
-               drag_target: []}));
-          }
+          // An empty payload tells the server the drag has ended.
+          conn.send(MeshCat.msgpack.encode(
+            {type: "mouse_drag", name: "", drag_anchor: [],
+             drag_target: []}));
         }
       }
 
       start(event) {
         // A drag requires Ctrl + the left button, over a Drake object.
         if (!event.ctrlKey || event.button !== 0) {
+          return;
+        }
+        // Dragging only means something if the server is there to act on it,
+        // so with no connection decline the drag.
+        if (!this.isConnected()) {
           return;
         }
         const hit = this.raycast(event);
@@ -266,6 +275,10 @@
         event.stopPropagation();
         this.object = hit.object;
         this.pointerId = event.pointerId;
+        // The drag belongs to the connection it started on. Holding the socket
+        // like this (rather than re-reading viewer.connection when sending)
+        // avoids problems if the connection closes mid-drag.
+        this.connection = this.viewer.connection;
         this.path = this.objectPath(hit.object);
         this.pickLocal = hit.object.worldToLocal(hit.point.clone());
         this.targetWorld = hit.point.clone();
@@ -285,7 +298,7 @@
           // Not dragging: when Ctrl is held, hint that the object under the
           // cursor is grabbable by showing a hand ("grab") cursor.
           const domElement = this.viewer.renderer.domElement;
-          if (event.ctrlKey && this.raycast(event)) {
+          if (this.isConnected() && event.ctrlKey && this.raycast(event)) {
             domElement.style.cursor = "grab";
           } else {
             domElement.style.cursor = "";
@@ -335,6 +348,9 @@
         }
         this.viewer.set_dirty();
         this.send();
+        // Cleared last: the send() above still needs it to post the
+        // end-of-drag message.
+        this.connection = null;
       }
     }
 
