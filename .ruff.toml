@@ -43,7 +43,6 @@ ignore = [
     "UP032",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
     # upgrade. Either re-enable them or comment why we're keeping them off.
-    "ISC004",
     "LOG015",
     "PERF102",
     "PERF402",
