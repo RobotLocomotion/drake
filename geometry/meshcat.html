@@ -53,7 +53,6 @@
         // non-null, and get cleared alongside it in end().
         this.object = null;       // The grabbed THREE.Object3D (a leaf mesh).
         this.pointerId = null;    // The captured pointer, released in end().
-        this.connection = null;   // The websocket the drag was started on.
         this.path = null;         // The meshcat "/"-path of the grabbed object.
         this.pickLocal = null;    // Grab point in the grabbed object's frame.
         this.targetWorld = null;  // Current drag target, in three.js world.
@@ -204,10 +203,7 @@
       // is called every animation frame, so that the attachment point keeps
       // tracking the (possibly moving) object even when the mouse is still.
       send() {
-        // A drag is only ever started while connected (see start()), so
-        // `this.connection` is non-null unless the connection was lost
-        // mid-drag.
-        const conn = this.connection;
+        const conn = this.viewer.connection;
         if (this.isActive()) {
           // The attachment point follows the object; the target follows the
           // cursor. Convert both into Drake's z-up world frame, which is the
@@ -276,11 +272,6 @@
         event.stopPropagation();
         this.object = hit.object;
         this.pointerId = event.pointerId;
-        // The server tracks the drag per socket, so all of this drag's messages
-        // must go to the socket that started it. Re-reading viewer.connection
-        // could pick up a new socket from an automatic reconnect, which knows
-        // nothing about this drag. Sending on a closed socket is harmless.
-        this.connection = this.viewer.connection;
         this.path = this.objectPath(hit.object);
         this.pickLocal = hit.object.worldToLocal(hit.point.clone());
         this.targetWorld = hit.point.clone();
@@ -350,9 +341,6 @@
         }
         this.viewer.set_dirty();
         this.send();
-        // Cleared last: the send() above still needs it to post the
-        // end-of-drag message.
-        this.connection = null;
       }
     }
 
@@ -495,6 +483,7 @@
         };
         connection.onclose = function(evt) {
           status_dom.style.display = "block";
+          mouseDrag.end();
           if (do_reconnect) {
             // Immediately schedule an attempt to reconnect.
             setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
