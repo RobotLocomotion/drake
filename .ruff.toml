@@ -24,6 +24,9 @@ ignore = [
     # that would be fine, but it also rewrites `dict(a=1)` to `{"a": 1}` which
     # is sometimes less readable.
     "C408",
+    # "Using the root logger causes the messages to have no source information,
+    # making them less useful for debugging." All uses are in main programs.
+    "LOG015",
     # "Checks for operations that compare a name to itself." Some of our types
     # override equality, so our unit tests do a self-comparison frequently.
     "PLR0124",
@@ -43,7 +46,6 @@ ignore = [
     "UP032",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
     # upgrade. Either re-enable them or comment why we're keeping them off.
-    "LOG015",
     "PERF102",
     "PERF402",
     "PIE810",
