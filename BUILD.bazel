@@ -198,8 +198,8 @@ install_test(
 add_lint_tests(
     bazel_lint_extra_srcs = glob(
         [
-            "cmake/external/workspace/**/*.bazel.in",
-            "cmake/external/workspace/**/*.bzl",
+            "cmake/**/*.bazel.in",
+            "cmake/**/*.bzl",
         ],
         allow_empty = False,
     ),
