@@ -36,11 +36,7 @@ def _models_inventory() -> Iterator[str]:
     """
     for resource_path, filesystem_path in _runfiles_inventory():
         url = f"package://{resource_path}"
-        if (
-            resource_path.endswith(".dmd.yaml")
-            or resource_path.endswith(".sdf")
-            or resource_path.endswith(".urdf")
-        ):
+        if resource_path.endswith((".dmd.yaml", ".sdf", ".urdf")):
             yield url
         elif resource_path.endswith(".xml"):
             # We can't tell a MuJoCo file just by its suffix.

@@ -182,7 +182,7 @@ def run(*, scenario, graphviz=None):
     )
 
     # Add scene cameras.
-    for _, camera in scenario.cameras.items():
+    for camera in scenario.cameras.values():
         ApplyCameraConfig(config=camera, builder=builder, lcm_buses=lcm_buses)
 
     # Add visualization.

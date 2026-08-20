@@ -24,14 +24,14 @@ class RobotCommanderTest(unittest.TestCase):
         iiwa_directive = demo["directives"][2]["add_model"]
         self.assertEqual(iiwa_directive["name"], "iiwa")
         iiwa_q0 = []
-        for _, qs in iiwa_directive["default_joint_positions"].items():
+        for qs in iiwa_directive["default_joint_positions"].values():
             iiwa_q0.extend(qs)
         self.assertListEqual(mut.IIWA_Q0.tolist(), iiwa_q0)
 
         wsg_directive = demo["directives"][5]["add_model"]
         self.assertEqual(wsg_directive["name"], "wsg")
         wsg_q0 = []
-        for _, qs in demo["initial_position"]["wsg"].items():
+        for qs in demo["initial_position"]["wsg"].values():
             wsg_q0.extend(qs)
         self.assertListEqual([-mut.WSG_Q0, mut.WSG_Q0], wsg_q0)
 

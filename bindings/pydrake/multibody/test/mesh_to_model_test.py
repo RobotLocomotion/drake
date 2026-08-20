@@ -62,15 +62,15 @@ def _make_offset_obj(target_obj_path: Path, offset):
     )
     mesh = ReadObjToTriangleSurfaceMesh(source_path)
     with open(target_obj_path, "w") as f:
-        for v in mesh.vertices():
-            f.write(
-                f"v {v[0] + offset[0]} {v[1] + offset[1]} {v[2] + offset[2]}\n"
-            )
-        for t in mesh.triangles():
+        f.writelines(
+            f"v {v[0] + offset[0]} {v[1] + offset[1]} {v[2] + offset[2]}\n"
+            for v in mesh.vertices()
+        )
+        f.writelines(
             # In-memory triangles are zero indexed, OBJ is one indexed.
-            f.write(
-                f"f {t.vertex(0) + 1} {t.vertex(1) + 1} {t.vertex(2) + 1}\n"
-            )
+            f"f {t.vertex(0) + 1} {t.vertex(1) + 1} {t.vertex(2) + 1}\n"
+            for t in mesh.triangles()
+        )
 
 
 def _file_contents(filename):

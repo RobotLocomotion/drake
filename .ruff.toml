@@ -16,11 +16,17 @@ ignore = [
     # easy bug to miss, but unfortunately the linter produces too many false
     # positives in our unit tests that use a helper lambda inside a test loop.
     "B023",
+    # "Checks for except clauses that catch all exceptions." In practice, all
+    # places this flags are false positives.
+    "BLE001",
     # "Checks for unnecessary dict(), list() or tuple() calls that can be
     # rewritten as empty literals." If it were only empty ones that got dinged,
     # that would be fine, but it also rewrites `dict(a=1)` to `{"a": 1}` which
     # is sometimes less readable.
     "C408",
+    # "Using the root logger causes the messages to have no source information,
+    # making them less useful for debugging." All uses are in main programs.
+    "LOG015",
     # "Checks for operations that compare a name to itself." Some of our types
     # override equality, so our unit tests do a self-comparison frequently.
     "PLR0124",
@@ -31,6 +37,10 @@ ignore = [
     # this because we have more linters than just `ruff`, and their noqa marks
     # confuse this check.
     "RUF100",
+    # "The exec() function is insecure as it allows for arbitrary code
+    # execution." The hazard is not relvant for us because Drake makes no
+    # security promises.
+    "S102",
     # "Checks for if statements that can be replaced with bool." We have a
     # handful of uses of these in our code, and all of them are written out
     # longhand for clarity.
@@ -38,23 +48,6 @@ ignore = [
     # "Checks for str.format calls that can be replaced with f-strings."
     # In many cases this is a good idea, but not universally.
     "UP032",
-    # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
-    # upgrade. Either re-enable them or comment why we're keeping them off.
-    "BLE001",
-    "DTZ005",
-    "EXE002",
-    "FLY002",
-    "FURB122",
-    "FURB136",
-    "ISC004",
-    "LOG015",
-    "PERF102",
-    "PERF402",
-    "PIE810",
-    "PYI041",
-    "RUF012",
-    "S102",
-    "S110",
 ]
 
 # Enable import sorting.

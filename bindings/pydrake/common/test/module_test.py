@@ -26,13 +26,8 @@ class TestCommon(unittest.TestCase):
             self.assertTrue(e.code is not None)
             self.assertRegex(
                 str(e),
-                ".*".join(
-                    [
-                        "Failure at ",
-                        " trigger_an_assertion_failure",
-                        " condition 'false' failed",
-                    ]
-                ),
+                "Failure at .* trigger_an_assertion_failure.*"
+                " condition 'false' failed",
             )
 
     def test_find_resource_or_throw(self):
