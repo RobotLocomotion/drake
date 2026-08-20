@@ -60,6 +60,19 @@ T CombinePointContactHuntCrossleyDissipation(const T& stiffness_A,
   return (stiffness_B / denom) * dissipation_A +
          (stiffness_A / denom) * dissipation_B;
 }
+
+template <typename T, typename SpecsMap>
+int CountActiveConstraints(const MultibodyPlant<T>& plant,
+                           const systems::Context<T>& context,
+                           const SpecsMap& specs_map) {
+  int result{0};
+  for (const auto& [id, _] : specs_map) {
+    if (plant.GetConstraintActiveStatus(context, id)) {
+      ++result;
+    }
+  }
+  return result;
+}
 }  // namespace
 
 template <typename T>
@@ -231,19 +244,15 @@ void IcfBuilder<T>::UpdateModel(
   }
 
   // Coupler constraints
-  AllocateCouplerConstraints(model);
   SetCouplerConstraints(context, model);
 
   // Weld constraints
-  AllocateWeldConstraints(model);
   SetWeldConstraints(context, model);
 
   // Ball constraints
-  AllocateBallConstraints(model);
   SetBallConstraints(context, model);
 
   // Distance constraints
-  AllocateDistanceConstraints(model);
   SetDistanceConstraints(context, model);
 
   // Limit constraints
@@ -381,15 +390,6 @@ void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
 }
 
 template <typename T>
-void IcfBuilder<T>::AllocateCouplerConstraints(IcfModel<T>* model) const {
-  DRAKE_ASSERT(model != nullptr);
-  const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
-      plant_.get_coupler_constraint_specs();
-  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
-  couplers.Resize(specs_map.size());
-}
-
-template <typename T>
 void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
                                           IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
@@ -400,8 +400,14 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
 
   CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
 
+  // Resize to account for (in)active constraints.
+  couplers.Resize(CountActiveConstraints(plant_, context, specs_map));
+
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
+    if (!plant_.GetConstraintActiveStatus(context, id)) {
+      continue;
+    }
     const Joint<T>& joint0 = plant_.get_joint(spec.joint0_index);
     const Joint<T>& joint1 = plant_.get_joint(spec.joint1_index);
 
@@ -438,15 +444,6 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
 }
 
 template <typename T>
-void IcfBuilder<T>::AllocateWeldConstraints(IcfModel<T>* model) const {
-  DRAKE_ASSERT(model != nullptr);
-  const std::map<MultibodyConstraintId, WeldConstraintSpec>& specs_map =
-      plant_.get_weld_constraint_specs();
-  WeldConstraintsPool<T>& welds = model->weld_constraints_pool();
-  welds.Resize(specs_map.size());
-}
-
-template <typename T>
 void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
                                        IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
@@ -458,8 +455,14 @@ void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
 
   WeldConstraintsPool<T>& welds = model->weld_constraints_pool();
 
+  // Resize to account for (in)active constraints.
+  welds.Resize(CountActiveConstraints(plant_, context, specs_map));
+
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
+    if (!plant_.GetConstraintActiveStatus(context, id)) {
+      continue;
+    }
     const RigidBody<T>& body_A = plant_.get_body(spec.body_A);
     const RigidBody<T>& body_B = plant_.get_body(spec.body_B);
 
@@ -519,15 +522,6 @@ void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
 }
 
 template <typename T>
-void IcfBuilder<T>::AllocateBallConstraints(IcfModel<T>* model) const {
-  DRAKE_ASSERT(model != nullptr);
-  const std::map<MultibodyConstraintId, BallConstraintSpec>& specs_map =
-      plant_.get_ball_constraint_specs();
-  BallConstraintsPool<T>& ball_constraints = model->ball_constraints_pool();
-  ball_constraints.Resize(specs_map.size());
-}
-
-template <typename T>
 void IcfBuilder<T>::SetBallConstraints(const systems::Context<T>& context,
                                        IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
@@ -538,8 +532,14 @@ void IcfBuilder<T>::SetBallConstraints(const systems::Context<T>& context,
 
   BallConstraintsPool<T>& ball_constraints = model->ball_constraints_pool();
 
+  // Resize to account for (in)active constraints.
+  ball_constraints.Resize(CountActiveConstraints(plant_, context, specs_map));
+
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
+    if (!plant_.GetConstraintActiveStatus(context, id)) {
+      continue;
+    }
     // p_BQ is optional pre-Finalize; on a finalized plant it must be set.
     DRAKE_DEMAND(spec.p_BQ.has_value());
 
@@ -592,14 +592,6 @@ void IcfBuilder<T>::SetBallConstraints(const systems::Context<T>& context,
 }
 
 template <typename T>
-void IcfBuilder<T>::AllocateDistanceConstraints(IcfModel<T>* model) const {
-  DRAKE_ASSERT(model != nullptr);
-  DistanceConstraintsPool<T>& distance_constraints =
-      model->distance_constraints_pool();
-  distance_constraints.Resize(plant_.num_distance_constraints());
-}
-
-template <typename T>
 void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
                                            IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
@@ -613,8 +605,15 @@ void IcfBuilder<T>::SetDistanceConstraints(const systems::Context<T>& context,
   DistanceConstraintsPool<T>& distance_constraints =
       model->distance_constraints_pool();
 
+  // Resize to account for (in)active constraints.
+  distance_constraints.Resize(
+      CountActiveConstraints(plant_, context, params_map));
+
   int index = 0;
-  for (const auto& [_, params] : params_map) {
+  for (const auto& [id, params] : params_map) {
+    if (!plant_.GetConstraintActiveStatus(context, id)) {
+      continue;
+    }
     const RigidBody<T>& body_A = plant_.get_body(params.bodyA());
     const RigidBody<T>& body_B = plant_.get_body(params.bodyB());
 
