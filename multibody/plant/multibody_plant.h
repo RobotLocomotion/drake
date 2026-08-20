@@ -2278,9 +2278,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @anchor mbp_surface_velocity
   /// @name               Surface velocity
   ///
-  /// @warning Surface velocity is a work in progress. There are no guarantees
-  ///          on its effect until the implementation is complete.
-  ///
   /// Surface velocity models bodies (links) whose surfaces move relative to
   /// the body itself — conveyor belts, spinning drums, tank treads, or any
   /// mechanism where internal motion produces a tangential velocity at contact

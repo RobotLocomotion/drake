@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+  <!-- A ground slab. -->
+  <model name="ground">
+    <!-- Floor -->
+    <link name="slab">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0</iyy>
+          <iyz>0</iyz>
+          <izz>1.0</izz>
+        </inertia>
+      </inertial>
+      <visual name="ground_visual">
+        <pose>0 0 -0.025 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>30.0 30.0 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1.0</ambient>
+          <diffuse>0.05 0.05 0.05 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="ground-collision">
+        <geometry>
+          <box>
+            <size>30.0 30.0 0.05</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

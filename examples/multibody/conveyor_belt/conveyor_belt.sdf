@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+  <!-- This file shows how to create a conveyor belt with a box on top.
+       It also shows how to define a surface velocity for other geometries. -->
+  <model name="belt_segment">
+
+    <!-- Conveyor belt -->
+    <link name="belt">
+      <drake:surface_velocity_axis>0.0 -1.0 0.0</drake:surface_velocity_axis>
+      <visual name="conveyor_belt_visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/examples/multibody/conveyor_belt/conveyor_belt.gltf</uri>
+            <scale>0.25 1 0.25</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="conveyor_belt_collision">
+        <geometry>
+          <box>
+            <size>2.5 1.0 0.025</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:mesh_resolution_hint>0.2</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
