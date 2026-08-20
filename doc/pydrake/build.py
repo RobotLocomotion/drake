@@ -83,8 +83,7 @@ def _write_module(name, f_name):
             f.write(".. toctree::\n")
             f.write("    :maxdepth: 1\n")
             f.write("\n")
-            for sub in subs:
-                f.write(f"    {sub}\n")
+            f.writelines(f"    {sub}\n" for sub in subs)
             f.write("\n\n")
         f.write(f".. automodule:: {name}\n")
         f.write("    :members:\n")
