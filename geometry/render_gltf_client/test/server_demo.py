@@ -324,7 +324,7 @@ class RenderRequest:
                 if CLEANUP:
                     try:
                         temp_path.unlink()
-                    except Exception:
+                    except Exception:  # noqa: S110
                         pass
                 raise RenderError(
                     f"Provided scene_sha256='{expected_sha256}' does not "

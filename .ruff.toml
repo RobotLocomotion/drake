@@ -47,9 +47,6 @@ ignore = [
     # "Checks for str.format calls that can be replaced with f-strings."
     # In many cases this is a good idea, but not universally.
     "UP032",
-    # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
-    # upgrade. Either re-enable them or comment why we're keeping them off.
-    "S110",
 ]
 
 # Enable import sorting.
