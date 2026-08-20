@@ -197,7 +197,8 @@ class CollisionFilter {
   /* A resolved statement: the GeometrySets of the original declaration have
    been expanded to explicit vectors of GeometryIds at the time the transient
    was applied. Storing resolved IDs means the extract_ids callback is not
-   needed at replay time.
+   needed at replay time. It also stores whether the statement was declared
+   as invariant or not (see Apply()).
 
    For Within operations, set_B is empty and the cross product is set_A × set_A.
    For Between operations, the cross product is set_A × set_B.
@@ -210,6 +211,7 @@ class CollisionFilter {
     Operation operation{};
     std::vector<GeometryId> set_A;
     std::vector<GeometryId> set_B;
+    bool is_invariant{false};
   };
 
   /* A transient declaration stored as its resolved statements. */
@@ -248,11 +250,19 @@ class CollisionFilter {
    when a geometry is unregistered. */
   static void RemovePairsFor(GeometryId id, FilterState* state);
 
-  /* Applies the given declaration (using the extract_ids callback) to `state`.
-   Used by the public Apply(). */
-  static void ApplyDeclarationToState(
+  /* Resolves all statements in `declaration` by calling `extract_ids` on each
+   GeometrySet, validates that every resulting GeometryId is registered with
+   this filter system, and returns the resolved statements. `is_invariant` is
+   forwarded into each ResolvedStatement so that ApplyStatement() can enforce
+   the invariant flag without re-consulting the original declaration.
+   @throws std::exception if any GeometryId produced by `extract_ids` has not
+                          been added to `this` filter system. */
+  std::vector<ResolvedStatement> ResolveStatementsOrThrow(
       const CollisionFilterDeclaration& declaration,
-      const ExtractIds& extract_ids, bool is_invariant, FilterState* state);
+      const ExtractIds& extract_ids, bool is_invariant) const;
+
+  /* Throws std::runtime_error if any id in `ids` is not in geometries_. */
+  void ThrowIfAnyUnregistered(const std::unordered_set<GeometryId>& ids) const;
 
   /* Rebuilds filter_state_ from persistent_base_ plus all entries in
    transient_history_ replayed in order. Called after RemoveDeclaration() or
