@@ -26,6 +26,7 @@ import re
 import shutil
 import subprocess
 import sys
+import types
 import unittest
 
 import numpy as np
@@ -143,22 +144,24 @@ class TestIntegration(unittest.TestCase):
         image_diff_fraction = np.count_nonzero(image_diff) / image_diff.size
         self.assertLess(image_diff_fraction, fraction)
 
-    _REPLACED = {
-        "bufferView": "bufferViews",
-        "camera": "cameras",
-        "index": "textures",
-        "indices": "accessors",
-        "material": "materials",
-        "mesh": "meshes",
-        "sampler": "samplers",
-        "source": "images",
-        "POSITION": "accessors",
-        "TEXCOORD_0": "accessors",
-    }
+    _REPLACED = types.MappingProxyType(
+        {
+            "bufferView": "bufferViews",
+            "camera": "cameras",
+            "index": "textures",
+            "indices": "accessors",
+            "material": "materials",
+            "mesh": "meshes",
+            "sampler": "samplers",
+            "source": "images",
+            "POSITION": "accessors",
+            "TEXCOORD_0": "accessors",
+        }
+    )
     """A map from an object property containing an index value to the name of
     the array that contains the full definition."""
 
-    _REMOVED = ["buffer", "name"]
+    _REMOVED = ("buffer", "name")
     """The nodes that we'll simply remove.  We don't want the test to even
     consider them."""
 

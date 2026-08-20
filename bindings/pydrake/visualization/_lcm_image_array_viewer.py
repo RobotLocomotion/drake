@@ -1,5 +1,6 @@
 import argparse
 from io import BytesIO
+import types
 import zlib
 
 from flask import Flask, Response
@@ -55,19 +56,23 @@ class LcmImageArrayViewer:
     and broadcasts them to an URL for visualization.
     """
 
-    _IMAGE_DATA_TYPE = {
-        lcmt_image.CHANNEL_TYPE_UINT8: np.uint8,
-        lcmt_image.CHANNEL_TYPE_INT16: np.int16,
-        lcmt_image.CHANNEL_TYPE_UINT16: np.uint16,
-        lcmt_image.CHANNEL_TYPE_FLOAT32: np.float32,
-    }
+    _IMAGE_DATA_TYPE = types.MappingProxyType(
+        {
+            lcmt_image.CHANNEL_TYPE_UINT8: np.uint8,
+            lcmt_image.CHANNEL_TYPE_INT16: np.int16,
+            lcmt_image.CHANNEL_TYPE_UINT16: np.uint16,
+            lcmt_image.CHANNEL_TYPE_FLOAT32: np.float32,
+        }
+    )
     """The mapping from `lcmt_image` channel_type enum to numpy data type."""
 
-    _IMAGE_CHANNEL_NUM = {
-        lcmt_image.PIXEL_FORMAT_RGBA: 4,
-        lcmt_image.PIXEL_FORMAT_DEPTH: 1,
-        lcmt_image.PIXEL_FORMAT_LABEL: 1,
-    }
+    _IMAGE_CHANNEL_NUM = types.MappingProxyType(
+        {
+            lcmt_image.PIXEL_FORMAT_RGBA: 4,
+            lcmt_image.PIXEL_FORMAT_DEPTH: 1,
+            lcmt_image.PIXEL_FORMAT_LABEL: 1,
+        }
+    )
     """The mapping from `lcmt_image` pixel_format enum to the number of
     channels.
     """

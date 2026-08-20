@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import tempfile
 from textwrap import dedent
+import types
 
 from flask import Flask, request, send_file
 from python.runfiles import Create as CreateRunfiles
@@ -147,25 +148,27 @@ class RenderRequest:
     # request <form>. It's used for validation and should be kept consistent
     # with Drake's documentation on `Render Endpoint <form> Data` section.
     # See also: https://drake.mit.edu/doxygen_cxx/group__render__engine__gltf__client__server__api.html  # noqa
-    EXPECTED_FORM_FIELDS: dict[str, FieldType] = {
-        "scene": FieldType.File,
-        "scene_sha256": FieldType.String,
-        "image_type": FieldType.String,
-        "min_depth": FieldType.Float,
-        "max_depth": FieldType.Float,
-        "width": FieldType.Int,
-        "height": FieldType.Int,
-        "near": FieldType.Float,
-        "far": FieldType.Float,
-        "focal_x": FieldType.Float,
-        "focal_y": FieldType.Float,
-        "fov_x": FieldType.Float,
-        "fov_y": FieldType.Float,
-        "center_x": FieldType.Float,
-        "center_y": FieldType.Float,
-        # NOTE: This input is not actually validated.
-        "submit": FieldType.String,
-    }
+    EXPECTED_FORM_FIELDS: dict[str, FieldType] = types.MappingProxyType(
+        {
+            "scene": FieldType.File,
+            "scene_sha256": FieldType.String,
+            "image_type": FieldType.String,
+            "min_depth": FieldType.Float,
+            "max_depth": FieldType.Float,
+            "width": FieldType.Int,
+            "height": FieldType.Int,
+            "near": FieldType.Float,
+            "far": FieldType.Float,
+            "focal_x": FieldType.Float,
+            "focal_y": FieldType.Float,
+            "fov_x": FieldType.Float,
+            "fov_y": FieldType.Float,
+            "center_x": FieldType.Float,
+            "center_y": FieldType.Float,
+            # NOTE: This input is not actually validated.
+            "submit": FieldType.String,
+        }
+    )
 
     def __init__(self, flask_request: request, verbose: bool = True):
         """
