@@ -1024,15 +1024,11 @@ class TestGlobalInverseKinematics(unittest.TestCase):
         options = ik.GlobalInverseKinematics.Options()
         self.assertEqual(
             repr(options),
-            "".join(
-                [
-                    "GlobalInverseKinematics.Options(",
-                    "num_intervals_per_half_axis=2, ",
-                    "approach=Approach.kBilinearMcCormick, "
-                    "interval_binning=IntervalBinning.kLogarithmic, "
-                    "linear_constraint_only=False)",
-                ]
-            ),
+            "GlobalInverseKinematics.Options("
+            "num_intervals_per_half_axis=2, "
+            "approach=Approach.kBilinearMcCormick, "
+            "interval_binning=IntervalBinning.kLogarithmic, "
+            "linear_constraint_only=False)",
         )
         self.assertEqual(options.num_intervals_per_half_axis, 2)
         mircg = mp.MixedIntegerRotationConstraintGenerator

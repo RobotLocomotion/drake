@@ -34,6 +34,7 @@ import re
 import struct
 import token
 import tokenize
+import types
 
 # A brief summary of LCM's grammar.
 #
@@ -58,7 +59,7 @@ import tokenize
 
 PrimitiveType = enum.Enum(
     "PrimitiveType",
-    " ".join(
+    " ".join(  # noqa: FLY002
         [
             "boolean",
             "byte",
@@ -673,16 +674,18 @@ class @@STRUCT_NAME@@ {
 class CppGen:
     """Produces C++ message code for an LCM message definition."""
 
-    _FIXED_SIZE = {
-        PrimitiveType.boolean: 1,
-        PrimitiveType.byte: 1,
-        PrimitiveType.double: 8,
-        PrimitiveType.float: 4,
-        PrimitiveType.int8_t: 1,
-        PrimitiveType.int16_t: 2,
-        PrimitiveType.int32_t: 4,
-        PrimitiveType.int64_t: 8,
-    }
+    _FIXED_SIZE = types.MappingProxyType(
+        {
+            PrimitiveType.boolean: 1,
+            PrimitiveType.byte: 1,
+            PrimitiveType.double: 8,
+            PrimitiveType.float: 4,
+            PrimitiveType.int8_t: 1,
+            PrimitiveType.int16_t: 2,
+            PrimitiveType.int32_t: 4,
+            PrimitiveType.int64_t: 8,
+        }
+    )
 
     def __init__(self, struct):
         self._struct = struct
