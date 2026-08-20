@@ -16,6 +16,9 @@ ignore = [
     # easy bug to miss, but unfortunately the linter produces too many false
     # positives in our unit tests that use a helper lambda inside a test loop.
     "B023",
+    # "Checks for except clauses that catch all exceptions." In practice, all
+    # places this flags are false positives.
+    "BLE001",
     # "Checks for unnecessary dict(), list() or tuple() calls that can be
     # rewritten as empty literals." If it were only empty ones that got dinged,
     # that would be fine, but it also rewrites `dict(a=1)` to `{"a": 1}` which
@@ -40,7 +43,6 @@ ignore = [
     "UP032",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
     # upgrade. Either re-enable them or comment why we're keeping them off.
-    "BLE001",
     "DTZ005",
     "EXE002",
     "FLY002",
