@@ -84,7 +84,9 @@ correspondence between elements of the graph and the forest:
   - A user-specified Link may get split into a "primary" Link and one or more
     "shadow" Links in order to break loops. Each of those follows its own Mobod,
     so a user Link can generate multiple Mobods. (Geometry should remain
-    attached to the Mobod followed by the primary Link.)
+    attached to the Mobod followed by the primary Link.) World is the one Link
+    that is never split; a loop that closes on World is broken by splitting the
+    Link at the other end of the loop-closing Joint instead.
   - A primary Link and its shadows must be welded together by weld constraints
     which will be included in the forest and added as an ephemeral element to
     the graph.
@@ -830,6 +832,7 @@ class LinkJointGraph {
   // connects a "parent" link to a "child" link; that ordering determines the
   // sign convention for its multipliers (forces). We always make the Primary
   // the weld's parent link, and the Shadow its child.
+  // @pre the primary link is not World (we never split World).
   LinkOrdinal AddShadowLink(LinkOrdinal primary_link_ordinal,
                             JointOrdinal shadow_joint_ordinal,
                             bool shadow_is_parent);
