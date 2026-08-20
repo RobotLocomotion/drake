@@ -330,7 +330,9 @@ class RenderRequest:
                 )
 
             # Create a timestamp for saving the file to avoid collisions.
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
+            timestamp = datetime.datetime.now(tz=datetime.UTC).strftime(
+                "%Y-%m-%d_%H-%M-%S-%f"
+            )
             scene_path = TMP_DIR / f"{timestamp}.gltf"
             temp_path.rename(scene_path)
 
