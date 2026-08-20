@@ -185,7 +185,7 @@ def _rewrite_one_text(*, text, inline_namespace):
 
     # Anytime the sense of wrapping switches, we'll insert a line.
     # Do this in reverse order so that the indices into lines[] are stable.
-    open_inline = " ".join(["inline namespace drake_vendor", hidden, "{"])
+    open_inline = f"inline namespace drake_vendor {hidden} {{"
     close_inline = "}  /* inline namespace drake_vendor */"
     for i in range(len(lines), -1, -1):
         this_wrap = should_wrap[i] if i < len(lines) else False

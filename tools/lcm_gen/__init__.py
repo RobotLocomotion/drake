@@ -58,7 +58,7 @@ import tokenize
 
 PrimitiveType = enum.Enum(
     "PrimitiveType",
-    " ".join(
+    " ".join(  # noqa: FLY002
         [
             "boolean",
             "byte",
