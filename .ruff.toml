@@ -37,6 +37,9 @@ ignore = [
     # this because we have more linters than just `ruff`, and their noqa marks
     # confuse this check.
     "RUF100",
+    # "The exec() function is insecure as it allows for arbitrary code
+    # execution." Not relevant.
+    "S102",
     # "Checks for if statements that can be replaced with bool." We have a
     # handful of uses of these in our code, and all of them are written out
     # longhand for clarity.
@@ -46,7 +49,6 @@ ignore = [
     "UP032",
     # TODO(jwnimmer-tri) These have been disabled as part of the ruff 0.16
     # upgrade. Either re-enable them or comment why we're keeping them off.
-    "S102",
     "S110",
 ]
 
