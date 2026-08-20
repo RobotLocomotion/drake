@@ -2005,9 +2005,9 @@ get back to {4} and realize we're forced to connect massless links {4} and {3}.
 But if we change link {4} to massful, that same procedure should rescue dynamics
 since we can end both branches with half of link {4}.
 
-We'll also try replacing massful link 4 with World and verify that still
-works the same way. We can split off an arbitrary-mass chunk of World to
-terminate the massless branch. */
+We'll also try replacing massful link 4 with World. In that case dynamics is
+_not_ rescued: World is never split, so we are forced to split massless link
+{3} and end both branches with a massless body. */
 GTEST_TEST(SpanningForest, MasslessLoopAreDetected) {
   LinkJointGraph graph;
   graph.RegisterJointType("revolute", 1, 1);
@@ -2054,15 +2054,94 @@ GTEST_TEST(SpanningForest, MasslessLoopAreDetected) {
                          LinkIndex(world_graph_joints[i].second));
   }
 
-  /* Check that we split World as expected. */
-  EXPECT_TRUE(world_graph.BuildForest());
+  /* The loop-closing joint here is joint1, connecting World to massless
+  link3. Check that we split link3 rather than World, and that we report that
+  this model can't be used for dynamics. */
+  EXPECT_FALSE(world_graph.BuildForest());
+  EXPECT_THAT(world_graph.forest().why_no_dynamics(),
+              testing::MatchesRegex("Loop breaks.*joint1.*between World and "
+                                    "massless link link3.*World can't be "
+                                    "split.*cannot be used for dynamics.*"));
   EXPECT_EQ(world_graph.num_user_links(), 4);
   EXPECT_EQ(ssize(world_graph.links()), 5);
   EXPECT_EQ(ssize(world_graph.forest().mobods()), 5);
-  EXPECT_EQ(world_graph.world_link().num_shadows(), 1);
+  EXPECT_EQ(world_graph.world_link().num_shadows(), 0);
   EXPECT_TRUE(world_graph.link_by_index(LinkIndex(4)).is_shadow());
   EXPECT_EQ(world_graph.link_by_index(LinkIndex(4)).primary_link(),
-            LinkIndex(0));
+            LinkIndex(3));
+  EXPECT_EQ(world_graph.link_by_index(LinkIndex(3)).num_shadows(), 1);
+}
+
+/* World must not be split even when nothing is massless. A non-weld loop
+joint that closes onto World from a Link that has been fused into the World
+WeldedLinksAssembly used to produce a level-0 "tie" in the branch-length
+heuristic, which broke the tie in favor of splitting the child -- World. Now
+we should always split the other Link.
+
+     {0}==={1}==={2}       (welds, all fused onto the World Mobod)
+      ^             |
+      +--revolute---+      (a loop joint, closing back onto World)
+
+There should be just two Mobods: the World Mobod (followed by links {0}, {1},
+and {2}) plus a Mobod for the shadow of link {2}, mobilized by the revolute
+joint and welded back to {2} by a loop constraint. Since all these links are
+massful, dynamics should be fine (though not very interesting!). We try this
+with the revolute joint declared in both directions to be sure the outcome
+doesn't depend on which end of the loop joint the user called the parent. */
+GTEST_TEST(SpanningForest, LoopClosingOnWorldDoesNotSplitWorld) {
+  for (bool world_is_parent : {false, true}) {
+    SCOPED_TRACE(fmt::format("world_is_parent={}", world_is_parent));
+    LinkJointGraph graph;
+    graph.RegisterJointType("revolute", 1, 1);
+    graph.SetGlobalForestBuildingOptions(
+        ForestBuildingOptions::kFuseWeldedLinksAssemblies);
+    graph.AddLink("link1", default_model_instance());
+    graph.AddLink("link2", default_model_instance());
+    graph.AddJoint("weld0", default_model_instance(), "weld", LinkIndex(0),
+                   LinkIndex(1));
+    graph.AddJoint("weld1", default_model_instance(), "weld", LinkIndex(1),
+                   LinkIndex(2));
+    graph.AddJoint("revolute", default_model_instance(), "revolute",
+                   world_is_parent ? LinkIndex(0) : LinkIndex(2),
+                   world_is_parent ? LinkIndex(2) : LinkIndex(0));
+
+    EXPECT_TRUE(graph.BuildForest());  // Dynamics is OK.
+    EXPECT_EQ(graph.num_user_links(), 3);
+    EXPECT_EQ(ssize(graph.links()), 4);  // One shadow link was added.
+    EXPECT_EQ(graph.world_link().num_shadows(), 0);
+
+    /* The shadow is of link2, not World. */
+    const LinkJointGraph::Link& shadow = graph.link_by_index(LinkIndex(3));
+    EXPECT_TRUE(shadow.is_shadow());
+    EXPECT_EQ(shadow.name(), "link2$1");
+    EXPECT_EQ(shadow.primary_link(), LinkIndex(2));
+    EXPECT_EQ(graph.link_by_index(LinkIndex(2)).num_shadows(), 1);
+
+    /* World, link1, and link2 all follow the World Mobod; the shadow gets its
+    own Mobod mobilized by the revolute joint. */
+    const SpanningForest& forest = graph.forest();
+    EXPECT_EQ(ssize(forest.mobods()), 2);
+    EXPECT_EQ(graph.link_to_mobod(LinkIndex(0)), MobodIndex(0));
+    EXPECT_EQ(graph.link_to_mobod(LinkIndex(1)), MobodIndex(0));
+    EXPECT_EQ(graph.link_to_mobod(LinkIndex(2)), MobodIndex(0));
+    EXPECT_EQ(graph.link_to_mobod(LinkIndex(3)), MobodIndex(1));
+    EXPECT_EQ(forest.mobods(MobodIndex(1)).inboard_mobod(), MobodIndex(0));
+    EXPECT_EQ(graph.joints(forest.mobods(MobodIndex(1)).active_joint_ordinal())
+                  .name(),
+              "revolute");
+
+    /* The loop constraint welds the shadow back to its primary. */
+    EXPECT_EQ(ssize(forest.loop_constraints()), 1);
+    const SpanningForest::LoopConstraint& loop_constraint =
+        forest.loop_constraints(LoopConstraintIndex(0));
+    EXPECT_EQ(loop_constraint.primary_mobod(), MobodIndex(0));
+    EXPECT_EQ(loop_constraint.shadow_mobod(), MobodIndex(1));
+    EXPECT_EQ(ssize(graph.loop_constraints()), 1);
+    EXPECT_EQ(graph.loop_constraints(LoopConstraintIndex(0)).primary_link(),
+              LinkIndex(2));
+    EXPECT_EQ(graph.loop_constraints(LoopConstraintIndex(0)).shadow_link(),
+              LinkIndex(3));
+  }
 }
 
 /* WeldedLinksAssemblies should be treated the same as single bodies while
