@@ -47,8 +47,7 @@ def _get_pydrake_modules():
     while worklist:
         current = worklist.pop(0)
         result.append(current)
-        for sub in _get_submodules(current):
-            worklist.append(sub)
+        worklist.extend(_get_submodules(current))
     return sorted(result)
 
 
