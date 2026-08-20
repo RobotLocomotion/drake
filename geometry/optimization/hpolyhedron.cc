@@ -985,8 +985,8 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
   // This method is based on FindRedundant, but adapted, for use with
   // `SimplifyByIncrementalFaceTranslation`, to optionally take
   // `inds_to_not_check`, which dictates certain faces to skip.  This method is
-  // also adapted to to return `witness_points`, which contains a point that
-  // certifies that each non-redundant face is non-redundant (the witess point
+  // also adapted to return `witness_points`, which contains a point that
+  // certifies that each non-redundant face is non-redundant (the witness point
   // is on the "wrong" side of the face it certifies, but the "right" side of
   // all other faces).
   std::set<int> redundant_indices;
