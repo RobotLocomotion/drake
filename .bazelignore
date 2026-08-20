@@ -1,0 +1,3 @@
+# Ignore CMake build directories, which contain MODULE.bazel files.
+build/
+cmake-build/
