@@ -42,6 +42,31 @@ class PythonBinder(Enum):
     PYBIND11 = "pybind11"
 
 
+class PythonTarget:
+    """
+    A representation of a Python target, constructed from the version number
+    tuple.
+
+    Example:
+        PythonTarget(3, 2, 1)
+
+    Members:
+        version_tuple: Target version as a tuple, e.g. (3, 2, 1)
+        version_full: Target full version as a string, e.g. '3.2.1'
+        version: Target major/minor version as a string, e.g. '3.2'
+        tag: Target major/minor version without separators, e.g. '32'
+    """
+
+    def __init__(self, *version_parts: int):
+        assert len(version_parts) in {2, 3}, version_parts
+
+        pv_parts = tuple(map(str, version_parts))
+        self.version_tuple = tuple(version_parts)
+        self.version_full = ".".join(pv_parts)
+        self.version = ".".join(pv_parts[:2])
+        self.tag = "".join(pv_parts[:2])
+
+
 def gripe(message):
     """
     Prints a message to stderr.
@@ -131,7 +156,7 @@ def create_snopt_tgz(*, snopt_path, output):
 
     print("[-] Creating SNOPT archive...", flush=True)
     tar_buffer = io.BytesIO()
-    tar_writer = tarfile.open(mode="w", fileobj=tar_buffer)
+    tar_writer = tarfile.open(mode="w", fileobj=tar_buffer)  # noqa: SIM115
 
     # Ask Bazel where it keeps its externals.
     command = ["bazel", "info", "output_base"]
@@ -220,7 +245,7 @@ def do_main(args, platform):
 
     # Ensure we and any subprocesses are speaking UTF-8.
     locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
-    locale_keys = [k for k in os.environ.keys() if k.startswith("LC_")]
+    locale_keys = [k for k in os.environ if k.startswith("LC_")]
     for k in locale_keys:
         os.environ.pop(k)
     os.environ["LC_ALL"] = "en_US.UTF-8"
@@ -292,9 +317,8 @@ def do_main(args, platform):
         print(f"Version '{options.version}' conforms to PEP 440")
         return
 
-    if options.snopt_path != "git":
-        if not os.path.exists(options.snopt_path):
-            die(f"The snopt-file path '{options.snopt_path}' does not exist")
+    if options.snopt_path != "git" and not os.path.exists(options.snopt_path):
+        die(f"The snopt-file path '{options.snopt_path}' does not exist")
 
     if platform is not None:
         platform.build(options)

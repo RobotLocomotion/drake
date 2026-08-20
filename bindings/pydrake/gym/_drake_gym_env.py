@@ -40,8 +40,8 @@ class DrakeGymEnv(gym.Env):
         observation_port_id: OutputPortIndex | str = None,
         render_rgb_port_id: OutputPortIndex | str = None,
         render_mode: str = "human",
-        reset_handler: Callable[[Simulator, Context], None] = None,
-        info_handler: Callable[[Simulator], dict] = None,
+        reset_handler: Callable[[Simulator, Context], None] | None = None,
+        info_handler: Callable[[Simulator], dict] | None = None,
         hardware: bool = False,
     ):
         """
@@ -122,7 +122,7 @@ class DrakeGymEnv(gym.Env):
             self.simulator = None
             self.make_simulator = simulator
         else:
-            raise ValueError("Invalid simulator argument")
+            raise TypeError("Invalid simulator argument")
 
         assert time_step > 0
         self.time_step = time_step
@@ -140,7 +140,7 @@ class DrakeGymEnv(gym.Env):
             self.reward_port_id = None
             self.reward = reward
         else:
-            raise ValueError("Invalid reward argument")
+            raise TypeError("Invalid reward argument")
 
         if action_port_id:
             assert isinstance(action_port_id, (InputPortIndex, str))

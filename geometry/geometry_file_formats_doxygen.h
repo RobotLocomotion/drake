@@ -320,11 +320,12 @@ namespace geometry {
  mistake a "visual" material from a "dynamics" material. The latter consists of
  parameters such as elasticity, friction, etc. The former models how *light*
  interacts with the object including parameters such as diffuse color,
- specularity, etc. Drakes visual material model is based on the
+ specularity, etc. Drake's visual material model is based on the
  <a href="https://en.wikipedia.org/wiki/Phong_shading">Phong shading
  model</a>, but only makes use of a subset of that model's parameters.
- Currently, only the diffuse color property is parameterized. It can be either a
- single Rgba value, or a texture map.
+ Currently, only the diffuse color property is parameterized. It consists of an
+ Rgba value and an optional texture map; the final diffuse color is their
+ channel-wise product.
 
  Even if a mesh file contains material definitions of its own, for some
  geometry operations, Drake will apply its own heuristic to define a Drake
@@ -336,11 +337,12 @@ namespace geometry {
  steps in sequence, but stops at the first step that provides a viable material
  definition.
 
-  1. If the mesh file specifies materials, then the diffuse color or texture
-     specified in that material will be applied. Note: cases where an .obj
-     references a material name, but the material is not defined in the .mtl
-     file, or the .mtl file is missing, will be treated as if no material is
-     specified and we proceed to step 2.
+  1. If the mesh file specifies materials, then the diffuse color and texture
+     specified in each material will be applied. When both are present, the
+     final diffuse color is their channel-wise product. Note: cases where an
+     .obj references a material name, but the material is not defined in the
+     .mtl file, or the .mtl file is missing, will be treated as if no material
+     is specified and we proceed to step 2.
      - If diffuse properties are *also* defined in the mesh's
        GeometryProperties, a warning will be written to the console.
      - If the material specifies a texture, but the mesh doesn't have texture
@@ -348,9 +350,6 @@ namespace geometry {
        color is used.
      - If the material specifies a texture, but the texture isn't accessible,
        the texture is dismissed and only the material's diffuse color is used.
-     - <b>If the mesh file contains *multiple* materials, then all materials
-       are discarded as if they weren't present and the next step of the
-       algorithm is evaluated.</b>
   2. If the geometry in SceneGraph has had diffuse color or diffuse texture
      defined in its GeometryProperties, then that diffuse specification is
      used. The final diffuse color of the object is always the channel-wise

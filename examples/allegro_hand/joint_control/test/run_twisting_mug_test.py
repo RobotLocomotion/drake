@@ -69,7 +69,7 @@ class TestRunTwistingMug(unittest.TestCase):
         # Wait until one of them exits.  Nominally the first to exit will be
         # the controller, once it finishes one twist.
         child_processes = [sim_process, control_process]
-        while all([x.poll() is None for x in child_processes]):
+        while all(x.poll() is None for x in child_processes):
             time.sleep(0.1)
         self.assertEqual(sim_process.returncode, None)
         self.assertEqual(control_process.returncode, 0)

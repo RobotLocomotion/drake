@@ -46,10 +46,8 @@ def _cull_skipped_headers(*, temp_dir, modules):
     for dirpath, _, filenames in (temp_dir / Path("drake")).walk():
         subdir = dirpath.relative_to(temp_dir)
         is_wanted = any(
-            [
-                str(subdir).startswith(str(module_path))
-                for module_path in module_paths
-            ]
+            str(subdir).startswith(str(module_path))
+            for module_path in module_paths
         )
         if is_wanted:
             continue
@@ -167,9 +165,8 @@ def _postprocess_doxygen_log(original_lines, check_for_errors):
     lines = []
     is_ignoring_parameters = False
     for line in original_lines:
-        if is_ignoring_parameters:
-            if line.startswith("parameter "):
-                continue
+        if is_ignoring_parameters and line.startswith("parameter "):
+            continue
         is_ignoring_parameters = False
         if line.endswith(" are not documented:"):
             is_ignoring_parameters = True

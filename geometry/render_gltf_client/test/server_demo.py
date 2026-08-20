@@ -72,9 +72,8 @@ def compute_hash(path: Path) -> str:
 @atexit.register
 def delete_server_cache():
     """Deletes `TMP_DIR` upon exit, e.g., `ctrl+C`, when CLEANUP is True."""
-    if CLEANUP:
-        if TMP_DIR.is_dir():
-            shutil.rmtree(TMP_DIR, ignore_errors=True)
+    if CLEANUP and TMP_DIR.is_dir():
+        shutil.rmtree(TMP_DIR, ignore_errors=True)
 
 
 class RenderError(Exception):
@@ -427,7 +426,7 @@ def render_callback(render_request: RenderRequest) -> str:
 
     # Call the render backend, including capturing any errors.
     try:
-        proc = subprocess.run(proc_args, capture_output=True)
+        proc = subprocess.run(proc_args, capture_output=True, check=False)
         if proc.returncode != 0:
             message = f"backend exited with code {proc.returncode}."
             stdout = proc.stdout.decode("utf-8")

@@ -128,7 +128,7 @@ class TemplateBase:
                 return instantiation(*args, **kwargs)
             except TypeError as e:
                 if not _is_pybind11_type_error(e):
-                    raise e
+                    raise
 
     def get_module_name(self):
         """
@@ -442,8 +442,7 @@ def _rename_callable(f, scope, name, cls=None):
     # Native functions (built-in or nanobind-bound) don't allowing resetting the
     # metadata unless we wrap them in Python first.
     if (
-        isinstance(f, types.BuiltinMethodType)
-        or isinstance(f, types.BuiltinFunctionType)
+        isinstance(f, (types.BuiltinMethodType, types.BuiltinFunctionType))
         or f.__class__.__name__ == "nb_method"
         or f.__class__.__name__ == "nb_func"
     ):

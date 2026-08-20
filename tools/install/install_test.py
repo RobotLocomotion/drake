@@ -23,7 +23,7 @@ class InstallTest(unittest.TestCase):
     def test_basic_paths(self):
         # Verify install directory content.
         content = set(os.listdir(self._installation_folder))
-        self.assertSetEqual(set(["bin", "include", "lib", "share"]), content)
+        self.assertSetEqual({"bin", "include", "lib", "share"}, content)
 
     def _run_one_command(self, test_command):
         assert test_command.endswith(".py")
@@ -34,8 +34,7 @@ class InstallTest(unittest.TestCase):
         # should be inherited.
         env = dict(os.environ)
         for key in ["RUNFILES_MANIFEST_FILE", "RUNFILES_DIR", "TEST_SRCDIR"]:
-            if key in env:
-                del env[key]
+            env.pop(key, None)
         env["PYTHONPATH"] = ":".join(sys.path)
 
         # Execute the test_command.

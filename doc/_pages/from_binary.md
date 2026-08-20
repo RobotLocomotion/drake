@@ -33,28 +33,28 @@ attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.55.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.55.0):
+[v1.56.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.56.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-noble.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-noble-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-noble-arm64.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-amd64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-amd64.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-amd64v3.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-amd64v3.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-resolute-arm64.tar.gz)
-* https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-mac-arm64.tar.gz
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-noble.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-noble-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-noble-arm64.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-resolute-amd64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-resolute-amd64.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-resolute-amd64v3.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-resolute-amd64v3.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-resolute-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-resolute-arm64.tar.gz)
+* https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-mac-arm64.tar.gz
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious
 software. For example:
 
 ```
-curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-mac-arm64.tar.gz
+curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-mac-arm64.tar.gz
 ```
 
 Ubuntu users may choose to download an archive matched to their operating system
 and architecture via this command:
 
 ```
-wget -O drake.tar.gz https://github.com/RobotLocomotion/drake/releases/download/v1.55.0/drake-1.55.0-$(. /etc/os-release && echo $VERSION_CODENAME)-$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .).tar.gz
+wget -O drake.tar.gz https://github.com/RobotLocomotion/drake/releases/download/v1.56.0/drake-1.56.0-$(. /etc/os-release && echo $VERSION_CODENAME)-$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .).tar.gz
 ```
 
 ### Use as a C++ library
@@ -141,12 +141,22 @@ Binary packages are generated nightly and are available to download at:
 Older packages for specific dates are available by replacing ``latest``
 with date YYYYMMDD preceded by ``0.0.``. For example,
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-noble-arm64.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-amd64v3.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-resolute-arm64.tar.gz)
-* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260510-mac-arm64.tar.gz
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-noble.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-noble-arm64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-resolute-amd64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-resolute-amd64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-resolute-amd64v3.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-resolute-arm64.tar.gz)
+* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818-mac-arm64.tar.gz
+
+Packages that use `nanobind` instead of `pybind11` are marked as "alpha
+release", e.g., `0.0.20260818a1`. For example,
+
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-noble.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-noble-arm64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-resolute-amd64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-resolute-amd64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-resolute-amd64v3.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-resolute-arm64.tar.gz)
+* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260818a1-mac-arm64.tar.gz
 
 As with stable releases, users of macOS must download using a command-line tool
 such as ``curl`` instead of using a web browser, to avoid hassles from

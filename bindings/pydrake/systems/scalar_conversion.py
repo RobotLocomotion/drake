@@ -156,7 +156,7 @@ class TemplateSystem(TemplateClass):
         # Check that the user has not defined `__init__`, and has defined
         # `_construct` and `_construct_copy`.
         if not issubclass(cls, LeafSystem_[T]):
-            raise RuntimeError(
+            raise TypeError(
                 f"{pretty_class_name(cls)} must inherit from {LeafSystem_[T]}"
             )
 
@@ -235,10 +235,11 @@ class TemplateSystem(TemplateClass):
         # Checks if a function signature implies a copy constructor.
         # Since this is called after `converter` has been removed from
         # `kwargs`, we just ensure that there are no additional arguments.
-        if len(args) == 1 and len(kwargs) == 0:
-            if self.is_subclass_of_instantiation(type(args[0])):
-                return True
-        return False
+        return (
+            len(args) == 1
+            and len(kwargs) == 0
+            and self.is_subclass_of_instantiation(type(args[0]))
+        )
 
     def _make(self, T, U, system_U):
         # Converts system_U (of scalar type U) to an instance of scalar type

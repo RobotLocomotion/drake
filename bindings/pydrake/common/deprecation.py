@@ -75,7 +75,7 @@ class ModuleShim:
                 value = self._handler(name)
             except AttributeError as e:
                 if str(e):
-                    raise e
+                    raise
                 else:
                     raise AttributeError(
                         f"'module' object has no attribute '{name}'"
@@ -312,7 +312,7 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
     symbols = getattr(m_new, "__all__", all_public)
     for symbol in symbols:
         new = getattr(m_new, symbol)
-        assert hasattr(new, "__call__")
+        assert callable(new)
         old_name = var_dict["__name__"]
         message = (
             f"Please use ``{m_new.__name__}.{symbol}`` instead of "

@@ -12,6 +12,7 @@
 #include <variant>
 #include <vector>
 
+#include <fmt/ranges.h>
 #include <sdf/Error.hh>
 #include <sdf/Frame.hh>
 #include <sdf/Joint.hh>
@@ -25,6 +26,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -1108,8 +1110,12 @@ void ParseWallBoundaryConditions(
     const sdf::ElementPtr element,
     std::vector<WallBoundaryCondition>* boundary_conditions,
     const SDFormatDiagnostic& diagnostic) {
+  // Note: this must be FindElement() and not GetElement(); the latter *adds*
+  // the element when it is absent, and adding an element that has no
+  // registered description (as is the case for all custom drake: tags) spams
+  // the console with an sdformat "Missing element description" error.
   for (sdf::ElementPtr wall_boundary_cond_element =
-           element->GetElement("drake:wall_boundary_condition");
+           element->FindElement("drake:wall_boundary_condition");
        wall_boundary_cond_element != nullptr;
        wall_boundary_cond_element = wall_boundary_cond_element->GetNextElement(
            "drake:wall_boundary_condition")) {
@@ -1276,9 +1282,33 @@ bool AddDeformableLinkFromSpecification(const SDFormatDiagnostic& diag,
   const sdf::Geometry& collision_geometry = *sdf_collision.Geom();
   sdf::ElementPtr collision_geometry_element = collision_geometry.Element();
 
-  const std::set<std::string> supported_collision_geometry_elements{"mesh"};
-  CheckSupportedElements(diag, collision_geometry_element,
-                         supported_collision_geometry_elements);
+  // A <mesh> and a <sphere> are the only shapes that MakeMeshForDeformable()
+  // knows how to turn into a tetrahedral mesh. We're not using
+  // CheckSupportedElements() to validate the child tag because the valid tags
+  // (<mesh> and <sphere>) are not `drake:` prefixed; CheckSupportedElements()
+  // will claim that the element will be *ignored*. It is, in fact, an error and
+  // should be presented as such. So, we handle the geometry check directly.
+  const bool is_primitive = collision_geometry_element->HasElement("sphere");
+  if (!is_primitive && !collision_geometry_element->HasElement("mesh")) {
+    // Report what the user actually wrote. As in CheckSupportedElements(), only
+    // elements explicitly set in the file are named; sdformat populates others
+    // on its own and the user would be baffled to see them quoted back.
+    std::vector<std::string> found;
+    for (sdf::ElementPtr child = collision_geometry_element->GetFirstElement();
+         child != nullptr; child = child->GetNextElement()) {
+      if (child->GetExplicitlySetInFile()) {
+        found.push_back(fmt::format("<{}>", child->GetName()));
+      }
+    }
+    diag.Error(
+        collision_geometry_element,
+        fmt::format("The <geometry> of a deformable <link>'s <collision> must "
+                    "be either a <mesh> (whose uri names a .vtk file "
+                    "containing a tetrahedral mesh) or a <sphere>; found {}.",
+                    found.empty() ? std::string("nothing")
+                                  : fmt::format("{}", fmt::join(found, ", "))));
+    return false;
+  }
 
   auto shape =
       MakeShapeFromSdfGeometry(diag, collision_geometry, resolve_filename);
@@ -1295,14 +1325,55 @@ bool AddDeformableLinkFromSpecification(const SDFormatDiagnostic& diag,
 
   // Parse proximity properties from <drake:proximity_properties> if they are
   // legally specified. Otherwise, add a default proximity property.
-  if (auto proximity_props =
+  geometry::ProximityProperties proximity_props;
+  if (auto parsed_props =
           MakeProximityForDeformableCollision(diag, sdf_collision)) {
-    geometry_instance->set_proximity_properties(*proximity_props);
+    proximity_props = std::move(*parsed_props);
   } else {
-    geometry::ProximityProperties default_proximity_props;
-    default_proximity_props.AddProperty("material", "coulomb_friction",
-                                        default_friction());
-    geometry_instance->set_proximity_properties(default_proximity_props);
+    proximity_props.AddProperty("material", "coulomb_friction",
+                                default_friction());
+  }
+  geometry_instance->set_proximity_properties(proximity_props);
+
+  // <drake:mesh_resolution_hint>, if given, is stored as this property.
+  std::optional<double> resolution_hint;
+  if (proximity_props.HasProperty(geometry::internal::kHydroGroup,
+                                  geometry::internal::kRezHint)) {
+    resolution_hint = proximity_props.GetProperty<double>(
+        geometry::internal::kHydroGroup, geometry::internal::kRezHint);
+  }
+
+  // A primitive requires a resolution hint (for tetrahedralization) and a mesh
+  // ignores it. Craft messages for when resolution hint is misaligned.
+  if (is_primitive) {
+    if (!resolution_hint.has_value()) {
+      diag.Error(collision_geometry_element,
+                 "The <geometry> of a deformable <link>'s <collision> is a "
+                 "primitive shape, so it must specify a positive "
+                 "<drake:mesh_resolution_hint> in its "
+                 "<drake:proximity_properties> to control the resolution of "
+                 "the tetrahedral mesh generated for it.");
+      return false;
+    }
+    if (!(*resolution_hint > 0)) {
+      diag.Error(collision_geometry_element,
+                 "drake:mesh_resolution_hint must be positive.");
+      return false;
+    }
+  } else if (resolution_hint.has_value()) {
+    diag.Warning(collision_geometry_element,
+                 "A deformable <link>'s <collision> specified a "
+                 "<drake:mesh_resolution_hint>, but its <geometry> is a "
+                 "<mesh>; the hint is ignored because the mesh is used as "
+                 "given.");
+    // We want to guarantee that the declared resolution hint is ignored with
+    // respect to *this deformable*. We leave it in the proximity properties
+    // (in case there are other downstream dependencies on the value). But
+    // the registration of deformable geometry below will not depend on the
+    // value in proximity_properties. It will solely depend on this local
+    // `resolution_hint`. So, by clearing it here, we are decoupling the
+    // registration logic from the declared value; we're ignoring it.
+    resolution_hint = std::nullopt;
   }
 
   // Optional embedded‑mesh perception – allow **at most one** <visual>.
@@ -1362,13 +1433,10 @@ bool AddDeformableLinkFromSpecification(const SDFormatDiagnostic& diag,
   }
 
   DeformableModel<double>& deformable_model = plant->mutable_deformable_model();
-  // Right now resolution hint is not used because we only parse meshes. When we
-  // support primitive geometries, the resolution hint needs to be meaningfully
-  // parsed.
-  const double dummy_resolution_hint = 1.0;
+  constexpr double kUnusedResolutionHint = 1.0;
   const DeformableBodyId body_id = deformable_model.RegisterDeformableBody(
       std::move(geometry_instance), model_instance, config,
-      dummy_resolution_hint);
+      resolution_hint.value_or(kUnusedResolutionHint));
 
   // Apply wall boundary conditions after body registration
   for (const WallBoundaryCondition& boundary_cond : boundary_conditions) {

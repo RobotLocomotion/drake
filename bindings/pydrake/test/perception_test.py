@@ -14,8 +14,8 @@ class TestPerception(unittest.TestCase):
     def test_pc_flags_api(self):
         # BaseField
         enum = mut.BaseField
-        enum.kNone
-        enum.kXYZs
+        enum.kNone  # noqa: B018
+        enum.kXYZs  # noqa: B018
         # Fields
         fields = mut.Fields(base_fields=enum.kXYZs)
         self.assertEqual(fields.base_fields(), enum.kXYZs)

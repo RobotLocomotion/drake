@@ -6,7 +6,7 @@ load(
 )
 load("//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(":defs.bzl", "LIMITED_API_DEFINES", "cc_library_with_limited_api")
+load(":defs.bzl", "NANOBIND_DEFINES", "cc_library_with_limited_api")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -60,7 +60,7 @@ cc_nolink_library(
 cc_library(
     name = "shared_library",
     srcs = [":libdrake_nanobind.so"],
-    defines = LIMITED_API_DEFINES,
+    defines = NANOBIND_DEFINES,
     deps = [
         ":hdrs",
         "//tools/workspace/nanobind/vendor:nanobind_eigen",

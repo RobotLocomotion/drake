@@ -37,7 +37,7 @@ def main():
     args = parser.parse_args()
 
     builder = DiagramBuilder()
-    cart_pole, scene_graph = AddMultibodyPlantSceneGraph(
+    cart_pole, _scene_graph = AddMultibodyPlantSceneGraph(
         builder=builder, time_step=args.time_step
     )
     Parser(builder=builder).AddModelsFromUrl(

@@ -104,7 +104,7 @@ class VolumeMesh {
    _element_, and _barycentric coordinates_. For %VolumeMesh, an element is a
    tetrahedron.
    */
-  //@{
+  ///@{
 
   using ScalarType = T;
 
@@ -133,7 +133,7 @@ class VolumeMesh {
   template <typename U = T>
   using Barycentric = Vector<U, kVertexPerElement>;
 
-  //@}
+  ///@}
 
   /** Constructor from a vector of vertices and from a vector of elements.
    Each element must be a valid VolumeElement following the vertex ordering

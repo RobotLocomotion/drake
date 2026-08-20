@@ -21,8 +21,8 @@ from pydrake.systems.sensors import (
 
 class TestGeometrySceneGraph(unittest.TestCase):
     def test_hydroelastic_contact_representation_enum(self):
-        mut.HydroelasticContactRepresentation.kTriangle
-        mut.HydroelasticContactRepresentation.kPolygon
+        mut.HydroelasticContactRepresentation.kTriangle  # noqa: B018
+        mut.HydroelasticContactRepresentation.kPolygon  # noqa: B018
 
     @numpy_compare.check_all_types
     def test_scene_graph_api(self, T):

@@ -452,10 +452,9 @@ def main(args):
             f" (got '{installer.prefix}')\n"
         )
 
-    if pre_clean:
-        if os.path.isdir(installer.prefix):
-            print(f"Remove previous directory: {installer.prefix}")
-            shutil.rmtree(installer.prefix)
+    if pre_clean and os.path.isdir(installer.prefix):
+        print(f"Remove previous directory: {installer.prefix}")
+        shutil.rmtree(installer.prefix)
 
     if installer.strip:
         # Match the output of the CMake install/strip target
@@ -470,8 +469,9 @@ def main(args):
     # is an absurd implementation choice that we've inherited from the original
     # installer scripts.  We should rework the install.bzl <=> installer.py
     # specification format to use something other than open-ended Python code.
-    for action in open(args.actions, "r", encoding="utf-8"):
-        exec(f"installer.{action}")
+    with open(args.actions, "r", encoding="utf-8") as actions:
+        for action in actions:
+            exec(f"installer.{action}")
 
     # Libraries paths may need to be updated in libraries and executables.
     installer.fix_rpaths_and_strip()

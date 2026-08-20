@@ -15,7 +15,6 @@ and to actually change the CPU configuration.
 
 import argparse
 import contextlib
-import copy
 import os
 import re
 import shlex
@@ -206,18 +205,20 @@ will be invalid. Supported methods are:
     ]
     command = ["taskset", "--cpu-list", str(args.cputask)]
     command += [args.binary] + default_args + args.extra_args
-    env = copy.copy(os.environ)
+    env = os.environ.copy()
     env["DRAKE_GOOGLEBENCH_SUPPRESS_SCALING_WARNING"] = "1"
-    with open(f"{args.output_dir}/summary.txt", "wb") as summary:
-        with cpu_speed_settings.scope(governor="performance", boost=False):
-            say("Run the experiment.")
-            print("Running: ", shlex.join(command))
-            popen = subprocess.Popen(command, stdout=subprocess.PIPE, env=env)
-            for line in popen.stdout:
-                summary.write(line)
-                print(line.decode("utf-8").strip(), flush=True)
-            if popen.wait() != 0:
-                raise RuntimeError("The profiled BINARY has failed")
+    with (
+        open(f"{args.output_dir}/summary.txt", "wb") as summary,
+        cpu_speed_settings.scope(governor="performance", boost=False),
+    ):
+        say("Run the experiment.")
+        print("Running: ", shlex.join(command))
+        popen = subprocess.Popen(command, stdout=subprocess.PIPE, env=env)
+        for line in popen.stdout:
+            summary.write(line)
+            print(line.decode("utf-8").strip(), flush=True)
+        if popen.wait() != 0:
+            raise RuntimeError("The profiled BINARY has failed")
 
 
 def main():

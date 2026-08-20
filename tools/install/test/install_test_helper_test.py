@@ -50,4 +50,4 @@ class TestInstallTestHelperTest(unittest.TestCase):
             if e.errno == 13:  # Permission denied
                 pass
             else:
-                raise e
+                raise

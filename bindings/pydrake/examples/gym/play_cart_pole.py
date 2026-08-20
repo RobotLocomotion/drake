@@ -54,7 +54,7 @@ def _run_playing(args):
             action = env.action_space.sample()
         else:
             action, _states = model.predict(obs, deterministic=True)
-        obs, reward, terminated, truncated, info = env.step(action)
+        obs, _reward, terminated, truncated, _info = env.step(action)
         if args.debug:
             # This will play the policy step by step.
             input("Press Enter to continue...")

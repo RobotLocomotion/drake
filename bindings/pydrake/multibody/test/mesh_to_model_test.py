@@ -35,7 +35,7 @@ from pydrake.systems.framework import (
 )
 
 
-def _parse_model_no_throw(sdf_file: Path, package_xml: Path = None):
+def _parse_model_no_throw(sdf_file: Path, package_xml: Path | None = None):
     """
     Simply attempts to parse the given file, expecting no errors. This
     should be invoked for every interesting variation of an _expected_
@@ -99,9 +99,7 @@ class TestModelMaker(unittest.TestCase):
         with open(filename) as f:
             text = f.read()
         matches = re.findall("<(i[xyz]{2})>(.+?)</i..>", text, re.MULTILINE)
-        values = dict(
-            [(key.replace("i", "I"), float(value)) for key, value in matches]
-        )
+        values = {key.replace("i", "I"): float(value) for key, value in matches}
         return RotationalInertia(**values)
 
     def test_simple_valid_invocation(self):
@@ -538,7 +536,10 @@ class TestMeshToModelProcess(unittest.TestCase):
         )
 
     def assert_files_equal(self, dut_path, ref_path):
-        self.assertEqual(open(dut_path).read(), open(ref_path).read())
+        self.assertEqual(
+            dut_path.read_text(encoding="utf-8"),
+            ref_path.read_text(encoding="utf-8"),
+        )
 
     def test_default_parameters(self):
         # Providing no command-line parameters should be equivalent to the

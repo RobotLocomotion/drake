@@ -81,7 +81,7 @@ class AllScalarsStruct:
 
 @dc.dataclass
 class ListStruct:
-    value: list[float] = dc.field(default_factory=lambda: list((nan,)))
+    value: list[float] = dc.field(default_factory=lambda: [nan])
     __eq__ = _dataclass_eq
 
 
@@ -177,7 +177,7 @@ class PrimitiveVariantStruct:
 @dc.dataclass
 class ListVariantStruct:
     value: list[str | float | FloatStruct | NumpyStruct] = dc.field(
-        default_factory=lambda: list([nan])
+        default_factory=lambda: [nan]
     )
     __eq__ = _dataclass_eq
 
@@ -409,7 +409,7 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         ]
         for value in cases:
             data = f"value: {value}"
-            with self.assertRaises(Exception):
+            with self.assertRaises(Exception):  # noqa: B017
                 yaml_load_typed(schema=PathStruct, data=data, **options)
 
     @run_with_multiple_values(_all_typed_read_options())

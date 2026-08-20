@@ -100,6 +100,7 @@ class TestIntegration(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
+            check=False,
         )
         if result.returncode != 0:
             for line in result.stdout.splitlines():
@@ -171,7 +172,7 @@ class TestIntegration(unittest.TestCase):
                 entry.pop(to_remove, None)
             for k, v in entry.items():
                 # Replace the index with the actual referenced data structure.
-                if k in TestIntegration._REPLACED.keys():
+                if k in TestIntegration._REPLACED:
                     try:
                         entry[k] = gltf[TestIntegration._REPLACED[k]][v]
                     except TypeError:

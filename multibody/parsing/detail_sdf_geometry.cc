@@ -727,9 +727,10 @@ MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
       collision_element->FindElement("drake:proximity_properties");
   if (!drake_element) return std::nullopt;  // no properties specified.
 
-  CheckSupportedElements(diagnostic, drake_element,
-                         {"drake:mu_dynamic", "drake:hunt_crossley_dissipation",
-                          "drake:relaxation_time"});
+  CheckSupportedElements(
+      diagnostic, drake_element,
+      {"drake:mu_dynamic", "drake:hunt_crossley_dissipation",
+       "drake:relaxation_time", "drake:mesh_resolution_hint"});
 
   geometry::ProximityProperties props;
 
@@ -772,6 +773,14 @@ MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
       return std::nullopt;
     }
     props.AddProperty("material", "relaxation_time", *relaxation_time);
+  }
+
+  // As documented, we're not validating the value here.
+  const std::optional<double> rez_hint =
+      read_double("drake:mesh_resolution_hint");
+  if (rez_hint.has_value()) {
+    props.AddProperty(geometry::internal::kHydroGroup,
+                      geometry::internal::kRezHint, *rez_hint);
   }
   return props;
 }

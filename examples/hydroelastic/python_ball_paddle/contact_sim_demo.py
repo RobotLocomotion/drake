@@ -35,7 +35,7 @@ def make_ball_paddle(contact_model, contact_surface_representation, time_step):
         RollPitchYaw(0, 0, 0), np.array([0, 0, -0.01])
     )
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
+    plant, _scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
 
     parser = Parser(builder)
     paddle_sdf_url = (

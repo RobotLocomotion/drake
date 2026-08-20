@@ -20,6 +20,15 @@ from pydrake.geometry import (
 from pydrake.math import RigidTransform
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 
+_T_VW_default = np.array(
+    [
+        [1.0, 0.0, 0.0] + [0.0],  # Vx = Wx, Vx_offset = 0.
+        [0.0, 0.0, 1.0] + [0.0],  # Vy = Wz, Vy_offset = 0.
+        [0.0, 0.0, 0.0, 1.0],  # Orthographic.
+    ]
+)
+_T_VW_default.setflags(write=False)
+
 
 class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     """
@@ -40,8 +49,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
     T_VW specifies the 3x4 view projection matrix. For planar orthographic
     projection, use:
-    [ <x axis select> x_axis_shift
-      <y axis select> y_axis_shift
+    [ <x axis select 3-vector> x_axis_shift
+      <y axis select 3-vector> y_axis_shift
        0, 0, 0, 1]  % homogenizer
 
     e.g.
@@ -65,16 +74,10 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self,
         scene_graph,
         draw_period=None,
-        T_VW=np.array(
-            [
-                [1.0, 0.0, 0.0, 0.0],  # BR
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        ),
-        xlim=[-1.0, 1],
-        ylim=[-1, 1],
-        facecolor=[1, 1, 1],
+        T_VW=_T_VW_default,
+        xlim=(-1.0, 1),
+        ylim=(-1, 1),
+        facecolor=(1, 1, 1),
         use_random_colors=False,
         substitute_collocated_mesh_files=True,
         ax=None,
@@ -151,7 +154,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         # bodies and patches in the same order.
         self._body_fill_dict = {}
         X_WB_initial = RigidTransform.Identity()
-        for full_name in self._patch_Blist.keys():
+        for full_name in self._patch_Blist:
             patch_Wlist, view_colors = self._get_view_patches(
                 full_name, X_WB_initial
             )
@@ -282,13 +285,13 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                         # For both shape types, we replace it with its convex
                         # hull.
                         convex_hull = shape.GetConvexHull()
-                    except RuntimeError as shape_error:
+                    except RuntimeError:
                         known_suffixes = [".obj", ".vtk", ".gltf"]
 
                         if source.extension() in known_suffixes:
                             # The file was already of a known extension;
                             # failure offers no recourse.
-                            raise shape_error
+                            raise
 
                         if search_for_alternate:
                             # For a path to an unknown file type, we can look
@@ -373,7 +376,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             color = iter(
                 plt_cm.rainbow(np.linspace(0, 1, len(self._patch_Blist_colors)))
             )
-            for name in self._patch_Blist_colors.keys():
+            for name in self._patch_Blist_colors:
                 this_color = next(color)
                 patch_count = len(self._patch_Blist[name])
                 self._patch_Blist_colors[name] = [this_color] * patch_count

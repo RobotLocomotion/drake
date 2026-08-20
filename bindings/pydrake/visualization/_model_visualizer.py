@@ -152,12 +152,14 @@ class ModelVisualizer:
                 f"show_rgbd_sensor must be bool or one of: {choices}"
             )
         self._show_rgbd_sensor = show_rgbd_sensor
-        if show_rgbd_sensor:
-            if sensor_image_type not in self._SUPPORTED_RGBD_IMAGE_TYPES:
-                choices = ", ".join(
-                    repr(x) for x in self._SUPPORTED_RGBD_IMAGE_TYPES
-                )
-                raise ValueError(f"sensor_image_type must be one of: {choices}")
+        if (
+            show_rgbd_sensor
+            and sensor_image_type not in self._SUPPORTED_RGBD_IMAGE_TYPES
+        ):
+            choices = ", ".join(
+                repr(x) for x in self._SUPPORTED_RGBD_IMAGE_TYPES
+            )
+            raise ValueError(f"sensor_image_type must be one of: {choices}")
         self._sensor_image_type = sensor_image_type
         self._browser_new = browser_new
         self._pyplot = pyplot
@@ -339,7 +341,9 @@ class ModelVisualizer:
             self._meshcat = StartMeshcat()
         return self._meshcat
 
-    def AddModels(self, filename: Path = None, *, url: str = None):
+    def AddModels(
+        self, filename: Path | None = None, *, url: str | None = None
+    ):
         """
         Adds all models found in an input file (or url).
 
@@ -380,7 +384,9 @@ class ModelVisualizer:
         if self._added_models is not None:
             self._added_models.append(kwargs)
 
-    def _wrap_gltf_as_visual(self, *, filename: Path = None, url: str = None):
+    def _wrap_gltf_as_visual(
+        self, *, filename: Path | None = None, url: str | None = None
+    ):
         """Given a filename xor url that refers to a glTF mesh, returns a dict
         of kwargs to Parser.AddModels which will load it as visual-only (i.e.,
         without collision geometry)"""

@@ -252,6 +252,8 @@ void DoScalarIndependentDefinitions(py::module_ m) {
         .def(py::init<int>(), py::arg("value"), doc.RenderLabel.ctor.doc_1args)
         .def("is_reserved", &RenderLabel::is_reserved)
         .def("__int__", [](const RenderLabel& self) -> int { return self; })
+        .def_prop_ro(
+            "_value_", [](const RenderLabel& self) -> int { return self; })
         .def("__repr__",
             [](const RenderLabel& self) -> std::string {
               if (self == RenderLabel::kEmpty) {

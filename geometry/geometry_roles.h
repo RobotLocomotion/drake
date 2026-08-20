@@ -217,27 +217,12 @@ enum class RoleAssign {
   kReplace  ///< Replace the existing role properties completely.
 };
 
-/** @name  Geometry role to string conversions
-
- These are simply convenience functions for converting the Role enumeration into
- a human-readable string.  */
-//@{
-
 std::string to_string(const Role& role);
-
-//@}
-
-/** @name  Convenience functions
-
- A collection of functions to help facilitate working with properties.  */
-//@{
 
 /** Constructs an IllustrationProperties instance compatible with a simple
  "phong" material using only the given `diffuse` color.  */
 IllustrationProperties MakePhongIllustrationProperties(
     const Vector4<double>& diffuse);
-
-//@}
 
 }  // namespace geometry
 }  // namespace drake

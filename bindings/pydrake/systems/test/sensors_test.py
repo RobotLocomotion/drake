@@ -70,7 +70,7 @@ image_type_aliases = [
 class TestSensors(unittest.TestCase):
     def _make_single_body_scene(self):
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
         scene_yaml = textwrap.dedent("""
             directives:
@@ -193,10 +193,10 @@ class TestSensors(unittest.TestCase):
             self.assertIn(t.kPixelFormat, mut.PixelFormat.__members__.values())
 
         # Smoke test the pixel scalars.
-        mut.PixelScalar.k8U
-        mut.PixelScalar.k16I
-        mut.PixelScalar.k16U
-        mut.PixelScalar.k32F
+        mut.PixelScalar.k8U  # noqa: B018
+        mut.PixelScalar.k16I  # noqa: B018
+        mut.PixelScalar.k16U  # noqa: B018
+        mut.PixelScalar.k32F  # noqa: B018
 
     def test_image_types(self):
         # Test instantiations of Image<>.
@@ -355,7 +355,7 @@ class TestSensors(unittest.TestCase):
     def test_camera_config_lcm_buses(self):
         """Calls ApplyCameraConfig using LcmBuses."""
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        _plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         system_count = len(builder.GetSystems())
 
         # We'll call the Apply function using lcm_buses= instead of lcm=.
@@ -372,7 +372,7 @@ class TestSensors(unittest.TestCase):
     def test_camera_config_lcm_interface_system(self):
         """Calls ApplyCameraConfig using LcmInterfaceSystem."""
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        _plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         lcm = builder.AddSystem(LcmInterfaceSystem(lcm=DrakeLcm()))
         config = mut.CameraConfig()
         system_count = len(builder.GetSystems())
@@ -655,7 +655,7 @@ class TestSensors(unittest.TestCase):
 
     def test_rgbd_sensor_async(self):
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        _plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         camera_core = self._make_render_camera_core()
         color_camera = ColorRenderCamera(camera_core)
         depth_camera = DepthRenderCamera(camera_core, DepthRange(0.1, 5.5))
@@ -716,9 +716,9 @@ class TestSensors(unittest.TestCase):
         dut.image_time_output_port()
 
     def test_image_file_format(self):
-        mut.ImageFileFormat.kJpeg
-        mut.ImageFileFormat.kPng
-        mut.ImageFileFormat.kTiff
+        mut.ImageFileFormat.kJpeg  # noqa: B018
+        mut.ImageFileFormat.kPng  # noqa: B018
+        mut.ImageFileFormat.kTiff  # noqa: B018
 
     def test_image_io_metadata(self):
         dut = mut.ImageIo.Metadata(width=640)

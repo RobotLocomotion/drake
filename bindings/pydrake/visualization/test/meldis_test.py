@@ -408,7 +408,7 @@ class TestMeldis(unittest.TestCase):
         png_filename.touch()
         hasher = mut._meldis._GeometryFileHasher()
         hasher.on_viewer_load_robot(message)
-        hashed_names = set([x.name for x in hasher._paths])
+        hashed_names = {x.name for x in hasher._paths}
         self.assertSetEqual(
             hashed_names,
             {
@@ -480,7 +480,7 @@ class TestMeldis(unittest.TestCase):
             )
         hasher = mut._meldis._GeometryFileHasher()
         hasher.on_viewer_load_robot(message)
-        hashed_names = set([x.name for x in hasher._paths])
+        hashed_names = {x.name for x in hasher._paths}
         self.assertSetEqual(
             hashed_names,
             {
@@ -652,7 +652,7 @@ Kd 1 1 0
         dut = mut.Meldis()
         lcm = dut._lcm
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant, _scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
         parser.AddModels(url=url)
         plant.Finalize()
@@ -933,9 +933,9 @@ Kd 1 1 0
         # can override them and win (no errors).
         bad_host = MeshcatParams(host="8.8.8.8")
         bad_port = MeshcatParams(port=1)
-        with self.assertRaises(BaseException):
+        with self.assertRaises(BaseException):  # noqa: B017
             mut.Meldis(meshcat_params=bad_host)
-        with self.assertRaises(BaseException):
+        with self.assertRaises(BaseException):  # noqa: B017
             mut.Meldis(meshcat_params=bad_port)
         mut.Meldis(meshcat_params=bad_host, meshcat_host="localhost")
         mut.Meldis(meshcat_params=bad_port, meshcat_port=0)

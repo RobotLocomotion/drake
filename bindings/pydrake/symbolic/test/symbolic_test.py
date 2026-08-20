@@ -784,11 +784,11 @@ class TestSymbolicExpression(unittest.TestCase):
             bool(e_x == e_x)
         message = str(cm.exception)
         self.assertTrue(
-            all([s in message for s in ["__nonzero__", "EqualToDict"]]), message
+            all(s in message for s in ["__nonzero__", "EqualToDict"]), message
         )
         # Ensure that compound formulas fail (#8536).
         with self.assertRaises(RuntimeError):
-            (0 < e_y < e_y)
+            (0 < e_y < e_y)  # noqa: B015
         # Indication of #8135. Ideally, these would all be arrays of formulas.
         e_xv = np.array([e_x, e_x])
         e_yv = np.array([e_y, e_y])
@@ -796,14 +796,14 @@ class TestSymbolicExpression(unittest.TestCase):
         # comparison (e.g. `is`).
         # - All false.
         with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
-            (e_xv == e_yv)
+            (e_xv == e_yv)  # noqa: B015
         # - True + False.
         with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
             e_xyv = np.array([e_x, e_y])
-            (e_xv == e_xyv)
+            (e_xv == e_xyv)  # noqa: B015
         # - All true.
         with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
-            (e_xv == e_xv)
+            (e_xv == e_xv)  # noqa: B015
 
     def test_functions_with_float(self):
         # TODO(eric.cousineau): Use concrete values once vectorized methods are
@@ -2139,7 +2139,7 @@ class TestExtractVariablesFromExpression(unittest.TestCase):
 class TestDecomposeAffineExpression(unittest.TestCase):
     def test_basic(self):
         e = 2 * x + 3 * y + 4
-        variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
+        _variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
         coeffs, constant_term = sym.DecomposeAffineExpression(
             e, map_var_to_index
         )
@@ -2209,7 +2209,7 @@ class TestDecomposeQuadraticPolynomial(unittest.TestCase):
         y = sym.Variable("y")
         e = x * x + 2 * y * y + 4 * x * y + 3 * x + 2 * y + 4
         poly = sym.Polynomial(e, [x, y])
-        variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
+        _variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
         Q, b, c = sym.DecomposeQuadraticPolynomial(poly, map_var_to_index)
         self.assertEqual(c, 4)
         x_idx = map_var_to_index[x.get_id()]
@@ -2340,7 +2340,7 @@ class TestUnapplyExpression(unittest.TestCase):
                 self._check_one_composite(e)
 
     def _check_one_composite(self, e):
-        ctor, args = e.Unapply()
+        _ctor, args = e.Unapply()
         self.assertGreater(len(args), 0)
         for arg in args:
             self.assertIsInstance(arg, (sym.Expression, float))
@@ -2411,7 +2411,7 @@ class TestUnapplyFormula(unittest.TestCase):
                 self._check_one_relational(f)
 
     def _check_one_relational(self, f):
-        ctor, args = f.Unapply()
+        _ctor, args = f.Unapply()
         self.assertEqual(len(args), 2)
         self.assertIsInstance(args[0], sym.Expression)
         self.assertIsInstance(args[1], sym.Expression)
@@ -2423,7 +2423,7 @@ class TestUnapplyFormula(unittest.TestCase):
                 self._check_one_compound(f)
 
     def _check_one_compound(self, f):
-        ctor, args = f.Unapply()
+        _ctor, args = f.Unapply()
         self.assertGreaterEqual(len(args), 1)
         for arg in args:
             self.assertIsInstance(arg, sym.Formula)

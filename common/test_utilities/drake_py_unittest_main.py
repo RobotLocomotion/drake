@@ -143,8 +143,8 @@ def main():
     index = 1
     while index < len(sys.argv):
         arg = sys.argv[index]
-        if arg in known_unittest_args or any([
-                arg.startswith(clazz) for clazz in test_class_guesses]):
+        if arg in known_unittest_args or any(
+                arg.startswith(clazz) for clazz in test_class_guesses):
             unittest_argv.append(arg)
             sys.argv.pop(index)
             continue

@@ -23,7 +23,7 @@ void DefineSolversSdpaFreeFormat(py::module_ m) {
 #ifdef PYDRAKE_USE_NANOBIND
       // We need to allow passing this enum to SetSolverOption (which only
       // accepts primitive types), even though it's not an IntEnum.
-      .def("__int__",
+      .def("__index__",
           [](RemoveFreeVariableMethod value) {
             return static_cast<int64_t>(value);
           })

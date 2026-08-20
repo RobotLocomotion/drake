@@ -77,7 +77,7 @@ def plot_graphviz(dot_text):
     elif running_as_notebook:
         return display(SVG(g.create_svg()))
     else:
-        f = NamedTemporaryFile(suffix=".png", dir=temp_directory())
+        f = NamedTemporaryFile(suffix=".png", dir=temp_directory())  # noqa: SIM115
         g.write_png(f.name)
         plt.axis("off")
 

@@ -78,8 +78,8 @@ class TestTrajectories(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_trajectory_start_end_time(self, T):
         # Acceptance check to ensure we have these base methods exposed.
-        Trajectory_[T].start_time
-        Trajectory_[T].end_time
+        Trajectory_[T].start_time  # noqa: B018
+        Trajectory_[T].end_time  # noqa: B018
 
     def test_custom_trajectory(self):
         trajectory = CustomTrajectory()

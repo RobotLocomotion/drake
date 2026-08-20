@@ -246,8 +246,8 @@ def _check_clang_format_toggles(filename):
     num_errors = 0
     for i, line in enumerate(lines):
         line = line + "\n"
-        found_on = any([x in line for x in ons])
-        found_off = any([x in line for x in offs])
+        found_on = any(x in line for x in ons)
+        found_off = any(x in line for x in offs)
         if found_on:
             if enabled:
                 print(
