@@ -11,8 +11,10 @@ import weakref
 from pydrake.common.ref_cycle_test_util import (
     IsDynamic,
     NotDynamic,
-    arbitrary_bad,
-    arbitrary_ok,
+    arbitrary_cycle_bad,
+    arbitrary_cycle_ok,
+    arbitrary_link_bad,
+    arbitrary_link_ok,
     free_function,
     invalid_arg_index,
     ouroboros,
@@ -66,15 +68,25 @@ class TestRefCycle(unittest.TestCase):
         self.assertEqual(len(dut._pydrake_internal_ref_cycle_peers), 1)
         self.check_is_collectable_cycle(returned, dut)
 
-    def test_arbitrary_ok(self):
-        got = arbitrary_ok()
+    def test_arbitrary_cycle_ok(self):
+        got = arbitrary_cycle_ok()
         self.assertTrue(hasattr(got, "_pydrake_internal_ref_cycle_peers"))
 
-    def test_arbitrary_bad(self):
+    def test_arbitrary_cycle_bad(self):
         with self.assertRaisesRegex(
-            RuntimeError, ".*IsDynamic::arbitrary_bad.*"
+            RuntimeError, ".*IsDynamic::arbitrary_cycle_bad.*"
         ):
-            arbitrary_bad()
+            arbitrary_cycle_bad()
+
+    def test_arbitrary_link_ok(self):
+        got = arbitrary_link_ok()
+        self.assertTrue(hasattr(got, "_pydrake_internal_ref_cycle_peers"))
+
+    def test_arbitrary_link_bad(self):
+        with self.assertRaisesRegex(
+            RuntimeError, ".*IsDynamic::arbitrary_link_bad.*"
+        ):
+            arbitrary_link_bad()
 
     def test_free_function(self):
         p0 = IsDynamic()

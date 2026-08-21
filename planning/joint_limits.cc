@@ -1,4 +1,4 @@
-#include "planning/joint_limits.h"
+#include "drake/planning/joint_limits.h"
 
 #include <stdexcept>
 

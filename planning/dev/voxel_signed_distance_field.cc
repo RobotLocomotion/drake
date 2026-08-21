@@ -38,7 +38,7 @@ VoxelSignedDistanceField& VoxelSignedDistanceField::operator=(
 
 const std::string& VoxelSignedDistanceField::parent_body_name() const {
   const auto& internal_sdf = internal::GetInternalSignedDistanceField(*this);
-  return internal_sdf.GetFrame();
+  return internal_sdf.Frame();
 }
 
 bool VoxelSignedDistanceField::is_empty() const {

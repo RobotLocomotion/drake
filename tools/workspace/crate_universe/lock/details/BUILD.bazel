@@ -32,14 +32,14 @@ filegroup(
 
 # Workspace Member Dependencies
 alias(
-    name = "cfg-if-1.0.3",
-    actual = "@crate__cfg-if-1.0.3//:cfg_if",
+    name = "cfg-if-1.0.4",
+    actual = "@crate__cfg-if-1.0.4//:cfg_if",
     tags = ["manual"],
 )
 
 alias(
     name = "cfg-if",
-    actual = "@crate__cfg-if-1.0.3//:cfg_if",
+    actual = "@crate__cfg-if-1.0.4//:cfg_if",
     tags = ["manual"],
 )
 

@@ -101,7 +101,7 @@ R"""(Default constructor. Sets all rows to their default value:
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/acrobot/acrobot_input.h
             const char* doc =
-R"""(See AcrobotInputIndices::GetCoordinateNames().)""";
+R"""(See AcrobotInputIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::acrobot::AcrobotInput::IsValid
           struct /* IsValid */ {
@@ -127,8 +127,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/acrobot/acrobot_input.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::acrobot::AcrobotInput::set_tau
           struct /* set_tau */ {
@@ -163,9 +163,8 @@ R"""(Describes the row indices of a AcrobotInput.)""";
             const char* doc =
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
-class. In other words,
-``AcrobotInputIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+class. In other words, ``AcrobotInputIndices∷GetCoordinateNames()[i]``
+is the name for ``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } AcrobotInputIndices;
         // Symbol: drake::examples::acrobot::AcrobotParams
@@ -210,7 +209,7 @@ R"""(Default constructor. Sets all rows to their default value:
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/acrobot/acrobot_params.h
             const char* doc =
-R"""(See AcrobotParamsIndices::GetCoordinateNames().)""";
+R"""(See AcrobotParamsIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::acrobot::AcrobotParams::GetElementBounds
           struct /* GetElementBounds */ {
@@ -265,8 +264,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/acrobot/acrobot_params.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::acrobot::AcrobotParams::b1
           struct /* b1 */ {
@@ -521,8 +520,8 @@ R"""(Describes the row indices of a AcrobotParams.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``AcrobotParamsIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+``AcrobotParamsIndices∷GetCoordinateNames()[i]`` is the name for
+``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } AcrobotParamsIndices;
         // Symbol: drake::examples::acrobot::AcrobotPlant
@@ -674,7 +673,7 @@ R"""(Default constructor. Sets all rows to their default value:
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/acrobot/acrobot_state.h
             const char* doc =
-R"""(See AcrobotStateIndices::GetCoordinateNames().)""";
+R"""(See AcrobotStateIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::acrobot::AcrobotState::IsValid
           struct /* IsValid */ {
@@ -700,8 +699,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/acrobot/acrobot_state.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::acrobot::AcrobotState::set_theta1
           struct /* set_theta1 */ {
@@ -799,9 +798,8 @@ R"""(Describes the row indices of a AcrobotState.)""";
             const char* doc =
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
-class. In other words,
-``AcrobotStateIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+class. In other words, ``AcrobotStateIndices∷GetCoordinateNames()[i]``
+is the name for ``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } AcrobotStateIndices;
         // Symbol: drake::examples::acrobot::AcrobotWEncoder
@@ -859,7 +857,7 @@ R"""(Specializes BasicVector with specific getters and setters.)""";
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/acrobot/spong_controller_params.h
             const char* doc =
-R"""(See SpongControllerParamsIndices::GetCoordinateNames().)""";
+R"""(See SpongControllerParamsIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::acrobot::SpongControllerParams::GetElementBounds
           struct /* GetElementBounds */ {
@@ -890,8 +888,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/acrobot/spong_controller_params.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::acrobot::SpongControllerParams::SpongControllerParams<T>
           struct /* ctor */ {
@@ -1017,8 +1015,8 @@ R"""(Describes the row indices of a SpongControllerParams.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``SpongControllerParamsIndices::GetCoordinateNames()[i]`` is the name
-for ``BasicVector::GetAtIndex(i)``.)""";
+``SpongControllerParamsIndices∷GetCoordinateNames()[i]`` is the name
+for ``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } SpongControllerParamsIndices;
       } acrobot;

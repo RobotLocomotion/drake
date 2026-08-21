@@ -2,7 +2,10 @@
 
 #include <limits>
 #include <memory>
+#include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -280,6 +283,11 @@ GTEST_TEST(IntegratorBaseTest, Clone) {
   LinearSystem<double> system(A);
 
   for (auto& scheme : GetIntegrationSchemes()) {
+    // Skip CENIC, since it requires a MultibodyPlant.
+    if (scheme == "cenic") {
+      continue;
+    }
+
     // Create an original integrator corresponding to scheme.
     Simulator<double> tmp(system);
     auto& original = ResetIntegratorFromFlags(&tmp, scheme, 0.2);
@@ -343,6 +351,29 @@ GTEST_TEST(IntegratorBaseTest, Clone) {
     // integrator.
     original.reset_context(nullptr);
     EXPECT_FALSE(original.Clone()->is_initialized());
+  }
+}
+
+GTEST_TEST(IntegratorBaseTest, GetStatisticsSummary) {
+  for (auto& scheme : GetIntegrationSchemes()) {
+    // Skip CENIC, since it requires a MultibodyPlant.
+    if (scheme == "cenic") {
+      continue;
+    }
+
+    // Create the integrator.
+    const LinearSystem<double> system(Eigen::Matrix2d::Zero());
+    Simulator<double> simulator(system);
+    auto& integrator = ResetIntegratorFromFlags(&simulator, scheme, 0.01);
+
+    // The summary should be non-empty and have no duplicates.
+    std::vector<NamedStatistic> summary = integrator.GetStatisticsSummary();
+    EXPECT_GT(summary.size(), 0);
+    std::set<std::string> keys;
+    for (const auto& [key, _] : summary) {
+      keys.insert(key);
+    }
+    EXPECT_EQ(keys.size(), summary.size());
   }
 }
 

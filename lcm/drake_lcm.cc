@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include <glib.h>
 #include <lcm/lcm.h>
 
 #include "drake/common/drake_assert.h"
@@ -24,6 +23,17 @@ constexpr const char* const kLcmDefaultUrl = "udpm://239.255.76.67:7667?ttl=0";
 
 // Defined below.
 class DrakeSubscription;
+
+void ThrowIfLcmError(bool is_lcm_error) {
+  if (is_lcm_error) {
+    throw std::logic_error(
+        "LCM has encountered an error. The most likely cause is network "
+        "misconfiguration. See "
+        "https://drake.mit.edu/troubleshooting.html#lcm-macos and "
+        "https://lcm-proj.github.io/lcm/content/multicast-setup.html for "
+        "more information.");
+  }
+}
 
 }  // namespace
 
@@ -97,7 +107,7 @@ DrakeLcm::DrakeLcm(const DrakeLcmParams& params)
     // ctor) and NOT in the first HandleSubscriptions call.  Without this,
     // ThreadSanitizer builds may report false positives related to the
     // self-test happening concurrently with LCM publishing.
-    ::lcm_get_fileno(impl_->lcm_);
+    ThrowIfLcmError(::lcm_get_fileno(impl_->lcm_) < 0);
   }
 }
 
@@ -124,11 +134,33 @@ namespace {
 
 // Given a literal string, escape it to be safe to use in an LCM channel regex.
 // For example ".foo" should be escaped to "\.foo" so that it only matches the
-// exact literal string, not "xfoo".
+// exact literal string, not "xfoo". LCM uses the PCRE regex syntax, which
+// states that any non-alpha-numeric character may be escaped to mean its
+// literal value by prefixing a backslash before the character:
+// https://en.wikipedia.org/wiki/Perl_Compatible_Regular_Expressions#Consistent_escaping_rules
 std::string ConvertLiteralStringToLcmRegex(const std::string& literal) {
-  char* const result_cstr = g_regex_escape_string(literal.c_str(), -1);
-  const std::string result{result_cstr};
-  g_free(result_cstr);
+  std::string result;
+  for (size_t i = 0; i < literal.size(); /* step size varies */) {
+    const int8_t ch = literal[i];
+    // Alpha-numeric characters should not be escaped -- escaping them could
+    // actually give them a special meaning.
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+        (ch >= '0' && ch <= '9')) {
+      result.push_back(literal[i++]);
+      continue;
+    }
+    // Everything else can be safely escaped, but if it's a multi-byte UTF-8
+    // codepoint then we need to be sure to escape the codepoint, not each
+    // individual byte.
+    result.push_back('\\');
+    const int num_bytes = (ch & 0b10000000) == 0            ? 1
+                          : (ch & 0b11100000) == 0b11000000 ? 2
+                          : (ch & 0b11110000) == 0b11100000 ? 3
+                                                            : 4;
+    for (int j = 0; j < num_bytes; ++j) {
+      result.push_back(literal[i++]);
+    }
+  }
   return result;
 }
 
@@ -216,8 +248,8 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     native_subscription_ =
         ::lcm_subscribe(native_instance_, channel_regex_.c_str(),
                         &DrakeSubscription::NativeCallback, this);
-    ::lcm_subscription_set_queue_capacity(native_subscription_,
-                                          queue_capacity_);
+    ThrowIfLcmError(native_subscription_ == nullptr);
+    set_queue_capacity(queue_capacity_);
   }
 
   // This is ONLY called from the DrakeLcm dtor.  Thus, a HandleSubscriptions

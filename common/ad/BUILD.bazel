@@ -10,7 +10,7 @@ package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "ad",
-    visibility = ["//common/benchmarking:__pkg__"],
+    visibility = ["//visibility:public"],
     deps = [
         ":auto_diff",
     ],
@@ -19,11 +19,14 @@ drake_cc_package_library(
 drake_cc_library(
     name = "auto_diff",
     srcs = [
+        "internal/derivatives_xpr.cc",
         "internal/partials.cc",
         "internal/standard_operations.cc",
     ],
     hdrs = [
         "auto_diff.h",
+        "internal/derivatives_xpr.h",
+        "internal/drake_operations.h",
         "internal/eigen_specializations.h",
         "internal/partials.h",
         "internal/standard_operations.h",
@@ -41,6 +44,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "drake_operations_test",
+    deps = [
+        ":auto_diff",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "matrix_test",
     deps = [
         ":auto_diff",
@@ -52,8 +63,17 @@ drake_cc_googletest(
     name = "partials_test",
     deps = [
         ":auto_diff",
+        "//common:random",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "partials_heap_test",
+    deps = [
+        "//common/ad:auto_diff",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
@@ -88,6 +108,7 @@ drake_cc_googletest(
         "test/standard_operations_dec_test.cc",
         "test/standard_operations_div_test.cc",
         "test/standard_operations_exp_test.cc",
+        "test/standard_operations_fmt_test.cc",
         "test/standard_operations_inc_test.cc",
         "test/standard_operations_integer_test.cc",
         "test/standard_operations_log_test.cc",
@@ -99,7 +120,6 @@ drake_cc_googletest(
         "test/standard_operations_sin_test.cc",
         "test/standard_operations_sinh_test.cc",
         "test/standard_operations_sqrt_test.cc",
-        "test/standard_operations_stream_test.cc",
         "test/standard_operations_sub_test.cc",
         "test/standard_operations_tan_test.cc",
         "test/standard_operations_tanh_test.cc",

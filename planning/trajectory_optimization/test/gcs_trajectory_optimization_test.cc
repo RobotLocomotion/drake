@@ -1218,7 +1218,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinuousTrajectory) {
   double middle_time_2 = unwrapped_traj.get_segment_times()[2];
   EXPECT_NEAR(middle_time_1, 1.0, time_eps);
   EXPECT_NEAR(middle_time_2, 4.0, time_eps);
-  // Verify the unwrapped trajectory is continous at the middle times.
+  // Verify the unwrapped trajectory is continuous at the middle times.
   EXPECT_TRUE(CompareMatrices(unwrapped_traj.value(middle_time_1 - time_eps),
                               unwrapped_traj.value(middle_time_1 + time_eps),
                               pos_eps));
@@ -1250,22 +1250,22 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinuousTrajectory) {
       0.0 + 2 * M_PI, 4.0 - 6 * M_PI, 3.0 - 6 * M_PI, 2.0 - 6 * M_PI;
   segments[1] = std::make_unique<trajectories::BezierCurve<double>>(
       1.0, 4.0, control_points_2);
-  const auto traj_not_continous_on_revolute_manifold =
+  const auto traj_not_continuous_on_revolute_manifold =
       trajectories::CompositeTrajectory<double>(segments);
-  // For joint 0, the trajectory is not continous: 2.0 (end of segment 0)--> 2.5
-  // (start of segment 1). If we treat joint 0 as continous revolute joint, the
-  // unwrapping will fail.
+  // For joint 0, the trajectory is not continuous: 2.0 (end of segment
+  // 0)--> 2.5 (start of segment 1). If we treat joint 0 as continuous revolute
+  // joint, the unwrapping will fail.
   continuous_revolute_joints = {0, 1};
   DRAKE_EXPECT_THROWS_MESSAGE(
       GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
-          traj_not_continous_on_revolute_manifold, continuous_revolute_joints),
+          traj_not_continuous_on_revolute_manifold, continuous_revolute_joints),
       ".*is not a multiple of 2π at segment.*");
   // If we set the tolerance to be very large, no error will occur. We use a
   // tolerance of 0.6, which is larger than the 0.5 gap between adjacent
   // segments.
   const double loose_tol = 0.6;
   EXPECT_NO_THROW(GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
-      traj_not_continous_on_revolute_manifold, continuous_revolute_joints,
+      traj_not_continuous_on_revolute_manifold, continuous_revolute_joints,
       std::nullopt, loose_tol));
 }
 
@@ -1944,7 +1944,7 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, EdgesFromWrappedJoints) {
-  // With wrapping continous joints
+  // With wrapping continuous joints
   Vector3d point_1(0.5, -12 * M_PI + 0.1, 12 * M_PI - 0.1);
   Vector3d point_2(0.5, 12 * M_PI - 0.1, 0.0);
   HPolyhedron box = HPolyhedron::MakeUnitBox(3);

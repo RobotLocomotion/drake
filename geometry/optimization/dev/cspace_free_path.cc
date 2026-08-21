@@ -71,12 +71,18 @@ PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
   }
 }
 
+CspaceFreePath::SeparationCertificateResult::~SeparationCertificateResult() =
+    default;
+
+CspaceFreePath::SeparationCertificateProgram::~SeparationCertificateProgram() =
+    default;
+
 CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const geometry::SceneGraph<double>* scene_graph,
                                const Eigen::Ref<const Eigen::VectorXd>& q_star,
                                int maximum_path_degree, int plane_degree)
     : rational_forward_kin_(plant),
-      scene_graph_{*scene_graph},
+      scene_graph_{DRAKE_DEREF(scene_graph)},
       q_star_{q_star},
       link_geometries_{internal::GetCollisionGeometries(*plant, *scene_graph)},
       plane_degree_{plane_degree},

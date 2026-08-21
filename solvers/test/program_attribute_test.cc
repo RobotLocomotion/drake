@@ -11,20 +11,59 @@ namespace solvers {
 namespace test {
 namespace {
 
-GTEST_TEST(ProgramAttributeTest, ToString) {
+// TODO(2026-06-01): Delete test `StreamInsertionOperator`.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(ProgramAttributeTest, StreamInsertionOperator) {
   const ProgramAttributes attrs{ProgramAttribute::kGenericCost,
                                 ProgramAttribute::kGenericConstraint};
-
-  EXPECT_EQ(to_string(ProgramAttribute::kGenericCost), "GenericCost");
-  EXPECT_EQ(to_string(attrs),
-            "{ProgramAttributes: GenericCost, GenericConstraint}");
-
   std::ostringstream os;
   os << ProgramAttribute::kGenericCost;
   EXPECT_EQ(os.str(), "GenericCost");
   os = std::ostringstream{};
   os << attrs;
   EXPECT_EQ(os.str(), "{ProgramAttributes: GenericCost, GenericConstraint}");
+}
+#pragma GCC diagnostic pop
+
+GTEST_TEST(ProgramAttributeTest, ProgramAttributeToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kGenericCost), "GenericCost");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kGenericConstraint),
+            "GenericConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kQuadraticCost), "QuadraticCost");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kQuadraticConstraint),
+            "QuadraticConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kLinearCost), "LinearCost");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kLinearConstraint),
+            "LinearConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kLinearEqualityConstraint),
+            "LinearEqualityConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kLinearComplementarityConstraint),
+            "LinearComplementarityConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kLorentzConeConstraint),
+            "LorentzConeConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kRotatedLorentzConeConstraint),
+            "RotatedLorentzConeConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kPositiveSemidefiniteConstraint),
+            "PositiveSemidefiniteConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kExponentialConeConstraint),
+            "ExponentialConeConstraint");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kL2NormCost), "L2NormCost");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kBinaryVariable),
+            "BinaryVariable");
+  EXPECT_EQ(fmt::to_string(ProgramAttribute::kCallback), "Callback");
+}
+
+GTEST_TEST(ProgramAttributeTest, ProgramAttributesToStringFmtFormatter) {
+  const ProgramAttributes attrs{
+      ProgramAttribute::kGenericCost,   ProgramAttribute::kGenericConstraint,
+      ProgramAttribute::kQuadraticCost, ProgramAttribute::kQuadraticConstraint,
+      ProgramAttribute::kLinearCost,    ProgramAttribute::kLinearConstraint};
+  EXPECT_EQ(fmt::to_string(ProgramAttributes()), "{ProgramAttributes: empty}");
+  EXPECT_EQ(
+      fmt::to_string(attrs),
+      "{ProgramAttributes: GenericCost, GenericConstraint, "
+      "QuadraticCost, QuadraticConstraint, LinearCost, LinearConstraint}");
 }
 
 GTEST_TEST(ProgramAttributeTest, Supported) {
@@ -68,7 +107,7 @@ GTEST_TEST(ProgramAttributeTest, Supported) {
     const auto& supported = std::get<1>(one_case);
     const auto& expected_message = std::get<2>(one_case);
     const bool expected_is_supported = expected_message.empty();
-    SCOPED_TRACE(to_string(required) + " vs " + to_string(supported));
+    SCOPED_TRACE(fmt::to_string(required) + " vs " + fmt::to_string(supported));
 
     const bool is_supported_1 =
         AreRequiredAttributesSupported(required, supported);
@@ -82,25 +121,28 @@ GTEST_TEST(ProgramAttributeTest, Supported) {
   }
 }
 
-GTEST_TEST(ProgramTypeTest, tostring) {
-  EXPECT_EQ(to_string(ProgramType::kLP), "linear programming");
-  EXPECT_EQ(to_string(ProgramType::kQP), "quadratic programming");
-  EXPECT_EQ(to_string(ProgramType::kSOCP), "second order cone programming");
-  EXPECT_EQ(to_string(ProgramType::kSDP), "semidefinite programming");
-  EXPECT_EQ(to_string(ProgramType::kGP), "geometric programming");
-  EXPECT_EQ(to_string(ProgramType::kCGP), "conic geometric programming");
-  EXPECT_EQ(to_string(ProgramType::kMILP), "mixed-integer linear programming");
-  EXPECT_EQ(to_string(ProgramType::kMIQP),
+GTEST_TEST(ProgramTypeTest, ProgramTypeToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(ProgramType::kLP), "linear programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kQP), "quadratic programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kSOCP),
+            "second order cone programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kSDP), "semidefinite programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kGP), "geometric programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kCGP), "conic geometric programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kMILP),
+            "mixed-integer linear programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kMIQP),
             "mixed-integer quadratic programming");
-  EXPECT_EQ(to_string(ProgramType::kMISOCP),
+  EXPECT_EQ(fmt::to_string(ProgramType::kMISOCP),
             "mixed-integer second order cone programming");
-  EXPECT_EQ(to_string(ProgramType::kMISDP),
+  EXPECT_EQ(fmt::to_string(ProgramType::kMISDP),
             "mixed-integer semidefinite programming");
-  EXPECT_EQ(to_string(ProgramType::kQuadraticCostConicConstraint),
+  EXPECT_EQ(fmt::to_string(ProgramType::kQuadraticCostConicConstraint),
             "conic-constrained quadratic programming");
-  EXPECT_EQ(to_string(ProgramType::kNLP), "nonlinear programming");
-  EXPECT_EQ(to_string(ProgramType::kLCP), "linear complementarity programming");
-  EXPECT_EQ(to_string(ProgramType::kUnknown),
+  EXPECT_EQ(fmt::to_string(ProgramType::kNLP), "nonlinear programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kLCP),
+            "linear complementarity programming");
+  EXPECT_EQ(fmt::to_string(ProgramType::kUnknown),
             "uncategorized mathematical programming type");
 }
 

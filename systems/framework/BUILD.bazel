@@ -204,6 +204,7 @@ drake_cc_library(
 drake_cc_library(
     name = "event_collection",
     srcs = [
+        "event.cc",
         "event_collection.cc",
         "event_status.cc",
     ],
@@ -236,10 +237,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "framework_common",
-    srcs = [],
-    hdrs = [
-        "framework_common.h",
-    ],
+    srcs = ["framework_common.cc"],
+    hdrs = ["framework_common.h"],
     deps = [
         "//common:identifier",
         "//common:type_safe_index",

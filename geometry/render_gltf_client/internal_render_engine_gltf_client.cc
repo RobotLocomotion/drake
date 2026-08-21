@@ -20,7 +20,6 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/overloaded.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/yaml/yaml_io.h"
 

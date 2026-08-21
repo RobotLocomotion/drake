@@ -132,7 +132,7 @@ Internally computes the nominal input corresponding to a hover at
 position ``x0``.
 
 See also:
-    systems::LinearQuadraticRegulator.)""";
+    systems∷LinearQuadraticRegulator.)""";
         } StabilizingLQRController;
       } quadrotor;
     } examples;

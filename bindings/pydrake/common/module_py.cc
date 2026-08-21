@@ -270,10 +270,8 @@ void InitLowLevelModules(py::module m) {
           doc.RandomDistribution.kExponential.doc);
 
   m.def("CalcProbabilityDensity", &CalcProbabilityDensity<double>,
-       py::arg("distribution"), py::arg("x"), doc.CalcProbabilityDensity.doc)
-      .def("CalcProbabilityDensity", &CalcProbabilityDensity<AutoDiffXd>,
-          py::arg("distribution"), py::arg("x"),
-          doc.CalcProbabilityDensity.doc);
+      py::arg("distribution"), py::arg("x"), doc.CalcProbabilityDensity.doc);
+  // N.B. The AutoDiffXd overload is bound later on in this function.
 
   // Adds a binding for drake::RandomGenerator.
   py::class_<RandomGenerator> random_generator_cls(m, "RandomGenerator",
@@ -380,6 +378,10 @@ discussion), use e.g.
   autodiffutils.doc() = "Bindings for Eigen AutoDiff Scalars";
   internal::DefineAutodiffutils(autodiffutils);
   ExecuteExtraPythonCode(autodiffutils, true);
+
+  // Define overloads in `pydrake.common` that require AutoDiffXd.
+  m.def("CalcProbabilityDensity", &CalcProbabilityDensity<AutoDiffXd>,
+      py::arg("distribution"), py::arg("x"), doc.CalcProbabilityDensity.doc);
 
   // Define `symbolic` top-level module.
   py::module symbolic = pydrake_top.def_submodule("symbolic");

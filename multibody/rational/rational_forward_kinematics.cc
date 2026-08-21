@@ -57,8 +57,7 @@ RationalForwardKinematics::Pose<Scalar2> CalcChildPose(
 
 RationalForwardKinematics::RationalForwardKinematics(
     const MultibodyPlant<double>* plant)
-    : plant_(*plant) {
-  DRAKE_DEMAND(plant != nullptr);
+    : plant_(DRAKE_DEREF(plant)) {
   const internal::MultibodyTree<double>& tree = GetInternalTree(plant_);
   const internal::SpanningForest& forest = tree.forest();
   // Initialize map_mobilizer_to_s_index_ to -1, where -1 indicates "no s

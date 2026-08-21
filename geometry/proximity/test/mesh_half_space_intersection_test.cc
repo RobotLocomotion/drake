@@ -306,12 +306,13 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
       const Scalar expected_pressure = pressure_in_F_(p_FV);
       const Scalar error = abs(test_pressure - expected_pressure);
       if (error > kPressureEps) {
-        return ::testing::AssertionFailure()
-               << "\nBad pressure field value at vertex " << v << "\n"
-               << "  Expected: " << expected_pressure << "\n"
-               << "  Found: " << test_pressure << "\n"
-               << "  tolerance: " << kPressureEps << "\n"
-               << "  error: " << error;
+        return ::testing::AssertionFailure() << fmt::format(
+                   "\nBad pressure field value at vertex {}\n"
+                   "  Expected: {}\n"
+                   "  Found: {}\n"
+                   "  tolerance: {}\n"
+                   "  error: {}",
+                   v, expected_pressure, test_pressure, kPressureEps, error);
       }
     }
 

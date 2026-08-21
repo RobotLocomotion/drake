@@ -30,7 +30,7 @@ build --notrim_test_configuration
 build --action_env=CCACHE_DISABLE=1
 
 # Transcriptions of CMake configs into their equivalent Bazel flags.
-build:Debug --compilation_mode=dbg --fission=no
+build:Debug --config=debug --fission=no
 build:MinSizeRel --compilation_mode=opt --copt=-Os --host_copt=-Os
 build:Release --compilation_mode=opt
 build:RelWithDebInfo --compilation_mode=opt --fission=no --copt=-g --host_copt=-g

@@ -1,8 +1,12 @@
 #!/bin/bash
 #
-# Drake script to upgrade our requirements lockfile.
-# - Users should make edits to pyproject.toml, and then
-# - run this script to compile pyproject.toml to pdm.lock.
+# Drake script to upgrade our requirements lock files.
+#
+# - Users can make edits to drake/setup/python/pyproject.toml, and then
+#   run this script to compile it to drake/setup/python/pdm.lock.
+#
+# - Users can make edits to drake/setup/python/mypy/requirements.in, and then
+#   run this script to compile it to drake/setup/python/mypy/requirements.txt.
 #
 # The --reuse option may be given to apply changes to pyproject.toml while
 # attempting to preserve existing version pins.
@@ -12,8 +16,7 @@
 
 set -eux -o pipefail
 
-# NOTE: The list of Python versions here should be the set of all Python
-# versions for which wheels are built.
+# When changing this, see drake/tools/workspace/python/README.md.
 readonly python_versions=( 3.10 3.11 3.12 3.13 3.14 )
 
 purge=1
@@ -110,8 +113,13 @@ for py in "${python_versions[@]}"; do
     "${venv_pdm}/bin/pdm" lock "${lock_args[@]}" --python ${py}
 done
 
-# Check for changes to the lock file.
+# Check for changes to the pdm lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
+
+# Upgrade the mypy lockfile.
+readonly mypy_requirements="./setup/python/mypy/requirements.txt" 
+bazel run //setup/python/mypy:lock.update
+files_to_commit+=( "$(git diff --name-only HEAD -- "${mypy_requirements}")" )
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then

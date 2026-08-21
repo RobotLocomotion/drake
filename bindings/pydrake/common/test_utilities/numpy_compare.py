@@ -150,7 +150,7 @@ def assert_not_equal(a, b):
             errs.append(str(e))
     all_equal = len(errs) == br.size
     if all_equal:
-        raise AssertionError("Unwanted equality: {}".format(errs))
+        raise AssertionError(f"Unwanted equality: {errs}")
 
 
 def assert_float_equal(a, bf):
@@ -193,9 +193,7 @@ def resolve_type(a):
     a = np.asarray(a)
     assert a.size != 0, "Cannot be empty."
     cls_set = {type(np.asarray(x).item()) for x in a.flat}
-    assert len(cls_set) == 1, "Types must be homogeneous; got: {}".format(
-        cls_set
-    )
+    assert len(cls_set) == 1, f"Types must be homogeneous; got: {cls_set}"
     (cls,) = cls_set
     return cls
 

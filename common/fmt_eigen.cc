@@ -32,6 +32,13 @@ std::string FormatEigenMatrix(const FormatterEigenRef<Scalar>& matrix)
   return stream.str();
 }
 
+template <typename Scalar>
+std::string StringifyErrorDetailValue(const fmt_eigen_ref<Scalar>& value)
+  requires is_fmt_eigen_drake_throw_scalar<Scalar>::value
+{
+  return fmt::to_string(value);
+}
+
 // Explicitly instantiate for the allowed scalar types in our header.
 template std::string FormatEigenMatrix<double>(
     const FormatterEigenRef<double>& matrix);
@@ -39,6 +46,14 @@ template std::string FormatEigenMatrix<float>(
     const FormatterEigenRef<float>& matrix);
 template std::string FormatEigenMatrix<std::string>(
     const FormatterEigenRef<std::string>& matrix);
+template std::string StringifyErrorDetailValue<double>(
+    const fmt_eigen_ref<double>& value);
+template std::string StringifyErrorDetailValue<float>(
+    const fmt_eigen_ref<float>& value);
+template std::string StringifyErrorDetailValue<int>(
+    const fmt_eigen_ref<int>& value);
+template std::string StringifyErrorDetailValue<std::string>(
+    const fmt_eigen_ref<std::string>& value);
 
 }  // namespace internal
 }  // namespace drake

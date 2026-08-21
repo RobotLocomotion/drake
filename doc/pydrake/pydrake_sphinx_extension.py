@@ -12,7 +12,7 @@ For guidance, see:
 
 import re
 from textwrap import indent
-from typing import Any, Tuple
+from typing import Any
 import warnings
 
 from docutils import nodes
@@ -316,7 +316,7 @@ def patch_document_members(original, self, all_members=False):
     # N.B. Patch for Drake starts here.
     elif member_order == "bycustomfunction":
 
-        def custom_key(entry: Tuple[autodoc.Documenter, bool]) -> Any:
+        def custom_key(entry: tuple[autodoc.Documenter, bool]) -> Any:
             result = self.env.app.emit_firstresult(
                 "autodoc-member-order-custom-function", entry[0]
             )

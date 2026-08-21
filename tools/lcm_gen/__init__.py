@@ -34,7 +34,6 @@ import re
 import struct
 import token
 import tokenize
-from typing import List, Optional, Union
 
 # A brief summary of LCM's grammar.
 #
@@ -81,7 +80,7 @@ class UserType:
     """A struct name from an LCM message definition, e.g., "foo" (when
     `package` is None) or "foo.bar" (`package` is "foo"; `name` is "bar")."""
 
-    package: Optional[str]
+    package: str | None
     name: str
 
     def __str__(self):
@@ -95,8 +94,8 @@ class StructField:
     """A field within an LCM message definition."""
 
     name: str
-    typ: Union[PrimitiveType, UserType]
-    array_dims: List[Union[int, str]] = dataclasses.field(default_factory=list)
+    typ: PrimitiveType | UserType
+    array_dims: list[int | str] = dataclasses.field(default_factory=list)
 
     def __str__(self):
         result = f"{self.typ} {self.name}"
@@ -111,7 +110,7 @@ class StructConstant:
 
     name: str
     typ: PrimitiveType
-    value: Union[int, float]
+    value: int | float
     value_str: str
 
     def __str__(self):
@@ -123,8 +122,8 @@ class Struct:
     """The parse tree for an LCM message definition."""
 
     typ: UserType
-    fields: List[StructField] = dataclasses.field(default_factory=list)
-    constants: List[StructConstant] = dataclasses.field(default_factory=list)
+    fields: list[StructField] = dataclasses.field(default_factory=list)
+    constants: list[StructConstant] = dataclasses.field(default_factory=list)
 
     def __str__(self):
         result = f"struct {self.typ} {{\n"

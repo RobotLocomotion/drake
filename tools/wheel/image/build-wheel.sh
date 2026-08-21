@@ -71,11 +71,13 @@ cp -r -t ${WHEEL_DIR}/pydrake \
 cp -r -t ${WHEEL_DIR}/pydrake/lib \
     /tmp/drake-wheel-build/drake-dist/lib/libdrake*.so
 
-# See tools/wheel/image/build-drake.sh for details on the lack of MOSEK support
-# for Python 3.14.
+# MOSEK's published wheels declare an upper bound on their supported Python
+# version, which is currently Python < 3.15. When that changes to a larger
+# version number, we should bump this up to match, and also grep tools/wheel
+# for other mentions of MOSEK version bounds and fix those as well.
 PYTHON_MINOR=$(python -c "import sys; print(sys.version_info.minor)")
 MOSEK_ENABLED=1
-[ ${PYTHON_MINOR} -ge 14 ] && MOSEK_ENABLED=
+[ ${PYTHON_MINOR} -ge 15 ] && MOSEK_ENABLED=
 
 if [[ "$(uname)" == "Darwin" && -n "${MOSEK_ENABLED}" ]]; then
     # MOSEK is "sort of" third party, but is procured as part of Drake's build
@@ -106,12 +108,6 @@ cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /tmp/drake-wheel-build/drake-dist/share/drake/geometry \
     /tmp/drake-wheel-build/drake-dist/share/drake/multibody \
     /tmp/drake-wheel-build/drake-dist/share/drake/tutorials
-
-if [[ "$(uname)" == "Linux" ]]; then
-    mkdir -p ${WHEEL_SHARE_DIR}/drake/setup
-    cp -r -t ${WHEEL_SHARE_DIR}/drake/setup \
-        /tmp/drake-wheel-build/drake-dist/share/drake/setup/deepnote
-fi
 
 if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib
@@ -174,5 +170,5 @@ if [[ "$(uname)" == "Darwin" ]]; then
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
 
-    auditwheel repair --plat manylinux_${GLIBC_VERSION}_x86_64 dist/drake*.whl
+    auditwheel repair --plat manylinux_${GLIBC_VERSION}_$(arch) dist/drake*.whl
 fi

@@ -201,7 +201,7 @@ void MatrixMultiply(benchmark::State& state) {  // NOLINT
       state);
 }
 
-void ArgSweep(benchmark::internal::Benchmark* benchmark, bool use_double) {
+void ArgSweep(benchmark::Benchmark* benchmark, bool use_double) {
   for (const auto& left_side : {kDerivativesEmpty, kDerivativesDense}) {
     for (const auto& right_side :
          {kDerivativesNone, kDerivativesEmpty, kDerivativesDense}) {
@@ -220,11 +220,11 @@ void ArgSweep(benchmark::internal::Benchmark* benchmark, bool use_double) {
   }
 }
 
-void VectorArgSweep(benchmark::internal::Benchmark* benchmark) {
+void VectorArgSweep(benchmark::Benchmark* benchmark) {
   ArgSweep(benchmark, /* use_double = */ true);
 }
 
-void MatrixArgSweep(benchmark::internal::Benchmark* benchmark) {
+void MatrixArgSweep(benchmark::Benchmark* benchmark) {
   ArgSweep(benchmark, /* use_double = */ false);
 }
 

@@ -6,16 +6,13 @@
 
 namespace drake {
 namespace {
+
 GTEST_TEST(EigenAutodiffTypesTest, CheckingInheritance) {
-  typedef double Scalar;
-  typedef Eigen::Matrix<Scalar, 2, 2> Deriv;
-  typedef Eigen::AutoDiffScalar<Deriv> AD;
-
-  typedef std::numeric_limits<AD> ADLimits;
-  typedef std::numeric_limits<Scalar> ScalarLimits;
-
-  bool res = std::is_base_of_v<ScalarLimits, ADLimits>;
-  EXPECT_TRUE(res);
+  using ScalarLimits = std::numeric_limits<double>;
+  using AutoDiffLimits = std::numeric_limits<AutoDiffXd>;
+  const bool result = std::is_base_of_v<ScalarLimits, AutoDiffLimits>;
+  EXPECT_TRUE(result);
 }
+
 }  // namespace
 }  // namespace drake

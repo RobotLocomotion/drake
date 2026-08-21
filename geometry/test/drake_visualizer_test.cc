@@ -1029,8 +1029,8 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
       simulator.AdvanceTo(t);
       results = this->ProcessMessages(role);
       EXPECT_EQ(results.num_load, modified_role == role ? 1 : 0)
-          << "For visualized role '" << role << "' and modified role '" << role
-          << "'\n";
+          << fmt::format("For visualized role '{}' and modified role '{}'\n",
+                         role, modified_role);
       EXPECT_EQ(results.num_draw, 1);
       EXPECT_EQ(results.num_deformable, 1);
     }

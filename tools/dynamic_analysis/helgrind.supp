@@ -1,6 +1,0 @@
-{
-   zmq: possible data race during read/write
-   Helgrind:Race
-   ...
-   obj:/usr/lib/x86_64-linux-gnu/libzmq.so.*
-}

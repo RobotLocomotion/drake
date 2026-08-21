@@ -10,8 +10,8 @@
 namespace drake {
 namespace planning {
 // Forward declarations.
-class VoxelCollisionMap;
-class VoxelTaggedObjectCollisionMap;
+class VoxelOccupancyMap;
+class VoxelTaggedObjectOccupancyMap;
 
 /// Container for voxelized signed distance fields. To enable efficient sharing
 /// signed distance fields (which may be quite large) between multiple uses, a
@@ -61,8 +61,8 @@ class VoxelSignedDistanceField {
  private:
   void InitializeEmpty();
 
-  friend class VoxelCollisionMap;
-  friend class VoxelTaggedObjectCollisionMap;
+  friend class VoxelOccupancyMap;
+  friend class VoxelTaggedObjectOccupancyMap;
 
   // Construct from an existing internal representation, used only by friends.
   explicit VoxelSignedDistanceField(

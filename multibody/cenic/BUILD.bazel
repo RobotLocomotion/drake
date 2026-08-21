@@ -1,0 +1,71 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "cenic",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cenic_integrator",
+        ":make_cenic_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "cenic_integrator",
+    srcs = ["cenic_integrator.cc"],
+    hdrs = ["cenic_integrator.h"],
+    deps = [
+        "//multibody/contact_solvers/icf:icf_builder",
+        "//multibody/contact_solvers/icf:icf_external_systems_linearizer",
+        "//multibody/contact_solvers/icf:icf_solver",
+        "//systems/analysis:integrator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "make_cenic_integrator",
+    srcs = ["make_cenic_integrator.cc"],
+    hdrs = ["make_cenic_integrator.h"],
+    deps = [
+        "//systems/analysis:integrator_base",
+        "//systems/framework:context",
+        "//systems/framework:system",
+    ],
+    implementation_deps = [
+        ":cenic_integrator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cenic_integrator_test",
+    deps = [
+        ":cenic_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_cenic_integrator_test",
+    deps = [
+        ":cenic_integrator",
+        ":make_cenic_integrator",
+        "//common/test_utilities:expect_throws_message",
+        "//planning:robot_diagram_builder",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+add_lint_tests()

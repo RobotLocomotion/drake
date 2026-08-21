@@ -154,11 +154,12 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
-  const double initial_velocity = 0.01;
+  const double initial_velocity = 2.1;
   const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition.
   spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Take all the defaults.
   integrator.Initialize();
@@ -181,7 +182,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Check the solution.
   EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,
-              5e-3);
+              1e-4);
 
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);

@@ -132,17 +132,17 @@ rust_library(
     deps = [
         "@crate__amd-0.2.2//:amd",
         "@crate__blas-0.22.0//:blas",
-        "@crate__cfg-if-1.0.3//:cfg_if",
+        "@crate__cfg-if-1.0.4//:cfg_if",
         "@crate__clarabel-0.11.1//:build_script_build",
         "@crate__derive_builder-0.11.2//:derive_builder",
-        "@crate__indexmap-2.11.4//:indexmap",
+        "@crate__indexmap-2.13.0//:indexmap",
         "@crate__itertools-0.11.0//:itertools",
         "@crate__lapack-0.19.0//:lapack",
         "@crate__lazy_static-1.5.0//:lazy_static",
         "@crate__num-traits-0.2.19//:num_traits",
         "@crate__serde-1.0.228//:serde",
         "@crate__serde-big-array-0.5.1//:serde_big_array",
-        "@crate__serde_json-1.0.145//:serde_json",
+        "@crate__serde_json-1.0.149//:serde_json",
         "@crate__thiserror-1.0.69//:thiserror",
     ] + select({
         "@rules_rust//rust/platform:wasm32-unknown-emscripten": [

@@ -56,7 +56,7 @@ RobotLocomotion/drake-ci
 
 <tr>
 <td><code>distribution</code></td>
-<td>Nightly binaries, monthly releases, docker, installation.</td>
+<td>Nightly binaries, monthly releases, installation.</td>
 <td>jwnimmer-tri</td>
 <td><small>
 tools/install<br>
@@ -159,7 +159,7 @@ multibody/parsing
 <tr>
 <td><code>multibody plant</code></td>
 <td>MultibodyPlant and supporting code.</td>
-<td>amcastro-tri</td>
+<td>joemasterjohn</td>
 <td><small>
 multibody/contact_solvers<br>
 multibody/math<br>

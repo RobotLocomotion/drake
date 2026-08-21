@@ -11,6 +11,9 @@ import numpy as np
 
 from pydrake.geometry import (
     Box,
+    EnvironmentMap,
+    EquirectangularMap,
+    LightParameter,
     MeshcatCone,
     RenderEngineVtkParams,
     Rgba,
@@ -77,6 +80,7 @@ class ModelVisualizer:
         pyplot=False,
         meshcat=None,
         environment_map: Path = Path(),
+        no_lights: bool = False,
         compliance_type: str = "undefined",
     ):
         """Initializes a ModelVisualizer.
@@ -93,6 +97,9 @@ class ModelVisualizer:
              image display uses a native window so will not work in a remote or
              cloud runtime environment.
           environment_map: Meshcat environment map filename.
+          no_lights: optionally disable the lights in the render engine and
+             meshcat. This is useful when using an environment map to assess
+             the effect of the map.
           compliance_type: Overrides the DefaultProximityProperties setting
              with same name. Can be set to either "rigid" or "compliant" for
              hydroelastic contact, or "undefined" to use point contact.
@@ -120,6 +127,7 @@ class ModelVisualizer:
         self._pyplot = pyplot
         self._meshcat = meshcat
         self._environment_map = environment_map
+        self._no_lights = no_lights
         self._compliance_type = compliance_type
 
         # This is the list of loaded models, to enable the Reload button.
@@ -379,6 +387,9 @@ class ModelVisualizer:
         self._meshcat.Delete()
         self._meshcat.DeleteAddedControls()
 
+        if self._no_lights:
+            self._meshcat.SetProperty("/Lights", "visible", False)
+
         if self._environment_map.is_file():
             self._meshcat.SetEnvironmentMap(self._environment_map)
 
@@ -411,11 +422,30 @@ class ModelVisualizer:
             camera_config.X_PB.base_frame = "$rgbd_sensor_body"
             camera_config.z_far = 3  # Show 3m of frustum.
             camera_config.fps = 1.0  # Ignored -- we're not simulating.
+            # The meshcat default field of view is 75 degrees. We want the two
+            # images to match.
+            camera_config.focal = CameraConfig.FovDegrees(y=75)
             is_unit_test = "TEST_SRCDIR" in os.environ
             if not is_unit_test:
                 # Pop up a local window.
                 camera_config.show_rgb = True
                 camera_config.renderer_class = RenderEngineVtkParams()
+                camera_config.renderer_class.exposure = 1
+                if self._environment_map.is_file():
+                    camera_config.renderer_class.environment_map = (
+                        EnvironmentMap(
+                            skybox=True,
+                            texture=EquirectangularMap(
+                                path=str(self._environment_map)
+                            ),
+                        )
+                    )
+                if self._no_lights:
+                    # We can only disable *all* lights by creating a light with
+                    # zero intensity.
+                    camera_config.renderer_class.lights = [
+                        LightParameter(intensity=0)
+                    ]
                 if "darwin" not in sys.platform:
                     camera_config.renderer_class.backend = "GLX"
             ApplyCameraConfig(

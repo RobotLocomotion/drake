@@ -154,6 +154,8 @@ drake_py_unittest(
     shard_count = 4,
     deps = [
         ":hardware_sim_test_common",
+        # This is only used by :demo_py, but it needs to be here.
+        "//bindings/pydrake",
     ],
 )
 

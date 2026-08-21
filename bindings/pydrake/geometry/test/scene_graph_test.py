@@ -700,7 +700,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         obj = GeometryConfigurationVector()
         geometry_id = mut.GeometryId.get_new_id()
 
-        obj.set_value(id=geometry_id, value=np.ones((10)))
+        obj.set_value(id=geometry_id, value=np.ones(10))
         self.assertEqual(obj.size(), 1)
         obj_value = obj.value(id=geometry_id)
         self.assertIsInstance(obj_value, np.ndarray)
@@ -964,6 +964,12 @@ class TestGeometrySceneGraph(unittest.TestCase):
             mut.HydroelasticContactRepresentation.kTriangle,
             mut.HydroelasticContactRepresentation.kPolygon,
         ):
+            # Check the non-empty return from FindCollisionCandidates() -- see
+            # issue #23839.
+            candidates = query_object.FindCollisionCandidates()
+            self.assertEqual(len(candidates), 1)
+            self.assertEqual(candidates[0], (g_id0, g_id1))
+
             expect_triangles = (
                 rep == mut.HydroelasticContactRepresentation.kTriangle
             )

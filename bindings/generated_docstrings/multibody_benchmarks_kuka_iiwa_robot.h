@@ -32,16 +32,16 @@ R"""(This method makes a MultibodyTree model for a Kuka Iiwa arm as
 specified in the file kuka_iiwa_robot.urdf contained in this same
 directory. Links can be accessed by their name "iiwa_link_1" (base)
 through "iiwa_link_7" (end effector). The "world" body can be accessed
-with MultibodyTree::world_body(). Joints can be accessed by their name
+with MultibodyTree∷world_body(). Joints can be accessed by their name
 "iiwa_joint_1" (from the base) through "iiwa_joint_7" (to the end
 effector). The new MultibodyTree model is finalized by
-MultibodyTree::Finalize() and therefore no more modeling elements can
+MultibodyTree∷Finalize() and therefore no more modeling elements can
 be added.
 
 Parameter ``finalize_model``:
-    If ``True``, the model is finalized with
-    MultibodyTree::Finalize(). A non-finalized model can be requested
-    if adding more multibody elements is desired.
+    If ``True``, the model is finalized with MultibodyTree∷Finalize().
+    A non-finalized model can be requested if adding more multibody
+    elements is desired.
 
 Parameter ``gravity``:
     The value of the acceleration of gravity, in m/s².)""";

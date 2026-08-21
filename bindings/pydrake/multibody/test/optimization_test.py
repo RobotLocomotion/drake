@@ -1,6 +1,5 @@
 from collections import namedtuple
 import copy
-import typing
 import unittest
 
 import numpy as np
@@ -54,7 +53,7 @@ Environment = namedtuple(
 )
 
 
-def construct_environment(masses: typing.List, box_sizes: typing.List):
+def construct_environment(masses: list, box_sizes: list):
     """
     Construct an environment with many free boxes.
     @param masses masses[i] is the mass of box i.
@@ -455,7 +454,7 @@ class TestToppra(unittest.TestCase):
         breaks = [path.start_time(), path.end_time()]
 
         speed_limit_traj = PiecewisePolynomial.FirstOrderHold(
-            breaks, np.array(([[1, 1]]))
+            breaks, np.array([[1, 1]])
         )
         constraint = toppra.AddFrameTranslationalSpeedLimit(
             constraint_frame=frame, upper_limit=speed_limit_traj

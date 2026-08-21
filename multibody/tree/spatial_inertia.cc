@@ -548,6 +548,11 @@ void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
 
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
+  return out << fmt::to_string(M);
+}
+
+template <typename T>
+std::string to_string(const SpatialInertia<T>& M) {
   // Write the data associated with the spatial inertia M of a body
   // (or composite body) B about a point P, expressed in a frame E.
   // Typically point P is either Bo (B's origin) or Bcm (B's center of mass)
@@ -558,16 +563,14 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
   const T& x = p_PBcm.x();
   const T& y = p_PBcm.y();
   const T& z = p_PBcm.z();
-
-  // TODO(jwnimmer-tri) Rewrite this to use fmt to our advantage.
+  std::string result;
   if constexpr (scalar_predicate<T>::is_bool) {
-    out << "\n"
-        << fmt::format(" mass = {}\n", mass)
-        << fmt::format(" Center of mass = [{}  {}  {}]\n", x, y, z);
+    result.append(fmt::format("\n mass = {}\n Center of mass = [{}  {}  {}]\n",
+                              mass, x, y, z));
   } else {
     // Print symbolic results.
-    out << " mass = " << mass << "\n"
-        << fmt::format(" Center of mass = {}\n", fmt_eigen(p_PBcm.transpose()));
+    result.append(fmt::format(" mass = {}\n Center of mass = {}\n", mass,
+                              fmt_eigen(p_PBcm.transpose())));
   }
 
   // Get G_BP (unit inertia about point P) and use it to calculate I_BP
@@ -578,17 +581,22 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
       G_BP.MultiplyByScalarSkipValidityCheck(mass);
 
   // Write B's rotational inertia about point P.
-  out << " Inertia about point P, I_BP =\n" << I_BP;
-
-  return out;
+  result.append(fmt::format(" Inertia about point P, I_BP =\n{}", I_BP));
+  return result;
 }
 
+// TODO(2026-06-01): delete `operator<<` instantiation and the `#pragma`s.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     (static_cast<std::ostream& (*)(std::ostream&, const SpatialInertia<T>&)>(
-        &operator<< )  // clang-format would remove space lint requires
+        &operator<< ),  // clang-format would remove space lint requires
+    static_cast<std::string(*)(const SpatialInertia<T>&)>(
+            &to_string)
 ));
 // clang-format on
+#pragma GCC diagnostic pop
 
 }  // namespace multibody
 }  // namespace drake

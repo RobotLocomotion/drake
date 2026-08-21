@@ -4,7 +4,9 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -18,6 +20,9 @@
 
 namespace drake {
 namespace systems {
+
+/** Helper type for IntegratorBase<T>::GetStatisticsSummary. */
+using NamedStatistic = std::pair<std::string, std::variant<int64_t, double>>;
 
 /** @defgroup integrators Integrators
  @ingroup simulation
@@ -1184,6 +1189,13 @@ class IntegratorBase {
    */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
+  /**
+   Returns all integrator statistics as a single collection. The data is
+   organized as a list of (key, value) pairs.  The types allowed by the
+   `variant` may grow over time; be sure to use `std::visit` for access.
+   */
+  std::vector<NamedStatistic> GetStatisticsSummary() const;
+
   /** Manually increments the statistic for the number of ODE evaluations.
    @warning Implementations should generally avoid calling this method;
             evaluating the ODEs using EvalTimeDerivatives() updates this
@@ -1342,7 +1354,15 @@ class IntegratorBase {
    collects its own statistics, you should re-implement this method and
    reset them there.
    */
-  virtual void DoResetStatistics() {}
+  virtual void DoResetStatistics();
+
+  /**
+   Returns statistics particular to a specific integrator, in service of
+   GetStatisticsSummary(). The default implementation of this function does
+   nothing. If your integrator collects its own statistics, you should
+   re-implement this method and return them there.
+   */
+  virtual std::vector<NamedStatistic> DoGetStatisticsSummary() const;
 
   /**
    Evaluates the derivative function and updates call statistics.
@@ -1411,7 +1431,7 @@ class IntegratorBase {
    largest error in any state vector component.
    @returns the norm (a non-negative value)
    */
-  T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
+  virtual T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
 
   /**
    Calculates adjusted integrator step sizes toward keeping state variables

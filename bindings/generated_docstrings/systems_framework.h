@@ -152,7 +152,7 @@ satisfies VectorBase. Once constructed, its size is fixed.)""";
           const char* doc_0args = R"""(Constructs an empty BasicVector.)""";
           // Source: drake/systems/framework/basic_vector.h
           const char* doc_1args_size =
-R"""(Initializes with the given ``size`` using the drake::dummy_value<T>,
+R"""(Initializes with the given ``size`` using the drake∷dummy_value<T>,
 which is NaN when T = double.)""";
           // Source: drake/systems/framework/basic_vector.h
           const char* doc_1args_vec =
@@ -206,7 +206,7 @@ R"""(Constructs a BasicVector whose elements are the elements of ``init``.)""";
           const char* doc_1args_Fargs =
 R"""(Constructs a BasicVector where each element is constructed using the
 placewise-corresponding member of ``args`` as the sole constructor
-argument. For instance: BasicVector<symbolic::Expression>::Make("x",
+argument. For instance: BasicVector<symbolic∷Expression>∷Make("x",
 "y", "z");)""";
         } Make;
         // Symbol: drake::systems::BasicVector::MakeRecursive
@@ -216,7 +216,7 @@ argument. For instance: BasicVector<symbolic::Expression>::Make("x",
 R"""(Sets ``data`` at ``index`` to an object of type T, which must have a
 single-argument constructor invoked via ``constructor_arg``, and then
 recursively invokes itself on the next index with ``recursive`` args.
-Helper for BasicVector<T>::Make.)""";
+Helper for BasicVector<T>∷Make.)""";
           // Source: drake/systems/framework/basic_vector.h
           const char* doc_3args =
 R"""(Base case for the MakeRecursive template recursion.)""";
@@ -240,16 +240,16 @@ R"""(Base case for the MakeRecursive template recursion.)""";
         struct /* get_mutable_value */ {
           // Source: drake/systems/framework/basic_vector.h
           const char* doc =
-R"""(Returns the entire vector as a mutable Eigen::VectorBlock, which
-allows mutation of the values, but does not allow ``resize()`` to be
-invoked on the returned object.)""";
+R"""(Returns the entire vector as a mutable Eigen∷VectorBlock, which allows
+mutation of the values, but does not allow ``resize()`` to be invoked
+on the returned object.)""";
         } get_mutable_value;
         // Symbol: drake::systems::BasicVector::get_value
         struct /* get_value */ {
           // Source: drake/systems/framework/basic_vector.h
           const char* doc =
 R"""((Don't use this in new code) Returns the entire vector as a const
-Eigen::VectorBlock. Prefer ``value()`` which returns direct access to
+Eigen∷VectorBlock. Prefer ``value()`` which returns direct access to
 the underlying VectorX rather than wrapping it in a VectorBlock.)""";
         } get_value;
         // Symbol: drake::systems::BasicVector::set_value
@@ -494,7 +494,7 @@ R"""((Advanced) Sets the "is frozen" flag. Cache entry values should check
 this before permitting mutable access to values.
 
 See also:
-    ContextBase::FreezeCache() for the user-facing API)""";
+    ContextBase∷FreezeCache() for the user-facing API)""";
         } freeze_cache;
         // Symbol: drake::systems::Cache::get_cache_entry_value
         struct /* get_cache_entry_value */ {
@@ -528,7 +528,7 @@ given index.)""";
 R"""((Advanced) Reports the current value of the "is frozen" flag.
 
 See also:
-    ContextBase::is_cache_frozen() for the user-facing API)""";
+    ContextBase∷is_cache_frozen() for the user-facing API)""";
         } is_cache_frozen;
         // Symbol: drake::systems::Cache::unfreeze_cache
         struct /* unfreeze_cache */ {
@@ -538,7 +538,7 @@ R"""((Advanced) Clears the "is frozen" flag, permitting normal cache
 activity.
 
 See also:
-    ContextBase::UnfreezeCache() for the user-facing API)""";
+    ContextBase∷UnfreezeCache() for the user-facing API)""";
         } unfreeze_cache;
       } Cache;
       // Symbol: drake::systems::CacheEntry
@@ -618,7 +618,7 @@ Raises:
     RuntimeError if the prerequisite list is empty.
 
 See also:
-    drake::systems::SystemBase::DeclareCacheEntry())""";
+    drake∷systems∷SystemBase∷DeclareCacheEntry())""";
         } ctor;
         // Symbol: drake::systems::CacheEntry::Calc
         struct /* Calc */ {
@@ -1303,7 +1303,7 @@ is an index providing extremely fast constant-time access to both.)""";
 R"""(This class bundles an instance of each EventCollection<EventType> into
 one object that stores the heterogeneous collection. This is intended
 to hold heterogeneous events returned by methods like
-System::CalcNextUpdateTime.
+System∷CalcNextUpdateTime.
 
 
 .. raw:: html
@@ -1707,7 +1707,7 @@ dependent computations in ``this`` context.
 
 Note:
     Currently does not copy fixed input port values from ``source``.
-    See System::FixInputPortsFrom() if you want to copy those.
+    See System∷FixInputPortsFrom() if you want to copy those.
 
 See also:
     SetTimeStateAndParametersFrom() if you want to copy time and
@@ -1804,7 +1804,7 @@ Raises:
 
 Note:
     Currently does not copy fixed input port values from ``source``.
-    See System::FixInputPortsFrom() if you want to copy those.
+    See System∷FixInputPortsFrom() if you want to copy those.
 
 See also:
     SetStateAndParametersFrom() if you want to copy state and
@@ -2245,7 +2245,7 @@ assigned ticket. Subscribes the "all input ports" tracker to this one.
 The fixed_input_type_checker will be used for validation when setting
 a fixed input, or may be null when no validation should be performed.
 Typically the fixed_input_type_checker is created by
-System::MakeFixInputPortTypeChecker. The fixed_input_type_checker
+System∷MakeFixInputPortTypeChecker. The fixed_input_type_checker
 lifetime will be the same as this ContextBase, so it should not depend
 on pointers that may go out of scope. Most acutely, the function must
 not depend on any captured SystemBase pointers.)""";
@@ -2335,7 +2335,7 @@ deep copy of the context, including all base class members but not
 fixing up base class pointers. To do that, implement a protected copy
 constructor that inherits from the base class copy constructor (which
 doesn't repair the pointers), then implement DoCloneWithoutPointers()
-as ``return std::unique_ptr<ContextBase>(new DerivedType(*this));``.)""";
+as ``return std∷unique_ptr<ContextBase>(new DerivedType(*this));``.)""";
         } DoCloneWithoutPointers;
         // Symbol: drake::systems::ContextBase::DoPropagateBuildTrackerPointerMap
         struct /* DoPropagateBuildTrackerPointerMap */ {
@@ -2415,7 +2415,7 @@ sugar.
 Note:
     Calling this method on an already connected input port, i.e., an
     input port that has previously been passed into a call to
-    DiagramBuilder::Connect(), causes FixedInputPortValue to override
+    DiagramBuilder∷Connect(), causes FixedInputPortValue to override
     any other value present on that port.
 
 Precondition:
@@ -2441,7 +2441,7 @@ R"""(Returns the local name of the subsystem for which this is the Context.
 This is intended primarily for error messages and logging.
 
 See also:
-    SystemBase::GetSystemName() for details.
+    SystemBase∷GetSystemName() for details.
 
 See also:
     GetSystemPathname() if you want the full name.)""";
@@ -2454,7 +2454,7 @@ R"""(Returns the full pathname of the subsystem for which this is the
 Context. This is intended primarily for error messages and logging.
 
 See also:
-    SystemBase::GetSystemPathname() for details.)""";
+    SystemBase∷GetSystemPathname() for details.)""";
         } GetSystemPathname;
         // Symbol: drake::systems::ContextBase::MaybeGetFixedInputPortValue
         struct /* MaybeGetFixedInputPortValue */ {
@@ -3249,7 +3249,7 @@ pointer to it here and we'll check that this tracker agrees. If you
 know which cache entry is supposed to be associated with this tracker,
 supply a pointer to that and we'll check it (trackers that are not
 associated with a real cache entry are still associated with the
-CacheEntryValue::dummy()). In addition we check for other internal
+CacheEntryValue∷dummy()). In addition we check for other internal
 inconsistencies.
 
 Raises:
@@ -3462,14 +3462,13 @@ R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
           // Source: drake/systems/framework/diagram.h
           const char* doc_0args =
 R"""(Constructs an uninitialized Diagram. Subclasses that use this
-constructor are obligated to call DiagramBuilder::BuildInto(this).
+constructor are obligated to call DiagramBuilder∷BuildInto(this).
 Provides scalar- type conversion support only if every contained
 subsystem provides the same support.)""";
           // Source: drake/systems/framework/diagram.h
           const char* doc_1args_converter =
 R"""((Advanced) Constructs an uninitialized Diagram. Subclasses that use
-this constructor are obligated to call
-DiagramBuilder::BuildInto(this).
+this constructor are obligated to call DiagramBuilder∷BuildInto(this).
 
 Declares scalar-type conversion support using ``converter``. Support
 for a given pair of types ``T, U`` to convert from and to will be
@@ -3478,7 +3477,7 @@ enabled only if every contained subsystem supports that pair.
 See system_scalar_conversion for detailed background and examples
 related to scalar-type conversion support.)""";
           // Source: drake/systems/framework/diagram.h
-          const char* doc_2args_drakesystemsSystemScalarConverter_constDiagram =
+          const char* doc_2args_SystemScalarConverter_constDiagram =
 R"""((Advanced) Scalar-converting constructor, for used by derived classes
 that are performing a conversion and also need to supply a
 ``converter`` that preserves subtypes for additional conversions.
@@ -3507,7 +3506,7 @@ the subsystem is not part of this Diagram.)""";
         struct /* DoGetGraphvizFragment */ {
           // Source: drake/systems/framework/diagram.h
           const char* doc =
-R"""(The NVI implementation of SystemBase::GetGraphvizFragment() for
+R"""(The NVI implementation of SystemBase∷GetGraphvizFragment() for
 subclasses to override if desired. The default behavior should be
 sufficient in most cases.)""";
         } DoGetGraphvizFragment;
@@ -3593,7 +3592,7 @@ returned by get_name(), downcast to the type provided as a template
 argument.
 
 Template parameter ``MySystem``:
-    is the downcast type, e.g., drake::systems::Adder
+    is the downcast type, e.g., drake∷systems∷Adder
 
 Raises:
     RuntimeError if a match cannot be found.
@@ -3602,7 +3601,7 @@ See also:
     GetSubsystemByName()
 
 See also:
-    System<T>::get_name())""";
+    System<T>∷get_name())""";
         } GetDowncastSubsystemByName;
         // Symbol: drake::systems::Diagram::GetInputPortLocators
         struct /* GetInputPortLocators */ {
@@ -3648,7 +3647,7 @@ See also:
     GetDowncastSubsystemByName()
 
 See also:
-    System<T>::get_name())""";
+    System<T>∷get_name())""";
         } GetSubsystemByName;
         // Symbol: drake::systems::Diagram::GetSubsystemCompositeEventCollection
         struct /* GetSubsystemCompositeEventCollection */ {
@@ -3790,16 +3789,16 @@ Building large Diagrams
 -----------------------
 
 When building large Diagrams with many added systems and input-output
-port connections, the runtime performance of DiagramBuilder::Build()
+port connections, the runtime performance of DiagramBuilder∷Build()
 might become relevant.
 
-As part of its correctness checks, the DiagramBuilder::Build()
-function performs a graph search of the diagram's dependencies. In the
-graph, the nodes are the child systems that have been added to the
-diagram, and the edges are the diagram connections from one child's
-output port to another child's input port(s). The builder must confirm
-that the graph is acyclic; a cycle would imply an infinite loop in an
-output calculation function. With a large graph, this check can be
+As part of its correctness checks, the DiagramBuilder∷Build() function
+performs a graph search of the diagram's dependencies. In the graph,
+the nodes are the child systems that have been added to the diagram,
+and the edges are the diagram connections from one child's output port
+to another child's input port(s). The builder must confirm that the
+graph is acyclic; a cycle would imply an infinite loop in an output
+calculation function. With a large graph, this check can be
 computationally expensive. To speed it up, ensure that your output
 ports do not gratuitously depend on irrelevant input ports.
 
@@ -3811,7 +3810,7 @@ sources.
 
 Refer to the DeclareLeafOutputPort_feedthrough "Direct feedthrough"
 documentation for additional details and examples. In particular, the
-SystemBase::all_sources_except_input_ports_ticket() is a convenient
+SystemBase∷all_sources_except_input_ports_ticket() is a convenient
 shortcut for outputs that do not depend on any inputs.)""";
         // Symbol: drake::systems::DiagramBuilder::AddNamedSystem
         struct /* AddNamedSystem */ {
@@ -3833,9 +3832,8 @@ R"""(Takes ownership of ``system`` and adds it to the builder. Returns a
 bare pointer to the System, which will remain valid for the lifetime
 of the Diagram built by this builder.
 
-If the system's name is unset, sets it to
-System::GetMemoryObjectName() as a default in order to have unique
-names within the diagram.
+If the system's name is unset, sets it to System∷GetMemoryObjectName()
+as a default in order to have unique names within the diagram.
 
 Warning:
     a System may only be added to at most one DiagramBuilder. Multiple
@@ -3889,8 +3887,8 @@ R"""(Declares that input port ``dest`` is connected to output port ``src``.
 Note:
     The connection created between ``src`` and ``dest`` via a call to
     this method can be effectively overridden by any subsequent call
-    to InputPort::FixValue(). That is, calling InputPort::FixValue()
-    on an already connected input port causes the resultant
+    to InputPort∷FixValue(). That is, calling InputPort∷FixValue() on
+    an already connected input port causes the resultant
     FixedInputPortValue to override any other value present on that
     port.)""";
         } Connect;
@@ -4001,7 +3999,7 @@ returned by get_name(), downcast to the type provided as a template
 argument.
 
 Template parameter ``MySystem``:
-    is the downcast type, e.g., drake::systems::Adder
+    is the downcast type, e.g., drake∷systems∷Adder
 
 Raises:
     RuntimeError if a unique match cannot be found.
@@ -4021,7 +4019,7 @@ returned by get_name(), downcast to the type provided as a template
 argument.
 
 Template parameter ``MySystem``:
-    is the downcast type, e.g., drake::systems::Adder
+    is the downcast type, e.g., drake∷systems∷Adder
 
 Raises:
     RuntimeError if a unique match cannot be found.
@@ -4043,7 +4041,7 @@ Raises:
     RuntimeError if a unique match cannot be found.
 
 See also:
-    System<T>::get_name()
+    System<T>∷get_name()
 
 See also:
     GetSubsystemByName()
@@ -4074,7 +4072,7 @@ Raises:
     RuntimeError if a unique match cannot be found.
 
 See also:
-    System<T>::get_name()
+    System<T>∷get_name()
 
 See also:
     GetMutableSubsystemByName()
@@ -4380,8 +4378,8 @@ ownership.)""";
           const char* doc =
 R"""(Creates a deep copy of this DiagramContinuousState, with the same
 substructure but with new, owned data. Intentionally shadows the
-ContinuousState::Clone() method but with a more-specific return type
-so you don't have to downcast.)""";
+ContinuousState∷Clone() method but with a more-specific return type so
+you don't have to downcast.)""";
         } Clone;
         // Symbol: drake::systems::DiagramContinuousState::DiagramContinuousState<T>
         struct /* ctor */ {
@@ -4426,7 +4424,7 @@ owned. When this is cloned, deep copies are made that are owned here.)""";
           const char* doc =
 R"""(Creates a deep copy of this DiagramDiscreteValues object, with the
 same substructure but with new, owned data. Intentionally shadows the
-DiscreteValues::Clone() method but with a more-specific return type so
+DiscreteValues∷Clone() method but with a more-specific return type so
 you don't have to downcast.)""";
         } Clone;
         // Symbol: drake::systems::DiagramDiscreteValues::DiagramDiscreteValues<T>
@@ -4762,12 +4760,12 @@ don't match.)""";
           // Source: drake/systems/framework/discrete_values.h
           const char* doc_0args =
 R"""(Returns the entire vector for the *only* group as a mutable
-Eigen::VectorBlock, which allows mutation of the values, but does not
+Eigen∷VectorBlock, which allows mutation of the values, but does not
 allow resize() to be called on the vector.)""";
           // Source: drake/systems/framework/discrete_values.h
           const char* doc_1args =
 R"""(Returns the entire vector for the indicated group as a mutable
-Eigen::VectorBlock, which allows mutation of the values, but does not
+Eigen∷VectorBlock, which allows mutation of the values, but does not
 allow resize() to be called on the vector.)""";
         } get_mutable_value;
         // Symbol: drake::systems::DiscreteValues::get_mutable_vector
@@ -4796,13 +4794,13 @@ object.)""";
           // Source: drake/systems/framework/discrete_values.h
           const char* doc_0args =
 R"""((Don't use this in new code) Returns the entire vector as a const
-Eigen::VectorBlock for the *only* group. Prefer ``value()`` which
+Eigen∷VectorBlock for the *only* group. Prefer ``value()`` which
 returns direct access to the underlying VectorX rather than wrapping
 it in a VectorBlock.)""";
           // Source: drake/systems/framework/discrete_values.h
           const char* doc_1args =
 R"""((Don't use this in new code) Returns the entire vector as a const
-Eigen::VectorBlock for the indicated group. Prefer ``value()`` which
+Eigen∷VectorBlock for the indicated group. Prefer ``value()`` which
 returns direct access to the underlying VectorX rather than wrapping
 it in a VectorBlock.)""";
         } get_value;
@@ -4889,7 +4887,7 @@ via the LeafSystem Declare*Event() methods. To that end, the callback
 signature always passes the ``const System<T>&`` as the first
 argument, so that LeafSystem does not need to capture ``this`` into
 the lambda; typically only a pointer-to-member- function is captured.
-Capturing any more than that would defeat std::function's small buffer
+Capturing any more than that would defeat std∷function's small buffer
 optimization and cause heap allocations when scheduling events.
 
 Event handling occurs during a simulation of a system. The logic that
@@ -5015,12 +5013,11 @@ simultaneous events).
 
 The Simulator promises that for each set of simultaneous events of the
 same type, the public event handling method (e.g.,
-System::Publish(context, publish_events)) will be invoked exactly
-once.
+System∷Publish(context, publish_events)) will be invoked exactly once.
 
 The System API provides several functions for customizable event
-generation such as System::DoCalcNextUpdateTime() or
-System::DoGetPerStepEvents(). These functions can return any number of
+generation such as System∷DoCalcNextUpdateTime() or
+System∷DoGetPerStepEvents(). These functions can return any number of
 events of arbitrary types, and the resulting events are stored in
 separate CompositeEventCollection instances. Before calling the event
 handlers, all of these CompositeEventCollection objects must be merged
@@ -5031,7 +5028,7 @@ For example, the Simulator executes this collation process when it is
 applied to simulate a system.
 
 Here is a complete example. For some LeafSystem ``sys`` at time ``t``,
-its System::DoCalcNextUpdateTime() generates the following
+its System∷DoCalcNextUpdateTime() generates the following
 CompositeEventCollection (``events1``):
 
 
@@ -5050,7 +5047,7 @@ CompositeEventCollection (``events1``):
     </details>
 
 This LeafSystem also desires per-step event processing(``events2``),
-generated by its implementation of System::DoGetPerStepEvents():
+generated by its implementation of System∷DoGetPerStepEvents():
 
 
 .. raw:: html
@@ -5457,7 +5454,7 @@ is connected, or a fixed value set in a Context.)""";
 R"""(Provides a fixed value for this InputPort in the given Context. If the
 port is already connected, this value will override the connected
 source value. (By "connected" we mean that the port appeared in a
-DiagramBuilder::Connect() call.)
+DiagramBuilder∷Connect() call.)
 
 For vector-valued input ports, you can provide an Eigen vector
 expression, a BasicVector object, or a scalar (treated as a Vector1).
@@ -5894,7 +5891,7 @@ observed different behavior with caching on or off and would like to
 determine if the problem is caused by this port.
 
 See also:
-    CacheEntry::disable_caching_by_default())""";
+    CacheEntry∷disable_caching_by_default())""";
         } disable_caching_by_default;
       } LeafOutputPort;
       // Symbol: drake::systems::LeafSystem
@@ -5918,7 +5915,7 @@ R"""(Returns a copy of the states declared in DeclareAbstractState() calls.)""";
         struct /* AllocateContext */ {
           // Source: drake/systems/framework/leaf_system.h
           const char* doc =
-R"""(Shadows System<T>::AllocateContext to provide a more concrete return
+R"""(Shadows System<T>∷AllocateContext to provide a more concrete return
 type LeafContext<T>.)""";
         } AllocateContext;
         // Symbol: drake::systems::LeafSystem::AllocateContinuousState
@@ -5980,7 +5977,7 @@ input, must provide for values whose type matches this
 ``model_value``.
 
 See also:
-    System::DeclareInputPort() for more information.)""";
+    System∷DeclareInputPort() for more information.)""";
         } DeclareAbstractInputPort;
         // Symbol: drake::systems::LeafSystem::DeclareAbstractOutputPort
         struct /* DeclareAbstractOutputPort */ {
@@ -5997,7 +5994,7 @@ member function (method) with signature:
 
 .. code-block:: c++
 
-    void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
+    void MySystem∷CalcOutputValue(const Context<T>&, OutputType*) const;
 
 .. raw:: html
 
@@ -6008,7 +6005,7 @@ where ``MySystem`` must be a class derived from ``LeafSystem<T>``.
 Template arguments will be deduced and do not need to be specified.
 
 See also:
-    drake::Value)""";
+    drake∷Value)""";
           // Source: drake/systems/framework/leaf_system.h
           const char* doc_3args_stdvariant_voidMySystemconstContextOutputTypeconst_stdset =
 R"""(Declares an abstract-valued output port by specifying only a
@@ -6022,7 +6019,7 @@ signature:
 
 .. code-block:: c++
 
-    void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
+    void MySystem∷CalcOutputValue(const Context<T>&, OutputType*) const;
 
 .. raw:: html
 
@@ -6045,7 +6042,7 @@ Note:
     constructor.
 
 See also:
-    drake::Value)""";
+    drake∷Value)""";
           // Source: drake/systems/framework/leaf_system.h
           const char* doc_4args_name_alloc_calc_prerequisites_of_calc =
 R"""((Advanced) Declares an abstract-valued output port using the given
@@ -6064,7 +6061,7 @@ Parameter ``calc``:
     new result.
 
 See also:
-    LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback)""";
+    LeafOutputPort∷AllocCallback, LeafOutputPort∷CalcCallback)""";
         } DeclareAbstractOutputPort;
         // Symbol: drake::systems::LeafSystem::DeclareAbstractParameter
         struct /* DeclareAbstractParameter */ {
@@ -6123,7 +6120,7 @@ R"""(Declares that this System should reserve continuous state with
 ``num_q`` generalized positions, ``num_v`` generalized velocities, and
 ``num_z`` miscellaneous state variables, stored in a vector cloned
 from ``model_vector``. Aborts if ``model_vector`` has the wrong size.
-If the ``model_vector`` declares any VectorBase::GetElementBounds()
+If the ``model_vector`` declares any VectorBase∷GetElementBounds()
 constraints, they will be re-declared as inequality constraints on
 this system (see DeclareInequalityConstraint()).
 
@@ -6167,7 +6164,7 @@ with a signature:
 
 .. code-block:: c++
 
-    void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
+    void MySystem∷CalcConstraint(const Context<T>&, VectorX<T>*) const;
 
 .. raw:: html
 
@@ -6189,7 +6186,7 @@ See also:
           // Source: drake/systems/framework/leaf_system.h
           const char* doc_3args_calc_count_description =
 R"""(Declares a system constraint of the form f(context) = 0 by specifying
-a std::function to use to calculate the (Vector) constraint value with
+a std∷function to use to calculate the (Vector) constraint value with
 a signature:
 
 
@@ -6237,7 +6234,7 @@ class member function (method) with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyDiscreteVariableUpdates(const Context<T>&,
+    EventStatus MySystem∷MyDiscreteVariableUpdates(const Context<T>&,
     DiscreteValues<T>*);
 
 .. raw:: html
@@ -6274,7 +6271,7 @@ a class member function (method) with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyPublish(const Context<T>&) const;
+    EventStatus MySystem∷MyPublish(const Context<T>&) const;
 
 .. raw:: html
 
@@ -6311,7 +6308,7 @@ with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyUnrestrictedUpdates(const Context<T>&,
+    EventStatus MySystem∷MyUnrestrictedUpdates(const Context<T>&,
     State<T>*);
 
 .. raw:: html
@@ -6340,19 +6337,19 @@ n=num_continuous_states().
 
 Parameter ``n``:
     The size of the residual vector output argument of
-    System::CalcImplicitTimeDerivativesResidual(). If n <= 0 restore
-    to the default, num_continuous_states().
+    System∷CalcImplicitTimeDerivativesResidual(). If n <= 0 restore to
+    the default, num_continuous_states().
 
 See also:
     implicit_time_derivatives_residual_size()
 
 See also:
-    System::CalcImplicitTimeDerivativesResidual())""";
+    System∷CalcImplicitTimeDerivativesResidual())""";
         } DeclareImplicitTimeDerivativesResidualSize;
         // Symbol: drake::systems::LeafSystem::DeclareInequalityConstraint
         struct /* DeclareInequalityConstraint */ {
           // Source: drake/systems/framework/leaf_system.h
-          const char* doc_3args_voidMySystemconstContextconst_drakesystemsSystemConstraintBounds_stdstring =
+          const char* doc_3args_voidMySystemconstContextconst_SystemConstraintBounds_stdstring =
 R"""(Declares a system constraint of the form bounds.lower() <=
 calc(context) <= bounds.upper() by specifying a member function to use
 to calculate the (VectorX) constraint value with a signature:
@@ -6364,7 +6361,7 @@ to calculate the (VectorX) constraint value with a signature:
 
 .. code-block:: c++
 
-    void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
+    void MySystem∷CalcConstraint(const Context<T>&, VectorX<T>*) const;
 
 .. raw:: html
 
@@ -6383,8 +6380,8 @@ See also:
           // Source: drake/systems/framework/leaf_system.h
           const char* doc_3args_calc_bounds_description =
 R"""(Declares a system constraint of the form bounds.lower() <=
-calc(context) <= bounds.upper() by specifying a std::function to use
-to calculate the (Vector) constraint value with a signature:
+calc(context) <= bounds.upper() by specifying a std∷function to use to
+calculate the (Vector) constraint value with a signature:
 
 
 .. raw:: html
@@ -6424,7 +6421,7 @@ should be a class member function (method) with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyUpdate(const Context<T>&,
+    EventStatus MySystem∷MyUpdate(const Context<T>&,
     DiscreteValues<T>*) const;
 
 .. raw:: html
@@ -6487,8 +6484,8 @@ stored internally so you do not need to keep the object around after
 this call.
 
 Precondition:
-    `event`'s associated trigger type must be TriggerType::kUnknown or
-    already set to TriggerType::kInitialization.)""";
+    `event`'s associated trigger type must be TriggerType∷kUnknown or
+    already set to TriggerType∷kInitialization.)""";
         } DeclareInitializationEvent;
         // Symbol: drake::systems::LeafSystem::DeclareInitializationPublishEvent
         struct /* DeclareInitializationPublishEvent */ {
@@ -6505,7 +6502,7 @@ a class member function (method) with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyPublish(const Context<T>&) const;
+    EventStatus MySystem∷MyPublish(const Context<T>&) const;
 
 .. raw:: html
 
@@ -6548,7 +6545,7 @@ this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyUpdate(const Context<T>&,
+    EventStatus MySystem∷MyUpdate(const Context<T>&,
     State<T>*) const;
 
 .. raw:: html
@@ -6583,7 +6580,7 @@ See also:
 R"""(Declares a numeric parameter using the given ``model_vector``.
 LeafSystem's default implementation of SetDefaultParameters() will
 reset parameters to their model vectors. If the ``model_vector``
-declares any VectorBase::GetElementBounds() constraints, they will be
+declares any VectorBase∷GetElementBounds() constraints, they will be
 re-declared as inequality constraints on this system (see
 DeclareInequalityConstraint()). Returns the index of the new
 parameter.)""";
@@ -6604,7 +6601,7 @@ event handler method. The handler should be a class member function
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyUpdate(const Context<T>&,
+    EventStatus MySystem∷MyUpdate(const Context<T>&,
     DiscreteValues<T>*) const;
 
 .. raw:: html
@@ -6669,8 +6666,8 @@ stored internally so you do not need to keep the object around after
 this call.
 
 Precondition:
-    `event`'s associated trigger type must be TriggerType::kUnknown or
-    already set to TriggerType::kPerStep.)""";
+    `event`'s associated trigger type must be TriggerType∷kUnknown or
+    already set to TriggerType∷kPerStep.)""";
         } DeclarePerStepEvent;
         // Symbol: drake::systems::LeafSystem::DeclarePerStepPublishEvent
         struct /* DeclarePerStepPublishEvent */ {
@@ -6688,7 +6685,7 @@ function (method) with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyPublish(const Context<T>&) const;
+    EventStatus MySystem∷MyPublish(const Context<T>&) const;
 
 .. raw:: html
 
@@ -6722,10 +6719,10 @@ See also:
     DeclarePerStepEvent()
 
 See also:
-    Simulator::set_publish_at_initialization()
+    Simulator∷set_publish_at_initialization()
 
 See also:
-    Simulator::set_publish_every_time_step())""";
+    Simulator∷set_publish_every_time_step())""";
         } DeclarePerStepPublishEvent;
         // Symbol: drake::systems::LeafSystem::DeclarePerStepUnrestrictedUpdateEvent
         struct /* DeclarePerStepUnrestrictedUpdateEvent */ {
@@ -6743,7 +6740,7 @@ event handler method. The handler should be a class member function
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyUpdate(const Context<T>&,
+    EventStatus MySystem∷MyUpdate(const Context<T>&,
     State<T>*) const;
 
 .. raw:: html
@@ -6786,7 +6783,7 @@ should be a class member function (method) with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyUpdate(const Context<T>&,
+    EventStatus MySystem∷MyUpdate(const Context<T>&,
     DiscreteValues<T>*) const;
 
 .. raw:: html
@@ -6849,8 +6846,8 @@ stored internally so you do not need to keep the object around after
 this call.
 
 Precondition:
-    `event`'s associated trigger type must be TriggerType::kUnknown or
-    already set to TriggerType::kPeriodic.)""";
+    `event`'s associated trigger type must be TriggerType∷kUnknown or
+    already set to TriggerType∷kPeriodic.)""";
         } DeclarePeriodicEvent;
         // Symbol: drake::systems::LeafSystem::DeclarePeriodicPublishEvent
         struct /* DeclarePeriodicPublishEvent */ {
@@ -6867,7 +6864,7 @@ class member function (method) with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyPublish(const Context<T>&) const;
+    EventStatus MySystem∷MyPublish(const Context<T>&) const;
 
 .. raw:: html
 
@@ -6909,7 +6906,7 @@ should be a class member function (method) with this signature:
 
 .. code-block:: c++
 
-    EventStatus MySystem::MyUpdate(const Context<T>&, State<T>*) const;
+    EventStatus MySystem∷MyUpdate(const Context<T>&, State<T>*) const;
 
 .. raw:: html
 
@@ -6965,12 +6962,12 @@ subclasses of BasicVector. The port's size and type will be the same
 as model_vector. If the port is intended to model a random noise or
 disturbance input, ``random_type`` can (optionally) be used to label
 it as such. If the ``model_vector`` declares any
-VectorBase::GetElementBounds() constraints, they will be re-declared
-as inequality constraints on this system (see
+VectorBase∷GetElementBounds() constraints, they will be re-declared as
+inequality constraints on this system (see
 DeclareInequalityConstraint()).
 
 See also:
-    System::DeclareInputPort() for more information.)""";
+    System∷DeclareInputPort() for more information.)""";
           // Source: drake/systems/framework/leaf_system.h
           const char* doc_3args_size =
 R"""(Declares a vector-valued input port with type BasicVector and size
@@ -6979,7 +6976,7 @@ disturbance input, ``random_type`` can (optionally) be used to label
 it as such.
 
 See also:
-    System::DeclareInputPort() for more information.)""";
+    System∷DeclareInputPort() for more information.)""";
         } DeclareVectorInputPort;
         // Symbol: drake::systems::LeafSystem::DeclareVectorOutputPort
         struct /* DeclareVectorOutputPort */ {
@@ -6993,18 +6990,18 @@ takes the calculator function in its most generic form; if you have a
 member function available use one of the other signatures.
 
 See also:
-    LeafOutputPort::CalcVectorCallback)""";
+    LeafOutputPort∷CalcVectorCallback)""";
           // Source: drake/systems/framework/leaf_system.h
           const char* doc_4args_size =
 R"""((Advanced) Declares a vector-valued output port with type
-BasicVector<T> and size ``size``, using the drake::dummy_value<T>,
+BasicVector<T> and size ``size``, using the drake∷dummy_value<T>,
 which is NaN when T = double. ``vector_calc_function`` is a function
 for calculating the port's value at runtime. Note that this takes the
 calculator function in its most generic form; if you have a member
 function available use one of the other signatures.
 
 See also:
-    LeafOutputPort::CalcVectorCallback)""";
+    LeafOutputPort∷CalcVectorCallback)""";
         } DeclareVectorOutputPort;
         // Symbol: drake::systems::LeafSystem::DeprecateInputPort
         struct /* DeprecateInputPort */ {
@@ -7130,7 +7127,7 @@ function; and with no event object.
 
 Note:
     In order for the witness function to be used, you MUST overload
-    System::DoGetWitnessFunctions().)""";
+    System∷DoGetWitnessFunctions().)""";
           // Source: drake/systems/framework/leaf_system.h
           const char* doc_4args =
 R"""(Constructs the witness function with the given description (used
@@ -7143,7 +7140,7 @@ WitnessFunction.
 
 Note:
     In order for the witness function to be used, you MUST overload
-    System::DoGetWitnessFunctions().)""";
+    System∷DoGetWitnessFunctions().)""";
         } MakeWitnessFunction;
         // Symbol: drake::systems::LeafSystem::SetDefaultParameters
         struct /* SetDefaultParameters */ {
@@ -7288,7 +7285,7 @@ Parameter ``context``:
           // Source: drake/systems/framework/output_port.h
           const char* doc =
 R"""(Provides derived classes the ability to set the base class members at
-construction. See OutputPortBase::OutputPortBase() for the meaning of
+construction. See OutputPortBase∷OutputPortBase() for the meaning of
 these parameters.
 
 Precondition:
@@ -7631,7 +7628,7 @@ Parameter ``size``:
         // Symbol: drake::systems::PortBase::PortEvalCast
         struct /* PortEvalCast */ {
           // Source: drake/systems/framework/port_base.h
-          const char* doc_1args_constdrakeAbstractValue =
+          const char* doc_1args_constAbstractValue =
 R"""(Pull a value of a given type from an abstract value or issue a nice
 message if the type is not correct.)""";
           // Source: drake/systems/framework/port_base.h
@@ -7665,7 +7662,7 @@ R"""((Internal use only) Checks whether the given id (nominally obtained
 from a Context passed to this port) was created for the system that
 owns this port.
 
-This is similar in spirit to SystemBase::ValidateContext, but ports
+This is similar in spirit to SystemBase∷ValidateContext, but ports
 cannot use SystemBase.
 
 Note:
@@ -7738,6 +7735,16 @@ owning System.)""";
         const char* doc =
 R"""(All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type.)""";
+        // Symbol: drake::systems::PortDataType::kAbstractValued
+        struct /* kAbstractValued */ {
+          // Source: drake/systems/framework/framework_common.h
+          const char* doc = R"""()""";
+        } kAbstractValued;
+        // Symbol: drake::systems::PortDataType::kVectorValued
+        struct /* kVectorValued */ {
+          // Source: drake/systems/framework/framework_common.h
+          const char* doc = R"""()""";
+        } kVectorValued;
       } PortDataType;
       // Symbol: drake::systems::PublishEvent
       struct /* PublishEvent */ {
@@ -7747,7 +7754,7 @@ R"""(This class represents a publish event. It has an optional callback
 function to do custom handling of this event.
 
 See also:
-    System::Publish for more details.
+    System∷Publish for more details.
 
 See also:
     LeafSystem for more convenient interfaces to publish events via
@@ -7788,7 +7795,7 @@ protected method
 
 .. code-block:: c++
 
-    void DoCalcOutput(const Context<T>&, Eigen::VectorBlock<VectorX<T>>*) const;
+    void DoCalcOutput(const Context<T>&, Eigen∷VectorBlock<VectorX<T>>*) const;
 
 .. raw:: html
 
@@ -7804,10 +7811,10 @@ protected method
           // Source: drake/systems/framework/single_output_vector_source.h
           const char* doc =
 R"""(Provides a convenience method for SingleOutputVectorSource subclasses.
-This method performs the same logical operation as
-System::DoCalcOutput but provides the single output's VectorBlock
-instead. Subclasses should override this method, and not the base
-class method (which is ``final``).)""";
+This method performs the same logical operation as System∷DoCalcOutput
+but provides the single output's VectorBlock instead. Subclasses
+should override this method, and not the base class method (which is
+``final``).)""";
         } DoCalcVectorOutput;
         // Symbol: drake::systems::SingleOutputVectorSource::SingleOutputVectorSource<T>
         struct /* ctor */ {
@@ -7843,7 +7850,7 @@ Note:
     conversion. See system_scalar_conversion.
 
 Parameter ``converter``:
-    is per LeafSystem::LeafSystem constructor documentation; see that
+    is per LeafSystem∷LeafSystem constructor documentation; see that
     function documentation for details.)""";
           // Source: drake/systems/framework/single_output_vector_source.h
           const char* doc_2args_converter_model_vector =
@@ -7855,7 +7862,7 @@ Note:
     conversion. See system_scalar_conversion.
 
 Parameter ``converter``:
-    is per LeafSystem::LeafSystem constructor documentation; see that
+    is per LeafSystem∷LeafSystem constructor documentation; see that
     function documentation for details.)""";
         } ctor;
         // Symbol: drake::systems::SingleOutputVectorSource::get_output_port
@@ -8079,7 +8086,7 @@ data must be WitnessTriggeredEventData.)""";
           const char* doc =
 R"""(Allocates a CompositeEventCollection for this system. The allocated
 instance is used for populating collections of triggered events; for
-example, Simulator passes this object to System::CalcNextUpdateTime()
+example, Simulator passes this object to System∷CalcNextUpdateTime()
 to allow the system to identify and handle upcoming events.)""";
         } AllocateCompositeEventCollection;
         // Symbol: drake::systems::System::AllocateContext
@@ -8094,7 +8101,7 @@ Warning:
     The returned context is uninitialized (contains invalid data). It
     is useful for pre-allocating storage which will later be
     overwritten (e.g., by SetDefaultContext() or
-    Context<T>::SetTimeStateAndParametersFrom()) and **must not** be
+    Context<T>∷SetTimeStateAndParametersFrom()) and **must not** be
     used for any calculations until it's been overwritten.)""";
         } AllocateContext;
         // Symbol: drake::systems::System::AllocateDiscreteVariables
@@ -8365,10 +8372,10 @@ Precondition:
     ``residual`` is of size implicit_time_derivatives_residual_size().
 
 See also:
-    SystemBase::implicit_time_derivatives_residual_size()
+    SystemBase∷implicit_time_derivatives_residual_size()
 
 See also:
-    LeafSystem::DeclareImplicitTimeDerivativesResidualSize()
+    LeafSystem∷DeclareImplicitTimeDerivativesResidualSize()
 
 See also:
     DoCalcImplicitTimeDerivativesResidual()
@@ -8504,7 +8511,7 @@ R"""(Returns true if ``context`` satisfies all of the registered
 SystemConstraints with tolerance ``tol``.
 
 See also:
-    SystemConstraint::CheckSatisfied.)""";
+    SystemConstraint∷CheckSatisfied.)""";
         } CheckSystemConstraintsSatisfied;
         // Symbol: drake::systems::System::Clone
         struct /* Clone */ {
@@ -8517,7 +8524,7 @@ created for this system are not compatible with the cloned system, and
 vice versa.
 
 See also:
-    Context::SetTimeStateAndParametersFrom() for how to copy context
+    Context∷SetTimeStateAndParametersFrom() for how to copy context
     data between clones.
 
 Warning:
@@ -8559,7 +8566,7 @@ Usage:
 .. code-block:: c++
 
     MySystem<double> plant;
-    unique_ptr<MySystem<double>> copy = System<double>::Clone(plant);
+    unique_ptr<MySystem<double>> copy = System<double>∷Clone(plant);
 
 .. raw:: html
 
@@ -8680,7 +8687,7 @@ Note:
     The public method has already verified that
     ``proposed_derivatives`` is compatible with this System and that
     ``residual`` is non-null and of the declared size (as reported by
-    SystemBase::implicit_time_derivatives_residual_size()). You do not
+    SystemBase∷implicit_time_derivatives_residual_size()). You do not
     have to check those two conditions in your implementation, but if
     you have additional restrictions you should validate that they are
     also met.)""";
@@ -9224,9 +9231,9 @@ GetInitializationEvents(). The method allocates temporary storage to
 perform the updates, and is intended only as a convenience method for
 callers who do not want to use the full Simulator workflow.
 
-Note that this is not fully equivalent to Simulator::Initialize()
+Note that this is not fully equivalent to Simulator∷Initialize()
 because *only* initialization events are handled here, while
-Simulator::Initialize() also processes other events associated with
+Simulator∷Initialize() also processes other events associated with
 time zero. Also, "reached termination" returns are ignored here.
 
 Parameter ``context``:
@@ -9277,9 +9284,9 @@ Note:
     There will always be at least one force-triggered event, though
     with no associated handler (so will do nothing when triggered).
 
-The Simulator can be configured to call this in
-Simulator::Initialize() and at the start of each continuous
-integration step. See the Simulator API for more details.
+The Simulator can be configured to call this in Simulator∷Initialize()
+and at the start of each continuous integration step. See the
+Simulator API for more details.
 
 Raises:
     RuntimeError if it invokes an event handler that returns status
@@ -9293,7 +9300,7 @@ See also:
         struct /* GetInitializationEvents */ {
           // Source: drake/systems/framework/system.h
           const char* doc =
-R"""(This method is called by Simulator::Initialize() to gather all update
+R"""(This method is called by Simulator∷Initialize() to gather all update
 and publish events that need to be handled at initialization before
 the simulator starts integration.
 
@@ -9376,7 +9383,7 @@ Raises:
         struct /* GetPerStepEvents */ {
           // Source: drake/systems/framework/system.h
           const char* doc =
-R"""(This method is called by Simulator::Initialize() to gather all update
+R"""(This method is called by Simulator∷Initialize() to gather all update
 and publish events that are to be handled in AdvanceTo() at the point
 before Simulator integrates continuous state. It is assumed that these
 events remain constant throughout the simulation. The "step" here
@@ -9698,7 +9705,7 @@ parameters using the stdc++ random library, e.g.:
 
 .. code-block:: c++
 
-    std::uniform_real_distribution<T> uniform();
+    std∷uniform_real_distribution<T> uniform();
     parameters->get_mutable_numeric_parameter(0)
     ->SetAtIndex(0, uniform(*generator));
 
@@ -9726,7 +9733,7 @@ random initial conditions using the stdc++ random library, e.g.:
 
 .. code-block:: c++
 
-    std::normal_distribution<T> gaussian();
+    std∷normal_distribution<T> gaussian();
     state->get_mutable_continuous_state()->get_mutable_vector()
     ->SetAtIndex(0, gaussian(*generator));
 
@@ -9782,8 +9789,8 @@ Usage:
 .. code-block:: c++
 
     MySystem<double> plant;
-    std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
-    systems::System<double>::ToAutoDiffXd(plant);
+    std∷unique_ptr<MySystem<AutoDiffXd>> ad_plant =
+    systems∷System<double>∷ToAutoDiffXd(plant);
 
 .. raw:: html
 
@@ -9838,7 +9845,7 @@ Usage:
 
     MySystem<double> plant;
     auto sym_plant =
-    systems::System<double>::ToScalarType<symbolic::Expression>(plant);
+    systems∷System<double>∷ToScalarType<symbolic∷Expression>(plant);
 
 .. raw:: html
 
@@ -9896,8 +9903,8 @@ Usage:
 .. code-block:: c++
 
     MySystem<double> plant;
-    std::unique_ptr<MySystem<symbolic::Expression>> sym_plant =
-    systems::System<double>::ToSymbolic(plant);
+    std∷unique_ptr<MySystem<symbolic∷Expression>> sym_plant =
+    systems∷System<double>∷ToSymbolic(plant);
 
 .. raw:: html
 
@@ -10031,7 +10038,7 @@ same common default or optional port semantics.)""";
           const char* doc =
 R"""((Advanced) Returns the SystemScalarConverter for this object. This is
 an expert-level API intended for framework authors. Most users should
-prefer the convenience helpers such as System::ToAutoDiffXd.)""";
+prefer the convenience helpers such as System∷ToAutoDiffXd.)""";
         } get_system_scalar_converter;
         // Symbol: drake::systems::System::get_time_derivatives_cache_entry
         struct /* get_time_derivatives_cache_entry */ {
@@ -10247,7 +10254,7 @@ function (method) with signature:
 
 .. code-block:: c++
 
-    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
+    void MySystem∷CalcCacheValue(const MyContext&, ValueType*) const;
 
 .. raw:: html
 
@@ -10262,7 +10269,7 @@ DeclareCacheEntry() signature" above for more information about the
 parameters and behavior.
 
 See also:
-    drake::Value)""";
+    drake∷Value)""";
           // Source: drake/systems/framework/system_base.h
           const char* doc_3args_stdstring_voidMySystemconstMyContextValueTypeconst_stdset =
 R"""(Declares a cache entry by specifying only a calculator function that
@@ -10275,7 +10282,7 @@ is a class member function (method) with signature:
 
 .. code-block:: c++
 
-    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
+    void MySystem∷CalcCacheValue(const MyContext&, ValueType*) const;
 
 .. raw:: html
 
@@ -10301,7 +10308,7 @@ Note:
     default constructor each time it is called.
 
 See also:
-    drake::Value)""";
+    drake∷Value)""";
         } DeclareCacheEntry;
         // Symbol: drake::systems::SystemBase::DeclareCacheEntryWithKnownTicket
         struct /* DeclareCacheEntryWithKnownTicket */ {
@@ -10347,7 +10354,7 @@ Precondition:
     ``port_index`` selects an existing input port of this System.
 
 See also:
-    InputPort::Eval() (preferred))""";
+    InputPort∷Eval() (preferred))""";
         } EvalAbstractInput;
         // Symbol: drake::systems::SystemBase::EvalAbstractInputImpl
         struct /* EvalAbstractInputImpl */ {
@@ -10375,10 +10382,10 @@ Precondition:
 
 Precondition:
     the port's value must be retrievable from the stored abstract
-    value using ``AbstractValue::get_value<V>``.
+    value using ``AbstractValue∷get_value<V>``.
 
 See also:
-    InputPort::Eval() (preferred)
+    InputPort∷Eval() (preferred)
 
 Template parameter ``V``:
     The type of data expected.)""";
@@ -10428,7 +10435,7 @@ between system input and output ports.
 it will be displayed as ``name=...``.
 
 - Systems can elect to display additional properties besides their name;
-see GraphvizFragmentParams::header_lines for implementation details.
+see GraphvizFragmentParams∷header_lines for implementation details.
 
 - A Diagram's input ports are shown with a
 <span style="border:2px solid blue;border-radius:4px">blue border</span>
@@ -10511,7 +10518,7 @@ placeholder name, currently just "_" (a lone underscore).)""";
           const char* doc =
 R"""(Generates and returns a human-readable full path name of this
 subsystem, for use in messages and logging. The name starts from the
-root System, with "::" delimiters between parent and child subsystems,
+root System, with "∷" delimiters between parent and child subsystems,
 with the individual subsystems represented by their names as returned
 by GetSystemName().)""";
         } GetSystemPathname;
@@ -10636,7 +10643,7 @@ graph.)""";
           // Source: drake/systems/framework/system_base.h
           const char* doc =
 R"""((Internal use only) Given a ``port_index``, returns a function to be
-called when validating Context::FixInputPort requests. The function
+called when validating Context∷FixInputPort requests. The function
 should attempt to throw an exception if the input AbstractValue is
 invalid, so that errors can be reported at Fix-time instead of
 EvalInput-time.)""";
@@ -10962,7 +10969,7 @@ this system. See system_compatibility.)""";
 R"""(Returns the size of the implicit time derivatives residual vector. By
 default this is the same as num_continuous_states() but a LeafSystem
 can change it during construction via
-LeafSystem::DeclareImplicitTimeDerivativesResidualSize().)""";
+LeafSystem∷DeclareImplicitTimeDerivativesResidualSize().)""";
         } implicit_time_derivatives_residual_size;
         // Symbol: drake::systems::SystemBase::input_port_ticket
         struct /* input_port_ticket */ {
@@ -10982,7 +10989,7 @@ R"""(Returns a ticket for the cache entry that holds the kinetic energy
 calculation.
 
 See also:
-    System::EvalKineticEnergy())""";
+    System∷EvalKineticEnergy())""";
         } ke_ticket;
         // Symbol: drake::systems::SystemBase::kinematics_ticket
         struct /* kinematics_ticket */ {
@@ -11104,7 +11111,7 @@ R"""(Returns a ticket for the cache entry that holds the conservative power
 calculation.
 
 See also:
-    System::EvalConservativePower())""";
+    System∷EvalConservativePower())""";
         } pc_ticket;
         // Symbol: drake::systems::SystemBase::pe_ticket
         struct /* pe_ticket */ {
@@ -11114,7 +11121,7 @@ R"""(Returns a ticket for the cache entry that holds the potential energy
 calculation.
 
 See also:
-    System::EvalPotentialEnergy())""";
+    System∷EvalPotentialEnergy())""";
         } pe_ticket;
         // Symbol: drake::systems::SystemBase::pn_ticket
         struct /* pn_ticket */ {
@@ -11135,7 +11142,7 @@ R"""(Returns a ticket for the cache entry that holds the non-conservative
 power calculation.
 
 See also:
-    System::EvalNonConservativePower())""";
+    System∷EvalNonConservativePower())""";
         } pnc_ticket;
         // Symbol: drake::systems::SystemBase::q_ticket
         struct /* q_ticket */ {
@@ -11155,17 +11162,17 @@ value is set, the default size is n=num_continuous_states().
 
 Parameter ``n``:
     The size of the residual vector output argument of
-    System::CalcImplicitTimeDerivativesResidual(). If n <= 0 restore
-    to the default, num_continuous_states().
+    System∷CalcImplicitTimeDerivativesResidual(). If n <= 0 restore to
+    the default, num_continuous_states().
 
 See also:
     implicit_time_derivatives_residual_size()
 
 See also:
-    LeafSystem::DeclareImplicitTimeDerivativesResidualSize()
+    LeafSystem∷DeclareImplicitTimeDerivativesResidualSize()
 
 See also:
-    System::CalcImplicitTimeDerivativesResidual())""";
+    System∷CalcImplicitTimeDerivativesResidual())""";
         } set_implicit_time_derivatives_residual_size;
         // Symbol: drake::systems::SystemBase::set_name
         struct /* set_name */ {
@@ -11248,7 +11255,7 @@ R"""((Internal use only) Returns a ticket for the cache entry that holds
 the unique periodic discrete update computation.
 
 See also:
-    System::EvalUniquePeriodicDiscreteUpdate())""";
+    System∷EvalUniquePeriodicDiscreteUpdate())""";
         } xd_unique_periodic_update_ticket;
         // Symbol: drake::systems::SystemBase::z_ticket
         struct /* z_ticket */ {
@@ -11273,7 +11280,7 @@ system will satisfy the following (in)equalities". Examples could
 include conserved quantities or joint limits on a mechanism.
 
 This class is intentionally similar to, but (so far) independent from
-solvers::Constraint. This is primarily because there is no notion of
+solvers∷Constraint. This is primarily because there is no notion of
 decision variables in the system classes (yet); rather each individual
 algorithm (e.g. trajectory optimization, or system identification)
 constructs decision variables for the particular mathematical program
@@ -11281,12 +11288,12 @@ that is being formulated, and must bind the system constraint to those
 variables (e.g. by populating the Context with the decision variables
 and calling Calc).
 
-We can convert a SystemConstraint to a solvers::Constraint by using
+We can convert a SystemConstraint to a solvers∷Constraint by using
 SystemConstraintWrapper or SystemConstraintAdapter.
 
 See also:
-    LeafSystem<T>::DeclareEqualityConstraint and
-    LeafSystem<T>::DeclareInequalityConstraint for use cases.)""";
+    LeafSystem<T>∷DeclareEqualityConstraint and
+    LeafSystem<T>∷DeclareInequalityConstraint for use cases.)""";
         // Symbol: drake::systems::SystemConstraint::Calc
         struct /* Calc */ {
           // Source: drake/systems/framework/system_constraint.h
@@ -11396,7 +11403,7 @@ upper bounds are all zeros.)""";
         struct /* Equality */ {
           // Source: drake/systems/framework/system_constraint.h
           const char* doc =
-R"""(Creates constraint of type SystemConstraintType::kEquality, with the
+R"""(Creates constraint of type SystemConstraintType∷kEquality, with the
 given size for ``f(x)``.)""";
         } Equality;
         // Symbol: drake::systems::SystemConstraintBounds::SystemConstraintBounds
@@ -11474,7 +11481,7 @@ there is never any live connection between a SystemOutput object and
 the System whose output values it has captured.
 
 A ``SystemOutput<T>`` object can only be obtained using
-``System<T>::AllocateOutput()`` or by copying an existing SystemOutput
+``System<T>∷AllocateOutput()`` or by copying an existing SystemOutput
 object.)""";
         // Symbol: drake::systems::SystemOutput::GetMutableData
         struct /* GetMutableData */ {
@@ -11483,7 +11490,7 @@ object.)""";
 R"""((Advanced) Returns mutable access to an AbstractValue object that is
 suitable for holding the value of output port ``index`` of the
 allocating System. This works for any output port regardless of it
-actual type. Most users should just call ``System<T>::CalcOutputs()``
+actual type. Most users should just call ``System<T>∷CalcOutputs()``
 to get all the output port values at once.)""";
         } GetMutableData;
         // Symbol: drake::systems::SystemOutput::GetMutableVectorData
@@ -11493,7 +11500,7 @@ to get all the output port values at once.)""";
 R"""((Advanced) Returns mutable access to a ``BasicVector<T>`` object that
 is suitable for holding the value of output port ``index`` of the
 allocating System. The object's concrete type is preserved from the
-output port. Most users should just call ``System<T>::CalcOutputs()``
+output port. Most users should just call ``System<T>∷CalcOutputs()``
 to get all the output port values at once.
 
 Raises:
@@ -11640,7 +11647,7 @@ of:
 
 By default, the converter supports conversions to and from all of the
 default_scalars "default scalars", but systems may specialize the
-scalar_conversion::Traits to disable support for some or all of these
+scalar_conversion∷Traits to disable support for some or all of these
 conversions. Conversions where ``T`` and ``U`` types are the same are
 not supported.
 
@@ -11662,7 +11669,7 @@ whether this is a default-constructed object.))""";
       struct /* SystemSymbolicInspector */ {
         // Source: drake/systems/framework/system_symbolic_inspector.h
         const char* doc =
-R"""(The SystemSymbolicInspector uses symbolic::Expressions to analyze
+R"""(The SystemSymbolicInspector uses symbolic∷Expressions to analyze
 various properties of the System, such as time invariance and
 input-to-output sparsity, along with many others.
 
@@ -11680,11 +11687,11 @@ modes, but not the mode tested.
 
 Even with that limitation on scope, SystemSymbolicInspector has risks,
 if the System contains C++ native conditionals like "if" or "switch".
-symbolic::Expression does not provide an implicit conversion to
+symbolic∷Expression does not provide an implicit conversion to
 ``bool``, so it is unlikely that anyone will accidentally write a
 System that both uses native conditionals and compiles with a
-symbolic::Expression scalar type. However, it is possible, for
-instance using an explicit cast, or ``std::equal_to``.)""";
+symbolic∷Expression scalar type. However, it is possible, for instance
+using an explicit cast, or ``std∷equal_to``.)""";
         // Symbol: drake::systems::SystemSymbolicInspector::HasAffineDynamics
         struct /* HasAffineDynamics */ {
           // Source: drake/systems/framework/system_symbolic_inspector.h
@@ -11820,10 +11827,10 @@ that can be used to call functions that look like:
 .. code-block:: c++
 
     template <template <typename> class S>
-    const char* get_foo(SystemTypeTag<S>) { return S<double>::get_foo(); }
+    const char* get_foo(SystemTypeTag<S>) { return S<double>∷get_foo(); }
     
     int main() {
-       std::cout << get_foo(SystemTypeTag<MySystem>{});
+       std∷cout << get_foo(SystemTypeTag<MySystem>{});
     }
 
 .. raw:: html
@@ -11873,8 +11880,8 @@ will call the correct ``Visit`` overload.
 
 Note:
     This method does *not* recurse through the subsystems of a
-    Diagram, but that is easy to do: just call Diagram::GetSystems()
-    in your visitor and then call Accept on the subsystems.)""";
+    Diagram, but that is easy to do: just call Diagram∷GetSystems() in
+    your visitor and then call Accept on the subsystems.)""";
         // Symbol: drake::systems::SystemVisitor::SystemVisitor<T>
         struct /* ctor */ {
           // Source: drake/systems/framework/system_visitor.h
@@ -11884,14 +11891,14 @@ Note:
         struct /* VisitDiagram */ {
           // Source: drake/systems/framework/system_visitor.h
           const char* doc =
-R"""(This method will be called by System<T>::accept() if the System *is* a
+R"""(This method will be called by System<T>∷accept() if the System *is* a
 Diagram<T>.)""";
         } VisitDiagram;
         // Symbol: drake::systems::SystemVisitor::VisitSystem
         struct /* VisitSystem */ {
           // Source: drake/systems/framework/system_visitor.h
           const char* doc =
-R"""(This method will be called by System<T>::accept() if the System *is
+R"""(This method will be called by System<T>∷accept() if the System *is
 not* a Diagram<T>.)""";
         } VisitSystem;
       } SystemVisitor;
@@ -11932,7 +11939,7 @@ to poll for events, like immediately after an integrator has advanced
 time and state.
 
 Per-step events are most commonly created in
-System::GetPerStepEvents(). A very common use of such per-step events
+System∷GetPerStepEvents(). A very common use of such per-step events
 is to update a discrete or abstract state variable that changes
 whenever the continuous state advances; examples are computing the
 "min" or "max" of some state variable, recording a signal in a delay
@@ -11951,7 +11958,7 @@ time offset t₀, and i is a non-negative integer.
 
 See also:
     PeriodicEventData. Periodic events are commonly created in
-    System::CalcNextUpdateTime().)""";
+    System∷CalcNextUpdateTime().)""";
         } kPeriodic;
         // Symbol: drake::systems::TriggerType::kTimed
         struct /* kTimed */ {
@@ -11959,7 +11966,7 @@ See also:
           const char* doc =
 R"""(This trigger indicates that an associated event is triggered by the
 system proceeding to a single, arbitrary time. Timed events are
-commonly created in System::CalcNextUpdateTime().)""";
+commonly created in System∷CalcNextUpdateTime().)""";
         } kTimed;
         // Symbol: drake::systems::TriggerType::kUnknown
         struct /* kUnknown */ {
@@ -12047,8 +12054,8 @@ For example, given this example calculator lambda:
 
 .. code-block:: c++
 
-    std::function calc = [](const Context<T>& context, std::string* output) {
-    output = std::to_string(context.get_time());
+    std∷function calc = [](const Context<T>& context, std∷string* output) {
+    output = std∷to_string(context.get_time());
     };
 
 .. raw:: html
@@ -12065,10 +12072,10 @@ We can capture it into a producer and then call it:
 .. code-block:: c++
 
     ValueProducer producer(calc);
-    std::unique_ptr<AbstractValue> storage = producer.Allocate();
+    std∷unique_ptr<AbstractValue> storage = producer.Allocate();
     const LeafContext<T> context;
     producer.Calc(context, storage.get());
-    EXPECT_THAT(storage->get_value<std::string>(), ::testing::StartsWith("0.0"));
+    EXPECT_THAT(storage->get_value<std∷string>(), ∷testing∷StartsWith("0.0"));
 
 .. raw:: html
 
@@ -12122,7 +12129,7 @@ value.)""";
           // Source: drake/systems/framework/value_producer.h
           const char* doc =
 R"""(This static function is provided for users who need an empty
-CalcCallback. Passing ``&ValueProducer::NoopCalc`` as ValueProducer's
+CalcCallback. Passing ``&ValueProducer∷NoopCalc`` as ValueProducer's
 last constructor argument will create a function that does not compute
 anything, but can still allocate.)""";
         } NoopCalc;
@@ -12379,7 +12386,7 @@ subclasses may not declare abstract state.)""";
         struct /* CalcVectorOutput */ {
           // Source: drake/systems/framework/vector_system.h
           const char* doc =
-R"""(Converts the parameters to Eigen::VectorBlock form, then delegates to
+R"""(Converts the parameters to Eigen∷VectorBlock form, then delegates to
 DoCalcVectorOutput().)""";
         } CalcVectorOutput;
         // Symbol: drake::systems::VectorSystem::DeclarePeriodicDiscreteUpdate
@@ -12393,7 +12400,7 @@ DoCalcVectorDiscreteVariableUpdates() to handle the update.)""";
         struct /* DoCalcTimeDerivatives */ {
           // Source: drake/systems/framework/vector_system.h
           const char* doc =
-R"""(Converts the parameters to Eigen::VectorBlock form, then delegates to
+R"""(Converts the parameters to Eigen∷VectorBlock form, then delegates to
 DoCalcVectorTimeDerivatives().)""";
         } DoCalcTimeDerivatives;
         // Symbol: drake::systems::VectorSystem::DoCalcVectorDiscreteVariableUpdates
@@ -12415,7 +12422,7 @@ and throws an exception otherwise.)""";
           // Source: drake/systems/framework/vector_system.h
           const char* doc =
 R"""(Provides a convenience method for VectorSystem subclasses. This method
-performs the same logical operation as System::DoCalcOutput but
+performs the same logical operation as System∷DoCalcOutput but
 provides VectorBlocks to represent the input, state, and output.
 Subclasses with outputs should override this method, and not the base
 class method (which is ``final``).
@@ -12435,7 +12442,7 @@ throws an exception otherwise.)""";
           // Source: drake/systems/framework/vector_system.h
           const char* doc =
 R"""(Provides a convenience method for VectorSystem subclasses. This method
-performs the same logical operation as System::DoCalcTimeDerivatives
+performs the same logical operation as System∷DoCalcTimeDerivatives
 but provides VectorBlocks to represent the input, continuous state,
 and derivatives. Subclasses should override this method, and not the
 base class method (which is ``final``). The ``state`` will be either
@@ -12470,15 +12477,14 @@ case no input (or output) port is created.
 
 The ``direct_feedthrough`` specifies whether the input port direct
 feeds through to the output port. (See
-SystemBase::GetDirectFeedthroughs().) When nullopt, assumes true (the
+SystemBase∷GetDirectFeedthroughs().) When nullopt, assumes true (the
 output is direct feedthrough). When false, the DoCalcVectorOutput
 ``input`` will be empty (zero-sized).
 
 Does *not* declare scalar-type conversion support (AutoDiff, etc.). To
 enable AutoDiff support, use the SystemScalarConverter-based
 constructor. (For that, see system_scalar_conversion at the example
-titled "Example using drake::systems::VectorSystem as the base
-class".))""";
+titled "Example using drake∷systems∷VectorSystem as the base class".))""";
           // Source: drake/systems/framework/vector_system.h
           const char* doc_4args =
 R"""(Creates a system with one input port and one output port of the given
@@ -12488,7 +12494,7 @@ subclasses to declare scalar-type conversion support (AutoDiff, etc.).
 
 The ``direct_feedthrough`` specifies whether the input port direct
 feeds through to the output port. (See
-SystemBase::GetDirectFeedthroughs().) When nullopt, infers feedthrough
+SystemBase∷GetDirectFeedthroughs().) When nullopt, infers feedthrough
 from the symbolic form if available, or else assumes true (the output
 is direct feedthrough). When false, the DoCalcVectorOutput ``input``
 will be empty (zero-sized).
@@ -12499,7 +12505,7 @@ scalar-type conversion support, pass a ``SystemTypeTag<S>{}`` where
 
 See system_scalar_conversion for detailed background and examples
 related to scalar-type conversion support, especially the example
-titled "Example using drake::systems::VectorSystem as the base class".)""";
+titled "Example using drake∷systems∷VectorSystem as the base class".)""";
         } ctor;
       } VectorSystem;
       // Symbol: drake::systems::WitnessFunction
@@ -12511,7 +12517,7 @@ and state at which a step of the initial value problem integration of
 a System should end, which may be done for any number of purposes,
 including publishing or state reinitialization (i.e., event handling).
 System authors declare witness functions through
-LeafSystem::MakeWitnessFunction().
+LeafSystem∷MakeWitnessFunction().
 
 For the ensuing discussion, consider two times (``t₀`` and ``t₁ >
 t₀``) and states corresponding to those times (``x(t₀)`` and
@@ -12751,16 +12757,6 @@ R"""(Gets a pointer to the continuous state at the right end of the
 isolation window.)""";
         } xcf;
       } WitnessTriggeredEventData;
-      // Symbol: drake::systems::kAbstractValued
-      struct /* kAbstractValued */ {
-        // Source: drake/systems/framework/framework_common.h
-        const char* doc = R"""()""";
-      } kAbstractValued;
-      // Symbol: drake::systems::kVectorValued
-      struct /* kVectorValued */ {
-        // Source: drake/systems/framework/framework_common.h
-        const char* doc = R"""()""";
-      } kVectorValued;
       // Symbol: drake::systems::scalar_conversion
       struct /* scalar_conversion */ {
         // Symbol: drake::systems::scalar_conversion::FromDoubleTraits
@@ -12769,7 +12765,7 @@ isolation window.)""";
           const char* doc =
 R"""(A concrete traits class providing sugar to support for converting only
 from the ``double`` scalar type. For example, if a
-MySystem<symbolic::Expression> cannot be converted into a
+MySystem<symbolic∷Expression> cannot be converted into a
 MySystem<double>, it could specialize Traits as follows:
 
 
@@ -12796,7 +12792,7 @@ MySystem<double>, it could specialize Traits as follows:
           // Source: drake/systems/framework/scalar_conversion_traits.h
           const char* doc =
 R"""(A concrete traits class providing sugar to disable support for
-symbolic evaluation (i.e., the symbolic::Expression scalar type).
+symbolic evaluation (i.e., the symbolic∷Expression scalar type).
 
 For example, if MySystem does not support the symbolic expression
 scalar type, it could specialize Traits as follows:
@@ -12830,7 +12826,7 @@ and ``U``. Particular scalar-dependent classes (``S``) may specialize
 this template to indicate whether the framework should support
 conversion for any given combination of ``T`` and ``U``.
 
-When ``Traits<S>::supported<T, U>`` is ``std::true_type``, the
+When ``Traits<S>∷supported<T, U>`` is ``std∷true_type``, the
 "scalar-converting copy constructor" that relates ``S``, `T`, and
 ``U`` will be used. That constructor takes the form of, e.g., when
 ``S`` is ``Foo``:
@@ -12855,8 +12851,8 @@ When ``Traits<S>::supported<T, U>`` is ``std::true_type``, the
 See system_scalar_conversion for detailed background and examples
 related to scalar-type conversion support.
 
-When ``Traits<S>::supported<T, U>`` is ``std::false_type``, the
-``S<T>::S(const S<U>&)`` scalar-conversion copy constructor will not
+When ``Traits<S>∷supported<T, U>`` is ``std∷false_type``, the
+``S<T>∷S(const S<U>&)`` scalar-conversion copy constructor will not
 even be mentioned by the framework, so that ``S`` need not even
 compile for certain values of ``T`` and ``U``.
 
@@ -12897,6 +12893,13 @@ derivatives) might be discarded.)""";
           const char* doc = R"""()""";
         } ThrowConversionMismatch;
       } system_scalar_converter_internal;
+      // Symbol: drake::systems::to_string
+      struct /* to_string */ {
+        // Source: drake/systems/framework/vector_base.h
+        const char* doc =
+R"""(Returns the string representation of a VectorBase<T> as a row vector
+RowVectorX<T> e.g., "1, 2, 3". This is useful for debugging purposes.)""";
+      } to_string;
     } systems;
   } drake;
 } pydrake_doc_systems_framework;

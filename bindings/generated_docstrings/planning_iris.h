@@ -342,7 +342,7 @@ this to the maximum tolerable parallelism.)""";
           // Source: drake/planning/iris/iris_from_clique_cover.h
           const char* doc =
 R"""(The tolerance used for checking whether a point is contained inside an
-HPolyhedron. See @ConvexSet::PointInSet.)""";
+HPolyhedron. See @ConvexSet∷PointInSet.)""";
         } point_in_set_tol;
         // Symbol: drake::planning::IrisFromCliqueCoverOptions::rank_tol_for_minimum_volume_circumscribed_ellipsoid
         struct /* rank_tol_for_minimum_volume_circumscribed_ellipsoid */ {
@@ -447,7 +447,7 @@ Pr[λ(P\Cfree)/λ(P) > ε] ≤ δ.
 Parameter ``starting_ellipsoid``:
     provides the initial ellipsoid around which to grow the region.
     This is typically a small ball around a collision-free
-    configuration (e.g. Hyperellipsoid::MakeHyperSphere(radius,
+    configuration (e.g. Hyperellipsoid∷MakeHyperSphere(radius,
     seed_point)). The center of this ellipsoid is required to be
     collision-free.
 
@@ -455,7 +455,7 @@ Parameter ``domain``:
     describes the total region of interest; computed IRIS regions will
     be inside this domain. It must be bounded, and is typically a
     simple bounding box representing joint limits (e.g. from
-    HPolyhedron::MakeBox).
+    HPolyhedron∷MakeBox).
 
 Parameter ``options``:
     contains algorithm parameters such as the desired collision-free
@@ -567,8 +567,14 @@ Note:
           const char* doc =
 R"""(The user can specify a solver to use for the counterexample search
 program. If nullptr (the default value) is given, then
-solvers::MakeFirstAvailableSolver will be used to pick the solver.)""";
+solvers∷MakeFirstAvailableSolver will be used to pick the solver.)""";
         } solver;
+        // Symbol: drake::planning::IrisNp2Options::solver_options
+        struct /* solver_options */ {
+          // Source: drake/planning/iris/iris_np2.h
+          const char* doc =
+R"""(Options passed to the counterexample search program solver.)""";
+        } solver_options;
         auto Serialize__fields() const {
           return std::array{
             std::make_pair("add_hyperplane_if_solve_fails", add_hyperplane_if_solve_fails.doc),
@@ -577,6 +583,7 @@ solvers::MakeFirstAvailableSolver will be used to pick the solver.)""";
             std::make_pair("sampled_iris_options", sampled_iris_options.doc),
             std::make_pair("sampling_strategy", sampling_strategy.doc),
             std::make_pair("solver", solver.doc),
+            std::make_pair("solver_options", solver_options.doc),
           };
         }
       } IrisNp2Options;
@@ -589,10 +596,10 @@ configuration space C. This allows the user to specify a function
 f:Q→C , and grow the region in Q instead. The function should be a map
 R^m to R^n, where n is the dimension of the plant configuration space
 and m is the input dimension, if specified. If the user provides a
-version of the function for Eigen::VectorX<double>, then the
+version of the function for Eigen∷VectorX<double>, then the
 parameterization can be used with IrisZo. IrisNp2 requires that the
 user also provies a version of the function for
-Eigen::VectorX<AutoDiffXd>. If not specified, the input dimension is
+Eigen∷VectorX<AutoDiffXd>. If not specified, the input dimension is
 assumed to be equal to the output dimension. The user must also
 specify whether or not the parameterization function can be called in
 parallel.)""";
@@ -601,7 +608,7 @@ parallel.)""";
           // Source: drake/planning/iris/iris_common.h
           const char* doc_3args_parameterization_double_parameterization_is_threadsafe_parameterization_dimension =
 R"""(Constructor for when the user only provides a version of the
-parameterization function for Eigen::VectorX<double>.
+parameterization function for Eigen∷VectorX<double>.
 ``parameterization_double`` is the function itself,
 ``parameterization_is_threadsafe`` specifies whether or not its
 threadsafe, and ``parameterization_dimension`` is the input dimension.)""";
@@ -609,8 +616,8 @@ threadsafe, and ``parameterization_dimension`` is the input dimension.)""";
           const char* doc_4args_parameterization_double_parameterization_autodiff_parameterization_is_threadsafe_parameterization_dimension =
 R"""(Constructor for when the user only provides both versions of the
 parameterization function. ``parameterization_double`` is the version
-for Eigen::VectorX<double>, ``parameterization_autodiff_`` is the
-version for Eigen::VectorX<AutoDiffXd>,
+for Eigen∷VectorX<double>, ``parameterization_autodiff_`` is the
+version for Eigen∷VectorX<AutoDiffXd>,
 ``parameterization_is_threadsafe`` specifies whether or not its
 threadsafe, and ``parameterization_dimension`` is the input dimension.)""";
           // Source: drake/planning/iris/iris_common.h
@@ -676,7 +683,7 @@ Note:
         struct /* get_parameterization_autodiff */ {
           // Source: drake/planning/iris/iris_common.h
           const char* doc =
-R"""(Get the Eigen::VectorX<AutoDiffXd> parameterization function.
+R"""(Get the Eigen∷VectorX<AutoDiffXd> parameterization function.
 
 Note:
     If the user has not specified this with
@@ -694,8 +701,8 @@ Raises:
           // Source: drake/planning/iris/iris_common.h
           const char* doc =
 R"""(Returns what the user has specified as the input dimension for the
-parameterization function, or std::nullopt if it has not been set. A
-std::nullopt value indicates that the chosen IRIS algorithm should use
+parameterization function, or std∷nullopt if it has not been set. A
+std∷nullopt value indicates that the chosen IRIS algorithm should use
 the ambient configuration space dimension as the input dimension to
 the parameterization.)""";
         } get_parameterization_dimension;
@@ -703,7 +710,7 @@ the parameterization.)""";
         struct /* get_parameterization_double */ {
           // Source: drake/planning/iris/iris_common.h
           const char* doc =
-R"""(Get the Eigen::VectorX<double> parameterization function.
+R"""(Get the Eigen∷VectorX<double> parameterization function.
 
 Note:
     If the user has not specified this with
@@ -750,7 +757,7 @@ Pr[λ(P\Cfree)/λ(P) > ε] ≤ δ.
 Parameter ``starting_ellipsoid``:
     provides the initial ellipsoid around which to grow the region.
     This is typically a small ball around a collision-free
-    configuration (e.g. Hyperellipsoid::MakeHyperSphere(radius,
+    configuration (e.g. Hyperellipsoid∷MakeHyperSphere(radius,
     seed_point)). The center of this ellipsoid is required to be
     collision-free.
 
@@ -758,7 +765,7 @@ Parameter ``domain``:
     describes the total region of interest; computed IRIS regions will
     be inside this domain. It must be bounded, and is typically a
     simple bounding box representing joint limits (e.g. from
-    HPolyhedron::MakeBox).
+    HPolyhedron∷MakeBox).
 
 Parameter ``options``:
     contains algorithm parameters such as the desired collision-free

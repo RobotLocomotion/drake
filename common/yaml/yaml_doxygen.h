@@ -10,6 +10,9 @@ such as Diagram connections or OutputPort traces. Any C++ struct to be
 serialized must provide a @ref implementing_serialize "Serialize()" function
 to enumerate its fields.
 
+Identical functionality is provided in Python via
+[pydrake.common.yaml](/pydrake/pydrake.common.yaml.html).
+
 <h2>Examples</h2>
 
 Given a struct definition:
@@ -380,5 +383,11 @@ bar4:
   value: !Foo
     data: hello
 @endcode
+
+Take particular note that the first type declared in the variant is a special
+case: when no tag is given in the YAML, then the scalar is read into the first
+type in the variant. For primitive types like `std::filesystem::path` that don't
+have a corresponding `!!tag` defined in the YAML specification, there is no way
+to load them into a variant unless they are the first type in the variant.
 
 */

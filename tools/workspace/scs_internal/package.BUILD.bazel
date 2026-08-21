@@ -38,6 +38,7 @@ cc_library(
         "include",
         "linsys",
     ],
+    isystem = True,
     copts = [
         "-fvisibility=hidden",
         "-w",

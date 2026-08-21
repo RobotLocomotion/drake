@@ -106,8 +106,8 @@ by this object
 <h5>Implicit Context Parallelism</h5>
 
 Many methods of this class aren't designed for entry from arbitrary
-threads (e.g. from std::async threads), but rather are designed for
-use with a main thread and various thread-pool-parallel operations
+threads (e.g. from std∷async threads), but rather are designed for use
+with a main thread and various thread-pool-parallel operations
 achieved by using directives like ``omp parallel``. To support this
 usage, the base class ``AllocateContexts()`` protected method
 establishes a pool of contexts to support the implicit context
@@ -153,7 +153,7 @@ are:
 - with a context number, via a parallelization method that provides a notion of
 thread numbers similar in behavior to OpenMP's (i.e. a thread number in
 [0, number of threads), not arbitrary values like
-``std::this_thread::get_id()``)
+``std∷this_thread∷get_id()``)
 
 To determine the greatest implicit context parallelism that can be
 achieved in a parallelized operation, ``GetNumberOfThreads(Parallelism
@@ -168,7 +168,7 @@ this class. Contexts returned from MakeStandaloneModelContext() may be
 used in any thread, using only ``const`` methods of this class, or
 "explicit context" methods.
 
-Explicit contexts are tracked by this class using ``std::weak_ptr`` to
+Explicit contexts are tracked by this class using ``std∷weak_ptr`` to
 track their lifetimes. This mechanism is used by
 PerformOperationAgainstAllModelContexts to map an operation over all
 collision contexts, whether explicit or implicit.
@@ -188,12 +188,12 @@ may look something like the example below.
 
 .. code-block:: c++
 
-    const Eigen::VectorXd start_q ...
-    const Eigen::VectorXd sample_q1 ...
-    const Eigen::VectorXd sample_q2 ...
+    const Eigen∷VectorXd start_q ...
+    const Eigen∷VectorXd sample_q1 ...
+    const Eigen∷VectorXd sample_q2 ...
     
     const auto check_edge_to = [&collision_checker, &start_q] (
-    const Eigen::VectorXd& sample_q,
+    const Eigen∷VectorXd& sample_q,
     CollisionCheckerContext* explicit_context) {
     return collision_checker.CheckContextEdgeCollisionFree(
     explicit_context, start_q, sample_q);
@@ -202,9 +202,9 @@ may look something like the example below.
     const auto context_1 = collision_checker.MakeStandaloneModelContext();
     const auto context_2 = collision_checker.MakeStandaloneModelContext();
     
-    auto future_q1 = std::async(std::launch::async, check_edge_to, sample_q1,
+    auto future_q1 = std∷async(std∷launch∷async, check_edge_to, sample_q1,
     context_1.get());
-    auto future_q2 = std::async(std::launch::async, check_edge_to, sample_q2,
+    auto future_q2 = std∷async(std∷launch∷async, check_edge_to, sample_q2,
     context_2.get());
     
     const double edge_1_valid = future_q1.get();
@@ -218,8 +218,8 @@ may look something like the example below.
 
 It is possible to support mixed threading models, i.e., using both
 OpenMP thread pools and arbitrary threads. In this case, each
-arbitrary thread (say, from std::async) should have its own instance
-of a collision checker made using Clone(). Then each arbitrary thread
+arbitrary thread (say, from std∷async) should have its own instance of
+a collision checker made using Clone(). Then each arbitrary thread
 will have its own implicit context pool.
 
 <h5>Implementing Derived Classes</h5>
@@ -463,7 +463,7 @@ Parameter ``parallelize``:
     How much should collision checks be parallelized?
 
 Returns:
-    std::vector<uint8_t>, one for each configuration in configs. For
+    std∷vector<uint8_t>, one for each configuration in configs. For
     each configuration, 1 if collision free, 0 if in collision.
 
 Raises:
@@ -564,7 +564,7 @@ Parameter ``parallelize``:
     How much should edge collision checks be parallelized?
 
 Returns:
-    std::vector<uint8_t>, one for each edge in edges. For each edge, 1
+    std∷vector<uint8_t>, one for each edge in edges. For each edge, 1
     if collision free, 0 if in collision.
 
 Raises:
@@ -620,7 +620,7 @@ See also:
 R"""(Derived classes declare upon construction whether they support
 parallel checking (see SupportsParallelChecking()). If a derived class
 does not support parallel checking, it must set
-params.implicit_context_parallelism to Parallelism::None(); otherwise
+params.implicit_context_parallelism to Parallelism∷None(); otherwise
 this constructor will throw.
 
 Raises:
@@ -1379,7 +1379,7 @@ necessary to work with "stand alone" instances. See CollisionChecker's
 documentation for more details.
 
 In all cases, modifying context should happen through
-CollisionChecker::PerformOperationAgainstAllModelContexts(). Modifying
+CollisionChecker∷PerformOperationAgainstAllModelContexts(). Modifying
 the contained Drake Contexts directly is generally erroneous.)""";
         // Symbol: drake::planning::CollisionCheckerContext::Clone
         struct /* Clone */ {
@@ -1541,8 +1541,8 @@ reports a collision.)""";
         // Source: drake/planning/collision_checker_params.h
         const char* doc =
 R"""(Configuration distance takes two configurations of the robot, q1 and
-q2, both as Eigen::VectorXd, and returns (potentially weighted)
-C-space distance as a double. The returned distance will be strictly
+q2, both as Eigen∷VectorXd, and returns (potentially weighted) C-space
+distance as a double. The returned distance will be strictly
 non-negative.
 
 To be valid, the function must satisfy the following condition:
@@ -1556,7 +1556,7 @@ for values of q that are valid for the CollisionChecker's plant.)""";
         // Source: drake/planning/collision_checker_params.h
         const char* doc =
 R"""(Configuration interpolation function takes two configurations of the
-robot, q1, and q2, both as Eigen::VectorXd, plus a ratio, r, in [0, 1]
+robot, q1, and q2, both as Eigen∷VectorXd, plus a ratio, r, in [0, 1]
 and returns the interpolated configuration. Behavior of the function
 for values of r outside of the range [0,1] is undefined.
 
@@ -1593,8 +1593,8 @@ more complex interpolation behavior (e.g. when planning for a mobile
 robot whose motion is modelled via Dubbins or Reeds-Shepp paths).
 
 Configuration distance takes two configurations of the robot, from and
-to, both as Eigen::VectorXd, and returns (potentially weighted)
-C-space distance as a double. The returned distance will be strictly
+to, both as Eigen∷VectorXd, and returns (potentially weighted) C-space
+distance as a double. The returned distance will be strictly
 non-negative.
 
 To be valid, distance must satisfy the following condition:
@@ -1604,7 +1604,7 @@ To be valid, distance must satisfy the following condition:
 for values of q that are valid for the C-space in use.
 
 Configuration interpolation takes two configurations of the robot,
-from and to, both as Eigen::VectorXd, plus a ratio in [0, 1] and
+from and to, both as Eigen∷VectorXd, plus a ratio in [0, 1] and
 returns the interpolated configuration.
 
 To be valid, interpolation must satisfy the following conditions:
@@ -1778,7 +1778,7 @@ For example:
     VectorX selected(mask.count());
     mask.GetFromArray(full_vec, &selected);
     // Print out the vector: [0, 10, 40].
-    std::cout << selected.transpose() << "\n";
+    std∷cout << selected.transpose() << "\n";
 
 .. raw:: html
 
@@ -1890,7 +1890,7 @@ For example:
     auto full_vec = (VectorX(5) << 0, 1, 2, 3, 4).finished();
     mask.SetInArray(dof_vec, &full_vec);
     // Print out the vector: [-10, -20, 2, 3, -30].
-    std::cout << full_vec.transpose() << "\n";
+    std∷cout << full_vec.transpose() << "\n";
 
 .. raw:: html
 
@@ -1962,7 +1962,7 @@ R"""(The measure of the distance of the edge from q1 to q2 and the portion
 of that is collision free.
 
 Distance is that produced by
-CollisionChecker::ComputeConfigurationDistance() for the entire edge
+CollisionChecker∷ComputeConfigurationDistance() for the entire edge
 between q1 and q2.
 
 The portion of the edge between q1 and q2 that is collision free is
@@ -1991,7 +1991,7 @@ Note:
     For α to be meaningful, the caller is obliged to make sure that
     they use the same interpolating function as the CollisionChecker
     did when generating the measure. Calling
-    CollisionChecker::InterpolateBetweenConfigurations() on the same
+    CollisionChecker∷InterpolateBetweenConfigurations() on the same
     checker instance would satisfy that requirement.)""";
         // Symbol: drake::planning::EdgeMeasure::EdgeMeasure
         struct /* ctor */ {
@@ -2338,10 +2338,10 @@ environment.
 - ``body index O`` is the BodyIndex of body O.
 - ``type`` implies the type of body O. Given that we know body R is a robot
 body, ``type`` indicates that body O is also a robot body with the value
-RobotCollisionType::kSelfCollision or an environment body with the value
-RobotCollisionType::kEnvironmentCollision. For a correct implementation of
+RobotCollisionType∷kSelfCollision or an environment body with the value
+RobotCollisionType∷kEnvironmentCollision. For a correct implementation of
 CollisionChecker, it will never be
-RobotCollisionType::kEnvironmentAndSelfCollision.
+RobotCollisionType∷kEnvironmentAndSelfCollision.
 - ``ϕᴼ(R)`` is the signed distance function of the other body O evaluated on
 body R. The reported distance is offset by the padding value for the body
 pair recorded in the CollisionChecker. It is the minimum padded distance
@@ -2405,7 +2405,7 @@ R"""(Returns:
           const char* doc =
 R"""(Returns:
     the vector of distance Jacobians (``Jqᵣ_ϕᴼ(R)``); the return type
-    is a readonly Eigen::Map with size() rows and num_positions()
+    is a readonly Eigen∷Map with size() rows and num_positions()
     columns.)""";
         } jacobians;
         // Symbol: drake::planning::RobotClearance::mutable_jacobians
@@ -2489,8 +2489,8 @@ Use RobotDiagramBuilder to construct a RobotDiagram.
 By default, the ports exposed by a RobotDiagram are the set of all
 ports provided by the plant and scene graph (excluding the internal
 connections between the two). Refer to their individual overview
-figures for details (see multibody::MultibodyPlant and
-geometry::SceneGraph), or see the full list by viewing the
+figures for details (see multibody∷MultibodyPlant and
+geometry∷SceneGraph), or see the full list by viewing the
 robot_diagram.GetGraphvizString().
 
 .. pydrake_system::
@@ -2505,7 +2505,7 @@ robot_diagram.GetGraphvizString().
     - ... etc ...
     - scene_graph_query
 
-However, if the RobotDiagramBuilder::builder() was used to change the
+However, if the RobotDiagramBuilder∷builder() was used to change the
 diagram or if either the plant or scene graph were renamed, then no
 ports will be exported by default. In that case, you can use the
 builder to export any desired ports.)""";
@@ -2519,7 +2519,7 @@ builder to export any desired ports.)""";
           // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained plant's context (mutable) out of the given root
-context. Refer to drake::systems::System::GetMyContextFromRoot() to
+context. Refer to drake∷systems∷System∷GetMyContextFromRoot() to
 understand ``root_context``.
 
 Raises:
@@ -2536,8 +2536,8 @@ R"""(Gets the contained scene graph (mutable).)""";
           // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained scene graph's context (mutable) out of the given
-root context. Refer to drake::systems::System::GetMyContextFromRoot()
-to understand ``root_context``.
+root context. Refer to drake∷systems∷System∷GetMyContextFromRoot() to
+understand ``root_context``.
 
 Raises:
     RuntimeError if the ``root_context`` is not a root context.)""";
@@ -2552,7 +2552,7 @@ Raises:
           // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained plant's context (readonly) out of the given root
-context. Refer to drake::systems::System::GetMyContextFromRoot() to
+context. Refer to drake∷systems∷System∷GetMyContextFromRoot() to
 understand ``root_context``.
 
 Raises:
@@ -2569,8 +2569,8 @@ R"""(Gets the contained scene graph (readonly).)""";
           // Source: drake/planning/robot_diagram.h
           const char* doc =
 R"""(Gets the contained scene graph's context (readonly) out of the given
-root context. Refer to drake::systems::System::GetMyContextFromRoot()
-to understand ``root_context``.
+root context. Refer to drake∷systems∷System∷GetMyContextFromRoot() to
+understand ``root_context``.
 
 Raises:
     RuntimeError if the ``root_context`` is not a root context.)""";
@@ -2624,7 +2624,7 @@ Parameter ``time_step``:
     Governs whether the MultibodyPlant is modeled as a discrete system
     (``time_step > 0``) or as a continuous system (``time_step = 0``).
     See multibody_simulation for further details. The default here
-    matches the default value from multibody::MultibodyPlantConfig.)""";
+    matches the default value from multibody∷MultibodyPlantConfig.)""";
         } ctor;
         // Symbol: drake::planning::RobotDiagramBuilder::builder
         struct /* builder */ {
@@ -2777,7 +2777,7 @@ R"""(Constructs a checker.
 
 Parameter ``supports_parallel_checking``:
     will serve as the return value of the
-    CollisionChecker::SupportsParallelChecking() function.)""";
+    CollisionChecker∷SupportsParallelChecking() function.)""";
           // Source: drake/planning/unimplemented_collision_checker.h
           const char* doc_move =
 R"""(@name Does not allow copy, move, or assignment.)""";
@@ -2806,7 +2806,7 @@ some more complex spaces with non-linear interpolation (e.g. a Dubin's
 car) are not symmetric.
 
 If ``parallelize`` specifies more than one thread, then the
-CollisionCheckerParams::distance_and_interpolation_provider for
+CollisionCheckerParams∷distance_and_interpolation_provider for
 ``checker`` must be implemented in C++, either by providing the C++
 implementation directly directly or by using the default provider.
 

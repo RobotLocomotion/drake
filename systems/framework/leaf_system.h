@@ -527,6 +527,8 @@ class LeafSystem : public System<T> {
   where `MySystem` is a class derived from `LeafSystem<T>` and the method
   name is arbitrary.
 
+  <!-- Delete this warning when publish_every_time_step is deleted on
+  2026-06-01. -->
   @warning These per-step publish events are independent of the Simulator's
   optional "publish every time step" and "publish at initialization"
   features. Generally if you are declaring per-step publish events yourself
@@ -678,7 +680,8 @@ class LeafSystem : public System<T> {
   _update_ events occur during initialization. On the other hand, any
   _publish_ events, including initialization-triggered, per-step,
   and time-triggered publish events that trigger at the initial time, are
-  dispatched together during initialization.
+  dispatched together during initialization. Initialization-triggered publish
+  events will precede per-step and time-triggered publish events.
 
   Template arguments to these methods are inferred from the argument lists
   and need not be specified explicitly. */
@@ -846,6 +849,8 @@ class LeafSystem : public System<T> {
   @note It's rare that an event needs to be triggered by force. Please
   consider per-step and periodic triggered events first.
 
+  <!-- Delete this warning when publish_every_time_step is deleted on
+  2026-06-01. -->
   @warning Simulator handles forced publish events at initialization
   and on a per-step basis when its "publish at initialization" and
   "publish every time step" options are set (not recommended).

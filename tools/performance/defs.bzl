@@ -52,10 +52,10 @@ def drake_cc_googlebench_binary(
             timeout = test_timeout,
             display = test_display,
             args = [
-                # When running as a unit test, run each function only once to
-                # save time. (Once should be sufficient to prove the lack of
-                # runtime errors.)
-                "--benchmark_min_time=0s",
+                # Google benchmark has a flag designed to do the minimal work
+                # to confirm that the tests run: dry run. For tests, that's
+                # sufficient.
+                "--benchmark_dry_run",
             ] + (test_args or []),
             tags = (test_tags or []) + ["nolint", "no_kcov"],
         )

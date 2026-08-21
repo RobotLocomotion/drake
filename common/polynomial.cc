@@ -850,6 +850,43 @@ Polynomial<T> Polynomial<T>::FromExpression(const Expression& e) {
   return FromExpressionVisitor<T>{}.Visit(e);
 }
 
+template <typename T>
+std::string Polynomial<T>::Monomial::to_string() const {
+  std::string result;
+  bool print_star = false;
+  if (coefficient != 1 || terms.empty()) {
+    result.append(fmt::format("({})", coefficient));
+    print_star = true;
+  }
+  for (const Term& term : terms) {
+    if (print_star) {
+      result.append("*");
+    } else {
+      print_star = true;
+    }
+    result.append(IdToVariableName(term.var));
+    if (term.power != 1) {
+      result.append(fmt::format("^{}", term.power));
+    }
+  }
+  return result;
+}
+
+template <typename T>
+std::string Polynomial<T>::to_string() const {
+  if (monomials_.empty()) {
+    return "0";
+  }
+  std::string result;
+  typename std::vector<Monomial>::const_iterator iter = monomials_.begin();
+  result.append((*iter).to_string());
+  for (++iter; iter != monomials_.end(); ++iter) {
+    result.append("+");
+    result.append((*iter).to_string());
+  }
+  return result;
+}
+
 // template class Polynomial<std::complex<double>>;
 // doesn't work yet because the roots solver can't handle it
 

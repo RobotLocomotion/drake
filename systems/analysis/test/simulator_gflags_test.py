@@ -20,6 +20,7 @@ class TestSimulatorGflags(unittest.TestCase):
                 "--simulator_accuracy=1E-3",
                 "--simulator_use_error_control=true",
                 "--simulator_target_realtime_rate=1.",
+                # Delete next line with publish_every_time_step 2026-06-01
                 "--simulator_publish_every_time_step=true",
             ],
             stdout=subprocess.PIPE,

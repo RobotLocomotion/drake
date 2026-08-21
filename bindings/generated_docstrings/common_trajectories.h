@@ -221,7 +221,7 @@ R"""(Represents a B-spline curve using a given ``basis`` with ordered
 ᶜᵒˡˢ.
 
 See also:
-    math::BsplineBasis)""";
+    math∷BsplineBasis)""";
         // Symbol: drake::trajectories::BsplineTrajectory::AsLinearInControlPoints
         struct /* AsLinearInControlPoints */ {
           // Source: drake/common/trajectories/bspline_trajectory.h
@@ -243,7 +243,7 @@ points of the ``order`` derivative in the form:
 
     </details>
 
-See ``BezierCurve::AsLinearInControlPoints()`` for more details.
+See ``BezierCurve∷AsLinearInControlPoints()`` for more details.
 
 Precondition:
     derivative_order >= 0.)""";
@@ -382,7 +382,7 @@ Returns:
     The matrix of evaluated values.
 
 Precondition:
-    If T == symbolic::Expression, ``t.is_constant()`` must be true.
+    If T == symbolic∷Expression, ``t.is_constant()`` must be true.
 
 Warning:
     If t does not lie in the range [start_time(), end_time()], the
@@ -399,7 +399,7 @@ R"""(A "composite trajectory" is a series of trajectories joined end to end
 where the end time of one trajectory coincides with the starting time
 of the next.
 
-See also PiecewisePolynomial::ConcatenateInTime(), which might be
+See also PiecewisePolynomial∷ConcatenateInTime(), which might be
 preferred if all of the segments are PiecewisePolynomial.)""";
         // Symbol: drake::trajectories::CompositeTrajectory::AlignAndConcatenate
         struct /* AlignAndConcatenate */ {
@@ -467,7 +467,7 @@ And it may be just as efficient to use ``DoEvalDerivative`` even in
 repeated evaluations of the derivative. The DerivativeTrajectory class
 helps with this case -- given a ``nominal`` Trajectory, it provides a
 Trajectory interface that calls ``nominal.EvalDerivative()`` to
-implement ``Trajectory::value()``.)""";
+implement ``Trajectory∷value()``.)""";
         // Symbol: drake::trajectories::DerivativeTrajectory::DerivativeTrajectory<T>
         struct /* ctor */ {
           // Source: drake/common/trajectories/derivative_trajectory.h
@@ -493,7 +493,7 @@ equal to one of those times (up to a tolerance) will throw. This
 trajectory does *not* have well-defined time-derivatives.
 
 In some applications, it may be preferable to use
-PiecewisePolynomial<T>::ZeroOrderHold instead of a
+PiecewisePolynomial<T>∷ZeroOrderHold instead of a
 DiscreteTimeTrajectory (and we offer a method here to easily convert).
 Note if the breaks are periodic, then one can also achieve a similar
 result in a Diagram by using the DiscreteTimeTrajectory in a
@@ -593,7 +593,7 @@ Raises:
           // Source: drake/common/trajectories/discrete_time_trajectory.h
           const char* doc =
 R"""(Converts the discrete-time trajectory using
-PiecewisePolynomial<T>::ZeroOrderHold().)""";
+PiecewisePolynomial<T>∷ZeroOrderHold().)""";
         } ToZeroOrderHold;
         // Symbol: drake::trajectories::DiscreteTimeTrajectory::cols
         struct /* cols */ {
@@ -792,7 +792,7 @@ Returns:
     The matrix of evaluated values.
 
 Precondition:
-    If T == symbolic::Expression, ``t.is_constant()`` must be true.
+    If T == symbolic∷Expression, ``t.is_constant()`` must be true.
 
 Warning:
     If t does not lie in the range [start_time(), end_time()], the
@@ -876,7 +876,7 @@ Warning:
     velocity ṡ and acceleration s̈ along the curve.
 
 See also:
-    multibody::CurvilinearJoint)""";
+    multibody∷CurvilinearJoint)""";
         // Symbol: drake::trajectories::PiecewiseConstantCurvatureTrajectory::CalcPose
         struct /* CalcPose */ {
           // Source: drake/common/trajectories/piecewise_constant_curvature_trajectory.h
@@ -1038,7 +1038,7 @@ R"""(Returns:
 
 Periodicity is defined as the beginning and end poses X_AM(s₀) and
 X_AM(sₙ) being equal up to the same tolerance, checked via
-RigidTransform::IsNearlyEqualTo() using ``tolerance``.
+RigidTransform∷IsNearlyEqualTo() using ``tolerance``.
 
 Parameter ``tolerance``:
     The tolerance for the pose equality check.)""";
@@ -1070,7 +1070,7 @@ orientation R_AM₀ of frame M at s = 0.
 Parameter ``breaks``:
     A vector of n break values sᵢ between segments. The parent class,
     PiecewiseTrajectory, enforces that the breaks increase by at least
-    PiecewiseTrajectory::kEpsilonTime.
+    PiecewiseTrajectory∷kEpsilonTime.
 
 Parameter ``turning_rates``:
     A vector of n-1 turning rates ρᵢ for each segment.
@@ -1180,22 +1180,22 @@ abs(t).
 .. code-block:: c++
 
     // Construct the PiecewisePolynomial.
-    const std::vector<double> breaks = { -1.0, 0.0, 1.0 };
-    std::vector<Eigen::MatrixXd> samples(3);
+    const std∷vector<double> breaks = { -1.0, 0.0, 1.0 };
+    std∷vector<Eigen∷MatrixXd> samples(3);
     for (int i = 0; i < static_cast<int>(breaks.size()); ++i) {
       samples[i].resize(1, 1);
-      samples[i](0, 0) = std::abs(breaks[i]);
+      samples[i](0, 0) = std∷abs(breaks[i]);
     }
     const auto pp =
-         PiecewisePolynomial<double>::FirstOrderHold(breaks, samples);
+         PiecewisePolynomial<double>∷FirstOrderHold(breaks, samples);
     const int row = 0, col = 0;
     
     // Evaluate the PiecewisePolynomial at some values.
-    std::cout << pp.value(-.5)(row, col) << std::endl;    // Outputs 0.5.
-    std::cout << pp.value(0.0)(row, col) << std::endl;    // Outputs 0.0;
+    std∷cout << pp.value(-.5)(row, col) << std∷endl;    // Outputs 0.5.
+    std∷cout << pp.value(0.0)(row, col) << std∷endl;    // Outputs 0.0;
     
     // Show how we can evaluate the first derivative (outputs -1.0).
-    std::cout << pp.derivative(1).value(-.5)(row, col) << std::endl;
+    std∷cout << pp.derivative(1).value(-.5)(row, col) << std∷endl;
 
 .. raw:: html
 
@@ -1233,7 +1233,7 @@ Raises:
     range.
 
 Warning:
-    If ``new_break`` is within PiecewiseTrajectory::kEpsilonTime from
+    If ``new_break`` is within PiecewiseTrajectory∷kEpsilonTime from
     an existing break, the new break will be silently ignored. Returns
     the index of the existing break.)""";
         } AddBreak;
@@ -1298,7 +1298,7 @@ Raises:
 
 Raises:
     RuntimeError if ``this->end_time()`` and ``other->start_time()``
-    are not within PiecewiseTrajectory<T>::kEpsilonTime from each
+    are not within PiecewiseTrajectory<T>∷kEpsilonTime from each
     other.)""";
         } ConcatenateInTime;
         // Symbol: drake::trajectories::PiecewisePolynomial::CubicHermite
@@ -1530,14 +1530,14 @@ Precondition:
         struct /* Reshape */ {
           // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
-R"""(Reshapes the dimensions of the Eigen::MatrixX<T> returned by value(),
+R"""(Reshapes the dimensions of the Eigen∷MatrixX<T> returned by value(),
 EvalDerivative(), etc.
 
 Precondition:
     ``rows`` x ``cols`` must equal this.rows() * this.cols().
 
 See also:
-    Eigen::PlainObjectBase::resize().)""";
+    Eigen∷PlainObjectBase∷resize().)""";
         } Reshape;
         // Symbol: drake::trajectories::PiecewisePolynomial::ReverseTime
         struct /* ReverseTime */ {
@@ -1606,7 +1606,7 @@ Raises:
           // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_vector =
 R"""(Version of ZeroOrderHold(breaks, samples) that uses vector samples and
-``Eigen::VectorX<T>/MatrixX<T>`` arguments. Each column of ``samples``
+``Eigen∷VectorX<T>/MatrixX<T>`` arguments. Each column of ``samples``
 represents a sample point.
 
 Precondition:
@@ -1631,7 +1631,7 @@ Raises:
           const char* doc =
 R"""(Returns a PiecewisePolynomial where each segment is the specified
 derivative of the corresponding segment in ``this``. Any rules or
-limitations of Polynomial::derivative() also apply to this function.
+limitations of Polynomial∷derivative() also apply to this function.
 
 Derivatives evaluated at non-differentiable points return the value at
 the left hand side of the interval.
@@ -1660,7 +1660,7 @@ corresponds to the given segment index. Equivalent to
 ``getPolynomialMatrix(segment_index)(row, col)``.
 
 Note:
-    Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+    Calls PiecewiseTrajectory<T>∷segment_number_range_check() to
     validate ``segment_index``.)""";
         } getPolynomial;
         // Symbol: drake::trajectories::PiecewisePolynomial::getPolynomialMatrix
@@ -1686,7 +1686,7 @@ index that corresponds to the given segment index. Equivalent to
           // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Returns a PiecewisePolynomial that is the indefinite integral of this
-one. Any rules or limitations of Polynomial::integral() also apply to
+one. Any rules or limitations of Polynomial∷integral() also apply to
 this function.
 
 If ``value_at_start_time`` is given, it does the following only for
@@ -1698,11 +1698,11 @@ the first segment: adds that constant as the constant term
           // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc =
 R"""(Checks whether a PiecewisePolynomial is approximately equal to this
-one by calling Polynomial<T>::CoefficientsAlmostEqual() on every
+one by calling Polynomial<T>∷CoefficientsAlmostEqual() on every
 element of every segment.
 
 See also:
-    Polynomial<T>::CoefficientsAlmostEqual().)""";
+    Polynomial<T>∷CoefficientsAlmostEqual().)""";
         } isApprox;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator*
         struct /* operator_mul */ {
@@ -1715,7 +1715,7 @@ coefficient-wise multiplication). If ``this`` corresponds to t² and
 
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
-    not within PiecewiseTrajectory::kEpsilonTime from
+    not within PiecewiseTrajectory∷kEpsilonTime from
     ``this->get_segment_times()``.)""";
         } operator_mul;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator*=
@@ -1730,7 +1730,7 @@ other`` will correspond to t⁵.
 
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
-    not within PiecewiseTrajectory::kEpsilonTime from
+    not within PiecewiseTrajectory∷kEpsilonTime from
     ``this->get_segment_times()``.)""";
         } operator_imul;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator+
@@ -1744,7 +1744,7 @@ other`` will correspond to t³ + t².
 
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
-    not within PiecewiseTrajectory::kEpsilonTime from
+    not within PiecewiseTrajectory∷kEpsilonTime from
     ``this->get_segment_times()``.)""";
         } operator_add;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator+=
@@ -1758,7 +1758,7 @@ corresponds to t³, ``this += other`` will correspond to t³ + t².
 
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
-    not within PiecewiseTrajectory::kEpsilonTime from
+    not within PiecewiseTrajectory∷kEpsilonTime from
     ``this->get_segment_times()``.)""";
         } operator_iadd;
         // Symbol: drake::trajectories::PiecewisePolynomial::operator-
@@ -1772,7 +1772,7 @@ other`` will correspond to t² - t³.
 
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
-    not within PiecewiseTrajectory::kEpsilonTime from
+    not within PiecewiseTrajectory∷kEpsilonTime from
     ``this->get_segment_times()``.)""";
           // Source: drake/common/trajectories/piecewise_polynomial.h
           const char* doc_0args =
@@ -1791,7 +1791,7 @@ t³.
 
 Raises:
     RuntimeError if every element of ``other.get_segment_times()`` is
-    not within PiecewiseTrajectory::kEpsilonTime from
+    not within PiecewiseTrajectory∷kEpsilonTime from
     ``this->get_segment_times()``.)""";
         } operator_isub;
         // Symbol: drake::trajectories::PiecewisePolynomial::rows
@@ -1821,7 +1821,7 @@ R"""(Replaces the specified block of the PolynomialMatrix at the given
 segment index.
 
 Note:
-    Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+    Calls PiecewiseTrajectory<T>∷segment_number_range_check() to
     validate ``segment_index``.
 
 Warning:
@@ -1847,7 +1847,7 @@ R"""(Returns the PiecewisePolynomial comprising the ``num_segments``
 segments starting at the specified ``start_segment_index``.
 
 Note:
-    Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+    Calls PiecewiseTrajectory<T>∷segment_number_range_check() to
     validate ``segment_index``.)""";
         } slice;
         // Symbol: drake::trajectories::PiecewisePolynomial::value
@@ -1863,7 +1863,7 @@ Returns:
     The matrix of evaluated values.
 
 Precondition:
-    If T == symbolic::Expression, ``t.is_constant()`` must be true.
+    If T == symbolic∷Expression, ``t.is_constant()`` must be true.
 
 Warning:
     If t does not lie in the range that the polynomial is defined

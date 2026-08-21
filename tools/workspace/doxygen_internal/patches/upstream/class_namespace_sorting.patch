@@ -1,0 +1,48 @@
+[doxygen] Restore class and namespace ordering controlled by `SORT_BRIEF_DOCS`
+
+Revert upstream commit 9cb220d1145731488f453d5e066a79b2628a910f so that
+`SORT_BRIEF_DOCS` only controls ordering on class and namespace pages
+themselves, instead of also applying to the navigation.
+
+Upstream could consider a new configuration option to separate these two
+behaviors.
+
+diff --git a/src/classdef.cpp b/src/classdef.cpp
+index 773614d48..3f1a3b562 100644
+--- a/src/classdef.cpp
++++ b/src/classdef.cpp
+@@ -4623,7 +4623,7 @@ void ClassDefImpl::sortMemberLists()
+   {
+     if (ml->needsSorting()) { ml->sort(); ml->setNeedsSorting(FALSE); }
+   }
+-  if (Config_getBool(SORT_BRIEF_DOCS))
++  if (true)
+   {
+     std::stable_sort(m_innerClasses.begin(),
+               m_innerClasses.end(),
+diff --git a/src/groupdef.cpp b/src/groupdef.cpp
+index f9e3e94c9..b5560d12d 100644
+--- a/src/groupdef.cpp
++++ b/src/groupdef.cpp
+@@ -1991,7 +1991,7 @@ void GroupDefImpl::removeMemberFromList(MemberListType lt,MemberDef *md)
+
+ void GroupDefImpl::sortSubGroups()
+ {
+-  if (Config_getBool(SORT_BRIEF_DOCS))
++  if (true)
+   {
+     std::stable_sort(m_groups.begin(),
+               m_groups.end(),
+diff --git a/src/namespacedef.cpp b/src/namespacedef.cpp
+index 82fe2634e..8baa18cc5 100644
+--- a/src/namespacedef.cpp
++++ b/src/namespacedef.cpp
+@@ -1470,7 +1470,7 @@ void NamespaceDefImpl::sortMemberLists()
+     if (ml->needsSorting()) { ml->sort(); ml->setNeedsSorting(FALSE); }
+   }
+
+-  if (Config_getBool(SORT_BRIEF_DOCS))
++  if (true)
+   {
+     auto classComp = [](const ClassLinkedRefMap::Ptr &c1,const ClassLinkedRefMap::Ptr &c2)
+     {

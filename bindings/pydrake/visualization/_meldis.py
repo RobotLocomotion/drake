@@ -181,7 +181,7 @@ class _GeometryFileHasher:
             self._hasher.update(content)
             self._paths.append(path)
             return content
-        except IOError:
+        except OSError:
             return b""
 
     def on_viewer_load_robot(self, message: lcmt_viewer_load_robot):

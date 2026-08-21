@@ -9,7 +9,7 @@
 /// Utilities for calling Python from C++ over an RPC.
 ///
 /// For command-line examples, see the documentation in `call_python_client.py`.
-/// For C++ examples, see `call_python_test.cc`.
+/// For C++ examples, see `call_python_server_test.cc`.
 
 namespace drake {
 namespace common {

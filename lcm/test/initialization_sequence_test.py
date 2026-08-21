@@ -57,7 +57,7 @@ class InitializationSequenceTest(unittest.TestCase):
 
         # Prompt it to active the recv parts on the LCM instance and wait until
         # that is complete.
-        dut.stdin.write("dummy\n".encode("utf-8"))
+        dut.stdin.write(b"dummy\n")
         dut.stdin.flush()
         for line in dut.stdout:
             line = line.decode("utf-8").strip()

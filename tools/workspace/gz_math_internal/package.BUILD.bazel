@@ -259,6 +259,7 @@ cc_library_vendored(
     copts = ["-w"],
     linkstatic = True,
     includes = ["drake_hdr"],
+    isystem = True,
     visibility = ["//visibility:public"],
     deps = [
         "@gz_utils_internal//:gz_utils",

@@ -9,9 +9,15 @@ load(
 load(
     "@drake//tools/workspace/vtk_internal:rules.bzl",
     "compile_all_modules",
-    "generate_common_core_sources",
-    "generate_rendering_opengl2_sources",
     "vtk_cc_module",
+)
+load(
+    "@drake//tools/workspace/vtk_internal:rules_common_core.bzl",
+    "generate_common_core_sources",
+)
+load(
+    "@drake//tools/workspace/vtk_internal:rules_rendering_opengl2.bzl",
+    "generate_rendering_opengl2_sources",
 )
 
 config_setting(

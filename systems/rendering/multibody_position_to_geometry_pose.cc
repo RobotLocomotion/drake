@@ -30,7 +30,7 @@ template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
     std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
     bool input_multibody_state)
-    : plant_(*owned_plant), owned_plant_(std::move(owned_plant)) {
+    : plant_(DRAKE_DEREF(owned_plant)), owned_plant_(std::move(owned_plant)) {
   DRAKE_DEMAND(owned_plant_ != nullptr);
   Configure(input_multibody_state);
 }

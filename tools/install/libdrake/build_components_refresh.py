@@ -48,8 +48,10 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
       ))
     )
     except("//lcmtypes/...")
+    except("//planning/dev/...")
     except("//tools/install/...")
     except("//tools/performance/...")
+    except("//tools/workspace/...")
     except(attr(tags, "exclude_from_libdrake", //...))
 """
     # First, find the drake_cc_package_library targets within that query.
@@ -69,7 +71,7 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
     misc_libs = _bazel_query(
         [
             components_query
-            + " ".join(["except deps({}, 1)".format(x) for x in package_libs])
+            + " ".join([f"except deps({x}, 1)" for x in package_libs])
         ]
     )
     # Sort the result for consistency.
@@ -132,7 +134,7 @@ def main():
             if "#" in one_label:
                 line = "    " + one_label
             else:
-                line = '    "{}",'.format(one_label)
+                line = f'    "{one_label}",'
                 if ":" in one_label:
                     line += "  # unpackaged"
             new.write(line)

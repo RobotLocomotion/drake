@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <set>
+#include <source_location>
 #include <string>
 #include <utility>
 #include <vector>
@@ -60,6 +61,115 @@ constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
+
+// This helper function works around a peculiarity of pybind11 wrapping of
+// python bound methods for calls from C++. It is possible to end up with
+// distinct call wrappers of the same method, with independent memory, but that
+// *compare* as equal. This quirk defeats the reference bookkeeping of
+// common/ref_cycle_pybind; attempts to add distinct but "equal" wrappers fail,
+// and a reference is lost. To compensate, this function wraps a potentially
+// quirky callable in a tuple with a unique integer, so that apparently "equal"
+// callables can be inserted as distinct set members with the
+// common/ref_cycle_pybind bookkeeping scheme.
+py::object UniquelyWrapCallback(py::object callback) {
+  static std::atomic<uint64_t> uniquifier{0};
+  py::tuple wrapped(2);
+  wrapped[0] = callback;
+  wrapped[1] = uniquifier.fetch_add(1);
+  return wrapped;
+}
+
+// This helper function causes the lifetime of `callback` to be at least as
+// long as the lifetime of `system`.
+void EnsureCallbackLifetime(py::object system, py::object callback,
+    const std::source_location location = std::source_location::current()) {
+  internal::make_arbitrary_ref_link(system, UniquelyWrapCallback(callback),
+      fmt::format("{}:{}", location.file_name(), location.line()));
+}
+
+// Because Python doesn't offer static type checking to help remind
+// the user to return an EventStatus from an event handler function,
+// we'll bind the callback as optional<> to allow the user to omit a
+// return statement. (When declaring a periodic event in C++, the
+// user-provided callback function is similarly overloaded to return
+// either EventStatus or void. We can't overload based on return
+// values in pybind11, so that's another reason we'll use optional<>
+// in Python for the same effect.)
+template <typename... Args>
+using EventSignature = std::optional<EventStatus>(Args...);
+// Declare the handler signature within std::function.
+template <typename... Args>
+using EventCallback = std::function<EventSignature<Args...>>;
+// Declare the handler signature as a python function object with compile-time
+// readable type signature.
+template <typename... Args>
+using PyEventCallback = py::typing::Callable<EventSignature<Args...>>;
+
+// Declare the various callback types that will appear as parameters of
+// bindings, such that automatic documentation has correct type signatures.
+template <typename T>
+using PyPublishCallback = PyEventCallback<const Context<T>*>;
+template <typename T>
+using PyDiscreteUpdateCallback =
+    PyEventCallback<const Context<T>*, DiscreteValues<T>*>;
+template <typename T>
+using PyUnrestrictedUpdateCallback =
+    PyEventCallback<const Context<T>*, State<T>*>;
+
+// Constructs a publish event for bound Declare*Event methods.
+// @param trigger_type the trigger type.
+// @param callback_ptr a callable expecting a context. Aliased; its lifetime
+// must be guaranteed elsewhere.
+template <typename T>
+PublishEvent<T> MakePublishEvent(
+    TriggerType trigger_type, PyObject* callback_ptr) {
+  return PublishEvent<T>(
+      trigger_type, [callback_ptr](const System<T>&, const Context<T>& context,
+                        const PublishEvent<T>&) {
+        py::gil_scoped_acquire guard;
+        py::handle py_callback_from_ptr = callback_ptr;
+        auto callback =
+            py::cast<EventCallback<const Context<T>*>>(py_callback_from_ptr);
+        return callback(&context).value_or(EventStatus::Succeeded());
+      });
+}
+
+// Constructs a DiscreteUpdate event for bound Declare*Event methods.
+// @param trigger_type the trigger type.
+// @param callback_ptr a callable expecting a context and a DiscreteValues
+// object. Aliased; its lifetime must be guaranteed elsewhere.
+template <typename T>
+DiscreteUpdateEvent<T> MakeDiscreteUpdateEvent(
+    TriggerType trigger_type, PyObject* callback_ptr) {
+  return DiscreteUpdateEvent<T>(
+      trigger_type, [callback_ptr](const System<T>&, const Context<T>& context,
+                        const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+        py::gil_scoped_acquire guard;
+        py::handle py_callback_from_ptr = callback_ptr;
+        auto callback =
+            py::cast<EventCallback<const Context<T>*, DiscreteValues<T>*>>(
+                py_callback_from_ptr);
+        return callback(&context, &*xd).value_or(EventStatus::Succeeded());
+      });
+}
+
+// Constructs an UnrestrictedUpdate event for bound Declare*Event methods.
+// @param trigger_type the trigger type.
+// @param callback_ptr a callable expecting a context and a State object.
+// Aliased; its lifetime must be guaranteed elsewhere.
+template <typename T>
+UnrestrictedUpdateEvent<T> MakeUnrestrictedUpdateEvent(
+    TriggerType trigger_type, PyObject* callback_ptr) {
+  return UnrestrictedUpdateEvent<T>(
+      trigger_type, [callback_ptr](const System<T>&, const Context<T>& context,
+                        const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+        py::gil_scoped_acquire guard;
+        py::handle py_callback_from_ptr = callback_ptr;
+        auto callback = py::cast<EventCallback<const Context<T>*, State<T>*>>(
+            py_callback_from_ptr);
+        return callback(&context, &*x).value_or(EventStatus::Succeeded());
+      });
+}
 
 class SystemBasePublic : public SystemBase {
  public:
@@ -294,17 +404,6 @@ struct Impl {
       PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
     }
   };
-
-  // Because Python doesn't offer static type checking to help remind
-  // the user to return an EventStatus from an event handler function,
-  // we'll bind the callback as optional<> to allow the user to omit a
-  // return statement. (When declaring a periodic event in C++, the
-  // user-provided callback function is similarly overloaded to return
-  // either EventStatus or void. We can't overload based on return
-  // values in pybind11, so that's another reason we'll use optional<>
-  // in Python for the same effect.)
-  template <typename... Args>
-  using EventCallback = std::function<std::optional<EventStatus>(Args...)>;
 
   static py::class_<System<T>, SystemBase, PySystem> DefineSystem(
       py::module m) {
@@ -736,46 +835,34 @@ Note: The above is for the C++ documentation. For Python, use
         // TODO(russt): Implement the std::function variant of
         // LeafSystem::Declare*Event sugar methods if they are ever needed,
         // instead of implementing them here.
-        .def("DeclareInitializationPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              EventCallback<const Context<T>&> publish) {
-              self->DeclareInitializationEvent(PublishEvent<T>(
-                  TriggerType::kInitialization,
-                  [publish](const System<T>&, const Context<T>& context,
-                      const PublishEvent<T>&) {
-                    return publish(context).value_or(EventStatus::Succeeded());
-                  }));
-            }),
+        .def(
+            "DeclareInitializationPublishEvent",
+            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_publish);
+              self->DeclareInitializationEvent(MakePublishEvent<T>(
+                  TriggerType::kInitialization, py_publish.ptr()));
+            },
             py::arg("publish"),
             doc.LeafSystem.DeclareInitializationPublishEvent.doc)
-        .def("DeclareInitializationDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->DeclareInitializationEvent(
-                      DiscreteUpdateEvent<T>(TriggerType::kInitialization,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareInitializationDiscreteUpdateEvent",
+            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclareInitializationEvent(MakeDiscreteUpdateEvent<T>(
+                  TriggerType::kInitialization, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationDiscreteUpdateEvent.doc)
-        .def("DeclareInitializationUnrestrictedUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, State<T>*> update) {
-                  self->DeclareInitializationEvent(
-                      UnrestrictedUpdateEvent<T>(TriggerType::kInitialization,
-                          [update](const System<T>&, const Context<T>& context,
-                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            return update(context, &*x)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareInitializationUnrestrictedUpdateEvent",
+            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclareInitializationEvent(MakeUnrestrictedUpdateEvent<T>(
+                  TriggerType::kInitialization, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationUnrestrictedUpdateEvent.doc)
         .def(
@@ -784,48 +871,40 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        .def("DeclarePeriodicPublishEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    EventCallback<const Context<T>&> publish) {
-                  self->DeclarePeriodicEvent(period_sec, offset_sec,
-                      PublishEvent<T>(TriggerType::kPeriodic,
-                          [publish](const System<T>&, const Context<T>& context,
-                              const PublishEvent<T>&) {
-                            return publish(context).value_or(
-                                EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePeriodicPublishEvent",
+            [](PyLeafSystem* self, double period_sec, double offset_sec,
+                PyPublishCallback<T> py_publish) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_publish);
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  MakePublishEvent<T>(
+                      TriggerType::kPeriodic, py_publish.ptr()));
+            },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("publish"),
             doc.LeafSystem.DeclarePeriodicPublishEvent.doc)
-        .def("DeclarePeriodicDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->DeclarePeriodicEvent(period_sec, offset_sec,
-                      DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePeriodicDiscreteUpdateEvent",
+            [](PyLeafSystem* self, double period_sec, double offset_sec,
+                PyDiscreteUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  MakeDiscreteUpdateEvent<T>(
+                      TriggerType::kPeriodic, py_update.ptr()));
+            },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
             doc.LeafSystem.DeclarePeriodicDiscreteUpdateEvent.doc)
-        .def("DeclarePeriodicUnrestrictedUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    EventCallback<const Context<T>&, State<T>*> update) {
-                  self->DeclarePeriodicEvent(period_sec, offset_sec,
-                      UnrestrictedUpdateEvent<T>(TriggerType::kPeriodic,
-                          [update](const System<T>&, const Context<T>& context,
-                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            return update(context, &*x)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePeriodicUnrestrictedUpdateEvent",
+            [](PyLeafSystem* self, double period_sec, double offset_sec,
+                PyUnrestrictedUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  MakeUnrestrictedUpdateEvent<T>(
+                      TriggerType::kPeriodic, py_update.ptr()));
+            },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
             doc.LeafSystem.DeclarePeriodicUnrestrictedUpdateEvent.doc)
         .def(
@@ -836,44 +915,33 @@ Note: The above is for the C++ documentation. For Python, use
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
             doc.LeafSystem.DeclarePeriodicEvent.doc)
-        .def("DeclarePerStepPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              EventCallback<const Context<T>&> publish) {
-              self->DeclarePerStepEvent(PublishEvent<T>(TriggerType::kPerStep,
-                  [publish](const System<T>&, const Context<T>& context,
-                      const PublishEvent<T>&) {
-                    return publish(context).value_or(EventStatus::Succeeded());
-                  }));
-            }),
+        .def(
+            "DeclarePerStepPublishEvent",
+            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_publish);
+              self->DeclarePerStepEvent(
+                  MakePublishEvent<T>(TriggerType::kPerStep, py_publish.ptr()));
+            },
             py::arg("publish"), doc.LeafSystem.DeclarePerStepPublishEvent.doc)
-        .def("DeclarePerStepDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->DeclarePerStepEvent(
-                      DiscreteUpdateEvent<T>(TriggerType::kPerStep,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePerStepDiscreteUpdateEvent",
+            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclarePerStepEvent(MakeDiscreteUpdateEvent<T>(
+                  TriggerType::kPerStep, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclarePerStepDiscreteUpdateEvent.doc)
-        .def("DeclarePerStepUnrestrictedUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, State<T>*> update) {
-                  self->DeclarePerStepEvent(
-                      UnrestrictedUpdateEvent<T>(TriggerType::kPerStep,
-                          [update](const System<T>&, const Context<T>& context,
-                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            return update(context, &*x)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePerStepUnrestrictedUpdateEvent",
+            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->DeclarePerStepEvent(MakeUnrestrictedUpdateEvent<T>(
+                  TriggerType::kPerStep, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclarePerStepUnrestrictedUpdateEvent.doc)
         .def(
@@ -882,46 +950,35 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclarePerStepEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
-        .def("DeclareForcedPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              EventCallback<const Context<T>&> publish) {
+        .def(
+            "DeclareForcedPublishEvent",
+            [](PyLeafSystem* self, PyPublishCallback<T> py_publish) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_publish);
               self->get_mutable_forced_publish_events().AddEvent(
-                  PublishEvent<T>(TriggerType::kForced,
-                      [publish](const System<T>&, const Context<T>& context,
-                          const PublishEvent<T>&) {
-                        return publish(context).value_or(
-                            EventStatus::Succeeded());
-                      }));
-            }),
+                  MakePublishEvent<T>(TriggerType::kForced, py_publish.ptr()));
+            },
             py::arg("publish"), doc.LeafSystem.DeclareForcedPublishEvent.doc)
-        .def("DeclareForcedDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->get_mutable_forced_discrete_update_events().AddEvent(
-                      DiscreteUpdateEvent<T>(TriggerType::kForced,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareForcedDiscreteUpdateEvent",
+            [](PyLeafSystem* self, PyDiscreteUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->get_mutable_forced_discrete_update_events().AddEvent(
+                  MakeDiscreteUpdateEvent<T>(
+                      TriggerType::kForced, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareForcedDiscreteUpdateEvent.doc)
-        .def("DeclareForcedUnrestrictedUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, State<T>*> update) {
-                  self->get_mutable_forced_unrestricted_update_events()
-                      .AddEvent(UnrestrictedUpdateEvent<T>(TriggerType::kForced,
-                          [update](const System<T>&, const Context<T>& context,
-                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            return update(context, &*x)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareForcedUnrestrictedUpdateEvent",
+            [](PyLeafSystem* self, PyUnrestrictedUpdateCallback<T> py_update) {
+              py::object py_self = py::cast(self, py_rvp::reference);
+              EnsureCallbackLifetime(py_self, py_update);
+              self->get_mutable_forced_unrestricted_update_events().AddEvent(
+                  MakeUnrestrictedUpdateEvent<T>(
+                      TriggerType::kForced, py_update.ptr()));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareForcedUnrestrictedUpdateEvent.doc)
         .def("MakeWitnessFunction",

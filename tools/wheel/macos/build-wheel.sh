@@ -52,10 +52,12 @@ build --config=packaging
 build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 EOF
 
-# See tools/wheel/image/build-drake.sh for details on the lack of MOSEK support
-# for Python 3.14.
+# MOSEK's published wheels declare an upper bound on their supported Python
+# version, which is currently Python < 3.15. When that changes to a larger
+# version number, we should bump this up to match, and also grep tools/wheel
+# for other mentions of MOSEK version bounds and fix those as well.
 PYTHON_MINOR=$($python_executable -c "import sys; print(sys.version_info.minor)")
-if [[ ${PYTHON_MINOR} -ge 14 ]]; then
+if [[ ${PYTHON_MINOR} -ge 15 ]]; then
     cat >> "$build_root/drake.bazelrc" << EOF
 build --@drake//tools/flags:with_mosek=False
 EOF

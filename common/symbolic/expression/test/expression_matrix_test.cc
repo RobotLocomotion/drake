@@ -573,6 +573,8 @@ Eigen::MatrixXd MakeSimpleInvertibleMatrix(int N) {
   for (int i = 0; i < N * N; ++i) {
     M(i) = std::pow(i, N - 1);
   }
+  // Add some diagonal dominance to improve conditioning for inversion.
+  M.diagonal() += (M.cwiseAbs().rowwise().sum().array() + 1.0).matrix();
   return M;
 }
 

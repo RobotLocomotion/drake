@@ -59,7 +59,7 @@ def run_pendulum_example(args):
         visualizer.stop_recording()
         ani = visualizer.get_recording_as_animation()
         # Playback the recording and save the output.
-        ani.save("{}/pend_playback.mp4".format(temp_directory()), fps=30)
+        ani.save(f"{temp_directory()}/pend_playback.mp4", fps=30)
 
 
 def main():

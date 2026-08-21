@@ -18,7 +18,7 @@ class _StrictMap:
         self._values = dict()
 
     def add(self, key, value):
-        assert key not in self._values, "Already added: {}".format(key)
+        assert key not in self._values, f"Already added: {key}"
         self._values[key] = value
 
     def get(self, key, default):

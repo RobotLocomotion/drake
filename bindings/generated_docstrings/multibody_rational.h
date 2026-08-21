@@ -119,13 +119,12 @@ rational function with indeterminates s().)""";
         struct /* Pose */ {
           // Source: drake/multibody/rational/rational_forward_kinematics.h
           const char* doc =
-R"""(This is a proxy for math::RigidTransform. It captures the rigid pose
-of one frame w.r.t another.
+R"""(This is a proxy for math∷RigidTransform. It captures the rigid pose of
+one frame w.r.t another.
 
 Template parameter ``T``:
-    The scalar type, which must be one of double,
-    symbolic::Expression, symbolic::Polynomial or
-    symbolic::RationalFunction.)""";
+    The scalar type, which must be one of double, symbolic∷Expression,
+    symbolic∷Polynomial or symbolic∷RationalFunction.)""";
           // Symbol: drake::multibody::RationalForwardKinematics::Pose::position
           struct /* position */ {
             // Source: drake/multibody/rational/rational_forward_kinematics.h

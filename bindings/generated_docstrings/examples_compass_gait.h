@@ -167,7 +167,7 @@ R"""(Default constructor. Sets all rows to their default value:
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
-R"""(See CompassGaitContinuousStateIndices::GetCoordinateNames().)""";
+R"""(See CompassGaitContinuousStateIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::IsValid
           struct /* IsValid */ {
@@ -193,8 +193,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/compass_gait/compass_gait_continuous_state.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::compass_gait::CompassGaitContinuousState::set_stance
           struct /* set_stance */ {
@@ -295,8 +295,8 @@ R"""(Describes the row indices of a CompassGaitContinuousState.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``CompassGaitContinuousStateIndices::GetCoordinateNames()[i]`` is the
-name for ``BasicVector::GetAtIndex(i)``.)""";
+``CompassGaitContinuousStateIndices∷GetCoordinateNames()[i]`` is the
+name for ``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } CompassGaitContinuousStateIndices;
         // Symbol: drake::examples::compass_gait::CompassGaitGeometry
@@ -380,7 +380,7 @@ R"""(Default constructor. Sets all rows to their default value:
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
-R"""(See CompassGaitParamsIndices::GetCoordinateNames().)""";
+R"""(See CompassGaitParamsIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::GetElementBounds
           struct /* GetElementBounds */ {
@@ -411,8 +411,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/compass_gait/compass_gait_params.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::compass_gait::CompassGaitParams::center_of_mass_leg
           struct /* center_of_mass_leg */ {
@@ -574,8 +574,8 @@ R"""(Describes the row indices of a CompassGaitParams.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``CompassGaitParamsIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+``CompassGaitParamsIndices∷GetCoordinateNames()[i]`` is the name for
+``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } CompassGaitParamsIndices;
       } compass_gait;

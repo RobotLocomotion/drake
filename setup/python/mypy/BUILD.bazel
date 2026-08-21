@@ -1,0 +1,19 @@
+load("@rules_python//python/uv:lock.bzl", "lock")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+lock(
+    name = "lock",
+    srcs = ["requirements.in"],
+    out = "requirements.txt",
+    args = [
+        "--upgrade",
+        "--universal",
+        # This is our minimum supported version.
+        # When changing this, see drake/tools/workspace/python/README.md.
+        "--python-version=3.10",
+    ],
+)
+
+add_lint_tests()

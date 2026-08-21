@@ -55,10 +55,8 @@ Expression ReplaceBilinearTerms(
       monomial_map.emplace(var_power.first.get_id(), var_power.second);
     }
     if (monomial_degree > 2) {
-      ostringstream oss;
-      oss << "The term " << p.first
-          << " has degree larger than 2 on the variables";
-      throw runtime_error(oss.str());
+      throw runtime_error(fmt::format(
+          "The term {} has degree larger than 2 on the variables", p.first));
     } else if (monomial_degree < 2) {
       // Only linear or constant terms, do not need to replace the variables.
       poly.AddProduct(p.second, p.first);
@@ -92,11 +90,10 @@ Expression ReplaceBilinearTerms(
           it_y_idx == y_to_index_map.end()) {
         // This error would happen, if we ask
         // ReplaceBilinearTerms(x(i) * x(j), x, y, W).
-        ostringstream oss;
-        oss << "Term " << p.first
-            << " is bilinear, but x and y does not have "
-               "the corresponding variables.";
-        throw runtime_error(oss.str());
+        throw runtime_error(
+            fmt::format("Term {} is bilinear, but x and y does not have the "
+                        "corresponding variables.",
+                        p.first));
       }
       // w_xy_expr is the symbolic expression representing the bilinear term x *
       // y.

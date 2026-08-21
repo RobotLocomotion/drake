@@ -78,5 +78,30 @@ GTEST_TEST(FmtEigenTest, MatrixString) {
             "goodbye   cruel   world");
 }
 
+// Regression against the set of supported Scalar types.
+GTEST_TEST(FmtEigenTest, StringifyErrorDetailValue) {
+  using internal::StringifyErrorDetailValue;
+  {
+    Eigen::VectorX<double> v(1);
+    v << 1.5;
+    EXPECT_NO_THROW(StringifyErrorDetailValue(fmt_eigen(v)));
+  }
+  {
+    Eigen::VectorX<float> v(1);
+    v << 1.5f;
+    EXPECT_NO_THROW(StringifyErrorDetailValue(fmt_eigen(v)));
+  }
+  {
+    Eigen::VectorX<int> v(1);
+    v << 15;
+    EXPECT_NO_THROW(StringifyErrorDetailValue(fmt_eigen(v)));
+  }
+  {
+    Eigen::VectorX<std::string> v(1);
+    v << "1.5";
+    EXPECT_NO_THROW(StringifyErrorDetailValue(fmt_eigen(v)));
+  }
+}
+
 }  // namespace
 }  // namespace drake

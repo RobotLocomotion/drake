@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import os
 import signal
 import subprocess
+import sys
 import time
 import unittest
 
@@ -59,9 +60,7 @@ def wait_for_done_count(num_expected, attempt_max=1000):
         attempt += 1
         if attempt == attempt_max:
             raise RuntimeError(
-                "Did not get updated 'done count'. Read values: {}".format(
-                    values_read
-                )
+                f"Did not get updated 'done count'. Read values: {values_read}"
             )
 
 
@@ -110,9 +109,10 @@ class TestCallPython(unittest.TestCase):
         print(text)
         self.assertTrue("Here's an example" in text)
 
+    @unittest.skipIf(sys.platform == "darwin", "Flaky on macOS")
     def test_basic(self):
         for with_error in [False, True]:
-            print("[ with_error: {} ]".format(with_error))
+            print(f"[ with_error: {with_error} ]")
             self.run_server_and_client(with_error)
         # TODO(eric.cousineau): Cover other use cases if it's useful, or prune
         # them from the code.

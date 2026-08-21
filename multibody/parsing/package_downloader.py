@@ -25,7 +25,6 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
-from typing import List
 import urllib.parse
 import urllib.request as request
 
@@ -38,7 +37,7 @@ def _run(
     *,
     temp_dir: Path,
     package_name: str,
-    urls: List[str],
+    urls: list[str],
     sha256: str,
     output_dir: Path,
     archive_type: str = None,

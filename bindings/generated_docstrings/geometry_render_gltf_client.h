@@ -29,7 +29,7 @@ R"""(Constructs a RenderEngine implementation which generates <a
 href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
 </a> files to upload to a render server, and retrieves renderings from
 said server by copying image data back into drake
-systems::sensors::Image buffers. The server url and endpoint are
+systems∷sensors∷Image buffers. The server url and endpoint are
 provided through the specified RenderEngineGltfClientParams. The
 returned RenderEngine implements the client side of the
 render_engine_gltf_client_server_api. The rules for supported
@@ -160,8 +160,8 @@ instead. During the construction process a number of copies and clones
 are created, when ``cleanup=false`` there will be more than one empty
 temporary directory created that will not be deleted. The path to the
 temporary directory can be observed by setting
-RenderEngineGltfClientParams::verbose to ``True``, or inspecting the
-parent directory described by drake::temp_directory().)""";
+RenderEngineGltfClientParams∷verbose to ``True``, or inspecting the
+parent directory described by drake∷temp_directory().)""";
         } cleanup;
         // Symbol: drake::geometry::RenderEngineGltfClientParams::render_endpoint
         struct /* render_endpoint */ {
@@ -178,7 +178,7 @@ R"""(Whether or not the client should log information about which files are
 being generated, as well as any information about HTTP communications
 between the client and server such as HTTP header information, url and
 port, etc. Information is logged at the debug level, so your
-application will need to logging::set_log_level() to ``"debug"``.
+application will need to logging∷set_log_level() to ``"debug"``.
 
 See also:
     drake/common/text_logging.h)""";

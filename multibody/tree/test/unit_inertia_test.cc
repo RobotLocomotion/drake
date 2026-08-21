@@ -1,6 +1,7 @@
 #include "drake/multibody/tree/unit_inertia.h"
 
 #include <limits>
+#include <string>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -1076,6 +1077,15 @@ GTEST_TEST(UnitInertia, CatastrophicCancellationForPointInertias) {
   // inertia. Therefore, we verify here that CouldBePhysicallyValid() correctly
   // reports a physical inertia.
   EXPECT_TRUE(Gtilde_BBo_W.CouldBePhysicallyValid());
+}
+
+GTEST_TEST(UnitInertia, ToStringFmtFormatter) {
+  UnitInertia<double> I(1, 2.718, 3.14);
+  std::string expected_string =
+      "[    1      0      0]\n"
+      "[    0  2.718      0]\n"
+      "[    0      0   3.14]\n";
+  EXPECT_EQ(fmt::to_string(I), expected_string);
 }
 
 }  // namespace

@@ -389,7 +389,7 @@ std::vector<int> VolumeIntersector<MeshBuilder, BvType>::CalcContactPolygon(
   }
   // The normal points in the direction of increasing field_0 and decreasing
   // field_1.
-  Vector3<T> polygon_nhat_M = equilibrium_plane_M.normal();
+  Vector3<T> polygon_nhat_M = equilibrium_plane_M.unit_normal();
   if (!IsPlaneNormalAlongPressureGradient(polygon_nhat_M, tet0, field0_M)) {
     return {};
   }

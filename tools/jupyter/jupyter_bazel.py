@@ -45,6 +45,9 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
     )
     args = parser.parse_args(argv)
 
+    # The notebook should be run with the same dependencies as we have now.
+    os.environ["PYTHONPATH"] = ":".join(sys.path)
+
     if not args.test:
         print("Running notebook interactively")
         notebook_path = os.path.realpath(notebook_path)

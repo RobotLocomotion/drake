@@ -75,7 +75,7 @@ R"""(Specializes BasicVector with specific getters and setters.)""";
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/pendulum/pendulum_input.h
             const char* doc =
-R"""(See PendulumInputIndices::GetCoordinateNames().)""";
+R"""(See PendulumInputIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::pendulum::PendulumInput::IsValid
           struct /* IsValid */ {
@@ -109,8 +109,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/pendulum/pendulum_input.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::pendulum::PendulumInput::set_tau
           struct /* set_tau */ {
@@ -146,8 +146,8 @@ R"""(Describes the row indices of a PendulumInput.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``PendulumInputIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+``PendulumInputIndices∷GetCoordinateNames()[i]`` is the name for
+``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } PendulumInputIndices;
         // Symbol: drake::examples::pendulum::PendulumParams
@@ -164,7 +164,7 @@ R"""(Specializes BasicVector with specific getters and setters.)""";
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/pendulum/pendulum_params.h
             const char* doc =
-R"""(See PendulumParamsIndices::GetCoordinateNames().)""";
+R"""(See PendulumParamsIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::pendulum::PendulumParams::GetElementBounds
           struct /* GetElementBounds */ {
@@ -209,8 +209,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/pendulum/pendulum_params.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::pendulum::PendulumParams::damping
           struct /* damping */ {
@@ -321,8 +321,8 @@ R"""(Describes the row indices of a PendulumParams.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``PendulumParamsIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+``PendulumParamsIndices∷GetCoordinateNames()[i]`` is the name for
+``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } PendulumParamsIndices;
         // Symbol: drake::examples::pendulum::PendulumPlant
@@ -402,7 +402,7 @@ R"""(Specializes BasicVector with specific getters and setters.)""";
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/pendulum/pendulum_state.h
             const char* doc =
-R"""(See PendulumStateIndices::GetCoordinateNames().)""";
+R"""(See PendulumStateIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::pendulum::PendulumState::IsValid
           struct /* IsValid */ {
@@ -438,8 +438,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/pendulum/pendulum_state.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::pendulum::PendulumState::set_theta
           struct /* set_theta */ {
@@ -496,8 +496,8 @@ R"""(Describes the row indices of a PendulumState.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``PendulumStateIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+``PendulumStateIndices∷GetCoordinateNames()[i]`` is the name for
+``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } PendulumStateIndices;
       } pendulum;

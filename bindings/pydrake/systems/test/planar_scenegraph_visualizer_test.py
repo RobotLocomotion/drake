@@ -63,7 +63,6 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         pole_pin.set_angle(context=cart_pole_context, angle=2.0)
 
         simulator = Simulator(diagram, diagram_context)
-        simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(0.1)
 
         visualizer.draw(vis_context)
@@ -108,7 +107,6 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         )
 
         simulator = Simulator(diagram, diagram_context)
-        simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(0.1)
 
         visualizer.draw(vis_context)
@@ -164,7 +162,6 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         )
 
         simulator = Simulator(diagram, diagram_context)
-        simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(0.1)
 
         visualizer.draw(vis_context)

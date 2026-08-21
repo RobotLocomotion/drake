@@ -41,7 +41,7 @@ Raises:
     expression with an empty environment.)""";
       // Source: drake/common/symbolic/expression/expression.h
       const char* doc_1args_constEigenMatrixBase =
-R"""(Returns ``matrix`` as an Eigen::Matrix<double, ...> with the same size
+R"""(Returns ``matrix`` as an Eigen∷Matrix<double, ...> with the same size
 allocation as ``matrix``. Calls ExtractDoubleOrThrow on each element
 of the matrix, and therefore throws if any one of the extractions
 fail.)""";
@@ -65,7 +65,7 @@ fail.)""";
       const char* doc =
 R"""(Provides specialization of ``cond`` function defined in
 drake/common/cond.h file. This specialization is required to handle
-``double`` to ``symbolic::Expression`` conversion so that we can write
+``double`` to ``symbolic``∷Expression conversion so that we can write
 one such as ``cond(x > 0.0, 1.0, -1.0)``.)""";
     } cond;
     // Symbol: drake::dummy_value
@@ -148,7 +148,7 @@ R"""(Returns the evaluation result f(``v1``, ``v2`` ).)""";
       struct /* CheckStructuralEquality */ {
         // Source: drake/common/symbolic/expression/expression.h
         const char* doc_was_unable_to_choose_unambiguous_names =
-R"""(Checks if two Eigen::Matrix<Expression> ``m1`` and ``m2`` are
+R"""(Checks if two Eigen∷Matrix<Expression> ``m1`` and ``m2`` are
 structurally equal. That is, it returns true if and only if ``m1(i,
 j)`` is structurally equal to ``m2(i, j)`` for all ``i``, `j`.)""";
       } CheckStructuralEquality;
@@ -208,7 +208,7 @@ Raises:
           // Source: drake/common/symbolic/expression/environment.h
           const char* doc_1args_m =
 R"""(Constructs an environment from ``m`` (of ``map`` type, which is
-``std::unordered_map``).
+``std∷unordered_map``).
 
 Raises:
     RuntimeError if ``m`` include a dummy variable or a NaN value.)""";
@@ -324,7 +324,7 @@ R"""(As above, but returns a constref and does not perform an insertion
         // Symbol: drake::symbolic::Environment::value_type
         struct /* value_type */ {
           // Source: drake/common/symbolic/expression/environment.h
-          const char* doc = R"""(std::pair<key_type, mapped_type>)""";
+          const char* doc = R"""(std∷pair<key_type, mapped_type>)""";
         } value_type;
       } Environment;
       // Symbol: drake::symbolic::Evaluate
@@ -451,9 +451,9 @@ argument(s), and throw ValueError exception if a function is not
 well-defined for a given argument(s).
 
 Relational operators over expressions (==, !=, <, >, <=, >=) return
-symbolic::Formula instead of bool. Those operations are declared in
+symbolic∷Formula instead of bool. Those operations are declared in
 formula.h file. To check structural equality between two expressions a
-separate function, Expression::EqualTo, is provided.
+separate function, Expression∷EqualTo, is provided.
 
 Regarding the arithmetic of an Expression when operating on NaNs, we
 have the following rules: 1. NaN values are extremely rare during
@@ -477,11 +477,11 @@ trunk. That goes against rule (1) where a NaN anywhere in a
 computation (other than dead code) is an error.
 
 note for Drake developers: under the hood of Expression, we have an
-internal::BoxedCell helper class that uses NaN for pointer tagging;
-that's a distinct concept from the Expression::NaN() rules enumerated
+internal∷BoxedCell helper class that uses NaN for pointer tagging;
+that's a distinct concept from the Expression∷NaN() rules enumerated
 just above.
 
-symbolic::Expression can be used as a scalar type of Eigen types.)""";
+symbolic∷Expression can be used as a scalar type of Eigen types.)""";
         // Symbol: drake::symbolic::Expression::Differentiate
         struct /* Differentiate */ {
           // Source: drake/common/symbolic/expression/expression.h
@@ -562,7 +562,7 @@ See the above overload for the exceptions that it might throw.)""";
           const char* doc =
 R"""(Partially evaluates this expression using an environment ``env``.
 Internally, this method promotes ``env`` into a substitution (Variable
-→ Expression) and call Evaluate::Substitute with it.
+→ Expression) and call Evaluate∷Substitute with it.
 
 Raises:
     RuntimeError if NaN is detected during evaluation.)""";
@@ -622,7 +622,7 @@ R"""(Let ``f`` be this Expression, computes a row vector of derivatives,
           const char* doc =
 R"""(Provides lexicographical ordering between expressions. This function
 is used as a compare function in map<Expression> and set<Expression>
-via std::less<drake::symbolic::Expression>.)""";
+via std∷less<drake∷symbolic∷Expression>.)""";
         } Less;
         // Symbol: drake::symbolic::Expression::NaN
         struct /* NaN */ {
@@ -674,9 +674,9 @@ Raises:
           // Source: drake/common/symbolic/expression/expression.h
           const char* doc =
 R"""(Returns true if this symbolic expression is already expanded.
-Expression::Expand() uses this flag to avoid calling
-ExpressionCell::Expand() on an pre-expanded expressions.
-Expression::Expand() also sets this flag before returning the result.
+Expression∷Expand() uses this flag to avoid calling
+ExpressionCell∷Expand() on an pre-expanded expressions.
+Expression∷Expand() also sets this flag before returning the result.
 
 Note:
     This check is conservative in that ``False`` does not always
@@ -1070,7 +1070,7 @@ R"""(Represents an abstract class which is the base of concrete
 symbolic-expression classes.
 
 Note:
-    It provides virtual function, ExpressionCell::Display, because
+    It provides virtual function, ExpressionCell∷Display, because
     operator<< is not allowed to be a virtual function.)""";
         // Symbol: drake::symbolic::ExpressionCell::Differentiate
         struct /* Differentiate */ {
@@ -1187,7 +1187,7 @@ R"""(Sets this symbolic expression as already expanded.)""";
         struct /* use_count */ {
           // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
-R"""(Returns the intrusive use count (ala boost::intrusive_ptr).)""";
+R"""(Returns the intrusive use count (ala boost∷intrusive_ptr).)""";
         } use_count;
       } ExpressionCell;
       // Symbol: drake::symbolic::ExpressionCos
@@ -2364,8 +2364,8 @@ See the above overload for the exceptions that it might throw.)""";
         struct /* ctor */ {
           // Source: drake/common/symbolic/expression/formula.h
           const char* doc_0args =
-R"""(Default constructor. Sets the value to Formula::False, to be
-consistent with value-initialized `bool`s.)""";
+R"""(Default constructor. Sets the value to Formula∷False, to be consistent
+with value-initialized `bool`s.)""";
           // Source: drake/common/symbolic/expression/formula.h
           const char* doc_1args_value =
 R"""(Constructs from a ``bool``. This overload is also used by Eigen when
@@ -2406,8 +2406,8 @@ all j < i, we have
 and f_1_i.Less(f_2_i) holds.
 
 This function is used as a compare function in
-std::map<symbolic::Formula> and std::set<symbolic::Formula> via
-std::less<symbolic::Formula>.)""";
+std∷map<symbolic∷Formula> and std∷set<symbolic∷Formula> via
+std∷less<symbolic∷Formula>.)""";
         } Less;
         // Symbol: drake::symbolic::Formula::Substitute
         struct /* Substitute */ {
@@ -2483,11 +2483,11 @@ R"""(Symbolic formula representing conjunctions (f1 ∧ ... ∧ fn).)""";
         // Source: drake/common/symbolic/expression/formula_cell.h
         const char* doc =
 R"""(Represents an abstract class which is the base of concrete
-symbolic-formula classes (i.e. symbolic::FormulaAnd,
-symbolic::FormulaEq).
+symbolic-formula classes (i.e. symbolic∷FormulaAnd,
+symbolic∷FormulaEq).
 
 Note:
-    It provides virtual function, FormulaCell::Display, because
+    It provides virtual function, FormulaCell∷Display, because
     operator<< is not allowed to be a virtual function.)""";
         // Symbol: drake::symbolic::FormulaCell::Display
         struct /* Display */ {
@@ -3766,7 +3766,7 @@ and ``is_expanded``.)""";
 R"""(Represents a symbolic variable.
 
 Note:
-    Expression::Evaluate and Formula::Evaluate methods take a symbolic
+    Expression∷Evaluate and Formula∷Evaluate methods take a symbolic
     environment (Variable → double) and a random number generator.
     When an expression or a formula includes random variables,
     ``Evaluate`` methods use the random number generator to draw a
@@ -3891,12 +3891,12 @@ R"""(Compares two variables based on their ID values.)""";
         const char* doc =
 R"""(Represents a set of variables.
 
-This class is based on std::set<Variable>. The intent is to add things
-that we need including set-union (Variables::insert, operator+,
-operator+=), set-minus (Variables::erase, operator-, operator-=), and
-subset/superset checking functions (Variables::IsSubsetOf,
-Variables::IsSupersetOf, Variables::IsStrictSubsetOf,
-Variables::IsStrictSupersetOf).)""";
+This class is based on std∷set<Variable>. The intent is to add things
+that we need including set-union (Variables∷insert, operator+,
+operator+=), set-minus (Variables∷erase, operator-, operator-=), and
+subset/superset checking functions (Variables∷IsSubsetOf,
+Variables∷IsSupersetOf, Variables∷IsStrictSubsetOf,
+Variables∷IsStrictSupersetOf).)""";
         // Symbol: drake::symbolic::Variables::IsStrictSubsetOf
         struct /* IsStrictSubsetOf */ {
           // Source: drake/common/symbolic/expression/variables.h
@@ -4826,7 +4826,7 @@ Raises:
         const char* doc =
 R"""(Returns a Formula for the predicate isnan(e) to the given expression.
 This serves as the argument-dependent lookup related to
-std::isnan(double).
+std∷isnan(double).
 
 When this formula is evaluated, there are two possible outcomes: -
 Returns false if the e.Evaluate() is not NaN. - Throws RuntimeError if
@@ -4992,9 +4992,9 @@ Raises:
 Note:
     This method checks if ``m`` is symmetric, which can be costly. If
     you want to avoid it, please consider using
-    ``positive_semidefinite(m.triangularView<Eigen::Lower>())`` or
-    ``positive_semidefinite(m.triangularView<Eigen::Upper>())``
-    instead of ``positive_semidefinite(m)``.)""";
+    ``positive_semidefinite(m.triangularView<Eigen∷Lower>())`` or
+    ``positive_semidefinite(m.triangularView<Eigen∷Upper>())`` instead
+    of ``positive_semidefinite(m)``.)""";
       } positive_semidefinite;
       // Symbol: drake::symbolic::pow
       struct /* pow */ {
@@ -5166,6 +5166,11 @@ R"""(Casts ``f_ptr`` to ``shared_ptr``<const RelationalFormulaCell>.
 Precondition:
     ``is_relational(*f_ptr)`` is true.)""";
       } to_relational;
+      // Symbol: drake::symbolic::to_string
+      struct /* to_string */ {
+        // Source: drake/common/symbolic/expression/variable.h
+        const char* doc = R"""()""";
+      } to_string;
       // Symbol: drake::symbolic::to_true
       struct /* to_true */ {
         // Source: drake/common/symbolic/expression/formula_cell.h

@@ -13,6 +13,7 @@ namespace symbolic {
 namespace {
 
 using test::ExprEqual;
+using test::ExprToDoubleMapEqual;
 using test::FormulaEqual;
 
 // Provides common variables and expressions that are used by the following
@@ -59,8 +60,9 @@ TEST_F(SymbolicExpressionCellTest, CastFunctionsConst) {
 
   EXPECT_EQ(to_addition(e_add_).get_constant(),
             get_constant_in_addition(e_add_));
-  EXPECT_EQ(to_addition(e_add_).get_expr_to_coeff_map(),
-            get_expr_to_coeff_map_in_addition(e_add_));
+  EXPECT_PRED2(ExprToDoubleMapEqual,
+               to_addition(e_add_).get_expr_to_coeff_map(),
+               get_expr_to_coeff_map_in_addition(e_add_));
 
   EXPECT_EQ(to_multiplication(e_mul_).get_constant(),
             get_constant_in_multiplication(e_mul_));
@@ -127,8 +129,9 @@ TEST_F(SymbolicExpressionCellTest, CastFunctionsNonConst) {
 
   EXPECT_EQ(to_addition(Expression{e_add_}).get_constant(),
             get_constant_in_addition(e_add_));
-  EXPECT_EQ(to_addition(Expression{e_add_}).get_expr_to_coeff_map(),
-            get_expr_to_coeff_map_in_addition(e_add_));
+  EXPECT_PRED2(ExprToDoubleMapEqual,
+               to_addition(Expression{e_add_}).get_expr_to_coeff_map(),
+               get_expr_to_coeff_map_in_addition(e_add_));
 
   EXPECT_EQ(to_multiplication(Expression{e_mul_}).get_constant(),
             get_constant_in_multiplication(e_mul_));

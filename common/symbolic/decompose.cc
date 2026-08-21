@@ -265,12 +265,10 @@ void DecomposeQuadraticPolynomial(
     const double coefficient = get_constant_value(p.second);
     const symbolic::Monomial& p_monomial = p.first;
     if (p_monomial.total_degree() > 2) {
-      ostringstream oss;
-      oss << p.first
-          << " has order higher than 2 and it cannot be handled by "
-             "DecomposeQuadraticPolynomial."
-          << std::endl;
-      throw runtime_error(oss.str());
+      throw runtime_error(
+          fmt::format("{} has order higher than 2 and it cannot be handled by "
+                      "DecomposeQuadraticPolynomial.\n",
+                      p.first));
     }
     const auto& monomial_powers = p_monomial.get_powers();
     if (monomial_powers.size() == 2) {

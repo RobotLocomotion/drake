@@ -81,10 +81,20 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
     fields.append(polynomials);
     return py::tuple(fields);
   });
-  // Given the __fields__ above, yaml_load_typed will try to setattr on "breaks"
-  // and "polynomials". However, we don't want to expose those properties to
-  // users so we'll respell the name during setattr to add a leading underscore,
-  // and bind the properties using the private name.
+  // Given the __fields__ above, yaml_dump_typed (and yaml_load_typed) will try
+  // to getattr (and setattr) on "breaks" and "polynomials". However, we don't
+  // want to expose those properties to users so we'll respell the name to add a
+  // leading underscore, and bind the properties using the private name.
+  cls->def("__getattr__", [](Class& self, py::str name) -> py::object {
+    py::object self_py = py::cast(self, py_rvp::reference);
+    if (std::string(name) == "breaks") {
+      return self_py.attr("_breaks");
+    } else if (std::string(name) == "polynomials") {
+      return self_py.attr("_polynomials");
+    }
+    throw py::attribute_error(fmt::format(
+        "PiecewisePolynomial has no attribute '{}'", std::string{name}));
+  });
   cls->def("__setattr__", [](Class& self, py::str name, py::object value) {
     if (std::string(name) == "breaks") {
       name = py::str("_breaks");
@@ -93,24 +103,60 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
     }
     py::eval("object.__setattr__")(self, name, value);
   });
-  // Define a property setter for "_breaks" (the getter is never called).
-  // Setting the breaks resets all of the polynomials; this is fine because
-  // deserialization matches __fields__ order, which has "breaks" come first
-  // followed by setting the "polynomials" afterward.
-  cls->def_property("_breaks", nullptr, [](Class& self, const Breaks& breaks) {
-    const size_t num_poly = breaks.empty() ? 0 : breaks.size() - 1;
-    const MatrixX<Eigen::VectorXd> empty_poly;
-    Archive archive{.set_breaks = true,
-        .breaks = breaks,
-        .set_polynomials = true,
-        .polynomials = Polynomials(num_poly, empty_poly)};
-    self.Serialize(&archive);
-  });
-  // Define a property setter for "_polynomials" (the getter is never called).
-  // We bind it as private: only yaml_load_typed should call it, not users.
-  // The property accepts a 4D ndarray and converts it to C++'s convention of
-  // vector-of-matrix-of-coeffs storage.
-  cls->def_property("_polynomials", nullptr,
+  // Define a private property for "_breaks". Setting the breaks resets all of
+  // the polynomials; this is fine because deserialization matches __fields__
+  // order, which has "breaks" come first followed by setting the "polynomials"
+  // afterward.
+  cls->def_property(
+      "_breaks",
+      [](const Class& self) -> Eigen::VectorXd {
+        const int num_poly = self.get_number_of_segments();
+        if (num_poly == 0) {
+          return Eigen::VectorXd();
+        }
+        Eigen::VectorXd breaks(num_poly + 1);
+        breaks[0] = self.start_time(0);
+        for (int i = 0; i < num_poly; ++i) {
+          breaks[i + 1] = self.end_time(i);
+        }
+        return breaks;
+      },
+      [](Class& self, const Breaks& breaks) {
+        const size_t num_poly = breaks.empty() ? 0 : breaks.size() - 1;
+        const MatrixX<Eigen::VectorXd> empty_poly;
+        Archive archive{.set_breaks = true,
+            .breaks = breaks,
+            .set_polynomials = true,
+            .polynomials = Polynomials(num_poly, empty_poly)};
+        self.Serialize(&archive);
+      });
+  // Define a private property for "_polynomials". The property is a 4D ndarray
+  // that we biject to C++'s convention of vector-of-matrix-of-coeffs storage.
+  cls->def_property(
+      "_polynomials",
+      [](const Class& self) -> py::array_t<double> {
+        Archive archive;
+        const_cast<Class&>(self).Serialize(&archive);
+        const Polynomials& polynomials = archive.polynomials;
+        const int num_poly = ssize(polynomials);
+        const int num_rows = num_poly == 0 ? 0 : polynomials.at(0).rows();
+        const int num_cols = num_poly == 0 ? 0 : polynomials.at(0).cols();
+        const int num_coeffs = (num_rows == 0 || num_cols == 0)
+                                   ? 0
+                                   : polynomials.at(0)(0, 0).size();
+        const std::vector<int> shape{num_poly, num_rows, num_cols, num_coeffs};
+        std::vector<double> buffer;
+        for (int i = 0; i < num_poly; ++i) {
+          for (int j = 0; j < num_rows; ++j) {
+            for (int k = 0; k < num_cols; ++k) {
+              for (int c = 0; c < num_coeffs; ++c) {
+                buffer.push_back(polynomials[i](j, k)(c));
+              }
+            }
+          }
+        }
+        return py::array_t<double>(shape, buffer.data());
+      },
       [](Class& self, const py::array_t<double>& polynomials) {
         Polynomials cxx_poly;
         if (polynomials.size() > 0) {

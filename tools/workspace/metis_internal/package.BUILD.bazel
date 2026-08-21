@@ -12,6 +12,7 @@ cc_library(
     srcs = glob(["libmetis/*.c"], allow_empty = False),
     hdrs = glob(["libmetis/*.h"], allow_empty = False) + ["include/metis.h"],
     includes = ["include"],
+    isystem = True,
     copts = [
         # We don't allow Drake externals to use OpenMP until we wire up "max
         # parallelism" governance to a drake::Parallellism public API option.

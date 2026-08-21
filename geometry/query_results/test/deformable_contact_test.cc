@@ -5,7 +5,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {

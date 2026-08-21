@@ -55,10 +55,10 @@ Two independently constructed RenderEngineGl instances can be freely
 used in different threads -- all APIs are available.
 
 The expected workflow is to add a RenderEngineGl instance a SceneGraph
-instance (see SceneGraph::AddRenderer()) and then to populate
-SceneGraph with the desired geometry. Each systems::Context allocated
+instance (see SceneGraph∷AddRenderer()) and then to populate
+SceneGraph with the desired geometry. Each systems∷Context allocated
 for that SceneGraph will receive a clone of the original
-RenderEngineGl. One systems::Context can be used per thread to create
+RenderEngineGl. One systems∷Context can be used per thread to create
 rendered images in parallel.
 
 Raises:

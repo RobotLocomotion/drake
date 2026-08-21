@@ -162,7 +162,7 @@ DrakeLcmBase instead.
 
 Similarly, method arguments will receive breaking API changes without
 notice. Users should not call this interface directly, but rather use
-drake::lcm::Publish() or drake::lcm::Subscribe() instead.)""";
+drake∷lcm∷Publish() or drake∷lcm∷Subscribe() instead.)""";
         // Symbol: drake::lcm::DrakeLcmInterface::DrakeLcmInterface
         struct /* ctor */ {
           // Source: drake/lcm/drake_lcm_interface.h
@@ -186,7 +186,7 @@ Raises:
         struct /* HandlerFunction */ {
           // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
-R"""(A callback used by DrakeLcmInterface::Subscribe(), with arguments: -
+R"""(A callback used by DrakeLcmInterface∷Subscribe(), with arguments: -
 ``message_buffer`` A pointer to the byte vector that is the serial
 representation of the LCM message. - ``message_size`` The size of
 ``message_buffer``.
@@ -198,14 +198,14 @@ called from C functions.)""";
         struct /* MultichannelHandlerFunction */ {
           // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
-R"""(A callback used by DrakeLcmInterface::SubscribeMultipleChannels (which
+R"""(A callback used by DrakeLcmInterface∷SubscribeMultipleChannels (which
 therefore needs the receiving channel passed in).)""";
         } MultichannelHandlerFunction;
         // Symbol: drake::lcm::DrakeLcmInterface::Publish
         struct /* Publish */ {
           // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
-R"""(Most users should use the drake::lcm::Publish() free function, instead
+R"""(Most users should use the drake∷lcm∷Publish() free function, instead
 of this interface method.
 
 Publishes an LCM message on channel ``channel``.
@@ -229,9 +229,8 @@ Parameter ``time_sec``:
         struct /* Subscribe */ {
           // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
-R"""(Most users should use the drake::lcm::Subscribe() free function or the
-drake::lcm::Subscriber wrapper class, instead of this interface
-method.
+R"""(Most users should use the drake∷lcm∷Subscribe() free function or the
+drake∷lcm∷Subscriber wrapper class, instead of this interface method.
 
 Subscribes to an LCM channel without automatic message decoding. The
 handler will be invoked when a message arrives on channel ``channel``.
@@ -467,7 +466,7 @@ Serialization" for background.)""";
 R"""(The custom LCM channel name suffix for this DrakeLcm instance
 (optional).
 
-When provided, calls to DrakeLcm::Publish() or DrakeLcm::Subscribe()
+When provided, calls to DrakeLcm∷Publish() or DrakeLcm∷Subscribe()
 will append this string to the ``channel`` name requested for publish
 or subscribe.
 
@@ -477,11 +476,11 @@ using the channel name "FOO_ALT", and a call to ``Subscribe(&lcm,
 "BAR", handler)`` will only call the handler for messages received on
 the "BAR_ALT" channel name.
 
-Simiarly, DrakeLcm::SubscribeMultichannel() and
-DrakeLcm::SubscribeAllChannels() only subscribe to network messages
+Simiarly, DrakeLcm∷SubscribeMultichannel() and
+DrakeLcm∷SubscribeAllChannels() only subscribe to network messages
 that end with the suffix. A network message on a non-matching channel
 name (e.g., "QUUX") will silently discarded. The
-DrakeLcmInterface::MultichannelHandlerFunction callback will be passed
+DrakeLcmInterface∷MultichannelHandlerFunction callback will be passed
 the *unadaorned* channel name as its first argument (e.g., "FOO" or
 "BAR"), not "FOO_ALT", etc.)""";
         } channel_suffix;
@@ -500,7 +499,7 @@ the construction time and first use.)""";
           // Source: drake/lcm/drake_lcm_params.h
           const char* doc =
 R"""(The URL for DrakeLcm communication. If empty, DrakeLcm will use the
-default URL per the DrakeLcm::DrakeLcm() no-argument constructor.)""";
+default URL per the DrakeLcm∷DrakeLcm() no-argument constructor.)""";
         } lcm_url;
         auto Serialize__fields() const {
           return std::array{
@@ -514,17 +513,17 @@ default URL per the DrakeLcm::DrakeLcm() no-argument constructor.)""";
       struct /* DrakeSubscriptionInterface */ {
         // Source: drake/lcm/drake_lcm_interface.h
         const char* doc =
-R"""(A helper class returned by DrakeLcmInterface::Subscribe() that allows
+R"""(A helper class returned by DrakeLcmInterface∷Subscribe() that allows
 for (possibly automatic) unsubscription and/or queue capacity control.
 Refer to that method for additional details.
 
-Instance of this object are always stored in ``std::shared_ptr`` to
+Instance of this object are always stored in ``std∷shared_ptr`` to
 manage them as resources. When a particular DrakeLcmInterface
 implementation does not support subscription controls, the managed
 pointer will be ``nullptr`` instead of an instance of this object.
 
 To unsubscribe, induce a call to the DrakeSubscriptionInterface
-destructor by bringing the ``std::shared_ptr`` use count to zero. That
+destructor by bringing the ``std∷shared_ptr`` use count to zero. That
 usually means either a call to ``subscription.reset()`` or by allowing
 it to go out of scope.
 
@@ -543,8 +542,8 @@ is specified by whatever method returns this object.)""";
           // Source: drake/lcm/drake_lcm_interface.h
           const char* doc =
 R"""(Sets this subscription's queue depth to store messages between calls
-to DrakeLcmInterface::HandleSubscriptions. When the queue becomes
-full, new received messages will be discarded. The default depth is 1.
+to DrakeLcmInterface∷HandleSubscriptions. When the queue becomes full,
+new received messages will be discarded. The default depth is 1.
 
 Warning:
     The memq:// LCM URL does not support per-channel queues, so this
@@ -600,7 +599,7 @@ Parameter ``time_sec``:
         // Source: drake/lcm/drake_lcm_interface.h
         const char* doc =
 R"""(Subscribes to an LCM channel named ``channel`` and decodes messages of
-type ``Message``. See also drake::lcm::Subscriber for a simple way to
+type ``Message``. See also drake∷lcm∷Subscriber for a simple way to
 passively observe received messages, without the need to write a
 handler function.
 
@@ -636,7 +635,7 @@ R"""(Subscribes to and stores a copy of the most recent message on a given
 channel, for some ``Message`` type. All copies of a given Subscriber
 share the same underlying data. This class does NOT provide any mutex
 behavior for multi-threaded locking; it should only be used in cases
-where the governing DrakeLcmInterface::HandleSubscriptions is called
+where the governing DrakeLcmInterface∷HandleSubscriptions is called
 from the same thread that owns all copies of this object.)""";
         // Symbol: drake::lcm::Subscriber::Subscriber<Message>
         struct /* ctor */ {

@@ -88,8 +88,8 @@ R"""(Alpha is half the interleg angle, and is used frequently.)""";
             // Source: drake/examples/rimless_wheel/rimless_wheel.h
             const char* doc =
 R"""(Returns reference to the output port that provides a 12 dimensional
-state (FloatingBaseType::kRollPitchYaw positions then velocities).
-This is useful, e.g., for visualization. θ of the rimless wheel is the
+state (FloatingBaseType∷kRollPitchYaw positions then velocities). This
+is useful, e.g., for visualization. θ of the rimless wheel is the
 pitch of the floating base (rotation around global y), and downhill
 moves toward positive x. As always, we use vehicle coordinates (x-y on
 the ground, z is up).)""";
@@ -142,7 +142,7 @@ R"""(Specializes BasicVector with specific getters and setters.)""";
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/rimless_wheel/rimless_wheel_continuous_state.h
             const char* doc =
-R"""(See RimlessWheelContinuousStateIndices::GetCoordinateNames().)""";
+R"""(See RimlessWheelContinuousStateIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::rimless_wheel::RimlessWheelContinuousState::IsValid
           struct /* IsValid */ {
@@ -178,8 +178,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/rimless_wheel/rimless_wheel_continuous_state.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::rimless_wheel::RimlessWheelContinuousState::set_theta
           struct /* set_theta */ {
@@ -237,8 +237,8 @@ R"""(Describes the row indices of a RimlessWheelContinuousState.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``RimlessWheelContinuousStateIndices::GetCoordinateNames()[i]`` is the
-name for ``BasicVector::GetAtIndex(i)``.)""";
+``RimlessWheelContinuousStateIndices∷GetCoordinateNames()[i]`` is the
+name for ``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } RimlessWheelContinuousStateIndices;
         // Symbol: drake::examples::rimless_wheel::RimlessWheelGeometry
@@ -302,7 +302,7 @@ R"""(Specializes BasicVector with specific getters and setters.)""";
           struct /* GetCoordinateNames */ {
             // Source: drake/examples/rimless_wheel/rimless_wheel_params.h
             const char* doc =
-R"""(See RimlessWheelParamsIndices::GetCoordinateNames().)""";
+R"""(See RimlessWheelParamsIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::examples::rimless_wheel::RimlessWheelParams::GetElementBounds
           struct /* GetElementBounds */ {
@@ -349,8 +349,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/examples/rimless_wheel/rimless_wheel_params.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::examples::rimless_wheel::RimlessWheelParams::gravity
           struct /* gravity */ {
@@ -482,8 +482,8 @@ R"""(Describes the row indices of a RimlessWheelParams.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``RimlessWheelParamsIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+``RimlessWheelParamsIndices∷GetCoordinateNames()[i]`` is the name for
+``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } RimlessWheelParamsIndices;
       } rimless_wheel;

@@ -8,8 +8,6 @@ import socket
 import subprocess
 import sys
 
-from pydrake.common import FindResourceOrThrow
-
 
 def _is_listening(port):
     """Returns True iff the port number (on localhost) is listening for
@@ -22,16 +20,11 @@ def _is_listening(port):
         sock.close()
 
 
-def _install_deepnote_nginx():
-    """Uses Ubuntu to install the NginX web server and configures it to serve
-    as a reverse proxy for MeshCat on Deepnote. The server will proxy
-    https://DEEPNOTE_PROJECT_ID:8080/PORT/ to http://127.0.0.1:PORT/ so
-    that multiple notebooks can all be served via Deepnote's only open port.
-    """
-    print("Installing NginX server for MeshCat on Deepnote...")
-    install_nginx = FindResourceOrThrow("drake/setup/deepnote/install_nginx")
+def _restart_nginx_service():
+    """(Re)starts Drake Deepnote's nginx proxy."""
+    print("(Re)starting NginX server for MeshCat on Deepnote...")
     proc = subprocess.run(
-        [install_nginx],
+        ["service", "nginx", "restart"],
         encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -54,7 +47,7 @@ def _start_meshcat_deepnote(*, params=None, restart_nginx=False):
         params = MeshcatParams()
     params.web_url_pattern = f"https://{host}.deepnoteproject.com/{{port}}/"
     if restart_nginx or not _is_listening(8080):
-        _install_deepnote_nginx()
+        _restart_nginx_service()
     meshcat = Meshcat(params=params)
     url = meshcat.web_url()
     display(HTML(f"Meshcat URL: <a href='{url}' target='_blank'>{url}</a>"))

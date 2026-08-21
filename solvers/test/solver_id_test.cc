@@ -59,6 +59,10 @@ GTEST_TEST(SolverId, WarningForVeryLongName) {
   SolverId foo{"this_solver_name_is_way_too_long"};
 }
 
+GTEST_TEST(SolverId, ToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(SolverId{"bar"}), "bar");
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

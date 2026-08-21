@@ -661,7 +661,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                          std::optional<Eigen::Vector3d> p_BQ,
                           systems::Context<double>* plant_context) {
           return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
               frameB, p_BQ, plant_context);
@@ -679,7 +679,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                          std::optional<Eigen::Vector3d> p_BQ,
                           systems::Context<double>* plant_context) {
           return std::make_unique<Class>(plant, frameAbar, X_AbarA, p_AQ_lower,
               p_AQ_upper, frameB, p_BQ, plant_context);
@@ -696,7 +696,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                          std::optional<Eigen::Vector3d> p_BQ,
                           systems::Context<AutoDiffXd>* plant_context) {
           return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
               frameB, p_BQ, plant_context);
@@ -714,7 +714,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                          std::optional<Eigen::Vector3d> p_BQ,
                           systems::Context<AutoDiffXd>* plant_context) {
           return std::make_unique<Class>(plant, frameAbar, X_AbarA, p_AQ_lower,
               p_AQ_upper, frameB, p_BQ, plant_context);

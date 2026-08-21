@@ -11,10 +11,10 @@ void DefineSolversMobyLCP(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
-  py::class_<MobyLCPSolver<double>, SolverInterface>(
-      m, "MobyLCPSolver", doc.MobyLCPSolver.doc)
-      .def(py::init<>(), doc.MobyLCPSolver.ctor.doc)
-      .def_static("id", &MobyLCPSolver<double>::id, doc.MobyLCPSolver.id.doc);
+  py::class_<MobyLcpSolver, SolverInterface>(
+      m, "MobyLcpSolver", doc.MobyLcpSolver.doc)
+      .def(py::init<>(), doc.MobyLcpSolver.ctor.doc)
+      .def_static("id", &MobyLcpSolver::id, doc.MobyLcpSolver.id.doc);
 }
 }  // namespace internal
 }  // namespace pydrake

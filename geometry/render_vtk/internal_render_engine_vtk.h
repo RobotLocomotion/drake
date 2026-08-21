@@ -315,22 +315,6 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 
-  // By design, all of the geometry is shared across clones of the render
-  // engine. This is predicated upon the idea that the geometry is *not*
-  // deformable and does *not* depend on the system's pose information.
-  // (If there is deformable geometry, it will have to be handled differently.)
-  // Having "shared geometry" means having shared vtkPolyDataAlgorithm and
-  // vtkOpenGLShaderProperty instances. The shader callback gets registered to
-  // the *mapper* instances, so they all, implicitly, share the same callback.
-  // Making this member static facilitates that but it does preclude the
-  // possibility of simultaneous renderings with different uniform parameters.
-  // Currently, this doesn't happen because drake isn't particularly thread safe
-  // (or executed in such a context). However, this renderer will need some
-  // formal thread safe mechanism so that it doesn't rely on that in the future.
-  // TODO(SeanCurtis-TRI): This is not threadsafe; investigate mechanisms to
-  // prevent undesirable behaviors if used in multi-threaded application.
-  static vtkNew<ShaderCallback> uniform_setting_callback_;
-
   // Obnoxious bright orange.
   Rgba default_diffuse_{0.9, 0.45, 0.1, 1.0};
 

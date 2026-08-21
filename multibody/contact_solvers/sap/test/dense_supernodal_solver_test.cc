@@ -7,7 +7,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
@@ -184,7 +183,7 @@ GTEST_TEST(DenseSuperNodalSolver, BasicChecks) {
       DenseSuperNodalSolver solver(nullptr, &J);
     };
     DRAKE_EXPECT_THROWS_MESSAGE(bad_constructor_call(),
-                                "Condition 'A != nullptr' failed.");
+                                ".*condition 'A != nullptr' failed.");
   }
 
   // J is nullptr.
@@ -194,7 +193,7 @@ GTEST_TEST(DenseSuperNodalSolver, BasicChecks) {
       DenseSuperNodalSolver solver(&A_not_a_binding, nullptr);
     };
     DRAKE_EXPECT_THROWS_MESSAGE(bad_constructor_call(),
-                                "Condition 'J != nullptr' failed.");
+                                ".*condition 'J != nullptr' failed.");
   }
 
   DenseSuperNodalSolver solver(&blocks_of_A, &J);

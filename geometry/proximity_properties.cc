@@ -75,9 +75,8 @@ std::string GetStringFromHydroelasticType(HydroelasticType hydroelastic_type) {
   DRAKE_UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
-  out << EnumToChars(type);
-  return out;
+std::string_view to_string(const HydroelasticType& type) {
+  return EnumToChars(type);
 }
 
 }  // namespace internal

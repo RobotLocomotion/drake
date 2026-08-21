@@ -62,6 +62,7 @@ using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
+using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
 using math::RigidTransformd;
 
@@ -1141,10 +1142,9 @@ TEST_F(UrdfGeometryTest, AcceptingRenderers) {
   const std::string property = "accepting";
 
   for (const auto& instance : visual_instances_) {
-    // TODO(SeanCurtis-TRI): When perception properties are uniquely parsed
-    //  from the file, change this to PerceptionProperties.
-    EXPECT_NE(instance.illustration_properties(), nullptr);
-    const IllustrationProperties& props = *instance.illustration_properties();
+    // The accepting_renderer property goes into perception properties.
+    EXPECT_NE(instance.perception_properties(), nullptr);
+    const PerceptionProperties& props = *instance.perception_properties();
     if (instance.name() == "all_renderers") {
       EXPECT_FALSE(props.HasProperty(group, property));
     } else if (instance.name() == "single_renderer") {
@@ -1191,6 +1191,222 @@ TEST_F(UrdfGeometryTest, TwoUnnamedBoxes) {
   ASSERT_EQ(collision_instances_.size(), 2);
   EXPECT_EQ(collision_instances_[0].name(), "Box");
   EXPECT_EQ(collision_instances_[1].name(), "Box_1");
+}
+
+// Test drake:illustration_properties and drake:perception_properties tags.
+// Default behavior: both roles assigned when no tags present.
+TEST_F(UrdfGeometryTest, VisualPropertiesDefault) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+        </visual>
+      </link>
+    </robot>)""");
+
+  ASSERT_EQ(visual_instances_.size(), 1);
+  const auto& instance = visual_instances_[0];
+  EXPECT_NE(instance.illustration_properties(), nullptr);
+  EXPECT_NE(instance.perception_properties(), nullptr);
+}
+
+// Test enabled="true" for both tags (should be same as default).
+TEST_F(UrdfGeometryTest, VisualPropertiesBothEnabledTrue) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <drake:illustration_properties enabled="true"/>
+          <drake:perception_properties enabled="true"/>
+        </visual>
+      </link>
+    </robot>)""");
+
+  ASSERT_EQ(visual_instances_.size(), 1);
+  const auto& instance = visual_instances_[0];
+  EXPECT_NE(instance.illustration_properties(), nullptr);
+  EXPECT_NE(instance.perception_properties(), nullptr);
+}
+
+// Test illustration disabled, perception enabled.
+TEST_F(UrdfGeometryTest, VisualPropertiesIllustrationDisabled) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <drake:illustration_properties enabled="false"/>
+        </visual>
+      </link>
+    </robot>)""");
+
+  ASSERT_EQ(visual_instances_.size(), 1);
+  const auto& instance = visual_instances_[0];
+  EXPECT_EQ(instance.illustration_properties(), nullptr);
+  EXPECT_NE(instance.perception_properties(), nullptr);
+}
+
+// Test perception disabled, illustration enabled.
+TEST_F(UrdfGeometryTest, VisualPropertiesPerceptionDisabled) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <drake:perception_properties enabled="false"/>
+        </visual>
+      </link>
+    </robot>)""");
+
+  ASSERT_EQ(visual_instances_.size(), 1);
+  const auto& instance = visual_instances_[0];
+  EXPECT_NE(instance.illustration_properties(), nullptr);
+  EXPECT_EQ(instance.perception_properties(), nullptr);
+}
+
+// Test both disabled - should emit warning and skip geometry.
+TEST_F(UrdfGeometryTest, VisualPropertiesBothDisabled) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <drake:illustration_properties enabled="false"/>
+          <drake:perception_properties enabled="false"/>
+        </visual>
+      </link>
+    </robot>)""");
+
+  EXPECT_EQ(visual_instances_.size(), 0);
+  EXPECT_THAT(TakeWarning(),
+              ContainsRegex(
+                  ".*both illustration and perception properties disabled.*"));
+}
+
+// Test that material properties are shared when both roles enabled.
+TEST_F(UrdfGeometryTest, VisualPropertiesMaterialShared) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <material>
+            <color rgba="0.8 0.1 0.2 1.0"/>
+          </material>
+        </visual>
+      </link>
+    </robot>)""");
+
+  ASSERT_EQ(visual_instances_.size(), 1);
+  const auto& instance = visual_instances_[0];
+
+  const auto* illus = instance.illustration_properties();
+  const auto* percep = instance.perception_properties();
+  ASSERT_NE(illus, nullptr);
+  ASSERT_NE(percep, nullptr);
+
+  // Both should have the same color.
+  EXPECT_TRUE(illus->HasProperty("phong", "diffuse"));
+  EXPECT_TRUE(percep->HasProperty("phong", "diffuse"));
+
+  const auto& illus_color = illus->GetProperty<Vector4d>("phong", "diffuse");
+  const auto& percep_color = percep->GetProperty<Vector4d>("phong", "diffuse");
+  EXPECT_TRUE(CompareMatrices(illus_color, percep_color));
+}
+
+// Test that accepting_renderer only goes to perception, not illustration.
+TEST_F(UrdfGeometryTest, VisualPropertiesAcceptingRendererOnlyPerception) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <drake:accepting_renderer name="my_renderer"/>
+        </visual>
+      </link>
+    </robot>)""");
+
+  ASSERT_EQ(visual_instances_.size(), 1);
+  const auto& instance = visual_instances_[0];
+
+  const auto* illus = instance.illustration_properties();
+  const auto* percep = instance.perception_properties();
+  ASSERT_NE(illus, nullptr);
+  ASSERT_NE(percep, nullptr);
+
+  // Only perception should have accepting renderer.
+  EXPECT_FALSE(illus->HasProperty("renderer", "accepting"));
+  EXPECT_TRUE(percep->HasProperty("renderer", "accepting"));
+
+  const auto& names =
+      percep->GetProperty<std::set<std::string>>("renderer", "accepting");
+  EXPECT_EQ(names.size(), 1);
+  EXPECT_TRUE(names.contains("my_renderer"));
+}
+
+// Test accepting_renderer with only illustration enabled (no perception).
+TEST_F(UrdfGeometryTest, VisualPropertiesAcceptingRendererNoPerception) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <drake:perception_properties enabled="false"/>
+          <drake:accepting_renderer name="my_renderer"/>
+        </visual>
+      </link>
+    </robot>)""");
+
+  ASSERT_EQ(visual_instances_.size(), 1);
+  const auto& instance = visual_instances_[0];
+
+  const auto* illus = instance.illustration_properties();
+  const auto* percep = instance.perception_properties();
+  ASSERT_NE(illus, nullptr);
+  EXPECT_EQ(percep, nullptr);
+
+  // accepting_renderer should not appear since perception is disabled.
+  EXPECT_FALSE(illus->HasProperty("renderer", "accepting"));
+}
+
+// Test invalid enabled value for illustration - should be an error.
+TEST_F(UrdfGeometryTest, VisualPropertiesIllustrationInvalidValue) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <drake:illustration_properties enabled="yes"/>
+        </visual>
+      </link>
+    </robot>)""");
+
+  EXPECT_EQ(visual_instances_.size(), 0);
+  EXPECT_THAT(
+      TakeError(),
+      ContainsRegex(".*Invalid value 'yes'.*illustration_properties.*Expected "
+                    "'true' or 'false'.*"));
+}
+
+// Test invalid enabled value for perception - should be an error.
+TEST_F(UrdfGeometryTest, VisualPropertiesPerceptionInvalidValue) {
+  ParseUrdfGeometryString(R"""(
+    <robot name='test'>
+      <link name='link'>
+        <visual>
+          <geometry><box size='1 1 1'/></geometry>
+          <drake:perception_properties enabled="1"/>
+        </visual>
+      </link>
+    </robot>)""");
+
+  EXPECT_EQ(visual_instances_.size(), 0);
+  EXPECT_THAT(
+      TakeError(),
+      ContainsRegex(".*Invalid value '1'.*perception_properties.*Expected "
+                    "'true' or 'false'.*"));
 }
 
 }  // namespace

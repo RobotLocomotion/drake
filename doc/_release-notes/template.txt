@@ -7,6 +7,8 @@ released: YYYY-MM-DD
 
 # Announcements
 
+<!-- <relnotes for announcements go here> -->
+
 * None
 
 # Breaking changes since v{prior_version}

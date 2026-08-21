@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <map>
-#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -13,7 +12,6 @@
 using std::accumulate;
 using std::make_pair;
 using std::map;
-using std::ostringstream;
 using std::pair;
 using std::runtime_error;
 
@@ -143,10 +141,9 @@ class DecomposePolynomialVisitor {
         // expression to be a polynomial. For example, aˣ is not a
         // polynomial. That is, vars(exponentᵢ) ∩ indeterminates = ∅ should
         // hold.
-        ostringstream oss;
-        oss << "Exponent " << exponent << " includes an indeterminates "
-            << indeterminates << ".";
-        throw runtime_error(oss.str());
+        throw runtime_error(
+            fmt::format("Exponent {} includes indeterminates {}.", exponent,
+                        indeterminates));
       }
       return make_pair(MonomialBasisElement{}, pow(base, exponent));
     } else {
@@ -155,19 +152,17 @@ class DecomposePolynomialVisitor {
       // exponentᵢ should be a positive integer.
       if (!is_constant(exponent) ||
           !is_positive_integer(get_constant_value(exponent))) {
-        ostringstream oss;
-        oss << "Given the base " << base << ", the Exponent " << exponent
-            << " should be a positive integer but it is not the case.";
-        throw runtime_error(oss.str());
+        throw runtime_error(
+            fmt::format("Given the base {}, the Exponent {} should be a "
+                        "positive integer but it is not the case.",
+                        base, exponent));
       }
 
       const int n{static_cast<int>(get_constant_value(exponent))};
       // `base` should be an indeterminate because `e` is a pre-expanded term.
       if (!is_variable(base)) {
-        ostringstream oss;
-        oss << "Base " << base << " is not an indeterminate, "
-            << indeterminates;
-        throw runtime_error(oss.str());
+        throw runtime_error(fmt::format("Base {} is not an indeterminate, {}",
+                                        base, indeterminates));
       }
       // Since we call e.Expand() before `Visit` function, `base` is already
       // expanded. If the variables in base intersect with indeterminates, then
@@ -201,10 +196,10 @@ class DecomposePolynomialVisitor {
 
     // vars(e₂) ∩ indeterminates = ∅.
     if (!intersect(e2.GetVariables(), indeterminates).empty()) {
-      ostringstream oss;
-      oss << "In " << e1 << " / " << e2 << ", the denominator " << e2
-          << " should be free of the indeterminates, " << indeterminates << ".";
-      throw runtime_error(oss.str());
+      throw runtime_error(
+          fmt::format("In {} / {}, the denominator {} should be free of the "
+                      "indeterminates, {}.",
+                      e1, e2, e2, indeterminates));
     }
 
     // Since e₁ is already expanded, we have:
@@ -232,10 +227,9 @@ class DecomposePolynomialVisitor {
       const Expression& e, const Variables& indeterminates) const {
     // vars(e) ∩ indeterminates = ∅.
     if (!intersect(e.GetVariables(), indeterminates).empty()) {
-      ostringstream oss;
-      oss << "The non-polynomial term " << e
-          << " should be free of the indeterminates " << indeterminates << ".";
-      throw runtime_error(oss.str());
+      throw runtime_error(fmt::format(
+          "The non-polynomial term {} should be free of the indeterminates {}.",
+          e, indeterminates));
     }
     return {{MonomialBasisElement{}, e}};  // = {1 ↦ e}.
   }
@@ -368,13 +362,11 @@ void GenericPolynomial<BasisElement>::CheckInvariant() const {
   // https://github.com/RobotLocomotion/drake/issues/10229
   Variables vars{intersect(decision_variables(), indeterminates())};
   if (!vars.empty()) {
-    ostringstream oss;
-    oss << "Polynomial " << *this
-        << " does not satisfy the invariant because the following variable(s) "
-           "are used as decision variables and indeterminates at the same "
-           "time:\n"
-        << vars << ".";
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("Polynomial {} does not satisfy the invariant because the "
+                    "following variable(s) are used as decision variables and "
+                    "indeterminates at the same time:\n{}.",
+                    *this, vars));
   }
 }
 
@@ -849,6 +841,27 @@ template <typename BasisElement>
 Formula GenericPolynomial<BasisElement>::operator!=(
     const GenericPolynomial<BasisElement>& p) const {
   return !(*this == p);
+}
+
+template <typename BasisElement>
+std::string to_string(const GenericPolynomial<BasisElement>& p) {
+  const typename GenericPolynomial<BasisElement>::MapType& map{
+      p.basis_element_to_coefficient_map()};
+  if (map.empty()) {
+    return "0";
+  }
+  auto it = map.begin();
+  std::string result{fmt::format("{}*{}", it->second, it->first)};
+  for (++it; it != map.end(); ++it) {
+    result.append(fmt::format(" + {}*{}", it->second, it->first));
+  }
+  return result;
+}
+
+template <typename BasisElement>
+std::ostream& operator<<(std::ostream& os,
+                         const GenericPolynomial<BasisElement>& p) {
+  return os << fmt::to_string(p);
 }
 
 template class GenericPolynomial<MonomialBasisElement>;

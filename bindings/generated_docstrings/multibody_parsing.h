@@ -171,9 +171,8 @@ R"""(Returns true if and only if this PackageMap contains ``package_name``.)""";
           // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Returns the deprecation message for package ``package_name`` if it has
-been set as deprecated. A value of std::nullopt implies no
-deprecation. Aborts if no package named ``package_name`` exists in
-this PackageMap.)""";
+been set as deprecated. A value of std∷nullopt implies no deprecation.
+Aborts if no package named ``package_name`` exists in this PackageMap.)""";
         } GetDeprecated;
         // Symbol: drake::multibody::PackageMap::GetPackageNames
         struct /* GetPackageNames */ {
@@ -208,7 +207,7 @@ R"""(A factory method that initializes an empty map.)""";
           // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(A constructor that initializes a default map containing only the
-top-level ``drake`` manifest. See PackageMap::MakeEmpty() to create an
+top-level ``drake`` manifest. See PackageMap∷MakeEmpty() to create an
 empty map.)""";
         } ctor;
         // Symbol: drake::multibody::PackageMap::PopulateFromEnvironment
@@ -341,7 +340,7 @@ Raises:
           // Source: drake/multibody/parsing/package_map.h
           const char* doc =
 R"""(Sets or clears the deprecation message for package ``package_name``. A
-``deprecated_message`` value of std::nullopt implies no deprecation.
+``deprecated_message`` value of std∷nullopt implies no deprecation.
 Aborts if no package named ``package_name`` exists in this PackageMap.)""";
         } SetDeprecated;
         // Symbol: drake::multibody::PackageMap::size
@@ -350,6 +349,11 @@ Aborts if no package named ``package_name`` exists in this PackageMap.)""";
           const char* doc =
 R"""(Returns the number of entries in this PackageMap.)""";
         } size;
+        // Symbol: drake::multibody::PackageMap::to_string
+        struct /* to_string */ {
+          // Source: drake/multibody/parsing/package_map.h
+          const char* doc = R"""()""";
+        } to_string;
       } PackageMap;
       // Symbol: drake::multibody::Parser
       struct /* Parser */ {
@@ -441,10 +445,10 @@ workflow makes multiple parsers to build models for a single plant:
 
     Parser left_parser(plant, "left");
      Parser right_parser(plant, "right");
-     left_parser.AddModels(arm_model);  // "left::arm"
-     right_parser.AddModels(arm_model);  // "right::arm"
-     left_parser.AddModels(gripper_model);  // "left::gripper"
-     right_parser.AddModels(gripper_model);  // "right::gripper"
+     left_parser.AddModels(arm_model);  // "left∷arm"
+     right_parser.AddModels(arm_model);  // "right∷arm"
+     left_parser.AddModels(gripper_model);  // "left∷gripper"
+     right_parser.AddModels(gripper_model);  // "right∷gripper"
 
 .. raw:: html
 
@@ -567,7 +571,7 @@ body names. Both may occur within scoped names indicating the model
 instance where they are defined. Note that the model instance names
 used in the returned data will reflect the current names in plant() at
 the time this accessor is called (see
-MultibodyPlant::RenameModelInstance()), but the local group and body
+MultibodyPlant∷RenameModelInstance()), but the local group and body
 names will be the names seen during parsing.)""";
         } GetCollisionFilterGroups;
         // Symbol: drake::multibody::Parser::Parser
@@ -787,13 +791,13 @@ R"""(The ``package://`` URI of the file to add.)""";
             // Source: drake/multibody/parsing/model_directives.h
             const char* doc =
 R"""(Namespaces base model instance for processing directive files. Affects
-scoping (i.e. the following members): - AddModel::name -
-AddModelInstance::name - AddFrame::name - AddWeld::parent -
-AddWeld::child - AddFrame::X_PF::base_frame -
-AddCollisionFilterGroup::name - AddCollisionFilterGroup::members -
-AddCollisionFilterGroup::ignored_colllision_filter_groups -
-AddDirectives::model_namespace See ``README.md`` for example
-references and namespacing.)""";
+scoping (i.e. the following members): - AddModel∷name -
+AddModelInstance∷name - AddFrame∷name - AddWeld∷parent - AddWeld∷child
+- AddFrame∷X_PF∷base_frame - AddCollisionFilterGroup∷name -
+AddCollisionFilterGroup∷members -
+AddCollisionFilterGroup∷ignored_colllision_filter_groups -
+AddDirectives∷model_namespace See ``README.md`` for example references
+and namespacing.)""";
           } model_namespace;
           auto Serialize__fields() const {
             return std::array{
@@ -861,15 +865,15 @@ using a given name for the added instance.)""";
             const char* doc =
 R"""(Map of body_name or frame_name => default free body pose. The name
 must be a name within the scope of the model added by this directive.
-The name must not be scoped (i.e., no "foo::link", just "link"). If
-the name is empty, then the posed frame will be the body frame of the
+The name must not be scoped (i.e., no "foo∷link", just "link"). If the
+name is empty, then the posed frame will be the body frame of the
 model's sole body (and if the model has >1 body then it is an error).
 
 For deformable bodies, the body pose defines the world pose of the
 reference configuration, i.e. the undeformed geometry of the
 deformable body will have this pose in the world frame.
 
-However, the schema::Transform associated with that named body/frame
+However, the schema∷Transform associated with that named body/frame
 can define a ``base_frame`` referring to any frame that has been added
 prior to or including this declaration. The named frame must *always*
 be a scoped name, even if its part of the model added by this
@@ -882,7 +886,7 @@ Warning:
 
 1. The named body will *not* be considered a "floating base" body (see
 mbp_working_with_free_bodies "Working with free bodies"). Calls to
-MultibodyPlant::SetDefaultFreeBodyPose() will have no effect on an
+MultibodyPlant∷SetDefaultFreeBodyPose() will have no effect on an
 allocated context. If you want to change its default pose after adding
 the model, you need to acquire the body's joint and set the new
 default pose on the joint directly. Note: what you will *actually* be
@@ -1033,7 +1037,7 @@ is not found.)""";
 R"""(Finds an optionally model-scoped frame.
 
 Returns ``nullptr`` if the frame is not found, as well as all the
-error cases of ``MultibodyPlant::HasFrameNamed(std::string_view)``.)""";
+error cases of ``MultibodyPlant∷HasFrameNamed(std∷string_view)``.)""";
         } GetScopedFrameByNameMaybe;
         // Symbol: drake::multibody::parsing::LoadModelDirectives
         struct /* LoadModelDirectives */ {
@@ -1052,9 +1056,9 @@ error cases of ``MultibodyPlant::HasFrameNamed(std::string_view)``.)""";
 R"""(Union structure for model directives.
 
 Note:
-    This was designed before support for ``std::variant<>`` was
-    around, and thus we used a parent field, rather than a YAML tag,
-    to designate the intended type for the directive.)""";
+    This was designed before support for ``std∷variant<>`` was around,
+    and thus we used a parent field, rather than a YAML tag, to
+    designate the intended type for the directive.)""";
           // Symbol: drake::multibody::parsing::ModelDirective::IsValid
           struct /* IsValid */ {
             // Source: drake/multibody/parsing/model_directives.h

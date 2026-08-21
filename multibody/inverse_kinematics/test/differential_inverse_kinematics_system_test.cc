@@ -1,5 +1,6 @@
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h"
 
+#include <future>
 #include <memory>
 #include <optional>
 #include <string>
@@ -835,6 +836,45 @@ TEST_F(DifferentialInverseKinematicsTest, CollisionConstraint) {
                          .vd_WB = vd1,
                          .v_WB_expected = vd1,
                          .q_active = q_active_init}});
+}
+
+TEST_F(DifferentialInverseKinematicsTest, CollisionConstraintThreaded) {
+  // Make a simple recipe with a CollisionConstraint and an arbitrary cost.
+  auto recipe = std::make_shared<Recipe>();
+  AddLeastSquaresCost(recipe.get());
+  using Config = DiffIk::CollisionConstraint::Config;
+  auto ingredient = std::make_shared<DiffIk::CollisionConstraint>(Config{});
+  ingredient->SetConfig(
+      Config{.safety_distance = 0.25, .influence_distance = 10.0});
+  recipe->AddIngredient(ingredient);
+  const DiffIk dut = MakeDiffIk(std::move(recipe));
+
+  // A simple functor to exercise the DUT's computation.
+  auto do_work = [&dut](auto* context) {
+    // Set some arbitrary inputs.
+    const VectorXd q = VectorXd::Zero(dut.plant().num_positions());
+    dut.get_input_port_nominal_posture().FixValue(context, q);
+    dut.get_input_port_position().FixValue(context, q);
+    BusValue desired_velocities;
+    const auto Vd_TB = SpatialVelocity<double>::Zero();
+    desired_velocities.Set("robot::ball", Value{Vd_TB});
+    dut.get_input_port_desired_cartesian_velocities().FixValue(
+        context, desired_velocities);
+    // Evaluate the output.
+    dut.get_output_port_commanded_velocity().Eval(*context);
+  };
+
+  // Run two do_work functions concurrently. Our TSan (etc.) might trip if there
+  // are concurrency bugs.
+  auto context_1 = dut.CreateDefaultContext();
+  auto context_2 = context_1->Clone();
+  auto context_3 = dut.CreateDefaultContext();
+  auto future_1 = std::async(std::launch::async, do_work, context_1.get());
+  auto future_2 = std::async(std::launch::async, do_work, context_2.get());
+  auto future_3 = std::async(std::launch::async, do_work, context_3.get());
+  future_1.get();
+  future_2.get();
+  future_3.get();
 }
 
 /* The constraint on joint velocities is conceptually simple, but has some

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import pydrake.manipulation as mut  # ruff: isort: skip
 
 import gc

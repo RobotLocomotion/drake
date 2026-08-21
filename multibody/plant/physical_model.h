@@ -67,10 +67,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    declares System resources from the `owning_plant` in the call to
    `DeclareSystemResources()` through the call to `MultibodyPlant::Finalize()`.
    @pre owning_plant != nullptr. */
-  explicit PhysicalModel(MultibodyPlant<T>* owning_plant)
-      : owning_plant_(*owning_plant), mutable_owning_plant_(owning_plant) {
-    DRAKE_DEMAND(owning_plant != nullptr);
-  }
+  explicit PhysicalModel(MultibodyPlant<T>* owning_plant);
 
   ~PhysicalModel() override;
 

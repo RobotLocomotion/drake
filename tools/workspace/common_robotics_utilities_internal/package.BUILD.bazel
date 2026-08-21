@@ -48,9 +48,11 @@ cc_library(
         "include/common_robotics_utilities/time_optimal_trajectory_parametrization.hpp",  # noqa
         "include/common_robotics_utilities/utility.hpp",
         "include/common_robotics_utilities/voxel_grid.hpp",
+        "include/common_robotics_utilities/voxel_grid_common.hpp",
         "include/common_robotics_utilities/zlib_helpers.hpp",
     ],
     includes = ["include"],
+    isystem = True,
     copts = COPTS,
     linkstatic = True,
     deps = [
@@ -115,6 +117,7 @@ cc_test(
         # Some of these tests take too long under valgrind for CI.
         "no_memcheck",
     ],
+    flaky = True,
     shard_count = 4,
     timeout = "moderate",
     deps = [

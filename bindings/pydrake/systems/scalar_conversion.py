@@ -98,19 +98,17 @@ class TemplateSystem(TemplateClass):
             T_list = SystemScalarConverter.SupportedScalars
         for T in T_list:
             assert T in SystemScalarConverter.SupportedScalars, (
-                "Type {} is not a supported scalar type".format(T)
+                f"Type {T} is not a supported scalar type"
             )
         if T_pairs is None:
             T_pairs = _get_conversion_pairs(T_list)
         for T_pair in T_pairs:
             T, U = T_pair
             assert T in T_list and U in T_list, (
-                "Conversion {} is not in the original parameter list".format(
-                    T_pair
-                )
+                f"Conversion {T_pair} is not in the original parameter list"
             )
             assert T_pair in SystemScalarConverter.SupportedConversionPairs, (
-                "Conversion {} is not supported".format(T_pair)
+                f"Conversion {T_pair} is not supported"
             )
 
         self._T_list = list(T_list)
@@ -159,9 +157,7 @@ class TemplateSystem(TemplateClass):
         # `_construct` and `_construct_copy`.
         if not issubclass(cls, LeafSystem_[T]):
             raise RuntimeError(
-                "{} must inherit from {}".format(
-                    pretty_class_name(cls), LeafSystem_[T]
-                )
+                f"{pretty_class_name(cls)} must inherit from {LeafSystem_[T]}"
             )
 
         # Use the immediate `__dict__`, rather than querying the attributes, so
@@ -172,20 +168,18 @@ class TemplateSystem(TemplateClass):
         has_copy = "_construct_copy" in d
         if not no_init:
             raise RuntimeError(
-                "{} defines `__init__`, but should not. Please implement "
-                "`_construct` and `_construct_copy` instead.".format(
-                    pretty_class_name(cls)
-                )
+                f"{pretty_class_name(cls)} defines `__init__`, but should not. "
+                "Please implement `_construct` and `_construct_copy` instead."
             )
         if not has_construct:
             raise RuntimeError(
-                "{} does not define `_construct`. Please ensure this is "
-                "defined.".format(pretty_class_name(cls))
+                f"{pretty_class_name(cls)} does not define `_construct`. "
+                "Please ensure this is defined."
             )
         if not has_copy:
             raise RuntimeError(
-                "{} does not define `_construct_copy`. Please ensure this "
-                "is defined.".format(pretty_class_name(cls))
+                f"{pretty_class_name(cls)} does not define `_construct_copy`. "
+                "Please ensure this is defined."
             )
 
         # Patch `__init__`.

@@ -291,11 +291,7 @@ GTEST_TEST(PolynomialTest, VariableIdGeneration) {
                std::runtime_error);  // Illegal ID.
 
   // Test that ID generation round-trips correctly.
-  std::stringstream test_stream;
-  test_stream << Polynomial<double>("x", 1);
-  std::string result;
-  test_stream >> result;
-  EXPECT_EQ(result, "x1");
+  EXPECT_EQ(fmt::to_string(Polynomial<double>("x", 1)), "x1");
 }
 
 GTEST_TEST(PolynomialTest, GetVariables) {
@@ -328,20 +324,62 @@ GTEST_TEST(PolynomialTest, Simplification) {
   Polynomiald y = Polynomiald("y");
 
   {  // Test duplicate monomials.
-    std::stringstream test_stream;
-    test_stream << ((x * y) + (x * y));
-    std::string result;
-    test_stream >> result;
-    EXPECT_EQ(result, "(2)*x1*y1");
+    EXPECT_EQ(fmt::to_string((x * y) + (x * y)), "(2)*x1*y1");
   }
 
   {  // Test monomials that are duplicates under commutativity.
-    std::stringstream test_stream;
-    test_stream << ((x * y) + (y * x));
-    std::string result;
-    test_stream >> result;
-    EXPECT_EQ(result, "(2)*x1*y1");
+    EXPECT_EQ(fmt::to_string((x * y) + (y * x)), "(2)*x1*y1");
   }
+}
+
+GTEST_TEST(PolynomialTest, MonomialToStringFmtFormatter) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  // "m_" prefix denotes monomial.
+  Polynomiald::Monomial m_minus_one = Polynomiald(-1).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_minus_one), "(-1)");
+  Polynomiald::Monomial m_one = Polynomiald(1).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_one), "(1)");
+  Polynomiald::Monomial m_two = Polynomiald(2).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_two), "(2)");
+  Polynomiald::Monomial m_minus_x = (x * -5).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_minus_x), "(-5)*x1");
+  Polynomiald::Monomial m_x2 = (x * x).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_x2), "x1^2");
+  Polynomiald::Monomial m_5x2y = (5 * x * x * y).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_5x2y), "(5)*x1^2*y1");
+}
+
+GTEST_TEST(PolynomialTest, PolynomialToStringFmtFormatter) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  Polynomiald z = Polynomiald("z");
+  EXPECT_EQ(fmt::to_string(Polynomiald()), "0");
+  EXPECT_EQ(fmt::to_string(Polynomiald(x)), "x1");
+  EXPECT_EQ(fmt::to_string(Polynomiald(x * x + 5 * x * y - z)),
+            "x1^2+(5)*x1*y1+(-1)*z1");
+}
+
+GTEST_TEST(PolynomialTest, EigenMatrixPolynomialToStringFmtFormatter) {
+  Eigen::Matrix<Polynomiald, 2, 2> poly_mat;
+  poly_mat << Polynomiald("x"), Polynomiald("y"), Polynomiald("z"),
+      Polynomiald("w");
+  EXPECT_EQ(fmt::to_string(fmt_eigen(poly_mat)), "x1 y1\nz1 w1");
+}
+
+// TODO(2026-06-01): delete test
+// DeprecatedEigenMatrixPolynomialOutStreemOperator on removal date.
+GTEST_TEST(PolynomialTest, DeprecatedEigenMatrixPolynomialOutputOperator) {
+  Eigen::Matrix<Polynomiald, 2, 2> poly_mat;
+  poly_mat << Polynomiald("x"), Polynomiald("y"), Polynomiald("z"),
+      Polynomiald("w");
+  std::stringstream test_stream;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  test_stream << poly_mat;
+#pragma GCC diagnostic pop
+  std::string result{test_stream.str()};
+  EXPECT_EQ(result, "[ x1 , y1 ]\n[ z1 , w1 ]\n");
 }
 
 GTEST_TEST(PolynomialTest, MonomialFactor) {

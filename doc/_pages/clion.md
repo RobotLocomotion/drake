@@ -34,10 +34,10 @@ clone) **must** be named ``drake``.
    academic license [here](https://www.jetbrains.com/shop/eform/students).
 
 The most recent versions that we have tested for compatibility are:
-* Ubuntu 22.04 (Jammy)
-* Bazel 8.0.0
-* CLion 2024.3.2
-    * Bazel plugin 2025.01.07.0.1-api-version-243
+* Ubuntu 24.04 (Noble)
+* Bazel 9.0.0
+* CLion 2025.3.2
+    * Bazel plugin 2026.01.26-api-version-253
 
 Different CLion versions will normally choose a compatible Bazel plugin.
 
@@ -72,7 +72,7 @@ Settings`` or ``File > Settings``), select ``Plugins``, then choose the
 prompted to restart CLion.
 
 To use Drake in CLion you **must** use Drake's bazel wrapper.
-Open ``Settings > Other Settings > Bazel Settings``.
+Open ``Settings > Bazel Settings``.
 For ``Bazel binary location`` select the path to
 ``drake/tools/clion/bazel_wrapper`` from any recent Drake source tree
 (it doesn't have to match the current project open in CLion).
@@ -80,7 +80,7 @@ For ``Bazel binary location`` select the path to
 ## Setting up Drake in CLion
 
 CLion will invoke Bazel to build Drake, including the external dependencies
-specified in the WORKSPACE file.
+specified in the MODULE file.
 
 1. ``File > Import Bazel Project``
 2. Select Workspace: Use an existing Bazel workspace, and provide the path to

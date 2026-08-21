@@ -1,11 +1,10 @@
 #pragma once
 
-#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/geometry/geometry_properties.h"
 
 namespace drake {
@@ -226,8 +225,6 @@ enum class RoleAssign {
 
 std::string to_string(const Role& role);
 
-std::ostream& operator<<(std::ostream& out, const Role& role);
-
 //@}
 
 /** @name  Convenience functions
@@ -245,8 +242,4 @@ IllustrationProperties MakePhongIllustrationProperties(
 }  // namespace geometry
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::geometry::Role> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::geometry, Role, x, drake::geometry::to_string(x))

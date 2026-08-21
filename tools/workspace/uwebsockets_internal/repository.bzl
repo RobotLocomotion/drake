@@ -9,15 +9,8 @@ def uwebsockets_internal_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "uNetworking/uWebSockets",
-        upgrade_advice = """
-        NOTE: Do not upgrade without testing the tutorials on Deepnote.  See
-        Drake #18289.  v20.35.0 was tested and showed the same symptoms.
-        """,
-        commit = "v20.14.0",
-        sha256 = "15cf995844a930c9a36747e8d714b94ff886b6814b5d4e3b3ee176f05681cccc",  # noqa
+        commit = "v20.75.0",
+        sha256 = "05c384e410d374ce81abc17c9ee9574f33611d4a020f1da26f444f0dfe9691d7",  # noqa
         build_file = ":package.BUILD.bazel",
-        patches = [
-            ":patches/upstream/pr1828.patch",
-        ],
         mirrors = mirrors,
     )

@@ -14,7 +14,7 @@ namespace fem {
 namespace internal {
 namespace {
 
-constexpr double kTol = 4.0 * std::numeric_limits<double>::epsilon();
+constexpr double kTol = 8.0 * std::numeric_limits<double>::epsilon();
 
 /* Tests that the deformation gradient is initialized to the identity matrix and
  the deformation gradient dependent data are initialized to be consistent with

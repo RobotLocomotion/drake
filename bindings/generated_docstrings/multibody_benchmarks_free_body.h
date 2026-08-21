@@ -134,7 +134,7 @@ Parameter ``t``:
 Returns:
     Machine-precision values at time t are returned as defined below.
 
-std::tuple | Description
+std∷tuple | Description
 -----------|-----------------------------------------------------------
 xyz | Vector3d [x, y, z], Bcm's position from No, expressed in N.
 xyzDt | Vector3d [ẋ, ẏ, ż] Bcm's velocity in N, expressed in N.

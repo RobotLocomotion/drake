@@ -271,6 +271,7 @@ class DifferentialInverseKinematicsSystem final
   systems::OutputPortIndex output_port_index_commanded_velocity_;
   systems::CacheIndex plant_context_cache_index_;
   systems::CacheIndex cartesian_desires_cache_index_;
+  systems::CacheIndex collision_checker_context_scratch_index_;
 };
 
 /** (Internal use only) A group of common arguments relevant to multiple
@@ -294,6 +295,9 @@ struct DifferentialInverseKinematicsSystem::CallbackDetails {
   Note that its robot_model_instances() accessor also partitions which parts of
   the `plant` are the robot model vs its environment. */
   const planning::CollisionChecker& collision_checker;
+
+  /** A mutable context for the collision checker. */
+  planning::CollisionCheckerContext& collision_checker_context;
 
   /** The active degrees of freedom in `collision_checker.plant()`. */
   const planning::DofMask& active_dof;

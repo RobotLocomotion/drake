@@ -300,6 +300,9 @@ GTEST_TEST(BallConstraintTests, FinalizedConstraint) {
           *context));
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(
@@ -312,6 +315,7 @@ GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
                                                       bodyB, Vector3d{0, 0, 0}),
                               ".*TAMSI does not support ball constraints.*");
 }
+#pragma GCC diagnostic push
 
 GTEST_TEST(BallConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};
@@ -319,11 +323,25 @@ GTEST_TEST(BallConstraintTests, FailOnContinuous) {
       plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>::NaN());
+  plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB, Vector3d{0, 0, 0});
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              ".*continuous.*not.*support.*constraints.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
-                              Vector3d{0, 0, 0}),
-      ".*Currently ball constraints are only supported for discrete "
-      "MultibodyPlant models.*");
+      plant.get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_generalized_acceleration_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_reaction_forces_output_port().Eval(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcCenterOfMassTranslationalAccelerationInWorld(*context),
+      ".*continuous.*not.*support.*constraints.*");
 }
 
 GTEST_TEST(BallConstraintTests, FailOnFinalized) {

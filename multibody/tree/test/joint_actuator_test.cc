@@ -56,7 +56,7 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
           Eigen::Vector3d(0, 0, 1)));
   DRAKE_EXPECT_THROWS_MESSAGE(
       tree.AddJointActuator("act2", body2_body1, kNegativeEffortLimit),
-      "Effort limit must be strictly positive!");
+      ".*effort limit.*positive.*");
 
   // Throw if the effort limit is set to be negative.
   const Joint<double>& body3_body2 =
@@ -65,7 +65,7 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
           Eigen::Vector3d(0, 0, 1)));
   DRAKE_EXPECT_THROWS_MESSAGE(
       tree.AddJointActuator("act3", body3_body2, kZeroEffortLimit),
-      "Effort limit must be strictly positive!");
+      ".*effort limit.*positive.*");
 
   EXPECT_EQ(actuator1.input_start(), 0);  // First & only actuated dof.
   EXPECT_EQ(actuator1.num_inputs(), 1);   // Prismatic is 1 dof.
@@ -78,6 +78,8 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   const auto& actuator4 =
       tree.AddJointActuator("act4", body4_world, kPositiveEffortLimit);
+  tree.get_mutable_joint_actuator(actuator4.index()).set_effort_limit(22.0);
+  EXPECT_EQ(actuator4.effort_limit(), 22.0);
 
   tree.Finalize();
 
@@ -153,26 +155,6 @@ GTEST_TEST(JointActuatorTest, PdControllerTest) {
     EXPECT_NO_THROW(dut.set_controller_gains({}));
     EXPECT_FALSE(dut.has_controller());
   }
-}
-
-GTEST_TEST(JointActuatorTest, ContinuousTimePdControllerTest) {
-  auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
-  internal::MultibodyTree<double>& tree = *tree_pointer;
-  JointActuator<double>& dut = AddBodyJointAndActuator(&tree);
-  tree.Finalize();
-  auto tree_system = std::make_unique<internal::MultibodyTreeSystem<double>>(
-      std::move(tree_pointer), /* is_discrete = */ false);
-  EXPECT_FALSE(dut.has_controller());
-
-  // Call the set function with zeros to clear out controller (a no-op) is safe.
-  EXPECT_NO_THROW(dut.set_controller_gains({}));
-  EXPECT_FALSE(dut.has_controller());
-
-  // Trying to set any non-zero gain is forbidden.
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.p = 1e3}),
-                              ".*only.*discrete models.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.d = 1e2}),
-                              ".*only.*discrete models.*");
 }
 
 GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {

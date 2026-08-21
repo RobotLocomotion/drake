@@ -1,12 +1,18 @@
 import copy
 import gc
 import unittest
+
+# delete next line with publish_every_time_step 2026-06-01
+import warnings
 import weakref
 
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import Parallelism
+
+# delete next line with publish_every_time_step 2026-06-01
+from pydrake.common.deprecation import DrakeDeprecationWarning
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.math import isnan
 from pydrake.symbolic import Expression, Variable
@@ -42,6 +48,7 @@ from pydrake.systems.primitives import (
     SymbolicVectorSystem,
     SymbolicVectorSystem_,
 )
+from pydrake.systems.test.test_util import CountingContextSystem
 from pydrake.trajectories import PiecewisePolynomial, PiecewisePolynomial_
 
 
@@ -243,6 +250,7 @@ class TestAnalysis(unittest.TestCase):
         )
         self.assertTrue(isnan(integrator.get_largest_step_size_taken()))
         self.assertEqual(integrator.get_num_steps_taken(), 0)
+        self.assertGreater(len(integrator.GetStatisticsSummary()), 0)
         integrator.ResetStatistics()
 
         integrator.Reset()
@@ -337,8 +345,14 @@ class TestAnalysis(unittest.TestCase):
         )
         simulator.reset_context(context=simulator.get_context().Clone())
 
-        simulator.set_publish_every_time_step(publish=True)
-        simulator.set_publish_at_initialization(publish=True)
+        # delete with publish_every_time_step 2026-06-01
+        # Test will pass after deletion since the API will no longer exist.
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", DrakeDeprecationWarning)
+            simulator.set_publish_every_time_step(publish=True)
+            simulator.set_publish_at_initialization(publish=True)
+            self.assertEqual(len(w), 2)
+        # delete till this line
         simulator.set_target_realtime_rate(realtime_rate=0.0)
         self.assertEqual(simulator.get_target_realtime_rate(), 0.0)
         self.assertIsInstance(simulator.get_actual_realtime_rate(), float)
@@ -350,6 +364,22 @@ class TestAnalysis(unittest.TestCase):
         self.assertEqual(simulator.get_num_unrestricted_updates(), 0)
 
         self.assertIs(simulator.get_system(), system)
+
+    def test_simulator_default_context_no_cpp_leak(self):
+        """Regression test for #23924"""
+        gc.collect()
+        baseline = CountingContextSystem.GetNumberOfLiveContexts()
+        self.assertEqual(baseline, 0)
+
+        simulator = Simulator(CountingContextSystem())
+        self.assertGreater(
+            CountingContextSystem.GetNumberOfLiveContexts(), baseline
+        )
+        del simulator
+        gc.collect()
+        self.assertEqual(
+            CountingContextSystem.GetNumberOfLiveContexts(), baseline
+        )
 
     def test_simulator_status(self):
         SimulatorStatus.ReturnReason.kReachedBoundaryTime

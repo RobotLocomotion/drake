@@ -90,13 +90,7 @@ class ContactCalculator {
   ContactCalculator(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs,
       const Geometries* geometries,
-      HydroelasticContactRepresentation representation)
-      : X_WGs_(*X_WGs),
-        geometries_(*geometries),
-        representation_(representation) {
-    DRAKE_DEMAND(X_WGs != nullptr);
-    DRAKE_DEMAND(geometries != nullptr);
-  }
+      HydroelasticContactRepresentation representation);
 
   struct MaybeMakeContactSurfaceResult {
     ContactSurfaceResult result;

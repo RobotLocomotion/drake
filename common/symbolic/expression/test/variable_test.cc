@@ -172,6 +172,24 @@ TEST_F(VariableTest, ToString) {
   EXPECT_EQ(w_.to_string(), "w");
 }
 
+TEST_F(VariableTest, VariableFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(x_), "x");
+  EXPECT_EQ(fmt::to_string(y_), "y");
+  EXPECT_EQ(fmt::to_string(z_), "z");
+  EXPECT_EQ(fmt::to_string(w_), "w");
+}
+
+TEST_F(VariableTest, VariableTypeFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(Variable::Type::CONTINUOUS), "Continuous");
+  EXPECT_EQ(fmt::to_string(Variable::Type::BINARY), "Binary");
+  EXPECT_EQ(fmt::to_string(Variable::Type::INTEGER), "Integer");
+  EXPECT_EQ(fmt::to_string(Variable::Type::BOOLEAN), "Boolean");
+  EXPECT_EQ(fmt::to_string(Variable::Type::RANDOM_UNIFORM), "Random Uniform");
+  EXPECT_EQ(fmt::to_string(Variable::Type::RANDOM_GAUSSIAN), "Random Gaussian");
+  EXPECT_EQ(fmt::to_string(Variable::Type::RANDOM_EXPONENTIAL),
+            "Random Exponential");
+}
+
 // This test checks whether Variable is compatible with std::unordered_set.
 TEST_F(VariableTest, CompatibleWithUnorderedSet) {
   unordered_set<Variable> uset;

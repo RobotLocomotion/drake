@@ -247,10 +247,10 @@ TEST_F(MonomialBasisElementTest, MonomialWithZeroExponent) {
   MonomialBasisElement m1({{var_y_, 2}});
   MonomialBasisElement m2({{var_x_, 0}, {var_y_, 2}});
   EXPECT_EQ(m1, m2);
-  EXPECT_EQ(m2.var_to_degree_map().size(), 1);
-  std::map<Variable, int> power_expected;
-  power_expected.emplace(var_y_, 2);
-  EXPECT_EQ(m2.var_to_degree_map(), power_expected);
+  ASSERT_EQ(m2.var_to_degree_map().size(), 1);
+  const auto& [base, exp] = *m2.var_to_degree_map().begin();
+  EXPECT_EQ(base, var_y_);
+  EXPECT_EQ(exp, 2);
 }
 
 // This test shows that we can have a std::unordered_map whose key is of
@@ -676,6 +676,17 @@ TEST_F(MonomialBasisElementTest, MergeBasisElementInPlace) {
   EXPECT_EQ(basis_element1.var_to_degree_map().at(var_y_), 4);
   EXPECT_EQ(basis_element1.var_to_degree_map().at(var_z_), 2);
   EXPECT_EQ(basis_element1.total_degree(), 9);
+}
+
+TEST_F(MonomialBasisElementTest, ToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(MonomialBasisElement{}), "1");
+  EXPECT_EQ(fmt::to_string(MonomialBasisElement{{{var_x_, 1}}}), "x");
+  EXPECT_EQ(fmt::to_string(MonomialBasisElement{{{var_x_, 2}}}), "x^2");
+  EXPECT_EQ(fmt::to_string(MonomialBasisElement{{{var_x_, 1}, {var_z_, 3}}}),
+            "z^3 * x");
+  EXPECT_EQ(fmt::to_string(
+                MonomialBasisElement{{{var_x_, 2}, {var_z_, 3}, {var_y_, 5}}}),
+            "z^3 * y^5 * x^2");
 }
 }  // namespace symbolic
 }  // namespace drake

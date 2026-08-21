@@ -63,7 +63,8 @@ Drake's linter.) */
     /* variable name to avoid potential variable name shadowing warnings. */ \
     ::drake::logging::logger* const drake_spdlog_macro_logger_alias =        \
         ::drake::log();                                                      \
-    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::trace) {  \
+    if (drake_spdlog_macro_logger_alias->level() <=                          \
+        ::drake::logging::level::trace) {                                    \
       SPDLOG_LOGGER_TRACE(drake_spdlog_macro_logger_alias, __VA_ARGS__);     \
     }                                                                        \
   } while (0)
@@ -73,7 +74,8 @@ Drake's linter.) */
     /* variable name to avoid potential variable name shadowing warnings. */ \
     ::drake::logging::logger* const drake_spdlog_macro_logger_alias =        \
         ::drake::log();                                                      \
-    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::debug) {  \
+    if (drake_spdlog_macro_logger_alias->level() <=                          \
+        ::drake::logging::level::debug) {                                    \
       SPDLOG_LOGGER_DEBUG(drake_spdlog_macro_logger_alias, __VA_ARGS__);     \
     }                                                                        \
   } while (0)
@@ -92,6 +94,7 @@ Drake's linter.) */
 #endif  // DRAKE_DOXYGEN_CXX
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/text_logging_level.h"
 
 namespace drake {
 
@@ -102,10 +105,6 @@ namespace logging {
 /** The drake::logging::logger class provides text logging methods.
 See the text_logging.h documentation for a short tutorial. */
 using logger = spdlog::logger;
-
-/** When spdlog is enabled in this build, drake::logging::sink is an alias for
-spdlog::sinks::sink.  When spdlog is disabled, it is an empty class. */
-using spdlog::sinks::sink;
 
 /** True only if spdlog is enabled in this build. */
 constexpr bool kHaveSpdlog = true;
@@ -140,14 +139,6 @@ class logger {
   void critical(const Args&...) {}
 };
 
-// A stubbed-out version of `spdlog::sinks::sink`.
-class sink {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(sink);
-
-  sink();
-};
-
 }  // namespace logging
 
 #define DRAKE_LOGGER_TRACE(...)
@@ -164,13 +155,6 @@ See the text_logging.h documentation for a short tutorial. */
 logging::logger* log();
 
 namespace logging {
-
-/** (Advanced) Retrieves the default sink for all Drake logs.  When spdlog is
-enabled, the return value can be cast to spdlog::sinks::dist_sink_mt and thus
-allows consumers of Drake to redirect Drake's text logs to locations other than
-the default of stderr.  When spdlog is disabled, the return value is an empty
-class. */
-sink* get_dist_sink();
 
 /** When constructed, logs a message (at "warn" severity); the destructor is
 guaranteed to be trivial.  This is useful for declaring an instance of this

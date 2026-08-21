@@ -100,7 +100,7 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
 // Shouldn't increment argument whether the macro expanded or not, since
 // logging is off.
 #if TEXT_LOGGING_TEST_SPDLOG
-  drake::log()->set_level(spdlog::level::off);
+  drake::log()->set_level(drake::logging::level::off);
 #endif
   DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
   DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
@@ -111,7 +111,7 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
 
 // Should increment arg only if the macro expanded.
 #if TEXT_LOGGING_TEST_SPDLOG
-  drake::log()->set_level(spdlog::level::trace);
+  drake::log()->set_level(drake::logging::level::trace);
 #endif
   DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
   DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
@@ -127,7 +127,7 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
 
 // Only DEBUG should increment arg since trace is not enabled.
 #if TEXT_LOGGING_TEST_SPDLOG
-  drake::log()->set_level(spdlog::level::debug);
+  drake::log()->set_level(drake::logging::level::debug);
 #endif
   DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
   DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
@@ -140,6 +140,15 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
 #endif
   tracearg = 0;
   debugarg = 0;
+}
+
+GTEST_TEST(TextLoggingTest, LogLevelEnum) {
+  EXPECT_LT(drake::logging::level::trace, drake::logging::level::debug);
+  EXPECT_LT(drake::logging::level::debug, drake::logging::level::info);
+  EXPECT_LT(drake::logging::level::info, drake::logging::level::warn);
+  EXPECT_LT(drake::logging::level::warn, drake::logging::level::err);
+  EXPECT_LT(drake::logging::level::err, drake::logging::level::critical);
+  EXPECT_LT(drake::logging::level::critical, drake::logging::level::off);
 }
 
 GTEST_TEST(TextLoggingTest, SetLogLevel) {

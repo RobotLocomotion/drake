@@ -69,7 +69,7 @@ constexpr struct /* pydrake_doc_common_schema */ {
 R"""(A single deterministic vector ``value``.
 
 Template parameter ``Size``:
-    rows at compile time (max 6) or else Eigen::Dynamic.)""";
+    rows at compile time (max 6) or else Eigen∷Dynamic.)""";
         // Symbol: drake::schema::DeterministicVector::DeterministicVector<Size>
         struct /* ctor */ {
           // Source: drake/common/schema/stochastic.h
@@ -242,7 +242,7 @@ matter the size of ``mean``; that denotes the same ``stddev`` value
 applied to every element of ``mean``.
 
 Template parameter ``Size``:
-    rows at compile time (max 6) or else Eigen::Dynamic.)""";
+    rows at compile time (max 6) or else Eigen∷Dynamic.)""";
         // Symbol: drake::schema::GaussianVector::GaussianVector<Size>
         struct /* ctor */ {
           // Source: drake/common/schema/stochastic.h
@@ -301,7 +301,7 @@ Raises:
     RuntimeError if ``vec`` is not deterministic.
 
 Template parameter ``Size``:
-    rows at compile time (max 6) or else Eigen::Dynamic.)""";
+    rows at compile time (max 6) or else Eigen∷Dynamic.)""";
       } GetDeterministicValue;
       // Symbol: drake::schema::IsDeterministic
       struct /* IsDeterministic */ {
@@ -314,16 +314,16 @@ R"""(Returns true iff all of `vec`'s elements are set to a deterministic
 value.
 
 Template parameter ``Size``:
-    rows at compile time (max 6) or else Eigen::Dynamic.)""";
+    rows at compile time (max 6) or else Eigen∷Dynamic.)""";
       } IsDeterministic;
       // Symbol: drake::schema::Mean
       struct /* Mean */ {
         // Source: drake/common/schema/stochastic.h
         const char* doc_1args_var =
-R"""(Like Distribution::Mean, but on a DistributionVariant instead.)""";
+R"""(Like Distribution∷Mean, but on a DistributionVariant instead.)""";
         // Source: drake/common/schema/stochastic.h
         const char* doc_1args_vec =
-R"""(Like Distribution::Mean, but elementwise over a collection of
+R"""(Like Distribution∷Mean, but elementwise over a collection of
 possibly-heterogenous DistributionVariant instead.)""";
       } Mean;
       // Symbol: drake::schema::Rotation
@@ -503,10 +503,10 @@ R"""(Sets this value to the given deterministic RPY, in degrees.)""";
       struct /* Sample */ {
         // Source: drake/common/schema/stochastic.h
         const char* doc_2args_var_generator =
-R"""(Like Distribution::Sample, but on a DistributionVariant instead.)""";
+R"""(Like Distribution∷Sample, but on a DistributionVariant instead.)""";
         // Source: drake/common/schema/stochastic.h
         const char* doc_2args_vec_generator =
-R"""(Like Distribution::Sample, but elementwise over a collection of
+R"""(Like Distribution∷Sample, but elementwise over a collection of
 possibly-heterogenous DistributionVariant instead.)""";
       } Sample;
       // Symbol: drake::schema::ToDistribution
@@ -522,16 +522,16 @@ R"""(Copies the given variant into a Distribution base class.)""";
 R"""(Copies the given variant into a DistributionVector base class.
 
 Template parameter ``Size``:
-    rows at compile time (max 6) or else Eigen::Dynamic.)""";
+    rows at compile time (max 6) or else Eigen∷Dynamic.)""";
       } ToDistributionVector;
       // Symbol: drake::schema::ToSymbolic
       struct /* ToSymbolic */ {
         // Source: drake/common/schema/stochastic.h
         const char* doc_1args_var =
-R"""(Like Distribution::ToSymbolic, but on a DistributionVariant instead.)""";
+R"""(Like Distribution∷ToSymbolic, but on a DistributionVariant instead.)""";
         // Source: drake/common/schema/stochastic.h
         const char* doc_1args_vec =
-R"""(Like Distribution::ToSymbolic, but elementwise over a collection of
+R"""(Like Distribution∷ToSymbolic, but elementwise over a collection of
 possibly-heterogenous DistributionVariant instead.)""";
       } ToSymbolic;
       // Symbol: drake::schema::Transform
@@ -735,7 +735,7 @@ R"""(A uniform distribution with vector ``min`` inclusive and vector
 ``max`` exclusive.
 
 Template parameter ``Size``:
-    rows at compile time (max 6) or else Eigen::Dynamic.)""";
+    rows at compile time (max 6) or else Eigen∷Dynamic.)""";
         // Symbol: drake::schema::UniformVector::Mean
         struct /* Mean */ {
           // Source: drake/common/schema/stochastic.h

@@ -1,5 +1,6 @@
 #include "drake/perception/point_cloud_flags.h"
 
+// TODO(2026-06-01): Remove sstream header when `Formatting` is removed.
 #include <sstream>
 #include <stdexcept>
 
@@ -14,6 +15,9 @@ namespace pcf = pc_flags;
 
 namespace {
 
+// TODO(2026-06-01): Delete test `Formatting`.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(PointCloudFlagsTest, Formatting) {
   // Check human-friendly formatting.
   {
@@ -27,6 +31,19 @@ GTEST_TEST(PointCloudFlagsTest, Formatting) {
     os << (pcf::kXYZs | pcf::kRGBs | pcf::kDescriptorCurvature);
     EXPECT_EQ("(kXYZs | kRGBs | kDescriptorCurvature)", os.str());
   }
+}
+#pragma GCC diagnostic pop
+
+GTEST_TEST(PointCloudFlagsTest, DescriptorTypeToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(pcf::kDescriptorNone), "kDescriptorNone");
+}
+
+GTEST_TEST(PointCloudFlagsTest, FieldsToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(pcf::Fields(pcf::kDescriptorNone)), "()");
+  EXPECT_EQ(fmt::to_string(pcf::kXYZs | pcf::kDescriptorNone), "(kXYZs)");
+  EXPECT_EQ(fmt::to_string(pcf::kXYZs | pcf::kNormals | pcf::kRGBs |
+                           pcf::kDescriptorCurvature),
+            "(kXYZs | kNormals | kRGBs | kDescriptorCurvature)");
 }
 
 GTEST_TEST(PointCloudFlagsTest, Basic) {

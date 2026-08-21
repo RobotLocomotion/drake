@@ -21,9 +21,16 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "triangle_quadrature_rules",
+    srcs = [
+        "gaussian_triangle_quadrature_rule.cc",
+        "triangle_quadrature_rule.cc",
+    ],
     hdrs = [
         "gaussian_triangle_quadrature_rule.h",
         "triangle_quadrature_rule.h",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -37,7 +44,6 @@ drake_cc_library(
     ],
     deps = [
         ":triangle_quadrature_rules",
-        "//common:essential",
         "//multibody/math:spatial_algebra",
     ],
 )

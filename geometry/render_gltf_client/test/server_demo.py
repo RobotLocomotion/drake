@@ -21,7 +21,6 @@ import shutil
 import subprocess
 import tempfile
 from textwrap import dedent
-from typing import Dict, Union
 
 from flask import Flask, request, send_file
 from python.runfiles import Create as CreateRunfiles
@@ -149,7 +148,7 @@ class RenderRequest:
     # request <form>. It's used for validation and should be kept consistent
     # with Drake's documentation on `Render Endpoint <form> Data` section.
     # See also: https://drake.mit.edu/doxygen_cxx/group__render__engine__gltf__client__server__api.html  # noqa
-    EXPECTED_FORM_FIELDS: Dict[str, FieldType] = {
+    EXPECTED_FORM_FIELDS: dict[str, FieldType] = {
         "scene": FieldType.File,
         "scene_sha256": FieldType.String,
         "image_type": FieldType.String,
@@ -247,7 +246,7 @@ class RenderRequest:
             )
         self._fields_map["scene"] = self._parse_scene("scene")
 
-    def get_field(self, field_name: str) -> Union[int, float, str]:
+    def get_field(self, field_name: str) -> int | float | str:
         """Queries the value of a field in the form. This function should be
         the **only** function called outside this class."""
         return self._fields_map[field_name]
@@ -268,7 +267,7 @@ class RenderRequest:
 
     def _parse_numeric(
         self, field_name: str, field_type: FieldType
-    ) -> Union[int, float]:
+    ) -> int | float:
         """Checks if the raw string value can be converted to the expected type
         and the numeric value is greater than 0 (as an indication of being
         sensible)."""

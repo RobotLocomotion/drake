@@ -113,6 +113,13 @@ def _main():
         ".jpg, .png, etc.). HDR images are not supported yet.",
     )
     args_parser.add_argument(
+        "--no_lights",
+        action="store_true",
+        help="If set, meshcat's lights will be disabled, similarly if "
+        "--show_rgbd_sensor is enabled, the sensor will have no visible "
+        "lights. This should be used in conjunction with --environment_map.",
+    )
+    args_parser.add_argument(
         "--compliance_type",
         default=defaults["compliance_type"],
         help=textwrap.dedent("""Overrides the DefaultProximityProperties
@@ -179,6 +186,7 @@ def _main():
         browser_new=args.browser_new,
         pyplot=args.pyplot,
         environment_map=args.environment_map,
+        no_lights=args.no_lights,
         compliance_type=args.compliance_type,
     )
     package_map = visualizer.package_map()

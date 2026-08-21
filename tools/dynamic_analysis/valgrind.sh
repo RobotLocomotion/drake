@@ -15,11 +15,12 @@ export G_SLICE=always-malloc
 # tests.
 export GTEST_DEATH_TEST_USE_FORK=1
 
-# If unset, set to empty string.
-export VALGRIND_OPTS="$VALGRIND_OPTS"
+# Set to empty so that tests can rely on the presence of this variable to check
+# if they're running under valgrind.
+export VALGRIND_OPTS=""
 
 # Note the "--disable-drake-valgrind-tracing" skip-by-arg option below. Any
-# subprocesslaunched by a test with that as a commanad-line argument won't
+# subprocess launched by a test with that as a command-line argument won't
 # be instrumented by valgrind. This is useful when you want to instrument
 # a C++ unit test but not a helper program that it calls.
 

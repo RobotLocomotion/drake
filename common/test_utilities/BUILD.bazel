@@ -42,6 +42,7 @@ drake_cc_package_library(
 drake_cc_library(
     name = "diagnostic_policy_test_base",
     testonly = 1,
+    srcs = ["diagnostic_policy_test_base.cc"],
     hdrs = ["diagnostic_policy_test_base.h"],
     deps = [
         "//common:diagnostic_policy",
@@ -82,13 +83,7 @@ drake_cc_library(
         "fmt_format_printer.h",
     ],
     tags = ["exclude_from_package"],
-    visibility = [
-        # We allow two spellings for where gtest came from -- the bazel central
-        # registry @googletest, or our traditional module extension @gtest.
-        "@googletest//:__pkg__",
-        # Remove on 2026-01-01 per @gtest deprecation.
-        "@gtest//:__pkg__",
-    ],
+    visibility = ["@googletest//:__pkg__"],
     deps = [
         "//common:fmt",
         "@eigen",

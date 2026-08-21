@@ -62,7 +62,7 @@ Eigen::Matrix<double, 12, 12> MakeSpdMatrix(double scale) {
 }
 
 /* Makes an arbitrary SPD sparse matrix. */
-BlockSparseSymmetricMatrix MakeSparseSpdMatrix(double scale = 1.0) {
+BlockSparseSymmetricMatrixXd MakeSparseSpdMatrix(double scale = 1.0) {
   std::vector<std::vector<int>> sparsity;
   sparsity.emplace_back(std::vector<int>{0});
   sparsity.emplace_back(std::vector<int>{1, 2, 3});
@@ -71,7 +71,7 @@ BlockSparseSymmetricMatrix MakeSparseSpdMatrix(double scale = 1.0) {
   std::vector<int> block_sizes = {2, 3, 4, 3};
   BlockSparsityPattern block_pattern(block_sizes, sparsity);
 
-  BlockSparseSymmetricMatrix A(std::move(block_pattern));
+  BlockSparseSymmetricMatrixXd A(std::move(block_pattern));
   const std::vector<int>& starting_cols = A.starting_cols();
   const Eigen::Matrix<double, 12, 12> dense_A = MakeSpdMatrix(scale);
   std::vector<std::pair<int, int>> nonzero_lower_triangular_blocks{
@@ -86,7 +86,7 @@ BlockSparseSymmetricMatrix MakeSparseSpdMatrix(double scale = 1.0) {
 
 GTEST_TEST(BlockSparseCholeskySolverTest, Solve) {
   BlockSparseCholeskySolver<MatrixXd> solver;
-  BlockSparseSymmetricMatrix A = MakeSparseSpdMatrix();
+  BlockSparseSymmetricMatrixXd A = MakeSparseSpdMatrix();
   MatrixX<double> dense_A = A.MakeDenseMatrix();
   EXPECT_EQ(solver.solver_mode(),
             BlockSparseCholeskySolver<MatrixXd>::SolverMode::kEmpty);
@@ -118,7 +118,7 @@ GTEST_TEST(BlockSparseCholeskySolverTest, Solve) {
 
   /* Update the matrix with different numeric values but the same sparsity
    pattern. */
-  BlockSparseSymmetricMatrix A2 = MakeSparseSpdMatrix(10);
+  BlockSparseSymmetricMatrixXd A2 = MakeSparseSpdMatrix(10);
   MatrixX<double> dense_A2 = A2.MakeDenseMatrix();
   solver.UpdateMatrix(A2);
   success = solver.Factor();
@@ -135,7 +135,7 @@ GTEST_TEST(BlockSparseCholeskySolverTest, FailureDueToNonSpdness) {
   sparsity.emplace_back(std::vector<int>{1});
   std::vector<int> block_sizes = {4, 3};
   BlockSparsityPattern block_pattern(block_sizes, sparsity);
-  BlockSparseSymmetricMatrix A(std::move(block_pattern));
+  BlockSparseSymmetricMatrixXd A(std::move(block_pattern));
   A.AddToBlock(0, 0, -Matrix4d::Identity());
   A.AddToBlock(1, 1, -Matrix3d::Identity());
 
@@ -172,7 +172,7 @@ GTEST_TEST(BlockSparseCholeskySolverTest, FactorBeforeSetMatrixThrows) {
 
 GTEST_TEST(BlockSparseCholeskySolverTest, SolveBeforeFactorThrows) {
   BlockSparseCholeskySolver<MatrixXd> solver;
-  BlockSparseSymmetricMatrix A = MakeSparseSpdMatrix();
+  BlockSparseSymmetricMatrixXd A = MakeSparseSpdMatrix();
   solver.SetMatrix(A);
   VectorXd b = VectorXd::LinSpaced(A.cols(), 0.0, 10.0);
   EXPECT_THROW(solver.Solve(b), std::exception);
@@ -181,7 +181,7 @@ GTEST_TEST(BlockSparseCholeskySolverTest, SolveBeforeFactorThrows) {
 
 GTEST_TEST(BlockSparseCholeskySolverTest, PermutationMatrix) {
   BlockSparseCholeskySolver<MatrixXd> solver;
-  BlockSparseSymmetricMatrix A = MakeSparseSpdMatrix();
+  BlockSparseSymmetricMatrixXd A = MakeSparseSpdMatrix();
   const MatrixXd A_dense = A.MakeDenseMatrix();
   solver.SetMatrix(A);
   /* Trying to get L before factorization is an exception. */
@@ -198,7 +198,7 @@ GTEST_TEST(BlockSparseCholeskySolverTest, PermutationMatrix) {
 
 GTEST_TEST(BlockSparseCholeskySolverTest, PermutationMatrixPrecondition) {
   BlockSparseCholeskySolver<MatrixXd> solver;
-  BlockSparseSymmetricMatrix A = MakeSparseSpdMatrix();
+  BlockSparseSymmetricMatrixXd A = MakeSparseSpdMatrix();
   /* CalcPermutationMatrix() before setting the matrix throws. */
   EXPECT_THROW(solver.CalcPermutationMatrix(), std::exception);
   /* After setting the matrix, CalcPermutatoinMatrix() returns the same result
@@ -215,7 +215,7 @@ GTEST_TEST(BlockSparseCholeskySolverTest, PermutationMatrixPrecondition) {
 
 GTEST_TEST(BlockSparseCholeskySolverTest, SolverModeAfterMove) {
   BlockSparseCholeskySolver<MatrixXd> solver;
-  BlockSparseSymmetricMatrix A = MakeSparseSpdMatrix();
+  BlockSparseSymmetricMatrixXd A = MakeSparseSpdMatrix();
   solver.SetMatrix(A);
   EXPECT_EQ(solver.solver_mode(),
             BlockSparseCholeskySolver<MatrixXd>::SolverMode::kAnalyzed);
@@ -229,7 +229,7 @@ GTEST_TEST(BlockSparseCholeskySolverTest, SolverModeAfterMove) {
 
 GTEST_TEST(BlockSparseCholeskySolverTest, FactorAndCalcSchurComplement) {
   BlockSparseCholeskySolver<MatrixXd> solver;
-  BlockSparseSymmetricMatrix M = MakeSparseSpdMatrix();
+  BlockSparseSymmetricMatrixXd M = MakeSparseSpdMatrix();
   const int kNumBlocks = 4;
   /* All blocks are eliminated. */
   {

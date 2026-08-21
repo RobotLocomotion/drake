@@ -310,7 +310,7 @@ class RigidBody : public MultibodyElement<T> {
     return is_floating_base_body_;
   }
 
-  DRAKE_DEPRECATED("2026-01-01", "Use is_floating_base_body() instead.")
+  DRAKE_DEPRECATED("2026-06-01", "Use is_floating_base_body() instead.")
   bool is_floating() const { return is_floating_base_body(); }
 
   /// (Advanced) If `true`, this body's generalized position coordinates q

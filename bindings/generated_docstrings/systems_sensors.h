@@ -195,7 +195,7 @@ Parameter ``lcm_buses``:
     (Optional) The available LCM buses to use for camera message
     publication. When not provided, uses the ``lcm`` interface if
     provided, or else the ``config.lcm_bus`` must be set to "default"
-    in which case an appropriate drake::lcm::DrakeLcm object is
+    in which case an appropriate drake∷lcm∷DrakeLcm object is
     constructed and used internally.
 
 Parameter ``plant``:
@@ -241,10 +241,10 @@ Precondition:
     "scene_graph" or else the provided ``scene_graph`` is non-null.
 
 See also:
-    drake::multibody::AddMultibodyPlant()
+    drake∷multibody∷AddMultibodyPlant()
 
 See also:
-    drake::systems::lcm::ApplyLcmBusConfig())""";
+    drake∷systems∷lcm∷ApplyLcmBusConfig())""";
         } ApplyCameraConfig;
         // Symbol: drake::systems::sensors::BeamModel
         struct /* BeamModel */ {
@@ -296,7 +296,7 @@ modeling framework we have here that builds the output out of simple
     output_ports:
     - depth
 
-It is convenient to use ``systems::AddRandomInputs()`` to supply all
+It is convenient to use ``systems∷AddRandomInputs()`` to supply all
 the random input signals:
 
 
@@ -388,7 +388,7 @@ R"""(Default constructor. Sets all rows to their default value:
           struct /* GetCoordinateNames */ {
             // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
-R"""(See BeamModelParamsIndices::GetCoordinateNames().)""";
+R"""(See BeamModelParamsIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::systems::sensors::BeamModelParams::GetElementBounds
           struct /* GetElementBounds */ {
@@ -419,8 +419,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/systems/sensors/beam_model_params.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::systems::sensors::BeamModelParams::lambda_short
           struct /* lambda_short */ {
@@ -562,8 +562,8 @@ R"""(Describes the row indices of a BeamModelParams.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``BeamModelParamsIndices::GetCoordinateNames()[i]`` is the name for
-``BasicVector::GetAtIndex(i)``.)""";
+``BeamModelParamsIndices∷GetCoordinateNames()[i]`` is the name for
+``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } BeamModelParamsIndices;
         // Symbol: drake::systems::sensors::CameraConfig
@@ -571,8 +571,8 @@ class. In other words,
           // Source: drake/systems/sensors/camera_config.h
           const char* doc =
 R"""(Configuration of a camera. This covers all of the parameters for both
-color (see geometry::render::ColorRenderCamera) and depth (see
-geometry::render::DepthRenderCamera) cameras.
+color (see geometry∷render∷ColorRenderCamera) and depth (see
+geometry∷render∷DepthRenderCamera) cameras.
 
 The various properties have restrictions on what they can be.
 
@@ -589,9 +589,8 @@ configuration (see ApplyCameraConfig().)
 
 **Cameras and RenderEngines**
 
-Every camera is supported by a geometry::render::RenderEngine
-instance. These properties configure the render engine for this
-camera.
+Every camera is supported by a geometry∷render∷RenderEngine instance.
+These properties configure the render engine for this camera.
 
 RenderEngines are uniquely identified by their name (as specified by
 ``renderer_name``) and configured by ``renderer_class``. Each
@@ -853,9 +852,9 @@ Precondition:
             const char* doc =
 R"""(The "background" color. This is the color drawn where there are no
 objects visible. Its default value matches the default value for
-render::RenderEngineVtkParams::default_clear_color. See the
-documentation for geometry::Rgba::Serialize for how to define this
-value in YAML.
+render∷RenderEngineVtkParams∷default_clear_color. See the
+documentation for geometry∷Rgba∷Serialize for how to define this value
+in YAML.
 
 This value is used only if the ``render_class`` specifies either
 ``"RenderEngineVtk"`` or ``"RenderEngineGl"`` by *name*
@@ -880,7 +879,7 @@ R"""(The x-position of the principal point (in pixels). To query what the
 current value is, use principal_point().
 
 Precondition:
-    0 < center_x < width or is std::nullopt.)""";
+    0 < center_x < width or is std∷nullopt.)""";
           } center_x;
           // Symbol: drake::systems::sensors::CameraConfig::center_y
           struct /* center_y */ {
@@ -890,7 +889,7 @@ R"""(The y-position of the principal point (in pixels). To query what the
 current value is, use principal_point().
 
 Precondition:
-    0 < center_y < height or is std::nullopt.)""";
+    0 < center_y < height or is std∷nullopt.)""";
           } center_y;
           // Symbol: drake::systems::sensors::CameraConfig::clipping_far
           struct /* clipping_far */ {
@@ -985,7 +984,7 @@ R"""(If true, label images will be produced and published via LCM.)""";
 R"""(Which LCM URL to use.
 
 See also:
-    drake::systems::lcm::LcmBuses)""";
+    drake∷systems∷lcm∷LcmBuses)""";
           } lcm_bus;
           // Symbol: drake::systems::sensors::CameraConfig::name
           struct /* name */ {
@@ -1183,13 +1182,13 @@ Precondition:
     Drake's RenderEngine implementations.
 
 See also:
-    drake::geometry::SceneGraph::GetRendererTypeName().)""";
+    drake∷geometry∷SceneGraph∷GetRendererTypeName().)""";
           } renderer_class;
           // Symbol: drake::systems::sensors::CameraConfig::renderer_name
           struct /* renderer_name */ {
             // Source: drake/systems/sensors/camera_config.h
             const char* doc =
-R"""(The name of the geometry::render::RenderEngine that this camera uses.
+R"""(The name of the geometry∷render∷RenderEngine that this camera uses.
 
 Precondition:
     ``renderer_name`` is not empty.)""";
@@ -1210,7 +1209,7 @@ images are rendered). Because both RGB and label images are configured
 from the same ``ColorRenderCamera``, this setting applies to both
 images. Even when set to true, whether or not the image is able to be
 displayed depends on the specific render engine and its configuration
-(see e.g., geometry::RenderEngineVtkParams::backend).
+(see e.g., geometry∷RenderEngineVtkParams∷backend).
 
 Note: This flag is intended for quick debug use during development
 instead of serving as an image viewer. Currently, there are known
@@ -1692,7 +1691,7 @@ and height can be either both zero or both strictly positive.)""";
           struct /* NonTypeTemplateParameter */ {
             // Source: drake/systems/sensors/image.h
             const char* doc =
-R"""(This is used by generic helpers such as drake::Value to deduce a
+R"""(This is used by generic helpers such as drake∷Value to deduce a
 non-type template argument.)""";
           } NonTypeTemplateParameter;
           // Symbol: drake::systems::sensors::Image::T
@@ -1987,7 +1986,7 @@ images (lcmt_image). This message can then be sent to other processes
 that sbscribe it using LcmPublisherSystem. Note that you should NOT
 assume any particular order of those images stored in
 lcmt_image_array, instead check the semantic of those images with
-lcmt_image::pixel_format before using them.
+lcmt_image∷pixel_format before using them.
 
 .. pydrake_system::
 
@@ -2112,7 +2111,7 @@ port *must* be connected; otherwise, attempting to write an image from
 that port, will cause an error in the system.
 
 If the user intends to write images directly instead of periodically,
-e.g., when running this system outside of Simulator::AdvanceTo, a call
+e.g., when running this system outside of Simulator∷AdvanceTo, a call
 to ``ForcedPublish(system_context)`` will write all images from each
 input port simultaneously to disk. Note that one can invoke a forced
 publish on this system using the same context multiple times,
@@ -2149,7 +2148,7 @@ Given a "start time" value ``tₛ``, the frames will be written at: ``t
 
 When writing image data to disk, the location and name of the output
 files are controlled by a user-defined format string. The format
-string should be compatible with ``fmt::format()``. ImageWriter
+string should be compatible with ``fmt∷format()``. ImageWriter
 provides several *named* format arguments that can be referenced in
 the format string:
 
@@ -2210,7 +2209,7 @@ Parameter ``port_name``:
     string is available in the format string as ``port_name``.
 
 Parameter ``file_name_format``:
-    The ``fmt::format()``-compatible string which defines the
+    The ``fmt∷format()``-compatible string which defines the
     context-dependent file name to write the image to.
 
 Parameter ``publish_period``:
@@ -2223,9 +2222,8 @@ Parameter ``start_time``:
 
 Parameter ``pixel_type``:
     The representation of the per-pixel data (see PixelType). Must be
-    one of {PixelType::kRgba8U, PixelType::kDepth32F,
-    PixelType::kLabel16I, PixelType::kDepth16U, or
-    PixelType::kGrey8U}.
+    one of {PixelType∷kRgba8U, PixelType∷kDepth32F,
+    PixelType∷kLabel16I, PixelType∷kDepth16U, or PixelType∷kGrey8U}.
 
 Raises:
     RuntimeError if (1) the directory encoded in the
@@ -2451,7 +2449,7 @@ of the following capital letters is used.
           const char* doc =
 R"""(A meta-sensor that houses RGB, depth, and label cameras, producing
 their corresponding images based on the contents of the
-geometry::SceneGraph.
+geometry∷SceneGraph.
 
 .. pydrake_system::
 
@@ -2507,19 +2505,19 @@ red, green, blue, and alpha.
 - depth_image_32f: One channel, float, representing the Z value in
 ``D`` in *meters*. The values 0 and infinity are reserved for out-of-range
 depth returns (too close or too far, respectively, as defined by
-geometry::render::DepthRenderCamera "DepthRenderCamera").
+geometry∷render∷DepthRenderCamera "DepthRenderCamera").
 
 - depth_image_16u: One channel, uint16_t, representing the Z value in
 ``D`` in *millimeters*. The values 0 and 65535 are reserved for out-of-range
 depth returns (too close or too far, respectively, as defined by
-geometry::render::DepthRenderCamera "DepthRenderCamera").
+geometry∷render∷DepthRenderCamera "DepthRenderCamera").
 Additionally, 65535 will also be returned if the
 depth measurement exceeds the representation range of uint16_t. Thus, the
 maximum valid depth return is 65534mm.
 
 - label_image: One channel, int16_t, whose value is a unique
-geometry::render::RenderLabel "RenderLabel" value aligned with the
-color camera frame. See geometry::render::RenderLabel "RenderLabel"
+geometry∷render∷RenderLabel "RenderLabel" value aligned with the
+color camera frame. See geometry∷render∷RenderLabel "RenderLabel"
 for discussion of interpreting rendered labels.
 
 Note:
@@ -2563,8 +2561,8 @@ both color/label and depth cameras.)""";
 R"""(Constructs an RgbdSensor using a fully specified depth render camera,
 inferring the color settings based on depth. The color camera in
 inferred from the ``depth_camera``; it shares the same
-geometry::render::RenderCameraCore and is configured to show the
-window based on the value of ``show_color_window``.)""";
+geometry∷render∷RenderCameraCore and is configured to show the window
+based on the value of ``show_color_window``.)""";
           } ctor;
           // Symbol: drake::systems::sensors::RgbdSensor::SetColorRenderCamera
           struct /* SetColorRenderCamera */ {
@@ -2663,7 +2661,7 @@ ImageLabel16I.)""";
           struct /* query_object_input_port */ {
             // Source: drake/systems/sensors/rgbd_sensor.h
             const char* doc =
-R"""(Returns the geometry::QueryObject<double>-valued input port.)""";
+R"""(Returns the geometry∷QueryObject<double>-valued input port.)""";
           } query_object_input_port;
           // Symbol: drake::systems::sensors::RgbdSensor::set_default_X_PB
           struct /* set_default_X_PB */ {
@@ -2770,7 +2768,7 @@ Warning:
     geometry shapes, textures, etc. after a simulation has started.
     The only thing it responds to are changes to geometry poses. If
     you change anything beyond poses, you must manually call
-    Simulator::Initialize() to reset things before resuming the
+    Simulator∷Initialize() to reset things before resuming the
     simulation, or else you'll get an exception. This holds true for
     changes to both SceneGraph's model geometry and the copy of the
     geometry in a scene graph Context.)""";
@@ -3070,28 +3068,28 @@ Warning:
             // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
-    RgbdSensor::body_pose_in_world_output_port().)""";
+    RgbdSensor∷body_pose_in_world_output_port().)""";
           } body_pose_in_world_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::color_image_output_port
           struct /* color_image_output_port */ {
             // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
-    RgbdSensor::color_image_output_port().)""";
+    RgbdSensor∷color_image_output_port().)""";
           } color_image_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::depth_image_16U_output_port
           struct /* depth_image_16U_output_port */ {
             // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
-    RgbdSensor::depth_image_16U_output_port().)""";
+    RgbdSensor∷depth_image_16U_output_port().)""";
           } depth_image_16U_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::depth_image_32F_output_port
           struct /* depth_image_32F_output_port */ {
             // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
-    RgbdSensor::depth_image_32F_output_port().)""";
+    RgbdSensor∷depth_image_32F_output_port().)""";
           } depth_image_32F_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::image_time_output_port
           struct /* image_time_output_port */ {
@@ -3106,7 +3104,7 @@ the simulation time when the image outputs were captured, in seconds
             // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
-    RgbdSensor::label_image_output_port().)""";
+    RgbdSensor∷label_image_output_port().)""";
           } label_image_output_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::period
           struct /* period */ {
@@ -3119,7 +3117,7 @@ R"""(Returns the update period for the discrete camera.)""";
             // Source: drake/systems/sensors/rgbd_sensor_discrete.h
             const char* doc =
 R"""(See also:
-    RgbdSensor::query_object_input_port().)""";
+    RgbdSensor∷query_object_input_port().)""";
           } query_object_input_port;
           // Symbol: drake::systems::sensors::RgbdSensorDiscrete::sensor
           struct /* sensor */ {

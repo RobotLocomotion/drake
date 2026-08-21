@@ -59,7 +59,6 @@ def main():
     pole_pin.set_angle(context=cart_pole_context, angle=2.0)
 
     simulator = Simulator(diagram, diagram_context)
-    simulator.set_publish_every_time_step(False)
     simulator.set_target_realtime_rate(args.target_realtime_rate)
     simulator.Initialize()
     simulator.AdvanceTo(args.simulation_time)

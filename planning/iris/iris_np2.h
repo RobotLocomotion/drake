@@ -90,6 +90,9 @@ class IrisNp2Options {
    * solvers::MakeFirstAvailableSolver will be used to pick the solver. */
   const solvers::SolverInterface* solver{nullptr};
 
+  /** Options passed to the counterexample search program solver. */
+  solvers::SolverOptions solver_options{};
+
   /** Options common to IRIS-type algorithms. */
   CommonSampledIrisOptions sampled_iris_options{};
 

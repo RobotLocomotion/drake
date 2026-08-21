@@ -454,7 +454,7 @@ class CallPythonClient:
             sys.stderr.write(
                 "ERROR: Invalid termination. "
                 "'execution_check.finish' called insufficient number of "
-                "times: {}\n".format(execution_check.count)
+                f"times: {execution_check.count}\n"
             )
         if self._wait and not self._had_error:
             wait_func = self.scope_globals["wait"]

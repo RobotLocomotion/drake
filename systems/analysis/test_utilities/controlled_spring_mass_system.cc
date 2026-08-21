@@ -69,6 +69,9 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
 }
 
 template <typename T>
+PidControlledSpringMassSystem<T>::~PidControlledSpringMassSystem() = default;
+
+template <typename T>
 T PidControlledSpringMassSystem<T>::get_position(
     const Context<T>& context) const {
   const Context<T>& plant_context =

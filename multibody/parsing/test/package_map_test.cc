@@ -395,7 +395,8 @@ GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
       ".*use PopulateFromRosPackagePath.*");
 }
 
-// Tests that PackageMap's streaming to-string operator works.
+// TODO(2026-06-01): delete TestStreamingToString
+//  Tests that PackageMap's streaming to-string operator works.
 GTEST_TEST(PackageMapTest, TestStreamingToString) {
   fs::create_directory("package_foo");
   fs::create_directory("package_bar");
@@ -411,8 +412,46 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
                         {.urls = {url}, .sha256 = std::string(64u, '0')});
 
   std::stringstream string_buffer;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   string_buffer << package_map;
+#pragma GCC diagnostic pop
   const std::string resulting_string = string_buffer.str();
+
+  // The following simply tests that the package names and their relative paths
+  // exist in the resulting string. It does not check the literal path since
+  // that's system dependent or the actual formatting of the text.
+  for (const auto& it : expected_packages) {
+    EXPECT_NE(resulting_string.find(it.first), std::string::npos);
+    EXPECT_NE(resulting_string.find(it.second), std::string::npos);
+  }
+  EXPECT_NE(resulting_string.find(url), std::string::npos);
+
+  // Verifies the number of lines in the resulting string.
+  EXPECT_EQ(std::count(resulting_string.begin(), resulting_string.end(), '\n'),
+            4);
+}
+
+// Tests that PackageMap can be converted to a string using its fmt formatter.
+GTEST_TEST(PackageMapTest, ToStringFmtFormatter) {
+  // Test the empty PackageMap case.
+  EXPECT_EQ(fmt::to_string(PackageMap().MakeEmpty()),
+            "PackageMap:\n  [EMPTY!]\n");
+
+  fs::create_directory("package_foo");
+  fs::create_directory("package_bar");
+  map<string, string> expected_packages = {{"package_foo", "package_foo"},
+                                           {"my_package", "package_bar"}};
+
+  PackageMap package_map = PackageMap::MakeEmpty();
+  for (const auto& it : expected_packages) {
+    package_map.Add(it.first, it.second);
+  }
+  const std::string url = "file:///tmp/missing.zip";
+  package_map.AddRemote("remote",
+                        {.urls = {url}, .sha256 = std::string(64u, '0')});
+
+  const std::string resulting_string{fmt::to_string(package_map)};
 
   // The following simply tests that the package names and their relative paths
   // exist in the resulting string. It does not check the literal path since

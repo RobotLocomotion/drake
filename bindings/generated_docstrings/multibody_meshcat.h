@@ -31,7 +31,7 @@ constexpr struct /* pydrake_doc_multibody_meshcat */ {
           // Source: drake/multibody/meshcat/contact_visualizer.h
           const char* doc =
 R"""(ContactVisualizer is a system that publishes a ContactResults to
-geometry::Meshcat; For point contact results, it draws double-sided
+geometry∷Meshcat; For point contact results, it draws double-sided
 arrows at the location of the contact force with length scaled by the
 magnitude of the contact force. For hydroelastic contact, it draws
 single-sided arrows at the centroid of the contact patch, one for
@@ -60,22 +60,22 @@ Warning:
             // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc_4args_builder_plant_meshcat_params =
 R"""(Adds a ContactVisualizer and connects it to the given MultibodyPlant's
-multibody::ContactResults-valued output port and
-geometry::QueryObject-valued output port. The ContactVisualizer's name
-(see systems::SystemBase::set_name) will be set to a sensible default
+multibody∷ContactResults-valued output port and
+geometry∷QueryObject-valued output port. The ContactVisualizer's name
+(see systems∷SystemBase∷set_name) will be set to a sensible default
 value, unless the default name was already in use by another system.)""";
             // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc_5args_builder_contact_results_port_query_object_port_meshcat_params =
 R"""(Adds a ContactVisualizer and connects it to the given
-multibody::ContactResults-valued output port and the given
-geometry::QueryObject-valued output port. The ContactVisualizer's name
-(see systems::SystemBase::set_name) will be set to a sensible default
+multibody∷ContactResults-valued output port and the given
+geometry∷QueryObject-valued output port. The ContactVisualizer's name
+(see systems∷SystemBase∷set_name) will be set to a sensible default
 value, unless the default name was already in use by another system.)""";
             // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc_4args_builder_contact_results_port_meshcat_params =
 R"""(Adds a ContactVisualizer and connects it to the given
-multibody::ContactResults-valued output port. The ContactVisualizer's
-name (see systems::SystemBase::set_name) will be set to a sensible
+multibody∷ContactResults-valued output port. The ContactVisualizer's
+name (see systems∷SystemBase∷set_name) will be set to a sensible
 default value, unless the default name was already in use by another
 system.
 
@@ -97,10 +97,10 @@ should only be used to convert *from* double *to* other scalar types.)""";
           struct /* Delete */ {
             // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc =
-R"""(Calls geometry::Meshcat::Delete(std::string_view path), with the path
-set to ``prefix``. Since this visualizer will only ever add geometry
-under this prefix, this will remove all geometry/transforms added by
-the visualizer, or by a previous instance of this visualizer using the
+R"""(Calls geometry∷Meshcat∷Delete(std∷string_view path), with the path set
+to ``prefix``. Since this visualizer will only ever add geometry under
+this prefix, this will remove all geometry/transforms added by the
+visualizer, or by a previous instance of this visualizer using the
 same prefix. Use the ``delete_on_initialization_event`` in the
 parameters to determine whether this should be called on
 initialization.)""";
@@ -109,8 +109,8 @@ initialization.)""";
           struct /* contact_results_input_port */ {
             // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc =
-R"""(Returns the multibody::ContactResults-valued input port. It should be
-connected to MultibodyPlant's multibody::ContactResults-valued output
+R"""(Returns the multibody∷ContactResults-valued input port. It should be
+connected to MultibodyPlant's multibody∷ContactResults-valued output
 port. Failure to do so will cause a runtime error when attempting to
 broadcast messages.)""";
           } contact_results_input_port;
@@ -118,7 +118,7 @@ broadcast messages.)""";
           struct /* query_object_input_port */ {
             // Source: drake/multibody/meshcat/contact_visualizer.h
             const char* doc =
-R"""(Returns the geometry::QueryObject-valued input port. It should be
+R"""(Returns the geometry∷QueryObject-valued input port. It should be
 (optionally) connected to SceneGraph's get_query_output_port().
 Failure to do so will prevent the display from showing names for the
 geometry.)""";
@@ -146,7 +146,7 @@ R"""(The color used to draw the point contact force arrows.)""";
           struct /* delete_on_initialization_event */ {
             // Source: drake/multibody/meshcat/contact_visualizer_params.h
             const char* doc =
-R"""(Determines whether to send a Meshcat::Delete(prefix) message on an
+R"""(Determines whether to send a Meshcat∷Delete(prefix) message on an
 initialization event to remove any visualizations e.g. from a previous
 simulation. See declare_initialization_events "Declare initialization
 events" for more information.)""";
@@ -199,7 +199,7 @@ R"""(Sets the length scale of the force vectors.)""";
             const char* doc =
 R"""(A prefix to add to the path for all objects and transforms curated by
 the ContactVisualizer. It can be an absolute path or relative path. If
-relative, this ``prefix`` will be appended to the geometry::Meshcat
+relative, this ``prefix`` will be appended to the geometry∷Meshcat
 ``prefix`` based on the standard path semantics in Meshcat. See
 meshcat_path "Meshcat paths" for details.)""";
           } prefix;
@@ -263,7 +263,7 @@ Beware that the output port of this system always provides the
 sliders' current values, even if evaluated by multiple different
 downstream input ports during a single computation. If you need to
 have a synchronized view of the slider data, place a
-systems::ZeroOrderHold system between the sliders and downstream
+systems∷ZeroOrderHold system between the sliders and downstream
 calculations.)""";
           // Symbol: drake::multibody::meshcat::JointSliders::Delete
           struct /* Delete */ {
@@ -317,12 +317,12 @@ Parameter ``step``:
 Parameter ``decrement_keycodes``:
     (Optional) A vector of length plant.num_positions() with keycodes
     to assign to decrement the value of each individual joint slider.
-    See Meshcat::AddSlider for more details.
+    See Meshcat∷AddSlider for more details.
 
 Parameter ``increment_keycodes``:
     (Optional) A vector of length plant.num_positions() with keycodes
     to assign to increment the value of each individual joint slider.
-    See Meshcat::AddSlider for more details.)""";
+    See Meshcat∷AddSlider for more details.)""";
           } ctor;
           // Symbol: drake::multibody::meshcat::JointSliders::Run
           struct /* Run */ {
@@ -341,7 +341,7 @@ Parameter ``timeout``:
 
 Parameter ``stop_button_keycode``:
     a keycode that will be assigned to the "Stop" button. Setting this
-    to the empty string means no keycode. See Meshcat::AddButton for
+    to the empty string means no keycode. See Meshcat∷AddButton for
     details. $*Default:* "Escape".
 
 Returns:
@@ -375,7 +375,7 @@ Delete).
 
 Parameter ``q``:
     A vector whose length is equal to the associated
-    MultibodyPlant::num_positions().)""";
+    MultibodyPlant∷num_positions().)""";
           } SetPositions;
         } JointSliders;
       } meshcat;

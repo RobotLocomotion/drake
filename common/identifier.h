@@ -1,14 +1,17 @@
 #pragma once
 
 #include <cstdint>
-#include <ostream>
 #include <string>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
+
+// Remove with deprecation 2026-05-01.
+#include <ostream>
 
 namespace drake {
 
@@ -233,7 +236,12 @@ class Identifier {
  @relates Identifier
  */
 template <typename Tag>
-std::ostream& operator<<(std::ostream& out, const Identifier<Tag>& id) {
+DRAKE_DEPRECATED(
+    "2026-05-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& out, const Identifier<Tag>& id) {
   out << id.get_value();
   return out;
 }
@@ -258,8 +266,4 @@ struct hash<drake::Identifier<Tag>> : public drake::DefaultHash {};
 
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename Tag>
-struct formatter<drake::Identifier<Tag>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename Tag, drake, Identifier<Tag>, x, drake::to_string(x))

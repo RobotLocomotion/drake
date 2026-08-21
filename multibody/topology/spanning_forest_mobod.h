@@ -76,25 +76,27 @@ class SpanningForest::Mobod {
   %Mobod's level(). */
   const std::vector<MobodIndex>& outboards() const { return outboard_mobods_; }
 
-  /* Returns the ordinal of the Link mobilized by this %Mobod. If this %Mobod
-  models a LinkComposite (collection of welded-together Links), this is the
-  "active" Link of that composite, the one whose (non-Weld) Joint connects
-  the whole LinkComposite to its inboard %Mobod.
-  @see joint() */
+  /* Returns the ordinal of the Link mobilized by this %Mobod. If this is a
+  composite %Mobod (representing a collection of welded-together links), this is
+  the most-inboard link of that composite, the one with the Joint whose
+  mobilizer connects the composite %Mobod to its inboard %Mobod.
+  @see follower_link_ordinals(), joint() */
   LinkOrdinal link_ordinal() const { return follower_link_ordinals()[0]; }
 
   /* Returns true if _any_ of the follower links is massful, in which case
   this Mobod is also massful. */
   bool has_massful_follower_link() const { return has_massful_follower_link_; }
 
-  /* Returns all the Links that are mobilized by this %Mobod. If this %Mobod
-  represents a LinkComposite, the first Link returned is the "active" Link as
-  returned by link_ordinal(). There is always at least one Link. */
+  /* Returns all the Links that are mobilized by this %Mobod. If this is a
+  composite %Mobod, the first link returned is the most-inboard link as
+  returned by link_ordinal(). There is always at least one link.
+  @see link_ordinal() */
   const std::vector<LinkOrdinal>& follower_link_ordinals() const {
     DRAKE_ASSERT(!follower_link_ordinals_.empty());
     return follower_link_ordinals_;
   }
 
+  /* Returns true if the given Link is one of the followers of this %Mobod. */
   bool HasFollower(LinkOrdinal link_ordinal) const {
     DRAKE_DEMAND(link_ordinal.is_valid());
     return std::find(follower_link_ordinals_.cbegin(),
@@ -103,10 +105,10 @@ class SpanningForest::Mobod {
   }
 
   /* Returns the ordinal of the Joint represented by this %Mobod. If this
-  %Mobod represents a LinkComposite (which has internal weld Joints), the Joint
-  returned here is the "active" Joint that connects the Composite's active Link
-  to a Link that follows this %Mobod's inboard %Mobod in the forest. The
-  returned ordinal is invalid only if this is the World %Mobod. */
+  is a composite %Mobod (with internal, unmodeled weld joints), the joint
+  returned here is the modeled joint whose mobilizer connects the composite
+  %Mobod to its inboard %Mobod in the forest. The returned ordinal is invalid
+  only if this is the World %Mobod. */
   JointOrdinal joint_ordinal() const { return joint_ordinal_; }
 
   /* Returns the index of the Tree of which this %Mobod is a member. The
@@ -208,8 +210,8 @@ class SpanningForest::Mobod {
   // Set to true if _any_ follower link has mass.
   bool has_massful_follower_link_{false};
 
-  // Corresponding Joint (user or modeling joint). If this Mobod represents
-  // a LinkComposite, this is the Joint that mobilizes the whole Composite.
+  // Corresponding Joint (user or modeling joint). If this is a composite Mobod,
+  // this is the Joint whose mobilizer is this Mobod's inboard mobilizer.
   JointOrdinal joint_ordinal_;
 
   // For an already-existing Joint, must we use a reverse mobilizer? If true,

@@ -7,7 +7,8 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/name_value.h"
 
 namespace drake {
@@ -226,8 +227,7 @@ class PackageMap final {
 
   ///@}
 
-  friend std::ostream& operator<<(std::ostream& out,
-                                  const PackageMap& package_map);
+  std::string to_string() const;
 
  private:
   /* A constructor that creates an empty map . */
@@ -248,6 +248,12 @@ class PackageMap final {
   std::unique_ptr<Impl> impl_;
 };
 
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream& operator<<(std::ostream& out, const PackageMap& package_map);
+
 namespace internal {
 
 /* (Internal use only) Parses the metadata from `tools/workspace/drake_models`
@@ -258,8 +264,4 @@ PackageMap::RemoteParams GetDrakeModelsRemoteParams();
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::multibody::PackageMap> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::multibody, PackageMap, x, x.to_string())

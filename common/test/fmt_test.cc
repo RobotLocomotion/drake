@@ -79,14 +79,6 @@ GTEST_TEST(FmtTest, FloatingPoint) {
   EXPECT_EQ(fmt_floating_point(1.0f), "1.0");
 }
 
-GTEST_TEST(FmtTest, FloatingPointDeprecated) {
-  const long double high_resolution_one = 1;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(fmt_floating_point(high_resolution_one), "1.0");
-#pragma GCC diagnostic pop
-}
-
 GTEST_TEST(FmtTest, DebugString) {
   // We'll use these named fmt args to help make our expected values clear.
   fmt::dynamic_format_arg_store<fmt::format_context> args;

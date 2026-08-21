@@ -119,8 +119,8 @@ rust_library(
     version = "0.2.4",
     deps = select({
         "@rules_rust//rust/platform:wasm32-unknown-unknown": [
-            "@crate__js-sys-0.3.81//:js_sys",  # cfg(all(target_family = "wasm", not(any(target_os = "emscripten", target_os = "wasi"))))
-            "@crate__wasm-bindgen-0.2.104//:wasm_bindgen",  # cfg(all(target_family = "wasm", not(any(target_os = "emscripten", target_os = "wasi"))))
+            "@crate__js-sys-0.3.91//:js_sys",  # cfg(all(target_family = "wasm", not(any(target_os = "emscripten", target_os = "wasi"))))
+            "@crate__wasm-bindgen-0.2.114//:wasm_bindgen",  # cfg(all(target_family = "wasm", not(any(target_os = "emscripten", target_os = "wasi"))))
         ],
         "//conditions:default": [],
     }),

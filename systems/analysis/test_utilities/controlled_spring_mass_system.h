@@ -35,7 +35,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   PidControlledSpringMassSystem(double spring_stiffness, double mass, double Kp,
                                 double Ki, double Kd, const T& target_position);
 
-  ~PidControlledSpringMassSystem() override {}
+  ~PidControlledSpringMassSystem() override;
 
   T get_position(const Context<T>& context) const;
 

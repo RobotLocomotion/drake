@@ -11,7 +11,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/value.h"
 #include "drake/geometry/rgba.h"
@@ -437,6 +437,9 @@ class GeometryProperties {
   }
 #endif
 
+  /** Converts the GeometryProperties to a string representation.  */
+  std::string to_string() const;
+
  protected:
   /** Constructs a property set with the default group. Only invoked by final
    subclasses.  */
@@ -492,17 +495,9 @@ class GeometryProperties {
   static Rgba ToRgba(const Eigen::Vector4d& value) {
     return Rgba(value(0), value(1), value(2), value(3));
   }
-
-  friend std::ostream& operator<<(std::ostream& out,
-                                  const GeometryProperties& props);
 };
 
 }  // namespace geometry
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::geometry::GeometryProperties>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::geometry, GeometryProperties, x, x.to_string())

@@ -30,6 +30,7 @@ cc_library_vendored(
         "FEATURE_SDP",
     ],
     includes = ["drake_hdr"],
+    isystem = True,
     linkstatic = True,
 )
 

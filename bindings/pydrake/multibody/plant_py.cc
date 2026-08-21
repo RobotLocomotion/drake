@@ -267,6 +267,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.AddJointActuator.doc)
         .def("RemoveJointActuator", &Class::RemoveJointActuator,
             py::arg("actuator"), cls_doc.RemoveJointActuator.doc)
+        .def("RemoveAllJointActuatorEffortLimits",
+            &Class::RemoveAllJointActuatorEffortLimits,
+            cls_doc.RemoveAllJointActuatorEffortLimits.doc)
         .def(
             "AddFrame",
             [](Class* self, const Frame<T>& frame) {
@@ -365,6 +368,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
             py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
+    cls  // BR
+        .def(
+            "CalcPointsVelocities",
+            [](const Class* self, const Context<T>& context,
+                const Frame<T>& frame_B,
+                const Eigen::Ref<const MatrixX<T>>& p_BQi,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              MatrixX<T> v_AQi_E(p_BQi.rows(), p_BQi.cols());
+              self->CalcPointsVelocities(
+                  context, frame_B, p_BQi, frame_A, frame_E, &v_AQi_E);
+              return v_AQi_E;
+            },
+            py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
+            py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcPointsVelocities.doc);
     cls  // BR
         .def("CalcTotalMass",
             overload_cast_explicit<T, const Context<T>&>(&Class::CalcTotalMass),
@@ -606,11 +624,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     const char* X_PB_parameter_name_deprecated =
         "X_PB parameter name for SetFreeBodyPose() is deprecated and will be "
-        "removed 2026-01-01. Use X_JpJc instead.";
+        "removed 2026-06-01. Use X_JpJc instead.";
     const char* V_PB_parameter_name_deprecated =
         "The parameter order and V_PB parameter name for "
         "SetFreeBodySpatialVelocity() are deprecated and will be removed "
-        "2026-01-01. Use context, body, V_JpJc instead.";
+        "2026-06-01. Use context, body, V_JpJc instead.";
     cls  // BR
         .def("SetDefaultFreeBodyPose",
             WrapDeprecated(cls_doc.SetDefaultFreeBodyPose.doc_deprecated,
@@ -1718,18 +1736,36 @@ PYBIND11_MODULE(plant, m) {
   }
 
   {
+    // Note that due to a bug in the docstring generation, the TAMSI deprecation
+    // warning ends up being attached to the enum class overview doc, instead of
+    // the kTamsi enum field. This is fine, but does make the 'doc_deprecated'
+    // uses below slightly confusing on first glance.
     using Class = DiscreteContactSolver;
     constexpr auto& cls_doc = doc.DiscreteContactSolver;
-    py::enum_<Class>(m, "DiscreteContactSolver", cls_doc.doc)
-        .value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc)
-        .value("kSap", Class::kSap, cls_doc.kSap.doc);
+    py::enum_<Class> cls(m, "DiscreteContactSolver", cls_doc.doc_deprecated);
+    // Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc);
+#pragma GCC diagnostic pop
+    cls.value("kSap", Class::kSap, cls_doc.kSap.doc);
   }
 
   {
+    // Note that due to a bug in the docstring generation, the TAMSI deprecation
+    // warning ends up being attached to the enum class overview doc, instead of
+    // the kTamsi enum field. This is fine, but does make the 'doc_deprecated'
+    // uses below slightly confusing on first glance.
     using Class = DiscreteContactApproximation;
     constexpr auto& cls_doc = doc.DiscreteContactApproximation;
-    py::enum_<Class>(m, "DiscreteContactApproximation", cls_doc.doc)
-        .value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc)
+    py::enum_<Class> cls(
+        m, "DiscreteContactApproximation", cls_doc.doc_deprecated);
+    // Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc);
+#pragma GCC diagnostic pop
+    cls  // BR
         .value("kSap", Class::kSap, cls_doc.kSap.doc)
         .value("kSimilar", Class::kSimilar, cls_doc.kSimilar.doc)
         .value("kLagged", Class::kLagged, cls_doc.kLagged.doc);

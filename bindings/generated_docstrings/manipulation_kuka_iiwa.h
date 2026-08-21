@@ -91,7 +91,7 @@ R"""(Handles lcmt_iiwa_command message from a LcmSubscriberSystem.
 
 Note that this system does not actually subscribe to an LCM channel.
 To receive the message, the input of this system should be connected
-to a LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>().
+to a LcmSubscriberSystem∷Make<drake∷lcmt_iiwa_command>().
 
 It has one required input port, "lcmt_iiwa_command".
 
@@ -176,7 +176,7 @@ R"""(Creates and outputs lcmt_iiwa_command messages.
 Note that this system does not actually send the message on an LCM
 channel. To send the message, the output of this system should be
 connected to a
-systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>().
+systems∷lcm∷LcmPublisherSystem∷Make<lcmt_iiwa_command>().
 
 This system has three vector-valued input ports:
 
@@ -455,7 +455,7 @@ R"""(Creates and outputs lcmt_iiwa_status messages.
 Note that this system does not actually send the message an LCM
 channel. To send the message, the output of this system should be
 connected to a
-systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>().
+systems∷lcm∷LcmPublisherSystem∷Make<lcmt_iiwa_status>().
 
 This system has many vector-valued input ports, most of which have
 exactly num_joints elements. The exception is ``time_measured`` which

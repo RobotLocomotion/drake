@@ -16,4 +16,13 @@ drake_py_binary(
     ],
 )
 
+# This program is deprecated. Docker images will be removed in the future.
+drake_py_binary(
+    name = "push_docker",
+    srcs = ["push_docker.py"],
+    deps = [
+        "@github3_py_internal//:github3_py",
+    ],
+)
+
 add_lint_tests()

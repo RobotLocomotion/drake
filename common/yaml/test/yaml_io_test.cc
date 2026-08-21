@@ -198,6 +198,15 @@ GTEST_TEST(YamlIoTest, SaveFileBad) {
                               ".* could not open .*/no_such_dir/.*");
 }
 
+GTEST_TEST(YamlIoTest, LoadYamlOptionsToStringFmtFormatter) {
+  LoadYamlOptions options = {.allow_yaml_with_no_cpp = true,
+                             .allow_cpp_with_no_yaml = false,
+                             .retain_map_defaults = true};
+  EXPECT_EQ(fmt::to_string(options),
+            "{.allow_yaml_with_no_cpp = true, "
+            ".allow_cpp_with_no_yaml = false, "
+            ".retain_map_defaults = true}");
+}
 }  // namespace
 }  // namespace test
 }  // namespace yaml

@@ -75,6 +75,7 @@ cc_library(
         "//conditions:default": [],
     }),
     includes = ["."],
+    isystem = True,
     copts = [
         "-fvisibility=hidden",
         "-w",

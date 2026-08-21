@@ -15,10 +15,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"
 
-using common_robotics_utilities::voxel_grid::DSHVGSetType;
 using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGrid;
-using common_robotics_utilities::voxel_grid::GridIndex;
-using common_robotics_utilities::voxel_grid::GridSizes;
+using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGridSizes;
+using common_robotics_utilities::voxel_grid::Vector3i64;
 using Eigen::Map;
 using Eigen::NoChange;
 
@@ -483,38 +482,29 @@ PointCloud PointCloud::VoxelizedDownSample(
   // DSHVG usually has each dynamic "chunk" contain multiple voxels, by setting
   // the chunk size to (voxel_size, 1, 1, 1) each chunk contains a single voxel
   // and the whole DSHVG behaves as a sparse voxel grid.
-  const GridSizes chunk_sizes(voxel_size, INT64_C(1), INT64_C(1), INT64_C(1));
+  const auto grid_sizes =
+      DynamicSpatialHashedVoxelGridSizes::FromChunkVoxelCounts(
+          voxel_size, Vector3i64(1, 1, 1));
   const std::vector<int> default_chunk_value;
   // By providing an initial estimated number of chunks, we reduce reallocation
   // and rehashing in the DSHVG.
   const size_t num_expected_chunks = static_cast<size_t>(size() / 16);
   DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
-      chunk_sizes, default_chunk_value, num_expected_chunks);
+      grid_sizes, default_chunk_value, num_expected_chunks);
 
   const auto& my_xyzs = storage_->xyzs();
 
   // Add points into the voxel grid.
   for (int i = 0; i < size(); ++i) {
     if (my_xyzs.col(i).array().isFinite().all()) {
-      auto chunk_query = dynamic_voxel_grid.GetLocationMutable3d(
+      auto query = dynamic_voxel_grid.GetOrCreateLocationMutable3d(
           my_xyzs.col(i).cast<double>());
-      if (chunk_query) {
-        // If the containing chunk has already been allocated, add the current
-        // point index directly.
-        chunk_query.Value().emplace_back(i);
-      } else {
-        // If the containing chunk hasn't already been allocated, create a new
-        // chunk containing the current point index.
-        dynamic_voxel_grid.SetLocation3d(my_xyzs.col(i).cast<double>(),
-                                         DSHVGSetType::SET_CHUNK, {i});
-      }
+      query.Value().emplace_back(i);
     }
   }
 
   // Initialize downsampled cloud.
-  PointCloud down_sampled(
-      dynamic_voxel_grid.GetImmutableInternalChunks().size(),
-      storage_->fields());
+  PointCloud down_sampled(dynamic_voxel_grid.NumChunks(), storage_->fields());
 
   const bool this_has_normals = has_normals();
   const bool this_has_rgbs = has_rgbs();
@@ -578,20 +568,18 @@ PointCloud PointCloud::VoxelizedDownSample(
 #endif
 
   // Since we specify chunks contain a single voxel, a chunk's lone voxel can be
-  // retrieved with index (0, 0, 0).
-  const GridIndex kSingleVoxel(0, 0, 0);
+  // retrieved with index 0.
+  const int64_t kSingleVoxel = 0;
 
   // Populate the elements of the down_sampled cloud.
   if (operate_in_parallel) {
     // Flatten voxel cells to allow parallel processing.
     std::vector<const std::vector<int>*> voxel_indices;
-    voxel_indices.reserve(
-        dynamic_voxel_grid.GetImmutableInternalChunks().size());
-    for (const auto& [chunk_region, chunk] :
-         dynamic_voxel_grid.GetImmutableInternalChunks()) {
-      unused(chunk_region);
-      const std::vector<int>& indices_in_this =
-          chunk.GetIndexImmutable(kSingleVoxel).Value();
+    voxel_indices.reserve(dynamic_voxel_grid.NumChunks());
+    for (const auto& [chunk_base, chunk] :
+         dynamic_voxel_grid.GetImmutableInternalChunkKeeper()) {
+      unused(chunk_base);
+      const std::vector<int>& indices_in_this = chunk.AccessIndex(kSingleVoxel);
       voxel_indices.emplace_back(&indices_in_this);
     }
 
@@ -607,11 +595,10 @@ PointCloud PointCloud::VoxelizedDownSample(
     }
   } else {
     int index_in_down_sampled = 0;
-    for (const auto& [chunk_region, chunk] :
-         dynamic_voxel_grid.GetImmutableInternalChunks()) {
-      unused(chunk_region);
-      const std::vector<int>& indices_in_this =
-          chunk.GetIndexImmutable(kSingleVoxel).Value();
+    for (const auto& [chunk_base, chunk] :
+         dynamic_voxel_grid.GetImmutableInternalChunkKeeper()) {
+      unused(chunk_base);
+      const std::vector<int>& indices_in_this = chunk.AccessIndex(kSingleVoxel);
       process_voxel(index_in_down_sampled, indices_in_this);
       ++index_in_down_sampled;
     }

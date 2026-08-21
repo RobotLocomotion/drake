@@ -955,6 +955,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
         .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc)
+        .def("set_effort_limit", &Class::set_effort_limit,
+            py::arg("effort_limit"), cls_doc.set_effort_limit.doc)
         .def("default_rotor_inertia", &Class::default_rotor_inertia,
             cls_doc.default_rotor_inertia.doc)
         .def("default_gear_ratio", &Class::default_gear_ratio,

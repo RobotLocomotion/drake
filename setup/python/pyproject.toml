@@ -10,8 +10,7 @@
 
 [project]
 name = "drake"
-# The supported Python major/minor version should match the minimum listed in
-# the root CMakeLists.txt and doc/_pages/from_source.md.
+# When changing this, see drake/tools/workspace/python/README.md.
 requires-python = ">=3.10"
 
 # Dependencies needed to build Drake.

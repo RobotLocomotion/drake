@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/sorted_pair.h"
-#include "drake/common/ssize.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
 namespace drake {

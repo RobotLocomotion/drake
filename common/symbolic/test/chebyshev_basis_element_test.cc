@@ -217,6 +217,17 @@ TEST_F(SymbolicChebyshevBasisElementTest, Integrate) {
   EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 2}, {y_, 2}})), -1. / 4);
 }
 
+TEST_F(SymbolicChebyshevBasisElementTest, ToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(ChebyshevBasisElement()), "T0()");
+  EXPECT_EQ(fmt::to_string(ChebyshevBasisElement({{x_, 1}})), "T1(x)");
+  EXPECT_EQ(fmt::to_string(ChebyshevBasisElement({{x_, 0}})), "T0()");
+  EXPECT_EQ(fmt::to_string(ChebyshevBasisElement({{x_, 1}, {y_, 2}})),
+            "T1(x)T2(y)");
+}
+
+// Remove StringOutput test with deprecation 2026-06-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(SymbolicChebyshevBasisElementTest, StringOutput) {
   std::ostringstream os1;
   os1 << ChebyshevBasisElement();
@@ -234,6 +245,7 @@ TEST_F(SymbolicChebyshevBasisElementTest, StringOutput) {
   os4 << ChebyshevBasisElement({{x_, 1}, {y_, 2}});
   EXPECT_EQ(fmt::format("{}", os4.str()), "T1(x)T2(y)");
 }
+#pragma GCC diagnostic pop
 
 TEST_F(SymbolicChebyshevBasisElementTest, ToExpression) {
   EXPECT_PRED2(test::ExprEqual, ChebyshevBasisElement().ToExpression(),

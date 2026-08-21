@@ -740,7 +740,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
   graphviz << "digraph GraphOfConvexSets {\n";
   graphviz << "labelloc=t;\n";
   for (const auto& [v_id, v] : vertices_) {
-    graphviz << "v" << v_id << " [label=\"" << v->name();
+    graphviz << "v" << to_string(v_id) << " [label=\"" << v->name();
     if (result) {
       if (options.show_vars) {
         std::optional<VectorXd> x = v->GetSolution(*result);
@@ -759,7 +759,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
   }
   for (const auto& [e_id, e] : edges_) {
     unused(e_id);
-    graphviz << "v" << e->u().id() << " -> v" << e->v().id();
+    graphviz << "v" << to_string(e->u().id()) << " -> v"
+             << to_string(e->v().id());
     graphviz << " [label=\"" << e->name();
     if (result) {
       if (options.show_costs) {
@@ -794,7 +795,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
 
   if (active_path) {
     for (const auto& e : *active_path) {
-      graphviz << "v" << e->u().id() << " -> v" << e->v().id();
+      graphviz << "v" << to_string(e->u().id()) << " -> v"
+               << to_string(e->v().id());
       graphviz << " [label=\"" << e->name() << " = active\"";
       graphviz << ", color="
                << "\"#ff0000\"";

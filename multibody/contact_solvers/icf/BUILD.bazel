@@ -1,0 +1,267 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "icf",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":coupler_constraints_data_pool",
+        ":eigen_pool",
+        ":gain_constraints_data_pool",
+        ":icf_builder",
+        ":icf_data",
+        ":icf_external_systems_linearizer",
+        ":icf_linear_feedback_gains",
+        ":icf_model",
+        ":icf_search_direction_data",
+        ":icf_solver",
+        ":icf_solver_parameters",
+        ":limit_constraints_data_pool",
+        ":patch_constraints_data_pool",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_pool",
+    srcs = ["eigen_pool.cc"],
+    hdrs = ["eigen_pool.h"],
+    deps = [
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "coupler_constraints_data_pool",
+    srcs = ["coupler_constraints_data_pool.cc"],
+    hdrs = ["coupler_constraints_data_pool.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "gain_constraints_data_pool",
+    srcs = ["gain_constraints_data_pool.cc"],
+    hdrs = ["gain_constraints_data_pool.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "limit_constraints_data_pool",
+    srcs = ["limit_constraints_data_pool.cc"],
+    hdrs = ["limit_constraints_data_pool.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "patch_constraints_data_pool",
+    srcs = ["patch_constraints_data_pool.cc"],
+    hdrs = ["patch_constraints_data_pool.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_search_direction_data",
+    hdrs = ["icf_search_direction_data.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_data",
+    srcs = ["icf_data.cc"],
+    hdrs = ["icf_data.h"],
+    deps = [
+        ":coupler_constraints_data_pool",
+        ":eigen_pool",
+        ":gain_constraints_data_pool",
+        ":limit_constraints_data_pool",
+        ":patch_constraints_data_pool",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_builder",
+    srcs = ["icf_builder.cc"],
+    hdrs = ["icf_builder.h"],
+    deps = [
+        ":icf_linear_feedback_gains",
+        ":icf_model",
+        "//common:essential",
+        "//multibody/plant",
+    ],
+    implementation_deps = [
+        "//multibody/plant:contact_properties",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_external_systems_linearizer",
+    srcs = ["icf_external_systems_linearizer.cc"],
+    hdrs = ["icf_external_systems_linearizer.h"],
+    deps = [
+        ":icf_linear_feedback_gains",
+        "//common:essential",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_linear_feedback_gains",
+    srcs = ["icf_linear_feedback_gains.cc"],
+    hdrs = ["icf_linear_feedback_gains.h"],
+    deps = [
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_solver_parameters",
+    hdrs = ["icf_solver_parameters.h"],
+    deps = ["//common:name_value"],
+)
+
+drake_cc_library(
+    name = "icf_solver",
+    srcs = ["icf_solver.cc"],
+    hdrs = ["icf_solver.h"],
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        ":icf_solver_parameters",
+        "//common:essential",
+        "//common:name_value",
+        "//multibody/contact_solvers:block_sparse_cholesky_solver",
+        "//multibody/contact_solvers:newton_with_bisection",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_model",
+    srcs = [
+        "coupler_constraints_pool.cc",
+        "gain_constraints_pool.cc",
+        "icf_model.cc",
+        "limit_constraints_pool.cc",
+        "patch_constraints_pool.cc",
+    ],
+    hdrs = [
+        "coupler_constraints_pool.h",
+        "gain_constraints_pool.h",
+        "icf_model.h",
+        "limit_constraints_pool.h",
+        "patch_constraints_pool.h",
+    ],
+    deps = [
+        ":coupler_constraints_data_pool",
+        ":eigen_pool",
+        ":icf_data",
+        ":icf_search_direction_data",
+        ":limit_constraints_data_pool",
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_pool_test",
+    deps = [
+        ":eigen_pool",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_builder_test",
+    deps = [
+        ":icf_builder",
+        "//common/test_utilities",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_data_test",
+    deps = [
+        ":icf_data",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_external_systems_linearizer_test",
+    deps = [
+        ":icf_external_systems_linearizer",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:pid_controller",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_model_test",
+    deps = [
+        ":eigen_pool",
+        ":icf_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_solver_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_solver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "two_spheres_test",
+    deps = [
+        ":icf_builder",
+        ":icf_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
+        "//multibody/parsing:parser",
+        "//multibody/plant:contact_properties",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+add_lint_tests()

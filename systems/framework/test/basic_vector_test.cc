@@ -236,6 +236,10 @@ using DefaultScalars =
     ::testing::Types<double, AutoDiffXd, symbolic::Expression>;
 TYPED_TEST_SUITE(TypedBasicVectorTest, DefaultScalars);
 
+// TODO(2026-07-01): delete test `StringStream` when
+// `BasicVector<T>::operator<<` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests ability to stream a BasicVector into a string.
 TYPED_TEST(TypedBasicVectorTest, StringStream) {
   using T = TypeParam;
@@ -247,7 +251,22 @@ TYPED_TEST(TypedBasicVectorTest, StringStream) {
       fmt::format("hello {} world", fmt_eigen(vec.value().transpose()));
   EXPECT_EQ(s.str(), expected);
 }
+#pragma GCC diagnostic pop
 
+// Tests string representation of a BasicVector.
+TYPED_TEST(TypedBasicVectorTest, ToStringFmtFormatter) {
+  using T = TypeParam;
+  BasicVector<T> vec(3);
+  vec.get_mutable_value() << 1.0, 2.2, 3.3;
+  const std::string expected =
+      fmt::format("hello {} world", fmt_eigen(vec.value().transpose()));
+  EXPECT_EQ(fmt::format("hello {} world", vec), expected);
+}
+
+// TODO(2026-07-01): delete test `ZeroLengthStringStream` block when
+// `BasicVector<T>::operator<<` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests ability to stream a BasicVector of size zero into a string.
 TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
   using T = TypeParam;
@@ -257,6 +276,16 @@ TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
   const std::string expected =
       fmt::format("foo [{}] bar", fmt_eigen(vec.value().transpose()));
   EXPECT_EQ(s.str(), expected);
+}
+#pragma GCC diagnostic pop
+
+// Tests string representation of a BasicVector of size zero.
+TYPED_TEST(TypedBasicVectorTest, ZeroLengthVectorToStringFmtFormatter) {
+  using T = TypeParam;
+  BasicVector<T> vec(0);
+  const std::string expected =
+      fmt::format("foo [{}] bar", fmt_eigen(vec.value().transpose()));
+  EXPECT_EQ(fmt::format("foo [{}] bar", vec), expected);
 }
 
 // Tests the default set of bounds (empty).

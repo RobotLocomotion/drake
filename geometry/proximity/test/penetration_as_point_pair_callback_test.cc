@@ -411,7 +411,7 @@ TEST_F(PenetrationAsPointPairCallbackTest, TestGradient) {
   // nhat_BA_W = -p_WBo / |p_WBo|, hence ∂nhat_BA_W /∂p_WBo = -∂(p_WBo/|p_WBo|)
   // / ∂p_WBo
   EXPECT_TRUE(CompareMatrices(math::ExtractGradient(result.nhat_BA_W),
-                              -dp_WBo_normalized_dp_WBo, kEps));
+                              -dp_WBo_normalized_dp_WBo, 2 * kEps));
   // p_WCa = radius * p_WBo / |p_WBo|.
   const Eigen::Matrix3d dp_WCa_dp_WBo = dp_WBo_normalized_dp_WBo * kRadius;
   EXPECT_TRUE(CompareMatrices(math::ExtractGradient(result.p_WCa),

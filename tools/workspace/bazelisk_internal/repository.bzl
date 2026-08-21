@@ -10,7 +10,7 @@ def bazelisk_internal_repository(
         When updating, the following additional steps (run in the Drake source
         tree) must also be performed:
 
-        $ bazel build @bazelisk//:*
+        $ bazel build @bazelisk_internal//:*
         $ cp -t third_party/com_github_bazelbuild_bazelisk/ \\
             bazel-drake/external/+internal_repositories+bazelisk_internal/LICENSE \\
             bazel-drake/external/+internal_repositories+bazelisk_internal/bazelisk.py
@@ -26,11 +26,8 @@ def bazelisk_internal_repository(
         To fully test, a Linux uprovisioned job must be launched from the
         pull request.
         """,  # noqa
-        commit = "v1.27.0",
-        sha256 = "d4abfac1a39876ec1e6c6fa04ec0b62cc4bef174f11d19848bc80dc15ee05261",  # noqa
+        commit = "v1.28.1",
+        sha256 = "e80f76b9d86f529e9d267ce0d333365ea14ec92b3269f81ab85cbd69edab2793",  # noqa
         build_file = ":package.BUILD.bazel",
-        patches = [
-            ":patches/upstream/pr722.patch",
-        ],
         mirrors = mirrors,
     )

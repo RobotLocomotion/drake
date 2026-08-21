@@ -144,7 +144,7 @@ R"""(For systems with multiple input ports, we must specify which input
 port is being used in the control design.
 
 See also:
-    systems::InputPortSelection.)""";
+    systems∷InputPortSelection.)""";
           } input_port_index;
           // Symbol: drake::systems::controllers::DynamicProgrammingOptions::periodic_boundary_conditions
           struct /* periodic_boundary_conditions */ {
@@ -281,7 +281,7 @@ R"""(For systems with multiple input ports, we must specify which input
 port is being used in the control design.
 
 See also:
-    systems::InputPortSelection.)""";
+    systems∷InputPortSelection.)""";
           } input_port_index;
           // Symbol: drake::systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions::simulator_config
           struct /* simulator_config */ {
@@ -439,7 +439,7 @@ Parameter ``options``:
     optional DynamicProgrammingOptions structure.
 
 Returns:
-    a std::pair containing the resulting policy, implemented as a
+    a std∷pair containing the resulting policy, implemented as a
     BarycentricMeshSystem, and the RowVectorXd J that defines the
     expected cost-to-go on a BarycentricMesh using ``state_grid``. The
     policy has a single vector input (which is the continuous state of
@@ -477,7 +477,7 @@ containing Coriolis and gyroscopic effects, ``τ_g(q)`` is the vector
 of generalized forces due to gravity and ``τ_app`` contains applied
 forces from force elements added to the multibody model (this can
 include damping, springs, etc. See
-MultibodyPlant::CalcForceElementsContribution()).
+MultibodyPlant∷CalcForceElementsContribution()).
 
 The system also provides a pure gravity compensation mode via an
 option in the constructor. In this case, the output is simply
@@ -498,7 +498,7 @@ option in the constructor. In this case, the output is simply
 Note:
     As an alternative to adding a controller to your diagram, gravity
     compensation can be modeled by disabling gravity for a given model
-    instance, see MultibodyPlant::set_gravity_enabled(), unless the
+    instance, see MultibodyPlant∷set_gravity_enabled(), unless the
     gravity compensation needs to be accounted for when evaluating
     effort limits.
 
@@ -593,7 +593,7 @@ identical to the dimensionality of the generalized velocities.)""";
 R"""(A state feedback controller that uses a PidController to generate
 desired accelerations, which are then converted into MultibodyPlant
 actuation inputs using InverseDynamics (with ``mode =``
-InverseDynamics::kInverseDynamics). More specifically, the output of
+InverseDynamics∷kInverseDynamics). More specifically, the output of
 this controller is:
 
 
@@ -636,7 +636,7 @@ Note that this class assumes the robot is fully actuated, its position
 and velocity have the same dimension, and it does not have a floating
 base. If violated, the program will abort. This controller was not
 designed for use with a constrained plant (e.g.
-multibody::MultibodyPlant::num_constraints() > 0): the controller does
+multibody∷MultibodyPlant∷num_constraints() > 0): the controller does
 not account for any constraint forces. Use on such systems is not
 recommended.
 
@@ -682,11 +682,11 @@ Precondition:
 
 Raises:
     RuntimeError if - The plant is not finalized (see
-    MultibodyPlant::Finalize()). - The plant is not compatible with
-    the plant context. - The number of generalized velocities is not
-    equal to the number of generalized positions. - The model is not
-    fully actuated. - Vector kp, ki and kd do not all have the same
-    size equal to the number of generalized positions.)""";
+    MultibodyPlant∷Finalize()). - The plant is not compatible with the
+    plant context. - The number of generalized velocities is not equal
+    to the number of generalized positions. - The model is not fully
+    actuated. - Vector kp, ki and kd do not all have the same size
+    equal to the number of generalized positions.)""";
           } ctor;
           // Symbol: drake::systems::controllers::InverseDynamicsController::get_input_port_desired_acceleration
           struct /* get_input_port_desired_acceleration */ {
@@ -755,11 +755,11 @@ where ``Kp`` and ``Kd`` are the joint stiffness and damping
 coefficients, respectively, ``τ_g(q)`` is the vector of generalized
 forces due to gravity, and ``τ_app`` contains applied forces from
 force elements added to the multibody model (this can include damping,
-springs, etc. See MultibodyPlant::CalcForceElementsContribution()).
-B⁻¹ is the inverse of the actuation matrix. ``q_d`` and ``v_d`` are
-the desired (setpoint) values for the multibody positions and
-velocities, respectively. ``kd`` and ``kp`` are taken as vectors, and
-⊙ represents elementwise multiplication.
+springs, etc. See MultibodyPlant∷CalcForceElementsContribution()). B⁻¹
+is the inverse of the actuation matrix. ``q_d`` and ``v_d`` are the
+desired (setpoint) values for the multibody positions and velocities,
+respectively. ``kd`` and ``kp`` are taken as vectors, and ⊙ represents
+elementwise multiplication.
 
 The goal of this controller is to produce a closed-loop dynamics that
 resembles a spring-damper dynamics at the joints around the setpoint:
@@ -803,11 +803,11 @@ details.
 Note:
     As an alternative to adding a separate controller system to your
     diagram, you can model a JointStiffness controller using
-    MultibodyPlant APIs. Refer to
-    MultibodyPlant::set_gravity_enabled() as an alternative to
-    modeling gravity compensation (unless the gravity compensation
-    terms need to be accounted for when computing effort limits). To
-    model PD controlled actuators, refer to mbp_actuation "Actuation".)""";
+    MultibodyPlant APIs. Refer to MultibodyPlant∷set_gravity_enabled()
+    as an alternative to modeling gravity compensation (unless the
+    gravity compensation terms need to be accounted for when computing
+    effort limits). To model PD controlled actuators, refer to
+    mbp_actuation "Actuation".)""";
           // Symbol: drake::systems::controllers::JointStiffnessController::JointStiffnessController<T>
           struct /* ctor */ {
             // Source: drake/systems/controllers/joint_stiffness_controller.h
@@ -893,7 +893,7 @@ Parameter ``linearly_parameterized_cost_to_go_function``:
     the state vector as the first input and the parameter vector as
     the second input. This can be any function of the form Jₚ(x) = ∑
     pᵢ φᵢ(x). This algorithm will pass in a VectorX of
-    symbolic::Variable in order to set up the linear program.
+    symbolic∷Variable in order to set up the linear program.
 
 Parameter ``state_samples``:
     is a list of sample states (one per column) at which to apply the
@@ -1021,7 +1021,7 @@ Parameter ``system``:
 Parameter ``context``:
     Defines the desired state and control input to regulate the system
     to. Note that this state/input must be an equilibrium point of the
-    system. See drake::systems::Linearize for more details.
+    system. See drake∷systems∷Linearize for more details.
 
 Parameter ``Q``:
     A symmetric positive semi-definite cost matrix of size num_states
@@ -1046,7 +1046,7 @@ Returns:
 Raises:
     RuntimeError if R is not positive definite. $See also:
 
-drake::systems::Linearize())""";
+drake∷systems∷Linearize())""";
         } LinearQuadraticRegulator;
         // Symbol: drake::systems::controllers::LinearQuadraticRegulatorResult
         struct /* LinearQuadraticRegulatorResult */ {

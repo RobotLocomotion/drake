@@ -385,7 +385,7 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
 
 /* Tests that actuation forces are accumulated using the correct indexing from
  JointActuaton::input_start() */
-TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointActuator) {
   BuildModel();
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   // Set gravity vector to zero so there is no force element contribution.
@@ -395,7 +395,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
 
   const systems::InputPort<double>& u_input =
       plant_->get_actuation_input_port();
-  u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
+  u_input.FixValue(plant_context_, Vector2d(0.25, 0.5));
 
   DiscreteUpdateManager<double>& manager =
       MultibodyPlantTester::discrete_update_manager(*plant_);
@@ -416,7 +416,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
       *plant_context_, false /* no joint limit penalty forces */,
       false /* no pd controlled actuator forces */, &forces);
 
-  const Vector3d expected_actuation_wo_pd(1.0, 0.0, 3.0);
+  const Vector3d expected_actuation_wo_pd(0.25, 0.0, 0.5);
   EXPECT_TRUE(
       CompareMatrices(forces.generalized_forces(), expected_actuation_wo_pd));
 }

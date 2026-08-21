@@ -11,9 +11,9 @@ using systems::DiagramBuilder;
 using systems::Simulator;
 
 template <template <typename> class JointType>
-void MultibodyPlantRemodeling::BuildModel() {
+void MultibodyPlantRemodelingBase::BuildModel() {
   builder_ = std::make_unique<DiagramBuilder<double>>();
-  MultibodyPlantConfig config = {.time_step = kTimeStep,
+  MultibodyPlantConfig config = {.time_step = time_step_,
                                  .discrete_contact_approximation = "sap"};
   std::tie(plant_, scene_graph_) = AddMultibodyPlant(config, builder_.get());
 
@@ -37,8 +37,8 @@ void MultibodyPlantRemodeling::BuildModel() {
       "actuator2", plant_->template GetJointByName<JointType>("joint2"), 1);
 }
 
-void MultibodyPlantRemodeling::DoRemoval(bool remove_actuator,
-                                         bool remove_joint) {
+void MultibodyPlantRemodelingBase::DoRemoval(bool remove_actuator,
+                                             bool remove_joint) {
   if (remove_actuator) {
     plant_->RemoveJointActuator(plant_->GetJointActuatorByName("actuator1"));
   }
@@ -48,7 +48,7 @@ void MultibodyPlantRemodeling::DoRemoval(bool remove_actuator,
   }
 }
 
-void MultibodyPlantRemodeling::FinalizeAndBuild() {
+void MultibodyPlantRemodelingBase::FinalizeAndBuild() {
   plant_->Finalize();
 
   diagram_ = builder_->Build();
@@ -59,8 +59,8 @@ void MultibodyPlantRemodeling::FinalizeAndBuild() {
       &plant_->GetMyMutableContextFromRoot(&simulator_->get_mutable_context());
 }
 
-template void MultibodyPlantRemodeling::BuildModel<RevoluteJoint>();
-template void MultibodyPlantRemodeling::BuildModel<PrismaticJoint>();
+template void MultibodyPlantRemodelingBase::BuildModel<RevoluteJoint>();
+template void MultibodyPlantRemodelingBase::BuildModel<PrismaticJoint>();
 
 }  // namespace multibody
 }  // namespace drake

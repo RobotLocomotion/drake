@@ -2,9 +2,9 @@
 workspace.  This repository contains no rules; just a single file named
 `path.bzl` which has a variable `additional_transitive_quote_include_directory`
 with Drake's parent directory name.  This path is used by `aspect.bzl` in this
-package (@drake//tools/clion).  This rule only makes sense when used directly
-from Drake's WORKSPACE file, not from any other project; thus, it does not live
-under //tools/workspace like most other repository rules.
+package (@drake//tools/clion). This rule only makes sense when used directly
+by Drake, not from any other project; thus, it does not live under 'workspace'
+like most other repository rules.
 """
 
 def _impl(repository_ctx):
@@ -36,9 +36,7 @@ def _impl(repository_ctx):
         executable = False,
     )
 
-def drake_clion_environment():
-    rule = repository_rule(
-        implementation = _impl,
-        local = True,
-    )
-    rule(name = "drake_clion_environment")
+drake_clion_environment = repository_rule(
+    implementation = _impl,
+    local = True,
+)
