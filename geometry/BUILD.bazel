@@ -641,6 +641,7 @@ drake_cc_binary(
     testonly = True,
     srcs = ["test/meshcat_manual_test.cc"],
     data = [
+        "test/mouse_spring_demo.sdf",
         ":environment_maps",
         "//examples/kuka_iiwa_arm:models",
         "//examples/scene_graph:models",
@@ -656,6 +657,7 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//common/test_utilities:maybe_pause_for_user",
         "//multibody/meshcat:contact_visualizer",
+        "//multibody/meshcat:meshcat_mouse_spring",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

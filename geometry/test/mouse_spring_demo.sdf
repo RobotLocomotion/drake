@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<!-- A row of free compliant-hydroelastic boxes resting on a rigid-hydroelastic
+     ground. Used to test mouse spring interactions. -->
+<sdf version="1.9" xmlns:drake="http://drake.mit.edu">
+  <model name="mouse_spring_demo">
+
+    <!-- Ground: a rigid hydroelastic slab whose top face lies at z = 0. -->
+    <link name="ground">
+      <pose>0 0 -0.05 0 0 0</pose>
+      <visual name="ground">
+        <geometry>
+          <box>
+            <size>3 3 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.5 0.5 0.5 1</diffuse>
+        </material>
+      </visual>
+      <collision name="ground">
+        <geometry>
+          <box>
+            <size>3 3 0.1</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>3.0</drake:mesh_resolution_hint>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+    <joint name="ground_weld" type="fixed">
+      <parent>world</parent>
+      <child>ground</child>
+    </joint>
+
+    <!-- A row of free compliant hydroelastic boxes resting on the ground. The
+         0.1 m boxes have a mass of 1 kg each. -->
+    <link name="box_0">
+      <pose>-0.3 0 0.05 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.0016666666666666668</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0016666666666666668</iyy>
+          <iyz>0</iyz>
+          <izz>0.0016666666666666668</izz>
+        </inertia>
+      </inertial>
+      <visual name="box_0_visual">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <collision name="box_0_collision">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:mesh_resolution_hint>0.05</drake:mesh_resolution_hint>
+          <drake:hydroelastic_modulus>1.0e8</drake:hydroelastic_modulus>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+
+    <link name="box_1">
+      <pose>0 0 0.05 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.0016666666666666668</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0016666666666666668</iyy>
+          <iyz>0</iyz>
+          <izz>0.0016666666666666668</izz>
+        </inertia>
+      </inertial>
+      <visual name="box_1_visual">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.7 0.3 1</diffuse>
+        </material>
+      </visual>
+      <collision name="box_1_collision">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:mesh_resolution_hint>0.05</drake:mesh_resolution_hint>
+          <drake:hydroelastic_modulus>1.0e8</drake:hydroelastic_modulus>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+
+    <link name="box_2">
+      <pose>0.3 0 0.05 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.0016666666666666668</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0016666666666666668</iyy>
+          <iyz>0</iyz>
+          <izz>0.0016666666666666668</izz>
+        </inertia>
+      </inertial>
+      <visual name="box_2_visual">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.4 0.9 1</diffuse>
+        </material>
+      </visual>
+      <collision name="box_2_collision">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:mesh_resolution_hint>0.05</drake:mesh_resolution_hint>
+          <drake:hydroelastic_modulus>1.0e8</drake:hydroelastic_modulus>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+
+  </model>
+</sdf>

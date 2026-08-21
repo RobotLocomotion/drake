@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include <Eigen/Dense>
@@ -29,6 +30,7 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(enable_meshcat_creation));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
     a->Visit(DRAKE_NVP(enable_alpha_sliders));
+    a->Visit(DRAKE_NVP(mouse_interaction_stiffness));
   }
 
   /** Which LCM URL to use.
@@ -78,6 +80,15 @@ struct VisualizationConfig {
 
   /** Determines whether to enable alpha sliders for geometry display. */
   bool enable_alpha_sliders{false};
+
+  /** The mass-normalized stiffness (in 1/s²) of the virtual spring
+   that lets a user drag bodies with the mouse in Meshcat (see
+   multibody::meshcat::MeshcatMouseSpring).
+
+   Setting this to std::nullopt disables mouse interaction. It also has no
+   effect for Meldis/LCM, and is skipped if the plant's applied-spatial-force
+   input port is already connected. */
+  std::optional<double> mouse_interaction_stiffness{100.0};
 };
 
 }  // namespace visualization
