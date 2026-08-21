@@ -5023,9 +5023,9 @@ to choose torque stiffness and damping constants" for more details.)""";
         // Source: drake/multibody/tree/linear_spring_damper.h
         const char* doc =
 R"""(This ForceElement models a spring-damper attached between two points
-on two different bodies (links). Given a point P on a body A and a
-point Q on a body B with positions p_AP and p_BQ, respectively, this
-spring-damper applies equal and opposite forces on bodies A and B
+on two different links (bodies). Given a point P on a link A and a
+point Q on a link B with positions p_AP and p_BQ, respectively, this
+spring-damper applies equal and opposite forces on links A and B
 according to:
 
 
@@ -5047,7 +5047,7 @@ its rate of change, ``r̂ = (p_WQ - p_WP) / ℓ`` is the normalized
 vector from P to Q, ℓ₀ is the free length of the spring and k and c
 are the stiffness and damping of the spring-damper, respectively. This
 ForceElement is meant to model finite free length springs attached
-between two points. In this typical arrangement springs are usually
+between two points. In the typical arrangement springs are usually
 pre-loaded, meaning they apply a non-zero spring force in the static
 configuration of the system. Thus, neither the free length ℓ₀ nor the
 current length ℓ of the spring can ever be zero. The length of the
@@ -5056,7 +5056,7 @@ and therefore this element throws a RuntimeError exception in that
 case. Note that:
 
 - The applied force is always along the line connecting points P and
-Q. - Damping always dissipates energy. - Forces on bodies A and B are
+Q. - Damping always dissipates energy. - Forces on links A and B are
 equal and opposite according to Newton's third law.)""";
         // Symbol: drake::multibody::LinearSpringDamper::CalcConservativePower
         struct /* CalcConservativePower */ {
@@ -5092,11 +5092,11 @@ equal and opposite according to Newton's third law.)""";
         struct /* ctor */ {
           // Source: drake/multibody/tree/linear_spring_damper.h
           const char* doc =
-R"""(Constructor for a spring-damper between a point P on ``bodyA`` and a
-point Q on ``bodyB``. Point P is defined by its position ``p_AP`` as
-measured and expressed in the body frame A and similarly, point Q is
-defined by its position p_BQ as measured and expressed in body frame
-B. The remaining parameters define:
+R"""(Constructor for a spring-damper between a point P on link ``bodyA``
+and a point Q on link ``bodyB``. Point P is defined by its position
+``p_AP`` as measured and expressed in the link frame A and similarly,
+point Q is defined by its position p_BQ as measured and expressed in
+link frame B. The remaining parameters define:
 
 Parameter ``free_length``:
     The free length of the spring ℓ₀, in meters, at which the spring

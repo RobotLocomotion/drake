@@ -774,8 +774,9 @@ class Joint : public MultibodyElement<T> {
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
-    DRAKE_DEMAND(mobilizer_ != nullptr);
-    joint_clone->mobilizer_ = &tree_clone->get_mutable_variant(*mobilizer_);
+    joint_clone->mobilizer_ =
+        mobilizer_ == nullptr ? nullptr
+                              : &tree_clone->get_mutable_variant(*mobilizer_);
     return joint_clone;
   }
 

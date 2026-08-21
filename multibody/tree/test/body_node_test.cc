@@ -158,7 +158,8 @@ class DummyBodyNode : public BodyNode<double> {
       const systems::Context<T>&, const PositionKinematicsCache<T>&,
       const ArticulatedBodyInertiaCache<T>&,
       const ArticulatedBodyForceCache<T>&,
-      const Eigen::Ref<const MatrixUpTo6<T>>&, const SpatialAcceleration<T>&,
+      const Eigen::Ref<const MatrixUpTo6<T>>&,
+      const VelocityKinematicsCache<T>&, const SpatialAcceleration<T>&,
       AccelerationKinematicsCache<T>*) const final {
     DRAKE_UNREACHABLE();
   }
