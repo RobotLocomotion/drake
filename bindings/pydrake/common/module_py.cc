@@ -418,8 +418,8 @@ discussion), use e.g.
         return result;
       },
       doc.MaybeGetDrakePath.doc);
-  // These are meant to be called internally by pydrake; not by users.
-  m.def("trigger_an_assertion_failure", &trigger_an_assertion_failure,
+  // This is meant to be called internally by pydrake; not by users.
+  m.def("_trigger_an_assertion_failure", &trigger_an_assertion_failure,
       "Trigger a Drake C++ assertion failure");
 
   m.attr("kDrakeAssertIsArmed") = kDrakeAssertIsArmed;
