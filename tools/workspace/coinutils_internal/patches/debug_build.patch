@@ -1,0 +1,31 @@
+commit ff9efeb13d7887a3c04f5982fd38163d294d5212
+Author: Haroldo Santos <haroldo.santos@gmail.com>
+Date:   Tue Apr 28 14:57:56 2020 +0000
+
+    allow to compile CoinOslFactorization2 with DEBUG defined
+
+diff --git CoinUtils/src/CoinOslFactorization2.cpp CoinUtils/src/CoinOslFactorization2.cpp
+index 833e1a09..4a6acf22 100644
+--- CoinUtils/src/CoinOslFactorization2.cpp
++++ CoinUtils/src/CoinOslFactorization2.cpp
+@@ -1449,13 +1449,15 @@ static int c_ekkbtrn_mpt(COIN_REGISTER3 const EKKfactinfo *COIN_RESTRICT2 fact,
+   /*const int *mrstrt	= fact->xrsadr;*/
+ 
+ #ifdef DEBUG
+-  int i;
+-  memset(spare, 'A', 3 * nrow * sizeof(int));
+   {
++    int i;
++    memset(spare, 'A', 3 * nrow * sizeof(int));
++    {
+ 
+-    for (i = 1; i <= nrow; i++) {
+-      if (dpermu[i]) {
+-        abort();
++      for (i = 1; i <= nrow; i++) {
++        if (dpermu[i]) {
++          abort();
++        }
+       }
+     }
+   }
