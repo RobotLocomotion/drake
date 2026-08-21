@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <cstdint>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -36,9 +38,9 @@ namespace internal {
      A and B are two different points, and their spanning line is not
      parallel to the bounding plane of the half space H.
  */
-template <typename T>
+template <typename T, typename HalfSpaceType = PosedHalfSpace<T>>
 Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                            const PosedHalfSpace<T>& H_F);
+                            const HalfSpaceType& H_F);
 
 /* Intersects a polygon with the half space H. It keeps the part of
  the polygon contained in the half space (signed distance is <= 0).
@@ -75,9 +77,9 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
         plane of the half space, the output polygon will be a zero-area
         triangle with three duplicate vertices.
 */
-template <typename T>
+template <typename T, typename HalfSpaceType = PosedHalfSpace<T>>
 void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& input_vertices_F,
-                            const PosedHalfSpace<T>& H_F,
+                            const HalfSpaceType& H_F,
                             std::vector<Vector3<T>>* output_vertices_F);
 
 /* Removes nearly duplicate vertices from a polygon represented as a cyclical
@@ -119,11 +121,11 @@ class SurfaceVolumeIntersector {
   using FieldType = typename MeshBuilder::FieldType;
 
   SurfaceVolumeIntersector() {
-    // We know that each contact polygon has at most 7 vertices.
-    // Each surface triangle is clipped by four half-spaces of the four
-    // triangular faces of a tetrahedron.
-    polygon_[0].reserve(7);
-    polygon_[1].reserve(7);
+    // The polygon_ scratch buffers are reserved lazily (see
+    // ClipTriangleByTetrahedron): an intersector is constructed for every
+    // broadphase candidate pair, and most such pairs are proven disjoint by
+    // the bounding-volume test without ever clipping a polygon, so eager
+    // allocation here would be wasted in the common case.
   }
 
   virtual ~SurfaceVolumeIntersector();
@@ -373,6 +375,62 @@ class SurfaceVolumeIntersector {
   // pool variables should take care that conflicting use of the resources are
   // not introduced.
   std::vector<Vector3<T>> polygon_[2];
+
+  /* A half-space bounding plane of a tetrahedron face, stored unpacked (the
+   unit outward normal n̂ and displacement d) so that a point's height above
+   the plane is n̂⋅p − d, exactly as Plane<double>::CalcHeight() computes it. */
+  struct TetFacePlane {
+    Vector3<double> nhat;
+    double d{};
+
+    /* Signed distance of the point Q (measured and expressed in the same
+     frame as the plane); positive outside the half space. Matches
+     PosedHalfSpace<double>::CalcSignedDistance() bit for bit. */
+    template <typename U>
+    promoted_numerical_t<U, double> CalcSignedDistance(
+        const Vector3<U>& p_FQ) const {
+      return nhat.dot(p_FQ) - d;
+    }
+  };
+
+  /* Quantities derived from a single tetrahedron of the volume mesh (and its
+   pressure field) that do not depend on the surface triangle: the four face
+   half-spaces and the normalized field gradient. Within one call to
+   SampleVolumeFieldOnSurface() the same tetrahedron is typically paired with
+   many candidate triangles, so these are computed once per tetrahedron
+   instead of once per (tet, tri) candidate pair. Entries are filled lazily;
+   `flags` records which parts are valid. */
+  struct TetCacheEntry {
+    static constexpr uint8_t kFacesValid = 1;
+    static constexpr uint8_t kGradValid = 2;
+    std::array<TetFacePlane, 4> faces;
+    Vector3<double> grad_nhat;
+    uint8_t flags{0};
+  };
+
+  /* Computes the four outward face half-spaces of the given tetrahedron,
+   with the same arithmetic PosedHalfSpace would perform. */
+  static void CalcTetFacePlanes(int element, const VolumeMesh<double>& volume_M,
+                                std::array<TetFacePlane, 4>* faces);
+
+  /* Per-call cache, indexed by tetrahedron index. Sized (and invalidated) at
+   the top of SampleVolumeFieldOnSurface(); empty when this class's lower
+   level entry points are exercised directly (they then compute the
+   per-tetrahedron quantities locally). */
+  std::vector<TetCacheEntry> tet_cache_;
+
+  /* Per-call cache of surface-triangle quantities in the volume mesh frame M:
+   the transformed vertex positions plus a bounding sphere (centroid and
+   radius) used for cheap plane rejection. `tri_cache_valid_` marks which
+   entries are filled. Like tet_cache_, sized per call and empty when
+   lower-level entry points are used directly. */
+  struct TriCacheEntry {
+    std::array<Vector3<T>, 3> p_MVs;
+    Vector3<double> centroid_M;
+    double radius{};
+  };
+  std::vector<TriCacheEntry> tri_cache_;
+  std::vector<char> tri_cache_valid_;
 
   // A container for the vertex indices that define an intersection polygon.
   // By making it a member, we only allocate on the heap *once* for a pair

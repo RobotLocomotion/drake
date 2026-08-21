@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="wooden_pencil">
+    <link name="base_link">
+      <inertial>
+        <mass>0.007000</mass>
+        <pose>0.00464406 3.468e-05 0.00510612 0 0 0</pose>
+        <inertia>
+          <ixx>1.040401e-06</ixx>
+          <iyy>1.071581e-05</iyy>
+          <izz>1.072060e-05</izz>
+          <ixy>1.525333e-09</ixy>
+          <ixz>-2.514999e-09</ixz>
+          <iyz>2.881060e-11</iyz>
+        </inertia>
+      </inertial>
+      <collision name="piece_0_tipbarrel">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wooden_pencil/assets/wooden_pencil_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02000000 1.02000000 1.02000000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>4668280.85855</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>150</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="piece_1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wooden_pencil/assets/wooden_pencil_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02000000 1.02000000 1.02000000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>4610785.19134</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>150</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="piece_2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wooden_pencil/assets/wooden_pencil_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02000000 1.02000000 1.02000000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>4538799.30034</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>150</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="piece_3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/wooden_pencil/assets/wooden_pencil_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>1.02000000 1.02000000 1.02000000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>4641050.7255</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.45</drake:mu_dynamic>
+          <drake:mu_static>0.45</drake:mu_static>
+          <drake:hunt_crossley_dissipation>150</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

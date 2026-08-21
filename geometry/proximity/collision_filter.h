@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <unordered_set>
 #include <utility>
@@ -178,7 +179,23 @@ class CollisionFilter {
    this key in a FilteredPairs set implies filtering of the pair. */
   using PairKey = SortedPair<GeometryId>;
 
-  using FilteredPairs = std::unordered_set<PairKey>;
+  /* Fast hasher for PairKey. CanCollideWith() runs once per broadphase
+   candidate pair, so hashing cost matters; the default drake hash walks the
+   bytes of both ids. This mixes the two id values with a few arithmetic
+   operations (splitmix64-style) instead. */
+  struct PairKeyHash {
+    std::size_t operator()(const PairKey& key) const {
+      const uint64_t a = static_cast<uint64_t>(key.first().get_value());
+      const uint64_t b = static_cast<uint64_t>(key.second().get_value());
+      uint64_t x = a * 0x9E3779B97F4A7C15ull + b;
+      x ^= x >> 30;
+      x *= 0xBF58476D1CE4E5B9ull;
+      x ^= x >> 27;
+      return static_cast<std::size_t>(x);
+    }
+  };
+
+  using FilteredPairs = std::unordered_set<PairKey, PairKeyHash>;
 
   /* Sparse representation of the collision filter state. Only filtered pairs
    are stored; an absent pair is unfiltered by default.
@@ -192,6 +209,10 @@ class CollisionFilter {
     FilteredPairs filtered;
     /* SceneGraph-invariant filtered pairs (cannot be removed by Allow*). */
     FilteredPairs invariant;
+    /* Union of `filtered` and `invariant`, maintained alongside them so that
+     CanCollideWith() -- which runs once per broadphase candidate pair --
+     performs a single set lookup instead of two. */
+    FilteredPairs blocked;
   };
 
   /* A resolved statement: the GeometrySets of the original declaration have
