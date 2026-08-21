@@ -220,6 +220,8 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             cls_doc.num_force_elements.doc)
         .def("num_constraints", &Class::num_constraints,
             cls_doc.num_constraints.doc)
+        .def("num_loop_constraints", &Class::num_loop_constraints,
+            cls_doc.num_loop_constraints.doc)
         .def("num_model_instances", &Class::num_model_instances,
             cls_doc.num_model_instances.doc)
         .def("num_positions",
@@ -257,6 +259,10 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         .def("SetUseSampledOutputPorts", &Class::SetUseSampledOutputPorts,
             py::arg("use_sampled_output_ports"),
             cls_doc.SetUseSampledOutputPorts.doc)
+        .def("SetEnableLoopTopology", &Class::SetEnableLoopTopology,
+            py::arg("enable"), cls_doc.SetEnableLoopTopology.doc)
+        .def("GetEnableLoopTopology", &Class::GetEnableLoopTopology,
+            cls_doc.GetEnableLoopTopology.doc)
         .def(
             "AddJoint",
             [](Class* self, const Joint<T>& joint) {

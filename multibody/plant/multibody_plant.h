@@ -1823,6 +1823,27 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void SetFuseWeldedLinks(
       bool fuse, std::optional<ModelInstanceIndex> model_instance = {});
 
+  /// (Internal use only for now) Controls whether Finalize() will automatically
+  /// model systems whose bodies and joints form one or more closed kinematic
+  /// loops (a "closed topology"). When enabled, Finalize() breaks each loop by
+  /// introducing a "shadow" body and a loop-closure constraint, using the
+  /// automatic loop-breaking already performed by Drake's internal topology
+  /// analysis. When disabled, Finalize() throws if the model contains any such
+  /// loops.
+  ///
+  /// Unlike SetFuseWeldedLinks() and SetBaseBodyJointType(), this is a single
+  /// global setting (a kinematic loop can span multiple model instances) and
+  /// therefore does not take a model instance argument.
+  ///
+  /// The default setting for Drake is _not_ to model looped systems
+  /// automatically.
+  ///
+  /// @param[in] enable Whether Finalize() should automatically model closed
+  ///   kinematic loops rather than throwing.
+  /// @throws std::exception if called after Finalize().
+  /// @see GetEnableLoopTopology(), Finalize()
+  void SetEnableLoopTopology(bool enable);
+
   /// Returns the currently-set choice for base body joint type, either for
   /// the global setting or for a specific model instance if provided.
   /// If a model instance is provided for which no explicit choice has been
@@ -1846,6 +1867,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see SetFuseWeldedLinks(), GetBaseBodyJointType(), Finalize()
   bool GetFuseWeldedLinks(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
+
+  /// (Internal use only for now) Returns the current setting for whether
+  /// Finalize() will automatically model closed-topology (looped) systems.
+  ///
+  /// @note This function can be called pre-Finalize() or post-Finalize().
+  /// @see SetEnableLoopTopology(), Finalize()
+  bool GetEnableLoopTopology() const;
 
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any
@@ -1908,11 +1936,24 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// MultibodyConstraintManager class to consolidate constraint management. -->
   /// @{
 
-  /// Returns the total number of constraints specified by the user.
+  /// Returns the total number of constraints in this model. Prior to
+  /// Finalize() these are just the constraints specified by the user.
+  /// Finalize() may add "ephemeral" constraints of its own; see
+  /// num_loop_constraints().
   int num_constraints() const {
     return num_coupler_constraints() + num_distance_constraints() +
            num_ball_constraints() + num_weld_constraints() +
            num_tendon_constraints();
+  }
+
+  /// Returns the number of ephemeral weld constraints that Finalize() added in
+  /// order to close topological loops. Each of these welds a shadow link to the
+  /// link it is a copy of; see SetEnableLoopTopology(). These are included in
+  /// num_constraints() and num_weld_constraints(), and are indistinguishable
+  /// from user-added welds to the constraint solvers. Returns zero prior to
+  /// Finalize().
+  int num_loop_constraints() const {
+    return internal_tree().graph().num_loop_constraints();
   }
 
   /// Returns a list of all constraint identifiers. The returned vector becomes
@@ -6262,6 +6303,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // corresponds to the largest penalty parameter (smaller violation errors)
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
+
+  // Adds an ephemeral weld constraint for each loop constraint the modeler
+  // introduced when it broke a closed kinematic loop by splitting a link into
+  // a primary link and a shadow link. Called during Finalize(), after the tree
+  // (and hence the shadow links) has been finalized, but before
+  // FinalizePlantOnly() declares the constraint parameters.
+  void AddEphemeralLoopConstraints();
 
   // Some constraints support std::optional specs, which implies that the
   // kinematics should be used to compute values such that the constraint is

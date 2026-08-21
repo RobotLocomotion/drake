@@ -5305,6 +5305,19 @@ See also:
 Raises:
     RuntimeError if called pre-finalize.)""";
         } GetEffortUpperLimits;
+        // Symbol: drake::multibody::MultibodyPlant::GetEnableLoopTopology
+        struct /* GetEnableLoopTopology */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Returns the current setting for whether
+Finalize() will automatically model closed-topology (looped) systems.
+
+Note:
+    This function can be called pre-Finalize() or post-Finalize().
+
+See also:
+    SetEnableLoopTopology(), Finalize())""";
+        } GetEnableLoopTopology;
         // Symbol: drake::multibody::MultibodyPlant::GetFloatingBaseBodies
         struct /* GetFloatingBaseBodies */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -6817,6 +6830,35 @@ Raises:
     if params.bodyA() or params.bodyB() do not correspond to rigid
     bodies in ``this`` MultibodyPlant.)""";
         } SetDistanceConstraintParams;
+        // Symbol: drake::multibody::MultibodyPlant::SetEnableLoopTopology
+        struct /* SetEnableLoopTopology */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""((Internal use only for now) Controls whether Finalize() will
+automatically model systems whose bodies and joints form one or more
+closed kinematic loops (a "closed topology"). When enabled, Finalize()
+breaks each loop by introducing a "shadow" body and a loop-closure
+constraint, using the automatic loop-breaking already performed by
+Drake's internal topology analysis. When disabled, Finalize() throws
+if the model contains any such loops.
+
+Unlike SetFuseWeldedLinks() and SetBaseBodyJointType(), this is a
+single global setting (a kinematic loop can span multiple model
+instances) and therefore does not take a model instance argument.
+
+The default setting for Drake is *not* to model looped systems
+automatically.
+
+Parameter ``enable``:
+    Whether Finalize() should automatically model closed kinematic
+    loops rather than throwing.
+
+Raises:
+    RuntimeError if called after Finalize().
+
+See also:
+    GetEnableLoopTopology(), Finalize())""";
+        } SetEnableLoopTopology;
         // Symbol: drake::multibody::MultibodyPlant::SetFloatingBaseBodyPoseInAnchoredFrame
         struct /* SetFloatingBaseBodyPoseInAnchoredFrame */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -8191,7 +8233,10 @@ calls will always return the same value.)""";
         struct /* num_constraints */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the total number of constraints specified by the user.)""";
+R"""(Returns the total number of constraints in this model. Prior to
+Finalize() these are just the constraints specified by the user.
+Finalize() may add "ephemeral" constraints of its own; see
+num_loop_constraints().)""";
         } num_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_coupler_constraints
         struct /* num_coupler_constraints */ {
@@ -8232,6 +8277,17 @@ R"""(Returns the number of joints in the model.
 See also:
     AddJoint().)""";
         } num_joints;
+        // Symbol: drake::multibody::MultibodyPlant::num_loop_constraints
+        struct /* num_loop_constraints */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the number of ephemeral weld constraints that Finalize() added
+in order to close topological loops. Each of these welds a shadow link
+to the link it is a copy of; see SetEnableLoopTopology(). These are
+included in num_constraints() and num_weld_constraints(), and are
+indistinguishable from user-added welds to the constraint solvers.
+Returns zero prior to Finalize().)""";
+        } num_loop_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_misc_continuous_states
         struct /* num_misc_continuous_states */ {
           // Source: drake/multibody/plant/multibody_plant.h
