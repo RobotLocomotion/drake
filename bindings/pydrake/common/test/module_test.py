@@ -20,7 +20,7 @@ class TestCommon(unittest.TestCase):
         # C++ assertion failure from Python and confirm that an exception with
         # an appropriate type and message comes out.
         try:
-            mut.trigger_an_assertion_failure()
+            mut._trigger_an_assertion_failure()
             self.fail("Did not get a SystemExit")
         except SystemExit as e:
             self.assertTrue(e.code is not None)
