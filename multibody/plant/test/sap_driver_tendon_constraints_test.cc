@@ -361,21 +361,6 @@ class SimplePlant : public ::testing::Test {
   double valid_damping_{5};
 };
 
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(SimplePlant, FailOnTAMSI) {
-  MakePlant();
-  plant_->set_discrete_contact_approximation(
-      DiscreteContactApproximation::kTamsi);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {}, {},
-                                  {}, {}, {}),
-      ".*TAMSI does not support tendon constraints.*");
-}
-#pragma GCC diagnostic pop
-
 TEST_F(SimplePlant, FailOnContinuous) {
   MakePlant(0.0);  // Continuous plant.
   plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {},

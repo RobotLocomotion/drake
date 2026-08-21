@@ -180,9 +180,6 @@ enum class ContactModel {
 ///   Unconstrained Convex Formulation of Compliant Contact. Available online at
 ///   https://arxiv.org/abs/2110.10107.
 enum class DiscreteContactSolver {
-  /// TAMSI solver, see [Castro et al., 2019].
-  kTamsi DRAKE_DEPRECATED("2026-09-01",
-                          "The TAMSI solver is deprecated for removal."),
   /// SAP solver, see [Castro et al., 2022].
   kSap,
 };
@@ -190,20 +187,19 @@ enum class DiscreteContactSolver {
 /// The type of the contact approximation used for a discrete MultibodyPlant
 /// model.
 ///
-/// kTamsi, kSimilar and kLagged are all approximations to the same contact
-/// model --  Compliant contact with regularized friction, refer to
+/// kSimilar and kLagged are both approximations to the same contact
+/// model -- Compliant contact with regularized friction, refer to
 /// @ref mbp_contact_modeling "Contact Modeling" for further details.
-/// The key difference however, is that the kSimilar and kLagged approximations
-/// are convex and therefore our contact solver has both theoretical and
-/// practical convergence guarantees ---  the solver will always succeed.
-/// Conversely, being non-convex, kTamsi can fail to find a solution.
+/// Both approximations are convex and therefore our contact solver has both
+/// theoretical and practical convergence guarantees --- the solver will always
+/// succeed.
 ///
 /// kSap is also a convex model of compliant contact with regularized friction.
 /// There are a couple of key differences however:
 /// - Dissipation is modeled using a linear Kelvin–Voigt model, parameterized by
 ///   a relaxation time constant.
 ///   See @ref accessing_contact_properties "contact parameters".
-/// - Unlike kTamsi, kSimilar and kLagged where regularization of friction is
+/// - In kSimilar and kLagged the regularization of friction is
 ///   parameterized by a stiction tolerance (see set_stiction_tolerance()), SAP
 ///   determines regularization automatically solely based on numerics. Users
 ///   have no control on the amount of regularization.
@@ -238,9 +234,6 @@ enum class DiscreteContactSolver {
 ///   of Irrotational Contact Fields. Available online at
 ///   https://arxiv.org/abs/2312.03908
 enum class DiscreteContactApproximation {
-  /// TAMSI solver approximation, see [Castro et al., 2019].
-  kTamsi DRAKE_DEPRECATED("2026-09-01",
-                          "The TAMSI solver is deprecated for removal."),
   /// SAP solver model approximation, see [Castro et al., 2022].
   kSap,
   /// Similarity approximation found in [Castro et al., 2023].
@@ -605,10 +598,6 @@ couple controller and model dynamics.
 
 @note PD controllers are ignored when a joint is locked (see Joint::Lock()).
 
-@warning For discrete models (is_discrete() is true), this feature is not
-supported when using the TAMSI solver (get_discrete_contact_solver() returns
-DiscreteContactSolver::kTamsi.)
-
 PD controlled joint actuators can be defined by setting PD gains for each joint
 actuator, see JointActuator::set_controller_gains(). Unless these gains are
 specified, joint actuators will not be PD controlled and
@@ -806,7 +795,7 @@ the following properties for point contact modeling:
   configuration of the %MultibodyPlant. As an example, if the SAP contact
   approximation is specified (see set_discrete_contact_approximation()) only the
   relaxation_time is used while hunt_crossley_dissipation is ignored.
-  Conversely, if the TAMSI, Similar or Lagged approximation is used (see
+  Conversely, if the Similar or Lagged approximation is used (see
   set_discrete_contact_approximation()) only hunt_crossley_dissipation is used
   while relaxation_time is ignored. Currently, a continuous %MultibodyPlant
   model will always use the Hunt & Crossley model and relaxation_time will be
@@ -2709,8 +2698,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @note Calling this method also sets the contact solver type (see
   /// get_discrete_contact_solver()) according to:
-  /// - DiscreteContactApproximation::kTamsi sets the solver to
-  ///   DiscreteContactSolver::kTamsi.
   /// - DiscreteContactApproximation::kSap,
   ///   DiscreteContactApproximation::kSimilar and
   ///   DiscreteContactApproximation::kLagged set the solver to
