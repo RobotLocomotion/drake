@@ -53,6 +53,7 @@ GTEST_TEST(CouplerConstraintsPool, LimitMallocOnCalcData) {
   EXPECT_EQ(model.num_coupler_constraints(), 1);
 
   IcfData<double> data;
+  model.SetSparsityPattern();
   model.ResizeData(&data);
   EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 1);
 
@@ -194,6 +195,7 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
   MakeUnconstrainedModel(&model);
   UndoFloatingBodyAnnotation(&model);
   AddCouplerConstraint(&model);
+  model.SetSparsityPattern();
 
   IcfData<double> data;
   model.ResizeData(&data);
@@ -249,6 +251,7 @@ GTEST_TEST(CouplerConstraintsPool, Reduce) {
 
     // Check the downstream calculations.
     IcfData<double> reduced_data;
+    reduced_model.SetSparsityPattern();
     reduced_model.ResizeData(&reduced_data);
     const auto reduced_velocity =
         SelectRows(v, mapping.velocity_subsequence.inverse_permutation());

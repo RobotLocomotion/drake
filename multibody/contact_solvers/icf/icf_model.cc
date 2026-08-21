@@ -1,7 +1,10 @@
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
+#include <span>
 #include <utility>
+#include <vector>
 
+#include "drake/common/unused.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
@@ -108,7 +111,8 @@ void IcfModel<T>::ResizeData(IcfData<T>* data) const {
        .num_welds = weld_constraints_pool_.num_constraints(),
        .gain_sizes = gain_constraints_pool_.constraint_sizes(),
        .limit_sizes = limit_constraints_pool_.constraint_sizes(),
-       .patch_sizes = patch_constraints_pool_.patch_sizes()});
+       .patch_sizes = patch_constraints_pool_.patch_sizes(),
+       .num_islands = partition_.num_islands()});
 }
 
 template <typename T>
@@ -156,6 +160,14 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
 }
 
 template <typename T>
+T IcfModel<T>::CalcData(const VectorX<T>& v, int island,
+                        IcfData<T>* data) const {
+  unused(v, island, data);
+  DRAKE_UNREACHABLE();
+  return {};
+}
+
+template <typename T>
 std::unique_ptr<BlockSparseSymmetricMatrix<MatrixX<T>>>
 IcfModel<T>::MakeHessian(const IcfData<T>& data) const {
   auto hessian = std::make_unique<BlockSparseSymmetricMatrix<MatrixX<T>>>(
@@ -187,6 +199,23 @@ void IcfModel<T>::UpdateHessian(
 }
 
 template <typename T>
+std::unique_ptr<BlockSparseSymmetricMatrix<MatrixX<T>>>
+IcfModel<T>::MakeHessian(int island, const IcfData<T>& data) const {
+  auto hessian = std::make_unique<BlockSparseSymmetricMatrix<MatrixX<T>>>(
+      island_sparsity_pattern(island));
+  UpdateHessian(island, data, hessian.get());
+  return hessian;
+}
+
+template <typename T>
+void IcfModel<T>::UpdateHessian(
+    int island, const IcfData<T>& data,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  unused(island, data, hessian);
+  DRAKE_UNREACHABLE();
+}
+
+template <typename T>
 void IcfModel<T>::CalcSearchDirectionData(
     const IcfData<T>& data, const VectorX<T>& w,
     IcfSearchDirectionData<T>* search_direction_data) const {
@@ -208,6 +237,45 @@ void IcfModel<T>::CalcSearchDirectionData(
 
   // U = J⋅w.
   CalcBodySpatialVelocities(w, &search_direction_data->U);
+}
+
+template <typename T>
+void IcfModel<T>::CalcSearchDirectionData(
+    const IcfData<T>& data, const VectorX<T>& w, int island,
+    IcfSearchDirectionData<T>* search_direction_data) const {
+  search_direction_data->w.resize(num_velocities_);
+  search_direction_data->U.Resize(num_bodies_, 6, 1);
+
+  // Use search_direction_data->w as scratch for A⋅w over the island's cliques.
+  VectorX<T>& temp = search_direction_data->w;
+  MultiplyByDynamicsMatrix(w, island, &temp);  // temp = A⋅w (island segments).
+
+  const VectorX<T>& v = data.v();
+  const VectorX<T>& Av = data.Av();
+
+  // a = wᵀ⋅A⋅w, b = vᵀ⋅A⋅w - wᵀ⋅r, c = ½vᵀ⋅A⋅v - rᵀ⋅v, all restricted to the
+  // island's clique segments (the only segments where w is nonzero).
+  T a = 0, vAw = 0, wr = 0, c = 0;
+  for (int cl : partition_.island_cliques(island)) {
+    const auto w_c = clique_segment(cl, w);
+    const auto Aw_c = clique_segment(cl, temp);
+    const auto v_c = clique_segment(cl, v);
+    const auto Av_c = clique_segment(cl, Av);
+    const auto r_c = clique_segment(cl, r_);
+    a += w_c.dot(Aw_c);
+    vAw += v_c.dot(Aw_c);
+    wr += w_c.dot(r_c);
+    c += v_c.dot(0.5 * Av_c - r_c);
+  }
+  search_direction_data->a = a;
+  search_direction_data->b = vAw - wr;
+  search_direction_data->c = c;
+
+  // It is now safe to overwrite the scratch with the desired value.
+  search_direction_data->w = w;
+
+  // U = J⋅w over the island's bodies.
+  CalcBodySpatialVelocities(w, island, &search_direction_data->U);
 }
 
 template <typename T>
@@ -352,6 +420,16 @@ T IcfModel<T>::CalcCostAlongLine(
 // TODO(#23912): Try removing allocations since this will now be used in the hot
 // path by joint locking.
 template <typename T>
+T IcfModel<T>::CalcCostAlongLine(
+    const T& alpha, const IcfData<T>& data,
+    const IcfSearchDirectionData<T>& search_direction, int island,
+    T* dcost_dalpha, T* d2cost_dalpha2) const {
+  unused(alpha, data, search_direction, island, dcost_dalpha, d2cost_dalpha2);
+  DRAKE_UNREACHABLE();
+  return {};
+}
+
+template <typename T>
 void IcfModel<T>::SetSparsityPattern() {
   DRAKE_DEMAND(params_ != nullptr);
 
@@ -383,6 +461,128 @@ void IcfModel<T>::SetSparsityPattern() {
   // TODO(#23912): This line allocates.
   sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
+
+  // Partition cliques into islands (connected components) for per-island
+  // solves, then group constraints and bodies by island.
+  partition_.Compute(*sparsity_pattern_);
+  BuildIslandMaps();
+  BuildIslandSparsityPatterns();
+}
+
+template <typename T>
+void IcfModel<T>::BuildIslandSparsityPatterns() {
+  const int num_islands = partition_.num_islands();
+  const std::vector<std::vector<int>>& global_neighbors =
+      sparsity_pattern_->neighbors();
+  const std::vector<int>& clique_sizes = params().clique_sizes;
+
+  // Reuse one set of pattern objects across calls, but rebuild the contents
+  // each time the sparsity changes (the SetSparsityPattern() cadence).
+  island_sparsity_patterns_.clear();
+  island_sparsity_patterns_.reserve(num_islands);
+
+  for (int i = 0; i < num_islands; ++i) {
+    const std::span<const int> cliques = partition_.island_cliques(i);
+    const int n = ssize(cliques);
+
+    // Local block sizes follow the island's (ascending) clique order.
+    island_block_sizes_.assign(n, 0);
+    for (int l = 0; l < n; ++l)
+      island_block_sizes_[l] = clique_sizes[cliques[l]];
+
+    // Local neighbors: map each global neighbor of clique cliques[l] to its
+    // island-local index. All neighbors lie in the same island (islands are
+    // connected components), and local indexing preserves global ordering, so
+    // the lower-triangular (j >= i) invariant carries over.
+    island_neighbors_.resize(n);
+    for (int l = 0; l < n; ++l) {
+      std::vector<int>& local = island_neighbors_[l];
+      local.clear();
+      local.reserve(ssize(global_neighbors[cliques[l]]));
+      for (int g : global_neighbors[cliques[l]]) {
+        local.push_back(partition_.clique_local_index(g));
+      }
+    }
+
+    std::vector<int> block_sizes(island_block_sizes_.begin(),
+                                 island_block_sizes_.begin() + n);
+    std::vector<std::vector<int>> neighbors(island_neighbors_.begin(),
+                                            island_neighbors_.begin() + n);
+    island_sparsity_patterns_.emplace_back(std::move(block_sizes),
+                                           std::move(neighbors));
+  }
+}
+
+template <typename T>
+void IcfModel<T>::BuildIslandMaps() {
+  const int num_islands = partition_.num_islands();
+
+  // Builds `map` so that map.items(i) lists the indices k in [0, n) whose
+  // key_fn(k) is island i. A negative key omits item k (e.g., anchored bodies).
+  std::vector<int>& keys = island_keys_;
+  auto build = [&](IslandItemMap* map, int n, auto&& key_fn) {
+    keys.resize(n);
+    for (int k = 0; k < n; ++k) keys[k] = key_fn(k);
+    map->Build(num_islands, std::span<const int>(keys.data(), n));
+  };
+
+  // The island of a (single-clique) constraint, or of a constraint between two
+  // bodies (at least one of which is dynamic; both share an island).
+  auto island_of_clique = [&](int clique) {
+    return partition_.clique_to_island(clique);
+  };
+  auto island_of_bodies = [&](int b0, int b1) {
+    const int c0 = body_to_clique(b0);
+    const int clique = (c0 >= 0) ? c0 : body_to_clique(b1);
+    DRAKE_ASSERT(clique >= 0);
+    return island_of_clique(clique);
+  };
+
+  const std::vector<std::pair<int, int>>& ball_bodies =
+      ball_constraints_pool_.body_pairs();
+  build(&island_balls_, ssize(ball_bodies), [&](int k) {
+    return island_of_bodies(ball_bodies[k].first, ball_bodies[k].second);
+  });
+
+  const std::vector<int>& coupler_clique =
+      coupler_constraints_pool_.constraint_to_clique();
+  build(&island_couplers_, ssize(coupler_clique), [&](int k) {
+    return island_of_clique(coupler_clique[k]);
+  });
+
+  const std::vector<std::pair<int, int>>& distance_bodies =
+      distance_constraints_pool_.body_pairs();
+  build(&island_distances_, ssize(distance_bodies), [&](int k) {
+    return island_of_bodies(distance_bodies[k].first,
+                            distance_bodies[k].second);
+  });
+
+  const std::vector<int>& gain_clique = gain_constraints_pool_.clique();
+  build(&island_gains_, ssize(gain_clique), [&](int k) {
+    return island_of_clique(gain_clique[k]);
+  });
+
+  const std::vector<int>& limit_clique = limit_constraints_pool_.clique();
+  build(&island_limits_, ssize(limit_clique), [&](int k) {
+    return island_of_clique(limit_clique[k]);
+  });
+
+  const std::vector<std::pair<int, int>>& patch_bodies =
+      patch_constraints_pool_.bodies();
+  build(&island_patches_, ssize(patch_bodies), [&](int k) {
+    return island_of_bodies(patch_bodies[k].first, patch_bodies[k].second);
+  });
+
+  const std::vector<std::pair<int, int>>& weld_bodies =
+      weld_constraints_pool_.body_pairs();
+  build(&island_welds_, ssize(weld_bodies), [&](int k) {
+    return island_of_bodies(weld_bodies[k].first, weld_bodies[k].second);
+  });
+
+  // Dynamic bodies only; anchored bodies (negative clique) belong to no island.
+  build(&island_bodies_, num_bodies_, [&](int b) {
+    return is_anchored(b) ? -1 : island_of_clique(body_to_clique(b));
+  });
 }
 
 template <typename T>
@@ -604,6 +804,21 @@ void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 }
 
 template <typename T>
+void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v, int island,
+                                           VectorX<T>* result) const {
+  DRAKE_ASSERT(v.size() == num_velocities_);
+  DRAKE_ASSERT(result != nullptr);
+  DRAKE_ASSERT(result->size() == num_velocities_);
+
+  for (int c : partition_.island_cliques(island)) {
+    ConstMatrixXView A_clique = A(c);
+    VectorBlock<const VectorX<T>> v_clique = clique_segment(c, v);
+    VectorBlock<VectorX<T>> Av_clique = mutable_clique_segment(c, result);
+    Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
+  }
+}
+
+template <typename T>
 void IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v,
                                     IcfData<T>* data) const {
   DRAKE_ASSERT(v.size() == num_velocities_);
@@ -618,6 +833,27 @@ void IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v,
 
   // Gradient.
   data->mutable_gradient() = Av - r_;
+}
+
+template <typename T>
+T IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v, int island,
+                                 IcfData<T>* data) const {
+  DRAKE_ASSERT(v.size() == num_velocities_);
+  VectorX<T>& Av = data->mutable_Av();
+  VectorX<T>& gradient = data->mutable_gradient();
+
+  T momentum_cost = 0;
+  for (int c : partition_.island_cliques(island)) {
+    ConstMatrixXView A_clique = A(c);
+    const auto v_c = clique_segment(c, v);
+    const auto r_c = clique_segment(c, r_);
+    auto Av_c = mutable_clique_segment(c, &Av);
+    Av_c.noalias() = A_clique * v_c;  // Required to avoid allocation!
+    // Cost ½vᵀAv - rᵀv and gradient Av - r, restricted to this clique.
+    momentum_cost += v_c.dot(0.5 * Av_c - r_c);
+    mutable_clique_segment(c, &gradient) = Av_c - r_c;
+  }
+  return momentum_cost;
 }
 
 template <typename T>
@@ -638,6 +874,27 @@ void IcfModel<T>::CalcBodySpatialVelocities(
       }
     } else {
       V_WB.setZero();  // Anchored body.
+    }
+  }
+}
+
+template <typename T>
+void IcfModel<T>::CalcBodySpatialVelocities(
+    const VectorX<T>& v, int island, EigenPool<Vector6<T>>* V_pool) const {
+  EigenPool<Vector6<T>>& spatial_velocities = *V_pool;
+  DRAKE_ASSERT(v.size() == num_velocities_);
+  DRAKE_ASSERT(spatial_velocities.size() == num_bodies_);
+  // island_bodies() lists only dynamic bodies (anchored bodies belong to no
+  // island), so every body here has a valid clique.
+  for (int b : island_bodies_.items(island)) {
+    const int c = body_to_clique(b);
+    DRAKE_ASSERT(c >= 0);
+    Vector6<T>& V_WB = spatial_velocities[b];
+    VectorBlock<const VectorX<T>> v_clique = clique_segment(c, v);
+    if (is_floating(b)) {
+      V_WB = v_clique;
+    } else {
+      V_WB = J_WB(b) * v_clique;
     }
   }
 }
