@@ -17,9 +17,6 @@ while [ "${1:-}" != "" ]; do
     --without-update)
       binary_args+=(--without-update)
       ;;
-    # Ignored for compatibility with Ubuntu.
-    -y)
-      ;;
     *)
       echo 'Invalid command line argument' >&2
       exit 1
