@@ -24,19 +24,25 @@ class Platform:
     name: str
     version: str
     alias: str
+    python: PythonTarget
     python_manager: PythonManager = PythonManager.PIP
 
 
 @dataclass
 class Target:
     python_binder: PythonBinder
-    python: PythonTarget
     build_platform: Platform
     test_platforms: tuple[Platform]
 
     def __post_init__(self):
-        assert len(self.python.version_tuple) == 3, self.python.version_tuple
+        assert len(self.build_platform.python.version_tuple) == 3, (
+            self.build_platform.python.version_tuple
+        )
         assert isinstance(self.test_platforms, tuple)
+        for test_platform in self.test_platforms:
+            assert len(test_platform.python.version_tuple) == 2, (
+                test_platform.python.version_tuple
+            )
 
     def platform(self, role: Role, test_index: int | None = None) -> Platform:
         """Returns the Platform for the given `role`. For the test role, the
