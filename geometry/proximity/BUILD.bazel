@@ -885,12 +885,16 @@ drake_cc_library(
     deps = [
         ":collision_filter",
         ":distance_to_point_callback",
+        ":mujoco_ccd_mesh_data",
         "//common:default_scalars",
         "//common:drake_export",
         "//common:nice_type_name",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_to_point",
         "@fcl_internal//:fcl",
+    ],
+    implementation_deps = [
+        ":mujoco_ccd_penetration",
     ],
 )
 

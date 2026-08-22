@@ -990,6 +990,31 @@ Note:
     Currently margin only applies to *compliant* hydroelastic contact
     and it does not affect point contact.)""";
         } margin;
+        // Symbol: drake::geometry::DefaultProximityProperties::point_contact_algorithm
+        struct /* point_contact_algorithm */ {
+          // Source: drake/geometry/scene_graph_config.h
+          const char* doc =
+R"""((Experimental) Selects the narrowphase algorithm used to compute point
+contact for this geometry. There are two valid options: -
+"single_point": the existing behavior; every penetrating geometry pair
+reports exactly one contact point (the deepest one). -
+"mujoco_multipoint": pairs where *both* geometries are Convex or Mesh
+shapes (and both request this algorithm) report a contact manifold of
+up to four contact points, computed with MuJoCo's native convex
+collision detection (GJK/EPA plus contact-polygon clipping over the
+meshes' convex hulls); each point carries its own depth. Face-face and
+edge-face contacts gain the extra points; vertex-face contacts still
+report one point. All other geometry pairs keep the "single_point"
+behavior. A mesh whose convex hull has no volume (for example, a
+planar mesh) reports a single point even when it selects this
+algorithm.
+
+This affects QueryObject∷ComputePointPairPenetration() and the point
+contact fallback of QueryObject∷ComputeContactSurfacesWithFallback()
+for double-valued scene graphs. Scene graphs of other scalar types
+ignore the property; those scalar types do not support penetration
+queries between Convex or Mesh shapes in the first place.)""";
+        } point_contact_algorithm;
         // Symbol: drake::geometry::DefaultProximityProperties::point_stiffness
         struct /* point_stiffness */ {
           // Source: drake/geometry/scene_graph_config.h
@@ -1049,6 +1074,7 @@ R"""(See also:
             std::make_pair("hunt_crossley_dissipation", hunt_crossley_dissipation.doc),
             std::make_pair("hydroelastic_modulus", hydroelastic_modulus.doc),
             std::make_pair("margin", margin.doc),
+            std::make_pair("point_contact_algorithm", point_contact_algorithm.doc),
             std::make_pair("point_stiffness", point_stiffness.doc),
             std::make_pair("relaxation_time", relaxation_time.doc),
             std::make_pair("resolution_hint", resolution_hint.doc),
@@ -6128,6 +6154,16 @@ Returns:
 Warning:
     For Mesh shapes, their convex hulls are used in this query. It is
     not* computationally efficient or particularly accurate.
+
+Note:
+    By default every penetrating geometry pair reports exactly one
+    point pair (its deepest point). A Convex-Convex, Convex-%Mesh, or
+    Mesh-%Mesh pair where *both* geometries select the (experimental)
+    "mujoco_multipoint" point contact algorithm (see
+    DefaultProximityProperties∷point_contact_algorithm) instead
+    reports a contact manifold of *up to four* point pairs for ``T`` =
+    ``double``, each with its own depth, ordered deterministically for
+    fixed poses.
 
 Raises:
     RuntimeError if a Shape-Shape pair is in collision and indicated

@@ -28,7 +28,9 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_calculator.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
+#include "drake/geometry/proximity/mujoco_ccd_mesh_data.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/geometry/utilities.h"
 
@@ -77,6 +79,13 @@ struct ConvexHullCacheEntry {
   // InflateAabbForHydroelasticTypesOnly() mutates the geometry's aabb_local
   // in-place.
   std::map<std::array<double, 4>, shared_ptr<fcl::Convexd>> scaled_hulls;
+  // Sub-cache of MuJoCo convex collision data (see MujocoCcdMeshData), keyed
+  // like `scaled_hulls` and populated only for geometries whose proximity
+  // properties select the "mujoco_multipoint" point contact algorithm. (The
+  // margin component of the key is irrelevant to this data — margin only
+  // affects the fcl aabb — so two keys differing only in margin hold
+  // duplicate but equivalent entries.)
+  std::map<std::array<double, 4>, shared_ptr<const MujocoCcdMeshData>> ccd_data;
 };
 
 class MapStringToConvexHullCache
@@ -224,6 +233,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     mesh_distance_boundary_cahe_ = other.mesh_distance_boundary_cahe_;
     convex_hull_cache_ = other.convex_hull_cache_;
     geometry_to_hull_key_ = other.geometry_to_hull_key_;
+    mujoco_ccd_geometries_ = other.mujoco_ccd_geometries_;
     dynamic_tree_.clear();
     dynamic_objects_.clear();
     anchored_tree_.clear();
@@ -286,6 +296,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     engine->mesh_distance_boundary_cahe_ = this->mesh_distance_boundary_cahe_;
     engine->convex_hull_cache_ = this->convex_hull_cache_;
     engine->geometry_to_hull_key_ = this->geometry_to_hull_key_;
+    engine->mujoco_ccd_geometries_ = this->mujoco_ccd_geometries_;
     engine->distance_tolerance_ = this->distance_tolerance_;
 
     return engine;
@@ -459,8 +470,44 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
         geometry.shape(), id, new_properties, X_WG);
 
+    // Refresh the geometry's membership in the MuJoCo multi-point contact
+    // catalog per the new properties.
+    MaybeAddMujocoCcdGeometry(id, new_properties);
+
     // We must also update the FCL representation in case margin was updated.
     MaybeUpdateFclLocalAabbWithMargin(geometry, new_properties);
+  }
+
+  // Adds (or removes) the geometry's MuJoCo convex collision data based on
+  // its proximity properties: after this call, the geometry is in
+  // mujoco_ccd_geometries_ iff it is a hull-based shape (Mesh or Convex)
+  // whose ("material", "point_contact_algorithm") property says
+  // "mujoco_multipoint". The tables are cached per (mesh source, scale) so
+  // geometries sharing a mesh file share them.
+  void MaybeAddMujocoCcdGeometry(GeometryId id,
+                                 const ProximityProperties& properties) {
+    // GeometryState validates the property before calling the engine; this
+    // check also protects direct users of the engine.
+    const std::string algorithm = GetPointContactAlgorithmOrThrow(properties);
+    mujoco_ccd_geometries_.erase(id);
+    auto key_iter = geometry_to_hull_key_.find(id);
+    if (key_iter == geometry_to_hull_key_.end()) return;
+    if (algorithm == kSinglePointAlgorithm) return;
+    const auto& [cache_key, scale_key] = key_iter->second;
+    ConvexHullCacheEntry& entry = convex_hull_cache_.at(cache_key);
+    shared_ptr<const MujocoCcdMeshData>& ccd = entry.ccd_data[scale_key];
+    if (ccd == nullptr) {
+      const Vector3d scale(scale_key[0], scale_key[1], scale_key[2]);
+      std::vector<Vector3d> vertices;
+      vertices.reserve(entry.unit_vertices->size());
+      for (const Vector3d& unit_vertex : *entry.unit_vertices) {
+        vertices.push_back(unit_vertex.array() * scale.array());
+      }
+      ccd = std::make_shared<const MujocoCcdMeshData>(
+          MakeMujocoCcdMeshData(PolygonSurfaceMesh<double>(
+              std::vector<int>(*entry.faces), std::move(vertices))));
+    }
+    mujoco_ccd_geometries_[id] = ccd;
   }
 
   // Returns true if the geometry with the given Id has been registered in
@@ -498,6 +545,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_.RemoveGeometry(id);
     geometries_for_deformable_contact_.RemoveGeometry(id);
     mesh_distance_boundary_cahe_.Remove(id);
+    mujoco_ccd_geometries_.erase(id);
 
     // Evict the convex hull cache entry for this geometry if it is the last
     // user. The CollisionObjectd was already destroyed above (by the inner
@@ -509,6 +557,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       if (auto cache_it = convex_hull_cache_.find(file_key);
           cache_it != convex_hull_cache_.end()) {
         auto& scaled_hulls = cache_it->second.scaled_hulls;
+        auto& ccd_data = cache_it->second.ccd_data;
+        if (auto ccd_it = ccd_data.find(scale_key);
+            ccd_it != ccd_data.end() && ccd_it->second.use_count() == 1) {
+          ccd_data.erase(ccd_it);
+        }
         if (auto hull_it = scaled_hulls.find(scale_key);
             hull_it != scaled_hulls.end() && hull_it->second.use_count() == 1) {
           scaled_hulls.erase(hull_it);
@@ -847,6 +900,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<PenetrationAsPointPair<T>> contacts;
     penetration_as_point_pair::CallbackData data{&collision_filter_, &X_WGs,
                                                  &contacts};
+    if (!mujoco_ccd_geometries_.empty()) {
+      data.mujoco_ccd_geometries = &mujoco_ccd_geometries_;
+    }
 
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, penetration_as_point_pair::Callback<T>);
@@ -856,10 +912,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                penetration_as_point_pair::Callback<T>);
 
-    std::sort(contacts.begin(), contacts.end(),
-              [](const auto& a, const auto& b) {
-                return Order<T>(a, b);
-              });
+    // Note: stable to preserve the deterministic emission order of multiple
+    // contact points reported for the same geometry pair.
+    std::stable_sort(contacts.begin(), contacts.end(),
+                     [](const auto& a, const auto& b) {
+                       return Order<T>(a, b);
+                     });
 
     return contacts;
   }
@@ -950,29 +1008,35 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         &X_WGs, &hydroelastic_geometries_, representation};
     penetration_as_point_pair::CallbackData<T> point_data{&collision_filter_,
                                                           &X_WGs, point_pairs};
+    if (!mujoco_ccd_geometries_.empty()) {
+      point_data.mujoco_ccd_geometries = &mujoco_ccd_geometries_;
+    }
 
     // As a suggestion to future thread parallelizers, make available fully
     // allocated and prepared vectors for results of the parallelizable steps.
+    // (A geometry pair can contribute more than one point pair when the
+    // multi-point contact algorithm is in use, hence a list per candidate.)
     vector<std::unique_ptr<ContactSurface<T>>> surface_ptrs(candidates.size());
-    vector<std::optional<PenetrationAsPointPair<T>>> point_pair_maybes(
+    vector<std::vector<PenetrationAsPointPair<T>>> point_pair_lists(
         candidates.size());
     // TODO(rpoyner-tri): try some thread parallelism here.
     for (int k = 0; k < ssize(candidates); ++k) {
       const auto& [id0, id1] = candidates[k];
       auto [result, surface] = calculator.MaybeMakeContactSurface(id0, id1);
       if (ContactSurfaceFailed(result)) {
-        auto penetration = penetration_as_point_pair::MaybeMakePointPair(
-            GetFclPtr(id0), GetFclPtr(id1), point_data);
-        if (penetration.has_value()) {
-          point_pair_maybes[k] = penetration;
-        }
+        penetration_as_point_pair::MakePointPairs(
+            GetFclPtr(id0), GetFclPtr(id1), point_data, &point_pair_lists[k]);
       } else if (surface != nullptr) {
         surface_ptrs[k] = std::move(surface);
       }
     }
     CullFlatten(&surface_ptrs, surfaces);
     DRAKE_ASSERT(IsSortedByOrder(*surfaces));
-    CullFlatten(&point_pair_maybes, point_pairs);
+    for (auto& list : point_pair_lists) {
+      for (auto& point_pair : list) {
+        point_pairs->push_back(std::move(point_pair));
+      }
+    }
     DRAKE_ASSERT(IsSortedByOrder(*point_pairs));
   }
 
@@ -1331,6 +1395,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     geometry_to_hull_key_[static_cast<const ReifyData*>(user_data)->id] = {
         cache_key, scale_key};
 
+    // If the geometry's properties select the MuJoCo multi-point contact
+    // algorithm, derive (or reuse) the collision tables for this hull.
+    MaybeAddMujocoCcdGeometry(
+        static_cast<const ReifyData*>(user_data)->id,
+        static_cast<const ReifyData*>(user_data)->properties);
+
     TakeShapeOwnership(fcl_convex, user_data);
     ProcessHydroelastic(mesh, user_data);
     // TODO(DamrongGuoy):  Right now ProcessGeometriesForDeformableContact()
@@ -1504,6 +1574,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // RemoveGeometry() to evict stale cache entries.
   std::unordered_map<GeometryId, std::pair<std::string, std::array<double, 4>>>
       geometry_to_hull_key_{};
+
+  // The Mesh/Convex geometries whose proximity properties opted into the
+  // "mujoco_multipoint" point contact algorithm, with the precomputed
+  // collision data of their convex hulls (shared with convex_hull_cache_).
+  // See MaybeAddMujocoCcdGeometry().
+  MujocoCcdGeometries mujoco_ccd_geometries_{};
 };
 
 template <typename T>

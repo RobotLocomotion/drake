@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_properties.h"
 
 #include <array>
+#include <stdexcept>
 #include <string>
 
 namespace drake {
@@ -12,6 +13,9 @@ const char* const kFriction = "coulomb_friction";
 const char* const kHcDissipation = "hunt_crossley_dissipation";
 const char* const kRelaxationTime = "relaxation_time";
 const char* const kPointStiffness = "point_contact_stiffness";
+const char* const kPointContactAlgorithm = "point_contact_algorithm";
+const char* const kSinglePointAlgorithm = "single_point";
+const char* const kMujocoMultipointAlgorithm = "mujoco_multipoint";
 
 const char* const kHydroGroup = "hydroelastic";
 const char* const kElastic = "hydroelastic_modulus";
@@ -19,6 +23,21 @@ const char* const kRezHint = "resolution_hint";
 const char* const kComplianceType = "compliance_type";
 const char* const kSlabThickness = "slab_thickness";
 const char* const kMargin = "margin";
+
+std::string GetPointContactAlgorithmOrThrow(
+    const ProximityProperties& properties) {
+  const std::string algorithm = properties.GetPropertyOrDefault<std::string>(
+      kMaterialGroup, kPointContactAlgorithm, kSinglePointAlgorithm);
+  if (algorithm != kSinglePointAlgorithm &&
+      algorithm != kMujocoMultipointAlgorithm) {
+    throw std::logic_error(fmt::format(
+        "Unrecognized ('{}', '{}') proximity property value '{}'; the "
+        "recognized values are '{}' and '{}'.",
+        kMaterialGroup, kPointContactAlgorithm, algorithm,
+        kSinglePointAlgorithm, kMujocoMultipointAlgorithm));
+  }
+  return algorithm;
+}
 
 namespace {
 
