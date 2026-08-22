@@ -46,7 +46,7 @@ namespace {
 
 class PyRenderEngine : public RenderEngine {
  public:
-  NB_TRAMPOLINE(RenderEngine, 9);
+  NB_TRAMPOLINE(RenderEngine);
   using Base = RenderEngine;
 
   PyRenderEngine() : Base() {}

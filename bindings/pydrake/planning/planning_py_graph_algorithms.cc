@@ -22,7 +22,7 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   {
     class PyMaxCliqueSolverBase : public MaxCliqueSolverBase {
      public:
-      NB_TRAMPOLINE(MaxCliqueSolverBase, 1);
+      NB_TRAMPOLINE(MaxCliqueSolverBase);
 
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMaxClique is made public to enable
@@ -67,7 +67,7 @@ void DefinePlanningGraphAlgorithms(py::module_ m) {
   {
     class PyMinCliqueCoverSolverBase : public MinCliqueCoverSolverBase {
      public:
-      NB_TRAMPOLINE(MinCliqueCoverSolverBase, 1);
+      NB_TRAMPOLINE(MinCliqueCoverSolverBase);
 
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMinCliqueCover is made public to
