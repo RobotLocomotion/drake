@@ -64,12 +64,15 @@ class_<Class, drake::AbstractValue> AddValueInstantiation(py::module_ scope) {
   constexpr bool has_get_mutable_value =
       internal::is_generic_caster_v<T> || std::is_same_v<T, Object>;
   if constexpr (has_get_mutable_value) {
-    py::rv_policy return_policy = py_rvp::reference_internal;
-    if (std::is_same_v<T, Object>) {
-      // N.B. This implies that `Object` will be copied by value; however, it
-      // is only a shallow copy of the pointer, not a deep copy of the object.
-      return_policy = py_rvp::copy;
-    }
+    // N.B. This implies that `Object` will be copied by value; however, it is
+    // only a shallow copy of the pointer, not a deep copy of the object.
+    constexpr auto return_policy = []() {
+      if constexpr (std::is_same_v<T, Object>) {
+        return py_rvp::copy;
+      } else {
+        return py_rvp::reference_internal;
+      }
+    }();
     std::string set_value_docstring = "Replaces stored value with a new one.";
     if (!std::is_copy_constructible_v<T>) {
       set_value_docstring += R"""(

@@ -306,7 +306,7 @@ struct Impl {
   template <typename LeafSystemBase = LeafSystemPublic>
   class PyLeafSystemBase : public LeafSystemBase {
    public:
-    NB_TRAMPOLINE(LeafSystemBase, 2);
+    NB_TRAMPOLINE(LeafSystemBase);
     using Base = LeafSystemBase;
 
     // Trampoline virtual methods.
@@ -369,7 +369,7 @@ struct Impl {
   template <typename DiagramBase = DiagramPublic>
   class PyDiagramBase : public DiagramBase {
    public:
-    NB_TRAMPOLINE(DiagramBase, 1);
+    NB_TRAMPOLINE(DiagramBase);
     using Base = DiagramBase;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
@@ -400,7 +400,7 @@ struct Impl {
 
   class PyVectorSystem : public VectorSystemPublic {
    public:
-    NB_TRAMPOLINE(VectorSystemPublic, 0);
+    NB_TRAMPOLINE(VectorSystemPublic);
     using Base = VectorSystemPublic;
 
     void DoCalcVectorOutput(const Context<T>& context,
@@ -476,7 +476,7 @@ struct Impl {
 
   class PySystemVisitor : public SystemVisitor<T> {
    public:
-    NB_TRAMPOLINE(SystemVisitor<T>, 2);
+    NB_TRAMPOLINE(SystemVisitor<T>);
 
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {

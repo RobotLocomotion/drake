@@ -900,7 +900,7 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def("Expand", &Polynomial::Expand, doc.Polynomial.Expand.doc)
       .def("SubstituteAndExpand", &Polynomial::SubstituteAndExpand,
           py::arg("indeterminate_substitution"),
-          py::arg("substitutions_cached_data") = std::nullopt,
+          py::arg("substitutions_cached_data").none() = std::nullopt,
           doc.Polynomial.SubstituteAndExpand.doc)
       .def("RemoveTermsWithSmallCoefficients",
           &Polynomial::RemoveTermsWithSmallCoefficients,

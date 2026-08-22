@@ -505,8 +505,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
             py::arg("num_vars"), py::arg("minimum_value_lower"),
             py::arg("influence_value_offset"), py::arg("max_num_values"),
             py::arg("value_function"),
-            py::arg("value_function_double") = std::function<Eigen::VectorXd(
-                const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+            py::arg("value_function_double").none() =
+                std::function<Eigen::VectorXd(
+                    const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
             cls_doc.ctor.doc)
         .def("minimum_value_lower", &Class::minimum_value_lower,
             cls_doc.minimum_value_lower.doc)
@@ -562,8 +563,9 @@ void BindEvaluatorsAndBindings(py::module_ m) {
             py::arg("num_vars"), py::arg("minimum_value_upper"),
             py::arg("influence_value_offset"), py::arg("max_num_values"),
             py::arg("value_function"),
-            py::arg("value_function_double") = std::function<Eigen::VectorXd(
-                const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+            py::arg("value_function_double").none() =
+                std::function<Eigen::VectorXd(
+                    const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
             cls_doc.ctor.doc)
         .def("minimum_value_upper", &Class::minimum_value_upper,
             cls_doc.minimum_value_upper.doc)

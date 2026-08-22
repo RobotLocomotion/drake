@@ -65,7 +65,7 @@ struct type_caster<drake::symbolic::Variable::Id> {
   bool load(handle src, bool /* convert */)
 #else  // PYDRAKE_USE_NANOBIND
   bool from_python(
-      handle src, uint8_t /* flags */, cleanup_list* /* cleanup */) noexcept
+      handle src, uint32_t /* flags */, cleanup_list* /* cleanup */) noexcept
 #endif
   {
     if (!src) {

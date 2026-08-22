@@ -442,7 +442,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
               influence_distance_offset);
         },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
-        py::arg("penalty_function") = nullptr,
+        py::arg("penalty_function").none() = nullptr,
         py::arg("influence_distance_offset") = 0.01,
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
@@ -463,7 +463,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
               influence_distance_offset);
         },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
-        py::arg("penalty_function") = nullptr,
+        py::arg("penalty_function").none() = nullptr,
         py::arg("influence_distance_offset") = 0.01,
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
@@ -487,7 +487,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
             },
             py::arg("collision_checker"), py::arg("bound"),
             py::arg("collision_checker_context"),
-            py::arg("penalty_function") =
+            py::arg("penalty_function").none() =
                 solvers::MinimumValuePenaltyFunction{},
             py::arg("influence_distance_offset") = 0.01,
             // Keep alive, reference: `self` keeps collision_checker
@@ -533,7 +533,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
         },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
         py::arg("influence_distance_offset"),
-        py::arg("penalty_function") = nullptr,
+        py::arg("penalty_function").none() = nullptr,
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
         // Keep alive, reference: `self` keeps `plant_context` alive.
@@ -554,7 +554,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
         },
         py::arg("plant"), py::arg("bound"), py::arg("plant_context"),
         py::arg("influence_distance_offset"),
-        py::arg("penalty_function") = nullptr,
+        py::arg("penalty_function").none() = nullptr,
         // Keep alive, reference: `self` keeps `plant` alive.
         py::keep_alive<1, 2>(),
         // Keep alive, reference: `self` keeps `plant_context` alive.
@@ -577,7 +577,7 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
             py::arg("collision_checker"), py::arg("bound"),
             py::arg("collision_checker_context"),
             py::arg("influence_distance_offset"),
-            py::arg("penalty_function") =
+            py::arg("penalty_function").none() =
                 solvers::MinimumValuePenaltyFunction{},
             // Keep alive, reference: `self` keeps collision_checker alive.
             py::keep_alive<1, 2>(),
