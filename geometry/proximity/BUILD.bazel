@@ -67,6 +67,8 @@ drake_cc_package_library(
         ":mesh_to_vtk",
         ":mesh_traits",
         ":meshing_utilities",
+        ":mujoco_ccd_mesh_data",
+        ":mujoco_ccd_penetration",
         ":obj_to_surface_mesh",
         ":plane",
         ":polygon_surface_mesh",
@@ -826,6 +828,34 @@ drake_cc_library(
     deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mujoco_ccd_mesh_data",
+    srcs = ["mujoco_ccd_mesh_data.cc"],
+    hdrs = ["mujoco_ccd_mesh_data.h"],
+    deps = [
+        ":polygon_surface_mesh",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mujoco_ccd_penetration",
+    srcs = ["mujoco_ccd_penetration.cc"],
+    hdrs = ["mujoco_ccd_penetration.h"],
+    deps = [
+        ":mujoco_ccd_mesh_data",
+        "//geometry:geometry_ids",
+        "//geometry/query_results:penetration_as_point_pair",
+        "//math:geometric_transform",
+    ],
+    implementation_deps = [
+        "//common:essential",
+        "//common:unused",
+        "@mujoco_internal//:mujoco_ccd",
     ],
 )
 
@@ -1737,6 +1767,17 @@ drake_cc_googletest(
         ":volume_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mujoco_ccd_penetration_test",
+    deps = [
+        ":mujoco_ccd_mesh_data",
+        ":mujoco_ccd_penetration",
+        ":polygon_surface_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
