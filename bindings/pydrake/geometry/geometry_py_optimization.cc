@@ -1136,7 +1136,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
   // python.
   class PyImplicitGraphOfConvexSets : public ImplicitGraphOfConvexSets {
    public:
-    NB_TRAMPOLINE(ImplicitGraphOfConvexSets, 1);
+    NB_TRAMPOLINE(ImplicitGraphOfConvexSets);
     using Base = ImplicitGraphOfConvexSets;
     using Base::mutable_gcs;
 
