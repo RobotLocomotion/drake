@@ -1301,8 +1301,11 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         const bool current_move_limited = b_i_min_allowed > b_i_scaled;
         std::set<int> indices_to_not_check;
         for (int ind = 0; ind < b_proposed.rows(); ++ind) {
+          // The finiteness check guards against the kInf value stored when
+          // a witness LP fails, which must not be treated as a certificate.
           if ((face_moved_in[ind] && !face_move_limited[ind]) ||
-              inbody.A().row(i) * witness_points[ind] <= b_proposed(i)) {
+              (witness_points[ind].allFinite() &&
+               inbody.A().row(i) * witness_points[ind] <= b_proposed(i))) {
             indices_to_not_check.insert(ind);
           }
         }
