@@ -92,6 +92,7 @@ bazel_dep(name = "glib", version = "2.82.2.bcr.9", repo_name = "module_glib")
 # implementation.
 
 bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
+bazel_dep(name = "libpng", version = "1.6.58", repo_name = "module_libpng")
 bazel_dep(name = "nanobind", version = "3.0.0", repo_name = "module_nanobind")
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2", repo_name = "module_nlohmann_json")
 bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
@@ -190,6 +191,7 @@ use_repo(
     # but (unlike the prior group) these are not configurable.
     #
     "libjpeg",
+    "libpng",
     "nlohmann_json",
     "suitesparse",
     "zlib",
@@ -323,7 +325,6 @@ use_repo(
     "ipopt_internal",
     "lapack_internal",
     "lcm_internal",
-    "libpng_internal",
     "libtiff_internal",
     "libzip_internal",
     "metis_internal",
