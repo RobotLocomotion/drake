@@ -896,10 +896,13 @@ namespace {
 HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
                             Eigen::VectorXd* face_center_distance,
                             std::vector<bool>* face_moved_in,
+                            std::vector<bool>* face_move_limited,
+                            bool current_move_limited,
                             std::vector<VectorXd>* witness_points, int* i,
                             const std::vector<int>& i_cull) {
   DRAKE_DEMAND(ssize(*face_moved_in) >= *i + 1);
   (*face_moved_in)[*i] = true;
+  (*face_move_limited)[*i] = current_move_limited;
   std::vector<int> i_not_cull;
   i_not_cull.reserve(A.rows() - i_cull.size());
   int num_cull_before_i = 0;
@@ -917,6 +920,8 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
   VectorXd b_new(i_not_cull.size());
   std::vector<bool> face_moved_in_new;
   face_moved_in_new.reserve(i_not_cull.size());
+  std::vector<bool> face_move_limited_new;
+  face_move_limited_new.reserve(i_not_cull.size());
   std::vector<VectorXd> witness_points_new;
   witness_points_new.reserve(i_not_cull.size());
   VectorXd face_center_distance_new(i_not_cull.size());
@@ -924,6 +929,7 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
     A_new.row(j) = A.row(i_not_cull[j]);
     b_new(j) = b(i_not_cull[j]);
     face_moved_in_new.push_back((*face_moved_in)[i_not_cull[j]]);
+    face_move_limited_new.push_back((*face_move_limited)[i_not_cull[j]]);
     witness_points_new.push_back((*witness_points)[i_not_cull[j]]);
     face_center_distance_new[j] = (*face_center_distance)[i_not_cull[j]];
   }
@@ -934,6 +940,7 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
   HPolyhedron inbody = HPolyhedron(A_new, b_new);
   *face_center_distance = face_center_distance_new;
   *face_moved_in = face_moved_in_new;
+  *face_move_limited = face_move_limited_new;
   *witness_points = witness_points_new;
 
   return inbody;
@@ -1073,13 +1080,17 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     return HPolyhedron(Eigen::MatrixXd(1, 0), Eigen::VectorXd::Constant(1, 1));
   }
 
-  // Ensure rows are normalized.
+  // Ensure rows are normalized.  A zero row cannot be normalized, but it also
+  // cannot make the set empty (the IsEmpty() check above would have thrown),
+  // so it is redundant and will be removed by the redundancy check below.
   MatrixXd A_initial = A_;
   VectorXd b_initial = b_;
   for (int i = 0; i < A_initial.rows(); ++i) {
     const double initial_row_norm = A_initial.row(i).norm();
-    A_initial.row(i) /= initial_row_norm;
-    b_initial(i) /= initial_row_norm;
+    if (initial_row_norm > 0) {
+      A_initial.row(i) /= initial_row_norm;
+      b_initial(i) /= initial_row_norm;
+    }
   }
 
   // Circumbody with normalized faces, before removing initially redundant
@@ -1153,6 +1164,10 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   // Initialize inbody as circumbody.
   HPolyhedron inbody = circumbody;
   std::vector<bool> face_moved_in(inbody.b().rows(), false);
+  // Whether each face's inward move was stopped short of its scaled position
+  // by an intersection or point-containment constraint (meaningful only where
+  // `face_moved_in` is true).
+  std::vector<bool> face_move_limited(inbody.b().rows(), false);
   int iterations = 0;
   bool any_faces_moved = true;
   RandomGenerator generator(random_seed);
@@ -1167,6 +1182,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     VectorXd b_shuffled(inbody.b().size());
     VectorXd face_center_distance_shuffled(inbody.b().size());
     std::vector<bool> face_moved_in_shuffled(inbody.b().size());
+    std::vector<bool> face_move_limited_shuffled(inbody.b().size());
     std::vector<VectorXd> witness_points_shuffled(inbody.b().size());
     for (int i_shuffle : shuffle_inds) {
       A_shuffled.row(i_shuffle) = inbody.A().row(shuffle_inds[i_shuffle]);
@@ -1175,12 +1191,15 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
           face_center_distance(shuffle_inds[i_shuffle]);
       face_moved_in_shuffled[i_shuffle] =
           face_moved_in[shuffle_inds[i_shuffle]];
+      face_move_limited_shuffled[i_shuffle] =
+          face_move_limited[shuffle_inds[i_shuffle]];
       witness_points_shuffled[i_shuffle] =
           witness_points[shuffle_inds[i_shuffle]];
     }
     inbody = HPolyhedron(A_shuffled, b_shuffled);
     face_center_distance = face_center_distance_shuffled;
     face_moved_in = face_moved_in_shuffled;
+    face_move_limited = face_move_limited_shuffled;
     witness_points = witness_points_shuffled;
 
     int i = 0;
@@ -1189,8 +1208,9 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
       if (!face_moved_in[i]) {
         // Lower bound on `b[i]`, to be updated by restrictions posed by
         // intersections.
-        double b_i_min_allowed =
+        const double b_i_scaled =
             inbody.b()(i) - face_scale_ratio * face_center_distance(i);
+        double b_i_min_allowed = b_i_scaled;
 
         // Loop through intersecting hyperplanes and update `b_i_min_allowed`
         // based on how far each intersection allows the hyperplane to move.
@@ -1269,11 +1289,19 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         VectorXd b_proposed = inbody.b();
         b_proposed(i) = b_i_min_allowed;
 
-        // A set of indices corresponding to faces that can be sure are still
-        // non-redundant without solving an additional LP.
+        // Faces certified non-redundant without solving an LP, either because
+        // their witness point remains in the set after the proposed move, or
+        // because they were moved fully to their scaled position: such faces
+        // are non-redundant in the uniformly scaled circumbody (which, as a
+        // scaling of the redundancy-free circumbody, has no redundant faces),
+        // and every face always lies at or outside its scaled position, which
+        // can only preserve their non-redundancy.  Faces whose move was
+        // limited by an intersection or point-containment constraint have no
+        // such guarantee and rely on their witness point like unmoved faces.
+        const bool current_move_limited = b_i_min_allowed > b_i_scaled;
         std::set<int> indices_to_not_check;
         for (int ind = 0; ind < b_proposed.rows(); ++ind) {
-          if (face_moved_in[ind] ||
+          if ((face_moved_in[ind] && !face_move_limited[ind]) ||
               inbody.A().row(i) * witness_points[ind] <= b_proposed(i)) {
             indices_to_not_check.insert(ind);
           }
@@ -1299,9 +1327,10 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         if (i_redundant.size() > 0) {
           any_faces_moved = true;
           const MatrixXd A = inbody.A();
-          inbody =
-              MoveFaceAndCull(A, b_proposed, &face_center_distance,
-                              &face_moved_in, &witness_points, &i, i_redundant);
+          inbody = MoveFaceAndCull(A, b_proposed, &face_center_distance,
+                                   &face_moved_in, &face_move_limited,
+                                   current_move_limited, &witness_points, &i,
+                                   i_redundant);
         }
       }
       ++i;
