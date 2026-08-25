@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
+import itertools
 
 from .common import PythonBinder, PythonTarget
 
@@ -33,12 +34,20 @@ class Platform:
 class TestCase:
     """A (platform, python) combination with which to test.
 
-    python_manager will be selected automatically based on _DISTRO_PYTHONS.
+    python_manager is selected as PIP if the platform's system package manager
+    natively provides the requested Python version, or UV otherwise.
     """
 
     platform: Platform
     python: PythonTarget
-    python_manager: PythonManager
+
+    def __post_init__(self):
+        provided = _DISTRO_PYTHONS[self.platform.alias]
+        self.python_manager = (
+            PythonManager.PIP
+            if self.python.version_tuple in provided
+            else PythonManager.UV
+        )
 
     @property
     def alias(self) -> str:
@@ -62,18 +71,10 @@ class Target:
 
     def test_matrix(self) -> tuple[TestCase, ...]:
         """Returns the Cartesian product of `test_platforms` and
-        `test_pythons`, choosing distro-provided Python (`PIP`) where
-        available and falling back to `UV` otherwise."""
-        result = []
-        for test_platform in self.test_platforms:
-            for test_python in self.test_pythons:
-                python_manager = (
-                    PythonManager.PIP
-                    if test_python.version_tuple
-                    in _DISTRO_PYTHONS[test_platform.alias]
-                    else PythonManager.UV
-                )
-                result.append(
-                    TestCase(test_platform, test_python, python_manager)
-                )
-        return tuple(result)
+        `test_pythons` as TestCases."""
+        return tuple(
+            itertools.starmap(
+                TestCase,
+                itertools.product(self.test_platforms, self.test_pythons),
+            )
+        )
