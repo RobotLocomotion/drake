@@ -1,9 +1,15 @@
+import glob
 import os
 
-# Note: use setuptools.glob rather than the built-in glob; see
-# https://bugs.python.org/issue37578.
-import setuptools
-from setuptools import find_packages, glob, setup
+from setuptools import Distribution, find_packages, setup
+
+
+class BinaryDistribution(Distribution):
+    """Force the wheel builder to output a platform-specific wheel tag."""
+
+    def has_ext_modules(self) -> bool:
+        return True
+
 
 DRAKE_VERSION = os.environ.get("DRAKE_VERSION", "0.0.0")
 
@@ -29,15 +35,19 @@ python_required = [
 ]
 
 
-def find_data_files(*patterns):
+def _find_data_files(*patterns: str) -> list[str]:
     result = []
     for pattern in patterns:
-        result += [f"../{f}" for f in glob.iglob(pattern, recursive=True)]
+        result += [
+            f"../{f}"
+            for f in glob.iglob(pattern, recursive=True, include_hidden=True)
+        ]
     return result
 
 
-def _actually_find_packages():
-    """Work around broken(?!) setuptools."""
+def _actually_find_packages() -> list[str]:
+    """Find additional `pydrake` modules intended to be packaged in the wheel
+    which aren't found by `setuptools` due to a missing `__init__.py` file."""
     result = find_packages()
     result.extend(
         [
@@ -54,13 +64,6 @@ def _actually_find_packages():
     )
     print(f"Using packages={result}")
     return result
-
-
-# Generate a source file we can use to produce an extension library (which we
-# do to force the wheel to not be platform-agnostic). We need this because
-# trying to build an extension module with no sources is not reliable.
-with open("dummy.c", "wt", encoding="utf-8") as f:
-    f.write("void not_used() {}")
 
 
 setup(
@@ -101,7 +104,7 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
     # Add in any packaged data.
     include_package_data=True,
     package_data={
-        "": find_data_files(
+        "": _find_data_files(
             "pydrake/py.typed",
             "pydrake/**/*.pyi",
             "pydrake/**/*.so",
@@ -121,9 +124,6 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
         else {}
     ),
     install_requires=python_required,
-    # Ensure the wheel is not platform-agnostic.
-    ext_modules=[
-        setuptools.Extension(name="drake", sources=["dummy.c"]),
-    ],
+    distclass=BinaryDistribution,
     zip_safe=False,
 )

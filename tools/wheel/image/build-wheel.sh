@@ -127,13 +127,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
         pydrake/*/*.so
 fi
 
-if [[ "$(uname)" == "Linux" ]]; then
-    # We compile a (trivial) extension specified from setup.py, so we must
-    # ensure our C compiler is available.
-    CC=/opt/rh/gcc-toolset-14/root/usr/bin/gcc python -m build --wheel
-else
-    python -m build --wheel
-fi
+python -m build --wheel
 
 if [[ "$(uname)" == "Darwin" ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl

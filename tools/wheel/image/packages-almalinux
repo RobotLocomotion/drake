@@ -1,6 +1,6 @@
 # Core compilers and linkers.
-# N.B. When you change anything here, also fix wheel/image/build-drake.sh,
-# wheel/image/build-wheel.sh, and wheel/licenses/gcc/copyright.
+# N.B. When you change anything here, also fix wheel/image/build-drake.sh
+# and wheel/licenses/gcc/copyright.
 gcc-toolset-14-gcc
 gcc-toolset-14-gcc-c++
 gcc-toolset-14-gcc-gfortran
