@@ -84,17 +84,12 @@ def _test_wheel(wheel, target, env):
     """
     Runs the test script on `wheel`.
     """
+    # Set up the environment.
     setup_script = os.path.join(
         resource_root, "macos", "provision-test-python.sh"
     )
     subprocess.check_call(
         ["bash", setup_script, target.python.version], env=env
-    )
-
-    test_python_venv = os.path.join(test_root, "python")
-    os.symlink(
-        os.path.join(test_root, f"python{target.python.version}"),
-        test_python_venv,
     )
 
     # Install the wheel.
@@ -107,8 +102,6 @@ def _test_wheel(wheel, target, env):
         print(f"-- Executing test {test}")
         subprocess.check_call(["bash", test_script, test, wheel], env=env)
         print(f"-- Executing test {test} - PASSED")
-
-    os.unlink(test_python_venv)
 
 
 def build(options):

@@ -21,4 +21,4 @@ fi
 
 # NOTE: Xcode ships python3, make sure to use the one from brew.
 $(brew --prefix python@$1)/bin/python$1 \
-    -m venv /tmp/drake-wheel-test/python$1
+    -m venv /tmp/drake-wheel-test/python
