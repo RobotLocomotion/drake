@@ -3,6 +3,7 @@
 
 import atexit
 from datetime import UTC, datetime
+import itertools
 import os
 import platform
 import subprocess
@@ -22,7 +23,7 @@ from .common import (
     wheel_name,
     wheelhouse,
 )
-from .linux_types import Platform, Target, TestCase
+from .linux_types import Platform, Target, python_manager_for
 
 # Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
 _files_to_remove = set()
@@ -235,15 +236,15 @@ def _build_tagname(target: Target, tag_prefix: str) -> str:
     return f"{tag_base}:{tag_prefix}-{platform}-py{python_tag}-{python_binder}"
 
 
-def _test_tagname(test_case: TestCase, stage: str) -> str:
+def _test_tagname(test_platform, test_python, python_manager, stage) -> str:
     """
-    Generates a Docker tag name for a test-role TestCase and stage/prefix.
+    Generates a Docker tag name from the inputs.
     """
-    platform = test_case.alias
-    manager = test_case.python_manager.value
+    platform = test_platform.alias
+    manager = python_manager.value
     if stage == "base":
         return f"{tag_base}:{stage}-{platform}-{manager}"
-    python_tag = test_case.python.tag
+    python_tag = test_python.tag
     return f"{tag_base}:{stage}-{platform}-py{python_tag}-{manager}"
 
 
@@ -279,15 +280,15 @@ def _build_target_args(target: Target):
     ]  # fmt: skip
 
 
-def _test_target_args(test_case: TestCase):
+def _test_target_args(test_platform, test_python, python_manager):
     """
     Returns the Docker build arguments for the test Dockerfile.
     """
-    platform = f"{test_case.platform.name}:{test_case.platform.version}"
+    platform = f"{test_platform.name}:{test_platform.version}"
     return [
         "--build-arg", f"PLATFORM={platform}",
-        "--build-arg", f"PYTHON={test_case.python.version_full}",
-        "--build-arg", f"PYTHON_MANAGER={test_case.python_manager.value}",
+        "--build-arg", f"PYTHON={test_python.version_full}",
+        "--build-arg", f"PYTHON_MANAGER={python_manager.value}",
     ]  # fmt: skip
 
 
@@ -353,19 +354,28 @@ def _test_wheel(target, identifier, version, options):
     )
     test_dir = os.path.join(resource_root, "test")
 
-    for test_case in target.test_matrix():
+    for test_platform, test_python in itertools.product(
+        target.test_platforms, target.test_pythons
+    ):
+        python_manager = python_manager_for(test_platform, test_python)
         print(
-            f"[-] Testing on {test_case.alias}"
-            f" (Python {test_case.python.version}) ..."
+            f"[-] Testing on {test_platform.alias}"
+            f" (Python {test_python.version}) ..."
         )
-        args = _test_target_args(test_case)
-        test_image = _test_tagname(test_case, f"test-{identifier}")
+        args = _test_target_args(test_platform, test_python, python_manager)
+        test_image = _test_tagname(
+            test_platform, test_python, python_manager, f"test-{identifier}"
+        )
         test_container = test_image.replace(":", "__")
 
         # Build the Python-version agnostic base provisioned image.
         if options.tag_stages:
             provisioned_image = _build_dockerfile_stages(
-                test_dir, args, lambda stage: _test_tagname(test_case, stage)
+                test_dir,
+                args,
+                lambda stage: _test_tagname(
+                    test_platform, test_python, python_manager, stage
+                ),
             )
         else:
             provisioned_image = test_image
@@ -383,7 +393,7 @@ def _test_wheel(target, identifier, version, options):
         install_command = [
             "/test/install-wheel.sh",
             os.path.join(wheelhouse, wheel),
-            test_case.python_manager.value,
+            python_manager.value,
         ]  # fmt: skip
         _docker(
             "run", "-t", f"--name={test_container}",

@@ -29,20 +29,13 @@ class Platform:
     alias: str
 
 
-@dataclass
-class TestCase:
-    """A (platform, python) combination with which to test.
-
-    python_manager will be selected automatically based on _DISTRO_PYTHONS.
-    """
-
-    platform: Platform
-    python: PythonTarget
-    python_manager: PythonManager
-
-    @property
-    def alias(self) -> str:
-        return self.platform.alias
+def python_manager_for(
+    platform: Platform, python: PythonTarget
+) -> PythonManager:
+    """Returns the PythonManager needed to obtain `python` on `platform`."""
+    if python.version_tuple in _DISTRO_PYTHONS[platform.alias]:
+        return PythonManager.PIP
+    return PythonManager.UV
 
 
 @dataclass
@@ -59,21 +52,3 @@ class Target:
         assert isinstance(self.test_pythons, tuple)
         for test_python in self.test_pythons:
             test_python.validate(n_components=2)
-
-    def test_matrix(self) -> tuple[TestCase, ...]:
-        """Returns the Cartesian product of `test_platforms` and
-        `test_pythons`, choosing distro-provided Python (`PIP`) where
-        available and falling back to `UV` otherwise."""
-        result = []
-        for test_platform in self.test_platforms:
-            for test_python in self.test_pythons:
-                python_manager = (
-                    PythonManager.PIP
-                    if test_python.version_tuple
-                    in _DISTRO_PYTHONS[test_platform.alias]
-                    else PythonManager.UV
-                )
-                result.append(
-                    TestCase(test_platform, test_python, python_manager)
-                )
-        return tuple(result)
