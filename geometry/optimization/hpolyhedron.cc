@@ -1319,7 +1319,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
                                            i_redundant_set.end());
         const std::vector<VectorXd> updated_witness_points =
             redundancy_info.second;
-        // update the witness points that have changed
+        // Update the witness points that have changed.
         for (int i_witness_point = 0; i_witness_point < ssize(witness_points);
              ++i_witness_point) {
           if (!indices_to_not_check.contains(i_witness_point)) {
