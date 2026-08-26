@@ -1017,6 +1017,10 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
   const int num_vars = polytope.A().cols();
   const int num_cons = polytope.A().rows();
   const auto x = prog.NewContinuousVariables(num_vars, "x");
+  // Add one constraint per row, rather than one matrix constraint, so that a
+  // single hyperplane's bound can be shifted and restored, and so that
+  // hyperplanes found redundant can be removed from the program individually
+  // (mirroring FindRedundant).
   std::vector<Binding<LinearConstraint>> bindings_vec;
   for (int i = 0; i < num_cons; ++i) {
     bindings_vec.push_back(prog.AddLinearConstraint(
@@ -1042,22 +1046,22 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
           bindings_vec[i].evaluator()->upper_bound() + hyperplane_shift_vec);
       cost_binding.evaluator()->UpdateCoefficients(-polytope.A().row(i), 0);
       const auto result = Solve(prog);
-      if ((result.is_success() &&
-           -result.get_optimal_cost() > polytope.b()[i]) ||
-          !result.is_success()) {
-        // Bring back the constraint, it is not redundant (or if the program
-        // fails for some reason, it is safer to treat it as non-redundant).
+      if (!result.is_success()) {
+        // The program failed, so it is safer to treat the hyperplane as
+        // non-redundant. Bring back the constraint, and use a point at
+        // infinity so that the witness point will be re-calculated at the
+        // next check.
         bindings_vec[i].evaluator()->UpdateUpperBound(
             bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
-        if (result.is_success()) {
-          witness_points.push_back(result.GetSolution(x));
-        } else {
-          // Use a point at infinity so that the witness point will be
-          // re-calculated at the next check
-          witness_points.push_back(VectorXd::Constant(num_vars, kInf));
-        }
+        witness_points.push_back(VectorXd::Constant(num_vars, kInf));
+      } else if (-result.get_optimal_cost() > polytope.b()[i]) {
+        // The hyperplane is not redundant. Bring back the constraint and
+        // store the witness point.
+        bindings_vec[i].evaluator()->UpdateUpperBound(
+            bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
+        witness_points.push_back(result.GetSolution(x));
       } else {
-        // The constraint is redundant and should be removed from the program.
+        // The hyperplane is redundant and should be removed from the program.
         prog.RemoveConstraint(bindings_vec.at(i));
         redundant_indices.insert(i);
         // Use zero as a placeholder for witness points that will be removed
