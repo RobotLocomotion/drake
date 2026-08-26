@@ -153,37 +153,43 @@ def _drake_dep_repositories_impl(module_ctx):
     python_repository(name = "python")
     snopt_repository(name = "snopt")
 
-    ALIAS_REPOSITORIES = [
-        "blas",
-        "eigen",
-        "fmt",
-        "glib",
-        "lapack",
-        "libjpeg",
-        "nlohmann_json",
-        "opencl",
-        "spdlog",
-        "suitesparse",
-        "zlib",
-    ]
-    for name in ALIAS_REPOSITORIES:
-        actual = "@drake//tools/workspace/" + name
-        aliases = {name: actual}
-        if name == "glib":
+    ALIAS_REPOSITORIES = {
+        "blas": "blas",
+        "eigen": "eigen",
+        "fmt": "fmt",
+        "glib": {
+            "glib": "glib",
             # We provide @glib//glib to match bzlmod glib's package structure.
-            aliases.update({"//glib:glib": actual})
-        if name == "nlohmann_json":
+            "//glib:glib": "glib",
+        },
+        "lapack": "lapack",
+        "libjpeg": "libjpeg",
+        "nlohmann_json": {
             # We provide both aliases, since Drake first-party only needs
             # :singleheader-json but third-party (VTK) needs :json.
-            aliases = {
-                "json": actual + ":json",
-                "singleheader-json": actual + ":singleheader-json",
-            }
-        if name == "suitesparse":
+            "json": "nlohmann_json:json",
+            "singleheader-json": "nlohmann_json:singleheader-json",
+        },
+        "opencl": "opencl",
+        "spdlog": "spdlog",
+        "suitesparse": {
             # We only provide @suitesparse//:amd since it's the only library in
             # suitesparse Drake needs (and can reasonably obtain, for licensing
             # reasons).
-            aliases = {"amd": actual + ":amd"}
+            "amd": "suitesparse:amd",
+        },
+        "zlib": "zlib",
+    }
+
+    ALIAS_ROOT = "@drake//tools/workspace/"
+    for name, alias in ALIAS_REPOSITORIES.items():
+        if type(alias) == "string":
+            aliases = {name: ALIAS_ROOT + alias}
+        elif type(alias) == "dict":
+            aliases = {n: ALIAS_ROOT + a for n, a in alias.items()}
+        else:
+            fail("invalid type for ALIAS_REPOSITORIES[" + name + "]: " +
+                 type(alias))
         alias_repository(
             name = name,
             aliases = aliases,
