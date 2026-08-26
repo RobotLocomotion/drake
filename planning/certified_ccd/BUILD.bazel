@@ -13,10 +13,12 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":bounding_sphere",
+        ":distance_oracle",
         ":motion_bound_table",
         ":numerics",
         ":options",
         ":piecewise_bezier_path",
+        ":vpolytope_ingestion",
     ],
 )
 
@@ -93,6 +95,43 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "distance_oracle",
+    srcs = ["distance_oracle.cc"],
+    hdrs = ["distance_oracle.h"],
+    deps = [
+        ":options",
+        "//geometry:scene_graph",
+        "//planning:robot_diagram",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:essential",
+        "//common:unused",
+        "//geometry:scene_graph_inspector",
+        "//geometry:shape_specification",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//math:geometric_transform",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "vpolytope_ingestion",
+    srcs = ["vpolytope_ingestion.cc"],
+    hdrs = ["vpolytope_ingestion.h"],
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry/optimization:convex_set",
+        "//math:geometric_transform",
+        "//multibody/plant",
+    ],
+    implementation_deps = [
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
 # === test/ ===
 
 # T1 — curve module acceptance tests.
@@ -135,6 +174,27 @@ drake_cc_googletest(
         "//geometry:shape_specification",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
+    ],
+)
+
+# T3 — oracle accuracy, probe classification, half-space fallback, V-polytope.
+drake_cc_googletest(
+    name = "distance_oracle_test",
+    deps = [
+        ":distance_oracle",
+        ":vpolytope_ingestion",
+        "//common:temp_directory",
+        "//geometry:geometry_instance",
+        "//geometry:proximity_properties",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//geometry/optimization:convex_set",
+        "//math:geometric_transform",
+        "//multibody/fem:deformable_body_config",
+        "//multibody/plant",
+        "//multibody/tree:spatial_inertia",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
     ],
 )
 
