@@ -1,0 +1,38 @@
+#pragma once
+
+#include <vector>
+
+#include <Eigen/Dense>
+
+#include "drake/planning/certified_ccd/options.h"
+
+namespace drake {
+namespace planning {
+namespace certified_ccd {
+
+/** One certification event: pair `pair_index` was certified over the
+parameter interval [s_start, s_end] of segment `segment` from representative
+configuration qc (the search algorithm). */
+struct CertificateRecord {
+  int segment{};
+  double s_start{};
+  double s_end{};
+  int pair_index{};
+  Eigen::VectorXd qc;
+  double phi_hat{};
+  double motion_bound{};
+  double threshold{};
+};
+
+/** Audit trail of every certification event of a run; an independent
+replay (VerifyCertificate, declared in the api header) re-evaluates every
+record and checks interval coverage of the full domain per pair. */
+struct Certificate {
+  std::vector<CertificateRecord> records;
+  /** Pair table snapshot the indices refer to. */
+  std::vector<PairId> pairs;
+};
+
+}  // namespace certified_ccd
+}  // namespace planning
+}  // namespace drake

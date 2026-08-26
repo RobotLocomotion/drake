@@ -13,6 +13,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":bounding_sphere",
+        ":certifier",
         ":distance_oracle",
         ":motion_bound_table",
         ":numerics",
@@ -129,6 +130,39 @@ drake_cc_library(
     implementation_deps = [
         "//common:essential",
         "//geometry:shape_specification",
+    ],
+)
+
+# The certificate and the node recursion are mutually recursive translation
+# units (certificate.cc replays the events that certifier.cc emits), so they
+# form one library, exactly as they formed one module in the standalone
+# package.
+drake_cc_library(
+    name = "certifier",
+    srcs = [
+        "certificate.cc",
+        "certifier.cc",
+    ],
+    hdrs = [
+        "certificate.h",
+        "certifier.h",
+    ],
+    deps = [
+        ":distance_oracle",
+        ":motion_bound_table",
+        ":numerics",
+        ":options",
+        ":piecewise_bezier_path",
+        "//geometry:scene_graph",
+        "//multibody/tree:multibody_tree_indexes",
+        "//planning:robot_diagram",
+        "//systems/framework:context",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:essential",
+        "//multibody/plant",
+        "@fmt",
     ],
 )
 
