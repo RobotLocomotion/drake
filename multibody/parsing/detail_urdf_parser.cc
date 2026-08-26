@@ -410,8 +410,8 @@ void UrdfParser::ParseJointDynamics(XMLElement* node, double* damping) {
         coulomb_friction != 0.0) {
       Warning(*dynamics_node,
               "A joint has specified a non-zero value for the"
-              " 'friction' attribute of a joint/dynamics tag. MultibodyPlant"
-              " does not currently support non-zero joint friction.");
+              " 'friction' attribute of a joint/dynamics tag. The URDF parser"
+              " does not currently parse joint friction and ignores it.");
     }
     if (ParseScalarAttribute(dynamics_node, "coulomb_window",
                              &coulomb_window)) {

@@ -19,6 +19,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_joint_friction_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_pd_controller_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
@@ -50,6 +51,7 @@ using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
 using drake::multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
 using drake::multibody::contact_solvers::internal::SapHuntCrossleyConstraint;
+using drake::multibody::contact_solvers::internal::SapJointFrictionConstraint;
 using drake::multibody::contact_solvers::internal::SapLimitConstraint;
 using drake::multibody::contact_solvers::internal::SapPdControllerConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
@@ -386,6 +388,54 @@ void SapDriver<T>::AddLimitConstraints(const systems::Context<T>& context,
             "https://github.com/RobotLocomotion/drake.");
       }
     }
+  }
+}
+
+template <typename T>
+void SapDriver<T>::AddJointFrictionConstraints(
+    const systems::Context<T>& context, SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // Dimensionless regularization parameter, see SapJointFrictionConstraint. We
+  // use the same value as for the regularization of friction in contact
+  // constraints, see AddContactConstraints().
+  constexpr double kSigma = 1.0e-3;
+
+  const SpanningForest& forest = get_forest();
+  for (JointIndex joint_index : plant().GetJointIndices()) {
+    const Joint<T>& joint = plant().get_joint(joint_index);
+    if (joint.num_velocities() == 0) continue;
+    const VectorX<T>& dry_friction = joint.GetDryFrictionVector(context);
+    if ((dry_friction.array() == 0.0).all()) continue;
+
+    // Joint::SetDryFrictionVector() rejects these values, but a parameter
+    // written by other means can still hold them. SapJointFrictionConstraint
+    // would abort on them.
+    if (joint.num_velocities() != 1 || !(dry_friction(0) > 0.0)) {
+      throw std::logic_error(fmt::format(
+          "Joint '{}' has an invalid dry friction. Dry friction must be "
+          "non-negative, and non-zero only for joints with one degree of "
+          "freedom. See Joint::SetDryFrictionVector().",
+          joint.name()));
+    }
+
+    // A locked joint has zero velocity by definition; friction cannot do any
+    // work on it. Moreover, the reduced problem built by
+    // CalcContactProblemCache() removes locked DOFs from constraint Jacobians,
+    // which would leave this constraint with a zero Jacobian and therefore a
+    // singular regularization.
+    if (joint.is_locked(context)) continue;
+
+    const int velocity_start = joint.velocity_start();
+    const TreeIndex tree_index = forest.v_to_tree_index(velocity_start);
+    const SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_nv = tree.nv();
+    const int tree_dof = velocity_start - tree.v_start();
+
+    typename SapJointFrictionConstraint<T>::Parameters parameters{
+        dry_friction(0), kSigma};
+    problem->AddConstraint(std::make_unique<SapJointFrictionConstraint<T>>(
+        tree_index, tree_dof, tree_nv, std::move(parameters)));
   }
 }
 
@@ -933,6 +983,7 @@ void SapDriver<T>::CalcContactProblemCache(
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
+  AddJointFrictionConstraints(context, &problem);
 
   cache->pd_controller_constraints_start = problem.num_constraints();
   AddPdControllerConstraints(context, &problem);

@@ -1052,6 +1052,28 @@ GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
                               ".*not.*support.*1 tendon constraint\\(s\\).*");
 }
 
+GTEST_TEST(IcfBuilder, JointDryFrictionUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  plant.GetJointByName("joint2").SetDryFrictionVector(&plant_context,
+                                                      Vector1d(0.5));
+
+  IcfBuilder<double> builder(&plant);
+  IcfModel<double> model;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.UpdateModel(plant_context, 0.01, nullptr, nullptr, &model),
+      ".*not.*support joint dry friction.*'joint2'.*");
+}
+
 GTEST_TEST(IcfBuilder, DeformableUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
   // TODO(#23768): MultibodyPlant (specifically, DeformableModel) does not yet

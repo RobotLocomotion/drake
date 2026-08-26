@@ -14,7 +14,8 @@
 #include "drake/multibody/tree/rpy_ball_mobilizer.h"
 
 /* @file This file provides testing for the SapDriver's limited support for
-joint limits on joints with multiple degrees of freedom.
+joint limits and joint dry friction on joints with multiple degrees of
+freedom.
 
     Constraints are only supported by the SAP solver. Therefore, to exercise the
   relevant code paths, we arbitrarily choose one contact approximation that uses
@@ -41,12 +42,18 @@ class SapDriverTest {
                                   SapContactProblem<double>* problem) {
     driver.AddLimitConstraints(context, v_star, problem);
   }
+
+  static void AddJointFrictionConstraints(const SapDriver<double>& driver,
+                                          const Context<double>& context,
+                                          SapContactProblem<double>* problem) {
+    driver.AddJointFrictionConstraints(context, problem);
+  }
 };
 
 // This joint is used to verify the support of multi-DOF joints with/without
-// joint limits. In particular, SapDriver does not support limits
-// for constraints with more than 1 DOF and therefore we expect the driver to
-// throw an exception when building the problem.
+// joint limits and dry friction. In particular, SapDriver does not support
+// limits nor dry friction for joints with more than 1 DOF and therefore we
+// expect the driver to throw an exception when building the problem.
 // The implementation for this joint is incomplete. Only the strictly necessary
 // overrides for the unit tests in this file are implemented.
 template <typename T>
@@ -210,10 +217,68 @@ GTEST_TEST(MultiDofJointWithLimitsTest,
 
   EXPECT_NO_THROW(
       SapDriverTest::AddLimitConstraints(driver, *context, v_star, &problem));
+  EXPECT_NO_THROW(
+      SapDriverTest::AddJointFrictionConstraints(driver, *context, &problem));
 
-  // No limit constraints are added since the only one joint in the model has
-  // no limits.
+  // No constraints are added since the only one joint in the model has no
+  // limits and no dry friction.
   EXPECT_EQ(problem.num_constraints(), 0);
+}
+
+namespace {
+
+// Writes `dry_friction` into the parameter that stores the dry friction of
+// `joint` in `context`, without the checks in Joint::SetDryFrictionVector().
+void WriteDryFrictionParameter(const Joint<double>& joint,
+                               const VectorXd& dry_friction,
+                               Context<double>* context) {
+  const VectorXd* storage = &joint.GetDryFrictionVector(*context);
+  for (int i = 0; i < context->num_numeric_parameter_groups(); ++i) {
+    if (&context->get_numeric_parameter(i).value() == storage) {
+      context->get_mutable_numeric_parameter(i).SetFromVector(dry_friction);
+      return;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+}  // namespace
+
+// SapDriver rejects a non-zero dry friction on a joint with more than one DOF,
+// also when the value does not come from Joint::SetDryFrictionVector(), which
+// rejects it.
+GTEST_TEST(MultiDofJointWithLimitsTest, ThrowForDryFrictionOnMultiDofJoints) {
+  MultibodyPlant<double> plant(1.0e-3);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  const RigidBody<double>& body =
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());
+  const double kInf = std::numeric_limits<double>::infinity();
+  const Joint<double>& joint =
+      plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
+          plant.world_frame(), body.body_frame(), -kInf, kInf));
+  plant.Finalize();
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>();
+  CompliantContactManager<double>* contact_manager =
+      owned_contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+  auto context = plant.CreateDefaultContext();
+  WriteDryFrictionParameter(
+      joint, VectorXd::Constant(MultiDofJointWithLimits<double>::kNumDofs, 0.1),
+      context.get());
+
+  // Dummy A, v* and problem.
+  const std::vector<MatrixX<double>> A(1, Matrix3<double>::Ones());
+  const VectorXd v_star = Vector3d::Zero();
+  SapContactProblem<double> problem(plant.time_step(), A, v_star);
+
+  const SapDriver<double>& driver =
+      CompliantContactManagerTester::sap_driver(*contact_manager);
+
+  // We verify the driver throws for the right reasons.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SapDriverTest::AddJointFrictionConstraints(driver, *context, &problem),
+      "Joint '.*' has an invalid dry friction.*");
 }
 
 }  // namespace internal

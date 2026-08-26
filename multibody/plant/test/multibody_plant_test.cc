@@ -6402,6 +6402,33 @@ INSTANTIATE_TEST_SUITE_P(ContinousAndDiscreteConstraints,
                          MultibodyPlantConstraintTestTimeStepParam,
                          ::testing::Values(0.0, 0.1));
 
+// A continuous plant with joint dry friction can be finalized, so that it can
+// still be used for kinematics or control. Evaluating its dynamics throws,
+// both for a default dry friction and for one set in the context.
+GTEST_TEST(MultibodyPlantTest, ContinuousDynamicsRejectJointDryFriction) {
+  MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  const RevoluteJoint<double>& joint =
+      plant.AddJoint<RevoluteJoint>("joint", plant.world_body(), std::nullopt,
+                                    body, std::nullopt, Vector3d::UnitZ());
+  plant.get_mutable_joint(joint.index())
+      .set_default_dry_friction_vector(Vector1d(0.5));
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+  const std::string expected_message =
+      ".*continuous time.*does not support joint dry friction.*'joint'.*";
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              expected_message);
+
+  joint.SetDryFrictionVector(context.get(), Vector1d(0.0));
+  EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
+
+  joint.SetDryFrictionVector(context.get(), Vector1d(0.5));
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              expected_message);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
