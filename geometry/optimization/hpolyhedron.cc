@@ -990,7 +990,7 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
     const HPolyhedron& polytope, const std::set<int>& inds_to_not_check) {
   // This method is based on FindRedundant, but adapted, for use with
   // `SimplifyByIncrementalFaceTranslation`, to optionally take
-  // `inds_to_not_check`, which dictates certain faces to skip.  This method is
+  // `inds_to_not_check`, which dictates certain faces to skip. This method is
   // also adapted to return `witness_points`, which contains a point that
   // certifies that each non-redundant face is non-redundant (the witness point
   // is on the "wrong" side of the face it certifies, but the "right" side of
@@ -1080,7 +1080,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     return HPolyhedron(Eigen::MatrixXd(1, 0), Eigen::VectorXd::Constant(1, 1));
   }
 
-  // Ensure rows are normalized.  A zero row cannot be normalized, but it also
+  // Ensure rows are normalized. A zero row cannot be normalized, but it also
   // cannot make the set empty (the IsEmpty() check above would have thrown),
   // so it is redundant and will be removed by the redundancy check below.
   MatrixXd A_initial = A_;
@@ -1249,7 +1249,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
           solvers::MathematicalProgramResult result = Solve(prog);
           if (result.is_success()) {
             // A multiplier for cost in LPs that find how far a face can be
-            // moved inward before losing an intersection.  Interpretation of
+            // moved inward before losing an intersection. Interpretation of
             // the optimal cost varies depending on `keep_whole_intersection`
             // parameter value.
             const int cost_multiplier = keep_whole_intersection ? -1 : 1;
@@ -1264,7 +1264,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
             }
           } else {
             log()->warn(
-                "Intersection program did not solve properly.  Will not"
+                "Intersection program did not solve properly. Will not"
                 "  move in hyperplane.");
             b_i_min_allowed = inbody.b()(i);
           }
@@ -1282,7 +1282,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         b_i_min_allowed = std::min(b_i_min_allowed, inbody.b()(i));
 
         // Find which hyperplanes become redundant if we move the hyperplane
-        // as far as is allowed.  If any, move face and cull other faces.
+        // as far as is allowed. If any, move face and cull other faces.
         // First find which face indices don't need to be checked for redundancy
         // due to their witness points still being in the set even if the face
         // moves in.
@@ -1295,8 +1295,8 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         // are non-redundant in the uniformly scaled circumbody (which, as a
         // scaling of the redundancy-free circumbody, has no redundant faces),
         // and every face always lies at or outside its scaled position, which
-        // can only preserve their non-redundancy.  Faces whose move was
-        // limited by an intersection or point-containment constraint have no
+        // can only preserve their non-redundancy. Faces whose move was
+        // limited by an intersection or point-containment constraint have no$
         // such guarantee and rely on their witness point like unmoved faces.
         const bool current_move_limited = b_i_min_allowed > b_i_scaled;
         std::set<int> indices_to_not_check;
@@ -1352,7 +1352,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   }
 
   // Check if intersection and containment constraints are still satisfied after
-  // affine transformation, and revert if not.  There is currently no way to
+  // affine transformation, and revert if not. There is currently no way to
   // constrain that the affine transformation upholds these constraints.
   if (!CheckIntersectionAndPointContainmentConstraints(
           inbody, circumbody, points_to_contain, intersecting_polytopes,
