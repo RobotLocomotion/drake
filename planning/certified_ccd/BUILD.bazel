@@ -12,6 +12,8 @@ drake_cc_package_library(
     name = "certified_ccd",
     visibility = ["//visibility:public"],
     deps = [
+        ":bounding_sphere",
+        ":motion_bound_table",
         ":numerics",
         ":options",
         ":piecewise_bezier_path",
@@ -54,6 +56,43 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "bounding_sphere",
+    srcs = ["bounding_sphere.cc"],
+    hdrs = ["bounding_sphere.h"],
+    deps = [
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:essential",
+        "//geometry/proximity:polygon_surface_mesh",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "motion_bound_table",
+    srcs = ["motion_bound_table.cc"],
+    hdrs = ["motion_bound_table.h"],
+    deps = [
+        ":bounding_sphere",
+        ":options",
+        ":piecewise_bezier_path",
+        "//planning:robot_diagram",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:essential",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph_inspector",
+        "//geometry:shape_specification",
+        "//multibody/tree",
+        "@fmt",
+    ],
+)
+
 # === test/ ===
 
 # T1 — curve module acceptance tests.
@@ -68,6 +107,34 @@ drake_cc_googletest(
         "//common/trajectories:composite_trajectory",
         "//common/trajectories:piecewise_polynomial",
         "//math:bspline_basis",
+    ],
+)
+
+# T2 — the displacement lemma, the lambda table and the J(p) subtree logic.
+drake_cc_googletest(
+    name = "motion_bound_test",
+    deps = [
+        ":motion_bound_table",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph_inspector",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+# T2 — the bounding-sphere radius property test.
+drake_cc_googletest(
+    name = "bounding_sphere_test",
+    deps = [
+        ":bounding_sphere",
+        "//common:essential",
+        "//common:temp_directory",
+        "//geometry:shape_specification",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//math:geometric_transform",
     ],
 )
 
