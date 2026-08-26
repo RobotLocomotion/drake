@@ -910,6 +910,11 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
                             bool current_move_limited,
                             std::vector<VectorXd>* witness_points, int* i,
                             const std::vector<int>& i_cull) {
+  DRAKE_DEMAND(face_center_distance != nullptr);
+  DRAKE_DEMAND(face_moved_in != nullptr);
+  DRAKE_DEMAND(face_move_limited != nullptr);
+  DRAKE_DEMAND(witness_points != nullptr);
+  DRAKE_DEMAND(i != nullptr);
   DRAKE_DEMAND(ssize(*face_moved_in) >= *i + 1);
   (*face_moved_in)[*i] = true;
   (*face_move_limited)[*i] = current_move_limited;
