@@ -1,0 +1,74 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "certified_ccd",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":numerics",
+        ":options",
+        ":piecewise_bezier_path",
+    ],
+)
+
+drake_cc_library(
+    name = "numerics",
+    hdrs = ["numerics.h"],
+)
+
+drake_cc_library(
+    name = "options",
+    hdrs = ["options.h"],
+    deps = [
+        "//common:parallelism",
+        "//geometry:geometry_ids",
+        "//multibody/tree:multibody_tree_indexes",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "piecewise_bezier_path",
+    srcs = ["piecewise_bezier_path.cc"],
+    hdrs = ["piecewise_bezier_path.h"],
+    deps = [
+        ":options",
+        "//common/trajectories:trajectory",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:essential",
+        "//common:nice_type_name",
+        "//common/trajectories:bezier_curve",
+        "//common/trajectories:bspline_trajectory",
+        "//common/trajectories:composite_trajectory",
+        "//common/trajectories:piecewise_polynomial",
+        "@fmt",
+    ],
+)
+
+# === test/ ===
+
+# T1 — curve module acceptance tests.
+drake_cc_googletest(
+    name = "piecewise_bezier_path_test",
+    deps = [
+        ":piecewise_bezier_path",
+        "//common:copyable_unique_ptr",
+        "//common:polynomial",
+        "//common/trajectories:bezier_curve",
+        "//common/trajectories:bspline_trajectory",
+        "//common/trajectories:composite_trajectory",
+        "//common/trajectories:piecewise_polynomial",
+        "//math:bspline_basis",
+    ],
+)
+
+add_lint_tests()
