@@ -428,6 +428,20 @@ class CertifiedContinuousCollisionChecker::Impl {
     for (int p = 0; p < static_cast<int>(pairs.size()); ++p) {
       pairs[p].threshold = options.margin + padding_[p];
       tau[p] = std::max(options.query_tolerance, tau_base_[p]);
+      // The displacement lemma argues entirely in the separated regime, so
+      // the certificate is meaningless for a negative effective threshold: a
+      // pair meant to touch must be collision-filtered, not padded below
+      // zero. Negative padding is therefore rejected rather than certified.
+      if (pairs[p].threshold < 0.0) {
+        throw std::runtime_error(fmt::format(
+            "CertifiedContinuousCollisionChecker: margin ({}) + padding ({}) "
+            "is negative for the pair on bodies {} and {}. The certificate "
+            "is only proven for nonnegative thresholds; filter the pair out "
+            "instead of using negative padding.",
+            options.margin, padding_[p],
+            model_->plant().get_body(pairs[p].id.body_a).name(),
+            model_->plant().get_body(pairs[p].id.body_b).name()));
+      }
     }
 
     internal::CertifierInput input;

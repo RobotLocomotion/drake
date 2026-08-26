@@ -370,6 +370,23 @@ GTEST_TEST(ApiTest, DeformableGeometryIsRefusedNamingIt) {
 // 3. Dimensions (trajectory normalization; the architecture).
 // ---------------------------------------------------------------------------
 
+// The displacement lemma is proved in the separated regime only, so a
+// negative effective threshold (margin + padding < 0) is outside what the
+// checker can certify and must be rejected, not silently "certified".
+GTEST_TEST(ApiTest, NegativeEffectiveThresholdIsRejected) {
+  const auto checker = MakeChecker(MakeArmWorld());
+  Options options;
+  options.parallelism = Parallelism::None();
+  options.margin = -0.01;
+  const VectorXd q0 = VectorXd::Zero(2);
+  const VectorXd q1 = VectorXd::Constant(2, 0.1);
+  const std::string message = ThrowMessage([&]() {
+    checker->CheckEdge(q0, q1, options);
+  });
+  ExpectContains(message, "negative");
+  ExpectContains(message, "filter the pair");
+}
+
 GTEST_TEST(ApiTest, DimensionMismatchMessagesNameTheSizes) {
   std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
   const auto checker = MakeChecker(model);
