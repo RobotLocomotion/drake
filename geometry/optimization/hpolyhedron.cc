@@ -1096,7 +1096,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
   if (A_.cols() == 0) {
     // All inequalities are redundant in a 0-dimensional space.
-    return HPolyhedron(Eigen::MatrixXd(1, 0), Eigen::VectorXd::Constant(1, 1));
+    return HPolyhedron(Eigen::MatrixXd(0, 0), Eigen::VectorXd(0));
   }
 
   // Ensure rows are normalized. A zero row cannot be normalized, but it also
