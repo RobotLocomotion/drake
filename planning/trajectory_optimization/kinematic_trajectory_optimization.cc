@@ -64,22 +64,12 @@ class PathConstraint : public Constraint {
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override {
-    AutoDiffVecXd y_t;
-    Eval(InitializeAutoDiff(x), &y_t);
-    *y = ExtractValue(y_t);
+    DoEvalGeneric<double>(x, y);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
-    AutoDiffVecXd x_sum = basis_function_values_[0] *
-                          x.segment(0, wrapped_constraint_->num_vars());
-    const int num_terms = basis_function_values_.size();
-    for (int i = 1; i < num_terms; ++i) {
-      x_sum += basis_function_values_[i] *
-               x.segment(i * wrapped_constraint_->num_vars(),
-                         wrapped_constraint_->num_vars());
-    }
-    wrapped_constraint_->Eval(x_sum, y);
+    DoEvalGeneric<AutoDiffXd>(x, y);
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
@@ -89,6 +79,20 @@ class PathConstraint : public Constraint {
   }
 
  private:
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const Eigen::VectorX<T>>& x,
+                     Eigen::VectorX<T>* y) const {
+    Eigen::VectorX<T> x_sum = basis_function_values_[0] *
+                              x.segment(0, wrapped_constraint_->num_vars());
+    const int num_terms = basis_function_values_.size();
+    for (int i = 1; i < num_terms; ++i) {
+      x_sum += basis_function_values_[i] *
+               x.segment(i * wrapped_constraint_->num_vars(),
+                         wrapped_constraint_->num_vars());
+    }
+    wrapped_constraint_->Eval(x_sum, y);
+  }
+
   std::shared_ptr<Constraint> wrapped_constraint_;
   std::vector<double> basis_function_values_;
 };
