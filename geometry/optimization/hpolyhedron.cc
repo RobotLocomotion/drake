@@ -4,6 +4,7 @@
 #include <bitset>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -903,13 +904,12 @@ namespace {
 // the moved face. Since removing rows shifts the indices of the faces after
 // them, `*i` is decremented so that on return it still refers to the face
 // that moved.
-HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
-                            Eigen::VectorXd* face_center_distance,
-                            std::vector<bool>* face_moved_in,
-                            std::vector<bool>* face_move_limited,
-                            bool current_move_limited,
-                            std::vector<VectorXd>* witness_points, int* i,
-                            const std::vector<int>& i_cull) {
+HPolyhedron MoveFaceAndCull(
+    const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
+    Eigen::VectorXd* face_center_distance, std::vector<bool>* face_moved_in,
+    std::vector<bool>* face_move_limited, bool current_move_limited,
+    std::vector<std::optional<VectorXd>>* witness_points, int* i,
+    const std::vector<int>& i_cull) {
   DRAKE_DEMAND(face_center_distance != nullptr);
   DRAKE_DEMAND(face_moved_in != nullptr);
   DRAKE_DEMAND(face_move_limited != nullptr);
@@ -937,7 +937,7 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
   face_moved_in_new.reserve(i_not_cull.size());
   std::vector<bool> face_move_limited_new;
   face_move_limited_new.reserve(i_not_cull.size());
-  std::vector<VectorXd> witness_points_new;
+  std::vector<std::optional<VectorXd>> witness_points_new;
   witness_points_new.reserve(i_not_cull.size());
   VectorXd face_center_distance_new(i_not_cull.size());
   for (int j = 0; j < ssize(i_not_cull); ++j) {
@@ -1001,17 +1001,20 @@ bool CheckIntersectionAndPointContainmentConstraints(
   return true;
 }
 
-std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
-    const HPolyhedron& polytope, const std::set<int>& inds_to_not_check) {
+std::pair<std::set<int>, std::vector<std::optional<VectorXd>>>
+FindRedundantWithWitnessPoints(const HPolyhedron& polytope,
+                               const std::set<int>& inds_to_not_check) {
   // This method is based on FindRedundant, but adapted, for use with
   // `SimplifyByIncrementalFaceTranslation`, to optionally take
   // `inds_to_not_check`, which dictates certain faces to skip. This method is
   // also adapted to return `witness_points`, which contains a point that
   // certifies that each non-redundant face is non-redundant (the witness point
   // is on the "wrong" side of the face it certifies, but the "right" side of
-  // all other faces).
+  // all other faces). An entry is std::nullopt when no witness point was
+  // computed for its face (because the face was skipped, found redundant, or
+  // its program failed to solve).
   std::set<int> redundant_indices;
-  std::vector<VectorXd> witness_points;
+  std::vector<std::optional<VectorXd>> witness_points;
 
   MathematicalProgram prog;
   const int num_vars = polytope.A().cols();
@@ -1031,9 +1034,8 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
   witness_points.reserve(num_cons);
   for (int i = 0; i < num_cons; ++i) {
     if (inds_to_not_check.contains(i)) {
-      // Use zero as a placeholder for witness points that don't need to be
-      // calculated
-      witness_points.push_back(Eigen::VectorXd::Zero(num_vars));
+      // No witness point needs to be computed.
+      witness_points.push_back(std::nullopt);
     } else {
       // Instead of removing the constraint like FindRedundant does, shift the
       // hyperplane slightly outward, to ensure that the polytope stays bounded
@@ -1048,12 +1050,11 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
       const auto result = Solve(prog);
       if (!result.is_success()) {
         // The program failed, so it is safer to treat the hyperplane as
-        // non-redundant. Bring back the constraint, and use a point at
-        // infinity so that the witness point will be re-calculated at the
-        // next check.
+        // non-redundant. Bring back the constraint; with no witness point
+        // available, the face will be re-checked at the next check.
         bindings_vec[i].evaluator()->UpdateUpperBound(
             bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
-        witness_points.push_back(VectorXd::Constant(num_vars, kInf));
+        witness_points.push_back(std::nullopt);
       } else if (-result.get_optimal_cost() > polytope.b()[i]) {
         // The hyperplane is not redundant. Bring back the constraint and
         // store the witness point.
@@ -1062,11 +1063,10 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
         witness_points.push_back(result.GetSolution(x));
       } else {
         // The hyperplane is redundant and should be removed from the program.
+        // Its witness point entry will be removed along with it.
         prog.RemoveConstraint(bindings_vec.at(i));
         redundant_indices.insert(i);
-        // Use zero as a placeholder for witness points that will be removed
-        // with their corresponding redundant hyperplanes.
-        witness_points.push_back(Eigen::VectorXd::Zero(num_vars));
+        witness_points.push_back(std::nullopt);
       }
     }
   }
@@ -1118,14 +1118,16 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
   // Remove redundant hyperplanes while calculating witness points that certify
   // non-redundancy of remaining hyperplanes.
-  std::pair<std::set<int>, std::vector<VectorXd>> redundancy_info =
-      FindRedundantWithWitnessPoints(initial_polytope, std::set<int>{});
+  std::pair<std::set<int>, std::vector<std::optional<VectorXd>>>
+      redundancy_info =
+          FindRedundantWithWitnessPoints(initial_polytope, std::set<int>{});
   std::set<int> i_redundant_initial = redundancy_info.first;
-  std::vector<VectorXd> witness_points_before_reducing = redundancy_info.second;
+  std::vector<std::optional<VectorXd>> witness_points_before_reducing =
+      redundancy_info.second;
 
   // Remove redundant hyperplanes and their corresponding witness points, and
   // define the circumbody.
-  std::vector<VectorXd> witness_points;
+  std::vector<std::optional<VectorXd>> witness_points;
   MatrixXd circumbody_A(b_.rows() - i_redundant_initial.size(),
                         ambient_dimension());
   VectorXd circumbody_b(b_.rows() - i_redundant_initial.size());
@@ -1202,7 +1204,8 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     VectorXd face_center_distance_shuffled(inbody.b().size());
     std::vector<bool> face_moved_in_shuffled(inbody.b().size());
     std::vector<bool> face_move_limited_shuffled(inbody.b().size());
-    std::vector<VectorXd> witness_points_shuffled(inbody.b().size());
+    std::vector<std::optional<VectorXd>> witness_points_shuffled(
+        inbody.b().size());
     for (int i_shuffle : shuffle_inds) {
       A_shuffled.row(i_shuffle) = inbody.A().row(shuffle_inds[i_shuffle]);
       b_shuffled(i_shuffle) = inbody.b()(shuffle_inds[i_shuffle]);
@@ -1320,11 +1323,10 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         const bool current_move_limited = b_i_min_allowed > b_i_scaled;
         std::set<int> indices_to_not_check;
         for (int ind = 0; ind < b_proposed.rows(); ++ind) {
-          // The finiteness check guards against the kInf value stored when
-          // a witness LP fails, which must not be treated as a certificate.
           if ((face_moved_in[ind] && !face_move_limited[ind]) ||
-              (witness_points[ind].allFinite() &&
-               inbody.A().row(i) * witness_points[ind] <= b_proposed(i))) {
+              (witness_points[ind].has_value() &&
+               inbody.A().row(i) * witness_points[ind].value() <=
+                   b_proposed(i))) {
             indices_to_not_check.insert(ind);
           }
         }
@@ -1336,7 +1338,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         std::set<int> i_redundant_set = redundancy_info.first;
         const std::vector<int> i_redundant(i_redundant_set.begin(),
                                            i_redundant_set.end());
-        const std::vector<VectorXd> updated_witness_points =
+        const std::vector<std::optional<VectorXd>> updated_witness_points =
             redundancy_info.second;
         // Update the witness points that have changed.
         for (int i_witness_point = 0; i_witness_point < ssize(witness_points);
