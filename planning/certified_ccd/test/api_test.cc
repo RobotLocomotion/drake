@@ -255,7 +255,87 @@ GTEST_TEST(ApiTest, ConstantQuaternionBaseIsAcceptedEndToEnd) {
       checker->CheckTrajectory(trajectory, options);
   EXPECT_EQ(result.verdict, Verdict::kCertifiedFree);
   ASSERT_TRUE(result.certificate.has_value());
+  // Every base control point here is bit-identical, so the carve-out is exact
+  // and owes no residual at all.
+  const MotionBoundTable table = checker->ComputeMotionBounds(path);
+  for (int p = 0; p < table.num_pairs(); ++p) {
+    EXPECT_EQ(table.carveout_slack(p), 0.0) << "pair " << p;
+  }
   EXPECT_TRUE(VerifyCertificate(*checker, path, *result.certificate));
+}
+
+GTEST_TEST(ApiTest, ToleranceConstantQuaternionBaseChargesItsResidualEndToEnd) {
+  // The carve-out flags a coordinate constant on a *tolerance*, so a base held
+  // only to within continuity_tolerance is carved even though it still moves.
+  // Its residual is charged to MotionBoundTable::carveout_slack(), and that has
+  // to survive all the way through the certifier — including the static-pair
+  // shortcut, which never evaluates a per-node Δ — and the certificate replay,
+  // which recomputes Δ from scratch and would reject a record whose bound came
+  // out smaller than the one the certifier used.
+  std::shared_ptr<const RobotDiagram<double>> model = MakeFloatingBaseWorld();
+  const auto checker = MakeChecker(model);
+
+  Options options;
+  options.parallelism = Parallelism::None();
+  options.emit_certificate = true;
+
+  Eigen::MatrixXd points(8, 3);
+  for (int j = 0; j < 3; ++j) {
+    points.col(j) = FloatingQ(Vector3d(0.05, -0.10, 0.0), 0.0);
+  }
+  // A sub-tolerance wobble in the base's y position: still "constant" to the
+  // curve module, but no longer exactly so.
+  constexpr double kWobble = 6e-8;
+  ASSERT_LE(kWobble, options.continuity_tolerance);
+  points(5, 1) += kWobble;
+  points(7, 1) = 0.35;  // ... and the elbow still moves.
+  points(7, 2) = 0.70;
+  const BezierCurve<double> trajectory(0.0, 1.0, points);
+
+  const PiecewiseBezierPath path = checker->Normalize(trajectory, options);
+  const std::vector<bool>& constant = path.constant_coordinates();
+  ASSERT_EQ(constant.size(), 8u);
+  for (int i = 0; i < 7; ++i) {
+    EXPECT_TRUE(constant[i]) << "base coordinate " << i;
+  }
+  EXPECT_FALSE(constant[7]);
+  // The control-point range of the wobbled coordinate: `kWobble` up to the
+  // rounding of adding it to -0.10 and subtracting again.
+  const double range =
+      path.global_upper_bound()[5] - path.global_lower_bound()[5];
+  EXPECT_GT(range, 0.0);
+  EXPECT_NEAR(range, kWobble, 1e-9 * kWobble);
+
+  const MotionBoundTable table = checker->ComputeMotionBounds(path);
+  bool any_slack = false;
+  bool any_static_with_slack = false;
+  for (int p = 0; p < table.num_pairs(); ++p) {
+    if (table.carveout_slack(p) > 0.0) {
+      any_slack = true;
+      if (table.pair_is_static(p)) any_static_with_slack = true;
+      // λ̃ = 1 for a floating base's translation coordinates, and only that one
+      // coordinate has a width, so the residual is exactly that width.
+      EXPECT_DOUBLE_EQ(table.carveout_slack(p), range) << "pair " << p;
+    }
+  }
+  EXPECT_TRUE(any_slack);
+  EXPECT_TRUE(any_static_with_slack)
+      << "the base-vs-post pair depends only on the carved base coordinates, "
+         "so it is static and must still owe the residual";
+
+  const CertificationResult result =
+      checker->CheckTrajectory(trajectory, options);
+  EXPECT_EQ(result.verdict, Verdict::kCertifiedFree);
+  ASSERT_TRUE(result.certificate.has_value());
+  // The replay recomputes Δ through MotionBound(), so it charges the residual
+  // too: a certificate emitted against the inflated bound verifies, and one
+  // emitted against a smaller bound would not.
+  EXPECT_TRUE(VerifyCertificate(*checker, path, *result.certificate));
+  for (const CertificateRecord& record : result.certificate->records) {
+    if (table.pair_is_static(record.pair_index)) {
+      EXPECT_GE(record.motion_bound, table.carveout_slack(record.pair_index));
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

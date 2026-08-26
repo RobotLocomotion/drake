@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <random>
@@ -48,10 +49,12 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/planning/certified_ccd/motion_bound_table.h"
@@ -93,6 +96,12 @@ using Rng = std::mt19937_64;
  mathematics; this only absorbs floating-point noise in Drake's forward
  kinematics and in our own accumulation (both ~1e-15 at these magnitudes). */
 constexpr double kSlack = 1e-9;
+
+/* Options::continuity_tolerance's default — the width below which the curve
+ module flags a coordinate constant and the carve-out removes it from every
+ J(p). A coordinate carved on that *tolerance* can still move by up to this
+ much, which is what MotionBoundTable::carveout_slack() charges for. */
+constexpr double kContinuityTolerance = 1e-7;
 
 // ---------------------------------------------------------------------------
 // Small random utilities (seeded, deterministic).
@@ -519,10 +528,14 @@ GTEST_TEST(JointSupportTest, ConstantCoordinateCarveOutEmptiesJp) {
     ASSERT_EQ(table.entries(0).size(), 1);
     EXPECT_EQ(table.entries(0)[0].first, 1);
   }
-  {  // All constant: the pair becomes static and its motion bound is zero.
+  {  // All constant, and *exactly* so (the box collapses with the flags, as it
+     // does for a real path): the pair becomes static and its motion bound is
+     // exactly zero.
+    const VectorXd pinned = VectorXd::Constant(nq, 0.25);
     const MotionBoundTable table = engine.ComputeMotionBoundTable(
-        lower, upper, std::vector<bool>(nq, true), pairs);
+        pinned, pinned, std::vector<bool>(nq, true), pairs);
     EXPECT_TRUE(table.pair_is_static(0));
+    EXPECT_EQ(table.carveout_slack(0), 0.0);
     EXPECT_EQ(table.MotionBound(0, VectorXd::Constant(nq, 1.0)), 0.0);
   }
 }
@@ -970,6 +983,11 @@ struct LemmaStats {
    close to 1: the bound must be *tight somewhere*, which is what makes the
    property test sensitive to an under-bound. */
   double max_tightness{0.0};
+  /* Pairs that were charged a nonzero carve-out slack, and the largest such
+   slack seen. Guards against the sub-tolerance corpus degenerating into the
+   exactly-constant one, which would test nothing new. */
+  int slack_charged_pairs{0};
+  double max_slack{0.0};
 
   void Observe(double achieved, double bound) {
     if (bound > 1e-12) {
@@ -978,8 +996,21 @@ struct LemmaStats {
   }
 };
 
+/* How the random control box treats the coordinates it flags constant. */
+enum class CarveOut {
+  /* No coordinate is flagged constant. */
+  kNone,
+  /* Flagged coordinates collapse to a single point: the carve-out is exact and
+   the slack must be bit-exactly zero. */
+  kExact,
+  /* Flagged coordinates keep a random *sub-tolerance* width, which is what the
+   curve module's tolerance-based flag actually admits. The carve-out then owes
+   a residual, and MotionBoundTable::carveout_slack() must pay for it. */
+  kSubTolerance,
+};
+
 /* Runs every displacement-lemma check on one random world. */
-void CheckWorld(Rng* rng, const RandomWorld& world, bool use_constant_coords,
+void CheckWorld(Rng* rng, const RandomWorld& world, CarveOut carve_out,
                 LemmaStats* stats) {
   const RobotDiagram<double>& diagram = *world.diagram;
   const MultibodyPlant<double>& plant = diagram.plant();
@@ -1000,11 +1031,21 @@ void CheckWorld(Rng* rng, const RandomWorld& world, bool use_constant_coords,
   for (int c = 0; c < nq; ++c) {
     q0[c] = angular[c] ? Uniform(rng, -M_PI, M_PI) : Uniform(rng, -0.5, 0.5);
     const bool is_constant =
-        use_constant_coords && Uniform(rng, 0.0, 1.0) < 0.3;
+        carve_out != CarveOut::kNone && Uniform(rng, 0.0, 1.0) < 0.3;
     constant[c] = is_constant;
-    const double half = is_constant ? 0.0
-                                    : (angular[c] ? Uniform(rng, 0.05, 1.2)
-                                                  : Uniform(rng, 0.02, 0.4));
+    double half;
+    if (is_constant) {
+      // A tolerance-carved coordinate keeps a nonzero, sub-tolerance width:
+      // the box the curve module would hand us, not a collapsed point. The
+      // samples below draw from that width too, so the residual is genuinely
+      // exercised rather than assumed away.
+      half = (carve_out == CarveOut::kSubTolerance)
+                 ? 0.5 * Uniform(rng, 0.02 * kContinuityTolerance,
+                                 kContinuityTolerance)
+                 : 0.0;
+    } else {
+      half = angular[c] ? Uniform(rng, 0.05, 1.2) : Uniform(rng, 0.02, 0.4);
+    }
     lower[c] = q0[c] - half;
     upper[c] = q0[c] + half;
   }
@@ -1032,6 +1073,19 @@ void CheckWorld(Rng* rng, const RandomWorld& world, bool use_constant_coords,
     }
     ASSERT_EQ(actual, expected) << "pair " << k;
     ASSERT_EQ(table.pair_is_static(k), expected.empty());
+
+    // The carve-out slack is a *residual*, so it is exactly zero unless some
+    // carved coordinate genuinely keeps a nonzero width.
+    const double pair_slack = table.carveout_slack(k);
+    ASSERT_TRUE(std::isfinite(pair_slack));
+    ASSERT_GE(pair_slack, 0.0);
+    if (carve_out != CarveOut::kSubTolerance) {
+      ASSERT_EQ(pair_slack, 0.0) << "pair " << k;
+    }
+    if (pair_slack > 0.0) {
+      ++stats->slack_charged_pairs;
+      stats->max_slack = std::max(stats->max_slack, pair_slack);
+    }
   }
 
   for (int sample = 0; sample < 4; ++sample) {
@@ -1090,15 +1144,17 @@ void CheckWorld(Rng* rng, const RandomWorld& world, bool use_constant_coords,
       }
 
       if (table.pair_is_static(k)) {
-        // A static pair must not move at all under any q, q' in the box.
+        // A static pair may move only by the carve-out residual — exactly zero
+        // when every carved coordinate is exactly constant.
         Matrix3Xd before(3, pts_b.cols());
         Matrix3Xd after(3, pts_b.cols());
         plant.SetPositions(&ctx, q);
         plant.CalcPointsPositions(ctx, frame_b, pts_b, frame_a, &before);
         plant.SetPositions(&ctx, qp);
         plant.CalcPointsPositions(ctx, frame_b, pts_b, frame_a, &after);
-        ASSERT_LE((after - before).colwise().norm().maxCoeff(), kSlack)
-            << "pair " << k << " has empty J(p) but its relative pose moved";
+        ASSERT_LE((after - before).colwise().norm().maxCoeff(), bound + kSlack)
+            << "pair " << k << " has empty J(p) but its relative pose moved by "
+            << "more than its carve-out slack " << bound;
         continue;
       }
 
@@ -1156,12 +1212,17 @@ GTEST_TEST(DisplacementLemmaTest, RandomPlants) {
   constexpr int kNumPlants = 1500;
   for (int trial = 0; trial < kNumPlants; ++trial) {
     SCOPED_TRACE(fmt::format("random plant #{}", trial));
-    // Screw joints in every third world; constant-coordinate carve-outs in
-    // every other world.
+    // Screw joints in every third world. The carve-out cycles through its
+    // three regimes so that the exactly-constant case and the (load-bearing)
+    // sub-tolerance case each get ~500 plants: the latter is the one where the
+    // carved coordinates still move and carveout_slack() has to pay for them.
     const RandomWorld world =
         MakeRandomWorld(&rng, /* allow_screw = */ trial % 3 == 0, 128);
     stats.screw_joints += world.num_screw_joints;
-    CheckWorld(&rng, world, /* use_constant_coords = */ trial % 2 == 1, &stats);
+    const CarveOut carve_out = (trial % 3 == 1)   ? CarveOut::kExact
+                               : (trial % 3 == 2) ? CarveOut::kSubTolerance
+                                                  : CarveOut::kNone;
+    CheckWorld(&rng, world, carve_out, &stats);
     if (HasFatalFailure()) return;
   }
   // Guard against the corpus silently degenerating into nothing.
@@ -1178,11 +1239,16 @@ GTEST_TEST(DisplacementLemmaTest, RandomPlants) {
   // arbitrarily wrong λ.
   EXPECT_GT(stats.max_tightness, 0.9);
   EXPECT_LE(stats.max_tightness, 1.0 + 1e-9);
+  // The sub-tolerance third of the corpus must actually be charging residuals,
+  // or the assertions above would be testing the exactly-constant case twice.
+  EXPECT_GE(stats.slack_charged_pairs, 200);
+  EXPECT_GT(stats.max_slack, 0.0);
   GTEST_LOG_(INFO) << fmt::format(
       "plants={} pairs={} atomic={} aggregate={} one_sided={} screw_joints={} "
-      "max_tightness={:.6f}",
+      "max_tightness={:.6f} slack_pairs={} max_slack={:.3e}",
       stats.plants, stats.pairs, stats.atomic_checks, stats.aggregate_checks,
-      stats.one_sided_checks, stats.screw_joints, stats.max_tightness);
+      stats.one_sided_checks, stats.screw_joints, stats.max_tightness,
+      stats.slack_charged_pairs, stats.max_slack);
 }
 
 /* A dedicated screw-joint world, so the screw λ = r + |pitch|/2π rule is
@@ -1211,7 +1277,7 @@ GTEST_TEST(DisplacementLemmaTest, ScrewChain) {
                         &world);
     }
     world.diagram = builder.Build();
-    CheckWorld(&rng, world, /* use_constant_coords = */ false, &stats);
+    CheckWorld(&rng, world, CarveOut::kNone, &stats);
     if (HasFatalFailure()) return;
   }
   EXPECT_GE(stats.plants, 75);
@@ -1220,6 +1286,528 @@ GTEST_TEST(DisplacementLemmaTest, ScrewChain) {
   GTEST_LOG_(INFO) << fmt::format("screw: plants={} atomic={} tightness={:.6f}",
                                   stats.plants, stats.atomic_checks,
                                   stats.max_tightness);
+}
+
+// ---------------------------------------------------------------------------
+// Part 3 — the constant-coordinate carve-out's residual.
+//
+// The curve module flags a coordinate constant when its whole control-point
+// range fits inside Options::continuity_tolerance. That is a *tolerance*, not
+// an identity: such a coordinate is removed from every J(p) but may still move
+// by up to its range, displacing the pair's distal side by λ̃·range. If that
+// residual went uncharged the certificate inequality could pass with the true
+// clearance below threshold by ~1e-7 m — two orders of magnitude above
+// Options::certificate_slack. MotionBoundTable::carveout_slack() is what pays
+// for it, and these tests are what pin it.
+// ---------------------------------------------------------------------------
+
+/* world --j_rot(revolute, ẑ)--> l1 --j_slide(prismatic, x̂)--> l2, with a
+ sphere on the world and one offset out along l2. */
+std::unique_ptr<RobotDiagram<double>> MakeCarveOutChain() {
+  RobotDiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = builder.plant();
+  const auto& l1 = plant.AddRigidBody("l1", UnitInertia());
+  const auto& l2 = plant.AddRigidBody("l2", UnitInertia());
+  plant.AddJoint<RevoluteJoint>("j_rot", plant.world_body(), {}, l1,
+                                RigidTransform<double>(Vector3d(-0.2, 0, 0)),
+                                Vector3d::UnitZ());
+  plant.AddJoint<PrismaticJoint>("j_slide", l1,
+                                 RigidTransform<double>(Vector3d(0.15, 0, 0)),
+                                 l2, {}, Vector3d::UnitX());
+  const CoulombFriction<double> mu(1.0, 1.0);
+  plant.RegisterCollisionGeometry(plant.world_body(),
+                                  RigidTransform<double>::Identity(),
+                                  Sphere(0.1), "g_world", mu);
+  plant.RegisterCollisionGeometry(l2,
+                                  RigidTransform<double>(Vector3d(0.3, 0, 0)),
+                                  Sphere(0.05), "g_tip", mu);
+  return builder.Build();
+}
+
+GTEST_TEST(CarveOutSlackTest, ToleranceConstantCoordinateIsChargedAtLambda) {
+  auto diagram = MakeCarveOutChain();
+  const MultibodyPlant<double>& plant = diagram->plant();
+  const KinematicsEngine engine(*diagram);
+  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  ASSERT_EQ(pairs.size(), 1);
+  const int nq = plant.num_positions();
+  ASSERT_EQ(nq, 2);
+  const int rot = plant.GetJointByName("j_rot").position_start();
+  const int slide = plant.GetJointByName("j_slide").position_start();
+
+  // The slide's box is the same in every build below, so the reach — and with
+  // it λ(j_rot) — is identical throughout; a revolute λ does not depend on the
+  // revolute's own box, which is the only thing that changes.
+  VectorXd lower = VectorXd::Zero(nq);
+  VectorXd upper = VectorXd::Zero(nq);
+  lower[slide] = 0.1;
+  upper[slide] = 0.4;
+
+  // (a) Nothing carved: no residual at all, and λ(j_rot) is read off here.
+  lower[rot] = -0.5;
+  upper[rot] = 0.5;
+  const MotionBoundTable moving = engine.ComputeMotionBoundTable(
+      lower, upper, std::vector<bool>(nq, false), pairs);
+  ASSERT_EQ(moving.entries(0).size(), 2);
+  EXPECT_EQ(moving.carveout_slack(0), 0.0);
+  double lambda_rot = 0.0;
+  for (const auto& [c, lam] : moving.entries(0)) {
+    if (c == rot) lambda_rot = lam;
+  }
+  ASSERT_GT(lambda_rot, 0.0);
+
+  // (b) j_rot carved on the tolerance: it leaves J(p), and exactly λ·range
+  //     takes its place in the slack.
+  constexpr double kRange = 5e-8;
+  static_assert(kRange <= kContinuityTolerance);
+  std::vector<bool> constant(nq, false);
+  constant[rot] = true;
+  lower[rot] = 0.0;
+  upper[rot] = kRange;  // upper − lower is exactly kRange in binary FP.
+  const MotionBoundTable carved =
+      engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
+  ASSERT_EQ(carved.entries(0).size(), 1);
+  EXPECT_EQ(carved.entries(0)[0].first, slide);
+  const double expected = lambda_rot * kRange;
+  EXPECT_NEAR(carved.carveout_slack(0), expected, 1e-15 * expected);
+  // MotionBound() charges it unconditionally, on top of the CSR row.
+  VectorXd w = VectorXd::Zero(nq);
+  w[slide] = 0.02;
+  EXPECT_DOUBLE_EQ(carved.MotionBound(0, w), carved.carveout_slack(0) + 0.02);
+
+  // (c) Exactly constant: nothing to charge, bit for bit.
+  lower[rot] = 0.0;
+  upper[rot] = 0.0;
+  const MotionBoundTable exact =
+      engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
+  EXPECT_EQ(exact.carveout_slack(0), 0.0);
+  EXPECT_EQ(exact.MotionBound(0, w), 0.02);
+
+  // (d) A *moving* coordinate never contributes to the slack, however wide.
+  const MotionBoundTable wide = engine.ComputeMotionBoundTable(
+      VectorXd::Constant(nq, -2.0), VectorXd::Constant(nq, 2.0),
+      std::vector<bool>(nq, false), pairs);
+  EXPECT_EQ(wide.carveout_slack(0), 0.0);
+}
+
+/* world --(base joint)--> link, with a HalfSpace on `link` — the *distal*
+ side — and a sphere on the world. The base joint's kind is excluded in v1, so
+ the construction-time half-space rule, which knows only the supported
+ rotational kinds, lets this model through; the carve-out is then the only
+ thing between it and an unbounded λ̃. `rpy` picks a 6-dof rpy floating base
+ over a 3-dof ball joint. */
+std::unique_ptr<RobotDiagram<double>> MakeCarvedHalfSpaceModel(bool rpy) {
+  RobotDiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = builder.plant();
+  const auto& link = plant.AddRigidBody("link", UnitInertia());
+  if (rpy) {
+    plant.AddJoint<drake::multibody::RpyFloatingJoint>(
+        "base", plant.world_body(), {}, link, {});
+  } else {
+    plant.AddJoint<drake::multibody::BallRpyJoint>("base", plant.world_body(),
+                                                   {}, link, {});
+  }
+  const CoulombFriction<double> mu(1.0, 1.0);
+  plant.RegisterCollisionGeometry(link, RigidTransform<double>::Identity(),
+                                  HalfSpace(), "hs", mu);
+  plant.RegisterCollisionGeometry(plant.world_body(),
+                                  RigidTransform<double>(Vector3d(0, 0, 1.0)),
+                                  Sphere(0.1), "ball", mu);
+  return builder.Build();
+}
+
+GTEST_TEST(CarveOutSlackTest, HalfSpaceAcrossAToleranceConstantRotationThrows) {
+  // The unsound case the residual exposes: a half space has no finite reach,
+  // so a rotational coordinate carrying it has no finite λ̃ and its residual
+  // cannot be charged at all. Such a coordinate must be EXACTLY constant.
+  auto diagram = MakeCarvedHalfSpaceModel(/* rpy = */ false);
+  const KinematicsEngine engine(*diagram);  // Must not throw: it is not a
+                                            // *supported* rotational kind.
+  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  ASSERT_EQ(pairs.size(), 1);
+  const int nq = diagram->plant().num_positions();
+  ASSERT_EQ(nq, 3);
+
+  VectorXd lower = VectorXd::Zero(nq);
+  VectorXd upper = VectorXd::Constant(nq, 5e-8);
+  try {
+    engine.ComputeMotionBoundTable(lower, upper, std::vector<bool>(nq, true),
+                                   pairs);
+    GTEST_FAIL()
+        << "expected a throw for a half space across a tolerance-constant "
+           "rotational coordinate";
+  } catch (const std::exception& e) {
+    const std::string what = e.what();
+    EXPECT_NE(what.find("hs"), std::string::npos) << what;
+    EXPECT_NE(what.find("base"), std::string::npos) << what;
+    EXPECT_NE(what.find("EXACTLY constant"), std::string::npos) << what;
+  }
+}
+
+GTEST_TEST(CarveOutSlackTest,
+           HalfSpaceAcrossAnExactlyConstantRotationIsAccepted) {
+  auto diagram = MakeCarvedHalfSpaceModel(/* rpy = */ false);
+  const KinematicsEngine engine(*diagram);
+  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  ASSERT_EQ(pairs.size(), 1);
+  const int nq = diagram->plant().num_positions();
+  const VectorXd pinned = VectorXd::Constant(nq, 0.3);
+  const MotionBoundTable table = engine.ComputeMotionBoundTable(
+      pinned, pinned, std::vector<bool>(nq, true), pairs);
+  EXPECT_TRUE(table.pair_is_static(0));
+  EXPECT_EQ(table.carveout_slack(0), 0.0);
+}
+
+GTEST_TEST(CarveOutSlackTest,
+           HalfSpaceAcrossToleranceConstantTranslationIsAccepted) {
+  // λ̃ = 1 for a translation coordinate is finite and correct even for a half
+  // space (every point of it moves by |Δq|), so only the *rotational*
+  // coordinates have to be exactly constant.
+  auto diagram = MakeCarvedHalfSpaceModel(/* rpy = */ true);
+  const MultibodyPlant<double>& plant = diagram->plant();
+  const KinematicsEngine engine(*diagram);
+  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  ASSERT_EQ(pairs.size(), 1);
+  const int nq = plant.num_positions();
+  ASSERT_EQ(nq, 6);  // q = (rpy, p_FM).
+
+  constexpr double kRange = 4e-8;
+  VectorXd lower = VectorXd::Zero(nq);
+  VectorXd upper = VectorXd::Zero(nq);
+  for (int c = 3; c < 6; ++c) upper[c] = kRange;  // Only the translation.
+  const MotionBoundTable table = engine.ComputeMotionBoundTable(
+      lower, upper, std::vector<bool>(nq, true), pairs);
+  EXPECT_TRUE(table.pair_is_static(0));
+  EXPECT_DOUBLE_EQ(table.carveout_slack(0), 3.0 * kRange);
+}
+
+// ---------------------------------------------------------------------------
+// Part 3b — the residual of a *floating base* held constant on the tolerance.
+//
+// This is where λ̃ is not simply the λ the CSR row would have carried: the
+// joint kinds are excluded in v1 and have no λ at all, only a carve-out λ̃.
+// Each test drives Drake's own forward kinematics from configurations sampled
+// inside the box — the carved base coordinates included — and checks the FK
+// displacement against carveout_slack() directly, with the arm coordinate
+// pinned so that the slack is the *whole* bound and the check is sensitive to
+// it, and then again with everything moving.
+// ---------------------------------------------------------------------------
+
+/* world --base(rpy or quaternion floating)--> b1 --jr(revolute ŷ)--> b2, with
+ a sphere on the world and one offset out along b2. */
+std::unique_ptr<RobotDiagram<double>> MakeFloatingBaseChain(Rng* rng,
+                                                            bool quaternion) {
+  RobotDiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = builder.plant();
+  const auto& b1 = plant.AddRigidBody("b1", UnitInertia());
+  const auto& b2 = plant.AddRigidBody("b2", UnitInertia());
+  const RigidTransform<double> X_PF = RandomTransform(rng, 0.2);
+  const RigidTransform<double> X_CM = RandomTransform(rng, 0.2);
+  if (quaternion) {
+    plant.AddJoint<QuaternionFloatingJoint>("base", plant.world_body(), X_PF,
+                                            b1, X_CM);
+  } else {
+    plant.AddJoint<drake::multibody::RpyFloatingJoint>(
+        "base", plant.world_body(), X_PF, b1, X_CM);
+  }
+  plant.AddJoint<RevoluteJoint>("jr", b1, RandomTransform(rng, 0.2), b2,
+                                RandomTransform(rng, 0.2),
+                                RandomUnitVector(rng));
+  const CoulombFriction<double> mu(1.0, 1.0);
+  plant.RegisterCollisionGeometry(plant.world_body(),
+                                  RigidTransform<double>::Identity(),
+                                  Sphere(0.1), "g_world", mu);
+  plant.RegisterCollisionGeometry(b2,
+                                  RigidTransform<double>(Vector3d(0.25, 0, 0)),
+                                  Sphere(0.06), "g_tip", mu);
+  return builder.Build();
+}
+
+/* Shared body of the two floating-base property tests. `quaternion` picks the
+ base parameterization; `seed` keeps the two corpora independent. */
+void RunFloatingBaseCarveOutCorpus(bool quaternion, std::uint64_t seed) {
+  Rng rng(seed);
+  constexpr int kTrials = 250;
+  int atomic_cases = 0;
+  int aggregate_cases = 0;
+  double max_ratio = 0.0;
+  double max_slack = 0.0;
+
+  for (int trial = 0; trial < kTrials; ++trial) {
+    SCOPED_TRACE(fmt::format("floating-base carve-out #{}", trial));
+    auto diagram = MakeFloatingBaseChain(&rng, quaternion);
+    const MultibodyPlant<double>& plant = diagram->plant();
+    const KinematicsEngine engine(*diagram);
+    const std::vector<PairId> pairs = CollisionPairs(*diagram);
+    ASSERT_EQ(pairs.size(), 1);
+    const int nq = plant.num_positions();
+    const int bs = plant.GetJointByName("base").position_start();
+    const int nb = plant.GetJointByName("base").num_positions();
+    const int jr = plant.GetJointByName("jr").position_start();
+    ASSERT_EQ(nb, quaternion ? 7 : 6);
+
+    // The base pose the trajectory holds. For the quaternion case it is a
+    // random *unit* quaternion, perturbed by at most the continuity tolerance
+    // — exactly the box the curve module would flag constant. Drake normalizes
+    // the quaternion internally, so a raw sample from that box and its
+    // renormalization produce identical forward kinematics; sampling raw is
+    // therefore both the honest test (the sample is in the box the bound is
+    // stated over) and the same thing Drake would compute.
+    VectorXd q0(nq);
+    if (quaternion) {
+      const Eigen::Quaterniond qb = RandomRotation(&rng).ToQuaternion();
+      q0.segment<4>(bs) << qb.w(), qb.x(), qb.y(), qb.z();
+      for (int i = 0; i < 3; ++i) q0[bs + 4 + i] = Uniform(&rng, -0.5, 0.5);
+    } else {
+      for (int i = 0; i < 3; ++i) q0[bs + i] = Uniform(&rng, -M_PI, M_PI);
+      for (int i = 0; i < 3; ++i) q0[bs + 3 + i] = Uniform(&rng, -0.5, 0.5);
+    }
+    q0[jr] = Uniform(&rng, -1.0, 1.0);
+
+    auto root = diagram->CreateDefaultContext();
+    auto& ctx = plant.GetMyMutableContextFromRoot(root.get());
+    const Matrix3Xd points_B =
+        SampleSphereSurface(&rng, 0.06, 64).colwise() + Vector3d(0.25, 0, 0);
+    const auto& frame_tip = plant.GetBodyByName("b2").body_frame();
+    const auto& frame_world = plant.world_frame();
+    Matrix3Xd out_q(3, points_B.cols());
+    Matrix3Xd out_qp(3, points_B.cols());
+    const auto displacement = [&](const VectorXd& q, const VectorXd& qp) {
+      plant.SetPositions(&ctx, q);
+      plant.CalcPointsPositions(ctx, frame_tip, points_B, frame_world, &out_q);
+      plant.SetPositions(&ctx, qp);
+      plant.CalcPointsPositions(ctx, frame_tip, points_B, frame_world, &out_qp);
+      return (out_qp - out_q).colwise().norm().maxCoeff();
+    };
+
+    std::vector<bool> constant(nq, false);
+    for (int c = bs; c < bs + nb; ++c) constant[c] = true;
+
+    // ---- (A) Atomic: exactly one carved base coordinate has a width. -----
+    // Every other base coordinate is *exactly* constant, so the pair's whole
+    // slack is λ̃_c · range_c and the probe below — which drives that one
+    // coordinate from one end of its interval to the other — pins that single
+    // coefficient rather than a seven-term sum. This is what makes the corpus
+    // sensitive to an under-bound in any one λ̃.
+    {
+      const int c = bs + UniformInt(&rng, 0, nb - 1);
+      const double width =
+          Uniform(&rng, 0.2 * kContinuityTolerance, kContinuityTolerance);
+      VectorXd lower = q0;
+      VectorXd upper = q0;
+      lower[c] = q0[c] - 0.5 * width;
+      upper[c] = q0[c] + 0.5 * width;
+      lower[jr] = q0[jr] - 0.8;
+      upper[jr] = q0[jr] + 0.8;
+
+      const MotionBoundTable table =
+          engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
+      ASSERT_EQ(table.entries(0).size(), 1);  // Only the revolute survives.
+      const double slack = table.carveout_slack(0);
+      ASSERT_GT(slack, 0.0);
+      ASSERT_LT(slack, 1e-4) << "a metre-scale reach against a 1e-7 box cannot "
+                                "produce a residual this large";
+      ++atomic_cases;
+      max_slack = std::max(max_slack, slack);
+
+      VectorXd q = q0;
+      q[jr] = Uniform(&rng, lower[jr], upper[jr]);
+      VectorXd qp = q;
+      q[c] = lower[c];
+      qp[c] = upper[c];
+      const double atomic = displacement(q, qp);
+      ASSERT_LE(atomic, slack + kSlack)
+          << "atomic carve-out residual: coordinate " << c << " moved by "
+          << (upper[c] - lower[c]) << ", displacement " << atomic << " > slack "
+          << slack;
+      max_ratio = std::max(max_ratio, atomic / slack);
+    }
+
+    // ---- (B) Aggregate: every base coordinate carved, everything moving. --
+    {
+      VectorXd lower = q0;
+      VectorXd upper = q0;
+      for (int c = bs; c < bs + nb; ++c) {
+        const double half = 0.5 * Uniform(&rng, 0.2 * kContinuityTolerance,
+                                          kContinuityTolerance);
+        lower[c] = q0[c] - half;
+        upper[c] = q0[c] + half;
+      }
+      lower[jr] = q0[jr] - 0.8;
+      upper[jr] = q0[jr] + 0.8;
+
+      const MotionBoundTable table =
+          engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
+      const double slack = table.carveout_slack(0);
+      ASSERT_GT(slack, 0.0);
+      max_slack = std::max(max_slack, slack);
+      ++aggregate_cases;
+
+      VectorXd q(nq);
+      VectorXd qp(nq);
+      for (int c = 0; c < nq; ++c) {
+        q[c] = Uniform(&rng, lower[c], upper[c]);
+        qp[c] = Uniform(&rng, lower[c], upper[c]);
+      }
+      // Σ_{uncarved} λ|Δq| + carveout_slack, with q and q′ drawn from the
+      // whole box — the carved coordinates' tiny ranges included.
+      const double full = displacement(q, qp);
+      const double bound = table.MotionBound(0, (qp - q).cwiseAbs());
+      ASSERT_LE(full, bound + kSlack)
+          << "full bound: displacement " << full << " > bound " << bound;
+
+      // ... and again with the revolute pinned, so the slack alone carries it.
+      qp[jr] = q[jr];
+      const double base_only = displacement(q, qp);
+      ASSERT_LE(base_only, slack + kSlack)
+          << "carved base residual: displacement " << base_only << " > slack "
+          << slack;
+    }
+  }
+
+  EXPECT_GE(atomic_cases, 200);
+  EXPECT_GE(aggregate_cases, 200);
+  // λ̃ must be near-tight somewhere, or these assertions would hold against an
+  // arbitrarily inflated coefficient. (The dedicated tight model below pins
+  // every coefficient individually; here the chain walk's own triangle
+  // inequalities are slack at random poses, so only the translation rule
+  // reaches 1.) The tolerance on the upper check is relative to a bound of
+  // ~1e-7 m, where Drake's forward kinematics rounds at ~1e-15 m absolute.
+  EXPECT_GT(max_ratio, 0.9);
+  EXPECT_LE(max_ratio, 1.0 + 1e-6);
+  GTEST_LOG_(INFO) << fmt::format(
+      "{} base: atomic={} aggregate={} max_slack={:.3e} m max_ratio={:.6f}",
+      quaternion ? "quaternion floating" : "rpy floating", atomic_cases,
+      aggregate_cases, max_slack, max_ratio);
+}
+
+GTEST_TEST(CarveOutSlackTest, ToleranceConstantRpyFloatingBase) {
+  RunFloatingBaseCarveOutCorpus(/* quaternion = */ false, 0x12F0BA5Eull);
+}
+
+GTEST_TEST(CarveOutSlackTest, ToleranceConstantQuaternionFloatingBase) {
+  RunFloatingBaseCarveOutCorpus(/* quaternion = */ true, 0x9A7E48A5Eull);
+}
+
+// ---------------------------------------------------------------------------
+// Part 3c — an exactly tight floating-base λ̃.
+//
+// The random corpus above catches structural errors but the chain walk's
+// triangle inequalities are slack at random poses, so a λ̃ that is merely too
+// small can hide inside that slack for the *rotation* rules. This model
+// removes the slack, the way MakeTightChain() does for the supported kinds:
+// both joint frames are identity, so the joint's M-frame origin *is* the
+// link's body origin, and the link's single sphere is centred on it. The reach
+// is then exactly R in every direction, so whatever axis a carved rotation
+// coordinate turns the link about, a material point sits at the full reach
+// perpendicular to that axis and the chord 2R·sin(θ/2) recovers R·θ to fifteen
+// digits at θ ~ 1e-7. Every λ̃ shows up digit for digit.
+// ---------------------------------------------------------------------------
+
+std::unique_ptr<RobotDiagram<double>> MakeTightFloatingChain(bool quaternion,
+                                                             double radius) {
+  RobotDiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = builder.plant();
+  const auto& link = plant.AddRigidBody("link", UnitInertia());
+  if (quaternion) {
+    plant.AddJoint<QuaternionFloatingJoint>("base", plant.world_body(), {},
+                                            link, {});
+  } else {
+    plant.AddJoint<drake::multibody::RpyFloatingJoint>(
+        "base", plant.world_body(), {}, link, {});
+  }
+  const CoulombFriction<double> mu(1.0, 1.0);
+  plant.RegisterCollisionGeometry(link, RigidTransform<double>::Identity(),
+                                  Sphere(radius), "g_link", mu);
+  plant.RegisterCollisionGeometry(plant.world_body(),
+                                  RigidTransform<double>(Vector3d(0, 0, 3.0)),
+                                  Sphere(0.05), "g_world", mu);
+  return builder.Build();
+}
+
+void RunTightFloatingBaseLambda(bool quaternion) {
+  constexpr double kRadius = 0.4;
+  Rng rng(quaternion ? 0x7168A7ull : 0x51DE12ull);
+  auto diagram = MakeTightFloatingChain(quaternion, kRadius);
+  const MultibodyPlant<double>& plant = diagram->plant();
+  const KinematicsEngine engine(*diagram);
+  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  ASSERT_EQ(pairs.size(), 1);
+  const int nq = plant.num_positions();
+  const auto& base = plant.GetJointByName("base");
+  const int bs = base.position_start();
+  const int nb = base.num_positions();
+  ASSERT_EQ(nb, quaternion ? 7 : 6);
+  ASSERT_EQ(nq, nb);
+
+  // Dense enough that some sample lands within ~1e-6 of the equator of any
+  // rotation axis, which is what makes the chord recover R·θ.
+  const Matrix3Xd points_B = SampleSphereSurface(&rng, kRadius, 4096);
+  auto root = diagram->CreateDefaultContext();
+  auto& ctx = plant.GetMyMutableContextFromRoot(root.get());
+  Matrix3Xd out_q(3, points_B.cols());
+  Matrix3Xd out_qp(3, points_B.cols());
+  const auto& frame_link = plant.GetBodyByName("link").body_frame();
+  const auto& frame_world = plant.world_frame();
+
+  constexpr double kWidth = 8e-8;  // ≤ Options::continuity_tolerance.
+  const std::vector<bool> constant(nq, true);
+
+  for (int off = 0; off < nb; ++off) {
+    SCOPED_TRACE(fmt::format("base coordinate offset {}", off));
+    VectorXd q0 = VectorXd::Zero(nq);
+    if (quaternion) {
+      // A unit quaternion with a *zero* in the coordinate being perturbed, so
+      // the perturbation is entirely orthogonal to it: normalization then
+      // absorbs none of it and the induced rotation is the full 2‖Δq‖ that
+      // λ̃ = 2r/m charges for. (A perturbation parallel to q induces no
+      // rotation at all, which is why the bound has to be stated for the
+      // worst case and cannot be tight in every direction at once.)
+      Eigen::Vector4d qb(0.31, 0.53, -0.62, 0.49);
+      if (off < 4) qb[off] = 0.0;
+      qb.normalize();
+      q0.head<4>() = qb;
+      for (int i = 0; i < 3; ++i) q0[4 + i] = Uniform(&rng, -0.5, 0.5);
+    } else {
+      // rpy = 0: each angle then turns the link about a coordinate axis
+      // through Mo, and the sphere is centred there.
+      for (int i = 0; i < 3; ++i) q0[3 + i] = Uniform(&rng, -0.5, 0.5);
+    }
+
+    VectorXd lower = q0;
+    VectorXd upper = q0;
+    lower[bs + off] = q0[bs + off] - 0.5 * kWidth;
+    upper[bs + off] = q0[bs + off] + 0.5 * kWidth;
+    const MotionBoundTable table =
+        engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
+    ASSERT_TRUE(table.pair_is_static(0));
+    const double slack = table.carveout_slack(0);
+    ASSERT_GT(slack, 0.0);
+
+    VectorXd q = lower;
+    VectorXd qp = upper;
+    plant.SetPositions(&ctx, q);
+    plant.CalcPointsPositions(ctx, frame_link, points_B, frame_world, &out_q);
+    plant.SetPositions(&ctx, qp);
+    plant.CalcPointsPositions(ctx, frame_link, points_B, frame_world, &out_qp);
+    const double displacement = (out_qp - out_q).colwise().norm().maxCoeff();
+
+    ASSERT_LE(displacement, slack + kSlack)
+        << "displacement " << displacement << " > slack " << slack;
+    EXPECT_GT(displacement / slack, 0.999)
+        << "the residual must be exactly attained on this model; a slack ratio "
+           "here would mean λ̃ is over-counted, and a violated bound would mean "
+           "it is under-counted. displacement "
+        << displacement << ", slack " << slack;
+  }
+}
+
+GTEST_TEST(CarveOutSlackTest, RpyFloatingLambdaTildeIsExactAndTight) {
+  RunTightFloatingBaseLambda(/* quaternion = */ false);
+}
+
+GTEST_TEST(CarveOutSlackTest, QuaternionFloatingLambdaTildeIsExactAndTight) {
+  RunTightFloatingBaseLambda(/* quaternion = */ true);
 }
 
 }  // namespace

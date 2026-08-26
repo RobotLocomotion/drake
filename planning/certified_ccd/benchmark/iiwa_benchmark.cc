@@ -439,9 +439,19 @@ void RunPwlEdge(const Config& config, const MachineInfo& machine,
   JsonWriter json;
   json.BeginObject();
   json.Write("scenario", "b_pwl_edge");
+  // The certified object and the ground-truth object are not the same
+  // trajectory, only the same point set: CheckEdge certifies a single order-1
+  // Bezier segment, while the clearance written below is measured on the
+  // quintic composite Bezier through the same two waypoints. With two
+  // waypoints that quintic's endpoint velocities are zero, so its control
+  // points collapse to {q1, q1, q1, q2, q2, q2} and it traces exactly the same
+  // straight joint-space segment under a different time parametrization —
+  // which is why the clearance it measures is the certified edge's clearance.
   json.Write("description",
-             "two-waypoint PWL edge (a single order-1 Bezier segment) in the "
-             "1 cm shelf world, healthy clearance");
+             "two-waypoint PWL edge in the 1 cm shelf world, healthy "
+             "clearance; certified as a single order-1 Bezier segment, with "
+             "the clearance ground truth measured on a quintic composite "
+             "Bezier tracing the same joint-space point set");
   json.Write("model", kIiwaUrl);
   json.Write("shelf_scale", scale);
   json.Write("pair_count", world.pair_count);

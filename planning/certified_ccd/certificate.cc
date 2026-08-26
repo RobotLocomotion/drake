@@ -189,7 +189,13 @@ bool ReplayCertificate(const ReplayInput& input, const Certificate& certificate,
     }
 
     const bool is_static = table.pair_is_static(p);
-    double motion_bound = 0.0;
+    // A static pair's J(p) is empty, so MotionBound() would return exactly the
+    // carve-out slack for any w: the residual of the coordinates the carve-out
+    // removed, which is nonzero only when some of them are constant merely to
+    // within Options::continuity_tolerance. Charging it here keeps the replay's
+    // Δ at least as large as the certifier's — a certificate emitted against a
+    // slack-inflated bound must not verify against a smaller one.
+    double motion_bound = table.carveout_slack(p);
     if (!is_static) {
       // Re-restrict the segment's control points to the record's interval and
       // recompute w about the record's qc from scratch. This is the half of
@@ -231,10 +237,11 @@ bool ReplayCertificate(const ReplayInput& input, const Certificate& certificate,
       }
     }
     // For a static pair J(p) = ∅: no coordinate the trajectory *moves* changes
-    // the pair's relative pose, so Δ_p ≡ 0 and one measurement certifies the
-    // whole domain. A *non*-static pair cannot smuggle in such a record: the
-    // recomputed Δ above would be the full node's bound and the test below
-    // would reject it.
+    // the pair's relative pose, so Δ_p is the constant carve-out slack (0 in
+    // every case but a tolerance-constant coordinate) and one measurement
+    // certifies the whole domain. A *non*-static pair cannot smuggle in such a
+    // record: the recomputed Δ above would be the full node's bound and the
+    // test below would reject it.
     //
     // "Static" is relative to the constant-coordinate carve-out (trajectory
     // normalization; the displacement lemma), so coordinates this path happens

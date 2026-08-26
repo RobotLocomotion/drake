@@ -25,26 +25,50 @@ for pair index k, a contiguous span of (position-coordinate index j, λ(j, p))
 entries over J(p), the coordinates that change the pair's relative pose. λ has
 units of meters of worst-case point displacement of the pair's distal side per
 unit change of coordinate j, valid for every configuration in the
-trajectory's global control-point box. */
+trajectory's global control-point box.
+
+Each pair also carries a scalar `carveout_slack(p)`, the residual motion of
+the coordinates the constant-coordinate carve-out (trajectory normalization; the
+joint-support scope) removed from J(p). "Constant" there is a *tolerance* — a
+coordinate whose global control-box range is at most
+Options::continuity_tolerance — not an identity, so a carved coordinate may
+still displace the pair's distal side by up to λ̃_j · range_j. That residual is
+charged unconditionally inside MotionBound(), which is what makes Δ_p a true
+upper bound on the pair's relative motion over the whole trajectory rather than
+one that ignores the carved coordinates. It is exactly zero — bit for bit —
+whenever every carved coordinate is *exactly* constant, which is the case for
+every path whose control points repeat a coordinate's value verbatim. */
 class MotionBoundTable {
  public:
   int num_pairs() const { return static_cast<int>(row_start_.size()) - 1; }
 
-  /** True iff J(p) is empty after the constant-coordinate carve-out: the
-  trajectory cannot change this pair's status, so it is checked once. */
+  /** True iff J(p) is empty after the constant-coordinate carve-out: no
+  coordinate the trajectory *moves* changes this pair's relative pose, so it
+  is checked once. Note that "static" does not mean "immobile": a static pair
+  can still drift by carveout_slack(p), which callers that shortcut
+  MotionBound() for such a pair must charge themselves. */
   bool pair_is_static(int pair_index) const {
     return row_start_[pair_index] == row_start_[pair_index + 1];
   }
 
-  /** Δ_p(ν) = Σ_{j ∈ J(p)} λ(j,p) · w_j — a sparse dot product against the
-  node's per-coordinate deviations w (the interval certificate, requirement P3).
-*/
+  /** Δ_p(ν) = carveout_slack(p) + Σ_{j ∈ J(p)} λ(j,p) · w_j — a sparse dot
+  product against the node's per-coordinate deviations w, plus the carved
+  coordinates' residual (the interval certificate, requirement P3). */
   double MotionBound(int pair_index, const Eigen::VectorXd& w) const {
-    double delta = 0.0;
+    double delta = carveout_slack_[pair_index];
     for (int e = row_start_[pair_index]; e < row_start_[pair_index + 1]; ++e) {
       delta += lambda_[e] * w[coord_[e]];
     }
     return delta;
+  }
+
+  /** Σ over the coordinates of J_topo(p) that the carve-out removed of
+  λ̃_j · (global_upper_j − global_lower_j): an upper bound on how far this
+  pair's two geometries can move relative to each other purely through the
+  coordinates the table no longer tracks. Zero when every carved coordinate is
+  exactly constant. */
+  double carveout_slack(int pair_index) const {
+    return carveout_slack_[pair_index];
   }
 
   /** Introspection for tests: the (coordinate, λ) entries of one pair,
@@ -58,11 +82,13 @@ class MotionBoundTable {
   std::vector<int>& mutable_row_start() { return row_start_; }
   std::vector<int>& mutable_coord() { return coord_; }
   std::vector<double>& mutable_lambda() { return lambda_; }
+  std::vector<double>& mutable_carveout_slack() { return carveout_slack_; }
 
  private:
   std::vector<int> row_start_{0};
   std::vector<int> coord_;
   std::vector<double> lambda_;
+  std::vector<double> carveout_slack_;
 };
 
 /** Construction-time kinematic analysis of a plant (the displacement lemma):
@@ -107,7 +133,8 @@ class KinematicsEngine {
   /** Assembles the λ CSR table for `pairs` given the path's global
   control-point box (prismatic chain contributions use the box, so the bound
   is trajectory-adaptive; the displacement lemma). Coordinates flagged constant
-  by the path are removed from every J(p).
+  by the path are removed from every J(p), and their residual motion inside the
+  box is charged to MotionBoundTable::carveout_slack() instead.
   @throws std::exception naming the joint if the path moves a coordinate of
   an unsupported joint type (quaternion floating, ball). */
   MotionBoundTable ComputeMotionBoundTable(
@@ -116,10 +143,17 @@ class KinematicsEngine {
   /** Raw-data overload of the above, for callers (and tests) that already
   hold the trajectory's global control-point box. `lower` and `upper` are the
   per-coordinate box bounds and `constant_coordinates` flags the coordinates
-  the path cannot change; all three have size num_positions().
+  the path cannot change; all three have size num_positions(). A coordinate
+  flagged constant still contributes (upper − lower) worth of residual motion
+  to the pair's carve-out slack, so the two arguments must describe the same
+  trajectory: flagging a coordinate constant does not license widening its
+  box.
   @throws std::exception on a size mismatch, an empty box (lower > upper), a
-  non-finite bound, a moving coordinate of an unsupported joint type, or a
-  pair whose distal side carries a HalfSpace across a rotational coordinate. */
+  non-finite bound, a moving coordinate of an unsupported joint type, a pair
+  whose distal side carries a HalfSpace across a rotational coordinate, or a
+  pair whose distal side carries a HalfSpace across a rotational coordinate
+  that is constant only to within a tolerance (a HalfSpace has no finite
+  reach, so such a coordinate must be *exactly* constant). */
   MotionBoundTable ComputeMotionBoundTable(
       const Eigen::VectorXd& lower, const Eigen::VectorXd& upper,
       const std::vector<bool>& constant_coordinates,
@@ -166,6 +200,23 @@ class KinematicsEngine {
     kUnsupported  // Throws if the path moves any of its coordinates.
   };
 
+  /* The λ̃ rule a single *coordinate* follows when the carve-out has removed
+   it from J(p) but it is not exactly constant. It is per coordinate, not per
+   joint, because the joint kinds the carve-out admits (floating bases in
+   particular) mix rotation and translation coordinates inside one joint. For
+   the four supported kinds this reproduces JointKind's λ exactly; it extends
+   to the kUnsupported kinds, which have no λ but do have a λ̃. */
+  enum class CoordRule {
+    kTranslation,  // λ̃ = 1: a unit translation of the outboard frame.
+    kRotation,     // λ̃ = r: a unit-angle rotation about an axis through Mo.
+    kScrewCoord,   // λ̃ = r + |pitch| / 2π.
+    kQuaternion,   // λ̃ = 2r / m; see ComputeMotionBoundTable() for the proof.
+  };
+
+  static bool IsRotationalRule(CoordRule rule) {
+    return rule != CoordRule::kTranslation;
+  }
+
   /* One tree edge, oriented from its outboard body toward the world. */
   struct JointRecord {
     drake::multibody::JointIndex index;
@@ -193,6 +244,11 @@ class KinematicsEngine {
     /* False for a joint type this library has never been taught, whose X_FM
      translation cannot be bounded from the control box at all. */
     bool translation_offsets_known{false};
+    /* One CoordRule per position coordinate of this joint (size
+     num_positions), used only for coordinates the carve-out removed. Empty
+     exactly when translation_offsets_known is false, i.e. for a joint type
+     this library cannot bound even when held constant. */
+    std::vector<CoordRule> coord_rules;
     /* Subtree membership: bodies whose pose depends on this joint's
      coordinates. Empty for welds. */
     std::vector<bool> subtree;

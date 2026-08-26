@@ -705,6 +705,14 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
     const double threshold = pair.threshold;
     const double tau_p = tau[p];
     const bool is_static = table.pair_is_static(p);
+    // Δ_p for a static pair: J(p) is empty, so the sparse dot product is empty
+    // and MotionBound() collapses to the pair's carve-out slack whatever w is.
+    // That slack is normally exactly 0 — "static" then means genuinely
+    // immobile — but a pair whose whole J_topo(p) was carved out on a
+    // *tolerance* can still drift by that much, and the discrete test below
+    // has to charge it or the carved coordinates' residual would go
+    // unaccounted for on exactly the pairs made entirely of them.
+    const double static_bound = table.carveout_slack(p);
     // A static pair's clearance is the same at every configuration of the
     // trajectory, so the t0 pass settles it for good: re-testing it at every
     // junction would only duplicate its finding (crowding out genuine ones
@@ -721,14 +729,15 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
     }
 
     if (is_static) {
-      // Δ_p ≡ 0 for a static pair, so the node certificate degenerates to a
-      // single discrete test that holds for the whole domain.
-      if (IsCertified(lower_bound, tau_p, 0.0, threshold, slack)) {
+      // Δ_p is the constant `static_bound` for a static pair, so the node
+      // certificate degenerates to a single discrete test that holds for the
+      // whole domain.
+      if (IsCertified(lower_bound, tau_p, static_bound, threshold, slack)) {
         ++stats->sphere_certifications;
         if (records != nullptr) {
           for (int k = 0; k < num_segments; ++k) {
             records->push_back(CertificateRecord{k, 0.0, 1.0, p, q, lower_bound,
-                                                 0.0, threshold});
+                                                 static_bound, threshold});
           }
         }
         continue;
@@ -758,24 +767,24 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
     }
     if (!is_static) continue;
 
-    if (IsCertified(phi_hat, tau_p, 0.0, threshold, slack)) {
+    if (IsCertified(phi_hat, tau_p, static_bound, threshold, slack)) {
       if (records != nullptr) {
         for (int k = 0; k < num_segments; ++k) {
-          records->push_back(
-              CertificateRecord{k, 0.0, 1.0, p, q, phi_hat, 0.0, threshold});
+          records->push_back(CertificateRecord{k, 0.0, 1.0, p, q, phi_hat,
+                                               static_bound, threshold});
         }
       }
       continue;
     }
     // Neither certified nor violating, and no subdivision can help: this
-    // pair's clearance is constant along the trajectory and sits within oracle
-    // tolerance of the threshold.
+    // pair's clearance is constant along the trajectory (up to the carve-out
+    // residual) and sits within oracle tolerance of the threshold.
     Finding finding;
     finding.time = time;
     finding.q = q;
     finding.pair = pair.id;
     finding.distance = phi_hat;
-    finding.motion_bound = 0.0;
+    finding.motion_bound = static_bound;
     finding.definite = false;
     finding.nearest_a_W = nearest_a;
     finding.nearest_b_W = nearest_b;

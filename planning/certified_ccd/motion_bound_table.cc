@@ -100,46 +100,69 @@ void KinematicsEngine::BuildTopology() {
     rec.num_positions = joint.num_positions();
     rec.position_start = rec.num_positions > 0 ? joint.position_start() : 0;
 
+    // `coord_rules` classifies each coordinate for the carve-out residual
+    // (see ComputeMotionBoundTable). For the supported kinds it mirrors the
+    // λ switch in the CSR assembly, coordinate for coordinate; the two must
+    // agree, and the property test in test/motion_bound_test.cc pins that.
+    using R = CoordRule;
     bool translation_known = false;
     if (rec.type_name == WeldJoint<double>::kTypeName) {
       rec.kind = JointKind::kWeld;
       translation_known = true;
     } else if (rec.type_name == "revolute") {
       rec.kind = JointKind::kRevolute;
+      rec.coord_rules = {R::kRotation};
       translation_known = true;
     } else if (rec.type_name == "prismatic") {
       rec.kind = JointKind::kPrismatic;
+      rec.coord_rules = {R::kTranslation};
       translation_known = true;
     } else if (rec.type_name == "planar") {
       rec.kind = JointKind::kPlanar;
+      // q = (x, y, θ) — see PlanarJoint's class documentation.
+      rec.coord_rules = {R::kTranslation, R::kTranslation, R::kRotation};
       translation_known = true;
     } else if (rec.type_name == ScrewJoint<double>::kTypeName) {
       rec.kind = JointKind::kScrew;
       rec.screw_pitch =
           dynamic_cast<const ScrewJoint<double>&>(joint).screw_pitch();
+      rec.coord_rules = {R::kScrewCoord};
       translation_known = true;
     } else if (rec.type_name == "quaternion_floating") {
       // q = (q_FM wxyz, p_FM): the translation lives in coordinates 4..6.
       rec.kind = JointKind::kUnsupported;
       rec.translation_offsets = {4, 5, 6};
+      rec.coord_rules = {R::kQuaternion, R::kQuaternion,  R::kQuaternion,
+                         R::kQuaternion, R::kTranslation, R::kTranslation,
+                         R::kTranslation};
       translation_known = true;
     } else if (rec.type_name == "rpy_floating") {
       // q = (rpy, p_FM): the translation lives in coordinates 3..5.
       rec.kind = JointKind::kUnsupported;
       rec.translation_offsets = {3, 4, 5};
+      rec.coord_rules = {R::kRotation,    R::kRotation,    R::kRotation,
+                         R::kTranslation, R::kTranslation, R::kTranslation};
       translation_known = true;
     } else if (rec.type_name == "ball_rpy" || rec.type_name == "universal") {
       // Pure rotation about coincident origins: X_FM has zero translation.
       rec.kind = JointKind::kUnsupported;
+      rec.coord_rules.assign(rec.num_positions, R::kRotation);
       translation_known = true;
     } else {
       // A shape of joint this library has never been taught. It cannot even
       // contribute a chain hop safely, so it is rejected unconditionally in
-      // ComputeMotionBoundTable().
+      // ComputeMotionBoundTable(). It gets no coord_rules either: without
+      // knowing what its coordinates *are*, no λ̃ can be written down.
       rec.kind = JointKind::kUnsupported;
       translation_known = false;
     }
     rec.translation_offsets_known = translation_known;
+    if (translation_known && rec.num_positions > 0) {
+      // Every coordinate of a joint we admit must have a carve-out rule, or
+      // a carved coordinate could slip through uncharged.
+      DRAKE_THROW_UNLESS(static_cast<int>(rec.coord_rules.size()) ==
+                         rec.num_positions);
+    }
 
     // Frame offsets: F = frame_on_parent (Jp), M = frame_on_child (Jc).
     // ‖p_PF‖ and ‖p_CM‖ are the two configuration-independent legs of one hop
@@ -484,6 +507,12 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   const auto abs_max = [&lower, &upper](int c) {
     return std::max(std::abs(lower[c]), std::abs(upper[c]));
   };
+  // The carve-out flags a coordinate constant when its whole control-point
+  // range collapses to within Options::continuity_tolerance — a tolerance,
+  // not an identity. `range` is exactly what the residual is charged against.
+  const auto range = [&lower, &upper](int c) {
+    return upper[c] - lower[c];
+  };
 
   // ------------------------------------------------------------------
   // Per-joint, box-dependent bound on ‖translation(X_FM)‖. This is the only
@@ -553,6 +582,32 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   }
 
   // ------------------------------------------------------------------
+  // m_k: the minimum Euclidean norm of the quaternion 4-vector over the
+  // control box, for the quaternion-floating joints. ‖q‖² is separable over
+  // the coordinates, so the minimum is attained coordinate-wise at whichever
+  // of {lower, upper, 0} lies in the interval and is closest to zero. It is
+  // the only box-dependent quantity the quaternion λ̃ needs (see below); it is
+  // left at 0 for every other joint, where it is never read.
+  // ------------------------------------------------------------------
+  std::vector<double> quat_min_norm(joints_.size(), 0.0);
+  for (int k = 0; k < static_cast<int>(joints_.size()); ++k) {
+    const JointRecord& rec = joints_[k];
+    double sum_sq = 0.0;
+    bool any_quaternion = false;
+    for (int off = 0; off < static_cast<int>(rec.coord_rules.size()); ++off) {
+      if (rec.coord_rules[off] != CoordRule::kQuaternion) continue;
+      any_quaternion = true;
+      const int c = rec.position_start + off;
+      const double closest =
+          (lower[c] <= 0.0 && upper[c] >= 0.0)
+              ? 0.0
+              : std::min(std::abs(lower[c]), std::abs(upper[c]));
+      sum_sq += closest * closest;
+    }
+    if (any_quaternion) quat_min_norm[k] = std::sqrt(sum_sq);
+  }
+
+  // ------------------------------------------------------------------
   // Assemble the CSR table.
   //
   // Displacement lemma (PWL ancestor: Schwarzer, Saha & Latombe,
@@ -590,14 +645,99 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   //
   // Only the separated branch of the distance function is ever used (the
   // soundness argument), so no penetration-depth regularity is needed.
+  //
+  // ------------------------------------------------------------------
+  // The carve-out residual (carveout_slack_p).
+  //
+  // The constant-coordinate carve-out (trajectory normalization; the
+  // joint-support scope) drops coordinate j from J(p) when its *whole*
+  // control-point range fits inside Options::continuity_tolerance. That is a
+  // tolerance, not an identity: the curve may still move q_j anywhere inside
+  // [lower_j, upper_j], and the telescoping proof above therefore still owes
+  // one step for j. Dropping the step outright would understate Δ_p by up to
+  // λ̃_j·range_j — small (≈ 1e-7 m for a metre-scale reach), but two orders of
+  // magnitude above Options::certificate_slack and unaccounted anywhere, so the
+  // certificate inequality could pass with the true clearance below threshold
+  // by that much. Instead of ignoring the step we charge it at its worst case,
+  // once per pair, against the *global* range (the node's own excursion in a
+  // carved coordinate is contained in it):
+  //
+  //   carveout_slack_p = Σ_{j ∈ J_topo(p), j carved} λ̃_j · range_j,
+  //   range_j = upper_j − lower_j.
+  //
+  // J_topo(p) is the pre-carve-out coordinate set, so the sum runs over
+  // exactly the steps the CSR row no longer carries. MotionBound() adds it
+  // unconditionally, which restores the telescoping sum in full. It is
+  // bit-exactly zero whenever every carved coordinate is exactly constant,
+  // and that is the case for every path whose control points repeat the
+  // coordinate's value verbatim — the overwhelmingly common way a coordinate
+  // becomes constant. λ̃_j, per coordinate kind:
+  //
+  //  * revolute / prismatic / planar / screw — the λ formulas above,
+  //    unchanged. The step being bounded is the same step; the carve-out
+  //    changed nothing about the geometry, only about what the table stores.
+  //
+  //  * RpyFloating, BallRpy and Universal *rotation* coordinates: λ̃ = r.
+  //    Each such angle enters X_FM as one factor of a product of elementary
+  //    rotations about axes through Mo (Rz(y)·Ry(p)·Rx(r) for rpy, likewise
+  //    for a universal joint's two angles), so changing angle j alone takes
+  //    R to R′ with R′R⁻¹ conjugate to a rotation by |Δq_j| — a rotation by
+  //    exactly |Δq_j| about *some* axis through Mo. A material point u of the
+  //    distal side, measured from Mo, is then displaced by
+  //    ‖(R′ − R)u‖ = ‖(R′R⁻¹ − I)(Ru)‖ ≤ |Δq_j|·‖u‖ ≤ r·|Δq_j|, which is the
+  //    revolute bound with the same r from the same chain walk (the walk
+  //    bounds the distance from Mo to the distal geometry and does not care
+  //    what kind of joint sits at the top of the chain). X_FM's translation
+  //    is untouched by these coordinates: zero for BallRpy/Universal, and
+  //    p_FM for RpyFloating, which is carried by its own coordinates.
+  //
+  //  * RpyFloating / QuaternionFloating *translation* coordinates: λ̃ = 1.
+  //    They are p_FM's components; a unit change translates the whole distal
+  //    side by one unit.
+  //
+  //  * QuaternionFloating quaternion coefficients: λ̃ = 2r/m ≤ 4r, with
+  //    m = min over the control box of ‖q‖ (computed above). Derivation.
+  //    Drake normalizes internally — X_FM uses R(q/‖q‖) — so the map from
+  //    coefficients to rotation is q ↦ R(π(q)) with π(q) = q/‖q‖. π has
+  //    derivative Dπ(q) = (I − q̂q̂ᵀ)/‖q‖, an orthogonal projector scaled by
+  //    1/‖q‖, hence ‖Dπ(q)‖₂ = 1/‖q‖. The control box is convex and every
+  //    point of it has ‖q‖ ≥ m, so for u, v in the box the straight segment
+  //    between them stays in the box and the geodesic distance on S³ between
+  //    π(u) and π(v) is at most the length of its image,
+  //      ψ ≤ ∫₀¹ ‖Dπ(γ(t))·γ′(t)‖ dt ≤ ‖u − v‖ / m.
+  //    The rotation-angle metric on SO(3) is at most twice the geodesic
+  //    metric on S³ (the unit quaternions double-cover SO(3): a geodesic of
+  //    length ψ maps to a rotation of angle 2ψ), so the rotation angle
+  //    between R(π(u)) and R(π(v)) obeys θ ≤ 2‖u − v‖/m. A material point at
+  //    distance ≤ r from Mo is displaced by at most the chord
+  //    2r·sin(θ/2) ≤ r·θ ≤ (2r/m)·‖u − v‖, and since
+  //    ‖u − v‖₂ ≤ ‖u − v‖₁ ≤ Σ_j range_j over the four coefficients, charging
+  //    λ̃ = 2r/m per coefficient covers every pair (u, v) in the box.
+  //    In the regime the carve-out actually produces — a box of diameter
+  //    ρ ≤ continuity_tolerance around a unit quaternion — m ≥ 1 − ρ, so
+  //    2r/m ≤ 2r/(1 − ρ) ≤ 4r for any ρ ≤ 1/2: the shipped coefficient is at
+  //    worst the small-angle constant 2r with a factor-2 margin, and is
+  //    computed rather than assumed. m = 0 (a box containing the zero
+  //    quaternion) admits no bound at all — Drake's own normalization is
+  //    undefined there — and throws.
+  //
+  //  * Any rotational carved coordinate whose distal side carries a HalfSpace
+  //    has no finite r and therefore no finite λ̃. Such a coordinate must be
+  //    *exactly* constant; anything else throws (the geometry-support scope).
+  //    Accepting a merely tolerance-constant one, as the code did before the
+  //    residual was charged, is the one case where the residual is genuinely
+  //    unbounded.
   // ------------------------------------------------------------------
   MotionBoundTable table;
   std::vector<int>& row_start = table.mutable_row_start();
   std::vector<int>& coord = table.mutable_coord();
   std::vector<double>& lambda = table.mutable_lambda();
+  std::vector<double>& carveout_slack = table.mutable_carveout_slack();
   row_start.clear();
   row_start.reserve(pairs.size() + 1);
   row_start.push_back(0);
+  carveout_slack.clear();
+  carveout_slack.reserve(pairs.size());
 
   // r(j, D) is shared by every pair with the same (joint, distal body), which
   // is the common case for an environment-heavy scene.
@@ -622,11 +762,12 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
           "plant's {} bodies.",
           static_cast<int>(a), static_cast<int>(b), num_bodies_));
     }
+    double slack = 0.0;
     for (int k : positioned_order_) {
       const JointRecord& rec = joints_[k];
       const bool in_a = rec.subtree[a];
       const bool in_b = rec.subtree[b];
-      if (in_a == in_b) continue;  // j ∉ J(p).
+      if (in_a == in_b) continue;  // j ∉ J_topo(p).
       const BodyIndex distal = in_a ? a : b;
       const int ps = rec.position_start;
 
@@ -648,7 +789,71 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
       };
 
       for (int c = ps; c < ps + rec.num_positions; ++c) {
-        if (constant_coordinates[c]) continue;  // Joint-support carve-out.
+        if (constant_coordinates[c]) {
+          // Joint-support carve-out: c leaves J(p), and its residual
+          // motion inside the control box is charged to the pair's slack
+          // instead. See the derivation above for every λ̃ used here.
+          const double span = range(c);
+          DRAKE_THROW_UNLESS(std::isfinite(span) && span >= 0.0);
+          if (span == 0.0) continue;  // Exactly constant: nothing to charge.
+          if (rec.coord_rules.empty()) {
+            // Unreachable: a joint kind with no rules is rejected above,
+            // constant or not. Kept as a guard so a future joint kind cannot
+            // reach here uncharged.
+            throw std::runtime_error(fmt::format(
+                "certified_ccd: joint '{}' has type '{}', which this library "
+                "does not know how to bound even when held constant.",
+                rec.name, rec.type_name));
+          }
+          const CoordRule rule = rec.coord_rules[c - ps];
+          if (IsRotationalRule(rule) && body_has_halfspace_[distal]) {
+            throw std::runtime_error(fmt::format(
+                "certified_ccd: HalfSpace geometry '{}' on body '{}' is the "
+                "distal side of coordinate {} of joint '{}' ({}), which "
+                "rotates it, and this trajectory holds that coordinate "
+                "constant only to within a tolerance — its control-point "
+                "range is {}, not 0. A half space has unbounded reach, so the "
+                "residual motion of a rotational coordinate across it cannot "
+                "be bounded by any finite λ (the geometry-support scope): a "
+                "half space may only "
+                "sit across a rotational coordinate that is EXACTLY constant. "
+                "Fix the trajectory so that coordinate's control points are "
+                "identical, anchor the half space, filter the pair, or "
+                "replace the half space with a large Box.",
+                body_halfspace_name_[distal], plant_->get_body(distal).name(),
+                c, rec.name, rec.type_name, span));
+          }
+          double lam_tilde = 0.0;
+          switch (rule) {
+            case CoordRule::kTranslation:
+              lam_tilde = 1.0;
+              break;
+            case CoordRule::kRotation:
+              lam_tilde = reach();
+              break;
+            case CoordRule::kScrewCoord:
+              lam_tilde = reach() + std::abs(rec.screw_pitch) / kTwoPi;
+              break;
+            case CoordRule::kQuaternion: {
+              const double m = quat_min_norm[k];
+              if (!(m > 0.0)) {
+                throw std::runtime_error(fmt::format(
+                    "certified_ccd: the trajectory's control box for the "
+                    "quaternion coordinates of joint '{}' ({}) contains the "
+                    "zero quaternion, whose normalized rotation is undefined, "
+                    "so the residual motion of its carved-out coordinates "
+                    "cannot be bounded. Quaternion control points must be "
+                    "unit quaternions.",
+                    rec.name, rec.type_name));
+              }
+              lam_tilde = 2.0 * reach() / m;
+              break;
+            }
+          }
+          DRAKE_THROW_UNLESS(std::isfinite(lam_tilde) && lam_tilde >= 0.0);
+          slack += lam_tilde * span;
+          continue;
+        }
         double lam = 0.0;
         switch (rec.kind) {
           case JointKind::kRevolute:
@@ -676,8 +881,11 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
         lambda.push_back(lam);
       }
     }
+    DRAKE_THROW_UNLESS(std::isfinite(slack) && slack >= 0.0);
+    carveout_slack.push_back(slack);
     row_start.push_back(static_cast<int>(coord.size()));
   }
+  DRAKE_THROW_UNLESS(carveout_slack.size() + 1 == row_start.size());
   return table;
 }
 
