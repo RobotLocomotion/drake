@@ -893,6 +893,16 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
 }
 
 namespace {
+// Helper for SimplifyByIncrementalFaceTranslation. Commits the move of face
+// `*i` of the polytope {x | Ax <= b} (where `b` already contains the moved
+// face's new value) and removes the faces with indices `i_cull`, which have
+// become redundant as a result of the move. The bookkeeping vectors
+// `face_center_distance`, `face_moved_in`, `face_move_limited`, and
+// `witness_points` map to the rows of A, so rows in `i_cull` are removed from
+// each of them. `face_moved_in` and `face_move_limited` are first updated for
+// the moved face. Since removing rows shifts the indices of the faces after
+// them, `*i` is decremented so that on return it still refers to the face
+// that moved.
 HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
                             Eigen::VectorXd* face_center_distance,
                             std::vector<bool>* face_moved_in,
