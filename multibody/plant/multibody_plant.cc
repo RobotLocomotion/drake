@@ -3409,7 +3409,7 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
 
 template <typename T>
 void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
-    const systems::Context<T>&) const {
+    const systems::Context<T>& context) const {
   // Reject constraints in the standard continuous-time dynamics path. CENIC
   // computes constrained dynamics separately.
   // TODO(#23763,#23992): Once CENIC supports tendon constraints and couplers
@@ -3442,6 +3442,25 @@ void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
         "'cenic') to simulate supported constraint types, or use a "
         "discrete-time plant with SAP.",
         constraints));
+  }
+
+  // Reject joint dry friction.
+  std::vector<std::string> joints_with_dry_friction;
+  for (JointIndex joint_index : GetJointIndices()) {
+    const Joint<T>& joint = get_joint(joint_index);
+    if ((joint.GetDryFrictionVector(context).array() != 0.0)
+            .template cast<bool>()
+            .any()) {
+      joints_with_dry_friction.push_back(fmt::format("'{}'", joint.name()));
+    }
+  }
+  if (!joints_with_dry_friction.empty()) {
+    throw std::logic_error(fmt::format(
+        "Currently this MultibodyPlant is set to use continuous time. "
+        "Continuous time does not support joint dry friction, but it is "
+        "specified for joints {}. Use a discrete time model, or set the dry "
+        "friction of these joints to zero, see Joint::SetDryFrictionVector().",
+        fmt::join(joints_with_dry_friction, ", ")));
   }
 
   // TODO(#24061): consider rejecting models with joint limits here, once CENIC

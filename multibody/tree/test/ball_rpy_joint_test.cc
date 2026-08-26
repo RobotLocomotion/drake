@@ -122,6 +122,32 @@ TEST_F(BallRpyJointTest, Damping) {
   EXPECT_EQ(joint_->default_damping_vector(), Vector3d::Constant(kDamping));
 }
 
+// Dry friction is only supported for joints with one degree of freedom. A
+// joint with more DOFs accepts only zero dry friction.
+TEST_F(BallRpyJointTest, DryFriction) {
+  EXPECT_EQ(joint_->default_dry_friction_vector(), Vector3d::Zero());
+  EXPECT_EQ(joint_->GetDryFrictionVector(*context_), Vector3d::Zero());
+  EXPECT_NO_THROW(
+      joint_->SetDryFrictionVector(context_.get(), Vector3d::Zero()));
+  EXPECT_THROW(
+      joint_->SetDryFrictionVector(context_.get(), Vector3d(0.0, 1.0, 0.0)),
+      std::exception);
+
+  // The default can only be set before the model is finalized.
+  internal::MultibodyTree<double> model;
+  const RigidBody<double>& body =
+      model.AddLink("Body", SpatialInertia<double>::NaN());
+  const JointIndex index =
+      model
+          .AddJoint<BallRpyJoint>("Joint", model.world_link(), std::nullopt,
+                                  body, std::nullopt, kDamping)
+          .index();
+  Joint<double>& joint = model.get_mutable_joint(index);
+  EXPECT_NO_THROW(joint.set_default_dry_friction_vector(Vector3d::Zero()));
+  EXPECT_THROW(joint.set_default_dry_friction_vector(Vector3d(0.0, 1.0, 0.0)),
+               std::exception);
+}
+
 // Context-dependent value access.
 TEST_F(BallRpyJointTest, ContextDependentAccess) {
   const Vector3d some_value(M_PI_2, 0., 1.);

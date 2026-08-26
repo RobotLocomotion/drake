@@ -141,6 +141,7 @@ class Joint : public MultibodyElement<T> {
         frame_on_parent_(frame_on_parent),
         frame_on_child_(frame_on_child),
         damping_(std::move(damping)),
+        dry_friction_(VectorX<double>::Zero(vel_lower_limits.size())),
         pos_lower_limits_(pos_lower_limits),
         pos_upper_limits_(pos_upper_limits),
         vel_lower_limits_(vel_lower_limits),
@@ -774,6 +775,69 @@ class Joint : public MultibodyElement<T> {
         .set_value(damping);
   }
 
+  /// Returns all default dry friction bounds of this joint, of size
+  /// num_velocities(). The default is zero. If vⱼ is the vector of generalized
+  /// velocities of this joint, dry (Coulomb) friction models a generalized
+  /// force τ at the joint with |τ| ≤ fⱼ componentwise, where fⱼ is the vector
+  /// returned by this function. When the joint moves, τ opposes the motion
+  /// with τ = −diag(fⱼ)⋅sign(vⱼ). The bound does not depend on the load on the
+  /// joint. The units of the bounds depend on the joint type. For instance, the
+  /// bound is in N⋅m for a revolute joint and in N for a prismatic joint.
+  ///
+  /// @note Only discrete MultibodyPlant models support dry friction, and only
+  /// joints with one degree of freedom accept a non-zero bound.
+  const VectorX<double>& default_dry_friction_vector() const {
+    return dry_friction_;
+  }
+
+  /// Returns the Context dependent dry friction bounds stored as parameters in
+  /// `context`. Refer to default_dry_friction_vector() for details.
+  /// @param[in] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  const VectorX<T>& GetDryFrictionVector(
+      const systems::Context<T>& context) const {
+    return context.get_numeric_parameter(dry_friction_parameter_index_).value();
+  }
+
+  /// Sets the default value of the dry friction bounds for this joint. Refer
+  /// to default_dry_friction_vector() for details.
+  /// @throws std::exception if dry_friction.size() != num_velocities().
+  /// @throws std::exception if any of the dry friction bounds is negative.
+  /// @throws std::exception if num_velocities() > 1 and any of the dry friction
+  ///   bounds is not zero.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
+  /// @pre the MultibodyPlant must not be finalized.
+  void set_default_dry_friction_vector(const VectorX<double>& dry_friction) {
+    DRAKE_THROW_UNLESS(dry_friction.size() == num_velocities());
+    DRAKE_THROW_UNLESS((dry_friction.array() >= 0).all());
+    DRAKE_THROW_UNLESS(num_velocities() <= 1 ||
+                       (dry_friction.array() == 0).all());
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
+    DRAKE_DEMAND(!this->get_parent_tree().is_finalized());
+    dry_friction_ = dry_friction;
+  }
+
+  /// Sets the value of the dry friction bounds for this joint, stored as
+  /// parameters in `context`. Refer to default_dry_friction_vector() for
+  /// details.
+  /// @param[out] context The context storing the state and parameters for the
+  /// model to which `this` joint belongs.
+  /// @param[in] dry_friction The vector of dry friction bounds.
+  /// @throws std::exception if dry_friction.size() != num_velocities().
+  /// @throws std::exception if any of the dry friction bounds is negative.
+  /// @throws std::exception if num_velocities() > 1 and any of the dry friction
+  ///   bounds is not zero.
+  void SetDryFrictionVector(systems::Context<T>* context,
+                            const VectorX<T>& dry_friction) const {
+    DRAKE_THROW_UNLESS(dry_friction.size() == num_velocities());
+    DRAKE_THROW_UNLESS((dry_friction.array() >= 0).template cast<bool>().all());
+    DRAKE_THROW_UNLESS(num_velocities() <= 1 ||
+                       (dry_friction.array() == 0).template cast<bool>().all());
+    context->get_mutable_numeric_parameter(dry_friction_parameter_index_)
+        .set_value(dry_friction);
+  }
+
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
   // (Internal use only) Model this joint using the appropriate Mobilizer.
@@ -815,6 +879,9 @@ class Joint : public MultibodyElement<T> {
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
+    // Dry friction is not a constructor argument of concrete joints, so it is
+    // copied here rather than in each DoCloneToScalar() implementation.
+    joint_clone->dry_friction_ = dry_friction_;
     joint_clone->mobilizer_ =
         (mobilizer_ == nullptr) ? nullptr
                                 : &tree_clone->get_mutable_variant(*mobilizer_);
@@ -1072,6 +1139,9 @@ class Joint : public MultibodyElement<T> {
     // Declare a parameter for damping.
     damping_parameter_index_ = this->DeclareNumericParameter(
         tree_system, systems::BasicVector<T>(damping_.size()));
+    // Declare a parameter for dry friction.
+    dry_friction_parameter_index_ = this->DeclareNumericParameter(
+        tree_system, systems::BasicVector<T>(dry_friction_.size()));
   }
 
   // Implementation for MultibodyElement::DoSetDefaultParameters().
@@ -1080,6 +1150,11 @@ class Joint : public MultibodyElement<T> {
     systems::BasicVector<T>& damping_parameter =
         parameters->get_mutable_numeric_parameter(damping_parameter_index_);
     damping_parameter.set_value(VectorX<T>(damping_));
+    // Set default dry friction.
+    systems::BasicVector<T>& dry_friction_parameter =
+        parameters->get_mutable_numeric_parameter(
+            dry_friction_parameter_index_);
+    dry_friction_parameter.set_value(VectorX<T>(dry_friction_));
   }
 
   void SetPosePairImpl(systems::Context<T>* context, const Quaternion<T>& q_FM,
@@ -1100,6 +1175,10 @@ class Joint : public MultibodyElement<T> {
   const Frame<T>* effective_frame_on_child_{nullptr};
 
   VectorX<double> damping_;
+
+  // Dry friction bounds, of size num_velocities(). Zero for joints that do not
+  // model dry friction.
+  VectorX<double> dry_friction_;
 
   // Joint position limits. These vectors have zero size for joints with no
   // such limits.
@@ -1124,6 +1203,7 @@ class Joint : public MultibodyElement<T> {
 
   // System parameter indices.
   systems::NumericParameterIndex damping_parameter_index_;
+  systems::NumericParameterIndex dry_friction_parameter_index_;
 };
 
 }  // namespace multibody
