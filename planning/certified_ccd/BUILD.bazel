@@ -13,6 +13,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":bounding_sphere",
+        ":certified_continuous_collision_checker",
         ":certifier",
         ":distance_oracle",
         ":motion_bound_table",
@@ -166,6 +167,31 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "certified_continuous_collision_checker",
+    srcs = ["certified_continuous_collision_checker.cc"],
+    hdrs = ["certified_continuous_collision_checker.h"],
+    deps = [
+        ":certifier",
+        ":distance_oracle",
+        ":motion_bound_table",
+        ":options",
+        ":piecewise_bezier_path",
+        "//common/trajectories:trajectory",
+        "//planning:robot_diagram",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//common:essential",
+        "//common:unused",
+        "//geometry:scene_graph",
+        "//geometry:scene_graph_inspector",
+        "//geometry:shape_specification",
+        "//multibody/plant",
+        "@fmt",
+    ],
+)
+
 # === test/ ===
 
 # T1 — curve module acceptance tests.
@@ -227,6 +253,126 @@ drake_cc_googletest(
         "//multibody/fem:deformable_body_config",
         "//multibody/plant",
         "//multibody/tree:spatial_inertia",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+# T4/T6 — certifier semantics on a focused, hand-built corpus.
+drake_cc_googletest(
+    name = "certifier_test",
+    deps = [
+        ":certified_continuous_collision_checker",
+        "//common:parallelism",
+        "//common/trajectories:bezier_curve",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+# T4 — the randomized soundness fuzz: random worlds x random trajectories,
+# cross-checked against dense sampling and against the certificate replay.
+# The dense cross-check (~1e7 signed-distance queries) is what makes this
+# test long rather than the certification itself.
+drake_cc_googletest(
+    name = "soundness_fuzz_test",
+    timeout = "moderate",
+    deps = [
+        ":certified_continuous_collision_checker",
+        "//common:parallelism",
+        "//common/trajectories:bezier_curve",
+        "//common/trajectories:bspline_trajectory",
+        "//common/trajectories:piecewise_polynomial",
+        "//common/trajectories:trajectory",
+        "//geometry:scene_graph",
+        "//geometry:scene_graph_inspector",
+        "//geometry:shape_specification",
+        "//math:bspline_basis",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+# T5 — thin-obstacle regression (the reason this library exists).
+drake_cc_googletest(
+    name = "thin_obstacle_test",
+    deps = [
+        ":certified_continuous_collision_checker",
+        "//common:parallelism",
+        "//common/trajectories:bezier_curve",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//planning:collision_checker_params",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
+    ],
+)
+
+# T7 — certificate audit trail + mutation test.
+drake_cc_googletest(
+    name = "certificate_test",
+    deps = [
+        ":certified_continuous_collision_checker",
+        "//common:parallelism",
+        "//common/trajectories:bezier_curve",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+# T8 — concurrency determinism. Running with many threads is the point of
+# this test: it pins the answer at Parallelism {1, 2, 8, 16}.
+drake_cc_googletest(
+    name = "concurrency_test",
+    num_threads = 16,
+    deps = [
+        ":certified_continuous_collision_checker",
+        "//common:parallelism",
+        "//common/trajectories:bezier_curve",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+# T9 — API / UX clear-throw tests.
+drake_cc_googletest(
+    name = "api_test",
+    deps = [
+        ":certified_continuous_collision_checker",
+        "//common:copyable_unique_ptr",
+        "//common:parallelism",
+        "//common/trajectories:bezier_curve",
+        "//common/trajectories:composite_trajectory",
+        "//common/trajectories:piecewise_polynomial",
+        "//common/trajectories:piecewise_quaternion",
+        "//common/trajectories:trajectory",
+        "//geometry:geometry_instance",
+        "//geometry:proximity_properties",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/fem:deformable_body_config",
+        "//multibody/plant",
+        "//multibody/tree",
         "//planning:robot_diagram",
         "//planning:robot_diagram_builder",
     ],
