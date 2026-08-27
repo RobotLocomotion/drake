@@ -49,6 +49,17 @@ class TestCase:
             else PythonManager.UV
         )
 
+    def base_tag_suffix(self) -> str:
+        """The platform-specific, Python-agnostic portion of a Docker tag for
+        the base image associated with this `TestCase`, e.g. 'AL2023-pip'."""
+        return f"{self.platform.alias}-{self.python_manager.value}"
+
+    def tag_suffix(self) -> str:
+        """The platform- and Python-specific portion of a Docker tag associated
+        with this `TestCase`, e.g. 'AL2023-py312-pip'."""
+        python_details = f"py{self.python.tag}-{self.python_manager.value}"
+        return f"{self.platform.alias}-{python_details}"
+
 
 @dataclass
 class Target:

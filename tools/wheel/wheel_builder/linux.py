@@ -237,33 +237,34 @@ def _build_tagname(target: Target, tag_prefix: str) -> str:
 
 def _test_tagname(test_case: TestCase, tag_prefix: str) -> str:
     """
-    Generates a Docker tag name for a test-role TestCase and tag prefix.
+    Generates a Python-specific (i.e., fully provisioned) Docker tag name for
+    a test-role TestCase and tag_prefix.
     """
-    platform = test_case.platform.alias
-    manager = test_case.python_manager.value
-    python_tag = test_case.python.tag
-    return f"{tag_base}:{tag_prefix}-{platform}-py{python_tag}-{manager}"
+    return f"{tag_base}:{tag_prefix}-{test_case.tag_suffix()}"
 
 
-def _build_stage(target, args, tag_prefix, stage=None):
+def _test_base_tagname(test_case: TestCase, tag_prefix: str) -> str:
     """
-    Runs a Docker build and return the build tag.
+    Generates a Python-agnostic Docker tag name for a test-role TestCase and
+    tag_prefix.
     """
+    return f"{tag_base}:{tag_prefix}-{test_case.base_tag_suffix()}"
 
-    # Generate canonical tag from target.
-    tag = _build_tagname(target, tag_prefix)
+
+def _build_stage(
+    tag: str, args: list[str], context_dir: str, stage: str | None = None
+) -> None:
+    """
+    Runs a Docker build with `args` from `context_dir` and tags the image with
+    `tag`. If `stage` is given, builds only that target.
+    """
 
     # Generate extra arguments to specify what stage to build.
-    if stage is not None:
-        extra = ["--target", stage]
-    else:
-        extra = []
+    extra = ["--target", stage] if stage is not None else []
 
     # Run the build.
     print("[-] Build", tag, extra + args)
-    _docker("build", "--tag", tag, *extra, *args, resource_root)
-
-    return tag
+    _docker("build", "--tag", tag, *extra, *args, context_dir)
 
 
 def _target_args(platform: Platform, python: PythonTarget):
@@ -310,15 +311,17 @@ def _build_image(target, identifier, version, options):
     if options.tag_stages:
         # Inspect Dockerfile, find stages, and build them.
         dockerfile = os.path.join(resource_root, "Dockerfile")
+        tag = None
         with open(dockerfile, encoding="utf-8") as f:
             for line in f:
                 if line.startswith("FROM"):
                     stage = line.strip().split()[-1]
-                    tag = _build_stage(
-                        target, args, tag_prefix=stage, stage=stage
-                    )
+                    tag = _build_tagname(target, stage)
+                    _build_stage(tag, args, resource_root, stage)
+        assert tag is not None, f"No named stages found in {dockerfile}"
     else:
-        tag = _build_stage(target, args, tag_prefix=identifier)
+        tag = _build_tagname(target, identifier)
+        _build_stage(tag, args, resource_root)
         _images_to_remove.add(tag)
 
     # Extract the wheel (if requested).
@@ -362,23 +365,27 @@ def _test_wheel(target, identifier, version, options):
             f"[-] Testing on {test_case.platform.alias}"
             f" (Python {test_case.python.version}) ..."
         )
+        args = _test_target_args(test_case)
         test_image = _test_tagname(test_case, f"test-{identifier}")
         test_container = test_image.replace(":", "__")
-        if options.tag_stages:
-            base_image = _test_tagname(test_case, "test")
-        else:
-            base_image = test_image
 
-        # Build the test base image.
-        _docker(
-            "build",
-            "-t",
-            base_image,
-            *_test_target_args(test_case),
-            test_dir,
-        )
-        if not options.tag_stages:
-            _images_to_remove.add(base_image)
+        if options.tag_stages:
+            # Build the Python-agnostic base image once, and tag it.
+            # Unlike test_image, base_image and provisioned_image carry no
+            # `identifier`, so they persist across separate invocations of
+            # the builder; they must NOT be queued for removal.
+            base_image = _test_base_tagname(test_case, "base")
+            _build_stage(base_image, args, test_dir, "base")
+
+            # Now build the Python-provisioned image.
+            provisioned_image = _test_tagname(test_case, "python")
+            _build_stage(provisioned_image, args, test_dir, "python")
+        else:
+            # Build the base and Python-provisioned images in one shot, relying
+            # on Docker caching for reuse of intermediate stages.
+            provisioned_image = test_image
+            _build_stage(provisioned_image, args, test_dir)
+            _images_to_remove.add(provisioned_image)
 
         # Install the wheel.
         install_command = [
@@ -390,7 +397,7 @@ def _test_wheel(target, identifier, version, options):
             "run", "-t", f"--name={test_container}",
             f"-v{test_dir}:/test",
             f"-v{options.output_dir}:{wheelhouse}",
-            base_image, *install_command,
+            provisioned_image, *install_command,
         )  # fmt: skip
 
         # Tag the container with the wheel installed.
