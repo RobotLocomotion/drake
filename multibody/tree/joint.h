@@ -365,8 +365,7 @@ class Joint : public MultibodyElement<T> {
 
   /// @return true if the joint is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
-    DRAKE_DEMAND(has_mobilizer());
-    return mobilizer_->is_locked(context);
+    return has_mobilizer() && mobilizer_->is_locked(context);
   }
 
   /// @name            Methods to get and set limits

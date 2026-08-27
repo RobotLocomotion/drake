@@ -1665,6 +1665,7 @@ void MultibodyTree<T>::CalcJointDamping(const systems::Context<T>& context,
   DRAKE_THROW_UNLESS(ssize(*joint_damping) == num_velocities());
 
   for (const Joint<T>* joint : joints_.elements()) {
+    if (joint->num_velocities() == 0) continue;  // No damping on a weld!
     joint_damping->segment(joint->velocity_start(), joint->num_velocities()) =
         joint->GetDampingVector(context);
   }
