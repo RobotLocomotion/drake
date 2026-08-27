@@ -76,7 +76,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/triangle_quadrature",
     "//perception",
     "//planning",
-    "//planning/certified_ccd",
+    "//planning/continuous_collision",
     "//planning/experimental",
     "//planning/graph_algorithms",
     "//planning/iris",
