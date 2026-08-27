@@ -49,16 +49,27 @@ namespace internal {
 
  Explicit functionality is given in derived classes. They specify the actual
  shader code and any idiosyncratic details. To be compatible with *this*
- shader abstraction, a shader must meet some minimum requirements:
+ shader abstraction, a shader must specify a uniform mat4 called "T_DM" for the
+ model-to-device matrix. This is a projective transform taking a model-frame
+ point in ℜ³ to homogeneous OpenGL clip coordinates. We define this matrix
+ as:
 
-   - It must specify a uniform mat4 called "T_CM" - this transforms
-     vertices from the geometry's canonical frame M to the OpenGl camera frame
-     C. This transform may include scale factors (meaning it is not necessarily
-     a RigidTransform).
-   - It must specify a uniform mat4 called "T_DC" - this transforms
-     vertices from the camera's frame C to the OpenGl normalized device frame
-     D. This is a projective transform, taking points in ℜ³ and mapping them
-     to ℜ².
+   `T_DM = T_DCgl * T_CglCPhysical * X_CphysicalW * T_WM`
+
+ where,
+
+   - `T_WM`:  the model-to-world transform (see documentation on frames for
+      OpenGlGeometry).
+   - `X_CphysicalW`: the rigid relationship between the physical camera frame
+     and the world frame. This is passed to SetModelViewMatrix() as X_CW.
+   - `T_CglCPhysical`: the fixed transform between Drake's physical camera frame
+     OpenGL's camera frame. The two cameras have different conventions. This is
+     hard-coded in the shader program's architecture.
+   - `T_DCgl`: the OpenGL projection matrix. This is passed to
+      SetProjectionMatrix() as T_DCgl.
+   - We define `T_DCphysical = T_DCgl * T_CglCPhysical`. This is a constant for
+     the camera's intrinsics and is what is *internally* stored as a result of
+     calling SetProjectionMatrix().
 
  The %ShaderProgram stores the identifier for an OpenGl program. These programs
  are included in the objects that are shared across OpenGl contexts. However,
@@ -132,14 +143,15 @@ class ShaderProgram {
   virtual void SetDepthCameraParameters(
       const render::DepthRenderCamera& /* camera */) const {}
 
-  /* Sets the OpenGl projection matrix state. The projection matrix transforms a
-   vertex from the camera frame C to the OpenGl 2D device frame D -- it
-   projects a point in 3D to a point on the image.  */
-  void SetProjectionMatrix(const Eigen::Matrix4f& T_DC) const;
+  /* Stores T_DCphysical by multiplying the given `T_DCgl` with the internal
+   `T_CglCPhysical` transform. Only needs to be called once per unique set of
+   camera intrinsics (doesn't depend on rendered geometry poses or even camera
+   pose). */
+  void SetProjectionMatrix(const Eigen::Matrix4f& T_DCgl) const;
 
-  /* Sets the OpenGl model view matrix (and allows the shader to do any other
-   (instance, camera)-dependent configuration). The model view matrix T_CM
-   transforms a vertex from the model frame M to the camera frame C.
+  /* Stores the `T_DM`, the OpenGL model-to-device matrix. Allows derived
+   shader programs to do any other instance- and camera-dependent
+   configuration).
 
    This method invokes DoSetModelViewMatrix() with many of the component
    matrices.
@@ -151,11 +163,14 @@ class ShaderProgram {
    matrix S_MG (such that it is zero off the diagonal and has the x-, y-, and
    z-scale values along the diagonal).
 
-   @param X_CW   The transform relating the world frame and the camera frame.
+   @param X_CW   The transform relating the world frame and the camera's
+                 physical frame. Noted above as X_CphysicalW.
    @param T_WM   The transform to map the model's vertex positions into the
                  world frame. Not necessarily a rigid transform.
    @param N_WM   The transform to map the model's vertex normals into the
-                 world frame.  */
+                 world frame.
+   @pre SetProjectionMatrix() has been called with the current camera's
+        projection matrix (unchecked). */
   void SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
                           const Eigen::Matrix4f& T_WM,
                           const Eigen::Matrix3f& N_WM) const;
@@ -263,10 +278,13 @@ class ShaderProgram {
   GLuint vertex_id_{0};
   GLuint fragment_id_{0};
 
-  // Locations of the projection matrix and the model view matrix in the
-  // *supported* shader.
-  GLint projection_matrix_loc_{};
-  GLint model_view_loc_{};
+  // The physical-camera-to-device matrix is common to all instances rendered
+  // by this shader. It is cached and combined with each instance's model-view
+  // matrix.
+  mutable Eigen::Matrix4f T_DCphysical_{Eigen::Matrix4f::Identity()};
+
+  // Location of the model-to-device matrix in the supported shader.
+  GLint model_to_device_matrix_loc_{};
 };
 
 }  // namespace internal

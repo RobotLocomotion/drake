@@ -41,7 +41,9 @@ class TestShader final : public ShaderProgram {
 
   // Collection of flags which report if certain virtual methods have been
   // invoked.
-  bool DoSetModelViewMatrixCalled() const { return do_mv_matrix_called_; }
+  bool DoSetModelViewMatrixCalled() const {
+    return do_model_view_matrix_called_;
+  }
 
   bool CalledDoConfigureUniforms() const {
     return do_configure_uniforms_called_;
@@ -100,14 +102,14 @@ class TestShader final : public ShaderProgram {
   void DoSetModelViewMatrix(const Eigen::Matrix4f& X_CW,
                             const Eigen::Matrix4f& T_WM,
                             const Eigen::Matrix3f& N_WM) const override {
-    do_mv_matrix_called_ = true;
+    do_model_view_matrix_called_ = true;
     EXPECT_TRUE(CompareMatrices(X_CW, X_CW_expected_));
     EXPECT_TRUE(CompareMatrices(T_WM, T_WM_expected_));
     EXPECT_TRUE(CompareMatrices(N_WM, N_WM_expected_));
   }
 
   bool do_configure_uniforms_called_{false};
-  mutable bool do_mv_matrix_called_{false};
+  mutable bool do_model_view_matrix_called_{false};
   mutable bool set_instance_params_called_{false};
   mutable bool set_depth_camera_called_{false};
 
@@ -119,21 +121,20 @@ class TestShader final : public ShaderProgram {
 
 constexpr char kVertexSource[] = R"""(
   #version 330
-  uniform mat4 T_CM;
-  uniform mat4 T_DC;
-  out vec4 p_CV;
+  uniform mat4 T_DM;
+  out vec4 p_DV;
   void main() {
-    gl_Position = T_DC * vec4(0.0, 0.0, 0.0, 1.0);
-    p_CV = T_CM * vec4(0.0, 0.0, 0.0, 1.0);
+    p_DV = T_DM * vec4(0.0, 0.0, 0.0, 1.0);
+    gl_Position = p_DV;
   }
 )""";
 
 constexpr char kFragmentSource[] = R"""(
   #version 330
   uniform float test_uniform;
-  in vec4 p_CV;
+  in vec4 p_DV;
   void main() {
-    gl_FragColor = vec4(0.18, 0.54, 0.34, test_uniform) + p_CV;
+    gl_FragColor = vec4(0.18, 0.54, 0.34, test_uniform) + p_DV;
   }
 )""";
 
@@ -157,34 +158,32 @@ class ShaderProgramTest : public ::testing::Test {
   // Reports the program id of the given program.
   static GLuint gl_id(const ShaderProgram& program) { return program.gl_id_; }
 
-  static GLint proj_mat_loc(const ShaderProgram& program) {
-    return program.projection_matrix_loc_;
+  static GLint model_to_device_loc(const ShaderProgram& program) {
+    return program.model_to_device_matrix_loc_;
   }
 
-  static GLint model_view_loc(const ShaderProgram& program) {
-    return program.model_view_loc_;
+  static const Matrix4f& T_DCphysical(const ShaderProgram& program) {
+    return program.T_DCphysical_;
   }
 
   static ::testing::AssertionResult Equals(const TestShader& p1,
                                            const TestShader& p2) {
     if (p1.id_ != p2.id_ || p1.gl_id_ != p2.gl_id_ ||
-        p1.projection_matrix_loc_ != p2.projection_matrix_loc_ ||
-        p1.model_view_loc_ != p2.model_view_loc_ ||
+        p1.model_to_device_matrix_loc_ != p2.model_to_device_matrix_loc_ ||
+        !CompareMatrices(p1.T_DCphysical_, p2.T_DCphysical_) ||
         p1.magic_number_ != p2.magic_number_) {
       return ::testing::AssertionFailure()
              << "Shader programs didn't match"
              << "\n  p1:"
              << "\n    shader id: " << fmt::to_string(p1.id_)
              << "\n    OpenGl id: " << p1.gl_id_
-             << "\n    projection matrix location: "
-             << p1.projection_matrix_loc_
-             << "\n    model view matrix location: " << p1.model_view_loc_
+             << "\n    model-to-device matrix location: "
+             << p1.model_to_device_matrix_loc_
              << "\n    magic number: " << p1.magic_number_ << "\n  p2:"
              << "\n    shader id: " << fmt::to_string(p2.id_)
              << "\n    OpenGl id: " << p2.gl_id_
-             << "\n    projection matrix location: "
-             << p2.projection_matrix_loc_
-             << "\n    model view matrix location: " << p2.model_view_loc_
+             << "\n    model-to-device matrix location: "
+             << p2.model_to_device_matrix_loc_
              << "\n    magic number: " << p1.magic_number_;
     }
     return ::testing::AssertionSuccess();
@@ -277,37 +276,19 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
   }
 
   {
-    // Case: Missing projection matrix uniform. In this case, one is *listed*
-    // in the shader, but because it isn't used, it gets compiled out.
+    // Case: Missing model-to-device matrix uniform. It is listed in the shader,
+    // but gets compiled out because it isn't used.
     DRAKE_EXPECT_THROWS_MESSAGE(program.LoadFromSources(R"""(
   #version 330
-  uniform mat4 T_CM;
-  uniform mat4 T_DC;
-  out vec4 p_CV;
+  uniform mat4 T_DM;
+  out vec4 p_DV;
   void main() {
     gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
-    p_CV = T_CM * vec4(0.0, 0.0, 0.0, 1.0);
+    p_DV = vec4(0.0, 0.0, 0.0, 1.0);
   }
 )""",
                                                         kFragmentSource),
-                                "Cannot get shader uniform 'T_DC'");
-  }
-
-  {
-    // Case: Missing modelview matrix uniform. In this case, one is *listed*
-    // in the shader, but because it isn't used, it gets compiled out.
-    DRAKE_EXPECT_THROWS_MESSAGE(program.LoadFromSources(R"""(
-  #version 330
-  uniform mat4 T_CM;
-  uniform mat4 T_DC;
-  out vec4 p_CV;
-  void main() {
-    gl_Position = T_DC * vec4(0.0, 0.0, 0.0, 1.0);
-    p_CV = vec4(0.0, 0.0, 0.0, 1.0);
-  }
-)""",
-                                                        kFragmentSource),
-                                "Cannot get shader uniform 'T_CM'");
+                                "Cannot get shader uniform 'T_DM'");
   }
 }
 
@@ -409,25 +390,21 @@ TEST_F(ShaderProgramTest, SetDepthCameraParameters) {
   ASSERT_TRUE(shader.CalledSetDepthCameraParameters());
 }
 
-// Confirms that given matrix propagates into the OpenGl state.
+// Confirms that the projection matrix is cached for later composition.
 TEST_F(ShaderProgramTest, SetProjectionMatrix) {
   TestShader shader;
   shader.LoadFromSources(kVertexSource, kFragmentSource);
 
-  // Note: this is a weird, invalid projection matrix that we shouldn't expect
-  // should ever happen by accident.
-  const Matrix4f proj_mat = -Matrix4f::Ones();
-  shader.Use();
-  shader.SetProjectionMatrix(proj_mat);
-  shader.Unuse();
-  float proj_mat_data[16];
-  glGetUniformfv(gl_id(shader), proj_mat_loc(shader), &proj_mat_data[0]);
-  const Matrix4f gl_proj_mat(proj_mat_data);
-  EXPECT_TRUE(CompareMatrices(proj_mat, gl_proj_mat));
+  const Matrix4f T_DCgl = -Matrix4f::Ones();
+  shader.SetProjectionMatrix(T_DCgl);
+  const Matrix4f X_CglCphysical =
+      (Matrix4f() << 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
+          .finished();
+  EXPECT_TRUE(CompareMatrices(T_DCgl * X_CglCphysical, T_DCphysical(shader)));
 }
 
-// Confirms that given matrix propagates into the OpenGl state and that the
-// virtual API gets exercised.
+// Confirms that the composed model-to-device matrix propagates into the OpenGL
+// state and that the virtual API gets exercised.
 TEST_F(ShaderProgramTest, SetModelViewMatrix) {
   TestShader test_shader;
   test_shader.LoadFromSources(kVertexSource, kFragmentSource);
@@ -443,25 +420,26 @@ TEST_F(ShaderProgramTest, SetModelViewMatrix) {
   for (int i = 0; i < 3; ++i) T_WM.col(i) *= scale(i);
   Matrix3f N_WM = X_WG.rotation().matrix().cast<float>();
   for (int i = 0; i < 3; ++i) N_WM.col(i) /= scale(i);
+  const Matrix4f T_DC = 2 * Matrix4f::Identity();
   ASSERT_FALSE(test_shader.DoSetModelViewMatrixCalled());
   test_shader.SetExpectedModelViewComponents(X_CW, T_WM, N_WM);
   shader.Use();
+  shader.SetProjectionMatrix(T_DC);
   shader.SetModelViewMatrix(X_CW, T_WM, N_WM);
   shader.Unuse();
   ASSERT_TRUE(test_shader.DoSetModelViewMatrixCalled());
 
-  float mv_mat_data[16];
-  glGetUniformfv(gl_id(shader), model_view_loc(shader), &mv_mat_data[0]);
-  const Matrix4f gl_mv_mat(mv_mat_data);
+  float model_to_device_data[16];
+  glGetUniformfv(gl_id(shader), model_to_device_loc(shader),
+                 model_to_device_data);
+  const Matrix4f gl_T_DM(model_to_device_data);
 
-  // Construct the OpenGl model view matrix by hand.
+  // Construct the OpenGL model-to-device matrix by hand.
   const Matrix4f X_CglC =
       (Matrix4f() << 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
           .finished();
-  const Eigen::DiagonalMatrix<float, 4, 4> scale_mat(
-      Vector4<float>(scale(0), scale(1), scale(2), 1.0));
-  const Matrix4f expected_mv_mat = X_CglC * X_CW * T_WM;
-  EXPECT_TRUE(CompareMatrices(expected_mv_mat, gl_mv_mat));
+  const Matrix4f expected_T_DM = T_DC * X_CglC * X_CW * T_WM;
+  EXPECT_TRUE(CompareMatrices(expected_T_DM, gl_T_DM));
 }
 
 // Confirms that the clone contains the same data (including any derived data).

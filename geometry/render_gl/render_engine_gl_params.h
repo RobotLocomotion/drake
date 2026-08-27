@@ -28,8 +28,11 @@ struct RenderEngineGlParams {
   /** The default background color for color images.  */
   Rgba default_clear_color{204 / 255., 229 / 255., 255 / 255., 1.0};
 
-  /** Lights in the scene. More than five lights is an error. If no lights are
-   defined, a single directional light, fixed to the camera frame, is used. */
+  /** Lights in the scene. If no lights are defined, a single directional
+   light, fixed to the camera frame, is used.
+
+   Note: RenderEngineGl does not have a hard-coded limit on the number of
+         lights; but more lights increases rendering cost. */
   std::vector<render::LightParameter> lights;
 };
 

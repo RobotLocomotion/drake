@@ -2878,53 +2878,40 @@ TEST_F(RenderEngineGlTest, SingleLight) {
   }
 }
 
-// Quick test to make sure that lights combine. Also, confirm that too many
-// lights throw.
+// Quick test to make sure that lights combine. We'll stress test an arbitrary
+// number of lights (the only limit is what the GPU can support in practice).
 TEST_F(RenderEngineGlTest, MultiLights) {
-  // Too many lights throw.
-  {
-    const RenderEngineGlParams params{.lights = {
-                                          {.position = {0, 0, 0}},
-                                          {.position = {1, 0, 0}},
-                                          {.position = {2, 0, 0}},
-                                          {.position = {3, 0, 0}},
-                                          {.position = {4, 0, 0}},
-                                          {.position = {5, 0, 0}},
-                                      }};
-    auto make_renderer = [](const RenderEngineGlParams& p) {
-      return RenderEngineGl(p);
-    };
-    EXPECT_THROW(make_renderer(params), std::exception);
-  }
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+  const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(M_PI),
+                             Vector3d(0, 0, 3));
+  ImageRgba8U image(camera.core().intrinsics().width(),
+                    camera.core().intrinsics().height());
+  const int cx = image.width() / 2;
+  const int cy = image.height() / 2;
 
-  // Lights combine.
-  {
-    const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
-    const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(M_PI),
-                               Vector3d(0, 0, 3));
-    ImageRgba8U image(camera.core().intrinsics().width(),
-                      camera.core().intrinsics().height());
-    const int cx = image.width() / 2;
-    const int cy = image.height() / 2;
+  // We have three conceptual lights. The *conceptual* lights are pointing
+  // directly at the image center, but their total intensity is 0.75. So, we
+  // should get 75% of the diffuse color. To test the non-limits on the number
+  // of lights, we'll duplicate each light with half the intensity.
+  const RenderEngineGlParams params{
+      .lights = {{.type = "point", .intensity = 0.25 * 0.5},
+                 {.type = "point", .intensity = 0.25 * 0.5},
+                 {.type = "spot", .intensity = 0.25 * 0.5, .cone_angle = 45},
+                 {.type = "spot", .intensity = 0.25 * 0.5, .cone_angle = 45},
+                 {.type = "directional", .intensity = 0.25 * 0.5},
+                 {.type = "directional", .intensity = 0.25 * 0.5}},
+  };
+  RenderEngineGl renderer(params);
 
-    // The lights are pointing directly at the image center, but their total
-    // intensity is 0.75. So, we should get 75% of the diffuse color.
-    const RenderEngineGlParams params{
-        .lights = {{.type = "point", .intensity = 0.25},
-                   {.type = "spot", .intensity = 0.25, .cone_angle = 45},
-                   {.type = "directional", .intensity = 0.25}}};
-    RenderEngineGl renderer(params);
+  InitializeRenderer(X_WR, true /* add terrain */, &renderer);
 
-    InitializeRenderer(X_WR, true /* add terrain */, &renderer);
+  EXPECT_NO_THROW(renderer.RenderColorImage(camera, &image));
 
-    EXPECT_NO_THROW(renderer.RenderColorImage(camera, &image));
-
-    const RgbaColor test_color(image.at(cx, cy));
-    const RgbaColor expected_color = kTerrainColor.scale_rgb(0.75);
-    EXPECT_TRUE(IsColorNear(test_color, expected_color))
-        << "  test color: " << test_color << "\n"
-        << "  expected color: " << expected_color;
-  }
+  const RgbaColor test_color(image.at(cx, cy));
+  const RgbaColor expected_color = kTerrainColor.scale_rgb(0.75);
+  EXPECT_TRUE(IsColorNear(test_color, expected_color))
+      << "  test color: " << test_color << "\n"
+      << "  expected color: " << expected_color;
 }
 
 namespace {
