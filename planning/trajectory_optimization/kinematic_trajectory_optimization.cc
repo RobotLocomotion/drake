@@ -82,14 +82,16 @@ class PathConstraint : public Constraint {
   template <typename T>
   void DoEvalGeneric(const Eigen::Ref<const Eigen::VectorX<T>>& x,
                      Eigen::VectorX<T>* y) const {
-    Eigen::VectorX<T> x_sum = basis_function_values_[0] *
-                              x.segment(0, wrapped_constraint_->num_vars());
-    const int num_terms = basis_function_values_.size();
-    for (int i = 1; i < num_terms; ++i) {
-      x_sum += basis_function_values_[i] *
-               x.segment(i * wrapped_constraint_->num_vars(),
-                         wrapped_constraint_->num_vars());
-    }
+    const Eigen::Index n = wrapped_constraint_->num_vars();
+    const Eigen::Index num_terms = basis_function_values_.size();
+    // Eigen::Ref of a vector type has a compile-time inner stride of one, so
+    // x's coefficients are contiguous and can be mapped as a matrix whose
+    // columns are the control points that the path point interpolates.
+    const Eigen::Map<const Eigen::MatrixX<T>> X(x.data(), n, num_terms);
+    const Eigen::Map<const Eigen::VectorXd> b(basis_function_values_.data(),
+                                              num_terms);
+    // An explicit cast is needed for MatrixX<AutoDiffXd> * VectorX<double>.
+    const Eigen::VectorX<T> x_sum = X * b.cast<T>();
     wrapped_constraint_->Eval(x_sum, y);
   }
 
