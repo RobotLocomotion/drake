@@ -4,12 +4,14 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/trajectories/bezier_curve.h"
@@ -40,14 +42,6 @@ constexpr double kParameterSlack = 1e-12;
 trajectory, so consecutive segments meet exactly in exact arithmetic; this
 absorbs only round-off in the caller's own time bookkeeping. */
 constexpr double kTimeContiguitySlack = 1e-9;
-
-/* Streams `args` into one string. Used only on the throwing paths. */
-template <typename... Args>
-std::string StrCat(Args&&... args) {
-  std::ostringstream stream;
-  (stream << ... << args);
-  return stream.str();
-}
 
 /* Pascal's triangle up to row `m`; table(j, a) = C(j, a) for a <= j, 0
 otherwise. Exact in double for the degrees this file accepts (the default cap
@@ -80,11 +74,11 @@ void AppendBsplineSegments(const BsplineTrajectory<double>& bspline,
                            int source_index,
                            std::vector<BezierSegment>* segments) {
   if (bspline.cols() != 1) {
-    throw std::runtime_error(StrCat(
-        "PiecewiseBezierPath: the BsplineTrajectory at segment index ",
-        source_index, " is ", bspline.rows(), "x", bspline.cols(),
-        "-valued; only column-vector-valued trajectories (cols() == 1) over "
-        "the plant's generalized positions are supported."));
+    throw std::runtime_error(fmt::format(
+        "PiecewiseBezierPath: the BsplineTrajectory at segment index {} is "
+        "{}x{}-valued; only column-vector-valued trajectories (cols() == 1) "
+        "over the plant's generalized positions are supported.",
+        source_index, bspline.rows(), bspline.cols()));
   }
   // InsertKnots mutates in place, so work on a copy of the caller's object.
   BsplineTrajectory<double> traj = bspline;
@@ -133,11 +127,11 @@ void AppendBsplineSegments(const BsplineTrajectory<double>& bspline,
     segments->push_back(std::move(segment));
   }
   if (segments->size() == num_before) {
-    throw std::runtime_error(StrCat(
-        "PiecewiseBezierPath: the BsplineTrajectory at segment index ",
-        source_index,
-        " has an empty parameter domain; a trajectory must span a positive "
-        "time interval."));
+    throw std::runtime_error(fmt::format(
+        "PiecewiseBezierPath: the BsplineTrajectory at segment index {} has "
+        "an empty parameter domain; a trajectory must span a positive time "
+        "interval.",
+        source_index));
   }
 }
 
@@ -158,18 +152,19 @@ void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
                                        const Options& options, int source_index,
                                        std::vector<BezierSegment>* segments) {
   if (pp.cols() != 1) {
-    throw std::runtime_error(StrCat(
-        "PiecewiseBezierPath: the PiecewisePolynomial at segment index ",
-        source_index, " is ", pp.rows(), "x", pp.cols(),
-        "-valued; only column-vector-valued trajectories (cols() == 1) over "
-        "the plant's generalized positions are supported."));
+    throw std::runtime_error(fmt::format(
+        "PiecewiseBezierPath: the PiecewisePolynomial at segment index {} is "
+        "{}x{}-valued; only column-vector-valued trajectories (cols() == 1) "
+        "over the plant's generalized positions are supported.",
+        source_index, pp.rows(), pp.cols()));
   }
   const int num_positions = static_cast<int>(pp.rows());
   const int num_pp_segments = pp.get_number_of_segments();
   if (num_pp_segments < 1) {
     throw std::runtime_error(
-        StrCat("PiecewiseBezierPath: the PiecewisePolynomial at segment index ",
-               source_index, " has no segments."));
+        fmt::format("PiecewiseBezierPath: the PiecewisePolynomial at segment "
+                    "index {} has no segments.",
+                    source_index));
   }
   for (int k = 0; k < num_pp_segments; ++k) {
     int m = 0;
@@ -177,24 +172,23 @@ void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
       m = std::max(m, pp.getSegmentPolynomialDegree(k, r, 0));
     }
     if (m > options.max_conversion_degree) {
-      throw std::runtime_error(StrCat(
-          "PiecewiseBezierPath: PiecewisePolynomial segment ", k,
-          " (source segment index ", source_index, ") has polynomial degree ",
-          m, ", above options.max_conversion_degree = ",
-          options.max_conversion_degree,
-          ". The monomial-to-Bernstein change of basis is ill-conditioned at "
-          "high degree; either raise Options::max_conversion_degree "
-          "deliberately or re-express the trajectory with more, lower-degree "
-          "segments."));
+      throw std::runtime_error(fmt::format(
+          "PiecewiseBezierPath: PiecewisePolynomial segment {} (source segment "
+          "index {}) has polynomial degree {}, above "
+          "options.max_conversion_degree = {}. The monomial-to-Bernstein "
+          "change of basis is ill-conditioned at high degree; either raise "
+          "Options::max_conversion_degree deliberately or re-express the "
+          "trajectory with more, lower-degree segments.",
+          k, source_index, m, options.max_conversion_degree));
     }
     const double t_start = pp.start_time(k);
     const double t_end = pp.end_time(k);
     const double duration = t_end - t_start;
     if (!(duration > 0.0)) {
       throw std::runtime_error(
-          StrCat("PiecewiseBezierPath: PiecewisePolynomial segment ", k,
-                 " (source segment index ", source_index,
-                 ") has non-positive duration ", duration, "."));
+          fmt::format("PiecewiseBezierPath: PiecewisePolynomial segment {} "
+                      "(source segment index {}) has non-positive duration {}.",
+                      k, source_index, duration));
     }
     const Eigen::MatrixXd binomial = BinomialTable(m);
     BezierSegment segment;
@@ -235,8 +229,9 @@ void AppendSegments(const Trajectory<double>& trajectory,
           dynamic_cast<const BezierCurve<double>*>(&trajectory)) {
     if (bezier->control_points().cols() < 1) {
       throw std::runtime_error(
-          StrCat("PiecewiseBezierPath: the BezierCurve at segment index ",
-                 *source_index, " has no control points."));
+          fmt::format("PiecewiseBezierPath: the BezierCurve at segment index "
+                      "{} has no control points.",
+                      *source_index));
     }
     BezierSegment segment;
     segment.t_start = bezier->start_time();
@@ -251,9 +246,9 @@ void AppendSegments(const Trajectory<double>& trajectory,
     const int num = composite->get_number_of_segments();
     if (num < 1) {
       throw std::runtime_error(
-          StrCat("PiecewiseBezierPath: the CompositeTrajectory at segment "
-                 "index ",
-                 *source_index, " has no segments."));
+          fmt::format("PiecewiseBezierPath: the CompositeTrajectory at "
+                      "segment index {} has no segments.",
+                      *source_index));
     }
     for (int i = 0; i < num; ++i) {
       AppendSegments(composite->segment(i), options, source_index, segments);
@@ -272,14 +267,14 @@ void AppendSegments(const Trajectory<double>& trajectory,
     ++(*source_index);
     return;
   }
-  throw std::runtime_error(StrCat(
-      "PiecewiseBezierPath: unsupported trajectory type '",
-      NiceTypeName::Get(trajectory), "' at segment index ", *source_index,
-      ". Supported types are drake::trajectories::BezierCurve<double>, "
+  throw std::runtime_error(fmt::format(
+      "PiecewiseBezierPath: unsupported trajectory type '{}' at segment index "
+      "{}. Supported types are drake::trajectories::BezierCurve<double>, "
       "drake::trajectories::BsplineTrajectory<double>, "
       "drake::trajectories::PiecewisePolynomial<double>, and "
       "drake::trajectories::CompositeTrajectory<double> whose segments are "
-      "themselves supported."));
+      "themselves supported.",
+      NiceTypeName::Get(trajectory), *source_index));
 }
 
 /* Checks shape, time ordering/contiguity and C0 junctions (trajectory
@@ -293,21 +288,21 @@ void ValidateSegments(int num_positions, const Options& options,
   for (std::size_t i = 0; i < segments.size(); ++i) {
     const BezierSegment& segment = segments[i];
     if (segment.control_points.rows() != num_positions) {
-      throw std::runtime_error(StrCat(
-          "PiecewiseBezierPath: segment ", i, " has ",
-          segment.control_points.rows(), " rows but the trajectory declares ",
-          num_positions,
-          " generalized positions; every segment must be valued in the same "
-          "position space."));
+      throw std::runtime_error(fmt::format(
+          "PiecewiseBezierPath: segment {} has {} rows but the trajectory "
+          "declares {} generalized positions; every segment must be valued in "
+          "the same position space.",
+          i, segment.control_points.rows(), num_positions));
     }
     if (segment.control_points.cols() < 1) {
-      throw std::runtime_error(StrCat("PiecewiseBezierPath: segment ", i,
-                                      " has no control points."));
+      throw std::runtime_error(fmt::format(
+          "PiecewiseBezierPath: segment {} has no control points.", i));
     }
     if (!(segment.t_end >= segment.t_start)) {
-      throw std::runtime_error(StrCat(
-          "PiecewiseBezierPath: segment ", i, " spans [", segment.t_start, ", ",
-          segment.t_end, "], which runs backwards in time."));
+      throw std::runtime_error(fmt::format(
+          "PiecewiseBezierPath: segment {} spans [{}, {}], which runs "
+          "backwards in time.",
+          i, segment.t_start, segment.t_end));
     }
     if (i > 0) {
       const double previous_end = segments[i - 1].t_end;
@@ -316,11 +311,11 @@ void ValidateSegments(int num_positions, const Options& options,
           std::max({1.0, std::abs(previous_end), std::abs(segment.t_start)});
       if (std::abs(segment.t_start - previous_end) > slack) {
         throw std::runtime_error(
-            StrCat("PiecewiseBezierPath: segments are not contiguous in time — "
-                   "segment ",
-                   i - 1, " ends at ", previous_end, " but segment ", i,
-                   " starts at ", segment.t_start,
-                   ". Segments must be ordered and meet end-to-start."));
+            fmt::format("PiecewiseBezierPath: segments are not contiguous "
+                        "in time — segment {} ends at {} but segment {} "
+                        "starts at {}. Segments must be ordered and meet "
+                        "end-to-start.",
+                        i - 1, previous_end, i, segment.t_start));
       }
     }
   }
@@ -328,10 +323,11 @@ void ValidateSegments(int num_positions, const Options& options,
   std::vector<bool> is_continuous_revolute(num_positions, false);
   for (int index : options.continuous_revolute_indices) {
     if (index < 0 || index >= num_positions) {
-      throw std::runtime_error(StrCat(
-          "PiecewiseBezierPath: Options::continuous_revolute_indices contains ",
-          index, ", which is out of range for a trajectory with ",
-          num_positions, " generalized positions."));
+      throw std::runtime_error(fmt::format(
+          "PiecewiseBezierPath: Options::continuous_revolute_indices contains "
+          "{}, which is out of range for a trajectory with {} generalized "
+          "positions.",
+          index, num_positions));
     }
     is_continuous_revolute[index] = true;
   }
@@ -352,20 +348,17 @@ void ValidateSegments(int num_positions, const Options& options,
         gap -= kTwoPi * std::round(gap / kTwoPi);
       }
       if (std::abs(gap) > options.continuity_tolerance) {
-        throw std::runtime_error(StrCat(
+        const std::string modulo = is_continuous_revolute[c]
+                                       ? fmt::format(" ({} modulo 2π)", gap)
+                                       : "";
+        throw std::runtime_error(fmt::format(
             "PiecewiseBezierPath: C0 discontinuity at the junction between "
-            "segments ",
-            i - 1, " and ", i, " in coordinate ", c, ": the gap is ", raw_gap,
-            (is_continuous_revolute[c] ? " (" : ""),
-            (is_continuous_revolute[c] ? StrCat(gap, " modulo 2π)")
-                                       : std::string()),
-            ", which exceeds Options::continuity_tolerance = ",
-            options.continuity_tolerance,
-            ". A discontinuous trajectory teleports; per-segment certificates "
-            "would not cover the jump. If coordinate ",
-            c,
-            " is a continuous revolute joint, list it in "
-            "Options::continuous_revolute_indices."));
+            "segments {} and {} in coordinate {}: the gap is {}{}, which "
+            "exceeds Options::continuity_tolerance = {}. A discontinuous "
+            "trajectory teleports; per-segment certificates would not cover "
+            "the jump. If coordinate {} is a continuous revolute joint, list "
+            "it in Options::continuous_revolute_indices.",
+            i - 1, i, c, raw_gap, modulo, options.continuity_tolerance, c));
       }
     }
   }
@@ -376,11 +369,11 @@ void ValidateSegments(int num_positions, const Options& options,
 PiecewiseBezierPath PiecewiseBezierPath::FromTrajectory(
     const Trajectory<double>& trajectory, const Options& options) {
   if (trajectory.cols() != 1) {
-    throw std::runtime_error(StrCat(
-        "PiecewiseBezierPath::FromTrajectory: the trajectory is ",
-        trajectory.rows(), "x", trajectory.cols(),
-        "-valued; only column-vector-valued trajectories (cols() == 1) over "
-        "the plant's generalized positions are supported."));
+    throw std::runtime_error(fmt::format(
+        "PiecewiseBezierPath::FromTrajectory: the trajectory is {}x{}-valued; "
+        "only column-vector-valued trajectories (cols() == 1) over the plant's "
+        "generalized positions are supported.",
+        trajectory.rows(), trajectory.cols()));
   }
   const int num_positions = static_cast<int>(trajectory.rows());
   if (num_positions < 1) {
@@ -406,10 +399,10 @@ PiecewiseBezierPath PiecewiseBezierPath::FromWaypoints(
         "rows; expected one row per generalized position.");
   }
   if (waypoints.cols() < 2) {
-    throw std::runtime_error(StrCat(
+    throw std::runtime_error(fmt::format(
         "PiecewiseBezierPath::FromWaypoints: at least 2 waypoints (columns) "
-        "are required to form a path; got ",
-        waypoints.cols(), "."));
+        "are required to form a path; got {}.",
+        waypoints.cols()));
   }
   const int num_positions = static_cast<int>(waypoints.rows());
   const int num_segments = static_cast<int>(waypoints.cols()) - 1;
@@ -459,15 +452,16 @@ void PiecewiseBezierPath::FinalizeMetadata(double continuity_tolerance) {
 }
 
 Eigen::VectorXd PiecewiseBezierPath::Value(double t) const {
-  DRAKE_THROW_UNLESS(!segments_.empty());
+  DRAKE_DEMAND(!segments_.empty());
   const double t0 = start_time();
   const double tf = end_time();
   const double slack =
       kParameterSlack * std::max({1.0, std::abs(t0), std::abs(tf)});
   if (!(t >= t0 - slack) || !(t <= tf + slack)) {
-    throw std::runtime_error(StrCat("PiecewiseBezierPath::Value: time ", t,
-                                    " is outside the path's domain [", t0, ", ",
-                                    tf, "]."));
+    throw std::runtime_error(
+        fmt::format("PiecewiseBezierPath::Value: time {} is outside the path's "
+                    "domain [{}, {}].",
+                    t, t0, tf));
   }
   const double clamped = std::clamp(t, t0, tf);
   // Last segment whose start time is at or before `clamped`. At an interior
@@ -497,14 +491,16 @@ Eigen::VectorXd PiecewiseBezierPath::EvaluateSegment(int segment_index,
                                                      double s) const {
   if (segment_index < 0 ||
       segment_index >= static_cast<int>(segments_.size())) {
-    throw std::runtime_error(StrCat(
-        "PiecewiseBezierPath::EvaluateSegment: segment index ", segment_index,
-        " is out of range; the path has ", segments_.size(), " segments."));
+    throw std::runtime_error(fmt::format(
+        "PiecewiseBezierPath::EvaluateSegment: segment index {} is out of "
+        "range; the path has {} segments.",
+        segment_index, segments_.size()));
   }
   if (!(s >= -kParameterSlack) || !(s <= 1.0 + kParameterSlack)) {
     throw std::runtime_error(
-        StrCat("PiecewiseBezierPath::EvaluateSegment: parameter s = ", s,
-               " is outside the segment's domain [0, 1]."));
+        fmt::format("PiecewiseBezierPath::EvaluateSegment: parameter s = {} "
+                    "is outside the segment's domain [0, 1].",
+                    s));
   }
   const double u = std::clamp(s, 0.0, 1.0);
   const Eigen::MatrixXd& control_points =

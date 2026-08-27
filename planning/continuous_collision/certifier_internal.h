@@ -11,20 +11,19 @@
 /// one set of per-call data structures without the core module depending on
 /// the api layer.
 
-#include <condition_variable>
-#include <cstdint>
 #include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/geometry/query_object.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/planning/continuous_collision/certificate.h"
 #include "drake/planning/continuous_collision/distance_oracle.h"
@@ -45,12 +44,11 @@ scene-graph sub-contexts pulled out of it once, so the hot loop pays a single
 bookkeeping. */
 class ThreadContext {
  public:
-  ThreadContext(const ThreadContext&) = delete;
-  ThreadContext& operator=(const ThreadContext&) = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ThreadContext);
 
   /** Allocates a root context of `model`. `model` is aliased and must outlive
   this object. */
-  explicit ThreadContext(const drake::planning::RobotDiagram<double>& model);
+  explicit ThreadContext(const RobotDiagram<double>& model);
 
   /** The one FK trigger per node: sets the plant's generalized positions.
   Drake caches forward kinematics per context afterwards, so body poses and
@@ -59,18 +57,18 @@ class ThreadContext {
   void SetPositions(const Eigen::VectorXd& q);
 
   /** The scene graph's query object at the configuration last set. */
-  const drake::geometry::QueryObject<double>& query_object() const;
+  const geometry::QueryObject<double>& query_object() const;
 
   /** World pose of `body` at the configuration last set (Drake's cache
   computes it on first use and reuses it afterwards). */
-  const drake::math::RigidTransform<double>& EvalBodyPose(
-      drake::multibody::BodyIndex body) const;
+  const math::RigidTransform<double>& EvalBodyPose(
+      multibody::BodyIndex body) const;
 
  private:
-  const drake::planning::RobotDiagram<double>* model_{};
-  std::unique_ptr<drake::systems::Context<double>> root_;
-  drake::systems::Context<double>* plant_context_{};
-  const drake::systems::Context<double>* scene_graph_context_{};
+  const RobotDiagram<double>* model_{};
+  std::unique_ptr<systems::Context<double>> root_;
+  systems::Context<double>* plant_context_{};
+  const systems::Context<double>* scene_graph_context_{};
 };
 
 /** A checkout pool of ThreadContexts (parallelism and determinism:
@@ -83,13 +81,11 @@ ever share one. A lease larger than the pre-warmed pool grows it (a cold-path
 allocation); nothing shrinks it. */
 class ContextPool {
  public:
-  ContextPool(const ContextPool&) = delete;
-  ContextPool& operator=(const ContextPool&) = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContextPool);
 
   /** Pre-warms `initial_size` contexts of `model`, which is aliased and must
   outlive this pool. */
-  ContextPool(const drake::planning::RobotDiagram<double>& model,
-              int initial_size);
+  ContextPool(const RobotDiagram<double>& model, int initial_size);
 
   /** RAII handle for a set of leased contexts. */
   class Lease {
@@ -128,7 +124,7 @@ class ContextPool {
  private:
   void Release(const std::vector<int>& slots) const;
 
-  const drake::planning::RobotDiagram<double>* model_{};
+  const RobotDiagram<double>* model_{};
   mutable std::mutex mutex_;
   /* A deque so that growing never invalidates the ThreadContext addresses
    already handed out. */
@@ -147,7 +143,7 @@ recruitment policy of RunCertifier() affordable: the driver can afford to start
 serial and hire only once a run has proved itself big enough.
 
 Threads are created on demand (never at construction), capped at
-`std::thread::hardware_concurrency()` per pool, parked on their own condition
+`Parallelism::Max().num_threads()` per pool, parked on their own condition
 variable when idle, and joined by the destructor. A `Batch` is a reservation of
 some of them for the duration of one call; because reservations never block,
 several concurrent `Check*` calls simply share out whatever threads exist and a
@@ -158,10 +154,10 @@ class WorkerPool {
   struct BatchState;
 
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorkerPool);
+
   /* Out of line (like the destructor) because Slot is incomplete here. */
   WorkerPool();
-  WorkerPool(const WorkerPool&) = delete;
-  WorkerPool& operator=(const WorkerPool&) = delete;
   ~WorkerPool();
 
   /** Reserved threads for one call. Destruction waits for every dispatched
@@ -217,7 +213,7 @@ slots so the node loop can cache one world-frame center per geometry per node.
 */
 struct PrefilterTable {
   struct Geometry {
-    drake::multibody::BodyIndex body;
+    multibody::BodyIndex body;
     Eigen::Vector3d center_L{Eigen::Vector3d::Zero()};
     double radius{0.0};
   };
@@ -234,7 +230,7 @@ struct PrefilterTable {
 /** Everything one certification run needs; assembled by the facade. All
 pointers are aliased and must outlive the call. */
 struct CertifierInput {
-  const drake::planning::RobotDiagram<double>* model{};
+  const RobotDiagram<double>* model{};
   const DistanceOracle* oracle{};
   const MotionBoundTable* table{};
   const PiecewiseBezierPath* path{};
@@ -352,7 +348,7 @@ Eigen::VectorXd EvaluateBezier(const Eigen::MatrixXd& cps, double u);
 
 /** Inputs of the independent certificate replay. All pointers are aliased. */
 struct ReplayInput {
-  const drake::planning::RobotDiagram<double>* model{};
+  const RobotDiagram<double>* model{};
   const DistanceOracle* oracle{};
   const MotionBoundTable* table{};
   const PiecewiseBezierPath* path{};

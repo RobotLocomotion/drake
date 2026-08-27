@@ -15,6 +15,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/scene_graph_inspector.h"
@@ -49,7 +50,25 @@ bool IsHalfSpace(const Shape& shape) {
 
 }  // namespace
 
-std::vector<std::pair<int, double>> MotionBoundTable::entries(
+MotionBoundTable::MotionBoundTable(std::vector<int> row_start,
+                                   std::vector<int> coord,
+                                   std::vector<double> lambda,
+                                   std::vector<double> carveout_slack)
+    : row_start_(std::move(row_start)),
+      coord_(std::move(coord)),
+      lambda_(std::move(lambda)),
+      carveout_slack_(std::move(carveout_slack)) {
+  DRAKE_THROW_UNLESS(!row_start_.empty());
+  DRAKE_THROW_UNLESS(row_start_.front() == 0);
+  for (int i = 1; i < static_cast<int>(row_start_.size()); ++i) {
+    DRAKE_THROW_UNLESS(row_start_[i] >= row_start_[i - 1]);
+  }
+  DRAKE_THROW_UNLESS(coord_.size() == lambda_.size());
+  DRAKE_THROW_UNLESS(static_cast<int>(coord_.size()) == row_start_.back());
+  DRAKE_THROW_UNLESS(carveout_slack_.size() + 1 == row_start_.size());
+}
+
+std::vector<std::pair<int, double>> MotionBoundTable::GetEntries(
     int pair_index) const {
   DRAKE_THROW_UNLESS(pair_index >= 0 && pair_index < num_pairs());
   std::vector<std::pair<int, double>> out;
@@ -60,8 +79,7 @@ std::vector<std::pair<int, double>> MotionBoundTable::entries(
   return out;
 }
 
-KinematicsEngine::KinematicsEngine(
-    const drake::planning::RobotDiagram<double>& model)
+KinematicsEngine::KinematicsEngine(const RobotDiagram<double>& model)
     : model_(&model), plant_(&model.plant()) {
   if (!plant_->is_finalized()) {
     throw std::runtime_error(
@@ -160,8 +178,8 @@ void KinematicsEngine::BuildTopology() {
     if (translation_known && rec.num_positions > 0) {
       // Every coordinate of a joint we admit must have a carve-out rule, or
       // a carved coordinate could slip through uncharged.
-      DRAKE_THROW_UNLESS(static_cast<int>(rec.coord_rules.size()) ==
-                         rec.num_positions);
+      DRAKE_DEMAND(static_cast<int>(rec.coord_rules.size()) ==
+                   rec.num_positions);
     }
 
     // Frame offsets: F = frame_on_parent (Jp), M = frame_on_child (Jc).
@@ -195,10 +213,17 @@ void KinematicsEngine::BuildTopology() {
   }
 
   // ------------------------------------------------------------------
-  // 2. Orient the joint graph into the world-rooted multibody tree. Post
+  // 2. Orient the joint graph into the world-rooted multibody tree by a
+  //    breadth-first walk from the world over the (body, joint) graph. Post
   //    Finalize() every non-world body has exactly one inboard joint
-  //    (ephemeral floating joints included), so a breadth-first walk from the
-  //    world over the (body, joint) graph recovers the tree exactly.
+  //    (ephemeral floating joints included), so the walk is well defined.
+  //
+  //    The walk is what supplies the inboard/outboard orientation and the
+  //    per-hop reach data, neither of which the plant exposes. The descendant
+  //    sets it implies are *not* what the λ table then uses: step 3 takes each
+  //    joint's subtree from the plant's own GetBodiesKinematicallyAffectedBy()
+  //    and throws if the two disagree. The walk is therefore an independent
+  //    cross-check of Drake's answer rather than a substitute for it.
   // ------------------------------------------------------------------
   std::vector<std::vector<int>> incident(num_bodies_);
   for (int k = 0; k < static_cast<int>(joints_.size()); ++k) {
@@ -258,7 +283,7 @@ void KinematicsEngine::BuildTopology() {
     while (k >= 0) {
       tree_subtree[k][b] = true;
       k = inboard_joint_[joints_[k].inboard];
-      DRAKE_THROW_UNLESS(++guard <= num_bodies_ + 1);
+      DRAKE_DEMAND(++guard <= num_bodies_ + 1);
     }
   }
 
@@ -274,10 +299,10 @@ void KinematicsEngine::BuildTopology() {
     JointRecord& rec = joints_[k];
     const Joint<double>& joint = plant.get_joint(rec.index);
     if (joint.num_velocities() == 0) {
-      DRAKE_THROW_UNLESS(rec.num_positions == 0);
+      DRAKE_DEMAND(rec.num_positions == 0);
       continue;
     }
-    DRAKE_THROW_UNLESS(rec.num_positions > 0);
+    DRAKE_DEMAND(rec.num_positions > 0);
     if (rec.outboard != joint.child_body().index()) {
       throw std::runtime_error(fmt::format(
           "KinematicsEngine: joint '{}' ({}) is reversed — its declared parent "
@@ -313,13 +338,13 @@ void KinematicsEngine::BuildTopology() {
     const JointRecord& rec = joints_[k];
     for (int c = rec.position_start; c < rec.position_start + rec.num_positions;
          ++c) {
-      DRAKE_THROW_UNLESS(c >= 0 && c < num_positions_);
-      DRAKE_THROW_UNLESS(coord_joint_[c] == -1);
+      DRAKE_DEMAND(c >= 0 && c < num_positions_);
+      DRAKE_DEMAND(coord_joint_[c] == -1);
       coord_joint_[c] = k;
     }
   }
   for (int c = 0; c < num_positions_; ++c) {
-    DRAKE_THROW_UNLESS(coord_joint_[c] >= 0);
+    DRAKE_DEMAND(coord_joint_[c] >= 0);
   }
 }
 
@@ -335,7 +360,7 @@ void KinematicsEngine::BuildGeometry() {
 
   for (int b = 0; b < num_bodies_; ++b) {
     const BodyIndex body(b);
-    DRAKE_THROW_UNLESS(plant.get_body(body).index() == body);
+    DRAKE_DEMAND(plant.get_body(body).index() == body);
     const std::optional<drake::geometry::FrameId> frame_id =
         plant.GetBodyFrameIdIfExists(body);
     if (!frame_id.has_value()) continue;
@@ -453,7 +478,7 @@ double KinematicsEngine::Reach(int joint_ord, BodyIndex body,
   BodyIndex b = body;
   for (int guard = 0; guard <= num_bodies_; ++guard) {
     const int k = inboard_joint_[b];
-    DRAKE_THROW_UNLESS(k >= 0);
+    DRAKE_DEMAND(k >= 0);
     if (k == joint_ord) {
       // Top of the chain: measure from j's M-frame origin, the point that
       // stays fixed when coordinate j moves (for a revolute, the axis passes
@@ -576,7 +601,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
         break;
       }
     }
-    DRAKE_THROW_UNLESS(std::isfinite(box_hop[k]) && box_hop[k] >= 0.0);
+    DRAKE_DEMAND(std::isfinite(box_hop[k]) && box_hop[k] >= 0.0);
   }
 
   // ------------------------------------------------------------------
@@ -726,15 +751,12 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   //    residual was charged, is the one case where the residual is genuinely
   //    unbounded.
   // ------------------------------------------------------------------
-  MotionBoundTable table;
-  std::vector<int>& row_start = table.mutable_row_start();
-  std::vector<int>& coord = table.mutable_coord();
-  std::vector<double>& lambda = table.mutable_lambda();
-  std::vector<double>& carveout_slack = table.mutable_carveout_slack();
-  row_start.clear();
+  std::vector<int> row_start;
+  std::vector<int> coord;
+  std::vector<double> lambda;
+  std::vector<double> carveout_slack;
   row_start.reserve(pairs.size() + 1);
   row_start.push_back(0);
-  carveout_slack.clear();
   carveout_slack.reserve(pairs.size());
 
   // r(j, D) is shared by every pair with the same (joint, distal body), which
@@ -792,7 +814,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
           // motion inside the control box is charged to the pair's slack
           // instead. See the derivation above for every λ̃ used here.
           const double span = range(c);
-          DRAKE_THROW_UNLESS(std::isfinite(span) && span >= 0.0);
+          DRAKE_DEMAND(std::isfinite(span) && span >= 0.0);
           if (span == 0.0) continue;  // Exactly constant: nothing to charge.
           if (rec.coord_rules.empty()) {
             // Unreachable: a joint kind with no rules is rejected above,
@@ -848,7 +870,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
               break;
             }
           }
-          DRAKE_THROW_UNLESS(std::isfinite(lam_tilde) && lam_tilde >= 0.0);
+          DRAKE_DEMAND(std::isfinite(lam_tilde) && lam_tilde >= 0.0);
           slack += lam_tilde * span;
           continue;
         }
@@ -874,17 +896,17 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
                 "the λ assembly with an unsupported kind.",
                 rec.name, rec.type_name));
         }
-        DRAKE_THROW_UNLESS(std::isfinite(lam) && lam >= 0.0);
+        DRAKE_DEMAND(std::isfinite(lam) && lam >= 0.0);
         coord.push_back(c);
         lambda.push_back(lam);
       }
     }
-    DRAKE_THROW_UNLESS(std::isfinite(slack) && slack >= 0.0);
+    DRAKE_DEMAND(std::isfinite(slack) && slack >= 0.0);
     carveout_slack.push_back(slack);
     row_start.push_back(static_cast<int>(coord.size()));
   }
-  DRAKE_THROW_UNLESS(carveout_slack.size() + 1 == row_start.size());
-  return table;
+  return MotionBoundTable(std::move(row_start), std::move(coord),
+                          std::move(lambda), std::move(carveout_slack));
 }
 
 const std::vector<BoundingSphere>& KinematicsEngine::body_spheres(

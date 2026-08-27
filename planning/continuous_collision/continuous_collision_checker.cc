@@ -39,7 +39,7 @@
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/planning/continuous_collision/certifier.h"
+#include "drake/planning/continuous_collision/certifier_internal.h"
 
 namespace drake {
 namespace planning {

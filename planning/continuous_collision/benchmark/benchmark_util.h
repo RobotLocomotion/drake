@@ -19,7 +19,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/trajectory.h"
@@ -29,7 +29,7 @@
 namespace drake {
 namespace planning {
 namespace continuous_collision {
-namespace benchmark {
+namespace internal {
 
 // ---------------------------------------------------------------------------
 // JSON
@@ -145,7 +145,7 @@ void WriteMachine(JsonWriter* json, const MachineInfo& machine);
 ///   P1 = P0 + h v0/5,        P4 = P5 − h v1/5,
 ///   P2 = P0 + 2 h v0/5,      P3 = P5 − 2 h v1/5,
 /// which reproduces q(t0)=q0, q̇(t0)=v0, q̈(t0)=0 and likewise at t1.
-std::shared_ptr<drake::trajectories::CompositeTrajectory<double>>
+std::shared_ptr<trajectories::CompositeTrajectory<double>>
 MakeQuinticCompositeBezier(const Eigen::MatrixXd& waypoints,
                            const std::vector<double>& times);
 
@@ -154,13 +154,13 @@ MakeQuinticCompositeBezier(const Eigen::MatrixXd& waypoints,
 /// weights are 1 for every non-quaternion coordinate), integrated along the
 /// trajectory with `num_samples` chords. Used to derive the number of samples
 /// a sampled checker would take at a given edge_step_size.
-double PathLengthInEdgeMetric(const drake::trajectories::Trajectory<double>& t,
+double PathLengthInEdgeMetric(const trajectories::Trajectory<double>& t,
                               int num_samples);
 
 /// Samples `count` configurations uniformly in trajectory time (inclusive of
 /// both endpoints).
 std::vector<Eigen::VectorXd> SampleTrajectory(
-    const drake::trajectories::Trajectory<double>& trajectory, int count);
+    const trajectories::Trajectory<double>& trajectory, int count);
 
 // ---------------------------------------------------------------------------
 // Ground-truth swept clearance
@@ -181,8 +181,8 @@ struct ClearanceReport {
 };
 
 /// Geometry ids belonging to bodies of the named model instances.
-std::unordered_set<drake::geometry::GeometryId> CollectGeometryIds(
-    const drake::planning::RobotDiagram<double>& diagram,
+std::unordered_set<geometry::GeometryId> CollectGeometryIds(
+    const RobotDiagram<double>& diagram,
     const std::vector<std::string>& model_instance_names);
 
 /// Dense-samples `trajectory` (`num_samples` configurations, split over
@@ -190,17 +190,17 @@ std::unordered_set<drake::geometry::GeometryId> CollectGeometryIds(
 /// Distances beyond `max_distance` are not resolved; if no pair comes within
 /// it the reported minimum saturates at `max_distance`.
 ClearanceReport MeasureSweptClearance(
-    const drake::planning::RobotDiagram<double>& diagram,
-    const drake::trajectories::Trajectory<double>& trajectory,
-    const std::unordered_set<drake::geometry::GeometryId>& env_ids,
-    int num_samples, int num_threads, double max_distance);
+    const RobotDiagram<double>& diagram,
+    const trajectories::Trajectory<double>& trajectory,
+    const std::unordered_set<geometry::GeometryId>& env_ids, int num_samples,
+    int num_threads, double max_distance);
 
 /// Bisects `f` (assumed non-decreasing) on [lo, hi] for f(x) = target.
 /// Returns x. Used to place the shelf at a requested swept clearance.
 double BisectMonotone(const std::function<double(double)>& f, double lo,
                       double hi, double target, int iterations);
 
-}  // namespace benchmark
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_throw.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
@@ -271,9 +273,8 @@ struct DistanceOracle::Impl {
   std::string report;
 };
 
-DistanceOracle::DistanceOracle(
-    const drake::planning::RobotDiagram<double>& model,
-    double query_tolerance) {
+DistanceOracle::DistanceOracle(const RobotDiagram<double>& model,
+                               double query_tolerance) {
   DRAKE_THROW_UNLESS(query_tolerance >= 0.0);
   tolerance_ = query_tolerance;
   auto impl = std::make_shared<Impl>();
@@ -286,15 +287,15 @@ DistanceOracle::DistanceOracle(
   const std::vector<GeometryId> deformables =
       inspector.GetAllDeformableGeometryIds();
   if (!deformables.empty()) {
-    std::ostringstream msg;
-    msg << "DistanceOracle: deformable geometries are not supported "
-           "(certified continuous collision checking assumes rigid bodies "
-           "whose motion the plant's kinematics describe). Offending "
-           "geometries:";
+    std::string names;
     for (const GeometryId id : deformables) {
-      msg << "\n  - " << inspector.GetName(id);
+      names += fmt::format("\n  - {}", inspector.GetName(id));
     }
-    throw std::runtime_error(msg.str());
+    throw std::runtime_error(fmt::format(
+        "DistanceOracle: deformable geometries are not supported (certified "
+        "continuous collision checking assumes rigid bodies whose motion the "
+        "plant's kinematics describe). Offending geometries:{}",
+        names));
   }
 
   // --- Snapshot the unfiltered pairs and classify each one. ----------------
@@ -310,11 +311,11 @@ DistanceOracle::DistanceOracle(
     const drake::multibody::RigidBody<double>* body_b =
         plant.GetBodyFromFrameId(inspector.GetFrameId(id_b));
     if (body_a == nullptr || body_b == nullptr) {
-      throw std::runtime_error(
-          "DistanceOracle: collision geometry " +
-          Describe(inspector, body_a == nullptr ? id_a : id_b) +
-          " is not attached to a MultibodyPlant body; the checker can only "
-          "certify geometry whose motion the plant describes.");
+      throw std::runtime_error(fmt::format(
+          "DistanceOracle: collision geometry {} is not attached to a "
+          "MultibodyPlant body; the checker can only certify geometry whose "
+          "motion the plant describes.",
+          Describe(inspector, body_a == nullptr ? id_a : id_b)));
     }
 
     const ShapeClass class_a = Classify(inspector.GetShape(id_a));
@@ -322,12 +323,12 @@ DistanceOracle::DistanceOracle(
 
     if (class_a == ShapeClass::kHalfSpace &&
         class_b == ShapeClass::kHalfSpace) {
-      throw std::runtime_error(
+      throw std::runtime_error(fmt::format(
           "DistanceOracle: signed distance between two HalfSpace geometries "
-          "is undefined, so the pair " +
-          Describe(inspector, id_a) + " / " + Describe(inspector, id_b) +
-          " cannot be certified. Remove one halfspace, or filter the pair "
-          "(CollisionFilterManager / a collision filter group).");
+          "is undefined, so the pair {} / {} cannot be certified. Remove one "
+          "halfspace, or filter the pair (CollisionFilterManager / a "
+          "collision filter group).",
+          Describe(inspector, id_a), Describe(inspector, id_b)));
     }
 
     DistanceRoute route = DistanceRoute::kNative;
@@ -345,11 +346,11 @@ DistanceOracle::DistanceOracle(
       const GeometryId partner = a_is_halfspace ? id_b : id_a;
       const ShapeClass partner_class = a_is_halfspace ? class_b : class_a;
       if (partner_class == ShapeClass::kUnsupported) {
-        throw std::runtime_error(
-            "DistanceOracle: no closed-form support function for shape type '" +
-            std::string(inspector.GetShape(partner).type_name()) +
-            "', so the halfspace pair " + Describe(inspector, id_a) + " / " +
-            Describe(inspector, id_b) + " cannot be certified.");
+        throw std::runtime_error(fmt::format(
+            "DistanceOracle: no closed-form support function for shape type "
+            "'{}', so the halfspace pair {} / {} cannot be certified.",
+            inspector.GetShape(partner).type_name(), Describe(inspector, id_a),
+            Describe(inspector, id_b)));
       }
       if (impl->support.find(partner) == impl->support.end()) {
         impl->support.emplace(partner,
@@ -395,15 +396,14 @@ DistanceOracle::DistanceOracle(
         query_object.ComputeSignedDistancePairClosestPoints(row.example_a,
                                                             row.example_b);
       } catch (const std::exception& e) {
-        throw std::runtime_error(
+        throw std::runtime_error(fmt::format(
             "DistanceOracle: this Drake build cannot compute signed distance "
-            "for the shape combination (" +
-            ClassName(combo.first) + ", " + ClassName(combo.second) +
-            "); an offending pair is " + Describe(inspector, row.example_a) +
-            " / " + Describe(inspector, row.example_b) +
-            ". Filter the pair, or replace the geometry with a supported "
-            "shape (Convex is always supported). Drake reported: " +
-            e.what());
+            "for the shape combination ({}, {}); an offending pair is {} / "
+            "{}. Filter the pair, or replace the geometry with a supported "
+            "shape (Convex is always supported). Drake reported: {}",
+            ClassName(combo.first), ClassName(combo.second),
+            Describe(inspector, row.example_a),
+            Describe(inspector, row.example_b), e.what()));
       }
     }
   }
@@ -516,7 +516,7 @@ double DistanceOracle::SignedDistance(const QueryObject<double>& query_object,
   return phi;
 }
 
-std::string DistanceOracle::support_report() const {
+const std::string& DistanceOracle::support_report() const {
   return impl_->report;
 }
 

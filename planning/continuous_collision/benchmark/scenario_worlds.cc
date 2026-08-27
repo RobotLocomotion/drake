@@ -14,7 +14,7 @@
 namespace drake {
 namespace planning {
 namespace continuous_collision {
-namespace benchmark {
+namespace internal {
 namespace {
 
 using drake::geometry::Box;
@@ -176,7 +176,7 @@ std::vector<double> DualArmTrajectoryTimes() {
   return {0.0, 1.0, 2.0, 3.0, 4.0};
 }
 
-}  // namespace benchmark
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

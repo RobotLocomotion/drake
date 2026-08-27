@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -10,7 +10,8 @@ namespace planning {
 namespace continuous_collision {
 
 /** A sphere, expressed in the owning body (link) frame L, that contains a
-proximity geometry at every configuration of the body. */
+proximity geometry at every configuration of the body.
+@ingroup planning_collision_checker */
 struct BoundingSphere {
   /** Sphere center in the body frame. */
   Eigen::Vector3d center_L{Eigen::Vector3d::Zero()};
@@ -40,10 +41,10 @@ containment per shape:
 λ soundness dies quietly if any formula under-bounds, so this function
 switches on the closed set of supported shape types and
 @throws std::exception on anything else (HalfSpace included — halfspaces are
-handled by dedicated rules, never through a bounding sphere). */
-BoundingSphere ComputeBoundingSphere(
-    const drake::geometry::Shape& shape,
-    const drake::math::RigidTransform<double>& X_LG);
+handled by dedicated rules, never through a bounding sphere).
+@ingroup planning_collision_checker */
+BoundingSphere ComputeBoundingSphere(const geometry::Shape& shape,
+                                     const math::RigidTransform<double>& X_LG);
 
 }  // namespace continuous_collision
 }  // namespace planning

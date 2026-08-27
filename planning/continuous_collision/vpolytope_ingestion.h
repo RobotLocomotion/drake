@@ -38,11 +38,12 @@ redundant or degenerate vertex sets.
 @throws std::exception if `plant` is null or already finalized, if
         `vpoly.ambient_dimension() != 3`, if the vertex set is empty, or if
         Drake rejects the resulting hull (e.g. a degenerate vertex set that
-        its hull computation cannot inflate). */
-drake::geometry::GeometryId AddVPolytopeObstacle(
-    drake::multibody::MultibodyPlant<double>* plant,
-    const drake::geometry::optimization::VPolytope& vpoly,
-    const drake::math::RigidTransform<double>& X_WG, const std::string& name);
+        its hull computation cannot inflate).
+@ingroup planning_collision_checker */
+geometry::GeometryId AddVPolytopeObstacle(
+    multibody::MultibodyPlant<double>* plant,
+    const geometry::optimization::VPolytope& vpoly,
+    const math::RigidTransform<double>& X_WG, const std::string& name);
 
 }  // namespace continuous_collision
 }  // namespace planning

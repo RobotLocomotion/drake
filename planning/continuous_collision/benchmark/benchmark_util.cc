@@ -18,7 +18,7 @@
 namespace drake {
 namespace planning {
 namespace continuous_collision {
-namespace benchmark {
+namespace internal {
 namespace {
 
 using drake::geometry::GeometryId;
@@ -475,7 +475,7 @@ double BisectMonotone(const std::function<double(double)>& f, double lo,
   return 0.5 * (a + b);
 }
 
-}  // namespace benchmark
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

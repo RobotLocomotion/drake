@@ -10,8 +10,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
-#include "drake/planning/continuous_collision/certifier.h"
+#include "drake/common/drake_assert.h"
+#include "drake/planning/continuous_collision/certifier_internal.h"
 #include "drake/planning/continuous_collision/numerics.h"
 
 namespace drake {
@@ -53,7 +53,7 @@ void SplitAt(const Eigen::MatrixXd& cps, double u, Eigen::MatrixXd* left,
 
 void RestrictBezier(const Eigen::MatrixXd& cps, double a, double b,
                     Eigen::MatrixXd* out) {
-  DRAKE_THROW_UNLESS(out != nullptr);
+  DRAKE_DEMAND(out != nullptr);
   const double lo = std::clamp(a, 0.0, 1.0);
   const double hi = std::clamp(b, 0.0, 1.0);
   if (lo <= 0.0 && hi >= 1.0) {
@@ -91,12 +91,12 @@ Eigen::VectorXd EvaluateBezier(const Eigen::MatrixXd& cps, double u) {
 
 bool ReplayCertificate(const ReplayInput& input, const Certificate& certificate,
                        std::string* message) {
-  DRAKE_THROW_UNLESS(input.model != nullptr);
-  DRAKE_THROW_UNLESS(input.oracle != nullptr);
-  DRAKE_THROW_UNLESS(input.table != nullptr);
-  DRAKE_THROW_UNLESS(input.path != nullptr);
-  DRAKE_THROW_UNLESS(input.pairs != nullptr);
-  DRAKE_THROW_UNLESS(input.tau != nullptr);
+  DRAKE_DEMAND(input.model != nullptr);
+  DRAKE_DEMAND(input.oracle != nullptr);
+  DRAKE_DEMAND(input.table != nullptr);
+  DRAKE_DEMAND(input.path != nullptr);
+  DRAKE_DEMAND(input.pairs != nullptr);
+  DRAKE_DEMAND(input.tau != nullptr);
 
   const auto fail = [message](std::string reason) {
     if (message != nullptr) *message = std::move(reason);

@@ -2,8 +2,9 @@
 
 #include <vector>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/planning/continuous_collision/options.h"
 
@@ -12,7 +13,8 @@ namespace planning {
 namespace continuous_collision {
 
 /** One Bézier segment q(s) = Σ_j B_{j,m}(s) P_j, s ∈ [0, 1] (trajectory
- * normalization). */
+ * normalization).
+ * @ingroup planning_collision_checker */
 struct BezierSegment {
   /** Original time interval (bookkeeping only; the certificate is a property
   of the path and is invariant under time reparametrization). */
@@ -32,9 +34,12 @@ max_j P_{j,i}]; (2) de Casteljau subdivision at any parameter u yields two
 child curves whose control points exactly represent the two sub-curves and
 are convex combinations of the parent's, so every descendant node's control
 box is contained in this path's global control box. The apex of the de
-Casteljau triangle at u is exactly q(u). */
+Casteljau triangle at u is exactly q(u).
+@ingroup planning_collision_checker */
 class PiecewiseBezierPath {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseBezierPath);
+
   /** Normalizes any supported Drake trajectory (BezierCurve,
   CompositeTrajectory, BsplineTrajectory via knot insertion,
   PiecewisePolynomial via monomial→Bernstein change of basis).
@@ -43,7 +48,7 @@ class PiecewiseBezierPath {
   options.continuity_tolerance (modulo 2π for coordinates in
   options.continuous_revolute_indices). */
   static PiecewiseBezierPath FromTrajectory(
-      const drake::trajectories::Trajectory<double>& trajectory,
+      const trajectories::Trajectory<double>& trajectory,
       const Options& options);
 
   /** Normalizes an n × K waypoint matrix into K−1 order-1 segments (exact).
@@ -90,7 +95,8 @@ class PiecewiseBezierPath {
 /** Splits the Bézier control matrix `cps` (n × (m+1)) at u = 1/2 by de
 Casteljau, writing the two children into `left` and `right` (resized as
 needed) and the curve value at the midpoint (the apex) into `mid`.
-Allocation-free when the outputs are already correctly sized. */
+Allocation-free when the outputs are already correctly sized.
+@ingroup planning_collision_checker */
 void DeCasteljauSplitAtHalf(const Eigen::MatrixXd& cps, Eigen::MatrixXd* left,
                             Eigen::MatrixXd* right, Eigen::VectorXd* mid);
 

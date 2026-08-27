@@ -7,7 +7,7 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
 namespace drake {
@@ -123,8 +123,8 @@ class BoundingSphereReifier final : public ShapeReifier {
   /* Sets the sphere centred on the geometry frame origin's image in L, with
    the given circumradius about that origin. */
   void SetCentered(double radius_about_Go) {
-    DRAKE_THROW_UNLESS(std::isfinite(radius_about_Go));
-    DRAKE_THROW_UNLESS(radius_about_Go >= 0.0);
+    DRAKE_DEMAND(std::isfinite(radius_about_Go));
+    DRAKE_DEMAND(radius_about_Go >= 0.0);
     sphere_.center_L = X_LG_.translation();
     sphere_.radius = radius_about_Go;
   }
@@ -139,7 +139,7 @@ class BoundingSphereReifier final : public ShapeReifier {
     // Drake's hull computation refuses degenerate vertex sets, so a hull
     // always has at least a tetrahedron's worth of vertices; assert the
     // non-empty precondition the centroid needs regardless.
-    DRAKE_THROW_UNLESS(num_vertices > 0);
+    DRAKE_DEMAND(num_vertices > 0);
     Eigen::Vector3d centroid_L = Eigen::Vector3d::Zero();
     for (int v = 0; v < num_vertices; ++v) {
       centroid_L += X_LG_ * hull.vertex(v);
@@ -167,8 +167,8 @@ BoundingSphere ComputeBoundingSphere(const Shape& shape,
   // A silently-zero or non-finite radius is the exact failure mode the
   // geometry-support scope warns about, so re-assert the postcondition every
   // caller relies on.
-  DRAKE_THROW_UNLESS(std::isfinite(result.radius) && result.radius >= 0.0);
-  DRAKE_THROW_UNLESS(result.center_L.allFinite());
+  DRAKE_DEMAND(std::isfinite(result.radius) && result.radius >= 0.0);
+  DRAKE_DEMAND(result.center_L.allFinite());
   return result;
 }
 

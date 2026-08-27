@@ -9,8 +9,12 @@
 #include <utility>
 #include <vector>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
+#include "drake/geometry/geometry_ids.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/planning/continuous_collision/bounding_sphere.h"
 #include "drake/planning/continuous_collision/options.h"
 #include "drake/planning/continuous_collision/piecewise_bezier_path.h"
@@ -37,9 +41,26 @@ charged unconditionally inside MotionBound(), which is what makes Δ_p a true
 upper bound on the pair's relative motion over the whole trajectory rather than
 one that ignores the carved coordinates. It is exactly zero — bit for bit —
 whenever every carved coordinate is *exactly* constant, which is the case for
-every path whose control points repeat a coordinate's value verbatim. */
+every path whose control points repeat a coordinate's value verbatim.
+@ingroup planning_collision_checker */
 class MotionBoundTable {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MotionBoundTable);
+
+  /** Constructs an empty table (zero pairs). */
+  MotionBoundTable() = default;
+
+  /** Constructs the CSR table directly from its four arrays.
+  @param row_start   Size num_pairs + 1, starting at 0 and non-decreasing;
+                     row_start.back() is the total entry count.
+  @param coord       Position-coordinate index of every entry.
+  @param lambda      λ of every entry, element for element with `coord`.
+  @param carveout_slack  One residual per pair.
+  @throws std::exception if the arrays do not satisfy those invariants. */
+  MotionBoundTable(std::vector<int> row_start, std::vector<int> coord,
+                   std::vector<double> lambda,
+                   std::vector<double> carveout_slack);
+
   int num_pairs() const { return static_cast<int>(row_start_.size()) - 1; }
 
   /** True iff J(p) is empty after the constant-coordinate carve-out: no
@@ -73,16 +94,10 @@ class MotionBoundTable {
 
   /** Introspection for tests: the (coordinate, λ) entries of one pair,
   ordered by increasing coordinate index. */
-  std::vector<std::pair<int, double>> entries(int pair_index) const;
+  std::vector<std::pair<int, double>> GetEntries(int pair_index) const;
 
   /** Total number of (coordinate, λ) entries over all pairs. */
   int num_entries() const { return static_cast<int>(coord_.size()); }
-
-  /** Builder access (kinematics module internals only). */
-  std::vector<int>& mutable_row_start() { return row_start_; }
-  std::vector<int>& mutable_coord() { return coord_; }
-  std::vector<double>& mutable_lambda() { return lambda_; }
-  std::vector<double>& mutable_carveout_slack() { return carveout_slack_; }
 
  private:
   std::vector<int> row_start_{0};
@@ -101,9 +116,14 @@ Typical use by the certifier:
 - once, at checker construction:   KinematicsEngine engine(model);
                                    engine.body_spheres(b) for the prefilter;
 - once per Check* call:            engine.ComputeMotionBoundTable(path, pairs);
-- once per node, per pair:         table.MotionBound(pair_index, w). */
+- once per node, per pair:         table.MotionBound(pair_index, w).
+@ingroup planning_collision_checker */
 class KinematicsEngine {
  public:
+  /* Copies alias the same model: the RobotDiagram passed to the constructor
+   must outlive every copy, not just the original. */
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KinematicsEngine);
+
   /** Builds topology tables and per-body geometry bounding spheres.
   Classification only; unsupported joint types throw later, and only if a
   given path actually moves them (constant-coordinate carve-out, the
@@ -121,14 +141,13 @@ class KinematicsEngine {
   "reversed" (its declared parent body is outboard of its declared child body
   in the multibody tree — a documented v1 exclusion), or if any proximity
   geometry has a shape ComputeBoundingSphere() rejects. */
-  explicit KinematicsEngine(const drake::planning::RobotDiagram<double>& model);
+  explicit KinematicsEngine(const RobotDiagram<double>& model);
 
   /** The position-coordinate indices whose motion changes the relative pose
   of the two bodies (J(p) before any carve-out), from topology alone. Sorted
   ascending. */
-  std::vector<int> CoordinatesAffectingPair(
-      drake::multibody::BodyIndex body_a,
-      drake::multibody::BodyIndex body_b) const;
+  std::vector<int> CoordinatesAffectingPair(multibody::BodyIndex body_a,
+                                            multibody::BodyIndex body_b) const;
 
   /** Assembles the λ CSR table for `pairs` given the path's global
   control-point box (prismatic chain contributions use the box, so the bound
@@ -163,30 +182,28 @@ class KinematicsEngine {
   used by the reach chain start and by the certifier's sphere prefilter.
   HalfSpace geometries have no bounding sphere and are omitted. */
   const std::vector<BoundingSphere>& body_spheres(
-      drake::multibody::BodyIndex body) const;
+      multibody::BodyIndex body) const;
 
   /** The geometry ids matching body_spheres(body), element for element. */
-  const std::vector<drake::geometry::GeometryId>& body_sphere_geometries(
-      drake::multibody::BodyIndex body) const;
+  const std::vector<geometry::GeometryId>& body_sphere_geometries(
+      multibody::BodyIndex body) const;
 
   /** The bounding sphere (in its body's frame) of one proximity geometry.
   @throws std::exception if `id` is not a proximity geometry of this model or
   is a HalfSpace (which has none). */
-  const BoundingSphere& geometry_sphere(drake::geometry::GeometryId id) const;
+  const BoundingSphere& geometry_sphere(geometry::GeometryId id) const;
 
   /** True iff `body` carries at least one HalfSpace proximity geometry. */
-  bool body_has_halfspace(drake::multibody::BodyIndex body) const;
+  bool body_has_halfspace(multibody::BodyIndex body) const;
 
   /** Radius, about the body frame origin, of a sphere containing every
   proximity geometry of `body` — the start of the reach chain. Zero for a
   body with no (non-HalfSpace) proximity geometry. */
-  double body_radius(drake::multibody::BodyIndex body) const;
+  double body_radius(multibody::BodyIndex body) const;
 
   int num_positions() const { return num_positions_; }
 
-  const drake::multibody::MultibodyPlant<double>& plant() const {
-    return *plant_;
-  }
+  const multibody::MultibodyPlant<double>& plant() const { return *plant_; }
 
  private:
   /* The λ rule a joint's coordinates follow (the displacement lemma; the
@@ -219,7 +236,7 @@ class KinematicsEngine {
 
   /* One tree edge, oriented from its outboard body toward the world. */
   struct JointRecord {
-    drake::multibody::JointIndex index;
+    multibody::JointIndex index;
     std::string name;
     std::string type_name;
     JointKind kind{JointKind::kUnsupported};
@@ -227,8 +244,8 @@ class KinematicsEngine {
     int num_positions{0};
     /* Tree-inboard / tree-outboard bodies (from the world-rooted walk, which
      is cross-checked against Drake's own subtree query). */
-    drake::multibody::BodyIndex inboard;
-    drake::multibody::BodyIndex outboard;
+    multibody::BodyIndex inboard;
+    multibody::BodyIndex outboard;
     /* ‖p_PF‖ + ‖p_CM‖ (+ ‖p_FM‖ for a weld): the configuration-independent
      part of one hop from the outboard body frame to the inboard body frame. */
     double fixed_hop{0.0};
@@ -256,7 +273,7 @@ class KinematicsEngine {
 
   /* Returns the joint ordinal (index into joints_) of `body`'s inboard joint,
    or -1 for the world body. */
-  int inboard_joint_of(drake::multibody::BodyIndex body) const {
+  int inboard_joint_of(multibody::BodyIndex body) const {
     return inboard_joint_[body];
   }
 
@@ -265,15 +282,15 @@ class KinematicsEngine {
    proximity geometry. `box_hop` holds the per-call, box-dependent part of
    each joint's hop translation. Requires `body` to be in the joint's
    subtree. */
-  double Reach(int joint_ord, drake::multibody::BodyIndex body,
+  double Reach(int joint_ord, multibody::BodyIndex body,
                const std::vector<double>& box_hop) const;
 
   void BuildTopology();
   void BuildGeometry();
   void CheckHalfSpaceRule() const;
 
-  const drake::planning::RobotDiagram<double>* model_{};
-  const drake::multibody::MultibodyPlant<double>* plant_{};
+  const RobotDiagram<double>* model_{};
+  const multibody::MultibodyPlant<double>* plant_{};
   int num_positions_{0};
   int num_bodies_{0};
 
@@ -289,12 +306,11 @@ class KinematicsEngine {
   std::vector<int> coord_joint_;
 
   std::vector<std::vector<BoundingSphere>> body_spheres_;
-  std::vector<std::vector<drake::geometry::GeometryId>> body_sphere_geoms_;
+  std::vector<std::vector<geometry::GeometryId>> body_sphere_geoms_;
   std::vector<double> body_radius_;
   std::vector<bool> body_has_halfspace_;
   std::vector<std::string> body_halfspace_name_;
-  std::unordered_map<drake::geometry::GeometryId, BoundingSphere>
-      geometry_spheres_;
+  std::unordered_map<geometry::GeometryId, BoundingSphere> geometry_spheres_;
 };
 
 }  // namespace continuous_collision

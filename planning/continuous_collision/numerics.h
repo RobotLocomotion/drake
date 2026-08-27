@@ -1,9 +1,5 @@
 #pragma once
 
-namespace drake {
-namespace planning {
-namespace continuous_collision {
-
 /** @file
 Single home of the numerical accounting used everywhere (the numerical policy).
 
@@ -23,13 +19,19 @@ directed rounding (that hardening is a future extension); ε defaults
 to 1e-9 m which dominates the accumulated FP error of the w/λ/dot-product
 expression depths involved. */
 
-/** True iff the pair is certified on the whole node. */
+namespace drake {
+namespace planning {
+namespace continuous_collision {
+
+/** True iff the pair is certified on the whole node.
+@ingroup planning_collision_checker */
 inline bool IsCertified(double phi_hat, double tau, double motion_bound,
                         double threshold, double slack) {
   return phi_hat - tau - motion_bound > threshold + slack;
 }
 
-/** True iff the representative configuration is a definite violation. */
+/** True iff the representative configuration is a definite violation.
+@ingroup planning_collision_checker */
 inline bool IsDefiniteViolation(double phi_hat, double tau, double threshold) {
   return phi_hat + tau < threshold;
 }

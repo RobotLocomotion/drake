@@ -518,15 +518,15 @@ GTEST_TEST(JointSupportTest, ConstantCoordinateCarveOutEmptiesJp) {
         lower, upper, std::vector<bool>(nq, false), pairs);
     ASSERT_EQ(table.num_pairs(), 1);
     EXPECT_FALSE(table.pair_is_static(0));
-    EXPECT_EQ(table.entries(0).size(), 2);
+    EXPECT_EQ(table.GetEntries(0).size(), 2);
   }
   {  // One constant: only the other survives.
     std::vector<bool> constant(nq, false);
     constant[0] = true;
     const MotionBoundTable table =
         engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
-    ASSERT_EQ(table.entries(0).size(), 1);
-    EXPECT_EQ(table.entries(0)[0].first, 1);
+    ASSERT_EQ(table.GetEntries(0).size(), 1);
+    EXPECT_EQ(table.GetEntries(0)[0].first, 1);
   }
   {  // All constant, and *exactly* so (the box collapses with the flags, as it
      // does for a real path): the pair becomes static and its motion bound is
@@ -616,9 +616,9 @@ GTEST_TEST(HalfSpaceRuleTest, AnchoredGroundPlaneIsAccepted) {
   const MotionBoundTable table = engine.ComputeMotionBoundTable(
       VectorXd::Constant(nq, -1.0), VectorXd::Constant(nq, 1.0),
       std::vector<bool>(nq, false), pairs);
-  ASSERT_EQ(table.entries(0).size(), 1);
-  EXPECT_GT(table.entries(0)[0].second, 0.0);
-  EXPECT_TRUE(std::isfinite(table.entries(0)[0].second));
+  ASSERT_EQ(table.GetEntries(0).size(), 1);
+  EXPECT_GT(table.GetEntries(0)[0].second, 0.0);
+  EXPECT_TRUE(std::isfinite(table.GetEntries(0)[0].second));
 }
 
 GTEST_TEST(HalfSpaceRuleTest, RotatingHalfSpaceThrowsAtConstruction) {
@@ -646,8 +646,8 @@ GTEST_TEST(HalfSpaceRuleTest, TranslatingHalfSpaceIsAccepted) {
   const MotionBoundTable table = engine.ComputeMotionBoundTable(
       VectorXd::Constant(nq, -1.0), VectorXd::Constant(nq, 1.0),
       std::vector<bool>(nq, false), pairs);
-  ASSERT_EQ(table.entries(0).size(), 1);
-  EXPECT_EQ(table.entries(0)[0].second, 1.0);
+  ASSERT_EQ(table.GetEntries(0).size(), 1);
+  EXPECT_EQ(table.GetEntries(0)[0].second, 1.0);
 }
 
 /* world --(revolute j0)--> b1 --(quaternion floating)--> b2 --(revolute j1)-->
@@ -726,12 +726,12 @@ GTEST_TEST(JointSupportTest, ConstantFloatingBaseCarveOutIsSoundMidChain) {
   }
   const MotionBoundTable table =
       engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
-  ASSERT_EQ(table.entries(0).size(), 2);
+  ASSERT_EQ(table.GetEntries(0).size(), 2);
 
   // The reach for j0 must include the floating joint's 1.22 m offset; a bound
   // that silently dropped it would be far too small.
   double lambda_j0 = 0.0;
-  for (const auto& [c, lam] : table.entries(0)) {
+  for (const auto& [c, lam] : table.GetEntries(0)) {
     if (c == j0.position_start()) lambda_j0 = lam;
   }
   EXPECT_GT(lambda_j0, p_FM.norm());
@@ -870,7 +870,7 @@ GTEST_TEST(ReachTest, RevoluteChainIsExactAndTight) {
 
   double lambda_top = 0.0;
   double lambda_slide = 0.0;
-  for (const auto& [c, lam] : table.entries(k)) {
+  for (const auto& [c, lam] : table.GetEntries(k)) {
     if (c == j_top.position_start()) lambda_top = lam;
     if (c == j_slide.position_start()) lambda_slide = lam;
   }
@@ -932,7 +932,7 @@ GTEST_TEST(ReachTest, ScrewLambdaIncludesPitchAndIsNecessary) {
       lower, upper, std::vector<bool>(nq, false), pairs);
 
   double lambda_top = 0.0;
-  for (const auto& [c, lam] : table.entries(k)) {
+  for (const auto& [c, lam] : table.GetEntries(k)) {
     if (c == j_top.position_start()) lambda_top = lam;
   }
   const double pitch_term = kPitch / (2.0 * M_PI);
@@ -1066,7 +1066,7 @@ void CheckWorld(Rng* rng, const RandomWorld& world, CarveOut carve_out,
       if (!constant[c]) expected.push_back(c);
     }
     std::vector<int> actual;
-    for (const auto& [c, lam] : table.entries(k)) {
+    for (const auto& [c, lam] : table.GetEntries(k)) {
       actual.push_back(c);
       ASSERT_TRUE(std::isfinite(lam));
       ASSERT_GE(lam, 0.0);
@@ -1110,7 +1110,7 @@ void CheckWorld(Rng* rng, const RandomWorld& world, CarveOut carve_out,
       // ---- (1) Atomic, one coordinate at a time. -----------------------
       bool single_distal_side = true;
       BodyIndex common_distal;
-      for (const auto& [c, lam] : table.entries(k)) {
+      for (const auto& [c, lam] : table.GetEntries(k)) {
         const std::vector<bool>& S = subtrees.at(owner[c]);
         ASSERT_NE(S[pair.body_a], S[pair.body_b]);
         const BodyIndex distal = S[pair.body_a] ? pair.body_a : pair.body_b;
@@ -1348,10 +1348,10 @@ GTEST_TEST(CarveOutSlackTest, ToleranceConstantCoordinateIsChargedAtLambda) {
   upper[rot] = 0.5;
   const MotionBoundTable moving = engine.ComputeMotionBoundTable(
       lower, upper, std::vector<bool>(nq, false), pairs);
-  ASSERT_EQ(moving.entries(0).size(), 2);
+  ASSERT_EQ(moving.GetEntries(0).size(), 2);
   EXPECT_EQ(moving.carveout_slack(0), 0.0);
   double lambda_rot = 0.0;
-  for (const auto& [c, lam] : moving.entries(0)) {
+  for (const auto& [c, lam] : moving.GetEntries(0)) {
     if (c == rot) lambda_rot = lam;
   }
   ASSERT_GT(lambda_rot, 0.0);
@@ -1366,8 +1366,8 @@ GTEST_TEST(CarveOutSlackTest, ToleranceConstantCoordinateIsChargedAtLambda) {
   upper[rot] = kRange;  // upper − lower is exactly kRange in binary FP.
   const MotionBoundTable carved =
       engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
-  ASSERT_EQ(carved.entries(0).size(), 1);
-  EXPECT_EQ(carved.entries(0)[0].first, slide);
+  ASSERT_EQ(carved.GetEntries(0).size(), 1);
+  EXPECT_EQ(carved.GetEntries(0)[0].first, slide);
   const double expected = lambda_rot * kRange;
   EXPECT_NEAR(carved.carveout_slack(0), expected, 1e-15 * expected);
   // MotionBound() charges it unconditionally, on top of the CSR row.
@@ -1602,7 +1602,7 @@ void RunFloatingBaseCarveOutCorpus(bool quaternion, std::uint64_t seed) {
 
       const MotionBoundTable table =
           engine.ComputeMotionBoundTable(lower, upper, constant, pairs);
-      ASSERT_EQ(table.entries(0).size(), 1);  // Only the revolute survives.
+      ASSERT_EQ(table.GetEntries(0).size(), 1);  // Only the revolute survives.
       const double slack = table.carveout_slack(0);
       ASSERT_GT(slack, 0.0);
       ASSERT_LT(slack, 1e-4) << "a metre-scale reach against a 1e-7 box cannot "

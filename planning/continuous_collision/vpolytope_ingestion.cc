@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_throw.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -22,28 +24,28 @@ namespace {
 constexpr double kDefaultFriction = 1.0;
 }  // namespace
 
-GeometryId AddVPolytopeObstacle(
-    MultibodyPlant<double>* plant,
-    const drake::geometry::optimization::VPolytope& vpoly,
-    const RigidTransformd& X_WG, const std::string& name) {
+GeometryId AddVPolytopeObstacle(MultibodyPlant<double>* plant,
+                                const geometry::optimization::VPolytope& vpoly,
+                                const RigidTransformd& X_WG,
+                                const std::string& name) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   if (plant->is_finalized()) {
-    throw std::runtime_error(
-        "AddVPolytopeObstacle(): cannot add obstacle '" + name +
-        "' because the plant is already finalized; register V-polytope "
-        "obstacles before calling MultibodyPlant::Finalize().");
+    throw std::runtime_error(fmt::format(
+        "AddVPolytopeObstacle(): cannot add obstacle '{}' because the plant "
+        "is already finalized; register V-polytope obstacles before calling "
+        "MultibodyPlant::Finalize().",
+        name));
   }
   if (vpoly.ambient_dimension() != 3) {
-    throw std::runtime_error(
-        "AddVPolytopeObstacle(): obstacle '" + name +
-        "' has ambient "
-        "dimension " +
-        std::to_string(vpoly.ambient_dimension()) +
-        "; only 3-dimensional V-polytopes can be registered as geometry.");
+    throw std::runtime_error(fmt::format(
+        "AddVPolytopeObstacle(): obstacle '{}' has ambient dimension {}; only "
+        "3-dimensional V-polytopes can be registered as geometry.",
+        name, vpoly.ambient_dimension()));
   }
   if (vpoly.vertices().cols() == 0) {
-    throw std::runtime_error("AddVPolytopeObstacle(): obstacle '" + name +
-                             "' has an empty vertex set.");
+    throw std::runtime_error(fmt::format(
+        "AddVPolytopeObstacle(): obstacle '{}' has an empty vertex set.",
+        name));
   }
 
   // Drake's pinned VPolytope -> Convex entry point; it forwards the vertex

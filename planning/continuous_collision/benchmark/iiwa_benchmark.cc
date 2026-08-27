@@ -53,7 +53,7 @@
 namespace drake {
 namespace planning {
 namespace continuous_collision {
-namespace benchmark {
+namespace internal {
 namespace {
 
 using drake::Parallelism;
@@ -887,7 +887,7 @@ void RunProfile(const Config& config, const MachineInfo& machine,
   // speedup a 6-segment trajectory can reach is total work / heaviest segment.
   // Certifying each segment on its own measures it directly. The driver no
   // longer works that way — it shares sub-segment nodes on demand (see
-  // certifier.h) — so this row is now a *reference* bound
+  // certifier_internal.h) — so this row is now a *reference* bound
   // that the measured per-call speedup is allowed to exceed, and the record of
   // why the old driver could not.
   {
@@ -1158,14 +1158,14 @@ int Main(int argc, char** argv) {
 }
 
 }  // namespace
-}  // namespace benchmark
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake
 
 int main(int argc, char** argv) {
   try {
-    return drake::planning::continuous_collision::benchmark::Main(argc, argv);
+    return drake::planning::continuous_collision::internal::Main(argc, argv);
   } catch (const std::exception& e) {
     std::fprintf(stderr, "benchmark failed: %s\n", e.what());
     return 1;

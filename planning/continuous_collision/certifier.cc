@@ -1,9 +1,8 @@
-#include "drake/planning/continuous_collision/certifier.h"
-
 #include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <condition_variable>
+#include <deque>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -11,10 +10,13 @@
 #include <system_error>
 #include <thread>
 #include <utility>
+#include <vector>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
+#include "drake/common/parallelism.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/continuous_collision/certifier_internal.h"
 #include "drake/planning/continuous_collision/numerics.h"
 
 namespace drake {
@@ -250,12 +252,12 @@ class WorkQueue {
     condition_.notify_all();
   }
 
-  /* The sharing policy (see certifier.h): a worker gives one child away
-   whenever the queue holds fewer items than there are live workers. Reading
-   the length through a relaxed atomic keeps the *test* off the queue's mutex,
-   so only an actual share pays for the lock; a stale answer costs at most one
-   redundant or one skipped share. `num_workers` is 0 until helpers are hired,
-   which is exactly how lazy recruitment disables sharing. */
+  /* The sharing policy (see certifier_internal.h): a worker gives one child
+   away whenever the queue holds fewer items than there are live workers.
+   Reading the length through a relaxed atomic keeps the *test* off the queue's
+   mutex, so only an actual share pays for the lock; a stale answer costs at
+   most one redundant or one skipped share. `num_workers` is 0 until helpers are
+   hired, which is exactly how lazy recruitment disables sharing. */
   bool ShouldShare() const {
     return size_.load(std::memory_order_relaxed) <
            num_workers_.load(std::memory_order_relaxed);
@@ -485,9 +487,10 @@ void Worker::RunItem(WorkItem* item) {
     ++stats_.nodes;
     stats_.max_depth = std::max(stats_.max_depth, frame.depth);
 
-    // Lazy recruitment (see certifier.h): the lead worker runs alone until the
-    // run has visited enough nodes to pay for helpers, then hires them once and
-    // drops the hook. Every other worker carries a null `recruit_`.
+    // Lazy recruitment (see certifier_internal.h): the lead worker runs alone
+    // until the run has visited enough nodes to pay for helpers, then hires
+    // them once and drops the hook. Every other worker carries a null
+    // `recruit_`.
     if (recruit_ != nullptr &&
         ++recruit_->nodes >= recruit_->nodes_before_hire) {
       Recruitment* const recruitment = recruit_;
@@ -641,12 +644,12 @@ void Worker::RunItem(WorkItem* item) {
     const NodeFrame left{frame.s_lo, s_mid, frame.depth + 1, survivor_offset,
                          survivor_count};
     if (queue_ != nullptr && queue_->ShouldShare()) {
-      // Occupancy-driven sharing (see certifier.h): the shared queue is running
-      // dry, so hand the right child over and carry on down the left one. This
-      // is the only mechanism that spreads a deep tree, and because it is
-      // driven by how hungry the other workers are rather than by depth, it
-      // keeps spreading right down to the last subtree — which is exactly what
-      // a fixed seeding depth cannot do.
+      // Occupancy-driven sharing (see certifier_internal.h): the shared queue
+      // is running dry, so hand the right child over and carry on down the left
+      // one. This is the only mechanism that spreads a deep tree, and because
+      // it is driven by how hungry the other workers are rather than by depth,
+      // it keeps spreading right down to the last subtree — which is exactly
+      // what a fixed seeding depth cannot do.
       share_.segment = item->segment;
       share_.s_lo = right.s_lo;
       share_.s_hi = right.s_hi;
@@ -841,7 +844,7 @@ ContextPool::ContextPool(const drake::planning::RobotDiagram<double>& model,
 }
 
 ContextPool::Lease ContextPool::Acquire(int count) const {
-  DRAKE_THROW_UNLESS(count >= 1);
+  DRAKE_DEMAND(count >= 1);
   std::vector<ThreadContext*> contexts;
   std::vector<int> slots;
   contexts.reserve(count);
@@ -950,9 +953,10 @@ WorkerPool::Batch WorkerPool::Reserve(int count) {
   // Bounding the pool by the machine's width keeps a program that runs many
   // concurrent parallel checks from multiplying threads without limit; a call
   // that finds nothing free simply runs with fewer workers, which is only a
-  // performance difference.
-  const int cap =
-      std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
+  // performance difference. The width comes from Parallelism::Max() rather
+  // than hardware_concurrency() directly, so the cap honours DRAKE_NUM_THREADS
+  // like the rest of Drake.
+  const int cap = Parallelism::Max().num_threads();
   std::lock_guard<std::mutex> guard(mutex_);
   if (shutdown_) return batch;
   while (static_cast<int>(batch.slots_.size()) < count && !idle_.empty()) {
@@ -1024,7 +1028,7 @@ void WorkerPool::Release(const std::vector<int>& slots) {
 
 void WorkerPool::Batch::Dispatch(const std::function<void(int)>& task) {
   if (handles_.empty()) return;
-  DRAKE_THROW_UNLESS(state_ == nullptr);
+  DRAKE_DEMAND(state_ == nullptr);
   state_ = std::make_shared<BatchState>();
   state_->remaining = static_cast<int>(handles_.size());
   for (int i = 0; i < static_cast<int>(handles_.size()); ++i) {
@@ -1077,14 +1081,14 @@ WorkerPool::Batch::~Batch() {
 
 CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool,
                              WorkerPool* workers) {
-  DRAKE_THROW_UNLESS(input.model != nullptr);
-  DRAKE_THROW_UNLESS(input.oracle != nullptr);
-  DRAKE_THROW_UNLESS(input.table != nullptr);
-  DRAKE_THROW_UNLESS(input.path != nullptr);
-  DRAKE_THROW_UNLESS(input.pairs != nullptr);
-  DRAKE_THROW_UNLESS(input.tau != nullptr);
-  DRAKE_THROW_UNLESS(input.prefilter != nullptr);
-  DRAKE_THROW_UNLESS(pool != nullptr);
+  DRAKE_DEMAND(input.model != nullptr);
+  DRAKE_DEMAND(input.oracle != nullptr);
+  DRAKE_DEMAND(input.table != nullptr);
+  DRAKE_DEMAND(input.path != nullptr);
+  DRAKE_DEMAND(input.pairs != nullptr);
+  DRAKE_DEMAND(input.tau != nullptr);
+  DRAKE_DEMAND(input.prefilter != nullptr);
+  DRAKE_DEMAND(pool != nullptr);
 
   const Options& options = input.options;
   const PiecewiseBezierPath& path = *input.path;
@@ -1174,7 +1178,7 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool,
   } else if (have_work) {
     // Parallel driver: lazy recruitment + occupancy-driven sharing. The full
     // rationale — and the deviation from parallelism and determinism's static
-    // seeding — is documented on RunCertifier() in certifier.h.
+    // seeding — is documented on RunCertifier() in certifier_internal.h.
     WorkQueue queue;
     {
       // Seeded in reverse so the LIFO hands segment 0 out first. Before any

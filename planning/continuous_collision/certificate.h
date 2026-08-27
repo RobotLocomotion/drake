@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 #include "drake/planning/continuous_collision/options.h"
 
@@ -12,7 +12,8 @@ namespace continuous_collision {
 
 /** One certification event: pair `pair_index` was certified over the
 parameter interval [s_start, s_end] of segment `segment` from representative
-configuration qc (the search algorithm). */
+configuration qc (the search algorithm).
+@ingroup planning_collision_checker */
 struct CertificateRecord {
   int segment{};
   double s_start{};
@@ -26,7 +27,8 @@ struct CertificateRecord {
 
 /** Audit trail of every certification event of a run; an independent
 replay (VerifyCertificate, declared in the api header) re-evaluates every
-record and checks interval coverage of the full domain per pair. */
+record and checks interval coverage of the full domain per pair.
+@ingroup planning_collision_checker */
 struct Certificate {
   std::vector<CertificateRecord> records;
   /** Pair table snapshot the indices refer to. */

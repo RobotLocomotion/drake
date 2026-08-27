@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 #include "drake/common/parallelism.h"
 #include "drake/geometry/geometry_ids.h"
@@ -14,7 +14,8 @@ namespace drake {
 namespace planning {
 namespace continuous_collision {
 
-/** Search modes for certification (the search algorithm). */
+/** Search modes for certification (the search algorithm).
+@ingroup planning_collision_checker */
 enum class SearchMode {
   /** Return on the first definite violation; serial execution returns the
   earliest one in time. */
@@ -24,7 +25,8 @@ enum class SearchMode {
   kCertifyAll,
 };
 
-/** Outcome of a certification run (the problem statement). */
+/** Outcome of a certification run (the problem statement).
+@ingroup planning_collision_checker */
 enum class Verdict {
   /** Proof: every unfiltered pair keeps signed distance > margin + padding
   over the entire continuous time domain. */
@@ -39,7 +41,8 @@ enum class Verdict {
 };
 
 /** Options controlling one certification call (the architecture; the numerical
- * policy). */
+ * policy).
+ * @ingroup planning_collision_checker */
 struct Options {
   /** Global clearance margin δ in meters. The certificate proves signed
   distance > margin + padding for every pair at every time. */
@@ -56,7 +59,8 @@ struct Options {
   narrower than this become kInconclusive findings instead of splitting. */
   double min_interval{1e-9};
   /** Position coordinates whose junction continuity is checked modulo 2π
-  (GcsTrajectoryOptimization continuous-revolute convention). */
+  (GcsTrajectoryOptimization continuous-revolute convention).
+  @see planning::trajectory_optimization::GetContinuousRevoluteJointIndices */
   std::vector<int> continuous_revolute_indices{};
   /** Maximum polynomial degree accepted for monomial→Bernstein conversion. */
   int max_conversion_degree{10};
@@ -67,30 +71,44 @@ struct Options {
   /** If true, every certification event is recorded into a Certificate that
   VerifyCertificate() can independently replay (the search algorithm). */
   bool emit_certificate{false};
-  drake::Parallelism parallelism{drake::Parallelism::Max()};
+  Parallelism parallelism{Parallelism::Max()};
 };
 
-/** Per-body-pair padding, mirroring drake::planning::CollisionChecker
-semantics: the effective threshold for pair p is margin + padding(p). */
+/** Per-body-pair padding: the effective threshold for pair p is
+margin + padding(p).
+
+Which of the two scalars applies to a pair is decided by *anchoring*, from
+plant topology alone. A body is anchored iff no position coordinate of the
+plant changes its pose relative to the world — the world body itself, and
+everything welded to it directly or transitively. A pair is a self-collision
+pair iff both of its bodies are non-anchored, and an environment pair
+otherwise. The rule never depends on which trajectory is being checked.
+@ingroup planning_collision_checker */
 struct PaddingSpec {
-  /** Padding for robot-vs-environment pairs. */
+  /** Padding for robot-vs-environment pairs, i.e. pairs with at least one
+  anchored body. */
   double env_padding{0.0};
-  /** Padding for robot-vs-robot (self-collision) pairs. */
+  /** Padding for robot-vs-robot (self-collision) pairs, i.e. pairs whose two
+  bodies are both non-anchored. */
   double self_padding{0.0};
-  /** Optional dense symmetric matrix indexed by BodyIndex; when set it
-  overrides the two scalars for the pairs it covers. */
+  /** Optional dense symmetric matrix indexed by BodyIndex, sized
+  num_bodies × num_bodies. Entry (a, b) overrides the scalars for that body
+  pair; a NaN entry means "not covered", and that pair falls back to
+  env_padding / self_padding. */
   std::optional<Eigen::MatrixXd> per_body_pair{};
 };
 
-/** Identifies an unfiltered proximity geometry pair. */
+/** Identifies an unfiltered proximity geometry pair.
+@ingroup planning_collision_checker */
 struct PairId {
-  drake::geometry::GeometryId a;
-  drake::geometry::GeometryId b;
-  drake::multibody::BodyIndex body_a;
-  drake::multibody::BodyIndex body_b;
+  geometry::GeometryId a;
+  geometry::GeometryId b;
+  multibody::BodyIndex body_a;
+  multibody::BodyIndex body_b;
 };
 
-/** One violation or inconclusive record (the architecture). */
+/** One violation or inconclusive record (the architecture).
+@ingroup planning_collision_checker */
 struct Finding {
   /** Trajectory time of the witness configuration. */
   double time{};
@@ -110,7 +128,8 @@ struct Finding {
   std::optional<Eigen::Vector3d> nearest_b_W{};
 };
 
-/** Cost accounting for one certification call. */
+/** Cost accounting for one certification call.
+@ingroup planning_collision_checker */
 struct Statistics {
   uint64_t nodes{0};
   uint64_t narrowphase_queries{0};

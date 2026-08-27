@@ -554,7 +554,7 @@ GTEST_TEST(ConcurrencyTest, ConcurrentMixedApiCallsAreIndependent) {
   std::vector<std::vector<std::pair<int, double>>> lambda_expected;
   std::vector<double> slack_expected;
   for (int p = 0; p < table_expected.num_pairs(); ++p) {
-    lambda_expected.push_back(table_expected.entries(p));
+    lambda_expected.push_back(table_expected.GetEntries(p));
     slack_expected.push_back(table_expected.carveout_slack(p));
   }
 
@@ -590,7 +590,7 @@ GTEST_TEST(ConcurrencyTest, ConcurrentMixedApiCallsAreIndependent) {
           continue;
         }
         for (int p = 0; p < table.num_pairs(); ++p) {
-          if (table.entries(p) != lambda_expected[p]) ++mismatches[t];
+          if (table.GetEntries(p) != lambda_expected[p]) ++mismatches[t];
           // The carve-out residual is part of Δ_p, so it has to be
           // bit-identical across threads too.
           if (table.carveout_slack(p) != slack_expected[p]) ++mismatches[t];

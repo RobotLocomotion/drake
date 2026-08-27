@@ -47,11 +47,11 @@ drake_cc_library(
     hdrs = ["piecewise_bezier_path.h"],
     deps = [
         ":options",
+        "//common:essential",
         "//common/trajectories:trajectory",
         "@eigen",
     ],
     implementation_deps = [
-        "//common:essential",
         "//common:nice_type_name",
         "//common/trajectories:bezier_curve",
         "//common/trajectories:bspline_trajectory",
@@ -85,11 +85,14 @@ drake_cc_library(
         ":bounding_sphere",
         ":options",
         ":piecewise_bezier_path",
+        "//common:essential",
+        "//geometry:geometry_ids",
+        "//multibody/plant",
+        "//multibody/tree:multibody_tree_indexes",
         "//planning:robot_diagram",
         "@eigen",
     ],
     implementation_deps = [
-        "//common:essential",
         "//geometry:geometry_roles",
         "//geometry:scene_graph_inspector",
         "//geometry:shape_specification",
@@ -104,18 +107,19 @@ drake_cc_library(
     hdrs = ["distance_oracle.h"],
     deps = [
         ":options",
+        "//common:essential",
         "//geometry:scene_graph",
         "//planning:robot_diagram",
         "@eigen",
     ],
     implementation_deps = [
-        "//common:essential",
         "//common:unused",
         "//geometry:scene_graph_inspector",
         "//geometry:shape_specification",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
         "//multibody/plant",
+        "@fmt",
     ],
 )
 
@@ -132,6 +136,7 @@ drake_cc_library(
     implementation_deps = [
         "//common:essential",
         "//geometry:shape_specification",
+        "@fmt",
     ],
 )
 
@@ -147,22 +152,25 @@ drake_cc_library(
     ],
     hdrs = [
         "certificate.h",
-        "certifier.h",
+        "certifier_internal.h",
     ],
+    install_hdrs_exclude = ["certifier_internal.h"],
     deps = [
         ":distance_oracle",
         ":motion_bound_table",
         ":numerics",
         ":options",
         ":piecewise_bezier_path",
+        "//common:essential",
+        "//common:parallelism",
         "//geometry:scene_graph",
+        "//math:geometric_transform",
         "//multibody/tree:multibody_tree_indexes",
         "//planning:robot_diagram",
         "//systems/framework:context",
         "@eigen",
     ],
     implementation_deps = [
-        "//common:essential",
         "//multibody/plant",
         "@fmt",
     ],
@@ -178,12 +186,12 @@ drake_cc_library(
         ":motion_bound_table",
         ":options",
         ":piecewise_bezier_path",
+        "//common:essential",
         "//common/trajectories:trajectory",
         "//planning:robot_diagram",
         "@eigen",
     ],
     implementation_deps = [
-        "//common:essential",
         "//common:unused",
         "//geometry:scene_graph",
         "//geometry:scene_graph_inspector",

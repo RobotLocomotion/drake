@@ -10,14 +10,14 @@
 #include <string>
 #include <vector>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 #include "drake/planning/robot_diagram.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
-namespace benchmark {
+namespace internal {
 
 /// The dense-sphere iiwa14 collision variant: 46 collision spheres over
 /// links 0-7, i.e. realistic proximity-pair counts (the benchmark suite asks
@@ -41,14 +41,12 @@ struct ShelfGeometry {
 
 /// iiwa14 welded to the world origin, a 3 m table slab, and a seven-box
 /// bookcase in reach. Model instances are named "iiwa14" and "environment".
-std::shared_ptr<drake::planning::RobotDiagram<double>> MakeShelfWorld(
-    double shelf_scale);
+std::shared_ptr<RobotDiagram<double>> MakeShelfWorld(double shelf_scale);
 
 /// Two iiwa14s welded to the world `base_separation` apart along +x, the
 /// second rotated 180 degrees about z so the arms face each other, over the
 /// same table slab. Model instances: "iiwa14", "iiwa14_1", "environment".
-std::shared_ptr<drake::planning::RobotDiagram<double>> MakeDualArmWorld(
-    double base_separation);
+std::shared_ptr<RobotDiagram<double>> MakeDualArmWorld(double base_separation);
 
 /// The 7 x 7 joint-space waypoint matrix of the shelf-reaching trajectory:
 /// home, up-and-over on the +y side, into the bay mouth, deep inside the bay,
@@ -68,7 +66,7 @@ Eigen::MatrixXd DualArmTrajectoryWaypoints();
 
 std::vector<double> DualArmTrajectoryTimes();
 
-}  // namespace benchmark
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

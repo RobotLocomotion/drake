@@ -4,8 +4,9 @@
 #include <optional>
 #include <vector>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/planning/continuous_collision/certificate.h"
 #include "drake/planning/continuous_collision/distance_oracle.h"
@@ -18,7 +19,8 @@ namespace drake {
 namespace planning {
 namespace continuous_collision {
 
-/** Result of one certification call (the architecture). */
+/** Result of one certification call (the architecture).
+@ingroup planning_collision_checker */
 struct CertificationResult {
   Verdict verdict{};
   /** Earliest-first. */
@@ -41,14 +43,21 @@ the continuum of configurations, not about samples. The certificate is a
 property of the path, so retiming the trajectory afterwards does not invalidate
 it.
 
-Thread-compatible: the Check* methods are const, own no mutable state
-outside per-call scratch, and are safe to call concurrently. */
+Thread safety: the Check* methods are const, own no mutable state outside
+per-call scratch, and may be called concurrently on one instance from
+arbitrary threads. This is deliberately stronger than
+planning::CollisionChecker, whose documentation requires a per-thread clone
+for use from threads the checker does not itself own; no clone is needed
+here. Construction and destruction are not thread-safe.
+@ingroup planning_collision_checker */
 class ContinuousCollisionChecker {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContinuousCollisionChecker);
+
   struct Params {
     /** Plant + scene graph; the plant must be finalized. */
-    std::shared_ptr<const drake::planning::RobotDiagram<double>> model;
-    /** Per-body-pair padding, drake::planning::CollisionChecker semantics. */
+    std::shared_ptr<const RobotDiagram<double>> model;
+    /** Per-body-pair padding; see PaddingSpec for the env/self rule. */
     PaddingSpec padding{};
     Options default_options{};
   };
@@ -62,7 +71,7 @@ class ContinuousCollisionChecker {
 
   /** Certifies a trajectory (any supported Drake trajectory type). */
   CertificationResult CheckTrajectory(
-      const drake::trajectories::Trajectory<double>& trajectory,
+      const trajectories::Trajectory<double>& trajectory,
       const std::optional<Options>& options = {}) const;
 
   /** Certifies a piecewise-linear path through the given waypoint columns. */
@@ -77,13 +86,13 @@ class ContinuousCollisionChecker {
 
   /** Introspection / testing seams (all const, thread-safe). */
   PiecewiseBezierPath Normalize(
-      const drake::trajectories::Trajectory<double>& trajectory,
+      const trajectories::Trajectory<double>& trajectory,
       const std::optional<Options>& options = {}) const;
   MotionBoundTable ComputeMotionBounds(const PiecewiseBezierPath& path) const;
   const DistanceOracle& distance_oracle() const;
   const KinematicsEngine& kinematics_engine() const;
   const std::vector<PairRecord>& pairs() const;
-  const drake::planning::RobotDiagram<double>& model() const;
+  const RobotDiagram<double>& model() const;
 
  private:
   class Impl;
@@ -93,7 +102,8 @@ class ContinuousCollisionChecker {
 /** Independently replays every record of `certificate` (recomputing node
 control boxes from freshly restricted control points and re-querying
 distances) and checks interval coverage of the full domain for every pair.
-Returns true iff the certificate holds (the search algorithm). */
+Returns true iff the certificate holds (the search algorithm).
+@ingroup planning_collision_checker */
 bool VerifyCertificate(const ContinuousCollisionChecker& checker,
                        const PiecewiseBezierPath& path,
                        const Certificate& certificate);
