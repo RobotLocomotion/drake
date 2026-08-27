@@ -10,21 +10,22 @@
 
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
-#include <fstream>
 #include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/temp_directory.h"
+#include "drake/common/find_resource.h"
+#include "drake/common/memory_file.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
@@ -52,6 +53,7 @@ using drake::geometry::Cylinder;
 using drake::geometry::Ellipsoid;
 using drake::geometry::GeometryId;
 using drake::geometry::HalfSpace;
+using drake::geometry::InMemoryMesh;
 using drake::geometry::Mesh;
 using drake::geometry::QueryObject;
 using drake::geometry::Shape;
@@ -249,29 +251,24 @@ const Vector3d& CubeHalf() {
   return half;
 }
 
-/// Writes a closed triangulated box OBJ; returns its path.
+/// The cube of the mesh cases, as Drake's own shipped unit cube (vertices at
+/// ±1) scaled to CubeHalf(). Using the shipped asset instead of writing one
+/// keeps the test off the filesystem and off any assumption about which OBJ
+/// dialect Drake's reader accepts; the non-uniform Mesh/Convex scale argument
+/// reproduces exactly the half-extents the analytic expectations below use, so
+/// its vertices coincide with BoxCorners(CubeHalf()) to the last bit.
 const std::string& CubeObjPath() {
-  static const std::string path = [] {
-    const std::filesystem::path p =
-        std::filesystem::path(drake::temp_directory()) / "ccd_cube.obj";
-    std::ofstream out(p);
-    const Vector3d& h = CubeHalf();
-    const double xs[8] = {-1, 1, 1, -1, -1, 1, 1, -1};
-    const double ys[8] = {-1, -1, 1, 1, -1, -1, 1, 1};
-    const double zs[8] = {-1, -1, -1, -1, 1, 1, 1, 1};
-    for (int i = 0; i < 8; ++i) {
-      out << "v " << xs[i] * h.x() << " " << ys[i] * h.y() << " "
-          << zs[i] * h.z() << "\n";
-    }
-    const int faces[12][3] = {{1, 4, 3}, {1, 3, 2}, {5, 6, 7}, {5, 7, 8},
-                              {1, 2, 6}, {1, 6, 5}, {3, 4, 8}, {3, 8, 7},
-                              {4, 1, 5}, {4, 5, 8}, {2, 3, 7}, {2, 7, 6}};
-    for (const auto& f : faces) {
-      out << "f " << f[0] << " " << f[1] << " " << f[2] << "\n";
-    }
-    return p.string();
-  }();
+  static const std::string path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   return path;
+}
+
+Mesh CubeMesh() {
+  return Mesh(CubeObjPath(), CubeHalf());
+}
+
+Convex CubeConvex() {
+  return Convex(CubeObjPath(), CubeHalf());
 }
 
 /// The L-shaped prism's cross-section, counter-clockwise. The reflex vertex is
@@ -284,12 +281,14 @@ const std::vector<Eigen::Vector2d>& LProfile() {
 
 constexpr double kLHalfHeight = 0.5;
 
-/// Writes a closed, genuinely non-convex L-prism OBJ; returns its path.
-const std::string& LPrismObjPath() {
-  static const std::string path = [] {
-    const std::filesystem::path p =
-        std::filesystem::path(drake::temp_directory()) / "ccd_l_prism.obj";
-    std::ofstream out(p);
+/// A closed, genuinely non-convex L-prism. This one stays generated — it
+/// encodes the analytic expectations of the mesh-vs-hull cases below and no
+/// shipped asset matches them — but it is generated into memory rather than
+/// into a file, so the test needs neither a temp directory nor a write that
+/// could fail unnoticed.
+InMemoryMesh LPrismMesh() {
+  const std::string contents = [] {
+    std::ostringstream out;
     const auto& profile = LProfile();
     const int n = static_cast<int>(profile.size());
     for (const double z : {-kLHalfHeight, kLHalfHeight}) {
@@ -308,9 +307,9 @@ const std::string& LPrismObjPath() {
       out << "f 1 " << i + 2 << " " << i + 1 << "\n";
       out << "f " << 1 + n << " " << i + 1 + n << " " << i + 2 + n << "\n";
     }
-    return p.string();
+    return out.str();
   }();
-  return path;
+  return InMemoryMesh{MemoryFile(contents, ".obj", "ccd_l_prism.obj")};
 }
 
 // ==========================================================================
@@ -588,7 +587,7 @@ class AllShapesTest : public ::testing::Test {
                  Vector3d(-1.5, 1.5, 1));
     AddShapeBody(&plant, "convex", Convex(BoxCorners(CubeHalf()), "convex"),
                  Vector3d(-0.5, 1.5, 1));
-    AddShapeBody(&plant, "mesh", Mesh(CubeObjPath()), Vector3d(0.5, 1.5, 1));
+    AddShapeBody(&plant, "mesh", CubeMesh(), Vector3d(0.5, 1.5, 1));
     // The halfspace is anchored on the world body: z <= 0 is solid.
     halfspace_id_ = plant.RegisterCollisionGeometry(
         plant.world_body(), RigidTransformd::Identity(), HalfSpace(),
@@ -838,7 +837,7 @@ GTEST_TEST(DistanceOracleMesh, MeshDistanceEqualsConvexHullDistance) {
   // The same cube: once as a Mesh (Drake silently hulls it), once as a Convex
   // built from that hull's vertices.
   const auto& mesh_body =
-      AddShapeBody(&plant, "mesh", Mesh(CubeObjPath()), Vector3d(-1, 0, 0));
+      AddShapeBody(&plant, "mesh", CubeMesh(), Vector3d(-1, 0, 0));
   const auto& convex_body =
       AddShapeBody(&plant, "convex", Convex(BoxCorners(CubeHalf()), "cube"),
                    Vector3d(1, 0, 0));
@@ -886,9 +885,9 @@ GTEST_TEST(DistanceOracleMesh,
   RobotDiagramBuilder<double> builder(0.0);
   MultibodyPlant<double>& plant = builder.plant();
   const auto& l_mesh_body =
-      AddShapeBody(&plant, "l_mesh", Mesh(LPrismObjPath()), Vector3d(0, 0, 0));
-  const auto& l_convex_body = AddShapeBody(
-      &plant, "l_convex", Convex(LPrismObjPath()), Vector3d(0, 0, 0));
+      AddShapeBody(&plant, "l_mesh", Mesh(LPrismMesh()), Vector3d(0, 0, 0));
+  const auto& l_convex_body =
+      AddShapeBody(&plant, "l_convex", Convex(LPrismMesh()), Vector3d(0, 0, 0));
   const double probe_radius = 0.05;
   const auto& probe_body =
       AddShapeBody(&plant, "probe", Sphere(probe_radius), Vector3d(5, 5, 5));
@@ -939,9 +938,9 @@ GTEST_TEST(DistanceOracleMesh, HalfSpaceFallbackAgainstMeshUsesTheSameHull) {
   RobotDiagramBuilder<double> builder(0.0);
   MultibodyPlant<double>& plant = builder.plant();
   const auto& mesh_body =
-      AddShapeBody(&plant, "mesh", Mesh(CubeObjPath()), Vector3d(0, 0, 1));
+      AddShapeBody(&plant, "mesh", CubeMesh(), Vector3d(0, 0, 1));
   const auto& convex_body =
-      AddShapeBody(&plant, "convex", Convex(CubeObjPath()), Vector3d(0, 3, 1));
+      AddShapeBody(&plant, "convex", CubeConvex(), Vector3d(0, 3, 1));
   const GeometryId ground = plant.RegisterCollisionGeometry(
       plant.world_body(), RigidTransformd::Identity(), HalfSpace(),
       "ground_geometry", Friction());

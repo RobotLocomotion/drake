@@ -20,10 +20,12 @@
 ///                       [--dense-samples N] [--batch N] [--only NAME]
 ///                       [--drake_commit SHA]
 ///
-/// `--out` defaults to the current directory, and `--drake_commit` (the
-/// Drake revision this binary was built from, "unknown" by default) is
-/// recorded verbatim in every result file so a JSON result identifies the
-/// code it measured.
+/// `--out` defaults to the current directory, or to $TEST_TMPDIR when that is
+/// set — the sandbox is the only writable directory under `bazel test`, and
+/// the smoke-test rule in BUILD.bazel relies on this so it needs no --out of
+/// its own. `--drake_commit` (the Drake revision this binary was built from,
+/// "unknown" by default) is recorded verbatim in every result file so a JSON
+/// result identifies the code it measured.
 
 #include <algorithm>
 #include <atomic>
@@ -1004,6 +1006,9 @@ void RunProfile(const Config& config, const MachineInfo& machine,
 
 int Main(int argc, char** argv) {
   Config config;
+  if (const char* const test_tmpdir = std::getenv("TEST_TMPDIR")) {
+    config.out_dir = test_tmpdir;
+  }
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     const auto next = [&]() -> std::string {

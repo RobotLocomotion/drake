@@ -22,9 +22,18 @@
 /// Budget. The gate is CI wall time, not case count: the dominant cost is the
 /// dense cross-check (~10⁷ signed-distance queries per run), not certification.
 /// kNumCases = 200 clears test-plan T4's ≥ 150 (world, trajectory) pairs per CI
-/// run by a third and measures ~14 s in Release here — a 10× margin against the
-/// ~3 min budget, so the suite still fits on a CI machine an order of magnitude
-/// slower. The spare budget is spent on resolution rather than on more
+/// run by a third and measures ~14 s in Release here, a 10× margin against the
+/// ~3 min budget — but that margin is a *Release* margin, and it is the only
+/// flavor in which it is that comfortable. An instrumented build slows the
+/// dense sweep by one to two orders of magnitude, which would spend the whole
+/// budget and more, so two things give: asan and lsan are excluded outright
+/// (BUILD.bazel tags), and the flavors that do run the fuzz — tsan, ubsan,
+/// memcheck — take a quarter corpus (`DRAKE_CCD_FUZZ_SMALL_CORPUS`), which
+/// buys back a 4× and leaves the timeout, raised to "long", to absorb the
+/// rest. Composition is asserted as fractions of kNumCases so both corpus
+/// sizes are held to the same standard.
+///
+/// The spare Release budget is spent on resolution rather than on more
 /// shallowly-checked cases: kDenseSamples = 10⁴ resolves any clearance dip
 /// wider than ~10⁻⁴ of the domain, and every 10th certified case gets the 10⁵
 /// sweep, which resolves 10× finer at 10× the cost. (Sample counts are per
@@ -99,7 +108,31 @@ using drake::trajectories::Trajectory;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
+#ifdef DRAKE_CCD_FUZZ_SMALL_CORPUS
+/// A quarter corpus for instrumented builds, where the dense cross-check runs
+/// one to two orders of magnitude slower than in Release (BUILD.bazel selects
+/// this on //tools:using_sanitizer and //tools:using_memcheck). Nothing about
+/// the case *recipes* changes,
+/// so the shrunk corpus is a prefix of the full one and a failure it finds
+/// reproduces under the full run at the same case index.
+constexpr int kNumCases = 50;
+#else
 constexpr int kNumCases = 200;
+#endif
+
+/// Corpus-composition floors, expressed as fractions of kNumCases rather than
+/// as absolute counts so that the shrunk corpus is held to the same *shape* of
+/// corpus instead of to a floor it cannot reach. The fractions are the ones
+/// the 200-case corpus has always been checked against.
+constexpr int kMinCertified = kNumCases / 5;              // 20%
+constexpr int kMinViolation = kNumCases / 10;             // 10%
+constexpr int kMinInconclusive = kNumCases / 40;          // 2.5%
+constexpr int kMinDefiniteFindings = kNumCases / 10;      // 10%
+constexpr int kMinInconclusiveFindings = kNumCases / 40;  // 2.5%
+constexpr int kMinPerTrajectoryFamily = kNumCases / 10;   // 10% each
+constexpr int kMaxBudgetExhausted = kNumCases / 20;       // 5%
+constexpr int kMinScanQueries = 500 * kNumCases;
+
 constexpr uint64_t kBaseSeed = 0x5eed'0000'0000'0000ull;
 constexpr int kDenseSamples = 10000;
 constexpr int kDeepDenseSamples = 100000;
@@ -964,27 +997,39 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
   // The corpus has to actually exercise the outcomes it claims to cross-check;
   // a fuzz that certified everything (or violated everything) would pass every
   // assertion above while testing nothing.
+#ifdef DRAKE_CCD_FUZZ_SMALL_CORPUS
+  // The shrunk corpus is an instrumentation-only configuration; T4's case
+  // count is satisfied by the uninstrumented run CI also performs. What it
+  // still has to be is large enough for the composition floors below to say
+  // something — at 50 cases the thinnest of them still demands a case.
+  static_assert(kNumCases >= 40,
+                "the shrunk corpus must stay large enough for the corpus "
+                "composition floors below to be nonzero");
+#else
   static_assert(
       kNumCases >= 150,
       "test plan T4 asks for >= 150 (world, trajectory) cases per CI run");
-  EXPECT_GE(tally.certified, 40);
-  EXPECT_GE(tally.violation, 20);
-  EXPECT_GE(tally.inconclusive, 5)
+#endif
+  static_assert(kMinInconclusive >= 1 && kMinInconclusiveFindings >= 1,
+                "every composition floor must demand at least one case");
+  EXPECT_GE(tally.certified, kMinCertified);
+  EXPECT_GE(tally.violation, kMinViolation);
+  EXPECT_GE(tally.inconclusive, kMinInconclusive)
       << "the grazing-margin cases should have produced kInconclusive verdicts";
-  EXPECT_GE(tally.definite_findings, 20);
-  EXPECT_GE(tally.inconclusive_findings, 5);
+  EXPECT_GE(tally.definite_findings, kMinDefiniteFindings);
+  EXPECT_GE(tally.inconclusive_findings, kMinInconclusiveFindings);
   // The node budget exists to bound a pathological case, not to be the usual
   // answer: if it starts firing often, the corpus has stopped cross-checking
   // anything and the numbers above would quietly stop meaning what they say.
-  EXPECT_LE(tally.budget, kNumCases / 20);
+  EXPECT_LE(tally.budget, kMaxBudgetExhausted);
   // All three trajectory families of trajectory normalization must be
   // represented.
-  EXPECT_GE(tally.pwl, 20);
-  EXPECT_GE(tally.bezier, 20);
-  EXPECT_GE(tally.bspline, 20);
+  EXPECT_GE(tally.pwl, kMinPerTrajectoryFamily);
+  EXPECT_GE(tally.bezier, kMinPerTrajectoryFamily);
+  EXPECT_GE(tally.bspline, kMinPerTrajectoryFamily);
   // The dense scan must really be measuring distances, not skipping everything
   // through its broadphase.
-  EXPECT_GT(tally.scan_queries, 100000);
+  EXPECT_GT(tally.scan_queries, kMinScanQueries);
   // Every supported geometry class must have appeared somewhere in the corpus,
   // including the analytic HalfSpace route: a fuzz that only ever built spheres
   // and boxes would leave the τ_p table's expensive rows (capsule, cylinder,

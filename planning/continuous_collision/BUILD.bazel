@@ -221,6 +221,7 @@ drake_cc_googletest(
 # T2 — the displacement lemma, the lambda table and the J(p) subtree logic.
 drake_cc_googletest(
     name = "motion_bound_test",
+    timeout = "moderate",
     deps = [
         ":motion_bound_table",
         "//geometry:geometry_roles",
@@ -239,7 +240,8 @@ drake_cc_googletest(
     deps = [
         ":bounding_sphere",
         "//common:essential",
-        "//common:temp_directory",
+        "//common:memory_file",
+        "//geometry:in_memory_mesh",
         "//geometry:shape_specification",
         "//geometry/proximity:polygon_surface_mesh",
         "//math:geometric_transform",
@@ -249,11 +251,14 @@ drake_cc_googletest(
 # T3 — oracle accuracy, probe classification, half-space fallback, V-polytope.
 drake_cc_googletest(
     name = "distance_oracle_test",
+    data = ["//geometry:test_obj_files"],
     deps = [
         ":distance_oracle",
         ":vpolytope_ingestion",
-        "//common:temp_directory",
+        "//common:find_resource",
+        "//common:memory_file",
         "//geometry:geometry_instance",
+        "//geometry:in_memory_mesh",
         "//geometry:proximity_properties",
         "//geometry:scene_graph",
         "//geometry:shape_specification",
@@ -270,6 +275,8 @@ drake_cc_googletest(
 # T4/T6 — certifier semantics on a focused, hand-built corpus.
 drake_cc_googletest(
     name = "certifier_test",
+    # Eight caller threads, each asking for Parallelism(2).
+    num_threads = 8,
     deps = [
         ":continuous_collision_checker",
         "//common:parallelism",
@@ -288,9 +295,26 @@ drake_cc_googletest(
 # cross-checked against dense sampling and against the certificate replay.
 # The dense cross-check (~1e7 signed-distance queries) is what makes this
 # test long rather than the certification itself.
+#
+# Under an instrumented build that cross-check is what blows the budget, so
+# the corpus shrinks to a quarter of its size there (the assertions are
+# fractions of kNumCases and hold either way; see soundness_fuzz_test.cc).
+# asan and lsan are excluded outright: they slow the dense sweep by more than
+# the shrink recovers, and the corpus is deliberately leaked.
 drake_cc_googletest(
     name = "soundness_fuzz_test",
-    timeout = "moderate",
+    timeout = "long",
+    # The two settings are mutually exclusive (each dynamic-analysis config
+    # defines exactly one of them), so this select is unambiguous.
+    defines = select({
+        "//tools:using_memcheck": ["DRAKE_CCD_FUZZ_SMALL_CORPUS"],
+        "//tools:using_sanitizer": ["DRAKE_CCD_FUZZ_SMALL_CORPUS"],
+        "//conditions:default": [],
+    }),
+    tags = [
+        "no_asan",
+        "no_lsan",
+    ],
     deps = [
         ":continuous_collision_checker",
         "//common:parallelism",
@@ -345,11 +369,11 @@ drake_cc_googletest(
     ],
 )
 
-# T8 — concurrency determinism. Running with many threads is the point of
-# this test: it pins the answer at Parallelism {1, 2, 8, 16}.
-drake_cc_googletest(
-    name = "concurrency_test",
-    num_threads = 16,
+# T8 — the corpus and the deep workload both concurrency targets run on.
+drake_cc_library(
+    name = "concurrency_test_utilities",
+    testonly = 1,
+    hdrs = ["test/concurrency_test_utilities.h"],
     deps = [
         ":continuous_collision_checker",
         "//common:parallelism",
@@ -360,6 +384,36 @@ drake_cc_googletest(
         "//multibody/tree",
         "//planning:robot_diagram",
         "//planning:robot_diagram_builder",
+        "@googletest//:gtest",
+    ],
+)
+
+# T8 — concurrency determinism. Running with many threads is the point of
+# this test: it pins the answer at Parallelism {1, 2, 8, 16}. Every case is an
+# equality, so this target runs under every build flavor, sanitizers included.
+drake_cc_googletest(
+    name = "concurrency_test",
+    num_threads = 16,
+    deps = [
+        ":concurrency_test_utilities",
+        "//common:parallelism",
+    ],
+)
+
+# T8 — the two per-call scaling claims. Split from concurrency_test because
+# they are wall-clock claims: Valgrind serializes threads, which inverts
+# "parallel is faster than serial" and fails the test for a reason that has
+# nothing to do with the driver. disable_in_compilation_mode_dbg already
+# excludes the sanitizers and memcheck; no_valgrind_tools adds drd and
+# helgrind, which serialize the same way.
+drake_cc_googletest(
+    name = "concurrency_timing_test",
+    disable_in_compilation_mode_dbg = True,
+    num_threads = 16,
+    tags = ["no_valgrind_tools"],
+    deps = [
+        ":concurrency_test_utilities",
+        "//common:parallelism",
     ],
 )
 
@@ -389,12 +443,18 @@ drake_cc_googletest(
 
 # === benchmark/ ===
 
-# The performance benchmark suite. Not part of the test suite: a full run
-# takes minutes and reports measurements rather than assertions. Run it with
+# The performance benchmark suite. A full run takes minutes and reports
+# measurements rather than assertions, so it is not a test; run it with
 #   bazel run //planning/continuous_collision:iiwa_benchmark -- \
 #       --out /tmp/ccd --drake_commit $(git rev-parse HEAD)
+# It is not tagged manual, though, so that CI compiles it: the benchmark shares
+# every header the library exposes, and a benchmark that stopped building would
+# otherwise go unnoticed until someone next needed a measurement. The smoke
+# test that comes with it runs the cheapest scenario at one repetition (about
+# two seconds) purely to prove the binary still starts and finishes.
 drake_cc_binary(
     name = "iiwa_benchmark",
+    testonly = 1,
     srcs = [
         "benchmark/benchmark_util.cc",
         "benchmark/benchmark_util.h",
@@ -402,10 +462,22 @@ drake_cc_binary(
         "benchmark/scenario_worlds.cc",
         "benchmark/scenario_worlds.h",
     ],
+    add_test_rule = 1,
     data = [
         "@drake_models//:iiwa_description",
     ],
-    tags = ["manual"],
+    test_rule_args = [
+        "--only",
+        "dual",
+        "--reps",
+        "1",
+        "--warmup",
+        "0",
+        "--dense-samples",
+        "200",
+    ],
+    test_rule_size = "small",
+    test_rule_timeout = "moderate",
     deps = [
         ":continuous_collision_checker",
         "//common:copyable_unique_ptr",

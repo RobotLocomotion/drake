@@ -10,10 +10,9 @@
 #include "drake/planning/continuous_collision/bounding_sphere.h"
 
 #include <cmath>
-#include <filesystem>
-#include <fstream>
 #include <functional>
 #include <random>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,7 +21,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/temp_directory.h"
+#include "drake/common/memory_file.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -349,14 +349,12 @@ GTEST_TEST(BoundingSphereTest, ConvexContainsHullVertices) {
                            "construction to make this test meaningful";
 }
 
-/* Writes a small nonconvex OBJ (an L-shaped prism) so the Mesh path exercises
- hull-vs-mesh semantics, not just a convex primitive in disguise. */
-std::string WriteLShapedObj() {
-  const std::filesystem::path dir =
-      std::filesystem::path(drake::temp_directory()) / "ccd_bounding_sphere";
-  std::filesystem::create_directories(dir);
-  const std::filesystem::path path = dir / "l_prism.obj";
-  std::ofstream out(path);
+/* Builds a small nonconvex OBJ (an L-shaped prism) so the Mesh path exercises
+ hull-vs-mesh semantics, not just a convex primitive in disguise. It is built
+ in memory: nothing here needs a file on disk, and a write that silently failed
+ would turn this case into a vacuous pass. */
+geometry::InMemoryMesh LShapedObj() {
+  std::ostringstream out;
   // Six-vertex L profile in the z = ±0.25 planes.
   const std::vector<std::pair<double, double>> profile{
       {0.0, 0.0}, {1.0, 0.0}, {1.0, 0.3}, {0.3, 0.3}, {0.3, 1.2}, {0.0, 1.2}};
@@ -378,16 +376,15 @@ std::string WriteLShapedObj() {
     out << "f " << a << " " << b << " " << b + 6 << "\n";
     out << "f " << a << " " << b + 6 << " " << a + 6 << "\n";
   }
-  out.close();
-  return path.string();
+  return geometry::InMemoryMesh{
+      MemoryFile(out.str(), ".obj", "ccd_l_prism.obj")};
 }
 
 GTEST_TEST(BoundingSphereTest, MeshContainsHullVertices) {
   Rng rng(0x5eed0007);
-  const std::string obj = WriteLShapedObj();
   for (const Vector3d& scale3 :
        {Vector3d(1.0, 1.0, 1.0), Vector3d(0.4, 1.7, 1.0)}) {
-    const Mesh shape(obj, scale3);
+    const Mesh shape(LShapedObj(), scale3);
     const auto& hull = shape.GetConvexHull();
     ASSERT_GT(hull.num_vertices(), 3);
     CheckContainment(shape, HullVertexSampler(hull),
