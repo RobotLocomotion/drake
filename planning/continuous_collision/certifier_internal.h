@@ -7,12 +7,11 @@
 ///
 /// Nothing in this header is part of the public API; it exists so the facade
 /// (`continuous_collision_checker.cc`), the certificate replay
-/// (`certificate.cc`) and the node loop (`certifier.cc`) can share
+/// (`certificate.cc`) and the node loop (`certifier_internal.cc`) can share
 /// one set of per-call data structures without the core module depending on
 /// the api layer.
 
 #include <deque>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -132,81 +131,6 @@ class ContextPool {
   mutable std::vector<bool> in_use_;
 };
 
-/** A pool of parked worker threads, reused across `Check*` calls.
-
-Why this exists: the driver used to spawn and join one `std::thread` per worker
-per call, which the benchmark measured at ~23 µs per worker — 0.37 ms of pure
-overhead on every 16-thread call, enough to make a sub-millisecond check
-*slower* in parallel than in serial. Parked threads turn "hire 15 helpers" into
-15 condition-variable notifications (a few µs), which is what makes the lazy
-recruitment policy of RunCertifier() affordable: the driver can afford to start
-serial and hire only once a run has proved itself big enough.
-
-Threads are created on demand (never at construction), capped at
-`Parallelism::Max().num_threads()` per pool, parked on their own condition
-variable when idle, and joined by the destructor. A `Batch` is a reservation of
-some of them for the duration of one call; because reservations never block,
-several concurrent `Check*` calls simply share out whatever threads exist and a
-call that gets none just runs with fewer workers. */
-class WorkerPool {
- private:
-  struct Slot;
-  struct BatchState;
-
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorkerPool);
-
-  /* Out of line (like the destructor) because Slot is incomplete here. */
-  WorkerPool();
-  ~WorkerPool();
-
-  /** Reserved threads for one call. Destruction waits for every dispatched
-  task to return and then releases the threads back to the pool. */
-  class Batch {
-   public:
-    Batch() = default;
-    Batch(const Batch&) = delete;
-    Batch& operator=(const Batch&) = delete;
-    Batch(Batch&& other) noexcept { *this = std::move(other); }
-    Batch& operator=(Batch&& other) noexcept;
-    ~Batch();
-
-    /** How many threads were actually reserved (≤ the requested count). */
-    int size() const { return static_cast<int>(handles_.size()); }
-
-    /** Runs `task(i)` for every i in [0, size()) on the reserved threads. The
-    referenced callable must outlive Wait(). Call at most once. */
-    void Dispatch(const std::function<void(int)>& task);
-
-    /** Blocks until every dispatched task has returned. Idempotent. */
-    void Wait();
-
-   private:
-    friend class WorkerPool;
-    WorkerPool* pool_{};
-    std::vector<int> slots_;
-    std::vector<Slot*> handles_;
-    std::shared_ptr<BatchState> state_;
-  };
-
-  /** Reserves at most `count` currently idle threads, creating new ones (a
-  cold path) while the pool is below its cap. Never blocks. */
-  Batch Reserve(int count);
-
-  /** Number of threads the pool has created (for tests/diagnostics). */
-  int size() const;
-
- private:
-  void Release(const std::vector<int>& slots);
-
-  mutable std::mutex mutex_;
-  /* A deque so that growing never invalidates the Slot addresses already
-   handed out to live batches. */
-  std::deque<std::unique_ptr<Slot>> slots_;
-  std::vector<int> idle_;
-  bool shutdown_{false};
-};
-
 /** Per-pair broadphase data for the free-sphere prefilter (the interval
 certificate): geometry bounding spheres in their body frames, indexed by dense
 slots so the node loop can cache one world-frame center per geometry per node.
@@ -296,9 +220,10 @@ are unchanged.
   visited `kNodesBeforeHiringHelpers` nodes. A check whose whole workload is
   smaller than that (a PWL edge, a shallow shelf check) therefore runs at
   exactly serial speed no matter what `Options::parallelism` says — which
-  matters because `Parallelism::Max()` is the default. Helpers come from a
-  `WorkerPool` that outlives the call, so hiring costs notifications rather
-  than thread creation.
+  matters because `Parallelism::Max()` is the default. Helpers are call-scoped
+  threads, spawned once per check when (and only when) that threshold is
+  crossed and joined before the call returns; nothing here owns a background
+  thread between calls.
 - **Determinism policy — unchanged, because sharing moves nodes between
   workers without changing which nodes exist.** Every node's decisions depend
   only on its own control points and its inherited active set, so the tree, the
@@ -320,13 +245,12 @@ dependent place, and on a degenerate segment with t_start == t_end every node
 maps to the same time, so the bound prunes on a tie and the reported
 configuration (not its time) may differ.
 
-`pool` supplies the per-thread contexts; `workers` supplies the helper threads
-and may be null, in which case every call runs serially on the calling thread.
+`pool` supplies the per-thread contexts. Helper threads, if any are hired, are
+created and joined within this call.
 
 @throws std::exception if the oracle throws for any pair; a parallel run waits
 for every worker first and rethrows the first failure. */
-CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool,
-                             WorkerPool* workers);
+CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool);
 
 // ---------------------------------------------------------------------------
 // Certificate assembly + independent replay (implemented in certificate.cc).

@@ -454,8 +454,7 @@ class ContinuousCollisionChecker::Impl {
     input.prefilter = &prefilter_;
     input.options = options;
 
-    internal::CertifierOutput output =
-        internal::RunCertifier(input, &pool_, &worker_pool_);
+    internal::CertifierOutput output = internal::RunCertifier(input, &pool_);
 
     CertificationResult result;
     result.verdict = output.verdict;
@@ -483,11 +482,6 @@ class ContinuousCollisionChecker::Impl {
   std::vector<double> tau_base_;
   internal::PrefilterTable prefilter_;
   mutable internal::ContextPool pool_;
-  /** Parked helper threads, created on demand by the first call that hires
-  any and reused by every later call (see internal::WorkerPool). Declared last
-  so that its destructor — which joins every parked thread — runs before the
-  contexts and tables those threads worked on are torn down. */
-  mutable internal::WorkerPool worker_pool_;
 };
 
 // ---------------------------------------------------------------------------

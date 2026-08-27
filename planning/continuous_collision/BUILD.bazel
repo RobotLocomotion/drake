@@ -141,14 +141,14 @@ drake_cc_library(
 )
 
 # The certificate and the node recursion are mutually recursive translation
-# units (certificate.cc replays the events that certifier.cc emits), so they
-# form one library, exactly as they formed one module in the standalone
+# units (certificate.cc replays the events that certifier_internal.cc emits),
+# so they form one library, exactly as they formed one module in the standalone
 # package.
 drake_cc_library(
     name = "certifier",
     srcs = [
         "certificate.cc",
-        "certifier.cc",
+        "certifier_internal.cc",
     ],
     hdrs = [
         "certificate.h",

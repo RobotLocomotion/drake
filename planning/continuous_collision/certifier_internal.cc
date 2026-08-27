@@ -1,14 +1,14 @@
+#include "drake/planning/continuous_collision/certifier_internal.h"
+
 #include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <condition_variable>
-#include <deque>
 #include <functional>
+#include <future>
 #include <limits>
 #include <memory>
 #include <optional>
-#include <system_error>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -16,7 +16,6 @@
 #include "drake/common/parallelism.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/planning/continuous_collision/certifier_internal.h"
 #include "drake/planning/continuous_collision/numerics.h"
 
 namespace drake {
@@ -294,21 +293,23 @@ struct Recruitment {
 
 /* How many nodes a run must have visited before it hires helpers.
 
- This is a measured break-even, not a taste knob. Hiring costs one WorkerPool
- reservation, one ContextPool lease, the construction of the helper Worker
- objects, one notification per helper and — at the end of the run — one wakeup
- per helper before the lead can collect their statistics: about 6-7 us per
- helper, ~65 us for a full fifteen, on the machine the benchmark suite
- was measured on. A node on that machine costs ~7-13 us. Sixteen nodes of work
- already done is therefore roughly a 3x margin over the price of the helpers,
- and it bounds the damage in the one case lazy recruitment cannot avoid — a
- check that ends immediately after hiring — to that same ~65 us (~15% of such a
- check).
+ This is a measured break-even, not a taste knob. Hiring costs one ContextPool
+ lease, the construction of the helper Worker objects, one *thread creation*
+ per helper and — at the end of the run — one join per helper before the lead
+ can collect their statistics. Thread creation dominates that list at tens of
+ microseconds per worker, which is where this threshold parts company with the
+ parked-thread pool it replaced: waking a parked thread cost ~6-7 us, so paying
+ for a fresh one instead moves the break-even up by roughly 4x, from 16 nodes
+ to 64. A node on the machine the benchmark suite was measured on costs
+ ~7-13 us, so 64 nodes of work already done is again roughly a 3x margin over
+ the price of a full fifteen helpers, and it bounds the damage in the one case
+ lazy recruitment cannot avoid — a check that ends immediately after hiring —
+ to a few hundred microseconds.
 
  Everything smaller than this runs at exactly serial speed at any
  Options::parallelism, which is the property that matters most in practice
  because Parallelism::Max() is the default value of that field. */
-constexpr std::uint64_t kNodesBeforeHiringHelpers = 16;
+constexpr std::uint64_t kNodesBeforeHiringHelpers = 64;
 
 // ---------------------------------------------------------------------------
 // The node loop.
@@ -895,192 +896,10 @@ ContextPool::Lease::~Lease() {
 }
 
 // ---------------------------------------------------------------------------
-// WorkerPool.
-// ---------------------------------------------------------------------------
-
-/* One parked thread. Each slot has its own mutex/condition variable so that
- dispatching to n slots is n independent handoffs rather than a broadcast every
- waiter has to filter. */
-struct WorkerPool::Slot {
-  std::mutex mutex;
-  std::condition_variable condition;
-  bool shutdown{false};
-  bool has_task{false};
-  const std::function<void(int)>* task{nullptr};
-  int index{0};
-  std::shared_ptr<BatchState> state;
-  std::thread thread;
-};
-
-/* Completion counter of one dispatch. Held by shared_ptr — the batch and every
- slot that ran one of its tasks own a reference — because the slot signals
- completion *through* this object and the waiter would otherwise be free to
- destroy it while the signalling thread is still inside notify_all(). */
-struct WorkerPool::BatchState {
-  std::mutex mutex;
-  std::condition_variable condition;
-  int remaining{0};
-};
-
-WorkerPool::WorkerPool() = default;
-
-WorkerPool::~WorkerPool() {
-  std::deque<std::unique_ptr<Slot>> slots;
-  {
-    std::lock_guard<std::mutex> guard(mutex_);
-    shutdown_ = true;
-    slots.swap(slots_);
-    idle_.clear();
-  }
-  // Outside the pool mutex: a slot thread never takes it, but keeping the
-  // teardown lock-free makes that independent of future edits.
-  for (const std::unique_ptr<Slot>& slot : slots) {
-    {
-      std::lock_guard<std::mutex> guard(slot->mutex);
-      slot->shutdown = true;
-    }
-    slot->condition.notify_one();
-  }
-  for (const std::unique_ptr<Slot>& slot : slots) {
-    if (slot->thread.joinable()) slot->thread.join();
-  }
-}
-
-WorkerPool::Batch WorkerPool::Reserve(int count) {
-  Batch batch;
-  batch.pool_ = this;
-  if (count <= 0) return batch;
-  // Bounding the pool by the machine's width keeps a program that runs many
-  // concurrent parallel checks from multiplying threads without limit; a call
-  // that finds nothing free simply runs with fewer workers, which is only a
-  // performance difference. The width comes from Parallelism::Max() rather
-  // than hardware_concurrency() directly, so the cap honours DRAKE_NUM_THREADS
-  // like the rest of Drake.
-  const int cap = Parallelism::Max().num_threads();
-  std::lock_guard<std::mutex> guard(mutex_);
-  if (shutdown_) return batch;
-  while (static_cast<int>(batch.slots_.size()) < count && !idle_.empty()) {
-    const int index = idle_.back();
-    idle_.pop_back();
-    batch.slots_.push_back(index);
-    batch.handles_.push_back(slots_[index].get());
-  }
-  while (static_cast<int>(batch.slots_.size()) < count &&
-         static_cast<int>(slots_.size()) < cap) {
-    slots_.push_back(std::make_unique<Slot>());
-    Slot* const slot = slots_.back().get();
-    const int index = static_cast<int>(slots_.size()) - 1;
-    try {
-      slot->thread = std::thread([slot]() {
-        while (true) {
-          const std::function<void(int)>* task = nullptr;
-          int task_index = 0;
-          std::shared_ptr<BatchState> state;
-          {
-            std::unique_lock<std::mutex> lock(slot->mutex);
-            slot->condition.wait(lock, [slot]() {
-              return slot->shutdown || slot->has_task;
-            });
-            if (!slot->has_task) return;  // shutdown
-            task = slot->task;
-            task_index = slot->index;
-            state = std::move(slot->state);
-            slot->task = nullptr;
-            slot->has_task = false;
-          }
-          // Tasks are documented not to throw (the certifier's worker lambda
-          // catches everything); swallowing here is the last line of defence
-          // against terminating the process and stranding the waiter.
-          try {
-            (*task)(task_index);
-          } catch (...) {  // NOLINT(bugprone-empty-catch)
-          }
-          {
-            std::lock_guard<std::mutex> state_guard(state->mutex);
-            --state->remaining;
-            state->condition.notify_all();
-          }
-        }
-      });
-    } catch (const std::system_error&) {
-      // Reserve() promises never to fail: running with fewer workers is only a
-      // performance difference. So when the system refuses a thread, drop the
-      // half-built slot and hand back what was already reserved.
-      slots_.pop_back();
-      break;
-    }
-    batch.slots_.push_back(index);
-    batch.handles_.push_back(slot);
-  }
-  return batch;
-}
-
-int WorkerPool::size() const {
-  std::lock_guard<std::mutex> guard(mutex_);
-  return static_cast<int>(slots_.size());
-}
-
-void WorkerPool::Release(const std::vector<int>& slots) {
-  std::lock_guard<std::mutex> guard(mutex_);
-  if (shutdown_) return;
-  for (const int slot : slots) idle_.push_back(slot);
-}
-
-void WorkerPool::Batch::Dispatch(const std::function<void(int)>& task) {
-  if (handles_.empty()) return;
-  DRAKE_DEMAND(state_ == nullptr);
-  state_ = std::make_shared<BatchState>();
-  state_->remaining = static_cast<int>(handles_.size());
-  for (int i = 0; i < static_cast<int>(handles_.size()); ++i) {
-    Slot* const slot = handles_[i];
-    {
-      std::lock_guard<std::mutex> guard(slot->mutex);
-      slot->task = &task;
-      slot->index = i;
-      slot->state = state_;
-      slot->has_task = true;
-    }
-    slot->condition.notify_one();
-  }
-}
-
-void WorkerPool::Batch::Wait() {
-  if (state_ == nullptr) return;
-  {
-    std::unique_lock<std::mutex> lock(state_->mutex);
-    state_->condition.wait(lock, [this]() {
-      return state_->remaining == 0;
-    });
-  }
-  state_.reset();
-}
-
-WorkerPool::Batch& WorkerPool::Batch::operator=(Batch&& other) noexcept {
-  if (this == &other) return *this;
-  Wait();
-  if (pool_ != nullptr && !slots_.empty()) pool_->Release(slots_);
-  pool_ = other.pool_;
-  slots_ = std::move(other.slots_);
-  handles_ = std::move(other.handles_);
-  state_ = std::move(other.state_);
-  other.pool_ = nullptr;
-  other.slots_.clear();
-  other.handles_.clear();
-  other.state_.reset();
-  return *this;
-}
-
-WorkerPool::Batch::~Batch() {
-  Wait();
-  if (pool_ != nullptr && !slots_.empty()) pool_->Release(slots_);
-}
-
-// ---------------------------------------------------------------------------
 // RunCertifier.
 // ---------------------------------------------------------------------------
 
-CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool,
-                             WorkerPool* workers) {
+CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
   DRAKE_DEMAND(input.model != nullptr);
   DRAKE_DEMAND(input.oracle != nullptr);
   DRAKE_DEMAND(input.table != nullptr);
@@ -1112,7 +931,13 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool,
   Statistics stats;
   std::vector<CertificateRecord> records;
 
-  const int requested_threads = std::max(1, options.parallelism.num_threads());
+  // Bounding the width by the machine's keeps a program that runs many
+  // concurrent parallel checks from multiplying threads without limit; the
+  // bound comes from Parallelism::Max() rather than hardware_concurrency()
+  // directly, so it honours DRAKE_NUM_THREADS like the rest of Drake.
+  const int num_threads =
+      std::min(std::max(1, options.parallelism.num_threads()),
+               Parallelism::Max().num_threads());
   // Only the lead worker's context is leased up front. Helpers lease theirs
   // when (if) they are hired, so a small check under the default
   // Parallelism::Max() never pays for sixteen leases it will not use.
@@ -1148,8 +973,6 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool,
   }
 
   const bool have_work = !moving_pairs.empty() && num_segments > 0;
-  const int num_threads =
-      (workers == nullptr) ? 1 : std::max(1, requested_threads);
   const auto accumulate = [&](Worker* worker) {
     stats.nodes += worker->stats().nodes;
     stats.narrowphase_queries += worker->stats().narrowphase_queries;
@@ -1209,39 +1032,47 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool,
       if (first_error == nullptr) first_error = std::current_exception();
     };
 
-    // Declared before the batch so that the batch — whose destructor waits for
-    // the helpers — is torn down first on every path, including the throwing
-    // one.
+    // The futures are declared last so that they are destroyed — and therefore
+    // waited on — before the workers, contexts and lease their tasks reference,
+    // on every path including the throwing one.
     std::optional<ContextPool::Lease> helper_lease;
     std::vector<std::unique_ptr<Worker>> helpers;
-    std::function<void(int)> helper_task;
-    WorkerPool::Batch batch;
+    std::vector<std::future<void>> helper_futures;
 
     Recruitment recruitment;
     recruitment.nodes_before_hire = kNodesBeforeHiringHelpers;
+    // Hiring is a per-call cold path: it runs at most once per check, only
+    // after the run has proved itself worth spreading, and it is the only
+    // place in the driver that allocates or creates a thread once the node
+    // loop is turning (requirement P1 covers the steady state, not this).
     recruitment.hire = [&]() {
-      batch = workers->Reserve(num_threads - 1);
-      const int hired = batch.size();
-      if (hired == 0) return;  // Pool exhausted: stay serial, still correct.
+      const int hired = num_threads - 1;
+      if (hired <= 0) return;
       helper_lease.emplace(pool->Acquire(hired));
       helpers.reserve(hired);
       for (int i = 0; i < hired; ++i) {
         helpers.push_back(std::make_unique<Worker>(
             input, &(*helper_lease)[i], &sink, &node_counter, &queue, nullptr));
       }
-      helper_task = [&](int index) {
-        try {
-          helpers[index]->Run();
-        } catch (...) {
-          record_error();
-          queue.Abort();
-        }
-      };
       // Every consumer of the queue, the lead included: this count is the
       // occupancy target of the sharing policy, and setting it from zero is
       // what switches sharing on.
       queue.set_num_workers(hired + 1);
-      batch.Dispatch(helper_task);
+      helper_futures.reserve(hired);
+      for (int i = 0; i < hired; ++i) {
+        // std::async throws std::system_error when the system refuses a
+        // thread. The helpers that did start are still joined below, and the
+        // lead's catch turns the refusal into the same aborted run any other
+        // throw out of the node loop produces.
+        helper_futures.push_back(std::async(std::launch::async, [&, i]() {
+          try {
+            helpers[i]->Run();
+          } catch (...) {
+            record_error();
+            queue.Abort();
+          }
+        }));
+      }
     };
 
     Worker lead(input, &lease[0], &sink, &node_counter, &queue, &recruitment);
@@ -1251,7 +1082,9 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool,
       record_error();
       queue.Abort();
     }
-    batch.Wait();
+    // The helper tasks swallow their own exceptions into `first_error`, so
+    // get() here is a join and never throws.
+    for (std::future<void>& helper : helper_futures) helper.get();
     if (first_error != nullptr) std::rethrow_exception(first_error);
     accumulate(&lead);
     for (const std::unique_ptr<Worker>& helper : helpers) {

@@ -23,7 +23,7 @@
 ///      inside one segment gets measurably faster with threads, and a check
 ///      too small to pay for workers is no slower at Parallelism::Max() than
 ///      serially. These are the two regressions the driver rework of
-///      certifier.cc fixed, as the benchmark suite's thread-scaling
+///      certifier_internal.cc fixed, as the benchmark suite's thread-scaling
 ///      results measured; the deep
 ///      workload is also where the sharing path gets its TSan coverage, since
 ///      the corpus cases of claims 1-3 are far too small to hire a helper.
@@ -606,8 +606,8 @@ GTEST_TEST(ConcurrencyTest, ConcurrentMixedApiCallsAreIndependent) {
 // 4. Per-call parallel scaling.
 // ---------------------------------------------------------------------------
 //
-// These pin the two properties the driver rework of certifier.cc exists
-// for, and that the benchmark suite's thread-scaling results measured
+// These pin the two properties the driver rework of certifier_internal.cc
+// exists for, and that the benchmark suite's thread-scaling results measured
 // the old driver failing:
 //
 //   a) a deep tree inside a single segment actually spreads over the workers
