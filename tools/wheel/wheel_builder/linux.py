@@ -25,8 +25,9 @@ from .common import (
 from .linux_types import BUILD, TEST, Platform, PythonManager, Role, Target
 
 # Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
-_files_to_remove = []
-_images_to_remove = []
+_files_to_remove = set()
+_images_to_remove = set()
+_built_test_bases = set()
 
 tag_base = "pip-drake"
 
@@ -238,38 +239,43 @@ def _create_source_tar(path):
     out.close()
 
 
-def _tagname(
-    target: Target, role: Role, tag_prefix: str, test_index: int | None = None
-):
+def _build_tagname(target: Target, tag_prefix: str) -> str:
     """
-    Generates a Docker tag name for a target and tag prefix.
-    Iff the role is the TEST role, then the test_index must be provided.
+    Generates a Docker tag name for a build-role target and tag prefix.
     """
-    platform = target.platform(role, test_index).alias
+    platform = target.platform(BUILD)
     python_tag = target.python.tag
     python_binder = target.python_binder.value
-    return f"{tag_base}:{tag_prefix}-{platform}-py{python_tag}-{python_binder}"
+    python_details = f"py{python_tag}-{python_binder}"
+    return f"{tag_base}:{tag_prefix}-{platform.alias}-{python_details}"
 
 
-def _build_stage(target, args, tag_prefix, stage=None):
+def _test_tagname(target: Target, test_index: int, tag_prefix: str) -> str:
     """
-    Runs a Docker build and return the build tag.
+    Generates a Docker tag name for a test-role target, test_index, and tag
+    prefix.
     """
+    platform = target.platform(TEST, test_index)
+    manager = platform.python_manager.value
+    if tag_prefix == "base":
+        return f"{tag_base}:{tag_prefix}-{platform.alias}-{manager}"
+    python_tag = target.python.tag
+    return f"{tag_base}:{tag_prefix}-{platform.alias}-py{python_tag}-{manager}"
 
-    # Generate canonical tag from target.
-    tag = _tagname(target, BUILD, tag_prefix)
+
+def _build_stage(
+    tag: str, args: list[str], context_dir: str, stage: str | None = None
+) -> None:
+    """
+    Runs a Docker build and tags the image with the given tag.
+    """
 
     # Generate extra arguments to specify what stage to build.
-    if stage is not None:
-        extra = ["--target", stage]
-    else:
-        extra = []
+    extra = ["--target", stage] if stage is not None else []
 
     # Run the build.
     print("[-] Build", tag, extra + args)
-    _docker("build", "--tag", tag, *extra, *args, resource_root)
-
-    return tag
+    _docker("build", "-t", tag, *extra, *args, context_dir)
 
 
 def _target_args(target: Target, role: Role, test_index: int | None = None):
@@ -297,7 +303,7 @@ def _target_args(target: Target, role: Role, test_index: int | None = None):
 
 def _build_image(target, identifier, version, options):
     """
-    Runs the build for a target and (optionally) extract the wheel.
+    Runs the build for a target and (optionally) extracts the wheel.
     """
     drake_is_abi3_wheel = (
         "1" if target.python_binder == PythonBinder.NANOBIND else "0"
@@ -314,16 +320,18 @@ def _build_image(target, identifier, version, options):
     if options.tag_stages:
         # Inspect Dockerfile, find stages, and build them.
         dockerfile = os.path.join(resource_root, "Dockerfile")
+        tag = None
         with open(dockerfile, encoding="utf-8") as f:
             for line in f:
                 if line.startswith("FROM"):
                     stage = line.strip().split()[-1]
-                    tag = _build_stage(
-                        target, args, tag_prefix=stage, stage=stage
-                    )
+                    tag = _build_tagname(target, stage)
+                    _build_stage(tag, args, resource_root, stage)
+        assert tag is not None, f"No named stages found in {dockerfile}"
     else:
-        tag = _build_stage(target, args, tag_prefix=identifier)
-        _images_to_remove.append(tag)
+        tag = _build_tagname(target, identifier)
+        _build_stage(tag, args, resource_root)
+        _images_to_remove.add(tag)
 
     # Extract the wheel (if requested).
     if options.extract:
@@ -359,27 +367,27 @@ def _test_wheel(target, identifier, version, options):
         wheel_version=version,
         wheel_platform=f"manylinux_{glibc}_{ARCH}",
     )
+    test_dir = os.path.join(resource_root, "test")
 
     for test_index, test_platform in enumerate(target.test_platforms):
         print(f"[-] Testing on {test_platform.alias} ...")
-        test_image = _tagname(target, TEST, f"test-{identifier}", test_index)
+        args = _target_args(target, TEST, test_index)
+        test_image = _test_tagname(target, test_index, f"test-{identifier}")
         test_container = test_image.replace(":", "__")
         if options.tag_stages:
-            base_image = _tagname(target, TEST, "test", test_index)
-        else:
-            base_image = test_image
-        test_dir = os.path.join(resource_root, "test")
+            # Build the base image, shared across multiple targets.
+            base_image = _test_tagname(target, test_index, "base")
+            if base_image not in _built_test_bases:
+                _build_stage(base_image, args, test_dir, "base")
+                _built_test_bases.add(base_image)
+                _images_to_remove.add(base_image)
 
-        # Build the test base image.
-        _docker(
-            "build",
-            "-t",
-            base_image,
-            *_target_args(target, TEST, test_index),
-            test_dir,
-        )
-        if not options.tag_stages:
-            _images_to_remove.append(base_image)
+            provisioned_image = _test_tagname(target, test_index, "python")
+            _build_stage(provisioned_image, args, test_dir, "python")
+        else:
+            provisioned_image = test_image
+            _build_stage(provisioned_image, args, test_dir)
+        _images_to_remove.add(provisioned_image)
 
         # Install the wheel.
         install_command = [
@@ -391,14 +399,14 @@ def _test_wheel(target, identifier, version, options):
             "run", "-t", f"--name={test_container}",
             f"-v{test_dir}:/test",
             f"-v{options.output_dir}:{wheelhouse}",
-            base_image, *install_command,
+            provisioned_image, *install_command,
         )  # fmt: skip
 
         # Tag the container with the wheel installed.
         _docker("commit", test_container, test_image)
         _docker("container", "rm", test_container)
         if options.tag_stages:
-            _images_to_remove.append(test_image)
+            _images_to_remove.add(test_image)
 
         # Run individual tests.
         test_script = "/test/test-wheel.sh"
@@ -442,12 +450,12 @@ def build(options):
 
     # Provide the SNOPT source archive as a dependency.
     snopt_tgz = os.path.join(resource_root, "image", "snopt.tar.gz")
-    _files_to_remove.append(snopt_tgz)
+    _files_to_remove.add(snopt_tgz)
     create_snopt_tgz(snopt_path=options.snopt_path, output=snopt_tgz)
 
     # Generate the Drake repository source archive.
     source_tar = os.path.join(resource_root, "image", "drake-src.tar")
-    _files_to_remove.append(source_tar)
+    _files_to_remove.add(source_tar)
     _create_source_tar(source_tar)
 
     # Build the requested wheels.
