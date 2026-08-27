@@ -22,7 +22,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningContinuousCollision(py::module m) {
+void DefinePlanningContinuousCollision(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::continuous_collision;
   constexpr auto& doc = pydrake_doc_planning_continuous_collision.drake.planning
@@ -61,47 +61,43 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = Options;
     constexpr auto& cls_doc = doc.Options;
-    py::class_<Class> cls(m, "Options", cls_doc.doc);
+    class_<Class> cls(m, "Options", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("margin", &Class::margin, cls_doc.margin.doc)
-        .def_readwrite("continuity_tolerance", &Class::continuity_tolerance,
+        .def_rw("margin", &Class::margin, cls_doc.margin.doc)
+        .def_rw("continuity_tolerance", &Class::continuity_tolerance,
             cls_doc.continuity_tolerance.doc)
-        .def_readwrite("query_tolerance", &Class::query_tolerance,
+        .def_rw("query_tolerance", &Class::query_tolerance,
             cls_doc.query_tolerance.doc)
-        .def_readwrite("certificate_slack", &Class::certificate_slack,
+        .def_rw("certificate_slack", &Class::certificate_slack,
             cls_doc.certificate_slack.doc)
-        .def_readwrite(
-            "min_interval", &Class::min_interval, cls_doc.min_interval.doc)
-        .def_readwrite("continuous_revolute_indices",
+        .def_rw("min_interval", &Class::min_interval, cls_doc.min_interval.doc)
+        .def_rw("continuous_revolute_indices",
             &Class::continuous_revolute_indices,
             cls_doc.continuous_revolute_indices.doc)
-        .def_readwrite("max_conversion_degree", &Class::max_conversion_degree,
+        .def_rw("max_conversion_degree", &Class::max_conversion_degree,
             cls_doc.max_conversion_degree.doc)
-        .def_readwrite("mode", &Class::mode, cls_doc.mode.doc)
-        .def_readwrite("max_reported_findings", &Class::max_reported_findings,
+        .def_rw("mode", &Class::mode, cls_doc.mode.doc)
+        .def_rw("max_reported_findings", &Class::max_reported_findings,
             cls_doc.max_reported_findings.doc)
-        .def_readwrite("max_nodes", &Class::max_nodes, cls_doc.max_nodes.doc)
-        .def_readwrite("emit_certificate", &Class::emit_certificate,
+        .def_rw("max_nodes", &Class::max_nodes, cls_doc.max_nodes.doc)
+        .def_rw("emit_certificate", &Class::emit_certificate,
             cls_doc.emit_certificate.doc)
-        .def_readwrite(
-            "parallelism", &Class::parallelism, cls_doc.parallelism.doc);
+        .def_rw("parallelism", &Class::parallelism, cls_doc.parallelism.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = PaddingSpec;
     constexpr auto& cls_doc = doc.PaddingSpec;
-    py::class_<Class> cls(m, "PaddingSpec", cls_doc.doc);
+    class_<Class> cls(m, "PaddingSpec", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite(
-            "env_padding", &Class::env_padding, cls_doc.env_padding.doc)
-        .def_readwrite(
-            "self_padding", &Class::self_padding, cls_doc.self_padding.doc)
-        .def_readwrite(
+        .def_rw("env_padding", &Class::env_padding, cls_doc.env_padding.doc)
+        .def_rw("self_padding", &Class::self_padding, cls_doc.self_padding.doc)
+        .def_rw(
             "per_body_pair", &Class::per_body_pair, cls_doc.per_body_pair.doc);
     DefCopyAndDeepCopy(&cls);
   }
@@ -109,53 +105,49 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = PairId;
     constexpr auto& cls_doc = doc.PairId;
-    py::class_<Class> cls(m, "PairId", cls_doc.doc);
+    class_<Class> cls(m, "PairId", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("a", &Class::a, cls_doc.a.doc)
-        .def_readwrite("b", &Class::b, cls_doc.b.doc)
-        .def_readwrite("body_a", &Class::body_a, cls_doc.body_a.doc)
-        .def_readwrite("body_b", &Class::body_b, cls_doc.body_b.doc);
+        .def_rw("a", &Class::a, cls_doc.a.doc)
+        .def_rw("b", &Class::b, cls_doc.b.doc)
+        .def_rw("body_a", &Class::body_a, cls_doc.body_a.doc)
+        .def_rw("body_b", &Class::body_b, cls_doc.body_b.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = Finding;
     constexpr auto& cls_doc = doc.Finding;
-    py::class_<Class> cls(m, "Finding", cls_doc.doc);
+    class_<Class> cls(m, "Finding", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("time", &Class::time, cls_doc.time.doc)
-        .def_readwrite("q", &Class::q, cls_doc.q.doc)
-        .def_readwrite("pair", &Class::pair, cls_doc.pair.doc)
-        .def_readwrite("distance", &Class::distance, cls_doc.distance.doc)
-        .def_readwrite(
-            "motion_bound", &Class::motion_bound, cls_doc.motion_bound.doc)
-        .def_readwrite("definite", &Class::definite, cls_doc.definite.doc)
-        .def_readwrite(
-            "nearest_a_W", &Class::nearest_a_W, cls_doc.nearest_a_W.doc)
-        .def_readwrite(
-            "nearest_b_W", &Class::nearest_b_W, cls_doc.nearest_b_W.doc);
+        .def_rw("time", &Class::time, cls_doc.time.doc)
+        .def_rw("q", &Class::q, cls_doc.q.doc)
+        .def_rw("pair", &Class::pair, cls_doc.pair.doc)
+        .def_rw("distance", &Class::distance, cls_doc.distance.doc)
+        .def_rw("motion_bound", &Class::motion_bound, cls_doc.motion_bound.doc)
+        .def_rw("definite", &Class::definite, cls_doc.definite.doc)
+        .def_rw("nearest_a_W", &Class::nearest_a_W, cls_doc.nearest_a_W.doc)
+        .def_rw("nearest_b_W", &Class::nearest_b_W, cls_doc.nearest_b_W.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = Statistics;
     constexpr auto& cls_doc = doc.Statistics;
-    py::class_<Class> cls(m, "Statistics", cls_doc.doc);
+    class_<Class> cls(m, "Statistics", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("nodes", &Class::nodes, cls_doc.nodes.doc)
-        .def_readwrite("narrowphase_queries", &Class::narrowphase_queries,
+        .def_rw("nodes", &Class::nodes, cls_doc.nodes.doc)
+        .def_rw("narrowphase_queries", &Class::narrowphase_queries,
             cls_doc.narrowphase_queries.doc)
-        .def_readwrite("sphere_certifications", &Class::sphere_certifications,
+        .def_rw("sphere_certifications", &Class::sphere_certifications,
             cls_doc.sphere_certifications.doc)
-        .def_readwrite("max_depth", &Class::max_depth, cls_doc.max_depth.doc)
-        .def_readwrite(
-            "wall_time_s", &Class::wall_time_s, cls_doc.wall_time_s.doc);
+        .def_rw("max_depth", &Class::max_depth, cls_doc.max_depth.doc)
+        .def_rw("wall_time_s", &Class::wall_time_s, cls_doc.wall_time_s.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -163,12 +155,12 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = BoundingSphere;
     constexpr auto& cls_doc = doc.BoundingSphere;
-    py::class_<Class> cls(m, "BoundingSphere", cls_doc.doc);
+    class_<Class> cls(m, "BoundingSphere", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("center_L", &Class::center_L, cls_doc.center_L.doc)
-        .def_readwrite("radius", &Class::radius, cls_doc.radius.doc);
+        .def_rw("center_L", &Class::center_L, cls_doc.center_L.doc)
+        .def_rw("radius", &Class::radius, cls_doc.radius.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -179,13 +171,13 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = BezierSegment;
     constexpr auto& cls_doc = doc.BezierSegment;
-    py::class_<Class> cls(m, "BezierSegment", cls_doc.doc);
+    class_<Class> cls(m, "BezierSegment", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("t_start", &Class::t_start, cls_doc.t_start.doc)
-        .def_readwrite("t_end", &Class::t_end, cls_doc.t_end.doc)
-        .def_readwrite("control_points", &Class::control_points,
+        .def_rw("t_start", &Class::t_start, cls_doc.t_start.doc)
+        .def_rw("t_end", &Class::t_end, cls_doc.t_end.doc)
+        .def_rw("control_points", &Class::control_points,
             cls_doc.control_points.doc);
     DefCopyAndDeepCopy(&cls);
   }
@@ -193,7 +185,7 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = PiecewiseBezierPath;
     constexpr auto& cls_doc = doc.PiecewiseBezierPath;
-    py::class_<Class> cls(m, "PiecewiseBezierPath", cls_doc.doc);
+    class_<Class> cls(m, "PiecewiseBezierPath", cls_doc.doc);
     cls  // BR
         .def_static("FromTrajectory", &Class::FromTrajectory,
             py::arg("trajectory"), py::arg("options"),
@@ -239,7 +231,7 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = MotionBoundTable;
     constexpr auto& cls_doc = doc.MotionBoundTable;
-    py::class_<Class> cls(m, "MotionBoundTable", cls_doc.doc);
+    class_<Class> cls(m, "MotionBoundTable", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::vector<int>, std::vector<int>, std::vector<double>,
@@ -262,7 +254,7 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = KinematicsEngine;
     constexpr auto& cls_doc = doc.KinematicsEngine;
-    py::class_<Class> cls(m, "KinematicsEngine", cls_doc.doc);
+    class_<Class> cls(m, "KinematicsEngine", cls_doc.doc);
     cls  // BR
         .def(py::init<const RobotDiagram<double>&>(), py::arg("model"),
             // Keep the model alive as long as the engine: the C++ object
@@ -310,20 +302,20 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = PairRecord;
     constexpr auto& cls_doc = doc.PairRecord;
-    py::class_<Class> cls(m, "PairRecord", cls_doc.doc);
+    class_<Class> cls(m, "PairRecord", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("id", &Class::id, cls_doc.id.doc)
-        .def_readwrite("route", &Class::route, cls_doc.route.doc)
-        .def_readwrite("threshold", &Class::threshold, cls_doc.threshold.doc);
+        .def_rw("id", &Class::id, cls_doc.id.doc)
+        .def_rw("route", &Class::route, cls_doc.route.doc)
+        .def_rw("threshold", &Class::threshold, cls_doc.threshold.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = DistanceOracle;
     constexpr auto& cls_doc = doc.DistanceOracle;
-    py::class_<Class> cls(m, "DistanceOracle", cls_doc.doc);
+    class_<Class> cls(m, "DistanceOracle", cls_doc.doc);
     cls  // BR
         .def(py::init<const RobotDiagram<double>&, double>(), py::arg("model"),
             py::arg("query_tolerance"), cls_doc.ctor.doc)
@@ -357,31 +349,30 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = CertificateRecord;
     constexpr auto& cls_doc = doc.CertificateRecord;
-    py::class_<Class> cls(m, "CertificateRecord", cls_doc.doc);
+    class_<Class> cls(m, "CertificateRecord", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("segment", &Class::segment, cls_doc.segment.doc)
-        .def_readwrite("s_start", &Class::s_start, cls_doc.s_start.doc)
-        .def_readwrite("s_end", &Class::s_end, cls_doc.s_end.doc)
-        .def_readwrite("pair_index", &Class::pair_index, cls_doc.pair_index.doc)
-        .def_readwrite("qc", &Class::qc, cls_doc.qc.doc)
-        .def_readwrite("phi_hat", &Class::phi_hat, cls_doc.phi_hat.doc)
-        .def_readwrite(
-            "motion_bound", &Class::motion_bound, cls_doc.motion_bound.doc)
-        .def_readwrite("threshold", &Class::threshold, cls_doc.threshold.doc);
+        .def_rw("segment", &Class::segment, cls_doc.segment.doc)
+        .def_rw("s_start", &Class::s_start, cls_doc.s_start.doc)
+        .def_rw("s_end", &Class::s_end, cls_doc.s_end.doc)
+        .def_rw("pair_index", &Class::pair_index, cls_doc.pair_index.doc)
+        .def_rw("qc", &Class::qc, cls_doc.qc.doc)
+        .def_rw("phi_hat", &Class::phi_hat, cls_doc.phi_hat.doc)
+        .def_rw("motion_bound", &Class::motion_bound, cls_doc.motion_bound.doc)
+        .def_rw("threshold", &Class::threshold, cls_doc.threshold.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = Certificate;
     constexpr auto& cls_doc = doc.Certificate;
-    py::class_<Class> cls(m, "Certificate", cls_doc.doc);
+    class_<Class> cls(m, "Certificate", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("records", &Class::records, cls_doc.records.doc)
-        .def_readwrite("pairs", &Class::pairs, cls_doc.pairs.doc);
+        .def_rw("records", &Class::records, cls_doc.records.doc)
+        .def_rw("pairs", &Class::pairs, cls_doc.pairs.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -389,31 +380,30 @@ collision-free over its entire continuous time domain, rather than sampling it.
   {
     using Class = CertificationResult;
     constexpr auto& cls_doc = doc.CertificationResult;
-    py::class_<Class> cls(m, "CertificationResult", cls_doc.doc);
+    class_<Class> cls(m, "CertificationResult", cls_doc.doc);
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_readwrite("verdict", &Class::verdict, cls_doc.verdict.doc)
-        .def_readwrite("findings", &Class::findings, cls_doc.findings.doc)
-        .def_readwrite("stats", &Class::stats, cls_doc.stats.doc)
-        .def_readwrite(
-            "certificate", &Class::certificate, cls_doc.certificate.doc);
+        .def_rw("verdict", &Class::verdict, cls_doc.verdict.doc)
+        .def_rw("findings", &Class::findings, cls_doc.findings.doc)
+        .def_rw("stats", &Class::stats, cls_doc.stats.doc)
+        .def_rw("certificate", &Class::certificate, cls_doc.certificate.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = ContinuousCollisionChecker;
     constexpr auto& cls_doc = doc.ContinuousCollisionChecker;
-    py::class_<Class> cls(m, "ContinuousCollisionChecker", cls_doc.doc);
+    class_<Class> cls(m, "ContinuousCollisionChecker", cls_doc.doc);
 
     {
       using Nested = Class::Params;
       constexpr auto& nested_doc = cls_doc.Params;
-      py::class_<Nested> nested_cls(cls, "Params", nested_doc.doc);
+      class_<Nested> nested_cls(cls, "Params", nested_doc.doc);
       nested_cls  // BR
           .def(py::init<>())
           .def(ParamInit<Nested>())
-          .def_property(
+          .def_prop_rw(
               "model",
               [](const Nested& self) -> const RobotDiagram<double>* {
                 return self.model.get();
@@ -425,28 +415,33 @@ collision-free over its entire continuous time domain, rather than sampling it.
                     make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
               },
               nested_doc.model.doc)
-          .def_readwrite("padding", &Nested::padding, nested_doc.padding.doc)
-          .def_readwrite("default_options", &Nested::default_options,
+          .def_rw("padding", &Nested::padding, nested_doc.padding.doc)
+          .def_rw("default_options", &Nested::default_options,
               nested_doc.default_options.doc);
     }
 
     py::object params_ctor = cls.attr("Params");
     cls  // BR
         .def(
-            py::init([params_ctor](py::object model, const py::kwargs& kwargs) {
+            "__init__",
+            [params_ctor](
+                Class* self, py::object model, const py::kwargs& kwargs) {
               // For lifetime management, we need to treat pointer-like
               // arguments separately. Start by creating a Params object in
               // Python with all of the other non-pointer kwargs.
               py::object params_py = params_ctor(**kwargs);
-              auto* params = params_py.cast<Class::Params*>();
+              auto* params = py::cast<Class::Params*>(params_py);
               DRAKE_DEMAND(params != nullptr);
               // Now, add a python reference to model (owned by the shared
               // pointer), and transfer that to the c++ checker.
               params->model =
                   make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
-              return std::make_unique<Class>(std::move(*params));
-            }),
+              new (self) Class(std::move(*params));
+            },
             py::kw_only(), py::arg("model"),
+#ifdef PYDRAKE_USE_NANOBIND
+            py::arg("kwargs"),
+#endif
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.continuous_collision"

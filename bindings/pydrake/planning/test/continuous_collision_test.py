@@ -1,4 +1,4 @@
-import pydrake.planning.continuous_collision as mut
+import pydrake.planning.continuous_collision as mut  # ruff: isort: skip
 
 import unittest
 
@@ -21,8 +21,11 @@ from pydrake.trajectories import BezierCurve
 
 
 def _inertia():
-    return SpatialInertia(mass=1.0, p_PScm_E=np.zeros(3),
-                          G_SP_E=UnitInertia(Ixx=1.0, Iyy=1.0, Izz=1.0))
+    return SpatialInertia(
+        mass=1.0,
+        p_PScm_E=np.zeros(3),
+        G_SP_E=UnitInertia(Ixx=1.0, Iyy=1.0, Izz=1.0),
+    )
 
 
 def _make_arm_builder():
@@ -35,34 +38,56 @@ def _make_arm_builder():
     plant = builder.plant()
     link = plant.AddRigidBody(name="link", M_BBo_B=_inertia())
     tool = plant.AddRigidBody(name="tool", M_BBo_B=_inertia())
-    plant.AddJoint(RevoluteJoint(
-        name="shoulder",
-        frame_on_parent=plant.world_frame(),
-        frame_on_child=link.body_frame(),
-        axis=[0, 0, 1]))
-    slide_frame = plant.AddFrame(FixedOffsetFrame(
-        name="slide_offset",
-        P=link.body_frame(),
-        X_PF=RigidTransform([0.30, 0.0, 0.0])))
-    plant.AddJoint(PrismaticJoint(
-        name="slide",
-        frame_on_parent=slide_frame,
-        frame_on_child=tool.body_frame(),
-        axis=[1, 0, 0]))
+    plant.AddJoint(
+        RevoluteJoint(
+            name="shoulder",
+            frame_on_parent=plant.world_frame(),
+            frame_on_child=link.body_frame(),
+            axis=[0, 0, 1],
+        )
+    )
+    slide_frame = plant.AddFrame(
+        FixedOffsetFrame(
+            name="slide_offset",
+            P=link.body_frame(),
+            X_PF=RigidTransform([0.30, 0.0, 0.0]),
+        )
+    )
+    plant.AddJoint(
+        PrismaticJoint(
+            name="slide",
+            frame_on_parent=slide_frame,
+            frame_on_child=tool.body_frame(),
+            axis=[1, 0, 0],
+        )
+    )
     plant.RegisterCollisionGeometry(
-        body=link, X_BG=RigidTransform([0.15, 0.0, 0.0]),
-        shape=Box(0.30, 0.05, 0.05), name="link_geom",
-        coulomb_friction=CoulombFriction(1.0, 1.0))
+        body=link,
+        X_BG=RigidTransform([0.15, 0.0, 0.0]),
+        shape=Box(0.30, 0.05, 0.05),
+        name="link_geom",
+        coulomb_friction=CoulombFriction(1.0, 1.0),
+    )
     plant.RegisterCollisionGeometry(
-        body=tool, X_BG=RigidTransform(), shape=Sphere(0.04),
-        name="tool_geom", coulomb_friction=CoulombFriction(1.0, 1.0))
+        body=tool,
+        X_BG=RigidTransform(),
+        shape=Sphere(0.04),
+        name="tool_geom",
+        coulomb_friction=CoulombFriction(1.0, 1.0),
+    )
     post = plant.AddRigidBody(name="post", M_BBo_B=_inertia())
-    plant.WeldFrames(frame_on_parent_F=plant.world_frame(),
-                     frame_on_child_M=post.body_frame(),
-                     X_FM=RigidTransform([0.0, 0.60, 0.0]))
+    plant.WeldFrames(
+        frame_on_parent_F=plant.world_frame(),
+        frame_on_child_M=post.body_frame(),
+        X_FM=RigidTransform([0.0, 0.60, 0.0]),
+    )
     plant.RegisterCollisionGeometry(
-        body=post, X_BG=RigidTransform(), shape=Sphere(0.08),
-        name="post_geom", coulomb_friction=CoulombFriction(1.0, 1.0))
+        body=post,
+        X_BG=RigidTransform(),
+        shape=Sphere(0.08),
+        name="post_geom",
+        coulomb_friction=CoulombFriction(1.0, 1.0),
+    )
     return builder
 
 
@@ -76,7 +101,8 @@ class TestContinuousCollision(unittest.TestCase):
     def setUp(self):
         self.model = _make_arm_builder().Build()
         self.checker = mut.ContinuousCollisionChecker(
-            model=self.model, default_options=_serial_options())
+            model=self.model, default_options=_serial_options()
+        )
 
     def test_options(self):
         """Exercises the Options / PaddingSpec / enum surface."""
@@ -141,8 +167,9 @@ class TestContinuousCollision(unittest.TestCase):
         self.assertIsInstance(engine, mut.KinematicsEngine)
         self.assertEqual(engine.num_positions(), 2)
         pair = checker.pairs()[0].id
-        coords = engine.CoordinatesAffectingPair(body_a=pair.body_a,
-                                                 body_b=pair.body_b)
+        coords = engine.CoordinatesAffectingPair(
+            body_a=pair.body_a, body_b=pair.body_b
+        )
         self.assertIsInstance(coords, list)
 
     def test_check_edge_free_and_colliding(self):
@@ -207,24 +234,33 @@ class TestContinuousCollision(unittest.TestCase):
         # CheckEdge normalizes exactly this waypoint matrix, so the replay
         # runs against the same path the certificate was recorded on.
         path = mut.PiecewiseBezierPath.FromWaypoints(
-            waypoints=np.column_stack([q1, q2]), options=options)
-        self.assertTrue(mut.VerifyCertificate(
-            checker=self.checker, path=path, certificate=certificate))
+            waypoints=np.column_stack([q1, q2]), options=options
+        )
+        self.assertTrue(
+            mut.VerifyCertificate(
+                checker=self.checker, path=path, certificate=certificate
+            )
+        )
 
         # A tampered certificate must not verify.
-        tampered = mut.Certificate(records=list(certificate.records),
-                                   pairs=list(certificate.pairs))
+        tampered = mut.Certificate(
+            records=list(certificate.records), pairs=list(certificate.pairs)
+        )
         bad = tampered.records[0]
         bad.phi_hat = bad.phi_hat + 100.0
         tampered.records = [bad] + list(tampered.records[1:])
-        self.assertFalse(mut.VerifyCertificate(
-            checker=self.checker, path=path, certificate=tampered))
+        self.assertFalse(
+            mut.VerifyCertificate(
+                checker=self.checker, path=path, certificate=tampered
+            )
+        )
 
     def test_piecewise_bezier_path(self):
         options = mut.Options()
         waypoints = np.array([[0.0, 0.3, 0.6], [0.0, 0.05, 0.10]])
-        dut = mut.PiecewiseBezierPath.FromWaypoints(waypoints=waypoints,
-                                                    options=options)
+        dut = mut.PiecewiseBezierPath.FromWaypoints(
+            waypoints=waypoints, options=options
+        )
         self.assertEqual(dut.num_positions(), 2)
         self.assertEqual(len(dut.segments()), 2)
         self.assertIsInstance(dut.segments()[0], mut.BezierSegment)
@@ -232,15 +268,17 @@ class TestContinuousCollision(unittest.TestCase):
         self.assertEqual(dut.end_time(), 2.0)
         np.testing.assert_allclose(dut.Value(t=0.0), waypoints[:, 0])
         np.testing.assert_allclose(dut.Value(t=2.0), waypoints[:, 2])
-        np.testing.assert_allclose(dut.EvaluateSegment(segment_index=0, s=0.0),
-                                   waypoints[:, 0])
+        np.testing.assert_allclose(
+            dut.EvaluateSegment(segment_index=0, s=0.0), waypoints[:, 0]
+        )
         np.testing.assert_allclose(dut.global_lower_bound(), waypoints[:, 0])
         np.testing.assert_allclose(dut.global_upper_bound(), waypoints[:, 2])
         self.assertEqual(len(dut.constant_coordinates()), 2)
 
         trajectory = BezierCurve(0.0, 1.0, waypoints)
         from_traj = mut.PiecewiseBezierPath.FromTrajectory(
-            trajectory=trajectory, options=options)
+            trajectory=trajectory, options=options
+        )
         self.assertEqual(from_traj.num_positions(), 2)
 
         # The out-params of DeCasteljauSplitAtHalf come back as a tuple.
@@ -251,33 +289,41 @@ class TestContinuousCollision(unittest.TestCase):
 
     def test_bounding_sphere(self):
         dut = mut.ComputeBoundingSphere(
-            shape=Sphere(0.25), X_LG=RigidTransform([1.0, 2.0, 3.0]))
+            shape=Sphere(0.25), X_LG=RigidTransform([1.0, 2.0, 3.0])
+        )
         self.assertIsInstance(dut, mut.BoundingSphere)
         self.assertEqual(dut.radius, 0.25)
         np.testing.assert_allclose(dut.center_L, [1.0, 2.0, 3.0])
 
-        box = mut.ComputeBoundingSphere(shape=Box(2.0, 2.0, 2.0),
-                                        X_LG=RigidTransform())
+        box = mut.ComputeBoundingSphere(
+            shape=Box(2.0, 2.0, 2.0), X_LG=RigidTransform()
+        )
         self.assertAlmostEqual(box.radius, np.sqrt(3.0))
 
     def test_add_vpolytope_obstacle(self):
         """AddVPolytopeObstacle runs on a pre-finalize plant."""
         builder = _make_arm_builder()
         plant = builder.plant()
-        vertices = np.array([
-            [0.0, 0.1, 0.0, 0.0],
-            [0.0, 0.0, 0.1, 0.0],
-            [0.0, 0.0, 0.0, 0.1],
-        ])
+        vertices = np.array(
+            [
+                [0.0, 0.1, 0.0, 0.0],
+                [0.0, 0.0, 0.1, 0.0],
+                [0.0, 0.0, 0.0, 0.1],
+            ]
+        )
         geometry_id = mut.AddVPolytopeObstacle(
-            plant=plant, vpoly=VPolytope(vertices),
-            X_WG=RigidTransform([0.0, -0.60, 0.0]), name="vpoly_obstacle")
+            plant=plant,
+            vpoly=VPolytope(vertices),
+            X_WG=RigidTransform([0.0, -0.60, 0.0]),
+            name="vpoly_obstacle",
+        )
         self.assertIsNotNone(geometry_id)
         # The new obstacle rides the ordinary narrowphase path, so a checker
         # built on the finalized diagram picks it up as an extra pair.
         model = builder.Build()
         checker = mut.ContinuousCollisionChecker(
-            model=model, default_options=_serial_options())
+            model=model, default_options=_serial_options()
+        )
         ids = set()
         for pair in checker.pairs():
             ids.add(pair.id.a)
@@ -285,13 +331,27 @@ class TestContinuousCollision(unittest.TestCase):
         self.assertIn(geometry_id, ids)
 
     def test_numerics(self):
-        self.assertTrue(mut.IsCertified(phi_hat=1.0, tau=1e-6,
-                                        motion_bound=0.1, threshold=0.0,
-                                        slack=1e-9))
-        self.assertFalse(mut.IsCertified(phi_hat=0.05, tau=1e-6,
-                                         motion_bound=0.1, threshold=0.0,
-                                         slack=1e-9))
-        self.assertTrue(mut.IsDefiniteViolation(phi_hat=-0.1, tau=1e-6,
-                                                threshold=0.0))
-        self.assertFalse(mut.IsDefiniteViolation(phi_hat=0.1, tau=1e-6,
-                                                 threshold=0.0))
+        self.assertTrue(
+            mut.IsCertified(
+                phi_hat=1.0,
+                tau=1e-6,
+                motion_bound=0.1,
+                threshold=0.0,
+                slack=1e-9,
+            )
+        )
+        self.assertFalse(
+            mut.IsCertified(
+                phi_hat=0.05,
+                tau=1e-6,
+                motion_bound=0.1,
+                threshold=0.0,
+                slack=1e-9,
+            )
+        )
+        self.assertTrue(
+            mut.IsDefiniteViolation(phi_hat=-0.1, tau=1e-6, threshold=0.0)
+        )
+        self.assertFalse(
+            mut.IsDefiniteViolation(phi_hat=0.1, tau=1e-6, threshold=0.0)
+        )

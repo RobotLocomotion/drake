@@ -38,13 +38,13 @@ R"""(Registers a V-polytope as an anchored obstacle with a collision role
 (the geometry-support scope, "V-polytopes as first-class geometry",
 ingestion route (b)).
 
-The polytope is converted to ``drake::geometry::Convex`` through
-Drake's own ``VPolytope::ToShapeConvex()`` entry point (a thin wrapper
-over the ``Convex(Eigen::Matrix3X<double> points, std::string label,
-double scale)`` constructor pinned at M0), then registered on the
-plant's world body. The result therefore rides the ordinary native
-narrowphase path end to end: the proximity engine and the certifier's
-radius/support code all read the same ``Convex::GetConvexHull()``
+The polytope is converted to ``drake∷geometry∷Convex`` through Drake's
+own ``VPolytope∷ToShapeConvex()`` entry point (a thin wrapper over the
+``Convex(Eigen∷Matrix3X<double> points, std∷string label, double
+scale)`` constructor pinned at M0), then registered on the plant's
+world body. The result therefore rides the ordinary native narrowphase
+path end to end: the proximity engine and the certifier's
+radius/support code all read the same ``Convex∷GetConvexHull()``
 object, so the certificate stays sound even for redundant or
 degenerate vertex sets.
 
@@ -192,7 +192,7 @@ R"""(Result of one certification call (the architecture).)""";
           // Symbol: drake::planning::continuous_collision::CertificationResult::certificate
           struct /* certificate */ {
             // Source: drake/planning/continuous_collision/continuous_collision_checker.h
-            const char* doc = R"""(Present iff Options::emit_certificate.)""";
+            const char* doc = R"""(Present iff Options∷emit_certificate.)""";
           } certificate;
           // Symbol: drake::planning::continuous_collision::CertificationResult::findings
           struct /* findings */ {
@@ -230,7 +230,7 @@ Formulas are exact containment per shape:
 - Ellipsoid(a,b,c): center, radius = max(a,b,c).
 - Convex / Mesh: centroid of the convex-hull vertices, radius = max vertex
 distance. The vertices MUST come from the same hull object the proximity
-engine collides (Shape::GetConvexHull()), never from the raw file: the
+engine collides (Shape∷GetConvexHull()), never from the raw file: the
 engine's hull bakes in scale and degeneracy inflation, and the radius must
 bound the geometry actually checked.
 
@@ -248,7 +248,7 @@ Raises:
 R"""(Certifies — not samples — that a trajectory is collision-free over its
 entire continuous time domain (the problem statement).
 
-Guarantee: if a check returns Verdict::kCertifiedFree, then for every
+Guarantee: if a check returns Verdict∷kCertifiedFree, then for every
 time t in the trajectory's domain and every unfiltered geometry pair
 (A, B), the signed distance φ_AB(q(t)) exceeds margin + padding(A, B)
 — under the stated assumptions: exact real arithmetic up to the
@@ -262,7 +262,7 @@ it.
 Thread safety: the Check* methods are const, own no mutable state
 outside per-call scratch, and may be called concurrently on one
 instance from arbitrary threads. This is deliberately stronger than
-planning::CollisionChecker, whose documentation requires a per-thread
+planning∷CollisionChecker, whose documentation requires a per-thread
 clone for use from threads the checker does not itself own; no clone
 is needed here. Construction and destruction are not thread-safe.)""";
           // Symbol: drake::planning::continuous_collision::ContinuousCollisionChecker::CheckEdge
@@ -452,7 +452,7 @@ halfspace.)""";
           struct /* kNative */ {
             // Source: drake/planning/continuous_collision/distance_oracle.h
             const char* doc =
-R"""(QueryObject::ComputeSignedDistancePairClosestPoints.)""";
+R"""(QueryObject∷ComputeSignedDistancePairClosestPoints.)""";
           } kNative;
         } DistanceRoute;
         // Symbol: drake::planning::continuous_collision::Finding
@@ -546,7 +546,7 @@ control-point box (prismatic chain contributions use the box, so the
 bound is trajectory-adaptive; the displacement lemma). Coordinates
 flagged constant by the path are removed from every J(p), and their
 residual motion inside the box is charged to
-MotionBoundTable::carveout_slack() instead.
+MotionBoundTable∷carveout_slack() instead.
 
 Raises:
     RuntimeError naming the joint if the path moves a coordinate of an
@@ -672,7 +672,7 @@ Each pair also carries a scalar ``carveout_slack(p)``, the residual
 motion of the coordinates the constant-coordinate carve-out
 (trajectory normalization; the joint-support scope) removed from J(p).
 "Constant" there is a *tolerance* — a coordinate whose global
-control-box range is at most Options::continuity_tolerance — not an
+control-box range is at most Options∷continuity_tolerance — not an
 identity, so a carved coordinate may still displace the pair's distal
 side by up to λ̃_j · range_j. That residual is charged unconditionally
 inside MotionBound(), which is what makes Δ_p a true upper bound on
@@ -780,7 +780,7 @@ R"""(Position coordinates whose junction continuity is checked modulo 2π
 (GcsTrajectoryOptimization continuous-revolute convention).
 
 See also:
-    planning::trajectory_optimization::GetContinuousRevoluteJointIndices)""";
+    planning∷trajectory_optimization∷GetContinuousRevoluteJointIndices)""";
           } continuous_revolute_indices;
           // Symbol: drake::planning::continuous_collision::Options::emit_certificate
           struct /* emit_certificate */ {
@@ -806,7 +806,7 @@ R"""(Maximum polynomial degree accepted for monomial→Bernstein conversion.)"""
           struct /* max_nodes */ {
             // Source: drake/planning/continuous_collision/options.h
             const char* doc =
-R"""(Optional node budget; exceeded ⇒ Verdict::kBudgetExhausted.)""";
+R"""(Optional node budget; exceeded ⇒ Verdict∷kBudgetExhausted.)""";
           } max_nodes;
           // Symbol: drake::planning::continuous_collision::Options::max_reported_findings
           struct /* max_reported_findings */ {
@@ -1035,7 +1035,7 @@ R"""(Search modes for certification (the search algorithm).)""";
             // Source: drake/planning/continuous_collision/options.h
             const char* doc =
 R"""(Certify the full domain and return every violation / inconclusive
-region found (bounded by Options::max_reported_findings).)""";
+region found (bounded by Options∷max_reported_findings).)""";
           } kCertifyAll;
           // Symbol: drake::planning::continuous_collision::SearchMode::kFindFirstViolation
           struct /* kFindFirstViolation */ {

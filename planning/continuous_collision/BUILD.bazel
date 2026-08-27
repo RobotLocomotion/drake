@@ -303,18 +303,18 @@ drake_cc_googletest(
 # the shrink recovers, and the corpus is deliberately leaked.
 drake_cc_googletest(
     name = "soundness_fuzz_test",
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/lsan:enabled",
+    ],
     timeout = "long",
     # The two settings are mutually exclusive (each dynamic-analysis config
-    # defines exactly one of them), so this select is unambiguous.
+    # matches exactly one of them), so this select is unambiguous.
     defines = select({
-        "//tools:using_memcheck": ["DRAKE_CCD_FUZZ_SMALL_CORPUS"],
+        "//tools/valgrind:enabled": ["DRAKE_CCD_FUZZ_SMALL_CORPUS"],
         "//tools:using_sanitizer": ["DRAKE_CCD_FUZZ_SMALL_CORPUS"],
         "//conditions:default": [],
     }),
-    tags = [
-        "no_asan",
-        "no_lsan",
-    ],
     deps = [
         ":continuous_collision_checker",
         "//common:parallelism",
@@ -403,14 +403,13 @@ drake_cc_googletest(
 # T8 — the two per-call scaling claims. Split from concurrency_test because
 # they are wall-clock claims: Valgrind serializes threads, which inverts
 # "parallel is faster than serial" and fails the test for a reason that has
-# nothing to do with the driver. disable_in_compilation_mode_dbg already
-# excludes the sanitizers and memcheck; no_valgrind_tools adds drd and
-# helgrind, which serialize the same way.
+# nothing to do with the driver. //tools:unoptimized covers every flavor that
+# does so: the sanitizers, dbg, kcov, and all of the Valgrind tools (memcheck
+# plus drd and helgrind, which serialize the same way).
 drake_cc_googletest(
     name = "concurrency_timing_test",
-    disable_in_compilation_mode_dbg = True,
+    opt_out_conditions = ["//tools:unoptimized"],
     num_threads = 16,
-    tags = ["no_valgrind_tools"],
     deps = [
         ":concurrency_test_utilities",
         "//common:parallelism",
@@ -462,22 +461,9 @@ drake_cc_binary(
         "benchmark/scenario_worlds.cc",
         "benchmark/scenario_worlds.h",
     ],
-    add_test_rule = 1,
     data = [
         "@drake_models//:iiwa_description",
     ],
-    test_rule_args = [
-        "--only",
-        "dual",
-        "--reps",
-        "1",
-        "--warmup",
-        "0",
-        "--dense-samples",
-        "200",
-    ],
-    test_rule_size = "small",
-    test_rule_timeout = "moderate",
     deps = [
         ":continuous_collision_checker",
         "//common:copyable_unique_ptr",
@@ -498,6 +484,19 @@ drake_cc_binary(
         "//planning:scene_graph_collision_checker",
         "@eigen",
     ],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--only",
+        "dual",
+        "--reps",
+        "1",
+        "--warmup",
+        "0",
+        "--dense-samples",
+        "200",
+    ],
+    test_rule_size = "small",
+    test_rule_timeout = "moderate",
 )
 
 add_lint_tests()
