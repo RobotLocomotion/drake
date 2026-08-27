@@ -2064,9 +2064,8 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
   }
 }
 
-// Quick test to make sure that lights combine. We'll intentionally use more
-// lights than RenderEngineGl allows for to confirm that RenderEngineVtk doesn't
-// share the limit.
+// Quick test to make sure that lights combine. We'll stress test an arbitrary
+// number of lights (the only limit is what the GPU can support in practice).
 TEST_F(RenderEngineVtkTest, MultiLights) {
   const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(M_PI),
@@ -2078,8 +2077,10 @@ TEST_F(RenderEngineVtkTest, MultiLights) {
 
   // We have three conceptual lights. The *conceptual* lights are pointing
   // directly at the image center, but their total intensity is 0.75. So, we
-  // should get 75% of the diffuse color. To test the non-limits on the number
-  // of lights, we'll duplicate each light with half the intensity.
+  // should get 75% of the diffuse color. Six is an arbitrary number of lights
+  // related to the historical behavior of a five-light limit. It *hints* at the
+  // idea that there is no conceptual limit on the light count (only GPU
+  // limits).
   const RenderEngineVtkParams params{
       .lights = {{.type = "point", .intensity = 0.25 * 0.5},
                  {.type = "point", .intensity = 0.25 * 0.5},
