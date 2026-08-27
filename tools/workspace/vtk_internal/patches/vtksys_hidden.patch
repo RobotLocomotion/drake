@@ -40,7 +40,7 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
 +class __attribute__((visibility("hidden"))) RegExpCompile
  {
  public:
-   const char* regparse; // Input-scan pointer.
+   char const* regparse; // Input-scan pointer.
 @@ -841,7 +841,7 @@ void RegExpCompile::regoptail(char* p, const char* val)
  /*
   * Utility class for RegularExpression::find().
@@ -49,7 +49,7 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
 +class __attribute__((visibility("hidden"))) RegExpFind
  {
  public:
-   const char* reginput;   // String-input pointer.
+   char const* reginput;   // String-input pointer.
 
 --- Utilities/KWSys/vtksys/SystemInformation.cxx
 +++ Utilities/KWSys/vtksys/SystemInformation.cxx
@@ -78,8 +78,8 @@ Reasoning for not upstreaming this patch: Drake-specific vendoring.
    }
  };
  
--class kwsysEnvSet : public std::set<const envchar*, kwsysEnvCompare>
-+class __attribute__((visibility("hidden"))) kwsysEnvSet : public std::set<const envchar*, kwsysEnvCompare>
+-class kwsysEnvSet : public std::set<envchar const*, kwsysEnvCompare>
++class __attribute__((visibility("hidden"))) kwsysEnvSet : public std::set<envchar const*, kwsysEnvCompare>
  {
  public:
    class Free
