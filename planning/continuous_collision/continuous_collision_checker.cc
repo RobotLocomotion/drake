@@ -1,23 +1,3 @@
-/// @file
-/// The public facade (the architecture). It owns the construction-time analysis
-/// — kinematics engine, distance oracle and capability probe, per-pair padding,
-/// per-pair oracle tolerances, the broadphase sphere table and the per-thread
-/// context pool — assembles the per-call inputs of the node-loop driver in
-/// certifier.{h,cc}, and hosts the independent certificate replay entry
-/// point.
-///
-/// The guarantee this file implements, stated verbatim as in the header:
-///
-///   Guarantee: if a check returns Verdict::kCertifiedFree, then for every
-///   time t in the trajectory's domain and every unfiltered geometry pair
-///   (A, B), the signed distance φ_AB(q(t)) exceeds margin + padding(A, B) —
-///   under the stated assumptions: exact real arithmetic up to the configured
-///   numerical slack, a distance oracle accurate to its stated tolerance, and
-///   the geometry semantics of the geometry-support scope (Mesh ≡ convex hull).
-///   This is a statement about the continuum of configurations, not about
-///   samples. The certificate is a property of the path, so retiming the
-///   trajectory afterwards does not invalidate it.
-
 #include "drake/planning/continuous_collision/continuous_collision_checker.h"
 
 #include <algorithm>
@@ -51,54 +31,36 @@ using drake::multibody::BodyIndex;
 using drake::planning::RobotDiagram;
 
 // ---------------------------------------------------------------------------
-// Per-pair oracle tolerance τ_p (a deliberate refinement of the numerical
-// policy's uniform τ policy).
+// Per-pair oracle tolerance τ_p.
 // ---------------------------------------------------------------------------
 //
-// The numerical policy charges every pair one global τ =
-// Options::query_tolerance (default 1e-6 m). Drake's *documented* accuracy for
-// QueryObject::ComputeSignedDistancePairClosestPoints() is worse than that for
-// several shape combinations — up to 5e-5 m for Cylinder-Ellipsoid — because
-// those combinations run an iterative GJK/EPA-style solver with a hard-coded
-// iteration limit.
+// Drake documents ComputeSignedDistancePairClosestPoints() accuracy as bad as
+// 5e-5 m for some shape pairs, well outside the 1e-6 m default of
+// Options::query_tolerance, and an oracle that over-reports a distance at or
+// above the threshold can fake a certificate. Every use of τ (node
+// certificate test, definite violation test, breakpoints, certificate replay)
+// therefore takes τ_p = max(Options::query_tolerance,
+// documented_accuracy(shape_a, shape_b)); pairs routed through the analytic
+// halfspace fallback are closed-form and keep the raw
+// Options::query_tolerance.
 //
-// Trusting the oracle to 1e-6 m where Drake only promises 5e-5 m is exactly
-// the one failure mode that can fake a certificate: the soundness argument
-// shows that oracle misbehaviour *below* the threshold cannot produce a false
-// "free", but over-reporting a distance at or above the threshold can. So the
-// checker uses
+// The table below is Table 4 of drake/geometry/query_object.h. Mesh is
+// certified as its convex hull, so its row and column duplicate Convex's, and
+// a shape the checker cannot classify is charged the worst documented value.
+// Never relax an entry ahead of Drake's own documentation.
 //
-//     τ_p = max(Options::query_tolerance, documented_accuracy(shape_a,
-//     shape_b))
-//
-// everywhere the white paper says τ — in the node certificate test, in the
-// definite violation test, at breakpoints and in the certificate replay. Pairs
-// routed through the analytic halfspace fallback are exact (closed-form support
-// functions, the geometry-support scope), so they carry τ_p =
-// Options::query_tolerance and nothing more.
-//
-// The table below is transcribed from Table 4 of
-// drake/geometry/query_object.h ("Worst observed error (in m) for 2mm
-// penetration/separation between geometries approximately 20cm in size" for
-// T = double) in the pinned Drake (~v1.45). Mesh is certified as its convex
-// hull, so its row/column duplicates Convex's, exactly as the Drake table's
-// footnote states. Anything the checker cannot classify is charged the worst
-// documented value.
-//
-//   |           |   Box  | Capsule | Convex | Cylinder | Ellipsoid | Mesh   |
-//   Sphere | | Box       |  4e-15 |         |        |          |           |
-//   |        | | Capsule   |  3e-6  |  2e-5   |        |          |           |
-//   |        | | Convex    |  3e-15 |  2e-5   | 3e-15  |          |           |
-//   |        | | Cylinder  |  6e-6  |  1e-5   |  6e-6  |   2e-5   |           |
-//   |        | | Ellipsoid |  9e-6  |  5e-6   |  9e-6  |   5e-5   |   2e-5    |
-//   |        | | Mesh      | (= Convex row)                                   |
-//   3e-15  |        | | Sphere    |  3e-15 |  6e-15  |  3e-6  |  5e-15   | 4e-5
-//   |  3e-6  | 6e-15  |
-//
-// If the pinned Drake ever tightens these numbers the table may be relaxed;
-// it must never be relaxed ahead of Drake's own documentation.
+// clang-format off
+//   |           | Box   | Caps  | Conv  | Cyl   | Ellip | Mesh  | Sph   |
+//   | Box       | 4e-15 |       |       |       |       |       |       |
+//   | Capsule   | 3e-6  | 2e-5  |       |       |       |       |       |
+//   | Convex    | 3e-15 | 2e-5  | 3e-15 |       |       |       |       |
+//   | Cylinder  | 6e-6  | 1e-5  | 6e-6  | 2e-5  |       |       |       |
+//   | Ellipsoid | 9e-6  | 5e-6  | 9e-6  | 5e-5  | 2e-5  |       |       |
+//   | Mesh      | (= the Convex row)                    | 3e-15 |       |
+//   | Sphere    | 3e-15 | 6e-15 | 3e-6  | 5e-15 | 4e-5  | 3e-6  | 6e-15 |
+// clang-format on
 
-/** The closed set of shape classes the τ_p table knows. */
+/* The closed set of shape classes the τ_p table knows. */
 enum class ShapeClass {
   kSphere = 0,
   kBox = 1,
@@ -112,10 +74,10 @@ enum class ShapeClass {
 };
 constexpr int kNumShapeClasses = 9;
 
-/** Worst documented error over the whole table; charged to any shape the
-checker cannot classify (it never reaches the narrowphase anyway — the
-capability probe refuses unknown shapes at construction — but the default must
-be the conservative one). */
+/* Worst documented error over the whole table, charged to any shape the
+ checker cannot classify. Such a shape never reaches the narrowphase, because
+ the capability probe refuses unknown shapes at construction, but the default
+ must still be the conservative one. */
 constexpr double kWorstDocumentedAccuracy = 5e-5;
 
 ShapeClass Classify(const drake::geometry::Shape& shape) {
@@ -185,21 +147,20 @@ const AccuracyTable& DocumentedAccuracyTable() {
     set(S::kConvex, S::kMesh, 3e-15);
     set(S::kMesh, S::kMesh, 3e-15);
     // Drake supports exactly one halfspace combination natively (Sphere, at
-    // 3e-15); the rest it refuses. Halfspace pairs never reach the narrowphase
-    // in this library anyway — the capability probe routes every one of them
-    // through the analytic support-function fallback, which is exact, and
-    // ComputeTauTable() below never consults this table for a non-native route
-    // — so these entries are belt-and-braces. They are filled with the
-    // documented value where there is one and with the worst documented value
-    // otherwise, so that a future routing change cannot silently inherit a
-    // τ of zero.
+    // 3e-15); the rest it refuses. Halfspace pairs never reach the
+    // narrowphase here, because the capability probe routes every one of them
+    // through the exact analytic support-function fallback and
+    // ComputeTauTable() below never consults this table for a non-native
+    // route. The entries are filled anyway, with the documented value where
+    // there is one and the worst documented value otherwise, so that a future
+    // routing change cannot inherit a τ of zero.
     set(S::kSphere, S::kHalfSpace, 3e-15);
     return t;
   }();
   return table;
 }
 
-/** τ_p for every pair of `pairs`, given the call's query tolerance. */
+/* τ_p for every pair of `pairs`, given the call's query tolerance. */
 std::vector<double> ComputeTauTable(const RobotDiagram<double>& model,
                                     const std::vector<PairRecord>& pairs,
                                     double query_tolerance) {
@@ -223,22 +184,13 @@ std::vector<double> ComputeTauTable(const RobotDiagram<double>& model,
 // PaddingSpec mirrors drake::planning::CollisionChecker: a pair's effective
 // threshold is m_p = margin + padding(p), where padding comes from the dense
 // per-body-pair matrix when one is supplied and otherwise from the {env, self}
-// scalars.
-//
-// Environment-vs-self rule used here (documented as required): a body is
-// *anchored* iff no position coordinate of the plant changes its pose relative
-// to the world — that is, iff KinematicsEngine::CoordinatesAffectingPair(world,
-// body) is empty, which covers the world body itself and everything welded
-// (directly or transitively) to it. A pair is then
-//
-//   - self  iff BOTH bodies are non-anchored (a robot-vs-robot pair), and
-//   - env   otherwise (at least one side is the world or rigidly attached to
-//           it).
-//
-// The rule is pure topology, so a pair's padding never depends on which
-// trajectory is being checked; in particular the constant-coordinate carve-out
-// of trajectory normalization (which can make a *moving* body behave as if
-// welded for one trajectory) deliberately does not enter here.
+// scalars. A pair is self iff both bodies are non-anchored and env otherwise,
+// where a body is anchored iff KinematicsEngine::CoordinatesAffectingPair(
+// world, body) is empty, which covers the world body and everything welded to
+// it, directly or transitively. The rule is pure topology, so padding never
+// depends on which trajectory is being checked; in particular the
+// constant-coordinate carve-out, which can make a moving body behave as if
+// welded for one trajectory, does not enter here.
 
 std::vector<double> ComputePaddingTable(const KinematicsEngine& engine,
                                         const std::vector<PairRecord>& pairs,
@@ -303,9 +255,9 @@ internal::PrefilterTable ComputePrefilterTable(
   std::unordered_map<GeometryId, int> slot_of;
 
   const auto slot = [&](GeometryId id, BodyIndex body) {
-    // HalfSpace has no bounding sphere (the geometry-support scope): such pairs
-    // skip the prefilter entirely and go straight to the analytic oracle route,
-    // which is cheap anyway.
+    // HalfSpace has no bounding sphere, so such pairs skip the prefilter
+    // entirely and go straight to the analytic oracle route, which is cheap
+    // anyway.
     if (Classify(inspector.GetShape(id)) == ShapeClass::kHalfSpace) return -1;
     const auto it = slot_of.find(id);
     if (it != slot_of.end()) return it->second;
@@ -476,9 +428,9 @@ class ContinuousCollisionChecker::Impl {
   DistanceOracle oracle_;
   std::vector<PairRecord> pairs_;
   std::vector<PairId> pair_ids_;
-  /** padding(p) alone; the margin is added per call. */
+  /* padding(p) alone; the margin is added per call. */
   std::vector<double> padding_;
-  /** Drake's documented accuracy per pair; τ_p = max(query_tolerance, this). */
+  /* Drake's documented accuracy per pair; τ_p = max(query_tolerance, this). */
   std::vector<double> tau_base_;
   internal::PrefilterTable prefilter_;
   mutable internal::ContextPool pool_;
@@ -583,23 +535,17 @@ const RobotDiagram<double>& ContinuousCollisionChecker::model() const {
 // VerifyCertificate.
 // ---------------------------------------------------------------------------
 //
-// Deliberately written against the checker's *public* introspection seams
-// only: it re-derives the λ table from the path, re-restricts every record's
-// control points with its own de Casteljau code, recomputes w about the
-// record's qc, re-queries the oracle at qc from a fresh context, and re-checks
-// the interval-certificate inequality with τ_p. It then verifies that the
+// Written against the checker's *public* introspection seams only: it
+// re-derives the λ table from the path, re-restricts every record's control
+// points with its own de Casteljau code, recomputes w about the record's qc,
+// re-queries the oracle at qc from a fresh context, and re-checks the
+// interval-certificate inequality with τ_p. It then verifies that the
 // certified intervals cover [0, 1] of every segment for every pair. Nothing of
 // the certifier's own bookkeeping is trusted.
 //
 // The replay charges the checker's construction-time query tolerance and the
-// documented Options::certificate_slack default; a run made with a *larger*
-// slack (a stricter certificate) therefore still verifies.
-//
-// It returns true only for a *complete* proof. A certificate from a run that
-// found a violation, ended inconclusive, exhausted its node budget, or pruned
-// the search (kFindFirstViolation) necessarily leaves part of the domain
-// uncovered, and the coverage check reports that as a failure — which is the
-// correct answer to "does this certificate prove the path is free?".
+// Options::certificate_slack default, so a run made with a *larger* slack, and
+// hence a stricter certificate, still verifies.
 
 bool VerifyCertificate(const ContinuousCollisionChecker& checker,
                        const PiecewiseBezierPath& path,

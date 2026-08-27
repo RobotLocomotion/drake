@@ -1,17 +1,8 @@
-/// @file
-/// T5 — the reason this library exists (test plan T5; the motivation for
-/// the library).
-///
-/// Drake's `drake::planning::SceneGraphCollisionChecker` checks an edge by
-/// interpolating it at `edge_step_size` increments and running a *discrete*
-/// check at each sample. A thin obstacle that sits between two samples is
-/// invisible to it, however carefully the planner was written. This file builds
-/// exactly that situation, pins Drake's miss, and shows that our continuum
-/// certificate catches it — then shows the mirror image: a genuinely free
-/// squeeze through a millimetre-scale gap that we certify with a bounded node
-/// budget, so the gain is not bought with useless conservatism.
-///
-/// Everything here is programmatic and deterministic: no RNG, no model files.
+// A plate thin enough that Drake's SceneGraphCollisionChecker steps over it at
+// its default edge_step_size; ContinuousCollisionChecker must reject the edge
+// anyway. The mirror image is here too: a millimetre-scale gap that is
+// genuinely free and certifies with a bounded node budget. Every world is built
+// programmatically and no case uses an RNG or a model file.
 
 #include <algorithm>
 #include <cmath>
@@ -70,7 +61,7 @@ using Eigen::VectorXd;
 // The robot is a 2-dof Cartesian gantry (prismatic x, then prismatic y)
 // carrying a sphere of radius kToolRadius = 5 mm. Its configuration *is* the
 // tool centre, which turns every number below into an exact, checkable
-// statement about the sampled check rather than a plausible story.
+// statement about the sampled check.
 //
 // The edge runs from q1 = (-0.5, 0) to q2 = (+0.5, 0).
 //
@@ -82,26 +73,23 @@ using Eigen::VectorXd;
 //     non-positive, so "the default" is whatever the planning stack picks.
 //     kDrakeEdgeStepSize = 0.05 is the value Drake's own planning tests and the
 //     IRIS/GCS examples use, and for a 1 m edge it is generous.
-//   * The checker therefore samples ⌈1.0 / 0.05⌉ = 20 uniform intervals — 21
-//     configurations 0.05 m apart in x, at x = -0.50, -0.45, …, 0.00, 0.05, …,
-//     0.50. (Reconstructed and measured below rather than trusted.)
+//   * The checker therefore samples ⌈1.0 / 0.05⌉ = 20 uniform intervals, i.e.
+//     21 configurations 0.05 m apart in x, at x = -0.50, -0.45, …, 0.00, 0.05,
+//     …, 0.50. (Reconstructed and measured below.)
 //   * The plate is kPlateThickness = 1 mm thick in x and welded at
-//     x = kPlateX = 0.025 — exactly halfway between the samples at x = 0.00 and
+//     x = kPlateX = 0.025, exactly halfway between the samples at x = 0.00 and
 //     x = 0.05.
 //   * Tool and plate are in contact for
 //         |x − 0.025| ≤ kToolRadius + kPlateThickness/2 = 0.0055 m,
 //     an interval 11 mm wide. 11 mm ≪ the 50 mm sample spacing, and the plate's
 //     mid-plane sits 25 mm from the nearest sample, so that sample still
 //     measures 25 − 5 − 0.5 = 19.5 mm of clearance.
-//
-// A sampled checker at this resolution cannot tell this edge from an empty
-// world. A certificate over the continuum can.
 
 constexpr double kToolRadius = 0.005;
 constexpr double kPlateThickness = 0.001;
 constexpr double kPlateX = 0.025;
 constexpr double kDrakeEdgeStepSize = 0.05;
-/// Half-width, in x, of the set of configurations that touch the plate.
+// Half-width, in x, of the set of configurations that touch the plate.
 constexpr double kContactHalfWidth = kToolRadius + 0.5 * kPlateThickness;
 
 CoulombFriction<double> Friction() {
@@ -112,9 +100,9 @@ SpatialInertia<double> Inertia() {
   return SpatialInertia<double>::SolidSphereWithMass(1.0, 0.05);
 }
 
-/// The gantry: q = (x, y) is the tool-sphere centre in the z = 0 plane. The
-/// robot lives in its own model instance so Drake's collision checker can be
-/// told which bodies are "the robot".
+// The gantry: q = (x, y) is the tool-sphere centre in the z = 0 plane. The
+// robot lives in its own model instance so Drake's collision checker can be
+// told which bodies are "the robot".
 void AddGantry(MultibodyPlant<double>* plant) {
   const auto robot = plant->AddModelInstance("robot");
   const RigidBody<double>& carriage =
@@ -139,8 +127,8 @@ void AddAnchoredBox(MultibodyPlant<double>* plant, const std::string& name,
       name + "_geom", Friction());
 }
 
-/// The thin-plate world: one plate of the given thickness welded at
-/// x = `plate_x`, spanning 0.6 m in y and z so the tool cannot go around it.
+// The thin-plate world: one plate of the given thickness welded at
+// x = `plate_x`, spanning 0.6 m in y and z so the tool cannot go around it.
 std::unique_ptr<RobotDiagram<double>> MakePlateWorld(double plate_x,
                                                      double thickness) {
   RobotDiagramBuilder<double> builder;
@@ -152,8 +140,8 @@ std::unique_ptr<RobotDiagram<double>> MakePlateWorld(double plate_x,
   return builder.Build();
 }
 
-/// The mirrored world: a slot 2·`half_gap` wide in y formed by two thin plates,
-/// running along the whole of the tool's x travel.
+// The mirrored world: a slot 2·`half_gap` wide in y formed by two thin plates,
+// running along the whole of the tool's x travel.
 std::unique_ptr<RobotDiagram<double>> MakeSlotWorld(double half_gap) {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -166,10 +154,10 @@ std::unique_ptr<RobotDiagram<double>> MakeSlotWorld(double half_gap) {
   return builder.Build();
 }
 
-/// Drake's sampled edge checker, always on its own freshly built RobotDiagram
-/// (the "clone of the same model" of test-plan T5): SceneGraphCollisionChecker
-/// rewrites collision filters on the model it is handed, which would otherwise
-/// perturb the pair table our checker snapshots at construction.
+// Drake's sampled edge checker, always on its own freshly built RobotDiagram:
+// SceneGraphCollisionChecker rewrites collision filters on the model it is
+// handed, which would otherwise perturb the pair table
+// ContinuousCollisionChecker snapshots at construction.
 SceneGraphCollisionChecker MakeDrakeChecker(
     std::unique_ptr<RobotDiagram<double>> model, double edge_step_size) {
   std::shared_ptr<RobotDiagram<double>> shared(std::move(model));
@@ -207,9 +195,9 @@ Eigen::MatrixXd Waypoints(const VectorXd& q1, const VectorXd& q2) {
   return waypoints;
 }
 
-/// Signed distance of `finding`'s pair, re-measured from a fresh context at the
-/// witness configuration: the independent confirmation that the witness is a
-/// real contact and not an artifact of the search.
+// Signed distance of `finding`'s pair, re-measured from a fresh context at the
+// witness configuration: an independent confirmation that the witness is a real
+// contact and not an artifact of the search.
 double DistanceAtFinding(const ContinuousCollisionChecker& checker,
                          const Finding& finding) {
   const RobotDiagram<double>& model = checker.model();
@@ -242,19 +230,17 @@ GTEST_TEST(ThinObstacleTest, DrakeSampledCheckerMissesTheThinPlate) {
   // The distance the sample count is derived from is exactly the edge length.
   EXPECT_NEAR(drake_checker.ComputeConfigurationDistance(q1, q2), 1.0, 1e-15);
 
-  // The headline: 1 mm of plate between the waypoints, and the sampled check
-  // calls the edge free.
+  // 1 mm of plate between the waypoints, and the sampled check calls the edge
+  // free.
   EXPECT_TRUE(drake_checker.CheckEdgeCollisionFree(q1, q2))
-      << "the premise of this test — that default-resolution sampling misses a "
-         "1 mm plate — no longer holds on this Drake pin";
+      << "the premise of this test no longer holds on this Drake pin: "
+         "default-resolution sampling now catches the 1 mm plate";
 
-  // Show *why*. The model of Drake's behaviour is: ⌈1.0/0.05⌉ = 20 uniform
-  // intervals, i.e. samples at x = -0.5 + k/20, which are exactly the multiples
-  // of 0.05. That model is *measured*, not assumed, by sliding the plate across
-  // one sample period and comparing Drake's verdict against the prediction
-  // "caught iff the plate's mid-plane is within the contact half-width of some
-  // multiple of 0.05". Every mismatch would mean the sample grid is not what
-  // the arithmetic above claims.
+  // The sample grid is ⌈1.0/0.05⌉ = 20 uniform intervals, i.e. samples at
+  // x = -0.5 + k/20, which are exactly the multiples of 0.05. Sliding the plate
+  // across one sample period and comparing Drake's verdict against "caught iff
+  // the plate's mid-plane is within the contact half-width of some multiple of
+  // 0.05" measures that grid instead of assuming it.
   const auto gap_to_nearest_sample = [](double x) {
     return std::abs(x -
                     kDrakeEdgeStepSize * std::round(x / kDrakeEdgeStepSize));
@@ -271,9 +257,8 @@ GTEST_TEST(ThinObstacleTest, DrakeSampledCheckerMissesTheThinPlate) {
   }
 
   // With the grid confirmed, walk it through Drake's own interpolation function
-  // and measure the clearance at every sample. The nearest one is 25 mm from
-  // the plate's mid-plane, i.e. 19.5 mm of clearance: the sampled check is not
-  // remotely close to seeing it.
+  // and measure the clearance at every sample. The nearest sample is 25 mm from
+  // the plate's mid-plane, i.e. 19.5 mm of clearance.
   const int num_intervals =
       static_cast<int>(std::ceil(1.0 / kDrakeEdgeStepSize));
   double nearest_sample_gap = std::numeric_limits<double>::infinity();
@@ -290,8 +275,7 @@ GTEST_TEST(ThinObstacleTest, DrakeSampledCheckerMissesTheThinPlate) {
       << "the plate must sit strictly between two samples";
 
   // The miss is a resolution gap, not a modelling one: shrink the step size and
-  // the very same sampled checker finds the plate. Replacing "shrink it and
-  // hope" with a proof is what this library is for.
+  // the very same sampled checker finds the plate.
   const SceneGraphCollisionChecker fine_checker =
       MakeDrakeChecker(MakePlateWorld(kPlateX, kPlateThickness), 0.002);
   EXPECT_FALSE(fine_checker.CheckEdgeCollisionFree(q1, q2));
@@ -360,8 +344,8 @@ GTEST_TEST(ThinObstacleTest, NarrowGapCertifiedWithBoundedNodeBudget) {
   const VectorXd q1 = MakeQ(-0.3, 0.0);
   const VectorXd q2 = MakeQ(0.3, 0.0);
 
-  // Sampling passes here too — but this time it is *right*, and the point is
-  // that we agree without having to sample.
+  // Sampling passes here too, and this time it is right; the certified checker
+  // agrees without sampling.
   const SceneGraphCollisionChecker drake_checker =
       MakeDrakeChecker(MakeSlotWorld(kHalfGap), kDrakeEdgeStepSize);
   EXPECT_TRUE(drake_checker.CheckEdgeCollisionFree(q1, q2));
@@ -372,8 +356,8 @@ GTEST_TEST(ThinObstacleTest, NarrowGapCertifiedWithBoundedNodeBudget) {
 
   // Node budget. Only the prismatic x coordinate moves, so λ = 1 for the two
   // tool-vs-plate pairs and the motion bound at depth d is the node's half
-  // width, 0.6 / 2^(d+1). Certification needs φ − τ − Δ > ε, i.e.
-  //     0.6 / 2^(d+1) < 0.003 − 1e-6   ⇒   2^(d+1) > 200.1   ⇒   d = 7,
+  // width, 0.6 / 2^(d+1). Certification needs ϕ − τ − Δ > ε, i.e.
+  //     0.6 / 2^(d+1) < 0.003 − 1e-6   =>   2^(d+1) > 200.1   =>   d = 7,
   // and a full binary tree to depth 7 has 2^8 − 1 = 255 nodes. Both slot pairs
   // certify at the same depth, so the whole recursion is that one tree. The
   // ceiling below is ~2.5× that: loose enough to survive a differently-tuned
@@ -402,7 +386,7 @@ GTEST_TEST(ThinObstacleTest, NarrowGapCertifiedWithBoundedNodeBudget) {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Thickness sweep — reported, not asserted (test plan T5's diagnostic half).
+// 4. Thickness sweep: reported, not asserted.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(ThinObstacleTest, ThicknessSweepReportsTheResolutionGap) {
@@ -410,12 +394,11 @@ GTEST_TEST(ThinObstacleTest, ThicknessSweepReportsTheResolutionGap) {
   // samples) and the tool radius. The sampled checker can only see the plate
   // once the contact half-width reaches the 25 mm sample gap, i.e. once
   //     thickness/2 + kToolRadius ≥ 0.025  ⇔  thickness ≥ 0.040 m.
-  // (thickness = 0.040 is the exact tangency, where the nearest sample's signed
-  // distance is 0 and "collision" — φ < 0 — is a coin toss decided by rounding;
-  // it is in the sweep because it is the interesting number, and the assertion
-  // at the end is a window, not an equality, for exactly that reason.)
-  // Our verdict must be kViolationFound at *every* thickness in the sweep: the
-  // plate is genuinely crossed in all of them.
+  // At thickness = 0.040 the nearest sample's signed distance is exactly 0, so
+  // "collision" (ϕ < 0) there is decided by rounding; that is why the assertion
+  // at the end is a window rather than an equality. The certified verdict must
+  // be kViolationFound at every thickness in the sweep, since the plate is
+  // crossed in all of them.
   const VectorXd q1 = MakeQ(-0.5, 0.0);
   const VectorXd q2 = MakeQ(0.5, 0.0);
   const std::vector<double> thicknesses = {0.001, 0.002, 0.005, 0.010,
@@ -446,14 +429,14 @@ GTEST_TEST(ThinObstacleTest, ThicknessSweepReportsTheResolutionGap) {
                                                              : "OTHER    ")
               << "\t" << (0.5 * thickness + kToolRadius) << "\n";
 
-    // The assertion half of the sweep: our verdict is stable throughout.
+    // The assertion half of the sweep: the verdict is stable throughout.
     EXPECT_EQ(result.verdict, Verdict::kViolationFound);
   }
   std::cout << "  --> Drake's sampled checker first sees the plate at "
                "thickness = "
             << first_caught << " m; predicted crossover 2*(0.025 - "
             << kToolRadius << ") = " << 2.0 * (0.025 - kToolRadius) << " m\n\n";
-  // A report, not a gate — but the crossover must land in the right decade,
+  // A report, not a gate. The crossover must still land in the right decade,
   // otherwise the sweep is measuring something other than the resolution gap.
   EXPECT_GT(first_caught, 0.03);
   EXPECT_LT(first_caught, 0.06);

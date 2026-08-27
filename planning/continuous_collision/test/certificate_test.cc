@@ -1,23 +1,15 @@
-/// @file
-/// T7 — certificate audit (test plan T7; the search algorithm's
-/// "certificate audit trail").
-///
-/// `VerifyCertificate` is the library's second, independent line of defence: it
-/// replays every certification event from the checker's *public* seams,
-/// re-restricting control points, recomputing motion bounds and re-querying
-/// distances, and then checks that the certified intervals tile the whole
-/// domain for every pair. This file audits the auditor.
-///
-/// Structure: a small corpus of certified runs — two random worlds plus one
-/// hand-built world whose pair structure is designed (one pair that only
-/// certifies after deep subdivision, one that certifies at the root) — and a
-/// table of adversarial mutations, each applied to *every* corpus case. A
-/// mutation that any case accepts is a hole in the audit.
-///
-/// certifier_test.cc already covers a handful of single-case mutations on its
-/// own world; this file is the sweep, plus the mutation classes that need a
-/// designed pair structure (record relabelling) or a second run
-/// (kFindFirstViolation and non-free verdicts).
+// Tests VerifyCertificate, which replays every certification event from the
+// checker's public seams, re-restricting control points, recomputing motion
+// bounds and re-querying distances, then checks that the certified intervals
+// tile the whole domain for every pair.
+//
+// The corpus is three certified runs: one hand-built world whose two pairs are
+// built to certify at very different depths, plus two small random worlds.
+// Below it is a table of mutations, each applied to every corpus case; a
+// mutation any case accepts is a hole in the audit. certifier_test.cc covers a
+// handful of single-case mutations on its own world, so this file is the sweep
+// plus the mutation classes that need a designed pair structure (record
+// relabelling) or a second run (kFindFirstViolation and non-free verdicts).
 
 #include <algorithm>
 #include <functional>
@@ -68,10 +60,9 @@ using drake::trajectories::BezierCurve;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-/// A non-zero margin *and* a non-zero environment padding, so that
-/// m_p = margin + padding is a number a tamperer could plausibly try to lower
-/// and the "threshold below what the options call for" branch has something to
-/// bite on.
+// A non-zero margin and a non-zero environment padding, so m_p = margin +
+// padding is a number a tamperer could plausibly try to lower and the
+// "threshold below what the options call for" branch has something to bite on.
 constexpr double kMargin = 0.005;
 constexpr double kEnvPadding = 0.002;
 
@@ -108,16 +99,14 @@ std::unique_ptr<ContinuousCollisionChecker> MakeChecker(
 // A 2-dof Cartesian gantry (prismatic x, prismatic y) carrying a 5 mm sphere,
 // with exactly two unfiltered pairs:
 //
-//   * tool vs. "near_plate" — a 1 mm plate parallel to the travel, offset in y
-//     so the clearance is a constant 12 mm. With m_p = 0.007 and λ = 1 for the
-//     moving x coordinate, certification needs Δ = w_x < 0.012 − 0.007 − τ ≈
-//     0.005, i.e. a node no wider than ~1/64 of the 0.6 m travel: this pair
-//     only certifies at depth 6, producing dozens of records.
-//   * tool vs. "far_ball" — 3 m away, certified by the sphere prefilter at the
-//     root: exactly one record per segment.
+//   * tool vs. "near_plate": a 1 mm plate offset in y so the clearance is a
+//     constant 12 mm. With m_p = 0.007 and λ = 1 for the moving x coordinate,
+//     certification needs Δ = w_x < 0.012 − 0.007 − τ ≈ 0.005 against 0.6 m of
+//     travel, so it first certifies at depth 6 and produces dozens of records.
+//   * tool vs. "far_ball": 3 m away, certified by the sphere prefilter at the
+//     root, so exactly one record per segment.
 //
-// Two pairs that could not be more different in how hard they are to certify is
-// exactly what the record-relabelling mutation needs.
+// The record-relabelling mutation needs two pairs this far apart in difficulty.
 std::unique_ptr<RobotDiagram<double>> MakeDesignedWorld() {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -146,7 +135,8 @@ std::unique_ptr<RobotDiagram<double>> MakeDesignedWorld() {
 }
 
 // ---------------------------------------------------------------------------
-// Worlds 2, 3 (small random): a trimmed copy of the T4 generator.
+// Worlds 2, 3 (small random): a trimmed copy of the generator in
+// soundness_fuzz_test.cc.
 // ---------------------------------------------------------------------------
 
 std::unique_ptr<RobotDiagram<double>> MakeRandomWorld(uint64_t seed) {
@@ -155,8 +145,8 @@ std::unique_ptr<RobotDiagram<double>> MakeRandomWorld(uint64_t seed) {
     return std::uniform_real_distribution<double>(lo, hi)(rng);
   };
   // Named locals throughout: sibling constructor arguments are evaluated in an
-  // unspecified order, so drawing variates inline would make these worlds — and
-  // therefore which seeds land in the corpus — depend on the toolchain.
+  // unspecified order, so drawing variates inline would make these worlds, and
+  // therefore which seeds land in the corpus, depend on the toolchain.
   const auto vector3 = [&uniform](double lo, double hi) {
     const double x = uniform(lo, hi);
     const double y = uniform(lo, hi);
@@ -221,11 +211,10 @@ std::unique_ptr<RobotDiagram<double>> MakeRandomWorld(uint64_t seed) {
   return builder.Build();
 }
 
-/// A cubic Bézier whose control points are equally spaced from `start` to
-/// `end` — the straight segment, but with four control points, so a mutation
-/// can perturb an *interior* one without moving either endpoint (which would
-/// change the path's start configuration and short-circuit the check we mean to
-/// exercise).
+// A cubic Bézier whose control points are equally spaced from `start` to `end`.
+// It is the straight segment, but with four control points, so a mutation can
+// perturb an interior one without moving either endpoint; moving an endpoint
+// would change the path's start configuration and short-circuit the check.
 Eigen::MatrixXd CubicControlPoints(const VectorXd& start, const VectorXd& end) {
   Eigen::MatrixXd points(start.size(), 4);
   for (int j = 0; j < 4; ++j) {
@@ -246,11 +235,11 @@ struct AuditCase {
   Eigen::MatrixXd control_points;
   std::optional<PiecewiseBezierPath> path;
   Certificate certificate;
-  /// true when this case's two pairs were designed to have wildly different
-  /// certification depths (only the hand-built world).
+  // True when this case's two pairs were built to have wildly different
+  // certification depths (only the hand-built world).
   bool designed{false};
 
-  /// The path a verifier would be handed if one control point were nudged.
+  // The path a verifier would be handed if one control point were nudged.
   PiecewiseBezierPath PerturbedPath(double delta) const {
     Eigen::MatrixXd points = control_points;
     points(0, 1) += delta;
@@ -263,18 +252,17 @@ struct AuditCase {
   }
 };
 
-/// Builds the corpus once. Everything in it is a run that ended
-/// Verdict::kCertifiedFree with an emitted certificate; a case that failed to
-/// certify is *not* added, so CorpusIsBuiltAndVerifies (which requires three
-/// cases, the designed one first) is the single place that reports the problem.
-/// No gtest assertion is used in here: this initializer runs inside whichever
-/// test happens to touch Corpus() first, which changes under --gtest_filter or
-/// --gtest_shuffle, and a failure charged to an arbitrary test is a failure
-/// nobody can read.
-///
-/// The vector is deliberately allocated and never freed: it owns RobotDiagrams
-/// and checkers whose destruction would otherwise race Drake's own static
-/// teardown. (Expect LSan to report it if an asan preset is ever added.)
+// Builds the corpus once. Every entry is a run that ended
+// Verdict::kCertifiedFree with an emitted certificate; a case that failed to
+// certify is dropped rather than added, so CorpusIsBuiltAndVerifies is the
+// single place that reports a short corpus. No gtest assertion belongs here:
+// this initializer runs inside whichever test touches Corpus() first, which
+// changes under --gtest_filter or --gtest_shuffle, and a failure charged to an
+// arbitrary test is a failure nobody can read.
+//
+// The vector is allocated and never freed because it owns RobotDiagrams and
+// checkers whose destruction would otherwise race Drake's static teardown. LSan
+// will report it if an asan preset is ever added.
 const std::vector<std::unique_ptr<AuditCase>>& Corpus() {
   static const std::vector<std::unique_ptr<AuditCase>>* corpus = [] {
     auto* cases = new std::vector<std::unique_ptr<AuditCase>>();
@@ -302,9 +290,9 @@ const std::vector<std::unique_ptr<AuditCase>>& Corpus() {
       }
     }
 
-    // 2. Small random worlds — the first two seeds whose trajectory certifies.
-    //    Sweeping deterministically (rather than hard-coding lucky seeds) keeps
-    //    the corpus honest if the geometry ever shifts underneath it.
+    // 2. Small random worlds: the first two seeds whose trajectory certifies.
+    //    Sweeping deterministically, rather than hard-coding lucky seeds, still
+    //    fills the corpus if the geometry ever shifts underneath it.
     for (uint64_t seed = 1; seed <= 40 && cases->size() < 3; ++seed) {
       auto entry = std::make_unique<AuditCase>();
       entry->name = "random_world_seed_" + std::to_string(seed);
@@ -331,7 +319,7 @@ const std::vector<std::unique_ptr<AuditCase>>& Corpus() {
   return *corpus;
 }
 
-/// Record counts per pair, for picking "the hardest" and "the easiest" pair.
+// Record counts per pair, for picking "the hardest" and "the easiest" pair.
 std::vector<int> RecordsPerPair(const AuditCase& entry) {
   std::vector<int> counts(entry.certificate.pairs.size(), 0);
   for (const CertificateRecord& record : entry.certificate.records) {
@@ -340,10 +328,10 @@ std::vector<int> RecordsPerPair(const AuditCase& entry) {
   return counts;
 }
 
-/// True iff `pair`'s records cover [0, 1] of every segment — the same coverage
-/// property VerifyCertificate checks, re-derived here so a test can assert that
-/// a mutation left coverage *intact* and therefore had to be caught by the
-/// per-record arithmetic instead.
+// True iff `pair`'s records cover [0, 1] of every segment. This is the coverage
+// property VerifyCertificate checks, re-derived here so a test can assert that
+// a mutation left coverage intact and therefore had to be caught by the
+// per-record arithmetic instead.
 bool TilesEverySegment(const Certificate& certificate, int pair,
                        std::size_t num_segments) {
   for (std::size_t segment = 0; segment < num_segments; ++segment) {
@@ -365,8 +353,8 @@ bool TilesEverySegment(const Certificate& certificate, int pair,
   return true;
 }
 
-/// Index of a record whose pair the trajectory actually moves and whose
-/// interval is a proper sub-interval — the kind a tamperer would target.
+// Index of a record whose pair the trajectory actually moves and whose interval
+// is a proper sub-interval, which is the kind a tamperer would target.
 int MovingRecordIndex(const AuditCase& entry) {
   const MotionBoundTable table =
       entry.checker->ComputeMotionBounds(*entry.path);
@@ -412,11 +400,11 @@ GTEST_TEST(CertificateAuditTest, DesignedWorldHasTheIntendedPairStructure) {
   const int easiest = *std::min_element(counts.begin(), counts.end());
   // The far pair certifies at the root: exactly one record, for the path's one
   // segment. The 12 mm pair needs Δ = w_x < 0.012 − 0.007 − τ ≈ 0.005 against
-  // 0.6 m of travel, i.e. a node half-width of 0.3/2^d < 0.005 ⇒ d = 6, and a
-  // constant clearance means *every* depth-6 node certifies it: 2^6 = 64
-  // records. Pinned exactly, so a regression that loosened (or tightened) the
-  // motion bound by even one bisection level shows up here rather than hiding
-  // behind an inequality.
+  // 0.6 m of travel, i.e. a node half-width of 0.3/2^d < 0.005 => d = 6, and a
+  // constant clearance means every depth-6 node certifies it: 2^6 = 64 records.
+  // Pinned exactly, so a regression that loosened or tightened the motion bound
+  // by even one bisection level shows up here rather than hiding behind an
+  // inequality.
   EXPECT_EQ(easiest, 1);
   EXPECT_EQ(hardest, 64);
   // Every pair's records must claim the same, correct threshold.
@@ -426,13 +414,13 @@ GTEST_TEST(CertificateAuditTest, DesignedWorldHasTheIntendedPairStructure) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Adversarial mutations, applied to every corpus case.
+// 2. Mutations, each applied to every corpus case.
 // ---------------------------------------------------------------------------
 
 using Mutation = std::function<bool(const AuditCase&, Certificate*)>;
 
-/// Applies `mutate` to every corpus case and requires the result to be
-/// rejected. `mutate` returns false when the case cannot host the mutation.
+// Applies `mutate` to every corpus case and requires the result to be rejected.
+// `mutate` returns false when the case cannot host the mutation.
 void ExpectRejectedEverywhere(const std::string& what, const Mutation& mutate) {
   int applied = 0;
   for (const auto& entry : Corpus()) {
@@ -482,7 +470,7 @@ GTEST_TEST(CertificateAuditTest, RejectsShiftedRepresentativeConfiguration) {
 
 GTEST_TEST(CertificateAuditTest, RejectsDeletedRecord) {
   // The certifier's intervals tile the domain disjointly, so deleting any
-  // record punches a coverage hole — even one whose own arithmetic was sound.
+  // record punches a coverage hole, even one whose own arithmetic was sound.
   ExpectRejectedEverywhere(
       "delete a record", [](const AuditCase&, Certificate* certificate) {
         if (certificate->records.size() < 2) return false;
@@ -502,7 +490,7 @@ GTEST_TEST(CertificateAuditTest, RejectsTruncatedRecords) {
 }
 
 GTEST_TEST(CertificateAuditTest, RejectsLoweredThreshold) {
-  // Lower *every* record of one pair, so the replay's self-consistency check
+  // Lower every record of one pair, so the replay's self-consistency check
   // ("all records of a pair claim the same threshold") passes and the mutation
   // has to be caught by the check that actually matters: the claimed threshold
   // must be at least the margin + padding the options call for.
@@ -535,11 +523,11 @@ GTEST_TEST(CertificateAuditTest, RejectsPairTableMismatch) {
 }
 
 GTEST_TEST(CertificateAuditTest, RejectsRelabelledPairRecords) {
-  // Relabelling records between two pairs of *similar* difficulty can be a true
+  // Relabelling records between two pairs of similar difficulty can be a true
   // statement about a claim nobody made, so this mutation is only meaningful
   // where the pair structure is designed: give the 12 mm pair the far ball's
-  // single root-wide record and its motion bound (half the 0.6 m travel)
-  // swamps its 5 mm of slack.
+  // single root-wide record and its motion bound, half the 0.6 m travel, swamps
+  // its 5 mm of slack.
   ASSERT_FALSE(Corpus().empty());
   const AuditCase& entry = *Corpus().front();
   ASSERT_TRUE(entry.designed);
@@ -558,8 +546,8 @@ GTEST_TEST(CertificateAuditTest, RejectsRelabelledPairRecords) {
       record.pair_index = hardest;
     }
   }
-  // Relabelling permutes two complete tilings, so coverage is *not* what
-  // catches this — verified rather than asserted, because a mutation that
+  // Relabelling permutes two complete tilings, so coverage is not what catches
+  // this. That is verified rather than assumed, because a mutation that
   // happened to break coverage would make the test pass for the wrong reason
   // and leave the arithmetic untested.
   for (int pair = 0; pair < static_cast<int>(certificate.pairs.size());
@@ -574,9 +562,9 @@ GTEST_TEST(CertificateAuditTest, RejectsRelabelledPairRecords) {
 }
 
 GTEST_TEST(CertificateAuditTest, RejectsPerturbedPath) {
-  // The certificate is a statement about one specific path. Handing the
-  // verifier a path with a nudged interior control point must not verify: every
-  // record's qc stops being the midpoint apex of the interval it names.
+  // The certificate is a statement about one specific path. A path with a
+  // nudged interior control point must not verify: every record's qc stops
+  // being the midpoint apex of the interval it names.
   for (const auto& entry : Corpus()) {
     SCOPED_TRACE(entry->name);
     const PiecewiseBezierPath perturbed = entry->PerturbedPath(0.05);
@@ -586,7 +574,7 @@ GTEST_TEST(CertificateAuditTest, RejectsPerturbedPath) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. What a *valid* transformation looks like — pinned deliberately.
+// 3. What a valid transformation looks like.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(CertificateAuditTest, AcceptsReorderedRecords) {
@@ -595,8 +583,8 @@ GTEST_TEST(CertificateAuditTest, AcceptsReorderedRecords) {
   // sorts the intervals itself before checking coverage and every record is
   // checked independently, so order carries no information. Pinning this keeps
   // a future "records must arrive sorted" shortcut from being mistaken for a
-  // security property — and keeps the mutations above honest, since a verifier
-  // that rejected everything would pass all of them.
+  // security property, and it rules out a verifier that rejects everything,
+  // which would pass every mutation above.
   std::mt19937 rng(20260826);
   int shuffled = 0;
   for (const auto& entry : Corpus()) {
@@ -613,7 +601,7 @@ GTEST_TEST(CertificateAuditTest, AcceptsReorderedRecords) {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Certificates a run cannot honestly produce.
+// 4. Runs whose certificate is not a proof.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(CertificateAuditTest, NoCertificateUnlessRequested) {
@@ -628,8 +616,8 @@ GTEST_TEST(CertificateAuditTest, NoCertificateUnlessRequested) {
   EXPECT_FALSE(result.certificate.has_value());
 }
 
-/// The designed world again, but driven straight through the 1 mm plate at
-/// y = 0.0175: q(t) sweeps y from 0 to 0.05 while x crosses the plate's span.
+// The designed world again, but driven straight through the 1 mm plate at
+// y = 0.0175: q(t) sweeps y from 0 to 0.05 while x crosses the plate's span.
 Eigen::MatrixXd ViolatingControlPoints() {
   VectorXd start(2), end(2);
   start << -0.3, 0.0;
@@ -638,12 +626,11 @@ Eigen::MatrixXd ViolatingControlPoints() {
 }
 
 GTEST_TEST(CertificateAuditTest, NonFreeVerdictCertificateIsNotAProof) {
-  // Pinned behaviour for "the certificate of a non-free run is absent or
-  // unusable": the field is *present* whenever emit_certificate was asked for,
-  // and the records the run did make are individually valid — but a run that
-  // found a violation dropped that pair from the subtree instead of certifying
-  // it, so the trail cannot cover the domain and the replay refuses it. The
-  // resolution is "usable as an audit trail, unusable as a proof".
+  // The certificate field is present whenever emit_certificate was asked for,
+  // and the records the run did make are individually valid. A run that found a
+  // violation dropped that pair from the subtree instead of certifying it, so
+  // the trail cannot cover the domain and the replay refuses it: usable as an
+  // audit trail, unusable as a proof.
   ASSERT_FALSE(Corpus().empty());
   const AuditCase& entry = *Corpus().front();
   const Options options = AuditOptions();
@@ -658,9 +645,9 @@ GTEST_TEST(CertificateAuditTest, NonFreeVerdictCertificateIsNotAProof) {
   EXPECT_FALSE(VerifyCertificate(*entry.checker, path, *violating.certificate))
       << "a certificate from a violating run must not read as a proof";
 
-  // Same for a run stopped by the node budget. That needs the *free*
-  // trajectory: a definite violation outranks budget exhaustion in the verdict
-  // reduction, so the budget branch is only reachable when nothing violates.
+  // Same for a run stopped by the node budget. That needs the free trajectory:
+  // a definite violation outranks budget exhaustion in the verdict reduction,
+  // so the budget branch is only reachable when nothing violates.
   Options budgeted = options;
   budgeted.max_nodes = 3;
   const BezierCurve<double> free_trajectory(0.0, 1.0, entry.control_points);
@@ -670,7 +657,7 @@ GTEST_TEST(CertificateAuditTest, NonFreeVerdictCertificateIsNotAProof) {
   ASSERT_TRUE(truncated.certificate.has_value());
   EXPECT_FALSE(entry.Verify(*truncated.certificate));
 
-  // ... and for kFindFirstViolation, which additionally *prunes* the search:
+  // ... and for kFindFirstViolation, which additionally prunes the search:
   // every node starting after the witness is skipped, so whole stretches of the
   // domain are never visited at all.
   Options find_first = options;

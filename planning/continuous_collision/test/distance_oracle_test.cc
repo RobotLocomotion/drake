@@ -1,10 +1,8 @@
-/// @file
-/// T3 (the test plan): distance oracle accuracy, capability-probe
-/// classification, the analytic halfspace fallback, Mesh-as-convex-hull
-/// semantics, and the V-polytope ingestion round trip.
-///
-/// Every world is built programmatically with RobotDiagramBuilder and every
-/// randomized case uses a fixed seed, so the suite is deterministic.
+// Distance oracle accuracy, capability-probe classification, the analytic
+// halfspace fallback, Mesh-as-convex-hull semantics, and the V-polytope
+// ingestion round trip. Every world is built programmatically with
+// RobotDiagramBuilder and every randomized case uses a fixed seed, so the suite
+// is deterministic.
 
 #include "drake/planning/continuous_collision/distance_oracle.h"
 
@@ -73,17 +71,17 @@ using Eigen::Matrix3Xd;
 using Eigen::Vector3d;
 
 constexpr double kTau = 1e-6;
-/// Exactness bar for the analytic halfspace fallback and for round trips that
-/// must land on identical code paths.
+// Exactness bar for the analytic halfspace fallback and for round trips that
+// must land on identical code paths.
 constexpr double kExact = 1e-12;
-/// Accuracy bar for Drake's native (partly iterative GJK) narrowphase.
+// Accuracy bar for Drake's native (partly iterative GJK) narrowphase.
 constexpr double kNative = 1e-6;
 
 // --------------------------------------------------------------------------
 // World construction helpers.
 // --------------------------------------------------------------------------
 
-/// A built RobotDiagram plus a context, with convenience accessors.
+// A built RobotDiagram plus a context, with convenience accessors.
 class World {
  public:
   explicit World(std::unique_ptr<RobotDiagram<double>> diagram)
@@ -97,7 +95,7 @@ class World {
     return diagram_->plant().GetMyMutableContextFromRoot(context_.get());
   }
 
-  /// Re-evaluates the query output port; call after every pose change.
+  // Re-evaluates the query output port; call after every pose change.
   const QueryObject<double>& query() {
     const auto& scene_graph = diagram_->scene_graph();
     return scene_graph.get_query_output_port().Eval<QueryObject<double>>(
@@ -108,7 +106,7 @@ class World {
     diagram_->plant().SetFreeBodyPose(&plant_context(), body, X_WB);
   }
 
-  /// Randomizes every floating body's pose.
+  // Randomizes every floating body's pose.
   void RandomizeAll(std::mt19937* rng, double range);
 
  private:
@@ -120,8 +118,8 @@ CoulombFriction<double> Friction() {
   return CoulombFriction<double>(1.0, 1.0);
 }
 
-/// Deterministic random pose: uniform translation in [-range, range]^3 and a
-/// uniformly distributed orientation.
+// Deterministic random pose: uniform translation in [-range, range]^3 and a
+// uniformly distributed orientation.
 RigidTransformd RandomPose(std::mt19937* rng, double range) {
   std::uniform_real_distribution<double> uniform(-range, range);
   std::normal_distribution<double> normal(0.0, 1.0);
@@ -139,9 +137,9 @@ void World::RandomizeAll(std::mt19937* rng, double range) {
   }
 }
 
-/// Adds a floating body carrying `shape` as its only collision geometry. The
-/// default pose spreads bodies out so the capability probe's default-context
-/// queries do not run on a pile of coincident geometry.
+// Adds a floating body carrying `shape` as its only collision geometry. The
+// default pose spreads bodies out so the capability probe's default-context
+// queries do not run on a pile of coincident geometry.
 const RigidBody<double>& AddShapeBody(MultibodyPlant<double>* plant,
                                       const std::string& name,
                                       const Shape& shape,
@@ -154,7 +152,7 @@ const RigidBody<double>& AddShapeBody(MultibodyPlant<double>* plant,
   return body;
 }
 
-/// The single collision geometry registered on `body_name`.
+// The single collision geometry registered on `body_name`.
 GeometryId GeometryOf(const MultibodyPlant<double>& plant,
                       const std::string& body_name) {
   const auto& ids =
@@ -163,7 +161,7 @@ GeometryId GeometryOf(const MultibodyPlant<double>& plant,
   return ids.front();
 }
 
-/// Finds the probe record for the unordered pair {a, b}.
+// Finds the probe record for the unordered pair {a, b}.
 const PairRecord& FindPair(const DistanceOracle& oracle, GeometryId a,
                            GeometryId b) {
   for (const PairRecord& p : oracle.pairs()) {
@@ -179,7 +177,7 @@ const PairRecord& FindPair(const DistanceOracle& oracle, GeometryId a,
 // Independently derived ground truth.
 // --------------------------------------------------------------------------
 
-/// Distance from a point to a box, both in the box's frame; zero inside.
+// Distance from a point to a box, both in the box's frame; zero inside.
 double PointBoxDistance(const Vector3d& p_B, const Vector3d& half) {
   return (p_B.cwiseAbs() - half).cwiseMax(0.0).norm();
 }
@@ -229,10 +227,10 @@ double HalfSpaceVertices(const Vector3d& n, const Vector3d& p0,
 }
 
 // --------------------------------------------------------------------------
-// On-disk meshes (written once per process into Drake's temp directory).
+// Mesh fixtures for the hull-semantics cases.
 // --------------------------------------------------------------------------
 
-/// The 8 corners of a box centered on its frame origin.
+// The 8 corners of a box centered on its frame origin.
 Matrix3Xd BoxCorners(const Vector3d& half) {
   Matrix3Xd v(3, 8);
   int col = 0;
@@ -251,12 +249,9 @@ const Vector3d& CubeHalf() {
   return half;
 }
 
-/// The cube of the mesh cases, as Drake's own shipped unit cube (vertices at
-/// ±1) scaled to CubeHalf(). Using the shipped asset instead of writing one
-/// keeps the test off the filesystem and off any assumption about which OBJ
-/// dialect Drake's reader accepts; the non-uniform Mesh/Convex scale argument
-/// reproduces exactly the half-extents the analytic expectations below use, so
-/// its vertices coincide with BoxCorners(CubeHalf()) to the last bit.
+// The cube of the mesh cases: Drake's shipped unit cube (vertices at ±1) scaled
+// to CubeHalf() by the non-uniform Mesh/Convex scale argument, so its vertices
+// coincide with BoxCorners(CubeHalf()) to the last bit.
 const std::string& CubeObjPath() {
   static const std::string path =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
@@ -271,8 +266,8 @@ Convex CubeConvex() {
   return Convex(CubeObjPath(), CubeHalf());
 }
 
-/// The L-shaped prism's cross-section, counter-clockwise. The reflex vertex is
-/// (1, 1); the convex hull closes the notch with the edge x + y = 3.
+// The L-shaped prism's cross-section, counter-clockwise. The reflex vertex is
+// (1, 1); the convex hull closes the notch with the edge x + y = 3.
 const std::vector<Eigen::Vector2d>& LProfile() {
   static const std::vector<Eigen::Vector2d> profile = {
       {0.0, 0.0}, {2.0, 0.0}, {2.0, 1.0}, {1.0, 1.0}, {1.0, 2.0}, {0.0, 2.0}};
@@ -281,11 +276,9 @@ const std::vector<Eigen::Vector2d>& LProfile() {
 
 constexpr double kLHalfHeight = 0.5;
 
-/// A closed, genuinely non-convex L-prism. This one stays generated — it
-/// encodes the analytic expectations of the mesh-vs-hull cases below and no
-/// shipped asset matches them — but it is generated into memory rather than
-/// into a file, so the test needs neither a temp directory nor a write that
-/// could fail unnoticed.
+// A closed, genuinely non-convex L-prism. No shipped asset matches the analytic
+// expectations of the mesh-vs-hull cases below, so this one is generated, into
+// memory rather than into a file so that the test stays off the filesystem.
 InMemoryMesh LPrismMesh() {
   const std::string contents = [] {
     std::ostringstream out;
@@ -410,8 +403,8 @@ GTEST_TEST(DistanceOracleAccuracy, SphereBoxMatchesAnalyticDistance) {
 // Analytic halfspace fallback: exact against hand-derived formulas.
 // ==========================================================================
 
-/// One world holding a halfspace plus one geometry of every partner class,
-/// all on floating bodies so both sides can be posed arbitrarily.
+// One world holding a halfspace plus one geometry of every partner class,
+// all on floating bodies so both sides can be posed arbitrarily.
 class HalfSpaceFallbackTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -436,8 +429,8 @@ class HalfSpaceFallbackTest : public ::testing::Test {
     halfspace_id_ = GeometryOf(world_->plant(), "halfspace");
   }
 
-  /// A deliberately asymmetric tetrahedron: its hull vertices are exactly the
-  /// four input points, so the reference minimum can be written down.
+  // An asymmetric tetrahedron: its hull vertices are exactly the four input
+  // points, so the reference minimum can be written down.
   static Matrix3Xd TetraVertices() {
     Matrix3Xd v(3, 4);
     v.col(0) = Vector3d(0.0, 0.0, 0.0);
@@ -573,7 +566,7 @@ TEST_F(HalfSpaceFallbackTest, ReportNamesEveryCombinationAndRoute) {
 // Capability probe: classification snapshot and refusals.
 // ==========================================================================
 
-/// A world with one geometry of every supported shape class.
+// A world with one geometry of every supported shape class.
 class AllShapesTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -719,10 +712,9 @@ TEST_F(AllShapesTest, IdOrderingIsSymmetricForHalfSpacePairs) {
   EXPECT_EQ(checked, kDynamicBodies);
 }
 
-/// Records, for the certifier and benchmark authors, which (shape, shape)
-/// combinations Drake's native narrowphase actually supports on the pinned
-/// build. The oracle routes every halfspace pair through the analytic fallback
-/// precisely because of the rows this test prints.
+// Records which (shape, shape) combinations Drake's native narrowphase supports
+// on the pinned build. The oracle routes every halfspace pair through the
+// analytic fallback because of the rows this test prints.
 TEST_F(AllShapesTest, NativeSupportTableSnapshot) {
   const auto& inspector = world_->diagram().scene_graph().model_inspector();
   const QueryObject<double>& query = world_->query();
@@ -745,7 +737,7 @@ TEST_F(AllShapesTest, NativeSupportTableSnapshot) {
   }
   std::cout << table << std::flush;
   EXPECT_EQ(supported + threw, static_cast<int>(oracle_->pairs().size()));
-  // All non-halfspace combinations must work natively -- exactly what the
+  // All non-halfspace combinations must work natively, which is what the
   // capability probe asserted at construction.
   EXPECT_GE(supported, kNativePairs);
 }
@@ -876,10 +868,9 @@ GTEST_TEST(DistanceOracleMesh, MeshDistanceEqualsConvexHullDistance) {
   EXPECT_GT(penetrating, 0);
 }
 
-/// Documents the semantics loudly (the geometry-support scope; the risk
-/// register): a *non-convex* Mesh is measured as its convex hull, so a probe
-/// sitting in the L's concave notch -- genuinely 0.35 m clear of the solid --
-/// is reported as penetrating.
+// A non-convex Mesh is measured as its convex hull, so a probe sitting in the
+// L's concave notch, genuinely 0.35 m clear of the solid, is reported as
+// penetrating.
 GTEST_TEST(DistanceOracleMesh,
            NonconvexMeshIsMeasuredAsItsConvexHullNotItsSurface) {
   RobotDiagramBuilder<double> builder(0.0);
@@ -976,7 +967,7 @@ GTEST_TEST(DistanceOracleMesh, HalfSpaceFallbackAgainstMeshUsesTheSameHull) {
 // V-polytope ingestion round trip.
 // ==========================================================================
 
-/// A deliberately lopsided polytope.
+// A lopsided polytope.
 Matrix3Xd PolytopeVertices() {
   Matrix3Xd v(3, 6);
   v.col(0) = Vector3d(0.00, 0.00, 0.00);
@@ -988,7 +979,7 @@ Matrix3Xd PolytopeVertices() {
   return v;
 }
 
-/// The same polytope with interior points that add nothing to the hull.
+// The same polytope with interior points that add nothing to the hull.
 Matrix3Xd RedundantPolytopeVertices() {
   const Matrix3Xd v = PolytopeVertices();
   Matrix3Xd r(3, v.cols() + 3);

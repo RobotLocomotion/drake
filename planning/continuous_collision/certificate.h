@@ -12,7 +12,7 @@ namespace continuous_collision {
 
 /** One certification event: pair `pair_index` was certified over the
 parameter interval [s_start, s_end] of segment `segment` from representative
-configuration qc (the search algorithm).
+configuration qc.
 @ingroup planning_collision_checker */
 struct CertificateRecord {
   int segment{};

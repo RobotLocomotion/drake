@@ -1,32 +1,18 @@
-/* T2 (the test plan) — the displacement lemma and the J(p) subtree logic. This
- * is the load-bearing test of the whole library: if any λ(j, p) under-bounds
- * the true motion of a pair's distal side, the certifier will happily certify a
- * colliding trajectory. Any failure here is a soundness bug in the kinematics
- * module and must be fixed there, never by loosening this test (the
- * implementation notes, item 2).
- *
- * Three complementary property tests run over the same random-plant corpus:
- *
- *  (1) Atomic, per coordinate. Move exactly one coordinate j ∈ J(p) and check
- *      that every sampled material point of the pair's distal side D(j, p) —
- *      the body inside S_j — displaces, measured in the *other* body's frame,
- *      by at most λ(j,p)·|Δq_j|. This is the elementary step the lemma's proof
- *      telescopes over, and it pins λ directly.
- *
- *  (2) Aggregate, multi-coordinate. Move all coordinates at once and check
- *      that the distance between any material point of A's geometry and any
- *      material point of B's geometry changes by at most Σ λ(j,p)·|Δq_j|. This
- *      is the pairwise-distance form the certifier actually consumes. Note
- *      that a one-sided statement ("points of B in A's frame") is NOT valid in
- *      general for a self-collision pair, because the distal side changes from
- *      joint to joint along J(p); the sum survives only because each
- *      telescoping step is bounded in the frame of *that step's* static side,
- *      and point-to-point distance is frame invariant.
- *
- *  (3) One-sided aggregate, for pairs whose whole J(p) shares a single distal
- *      side (every robot-vs-environment pair): then the stronger statement
- *      does hold and is checked.
- */
+/* The displacement lemma and the J(p) subtree logic. An under-bounding λ(j, p)
+ makes the certifier certify a colliding path, with no other symptom, so a
+ failure here is a soundness bug in the kinematics module, not a test to loosen.
+
+ Three property tests share one random-plant corpus: (1) move a single
+ coordinate j ∈ J(p) and check that every sampled point of the distal side
+ D(j, p) displaces by at most λ(j,p)·|Δq_j| in the other body's frame; (2) move
+ all coordinates and check that every A-point-to-B-point distance changes by at
+ most Σ λ(j,p)·|Δq_j|; (3) for pairs whose whole J(p) shares one distal side,
+ check the stronger one-sided form.
+
+ (2) is stated on distances rather than on B's points in A's frame because the
+ distal side changes from joint to joint along a self-collision pair's J(p).
+ Each telescoping step is bounded in the frame of that step's static side, and
+ point-to-point distance is frame invariant. */
 
 #include <algorithm>
 #include <cmath>
@@ -94,10 +80,10 @@ using Rng = std::mt19937_64;
 
 /* Absolute slack on every displacement assertion. The claims are exact
  mathematics; this only absorbs floating-point noise in Drake's forward
- kinematics and in our own accumulation (both ~1e-15 at these magnitudes). */
+ kinematics and in this test's own accumulation (both ~1e-15 here). */
 constexpr double kSlack = 1e-9;
 
-/* Options::continuity_tolerance's default — the width below which the curve
+/* Options::continuity_tolerance's default: the width below which the curve
  module flags a coordinate constant and the carve-out removes it from every
  J(p). A coordinate carved on that *tolerance* can still move by up to this
  much, which is what MotionBoundTable::carveout_slack() charges for. */
@@ -367,7 +353,7 @@ std::vector<PairId> CollisionPairs(const RobotDiagram<double>& diagram) {
 }
 
 // ---------------------------------------------------------------------------
-// Part 1 — J(p) subtree logic on hand-built plants.
+// Part 1. J(p) subtree logic on hand-built plants.
 // ---------------------------------------------------------------------------
 
 /* Convenience: the position coordinates of a named joint. */
@@ -541,15 +527,13 @@ GTEST_TEST(JointSupportTest, ConstantCoordinateCarveOutEmptiesJp) {
 }
 
 // ---------------------------------------------------------------------------
-// Part 1b — the joint-type and half-space carve-outs (the joint-support scope;
-// the geometry-support scope).
+// Part 1b. The joint-type and half-space carve-outs.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(JointSupportTest, ReversedJointThrowsWithAnActionableMessage) {
   // A joint whose declared parent ends up OUTBOARD of its declared child once
   // the tree is rooted at the world. Drake reverses the mobilizer internally;
-  // the reach chain does not model that, so v1 rejects it by name (the
-  // displacement lemma).
+  // the reach chain does not model that, so the library rejects it by name.
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
   const auto& a = plant.AddRigidBody("body_a", UnitInertia());
@@ -636,8 +620,7 @@ GTEST_TEST(HalfSpaceRuleTest, RotatingHalfSpaceThrowsAtConstruction) {
 
 GTEST_TEST(HalfSpaceRuleTest, TranslatingHalfSpaceIsAccepted) {
   // Pure translation keeps every point of the half space moving by |Δq|, so
-  // λ = 1 is finite and correct even though the reach is not (the
-  // geometry-support scope).
+  // λ = 1 is finite and correct even though the reach is not.
   auto diagram = MakeHalfSpaceModel(/* halfspace_on_link = */ true, true);
   const KinematicsEngine engine(*diagram);
   const std::vector<PairId> pairs = CollisionPairs(*diagram);
@@ -652,8 +635,8 @@ GTEST_TEST(HalfSpaceRuleTest, TranslatingHalfSpaceIsAccepted) {
 
 /* world --(revolute j0)--> b1 --(quaternion floating)--> b2 --(revolute j1)-->
  b3, with geometry on the world and on b3. The floating joint sits mid-chain so
- that the reach for j0 has to cross it — which is exactly where its X_FM
- translation must be picked up from the control box. */
+ that the reach for j0 has to cross it, which is where its X_FM translation
+ must be picked up from the control box. */
 std::unique_ptr<RobotDiagram<double>> MakeMidChainFloatingModel() {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -766,20 +749,17 @@ GTEST_TEST(JointSupportTest, ConstantFloatingBaseCarveOutIsSoundMidChain) {
 }
 
 // ---------------------------------------------------------------------------
-// Part 1c — an exactly tight reach chain.
+// Part 1c. An exactly tight reach chain.
 //
-// The randomized corpus below is excellent at catching *structural* errors
-// (a dropped term, a wrong distal side), but the chain walk's triangle
-// inequalities are strictly slack at random poses, so a term that is merely
-// too small can hide inside that slack. This model removes the slack: every
-// offset lies along +x with identity rotation, so ‖a + b‖ = ‖a‖ + ‖b‖ at every
-// hop and the reach is *exactly attained* by a specific material point. Each
-// contribution to r therefore shows up in λ digit for digit.
+// The chain walk's triangle inequalities are slack at random poses, so a term
+// that is merely too small hides inside that slack in the randomized corpus.
+// Here every offset lies along +x with identity rotation, giving
+// ‖a + b‖ = ‖a‖ + ‖b‖ at every hop, so each contribution to r shows up in λ.
 //
 //   world --j_top(axis ẑ)--> b1 --j_slide(axis x̂)--> b2 --weld--> b3(sphere)
 //
-// with, all along x̂:  ‖p_CM(j_top)‖ = L1, ‖p_PF(j_slide)‖ = d1, the slide's
-// box maximum s, ‖p_CM(j_slide)‖ = d2, the weld's ‖p_PF‖ = e1, ‖X_FM‖ = e2,
+// with, all along x̂: ‖p_CM(j_top)‖ = L1, ‖p_PF(j_slide)‖ = d1, the slide's box
+// maximum s, ‖p_CM(j_slide)‖ = d2, the weld's ‖p_PF‖ = e1, ‖X_FM‖ = e2,
 // ‖p_CM‖ = e3, and the sphere reaching L3 + ρ from b3's origin. At the slide's
 // box maximum the farthest sphere point sits at exactly
 //   r = (L3 + ρ) + (e3 + e2 + e1) + (d2 + s + d1) + L1
@@ -958,9 +938,8 @@ GTEST_TEST(ReachTest, ScrewLambdaIncludesPitchAndIsNecessary) {
 
   EXPECT_LE(displacement, lambda_top * dtheta + kSlack);
   // The helix's axial travel is orthogonal to the chord it sweeps, so the true
-  // displacement is √(r² + (pitch/2π)²)·Δθ — strictly larger than r·Δθ. This
-  // is the direct evidence that dropping the pitch term would be UNSOUND, not
-  // merely conservative.
+  // displacement is √(r² + (pitch/2π)²)·Δθ, strictly larger than r·Δθ, so
+  // dropping the pitch term would be unsound, not merely conservative.
   EXPECT_GT(displacement, chain.expected_reach * dtheta * (1.0 + 1e-6))
       << "a screw λ of r alone would under-bound this motion";
   const double exact = std::hypot(chain.expected_reach, pitch_term) * dtheta;
@@ -968,7 +947,7 @@ GTEST_TEST(ReachTest, ScrewLambdaIncludesPitchAndIsNecessary) {
 }
 
 // ---------------------------------------------------------------------------
-// Part 2 — the displacement lemma property test.
+// Part 2. The displacement lemma property test.
 // ---------------------------------------------------------------------------
 
 struct LemmaStats {
@@ -1144,8 +1123,8 @@ void CheckWorld(Rng* rng, const RandomWorld& world, CarveOut carve_out,
       }
 
       if (table.pair_is_static(k)) {
-        // A static pair may move only by the carve-out residual — exactly zero
-        // when every carved coordinate is exactly constant.
+        // A static pair may move only by the carve-out residual, which is
+        // exactly zero when every carved coordinate is exactly constant.
         Matrix3Xd before(3, pts_b.cols());
         Matrix3Xd after(3, pts_b.cols());
         plant.SetPositions(&ctx, q);
@@ -1213,9 +1192,9 @@ GTEST_TEST(DisplacementLemmaTest, RandomPlants) {
   for (int trial = 0; trial < kNumPlants; ++trial) {
     SCOPED_TRACE(fmt::format("random plant #{}", trial));
     // Screw joints in every third world. The carve-out cycles through its
-    // three regimes so that the exactly-constant case and the (load-bearing)
-    // sub-tolerance case each get ~500 plants: the latter is the one where the
-    // carved coordinates still move and carveout_slack() has to pay for them.
+    // three regimes so the exactly-constant and sub-tolerance cases each get
+    // ~500 plants; in the sub-tolerance case the carved coordinates still move
+    // and carveout_slack() has to pay for them.
     const RandomWorld world =
         MakeRandomWorld(&rng, /* allow_screw = */ trial % 3 == 0, 128);
     stats.screw_joints += world.num_screw_joints;
@@ -1231,9 +1210,8 @@ GTEST_TEST(DisplacementLemmaTest, RandomPlants) {
   EXPECT_GE(stats.atomic_checks, 20000);
   EXPECT_GE(stats.aggregate_checks, 10000);
   EXPECT_GE(stats.one_sided_checks, 2000);
-  // Screw joints must actually appear: the joint-support scope lists them as
-  // should-have, and this test is what decides whether they are supported or
-  // excluded.
+  // Screw joints must actually appear in the corpus, or the screw λ rule is
+  // never exercised.
   EXPECT_GT(stats.screw_joints, 0);
   // The bound must be near-tight somewhere, or this test would pass against an
   // arbitrarily wrong λ.
@@ -1289,16 +1267,16 @@ GTEST_TEST(DisplacementLemmaTest, ScrewChain) {
 }
 
 // ---------------------------------------------------------------------------
-// Part 3 — the constant-coordinate carve-out's residual.
+// Part 3. The constant-coordinate carve-out's residual.
 //
 // The curve module flags a coordinate constant when its whole control-point
-// range fits inside Options::continuity_tolerance. That is a *tolerance*, not
-// an identity: such a coordinate is removed from every J(p) but may still move
-// by up to its range, displacing the pair's distal side by λ̃·range. If that
-// residual went uncharged the certificate inequality could pass with the true
-// clearance below threshold by ~1e-7 m — two orders of magnitude above
-// Options::certificate_slack. MotionBoundTable::carveout_slack() is what pays
-// for it, and these tests are what pin it.
+// range fits inside Options::continuity_tolerance. That is a tolerance, not an
+// identity: such a coordinate is removed from every J(p) but may still move by
+// up to its range, displacing the pair's distal side by λ̃·range. Uncharged,
+// that residual would let the certificate inequality pass with the true
+// clearance ~1e-7 m below threshold, two orders of magnitude above
+// Options::certificate_slack. MotionBoundTable::carveout_slack() pays for it,
+// and these tests pin it.
 // ---------------------------------------------------------------------------
 
 /* world --j_rot(revolute, ẑ)--> l1 --j_slide(prismatic, x̂)--> l2, with a
@@ -1335,8 +1313,8 @@ GTEST_TEST(CarveOutSlackTest, ToleranceConstantCoordinateIsChargedAtLambda) {
   const int rot = plant.GetJointByName("j_rot").position_start();
   const int slide = plant.GetJointByName("j_slide").position_start();
 
-  // The slide's box is the same in every build below, so the reach — and with
-  // it λ(j_rot) — is identical throughout; a revolute λ does not depend on the
+  // The slide's box is the same in every build below, so the reach, and with it
+  // λ(j_rot), is identical throughout; a revolute λ does not depend on the
   // revolute's own box, which is the only thing that changes.
   VectorXd lower = VectorXd::Zero(nq);
   VectorXd upper = VectorXd::Zero(nq);
@@ -1390,12 +1368,12 @@ GTEST_TEST(CarveOutSlackTest, ToleranceConstantCoordinateIsChargedAtLambda) {
   EXPECT_EQ(wide.carveout_slack(0), 0.0);
 }
 
-/* world --(base joint)--> link, with a HalfSpace on `link` — the *distal*
- side — and a sphere on the world. The base joint's kind is excluded in v1, so
- the construction-time half-space rule, which knows only the supported
- rotational kinds, lets this model through; the carve-out is then the only
- thing between it and an unbounded λ̃. `rpy` picks a 6-dof rpy floating base
- over a 3-dof ball joint. */
+/* world --(base joint)--> link, with a HalfSpace on `link`, the distal side,
+ and a sphere on the world. The base joint's kind is excluded, so the
+ construction-time half-space rule, which knows only the supported rotational
+ kinds, lets this model through; the carve-out is then the only thing between it
+ and an unbounded λ̃. `rpy` picks a 6-dof rpy floating base over a 3-dof ball
+ joint. */
 std::unique_ptr<RobotDiagram<double>> MakeCarvedHalfSpaceModel(bool rpy) {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -1482,15 +1460,14 @@ GTEST_TEST(CarveOutSlackTest,
 }
 
 // ---------------------------------------------------------------------------
-// Part 3b — the residual of a *floating base* held constant on the tolerance.
+// Part 3b. The residual of a floating base held constant on the tolerance.
 //
-// This is where λ̃ is not simply the λ the CSR row would have carried: the
-// joint kinds are excluded in v1 and have no λ at all, only a carve-out λ̃.
-// Each test drives Drake's own forward kinematics from configurations sampled
-// inside the box — the carved base coordinates included — and checks the FK
-// displacement against carveout_slack() directly, with the arm coordinate
-// pinned so that the slack is the *whole* bound and the check is sensitive to
-// it, and then again with everything moving.
+// This is where λ̃ is not simply the λ the CSR row would have carried: these
+// joint kinds are excluded and have no λ at all, only a carve-out λ̃. Each test
+// drives Drake's own forward kinematics from configurations sampled inside the
+// box, the carved base coordinates included, and checks the FK displacement
+// against carveout_slack() directly: first with the arm coordinate pinned so
+// the slack is the whole bound, then again with everything moving.
 // ---------------------------------------------------------------------------
 
 /* world --base(rpy or quaternion floating)--> b1 --jr(revolute ŷ)--> b2, with
@@ -1547,12 +1524,11 @@ void RunFloatingBaseCarveOutCorpus(bool quaternion, std::uint64_t seed) {
     ASSERT_EQ(nb, quaternion ? 7 : 6);
 
     // The base pose the trajectory holds. For the quaternion case it is a
-    // random *unit* quaternion, perturbed by at most the continuity tolerance
-    // — exactly the box the curve module would flag constant. Drake normalizes
+    // random unit quaternion perturbed by at most the continuity tolerance,
+    // exactly the box the curve module would flag constant. Drake normalizes
     // the quaternion internally, so a raw sample from that box and its
-    // renormalization produce identical forward kinematics; sampling raw is
-    // therefore both the honest test (the sample is in the box the bound is
-    // stated over) and the same thing Drake would compute.
+    // renormalization produce identical forward kinematics; sampling raw keeps
+    // the sample inside the box the bound is stated over.
     VectorXd q0(nq);
     if (quaternion) {
       const Eigen::Quaterniond qb = RandomRotation(&rng).ToQuaternion();
@@ -1584,11 +1560,11 @@ void RunFloatingBaseCarveOutCorpus(bool quaternion, std::uint64_t seed) {
     for (int c = bs; c < bs + nb; ++c) constant[c] = true;
 
     // ---- (A) Atomic: exactly one carved base coordinate has a width. -----
-    // Every other base coordinate is *exactly* constant, so the pair's whole
-    // slack is λ̃_c · range_c and the probe below — which drives that one
-    // coordinate from one end of its interval to the other — pins that single
-    // coefficient rather than a seven-term sum. This is what makes the corpus
-    // sensitive to an under-bound in any one λ̃.
+    // Every other base coordinate is exactly constant, so the pair's whole
+    // slack is λ̃_c · range_c. The probe below drives that one coordinate from
+    // one end of its interval to the other, pinning that single coefficient
+    // rather than a seven-term sum, which is what makes the corpus sensitive to
+    // an under-bound in any one λ̃.
     {
       const int c = bs + UniformInt(&rng, 0, nb - 1);
       const double width =
@@ -1649,8 +1625,8 @@ void RunFloatingBaseCarveOutCorpus(bool quaternion, std::uint64_t seed) {
         q[c] = Uniform(&rng, lower[c], upper[c]);
         qp[c] = Uniform(&rng, lower[c], upper[c]);
       }
-      // Σ_{uncarved} λ|Δq| + carveout_slack, with q and q′ drawn from the
-      // whole box — the carved coordinates' tiny ranges included.
+      // Σ_{uncarved} λ|Δq| + carveout_slack, with q and q′ drawn from the whole
+      // box, the carved coordinates' tiny ranges included.
       const double full = displacement(q, qp);
       const double bound = table.MotionBound(0, (qp - q).cwiseAbs());
       ASSERT_LE(full, bound + kSlack)
@@ -1690,18 +1666,18 @@ GTEST_TEST(CarveOutSlackTest, ToleranceConstantQuaternionFloatingBase) {
 }
 
 // ---------------------------------------------------------------------------
-// Part 3c — an exactly tight floating-base λ̃.
+// Part 3c. An exactly tight floating-base λ̃.
 //
 // The random corpus above catches structural errors but the chain walk's
 // triangle inequalities are slack at random poses, so a λ̃ that is merely too
-// small can hide inside that slack for the *rotation* rules. This model
-// removes the slack, the way MakeTightChain() does for the supported kinds:
-// both joint frames are identity, so the joint's M-frame origin *is* the
-// link's body origin, and the link's single sphere is centred on it. The reach
-// is then exactly R in every direction, so whatever axis a carved rotation
-// coordinate turns the link about, a material point sits at the full reach
-// perpendicular to that axis and the chord 2R·sin(θ/2) recovers R·θ to fifteen
-// digits at θ ~ 1e-7. Every λ̃ shows up digit for digit.
+// small can hide inside that slack for the rotation rules. This model removes
+// the slack, the way MakeTightChain() does for the supported kinds: both joint
+// frames are identity, so the joint's M-frame origin is the link's body origin,
+// and the link's single sphere is centred on it. The reach is then exactly R in
+// every direction, so whatever axis a carved rotation coordinate turns the link
+// about, a material point sits at the full reach perpendicular to that axis and
+// the chord 2R·sin(θ/2) recovers R·θ to fifteen digits at θ ~ 1e-7. Every λ̃
+// shows up digit for digit.
 // ---------------------------------------------------------------------------
 
 std::unique_ptr<RobotDiagram<double>> MakeTightFloatingChain(bool quaternion,

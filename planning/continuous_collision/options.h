@@ -14,7 +14,7 @@ namespace drake {
 namespace planning {
 namespace continuous_collision {
 
-/** Search modes for certification (the search algorithm).
+/** Search modes for certification.
 @ingroup planning_collision_checker */
 enum class SearchMode {
   /** Return on the first definite violation; serial execution returns the
@@ -25,7 +25,7 @@ enum class SearchMode {
   kCertifyAll,
 };
 
-/** Outcome of a certification run (the problem statement).
+/** Outcome of a certification run.
 @ingroup planning_collision_checker */
 enum class Verdict {
   /** Proof: every unfiltered pair keeps signed distance > margin + padding
@@ -40,9 +40,8 @@ enum class Verdict {
   kBudgetExhausted,
 };
 
-/** Options controlling one certification call (the architecture; the numerical
- * policy).
- * @ingroup planning_collision_checker */
+/** Options controlling one certification call.
+@ingroup planning_collision_checker */
 struct Options {
   /** Global clearance margin δ in meters. The certificate proves signed
   distance > margin + padding for every pair at every time. */
@@ -50,8 +49,7 @@ struct Options {
   /** Junction C0-continuity tolerance (per coordinate; modulo 2π for
   coordinates listed in continuous_revolute_indices). */
   double continuity_tolerance{1e-7};
-  /** τ: the distance oracle's accuracy contract in meters (the distance-oracle
-   * contract; the numerical policy). */
+  /** τ: the distance oracle's accuracy contract in meters. */
   double query_tolerance{1e-6};
   /** ε_slack: swallows floating-point noise in the bound arithmetic. */
   double certificate_slack{1e-9};
@@ -66,10 +64,10 @@ struct Options {
   int max_conversion_degree{10};
   SearchMode mode{SearchMode::kCertifyAll};
   int max_reported_findings{32};
-  /** Optional node budget; exceeded ⇒ Verdict::kBudgetExhausted. */
+  /** Optional node budget; exceeded => Verdict::kBudgetExhausted. */
   std::optional<uint64_t> max_nodes{};
   /** If true, every certification event is recorded into a Certificate that
-  VerifyCertificate() can independently replay (the search algorithm). */
+  VerifyCertificate() can independently replay. */
   bool emit_certificate{false};
   Parallelism parallelism{Parallelism::Max()};
 };
@@ -79,7 +77,7 @@ margin + padding(p).
 
 Which of the two scalars applies to a pair is decided by *anchoring*, from
 plant topology alone. A body is anchored iff no position coordinate of the
-plant changes its pose relative to the world — the world body itself, and
+plant changes its pose relative to the world, i.e. the world body itself and
 everything welded to it directly or transitively. A pair is a self-collision
 pair iff both of its bodies are non-anchored, and an environment pair
 otherwise. The rule never depends on which trajectory is being checked.
@@ -107,7 +105,7 @@ struct PairId {
   multibody::BodyIndex body_b;
 };
 
-/** One violation or inconclusive record (the architecture).
+/** One violation or inconclusive record.
 @ingroup planning_collision_checker */
 struct Finding {
   /** Trajectory time of the witness configuration. */
@@ -119,7 +117,7 @@ struct Finding {
   double distance{};
   /** Motion bound Δ_p at the terminal node (0 for breakpoint findings). */
   double motion_bound{};
-  /** true ⇒ definite violation; false ⇒ grazing / inconclusive. */
+  /** true => definite violation; false => grazing / inconclusive. */
   bool definite{};
   /** Closest points in world frame at q, when the narrowphase provides
   them (violation findings; planners use these to push trajectories out

@@ -19,16 +19,15 @@ struct BoundingSphere {
 };
 
 /** Computes a bounding sphere, in the body frame, of shape `shape` posed at
-X_LG in the body frame (the geometry-support scope).
+X_LG in the body frame.
 
-The sphere is centered at the shape's natural center (tighter for the
-broadphase prefilter than the white paper's origin-centered radius R_g; the
-origin-centered bound the reach chain needs is ‖center_L‖ + radius, which is
-sound because the sphere contains the geometry). Formulas are exact
-containment per shape:
+The sphere is centered at the shape's natural center, which is tighter for the
+broadphase prefilter than an origin-centered radius. The origin-centered bound
+the reach chain needs is ‖center_L‖ + radius, which is sound because the sphere
+contains the geometry. Formulas are exact containment per shape:
 
  - Sphere(r): center X_LG·0, radius r.
- - Box(w,d,h — Drake stores full sizes): box center, radius = half diagonal.
+ - Box(w,d,h; Drake stores full sizes): box center, radius = half diagonal.
  - Capsule(r, L): center, radius = L/2 + r.
  - Cylinder(r, L): center, radius = √(r² + (L/2)²) (farthest point on a rim).
  - Ellipsoid(a,b,c): center, radius = max(a,b,c).
@@ -38,10 +37,11 @@ containment per shape:
    engine's hull bakes in scale and degeneracy inflation, and the radius must
    bound the geometry actually checked.
 
-λ soundness dies quietly if any formula under-bounds, so this function
-switches on the closed set of supported shape types and
-@throws std::exception on anything else (HalfSpace included — halfspaces are
-handled by dedicated rules, never through a bounding sphere).
+An under-bounding formula produces an unsound λ with no other symptom, so this
+function switches on the closed set of supported shape types rather than
+falling back to a generic bound.
+@throws std::exception on any other shape type, HalfSpace included; half
+spaces are handled by dedicated rules, never through a bounding sphere.
 @ingroup planning_collision_checker */
 BoundingSphere ComputeBoundingSphere(const geometry::Shape& shape,
                                      const math::RigidTransform<double>& X_LG);

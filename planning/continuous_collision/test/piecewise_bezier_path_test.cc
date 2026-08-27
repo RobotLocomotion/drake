@@ -1,4 +1,4 @@
-/* T1 — curve module acceptance tests (the test plan, T1).
+/* Acceptance tests for the curve module.
 
 Every property test uses a fixed seed so the suite is reproducible and never
 flaky. Reference values come from Drake's own trajectory classes, so these
@@ -183,7 +183,7 @@ GTEST_TEST(BezierEvaluation, MatchesDrakeBezierCurve) {
 
 /* Property test: for >= 1000 random curves the two children produced by
 splitting at 1/2 reproduce the parent exactly (to 1e-12) on their halves, and
-the apex is the parent's midpoint value (trajectory normalization). */
+the apex is the parent's midpoint value. */
 GTEST_TEST(DeCasteljau, ChildrenReproduceParent) {
   std::mt19937_64 generator(20260826);
   std::uniform_int_distribution<int> rows_distribution(1, 7);
@@ -232,7 +232,8 @@ GTEST_TEST(DeCasteljau, ChildrenReproduceParent) {
 }
 
 /* The hot loop pre-sizes its outputs; re-splitting into already-correctly
-sized buffers must not reallocate them (the performance requirements, P1). */
+sized buffers must not reallocate them, so the steady-state loop does not
+allocate. */
 GTEST_TEST(DeCasteljau, PreSizedOutputsAreNotReallocated) {
   std::mt19937_64 generator(7);
   const Eigen::MatrixXd parent = RandomMatrix(6, 4, &generator);
@@ -353,8 +354,7 @@ BsplineTrajectory<double> MakeBsplineFromBasis(
 }
 
 /* Shared checker: the conversion must reproduce the B-spline to 1e-10 over
->= 1e4 dense samples, and the segments must tile the domain (trajectory
-normalization; the test plan). */
+>= 1e4 dense samples, and the segments must tile the domain. */
 void CheckBsplineEquivalence(const BsplineTrajectory<double>& bspline) {
   const PiecewiseBezierPath path =
       PiecewiseBezierPath::FromTrajectory(bspline, Options{});
@@ -362,7 +362,7 @@ void CheckBsplineEquivalence(const BsplineTrajectory<double>& bspline) {
   EXPECT_NEAR(path.start_time(), bspline.start_time(), 1e-14);
   EXPECT_NEAR(path.end_time(), bspline.end_time(), 1e-14);
   for (const BezierSegment& segment : path.segments()) {
-    // Full interior multiplicity ⇒ every segment has exactly `order` control
+    // Full interior multiplicity => every segment has exactly `order` control
     // points, i.e. the degree of the source spline.
     EXPECT_EQ(segment.control_points.cols(), bspline.basis().order());
   }
@@ -420,7 +420,7 @@ GTEST_TEST(BsplineConversion, NonUniformKnots) {
 GTEST_TEST(BsplineConversion, RepeatedInteriorKnots) {
   std::mt19937_64 generator(606060);
   // Order 4 (cubic): interior knot 1.0 with multiplicity 2 (C1 there) and
-  // interior knot 2.0 with multiplicity 3 (C0 there — the extreme case that
+  // interior knot 2.0 with multiplicity 3 (C0 there, the extreme case that
   // still passes junction validation).
   const std::vector<double> knots{0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 2.0, 2.0,
                                   2.0, 3.0, 3.5, 4.0, 4.0, 4.0, 4.0};
@@ -557,7 +557,7 @@ GTEST_TEST(PiecewisePolynomialConversion, LagrangeUpToDegreeCap) {
     Eigen::VectorXd times(num_points);
     Eigen::MatrixXd samples(2, num_points);
     for (int i = 0; i < num_points; ++i) {
-      // A deliberately non-unit segment duration: the monomial coefficients
+      // A non-unit segment duration: the monomial coefficients
       // must be rescaled by (t_end - t_start)^a before the change of basis.
       times[i] = 0.3 + 1.7 * static_cast<double>(i) / degree;
       samples(0, i) = std::sin(3.0 * times[i]);
@@ -592,7 +592,7 @@ GTEST_TEST(PiecewisePolynomialConversion, DegreeAboveCapThrows) {
       },
       "max_conversion_degree");
 
-  // Raising the cap deliberately makes it work.
+  // Raising the cap makes it work.
   Options relaxed;
   relaxed.max_conversion_degree = degree;
   const PiecewiseBezierPath path =
@@ -707,8 +707,7 @@ GTEST_TEST(JunctionValidation, NonMultipleOfTwoPiOffsetThrowsEvenWhenRevolute) {
 }
 
 /* Forward kinematics is 2π-periodic, so a legitimate 2πk junction offset must
-be left exactly as it is — the segments are NOT re-aligned (trajectory
-normalization). */
+be left exactly as it is: the segments are NOT re-aligned. */
 GTEST_TEST(JunctionValidation,
            ControlPointsAreNotRealignedAcrossTwoPiJunction) {
   std::mt19937_64 generator(864213);
@@ -901,7 +900,7 @@ GTEST_TEST(Composite, NestedCompositeRecursion) {
 }
 
 /* A CompositeTrajectory whose segments are B-splines and PiecewisePolynomials
-recurses through the same rules (trajectory normalization, item 3). */
+recurses through the same rules. */
 GTEST_TEST(Composite, MixedSegmentTypes) {
   std::mt19937_64 generator(11111);
   const int num_positions = 2;

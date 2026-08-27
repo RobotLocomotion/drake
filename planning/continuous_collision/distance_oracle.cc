@@ -34,10 +34,9 @@ using drake::geometry::QueryObject;
 using drake::geometry::SceneGraphInspector;
 using drake::math::RigidTransformd;
 
-/** The closed set of shape classes the oracle recognizes. Anything outside it
-is `kUnsupported` and is refused by the capability probe (mirroring the
-throw-on-unknown-shape rule the radius table uses; the geometry-support scope).
-*/
+/* The closed set of shape classes the oracle recognizes. Anything outside it
+is `kUnsupported` and is refused by the capability probe, mirroring the
+throw-on-unknown-shape rule ComputeBoundingSphere() uses. */
 enum class ShapeClass {
   kSphere,
   kBox,
@@ -76,18 +75,18 @@ ShapeClass Classify(const drake::geometry::Shape& shape) {
   });
 }
 
-/** Everything the analytic halfspace fallback needs about the *non*-halfspace
+/* Everything the analytic halfspace fallback needs about the *non*-halfspace
 partner, extracted once by the probe. Only the fields relevant to `klass` are
 populated. All quantities are in the geometry's canonical frame G. */
 struct SupportData {
   ShapeClass klass{ShapeClass::kUnsupported};
-  /** Sphere / Capsule / Cylinder radius. */
+  /* Sphere / Capsule / Cylinder radius. */
   double radius{0.0};
-  /** Half the axial length of a Capsule / Cylinder. */
+  /* Half the axial length of a Capsule / Cylinder. */
   double half_length{0.0};
-  /** Box half-sizes, or Ellipsoid semi-axes (a, b, c). */
+  /* Box half-sizes, or Ellipsoid semi-axes (a, b, c). */
   Eigen::Vector3d extent{Eigen::Vector3d::Zero()};
-  /** Convex / Mesh: the vertices of the very hull object the proximity engine
+  /* Convex / Mesh: the vertices of the very hull object the proximity engine
   collides (`GetConvexHull()`), so scale and any degeneracy inflation Drake
   applied are already baked in. */
   Eigen::Matrix3Xd hull_G;
@@ -145,7 +144,7 @@ SupportData MakeSupportData(const drake::geometry::Shape& shape) {
   return data;
 }
 
-/** Returns argmax over x ∈ C of d_W·x, with C the shape described by `data`
+/* Returns argmax over x ∈ C of d_W·x, with C the shape described by `data`
 posed at `X_WC` and `d_W` a unit vector -- i.e. the point attaining the
 support function h_C(d_W). Each branch is the standard closed form.
 
@@ -244,7 +243,7 @@ std::string ClassName(ShapeClass klass) {
   return "<unsupported>";
 }
 
-/** "geometry_name (ShapeType)", for error messages and the report. */
+/* "geometry_name (ShapeType)", for error messages and the report. */
 std::string Describe(const SceneGraphInspector<double>& inspector,
                      GeometryId id) {
   std::ostringstream out;
@@ -253,12 +252,12 @@ std::string Describe(const SceneGraphInspector<double>& inspector,
   return out.str();
 }
 
-/** One row of the probe report: a distinct unordered shape-type combination
+/* One row of the probe report: a distinct unordered shape-type combination
 and the route it resolved to. */
 struct ComboRow {
   DistanceRoute route{DistanceRoute::kNative};
   int pair_count{0};
-  /** A representative pair, used for the probe query and error messages. */
+  /* A representative pair, used for the probe query and error messages. */
   GeometryId example_a;
   GeometryId example_b;
 };
@@ -266,7 +265,7 @@ struct ComboRow {
 }  // namespace
 
 struct DistanceOracle::Impl {
-  /** Closed-form support data for every geometry that partners a halfspace.
+  /* Closed-form support data for every geometry that partners a halfspace.
   Keyed by geometry id because the facade hands back its own PairRecord
   copies, so SignedDistance() cannot index into pairs_. */
   std::unordered_map<GeometryId, SupportData> support;
@@ -283,7 +282,7 @@ DistanceOracle::DistanceOracle(const RobotDiagram<double>& model,
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
   const drake::multibody::MultibodyPlant<double>& plant = model.plant();
 
-  // --- Deformables are out of scope: refuse, naming them. ----------
+  // --- Deformables are out of scope: refuse, naming them. -----------------
   const std::vector<GeometryId> deformables =
       inspector.GetAllDeformableGeometryIds();
   if (!deformables.empty()) {
@@ -358,8 +357,7 @@ DistanceOracle::DistanceOracle(const RobotDiagram<double>& model,
       }
     }
 
-    // Meshes are certified as their convex hulls; say so, loudly (the risk
-    // register).
+    // Meshes are certified as their convex hulls; the report says so.
     if (class_a == ShapeClass::kMesh)
       mesh_names.insert(inspector.GetName(id_a));
     if (class_b == ShapeClass::kMesh)
@@ -444,9 +442,9 @@ double DistanceOracle::SignedDistance(const QueryObject<double>& query_object,
     const drake::geometry::SignedDistancePair<double> result =
         query_object.ComputeSignedDistancePairClosestPoints(pair.id.a,
                                                             pair.id.b);
-    // Drake reports the pair in its own fixed (deliberately undocumented)
-    // order, which may be the reverse of ours; the witness points come back
-    // in *its* A/B geometry frames, so undo any swap explicitly.
+    // Drake reports the pair in its own fixed but undocumented order, which
+    // may be the reverse of this record's; the witness points come back in
+    // *its* A/B geometry frames, so undo any swap explicitly.
     Eigen::Vector3d p_ACa;
     Eigen::Vector3d p_BCb;
     if (result.id_A == pair.id.a && result.id_B == pair.id.b) {
@@ -473,13 +471,13 @@ double DistanceOracle::SignedDistance(const QueryObject<double>& query_object,
   // Drake's HalfSpace is {x : n̂·(x - p0) ≤ 0}, with n̂ = R_WG·ẑ the outward
   // normal and p0 = X_WG.translation() a point of the boundary plane. For a
   // convex partner C,
-  //     φ = min_{x ∈ C} n̂·(x - p0) = -h_C(-n̂) - n̂·p0.
+  //     ϕ = min_{x ∈ C} n̂·(x - p0) = -h_C(-n̂) - n̂·p0.
   // Proof that this is the signed distance on both branches: translating C by
   // t·n̂ shifts the minimum by exactly t, and C is disjoint from the halfspace
-  // iff that minimum is ≥ 0. Hence for φ ≥ 0 the pair is separated and the
+  // iff that minimum is ≥ 0. Hence for ϕ ≥ 0 the pair is separated and the
   // minimizer together with its foot on the plane realizes the gap (any point
-  // of C is at least φ from the plane, and the minimizer is exactly φ), while
-  // for φ < 0 the smallest translation that separates them has length -φ,
+  // of C is at least ϕ from the plane, and the minimizer is exactly ϕ), while
+  // for ϕ < 0 the smallest translation that separates them has length -ϕ,
   // which is Drake's negative-penetration-depth definition. Exact, so this
   // route contributes 0 to τ -- but τ accounting stays uniform (the numerical
   // policy).
@@ -504,7 +502,7 @@ double DistanceOracle::SignedDistance(const QueryObject<double>& query_object,
   const Eigen::Vector3d x_W = SupportPoint(it->second, X_WC, -n_W);
   const double phi = n_W.dot(x_W - p0_W);
   // The halfspace witness is the minimizer's orthogonal projection onto the
-  // boundary plane; the witness displacement is then exactly φ·n̂.
+  // boundary plane; the witness displacement is then exactly ϕ·n̂.
   const Eigen::Vector3d plane_W = x_W - phi * n_W;
 
   if (nearest_a_W != nullptr) {

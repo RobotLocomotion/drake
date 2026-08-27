@@ -32,7 +32,7 @@ using drake::trajectories::Trajectory;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-/// Formats a double with enough digits to round-trip through the JSON.
+// Formats a double with enough digits to round-trip through the JSON.
 std::string FormatDouble(double v) {
   if (std::isnan(v)) return "null";
   if (std::isinf(v)) return v > 0 ? "1e999" : "-1e999";
@@ -64,7 +64,7 @@ std::string Escape(const std::string& s) {
   return out;
 }
 
-/// One (t, min-distance-over-all-pairs, min-distance-over-env-pairs) probe.
+// One (t, min-distance-over-all-pairs, min-distance-over-env-pairs) probe.
 struct Probe {
   double all{0.0};
   double env{0.0};
@@ -92,8 +92,8 @@ Probe ProbeAt(const RobotDiagram<double>& diagram, Context<double>* root,
   return p;
 }
 
-/// Golden-section minimization of `f` on [lo, hi]; the sampled bracket around
-/// a dense-sample argmin is unimodal in practice for these smooth curves.
+// Golden-section minimization of `f` on [lo, hi]; the sampled bracket around
+// a dense-sample argmin is unimodal in practice for these smooth curves.
 std::pair<double, double> GoldenSectionMin(
     const std::function<double(double)>& f, double lo, double hi,
     int iterations) {

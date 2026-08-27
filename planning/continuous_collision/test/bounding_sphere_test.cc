@@ -1,11 +1,9 @@
-/* T2 (the test plan) — the bounding-sphere radius property test.
- *
- * For every supported shape class, at many random poses X_LG, every sampled
- * surface point must lie inside the reported sphere. A shape that silently
- * picks up another shape's radius formula is a *silent* λ soundness bug, so
- * this test is deliberately exhaustive over the closed set of supported shapes
- * and also pins the throw-on-unsupported behaviour. Never loosen the tolerance
- * to make a case pass (the implementation notes, item 2). */
+// The bounding-sphere radius property: for every supported shape class, at many
+// random poses X_LG, every sampled surface point lies inside the reported
+// sphere. A shape that picks up another shape's radius formula produces an
+// unsound λ with no other symptom, so the sweep covers the whole closed set of
+// supported shapes and pins the throw-on-unsupported behaviour. Never loosen
+// the tolerance to make a case pass.
 
 #include "drake/planning/continuous_collision/bounding_sphere.h"
 
@@ -49,13 +47,13 @@ using Eigen::Vector3d;
 
 constexpr int kNumPoses = 100;
 constexpr int kNumSurfaceSamples = 1000;
-/* The containment claim is exact mathematics; this only absorbs the rounding
- of re-evaluating it. Note the slack is taken relative to the *origin-centred*
- radius R_g = ‖c_L‖ + ρ, exactly as the test plan's T2 states the property: the
- test forms ‖X_LG·p − c_L‖ by cancelling two quantities of magnitude ‖t‖, so its
- absolute rounding error scales with ‖t‖ and not with ρ. Scaling the slack by ρ
- alone would make the test's own arithmetic, rather than the formulas under
- test, decide the outcome for a millimetre-scale shape parked a metre away. */
+/* The containment claim is exact mathematics; this only absorbs the rounding of
+ re-evaluating it. The slack is taken relative to the origin-centred radius
+ R_g = ‖c_L‖ + ρ, which is the form the property is stated in: the test forms
+ ‖X_LG·p − c_L‖ by cancelling two quantities of magnitude ‖t‖, so its absolute
+ rounding error scales with ‖t‖ and not with ρ. Scaling the slack by ρ alone
+ would make the test's own arithmetic, rather than the formulas under test,
+ decide the outcome for a millimetre-scale shape parked a metre away. */
 constexpr double kRelativeSlack = 1e-12;
 
 using Rng = std::mt19937_64;
@@ -124,7 +122,8 @@ Sampler CapsuleSampler(double r, double length) {
   const double half = 0.5 * length;
   return [r, half](Rng* rng) {
     // Total area is split between the cylindrical barrel and the two caps;
-    // exact area weighting is irrelevant here — every region must be sampled.
+    // exact area weighting is irrelevant here, but every region must be
+    // sampled.
     if (std::uniform_int_distribution<int>(0, 1)(*rng) == 0) {
       const double phi = Uniform(rng, 0.0, 2.0 * M_PI);
       return Vector3d(r * std::cos(phi), r * std::sin(phi),
@@ -161,8 +160,7 @@ Sampler EllipsoidSampler(double a, double b, double c) {
 
 /* For Convex and Mesh the "surface samples" are the convex-hull vertices
  themselves: they are the extreme points of the very hull object the proximity
- engine collides, so containing all of them is exactly the claim the
- geometry-support scope makes. */
+ engine collides, so containing all of them is the whole claim. */
 Sampler HullVertexSampler(
     const drake::geometry::PolygonSurfaceMesh<double>& hull) {
   return [&hull](Rng* rng) {
@@ -332,8 +330,8 @@ GTEST_TEST(BoundingSphereTest, ConvexContainsHullVertices) {
         hull = &shape.GetConvexHull();
       } catch (const std::exception& e) {
         // Drake rejects hulls it considers degenerate; the checker inherits
-        // that decision, and nothing about our radius is claimed for a shape
-        // the proximity engine cannot build either.
+        // that decision, and the radius claims nothing about a shape the
+        // proximity engine cannot build either.
         GTEST_LOG_(INFO) << name << ": Drake refused the hull: " << e.what();
         continue;
       }
@@ -394,9 +392,8 @@ GTEST_TEST(BoundingSphereTest, MeshContainsHullVertices) {
   }
 }
 
-/* The closed-set requirement of the geometry-support scope: a shape that is not
- on the supported list must throw, never silently inherit some other shape's
- formula. */
+/* A shape that is not on the supported list must throw, never silently inherit
+ some other shape's formula. */
 GTEST_TEST(BoundingSphereTest, ThrowsOnHalfSpace) {
   const HalfSpace shape;
   const RigidTransform<double> X_LG = RigidTransform<double>::Identity();

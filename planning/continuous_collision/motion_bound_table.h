@@ -1,9 +1,5 @@
 #pragma once
 
-// NOTE(interface): This header is owned by the kinematics module. The class
-// and file names and the documented semantics are fixed; internal details
-// (private members, helper structs) may be refined by the implementation.
-
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -24,24 +20,16 @@ namespace drake {
 namespace planning {
 namespace continuous_collision {
 
-/** Per-pair motion-bound coefficients in CSR layout (the displacement lemma):
-for pair index k, a contiguous span of (position-coordinate index j, λ(j, p))
-entries over J(p), the coordinates that change the pair's relative pose. λ has
-units of meters of worst-case point displacement of the pair's distal side per
-unit change of coordinate j, valid for every configuration in the
-trajectory's global control-point box.
+/** Per-pair motion-bound coefficients in CSR layout: for pair index k, a
+contiguous span of (position-coordinate index j, λ(j, p)) entries over J(p),
+the coordinates that change the pair's relative pose. λ is meters of worst-case
+displacement of the pair's distal side per unit change of coordinate j, valid
+for every configuration in the trajectory's global control-point box.
 
-Each pair also carries a scalar `carveout_slack(p)`, the residual motion of
-the coordinates the constant-coordinate carve-out (trajectory normalization; the
-joint-support scope) removed from J(p). "Constant" there is a *tolerance* — a
-coordinate whose global control-box range is at most
-Options::continuity_tolerance — not an identity, so a carved coordinate may
-still displace the pair's distal side by up to λ̃_j · range_j. That residual is
-charged unconditionally inside MotionBound(), which is what makes Δ_p a true
-upper bound on the pair's relative motion over the whole trajectory rather than
-one that ignores the carved coordinates. It is exactly zero — bit for bit —
-whenever every carved coordinate is *exactly* constant, which is the case for
-every path whose control points repeat a coordinate's value verbatim.
+Each pair also carries a scalar carveout_slack(p), the residual motion of the
+coordinates the constant-coordinate carve-out removed from J(p). MotionBound()
+charges it unconditionally, which is what makes Δ_p an upper bound on the
+pair's relative motion over the whole trajectory.
 @ingroup planning_collision_checker */
 class MotionBoundTable {
  public:
@@ -67,14 +55,17 @@ class MotionBoundTable {
   coordinate the trajectory *moves* changes this pair's relative pose, so it
   is checked once. Note that "static" does not mean "immobile": a static pair
   can still drift by carveout_slack(p), which callers that shortcut
-  MotionBound() for such a pair must charge themselves. */
+  MotionBound() for such a pair must charge themselves.
+  @pre 0 <= pair_index < num_pairs(). */
   bool pair_is_static(int pair_index) const {
     return row_start_[pair_index] == row_start_[pair_index + 1];
   }
 
-  /** Δ_p(ν) = carveout_slack(p) + Σ_{j ∈ J(p)} λ(j,p) · w_j — a sparse dot
+  /** Δ_p(ν) = carveout_slack(p) + Σ_{j ∈ J(p)} λ(j,p) · w_j: a sparse dot
   product against the node's per-coordinate deviations w, plus the carved
-  coordinates' residual (the interval certificate, requirement P3). */
+  coordinates' residual.
+  @pre 0 <= pair_index < num_pairs().
+  @pre w.size() equals the plant's number of position coordinates. */
   double MotionBound(int pair_index, const Eigen::VectorXd& w) const {
     double delta = carveout_slack_[pair_index];
     for (int e = row_start_[pair_index]; e < row_start_[pair_index + 1]; ++e) {
@@ -86,14 +77,18 @@ class MotionBoundTable {
   /** Σ over the coordinates of J_topo(p) that the carve-out removed of
   λ̃_j · (global_upper_j − global_lower_j): an upper bound on how far this
   pair's two geometries can move relative to each other purely through the
-  coordinates the table no longer tracks. Zero when every carved coordinate is
-  exactly constant. */
+  coordinates the table no longer tracks. The carve-out's "constant" is a
+  tolerance, a coordinate whose global control-box range is at most
+  Options::continuity_tolerance, so this is zero exactly when every carved
+  coordinate is exactly constant.
+  @pre 0 <= pair_index < num_pairs(). */
   double carveout_slack(int pair_index) const {
     return carveout_slack_[pair_index];
   }
 
   /** Introspection for tests: the (coordinate, λ) entries of one pair,
-  ordered by increasing coordinate index. */
+  ordered by increasing coordinate index.
+  @throws std::exception if pair_index is outside [0, num_pairs()). */
   std::vector<std::pair<int, double>> GetEntries(int pair_index) const;
 
   /** Total number of (coordinate, λ) entries over all pairs. */
@@ -106,8 +101,8 @@ class MotionBoundTable {
   std::vector<double> carveout_slack_;
 };
 
-/** Construction-time kinematic analysis of a plant (the displacement lemma):
-joint classification, per-hop fixed-transform translations, per-body proximity
+/** Construction-time kinematic analysis of a plant: joint classification,
+per-hop fixed-transform translations, per-body proximity
 geometry bounding spheres, and subtree tables for J(p). Thread-compatible;
 all methods are const after construction and hold no mutable state, so
 concurrent ComputeMotionBoundTable() calls are safe.
@@ -126,21 +121,23 @@ class KinematicsEngine {
 
   /** Builds topology tables and per-body geometry bounding spheres.
   Classification only; unsupported joint types throw later, and only if a
-  given path actually moves them (constant-coordinate carve-out, the
-  joint-support scope).
+  given path actually moves them.
 
   `model` is aliased and must outlive this object.
 
+  @throws std::exception if the plant is not finalized.
   @throws std::exception if a HalfSpace geometry is on the *distal* side of a
-  rotational coordinate relative to an unfiltered partner (unbounded reach).
-  A HalfSpace that is merely the static partner of a rotating body — the
-  anchored ground plane under a robot arm, the overwhelmingly common case — is
-  accepted: λ then bounds the partner's points, and signed distance is
-  symmetric, so the certificate still holds.
-  @throws std::exception if the plant is not finalized, if a joint is
-  "reversed" (its declared parent body is outboard of its declared child body
-  in the multibody tree — a documented v1 exclusion), or if any proximity
-  geometry has a shape ComputeBoundingSphere() rejects. */
+  rotational coordinate relative to an unfiltered partner, whose reach is then
+  unbounded. A HalfSpace that is merely the static partner of a rotating body,
+  such as the anchored ground plane under a robot arm, is accepted: λ then
+  bounds the partner's points, and signed distance is symmetric, so the
+  certificate still holds.
+  @throws std::exception if a joint is "reversed", i.e. its declared parent
+  body is outboard of its declared child body in the multibody tree.
+  @throws std::exception if a joint closes a kinematic loop, or if the plant's
+  kinematically-affected sets disagree with the world-rooted tree walk.
+  @throws std::exception if any proximity geometry has a shape
+  ComputeBoundingSphere() rejects. */
   explicit KinematicsEngine(const RobotDiagram<double>& model);
 
   /** The position-coordinate indices whose motion changes the relative pose
@@ -150,10 +147,12 @@ class KinematicsEngine {
                                             multibody::BodyIndex body_b) const;
 
   /** Assembles the λ CSR table for `pairs` given the path's global
-  control-point box (prismatic chain contributions use the box, so the bound
-  is trajectory-adaptive; the displacement lemma). Coordinates flagged constant
-  by the path are removed from every J(p), and their residual motion inside the
-  box is charged to MotionBoundTable::carveout_slack() instead.
+  control-point box; prismatic chain contributions use the box, so the bound is
+  trajectory-adaptive. Coordinates flagged constant by the path are removed
+  from every J(p), and their residual motion inside the box is charged to
+  MotionBoundTable::carveout_slack() instead.
+  @throws std::exception if the path's number of positions differs from the
+  plant's.
   @throws std::exception naming the joint if the path moves a coordinate of
   an unsupported joint type (quaternion floating, ball). */
   MotionBoundTable ComputeMotionBoundTable(
@@ -197,8 +196,8 @@ class KinematicsEngine {
   bool body_has_halfspace(multibody::BodyIndex body) const;
 
   /** Radius, about the body frame origin, of a sphere containing every
-  proximity geometry of `body` — the start of the reach chain. Zero for a
-  body with no (non-HalfSpace) proximity geometry. */
+  proximity geometry of `body`; this is the start of the reach chain. Zero for
+  a body with no (non-HalfSpace) proximity geometry. */
   double body_radius(multibody::BodyIndex body) const;
 
   int num_positions() const { return num_positions_; }
@@ -206,8 +205,7 @@ class KinematicsEngine {
   const multibody::MultibodyPlant<double>& plant() const { return *plant_; }
 
  private:
-  /* The λ rule a joint's coordinates follow (the displacement lemma; the
-   * joint-support scope). */
+  /* The λ rule a joint's coordinates follow. */
   enum class JointKind {
     kWeld,        // 0 dof; contributes fixed translations to reach only.
     kRevolute,    // λ = r.

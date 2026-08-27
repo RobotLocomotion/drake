@@ -21,11 +21,11 @@ namespace internal {
 namespace {
 
 /* Slop allowed between the certifier's arithmetic and the replay's. The two
- compute the same quantities by *different* routes — repeated halving versus a
- pair of arbitrary-u de Casteljau subdivisions — so they agree only to rounding
- (both routes are sequences of convex combinations, hence numerically benign,
- and in practice differ by ~1e-15·‖q‖). This tolerance sits far below anything
- a tamperer could hide in and far above the true rounding gap. */
+ compute the same quantities by *different* routes, repeated halving versus a
+ pair of arbitrary-u de Casteljau subdivisions, so they agree only to rounding.
+ Both routes are sequences of convex combinations, hence numerically benign.
+ This tolerance sits far below anything a tamperer could hide in and far above
+ the rounding gap. */
 constexpr double kReplayTolerance = 1e-9;
 
 /* One de Casteljau subdivision at u ∈ [0, 1]: `left` receives the control
@@ -193,8 +193,8 @@ bool ReplayCertificate(const ReplayInput& input, const Certificate& certificate,
     // carve-out slack for any w: the residual of the coordinates the carve-out
     // removed, which is nonzero only when some of them are constant merely to
     // within Options::continuity_tolerance. Charging it here keeps the replay's
-    // Δ at least as large as the certifier's — a certificate emitted against a
-    // slack-inflated bound must not verify against a smaller one.
+    // Δ at least as large as the certifier's: a certificate emitted against
+    // a slack-inflated bound must not verify against a smaller one.
     double motion_bound = table.carveout_slack(p);
     if (!is_static) {
       // Re-restrict the segment's control points to the record's interval and
@@ -243,12 +243,11 @@ bool ReplayCertificate(const ReplayInput& input, const Certificate& certificate,
     // record: the recomputed Δ above would be the full node's bound and the
     // test below would reject it.
     //
-    // "Static" is relative to the constant-coordinate carve-out (trajectory
-    // normalization; the displacement lemma), so coordinates this path happens
-    // to hold fixed still move the pair in general — which means the
-    // representative configuration has to be pinned to the path, exactly as the
-    // certifier pins it (q(t0)), or a record could be re-based onto an off-path
-    // configuration that measures more clearance.
+    // "Static" is relative to the constant-coordinate carve-out, so
+    // coordinates this path happens to hold fixed still move the pair in
+    // general. The representative configuration therefore has to be pinned to
+    // the path, exactly as the certifier pins it (q(t0)), or a record could be
+    // re-based onto an off-path configuration that measures more clearance.
     if (is_static) {
       const Eigen::VectorXd q0 = path.segments()[0].control_points.col(0);
       const double qc_error = (q0 - record.qc).cwiseAbs().maxCoeff();
@@ -274,7 +273,7 @@ bool ReplayCertificate(const ReplayInput& input, const Certificate& certificate,
         input.oracle->SignedDistance(context.query_object(), pairs[p]);
     const double tau_p = tau[p];
     // Coherence: a record may legitimately store *less* than the narrowphase
-    // reports (the sphere-prefilter branch stores a lower bound on φ), but it
+    // reports (the sphere-prefilter branch stores a lower bound on ϕ), but it
     // may never claim more than the oracle's own contract allows.
     if (!(record.phi_hat <= phi_replay + tau_p + kReplayTolerance)) {
       return fail(fmt::format(
@@ -283,9 +282,9 @@ bool ReplayCertificate(const ReplayInput& input, const Certificate& certificate,
           r, record.phi_hat, phi_replay, p));
     }
     // The certificate test runs on min(stored, re-measured), so an inflated
-    // φ̂ can never buy a record anything: only the value this replay measured
+    // ϕ̂ can never buy a record anything: only the value this replay measured
     // for itself can carry the inequality. Both are lower bounds we are
-    // entitled to charge τ_p against, and for an honest record the stored
+    // entitled to charge τ_p against, and for an untampered record the stored
     // value is the smaller one (identical for a narrowphase record, the
     // sphere bound for a prefilter record), so nothing legitimate is lost.
     const double effective_phi = std::min(record.phi_hat, phi_replay);
@@ -333,7 +332,7 @@ bool ReplayCertificate(const ReplayInput& input, const Certificate& certificate,
       double covered_to = 0.0;
       for (std::size_t i = begin; i < cursor; ++i) {
         // Sorted by lo, so a start beyond the covered prefix is a real gap.
-        // Compared exactly and deliberately: the certifier's intervals are
+        // Compared exactly: the certifier's intervals are
         // dyadic and abut bit-for-bit (a child's endpoint *is* the parent's
         // computed midpoint), so any slack here would only buy a forged
         // certificate the right to excise a sliver at every one of its

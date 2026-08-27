@@ -12,9 +12,8 @@ namespace drake {
 namespace planning {
 namespace continuous_collision {
 
-/** One Bézier segment q(s) = Σ_j B_{j,m}(s) P_j, s ∈ [0, 1] (trajectory
- * normalization).
- * @ingroup planning_collision_checker */
+/** One Bézier segment q(s) = Σ_j B_{j,m}(s) P_j, s ∈ [0, 1].
+@ingroup planning_collision_checker */
 struct BezierSegment {
   /** Original time interval (bookkeeping only; the certificate is a property
   of the path and is invariant under time reparametrization). */
@@ -26,7 +25,7 @@ struct BezierSegment {
 
 /** Ordered, C0-validated piecewise-Bézier path over the plant's generalized
 positions. Every accepted trajectory type is converted, exactly, into this
-representation up front (trajectory normalization).
+representation up front.
 
 Two Bézier facts the whole method rests on: (1) the curve lies in the convex
 hull of its control points, so per coordinate i, q_i(s) ∈ [min_j P_{j,i},
@@ -52,7 +51,9 @@ class PiecewiseBezierPath {
       const Options& options);
 
   /** Normalizes an n × K waypoint matrix into K−1 order-1 segments (exact).
-  Segment k spans time [k, k+1]. @throws std::exception if K < 2. */
+  Segment k spans time [k, k+1].
+  @throws std::exception if `waypoints` has fewer than two columns.
+  @throws std::exception if `waypoints` has zero rows. */
   static PiecewiseBezierPath FromWaypoints(const Eigen::MatrixXd& waypoints,
                                            const Options& options);
 
@@ -61,24 +62,28 @@ class PiecewiseBezierPath {
   double start_time() const { return segments_.front().t_start; }
   double end_time() const { return segments_.back().t_end; }
 
-  /** Per-coordinate global control-point box over all segments (trajectory
-  normalization); used for trajectory-adaptive prismatic reach bounds. */
+  /** Per-coordinate global control-point box over all segments, used for
+  trajectory-adaptive prismatic reach bounds. */
   const Eigen::VectorXd& global_lower_bound() const { return global_lower_; }
   const Eigen::VectorXd& global_upper_bound() const { return global_upper_; }
 
   /** True for coordinates whose value is identical (within the continuity
   tolerance) across all control points of all segments; such coordinates are
-  treated as welded for the check (trajectory normalization; the joint-support
-  scope). */
+  treated as welded for the check. */
   const std::vector<bool>& constant_coordinates() const {
     return constant_coordinates_;
   }
 
-  /** Evaluates the path at time t (for tests and breakpoint checks; the hot
-  loop never calls this — it uses de Casteljau apexes). */
+  /** Evaluates the path at time t, for tests and breakpoint checks; the hot
+  loop uses de Casteljau apexes instead.
+  @pre t lies in [start_time(), end_time()], up to a parameter slack.
+  @throws std::exception if t is outside that domain. */
   Eigen::VectorXd Value(double t) const;
 
-  /** Evaluates segment `segment_index` at local parameter s ∈ [0, 1]. */
+  /** Evaluates segment `segment_index` at local parameter s ∈ [0, 1].
+  @pre 0 <= segment_index < segments().size().
+  @pre s lies in [0, 1], up to a parameter slack.
+  @throws std::exception if either precondition is violated. */
   Eigen::VectorXd EvaluateSegment(int segment_index, double s) const;
 
  private:

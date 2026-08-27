@@ -1,31 +1,18 @@
-/// @file
-/// The `continuous_collision` performance benchmark suite (the performance
-/// targets and the benchmark deliverable of the white paper), adapted to what
-/// exists on this machine: no trajectory optimizer is invoked, the smooth
-/// composite Bézier trajectories are hand-constructed in
-/// benchmark/scenario_worlds.cc, and every scenario's *true* swept clearance is
-/// verified by dense sampling before it is benchmarked.
-///
-/// Scenarios
-///   a) iiwa14 + bookcase, three tiers at ~2 mm / 1 cm / 5 cm swept clearance
-///   b) a two-waypoint PWL edge in the same world
-///   c) dual-arm iiwa handover (self-collision heavy)
-///   d) the grazing pathological case (kInconclusive cost at the floor)
-///   e) thread scaling over a 1000-check batch, two ways
-///
-/// Scenarios (a, 1 cm tier) and (b) are additionally compared against Drake's
-/// own sampled `SceneGraphCollisionChecker` on the *same* RobotDiagram.
-///
-/// Usage: iiwa_benchmark [--out DIR] [--reps N] [--warmup N]
-///                       [--dense-samples N] [--batch N] [--only NAME]
-///                       [--drake_commit SHA]
-///
-/// `--out` defaults to the current directory, or to $TEST_TMPDIR when that is
-/// set — the sandbox is the only writable directory under `bazel test`, and
-/// the smoke-test rule in BUILD.bazel relies on this so it needs no --out of
-/// its own. `--drake_commit` (the Drake revision this binary was built from,
-/// "unknown" by default) is recorded verbatim in every result file so a JSON
-/// result identifies the code it measured.
+// The `continuous_collision` performance benchmark suite. No trajectory
+// optimizer is invoked: the smooth composite Bézier trajectories are
+// hand-constructed in benchmark/scenario_worlds.cc, and every scenario's
+// *true* swept clearance is verified by dense sampling before it is
+// benchmarked.
+//
+// Scenarios
+//   a) iiwa14 + bookcase, three tiers at ~2 mm / 1 cm / 5 cm swept clearance
+//   b) a two-waypoint PWL edge in the same world
+//   c) dual-arm iiwa handover (self-collision heavy)
+//   d) the grazing pathological case (kInconclusive cost at the floor)
+//   e) thread scaling over a 1000-check batch, two ways
+//
+// Scenarios (a, 1 cm tier) and (b) are additionally compared against Drake's
+// own sampled `SceneGraphCollisionChecker` on the *same* RobotDiagram.
 
 #include <algorithm>
 #include <atomic>
@@ -67,18 +54,17 @@ using drake::trajectories::Trajectory;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-/// drake::planning::CollisionCheckerParams::edge_step_size has NO library
-/// default: the field is value-initialized to 0 and the CollisionChecker
-/// constructor rejects any non-positive value, so every caller must choose
-/// one. 0.05 rad is the value that appears most often in Drake's own tests
-/// and examples; the other common choices (0.125, 0.1, 0.01) are measured and
-/// reported too, so the comparison cannot be accused of picking a flattering
-/// resolution.
+// drake::planning::CollisionCheckerParams::edge_step_size has NO library
+// default: the field is value-initialized to 0 and the CollisionChecker
+// constructor rejects any non-positive value, so every caller must choose one.
+// 0.05 rad is the value that appears most often in Drake's own tests and
+// examples; the other common choices (0.125, 0.1, 0.01) are measured and
+// reported too.
 constexpr double kEdgeStepSize = 0.05;
 constexpr double kReportedEdgeStepSizes[] = {0.125, 0.1, 0.05, 0.01};
 
-/// Distances beyond this are irrelevant to every scenario here; the ground
-/// truth sampler saturates at it.
+// Distances beyond this are irrelevant to every scenario here; the ground
+// truth sampler saturates at it.
 constexpr double kMaxProbeDistance = 0.30;
 
 struct Config {
@@ -112,20 +98,20 @@ std::string ModeName(SearchMode m) {
   return m == SearchMode::kCertifyAll ? "kCertifyAll" : "kFindFirstViolation";
 }
 
-/// A world plus both checkers built on the *same* RobotDiagram. The sampled
-/// checker is constructed first on purpose: its constructor pushes its
-/// nominal filtered-collision matrix into the SceneGraph, so building our
-/// checker afterwards guarantees the two see a bit-identical unfiltered pair
-/// set. Anything else would make the comparison unfair in our favour.
+// A world plus both checkers built on the *same* RobotDiagram. The two
+// checkers must see the same pair set for the comparison to mean anything, so
+// the sampled checker is constructed first: its constructor pushes its nominal
+// filtered-collision matrix into the SceneGraph, and building the continuous
+// checker afterwards makes the two see a bit-identical unfiltered pair set.
 struct World {
   std::shared_ptr<RobotDiagram<double>> diagram;
   std::unique_ptr<SceneGraphCollisionChecker> sampled;
   std::unique_ptr<ContinuousCollisionChecker> certified;
   std::unordered_set<drake::geometry::GeometryId> env_ids;
   int pair_count{0};
-  /// SceneGraph's own unfiltered-candidate count *after* the sampled checker
-  /// pushed its filters in. Equality with pair_count is the evidence that
-  /// both checkers are looking at exactly the same pairs.
+  // SceneGraph's own unfiltered-candidate count *after* the sampled checker
+  // pushed its filters in. Equality with pair_count is the evidence that
+  // both checkers are looking at exactly the same pairs.
   int scene_graph_candidates{0};
 };
 
@@ -208,7 +194,7 @@ void WriteClearance(JsonWriter* json, const ClearanceReport& clearance) {
   json->EndObject();
 }
 
-/// One certification measurement.
+// One certification measurement.
 struct CertRun {
   Verdict verdict{};
   Statistics stats;
@@ -254,15 +240,15 @@ void WriteCertRun(JsonWriter* json, const std::string& key,
 }
 
 // ---------------------------------------------------------------------------
-// The sampled-checker comparison (the performance requirements, the headline
-// number)
+// The sampled-checker comparison: the cost of certifying a path against the
+// cost of sampling it at the resolutions a practitioner would use.
 // ---------------------------------------------------------------------------
 
-/// For a curved trajectory a practitioner checks it the only way a sampled
-/// checker allows: walk the path and call CheckConfigCollisionFree at the
-/// same resolution the checker would use for an edge, i.e. one sample per
-/// `edge_step_size` of path length in the plant's edge metric. We report the
-/// implied sample count and the wall time of exactly that sweep.
+// For a curved trajectory a practitioner checks it the only way a sampled
+// checker allows: walk the path and call CheckConfigCollisionFree at the
+// same resolution the checker would use for an edge, i.e. one sample per
+// `edge_step_size` of path length in the plant's edge metric. We report the
+// implied sample count and the wall time of exactly that sweep.
 void MeasureSampledPathSweep(JsonWriter* json,
                              const SceneGraphCollisionChecker& sampled,
                              const Trajectory<double>& trajectory, int warmup,
@@ -341,9 +327,9 @@ void MeasureSampledEdge(JsonWriter* json,
 // Shared plumbing
 // ---------------------------------------------------------------------------
 
-/// Places the bookcase so the fixed trajectory's robot-vs-environment swept
-/// clearance equals `target` (bisection on the shelf scale, which is monotone
-/// non-decreasing over [0.010, 0.090]).
+// Places the bookcase so the fixed trajectory's robot-vs-environment swept
+// clearance equals `target` (bisection on the shelf scale, which is monotone
+// non-decreasing over [0.010, 0.090]).
 double TuneShelfScale(const Config& config, double target) {
   const MatrixXd waypoints = ShelfTrajectoryWaypoints();
   const auto trajectory =
@@ -360,14 +346,14 @@ double TuneShelfScale(const Config& config, double target) {
                         config.tune_iterations);
 }
 
-/// Repetition policy. Every millisecond-scale measurement gets the full
-/// `--reps` after `--warmup` untimed runs. The grazing scenario at the
-/// default 1e-9 resolution floor costs tens of seconds per call, where 20
-/// repetitions would blow the suite's time budget for no statistical gain
-/// (the relative spread of a 40 s measurement is far below that of a 2 ms
-/// one), so expensive cases fall back to a small fixed count. The chosen
-/// count is recorded in every timing block, so no result is silently
-/// under-sampled.
+// Repetition policy. Every millisecond-scale measurement gets the full
+// `--reps` after `--warmup` untimed runs. The grazing scenario at the
+// default 1e-9 resolution floor costs tens of seconds per call, where 20
+// repetitions would blow the suite's time budget for no statistical gain
+// (the relative spread of a 40 s measurement is far below that of a 2 ms
+// one), so expensive cases fall back to a small fixed count. The chosen
+// count is recorded in every timing block, so no result is silently
+// under-sampled.
 void PlanReps(const Config& config, double single_run_ms, int* warmup,
               int* reps) {
   if (single_run_ms > 1000.0) {
@@ -379,7 +365,7 @@ void PlanReps(const Config& config, double single_run_ms, int* warmup,
   }
 }
 
-/// Times one certification once, untimed, to price the case for PlanReps.
+// Times one certification once, untimed, to price the case for PlanReps.
 double ProbeCost(const ContinuousCollisionChecker& checker,
                  const Trajectory<double>& trajectory, const Options& options) {
   const auto t0 = std::chrono::steady_clock::now();
@@ -446,8 +432,8 @@ void RunPwlEdge(const Config& config, const MachineInfo& machine,
   // quintic composite Bezier through the same two waypoints. With two
   // waypoints that quintic's endpoint velocities are zero, so its control
   // points collapse to {q1, q1, q1, q2, q2, q2} and it traces exactly the same
-  // straight joint-space segment under a different time parametrization —
-  // which is why the clearance it measures is the certified edge's clearance.
+  // straight joint-space segment under a different time parametrization. That
+  // is why the clearance it measures is the certified edge's clearance.
   json.Write("description",
              "two-waypoint PWL edge in the 1 cm shelf world, healthy "
              "clearance; certified as a single order-1 Bezier segment, with "
@@ -732,8 +718,7 @@ void RunGrazing(const Config& config, const MachineInfo& machine,
   WriteClearance(&json, clearance);
 
   // The resolution floor is the knob that prices the pathological case: cost
-  // at the floor grows like log2(1 / min_interval) (the soundness argument's
-  // termination proof).
+  // at the floor grows like log2(1 / min_interval).
   constexpr double kFloors[] = {1e-9, 1e-6, 1e-4, 1e-2};
   CertRun default_run;
   json.BeginArray("min_interval_sweep");
@@ -762,7 +747,8 @@ void RunGrazing(const Config& config, const MachineInfo& machine,
   json.EndArray();
   // kFindFirstViolation at the same floor: with no definite violation
   // anywhere on the trajectory the earliest-witness bound never prunes, so
-  // this is expected to cost the same as kCertifyAll — measured, not assumed.
+  // this should cost the same as kCertifyAll. The row below measures that
+  // rather than assuming it.
   const Options first_options =
       MakeOptions(SearchMode::kFindFirstViolation, Parallelism::None());
   int first_warmup = 0;
@@ -789,8 +775,8 @@ void RunGrazing(const Config& config, const MachineInfo& machine,
 
 // ---------------------------------------------------------------------------
 // (f) performance review: where the time goes, and why per-call parallelism
-// saturates. Not a standard scenario — this exists to back the gap analysis
-// in the benchmark write-up with measurements rather than assertions.
+// saturates. Not one of the standard scenarios; it attributes cost and probes
+// parallel granularity by measurement rather than by assertion.
 // ---------------------------------------------------------------------------
 
 void RunProfile(const Config& config, const MachineInfo& machine,
@@ -887,11 +873,9 @@ void RunProfile(const Config& config, const MachineInfo& machine,
   // This measures the ceiling that *segment-root seeding* imposes: if the
   // parallel driver's only work units are whole segments, the best per-call
   // speedup a 6-segment trajectory can reach is total work / heaviest segment.
-  // Certifying each segment on its own measures it directly. The driver no
-  // longer works that way — it shares sub-segment nodes on demand (see
-  // certifier_internal.h) — so this row is now a *reference* bound
-  // that the measured per-call speedup is allowed to exceed, and the record of
-  // why the old driver could not.
+  // Certifying each segment on its own measures it directly. The driver shares
+  // sub-segment nodes on demand (see certifier_internal.h), so this row is a
+  // *reference* bound that the measured per-call speedup is allowed to exceed.
   {
     const PiecewiseBezierPath path = world.certified->Normalize(
         shelf_trajectory,
@@ -944,10 +928,10 @@ void RunProfile(const Config& config, const MachineInfo& machine,
 
   // --- Parallel granularity -------------------------------------------------
   // Per-call parallelism is measured on three workloads spanning three orders
-  // of magnitude in node count, holding everything else fixed. The three sit
-  // on either side of the driver's lazy-recruitment threshold on purpose: the
-  // 15-node edge is below it (and must therefore be exactly serial at every p)
-  // while the other two are above it.
+  // of magnitude in node count, holding everything else fixed. The three
+  // straddle the driver's lazy-recruitment threshold: the 15-node edge is
+  // below it (and must therefore be exactly serial at every p) while the other
+  // two are above it.
   std::printf(
       "[f profile] tuning the grazing world for the long "
       "workload ...\n");
@@ -1004,6 +988,16 @@ void RunProfile(const Config& config, const MachineInfo& machine,
   std::printf("\n");
 }
 
+// Usage: iiwa_benchmark [--out DIR] [--reps N] [--warmup N]
+//                       [--dense-samples N] [--batch N] [--only NAME]
+//                       [--drake_commit SHA]
+//
+// `--out` defaults to the current directory, or to $TEST_TMPDIR when that is
+// set: the sandbox is the only writable directory under `bazel test`, and the
+// smoke-test rule in BUILD.bazel relies on this, so it needs no --out of its
+// own. `--drake_commit` (the Drake revision this binary was built from,
+// "unknown" by default) is recorded verbatim in every result file, so a JSON
+// result identifies the code it measured.
 int Main(int argc, char** argv) {
   Config config;
   if (const char* const test_tmpdir = std::getenv("TEST_TMPDIR")) {

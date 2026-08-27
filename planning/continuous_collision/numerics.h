@@ -1,23 +1,25 @@
 #pragma once
 
 /** @file
-Single home of the numerical accounting used everywhere (the numerical policy).
+Single home of the numerical accounting used everywhere.
 
-Let φ̂ be the oracle's reported signed distance at the node's representative
-configuration, τ the oracle accuracy contract (|φ̂ − φ_true| ≤ τ on the
+Let ϕ̂ be the oracle's reported signed distance at the node's representative
+configuration, τ the oracle accuracy contract (|ϕ̂ − ϕ_true| ≤ τ on the
 at-or-above-threshold branch), Δ the motion bound for the node, m the
 effective threshold (margin + padding), and ε the certificate slack.
 
- - Certified:          φ̂ − τ − Δ > m + ε   (sound by the displacement lemma:
+ - Certified:          ϕ̂ − τ − Δ > m + ε   (sound by the displacement lemma:
                        every configuration on the node keeps clearance > m).
- - Definite violation: φ̂ + τ < m           (the true clearance at an exactly
+ - Definite violation: ϕ̂ + τ < m           (the true clearance at an exactly
                        on-trajectory configuration is below threshold).
  - Otherwise the pair is gray and drives subdivision.
 
-The certificate is mathematical modulo τ and ε: the library does not use
-directed rounding (that hardening is a future extension); ε defaults
-to 1e-9 m which dominates the accumulated FP error of the w/λ/dot-product
-expression depths involved. */
+The certificate is mathematical modulo τ and ε. ε defaults to 1e-9 m, which
+dominates the accumulated floating-point error of the w, λ and dot-product
+expression depths involved.
+
+TODO(wernerpe): Harden the arithmetic with directed rounding, so that the
+certificate holds without the ε slack. */
 
 namespace drake {
 namespace planning {

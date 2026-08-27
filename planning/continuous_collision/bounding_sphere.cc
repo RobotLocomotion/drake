@@ -38,15 +38,14 @@ using drake::math::RigidTransform;
  containment in G with no dependence on the orientation. That is why the centre
  never needs a search and the radius never needs inflating for rotation.
 
- The origin-centred radius the reach chain consumes is ‖c_L‖ + radius (a
- sound relaxation of the geometry-support scope's exact per-shape R_g, by the
- triangle inequality); the tighter centre is what the broadphase prefilter
+ The origin-centred radius the reach chain consumes is ‖c_L‖ + radius, sound by
+ the triangle inequality; the tighter centre is what the broadphase prefilter
  wants.
 
- λ soundness dies quietly if any formula under-bounds, so this reifier
- enumerates the closed set of supported shapes and lets every other shape fall
- through to ShapeReifier's default, which routes to ThrowUnsupportedGeometry()
- below (the geometry-support scope). */
+ An under-bounding formula produces an unsound λ with no other symptom, so this
+ reifier enumerates the closed set of supported shapes and lets every other
+ shape fall through to ShapeReifier's default, which routes to
+ ThrowUnsupportedGeometry() below. */
 class BoundingSphereReifier final : public ShapeReifier {
  public:
   explicit BoundingSphereReifier(const RigidTransform<double>& X_LG)
@@ -76,15 +75,14 @@ class BoundingSphereReifier final : public ShapeReifier {
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void*) final {
-    // The farthest point from Go is always on a rim (the geometry-support
-    // scope). For a point p = z·ẑ + r'·û with |z| ≤ L/2, r' ≤ r and û ⊥ ẑ,
+    // The farthest point from Go is always on a rim. For a point
+    // p = z·ẑ + r'·û with |z| ≤ L/2, r' ≤ r and û ⊥ ẑ,
     //   ‖p‖² = z² + r'²,
     // which is maximised at |z| = L/2 and r' = r, so R = √(r² + (L/2)²).
     // Cap-disk interior points (r' < r) and lateral points with |z| < L/2 are
-    // both strictly dominated. (The same rim argument in the geometry-support
-    // scope's origin-centred form picks up the ‖t‖ cross terms; here the centre
-    // rides along with the geometry, so only the canonical-frame extent
-    // matters.)
+    // both strictly dominated. An origin-centred form of the same argument
+    // would pick up the ‖t‖ cross terms; here the centre rides along with the
+    // geometry, so only the canonical-frame extent matters.
     SetCentered(std::hypot(cylinder.radius(), 0.5 * cylinder.length()));
   }
 
@@ -102,7 +100,7 @@ class BoundingSphereReifier final : public ShapeReifier {
   void ImplementGeometry(const Mesh& mesh, void*) final {
     // Drake collides a Mesh as its convex hull in signed-distance queries, and
     // the hull contains the mesh, so bounding the hull bounds the geometry
-    // actually checked (the geometry-support scope).
+    // actually checked.
     SetFromHull(mesh.GetConvexHull());
   }
 
@@ -112,11 +110,10 @@ class BoundingSphereReifier final : public ShapeReifier {
         "ComputeBoundingSphere(): does not support the shape "
         "type '{}'. Supported proximity shapes are Sphere, Box, Capsule, "
         "Cylinder, Ellipsoid, Convex and Mesh. HalfSpace has no finite "
-        "bounding sphere and is governed by the dedicated rules in the "
-        "geometry-support scope "
-        "(anchored, or translation-only relative motion to its partner); any "
-        "other shape must be replaced by a Convex/Mesh approximation before "
-        "it can be certified.",
+        "bounding sphere and is governed by dedicated rules instead: it must "
+        "be anchored, or move only by translation relative to its partner. "
+        "Any other shape must be replaced by a Convex/Mesh approximation "
+        "before it can be certified.",
         shape_name));
   }
 
@@ -164,9 +161,8 @@ BoundingSphere ComputeBoundingSphere(const Shape& shape,
   BoundingSphereReifier reifier(X_LG);
   shape.Reify(&reifier);
   const BoundingSphere& result = reifier.sphere();
-  // A silently-zero or non-finite radius is the exact failure mode the
-  // geometry-support scope warns about, so re-assert the postcondition every
-  // caller relies on.
+  // A zero or non-finite radius under-bounds every λ built on it, so
+  // re-assert the postcondition every caller relies on.
   DRAKE_DEMAND(std::isfinite(result.radius) && result.radius >= 0.0);
   DRAKE_DEMAND(result.center_L.allFinite());
   return result;

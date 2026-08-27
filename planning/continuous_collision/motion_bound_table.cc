@@ -137,7 +137,7 @@ void KinematicsEngine::BuildTopology() {
       translation_known = true;
     } else if (rec.type_name == "planar") {
       rec.kind = JointKind::kPlanar;
-      // q = (x, y, θ) — see PlanarJoint's class documentation.
+      // q = (x, y, θ); see PlanarJoint's class documentation.
       rec.coord_rules = {R::kTranslation, R::kTranslation, R::kRotation};
       translation_known = true;
     } else if (rec.type_name == ScrewJoint<double>::kTypeName) {
@@ -267,8 +267,10 @@ void KinematicsEngine::BuildTopology() {
     if (!rec.outboard.is_valid()) {
       throw std::runtime_error(fmt::format(
           "KinematicsEngine: joint '{}' ({}) closes a kinematic loop (both of "
-          "its bodies are already reachable from the world without it). Loop "
-          "topologies are not supported in v1.",
+          "its bodies are already reachable from the world without it). The "
+          "motion bound is defined over a single world-rooted tree, so the "
+          "loop-closing joint must be removed; express the constraint it "
+          "carried with a MultibodyPlant constraint instead.",
           rec.name, rec.type_name));
     }
   }
@@ -305,11 +307,10 @@ void KinematicsEngine::BuildTopology() {
     DRAKE_DEMAND(rec.num_positions > 0);
     if (rec.outboard != joint.child_body().index()) {
       throw std::runtime_error(fmt::format(
-          "KinematicsEngine: joint '{}' ({}) is reversed — its declared parent "
+          "KinematicsEngine: joint '{}' ({}) is reversed: its declared parent "
           "body '{}' is outboard of its declared child body '{}' in the "
-          "multibody tree. Reversed mobilizers are a documented v1 exclusion "
-          "because the frame that stays fixed under the joint's motion is then "
-          "on the outboard side, which the reach chain does not model. "
+          "multibody tree. The frame that stays fixed under the joint's motion "
+          "is then on the outboard side, which the reach chain does not model. "
           "Re-declare the joint with the inboard body as its parent.",
           rec.name, rec.type_name, joint.parent_body().name(),
           joint.child_body().name()));
@@ -321,8 +322,9 @@ void KinematicsEngine::BuildTopology() {
     if (rec.subtree != tree_subtree[k]) {
       throw std::runtime_error(fmt::format(
           "KinematicsEngine: the plant's kinematically-affected set for joint "
-          "'{}' ({}) disagrees with the world-rooted tree walk. This model's "
-          "topology is not supported in v1.",
+          "'{}' ({}) disagrees with the world-rooted tree walk over the same "
+          "joints, so which side of a pair is distal to this joint is "
+          "ambiguous. This model's topology is not supported.",
           rec.name, rec.type_name));
     }
     positioned_order_.push_back(k);
@@ -368,9 +370,9 @@ void KinematicsEngine::BuildGeometry() {
          inspector.GetGeometries(*frame_id, Role::kProximity)) {
       const Shape& shape = inspector.GetShape(gid);
       if (IsHalfSpace(shape)) {
-        // Half spaces are unbounded: they get no bounding sphere, and the
-        // dedicated rule in CheckHalfSpaceRule() (the geometry-support scope)
-        // keeps them off the distal side of any rotational coordinate.
+        // Half spaces are unbounded: they get no bounding sphere, and
+        // CheckHalfSpaceRule() keeps them off the distal side of any
+        // rotational coordinate.
         body_has_halfspace_[b] = true;
         if (body_halfspace_name_[b].empty()) {
           body_halfspace_name_[b] = inspector.GetName(gid);
@@ -435,9 +437,9 @@ void KinematicsEngine::CheckHalfSpaceRule() const {
           "KinematicsEngine: HalfSpace geometry '{}' (body '{}') rotates "
           "relative to its unfiltered partner geometry '{}' (body '{}') "
           "through joint '{}' ({}). A half space has unbounded reach, so no "
-          "finite motion bound λ exists for that pair (the geometry-support "
-          "scope). Fix the model by anchoring the half space, filtering the "
-          "pair, or replacing the half space with a large Box.",
+          "finite motion bound λ exists for that pair. Fix the model by "
+          "anchoring the half space, filtering the pair, or replacing the "
+          "half space with a large Box.",
           inspector.GetName(offender), plant.get_body(in_a ? ia : ib).name(),
           inspector.GetName(partner), plant.get_body(in_a ? ib : ia).name(),
           rec.name, rec.type_name));
@@ -453,8 +455,7 @@ std::vector<int> KinematicsEngine::CoordinatesAffectingPair(
   for (int k : positioned_order_) {
     const JointRecord& rec = joints_[k];
     // Joint j ∈ J(p) iff exactly one of the pair's bodies is outboard of it:
-    // only then does moving j change the pair's relative pose (the displacement
-    // lemma).
+    // only then does moving j change the pair's relative pose.
     if (rec.subtree[body_a] == rec.subtree[body_b]) continue;
     for (int c = rec.position_start; c < rec.position_start + rec.num_positions;
          ++c) {
@@ -482,16 +483,15 @@ double KinematicsEngine::Reach(int joint_ord, BodyIndex body,
     if (k == joint_ord) {
       // Top of the chain: measure from j's M-frame origin, the point that
       // stays fixed when coordinate j moves (for a revolute, the axis passes
-      // through it). j's own X_FM and parent-side offset are deliberately NOT
-      // included.
+      // through it). j's own X_FM and parent-side offset are excluded.
       return r + joints_[k].p_CM_norm;
     }
     r += joints_[k].fixed_hop + box_hop[k];
     b = joints_[k].inboard;
   }
   throw std::runtime_error(
-      "KinematicsEngine: internal error — reach chain walk did not reach the "
-      "requested joint. This indicates inconsistent topology tables.");
+      "KinematicsEngine: internal error: the reach chain walk did not reach "
+      "the requested joint. This indicates inconsistent topology tables.");
 }
 
 MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
@@ -513,7 +513,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   if (lower.size() != num_positions_ || upper.size() != num_positions_ ||
       static_cast<int>(constant_coordinates.size()) != num_positions_) {
     throw std::runtime_error(fmt::format(
-        "KinematicsEngine: control-box size mismatch — got lower={}, upper={}, "
+        "KinematicsEngine: control-box size mismatch: got lower={}, upper={}, "
         "constant_coordinates={} for a plant with {} positions.",
         lower.size(), upper.size(), constant_coordinates.size(),
         num_positions_));
@@ -532,8 +532,9 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
     return std::max(std::abs(lower[c]), std::abs(upper[c]));
   };
   // The carve-out flags a coordinate constant when its whole control-point
-  // range collapses to within Options::continuity_tolerance — a tolerance,
-  // not an identity. `range` is exactly what the residual is charged against.
+  // range collapses to within Options::continuity_tolerance. That is a
+  // tolerance, not an identity, and `range` is what the residual is charged
+  // against.
   const auto range = [&lower, &upper](int c) {
     return upper[c] - lower[c];
   };
@@ -543,7 +544,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   // part of a chain hop that varies with the configuration; taking the max
   // over the trajectory's *control box* (not the plant's joint limits) keeps
   // unbounded prismatic joints usable and makes every reach trajectory
-  // adaptive (the displacement lemma).
+  // adaptive.
   // ------------------------------------------------------------------
   std::vector<double> box_hop(joints_.size(), 0.0);
   for (int k = 0; k < static_cast<int>(joints_.size()); ++k) {
@@ -571,17 +572,17 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
       case JointKind::kUnsupported: {
         for (int c = ps; c < ps + rec.num_positions; ++c) {
           if (!constant_coordinates[c]) {
+            // TODO(wernerpe): Support quaternion coordinates via a
+            // manifold-curve bound.
             throw std::runtime_error(fmt::format(
                 "KinematicsEngine: this trajectory moves coordinate {} of "
-                "joint '{}', whose type '{}' is excluded in v1 (the "
-                "joint-support scope). Quaternion coordinates are not a vector "
-                "space, so Bézier interpolation of their components has no "
-                "rotation-space meaning and the convex-hull motion bound does "
-                "not apply. Supported joint types are revolute, prismatic, "
-                "planar, screw and weld; a floating base whose pose is "
-                "*constant* along the trajectory is accepted via the "
-                "constant-coordinate carve-out. See the white paper's future "
-                "extensions for the manifold-curve extension.",
+                "joint '{}', whose type '{}' is not supported. Quaternion "
+                "coordinates are not a vector space, so Bézier interpolation "
+                "of their components has no rotation-space meaning and the "
+                "convex-hull motion bound does not apply. Supported joint "
+                "types are revolute, prismatic, planar, screw and weld; a "
+                "floating base whose pose is *constant* along the trajectory "
+                "is accepted via the constant-coordinate carve-out.",
                 c, rec.name, rec.type_name));
           }
         }
@@ -643,8 +644,8 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   //
   // Proof sketch. Walk from q to q′ one coordinate at a time along the
   // axis-aligned path; every intermediate configuration stays inside the box
-  // (a box is closed under coordinate-wise interpolation), so every reach r —
-  // computed as a uniform bound over that box — is valid at each step. On the
+  // (a box is closed under coordinate-wise interpolation), so every reach r,
+  // computed as a uniform bound over that box, is valid at each step. On the
   // step that moves coordinate j alone, only the distal side D(j,p) (the body
   // of the pair inside S_j) moves relative to the other body, and the relative
   // transform factors as
@@ -654,10 +655,10 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   //     ‖(X_FM(q′_j) − X_FM(q_j))·u‖ with ‖u‖ ≤ r(j, D),
   // because the leading factors are isometries and u is the point measured
   // from Mo. Bounding that per joint type gives the λ values below:
-  //   revolute  chord ≤ arc  ⇒ λ = r;
-  //   prismatic pure unit translation ⇒ λ = 1;
+  //   revolute  chord ≤ arc  => λ = r;
+  //   prismatic pure unit translation => λ = 1;
   //   planar    λ = 1 for x and y, λ = r for θ;
-  //   screw     rotation + |pitch|/2π of axial travel ⇒ λ = r + |pitch|/2π.
+  //   screw     rotation + |pitch|/2π of axial travel => λ = r + |pitch|/2π.
   // Since a rigid motion of one of two sets changes their separation distance
   // by at most the supremum pointwise displacement (triangle inequality on the
   // minimizing witness pair), each step changes the distance by at most
@@ -666,22 +667,21 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   // is still valid because each step is bounded in the frame of that step's
   // static side and distance is frame-invariant.
   //
-  // Only the separated branch of the distance function is ever used (the
-  // soundness argument), so no penetration-depth regularity is needed.
+  // Only the separated branch of the distance function is ever used, so no
+  // penetration-depth regularity is needed.
   //
   // ------------------------------------------------------------------
   // The carve-out residual (carveout_slack_p).
   //
-  // The constant-coordinate carve-out (trajectory normalization; the
-  // joint-support scope) drops coordinate j from J(p) when its *whole*
-  // control-point range fits inside Options::continuity_tolerance. That is a
-  // tolerance, not an identity: the curve may still move q_j anywhere inside
-  // [lower_j, upper_j], and the telescoping proof above therefore still owes
-  // one step for j. Dropping the step outright would understate Δ_p by up to
-  // λ̃_j·range_j — small (≈ 1e-7 m for a metre-scale reach), but two orders of
-  // magnitude above Options::certificate_slack and unaccounted anywhere, so the
-  // certificate inequality could pass with the true clearance below threshold
-  // by that much. Instead of ignoring the step we charge it at its worst case,
+  // The constant-coordinate carve-out drops coordinate j from J(p) when its
+  // *whole* control-point range fits inside Options::continuity_tolerance.
+  // That is a tolerance, not an identity: the curve may still move q_j
+  // anywhere inside [lower_j, upper_j], and the telescoping proof above
+  // therefore still owes one step for j. Dropping the step outright would
+  // understate Δ_p by up to λ̃_j·range_j, which is unaccounted for anywhere
+  // else and is orders of magnitude above Options::certificate_slack, so the
+  // certificate inequality could pass with the true clearance below the
+  // threshold by that much. We charge the step at its worst case instead,
   // once per pair, against the *global* range (the node's own excursion in a
   // carved coordinate is contained in it):
   //
@@ -692,11 +692,10 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   // exactly the steps the CSR row no longer carries. MotionBound() adds it
   // unconditionally, which restores the telescoping sum in full. It is
   // bit-exactly zero whenever every carved coordinate is exactly constant,
-  // and that is the case for every path whose control points repeat the
-  // coordinate's value verbatim — the overwhelmingly common way a coordinate
-  // becomes constant. λ̃_j, per coordinate kind:
+  // which is the case for every path whose control points repeat the
+  // coordinate's value verbatim. λ̃_j, per coordinate kind:
   //
-  //  * revolute / prismatic / planar / screw — the λ formulas above,
+  //  * revolute / prismatic / planar / screw: the λ formulas above,
   //    unchanged. The step being bounded is the same step; the carve-out
   //    changed nothing about the geometry, only about what the table stores.
   //
@@ -704,9 +703,9 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   //    Each such angle enters X_FM as one factor of a product of elementary
   //    rotations about axes through Mo (Rz(y)·Ry(p)·Rx(r) for rpy, likewise
   //    for a universal joint's two angles), so changing angle j alone takes
-  //    R to R′ with R′R⁻¹ conjugate to a rotation by |Δq_j| — a rotation by
-  //    exactly |Δq_j| about *some* axis through Mo. A material point u of the
-  //    distal side, measured from Mo, is then displaced by
+  //    R to R′ with R′R⁻¹ conjugate to a rotation by |Δq_j|, i.e. a rotation
+  //    by exactly |Δq_j| about *some* axis through Mo. A material point u of
+  //    the distal side, measured from Mo, is then displaced by
   //    ‖(R′ − R)u‖ = ‖(R′R⁻¹ − I)(Ru)‖ ≤ |Δq_j|·‖u‖ ≤ r·|Δq_j|, which is the
   //    revolute bound with the same r from the same chain walk (the walk
   //    bounds the distance from Mo to the distal geometry and does not care
@@ -720,7 +719,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   //
   //  * QuaternionFloating quaternion coefficients: λ̃ = 2r/m ≤ 4r, with
   //    m = min over the control box of ‖q‖ (computed above). Derivation.
-  //    Drake normalizes internally — X_FM uses R(q/‖q‖) — so the map from
+  //    Drake normalizes internally, X_FM using R(q/‖q‖), so the map from
   //    coefficients to rotation is q ↦ R(π(q)) with π(q) = q/‖q‖. π has
   //    derivative Dπ(q) = (I − q̂q̂ᵀ)/‖q‖, an orthogonal projector scaled by
   //    1/‖q‖, hence ‖Dπ(q)‖₂ = 1/‖q‖. The control box is convex and every
@@ -736,20 +735,18 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   //    2r·sin(θ/2) ≤ r·θ ≤ (2r/m)·‖u − v‖, and since
   //    ‖u − v‖₂ ≤ ‖u − v‖₁ ≤ Σ_j range_j over the four coefficients, charging
   //    λ̃ = 2r/m per coefficient covers every pair (u, v) in the box.
-  //    In the regime the carve-out actually produces — a box of diameter
-  //    ρ ≤ continuity_tolerance around a unit quaternion — m ≥ 1 − ρ, so
-  //    2r/m ≤ 2r/(1 − ρ) ≤ 4r for any ρ ≤ 1/2: the shipped coefficient is at
-  //    worst the small-angle constant 2r with a factor-2 margin, and is
-  //    computed rather than assumed. m = 0 (a box containing the zero
-  //    quaternion) admits no bound at all — Drake's own normalization is
-  //    undefined there — and throws.
+  //    In the regime the carve-out produces, a box of diameter
+  //    ρ ≤ continuity_tolerance around a unit quaternion, m ≥ 1 − ρ, so
+  //    2r/m ≤ 2r/(1 − ρ) ≤ 4r for any ρ ≤ 1/2: the coefficient is at worst
+  //    the small-angle constant 2r with a factor-2 margin, and is computed
+  //    rather than assumed. m = 0, a box containing the zero quaternion,
+  //    admits no bound at all, because Drake's own normalization is undefined
+  //    there, and throws.
   //
   //  * Any rotational carved coordinate whose distal side carries a HalfSpace
-  //    has no finite r and therefore no finite λ̃. Such a coordinate must be
-  //    *exactly* constant; anything else throws (the geometry-support scope).
-  //    Accepting a merely tolerance-constant one, as the code did before the
-  //    residual was charged, is the one case where the residual is genuinely
-  //    unbounded.
+  //    has no finite r and therefore no finite λ̃; its residual is genuinely
+  //    unbounded. Such a coordinate must be *exactly* constant; anything else
+  //    throws.
   // ------------------------------------------------------------------
   std::vector<int> row_start;
   std::vector<int> coord;
@@ -798,8 +795,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
             throw std::runtime_error(fmt::format(
                 "KinematicsEngine: HalfSpace geometry '{}' on body '{}' is the "
                 "distal side of joint '{}' ({}), which rotates it. A half "
-                "space has unbounded reach, so no finite λ exists (the "
-                "geometry-support scope).",
+                "space has unbounded reach, so no finite λ exists.",
                 body_halfspace_name_[distal], plant_->get_body(distal).name(),
                 rec.name, rec.type_name));
           }
@@ -831,13 +827,12 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
                 "KinematicsEngine: HalfSpace geometry '{}' on body '{}' is the "
                 "distal side of coordinate {} of joint '{}' ({}), which "
                 "rotates it, and this trajectory holds that coordinate "
-                "constant only to within a tolerance — its control-point "
+                "constant only to within a tolerance: its control-point "
                 "range is {}, not 0. A half space has unbounded reach, so the "
                 "residual motion of a rotational coordinate across it cannot "
-                "be bounded by any finite λ (the geometry-support scope): a "
-                "half space may only "
-                "sit across a rotational coordinate that is EXACTLY constant. "
-                "Fix the trajectory so that coordinate's control points are "
+                "be bounded by any finite λ. A half space may only sit across "
+                "a rotational coordinate that is EXACTLY constant. Fix the "
+                "trajectory so that coordinate's control points are "
                 "identical, anchor the half space, filter the pair, or "
                 "replace the half space with a large Box.",
                 body_halfspace_name_[distal], plant_->get_body(distal).name(),
@@ -883,7 +878,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
             lam = 1.0;
             break;
           case JointKind::kPlanar:
-            // q = (x, y, θ) — see PlanarJoint's class documentation.
+            // q = (x, y, θ); see PlanarJoint's class documentation.
             lam = (c == ps + 2) ? reach() : 1.0;
             break;
           case JointKind::kScrew:
@@ -892,7 +887,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
           case JointKind::kWeld:
           case JointKind::kUnsupported:
             throw std::runtime_error(fmt::format(
-                "KinematicsEngine: internal error — joint '{}' ({}) reached "
+                "KinematicsEngine: internal error: joint '{}' ({}) reached "
                 "the λ assembly with an unsupported kind.",
                 rec.name, rec.type_name));
         }

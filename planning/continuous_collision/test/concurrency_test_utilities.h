@@ -1,15 +1,12 @@
 #pragma once
 
-/// @file
-/// The shared fixture of the two T8 concurrency targets: the random corpus
-/// that `concurrency_test.cc` pins the driver's determinism against, and the
-/// deliberately deep workload that both it and `concurrency_timing_test.cc`
-/// need. It lives in a header because each target wants its own copy — the
-/// corpus and the deep workload are lazily built per binary — and because
-/// duplicating three hundred lines of world generation between the two files
-/// would be worse than sharing them.
-///
-/// Nothing here asserts; the claims live in the two test files.
+// The shared fixture of the two concurrency targets: the random corpus that
+// `concurrency_test.cc` pins the driver's determinism against, and the deep
+// workload that both it and `concurrency_timing_test.cc` need. Each target
+// builds its own copy lazily, so the fixture lives in a header rather than
+// duplicating three hundred lines of world generation between the two files.
+//
+// Nothing here asserts; the claims live in the two test files.
 
 #include <cstdint>
 #include <memory>
@@ -60,9 +57,9 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 constexpr double kMargin = 0.005;
-/// Ten cases keeps the full 4-thread-count × 2-mode sweep (80 certification
-/// runs) plus the concurrent-call test under a second in Release, which is what
-/// makes this affordable to run again under TSan (~100× slower).
+// Ten cases keeps the full 4-thread-count × 2-mode sweep (80 certification
+// runs) plus the concurrent-call test under a second in Release, which is what
+// makes this affordable to run again under TSan (~100× slower).
 constexpr int kNumCases = 10;
 constexpr int kMinFreeCases = 3;
 constexpr int kMinViolatingCases = 3;
@@ -75,9 +72,9 @@ inline SpatialInertia<double> Inertia() {
   return SpatialInertia<double>::SolidSphereWithMass(1.0, 0.05);
 }
 
-/// A four-link chain of revolute and prismatic joints with primitive geometry,
-/// four anchored obstacles and (on odd seeds) a HalfSpace floor, so the corpus
-/// exercises the native narrowphase route and the analytic one.
+// A four-link chain of revolute and prismatic joints with primitive geometry,
+// four anchored obstacles and (on odd seeds) a HalfSpace floor, so the corpus
+// exercises the native narrowphase route and the analytic one.
 inline std::unique_ptr<RobotDiagram<double>> MakeWorld(uint64_t seed) {
   std::mt19937_64 rng(seed);
   const auto uniform = [&rng](double lo, double hi) {
@@ -174,8 +171,8 @@ inline std::unique_ptr<RobotDiagram<double>> MakeWorld(uint64_t seed) {
   return builder.Build();
 }
 
-/// A quintic Bézier with random control points, so the corpus has real curved
-/// trajectories rather than straight edges.
+// A quintic Bézier with random control points, so the corpus has real curved
+// trajectories rather than straight edges.
 inline Eigen::MatrixXd MakeControlPoints(uint64_t seed, int num_positions) {
   std::mt19937_64 rng(seed ^ 0xa5a5'5a5a'0f0f'f0f0ull);
   std::uniform_real_distribution<double> value(-1.4, 1.4);
@@ -208,13 +205,12 @@ struct Case {
   }
 };
 
-/// Ten cases with at least three free and three violating, taken from the
-/// lowest seeds that supply them (deterministic, no hard-coded lucky numbers).
-///
-/// The vector is deliberately allocated and never freed: it owns RobotDiagrams
-/// and checkers whose destruction would otherwise race Drake's own static
-/// teardown. (Expect LSan to report it if an asan preset is ever added next to
-/// the tsan one.)
+// Ten cases with at least three free and three violating, taken from the
+// lowest seeds that supply them (deterministic, no hard-coded lucky numbers).
+//
+// The vector is allocated and never freed: it owns RobotDiagrams and checkers
+// whose destruction would otherwise race Drake's own static teardown. Expect
+// LSan to report it if an asan preset is ever added next to the tsan one.
 inline const std::vector<std::unique_ptr<Case>>& Corpus() {
   static const std::vector<std::unique_ptr<Case>>* corpus = [] {
     auto* cases = new std::vector<std::unique_ptr<Case>>();
@@ -253,9 +249,9 @@ inline const std::vector<std::unique_ptr<Case>>& Corpus() {
   return *corpus;
 }
 
-/// Bit-for-bit equality of two findings. Nothing here is a tolerance: two runs
-/// of the same deterministic computation either agree exactly or the claim of
-/// determinism is false.
+// Bit-for-bit equality of two findings. Nothing here is a tolerance: two runs
+// of the same deterministic computation either agree exactly or the claim of
+// determinism is false.
 inline ::testing::AssertionResult FindingsIdentical(
     const std::vector<Finding>& a, const std::vector<Finding>& b) {
   if (a.size() != b.size()) {
@@ -308,32 +304,30 @@ inline ::testing::AssertionResult EarliestWitnessIdentical(
   return FindingsIdentical({a.findings.front()}, {b.findings.front()});
 }
 
-/// The bisection's node budget in Deep() doubles as the deep workload's size:
-/// the margin it converges to is the largest one still certifiable inside this
-/// budget, so the tree it produces has just under this many nodes. Large
-/// enough that a run takes tens of milliseconds (a wall-clock ratio then means
-/// something) and that no fixed seeding depth could ever have covered it;
-/// small enough that the ~40 probes that find it, and the timed repetitions
-/// concurrency_timing_test.cc runs on it, stay cheap — under a sanitizer too.
-///
-/// kMinDeepNodes is the floor concurrency_test.cc holds the result to, so the
-/// workload cannot silently degenerate if the corpus or the bisection drifts.
+// The bisection's node budget in Deep() doubles as the deep workload's size:
+// the margin it converges to is the largest one still certifiable inside this
+// budget, so the tree it produces has just under this many nodes. Large enough
+// that a run takes tens of milliseconds (a wall-clock ratio then means
+// something) and that no fixed seeding depth could ever have covered it; small
+// enough that the ~40 probes that find it, and the timed repetitions
+// concurrency_timing_test.cc runs on it, stay cheap, sanitizers included.
+//
+// kMinDeepNodes is the floor concurrency_test.cc holds the result to, so the
+// workload cannot silently degenerate if the corpus or the bisection drifts.
 constexpr uint64_t kProbeBudget = 6000;
 constexpr uint64_t kMinDeepNodes = 3000;
 
-/// A corpus case run at a margin just below its own swept clearance, which is
-/// what makes the subdivision tree deep and *narrow* (the soundness argument):
-/// certifying a node needs φ̂ − τ − Δ > m, so as the threshold m approaches the
-/// trajectory's closest approach the motion bound Δ has to be driven to nothing
-/// there and nowhere else. The result is thousands of nodes concentrated in a
-/// tiny sub-interval of one segment — exactly the shape a depth-seeded work
-/// queue cannot split, and the shape the benchmark suite's thread-scaling
-/// results measured the old driver getting 0.98× on.
-///
-/// That margin is found by bisection rather than hard-coded, so the workload
-/// survives any change to the random worlds, the bounds, or Drake: the largest
-/// margin still certifiable within kProbeBudget nodes is by construction the
-/// one that costs about kProbeBudget nodes.
+// A corpus case run at a margin just below its own swept clearance, which is
+// what makes the subdivision tree deep and *narrow*: certifying a node needs
+// ϕ̂ − τ − Δ > m, so as the threshold m approaches the trajectory's closest
+// approach the motion bound Δ has to be driven to nothing there and nowhere
+// else. The result is thousands of nodes concentrated in a tiny sub-interval
+// of one segment, which is the shape a depth-seeded work queue cannot split.
+//
+// That margin is found by bisection rather than hard-coded, so the workload
+// survives any change to the random worlds, the bounds, or Drake: the largest
+// margin still certifiable within kProbeBudget nodes is by construction the
+// one that costs about kProbeBudget nodes.
 struct DeepWorkload {
   const Case* entry{};
   double margin{0.0};

@@ -1,11 +1,10 @@
-/// @file
-/// End-to-end tests of the certifier core and the public facade (the test plan,
-/// T4/T6/T7 restricted to a focused corpus; the large randomized T4 fuzz
-/// corpus is a separate milestone and deliberately not duplicated here).
-///
-/// Every world is built programmatically, every trajectory is fixed, and every
-/// cross-check is dense sampling of the *same* path the checker certified, so
-/// the suite is deterministic and fast.
+// End-to-end tests of the certifier core and the public facade on a focused,
+// hand-built corpus. The large randomized corpus lives in
+// test/soundness_fuzz_test.cc and is not duplicated here.
+//
+// Every world is built programmatically, every trajectory is fixed, and every
+// cross-check is dense sampling of the *same* path the checker certified, so
+// the suite is deterministic and fast.
 
 #include <algorithm>
 #include <cmath>
@@ -65,14 +64,14 @@ SpatialInertia<double> UnitInertia() {
   return SpatialInertia<double>::SolidSphereWithMass(1.0, 0.05);
 }
 
-/// A planar 3-dof arm (revolute, revolute, prismatic) in the z = 0 plane:
-///
-///   world --j1(Rz)--> link1 [box, x ∈ 0 .. 0.40]
-///                       --j2(Rz @ x=0.40)--> link2 [box, x ∈ 0 .. 0.30]
-///                            --j3(Px @ x=0.30)--> tool [sphere r = 0.05]
-///
-/// so q = (θ1, θ2, d) and the tool centre sits at radius ≈ 0.70 + d when the
-/// arm is straight. Obstacles are welded to the world.
+// A planar 3-dof arm (revolute, revolute, prismatic) in the z = 0 plane:
+// clang-format off
+//   world --j1(Rz)--> link1 [box, x ∈ 0 .. 0.40]
+//                       --j2(Rz @ x=0.40)--> link2 [box, x ∈ 0 .. 0.30]
+//                            --j3(Px @ x=0.30)--> tool [sphere r = 0.05]
+// clang-format on
+// so q = (θ1, θ2, d) and the tool centre sits at radius ≈ 0.70 + d when the
+// arm is straight. Obstacles are welded to the world.
 void AddArm(MultibodyPlant<double>* plant) {
   const RigidBody<double>& link1 = plant->AddRigidBody("link1", UnitInertia());
   const RigidBody<double>& link2 = plant->AddRigidBody("link2", UnitInertia());
@@ -106,9 +105,9 @@ void AddWeldedSphere(MultibodyPlant<double>* plant, const std::string& name,
                                    name + "_geom", Friction());
 }
 
-/// The main world: the arm, two round obstacles at different sweep angles, a
-/// ground halfspace (which exercises the analytic distance route and the
-/// "skip the sphere prefilter" path) and a far ceiling box.
+// The main world: the arm, two round obstacles at different sweep angles, a
+// ground halfspace (which exercises the analytic distance route and the
+// "skip the sphere prefilter" path) and a far ceiling box.
 std::shared_ptr<const RobotDiagram<double>> MakeArmWorld() {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -134,9 +133,9 @@ std::shared_ptr<const RobotDiagram<double>> MakeArmWorld() {
   return std::shared_ptr<const RobotDiagram<double>>(builder.Build());
 }
 
-/// A world built for exact tangency: with θ1 = θ2 = 0 held constant the tool
-/// centre slides along +x through (0.80, 0, 0), where the "graze" sphere sits
-/// at distance 0.11 — exactly r_tool + r_graze + kMargin.
+// A world built for exact tangency: with θ1 = θ2 = 0 held constant the tool
+// centre slides along +x through (0.80, 0, 0), where the "graze" sphere sits
+// at distance 0.11, which is exactly r_tool + r_graze + kMargin.
 std::shared_ptr<const RobotDiagram<double>> MakeGrazeWorld() {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -145,9 +144,9 @@ std::shared_ptr<const RobotDiagram<double>> MakeGrazeWorld() {
   return std::shared_ptr<const RobotDiagram<double>>(builder.Build());
 }
 
-/// A genuinely free squeeze: the tool slides between two spheres that leave
-/// only 5 mm of clearance over the margin, so the certificate is real but has
-/// to be earned by subdividing (the mirror image of the tangency world).
+// A genuinely free squeeze: the tool slides between two spheres that leave
+// only 5 mm of clearance over the margin, so the certificate is real but has
+// to be earned by subdividing (the mirror image of the tangency world).
 std::shared_ptr<const RobotDiagram<double>> MakeGapWorld() {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -174,9 +173,9 @@ Options SerialOptions() {
   return options;
 }
 
-/// A cubic Bézier from `start` to `end` with linearly spaced control points
-/// (so the curve is the straight segment, traversed with a nontrivial
-/// parametrization) over the time interval [t0, t1].
+// A cubic Bézier from `start` to `end` with linearly spaced control points
+// (so the curve is the straight segment, traversed with a nontrivial
+// parametrization) over the time interval [t0, t1].
 BezierCurve<double> MakeBezier(const VectorXd& start, const VectorXd& end,
                                int order, double t0, double t1) {
   Eigen::MatrixXd control_points(start.size(), order + 1);
@@ -187,17 +186,18 @@ BezierCurve<double> MakeBezier(const VectorXd& start, const VectorXd& end,
   return BezierCurve<double>(t0, t1, control_points);
 }
 
-/// Result of the dense-sampling cross-check.
+// Result of the dense-sampling cross-check.
 struct SampledClearance {
   double min_clearance{std::numeric_limits<double>::infinity()};
-  /// Time of the first sample whose clearance drops below `threshold`, or NaN.
+  // Time of the first sample whose clearance drops below `threshold`, or NaN.
   double first_crossing{std::numeric_limits<double>::quiet_NaN()};
 };
 
-/// Densely samples `path` and evaluates every unfiltered pair discretely. This
-/// is the independent check the certifier's continuum claim is measured
-/// against; it reuses the (separately tested, T3) distance oracle so that
-/// halfspace pairs are handled the same way.
+// Densely samples `path` and evaluates every unfiltered pair discretely. This
+// is the independent check the certifier's continuum claim is measured
+// against; it reuses the distance oracle (tested on its own in
+// test/distance_oracle_test.cc) so that halfspace pairs are handled the same
+// way.
 SampledClearance SampleClearance(const ContinuousCollisionChecker& checker,
                                  const PiecewiseBezierPath& path,
                                  int samples_per_segment, double threshold) {
@@ -229,8 +229,8 @@ SampledClearance SampleClearance(const ContinuousCollisionChecker& checker,
   return result;
 }
 
-/// Re-evaluates one finding's configuration from scratch and returns the
-/// oracle distance of its pair there.
+// Re-evaluates one finding's configuration from scratch and returns the
+// oracle distance of its pair there.
 double DistanceAtFinding(const ContinuousCollisionChecker& checker,
                          const Finding& finding) {
   const RobotDiagram<double>& model = checker.model();
@@ -377,7 +377,7 @@ GTEST_TEST(CertifierTest, FindFirstReturnsEarliestWitness) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Grazing tangency is inconclusive — never certified free.
+// 3. Grazing tangency is inconclusive, never certified free.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(CertifierTest, GrazingTangencyIsInconclusive) {
@@ -420,9 +420,9 @@ GTEST_TEST(CertifierTest, GrazingTangencyIsInconclusive) {
 // filters every pair *within* a welded subgraph, so two anchored obstacles (or
 // two members of a welded cluster on the robot) never even reach the checker
 // as a candidate pair. The reachable source of J(p) = ∅ is therefore the
-// constant-coordinate carve-out of trajectory normalization; the joint-support
-// scope: a coordinate that no control point of the trajectory moves is removed
-// from every J(p), and pairs left with an empty set are resolved once at q(t0).
+// constant-coordinate carve-out: a coordinate that no control point of the
+// trajectory moves is removed from every J(p), and pairs left with an empty
+// set are resolved once at q(t0).
 GTEST_TEST(CertifierTest, StaticPairsResolvedOnce) {
   const auto model = MakeArmWorld();
   const auto checker = MakeChecker(model, SerialOptions());
@@ -450,8 +450,8 @@ GTEST_TEST(CertifierTest, StaticPairsResolvedOnce) {
   ASSERT_EQ(result.verdict, Verdict::kCertifiedFree);
   ASSERT_TRUE(result.certificate.has_value());
 
-  // A static pair is certified exactly once — one full-segment record per
-  // segment, all sharing the single representative configuration q(t0) — and
+  // A static pair is certified exactly once: one full-segment record per
+  // segment, all sharing the single representative configuration q(t0). It
   // never appears in a node record.
   const int num_segments = static_cast<int>(path.segments().size());
   std::vector<int> records_per_pair(table.num_pairs(), 0);
@@ -493,8 +493,8 @@ GTEST_TEST(CertifierTest, PaddingSemantics) {
   };
 
   // The one robot-vs-robot pair (link1, tool) keeps ≈ 0.27 m of clearance on
-  // this trajectory, so 0.4 m of *self* padding must break it — and nothing
-  // else, because every other pair has an anchored side and takes the (zero)
+  // this trajectory, so 0.4 m of *self* padding must break it, and nothing
+  // else: every other pair has an anchored side and takes the (zero)
   // environment padding.
   {
     ContinuousCollisionChecker::Params params;
@@ -550,7 +550,7 @@ GTEST_TEST(CertifierTest, PaddingSemantics) {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Retiming invariance (T6): the certificate is a property of the path.
+// 5. Retiming invariance: the certificate is a property of the path.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(CertifierTest, RetimingInvariance) {
@@ -592,7 +592,7 @@ GTEST_TEST(CertifierTest, RetimingInvariance) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Certificate emission, replay and mutation (T7).
+// 6. Certificate emission, replay and mutation.
 // ---------------------------------------------------------------------------
 
 class CertificateFixture : public ::testing::Test {
@@ -608,8 +608,8 @@ class CertificateFixture : public ::testing::Test {
     result_ = checker_.CheckTrajectory(trajectory_, options);
   }
 
-  /// Index of a record belonging to a pair the trajectory actually moves (so
-  /// the record carries a real node interval, not the global static one).
+  // Index of a record belonging to a pair the trajectory actually moves (so
+  // the record carries a real node interval, not the global static one).
   int MovingRecordIndex() const {
     const MotionBoundTable table = checker_.ComputeMotionBounds(path_);
     for (int i = 0; i < static_cast<int>(result_.certificate->records.size());
@@ -714,8 +714,8 @@ GTEST_TEST(CertifierTest, CertificateRejectsRebasedStaticRecord) {
   EXPECT_TRUE(VerifyCertificate(checker, path, *result.certificate));
 
   // Both directions: rotating θ1 toward the obstacles reduces the clearance
-  // the replay measures, while rotating away *increases* it — the case only
-  // the "static records are pinned to q(t0)" check can catch.
+  // the replay measures, while rotating away *increases* it. Only the "static
+  // records are pinned to q(t0)" check catches that second case.
   for (const double delta : {1.5, -1.5}) {
     Certificate certificate = *result.certificate;
     int tampered = 0;
@@ -849,8 +849,8 @@ GTEST_TEST(CertifierTest, ParallelMatchesSerialOnViolation) {
 
 GTEST_TEST(CertifierTest, ConcurrentChecksAreIndependent) {
   // The Check* methods are const and documented thread-safe: concurrent calls
-  // must lease disjoint contexts from the pool (the full T8 sweep is a later
-  // milestone; this is the smoke test for the lease).
+  // must lease disjoint contexts from the pool. test/concurrency_test.cc
+  // sweeps that; this is the smoke test for the lease.
   const auto model = MakeArmWorld();
   const auto checker = MakeChecker(model, SerialOptions());
   const BezierCurve<double> free_trajectory =
@@ -903,8 +903,8 @@ GTEST_TEST(CertifierTest, ViolationExactlyAtStartTime) {
 GTEST_TEST(CertifierTest, ViolationAtAJunctionIsReported) {
   const auto model = MakeArmWorld();
   const auto checker = MakeChecker(model, SerialOptions());
-  // A 3-waypoint path whose middle waypoint — the junction between segments,
-  // at t = 1 — is inside the post.
+  // A 3-waypoint path whose middle waypoint (the junction between segments,
+  // at t = 1) is inside the post.
   Eigen::MatrixXd waypoints(3, 3);
   waypoints.col(0) = MakeQ(0.0, 0.0, 0.0);
   waypoints.col(1) = MakeQ(1.5708, 0.0, 0.0);
@@ -926,10 +926,11 @@ GTEST_TEST(CertifierTest, ViolationAtAJunctionIsReported) {
 }
 
 // ---------------------------------------------------------------------------
-// 9b. A small seeded soundness sweep. The full T4 corpus (random worlds,
-//     B-splines, 10^5 samples, hundreds of cases) is a separate milestone;
-//     this is the cheap standing guard that no kCertifiedFree of *this* driver
-//     survives dense sampling, and that every definite witness really violates.
+// 9b. A small seeded soundness sweep. The full corpus (random worlds,
+//     B-splines, 10^5 samples, hundreds of cases) lives in
+//     test/soundness_fuzz_test.cc; this is the cheap standing guard that no
+//     kCertifiedFree of *this* driver survives dense sampling, and that every
+//     definite witness really violates.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(CertifierTest, RandomTrajectoriesAreSoundAgainstDenseSampling) {
@@ -976,7 +977,7 @@ GTEST_TEST(CertifierTest, RandomTrajectoriesAreSoundAgainstDenseSampling) {
 }
 
 // ---------------------------------------------------------------------------
-// 10. API guardrails (the full T9 suite lives in api_test).
+// 10. API guardrails (the full suite lives in test/api_test.cc).
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(CertifierTest, ApiThrowsOnDimensionMismatch) {

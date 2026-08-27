@@ -142,8 +142,7 @@ drake_cc_library(
 
 # The certificate and the node recursion are mutually recursive translation
 # units (certificate.cc replays the events that certifier_internal.cc emits),
-# so they form one library, exactly as they formed one module in the standalone
-# package.
+# so they form one library.
 drake_cc_library(
     name = "certifier",
     srcs = [
@@ -203,7 +202,7 @@ drake_cc_library(
 
 # === test/ ===
 
-# T1 — curve module acceptance tests.
+# Curve module acceptance tests.
 drake_cc_googletest(
     name = "piecewise_bezier_path_test",
     deps = [
@@ -218,7 +217,7 @@ drake_cc_googletest(
     ],
 )
 
-# T2 — the displacement lemma, the lambda table and the J(p) subtree logic.
+# The displacement lemma, the lambda table and the J(p) subtree logic.
 drake_cc_googletest(
     name = "motion_bound_test",
     timeout = "moderate",
@@ -234,7 +233,7 @@ drake_cc_googletest(
     ],
 )
 
-# T2 — the bounding-sphere radius property test.
+# The bounding-sphere radius property test.
 drake_cc_googletest(
     name = "bounding_sphere_test",
     deps = [
@@ -248,7 +247,7 @@ drake_cc_googletest(
     ],
 )
 
-# T3 — oracle accuracy, probe classification, half-space fallback, V-polytope.
+# Oracle accuracy, probe classification, half-space fallback, V-polytope.
 drake_cc_googletest(
     name = "distance_oracle_test",
     data = ["//geometry:test_obj_files"],
@@ -272,7 +271,8 @@ drake_cc_googletest(
     ],
 )
 
-# T4/T6 — certifier semantics on a focused, hand-built corpus.
+# Certifier semantics, including retiming invariance, on a focused,
+# hand-built corpus.
 drake_cc_googletest(
     name = "certifier_test",
     # Eight caller threads, each asking for Parallelism(2).
@@ -291,7 +291,7 @@ drake_cc_googletest(
     ],
 )
 
-# T4 — the randomized soundness fuzz: random worlds x random trajectories,
+# The randomized soundness fuzz: random worlds x random trajectories,
 # cross-checked against dense sampling and against the certificate replay.
 # The dense cross-check (~1e7 signed-distance queries) is what makes this
 # test long rather than the certification itself.
@@ -300,7 +300,7 @@ drake_cc_googletest(
 # the corpus shrinks to a quarter of its size there (the assertions are
 # fractions of kNumCases and hold either way; see soundness_fuzz_test.cc).
 # asan and lsan are excluded outright: they slow the dense sweep by more than
-# the shrink recovers, and the corpus is deliberately leaked.
+# the quarter corpus recovers.
 drake_cc_googletest(
     name = "soundness_fuzz_test",
     opt_out_conditions = [
@@ -334,7 +334,9 @@ drake_cc_googletest(
     ],
 )
 
-# T5 — thin-obstacle regression (the reason this library exists).
+# Regression on obstacles a sampled checker steps over: a plate thinner than
+# SceneGraphCollisionChecker's default edge_step_size, and the millimetre-scale
+# gap that must still certify free.
 drake_cc_googletest(
     name = "thin_obstacle_test",
     deps = [
@@ -353,7 +355,7 @@ drake_cc_googletest(
     ],
 )
 
-# T7 — certificate audit trail + mutation test.
+# Certificate audit trail + mutation test.
 drake_cc_googletest(
     name = "certificate_test",
     deps = [
@@ -369,7 +371,7 @@ drake_cc_googletest(
     ],
 )
 
-# T8 — the corpus and the deep workload both concurrency targets run on.
+# The corpus and the deep workload both concurrency targets run on.
 drake_cc_library(
     name = "concurrency_test_utilities",
     testonly = 1,
@@ -388,7 +390,7 @@ drake_cc_library(
     ],
 )
 
-# T8 — concurrency determinism. Running with many threads is the point of
+# Concurrency determinism. Running with many threads is the point of
 # this test: it pins the answer at Parallelism {1, 2, 8, 16}. Every case is an
 # equality, so this target runs under every build flavor, sanitizers included.
 drake_cc_googletest(
@@ -400,7 +402,7 @@ drake_cc_googletest(
     ],
 )
 
-# T8 — the two per-call scaling claims. Split from concurrency_test because
+# The two per-call scaling claims. Split from concurrency_test because
 # they are wall-clock claims: Valgrind serializes threads, which inverts
 # "parallel is faster than serial" and fails the test for a reason that has
 # nothing to do with the driver. //tools:unoptimized covers every flavor that
@@ -416,7 +418,7 @@ drake_cc_googletest(
     ],
 )
 
-# T9 — API / UX clear-throw tests.
+# API / UX clear-throw tests.
 drake_cc_googletest(
     name = "api_test",
     deps = [

@@ -11,14 +11,12 @@ namespace drake {
 namespace planning {
 namespace continuous_collision {
 
-/** Registers a V-polytope as an anchored obstacle with a collision role
-(the geometry-support scope, "V-polytopes as first-class geometry", ingestion
-route (b)).
+/** Registers a V-polytope as an anchored obstacle with a collision role.
 
 The polytope is converted to `drake::geometry::Convex` through Drake's own
-`VPolytope::ToShapeConvex()` entry point (a thin wrapper over the
+`VPolytope::ToShapeConvex()` entry point, a thin wrapper over the
 `Convex(Eigen::Matrix3X<double> points, std::string label, double scale)`
-constructor pinned at M0), then registered on the plant's world body. The
+constructor, then registered on the plant's world body. The
 result therefore rides the ordinary native narrowphase path end to end: the
 proximity engine and the certifier's radius/support code all read the same
 `Convex::GetConvexHull()` object, so the certificate stays sound even for

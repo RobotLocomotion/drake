@@ -68,8 +68,8 @@ nonempty span [t_i, t_{i+1}) satisfies t_{i-p+1} = ... = t_i and t_{i+1} = ...
 span, N_{i-p}, ..., N_i, reduce to the Bernstein basis of degree p in
 (t - t_i)/(t_{i+1} - t_i), so control points i-p ... i ARE that span's Bézier
 control points. The conversion is exact in exact arithmetic; the acceptance
-test in the test plan's T1 (1e-10 over >= 1e4 dense samples) guards the
-indexing. */
+test in test/piecewise_bezier_path_test.cc (1e-10 over >= 1e4 dense samples)
+guards the indexing. */
 void AppendBsplineSegments(const BsplineTrajectory<double>& bspline,
                            int source_index,
                            std::vector<BezierSegment>* segments) {
@@ -177,7 +177,7 @@ void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
           "index {}) has polynomial degree {}, above "
           "options.max_conversion_degree = {}. The monomial-to-Bernstein "
           "change of basis is ill-conditioned at high degree; either raise "
-          "Options::max_conversion_degree deliberately or re-express the "
+          "Options::max_conversion_degree or re-express the "
           "trajectory with more, lower-degree segments.",
           k, source_index, m, options.max_conversion_degree));
     }
@@ -220,7 +220,7 @@ void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
 
 /* Dispatches `trajectory` by dynamic type and appends its Bézier segments,
 recursing through CompositeTrajectory. `source_index` counts source segments
-visited so far and appears in error messages (trajectory normalization, item 3).
+visited so far and appears in error messages.
 */
 void AppendSegments(const Trajectory<double>& trajectory,
                     const Options& options, int* source_index,
@@ -312,7 +312,7 @@ void ValidateSegments(int num_positions, const Options& options,
       if (std::abs(segment.t_start - previous_end) > slack) {
         throw std::runtime_error(
             fmt::format("PiecewiseBezierPath: segments are not contiguous "
-                        "in time — segment {} ends at {} but segment {} "
+                        "in time: segment {} ends at {} but segment {} "
                         "starts at {}. Segments must be ordered and meet "
                         "end-to-start.",
                         i - 1, previous_end, i, segment.t_start));
@@ -337,7 +337,7 @@ void ValidateSegments(int num_positions, const Options& options,
   // these) is accepted and the control points are left exactly as they are:
   // forward kinematics is 2π-periodic in a revolute coordinate, so the
   // certificate is unaffected and re-aligning segments would be a no-op that
-  // only risks introducing error (trajectory normalization).
+  // only risks introducing error.
   for (std::size_t i = 1; i < segments.size(); ++i) {
     const Eigen::MatrixXd& previous = segments[i - 1].control_points;
     const Eigen::MatrixXd& next = segments[i].control_points;
@@ -412,7 +412,7 @@ PiecewiseBezierPath PiecewiseBezierPath::FromWaypoints(
   path.segments_.reserve(num_segments);
   for (int k = 0; k < num_segments; ++k) {
     // A straight waypoint-to-waypoint move is exactly the order-1 Bézier with
-    // control points {q_k, q_{k+1}} (trajectory normalization, item 1). Segment
+    // control points {q_k, q_{k+1}}. Segment
     // k spans the nominal time interval [k, k+1]; the certificate does not
     // depend on the time parametrization.
     BezierSegment segment;
@@ -443,7 +443,7 @@ void PiecewiseBezierPath::FinalizeMetadata(double continuity_tolerance) {
   // By the convex-hull property the curve never leaves [global_lower_,
   // global_upper_], so a coordinate whose whole control-point range collapses
   // to within the continuity tolerance cannot move on this path and is
-  // treated as welded (trajectory normalization; the joint-support scope).
+  // treated as welded.
   constant_coordinates_.assign(n, false);
   for (int i = 0; i < n; ++i) {
     constant_coordinates_[i] =
@@ -469,7 +469,7 @@ Eigen::VectorXd PiecewiseBezierPath::Value(double t) const {
   // drake::trajectories::PiecewiseTrajectory::get_segment_index(). The choice
   // is observable only when a junction carries a legitimate 2πk offset in a
   // continuous-revolute coordinate, where the two sides are different
-  // representatives of the same configuration (trajectory normalization).
+  // representatives of the same configuration.
   int low = 0;
   int high = static_cast<int>(segments_.size()) - 1;
   while (low < high) {
@@ -544,8 +544,7 @@ void DeCasteljauSplitAtHalf(const Eigen::MatrixXd& cps, Eigen::MatrixXd* left,
   // left child's control points are the first entries of each triangle row,
   // b_0^r; the right child's are the last entries, b_{m-r}^r, which is exactly
   // the entry the sweep leaves at column m-r; and the apex b_0^m = q(1/2) is
-  // the right child's first control point (trajectory normalization; the search
-  // algorithm).
+  // the right child's first control point.
   *right = cps;
   left->col(0) = cps.col(0);
   for (int r = 1; r <= m; ++r) {

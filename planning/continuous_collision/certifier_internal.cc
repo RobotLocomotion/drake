@@ -33,7 +33,7 @@ constexpr double kInfinity = std::numeric_limits<double>::infinity();
 /* Global (trajectory) time of parameter s in `seg`. Segment times are pure
  bookkeeping: the recursion runs in the segment parameter s ∈ [0, 1] and only
  the *reported* times go through this map, which is why the certificate is
- invariant under time reparametrization (the soundness argument, T6). */
+ invariant under time reparametrization. */
 double TimeOf(const BezierSegment& seg, double s) {
   return seg.t_start + s * (seg.t_end - seg.t_start);
 }
@@ -42,10 +42,10 @@ double TimeOf(const BezierSegment& seg, double s) {
 // Per-node world-frame geometry sphere centers.
 // ---------------------------------------------------------------------------
 
-/* Caches one world-frame bounding-sphere center per geometry per node
- (requirement P2: the poses behind them are pulled lazily from Drake's FK cache
- and only for geometries of still-active pairs). Invalidation is a stamp bump,
- so switching to a new configuration is O(1). */
+/* Caches one world-frame bounding-sphere center per geometry per node. The
+ poses behind them are pulled lazily from Drake's FK cache and only for
+ geometries of still-active pairs. Invalidation is a stamp bump, so switching
+ to a new configuration is O(1). */
 class GeometryCache {
  public:
   GeometryCache(const PrefilterTable& table, const ThreadContext& context)
@@ -95,9 +95,9 @@ class FindingSink {
       std::lock_guard<std::mutex> guard(mutex_);
       Insert(&definite_, std::move(finding));
     }
-    // Branch-and-bound bound for kFindFirstViolation (the search algorithm;
-    // parallelism and determinism): workers skip nodes whose interval starts at
-    // or after the earliest witness known so far. The bound decreases
+    // Branch-and-bound bound for kFindFirstViolation: workers skip nodes
+    // whose interval starts at or after the earliest witness known so far.
+    // The bound decreases
     // monotonically, so a node that could hold an earlier witness is never
     // pruned and the answer does not depend on timing.
     double previous = best_violation_time_.load(std::memory_order_relaxed);
@@ -164,7 +164,7 @@ class FindingSink {
 };
 
 // ---------------------------------------------------------------------------
-// Shared work source for the parallel driver (parallelism and determinism).
+// Shared work source for the parallel driver.
 // ---------------------------------------------------------------------------
 
 /* One unit of shared work: a node, self-contained so a worker can pick it up
@@ -172,8 +172,8 @@ class FindingSink {
 
  Work items carry copies (control points and the active-pair span) rather than
  pointing into the producing worker's arenas, because the producer walks on
- immediately. Requirement P1 (no per-node heap allocation) survives that
- because the queue recycles item *shells*: a popped shell goes back on a free
+ immediately. The steady-state loop still allocates nothing, because the queue
+ recycles item *shells*: a popped shell goes back on a free
  list and is handed to the next producer, whose `resize`/`assign` then reuse
  the buffers already attached to it. Allocation happens while the free list is
  filling up and never again. */
@@ -189,8 +189,8 @@ struct WorkItem {
 /* Mutex-guarded LIFO work source with quiescence detection, shell recycling
  and the occupancy counter that drives the sharing policy. The *only* shared
  mutable state of the parallel driver is this queue, the FindingSink, and the
- atomic node counter / violation bound (parallelism and determinism), which is
- what makes the driver TSan-clean by construction. */
+ atomic node counter / violation bound, which is what makes the driver
+ TSan-clean by construction. */
 class WorkQueue {
  public:
   /* Moves `*item` into the queue and hands back a recycled shell (or an empty
@@ -293,22 +293,16 @@ struct Recruitment {
 
 /* How many nodes a run must have visited before it hires helpers.
 
- This is a measured break-even, not a taste knob. Hiring costs one ContextPool
- lease, the construction of the helper Worker objects, one *thread creation*
- per helper and — at the end of the run — one join per helper before the lead
- can collect their statistics. Thread creation dominates that list at tens of
- microseconds per worker, which is where this threshold parts company with the
- parked-thread pool it replaced: waking a parked thread cost ~6-7 us, so paying
- for a fresh one instead moves the break-even up by roughly 4x, from 16 nodes
- to 64. A node on the machine the benchmark suite was measured on costs
- ~7-13 us, so 64 nodes of work already done is again roughly a 3x margin over
- the price of a full fifteen helpers, and it bounds the damage in the one case
- lazy recruitment cannot avoid — a check that ends immediately after hiring —
- to a few hundred microseconds.
-
- Everything smaller than this runs at exactly serial speed at any
- Options::parallelism, which is the property that matters most in practice
- because Parallelism::Max() is the default value of that field. */
+ Hiring costs one ContextPool lease, the construction of the helper Worker
+ objects, one thread creation per helper and, at the end of the run, one join
+ per helper before the lead can collect their statistics. Thread creation
+ dominates that list at tens of microseconds per worker, while a node costs
+ ~7-13 us on the machine the benchmark suite was measured on, so 64 nodes of
+ work already done is roughly a 3x margin over the price of a full fifteen
+ helpers. It also bounds the one case lazy recruitment cannot avoid, a check
+ that ends immediately after hiring, to a few hundred microseconds. Below the
+ threshold a run is exactly serial at any Options::parallelism, which matters
+ because Parallelism::Max() is that field's default. */
 constexpr std::uint64_t kNodesBeforeHiringHelpers = 64;
 
 // ---------------------------------------------------------------------------
@@ -327,7 +321,7 @@ struct NodeFrame {
 };
 
 /* A worker owns all per-thread scratch of the node recursion; nothing in the
- steady-state loop allocates (requirement P1):
+ steady-state loop allocates:
 
   - `slabs_` is the node pool: slab k is the n × (m+1) control-point matrix of
     the frame at stack index k. Splitting a node writes its left child into
@@ -398,7 +392,7 @@ class Worker {
     }
   }
 
-  /* Appends one certification event to the audit trail (the search algorithm).
+  /* Appends one certification event to the audit trail.
    */
   void RecordCertification(int segment, double s_lo, double s_hi, int pair,
                            double phi_hat, double motion_bound,
@@ -466,16 +460,15 @@ void Worker::RunItem(WorkItem* item) {
     stack_.pop_back();
     const int k = static_cast<int>(stack_.size());
 
-    // Branch-and-bound on time (the search algorithm; parallelism and
-    // determinism): a node starting at or after the earliest witness known so
-    // far cannot contain an earlier one.
+    // Branch-and-bound on time: a node starting at or after the earliest
+    // witness known so far cannot contain an earlier one.
     if (find_first_ &&
         TimeOf(segment, frame.s_lo) >= sink_->best_violation_time()) {
       continue;
     }
     if (node_counter_->fetch_add(1, std::memory_order_relaxed) >= max_nodes) {
       // Budget exhausted: stop here and report the earliest node this worker
-      // leaves uncovered — which is exactly this one, because a left-first DFS
+      // leaves uncovered, which is exactly this one, because a left-first DFS
       // pops in increasing parameter order and every frame still on the stack
       // starts at or after this node's end.
       sink_->ReportPending(
@@ -504,14 +497,13 @@ void Worker::RunItem(WorkItem* item) {
 
     // The split *is* the evaluation: the apex of the de Casteljau triangle at
     // the midpoint is exactly q(s_mid), so the node's representative
-    // configuration comes for free (trajectory normalization; the search
-    // algorithm).
+    // configuration comes for free.
     DeCasteljauSplitAtHalf(control_points, &slabs_[k + 1], &split_scratch_,
                            &q_mid_);
 
     // w_i = max_j |P_{j,i} − qc_i|. By the convex-hull property of the
     // Bernstein basis, |q_i(s) − qc_i| ≤ w_i for every s in this node
-    // (the interval certificate).
+
     w_.setZero();
     for (int j = 0; j < cols; ++j) {
       for (int i = 0; i < rows; ++i) {
@@ -519,7 +511,7 @@ void Worker::RunItem(WorkItem* item) {
       }
     }
 
-    // One FK per node (requirement P2); body poses and the query object are
+    // One FK per node; body poses and the query object are
     // pulled lazily below, and only for pairs that survive that far.
     context_->SetPositions(q_mid_);
     geometry_.NewConfiguration();
@@ -544,13 +536,13 @@ void Worker::RunItem(WorkItem* item) {
       const PairRecord& pair = pairs[p];
       const double threshold = pair.threshold;
       const double tau_p = tau[p];
-      // Δ_p(ν) = Σ_{j ∈ J(p)} λ(j,p)·w_j — a sparse dot product over this
-      // pair's CSR row (requirement P3).
+      // Δ_p(ν) = Σ_{j ∈ J(p)} λ(j,p)·w_j, a sparse dot product over this
+      // pair's CSR row.
       const double motion_bound = table.MotionBound(p, w_);
 
-      // --- Early-out 1: the free-sphere prefilter (requirements P4, P5). ---
-      // φ_p ≥ ‖c_A − c_B‖ − ρ_A − ρ_B with the bounding spheres posed at qc,
-      // so the lower bound stands in for φ̂ in the certificate test below and
+      // --- Early-out 1: the free-sphere prefilter. ---
+      // ϕ_p ≥ ‖c_A − c_B‖ − ρ_A − ρ_B with the bounding spheres posed at qc,
+      // so the lower bound stands in for ϕ̂ in the certificate test below and
       // is sound by the same displacement-lemma argument. It needs no
       // narrowphase and no allocation, only the lazily pulled body poses. It
       // is charged the same τ_p as the oracle even though it is exact given
@@ -579,9 +571,8 @@ void Worker::RunItem(WorkItem* item) {
 
       if (IsDefiniteViolation(phi_hat, tau_p, threshold)) {
         // qc is exactly on the trajectory (it is the de Casteljau apex), so
-        // φ_true(qc) ≤ φ̂ + τ_p < m_p is a definite violation of the
-        // continuum statement, not a sampling artifact (the problem statement;
-        // the interval certificate).
+        // ϕ_true(qc) ≤ ϕ̂ + τ_p < m_p is a definite violation of the
+        // continuum statement, not a sampling artifact.
         Finding finding;
         finding.time = t_mid;
         finding.q = q_mid_;
@@ -606,11 +597,12 @@ void Worker::RunItem(WorkItem* item) {
         // can refine the witness toward the earliest violating time.
       } else if (IsCertified(phi_hat, tau_p, motion_bound, threshold, slack)) {
         // Displacement lemma: for every s in this node,
-        //   φ_p(q(s)) ≥ φ_true(qc) − Σ_{j∈J(p)} λ(j,p)·|q_j(s) − qc_j|
-        //            ≥ (φ̂ − τ_p) − Δ_p(ν) > m_p + ε,
+        //   ϕ_p(q(s)) ≥ ϕ_true(qc) − Σ_{j∈J(p)} λ(j,p)·|q_j(s) − qc_j|
+        //            ≥ (ϕ̂ − τ_p) − Δ_p(ν) > m_p + ε,
         // using |q_j(s) − qc_j| ≤ w_j from the convex-hull property. The whole
         // closed parameter interval of the node is therefore certified and the
-        // pair drops out of the entire subtree — the dominant work saver.
+        // pair drops out of the entire subtree, which is the dominant work
+        // saver.
         if (emit_certificate_) {
           RecordCertification(item->segment, frame.s_lo, frame.s_hi, p, phi_hat,
                               motion_bound, threshold);
@@ -649,7 +641,7 @@ void Worker::RunItem(WorkItem* item) {
       // is running dry, so hand the right child over and carry on down the left
       // one. This is the only mechanism that spreads a deep tree, and because
       // it is driven by how hungry the other workers are rather than by depth,
-      // it keeps spreading right down to the last subtree — which is exactly
+      // it keeps spreading right down to the last subtree, which is exactly
       // what a fixed seeding depth cannot do.
       share_.segment = item->segment;
       share_.s_lo = right.s_lo;
@@ -665,8 +657,8 @@ void Worker::RunItem(WorkItem* item) {
       stack_.push_back(left);  // slab k holds the left child.
     } else {
       slabs_[k].swap(split_scratch_);  // O(1): slab k = right child.
-      // LIFO with the left child on top ⇒ a left-to-right sweep in time, so
-      // the serial driver walks the trajectory in order (the search algorithm).
+      // LIFO with the left child on top => a left-to-right sweep in time, so
+      // the serial driver walks the trajectory in order.
       stack_.push_back(right);  // slab k holds the right child.
       stack_.push_back(left);   // slab k+1 holds the left child.
     }
@@ -674,7 +666,7 @@ void Worker::RunItem(WorkItem* item) {
 }
 
 // ---------------------------------------------------------------------------
-// Breakpoint pre-pass and static-pair resolution (the search algorithm, steps 1
+// Breakpoint pre-pass and static-pair resolution (steps 1
 // and 2).
 // ---------------------------------------------------------------------------
 
@@ -711,8 +703,8 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
     const bool is_static = table.pair_is_static(p);
     // Δ_p for a static pair: J(p) is empty, so the sparse dot product is empty
     // and MotionBound() collapses to the pair's carve-out slack whatever w is.
-    // That slack is normally exactly 0 — "static" then means genuinely
-    // immobile — but a pair whose whole J_topo(p) was carved out on a
+    // That slack is normally exactly 0, and "static" then means genuinely
+    // immobile, but a pair whose whole J_topo(p) was carved out on a
     // *tolerance* can still drift by that much, and the discrete test below
     // has to charge it or the carved coordinates' residual would go
     // unaccounted for on exactly the pairs made entirely of them.
@@ -747,7 +739,7 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
         continue;
       }
     } else if (lower_bound >= threshold) {
-      // A definite violation needs φ̂ + τ_p < m_p, and φ̂ ≥ φ_true − τ_p ≥
+      // A definite violation needs ϕ̂ + τ_p < m_p, and ϕ̂ ≥ ϕ_true − τ_p ≥
       // lower_bound − τ_p, so lower_bound ≥ m_p rules one out with no query.
       continue;
     }
@@ -797,7 +789,7 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
 }
 
 /* Orders the audit trail so that a run is comparable across thread counts and
- across time reparametrizations (T6). */
+ across time reparametrizations. */
 void SortRecords(std::vector<CertificateRecord>* records) {
   std::sort(records->begin(), records->end(),
             [](const CertificateRecord& a, const CertificateRecord& b) {
@@ -951,7 +943,7 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
       // sides are the same physical configuration (they may differ by 2πk in a
       // continuous-revolute coordinate, which forward kinematics ignores), so
       // one evaluation per breakpoint suffices. Endpoints are Bézier control
-      // points, so they are exact — no curve evaluation needed.
+      // points, so they are exact; no curve evaluation needed.
       const Eigen::VectorXd q =
           (k < num_segments)
               ? Eigen::VectorXd(path.segments()[k].control_points.col(0))
@@ -987,7 +979,7 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
 
   if (have_work && num_threads <= 1) {
     // Serial: one worker, one local stack, no shared queue and no thread
-    // interleaving ⇒ bit-deterministic results and stats (requirement P7).
+    // interleaving => bit-deterministic results and stats.
     Worker worker(input, &lease[0], &sink, &node_counter, nullptr, nullptr);
     for (int k = 0; k < num_segments; ++k) {
       WorkItem item;
@@ -1000,8 +992,8 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
     accumulate(&worker);
   } else if (have_work) {
     // Parallel driver: lazy recruitment + occupancy-driven sharing. The full
-    // rationale — and the deviation from parallelism and determinism's static
-    // seeding — is documented on RunCertifier() in certifier_internal.h.
+    // rationale, and why static seeding is not used, is documented on
+    // RunCertifier() in certifier_internal.h.
     WorkQueue queue;
     {
       // Seeded in reverse so the LIFO hands segment 0 out first. Before any
@@ -1021,8 +1013,8 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
     }
 
     // The oracle is documented to throw, and any allocation can. A worker that
-    // let an exception escape would terminate the process, and — because it
-    // would skip WorkQueue::FinishItem() — would also strand every other
+    // let an exception escape would terminate the process, and, because it
+    // would skip WorkQueue::FinishItem(), would also strand every other
     // worker in Pop(). So every worker catches, aborts the work source, and
     // the first exception is rethrown once all of them have finished.
     std::exception_ptr first_error;
@@ -1032,8 +1024,8 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
       if (first_error == nullptr) first_error = std::current_exception();
     };
 
-    // The futures are declared last so that they are destroyed — and therefore
-    // waited on — before the workers, contexts and lease their tasks reference,
+    // The futures are declared last so that they are destroyed, and therefore
+    // waited on, before the workers, contexts and lease their tasks reference,
     // on every path including the throwing one.
     std::optional<ContextPool::Lease> helper_lease;
     std::vector<std::unique_ptr<Worker>> helpers;
@@ -1044,7 +1036,7 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
     // Hiring is a per-call cold path: it runs at most once per check, only
     // after the run has proved itself worth spreading, and it is the only
     // place in the driver that allocates or creates a thread once the node
-    // loop is turning (requirement P1 covers the steady state, not this).
+    // loop is turning; only the steady state is allocation-free.
     recruitment.hire = [&]() {
       const int hired = num_threads - 1;
       if (hired <= 0) return;
@@ -1108,7 +1100,7 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
       options.mode == SearchMode::kFindFirstViolation) {
     // The branch-and-bound recursion refines toward the earliest witness and
     // the sink keeps entries earliest-first, so this *is* the earliest witness
-    // the run found — identical serially and in parallel.
+    // the run found, identical serially and in parallel.
     findings.push_back(sink.definite().front());
   } else {
     findings = sink.definite();
@@ -1118,7 +1110,7 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
 
   if (budget_exhausted && sink.pending_valid()) {
     // Report what the budget left uncovered as a non-definite finding at the
-    // earliest uncovered time (the search algorithm: truncate in parameter
+    // earliest uncovered time (truncate in parameter
     // order, report the remainder).
     Finding finding;
     finding.time = sink.pending_time();

@@ -35,7 +35,7 @@ CoulombFriction<double> Friction() {
   return CoulombFriction<double>(1.0, 1.0);
 }
 
-/// Adds one anchored box to the "environment" model instance.
+// Adds one anchored box to the "environment" model instance.
 void AddAnchoredBox(MultibodyPlant<double>* plant, const std::string& name,
                     const Vector3d& size, const RigidTransformd& X_WB) {
   if (!plant->HasModelInstanceNamed("environment")) {
@@ -58,10 +58,10 @@ void AddTable(MultibodyPlant<double>* plant) {
                  RigidTransformd(Vector3d(0.0, 0.0, -0.05)));
 }
 
-/// The bookcase: two side panels, four horizontal boards (bottom, the two
-/// bounding the reached-into bay, and top) and a back panel — seven anchored
-/// boxes, all in the "environment" instance so they form one welded subgraph
-/// with the world and with each other.
+// The bookcase: seven anchored boxes, namely two side panels, four horizontal
+// boards (bottom, the two bounding the reached-into bay, and top) and a back
+// panel. All are in the "environment" instance, so they form one welded
+// subgraph with the world and with each other.
 void AddShelf(MultibodyPlant<double>* plant, double s) {
   using S = ShelfGeometry;
   const double x_front = S::kFrontX + s;

@@ -1,59 +1,39 @@
-/// @file
-/// T8 — concurrency determinism (test plan T8; performance requirement
-/// P7; parallelism and determinism).
-///
-/// Four claims are pinned here, on the fixed corpus of ten T4-style random
-/// cases (a mix of free and violating) that
-/// concurrency_test_utilities.h builds, plus the deep workload it derives
-/// from that corpus:
-///
-///   1. The *answer* does not depend on the thread count. Verdict and earliest
-///      witness are identical at Parallelism {1, 2, 8, 16} in both search
-///      modes, and in kCertifyAll so are `nodes` and `narrowphase_queries` —
-///      the parallel driver explores the same tree, only in a different order.
-///      (In kFindFirstViolation the branch-and-bound bound arrives at different
-///      times, so the *statistics* are explicitly not deterministic; the
-///      reported witness still is.)
-///   2. Serial mode is bit-deterministic: two runs produce byte-identical
-///      findings and statistics.
-///   3. The public Check* methods are safe to call concurrently on one checker
-///      instance: eight threads hammering one checker get the same answers as
-///      running the same calls one after another.
-///   4. The deep workload — the only one big enough that the driver actually
-///      hires helpers, which no corpus case is — explores the same tree and
-///      reports the same findings at every thread count, and keeps doing so
-///      when several callers ask for it at once. This is where the sharing
-///      path gets its coverage, TSan's included.
-///
-/// Every case here is an equality, not a wall-clock claim, so this target runs
-/// under every build flavor. The two timing claims that used to live here — a
-/// deep tree gets faster with threads, a small check does not get slower — are
-/// in concurrency_timing_test.cc, which is excluded from the build flavors
-/// that make a duration meaningless.
-///
-/// TSan. This file is the test to run under ThreadSanitizer. Drake's
-/// build carries a `tsan` config, so the invocation is:
-///
-///    bazel test --config=tsan //planning/continuous_collision:concurrency_test
-///
-/// On recent kernels the default `vm.mmap_rnd_bits` puts mappings outside
-/// the range TSan's shadow memory expects and the runtime aborts with
-/// "unexpected memory mapping" before main ever runs; running the test
-/// binary under `setarch $(uname -m) -R` (or lowering vm.mmap_rnd_bits to
-/// 28) is the standard workaround.
-///
-/// Result on Drake ~v1.45 at the time of writing: clean — no data races
-/// reported over repeated runs, so no suppression file is shipped. That was
-/// measured against a prebuilt (uninstrumented) Drake, so TSan saw only
-/// continuous_collision frames. It sees all of the
-/// driver's shared mutable state, though — the work queue, the findings sink,
-/// the atomic node counter and bound, and the context pool are all ours — which
-/// is exactly the surface the design claims is the only one there is. If a
-/// future pin
-/// does produce reports rooted entirely in Drake, triage them and park
-/// them in a suppression file (TSAN_OPTIONS=suppressions=...); anything
-/// rooted in a
-/// continuous_collision frame is a real bug.
+// Concurrency determinism.
+//
+// Four claims are pinned here, on the fixed corpus of ten random cases (a mix
+// of free and violating) that concurrency_test_utilities.h builds, plus the
+// deep workload it derives from that corpus:
+//
+//   1. The answer does not depend on the thread count. Verdict and earliest
+//      witness are identical at Parallelism {1, 2, 8, 16} in both search
+//      modes, and in kCertifyAll so are `nodes` and `narrowphase_queries`:
+//      the parallel driver explores the same tree in a different order. (In
+//      kFindFirstViolation the branch-and-bound bound arrives at different
+//      times, so the statistics are not deterministic; the reported witness
+//      still is.)
+//   2. Serial mode is bit-deterministic: two runs produce byte-identical
+//      findings and statistics.
+//   3. The public Check* methods are safe to call concurrently on one checker
+//      instance: eight threads sharing one checker get the same answers as
+//      the same calls made one after another.
+//   4. The deep workload, which unlike any corpus case is big enough that the
+//      driver actually hires helpers, explores the same tree and reports the
+//      same findings at every thread count, and keeps doing so when several
+//      callers ask for it at once.
+//
+// Every case is an equality, not a wall-clock claim, so this target runs under
+// every build flavor; the timing claims live in concurrency_timing_test.cc.
+//
+// This is the test to run under ThreadSanitizer:
+//
+//    bazel test --config=tsan //planning/continuous_collision:concurrency_test
+//
+// On recent kernels the default `vm.mmap_rnd_bits` puts mappings outside the
+// range TSan's shadow memory expects and the runtime aborts before main ever
+// runs; run the binary under `setarch $(uname -m) -R`, or lower
+// vm.mmap_rnd_bits to 28. A report rooted in a continuous_collision frame is a
+// real bug; one rooted entirely in Drake belongs in a suppression file
+// (TSAN_OPTIONS=suppressions=...).
 
 #include <cstddef>
 #include <iostream>
@@ -113,8 +93,8 @@ GTEST_TEST(ConcurrencyTest, VerdictAndEarliestWitnessAreThreadCountInvariant) {
 
 GTEST_TEST(ConcurrencyTest, CertifyAllIsFullyThreadCountInvariant) {
   // In kCertifyAll every node's decision depends only on its own control points
-  // and inherited active set, so the *whole* tree — and therefore every
-  // statistic and every finding — is thread-count independent, not just the
+  // and inherited active set, so the *whole* tree, and therefore every
+  // statistic and every finding, is thread-count independent, not just the
   // earliest witness.
   for (const auto& entry : Corpus()) {
     const BezierCurve<double> trajectory = entry->trajectory();
@@ -138,11 +118,10 @@ GTEST_TEST(ConcurrencyTest, CertifyAllIsFullyThreadCountInvariant) {
 
 GTEST_TEST(ConcurrencyTest, FindFirstViolationStatisticsAreAllowedToDiffer) {
   // The complement of the test above, pinned so that a future reader does not
-  // "fix" a statistics mismatch that the design explicitly permits: under
-  // branch-and-bound the number of nodes a run visits depends on when the
-  // atomic bound tightens, which depends on timing. Only the answer is
-  // deterministic. (The assertion is therefore on the *witness*, and the
-  // statistics are merely reported.)
+  // "fix" an expected statistics mismatch: under branch-and-bound the number of
+  // nodes a run visits depends on when the atomic bound tightens, which depends
+  // on timing. Only the answer is deterministic, so the assertion is on the
+  // *witness* and the statistics are merely reported.
   int cases_with_differing_stats = 0;
   int examined = 0;
   for (const auto& entry : Corpus()) {
@@ -165,15 +144,15 @@ GTEST_TEST(ConcurrencyTest, FindFirstViolationStatisticsAreAllowedToDiffer) {
   }
   // Without this the `continue` above could silently empty the test.
   EXPECT_GE(examined, kMinViolatingCases);
-  std::cout << "\n[ T8 ] kFindFirstViolation: node counts differed between 1 "
-               "and 16 threads on "
+  std::cout << "\n[ concurrency ] kFindFirstViolation: node counts differed "
+               "between 1 and 16 threads on "
             << cases_with_differing_stats << " of the " << examined
             << " violating cases; the reported witness was identical on all of "
                "them.\n\n";
 }
 
 // ---------------------------------------------------------------------------
-// 2. Serial mode is bit-deterministic (the performance requirements, P7).
+// 2. Serial mode is bit-deterministic.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(ConcurrencyTest, SerialModeIsBitDeterministic) {
@@ -326,10 +305,9 @@ GTEST_TEST(ConcurrencyTest, ConcurrentMixedApiCallsAreIndependent) {
 // ---------------------------------------------------------------------------
 //
 // The sharing path only ever runs on a workload big enough to hire a helper,
-// which the corpus cases of claims 1-3 never are. These cases are where it
-// gets its coverage — including its TSan coverage — and they are equalities,
-// so unlike the wall-clock claims in concurrency_timing_test.cc they run
-// everywhere.
+// which the corpus cases of claims 1-3 never are. These cases are where it gets
+// its coverage, TSan's included, and they are equalities, so unlike the
+// wall-clock claims in concurrency_timing_test.cc they run everywhere.
 
 GTEST_TEST(ConcurrencyTest, DeepWorkloadIsBigEnoughToBeWorthSpreading) {
   // Without this the two tests below could silently degenerate into measuring
@@ -337,16 +315,16 @@ GTEST_TEST(ConcurrencyTest, DeepWorkloadIsBigEnoughToBeWorthSpreading) {
   const DeepWorkload& deep = Deep();
   ASSERT_NE(deep.entry, nullptr);
   EXPECT_GE(deep.nodes, kMinDeepNodes) << "grazing margin " << deep.margin;
-  std::cout << "\n[ T8 ] deep workload: " << deep.entry->name << ", margin "
-            << deep.margin << ", " << deep.nodes << " nodes at min_interval "
-            << deep.min_interval << "\n\n";
+  std::cout << "\n[ concurrency ] deep workload: " << deep.entry->name
+            << ", margin " << deep.margin << ", " << deep.nodes
+            << " nodes at min_interval " << deep.min_interval << "\n\n";
 }
 
 GTEST_TEST(ConcurrencyTest, DeepWorkloadIsThreadCountInvariant) {
   // The scaling test below only proves work moved between threads; this proves
   // the *same* work moved. It runs in every build, sanitizers included, and is
-  // where the sharing path gets its TSan coverage — the corpus cases of the
-  // tests above are too small to ever hire a helper.
+  // where the sharing path gets its TSan coverage, because the corpus cases of
+  // the tests above are too small to ever hire a helper.
   const DeepWorkload& deep = Deep();
   ASSERT_NE(deep.entry, nullptr);
   const BezierCurve<double> trajectory = deep.entry->trajectory();

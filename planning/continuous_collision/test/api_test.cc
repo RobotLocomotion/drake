@@ -1,22 +1,9 @@
-/// @file
-/// T9 — API / UX (test plan T9: the joint-support and geometry-support
-/// scopes, and the architecture).
-///
-/// Every refusal this library makes has to be *actionable*: the message must
-/// name the joint, geometry, coordinate, index or size the caller has to go and
-/// fix. These tests therefore assert on message content, not just that
-/// something was thrown — a bare EXPECT_THROW would pass for a message reading
-/// "error" and leave a user with nothing to act on.
-///
-/// Coverage notes for two items of test-plan T9:
-///   * Python bindings do not exist yet, so the pydrake-style smoke
-///     tests are out of scope here.
-///   * An *unfinalized* plant cannot reach the checker through Drake's public
-///     API on this pin: RobotDiagramBuilder::Build() finalizes the plant
-///     unconditionally and RobotDiagram's constructor is private to the
-///     builder, so there is no way to construct the input that guard rejects.
-///     The guard is therefore defensive; the adjacent, reachable guards (null
-///     model) are pinned instead. See NullModelIsRefused below.
+// Which joints, geometries, dimensions and options the checker accepts, and
+// what it says when it refuses. A refusal must name the joint, geometry,
+// coordinate, index or size the caller has to go and fix, so these tests assert
+// on message content: a bare EXPECT_THROW would pass for a message reading
+// "error". The pydrake surface is covered separately, in
+// bindings/pydrake/planning/test/continuous_collision_test.py.
 
 #include <limits>
 #include <memory>
@@ -86,9 +73,9 @@ SpatialInertia<double> Inertia() {
   return SpatialInertia<double>::SolidSphereWithMass(1.0, 0.05);
 }
 
-/// Runs `call`, requires it to throw, and returns the message so the caller can
-/// assert on the identifiers it must contain. Reports the actual message on
-/// every failure path, so a message regression is diagnosable from the log.
+// Runs `call`, requires it to throw, and returns the message so the caller can
+// assert on the identifiers it must contain. Reports the actual message on
+// every failure path, so a message regression is diagnosable from the log.
 template <typename Callable>
 std::string ThrowMessage(Callable&& call) {
   try {
@@ -114,8 +101,8 @@ std::unique_ptr<ContinuousCollisionChecker> MakeChecker(
   return std::make_unique<ContinuousCollisionChecker>(params);
 }
 
-/// A planar 2-dof arm (revolute, prismatic) with one anchored obstacle: the
-/// well-formed world the dimension / options / trajectory tests use.
+// A planar 2-dof arm (revolute, prismatic) with one anchored obstacle: the
+// well-formed world the dimension / options / trajectory tests use.
 std::unique_ptr<RobotDiagram<double>> MakeArmWorld() {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -139,9 +126,9 @@ std::unique_ptr<RobotDiagram<double>> MakeArmWorld() {
   return builder.Build();
 }
 
-/// A *floating* base body carrying a one-revolute arm, plus an anchored
-/// obstacle. MultibodyPlant::Finalize() gives the free base a
-/// QuaternionFloatingJoint, so q = [quaternion(4), position(3), elbow(1)].
+// A floating base body carrying a one-revolute arm, plus an anchored obstacle.
+// MultibodyPlant::Finalize() gives the free base a QuaternionFloatingJoint, so
+// q = [quaternion(4), position(3), elbow(1)].
 std::unique_ptr<RobotDiagram<double>> MakeFloatingBaseWorld() {
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
@@ -163,7 +150,7 @@ std::unique_ptr<RobotDiagram<double>> MakeFloatingBaseWorld() {
   return builder.Build();
 }
 
-/// The name Drake gave the quaternion floating joint it added at Finalize().
+// The name Drake gave the quaternion floating joint it added at Finalize().
 std::string FloatingJointName(const MultibodyPlant<double>& plant) {
   for (drake::multibody::JointIndex index : plant.GetJointIndices()) {
     const Joint<double>& joint = plant.get_joint(index);
@@ -173,8 +160,8 @@ std::string FloatingJointName(const MultibodyPlant<double>& plant) {
   return {};
 }
 
-/// q for MakeFloatingBaseWorld(): identity quaternion, `p` for the base
-/// position, `elbow` for the joint.
+// q for MakeFloatingBaseWorld(): identity quaternion, `p` for the base
+// position, `elbow` for the joint.
 VectorXd FloatingQ(const Vector3d& p, double elbow) {
   VectorXd q(8);
   q << 1.0, 0.0, 0.0, 0.0, p.x(), p.y(), p.z(), elbow;
@@ -182,9 +169,8 @@ VectorXd FloatingQ(const Vector3d& p, double elbow) {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Joint scope (the joint-support scope): quaternion bases, and the
-// constant-coordinate
-//    carve-out that makes them usable anyway.
+// 1. Joint scope: quaternion bases, and the constant-coordinate carve-out that
+//    makes them usable anyway.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(ApiTest, MovingQuaternionBaseThrowsNamingTheJoint) {
@@ -193,7 +179,7 @@ GTEST_TEST(ApiTest, MovingQuaternionBaseThrowsNamingTheJoint) {
   const std::string joint_name = FloatingJointName(model->plant());
   ASSERT_FALSE(joint_name.empty());
 
-  // Move a *quaternion* coordinate: straight-line interpolation of quaternion
+  // Move a quaternion coordinate: straight-line interpolation of quaternion
   // components is not a rotation-space geodesic, so the convex-hull motion
   // bound has no meaning and the library must refuse rather than guess.
   Eigen::MatrixXd points(8, 2);
@@ -222,11 +208,10 @@ GTEST_TEST(ApiTest, MovingQuaternionBaseThrowsNamingTheJoint) {
 }
 
 GTEST_TEST(ApiTest, ConstantQuaternionBaseIsAcceptedEndToEnd) {
-  // The joint-support carve-out: a floating base whose pose is *constant* along
-  // the trajectory is treated as welded, so a floating-base robot is fully
-  // usable as long as the given trajectory does not move the base. This is the
-  // end-to-end version of that promise — not just "does not throw", but a real
-  // verdict with a real certificate.
+  // A floating base whose pose is constant along the trajectory is treated as
+  // welded, so a floating-base robot is usable as long as the trajectory does
+  // not move the base. Checked end to end: a verdict and a certificate, not
+  // just "does not throw".
   std::shared_ptr<const RobotDiagram<double>> model = MakeFloatingBaseWorld();
   const auto checker = MakeChecker(model);
 
@@ -265,13 +250,12 @@ GTEST_TEST(ApiTest, ConstantQuaternionBaseIsAcceptedEndToEnd) {
 }
 
 GTEST_TEST(ApiTest, ToleranceConstantQuaternionBaseChargesItsResidualEndToEnd) {
-  // The carve-out flags a coordinate constant on a *tolerance*, so a base held
+  // The carve-out flags a coordinate constant on a tolerance, so a base held
   // only to within continuity_tolerance is carved even though it still moves.
   // Its residual is charged to MotionBoundTable::carveout_slack(), and that has
-  // to survive all the way through the certifier — including the static-pair
-  // shortcut, which never evaluates a per-node Δ — and the certificate replay,
-  // which recomputes Δ from scratch and would reject a record whose bound came
-  // out smaller than the one the certifier used.
+  // to survive the static-pair shortcut, which never evaluates a per-node Δ,
+  // and the certificate replay, which recomputes Δ from scratch and would
+  // reject a record whose bound came out smaller than the certifier's.
   std::shared_ptr<const RobotDiagram<double>> model = MakeFloatingBaseWorld();
   const auto checker = MakeChecker(model);
 
@@ -339,12 +323,11 @@ GTEST_TEST(ApiTest, ToleranceConstantQuaternionBaseChargesItsResidualEndToEnd) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Geometry scope (the geometry-support scope): rotating half spaces and
-// deformables.
+// 2. Geometry scope: rotating half spaces and deformables.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(ApiTest, RotatingHalfSpaceThrowsAtConstruction) {
-  // A half space on a body that *rotates* relative to an unfiltered partner has
+  // A half space on a body that rotates relative to an unfiltered partner has
   // unbounded reach, so no finite λ exists for that pair. This must be refused
   // when the checker is built, not discovered mid-certification.
   RobotDiagramBuilder<double> builder;
@@ -373,9 +356,8 @@ GTEST_TEST(ApiTest, RotatingHalfSpaceThrowsAtConstruction) {
 
 GTEST_TEST(ApiTest, AnchoredHalfSpaceUnderARotatingArmIsAccepted) {
   // The complement, so the rule above is not read as "half spaces are
-  // unsupported": the overwhelmingly common case — an anchored ground plane
-  // under a rotating arm — is accepted, because λ then bounds the *arm's*
-  // points and signed distance is symmetric.
+  // unsupported". An anchored ground plane under a rotating arm is accepted,
+  // because λ then bounds the arm's points and signed distance is symmetric.
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
   const RigidBody<double>& link = plant.AddRigidBody("link", Inertia());
@@ -402,12 +384,10 @@ GTEST_TEST(ApiTest, AnchoredHalfSpaceUnderARotatingArmIsAccepted) {
 }
 
 GTEST_TEST(ApiTest, DeformableGeometryIsRefusedNamingIt) {
-  // Deformables are out of scope (the geometry-support scope): their motion is
-  // not described by the plant's generalized positions, so no motion bound
-  // exists for them at all. Registering one is possible on this Drake pin (the
-  // plant must be discrete, which RobotDiagramBuilder's default time step
-  // already is), so the refusal is exercised on a real model rather than argued
-  // about.
+  // Deformables are out of scope: their motion is not described by the plant's
+  // generalized positions, so no motion bound exists for them at all.
+  // Registering one needs a discrete plant, which RobotDiagramBuilder's default
+  // time step already gives, so the refusal is exercised on a real model.
   RobotDiagramBuilder<double> builder(0.01);
   MultibodyPlant<double>& plant = builder.plant();
   const RigidBody<double>& post = plant.AddRigidBody("post", Inertia());
@@ -447,7 +427,7 @@ GTEST_TEST(ApiTest, DeformableGeometryIsRefusedNamingIt) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Dimensions (trajectory normalization; the architecture).
+// 3. Dimensions.
 // ---------------------------------------------------------------------------
 
 // The displacement lemma is proved in the separated regime only, so a
@@ -501,7 +481,7 @@ GTEST_TEST(ApiTest, DimensionMismatchMessagesNameTheSizes) {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Trajectory validation (trajectory normalization).
+// 4. Trajectory validation.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(ApiTest, DiscontinuousTrajectoryThrowsNamingTheJunction) {
@@ -532,7 +512,7 @@ GTEST_TEST(ApiTest, DegreeAboveConversionCapThrows) {
   std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
   const auto checker = MakeChecker(model);
 
-  // 13 interpolation nodes ⇒ one polynomial segment of degree 12, above the
+  // 13 interpolation nodes => one polynomial segment of degree 12, above the
   // default max_conversion_degree of 10.
   const int kNodes = 13;
   VectorXd times(kNodes);
@@ -551,7 +531,7 @@ GTEST_TEST(ApiTest, DegreeAboveConversionCapThrows) {
   ExpectContains(message, "polynomial degree 12");
   ExpectContains(message, "max_conversion_degree");
 
-  // Raising the cap deliberately is the documented escape hatch, and it works.
+  // Raising the cap is the documented escape hatch.
   Options options;
   options.parallelism = Parallelism::None();
   options.max_conversion_degree = 12;
@@ -572,7 +552,7 @@ GTEST_TEST(ApiTest, UnsupportedTrajectoryTypeThrowsNamingTheType) {
   });
   ExpectContains(message, "unsupported trajectory type");
   ExpectContains(message, "PiecewiseQuaternionSlerp");
-  // The message must list what *is* accepted.
+  // The message must list what is accepted.
   ExpectContains(message, "BezierCurve");
   ExpectContains(message, "BsplineTrajectory");
 }
@@ -652,8 +632,10 @@ GTEST_TEST(ApiTest, NullModelIsRefused) {
     ContinuousCollisionChecker checker(params);
   });
   ExpectContains(message, "Params::model is null");
-  // The message points at the requirement the (unreachable-through-Drake's
-  // public API) finalization guard also enforces.
+  // The adjacent finalization guard has no reachable input:
+  // RobotDiagramBuilder::Build() finalizes unconditionally and RobotDiagram's
+  // constructor is private to the builder. The null-model message names both
+  // requirements, so this pins the wording for the pair.
   ExpectContains(message, "finalized");
 }
 
@@ -687,8 +669,8 @@ GTEST_TEST(ApiTest, MaxReportedFindingsIsRespected) {
     // would be satisfied by a regression that returned nothing, which would
     // also make the prefix check below vacuous.
     ASSERT_EQ(static_cast<int>(result.findings.size()), cap);
-    // The cap keeps the *earliest* findings, so a capped run is a prefix of the
-    // uncapped one — dropping the latest entry can never remove an earlier one.
+    // The cap keeps the earliest findings, so a capped run is a prefix of the
+    // uncapped one: dropping the latest entry never removes an earlier one.
     for (std::size_t i = 0; i < result.findings.size(); ++i) {
       EXPECT_EQ(result.findings[i].time, uncapped.findings[i].time);
       EXPECT_EQ(result.findings[i].definite, uncapped.findings[i].definite);
