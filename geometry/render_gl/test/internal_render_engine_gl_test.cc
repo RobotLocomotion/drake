@@ -84,6 +84,10 @@ class RenderEngineGlTester {
     return engine_.geometries_;
   }
 
+  const std::vector<int>& shadow_light_indices() const {
+    return engine_.shadow_light_indices();
+  }
+
  private:
   const RenderEngineGl& engine_;
 };
@@ -229,6 +233,97 @@ bool IsColorNear(const RgbaColor& expected, const RgbaColor& tested,
   return ::testing::AssertionFailure()
          << "At pixel " << p << "\n  Expected: " << expected
          << "\n  Found: " << tested << "\n  with tolerance: " << tolerance;
+}
+
+// DO NOT PUT ANY TEST ABOVE THIS TEST!
+//
+// RenderEngineGl generates the source of its lighting shaders from its light
+// configuration, which determines both LIGHT_COUNT and SHADOW_MAP_COUNT.
+// Graphics drivers have been known to *crash* (rather than report an error) on
+// particular shader variants. For example, Mesa 25.2 segfaults inside
+// glLinkProgram() when SHADOW_MAP_COUNT is 1. We can't catch such a crash, but
+// we can make sure it happens in a test whose name identifies the offending
+// variant, rather than in whichever unrelated test happens to use it.
+//
+// These tests must run before any other test that builds a lighting shader and
+// due to how googletest orders test execution, the declarations must precede
+// all other tests.
+//
+// For each variant, we construct the renderer (compiling and linking its
+// shaders) and render a single frame containing an untextured and a textured
+// box (drivers may defer part of shader compilation to the first draw call).
+// Three lights are enough to cover the sizes that matter for every array in
+// the shaders: zero (SHADOW_MAP_COUNT undefined), one, and more than one.
+void CheckShaderVariant(int light_count, int shadow_map_count) {
+  // Directional lights cast shadows; point lights don't. The light types
+  // otherwise don't affect the shader source.
+  std::vector<LightParameter> lights;
+  for (int i = 0; i < light_count; ++i) {
+    if (i < shadow_map_count) {
+      lights.push_back({.type = "directional",
+                        .frame = "world",
+                        .intensity = 0.5,
+                        .direction = {0.1 * i, 0, -1}});
+    } else {
+      lights.push_back({.type = "point",
+                        .position = {0, 0, 2},
+                        .frame = "world",
+                        .intensity = 0.5});
+    }
+  }
+  RenderEngineGl renderer(RenderEngineGlParams{
+      .lights = lights, .cast_shadows = true, .shadow_map_size = 64});
+  ASSERT_EQ(ssize(RenderEngineGlTester(&renderer).shadow_light_indices()),
+            shadow_map_count);
+
+  PerceptionProperties rgba_props;
+  rgba_props.AddProperty("phong", "diffuse", Rgba(1, 0, 0));
+  renderer.RegisterVisual(GeometryId::get_new_id(), Box(0.5, 0.5, 0.5),
+                          rgba_props, RigidTransformd(Vector3d(-0.5, 0, 0)),
+                          false);
+  PerceptionProperties texture_props;
+  texture_props.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+  texture_props.AddProperty(
+      "phong", "diffuse_map",
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"));
+  renderer.RegisterVisual(GeometryId::get_new_id(), Box(0.5, 0.5, 0.5),
+                          texture_props, RigidTransformd(Vector3d(0.5, 0, 0)),
+                          false);
+
+  renderer.UpdateViewpoint(
+      RigidTransformd(RotationMatrixd::MakeXRotation(M_PI), Vector3d(0, 0, 3)));
+  const ColorRenderCamera camera(
+      {"unused", {64, 64, M_PI / 4}, {kClipNear, 10.0}, {}}, FLAGS_show_window);
+  ImageRgba8U color(64, 64);
+  EXPECT_NO_THROW(renderer.RenderColorImage(camera, &color));
+}
+
+GTEST_TEST(ShaderVariantTest, Lights1ShadowMaps0) {
+  CheckShaderVariant(1, 0);
+}
+GTEST_TEST(ShaderVariantTest, Lights1ShadowMaps1) {
+  CheckShaderVariant(1, 1);
+}
+GTEST_TEST(ShaderVariantTest, Lights2ShadowMaps0) {
+  CheckShaderVariant(2, 0);
+}
+GTEST_TEST(ShaderVariantTest, Lights2ShadowMaps1) {
+  CheckShaderVariant(2, 1);
+}
+GTEST_TEST(ShaderVariantTest, Lights2ShadowMaps2) {
+  CheckShaderVariant(2, 2);
+}
+GTEST_TEST(ShaderVariantTest, Lights3ShadowMaps0) {
+  CheckShaderVariant(3, 0);
+}
+GTEST_TEST(ShaderVariantTest, Lights3ShadowMaps1) {
+  CheckShaderVariant(3, 1);
+}
+GTEST_TEST(ShaderVariantTest, Lights3ShadowMaps2) {
+  CheckShaderVariant(3, 2);
+}
+GTEST_TEST(ShaderVariantTest, Lights3ShadowMaps3) {
+  CheckShaderVariant(3, 3);
 }
 
 class RenderEngineGlTest : public ::testing::Test {
@@ -2927,12 +3022,214 @@ TEST_F(RenderEngineGlTest, MultiLights) {
       << "  expected color: " << expected_color;
 }
 
+// A regression test that open meshes cast shadows from both sides.
+//
+// We've created a mesh consisting of two planar triangles next to each other.
+// One triangle's normal is facing the camera, the other's is facing away. The
+// first triangle is visible in the color image, the second is not. Both
+// triangles cast shadows (you'll see two distinct, triangular shadows on the
+// ground plane, heavily pixelated due to a low-resolution shadow map so the
+// geometry is easy to distinguish from the shadows).
+TEST_F(RenderEngineGlTest, ShadowCastersAreTwoSided) {
+  const RenderCameraCore core{
+      "unused", depth_camera_.core().intrinsics(), {kClipNear, 10.0}, {}};
+  const ColorRenderCamera camera(core, FLAGS_show_window);
+  const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(M_PI),
+                             Vector3d(0, 0, 3));
+  const LightParameter light{
+      .type = "directional", .frame = "world", .direction = {0.5, 0, -1}};
+
+  RenderEngineGl renderer(RenderEngineGlParams{
+      .lights = {light}, .cast_shadows = true, .shadow_map_size = 256});
+  renderer.UpdateViewpoint(X_WR);
+
+  PerceptionProperties ground_props;
+  ground_props.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+  renderer.RegisterVisual(GeometryId::get_new_id(), HalfSpace(), ground_props,
+                          RigidTransformd::Identity(), false);
+
+  PerceptionProperties triangle_props;
+  triangle_props.AddProperty("phong", "diffuse", Rgba(1, 0, 0));
+  // These two open triangles have opposite winding. From above, the left
+  // triangle is visible and the right triangle is culled. Both must cast a
+  // triangular shadow onto the ground.
+  const std::string obj = R"(v -0.65 -0.35 1
+v -0.15 -0.35 1
+v -0.4 0.35 1
+v 0.15 -0.35 1
+v 0.65 -0.35 1
+v 0.4 0.35 1
+vn 0 0 1
+f 1//1 2//1 3//1
+f 4//1 6//1 5//1
+)";
+  renderer.RegisterVisual(
+      GeometryId::get_new_id(),
+      Mesh(InMemoryMesh{MemoryFile(obj, ".obj", "open_triangles.obj")}),
+      triangle_props, RigidTransformd::Identity(), false);
+
+  ImageRgba8U color(kWidth, kHeight);
+  EXPECT_NO_THROW(renderer.RenderColorImage(camera, &color));
+  CompareAgainstRef(
+      color, "two_sided_shadow_casters",
+      "drake/geometry/render_gl/test/two_sided_shadow_casters.png");
+}
+
+// When nothing the camera sees can receive shadows, the shadow-casting lights'
+// depth maps are cleared but nothing is drawn into them. This smoke test
+// confirms that such a frame renders correctly (only the clear color) and that
+// it doesn't disturb later frames: after moving the camera to see a shadowed
+// scene, the renderer produces the same image as a renderer that only ever
+// rendered that view. Both a directional and a spot light are included so
+// that both kinds of shadow camera take the "nothing to receive" path.
+TEST_F(RenderEngineGlTest, ShadowMapsWithoutVisibleReceivers) {
+  const RenderCameraCore core{
+      "unused", depth_camera_.core().intrinsics(), {kClipNear, 10.0}, {}};
+  const ColorRenderCamera camera(core, FLAGS_show_window);
+  // The shadowed scene is far from the origin; the "empty" view looks down at
+  // the origin, the "scene" view looks down at the scene.
+  const Vector3d p_WScene(50, 0, 0);
+  const RigidTransformd X_WR_empty(RotationMatrixd::MakeXRotation(M_PI),
+                                   Vector3d(0, 0, 3));
+  const RigidTransformd X_WR_scene(RotationMatrixd::MakeXRotation(M_PI),
+                                   p_WScene + Vector3d(0, 0, 3));
+  const RenderEngineGlParams params{
+      .default_clear_color = kBgColor,
+      .lights = {{.type = "directional",
+                  .frame = "world",
+                  .intensity = 0.5,
+                  .direction = {0.5, 0, -1}},
+                 {.type = "spot",
+                  .position = p_WScene + Vector3d(-0.5, 0.5, 3),
+                  .frame = "world",
+                  .intensity = 0.5,
+                  .direction = {0.5, -0.5, -3},
+                  .cone_angle = 30}},
+      .cast_shadows = true,
+      .shadow_map_size = 256};
+
+  auto populate = [&p_WScene](RenderEngineGl* renderer) {
+    PerceptionProperties props;
+    props.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+    renderer->RegisterVisual(GeometryId::get_new_id(), Box(4, 4, 0.1), props,
+                             RigidTransformd(p_WScene + Vector3d(0, 0, -0.05)),
+                             false);
+    renderer->RegisterVisual(
+        GeometryId::get_new_id(), Box(0.5, 0.5, 0.5), props,
+        RigidTransformd(p_WScene + Vector3d(0, 0, 0.5)), false);
+  };
+
+  RenderEngineGl renderer(params);
+  populate(&renderer);
+  ImageRgba8U empty_color(kWidth, kHeight);
+  renderer.UpdateViewpoint(X_WR_empty);
+  EXPECT_NO_THROW(renderer.RenderColorImage(camera, &empty_color));
+  VerifyUniformColor(kBgColor, &empty_color);
+
+  ImageRgba8U scene_color(kWidth, kHeight);
+  renderer.UpdateViewpoint(X_WR_scene);
+  EXPECT_NO_THROW(renderer.RenderColorImage(camera, &scene_color));
+
+  RenderEngineGl reference_renderer(params);
+  populate(&reference_renderer);
+  ImageRgba8U reference_color(kWidth, kHeight);
+  reference_renderer.UpdateViewpoint(X_WR_scene);
+  EXPECT_NO_THROW(
+      reference_renderer.RenderColorImage(camera, &reference_color));
+  EXPECT_EQ(scene_color, reference_color);
+}
+
+// Deformable geometry's bounds must follow its vertices for it to receive
+// shadows correctly. We register a deformable box far outside the view and then
+// move its vertices to the center of the view. The box is the only potentially
+// visible receiver; the shadow caster is above the camera, so the camera can't
+// see it. If the box's bound stayed at the registration location, the
+// directional light would find no visible receivers and would skip its shadow
+// map entirely -- the box would be fully lit.
+TEST_F(RenderEngineGlTest, DeformableShadowReceiverBoundsFollowVertices) {
+  const RenderCameraCore core{
+      "unused", depth_camera_.core().intrinsics(), {kClipNear, 10.0}, {}};
+  const ColorRenderCamera camera(core, FLAGS_show_window);
+  const double kCameraHeight = 6.0;
+  const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(M_PI),
+                             Vector3d(0, 0, kCameraHeight));
+  // The light travels in the +Wx direction as it descends.
+  RenderEngineGl renderer(
+      RenderEngineGlParams{.lights = {{.type = "directional",
+                                       .frame = "world",
+                                       .direction = {1, 0, -1}}},
+                           .cast_shadows = true,
+                           .shadow_map_size = 1024});
+  renderer.UpdateViewpoint(X_WR);
+
+  PerceptionProperties props;
+  props.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+  // The caster is a 1x1 plate above the camera (and so outside its view). Its
+  // shadow falls 7 m downstream along the light: centered on (0, 0, 1), the
+  // middle of the deformable box's top face.
+  renderer.RegisterVisual(GeometryId::get_new_id(), Box(1, 1, 0.1), props,
+                          RigidTransformd(Vector3d(-7, 0, 8)), false);
+
+  // The box has half edge length 1 and is centered on its frame's origin.
+  // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
+  // from box.obj by stripping out material data in the build system.
+  const fs::path box_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj");
+  std::vector<geometry::internal::RenderMesh> render_meshes =
+      geometry::internal::LoadRenderMeshesFromObj(box_path, props,
+                                                  Rgba(1, 1, 1));
+  ASSERT_EQ(render_meshes.size(), 1);
+  using PositionMatrix =
+      Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
+  const PositionMatrix p_GVs = render_meshes[0].positions;
+  const PositionMatrix normals = render_meshes[0].normals;
+  auto translated = [&p_GVs](const Vector3d& t_W) {
+    PositionMatrix result = p_GVs;
+    result.rowwise() += t_W.transpose();
+    return result;
+  };
+  auto flatten = [](const PositionMatrix& input) {
+    return VectorXd(Eigen::Map<const VectorXd>(input.data(), input.size()));
+  };
+
+  // Register far outside the view, then move the box to the view's center.
+  render_meshes[0].positions = translated(Vector3d(30, 0, 5));
+  const GeometryId id = GeometryId::get_new_id();
+  renderer.RegisterDeformableVisual(id, render_meshes, props);
+  ImageRgba8U color(kWidth, kHeight);
+  // TODO(SeanCurtis-TRI): Deformable configuration updates applied before the
+  //  engine's first render are lost (independent of shadows). Remove this
+  //  render once that is fixed.
+  renderer.RenderColorImage(camera, &color);
+  renderer.UpdateDeformableConfigurations(
+      id, {flatten(translated(Vector3d::Zero()))}, {flatten(normals)});
+
+  EXPECT_NO_THROW(renderer.RenderColorImage(camera, &color));
+  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+    ImageIo{}.Save(color, fs::path(dir) / "deformable_shadow_receiver.png");
+  }
+
+  // The box's top face (z = 1) spans Wx, Wy ∈ [-1, 1]; the plate's shadow on
+  // it spans Wx, Wy ∈ [-0.5, 0.5]. So (0, 0, 1) is in shadow and (0, 0.8, 1)
+  // is lit.
+  const auto& intrinsics = camera.core().intrinsics();
+  auto top_pixel = [&](double x_W, double y_W) {
+    // The camera looks straight down with Cx = Wx and Cy = -Wy.
+    const double depth = kCameraHeight - 1.0;
+    const int u = static_cast<int>(intrinsics.center_x() +
+                                   intrinsics.focal_x() * x_W / depth);
+    const int v = static_cast<int>(intrinsics.center_y() -
+                                   intrinsics.focal_y() * y_W / depth);
+    return static_cast<int>(color.at(u, v)[0]);
+  };
+  const int shadowed = top_pixel(0, 0);
+  const int lit = top_pixel(0, 0.8);
+  EXPECT_LT(shadowed + 50, lit) << "shadowed: " << shadowed << ", lit: " << lit;
+}
+
 // A regression test against various properties of shadows:
 //
 // 1. Directional light casts shadows (behind the box, pointing toward camera).
-//    Note: the directional shadow will currently be *very* pixelated; it
-//    depends on the very large kClipFar value (100). Follow up PRs will correct
-//    that.
 // 2. Spot light with angle < 90 casts shadows (behind the box, pointing
 //    toward the camera's right).
 // 3. Spot lights with angle >= 90 and point lights universally do not cast
@@ -2946,8 +3243,11 @@ TEST_F(RenderEngineGlTest, MultiLights) {
 // The camera's pose is chosen for the express purpose of making all of the
 // above as reasonably recognizable for a human.
 TEST_F(RenderEngineGlTest, ShadowMaps) {
+  // It's important for far clipping to be quite distant; it provides regression
+  // against the light frusta being driven by the camera frusta.
+  DRAKE_DEMAND(kClipFar >= 100.0);
   const RenderCameraCore core{
-      "unused", depth_camera_.core().intrinsics(), {kClipNear, 100.0}, {}};
+      "unused", depth_camera_.core().intrinsics(), {kClipNear, kClipFar}, {}};
   const ColorRenderCamera camera(core, FLAGS_show_window);
   constexpr double kViewAngle = M_PI / 6;
   constexpr double kAzimuth = -M_PI / 6;

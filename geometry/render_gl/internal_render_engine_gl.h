@@ -336,7 +336,9 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
   const std::vector<int>& shadow_light_indices() const;
 
   // Renders one depth map for every shadow-casting light and returns the
-  // world-to-light-device (T_DlightW) matrix for each depth map.
+  // world-to-light-device (T_DlightW) matrix for each depth map. If nothing the
+  // camera can see can receive a light's shadows, that light's depth map is
+  // cleared but nothing is drawn into it (every lookup reports "lit").
   std::vector<Eigen::Matrix4f> RenderShadowMaps(
       const render::ColorRenderCamera& camera) const;
 
