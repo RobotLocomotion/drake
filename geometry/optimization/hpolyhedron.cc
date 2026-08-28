@@ -1041,38 +1041,38 @@ FindRedundantWithWitnessPoints(const HPolyhedron& polytope,
     if (indices_to_not_check.contains(i)) {
       // No witness point needs to be computed.
       witness_points.push_back(std::nullopt);
-    } else {
-      // Instead of removing the constraint like FindRedundant does, shift the
-      // hyperplane slightly outward, to ensure that the polytope stays bounded
-      // and we get a valid witness point.
-      const double kHyperplaneShift = 0.01;
-      const VectorXd hyperplane_shift_vec =
-          VectorXd::Constant(1, kHyperplaneShift);
+      continue;
+    }
+    // Instead of removing the constraint like FindRedundant does, shift the
+    // hyperplane slightly outward, to ensure that the polytope stays bounded
+    // and we get a valid witness point.
+    const double kHyperplaneShift = 0.01;
+    const VectorXd hyperplane_shift_vec =
+        VectorXd::Constant(1, kHyperplaneShift);
 
+    bindings_vec[i].evaluator()->UpdateUpperBound(
+        bindings_vec[i].evaluator()->upper_bound() + hyperplane_shift_vec);
+    cost_binding.evaluator()->UpdateCoefficients(-polytope.A().row(i), 0);
+    const auto result = Solve(prog);
+    if (!result.is_success()) {
+      // The program failed, so it is safer to treat the hyperplane as
+      // non-redundant. Bring back the constraint; with no witness point
+      // available, the face will be re-checked at the next check.
       bindings_vec[i].evaluator()->UpdateUpperBound(
-          bindings_vec[i].evaluator()->upper_bound() + hyperplane_shift_vec);
-      cost_binding.evaluator()->UpdateCoefficients(-polytope.A().row(i), 0);
-      const auto result = Solve(prog);
-      if (!result.is_success()) {
-        // The program failed, so it is safer to treat the hyperplane as
-        // non-redundant. Bring back the constraint; with no witness point
-        // available, the face will be re-checked at the next check.
-        bindings_vec[i].evaluator()->UpdateUpperBound(
-            bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
-        witness_points.push_back(std::nullopt);
-      } else if (-result.get_optimal_cost() > polytope.b()[i]) {
-        // The hyperplane is not redundant. Bring back the constraint and
-        // store the witness point.
-        bindings_vec[i].evaluator()->UpdateUpperBound(
-            bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
-        witness_points.push_back(result.GetSolution(x));
-      } else {
-        // The hyperplane is redundant and should be removed from the program.
-        // Its witness point entry will be removed along with it.
-        prog.RemoveConstraint(bindings_vec.at(i));
-        redundant_indices.insert(i);
-        witness_points.push_back(std::nullopt);
-      }
+          bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
+      witness_points.push_back(std::nullopt);
+    } else if (-result.get_optimal_cost() > polytope.b()[i]) {
+      // The hyperplane is not redundant. Bring back the constraint and
+      // store the witness point.
+      bindings_vec[i].evaluator()->UpdateUpperBound(
+          bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
+      witness_points.push_back(result.GetSolution(x));
+    } else {
+      // The hyperplane is redundant and should be removed from the program.
+      // Its witness point entry will be removed along with it.
+      prog.RemoveConstraint(bindings_vec.at(i));
+      redundant_indices.insert(i);
+      witness_points.push_back(std::nullopt);
     }
   }
   return std::pair(redundant_indices, witness_points);
