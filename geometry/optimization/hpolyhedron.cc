@@ -1037,19 +1037,17 @@ FindRedundantWithWitnessPoints(const HPolyhedron& polytope,
   }
   auto cost_binding = prog.AddLinearCost(-polytope.A().row(0), 0, x);
   witness_points.reserve(num_cons);
+  // Instead of removing a constraint like FindRedundant does, we shift its
+  // hyperplane slightly outward, to ensure that the polytope stays bounded
+  // and we get a valid witness point. Any positive shift is sufficient.
+  const double kHyperplaneShift = 0.01;
+  const VectorXd hyperplane_shift_vec = VectorXd::Constant(1, kHyperplaneShift);
   for (int i = 0; i < num_cons; ++i) {
     if (indices_to_not_check.contains(i)) {
       // No witness point needs to be computed.
       witness_points.push_back(std::nullopt);
       continue;
     }
-    // Instead of removing the constraint like FindRedundant does, shift the
-    // hyperplane slightly outward, to ensure that the polytope stays bounded
-    // and we get a valid witness point.
-    const double kHyperplaneShift = 0.01;
-    const VectorXd hyperplane_shift_vec =
-        VectorXd::Constant(1, kHyperplaneShift);
-
     bindings_vec[i].evaluator()->UpdateUpperBound(
         bindings_vec[i].evaluator()->upper_bound() + hyperplane_shift_vec);
     cost_binding.evaluator()->UpdateCoefficients(-polytope.A().row(i), 0);
@@ -1330,6 +1328,9 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
             indices_to_not_check.insert(ind);
           }
         }
+        // The moving face itself need not be checked: it was non-redundant
+        // before the move, and moving a hyperplane inward cannot make it
+        // redundant.
         indices_to_not_check.insert(i);
 
         const HPolyhedron inbody_proposed = HPolyhedron(inbody.A(), b_proposed);
