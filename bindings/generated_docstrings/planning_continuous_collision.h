@@ -533,7 +533,7 @@ hold no mutable state, so concurrent ComputeMotionBoundTable() calls
 are safe.
 
 Typical use by the certifier: - once, at checker construction:
-KinematicsEngine engine(model); engine.body_spheres(b) for the
+KinematicsEngine engine(model); engine.geometry_sphere(id) for the
 prefilter; - once per Check* call:
 engine.ComputeMotionBoundTable(path, pairs); - once per node, per
 pair: table.MotionBound(pair_index, w).)""";
@@ -621,20 +621,6 @@ R"""(Radius, about the body frame origin, of a sphere containing every
 proximity geometry of ``body`` — the start of the reach chain. Zero
 for a body with no (non-HalfSpace) proximity geometry.)""";
           } body_radius;
-          // Symbol: drake::planning::continuous_collision::KinematicsEngine::body_sphere_geometries
-          struct /* body_sphere_geometries */ {
-            // Source: drake/planning/continuous_collision/motion_bound_table.h
-            const char* doc =
-R"""(The geometry ids matching body_spheres(body), element for element.)""";
-          } body_sphere_geometries;
-          // Symbol: drake::planning::continuous_collision::KinematicsEngine::body_spheres
-          struct /* body_spheres */ {
-            // Source: drake/planning/continuous_collision/motion_bound_table.h
-            const char* doc =
-R"""(Bounding spheres (body frame) of every proximity geometry of ``body``,
-used by the reach chain start and by the certifier's sphere prefilter.
-HalfSpace geometries have no bounding sphere and are omitted.)""";
-          } body_spheres;
           // Symbol: drake::planning::continuous_collision::KinematicsEngine::geometry_sphere
           struct /* geometry_sphere */ {
             // Source: drake/planning/continuous_collision/motion_bound_table.h
@@ -731,12 +717,6 @@ pair's two geometries can move relative to each other purely through
 the coordinates the table no longer tracks. Zero when every carved
 coordinate is exactly constant.)""";
           } carveout_slack;
-          // Symbol: drake::planning::continuous_collision::MotionBoundTable::num_entries
-          struct /* num_entries */ {
-            // Source: drake/planning/continuous_collision/motion_bound_table.h
-            const char* doc =
-R"""(Total number of (coordinate, λ) entries over all pairs.)""";
-          } num_entries;
           // Symbol: drake::planning::continuous_collision::MotionBoundTable::num_pairs
           struct /* num_pairs */ {
             // Source: drake/planning/continuous_collision/motion_bound_table.h

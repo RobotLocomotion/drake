@@ -91,9 +91,6 @@ class MotionBoundTable {
   @throws std::exception if pair_index is outside [0, num_pairs()). */
   std::vector<std::pair<int, double>> GetEntries(int pair_index) const;
 
-  /** Total number of (coordinate, λ) entries over all pairs. */
-  int num_entries() const { return static_cast<int>(coord_.size()); }
-
  private:
   std::vector<int> row_start_{0};
   std::vector<int> coord_;
@@ -109,7 +106,8 @@ concurrent ComputeMotionBoundTable() calls are safe.
 
 Typical use by the certifier:
 - once, at checker construction:   KinematicsEngine engine(model);
-                                   engine.body_spheres(b) for the prefilter;
+                                   engine.geometry_sphere(id) for the
+                                   prefilter;
 - once per Check* call:            engine.ComputeMotionBoundTable(path, pairs);
 - once per node, per pair:         table.MotionBound(pair_index, w).
 @ingroup planning_collision_checker */
@@ -176,16 +174,6 @@ class KinematicsEngine {
       const Eigen::VectorXd& lower, const Eigen::VectorXd& upper,
       const std::vector<bool>& constant_coordinates,
       const std::vector<PairId>& pairs) const;
-
-  /** Bounding spheres (body frame) of every proximity geometry of `body`,
-  used by the reach chain start and by the certifier's sphere prefilter.
-  HalfSpace geometries have no bounding sphere and are omitted. */
-  const std::vector<BoundingSphere>& body_spheres(
-      multibody::BodyIndex body) const;
-
-  /** The geometry ids matching body_spheres(body), element for element. */
-  const std::vector<geometry::GeometryId>& body_sphere_geometries(
-      multibody::BodyIndex body) const;
 
   /** The bounding sphere (in its body's frame) of one proximity geometry.
   @throws std::exception if `id` is not a proximity geometry of this model or
@@ -303,8 +291,6 @@ class KinematicsEngine {
   /* Position coordinate -> ordinal of the owning joint. */
   std::vector<int> coord_joint_;
 
-  std::vector<std::vector<BoundingSphere>> body_spheres_;
-  std::vector<std::vector<geometry::GeometryId>> body_sphere_geoms_;
   std::vector<double> body_radius_;
   std::vector<bool> body_has_halfspace_;
   std::vector<std::string> body_halfspace_name_;

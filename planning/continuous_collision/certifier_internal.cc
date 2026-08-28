@@ -14,7 +14,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/parallelism.h"
-#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/continuous_collision/numerics.h"
 
@@ -36,6 +35,24 @@ constexpr double kInfinity = std::numeric_limits<double>::infinity();
  invariant under time reparametrization. */
 double TimeOf(const BezierSegment& seg, double s) {
   return seg.t_start + s * (seg.t_end - seg.t_start);
+}
+
+/* Assembles one Finding. Every field is set here, so the call sites below
+ differ only in the values they pass. */
+Finding MakeFinding(double time, const Eigen::VectorXd& q, const PairId& pair,
+                    double distance, double motion_bound, bool definite,
+                    const Eigen::Vector3d& nearest_a_W,
+                    const Eigen::Vector3d& nearest_b_W) {
+  Finding finding;
+  finding.time = time;
+  finding.q = q;
+  finding.pair = pair;
+  finding.distance = distance;
+  finding.motion_bound = motion_bound;
+  finding.definite = definite;
+  finding.nearest_a_W = nearest_a_W;
+  finding.nearest_b_W = nearest_b_W;
+  return finding;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,6 +84,13 @@ class GeometryCache {
   }
 
   double radius(int slot) const { return table_->geometries[slot].radius; }
+
+  /* The free-sphere lower bound on the pair's signed distance at the
+   configuration last set: phi >= ||c_A - c_B|| - rho_A - rho_B. */
+  double LowerBound(int slot_a, int slot_b) {
+    return (Center(slot_a) - Center(slot_b)).norm() - radius(slot_a) -
+           radius(slot_b);
+  }
 
  private:
   const PrefilterTable* table_{};
@@ -551,9 +575,7 @@ void Worker::RunItem(WorkItem* item) {
       const int slot_a = prefilter.slot_a[p];
       const int slot_b = prefilter.slot_b[p];
       if (slot_a >= 0 && slot_b >= 0) {
-        const double lower_bound =
-            (geometry_.Center(slot_a) - geometry_.Center(slot_b)).norm() -
-            geometry_.radius(slot_a) - geometry_.radius(slot_b);
+        const double lower_bound = geometry_.LowerBound(slot_a, slot_b);
         if (IsCertified(lower_bound, tau_p, motion_bound, threshold, slack)) {
           ++stats_.sphere_certifications;
           if (emit_certificate_) {
@@ -573,16 +595,9 @@ void Worker::RunItem(WorkItem* item) {
         // qc is exactly on the trajectory (it is the de Casteljau apex), so
         // ϕ_true(qc) ≤ ϕ̂ + τ_p < m_p is a definite violation of the
         // continuum statement, not a sampling artifact.
-        Finding finding;
-        finding.time = t_mid;
-        finding.q = q_mid_;
-        finding.pair = pair.id;
-        finding.distance = phi_hat;
-        finding.motion_bound = motion_bound;
-        finding.definite = true;
-        finding.nearest_a_W = nearest_a_;
-        finding.nearest_b_W = nearest_b_;
-        sink_->AddDefinite(std::move(finding));
+        sink_->AddDefinite(MakeFinding(t_mid, q_mid_, pair.id, phi_hat,
+                                       motion_bound, true, nearest_a_,
+                                       nearest_b_));
         if (!find_first_ || at_floor) {
           // kCertifyAll (or a floor node, which has no children to refine
           // into): drop p from this subtree. Without this a single
@@ -612,16 +627,9 @@ void Worker::RunItem(WorkItem* item) {
 
       // --- Gray: subdivide, unless we are already at the resolution floor. -
       if (at_floor) {
-        Finding finding;
-        finding.time = t_mid;
-        finding.q = q_mid_;
-        finding.pair = pair.id;
-        finding.distance = phi_hat;
-        finding.motion_bound = motion_bound;
-        finding.definite = false;
-        finding.nearest_a_W = nearest_a_;
-        finding.nearest_b_W = nearest_b_;
-        sink_->AddInconclusive(std::move(finding));
+        sink_->AddInconclusive(MakeFinding(t_mid, q_mid_, pair.id, phi_hat,
+                                           motion_bound, false, nearest_a_,
+                                           nearest_b_));
       } else {
         arena_[survivor_offset + survivor_count] = p;
         ++survivor_count;
@@ -719,9 +727,7 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
     const int slot_a = prefilter.slot_a[p];
     const int slot_b = prefilter.slot_b[p];
     if (slot_a >= 0 && slot_b >= 0) {
-      lower_bound =
-          (geometry->Center(slot_a) - geometry->Center(slot_b)).norm() -
-          geometry->radius(slot_a) - geometry->radius(slot_b);
+      lower_bound = geometry->LowerBound(slot_a, slot_b);
     }
 
     if (is_static) {
@@ -749,16 +755,10 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
                                                         &nearest_a, &nearest_b);
 
     if (IsDefiniteViolation(phi_hat, tau_p, threshold)) {
-      Finding finding;
-      finding.time = time;
-      finding.q = q;
-      finding.pair = pair.id;
-      finding.distance = phi_hat;
-      finding.motion_bound = 0.0;
-      finding.definite = true;
-      finding.nearest_a_W = nearest_a;
-      finding.nearest_b_W = nearest_b;
-      sink->AddDefinite(std::move(finding));
+      // A breakpoint is a single configuration, so the finding carries no
+      // motion bound.
+      sink->AddDefinite(MakeFinding(time, q, pair.id, phi_hat, 0.0, true,
+                                    nearest_a, nearest_b));
       continue;
     }
     if (!is_static) continue;
@@ -775,16 +775,8 @@ void RunBreakpointPass(const CertifierInput& input, ThreadContext* context,
     // Neither certified nor violating, and no subdivision can help: this
     // pair's clearance is constant along the trajectory (up to the carve-out
     // residual) and sits within oracle tolerance of the threshold.
-    Finding finding;
-    finding.time = time;
-    finding.q = q;
-    finding.pair = pair.id;
-    finding.distance = phi_hat;
-    finding.motion_bound = static_bound;
-    finding.definite = false;
-    finding.nearest_a_W = nearest_a;
-    finding.nearest_b_W = nearest_b;
-    sink->AddInconclusive(std::move(finding));
+    sink->AddInconclusive(MakeFinding(time, q, pair.id, phi_hat, static_bound,
+                                      false, nearest_a, nearest_b));
   }
 }
 
@@ -806,24 +798,12 @@ void SortRecords(std::vector<CertificateRecord>* records) {
 // ThreadContext / ContextPool.
 // ---------------------------------------------------------------------------
 
-ThreadContext::ThreadContext(const drake::planning::RobotDiagram<double>& model)
-    : model_(&model), root_(model.CreateDefaultContext()) {
-  plant_context_ = &model.plant().GetMyMutableContextFromRoot(root_.get());
-  scene_graph_context_ = &model.scene_graph().GetMyContextFromRoot(*root_);
-}
-
 void ThreadContext::SetPositions(const Eigen::VectorXd& q) {
-  model_->plant().SetPositions(plant_context_, q);
-}
-
-const QueryObject<double>& ThreadContext::query_object() const {
-  return model_->scene_graph()
-      .get_query_output_port()
-      .Eval<QueryObject<double>>(*scene_graph_context_);
+  model_->plant().SetPositions(&context_.mutable_plant_context(), q);
 }
 
 const RigidTransformd& ThreadContext::EvalBodyPose(BodyIndex body) const {
-  return model_->plant().EvalBodyPoseInWorld(*plant_context_,
+  return model_->plant().EvalBodyPoseInWorld(context_.plant_context(),
                                              model_->plant().get_body(body));
 }
 
@@ -859,11 +839,6 @@ ContextPool::Lease ContextPool::Acquire(int count) const {
     contexts.push_back(slots_.back().get());
   }
   return Lease(this, std::move(contexts), std::move(slots));
-}
-
-int ContextPool::size() const {
-  std::lock_guard<std::mutex> guard(mutex_);
-  return static_cast<int>(slots_.size());
 }
 
 void ContextPool::Release(const std::vector<int>& slots) const {
@@ -1112,22 +1087,16 @@ CertifierOutput RunCertifier(const CertifierInput& input, ContextPool* pool) {
     // Report what the budget left uncovered as a non-definite finding at the
     // earliest uncovered time (truncate in parameter
     // order, report the remainder).
-    Finding finding;
-    finding.time = sink.pending_time();
-    finding.q = sink.pending_q();
-    finding.pair = pairs[sink.pending_pair()].id;
-    finding.motion_bound = 0.0;
-    finding.definite = false;
+    const PairRecord& pending_pair = pairs[sink.pending_pair()];
+    const Eigen::VectorXd q = sink.pending_q();
     Eigen::Vector3d nearest_a;
     Eigen::Vector3d nearest_b;
-    lease[0].SetPositions(finding.q);
-    finding.distance = input.oracle->SignedDistance(lease[0].query_object(),
-                                                    pairs[sink.pending_pair()],
-                                                    &nearest_a, &nearest_b);
-    finding.nearest_a_W = nearest_a;
-    finding.nearest_b_W = nearest_b;
+    lease[0].SetPositions(q);
+    const double distance = input.oracle->SignedDistance(
+        lease[0].query_object(), pending_pair, &nearest_a, &nearest_b);
     ++stats.narrowphase_queries;
-    findings.push_back(std::move(finding));
+    findings.push_back(MakeFinding(sink.pending_time(), q, pending_pair.id,
+                                   distance, 0.0, false, nearest_a, nearest_b));
   }
 
   std::stable_sort(findings.begin(), findings.end(),

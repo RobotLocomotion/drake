@@ -29,19 +29,10 @@ GeometryId AddVPolytopeObstacle(MultibodyPlant<double>* plant,
                                 const RigidTransformd& X_WG,
                                 const std::string& name) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  if (plant->is_finalized()) {
-    throw std::runtime_error(fmt::format(
-        "AddVPolytopeObstacle(): cannot add obstacle '{}' because the plant "
-        "is already finalized; register V-polytope obstacles before calling "
-        "MultibodyPlant::Finalize().",
-        name));
-  }
-  if (vpoly.ambient_dimension() != 3) {
-    throw std::runtime_error(fmt::format(
-        "AddVPolytopeObstacle(): obstacle '{}' has ambient dimension {}; only "
-        "3-dimensional V-polytopes can be registered as geometry.",
-        name, vpoly.ambient_dimension()));
-  }
+  // A non-3D V-polytope is refused by VPolytope::ToShapeConvex() below, and a
+  // finalized plant by MultibodyPlant::RegisterCollisionGeometry(); neither
+  // needs a check here. An empty vertex set reaches the proximity engine
+  // undetected, so it does.
   if (vpoly.vertices().cols() == 0) {
     throw std::runtime_error(fmt::format(
         "AddVPolytopeObstacle(): obstacle '{}' has an empty vertex set.",

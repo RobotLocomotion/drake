@@ -246,8 +246,7 @@ collision-free over its entire continuous time domain, rather than sampling it.
         .def("carveout_slack", &Class::carveout_slack, py::arg("pair_index"),
             cls_doc.carveout_slack.doc)
         .def("GetEntries", &Class::GetEntries, py::arg("pair_index"),
-            cls_doc.GetEntries.doc)
-        .def("num_entries", &Class::num_entries, cls_doc.num_entries.doc);
+            cls_doc.GetEntries.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -274,10 +273,6 @@ collision-free over its entire continuous time domain, rather than sampling it.
                 const std::vector<PairId>&>(&Class::ComputeMotionBoundTable),
             py::arg("lower"), py::arg("upper"), py::arg("constant_coordinates"),
             py::arg("pairs"), cls_doc.ComputeMotionBoundTable.doc_4args)
-        .def("body_spheres", &Class::body_spheres, py::arg("body"),
-            cls_doc.body_spheres.doc)
-        .def("body_sphere_geometries", &Class::body_sphere_geometries,
-            py::arg("body"), cls_doc.body_sphere_geometries.doc)
         .def("geometry_sphere", &Class::geometry_sphere, py::arg("id"),
             cls_doc.geometry_sphere.doc)
         .def("body_has_halfspace", &Class::body_has_halfspace, py::arg("body"),

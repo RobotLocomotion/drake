@@ -18,29 +18,30 @@
 #include "drake/geometry/query_object.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/planning/collision_checker_context.h"
 #include "drake/planning/continuous_collision/certificate.h"
 #include "drake/planning/continuous_collision/distance_oracle.h"
 #include "drake/planning/continuous_collision/motion_bound_table.h"
 #include "drake/planning/continuous_collision/options.h"
 #include "drake/planning/continuous_collision/piecewise_bezier_path.h"
 #include "drake/planning/robot_diagram.h"
-#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
 namespace internal {
 
-/* One thread's view of the model: a root diagram context plus the plant and
-scene-graph sub-contexts pulled out of it once, so the hot loop pays a single
-`SetPositions` per node and no context bookkeeping. */
+/* One thread's view of the model: a CollisionCheckerContext (which owns the
+root diagram context and the plant and scene-graph sub-contexts pulled out of
+it once), plus the two model queries the node loop makes of it. */
 class ThreadContext {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ThreadContext);
 
   /* Allocates a root context of `model`. `model` is aliased and must outlive
   this object. */
-  explicit ThreadContext(const RobotDiagram<double>& model);
+  explicit ThreadContext(const RobotDiagram<double>& model)
+      : model_(&model), context_(&model) {}
 
   /* The one FK trigger per node: sets the plant's generalized positions.
   Drake caches forward kinematics per context afterwards, so body poses and
@@ -49,7 +50,9 @@ class ThreadContext {
   void SetPositions(const Eigen::VectorXd& q);
 
   /* The scene graph's query object at the configuration last set. */
-  const geometry::QueryObject<double>& query_object() const;
+  const geometry::QueryObject<double>& query_object() const {
+    return context_.GetQueryObject();
+  }
 
   /* World pose of `body` at the configuration last set (Drake's cache
   computes it on first use and reuses it afterwards). */
@@ -58,9 +61,7 @@ class ThreadContext {
 
  private:
   const RobotDiagram<double>* model_{};
-  std::unique_ptr<systems::Context<double>> root_;
-  systems::Context<double>* plant_context_{};
-  const systems::Context<double>* scene_graph_context_{};
+  CollisionCheckerContext context_;
 };
 
 /* A checkout pool of ThreadContexts; construction allocates
@@ -91,7 +92,6 @@ class ContextPool {
     Lease& operator=(Lease&& other) noexcept;
     ~Lease();
 
-    int size() const { return static_cast<int>(contexts_.size()); }
     ThreadContext& operator[](int i) const { return *contexts_[i]; }
 
    private:
@@ -109,9 +109,6 @@ class ContextPool {
 
   /* Leases exactly `count` contexts, growing the pool if it is exhausted. */
   Lease Acquire(int count) const;
-
-  /* Number of contexts currently held by the pool (for tests/diagnostics). */
-  int size() const;
 
  private:
   void Release(const std::vector<int>& slots) const;

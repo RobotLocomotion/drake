@@ -213,7 +213,6 @@ class TestContinuousCollision(unittest.TestCase):
         self.assertGreaterEqual(table.carveout_slack(pair_index=0), 0.0)
         self.assertIsInstance(table.pair_is_static(pair_index=0), bool)
         self.assertIsInstance(table.GetEntries(pair_index=0), list)
-        self.assertGreaterEqual(table.num_entries(), 0)
 
     def test_certificate_round_trip(self):
         options = _serial_options()

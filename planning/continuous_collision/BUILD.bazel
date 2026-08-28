@@ -29,6 +29,19 @@ drake_cc_library(
     hdrs = ["numerics.h"],
 )
 
+# Shape classification shared by the oracle, the tau table and the
+# bounding-sphere pass. Header-only and build-system internal.
+drake_cc_library(
+    name = "shape_class",
+    hdrs = ["shape_class.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:unused",
+        "//geometry:shape_specification",
+    ],
+)
+
 drake_cc_library(
     name = "options",
     hdrs = ["options.h"],
@@ -56,6 +69,7 @@ drake_cc_library(
         "//common/trajectories:bspline_trajectory",
         "//common/trajectories:composite_trajectory",
         "//common/trajectories:piecewise_polynomial",
+        "//math:binomial_coefficient",
         "@fmt",
     ],
 )
@@ -92,6 +106,7 @@ drake_cc_library(
         "@eigen",
     ],
     implementation_deps = [
+        ":shape_class",
         "//geometry:geometry_roles",
         "//geometry:scene_graph_inspector",
         "//geometry:shape_specification",
@@ -112,7 +127,7 @@ drake_cc_library(
         "@eigen",
     ],
     implementation_deps = [
-        "//common:unused",
+        ":shape_class",
         "//geometry:scene_graph_inspector",
         "//geometry:shape_specification",
         "//geometry/proximity:polygon_surface_mesh",
@@ -164,8 +179,8 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//multibody/tree:multibody_tree_indexes",
+        "//planning:collision_checker_context",
         "//planning:robot_diagram",
-        "//systems/framework:context",
         "@eigen",
     ],
     implementation_deps = [
@@ -190,7 +205,7 @@ drake_cc_library(
         "@eigen",
     ],
     implementation_deps = [
-        "//common:unused",
+        ":shape_class",
         "//geometry:scene_graph",
         "//geometry:scene_graph_inspector",
         "//geometry:shape_specification",

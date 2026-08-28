@@ -6,7 +6,6 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -14,12 +13,12 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
-#include "drake/common/unused.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/continuous_collision/certifier_internal.h"
+#include "drake/planning/continuous_collision/shape_class.h"
 
 namespace drake {
 namespace planning {
@@ -29,6 +28,9 @@ namespace {
 using drake::geometry::GeometryId;
 using drake::multibody::BodyIndex;
 using drake::planning::RobotDiagram;
+using internal::Classify;
+using internal::kNumShapeClasses;
+using internal::ShapeClass;
 
 // ---------------------------------------------------------------------------
 // Per-pair oracle tolerance τ_p.
@@ -57,54 +59,14 @@ using drake::planning::RobotDiagram;
 //   | Cylinder  | 6e-6  | 1e-5  | 6e-6  | 2e-5  |       |       |       |
 //   | Ellipsoid | 9e-6  | 5e-6  | 9e-6  | 5e-5  | 2e-5  |       |       |
 //   | Mesh      | (= the Convex row)                    | 3e-15 |       |
-//   | Sphere    | 3e-15 | 6e-15 | 3e-6  | 5e-15 | 4e-5  | 3e-6  | 6e-15 |
+//   | Sphere    | 4e-15 | 6e-15 | 3e-6  | 5e-15 | 4e-5  | 3e-6  | 6e-15 |
 // clang-format on
-
-/* The closed set of shape classes the τ_p table knows. */
-enum class ShapeClass {
-  kSphere = 0,
-  kBox = 1,
-  kCapsule = 2,
-  kCylinder = 3,
-  kEllipsoid = 4,
-  kConvex = 5,
-  kMesh = 6,
-  kHalfSpace = 7,
-  kOther = 8,
-};
-constexpr int kNumShapeClasses = 9;
 
 /* Worst documented error over the whole table, charged to any shape the
  checker cannot classify. Such a shape never reaches the narrowphase, because
  the capability probe refuses unknown shapes at construction, but the default
  must still be the conservative one. */
 constexpr double kWorstDocumentedAccuracy = 5e-5;
-
-ShapeClass Classify(const drake::geometry::Shape& shape) {
-  return shape.Visit<ShapeClass>([](const auto& s) {
-    using S = std::decay_t<decltype(s)>;
-    drake::unused(s);
-    if constexpr (std::is_same_v<S, drake::geometry::Sphere>) {
-      return ShapeClass::kSphere;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Box>) {
-      return ShapeClass::kBox;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Capsule>) {
-      return ShapeClass::kCapsule;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Cylinder>) {
-      return ShapeClass::kCylinder;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Ellipsoid>) {
-      return ShapeClass::kEllipsoid;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Convex>) {
-      return ShapeClass::kConvex;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Mesh>) {
-      return ShapeClass::kMesh;
-    } else if constexpr (std::is_same_v<S, drake::geometry::HalfSpace>) {
-      return ShapeClass::kHalfSpace;
-    } else {
-      return ShapeClass::kOther;
-    }
-  });
-}
 
 using AccuracyTable =
     std::array<std::array<double, kNumShapeClasses>, kNumShapeClasses>;
@@ -119,7 +81,7 @@ const AccuracyTable& DocumentedAccuracyTable() {
     };
     using S = ShapeClass;
     set(S::kSphere, S::kSphere, 6e-15);
-    set(S::kSphere, S::kBox, 3e-15);
+    set(S::kSphere, S::kBox, 4e-15);
     set(S::kSphere, S::kCapsule, 6e-15);
     set(S::kSphere, S::kCylinder, 5e-15);
     set(S::kSphere, S::kEllipsoid, 4e-5);
@@ -184,13 +146,11 @@ std::vector<double> ComputeTauTable(const RobotDiagram<double>& model,
 // PaddingSpec mirrors drake::planning::CollisionChecker: a pair's effective
 // threshold is m_p = margin + padding(p), where padding comes from the dense
 // per-body-pair matrix when one is supplied and otherwise from the {env, self}
-// scalars. A pair is self iff both bodies are non-anchored and env otherwise,
-// where a body is anchored iff KinematicsEngine::CoordinatesAffectingPair(
-// world, body) is empty, which covers the world body and everything welded to
-// it, directly or transitively. The rule is pure topology, so padding never
-// depends on which trajectory is being checked; in particular the
-// constant-coordinate carve-out, which can make a moving body behave as if
-// welded for one trajectory, does not enter here.
+// scalars. A pair is self iff both bodies are non-anchored and env otherwise.
+// The rule is pure topology, so padding never depends on which trajectory is
+// being checked; in particular the constant-coordinate carve-out, which can
+// make a moving body behave as if welded for one trajectory, does not enter
+// here.
 
 std::vector<double> ComputePaddingTable(const KinematicsEngine& engine,
                                         const std::vector<PairRecord>& pairs,
@@ -210,10 +170,7 @@ std::vector<double> ComputePaddingTable(const KinematicsEngine& engine,
 
   std::vector<bool> anchored(num_bodies, false);
   for (int b = 0; b < num_bodies; ++b) {
-    anchored[b] =
-        engine
-            .CoordinatesAffectingPair(plant.world_body().index(), BodyIndex(b))
-            .empty();
+    anchored[b] = plant.IsAnchored(plant.get_body(BodyIndex(b)));
   }
 
   std::vector<double> result(pairs.size(), 0.0);
@@ -245,20 +202,18 @@ std::vector<double> ComputePaddingTable(const KinematicsEngine& engine,
 // ---------------------------------------------------------------------------
 
 internal::PrefilterTable ComputePrefilterTable(
-    const RobotDiagram<double>& model, const KinematicsEngine& engine,
-    const std::vector<PairRecord>& pairs) {
-  const drake::geometry::SceneGraphInspector<double>& inspector =
-      model.scene_graph().model_inspector();
+    const KinematicsEngine& engine, const std::vector<PairRecord>& pairs) {
   internal::PrefilterTable table;
   table.slot_a.resize(pairs.size(), -1);
   table.slot_b.resize(pairs.size(), -1);
   std::unordered_map<GeometryId, int> slot_of;
 
-  const auto slot = [&](GeometryId id, BodyIndex body) {
-    // HalfSpace has no bounding sphere, so such pairs skip the prefilter
-    // entirely and go straight to the analytic oracle route, which is cheap
-    // anyway.
-    if (Classify(inspector.GetShape(id)) == ShapeClass::kHalfSpace) return -1;
+  // HalfSpace has no bounding sphere, so such pairs skip the prefilter
+  // entirely and go straight to the analytic oracle route, which is cheap
+  // anyway. The oracle probe already found the halfspace: a pair is routed
+  // kHalfSpaceA/kHalfSpaceB exactly when geometry a/b is one.
+  const auto slot = [&](GeometryId id, BodyIndex body, bool is_half_space) {
+    if (is_half_space) return -1;
     const auto it = slot_of.find(id);
     if (it != slot_of.end()) return it->second;
     const BoundingSphere& sphere = engine.geometry_sphere(id);
@@ -270,8 +225,10 @@ internal::PrefilterTable ComputePrefilterTable(
   };
 
   for (int p = 0; p < static_cast<int>(pairs.size()); ++p) {
-    table.slot_a[p] = slot(pairs[p].id.a, pairs[p].id.body_a);
-    table.slot_b[p] = slot(pairs[p].id.b, pairs[p].id.body_b);
+    table.slot_a[p] = slot(pairs[p].id.a, pairs[p].id.body_a,
+                           pairs[p].route == DistanceRoute::kHalfSpaceA);
+    table.slot_b[p] = slot(pairs[p].id.b, pairs[p].id.body_b,
+                           pairs[p].route == DistanceRoute::kHalfSpaceB);
   }
   return table;
 }
@@ -332,7 +289,7 @@ class ContinuousCollisionChecker::Impl {
         padding_(ComputePaddingTable(engine_, pairs_, params.padding)),
         tau_base_(ComputeTauTable(*model_, pairs_,
                                   /* query_tolerance = */ 0.0)),
-        prefilter_(ComputePrefilterTable(*model_, engine_, pairs_)),
+        prefilter_(ComputePrefilterTable(engine_, pairs_)),
         pool_(*model_,
               std::max(1, default_options_.parallelism.num_threads())) {
     pair_ids_.reserve(pairs_.size());

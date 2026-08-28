@@ -4,10 +4,8 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -15,65 +13,25 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
-#include "drake/common/unused.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/continuous_collision/shape_class.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
 namespace {
 
-using drake::unused;
 using drake::geometry::GeometryId;
 using drake::geometry::QueryObject;
 using drake::geometry::SceneGraphInspector;
 using drake::math::RigidTransformd;
-
-/* The closed set of shape classes the oracle recognizes. Anything outside it
-is `kUnsupported` and is refused by the capability probe, mirroring the
-throw-on-unknown-shape rule ComputeBoundingSphere() uses. */
-enum class ShapeClass {
-  kSphere,
-  kBox,
-  kCapsule,
-  kCylinder,
-  kEllipsoid,
-  kConvex,
-  kMesh,
-  kHalfSpace,
-  kUnsupported,
-};
-
-ShapeClass Classify(const drake::geometry::Shape& shape) {
-  return shape.Visit<ShapeClass>([](const auto& s) {
-    using S = std::decay_t<decltype(s)>;
-    unused(s);
-    if constexpr (std::is_same_v<S, drake::geometry::Sphere>) {
-      return ShapeClass::kSphere;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Box>) {
-      return ShapeClass::kBox;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Capsule>) {
-      return ShapeClass::kCapsule;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Cylinder>) {
-      return ShapeClass::kCylinder;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Ellipsoid>) {
-      return ShapeClass::kEllipsoid;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Convex>) {
-      return ShapeClass::kConvex;
-    } else if constexpr (std::is_same_v<S, drake::geometry::Mesh>) {
-      return ShapeClass::kMesh;
-    } else if constexpr (std::is_same_v<S, drake::geometry::HalfSpace>) {
-      return ShapeClass::kHalfSpace;
-    } else {
-      return ShapeClass::kUnsupported;
-    }
-  });
-}
+using internal::Classify;
+using internal::ShapeClass;
 
 /* Everything the analytic halfspace fallback needs about the *non*-halfspace
 partner, extracted once by the probe. Only the fields relevant to `klass` are
@@ -246,10 +204,8 @@ std::string ClassName(ShapeClass klass) {
 /* "geometry_name (ShapeType)", for error messages and the report. */
 std::string Describe(const SceneGraphInspector<double>& inspector,
                      GeometryId id) {
-  std::ostringstream out;
-  out << inspector.GetName(id) << " (" << inspector.GetShape(id).type_name()
-      << ")";
-  return out.str();
+  return fmt::format("{} ({})", inspector.GetName(id),
+                     inspector.GetShape(id).type_name());
 }
 
 /* One row of the probe report: a distinct unordered shape-type combination
@@ -407,29 +363,22 @@ DistanceOracle::DistanceOracle(const RobotDiagram<double>& model,
   }
 
   // --- Render the report. --------------------------------------------------
-  std::ostringstream report;
-  report << "DistanceOracle capability probe: " << pairs_.size()
-         << " unfiltered pair(s), " << combos.size()
-         << " distinct shape-type combination(s), tolerance tau = "
-         << tolerance_ << " m.\n";
+  std::string report = fmt::format(
+      "DistanceOracle capability probe: {} unfiltered pair(s), {} distinct "
+      "shape-type combination(s), tolerance tau = {} m.\n",
+      pairs_.size(), combos.size(), tolerance_);
   for (const auto& [combo, row] : combos) {
-    report << "  " << ClassName(combo.first) << "-" << ClassName(combo.second)
-           << ": ";
-    switch (row.route) {
-      case DistanceRoute::kNative:
-        report << "native (ComputeSignedDistancePairClosestPoints, probed ok)";
-        break;
-      case DistanceRoute::kHalfSpaceA:
-      case DistanceRoute::kHalfSpaceB:
-        report << "halfspace analytic support-function fallback (exact)";
-        break;
-    }
-    report << "; " << row.pair_count << " pair(s)\n";
+    const char* const route =
+        (row.route == DistanceRoute::kNative)
+            ? "native (ComputeSignedDistancePairClosestPoints, probed ok)"
+            : "halfspace analytic support-function fallback (exact)";
+    report += fmt::format("  {}-{}: {}; {} pair(s)\n", ClassName(combo.first),
+                          ClassName(combo.second), route, row.pair_count);
   }
   for (const std::string& name : mesh_names) {
-    report << "  Mesh " << name << ": certified as its convex hull\n";
+    report += fmt::format("  Mesh {}: certified as its convex hull\n", name);
   }
-  impl->report = report.str();
+  impl->report = std::move(report);
 
   impl_ = std::move(impl);
 }

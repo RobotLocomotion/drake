@@ -23,13 +23,13 @@
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/planning/continuous_collision/shape_class.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
 
 using drake::geometry::GeometryId;
-using drake::geometry::HalfSpace;
 using drake::geometry::Role;
 using drake::geometry::Shape;
 using drake::math::RigidTransform;
@@ -39,16 +39,7 @@ using drake::multibody::JointIndex;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::ScrewJoint;
 using drake::multibody::WeldJoint;
-
-namespace {
-
-constexpr double kTwoPi = 6.283185307179586476925286766559;
-
-bool IsHalfSpace(const Shape& shape) {
-  return dynamic_cast<const HalfSpace*>(&shape) != nullptr;
-}
-
-}  // namespace
+using internal::IsHalfSpace;
 
 MotionBoundTable::MotionBoundTable(std::vector<int> row_start,
                                    std::vector<int> coord,
@@ -354,8 +345,6 @@ void KinematicsEngine::BuildGeometry() {
   const MultibodyPlant<double>& plant = *plant_;
   const auto& inspector = model_->scene_graph().model_inspector();
 
-  body_spheres_.assign(num_bodies_, {});
-  body_sphere_geoms_.assign(num_bodies_, {});
   body_radius_.assign(num_bodies_, 0.0);
   body_has_halfspace_.assign(num_bodies_, false);
   body_halfspace_name_.assign(num_bodies_, std::string{});
@@ -393,8 +382,6 @@ void KinematicsEngine::BuildGeometry() {
       // triangle inequality on the sphere that contains it.
       body_radius_[b] =
           std::max(body_radius_[b], sphere.center_L.norm() + sphere.radius);
-      body_sphere_geoms_[b].push_back(gid);
-      body_spheres_[b].push_back(sphere);
       geometry_spheres_.emplace(gid, sphere);
     }
   }
@@ -567,7 +554,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
       case JointKind::kScrew:
         // Drake's screw pitch is meters of travel per full revolution, so the
         // helix advances |θ|·|pitch| / 2π meters.
-        box_hop[k] = abs_max(ps) * std::abs(rec.screw_pitch) / kTwoPi;
+        box_hop[k] = abs_max(ps) * std::abs(rec.screw_pitch) / (2 * M_PI);
         break;
       case JointKind::kUnsupported: {
         for (int c = ps; c < ps + rec.num_positions; ++c) {
@@ -847,7 +834,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
               lam_tilde = reach();
               break;
             case CoordRule::kScrewCoord:
-              lam_tilde = reach() + std::abs(rec.screw_pitch) / kTwoPi;
+              lam_tilde = reach() + std::abs(rec.screw_pitch) / (2 * M_PI);
               break;
             case CoordRule::kQuaternion: {
               const double m = quat_min_norm[k];
@@ -882,7 +869,7 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
             lam = (c == ps + 2) ? reach() : 1.0;
             break;
           case JointKind::kScrew:
-            lam = reach() + std::abs(rec.screw_pitch) / kTwoPi;
+            lam = reach() + std::abs(rec.screw_pitch) / (2 * M_PI);
             break;
           case JointKind::kWeld:
           case JointKind::kUnsupported:
@@ -902,18 +889,6 @@ MotionBoundTable KinematicsEngine::ComputeMotionBoundTable(
   }
   return MotionBoundTable(std::move(row_start), std::move(coord),
                           std::move(lambda), std::move(carveout_slack));
-}
-
-const std::vector<BoundingSphere>& KinematicsEngine::body_spheres(
-    BodyIndex body) const {
-  DRAKE_THROW_UNLESS(body.is_valid() && body < num_bodies_);
-  return body_spheres_[body];
-}
-
-const std::vector<GeometryId>& KinematicsEngine::body_sphere_geometries(
-    BodyIndex body) const {
-  DRAKE_THROW_UNLESS(body.is_valid() && body < num_bodies_);
-  return body_sphere_geoms_[body];
 }
 
 const BoundingSphere& KinematicsEngine::geometry_sphere(GeometryId id) const {

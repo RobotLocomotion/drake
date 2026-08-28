@@ -18,6 +18,7 @@
 #include "drake/common/trajectories/bspline_trajectory.h"
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/math/binomial_coefficient.h"
 
 namespace drake {
 namespace planning {
@@ -25,13 +26,12 @@ namespace continuous_collision {
 namespace {
 
 using drake::NiceTypeName;
+using drake::math::BinomialCoefficient;
 using drake::trajectories::BezierCurve;
 using drake::trajectories::BsplineTrajectory;
 using drake::trajectories::CompositeTrajectory;
 using drake::trajectories::PiecewisePolynomial;
 using drake::trajectories::Trajectory;
-
-constexpr double kTwoPi = 6.2831853071795864769252867665590;
 
 /* Relative slack when clamping an evaluation parameter back onto the closed
 domain. Callers legitimately land a hair outside after their own arithmetic;
@@ -42,20 +42,6 @@ constexpr double kParameterSlack = 1e-12;
 trajectory, so consecutive segments meet exactly in exact arithmetic; this
 absorbs only round-off in the caller's own time bookkeeping. */
 constexpr double kTimeContiguitySlack = 1e-9;
-
-/* Pascal's triangle up to row `m`; table(j, a) = C(j, a) for a <= j, 0
-otherwise. Exact in double for the degrees this file accepts (the default cap
-is 10; C(10, 5) = 252). */
-Eigen::MatrixXd BinomialTable(int m) {
-  Eigen::MatrixXd table = Eigen::MatrixXd::Zero(m + 1, m + 1);
-  for (int j = 0; j <= m; ++j) {
-    table(j, 0) = 1.0;
-    for (int a = 1; a <= j; ++a) {
-      table(j, a) = table(j - 1, a - 1) + (a <= j - 1 ? table(j - 1, a) : 0.0);
-    }
-  }
-  return table;
-}
 
 /* Converts one BsplineTrajectory into Bézier segments (trajectory
 normalization, item 4).
@@ -190,7 +176,6 @@ void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
                       "(source segment index {}) has non-positive duration {}.",
                       k, source_index, duration));
     }
-    const Eigen::MatrixXd binomial = BinomialTable(m);
     BezierSegment segment;
     segment.t_start = t_start;
     segment.t_end = t_end;
@@ -209,7 +194,9 @@ void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
       for (int j = 0; j <= m; ++j) {
         double sum = 0.0;
         for (int a = 0; a <= j; ++a) {
-          sum += (binomial(j, a) / binomial(m, a)) * alpha[a];
+          sum += (static_cast<double>(BinomialCoefficient(j, a)) /
+                  BinomialCoefficient(m, a)) *
+                 alpha[a];
         }
         segment.control_points(r, j) = sum;
       }
@@ -345,7 +332,7 @@ void ValidateSegments(int num_positions, const Options& options,
       const double raw_gap = next(c, 0) - previous(c, previous.cols() - 1);
       double gap = raw_gap;
       if (is_continuous_revolute[c]) {
-        gap -= kTwoPi * std::round(gap / kTwoPi);
+        gap -= 2 * M_PI * std::round(gap / (2 * M_PI));
       }
       if (std::abs(gap) > options.continuity_tolerance) {
         const std::string modulo = is_continuous_revolute[c]
@@ -464,27 +451,20 @@ Eigen::VectorXd PiecewiseBezierPath::Value(double t) const {
                     t, t0, tf));
   }
   const double clamped = std::clamp(t, t0, tf);
-  // Last segment whose start time is at or before `clamped`. At an interior
-  // junction the later segment wins, matching
-  // drake::trajectories::PiecewiseTrajectory::get_segment_index(). The choice
-  // is observable only when a junction carries a legitimate 2πk offset in a
-  // continuous-revolute coordinate, where the two sides are different
-  // representatives of the same configuration.
-  int low = 0;
-  int high = static_cast<int>(segments_.size()) - 1;
-  while (low < high) {
-    const int mid = low + (high - low + 1) / 2;
-    if (segments_[mid].t_start <= clamped) {
-      low = mid;
-    } else {
-      high = mid - 1;
-    }
-  }
-  const BezierSegment& segment = segments_[low];
+  // Last segment whose start time is at or before `clamped`; at an interior
+  // junction the later segment wins.
+  const auto next =
+      std::upper_bound(segments_.begin(), segments_.end(), clamped,
+                       [](double time, const BezierSegment& seg) {
+                         return time < seg.t_start;
+                       });
+  const int index = static_cast<int>(next - segments_.begin()) - 1;
+  DRAKE_DEMAND(index >= 0);
+  const BezierSegment& segment = segments_[index];
   const double duration = segment.t_end - segment.t_start;
   const double s =
       (duration > 0.0) ? (clamped - segment.t_start) / duration : 0.0;
-  return EvaluateSegment(low, std::clamp(s, 0.0, 1.0));
+  return EvaluateSegment(index, std::clamp(s, 0.0, 1.0));
 }
 
 Eigen::VectorXd PiecewiseBezierPath::EvaluateSegment(int segment_index,
