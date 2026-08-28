@@ -69,24 +69,6 @@ class WeldJoint final : public Joint<T> {
   }
 
  private:
-  int do_get_velocity_start() const final {
-    // Since WeldJoint has no state, the start index has no meaning. However,
-    // we let its decide the return value for this case (this has to do with
-    // allowing zero sized Eigen blocks).
-    return get_mobilizer().velocity_start_in_v();
-  }
-
-  int do_get_num_velocities() const final { return 0; }
-
-  int do_get_position_start() const final {
-    // Since WeldJoint has no state, the start index has no meaning. However,
-    // we let it decide the return value for this case (this has to do with
-    // allowing zero sized Eigen blocks).
-    return get_mobilizer().position_start_in_q();
-  }
-
-  int do_get_num_positions() const final { return 0; }
-
   std::string do_get_position_suffix(int index) const final {
     return get_mobilizer().position_suffix(index);
   }

@@ -157,6 +157,38 @@ TestModel MakeModel(bool fuse_welded_links) {
   return m;
 }
 
+/* Verifies the user-facing Joint coordinate accessors for a WeldJoint that is
+modeled by a zero-dof mobilizer without fusion, but is unmodeled when its links
+are fused into a single Mobod. */
+GTEST_TEST(FusedTest, UnmodeledWeldJointCoordinateStarts) {
+  const TestModel unfused_model = MakeModel(false);
+  const TestModel fused_model = MakeModel(true);
+
+  auto verify_weld_starts = [](const TestModel& model, bool is_fused,
+                               int expected_start) {
+    const auto& graph = GetInternalTree(*model.plant).graph();
+    for (const char* name : {"weld12", "weld23", "weldW4"}) {
+      SCOPED_TRACE(fmt::format("{} model, joint {}",
+                               is_fused ? "fused" : "unfused", name));
+      const auto& weld = model.plant->GetJointByName<WeldJoint>(name);
+      const auto& graph_joint = graph.joint_by_index(weld.index());
+
+      // Confirm that the fixtures exercise both the modeled and unmodeled
+      // paths. All three welds have the same q and v start within each model.
+      EXPECT_EQ(graph_joint.mobod_index().is_valid(), !is_fused);
+      EXPECT_EQ(weld.position_start(), expected_start);
+      EXPECT_EQ(weld.velocity_start(), expected_start);
+    }
+  };
+
+  // Without fusion, every modeled zero-dof weld follows the model's single
+  // revolute coordinate. With fusion, every unmodeled weld inherits the start
+  // of its fused Mobod; both fused Mobods start at zero. This includes weldW4,
+  // whose links are fused into the World Mobod.
+  verify_weld_starts(unfused_model, false, 1);
+  verify_weld_starts(fused_model, true, 0);
+}
+
 // Sets the revolute joint angle (q) and angular velocity (v) in the model.
 void SetState(const TestModel& m, double angle_rad, double angular_vel) {
   m.revolute->set_angle(m.context.get(), angle_rad);
