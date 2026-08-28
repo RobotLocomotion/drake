@@ -6,12 +6,10 @@
 // The corpus is three certified runs: one hand-built world whose two pairs are
 // built to certify at very different depths, plus two small random worlds.
 // Below it is a table of mutations, each applied to every corpus case; a
-// mutation any case accepts is a hole in the audit. certifier_test.cc covers a
-// handful of single-case mutations on its own world, so this file is the sweep
-// plus the mutation classes that need a designed pair structure (record
-// relabelling) or a second run (kFindFirstViolation and non-free verdicts).
+// mutation any case accepts is a hole in the audit.
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -22,57 +20,34 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/parallelism.h"
-#include "drake/common/trajectories/bezier_curve.h"
-#include "drake/geometry/shape_specification.h"
-#include "drake/math/rigid_transform.h"
-#include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/spatial_inertia.h"
-#include "drake/planning/continuous_collision/continuous_collision_checker.h"
-#include "drake/planning/robot_diagram.h"
-#include "drake/planning/robot_diagram_builder.h"
+#include "drake/planning/continuous_collision/test/test_utilities.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
 namespace {
 
-using drake::Parallelism;
-using drake::geometry::Box;
-using drake::geometry::Capsule;
-using drake::geometry::Shape;
-using drake::geometry::Sphere;
-using drake::math::RigidTransformd;
-using drake::math::RollPitchYawd;
-using drake::multibody::CoulombFriction;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::PrismaticJoint;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::planning::RobotDiagram;
-using drake::planning::RobotDiagramBuilder;
-using drake::trajectories::BezierCurve;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using test::BezierCurve;
+using test::Box;
+using test::Friction;
+using test::Inertia;
+using test::MakeRandomWorld;
+using test::MultibodyPlant;
+using test::Parallelism;
+using test::PrismaticJoint;
+using test::RigidBody;
+using test::RigidTransformd;
+using test::RobotDiagram;
+using test::RobotDiagramBuilder;
+using test::Sphere;
 
 // A non-zero margin and a non-zero environment padding, so m_p = margin +
 // padding is a number a tamperer could plausibly try to lower and the
 // "threshold below what the options call for" branch has something to bite on.
 constexpr double kMargin = 0.005;
 constexpr double kEnvPadding = 0.002;
-
-CoulombFriction<double> Friction() {
-  return CoulombFriction<double>(1.0, 1.0);
-}
-
-SpatialInertia<double> Inertia() {
-  return SpatialInertia<double>::SolidSphereWithMass(1.0, 0.05);
-}
 
 Options AuditOptions() {
   Options options;
@@ -82,20 +57,14 @@ Options AuditOptions() {
   return options;
 }
 
-std::unique_ptr<ContinuousCollisionChecker> MakeChecker(
+std::unique_ptr<ContinuousCollisionChecker> MakeAuditChecker(
     std::shared_ptr<const RobotDiagram<double>> model) {
-  ContinuousCollisionChecker::Params params;
-  params.model = std::move(model);
-  params.default_options = AuditOptions();
-  params.padding.env_padding = kEnvPadding;
-  params.padding.self_padding = kEnvPadding;
-  return std::make_unique<ContinuousCollisionChecker>(params);
+  PaddingSpec padding;
+  padding.env_padding = kEnvPadding;
+  padding.self_padding = kEnvPadding;
+  return test::MakeCheckerPtr(std::move(model), AuditOptions(), padding);
 }
 
-// ---------------------------------------------------------------------------
-// World 1 (hand-built): a designed pair structure.
-// ---------------------------------------------------------------------------
-//
 // A 2-dof Cartesian gantry (prismatic x, prismatic y) carrying a 5 mm sphere,
 // with exactly two unfiltered pairs:
 //
@@ -134,83 +103,6 @@ std::unique_ptr<RobotDiagram<double>> MakeDesignedWorld() {
   return builder.Build();
 }
 
-// ---------------------------------------------------------------------------
-// Worlds 2, 3 (small random): a trimmed copy of the generator in
-// soundness_fuzz_test.cc.
-// ---------------------------------------------------------------------------
-
-std::unique_ptr<RobotDiagram<double>> MakeRandomWorld(uint64_t seed) {
-  std::mt19937_64 rng(seed);
-  const auto uniform = [&rng](double lo, double hi) {
-    return std::uniform_real_distribution<double>(lo, hi)(rng);
-  };
-  // Named locals throughout: sibling constructor arguments are evaluated in an
-  // unspecified order, so drawing variates inline would make these worlds, and
-  // therefore which seeds land in the corpus, depend on the toolchain.
-  const auto vector3 = [&uniform](double lo, double hi) {
-    const double x = uniform(lo, hi);
-    const double y = uniform(lo, hi);
-    const double z = uniform(lo, hi);
-    return Vector3d(x, y, z);
-  };
-  const auto direction = [&vector3]() {
-    Vector3d v;
-    do {
-      v = vector3(-1, 1);
-    } while (v.norm() < 1e-3 || v.norm() > 1.0);
-    return v.normalized();
-  };
-  const auto offset = [&direction, &uniform](double lo, double hi) {
-    const Vector3d unit = direction();
-    const double length = uniform(lo, hi);
-    return Vector3d(unit * length);
-  };
-
-  RobotDiagramBuilder<double> builder;
-  MultibodyPlant<double>& plant = builder.plant();
-  std::vector<const RigidBody<double>*> links;
-  for (int i = 0; i < 3; ++i) {
-    const std::string name = "link" + std::to_string(i);
-    const RigidBody<double>& body = plant.AddRigidBody(name, Inertia());
-    const RigidBody<double>& parent =
-        (i == 0) ? plant.world_body() : *links.back();
-    const Vector3d rpy_PF = vector3(-0.5, 0.5);
-    const RigidTransformd X_PF(RollPitchYawd(rpy_PF), offset(0.25, 0.35));
-    const Vector3d axis = direction();
-    if (i == 1) {
-      plant.AddJoint<PrismaticJoint>("j" + std::to_string(i), parent, X_PF,
-                                     body, RigidTransformd(), axis);
-    } else {
-      plant.AddJoint<RevoluteJoint>("j" + std::to_string(i), parent, X_PF, body,
-                                    RigidTransformd(), axis);
-    }
-    const RigidTransformd X_LG(offset(0.12, 0.18));
-    const double radius = uniform(0.02, 0.04);
-    const double length = uniform(0.05, 0.10);
-    plant.RegisterCollisionGeometry(body, X_LG, Capsule(radius, length),
-                                    name + "_geom", Friction());
-    links.push_back(&body);
-  }
-  for (int i = 0; i < 3; ++i) {
-    const std::string name = "obstacle" + std::to_string(i);
-    const RigidBody<double>& body = plant.AddRigidBody(name, Inertia());
-    const Vector3d rpy_W = vector3(-3, 3);
-    plant.WeldFrames(plant.world_frame(), body.body_frame(),
-                     RigidTransformd(RollPitchYawd(rpy_W), offset(0.3, 0.8)));
-    if (i % 2 == 0) {
-      const Vector3d size = vector3(0.08, 0.2);
-      plant.RegisterCollisionGeometry(body, RigidTransformd(),
-                                      Box(size.x(), size.y(), size.z()),
-                                      name + "_geom", Friction());
-    } else {
-      plant.RegisterCollisionGeometry(body, RigidTransformd(),
-                                      Sphere(uniform(0.05, 0.11)),
-                                      name + "_geom", Friction());
-    }
-  }
-  return builder.Build();
-}
-
 // A cubic Bézier whose control points are equally spaced from `start` to `end`.
 // It is the straight segment, but with four control points, so a mutation can
 // perturb an interior one without moving either endpoint; moving an endpoint
@@ -223,10 +115,6 @@ Eigen::MatrixXd CubicControlPoints(const VectorXd& start, const VectorXd& end) {
   }
   return points;
 }
-
-// ---------------------------------------------------------------------------
-// The corpus.
-// ---------------------------------------------------------------------------
 
 struct AuditCase {
   std::string name;
@@ -257,47 +145,49 @@ struct AuditCase {
 // certify is dropped rather than added, so CorpusIsBuiltAndVerifies is the
 // single place that reports a short corpus. No gtest assertion belongs here:
 // this initializer runs inside whichever test touches Corpus() first, which
-// changes under --gtest_filter or --gtest_shuffle, and a failure charged to an
-// arbitrary test is a failure nobody can read.
+// changes under --gtest_filter or --gtest_shuffle.
 //
 // The vector is allocated and never freed because it owns RobotDiagrams and
-// checkers whose destruction would otherwise race Drake's static teardown. LSan
-// will report it if an asan preset is ever added.
+// checkers whose destruction would otherwise race Drake's static teardown.
 const std::vector<std::unique_ptr<AuditCase>>& Corpus() {
   static const std::vector<std::unique_ptr<AuditCase>>* corpus = [] {
     auto* cases = new std::vector<std::unique_ptr<AuditCase>>();
     const Options options = AuditOptions();
+    const auto add = [&cases, &options](std::unique_ptr<AuditCase> entry) {
+      const BezierCurve<double> trajectory(0.0, 1.0, entry->control_points);
+      const CertificationResult result =
+          entry->checker->CheckTrajectory(trajectory, options);
+      if (result.verdict != Verdict::kCertifiedFree) return;
+      entry->path = entry->checker->Normalize(trajectory, options);
+      entry->certificate = *result.certificate;
+      cases->push_back(std::move(entry));
+    };
 
-    // 1. The designed world.
-    {
+    {  // 1. The designed world.
       auto entry = std::make_unique<AuditCase>();
       entry->name = "designed_gantry";
       entry->designed = true;
       entry->model = MakeDesignedWorld();
-      entry->checker = MakeChecker(entry->model);
+      entry->checker = MakeAuditChecker(entry->model);
       VectorXd start(2), end(2);
       start << -0.3, 0.0;
       end << 0.3, 0.0;
       entry->control_points = CubicControlPoints(start, end);
-      const BezierCurve<double> trajectory(0.0, 1.0, entry->control_points);
-      const CertificationResult result =
-          entry->checker->CheckTrajectory(trajectory, options);
-      if (result.verdict == Verdict::kCertifiedFree &&
-          result.certificate.has_value()) {
-        entry->path = entry->checker->Normalize(trajectory, options);
-        entry->certificate = *result.certificate;
-        cases->push_back(std::move(entry));
-      }
+      add(std::move(entry));
     }
 
     // 2. Small random worlds: the first two seeds whose trajectory certifies.
     //    Sweeping deterministically, rather than hard-coding lucky seeds, still
     //    fills the corpus if the geometry ever shifts underneath it.
-    for (uint64_t seed = 1; seed <= 40 && cases->size() < 3; ++seed) {
+    for (uint64_t seed = 1; seed <= 60 && cases->size() < 3; ++seed) {
       auto entry = std::make_unique<AuditCase>();
       entry->name = "random_world_seed_" + std::to_string(seed);
-      entry->model = MakeRandomWorld(seed);
-      entry->checker = MakeChecker(entry->model);
+      test::WorldSpec spec;
+      spec.num_links = 3;
+      spec.num_obstacles = 3;
+      spec.floor = false;
+      entry->model = MakeRandomWorld(seed, spec);
+      entry->checker = MakeAuditChecker(entry->model);
       const int n = entry->model->plant().num_positions();
       VectorXd start = VectorXd::Zero(n);
       VectorXd end = VectorXd::Zero(n);
@@ -306,13 +196,7 @@ const std::vector<std::unique_ptr<AuditCase>>& Corpus() {
         end[i] = start[i] + 0.25;
       }
       entry->control_points = CubicControlPoints(start, end);
-      const BezierCurve<double> trajectory(0.0, 1.0, entry->control_points);
-      const CertificationResult result =
-          entry->checker->CheckTrajectory(trajectory, options);
-      if (result.verdict != Verdict::kCertifiedFree) continue;
-      entry->path = entry->checker->Normalize(trajectory, options);
-      entry->certificate = *result.certificate;
-      cases->push_back(std::move(entry));
+      add(std::move(entry));
     }
     return cases;
   }();
@@ -396,8 +280,6 @@ GTEST_TEST(CertificateAuditTest, DesignedWorldHasTheIntendedPairStructure) {
       << "the designed world should present exactly the tool/plate and "
          "tool/ball pairs";
   const std::vector<int> counts = RecordsPerPair(entry);
-  const int hardest = *std::max_element(counts.begin(), counts.end());
-  const int easiest = *std::min_element(counts.begin(), counts.end());
   // The far pair certifies at the root: exactly one record, for the path's one
   // segment. The 12 mm pair needs Δ = w_x < 0.012 − 0.007 − τ ≈ 0.005 against
   // 0.6 m of travel, i.e. a node half-width of 0.3/2^d < 0.005 => d = 6, and a
@@ -405,8 +287,8 @@ GTEST_TEST(CertificateAuditTest, DesignedWorldHasTheIntendedPairStructure) {
   // Pinned exactly, so a regression that loosened or tightened the motion bound
   // by even one bisection level shows up here rather than hiding behind an
   // inequality.
-  EXPECT_EQ(easiest, 1);
-  EXPECT_EQ(hardest, 64);
+  EXPECT_EQ(*std::min_element(counts.begin(), counts.end()), 1);
+  EXPECT_EQ(*std::max_element(counts.begin(), counts.end()), 64);
   // Every pair's records must claim the same, correct threshold.
   for (const CertificateRecord& record : entry.certificate.records) {
     EXPECT_DOUBLE_EQ(record.threshold, kMargin + kEnvPadding);
@@ -435,11 +317,20 @@ void ExpectRejectedEverywhere(const std::string& what, const Mutation& mutate) {
                         << "' was never applicable to any corpus case";
 }
 
-GTEST_TEST(CertificateAuditTest, RejectsInflatedClearance) {
+GTEST_TEST(CertificateAuditTest, RejectsTamperedClearance) {
   ExpectRejectedEverywhere("inflate phi_hat",
                            [](const AuditCase&, Certificate* certificate) {
                              if (certificate->records.empty()) return false;
                              certificate->records.front().phi_hat += 1.0;
+                             return true;
+                           });
+  // ... and the mirror image: a record whose claimed clearance no longer
+  // exceeds its own threshold proves nothing.
+  ExpectRejectedEverywhere("shrink phi_hat to the threshold",
+                           [](const AuditCase&, Certificate* certificate) {
+                             if (certificate->records.empty()) return false;
+                             certificate->records.front().phi_hat =
+                                 certificate->records.front().threshold;
                              return true;
                            });
 }
@@ -468,7 +359,7 @@ GTEST_TEST(CertificateAuditTest, RejectsShiftedRepresentativeConfiguration) {
       });
 }
 
-GTEST_TEST(CertificateAuditTest, RejectsDeletedRecord) {
+GTEST_TEST(CertificateAuditTest, RejectsMissingRecords) {
   // The certifier's intervals tile the domain disjointly, so deleting any
   // record punches a coverage hole, even one whose own arithmetic was sound.
   ExpectRejectedEverywhere(
@@ -477,9 +368,6 @@ GTEST_TEST(CertificateAuditTest, RejectsDeletedRecord) {
         certificate->records.erase(certificate->records.begin());
         return true;
       });
-}
-
-GTEST_TEST(CertificateAuditTest, RejectsTruncatedRecords) {
   ExpectRejectedEverywhere(
       "truncate the record list",
       [](const AuditCase&, Certificate* certificate) {
@@ -501,6 +389,17 @@ GTEST_TEST(CertificateAuditTest, RejectsLoweredThreshold) {
         const int pair = certificate->records.front().pair_index;
         for (CertificateRecord& record : certificate->records) {
           if (record.pair_index == pair) record.threshold -= 0.003;
+        }
+        return true;
+      });
+  // Self-consistency is not enough either: a certificate whose records *all*
+  // agree on a threshold nobody asked for proves a claim nobody asked for.
+  ExpectRejectedEverywhere(
+      "lower every threshold uniformly",
+      [](const AuditCase&, Certificate* certificate) {
+        if (certificate->records.empty()) return false;
+        for (CertificateRecord& record : certificate->records) {
+          record.threshold = -1e9;
         }
         return true;
       });
@@ -573,18 +472,12 @@ GTEST_TEST(CertificateAuditTest, RejectsPerturbedPath) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 3. What a valid transformation looks like.
-// ---------------------------------------------------------------------------
-
 GTEST_TEST(CertificateAuditTest, AcceptsReorderedRecords) {
   // Re-ordering is the one item on the classic mutation list that must NOT be
-  // rejected: a permutation of a valid proof is still a valid proof. The replay
-  // sorts the intervals itself before checking coverage and every record is
-  // checked independently, so order carries no information. Pinning this keeps
-  // a future "records must arrive sorted" shortcut from being mistaken for a
-  // security property, and it rules out a verifier that rejects everything,
-  // which would pass every mutation above.
+  // rejected: a permutation of a valid proof is still a valid proof. Pinning
+  // this keeps a future "records must arrive sorted" shortcut from being
+  // mistaken for a security property, and it rules out a verifier that rejects
+  // everything, which would pass every mutation above.
   std::mt19937 rng(20260826);
   int shuffled = 0;
   for (const auto& entry : Corpus()) {
@@ -601,7 +494,7 @@ GTEST_TEST(CertificateAuditTest, AcceptsReorderedRecords) {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Runs whose certificate is not a proof.
+// 3. Runs whose certificate is not a proof.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(CertificateAuditTest, NoCertificateUnlessRequested) {
@@ -616,15 +509,6 @@ GTEST_TEST(CertificateAuditTest, NoCertificateUnlessRequested) {
   EXPECT_FALSE(result.certificate.has_value());
 }
 
-// The designed world again, but driven straight through the 1 mm plate at
-// y = 0.0175: q(t) sweeps y from 0 to 0.05 while x crosses the plate's span.
-Eigen::MatrixXd ViolatingControlPoints() {
-  VectorXd start(2), end(2);
-  start << -0.3, 0.0;
-  end << 0.3, 0.05;
-  return CubicControlPoints(start, end);
-}
-
 GTEST_TEST(CertificateAuditTest, NonFreeVerdictCertificateIsNotAProof) {
   // The certificate field is present whenever emit_certificate was asked for,
   // and the records the run did make are individually valid. A run that found a
@@ -634,7 +518,13 @@ GTEST_TEST(CertificateAuditTest, NonFreeVerdictCertificateIsNotAProof) {
   ASSERT_FALSE(Corpus().empty());
   const AuditCase& entry = *Corpus().front();
   const Options options = AuditOptions();
-  const BezierCurve<double> trajectory(0.0, 1.0, ViolatingControlPoints());
+  // The designed world driven straight through the 1 mm plate at y = 0.0175:
+  // q(t) sweeps y from 0 to 0.05 while x crosses the plate's span.
+  VectorXd start(2), end(2);
+  start << -0.3, 0.0;
+  end << 0.3, 0.05;
+  const BezierCurve<double> trajectory(0.0, 1.0,
+                                       CubicControlPoints(start, end));
   const PiecewiseBezierPath path =
       entry.checker->Normalize(trajectory, options);
 

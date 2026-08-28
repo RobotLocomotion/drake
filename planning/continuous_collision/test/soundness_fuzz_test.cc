@@ -1,15 +1,12 @@
 // End-to-end soundness fuzz: random worlds × random trajectories, cross-checked
-// three ways.
-//
-//   * a sampled configuration whose clearance reaches the threshold refutes a
-//     `kCertifiedFree` verdict, so every certified case is searched for one
-//     (10⁴ configurations, 10⁵ on a subset) and its certificate is replayed
-//     independently;
-//   * every definite `Finding` is re-evaluated at its witness configuration,
-//     from a context this run never touched, and must really violate;
-//   * every non-definite `Finding` claiming to be a resolution-floor grazing
-//     record must be backed by a clearance within 10·(τ_p + ε) of the
-//     threshold near the reported time.
+// three ways. A sampled configuration whose clearance reaches the threshold
+// refutes a `kCertifiedFree` verdict, so every certified case is searched for
+// one (10⁴ configurations, 10⁵ on a subset) and its certificate is replayed
+// independently; every definite `Finding` is re-evaluated at its witness
+// configuration, from a context this run never touched, and must really
+// violate; and every non-definite `Finding` claiming to be a resolution-floor
+// grazing record must be backed by a clearance within 10·(τ_p + ε) of the
+// threshold near the reported time.
 //
 // A failure here is a soundness bug, not a reason to loosen the test. Every
 // message carries a complete repro: seed, world recipe, control points.
@@ -84,20 +81,15 @@ using Eigen::VectorXd;
 
 #ifdef DRAKE_CCD_FUZZ_SMALL_CORPUS
 // A quarter corpus for instrumented builds, where the dense cross-check runs
-// one to two orders of magnitude slower than in Release (BUILD.bazel selects
-// this on //tools:using_sanitizer and //tools:using_memcheck). The case
-// *recipes* do not change, so the shrunk corpus is a prefix of the full one and
-// a failure it finds reproduces under the full run at the same case index.
+// one to two orders of magnitude slower than in Release. The case *recipes* do
+// not change, so the shrunk corpus is a prefix of the full one and a failure it
+// finds reproduces under the full run at the same case index.
 constexpr int kNumCases = 50;
 #else
 // The gate is CI wall time, not case count: the dominant cost is the dense
 // cross-check (~10⁷ signed-distance queries per run), not certification. Two
-// hundred cases stay an order of magnitude inside the ~3 min budget in
-// Release, which is the only flavor with that much room. asan and lsan are
-// excluded outright (BUILD.bazel tags), and the instrumented flavors that do
-// run the fuzz take the quarter corpus above, with the timeout raised to
-// "long" to absorb the rest. Composition is asserted as fractions of kNumCases
-// so both corpus sizes are held to the same standard.
+// hundred cases stay an order of magnitude inside the ~3 min budget in Release,
+// which is the only flavor with that much room.
 constexpr int kNumCases = 200;
 #endif
 
@@ -115,10 +107,9 @@ constexpr int kMinScanQueries = 500 * kNumCases;
 
 constexpr uint64_t kBaseSeed = 0x5eed'0000'0000'0000ull;
 // kDenseSamples resolves any clearance dip wider than ~10⁻⁴ of the domain;
-// every kDeepEvery-th certified case gets the 10⁵-sample sweep, which resolves
-// 10× finer at 10× the cost. Sample counts are per case and approximate: they
-// are split evenly across segments and each segment gets both endpoints, so the
-// true count is total + #segments.
+// every kDeepEvery-th certified case gets the 10⁵-sample sweep. Sample counts
+// are approximate: they are split evenly across segments and each segment gets
+// both endpoints.
 constexpr int kDenseSamples = 10000;
 constexpr int kDeepDenseSamples = 100000;
 constexpr int kDeepEvery = 10;
@@ -127,15 +118,12 @@ constexpr int kDeepEvery = 10;
 constexpr int kGrazeProbeSamples = 2000;
 
 // The worst signed-distance accuracy Drake documents for any supported shape
-// combination (query_object.h Table 4, Cylinder–Ellipsoid). The checker charges
-// each pair its own τ_p ≥ Options::query_tolerance; the tests below only ever
-// need an upper bound on it, and this is it.
+// combination (query_object.h Table 4, Cylinder–Ellipsoid): an upper bound on
+// the per-pair τ_p, which is all the tests below need.
 constexpr double kWorstTau = 5e-5;
 
-// ---------------------------------------------------------------------------
-// Recipes. Everything random about a case lives in these structs, and every
-// one of them prints itself, so a failure message is a complete repro.
-// ---------------------------------------------------------------------------
+// Recipes. Everything random about a case lives in these structs, and every one
+// of them prints itself, so a failure message is a complete repro.
 
 enum class ShapeKind {
   kSphere,
@@ -153,22 +141,10 @@ struct ShapeSpec {
   Vector3d dims{Vector3d::Zero()};
 };
 
-std::string Name(ShapeKind kind) {
-  switch (kind) {
-    case ShapeKind::kSphere:
-      return "Sphere";
-    case ShapeKind::kBox:
-      return "Box";
-    case ShapeKind::kCapsule:
-      return "Capsule";
-    case ShapeKind::kCylinder:
-      return "Cylinder";
-    case ShapeKind::kEllipsoid:
-      return "Ellipsoid";
-    case ShapeKind::kConvex:
-      return "ConvexTetra";
-  }
-  return "?";
+const char* Name(ShapeKind kind) {
+  static constexpr const char* kNames[] = {
+      "Sphere", "Box", "Capsule", "Cylinder", "Ellipsoid", "ConvexTetra"};
+  return kNames[static_cast<int>(kind)];
 }
 
 // A regular tetrahedron of circumradius √3·`scale`, as a vertex matrix; Drake
@@ -317,17 +293,16 @@ class Rng {
     return std::uniform_int_distribution<int>(lo, hi)(engine_);
   }
   bool Bernoulli(double p) { return std::bernoulli_distribution(p)(engine_); }
-  // Note the named locals: the order in which a compiler evaluates sibling
-  // constructor arguments is unspecified, so drawing three variates inline
-  // would make the corpus depend on the toolchain. Every draw in this file is
-  // sequenced explicitly for that reason.
+  // Named locals throughout: the order in which a compiler evaluates sibling
+  // constructor arguments is unspecified, so drawing variates inline would make
+  // the corpus depend on the toolchain.
   Vector3d UniformVector(double lo, double hi) {
     const double x = Uniform(lo, hi);
     const double y = Uniform(lo, hi);
     const double z = Uniform(lo, hi);
     return Vector3d(x, y, z);
   }
-  // A uniformly distributed direction (rejection-sampled, so no pole bias).
+  // Rejection-sampled, so no pole bias.
   Vector3d Direction() {
     while (true) {
       const Vector3d v = UniformVector(-1.0, 1.0);
@@ -335,7 +310,6 @@ class Rng {
       if (n > 1e-3 && n <= 1.0) return v / n;
     }
   }
-  // A direction scaled by a length drawn *after* it.
   Vector3d Offset(double lo, double hi) {
     const Vector3d direction = Direction();
     const double length = Uniform(lo, hi);
@@ -347,11 +321,10 @@ class Rng {
 };
 
 // Link geometries stay small (≤ 5 cm half-extent) and sit ~12–18 cm out along
-// the link, while joints are ~25–35 cm apart. Adjacent links therefore have
-// real clearance in most configurations but can genuinely fold into each
-// other, which is what makes the self-collision half of the corpus nontrivial.
+// the link, while joints are ~25–35 cm apart, so adjacent links have real
+// clearance in most configurations but can genuinely fold into each other.
 // (MultibodyPlant::Finalize only filters *welded* subgraphs, so every
-// parent/child pair here is a live, unfiltered pair.)
+// parent/child pair here is live.)
 ShapeSpec RandomLinkShape(Rng* rng) {
   ShapeSpec spec;
   const int roll = rng->Int(0, 11);
@@ -557,9 +530,8 @@ std::unique_ptr<Trajectory<double>> BuildTrajectory(
 // Radius of the smallest sphere about the *geometry frame origin* containing
 // the shape. Re-derived here rather than reused from the library, so the
 // broadphase this cross-check uses to skip far pairs cannot inherit a bug from
-// the code it is auditing. std::nullopt means "no finite radius available"
-// (HalfSpace) or "not derived here" (Convex / Mesh); such pairs always take the
-// narrowphase.
+// the code it audits. std::nullopt (HalfSpace, Convex, Mesh) means the pair
+// always takes the narrowphase.
 std::optional<double> LocalRadius(const Shape& shape) {
   return shape.Visit<std::optional<double>>(
       [](const auto& s) -> std::optional<double> {
@@ -765,10 +737,8 @@ Options FuzzOptions(double margin) {
   options.emit_certificate = true;
   options.parallelism = Parallelism::None();
   // A coarser resolution floor than the 1e-9 default: a grazing pair still ends
-  // kInconclusive, but after ~20 bisections rather than ~30, which keeps the
-  // pathological cases of a 200-case corpus affordable. The node budget is the
-  // second guard; a case that hits it is counted and skipped, never silently
-  // accepted.
+  // kInconclusive, but after ~20 bisections rather than ~30. The node budget is
+  // the second guard; a case that hits it is counted, never silently accepted.
   options.min_interval = 1e-6;
   options.max_nodes = 300000;
   return options;
@@ -816,10 +786,7 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
     // clearance requirement, plus on every fifth case a *grazing* margin: the
     // trajectory's own minimum clearance, located by a coarse pre-scan. Setting
     // m_p exactly there makes the tangency unavoidable, which is the only
-    // reliable way to exercise the kInconclusive branch (and its cross-check)
-    // on random geometry. Without it the corpus would never produce a grazing
-    // case, because a random trajectory is tangent to a random obstacle with
-    // probability zero.
+    // reliable way to reach the kInconclusive branch on random geometry.
     double margin = (case_index % 2 == 0) ? 0.0 : 0.01;
     bool grazing = (case_index % 5) == 3;
     if (grazing) {
@@ -928,15 +895,11 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
             << "the reported distance is not reproducible at the witness";
       } else if (result.verdict != Verdict::kBudgetExhausted) {
         // Every non-definite finding that is *not* a budget remainder is a
-        // resolution-floor grazing record, whether the run as a whole ended
-        // kInconclusive or kViolationFound (in kCertifyAll the sink's
-        // inconclusive list is appended to the definite one, so a violating run
-        // can carry grazing records too). All of them get the same audit; only
-        // the synthesized "here is where the budget stopped us" finding is
-        // exempt, because its clearance carries no claim.
+        // resolution-floor grazing record, and must be backed by a clearance
+        // that sits within 10·(τ_p + ε) of the threshold somewhere near the
+        // reported time. Only the synthesized "here is where the budget stopped
+        // us" finding is exempt, because its clearance carries no claim.
         ++tally.inconclusive_findings;
-        // A grazing record must be backed by a clearance that sits within
-        // 10·(τ_p + ε) of the threshold somewhere near the reported time.
         const double tolerance = 10.0 * (kWorstTau + options.certificate_slack);
         const double window =
             0.01 * std::max(1e-12, path.end_time() - path.start_time());
@@ -981,9 +944,7 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
   // assertion above while testing nothing.
 #ifdef DRAKE_CCD_FUZZ_SMALL_CORPUS
   // The shrunk corpus is an instrumentation-only configuration; the full case
-  // count is satisfied by the uninstrumented run CI also performs. It still has
-  // to be large enough for the composition floors below to say something; at 50
-  // cases the thinnest of them still demands a case.
+  // count is satisfied by the uninstrumented run CI also performs.
   static_assert(kNumCases >= 40,
                 "the shrunk corpus must stay large enough for the corpus "
                 "composition floors below to be nonzero");
@@ -1012,10 +973,9 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
   // The dense scan must really be measuring distances, not skipping everything
   // through its broadphase.
   EXPECT_GT(tally.scan_queries, kMinScanQueries);
-  // Every supported geometry class must have appeared somewhere in the corpus,
-  // including the analytic HalfSpace route: a fuzz that only ever built spheres
-  // and boxes would leave the τ_p table's expensive rows (capsule, cylinder,
-  // ellipsoid) and the Convex path untested end to end.
+  // Every supported geometry class must have appeared somewhere: a fuzz that
+  // only ever built spheres and boxes would leave the τ_p table's expensive
+  // rows (capsule, cylinder, ellipsoid) and the Convex path untested.
   for (int kind = 0; kind < 6; ++kind) {
     EXPECT_GT(tally.shapes[kind], 0)
         << "no " << Name(static_cast<ShapeKind>(kind))

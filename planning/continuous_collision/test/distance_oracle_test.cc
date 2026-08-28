@@ -9,19 +9,21 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/memory_file.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/optimization/vpolytope.h"
@@ -69,6 +71,7 @@ using drake::planning::RobotDiagramBuilder;
 using drake::systems::Context;
 using Eigen::Matrix3Xd;
 using Eigen::Vector3d;
+using ::testing::HasSubstr;
 
 constexpr double kTau = 1e-6;
 // Exactness bar for the analytic halfspace fallback and for round trips that
@@ -309,6 +312,47 @@ InMemoryMesh LPrismMesh() {
 // Accuracy vs analytic ground truth (native route).
 // ==========================================================================
 
+// Poses two floating bodies at random 250 times and compares the oracle
+// against `expected`, which returns the reference distance, or nullopt for a
+// pose the reference formula does not cover. Both the separated and the
+// penetrating branch must be exercised, and where the pair is separated the
+// returned witnesses must be exactly phi apart.
+void CheckAgainstReference(
+    World* world, const DistanceOracle& oracle, const RigidBody<double>& body_a,
+    const RigidBody<double>& body_b, double range,
+    const std::function<std::optional<double>(
+        const RigidTransformd&, const RigidTransformd&)>& expected,
+    std::mt19937* rng) {
+  ASSERT_EQ(oracle.pairs().size(), 1u);
+  const PairRecord& pair = oracle.pairs().front();
+  EXPECT_EQ(pair.route, DistanceRoute::kNative);
+  int separated = 0;
+  int penetrating = 0;
+  for (int trial = 0; trial < 250; ++trial) {
+    const RigidTransformd X_WA = RandomPose(rng, range);
+    const RigidTransformd X_WB = RandomPose(rng, range);
+    world->SetPose(body_a, X_WA);
+    world->SetPose(body_b, X_WB);
+    const std::optional<double> reference = expected(X_WA, X_WB);
+    if (!reference.has_value()) continue;
+
+    Vector3d p_a_W;
+    Vector3d p_b_W;
+    const double phi =
+        oracle.SignedDistance(world->query(), pair, &p_a_W, &p_b_W);
+    EXPECT_NEAR(phi, *reference, kNative) << "trial " << trial;
+    if (phi > 1e-9) {
+      ++separated;
+      EXPECT_NEAR((p_a_W - p_b_W).norm(), phi, kNative) << "trial " << trial;
+    } else {
+      ++penetrating;
+    }
+  }
+  EXPECT_GT(separated, 0);
+  EXPECT_GT(penetrating, 0) << "the sweep never exercised the penetrating "
+                               "branch";
+}
+
 GTEST_TEST(DistanceOracleAccuracy, SphereSphereMatchesAnalyticDistance) {
   RobotDiagramBuilder<double> builder(0.0);
   MultibodyPlant<double>& plant = builder.plant();
@@ -319,35 +363,16 @@ GTEST_TEST(DistanceOracleAccuracy, SphereSphereMatchesAnalyticDistance) {
   const auto& body_b =
       AddShapeBody(&plant, "sphere_b", Sphere(r_b), Vector3d(1, 0, 0));
   World world(builder.Build());
-
   const DistanceOracle oracle(world.diagram(), kTau);
-  ASSERT_EQ(oracle.pairs().size(), 1u);
-  const PairRecord& pair = oracle.pairs().front();
-  EXPECT_EQ(pair.route, DistanceRoute::kNative);
 
   std::mt19937 rng(20260826);
-  int penetrating = 0;
-  for (int trial = 0; trial < 250; ++trial) {
-    const RigidTransformd X_WA = RandomPose(&rng, 0.4);
-    const RigidTransformd X_WB = RandomPose(&rng, 0.4);
-    world.SetPose(body_a, X_WA);
-    world.SetPose(body_b, X_WB);
-
-    Vector3d p_a_W;
-    Vector3d p_b_W;
-    const double phi =
-        oracle.SignedDistance(world.query(), pair, &p_a_W, &p_b_W);
-    // Exact for two spheres on both branches.
-    const double expected =
-        (X_WB.translation() - X_WA.translation()).norm() - r_a - r_b;
-    EXPECT_NEAR(phi, expected, kNative) << "trial " << trial;
-    if (phi < 0.0) ++penetrating;
-    if (phi > 1e-9) {
-      EXPECT_NEAR((p_a_W - p_b_W).norm(), phi, kNative) << "trial " << trial;
-    }
-  }
-  EXPECT_GT(penetrating, 0) << "the sweep never exercised the penetrating "
-                               "branch";
+  // Exact for two spheres on both branches.
+  CheckAgainstReference(
+      &world, oracle, body_a, body_b, 0.4,
+      [r_a, r_b](const RigidTransformd& X_WA, const RigidTransformd& X_WB) {
+        return (X_WB.translation() - X_WA.translation()).norm() - r_a - r_b;
+      },
+      &rng);
 }
 
 GTEST_TEST(DistanceOracleAccuracy, SphereBoxMatchesAnalyticDistance) {
@@ -361,42 +386,23 @@ GTEST_TEST(DistanceOracleAccuracy, SphereBoxMatchesAnalyticDistance) {
       AddShapeBody(&plant, "box", Box(2 * half.x(), 2 * half.y(), 2 * half.z()),
                    Vector3d(1, 0, 0));
   World world(builder.Build());
-
   const DistanceOracle oracle(world.diagram(), kTau);
-  ASSERT_EQ(oracle.pairs().size(), 1u);
-  const PairRecord& pair = oracle.pairs().front();
 
   std::mt19937 rng(881);
-  int separated = 0;
-  int penetrating = 0;
-  for (int trial = 0; trial < 250; ++trial) {
-    const RigidTransformd X_WS = RandomPose(&rng, 0.5);
-    const RigidTransformd X_WB = RandomPose(&rng, 0.5);
-    world.SetPose(sphere_body, X_WS);
-    world.SetPose(box_body, X_WB);
-
-    const Vector3d p_B = X_WB.inverse() * X_WS.translation();
-    const double center_distance = PointBoxDistance(p_B, half);
-    if (center_distance <= 0.0) continue;  // center inside the box
-    // For a sphere whose center lies outside a convex body, the signed
-    // distance is exactly dist(center, body) - radius on both branches: the
-    // sublevel sets of dist(., body) are the Minkowski sums body (+) ball.
-    const double expected = center_distance - radius;
-
-    Vector3d p_a_W;
-    Vector3d p_b_W;
-    const double phi =
-        oracle.SignedDistance(world.query(), pair, &p_a_W, &p_b_W);
-    EXPECT_NEAR(phi, expected, kNative) << "trial " << trial;
-    if (phi > 1e-9) {
-      ++separated;
-      EXPECT_NEAR((p_a_W - p_b_W).norm(), phi, kNative) << "trial " << trial;
-    } else {
-      ++penetrating;
-    }
-  }
-  EXPECT_GT(separated, 0);
-  EXPECT_GT(penetrating, 0);
+  // For a sphere whose center lies outside a convex body, the signed distance
+  // is exactly dist(center, body) - radius on both branches: the sublevel sets
+  // of dist(., body) are the Minkowski sums body (+) ball. A center inside the
+  // box has no such reference, so those poses are skipped.
+  CheckAgainstReference(
+      &world, oracle, sphere_body, box_body, 0.5,
+      [radius, half](const RigidTransformd& X_WS,
+                     const RigidTransformd& X_WB) -> std::optional<double> {
+        const Vector3d p_B = X_WB.inverse() * X_WS.translation();
+        const double center_distance = PointBoxDistance(p_B, half);
+        if (center_distance <= 0.0) return std::nullopt;
+        return center_distance - radius;
+      },
+      &rng);
 }
 
 // ==========================================================================
@@ -457,11 +463,7 @@ class HalfSpaceFallbackTest : public ::testing::Test {
 TEST_F(HalfSpaceFallbackTest, EveryPartnerMatchesHandDerivedFormulaExactly) {
   using Reference = std::function<double(const Vector3d&, const Vector3d&,
                                          const RigidTransformd&)>;
-  struct Partner {
-    std::string name;
-    Reference reference;
-  };
-  const std::vector<Partner> partners = {
+  const std::vector<std::pair<std::string, Reference>> partners = {
       {"sphere",
        [](const Vector3d& n, const Vector3d& p0, const RigidTransformd& X) {
          return HalfSpaceSphere(n, p0, X, kRadius);
@@ -495,9 +497,9 @@ TEST_F(HalfSpaceFallbackTest, EveryPartnerMatchesHandDerivedFormulaExactly) {
     const RigidTransformd X_WH = RandomPose(&rng, 0.3);
     world_->SetPose(Body("halfspace"), X_WH);
     std::vector<RigidTransformd> poses;
-    for (const Partner& p : partners) {
+    for (const auto& [name, reference] : partners) {
       poses.push_back(RandomPose(&rng, 0.4));
-      world_->SetPose(Body(p.name), poses.back());
+      world_->SetPose(Body(name), poses.back());
     }
     const QueryObject<double>& query = world_->query();
     const Vector3d n_W = X_WH.rotation().matrix().col(2);
@@ -506,25 +508,20 @@ TEST_F(HalfSpaceFallbackTest, EveryPartnerMatchesHandDerivedFormulaExactly) {
     for (size_t i = 0; i < partners.size(); ++i) {
       const PairRecord& pair =
           FindPair(*oracle_, halfspace_id_,
-                   GeometryOf(world_->plant(), partners[i].name));
-      ASSERT_NE(pair.route, DistanceRoute::kNative) << partners[i].name;
+                   GeometryOf(world_->plant(), partners[i].first));
+      ASSERT_NE(pair.route, DistanceRoute::kNative) << partners[i].first;
 
       Vector3d p_a_W;
       Vector3d p_b_W;
       const double phi = oracle_->SignedDistance(query, pair, &p_a_W, &p_b_W);
-      const double expected = partners[i].reference(n_W, p0_W, poses[i]);
-      EXPECT_NEAR(phi, expected, kExact)
-          << partners[i].name << ", trial " << trial;
+      EXPECT_NEAR(phi, partners[i].second(n_W, p0_W, poses[i]), kExact)
+          << partners[i].first << ", trial " << trial;
       // Witnesses: separated by exactly |phi|, with the halfspace-side witness
       // on the boundary plane.
       const Vector3d& on_plane = (pair.id.a == halfspace_id_) ? p_a_W : p_b_W;
       EXPECT_NEAR(n_W.dot(on_plane - p0_W), 0.0, kExact);
       EXPECT_NEAR((p_a_W - p_b_W).norm(), std::abs(phi), kExact);
-      if (phi > 0.0) {
-        ++positive;
-      } else {
-        ++negative;
-      }
+      (phi > 0.0 ? positive : negative) += 1;
     }
   }
   EXPECT_GT(positive, 0);
@@ -550,16 +547,13 @@ TEST_F(HalfSpaceFallbackTest, ReportNamesEveryCombinationAndRoute) {
   const std::string report = oracle_->support_report();
   SCOPED_TRACE(report);
   // Rows are ordered by shape class, so HalfSpace is always the second name.
-  EXPECT_NE(report.find("Sphere-HalfSpace"), std::string::npos);
-  EXPECT_NE(report.find("Box-HalfSpace"), std::string::npos);
-  EXPECT_NE(report.find("Capsule-HalfSpace"), std::string::npos);
-  EXPECT_NE(report.find("Cylinder-HalfSpace"), std::string::npos);
-  EXPECT_NE(report.find("Ellipsoid-HalfSpace"), std::string::npos);
-  EXPECT_NE(report.find("Convex-HalfSpace"), std::string::npos);
-  EXPECT_NE(report.find("halfspace analytic support-function fallback"),
-            std::string::npos);
-  EXPECT_NE(report.find("native (ComputeSignedDistancePairClosestPoints"),
-            std::string::npos);
+  for (const char* row :
+       {"Sphere-HalfSpace", "Box-HalfSpace", "Capsule-HalfSpace",
+        "Cylinder-HalfSpace", "Ellipsoid-HalfSpace", "Convex-HalfSpace",
+        "halfspace analytic support-function fallback",
+        "native (ComputeSignedDistancePairClosestPoints"}) {
+    EXPECT_THAT(report, HasSubstr(row));
+  }
 }
 
 // ==========================================================================
@@ -626,13 +620,10 @@ TEST_F(AllShapesTest, ProbeClassifiesEveryPairSnapshot) {
 TEST_F(AllShapesTest, ReportAnnouncesMeshAsConvexHull) {
   const std::string report = oracle_->support_report();
   SCOPED_TRACE(report);
-  EXPECT_NE(report.find("Mesh mesh_geometry: certified as its convex hull"),
-            std::string::npos);
-  EXPECT_NE(report.find("distinct shape-type combination(s)"),
-            std::string::npos);
+  EXPECT_THAT(report,
+              HasSubstr("Mesh mesh_geometry: certified as its convex hull"));
   // 8 distinct classes, each present once: 8*7/2 = 28 combinations.
-  EXPECT_NE(report.find("28 distinct shape-type combination(s)"),
-            std::string::npos);
+  EXPECT_THAT(report, HasSubstr("28 distinct shape-type combination(s)"));
 }
 
 TEST_F(AllShapesTest, WitnessPointsAreConsistentForSeparatedNativePairs) {
@@ -655,91 +646,42 @@ TEST_F(AllShapesTest, WitnessPointsAreConsistentForSeparatedNativePairs) {
   EXPECT_GT(checked, 100);
 }
 
-TEST_F(AllShapesTest, IdOrderingIsSymmetricForNativePairs) {
+TEST_F(AllShapesTest, IdOrderingIsSymmetric) {
+  // Swapping a record's two slots (and, on the analytic route, the halfspace
+  // side with it) must return the same distance and the mirrored witnesses,
+  // bit for bit.
   std::mt19937 rng(777);
   world_->RandomizeAll(&rng, 0.5);
   const QueryObject<double>& query = world_->query();
 
-  int checked = 0;
+  int native = 0;
+  int halfspace = 0;
   for (const PairRecord& pair : oracle_->pairs()) {
-    if (pair.route != DistanceRoute::kNative) continue;
     PairRecord swapped = pair;
     std::swap(swapped.id.a, swapped.id.b);
     std::swap(swapped.id.body_a, swapped.id.body_b);
-
-    Vector3d a1;
-    Vector3d b1;
-    Vector3d a2;
-    Vector3d b2;
-    const double phi = oracle_->SignedDistance(query, pair, &a1, &b1);
-    const double phi_swapped =
-        oracle_->SignedDistance(query, swapped, &a2, &b2);
-    EXPECT_EQ(phi, phi_swapped);
-    EXPECT_EQ(a1, b2);
-    EXPECT_EQ(b1, a2);
-    ++checked;
-  }
-  EXPECT_EQ(checked, kNativePairs);
-}
-
-TEST_F(AllShapesTest, IdOrderingIsSymmetricForHalfSpacePairs) {
-  std::mt19937 rng(778);
-  world_->RandomizeAll(&rng, 0.5);
-  const QueryObject<double>& query = world_->query();
-
-  int checked = 0;
-  for (const PairRecord& pair : oracle_->pairs()) {
-    if (pair.route == DistanceRoute::kNative) continue;
-    PairRecord swapped = pair;
-    std::swap(swapped.id.a, swapped.id.b);
-    std::swap(swapped.id.body_a, swapped.id.body_b);
-    swapped.route = (pair.route == DistanceRoute::kHalfSpaceA)
-                        ? DistanceRoute::kHalfSpaceB
-                        : DistanceRoute::kHalfSpaceA;
-
-    Vector3d a1;
-    Vector3d b1;
-    Vector3d a2;
-    Vector3d b2;
-    const double phi = oracle_->SignedDistance(query, pair, &a1, &b1);
-    const double phi_swapped =
-        oracle_->SignedDistance(query, swapped, &a2, &b2);
-    EXPECT_EQ(phi, phi_swapped);
-    EXPECT_EQ(a1, b2);
-    EXPECT_EQ(b1, a2);
-    ++checked;
-  }
-  EXPECT_EQ(checked, kDynamicBodies);
-}
-
-// Records which (shape, shape) combinations Drake's native narrowphase supports
-// on the pinned build. The oracle routes every halfspace pair through the
-// analytic fallback because of the rows this test prints.
-TEST_F(AllShapesTest, NativeSupportTableSnapshot) {
-  const auto& inspector = world_->diagram().scene_graph().model_inspector();
-  const QueryObject<double>& query = world_->query();
-  std::string table =
-      "Native ComputeSignedDistancePairClosestPoints support:\n";
-  int supported = 0;
-  int threw = 0;
-  for (const PairRecord& pair : oracle_->pairs()) {
-    const std::string combo =
-        std::string(inspector.GetShape(pair.id.a).type_name()) + "-" +
-        std::string(inspector.GetShape(pair.id.b).type_name());
-    try {
-      query.ComputeSignedDistancePairClosestPoints(pair.id.a, pair.id.b);
-      table += "  " + combo + ": supported\n";
-      ++supported;
-    } catch (const std::exception&) {
-      table += "  " + combo + ": THROWS\n";
-      ++threw;
+    if (pair.route == DistanceRoute::kNative) {
+      ++native;
+    } else {
+      ++halfspace;
+      swapped.route = (pair.route == DistanceRoute::kHalfSpaceA)
+                          ? DistanceRoute::kHalfSpaceB
+                          : DistanceRoute::kHalfSpaceA;
     }
+
+    Vector3d a1;
+    Vector3d b1;
+    Vector3d a2;
+    Vector3d b2;
+    const double phi = oracle_->SignedDistance(query, pair, &a1, &b1);
+    const double phi_swapped =
+        oracle_->SignedDistance(query, swapped, &a2, &b2);
+    EXPECT_EQ(phi, phi_swapped);
+    EXPECT_EQ(a1, b2);
+    EXPECT_EQ(b1, a2);
   }
-  std::cout << table << std::flush;
-  EXPECT_EQ(supported + threw, static_cast<int>(oracle_->pairs().size()));
-  // All non-halfspace combinations must work natively, which is what the
-  // capability probe asserted at construction.
-  EXPECT_GE(supported, kNativePairs);
+  EXPECT_EQ(native, kNativePairs);
+  EXPECT_EQ(halfspace, kDynamicBodies);
 }
 
 GTEST_TEST(DistanceOracleProbe, HalfSpaceHalfSpacePairThrowsAtConstruction) {
@@ -751,16 +693,13 @@ GTEST_TEST(DistanceOracleProbe, HalfSpaceHalfSpacePairThrowsAtConstruction) {
   AddShapeBody(&plant, "ceiling", HalfSpace(), Vector3d(0, 0, 2));
   World world(builder.Build());
 
-  try {
-    const DistanceOracle oracle(world.diagram(), kTau);
-    ADD_FAILURE() << "expected the capability probe to refuse the pair";
-  } catch (const std::exception& e) {
-    const std::string what = e.what();
-    SCOPED_TRACE(what);
-    EXPECT_NE(what.find("HalfSpace"), std::string::npos);
-    EXPECT_NE(what.find("ground_geometry"), std::string::npos);
-    EXPECT_NE(what.find("ceiling_geometry"), std::string::npos);
-  }
+  // Both geometries must be named, in whichever order the candidate set has
+  // them.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DistanceOracle(world.diagram(), kTau),
+      "[\\s\\S]*two HalfSpace geometries[\\s\\S]*"
+      "(ground_geometry[\\s\\S]*ceiling_geometry"
+      "|ceiling_geometry[\\s\\S]*ground_geometry)[\\s\\S]*");
 }
 
 GTEST_TEST(DistanceOracleProbe, ProbeSnapshotIsStableAcrossConstructions) {
@@ -799,15 +738,8 @@ GTEST_TEST(DistanceOracleProbe, DeformableGeometryIsRefusedByName) {
       drake::multibody::fem::DeformableBodyConfig<double>{}, 0.05);
   World world(builder.Build());
 
-  try {
-    const DistanceOracle oracle(world.diagram(), kTau);
-    ADD_FAILURE() << "expected the probe to refuse the deformable geometry";
-  } catch (const std::exception& e) {
-    const std::string what = e.what();
-    SCOPED_TRACE(what);
-    EXPECT_NE(what.find("deformable"), std::string::npos);
-    EXPECT_NE(what.find("squishy"), std::string::npos);
-  }
+  DRAKE_EXPECT_THROWS_MESSAGE(DistanceOracle(world.diagram(), kTau),
+                              "[\\s\\S]*deformable[\\s\\S]*squishy[\\s\\S]*");
 }
 
 GTEST_TEST(DistanceOracleProbe, EmptyWorldProbesCleanly) {
@@ -815,8 +747,7 @@ GTEST_TEST(DistanceOracleProbe, EmptyWorldProbesCleanly) {
   World world(builder.Build());
   const DistanceOracle oracle(world.diagram(), kTau);
   EXPECT_TRUE(oracle.pairs().empty());
-  EXPECT_NE(oracle.support_report().find("0 unfiltered pair(s)"),
-            std::string::npos);
+  EXPECT_THAT(oracle.support_report(), HasSubstr("0 unfiltered pair(s)"));
 }
 
 // ==========================================================================
@@ -838,11 +769,11 @@ GTEST_TEST(DistanceOracleMesh, MeshDistanceEqualsConvexHullDistance) {
   World world(builder.Build());
   const DistanceOracle oracle(world.diagram(), kTau);
 
-  const GeometryId mesh_id = GeometryOf(world.plant(), "mesh");
-  const GeometryId convex_id = GeometryOf(world.plant(), "convex");
   const GeometryId probe_id = GeometryOf(world.plant(), "probe");
-  const PairRecord& mesh_pair = FindPair(oracle, mesh_id, probe_id);
-  const PairRecord& convex_pair = FindPair(oracle, convex_id, probe_id);
+  const PairRecord& mesh_pair =
+      FindPair(oracle, GeometryOf(world.plant(), "mesh"), probe_id);
+  const PairRecord& convex_pair =
+      FindPair(oracle, GeometryOf(world.plant(), "convex"), probe_id);
 
   std::mt19937 rng(9091);
   int separated = 0;
@@ -856,13 +787,9 @@ GTEST_TEST(DistanceOracleMesh, MeshDistanceEqualsConvexHullDistance) {
 
     const QueryObject<double>& query = world.query();
     const double phi_mesh = oracle.SignedDistance(query, mesh_pair);
-    const double phi_convex = oracle.SignedDistance(query, convex_pair);
-    EXPECT_NEAR(phi_mesh, phi_convex, kExact) << "trial " << trial;
-    if (phi_mesh > 0) {
-      ++separated;
-    } else {
-      ++penetrating;
-    }
+    EXPECT_NEAR(phi_mesh, oracle.SignedDistance(query, convex_pair), kExact)
+        << "trial " << trial;
+    (phi_mesh > 0 ? separated : penetrating) += 1;
   }
   EXPECT_GT(separated, 0);
   EXPECT_GT(penetrating, 0);
@@ -885,43 +812,31 @@ GTEST_TEST(DistanceOracleMesh,
   World world(builder.Build());
   const DistanceOracle oracle(world.diagram(), kTau);
 
-  const GeometryId mesh_id = GeometryOf(world.plant(), "l_mesh");
-  const GeometryId convex_id = GeometryOf(world.plant(), "l_convex");
   const GeometryId probe_id = GeometryOf(world.plant(), "probe");
+  const PairRecord& mesh_pair =
+      FindPair(oracle, GeometryOf(world.plant(), "l_mesh"), probe_id);
+  const PairRecord& convex_pair =
+      FindPair(oracle, GeometryOf(world.plant(), "l_convex"), probe_id);
+  world.SetPose(l_mesh_body, RigidTransformd::Identity());
+  world.SetPose(l_convex_body, RigidTransformd::Identity());
 
   // (1.4, 1.4) sits in the notch: outside the L (the nearest solid points are
   // (1.4, 1.0) and (1.0, 1.4), so the true clearance is 0.4 - r = 0.35), but
-  // inside the hull, whose closing edge is x + y = 3.
-  const double true_surface_clearance = 0.4 - probe_radius;
-  ASSERT_GT(true_surface_clearance, 0.0);
-
-  world.SetPose(l_mesh_body, RigidTransformd::Identity());
-  world.SetPose(l_convex_body, RigidTransformd::Identity());
-  world.SetPose(probe_body, RigidTransformd(Vector3d(1.4, 1.4, 0.0)));
-
-  {
+  // inside the hull, whose closing edge is x + y = 3. (1.9, 1.9) is outside the
+  // hull too, so there both agree and both are positive.
+  ASSERT_GT(0.4 - probe_radius, 0.0);
+  for (const auto& [p_W, expect_negative] :
+       std::vector<std::pair<Vector3d, bool>>{
+           {Vector3d(1.4, 1.4, 0.0), true}, {Vector3d(1.9, 1.9, 0.0), false}}) {
+    SCOPED_TRACE("probe at " + std::to_string(p_W.x()));
+    world.SetPose(probe_body, RigidTransformd(p_W));
     const QueryObject<double>& query = world.query();
-    const double phi_mesh =
-        oracle.SignedDistance(query, FindPair(oracle, mesh_id, probe_id));
-    const double phi_convex =
-        oracle.SignedDistance(query, FindPair(oracle, convex_id, probe_id));
-    EXPECT_NEAR(phi_mesh, phi_convex, kExact);
-    EXPECT_LT(phi_mesh, 0.0)
+    const double phi_mesh = oracle.SignedDistance(query, mesh_pair);
+    EXPECT_NEAR(phi_mesh, oracle.SignedDistance(query, convex_pair), kExact);
+    EXPECT_EQ(phi_mesh < 0.0, expect_negative)
         << "the L-mesh must measure as its convex hull, which swallows the "
            "notch; got phi = "
         << phi_mesh;
-  }
-
-  // Outside the hull too => both agree and both are positive.
-  world.SetPose(probe_body, RigidTransformd(Vector3d(1.9, 1.9, 0.0)));
-  {
-    const QueryObject<double>& query = world.query();
-    const double phi_mesh =
-        oracle.SignedDistance(query, FindPair(oracle, mesh_id, probe_id));
-    const double phi_convex =
-        oracle.SignedDistance(query, FindPair(oracle, convex_id, probe_id));
-    EXPECT_GT(phi_mesh, 0.0);
-    EXPECT_NEAR(phi_mesh, phi_convex, kExact);
   }
 }
 
@@ -938,8 +853,10 @@ GTEST_TEST(DistanceOracleMesh, HalfSpaceFallbackAgainstMeshUsesTheSameHull) {
   World world(builder.Build());
   const DistanceOracle oracle(world.diagram(), kTau);
 
-  const GeometryId mesh_id = GeometryOf(world.plant(), "mesh");
-  const GeometryId convex_id = GeometryOf(world.plant(), "convex");
+  const PairRecord& mesh_pair =
+      FindPair(oracle, ground, GeometryOf(world.plant(), "mesh"));
+  const PairRecord& convex_pair =
+      FindPair(oracle, ground, GeometryOf(world.plant(), "convex"));
   const Matrix3Xd corners = BoxCorners(CubeHalf());
 
   std::mt19937 rng(5150);
@@ -948,11 +865,9 @@ GTEST_TEST(DistanceOracleMesh, HalfSpaceFallbackAgainstMeshUsesTheSameHull) {
     world.SetPose(mesh_body, X_W);
     world.SetPose(convex_body, X_W);
     const QueryObject<double>& query = world.query();
-    const double phi_mesh =
-        oracle.SignedDistance(query, FindPair(oracle, ground, mesh_id));
-    const double phi_convex =
-        oracle.SignedDistance(query, FindPair(oracle, ground, convex_id));
-    EXPECT_NEAR(phi_mesh, phi_convex, kExact) << "trial " << trial;
+    const double phi_mesh = oracle.SignedDistance(query, mesh_pair);
+    EXPECT_NEAR(phi_mesh, oracle.SignedDistance(query, convex_pair), kExact)
+        << "trial " << trial;
     // The ground plane is z = 0 with the solid below, so the reference is the
     // lowest transformed cube corner.
     double lowest = std::numeric_limits<double>::infinity();
@@ -1038,10 +953,9 @@ GTEST_TEST(VPolytopeIngestion, RoundTripMatchesDirectConvexRegistration) {
         oracle.SignedDistance(query, p_ingested, &a_i, &b_i);
     const double phi_direct =
         oracle.SignedDistance(query, p_direct, &a_d, &b_d);
-    const double phi_redundant = oracle.SignedDistance(query, p_redundant);
-
     EXPECT_NEAR(phi_ingested, phi_direct, kExact) << "trial " << trial;
-    EXPECT_NEAR(phi_redundant, phi_direct, kExact) << "trial " << trial;
+    EXPECT_NEAR(oracle.SignedDistance(query, p_redundant), phi_direct, kExact)
+        << "trial " << trial;
     if (phi_direct > 1e-9) {
       ++separated;
       EXPECT_LT((a_i - a_d).norm(), kExact) << "trial " << trial;
@@ -1070,8 +984,10 @@ GTEST_TEST(VPolytopeIngestion, RoundTripAlsoHoldsOnTheHalfSpaceFallbackRoute) {
   World world(builder.Build());
   const DistanceOracle oracle(world.diagram(), kTau);
 
-  const GeometryId ingested_id = GeometryOf(world.plant(), "ingested");
-  const GeometryId direct_id = GeometryOf(world.plant(), "direct");
+  const PairRecord& ingested_pair =
+      FindPair(oracle, ground, GeometryOf(world.plant(), "ingested"));
+  const PairRecord& direct_pair =
+      FindPair(oracle, ground, GeometryOf(world.plant(), "direct"));
 
   std::mt19937 rng(1618);
   for (int trial = 0; trial < 100; ++trial) {
@@ -1079,11 +995,9 @@ GTEST_TEST(VPolytopeIngestion, RoundTripAlsoHoldsOnTheHalfSpaceFallbackRoute) {
     world.SetPose(ingested_body, X_W);
     world.SetPose(direct_body, X_W);
     const QueryObject<double>& query = world.query();
-    const double phi_ingested =
-        oracle.SignedDistance(query, FindPair(oracle, ground, ingested_id));
-    const double phi_direct =
-        oracle.SignedDistance(query, FindPair(oracle, ground, direct_id));
-    EXPECT_NEAR(phi_ingested, phi_direct, kExact) << "trial " << trial;
+    const double phi_direct = oracle.SignedDistance(query, direct_pair);
+    EXPECT_NEAR(oracle.SignedDistance(query, ingested_pair), phi_direct, kExact)
+        << "trial " << trial;
     // Reference: the lowest transformed vertex, since the ground is z = 0.
     double lowest = std::numeric_limits<double>::infinity();
     for (int i = 0; i < vertices.cols(); ++i) {

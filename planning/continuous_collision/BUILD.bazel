@@ -216,13 +216,37 @@ drake_cc_library(
 
 # === test/ ===
 
+# The helpers the tests share: seeded random primitives and surface samplers,
+# the throw-message probe, the checker factory, the random world generator two
+# corpora are built from, and the corpus plus deep workload concurrency_test.cc
+# pins the driver's determinism against.
+drake_cc_library(
+    name = "test_utilities",
+    testonly = 1,
+    hdrs = ["test/test_utilities.h"],
+    deps = [
+        ":continuous_collision_checker",
+        "//common:parallelism",
+        "//common/trajectories:bezier_curve",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+        "@googletest//:gtest",
+    ],
+)
+
 # Curve module acceptance tests.
 drake_cc_googletest(
     name = "piecewise_bezier_path_test",
     deps = [
         ":piecewise_bezier_path",
         "//common:copyable_unique_ptr",
-        "//common:polynomial",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
         "//common/trajectories:bezier_curve",
         "//common/trajectories:bspline_trajectory",
         "//common/trajectories:composite_trajectory",
@@ -237,13 +261,11 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":motion_bound_table",
+        ":test_utilities",
         "//geometry:geometry_roles",
         "//geometry:scene_graph_inspector",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "//multibody/plant",
         "//multibody/tree",
-        "//planning:robot_diagram_builder",
+        "@fmt",
     ],
 )
 
@@ -252,8 +274,10 @@ drake_cc_googletest(
     name = "bounding_sphere_test",
     deps = [
         ":bounding_sphere",
+        ":test_utilities",
         "//common:essential",
         "//common:memory_file",
+        "//common/test_utilities:expect_throws_message",
         "//geometry:in_memory_mesh",
         "//geometry:shape_specification",
         "//geometry/proximity:polygon_surface_mesh",
@@ -270,6 +294,7 @@ drake_cc_googletest(
         ":vpolytope_ingestion",
         "//common:find_resource",
         "//common:memory_file",
+        "//common/test_utilities:expect_throws_message",
         "//geometry:geometry_instance",
         "//geometry:in_memory_mesh",
         "//geometry:proximity_properties",
@@ -285,24 +310,11 @@ drake_cc_googletest(
     ],
 )
 
-# Certifier semantics, including retiming invariance, on a focused,
-# hand-built corpus.
+# Certifier semantics, including retiming invariance and the standing soundness
+# guard, on a focused, hand-built corpus.
 drake_cc_googletest(
     name = "certifier_test",
-    # Eight caller threads, each asking for Parallelism(2).
-    num_threads = 8,
-    deps = [
-        ":continuous_collision_checker",
-        "//common:parallelism",
-        "//common/trajectories:bezier_curve",
-        "//geometry:scene_graph",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "//multibody/plant",
-        "//multibody/tree",
-        "//planning:robot_diagram",
-        "//planning:robot_diagram_builder",
-    ],
+    deps = [":test_utilities"],
 )
 
 # The randomized soundness fuzz: random worlds x random trajectories,
@@ -354,17 +366,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "thin_obstacle_test",
     deps = [
-        ":continuous_collision_checker",
-        "//common:parallelism",
-        "//common/trajectories:bezier_curve",
-        "//geometry:scene_graph",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "//multibody/plant",
-        "//multibody/tree",
+        ":test_utilities",
         "//planning:collision_checker_params",
-        "//planning:robot_diagram",
-        "//planning:robot_diagram_builder",
         "//planning:scene_graph_collision_checker",
     ],
 )
@@ -372,36 +375,7 @@ drake_cc_googletest(
 # Certificate audit trail + mutation test.
 drake_cc_googletest(
     name = "certificate_test",
-    deps = [
-        ":continuous_collision_checker",
-        "//common:parallelism",
-        "//common/trajectories:bezier_curve",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "//multibody/plant",
-        "//multibody/tree",
-        "//planning:robot_diagram",
-        "//planning:robot_diagram_builder",
-    ],
-)
-
-# The corpus and the deep workload both concurrency targets run on.
-drake_cc_library(
-    name = "concurrency_test_utilities",
-    testonly = 1,
-    hdrs = ["test/concurrency_test_utilities.h"],
-    deps = [
-        ":continuous_collision_checker",
-        "//common:parallelism",
-        "//common/trajectories:bezier_curve",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "//multibody/plant",
-        "//multibody/tree",
-        "//planning:robot_diagram",
-        "//planning:robot_diagram_builder",
-        "@googletest//:gtest",
-    ],
+    deps = [":test_utilities"],
 )
 
 # Concurrency determinism. Running with many threads is the point of
@@ -411,23 +385,7 @@ drake_cc_googletest(
     name = "concurrency_test",
     num_threads = 16,
     deps = [
-        ":concurrency_test_utilities",
-        "//common:parallelism",
-    ],
-)
-
-# The two per-call scaling claims. Split from concurrency_test because
-# they are wall-clock claims: Valgrind serializes threads, which inverts
-# "parallel is faster than serial" and fails the test for a reason that has
-# nothing to do with the driver. //tools:unoptimized covers every flavor that
-# does so: the sanitizers, dbg, kcov, and all of the Valgrind tools (memcheck
-# plus drd and helgrind, which serialize the same way).
-drake_cc_googletest(
-    name = "concurrency_timing_test",
-    opt_out_conditions = ["//tools:unoptimized"],
-    num_threads = 16,
-    deps = [
-        ":concurrency_test_utilities",
+        ":test_utilities",
         "//common:parallelism",
     ],
 )
@@ -436,23 +394,18 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "api_test",
     deps = [
-        ":continuous_collision_checker",
+        ":test_utilities",
         "//common:copyable_unique_ptr",
-        "//common:parallelism",
-        "//common/trajectories:bezier_curve",
+        "//common/test_utilities:expect_throws_message",
         "//common/trajectories:composite_trajectory",
         "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:piecewise_quaternion",
         "//common/trajectories:trajectory",
         "//geometry:geometry_instance",
         "//geometry:proximity_properties",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
         "//multibody/fem:deformable_body_config",
         "//multibody/plant",
         "//multibody/tree",
-        "//planning:robot_diagram",
-        "//planning:robot_diagram_builder",
     ],
 )
 

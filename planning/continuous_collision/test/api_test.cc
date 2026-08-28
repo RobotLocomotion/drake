@@ -5,100 +5,67 @@
 // "error". The pydrake surface is covered separately, in
 // bindings/pydrake/planning/test/continuous_collision_test.py.
 
+#include <algorithm>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/parallelism.h"
-#include "drake/common/trajectories/bezier_curve.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
-#include "drake/geometry/shape_specification.h"
-#include "drake/math/rigid_transform.h"
 #include "drake/multibody/fem/deformable_body_config.h"
-#include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/deformable_model.h"
-#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/joint.h"
-#include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/spatial_inertia.h"
-#include "drake/planning/continuous_collision/continuous_collision_checker.h"
-#include "drake/planning/robot_diagram.h"
-#include "drake/planning/robot_diagram_builder.h"
+#include "drake/planning/continuous_collision/test/test_utilities.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
 namespace {
 
-using drake::Parallelism;
-using drake::geometry::Box;
 using drake::geometry::GeometryInstance;
-using drake::geometry::HalfSpace;
 using drake::geometry::ProximityProperties;
-using drake::geometry::Sphere;
-using drake::math::RigidTransformd;
-using drake::multibody::CoulombFriction;
 using drake::multibody::Joint;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::PrismaticJoint;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::planning::RobotDiagram;
-using drake::planning::RobotDiagramBuilder;
-using drake::trajectories::BezierCurve;
 using drake::trajectories::CompositeTrajectory;
 using drake::trajectories::PiecewisePolynomial;
 using drake::trajectories::PiecewiseQuaternionSlerp;
 using drake::trajectories::Trajectory;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using test::BezierCurve;
+using test::Box;
+using test::Friction;
+using test::HalfSpace;
+using test::Inertia;
+using test::MakeChecker;
+using test::MultibodyPlant;
+using test::Parallelism;
+using test::PrismaticJoint;
+using test::RevoluteJoint;
+using test::RigidBody;
+using test::RigidTransformd;
+using test::RobotDiagram;
+using test::RobotDiagramBuilder;
+using test::Sphere;
+using test::ThrowMessage;
+using ::testing::AllOf;
+using ::testing::HasSubstr;
 
-CoulombFriction<double> Friction() {
-  return CoulombFriction<double>(1.0, 1.0);
-}
-
-SpatialInertia<double> Inertia() {
-  return SpatialInertia<double>::SolidSphereWithMass(1.0, 0.05);
-}
-
-// Runs `call`, requires it to throw, and returns the message so the caller can
-// assert on the identifiers it must contain. Reports the actual message on
-// every failure path, so a message regression is diagnosable from the log.
-template <typename Callable>
-std::string ThrowMessage(Callable&& call) {
-  try {
-    call();
-  } catch (const std::exception& error) {
-    return error.what();
-  }
-  ADD_FAILURE() << "expected an exception, but the call returned normally";
-  return {};
-}
-
-void ExpectContains(const std::string& haystack, const std::string& needle) {
-  EXPECT_NE(haystack.find(needle), std::string::npos)
-      << "the message did not mention '" << needle << "'.\nMessage was:\n"
-      << haystack;
-}
-
-std::unique_ptr<ContinuousCollisionChecker> MakeChecker(
-    std::shared_ptr<const RobotDiagram<double>> model) {
-  ContinuousCollisionChecker::Params params;
-  params.model = std::move(model);
-  params.default_options.parallelism = Parallelism::None();
-  return std::make_unique<ContinuousCollisionChecker>(params);
+Options SerialOptions() {
+  Options options;
+  options.parallelism = Parallelism::None();
+  return options;
 }
 
 // A planar 2-dof arm (revolute, prismatic) with one anchored obstacle: the
@@ -175,59 +142,64 @@ VectorXd FloatingQ(const Vector3d& p, double elbow) {
 
 GTEST_TEST(ApiTest, MovingQuaternionBaseThrowsNamingTheJoint) {
   std::shared_ptr<const RobotDiagram<double>> model = MakeFloatingBaseWorld();
-  const auto checker = MakeChecker(model);
+  const auto checker = MakeChecker(model, SerialOptions());
   const std::string joint_name = FloatingJointName(model->plant());
   ASSERT_FALSE(joint_name.empty());
 
   // Move a quaternion coordinate: straight-line interpolation of quaternion
   // components is not a rotation-space geodesic, so the convex-hull motion
-  // bound has no meaning and the library must refuse rather than guess.
+  // bound has no meaning and the library must refuse rather than guess. The
+  // message must also point at the way out.
   Eigen::MatrixXd points(8, 2);
   points.col(0) = FloatingQ(Vector3d::Zero(), 0.0);
   points.col(1) = FloatingQ(Vector3d::Zero(), 0.0);
   points(0, 1) = 0.7071067811865476;  // w
   points(3, 1) = 0.7071067811865476;  // z
-  const std::string message = ThrowMessage([&]() {
-    checker->CheckTrajectory(BezierCurve<double>(0.0, 1.0, points));
-  });
-  ExpectContains(message, joint_name);
-  ExpectContains(message, "quaternion_floating");
-  // The message must also point at the way out.
-  ExpectContains(message, "constant-coordinate carve-out");
+  EXPECT_THAT(ThrowMessage([&]() {
+                checker.CheckTrajectory(BezierCurve<double>(0.0, 1.0, points));
+              }),
+              AllOf(HasSubstr(joint_name), HasSubstr("quaternion_floating"),
+                    HasSubstr("constant-coordinate carve-out")));
 
   // Translating the base is refused for the same reason (the coordinate belongs
   // to an excluded joint), and the message names the coordinate index.
   Eigen::MatrixXd translated(8, 2);
   translated.col(0) = FloatingQ(Vector3d::Zero(), 0.0);
   translated.col(1) = FloatingQ(Vector3d(0.2, 0.0, 0.0), 0.0);
-  const std::string translate_message = ThrowMessage([&]() {
-    checker->CheckTrajectory(BezierCurve<double>(0.0, 1.0, translated));
-  });
-  ExpectContains(translate_message, joint_name);
-  ExpectContains(translate_message, "coordinate 4");
+  EXPECT_THAT(
+      ThrowMessage([&]() {
+        checker.CheckTrajectory(BezierCurve<double>(0.0, 1.0, translated));
+      }),
+      AllOf(HasSubstr(joint_name), HasSubstr("coordinate 4")));
 }
 
-GTEST_TEST(ApiTest, ConstantQuaternionBaseIsAcceptedEndToEnd) {
-  // A floating base whose pose is constant along the trajectory is treated as
-  // welded, so a floating-base robot is usable as long as the trajectory does
-  // not move the base. Checked end to end: a verdict and a certificate, not
-  // just "does not throw".
+// A floating base whose pose is constant along the trajectory is treated as
+// welded, so a floating-base robot is usable as long as the trajectory does not
+// move the base. `wobble` is the sub-tolerance drift of the base's y position:
+// at exactly zero the carve-out is exact and owes no residual at all, while a
+// base held only to within continuity_tolerance is still carved but owes
+// lambda-tilde times its range, charged to MotionBoundTable::carveout_slack().
+// That residual has to survive the static-pair shortcut, which never evaluates
+// a per-node Delta, and the certificate replay, which recomputes Delta from
+// scratch and would reject a record whose bound came out smaller.
+void CheckConstantFloatingBase(double wobble) {
+  SCOPED_TRACE("wobble = " + std::to_string(wobble));
   std::shared_ptr<const RobotDiagram<double>> model = MakeFloatingBaseWorld();
-  const auto checker = MakeChecker(model);
-
-  Options options;
-  options.parallelism = Parallelism::None();
+  Options options = SerialOptions();
   options.emit_certificate = true;
+  ASSERT_LE(wobble, options.continuity_tolerance);
+  const auto checker = MakeChecker(model, options);
 
   Eigen::MatrixXd points(8, 3);
   for (int j = 0; j < 3; ++j) {
     points.col(j) = FloatingQ(Vector3d(0.05, -0.10, 0.0), 0.0);
   }
+  points(5, 1) += wobble;
   points(7, 1) = 0.35;  // Only the elbow moves.
   points(7, 2) = 0.70;
   const BezierCurve<double> trajectory(0.0, 1.0, points);
 
-  const PiecewiseBezierPath path = checker->Normalize(trajectory, options);
+  const PiecewiseBezierPath path = checker.Normalize(trajectory, options);
   const std::vector<bool>& constant = path.constant_coordinates();
   ASSERT_EQ(constant.size(), 8u);
   for (int i = 0; i < 7; ++i) {
@@ -235,91 +207,46 @@ GTEST_TEST(ApiTest, ConstantQuaternionBaseIsAcceptedEndToEnd) {
         << "base coordinate " << i << " should have been flagged constant";
   }
   EXPECT_FALSE(constant[7]);
-
-  const CertificationResult result =
-      checker->CheckTrajectory(trajectory, options);
-  EXPECT_EQ(result.verdict, Verdict::kCertifiedFree);
-  ASSERT_TRUE(result.certificate.has_value());
-  // Every base control point here is bit-identical, so the carve-out is exact
-  // and owes no residual at all.
-  const MotionBoundTable table = checker->ComputeMotionBounds(path);
-  for (int p = 0; p < table.num_pairs(); ++p) {
-    EXPECT_EQ(table.carveout_slack(p), 0.0) << "pair " << p;
-  }
-  EXPECT_TRUE(VerifyCertificate(*checker, path, *result.certificate));
-}
-
-GTEST_TEST(ApiTest, ToleranceConstantQuaternionBaseChargesItsResidualEndToEnd) {
-  // The carve-out flags a coordinate constant on a tolerance, so a base held
-  // only to within continuity_tolerance is carved even though it still moves.
-  // Its residual is charged to MotionBoundTable::carveout_slack(), and that has
-  // to survive the static-pair shortcut, which never evaluates a per-node Δ,
-  // and the certificate replay, which recomputes Δ from scratch and would
-  // reject a record whose bound came out smaller than the certifier's.
-  std::shared_ptr<const RobotDiagram<double>> model = MakeFloatingBaseWorld();
-  const auto checker = MakeChecker(model);
-
-  Options options;
-  options.parallelism = Parallelism::None();
-  options.emit_certificate = true;
-
-  Eigen::MatrixXd points(8, 3);
-  for (int j = 0; j < 3; ++j) {
-    points.col(j) = FloatingQ(Vector3d(0.05, -0.10, 0.0), 0.0);
-  }
-  // A sub-tolerance wobble in the base's y position: still "constant" to the
-  // curve module, but no longer exactly so.
-  constexpr double kWobble = 6e-8;
-  ASSERT_LE(kWobble, options.continuity_tolerance);
-  points(5, 1) += kWobble;
-  points(7, 1) = 0.35;  // ... and the elbow still moves.
-  points(7, 2) = 0.70;
-  const BezierCurve<double> trajectory(0.0, 1.0, points);
-
-  const PiecewiseBezierPath path = checker->Normalize(trajectory, options);
-  const std::vector<bool>& constant = path.constant_coordinates();
-  ASSERT_EQ(constant.size(), 8u);
-  for (int i = 0; i < 7; ++i) {
-    EXPECT_TRUE(constant[i]) << "base coordinate " << i;
-  }
-  EXPECT_FALSE(constant[7]);
-  // The control-point range of the wobbled coordinate: `kWobble` up to the
+  // The control-point range of the wobbled coordinate: `wobble` up to the
   // rounding of adding it to -0.10 and subtracting again.
   const double range =
       path.global_upper_bound()[5] - path.global_lower_bound()[5];
-  EXPECT_GT(range, 0.0);
-  EXPECT_NEAR(range, kWobble, 1e-9 * kWobble);
+  EXPECT_NEAR(range, wobble, 1e-9 * std::max(wobble, 1e-12));
 
-  const MotionBoundTable table = checker->ComputeMotionBounds(path);
-  bool any_slack = false;
+  const MotionBoundTable table = checker.ComputeMotionBounds(path);
   bool any_static_with_slack = false;
   for (int p = 0; p < table.num_pairs(); ++p) {
-    if (table.carveout_slack(p) > 0.0) {
-      any_slack = true;
+    if (wobble == 0.0) {
+      EXPECT_EQ(table.carveout_slack(p), 0.0) << "pair " << p;
+    } else if (table.carveout_slack(p) > 0.0) {
       if (table.pair_is_static(p)) any_static_with_slack = true;
-      // λ̃ = 1 for a floating base's translation coordinates, and only that one
-      // coordinate has a width, so the residual is exactly that width.
+      // lambda-tilde = 1 for a floating base's translation coordinates, and
+      // only that one coordinate has a width, so the residual is exactly it.
       EXPECT_DOUBLE_EQ(table.carveout_slack(p), range) << "pair " << p;
     }
   }
-  EXPECT_TRUE(any_slack);
-  EXPECT_TRUE(any_static_with_slack)
+  EXPECT_EQ(any_static_with_slack, wobble > 0.0)
       << "the base-vs-post pair depends only on the carved base coordinates, "
          "so it is static and must still owe the residual";
 
   const CertificationResult result =
-      checker->CheckTrajectory(trajectory, options);
+      checker.CheckTrajectory(trajectory, options);
   EXPECT_EQ(result.verdict, Verdict::kCertifiedFree);
   ASSERT_TRUE(result.certificate.has_value());
-  // The replay recomputes Δ through MotionBound(), so it charges the residual
-  // too: a certificate emitted against the inflated bound verifies, and one
-  // emitted against a smaller bound would not.
-  EXPECT_TRUE(VerifyCertificate(*checker, path, *result.certificate));
+  EXPECT_TRUE(VerifyCertificate(checker, path, *result.certificate));
   for (const CertificateRecord& record : result.certificate->records) {
     if (table.pair_is_static(record.pair_index)) {
       EXPECT_GE(record.motion_bound, table.carveout_slack(record.pair_index));
     }
   }
+}
+
+GTEST_TEST(ApiTest, ExactlyConstantQuaternionBaseIsAcceptedEndToEnd) {
+  CheckConstantFloatingBase(0.0);
+}
+
+GTEST_TEST(ApiTest, ToleranceConstantQuaternionBaseChargesItsResidual) {
+  CheckConstantFloatingBase(6e-8);
 }
 
 // ---------------------------------------------------------------------------
@@ -328,8 +255,9 @@ GTEST_TEST(ApiTest, ToleranceConstantQuaternionBaseChargesItsResidualEndToEnd) {
 
 GTEST_TEST(ApiTest, RotatingHalfSpaceThrowsAtConstruction) {
   // A half space on a body that rotates relative to an unfiltered partner has
-  // unbounded reach, so no finite λ exists for that pair. This must be refused
-  // when the checker is built, not discovered mid-certification.
+  // unbounded reach, so no finite lambda exists for that pair. This must be
+  // refused when the checker is built, not discovered mid-certification, and
+  // the message must say what to do about it ("Box").
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
   const RigidBody<double>& blade = plant.AddRigidBody("blade", Inertia());
@@ -344,20 +272,18 @@ GTEST_TEST(ApiTest, RotatingHalfSpaceThrowsAtConstruction) {
                                   "post_geom", Friction());
   std::shared_ptr<const RobotDiagram<double>> model = builder.Build();
 
-  const std::string message = ThrowMessage([&]() {
-    MakeChecker(model);
-  });
-  ExpectContains(message, "blade_halfspace");
-  ExpectContains(message, "post_geom");
-  ExpectContains(message, "spin");
-  // ... and it must say what to do about it.
-  ExpectContains(message, "Box");
+  EXPECT_THAT(ThrowMessage([&]() {
+                MakeChecker(model, SerialOptions());
+              }),
+              AllOf(HasSubstr("blade_halfspace"), HasSubstr("post_geom"),
+                    HasSubstr("spin"), HasSubstr("Box")));
 }
 
 GTEST_TEST(ApiTest, AnchoredHalfSpaceUnderARotatingArmIsAccepted) {
   // The complement, so the rule above is not read as "half spaces are
   // unsupported". An anchored ground plane under a rotating arm is accepted,
-  // because λ then bounds the arm's points and signed distance is symmetric.
+  // because lambda then bounds the arm's points and signed distance is
+  // symmetric.
   RobotDiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = builder.plant();
   const RigidBody<double>& link = plant.AddRigidBody("link", Inertia());
@@ -373,12 +299,12 @@ GTEST_TEST(ApiTest, AnchoredHalfSpaceUnderARotatingArmIsAccepted) {
                                   "ground_halfspace", Friction());
   std::shared_ptr<const RobotDiagram<double>> model = builder.Build();
 
-  const auto checker = MakeChecker(model);
+  const auto checker = MakeChecker(model, SerialOptions());
   // The probe report is part of the UX: it must say how each pair is routed.
-  const std::string report = checker->distance_oracle().support_report();
-  ExpectContains(report, "HalfSpace");
+  EXPECT_THAT(checker.distance_oracle().support_report(),
+              HasSubstr("HalfSpace"));
   EXPECT_EQ(
-      checker->CheckEdge(VectorXd::Constant(1, 0.0), VectorXd::Constant(1, 1.5))
+      checker.CheckEdge(VectorXd::Constant(1, 0.0), VectorXd::Constant(1, 1.5))
           .verdict,
       Verdict::kCertifiedFree);
 }
@@ -419,74 +345,60 @@ GTEST_TEST(ApiTest, DeformableGeometryIsRefusedNamingIt) {
                 .size(),
             1u);
 
-  const std::string message = ThrowMessage([&]() {
-    MakeChecker(model);
-  });
-  ExpectContains(message, "deformable");
-  ExpectContains(message, "squishy_blob");
+  EXPECT_THAT(ThrowMessage([&]() {
+                MakeChecker(model, SerialOptions());
+              }),
+              AllOf(HasSubstr("deformable"), HasSubstr("squishy_blob")));
 }
 
 // ---------------------------------------------------------------------------
-// 3. Dimensions.
+// 3. Dimensions, trajectory validation and options.
 // ---------------------------------------------------------------------------
 
-// The displacement lemma is proved in the separated regime only, so a
-// negative effective threshold (margin + padding < 0) is outside what the
-// checker can certify and must be rejected, not silently "certified".
 GTEST_TEST(ApiTest, NegativeEffectiveThresholdIsRejected) {
-  const auto checker = MakeChecker(MakeArmWorld());
-  Options options;
-  options.parallelism = Parallelism::None();
+  // The displacement lemma is proved in the separated regime only, so a
+  // negative effective threshold (margin + padding < 0) is outside what the
+  // checker can certify and must be rejected, not silently "certified".
+  const auto checker = MakeChecker(MakeArmWorld(), SerialOptions());
+  Options options = SerialOptions();
   options.margin = -0.01;
-  const VectorXd q0 = VectorXd::Zero(2);
-  const VectorXd q1 = VectorXd::Constant(2, 0.1);
-  const std::string message = ThrowMessage([&]() {
-    checker->CheckEdge(q0, q1, options);
-  });
-  ExpectContains(message, "negative");
-  ExpectContains(message, "filter the pair");
+  EXPECT_THAT(ThrowMessage([&]() {
+                checker.CheckEdge(VectorXd::Zero(2), VectorXd::Constant(2, 0.1),
+                                  options);
+              }),
+              AllOf(HasSubstr("negative"), HasSubstr("filter the pair")));
 }
 
 GTEST_TEST(ApiTest, DimensionMismatchMessagesNameTheSizes) {
   std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
-  const auto checker = MakeChecker(model);
+  const auto checker = MakeChecker(model, SerialOptions());
   ASSERT_EQ(model->plant().num_positions(), 2);
 
-  const std::string path_message = ThrowMessage([&]() {
-    checker->CheckPath(Eigen::MatrixXd::Zero(3, 4));
-  });
-  ExpectContains(path_message, "CheckPath");
-  ExpectContains(path_message, "3 rows");
-  ExpectContains(path_message, "2 generalized positions");
-  ExpectContains(path_message, "waypoints are columns");
+  EXPECT_THAT(ThrowMessage([&]() {
+                checker.CheckPath(Eigen::MatrixXd::Zero(3, 4));
+              }),
+              AllOf(HasSubstr("CheckPath"), HasSubstr("3 rows"),
+                    HasSubstr("2 generalized positions"),
+                    HasSubstr("waypoints are columns")));
 
-  const std::string edge_message = ThrowMessage([&]() {
-    checker->CheckEdge(VectorXd::Zero(2), VectorXd::Zero(5));
-  });
-  ExpectContains(edge_message, "CheckEdge");
-  ExpectContains(edge_message, "sizes 2 and 5");
+  EXPECT_THAT(ThrowMessage([&]() {
+                checker.CheckEdge(VectorXd::Zero(2), VectorXd::Zero(5));
+              }),
+              AllOf(HasSubstr("CheckEdge"), HasSubstr("sizes 2 and 5")));
 
-  const std::string trajectory_message = ThrowMessage([&]() {
-    checker->CheckTrajectory(
-        BezierCurve<double>(0.0, 1.0, Eigen::MatrixXd::Zero(7, 3)));
-  });
-  ExpectContains(trajectory_message, "7 rows");
-  ExpectContains(trajectory_message, "2 generalized positions");
+  EXPECT_THAT(ThrowMessage([&]() {
+                checker.CheckTrajectory(
+                    BezierCurve<double>(0.0, 1.0, Eigen::MatrixXd::Zero(7, 3)));
+              }),
+              AllOf(HasSubstr("7 rows"), HasSubstr("2 generalized positions")));
 
   // A single waypoint is not a path.
-  const std::string single_message = ThrowMessage([&]() {
-    checker->CheckPath(Eigen::MatrixXd::Zero(2, 1));
-  });
-  ExpectContains(single_message, "at least 2 waypoints");
+  DRAKE_EXPECT_THROWS_MESSAGE(checker.CheckPath(Eigen::MatrixXd::Zero(2, 1)),
+                              ".*at least 2 waypoints.*");
 }
 
-// ---------------------------------------------------------------------------
-// 4. Trajectory validation.
-// ---------------------------------------------------------------------------
-
 GTEST_TEST(ApiTest, DiscontinuousTrajectoryThrowsNamingTheJunction) {
-  std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
-  const auto checker = MakeChecker(model);
+  const auto checker = MakeChecker(MakeArmWorld(), SerialOptions());
 
   Eigen::MatrixXd first(2, 2);
   first << 0.0, 0.3, 0.0, 0.05;
@@ -499,18 +411,16 @@ GTEST_TEST(ApiTest, DiscontinuousTrajectoryThrowsNamingTheJunction) {
       std::make_unique<BezierCurve<double>>(1.0, 2.0, second));
   const CompositeTrajectory<double> trajectory(std::move(segments));
 
-  const std::string message = ThrowMessage([&]() {
-    checker->CheckTrajectory(trajectory);
-  });
-  ExpectContains(message, "C0 discontinuity");
-  ExpectContains(message, "segments 0 and 1");
-  ExpectContains(message, "coordinate 1");
-  ExpectContains(message, "continuity_tolerance");
+  EXPECT_THAT(
+      ThrowMessage([&]() {
+        checker.CheckTrajectory(trajectory);
+      }),
+      AllOf(HasSubstr("C0 discontinuity"), HasSubstr("segments 0 and 1"),
+            HasSubstr("coordinate 1"), HasSubstr("continuity_tolerance")));
 }
 
 GTEST_TEST(ApiTest, DegreeAboveConversionCapThrows) {
-  std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
-  const auto checker = MakeChecker(model);
+  const auto checker = MakeChecker(MakeArmWorld(), SerialOptions());
 
   // 13 interpolation nodes => one polynomial segment of degree 12, above the
   // default max_conversion_degree of 10.
@@ -525,134 +435,130 @@ GTEST_TEST(ApiTest, DegreeAboveConversionCapThrows) {
   const PiecewisePolynomial<double> trajectory =
       PiecewisePolynomial<double>::LagrangeInterpolatingPolynomial(times,
                                                                    samples);
-  const std::string message = ThrowMessage([&]() {
-    checker->CheckTrajectory(trajectory);
-  });
-  ExpectContains(message, "polynomial degree 12");
-  ExpectContains(message, "max_conversion_degree");
+  EXPECT_THAT(ThrowMessage([&]() {
+                checker.CheckTrajectory(trajectory);
+              }),
+              AllOf(HasSubstr("polynomial degree 12"),
+                    HasSubstr("max_conversion_degree")));
 
   // Raising the cap is the documented escape hatch.
-  Options options;
-  options.parallelism = Parallelism::None();
+  Options options = SerialOptions();
   options.max_conversion_degree = 12;
-  EXPECT_NO_THROW(checker->Normalize(trajectory, options));
+  EXPECT_NO_THROW(checker.Normalize(trajectory, options));
 }
 
 GTEST_TEST(ApiTest, UnsupportedTrajectoryTypeThrowsNamingTheType) {
-  std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
-  const auto checker = MakeChecker(model);
+  const auto checker = MakeChecker(MakeArmWorld(), SerialOptions());
   const PiecewiseQuaternionSlerp<double> trajectory(
       std::vector<double>{0.0, 1.0},
       std::vector<Eigen::Quaternion<double>>{
           Eigen::Quaternion<double>::Identity(),
           Eigen::Quaternion<double>(0.7071067811865476, 0.0, 0.0,
                                     0.7071067811865476)});
-  const std::string message = ThrowMessage([&]() {
-    checker->CheckTrajectory(trajectory);
-  });
-  ExpectContains(message, "unsupported trajectory type");
-  ExpectContains(message, "PiecewiseQuaternionSlerp");
-  // The message must list what is accepted.
-  ExpectContains(message, "BezierCurve");
-  ExpectContains(message, "BsplineTrajectory");
+  // The message must name the offending type and list what is accepted.
+  EXPECT_THAT(ThrowMessage([&]() {
+                checker.CheckTrajectory(trajectory);
+              }),
+              AllOf(HasSubstr("unsupported trajectory type"),
+                    HasSubstr("PiecewiseQuaternionSlerp"),
+                    HasSubstr("BezierCurve"), HasSubstr("BsplineTrajectory")));
 }
 
 GTEST_TEST(ApiTest, ContinuousRevoluteIndexOutOfRangeThrows) {
-  std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
-  const auto checker = MakeChecker(model);
-  Options options;
-  options.parallelism = Parallelism::None();
+  const auto checker = MakeChecker(MakeArmWorld(), SerialOptions());
+  Options options = SerialOptions();
   options.continuous_revolute_indices = {0, 5};
 
   Eigen::MatrixXd points(2, 2);
   points << 0.0, 0.2, 0.0, 0.05;
-  const std::string message = ThrowMessage([&]() {
-    checker->CheckTrajectory(BezierCurve<double>(0.0, 1.0, points), options);
-  });
-  ExpectContains(message, "continuous_revolute_indices contains 5,");
-  ExpectContains(message, "2 generalized positions");
+  EXPECT_THAT(ThrowMessage([&]() {
+                checker.CheckTrajectory(BezierCurve<double>(0.0, 1.0, points),
+                                        options);
+              }),
+              AllOf(HasSubstr("continuous_revolute_indices contains 5,"),
+                    HasSubstr("2 generalized positions")));
 
   // A negative index is out of range too.
   options.continuous_revolute_indices = {-1};
-  const std::string negative_message = ThrowMessage([&]() {
-    checker->CheckTrajectory(BezierCurve<double>(0.0, 1.0, points), options);
-  });
-  ExpectContains(negative_message, "continuous_revolute_indices contains -1,");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      checker.CheckTrajectory(BezierCurve<double>(0.0, 1.0, points), options),
+      ".*continuous_revolute_indices contains -1,.*");
 }
 
-// ---------------------------------------------------------------------------
-// 5. Options and construction.
-// ---------------------------------------------------------------------------
-
 GTEST_TEST(ApiTest, OptionsValidationMessagesAreActionable) {
-  std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
-  const auto checker = MakeChecker(model);
+  const auto checker = MakeChecker(MakeArmWorld(), SerialOptions());
   Eigen::MatrixXd points(2, 2);
   points << 0.0, 0.2, 0.0, 0.05;
   const BezierCurve<double> trajectory(0.0, 1.0, points);
-  const auto check_with = [&](const Options& options) {
-    return ThrowMessage([&]() {
-      checker->CheckTrajectory(trajectory, options);
-    });
-  };
 
-  Options options;
-  options.parallelism = Parallelism::None();
-
-  Options bad = options;
-  bad.min_interval = 0.0;
-  ExpectContains(check_with(bad), "min_interval");
-  bad.min_interval = 2.0;
-  ExpectContains(check_with(bad), "(0, 1]");
-
-  bad = options;
-  bad.max_reported_findings = 0;
-  ExpectContains(check_with(bad), "max_reported_findings");
-
-  bad = options;
-  bad.query_tolerance = -1.0;
-  ExpectContains(check_with(bad), "query_tolerance");
-
-  bad = options;
-  bad.certificate_slack = -1e-9;
-  ExpectContains(check_with(bad), "certificate_slack");
-
-  bad = options;
-  bad.max_nodes = 0;
-  ExpectContains(check_with(bad), "max_nodes");
-
-  bad = options;
-  bad.margin = std::numeric_limits<double>::quiet_NaN();
-  ExpectContains(check_with(bad), "margin");
+  // Each case names the option the caller has to fix.
+  const std::vector<std::pair<std::string, std::function<void(Options*)>>>
+      cases = {
+          {"min_interval",
+           [](Options* o) {
+             o->min_interval = 0.0;
+           }},
+          {R"((0, 1])",
+           [](Options* o) {
+             o->min_interval = 2.0;
+           }},
+          {"max_reported_findings",
+           [](Options* o) {
+             o->max_reported_findings = 0;
+           }},
+          {"query_tolerance",
+           [](Options* o) {
+             o->query_tolerance = -1.0;
+           }},
+          {"certificate_slack",
+           [](Options* o) {
+             o->certificate_slack = -1e-9;
+           }},
+          {"max_nodes",
+           [](Options* o) {
+             o->max_nodes = 0;
+           }},
+          {"margin",
+           [](Options* o) {
+             o->margin = std::numeric_limits<double>::quiet_NaN();
+           }},
+      };
+  for (const auto& [needle, mutate] : cases) {
+    SCOPED_TRACE(needle);
+    Options bad = SerialOptions();
+    mutate(&bad);
+    EXPECT_THAT(ThrowMessage([&]() {
+                  checker.CheckTrajectory(trajectory, bad);
+                }),
+                HasSubstr(needle));
+  }
 }
 
 GTEST_TEST(ApiTest, NullModelIsRefused) {
-  ContinuousCollisionChecker::Params params;
-  const std::string message = ThrowMessage([&]() {
-    ContinuousCollisionChecker checker(params);
-  });
-  ExpectContains(message, "Params::model is null");
   // The adjacent finalization guard has no reachable input:
   // RobotDiagramBuilder::Build() finalizes unconditionally and RobotDiagram's
   // constructor is private to the builder. The null-model message names both
   // requirements, so this pins the wording for the pair.
-  ExpectContains(message, "finalized");
+  ContinuousCollisionChecker::Params params;
+  EXPECT_THAT(
+      ThrowMessage([&]() {
+        ContinuousCollisionChecker checker(params);
+      }),
+      AllOf(HasSubstr("Params::model is null"), HasSubstr("finalized")));
 }
 
 GTEST_TEST(ApiTest, MaxReportedFindingsIsRespected) {
-  std::shared_ptr<const RobotDiagram<double>> model = MakeArmWorld();
-  const auto checker = MakeChecker(model);
-  Options options;
-  options.parallelism = Parallelism::None();
+  const auto checker = MakeChecker(MakeArmWorld(), SerialOptions());
+  const Options options = SerialOptions();
 
-  // Sweep the arm out past the post at θ ≈ π/2 with the tool extended and back
-  // again: two segments, each with its own violating region, so kCertifyAll
-  // (which drops a violating pair once per subtree) has more than one finding
-  // to cap.
+  // Sweep the arm out past the post at theta ~ pi/2 with the tool extended and
+  // back again: two segments, each with its own violating region, so
+  // kCertifyAll (which drops a violating pair once per subtree) has more than
+  // one finding to cap.
   Eigen::MatrixXd waypoints(2, 3);
   waypoints << 0.0, 2.4, 0.0, 0.25, 0.25, 0.25;
 
-  const CertificationResult uncapped = checker->CheckPath(waypoints, options);
+  const CertificationResult uncapped = checker.CheckPath(waypoints, options);
   ASSERT_EQ(uncapped.verdict, Verdict::kViolationFound);
   ASSERT_GE(uncapped.findings.size(), 2u);
   EXPECT_LE(static_cast<int>(uncapped.findings.size()),
@@ -662,7 +568,7 @@ GTEST_TEST(ApiTest, MaxReportedFindingsIsRespected) {
     SCOPED_TRACE("cap = " + std::to_string(cap));
     Options capped = options;
     capped.max_reported_findings = cap;
-    const CertificationResult result = checker->CheckPath(waypoints, capped);
+    const CertificationResult result = checker.CheckPath(waypoints, capped);
     EXPECT_EQ(result.verdict, Verdict::kViolationFound);
     // Exactly `cap`, not merely at most: the sink keeps the cap earliest
     // entries, and this run has more than `cap` of them. An "at most" assertion

@@ -9,7 +9,7 @@ against themselves. */
 
 #include <algorithm>
 #include <cmath>
-#include <functional>
+#include <cstddef>
 #include <limits>
 #include <memory>
 #include <random>
@@ -17,11 +17,11 @@ against themselves. */
 #include <utility>
 #include <vector>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/polynomial.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/trajectories/bezier_curve.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
 #include "drake/common/trajectories/composite_trajectory.h"
@@ -42,7 +42,6 @@ using drake::trajectories::BsplineTrajectory;
 using drake::trajectories::CompositeTrajectory;
 using drake::trajectories::PiecewisePolynomial;
 using drake::trajectories::Trajectory;
-using ::testing::HasSubstr;
 
 constexpr double kTwoPi = 6.2831853071795864769252867665590;
 
@@ -87,17 +86,6 @@ Eigen::VectorXd DrakeBezierValue(const Eigen::MatrixXd& control_points,
   return BezierCurve<double>(0.0, 1.0, control_points).value(s);
 }
 
-void ExpectThrowsWith(const std::function<void()>& statement,
-                      const std::string& substring) {
-  try {
-    statement();
-    ADD_FAILURE() << "Expected an exception whose message contains \""
-                  << substring << "\", but nothing was thrown.";
-  } catch (const std::exception& e) {
-    EXPECT_THAT(std::string(e.what()), HasSubstr(substring));
-  }
-}
-
 /* Builds a Bézier curve over [t_start, t_end] whose first control point is
 `start` and whose remaining control points are random. */
 BezierCurve<double> MakeBezierCurve(const Eigen::VectorXd& start, int order,
@@ -137,7 +125,7 @@ double MaxSampledError(const PiecewiseBezierPath& path,
 }
 
 // --------------------------------------------------------------------------
-// Bézier evaluation.
+// Bézier evaluation and de Casteljau subdivision.
 // --------------------------------------------------------------------------
 
 /* Our de Casteljau evaluation must agree with BezierCurve::value to 1e-12 over
@@ -177,10 +165,6 @@ GTEST_TEST(BezierEvaluation, MatchesDrakeBezierCurve) {
   }
 }
 
-// --------------------------------------------------------------------------
-// de Casteljau subdivision.
-// --------------------------------------------------------------------------
-
 /* Property test: for >= 1000 random curves the two children produced by
 splitting at 1/2 reproduce the parent exactly (to 1e-12) on their halves, and
 the apex is the parent's midpoint value. */
@@ -208,10 +192,10 @@ GTEST_TEST(DeCasteljau, ChildrenReproduceParent) {
     ASSERT_EQ(right.cols(), order + 1);
     ASSERT_EQ(mid.size(), num_positions);
 
-    // The apex is exactly q(1/2).
+    // The apex is exactly q(1/2), and the children share the endpoints they
+    // must.
     worst = std::max(
         worst, (mid - DrakeBezierValue(parent, 0.5)).cwiseAbs().maxCoeff());
-    // Children share the endpoints they must.
     worst =
         std::max(worst, (left.col(0) - parent.col(0)).cwiseAbs().maxCoeff());
     worst = std::max(
@@ -232,30 +216,23 @@ GTEST_TEST(DeCasteljau, ChildrenReproduceParent) {
 }
 
 /* The hot loop pre-sizes its outputs; re-splitting into already-correctly
-sized buffers must not reallocate them, so the steady-state loop does not
-allocate. */
-GTEST_TEST(DeCasteljau, PreSizedOutputsAreNotReallocated) {
+sized buffers must not allocate at all, so the steady-state recursion the
+certifier runs is allocation-free. */
+GTEST_TEST(DeCasteljau, PreSizedOutputsDoNotAllocate) {
   std::mt19937_64 generator(7);
   const Eigen::MatrixXd parent = RandomMatrix(6, 4, &generator);
   Eigen::MatrixXd left(6, 4);
   Eigen::MatrixXd right(6, 4);
   Eigen::VectorXd mid(6);
-  const double* left_data = left.data();
-  const double* right_data = right.data();
-  const double* mid_data = mid.data();
-
   DeCasteljauSplitAtHalf(parent, &left, &right, &mid);
-  EXPECT_EQ(left.data(), left_data);
-  EXPECT_EQ(right.data(), right_data);
-  EXPECT_EQ(mid.data(), mid_data);
-
   // Splitting a child in place into the same buffers is the recursion the
-  // certifier runs; it must also be stable.
+  // certifier runs; it must be allocation-free too.
   const Eigen::MatrixXd child = left;
-  DeCasteljauSplitAtHalf(child, &left, &right, &mid);
-  EXPECT_EQ(left.data(), left_data);
-  EXPECT_EQ(right.data(), right_data);
-  EXPECT_EQ(mid.data(), mid_data);
+  {
+    drake::test::LimitMalloc guard;
+    DeCasteljauSplitAtHalf(parent, &left, &right, &mid);
+    DeCasteljauSplitAtHalf(child, &left, &right, &mid);
+  }
 }
 
 /* Property test: after a random sequence of subdivisions, the node's
@@ -354,8 +331,10 @@ BsplineTrajectory<double> MakeBsplineFromBasis(
 }
 
 /* Shared checker: the conversion must reproduce the B-spline to 1e-10 over
->= 1e4 dense samples, and the segments must tile the domain. */
-void CheckBsplineEquivalence(const BsplineTrajectory<double>& bspline) {
+>= 1e4 dense samples, the segments must tile the domain, and there must be
+`expected_segments` of them (or any number, when that is 0). */
+void CheckBsplineEquivalence(const BsplineTrajectory<double>& bspline,
+                             int expected_segments = 0) {
   const PiecewiseBezierPath path =
       PiecewiseBezierPath::FromTrajectory(bspline, Options{});
   EXPECT_EQ(path.num_positions(), bspline.rows());
@@ -366,53 +345,39 @@ void CheckBsplineEquivalence(const BsplineTrajectory<double>& bspline) {
     // points, i.e. the degree of the source spline.
     EXPECT_EQ(segment.control_points.cols(), bspline.basis().order());
   }
-  constexpr int kNumSamples = 10001;
-  EXPECT_LT(MaxSampledError(path, bspline, kNumSamples), 1e-10);
+  if (expected_segments > 0) {
+    EXPECT_EQ(static_cast<int>(path.segments().size()), expected_segments);
+  }
+  EXPECT_LT(MaxSampledError(path, bspline, 10001), 1e-10);
 }
 
 GTEST_TEST(BsplineConversion, ClampedUniformOrders2To6) {
   std::mt19937_64 generator(4242);
   for (int order = 2; order <= 6; ++order) {
-    const int num_basis_functions = order + 4;
-    const BsplineBasis<double> basis(order, num_basis_functions,
-                                     KnotVectorType::kClampedUniform, 0.0, 3.0);
-    const BsplineTrajectory<double> bspline =
-        MakeBsplineFromBasis(basis, 3, &generator);
     SCOPED_TRACE("order " + std::to_string(order));
-    CheckBsplineEquivalence(bspline);
-
-    const PiecewiseBezierPath path =
-        PiecewiseBezierPath::FromTrajectory(bspline, Options{});
-    // A clamped uniform basis has num_basis_functions - order + 1 nonempty
-    // spans.
-    EXPECT_EQ(static_cast<int>(path.segments().size()),
-              num_basis_functions - order + 1);
+    const int num_basis_functions = order + 4;
+    // A clamped uniform basis has num_basis_functions - order + 1 spans.
+    CheckBsplineEquivalence(
+        MakeBsplineFromBasis(
+            BsplineBasis<double>(order, num_basis_functions,
+                                 KnotVectorType::kClampedUniform, 0.0, 3.0),
+            3, &generator),
+        num_basis_functions - order + 1);
   }
 }
 
 GTEST_TEST(BsplineConversion, NonUniformKnots) {
   std::mt19937_64 generator(515151);
   for (int order = 2; order <= 6; ++order) {
+    SCOPED_TRACE("order " + std::to_string(order));
     // Clamped, but with irregular interior spacing.
-    std::vector<double> knots;
-    for (int i = 0; i < order; ++i) {
-      knots.push_back(0.0);
-    }
+    std::vector<double> knots(order, 0.0);
     for (double interior : {0.13, 0.29, 0.31, 1.70, 2.55}) {
       knots.push_back(interior);
     }
-    for (int i = 0; i < order; ++i) {
-      knots.push_back(3.0);
-    }
-    const BsplineBasis<double> basis(order, knots);
-    const BsplineTrajectory<double> bspline =
-        MakeBsplineFromBasis(basis, 4, &generator);
-    SCOPED_TRACE("order " + std::to_string(order));
-    CheckBsplineEquivalence(bspline);
-    EXPECT_EQ(
-        static_cast<int>(PiecewiseBezierPath::FromTrajectory(bspline, Options{})
-                             .segments()
-                             .size()),
+    knots.insert(knots.end(), order, 3.0);
+    CheckBsplineEquivalence(
+        MakeBsplineFromBasis(BsplineBasis<double>(order, knots), 4, &generator),
         6);
   }
 }
@@ -421,34 +386,24 @@ GTEST_TEST(BsplineConversion, RepeatedInteriorKnots) {
   std::mt19937_64 generator(606060);
   // Order 4 (cubic): interior knot 1.0 with multiplicity 2 (C1 there) and
   // interior knot 2.0 with multiplicity 3 (C0 there, the extreme case that
-  // still passes junction validation).
+  // still passes junction validation). Nonempty spans: [0,1], [1,2], [2,3],
+  // [3,3.5], [3.5,4].
   const std::vector<double> knots{0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 2.0, 2.0,
                                   2.0, 3.0, 3.5, 4.0, 4.0, 4.0, 4.0};
-  const BsplineBasis<double> basis(4, knots);
-  const BsplineTrajectory<double> bspline =
-      MakeBsplineFromBasis(basis, 2, &generator);
-  CheckBsplineEquivalence(bspline);
-  // Nonempty spans: [0,1], [1,2], [2,3], [3,3.5], [3.5,4].
-  EXPECT_EQ(
-      static_cast<int>(PiecewiseBezierPath::FromTrajectory(bspline, Options{})
-                           .segments()
-                           .size()),
-      5);
+  CheckBsplineEquivalence(
+      MakeBsplineFromBasis(BsplineBasis<double>(4, knots), 2, &generator), 5);
 }
 
 /* The representation KinematicTrajectoryOptimization emits: clamped uniform,
 order 4, one control point per decision-variable column. */
 GTEST_TEST(BsplineConversion, KinematicTrajectoryOptimizationStyle) {
   std::mt19937_64 generator(777);
-  const BsplineBasis<double> basis(4, 10, KnotVectorType::kClampedUniform, 0.0,
-                                   5.0);
-  const BsplineTrajectory<double> bspline =
-      MakeBsplineFromBasis(basis, 7, &generator);
-  CheckBsplineEquivalence(bspline);
-  const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(bspline, Options{});
-  EXPECT_EQ(static_cast<int>(path.segments().size()), 7);
-  EXPECT_EQ(path.num_positions(), 7);
+  CheckBsplineEquivalence(
+      MakeBsplineFromBasis(
+          BsplineBasis<double>(4, 10, KnotVectorType::kClampedUniform, 0.0,
+                               5.0),
+          7, &generator),
+      7);
 }
 
 /* General (unclamped) knot vectors are supported too: the domain endpoints are
@@ -456,23 +411,20 @@ raised to full multiplicity by the same insertion pass. */
 GTEST_TEST(BsplineConversion, UnclampedUniformKnots) {
   std::mt19937_64 generator(31337);
   for (int order = 2; order <= 5; ++order) {
-    const BsplineBasis<double> basis(order, order + 5, KnotVectorType::kUniform,
-                                     0.0, 2.0);
-    const BsplineTrajectory<double> bspline =
-        MakeBsplineFromBasis(basis, 3, &generator);
     SCOPED_TRACE("order " + std::to_string(order));
-    CheckBsplineEquivalence(bspline);
+    CheckBsplineEquivalence(MakeBsplineFromBasis(
+        BsplineBasis<double>(order, order + 5, KnotVectorType::kUniform, 0.0,
+                             2.0),
+        3, &generator));
   }
 }
 
 GTEST_TEST(BsplineConversion, SegmentTimesMatchKnotSpans) {
   std::mt19937_64 generator(24680);
   const std::vector<double> knots{0.0, 0.0, 0.0, 0.5, 1.25, 2.0, 2.0, 2.0};
-  const BsplineBasis<double> basis(3, knots);
-  const BsplineTrajectory<double> bspline =
-      MakeBsplineFromBasis(basis, 2, &generator);
-  const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(bspline, Options{});
+  const PiecewiseBezierPath path = PiecewiseBezierPath::FromTrajectory(
+      MakeBsplineFromBasis(BsplineBasis<double>(3, knots), 2, &generator),
+      Options{});
   ASSERT_EQ(path.segments().size(), 3u);
   const std::vector<double> expected{0.0, 0.5, 1.25, 2.0};
   for (int i = 0; i < 3; ++i) {
@@ -486,11 +438,9 @@ GTEST_TEST(BsplineConversion, MatrixValuedThrows) {
   const BsplineTrajectory<double> bspline(
       BsplineBasis<double>(3, 6, KnotVectorType::kClampedUniform, 0.0, 1.0),
       control_points);
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(bspline, Options{});
-      },
-      "column-vector-valued");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromTrajectory(bspline, Options{}),
+      "[\\s\\S]*column-vector-valued[\\s\\S]*");
 }
 
 // --------------------------------------------------------------------------
@@ -507,12 +457,10 @@ GTEST_TEST(PiecewisePolynomialConversion, FirstOrderHold) {
   const PiecewiseBezierPath path =
       PiecewiseBezierPath::FromTrajectory(pp, Options{});
   ASSERT_EQ(path.segments().size(), 5u);
-  for (const BezierSegment& segment : path.segments()) {
-    // A first-order hold is exactly an order-1 Bézier per segment.
-    EXPECT_EQ(segment.control_points.cols(), 2);
-  }
-  // Order-1 Bézier control points are the waypoints themselves.
   for (int k = 0; k < 5; ++k) {
+    // A first-order hold is exactly an order-1 Bézier per segment, whose
+    // control points are the waypoints themselves.
+    ASSERT_EQ(path.segments()[k].control_points.cols(), 2);
     EXPECT_LT((path.segments()[k].control_points.col(0) - samples.col(k))
                   .cwiseAbs()
                   .maxCoeff(),
@@ -548,17 +496,19 @@ GTEST_TEST(PiecewisePolynomialConversion, CubicSplines) {
   EXPECT_LT(MaxSampledError(path_b, shape_preserving, 10001), 1e-10);
 }
 
-/* A single high-degree polynomial segment, up to the default degree cap. */
-GTEST_TEST(PiecewisePolynomialConversion, LagrangeUpToDegreeCap) {
+/* A single high-degree polynomial segment, from degree 1 up to the default cap
+and one past it. */
+GTEST_TEST(PiecewisePolynomialConversion, LagrangeUpToDegreeCapAndBeyond) {
   const Options options;
   ASSERT_EQ(options.max_conversion_degree, 10);
-  for (int degree = 1; degree <= options.max_conversion_degree; ++degree) {
+  for (int degree = 1; degree <= options.max_conversion_degree + 1; ++degree) {
+    SCOPED_TRACE("degree " + std::to_string(degree));
     const int num_points = degree + 1;
     Eigen::VectorXd times(num_points);
     Eigen::MatrixXd samples(2, num_points);
     for (int i = 0; i < num_points; ++i) {
-      // A non-unit segment duration: the monomial coefficients
-      // must be rescaled by (t_end - t_start)^a before the change of basis.
+      // A non-unit segment duration: the monomial coefficients must be
+      // rescaled by (t_end - t_start)^a before the change of basis.
       times[i] = 0.3 + 1.7 * static_cast<double>(i) / degree;
       samples(0, i) = std::sin(3.0 * times[i]);
       samples(1, i) = std::cos(2.0 * times[i]) - 0.25 * times[i];
@@ -566,39 +516,20 @@ GTEST_TEST(PiecewisePolynomialConversion, LagrangeUpToDegreeCap) {
     const PiecewisePolynomial<double> pp =
         PiecewisePolynomial<double>::LagrangeInterpolatingPolynomial(times,
                                                                      samples);
+    Options relaxed = options;
+    if (degree > options.max_conversion_degree) {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          PiecewiseBezierPath::FromTrajectory(pp, options),
+          "[\\s\\S]*max_conversion_degree[\\s\\S]*");
+      // Raising the cap is the documented escape hatch.
+      relaxed.max_conversion_degree = degree;
+    }
     const PiecewiseBezierPath path =
-        PiecewiseBezierPath::FromTrajectory(pp, options);
+        PiecewiseBezierPath::FromTrajectory(pp, relaxed);
     ASSERT_EQ(path.segments().size(), 1u);
     EXPECT_EQ(path.segments()[0].control_points.cols(), degree + 1);
-    EXPECT_LT(MaxSampledError(path, pp, 10001), 1e-10) << "degree " << degree;
+    EXPECT_LT(MaxSampledError(path, pp, 10001), 1e-10);
   }
-}
-
-GTEST_TEST(PiecewisePolynomialConversion, DegreeAboveCapThrows) {
-  const int degree = 11;
-  const int num_points = degree + 1;
-  Eigen::VectorXd times(num_points);
-  Eigen::MatrixXd samples(1, num_points);
-  for (int i = 0; i < num_points; ++i) {
-    times[i] = 0.3 + 1.7 * static_cast<double>(i) / degree;
-    samples(0, i) = std::sin(2.0 * times[i]);
-  }
-  const PiecewisePolynomial<double> pp =
-      PiecewisePolynomial<double>::LagrangeInterpolatingPolynomial(times,
-                                                                   samples);
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(pp, Options{});
-      },
-      "max_conversion_degree");
-
-  // Raising the cap makes it work.
-  Options relaxed;
-  relaxed.max_conversion_degree = degree;
-  const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(pp, relaxed);
-  EXPECT_EQ(path.segments()[0].control_points.cols(), degree + 1);
-  EXPECT_LT(MaxSampledError(path, pp, 10001), 1e-10);
 }
 
 GTEST_TEST(PiecewisePolynomialConversion, MatrixValuedThrows) {
@@ -608,11 +539,9 @@ GTEST_TEST(PiecewisePolynomialConversion, MatrixValuedThrows) {
   const std::vector<double> times{0.0, 1.0};
   const PiecewisePolynomial<double> pp =
       PiecewisePolynomial<double>::FirstOrderHold(times, samples);
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(pp, Options{});
-      },
-      "column-vector-valued");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromTrajectory(pp, Options{}),
+      "[\\s\\S]*column-vector-valued[\\s\\S]*");
 }
 
 // --------------------------------------------------------------------------
@@ -637,24 +566,16 @@ GTEST_TEST(JunctionValidation, InjectedDiscontinuityThrows) {
   std::mt19937_64 generator(90210);
   Eigen::VectorXd offset = Eigen::VectorXd::Zero(3);
   offset[1] = 1e-3;
-  const CompositeTrajectory<double> trajectory =
-      MakeJunctionCase(offset, &generator);
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
-      },
-      "C0 discontinuity");
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
-      },
-      "coordinate 1");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromTrajectory(MakeJunctionCase(offset, &generator),
+                                          Options{}),
+      "[\\s\\S]*C0 discontinuity[\\s\\S]*coordinate 1[\\s\\S]*");
 
   // A gap just under the tolerance is accepted.
   Eigen::VectorXd tiny = Eigen::VectorXd::Zero(3);
   tiny[2] = 9e-8;
-  const CompositeTrajectory<double> ok = MakeJunctionCase(tiny, &generator);
-  EXPECT_NO_THROW(PiecewiseBezierPath::FromTrajectory(ok, Options{}));
+  EXPECT_NO_THROW(PiecewiseBezierPath::FromTrajectory(
+      MakeJunctionCase(tiny, &generator), Options{}));
 }
 
 GTEST_TEST(JunctionValidation, TwoPiOffsetAcceptedOnlyWhenDeclaredRevolute) {
@@ -664,46 +585,33 @@ GTEST_TEST(JunctionValidation, TwoPiOffsetAcceptedOnlyWhenDeclaredRevolute) {
   const CompositeTrajectory<double> trajectory =
       MakeJunctionCase(offset, &generator);
 
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
-      },
-      "C0 discontinuity");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromTrajectory(trajectory, Options{}),
+      "[\\s\\S]*C0 discontinuity[\\s\\S]*");
 
   // Declaring the *wrong* coordinate does not help.
   Options wrong;
   wrong.continuous_revolute_indices = {0, 2};
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(trajectory, wrong);
-      },
-      "C0 discontinuity");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromTrajectory(trajectory, wrong),
+      "[\\s\\S]*C0 discontinuity[\\s\\S]*");
 
   Options right;
   right.continuous_revolute_indices = {1};
   EXPECT_NO_THROW(PiecewiseBezierPath::FromTrajectory(trajectory, right));
 
-  // Any integer multiple of 2π is fine.
+  // Any integer multiple of 2π is fine ...
   Eigen::VectorXd big_offset = Eigen::VectorXd::Zero(3);
   big_offset[1] = -3.0 * kTwoPi;
-  const CompositeTrajectory<double> big =
-      MakeJunctionCase(big_offset, &generator);
-  EXPECT_NO_THROW(PiecewiseBezierPath::FromTrajectory(big, right));
-}
+  EXPECT_NO_THROW(PiecewiseBezierPath::FromTrajectory(
+      MakeJunctionCase(big_offset, &generator), right));
 
-GTEST_TEST(JunctionValidation, NonMultipleOfTwoPiOffsetThrowsEvenWhenRevolute) {
-  std::mt19937_64 generator(2468);
-  Eigen::VectorXd offset = Eigen::VectorXd::Zero(2);
-  offset[0] = kTwoPi + 1e-3;
-  const CompositeTrajectory<double> trajectory =
-      MakeJunctionCase(offset, &generator);
-  Options options;
-  options.continuous_revolute_indices = {0, 1};
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(trajectory, options);
-      },
-      "C0 discontinuity");
+  // ... but an offset that is not one is still a discontinuity.
+  Eigen::VectorXd off_by = Eigen::VectorXd::Zero(3);
+  off_by[1] = kTwoPi + 1e-3;
+  DRAKE_EXPECT_THROWS_MESSAGE(PiecewiseBezierPath::FromTrajectory(
+                                  MakeJunctionCase(off_by, &generator), right),
+                              "[\\s\\S]*C0 discontinuity[\\s\\S]*");
 }
 
 /* Forward kinematics is 2π-periodic, so a legitimate 2πk junction offset must
@@ -741,11 +649,9 @@ GTEST_TEST(JunctionValidation, OutOfRangeRevoluteIndexThrows) {
   waypoints << 0.0, 1.0, 2.0, 0.0, 0.0, 0.0;
   Options options;
   options.continuous_revolute_indices = {2};
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromWaypoints(waypoints, options);
-      },
-      "continuous_revolute_indices");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromWaypoints(waypoints, options),
+      "[\\s\\S]*continuous_revolute_indices[\\s\\S]*");
 }
 
 /* A zero-order hold genuinely teleports at every break; certifying it
@@ -754,13 +660,11 @@ GTEST_TEST(JunctionValidation, ZeroOrderHoldIsRejected) {
   const Eigen::VectorXd times = Eigen::VectorXd::LinSpaced(4, 0.0, 3.0);
   Eigen::MatrixXd samples(2, 4);
   samples << 0.0, 1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 0.0;
-  const PiecewisePolynomial<double> pp =
-      PiecewisePolynomial<double>::ZeroOrderHold(times, samples);
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(pp, Options{});
-      },
-      "C0 discontinuity");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromTrajectory(
+          PiecewisePolynomial<double>::ZeroOrderHold(times, samples),
+          Options{}),
+      "[\\s\\S]*C0 discontinuity[\\s\\S]*");
 }
 
 // --------------------------------------------------------------------------
@@ -948,28 +852,19 @@ GTEST_TEST(Composite, UnknownSegmentTypeThrowsWithIndexAndTypeName) {
   const CompositeTrajectory<double> trajectory =
       MakeComposite(std::move(pieces));
 
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
-      },
-      "segment index 1");
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
-      },
-      "UnsupportedTrajectory");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromTrajectory(trajectory, Options{}),
+      "[\\s\\S]*UnsupportedTrajectory[\\s\\S]*segment index 1[\\s\\S]*");
 
   // At the top level the offending segment index is 0.
   const UnsupportedTrajectory bare(num_positions, 0.0, 1.0);
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromTrajectory(bare, Options{});
-      },
-      "segment index 0");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromTrajectory(bare, Options{}),
+      "[\\s\\S]*segment index 0[\\s\\S]*");
 }
 
 // --------------------------------------------------------------------------
-// Waypoints.
+// Waypoints and evaluation domain handling.
 // --------------------------------------------------------------------------
 
 GTEST_TEST(Waypoints, OrderOneSegmentsAreExact) {
@@ -993,9 +888,7 @@ GTEST_TEST(Waypoints, OrderOneSegmentsAreExact) {
     EXPECT_TRUE(segment.control_points.col(0).isApprox(waypoints.col(k), 0.0));
     EXPECT_TRUE(
         segment.control_points.col(1).isApprox(waypoints.col(k + 1), 0.0));
-  }
-  // Straight-line interpolation is exact at every parameter.
-  for (int k = 0; k + 1 < num_waypoints; ++k) {
+    // Straight-line interpolation is exact at every parameter.
     for (int i = 0; i <= 100; ++i) {
       const double s = i / 100.0;
       const Eigen::VectorXd expected =
@@ -1008,22 +901,13 @@ GTEST_TEST(Waypoints, OrderOneSegmentsAreExact) {
 }
 
 GTEST_TEST(Waypoints, TooFewWaypointsThrows) {
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromWaypoints(Eigen::MatrixXd::Zero(3, 1),
-                                           Options{});
-      },
-      "at least 2 waypoints");
-  ExpectThrowsWith(
-      [&]() {
-        PiecewiseBezierPath::FromWaypoints(Eigen::MatrixXd(0, 4), Options{});
-      },
-      "zero rows");
+  DRAKE_EXPECT_THROWS_MESSAGE(PiecewiseBezierPath::FromWaypoints(
+                                  Eigen::MatrixXd::Zero(3, 1), Options{}),
+                              "[\\s\\S]*at least 2 waypoints[\\s\\S]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromWaypoints(Eigen::MatrixXd(0, 4), Options{}),
+      "[\\s\\S]*zero rows[\\s\\S]*");
 }
-
-// --------------------------------------------------------------------------
-// Evaluation domain handling.
-// --------------------------------------------------------------------------
 
 GTEST_TEST(Evaluation, DomainEdgesClampAndOutsideThrows) {
   Eigen::MatrixXd waypoints(2, 3);
@@ -1034,52 +918,27 @@ GTEST_TEST(Evaluation, DomainEdgesClampAndOutsideThrows) {
   EXPECT_TRUE(path.Value(0.0).isApprox(waypoints.col(0), 0.0));
   EXPECT_TRUE(path.Value(2.0).isApprox(waypoints.col(2), 0.0));
   // Within the clamping slack.
-  EXPECT_NO_THROW(path.Value(-1e-13));
   EXPECT_NO_THROW(path.Value(2.0 + 1e-13));
   EXPECT_TRUE(path.Value(-1e-13).isApprox(waypoints.col(0), 0.0));
-
-  ExpectThrowsWith(
-      [&]() {
-        path.Value(-1e-3);
-      },
-      "outside the path's domain");
-  ExpectThrowsWith(
-      [&]() {
-        path.Value(2.5);
-      },
-      "outside the path's domain");
-  ExpectThrowsWith(
-      [&]() {
-        path.EvaluateSegment(0, 1.5);
-      },
-      "outside the segment's domain");
-  ExpectThrowsWith(
-      [&]() {
-        path.EvaluateSegment(0, -0.5);
-      },
-      "outside the segment's domain");
   EXPECT_NO_THROW(path.EvaluateSegment(0, 1.0 + 1e-13));
+
+  for (const double t : {-1e-3, 2.5}) {
+    DRAKE_EXPECT_THROWS_MESSAGE(path.Value(t),
+                                "[\\s\\S]*outside the path's domain[\\s\\S]*");
+  }
+  for (const double bad_s : {-0.5, 1.5}) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        path.EvaluateSegment(0, bad_s),
+        "[\\s\\S]*outside the segment's domain[\\s\\S]*");
+  }
+  for (const int k : {-1, 2}) {
+    DRAKE_EXPECT_THROWS_MESSAGE(path.EvaluateSegment(k, 0.5),
+                                "[\\s\\S]*out of range[\\s\\S]*");
+  }
 }
 
-GTEST_TEST(Evaluation, SegmentIndexOutOfRangeThrows) {
-  Eigen::MatrixXd waypoints(2, 3);
-  waypoints << 0.0, 1.0, 3.0, -1.0, 0.0, 1.0;
-  const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromWaypoints(waypoints, Options{});
-  ExpectThrowsWith(
-      [&]() {
-        path.EvaluateSegment(2, 0.5);
-      },
-      "out of range");
-  ExpectThrowsWith(
-      [&]() {
-        path.EvaluateSegment(-1, 0.5);
-      },
-      "out of range");
-}
-
-/* Segment-time bookkeeping contract for downstream modules: at a junction
-time shared by two segments, Value() evaluates the LATER segment, exactly as
+/* Segment-time bookkeeping contract for downstream modules: at a junction time
+shared by two segments, Value() evaluates the LATER segment, exactly as
 drake::trajectories::PiecewiseTrajectory::get_segment_index() does; at the
 domain end it evaluates the last segment. */
 GTEST_TEST(Evaluation, JunctionTimeSelectsTheLaterSegment) {
@@ -1090,17 +949,17 @@ GTEST_TEST(Evaluation, JunctionTimeSelectsTheLaterSegment) {
   ASSERT_EQ(path.segments().size(), 3u);
   // Segment k spans [k, k+1]; at t = 1 both segment 0's end and segment 1's
   // start are the value 1.0, and the lookup lands on segment 1.
+  EXPECT_EQ(path.Value(0.0)[0], 0.0);
   EXPECT_EQ(path.Value(1.0)[0], 1.0);
   EXPECT_EQ(path.Value(2.0)[0], 3.0);
   EXPECT_EQ(path.Value(3.0)[0], 6.0);
-  EXPECT_EQ(path.Value(0.0)[0], 0.0);
   // Interior samples resolve to the expected segment.
   EXPECT_NEAR(path.Value(1.5)[0], 2.0, 1e-15);
   EXPECT_NEAR(path.Value(2.5)[0], 4.5, 1e-15);
 }
 
-/* Junction times are shared by two segments; Value() must be consistent there
-regardless of which side the lookup lands on. */
+/* Junction times are shared by two segments; Value() must agree with the source
+trajectory there regardless of which side the lookup lands on. */
 GTEST_TEST(Evaluation, JunctionTimesAreConsistent) {
   std::mt19937_64 generator(606);
   const int num_positions = 3;

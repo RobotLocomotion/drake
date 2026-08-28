@@ -1,30 +1,20 @@
-// Concurrency determinism.
-//
-// Four claims are pinned here, on the fixed corpus of ten random cases (a mix
-// of free and violating) that concurrency_test_utilities.h builds, plus the
-// deep workload it derives from that corpus:
+// Concurrency determinism, on the fixed corpus of ten random cases (a mix of
+// free and violating) that test_utilities.h builds, plus the deep workload it
+// derives from that corpus:
 //
 //   1. The answer does not depend on the thread count. Verdict and earliest
-//      witness are identical at Parallelism {1, 2, 8, 16} in both search
-//      modes, and in kCertifyAll so are `nodes` and `narrowphase_queries`:
-//      the parallel driver explores the same tree in a different order. (In
+//      witness are identical at Parallelism {1, 2, 8, 16} in both search modes,
+//      and in kCertifyAll so are `nodes` and `narrowphase_queries`. (In
 //      kFindFirstViolation the branch-and-bound bound arrives at different
-//      times, so the statistics are not deterministic; the reported witness
-//      still is.)
-//   2. Serial mode is bit-deterministic: two runs produce byte-identical
-//      findings and statistics.
-//   3. The public Check* methods are safe to call concurrently on one checker
-//      instance: eight threads sharing one checker get the same answers as
-//      the same calls made one after another.
+//      times, so the statistics are not deterministic; the witness still is.)
+//   2. Serial mode is bit-deterministic.
+//   3. The public Check* methods are safe to call concurrently on one instance.
 //   4. The deep workload, which unlike any corpus case is big enough that the
 //      driver actually hires helpers, explores the same tree and reports the
-//      same findings at every thread count, and keeps doing so when several
-//      callers ask for it at once.
+//      same findings at every thread count, concurrent callers included.
 //
 // Every case is an equality, not a wall-clock claim, so this target runs under
-// every build flavor; the timing claims live in concurrency_timing_test.cc.
-//
-// This is the test to run under ThreadSanitizer:
+// every build flavor. This is the test to run under ThreadSanitizer:
 //
 //    bazel test --config=tsan //planning/continuous_collision:concurrency_test
 //
@@ -32,8 +22,7 @@
 // range TSan's shadow memory expects and the runtime aborts before main ever
 // runs; run the binary under `setarch $(uname -m) -R`, or lower
 // vm.mmap_rnd_bits to 28. A report rooted in a continuous_collision frame is a
-// real bug; one rooted entirely in Drake belongs in a suppression file
-// (TSAN_OPTIONS=suppressions=...).
+// real bug; one rooted entirely in Drake belongs in a suppression file.
 
 #include <cstddef>
 #include <iostream>
@@ -45,17 +34,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/parallelism.h"
-#include "drake/planning/continuous_collision/test/concurrency_test_utilities.h"
+#include "drake/planning/continuous_collision/test/test_utilities.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
 namespace test {
 namespace {
-
-// ---------------------------------------------------------------------------
-// 1. The answer does not depend on the thread count.
-// ---------------------------------------------------------------------------
 
 GTEST_TEST(ConcurrencyTest, CorpusIsBalanced) {
   const auto& corpus = Corpus();
@@ -92,10 +77,9 @@ GTEST_TEST(ConcurrencyTest, VerdictAndEarliestWitnessAreThreadCountInvariant) {
 }
 
 GTEST_TEST(ConcurrencyTest, CertifyAllIsFullyThreadCountInvariant) {
-  // In kCertifyAll every node's decision depends only on its own control points
-  // and inherited active set, so the *whole* tree, and therefore every
-  // statistic and every finding, is thread-count independent, not just the
-  // earliest witness.
+  // In kCertifyAll every node's decision depends only on its own control
+  // points and inherited active set, so the *whole* tree, and therefore every
+  // statistic and every finding, is thread-count independent.
   for (const auto& entry : Corpus()) {
     const BezierCurve<double> trajectory = entry->trajectory();
     const CertificationResult serial = entry->checker->CheckTrajectory(
@@ -120,8 +104,7 @@ GTEST_TEST(ConcurrencyTest, FindFirstViolationStatisticsAreAllowedToDiffer) {
   // The complement of the test above, pinned so that a future reader does not
   // "fix" an expected statistics mismatch: under branch-and-bound the number of
   // nodes a run visits depends on when the atomic bound tightens, which depends
-  // on timing. Only the answer is deterministic, so the assertion is on the
-  // *witness* and the statistics are merely reported.
+  // on timing. Only the *witness* is deterministic.
   int cases_with_differing_stats = 0;
   int examined = 0;
   for (const auto& entry : Corpus()) {
@@ -151,10 +134,6 @@ GTEST_TEST(ConcurrencyTest, FindFirstViolationStatisticsAreAllowedToDiffer) {
                "them.\n\n";
 }
 
-// ---------------------------------------------------------------------------
-// 2. Serial mode is bit-deterministic.
-// ---------------------------------------------------------------------------
-
 GTEST_TEST(ConcurrencyTest, SerialModeIsBitDeterministic) {
   for (const auto& entry : Corpus()) {
     for (const SearchMode mode :
@@ -177,10 +156,6 @@ GTEST_TEST(ConcurrencyTest, SerialModeIsBitDeterministic) {
     }
   }
 }
-
-// ---------------------------------------------------------------------------
-// 3. Concurrent Check* calls on one checker instance.
-// ---------------------------------------------------------------------------
 
 GTEST_TEST(ConcurrencyTest, ConcurrentCallsOnOneCheckerMatchSequential) {
   // Every worker hits the *same* checker object, so they contend for the
@@ -247,8 +222,8 @@ GTEST_TEST(ConcurrencyTest, ConcurrentMixedApiCallsAreIndependent) {
       entry.checker->CheckPath(waypoints, options);
   const MotionBoundTable table_expected = entry.checker->ComputeMotionBounds(
       entry.checker->Normalize(entry.trajectory(), options));
-  // Snapshot every λ entry, not just the CSR's size: the row layout is fixed by
-  // topology and would survive any amount of corruption in the coefficients.
+  // Snapshot every lambda entry, not just the CSR's size: the row layout is
+  // fixed by topology and would survive any amount of coefficient corruption.
   std::vector<std::vector<std::pair<int, double>>> lambda_expected;
   std::vector<double> slack_expected;
   for (int p = 0; p < table_expected.num_pairs(); ++p) {
@@ -289,7 +264,7 @@ GTEST_TEST(ConcurrencyTest, ConcurrentMixedApiCallsAreIndependent) {
         }
         for (int p = 0; p < table.num_pairs(); ++p) {
           if (table.GetEntries(p) != lambda_expected[p]) ++mismatches[t];
-          // The carve-out residual is part of Δ_p, so it has to be
+          // The carve-out residual is part of Delta_p, so it has to be
           // bit-identical across threads too.
           if (table.carveout_slack(p) != slack_expected[p]) ++mismatches[t];
         }
@@ -300,31 +275,24 @@ GTEST_TEST(ConcurrencyTest, ConcurrentMixedApiCallsAreIndependent) {
   for (int t = 0; t < kThreads; ++t) EXPECT_EQ(mismatches[t], 0);
 }
 
-// ---------------------------------------------------------------------------
-// 4. The deep workload explores the same tree at every thread count.
-// ---------------------------------------------------------------------------
-//
 // The sharing path only ever runs on a workload big enough to hire a helper,
-// which the corpus cases of claims 1-3 never are. These cases are where it gets
-// its coverage, TSan's included, and they are equalities, so unlike the
-// wall-clock claims in concurrency_timing_test.cc they run everywhere.
+// which the corpus cases above never are. The three tests below are where it
+// gets its coverage, TSan's included.
 
 GTEST_TEST(ConcurrencyTest, DeepWorkloadIsBigEnoughToBeWorthSpreading) {
-  // Without this the two tests below could silently degenerate into measuring
-  // a handful of nodes if the corpus or the bisection ever drifted.
+  // Without this the two tests below could silently degenerate into measuring a
+  // handful of nodes if the corpus or the bisection ever drifted.
   const DeepWorkload& deep = Deep();
   ASSERT_NE(deep.entry, nullptr);
   EXPECT_GE(deep.nodes, kMinDeepNodes) << "grazing margin " << deep.margin;
+  EXPECT_GE(deep.max_depth, kMinDeepDepth) << "grazing margin " << deep.margin;
   std::cout << "\n[ concurrency ] deep workload: " << deep.entry->name
             << ", margin " << deep.margin << ", " << deep.nodes
-            << " nodes at min_interval " << deep.min_interval << "\n\n";
+            << " nodes, depth " << deep.max_depth << ", at min_interval "
+            << deep.min_interval << "\n\n";
 }
 
 GTEST_TEST(ConcurrencyTest, DeepWorkloadIsThreadCountInvariant) {
-  // The scaling test below only proves work moved between threads; this proves
-  // the *same* work moved. It runs in every build, sanitizers included, and is
-  // where the sharing path gets its TSan coverage, because the corpus cases of
-  // the tests above are too small to ever hire a helper.
   const DeepWorkload& deep = Deep();
   ASSERT_NE(deep.entry, nullptr);
   const BezierCurve<double> trajectory = deep.entry->trajectory();
@@ -348,17 +316,15 @@ GTEST_TEST(ConcurrencyTest, DeepWorkloadIsThreadCountInvariant) {
 GTEST_TEST(ConcurrencyTest, DeepWorkloadSurvivesConcurrentParallelCalls) {
   // Several caller threads each asking the *same* checker for internal
   // parallelism on a workload big enough to hire: this is the only test that
-  // makes concurrent calls contend for the checker's worker pool as well as
-  // its context pool, and the case where a reservation returning fewer threads
-  // than asked for is the normal outcome rather than an edge case.
+  // makes concurrent calls contend for the checker's worker pool as well as its
+  // context pool, and the case where a reservation returning fewer threads than
+  // asked for is the normal outcome rather than an edge case.
   const DeepWorkload& deep = Deep();
   ASSERT_NE(deep.entry, nullptr);
   const CertificationResult expected = deep.entry->checker->CheckTrajectory(
       deep.entry->trajectory(), deep.options(Parallelism::None()));
 
   constexpr int kThreads = 4;
-  // gtest assertions are not safe off the main thread, so each worker counts
-  // its own mismatches and the main thread asserts after the join.
   std::vector<int> mismatches(kThreads, 0);
   std::vector<std::thread> threads;
   for (int t = 0; t < kThreads; ++t) {
