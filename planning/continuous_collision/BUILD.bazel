@@ -1,7 +1,6 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -440,65 +439,6 @@ drake_cc_googletest(
         "//planning:robot_diagram",
         "//planning:robot_diagram_builder",
     ],
-)
-
-# === benchmark/ ===
-
-# The performance benchmark suite. A full run takes minutes and reports
-# measurements rather than assertions, so it is not a test; run it with
-#   bazel run //planning/continuous_collision:iiwa_benchmark -- \
-#       --out /tmp/ccd --drake_commit $(git rev-parse HEAD)
-# It is not tagged manual, though, so that CI compiles it: the benchmark shares
-# every header the library exposes, and a benchmark that stopped building would
-# otherwise go unnoticed until someone next needed a measurement. The smoke
-# test that comes with it runs the cheapest scenario at one repetition (about
-# two seconds) purely to prove the binary still starts and finishes.
-drake_cc_binary(
-    name = "iiwa_benchmark",
-    testonly = 1,
-    srcs = [
-        "benchmark/benchmark_util.cc",
-        "benchmark/benchmark_util.h",
-        "benchmark/iiwa_benchmark.cc",
-        "benchmark/scenario_worlds.cc",
-        "benchmark/scenario_worlds.h",
-    ],
-    data = [
-        "@drake_models//:iiwa_description",
-    ],
-    deps = [
-        ":continuous_collision_checker",
-        "//common:copyable_unique_ptr",
-        "//common:parallelism",
-        "//common/trajectories:bezier_curve",
-        "//common/trajectories:composite_trajectory",
-        "//common/trajectories:trajectory",
-        "//geometry:geometry_ids",
-        "//geometry:scene_graph",
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "//multibody/parsing:parser",
-        "//multibody/plant",
-        "//multibody/tree",
-        "//planning:collision_checker_params",
-        "//planning:robot_diagram",
-        "//planning:robot_diagram_builder",
-        "//planning:scene_graph_collision_checker",
-        "@eigen",
-    ],
-    add_test_rule = 1,
-    test_rule_args = [
-        "--only",
-        "dual",
-        "--reps",
-        "1",
-        "--warmup",
-        "0",
-        "--dense-samples",
-        "200",
-    ],
-    test_rule_size = "small",
-    test_rule_timeout = "moderate",
 )
 
 add_lint_tests()

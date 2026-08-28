@@ -42,8 +42,8 @@ namespace {
 // Both are timing claims, so both are written to survive a loaded machine: a
 // ratio with a wide margin, best-of-three, and a skip when the hardware or the
 // build cannot support the claim at all. They are regression detectors rather
-// than benchmarks (the numbers live in benchmark/results/), and should only
-// ever fire on a driver that has stopped distributing work.
+// than benchmarks, and should only ever fire on a driver that has stopped
+// distributing work.
 
 // True when the build cannot support a meaningful wall-clock claim: a sanitizer
 // build serializes and inflates everything, an unoptimized build changes the

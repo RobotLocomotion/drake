@@ -297,12 +297,12 @@ struct Recruitment {
  objects, one thread creation per helper and, at the end of the run, one join
  per helper before the lead can collect their statistics. Thread creation
  dominates that list at tens of microseconds per worker, while a node costs
- ~7-13 us on the machine the benchmark suite was measured on, so 64 nodes of
- work already done is roughly a 3x margin over the price of a full fifteen
- helpers. It also bounds the one case lazy recruitment cannot avoid, a check
- that ends immediately after hiring, to a few hundred microseconds. Below the
- threshold a run is exactly serial at any Options::parallelism, which matters
- because Parallelism::Max() is that field's default. */
+ ~7-13 us on a modern desktop core, so 64 nodes of work already done is
+ roughly a 3x margin over the price of a full fifteen helpers. It also bounds
+ the one case lazy recruitment cannot avoid, a check that ends immediately
+ after hiring, to a few hundred microseconds. Below the threshold a run is
+ exactly serial at any Options::parallelism, which matters because
+ Parallelism::Max() is that field's default. */
 constexpr std::uint64_t kNodesBeforeHiringHelpers = 64;
 
 // ---------------------------------------------------------------------------
