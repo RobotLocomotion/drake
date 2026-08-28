@@ -1,0 +1,47 @@
+Require valid bounds on POSITION accessors
+
+The glTF 2.0 specification requires that the accessor referenced by a mesh
+primitive's POSITION attribute define both `min` and `max`, and that they
+bound the accessor's values (so min <= max). tinygltf parses these as optional
+and doesn't validate them, so a non-conforming file loads successfully with
+empty or inverted bounds. RenderEngineGl relies on these bounds (e.g., for
+shadow-camera fitting), so we reject such files at parse time with a
+descriptive error.
+
+This should be upstreamed, but upstream has disabled pull requests.
+
+--- attic/tiny_gltf.h
++++ attic/tiny_gltf.h
+@@ -6290,6 +6290,32 @@
+       for (auto &attribute : primitive.attributes) {
+         const auto accessorsIndex = size_t(attribute.second);
+         if (accessorsIndex < model->accessors.size()) {
++          // The glTF 2.0 spec requires that a POSITION attribute's accessor
++          // define both min and max (one value per vector component), with
++          // min <= max.
++          if (attribute.first == "POSITION") {
++            const Accessor &accessor = model->accessors[accessorsIndex];
++            if (accessor.minValues.size() != 3 ||
++                accessor.maxValues.size() != 3) {
++              if (err) {
++                (*err) += "accessor[" + std::to_string(accessorsIndex) +
++                          "] is used as a POSITION attribute, but does not "
++                          "define both 'min' and 'max' with three values "
++                          "each.";
++              }
++              return false;
++            }
++            for (size_t i = 0; i < 3; ++i) {
++              if (!(accessor.minValues[i] <= accessor.maxValues[i])) {
++                if (err) {
++                  (*err) += "accessor[" + std::to_string(accessorsIndex) +
++                            "] is used as a POSITION attribute, but its 'min' "
++                            "is greater than its 'max'.";
++                }
++                return false;
++              }
++            }
++          }
+           const auto bufferView = model->accessors[accessorsIndex].bufferView;
+           // bufferView could be null(-1) for sparse morph target
+           if (bufferView >= 0 && bufferView < (int)model->bufferViews.size()) {
