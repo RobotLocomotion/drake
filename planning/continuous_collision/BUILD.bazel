@@ -11,45 +11,21 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "continuous_collision",
     visibility = ["//visibility:public"],
-    deps = [
-        ":bounding_sphere",
-        ":certifier",
-        ":continuous_collision_checker",
-        ":distance_oracle",
-        ":motion_bound_table",
-        ":numerics",
-        ":options",
-        ":piecewise_bezier_path",
-        ":vpolytope_ingestion",
-    ],
+    deps = [":continuous_collision_checker"],
 )
 
+# Numerical policy, shape classification and the pair record, shared by every
+# translation unit here.
 drake_cc_library(
-    name = "numerics",
-    hdrs = ["numerics.h"],
-)
-
-# Shape classification shared by the oracle, the tau table and the
-# bounding-sphere pass. Header-only and build-system internal.
-drake_cc_library(
-    name = "shape_class",
-    hdrs = ["shape_class.h"],
+    name = "internal",
+    hdrs = ["internal.h"],
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
         "//common:unused",
-        "//geometry:shape_specification",
-    ],
-)
-
-drake_cc_library(
-    name = "options",
-    hdrs = ["options.h"],
-    deps = [
-        "//common:parallelism",
         "//geometry:geometry_ids",
+        "//geometry:shape_specification",
         "//multibody/tree:multibody_tree_indexes",
-        "@eigen",
     ],
 )
 
@@ -57,13 +33,15 @@ drake_cc_library(
     name = "piecewise_bezier_path",
     srcs = ["piecewise_bezier_path.cc"],
     hdrs = ["piecewise_bezier_path.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
-        ":options",
         "//common:essential",
         "//common/trajectories:trajectory",
         "@eigen",
     ],
     implementation_deps = [
+        ":internal",
         "//common:nice_type_name",
         "//common/trajectories:bezier_curve",
         "//common/trajectories:bspline_trajectory",
@@ -74,42 +52,29 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "bounding_sphere",
-    srcs = ["bounding_sphere.cc"],
-    hdrs = ["bounding_sphere.h"],
-    deps = [
-        "//geometry:shape_specification",
-        "//math:geometric_transform",
-        "@eigen",
-    ],
-    implementation_deps = [
-        "//common:essential",
-        "//geometry/proximity:polygon_surface_mesh",
-        "@fmt",
-    ],
-)
-
+# The kinematic analysis: bounding spheres, J(p) and the lambda table.
 drake_cc_library(
     name = "motion_bound_table",
     srcs = ["motion_bound_table.cc"],
     hdrs = ["motion_bound_table.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
-        ":bounding_sphere",
-        ":options",
+        ":internal",
         ":piecewise_bezier_path",
         "//common:essential",
         "//geometry:geometry_ids",
+        "//math:geometric_transform",
         "//multibody/plant",
         "//multibody/tree:multibody_tree_indexes",
         "//planning:robot_diagram",
         "@eigen",
     ],
     implementation_deps = [
-        ":shape_class",
         "//geometry:geometry_roles",
         "//geometry:scene_graph_inspector",
         "//geometry:shape_specification",
+        "//geometry/proximity:polygon_surface_mesh",
         "//multibody/tree",
         "@fmt",
     ],
@@ -119,15 +84,16 @@ drake_cc_library(
     name = "distance_oracle",
     srcs = ["distance_oracle.cc"],
     hdrs = ["distance_oracle.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
-        ":options",
+        ":internal",
         "//common:essential",
         "//geometry:scene_graph",
         "//planning:robot_diagram",
         "@eigen",
     ],
     implementation_deps = [
-        ":shape_class",
         "//geometry:scene_graph_inspector",
         "//geometry:shape_specification",
         "//geometry/proximity:polygon_surface_mesh",
@@ -137,79 +103,37 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "vpolytope_ingestion",
-    srcs = ["vpolytope_ingestion.cc"],
-    hdrs = ["vpolytope_ingestion.h"],
-    deps = [
-        "//geometry:geometry_ids",
-        "//geometry/optimization:convex_set",
-        "//math:geometric_transform",
-        "//multibody/plant",
-    ],
-    implementation_deps = [
-        "//common:essential",
-        "//geometry:shape_specification",
-        "@fmt",
-    ],
-)
-
-# The certificate and the node recursion are mutually recursive translation
-# units (certificate.cc replays the events that certifier_internal.cc emits),
-# so they form one library.
-drake_cc_library(
-    name = "certifier",
-    srcs = [
-        "certificate.cc",
-        "certifier_internal.cc",
-    ],
-    hdrs = [
-        "certificate.h",
-        "certifier_internal.h",
-    ],
-    install_hdrs_exclude = ["certifier_internal.h"],
-    deps = [
-        ":distance_oracle",
-        ":motion_bound_table",
-        ":numerics",
-        ":options",
-        ":piecewise_bezier_path",
-        "//common:essential",
-        "//common:parallelism",
-        "//geometry:scene_graph",
-        "//math:geometric_transform",
-        "//multibody/tree:multibody_tree_indexes",
-        "//planning:collision_checker_context",
-        "//planning:robot_diagram",
-        "@eigen",
-    ],
-    implementation_deps = [
-        "//multibody/plant",
-        "@fmt",
-    ],
-)
-
+# The public facade plus the node recursion it drives. certifier.{h,cc} are
+# private to this target: certifier.h names the public Options/Result types, so
+# it cannot live in a library the facade depends on.
 drake_cc_library(
     name = "continuous_collision_checker",
-    srcs = ["continuous_collision_checker.cc"],
+    srcs = [
+        "certifier.cc",
+        "certifier.h",
+        "continuous_collision_checker.cc",
+    ],
     hdrs = ["continuous_collision_checker.h"],
     deps = [
-        ":certifier",
-        ":distance_oracle",
-        ":motion_bound_table",
-        ":options",
-        ":piecewise_bezier_path",
         "//common:essential",
+        "//common:parallelism",
         "//common/trajectories:trajectory",
+        "//geometry:geometry_ids",
+        "//multibody/tree:multibody_tree_indexes",
         "//planning:robot_diagram",
         "@eigen",
     ],
     implementation_deps = [
-        ":shape_class",
+        ":distance_oracle",
+        ":internal",
+        ":motion_bound_table",
+        ":piecewise_bezier_path",
         "//geometry:scene_graph",
         "//geometry:scene_graph_inspector",
         "//geometry:shape_specification",
+        "//math:geometric_transform",
         "//multibody/plant",
+        "//planning:collision_checker_context",
         "@fmt",
     ],
 )
@@ -217,15 +141,16 @@ drake_cc_library(
 # === test/ ===
 
 # The helpers the tests share: seeded random primitives and surface samplers,
-# the throw-message probe, the checker factory, the random world generator two
-# corpora are built from, and the corpus plus deep workload concurrency_test.cc
-# pins the driver's determinism against.
+# the throw-message probe, the random world generator two corpora are built
+# from, and the corpus plus deep workload concurrency_test.cc pins the driver's
+# determinism against.
 drake_cc_library(
     name = "test_utilities",
     testonly = 1,
     hdrs = ["test/test_utilities.h"],
     deps = [
         ":continuous_collision_checker",
+        ":distance_oracle",
         "//common:parallelism",
         "//common/trajectories:bezier_curve",
         "//geometry:scene_graph",
@@ -243,6 +168,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "piecewise_bezier_path_test",
     deps = [
+        ":internal",
         ":piecewise_bezier_path",
         "//common:copyable_unique_ptr",
         "//common/test_utilities:expect_throws_message",
@@ -262,6 +188,7 @@ drake_cc_googletest(
     deps = [
         ":motion_bound_table",
         ":test_utilities",
+        "//common/test_utilities:expect_throws_message",
         "//geometry:geometry_roles",
         "//geometry:scene_graph_inspector",
         "//multibody/tree",
@@ -269,13 +196,12 @@ drake_cc_googletest(
     ],
 )
 
-# The bounding-sphere radius property test.
+# The bounding-sphere containment property test.
 drake_cc_googletest(
     name = "bounding_sphere_test",
     deps = [
-        ":bounding_sphere",
+        ":motion_bound_table",
         ":test_utilities",
-        "//common:essential",
         "//common:memory_file",
         "//common/test_utilities:expect_throws_message",
         "//geometry:in_memory_mesh",
@@ -285,13 +211,12 @@ drake_cc_googletest(
     ],
 )
 
-# Oracle accuracy, probe classification, half-space fallback, V-polytope.
+# Oracle accuracy, probe classification and the analytic half-space fallback.
 drake_cc_googletest(
     name = "distance_oracle_test",
     data = ["//geometry:test_obj_files"],
     deps = [
         ":distance_oracle",
-        ":vpolytope_ingestion",
         "//common:find_resource",
         "//common:memory_file",
         "//common/test_utilities:expect_throws_message",
@@ -300,7 +225,6 @@ drake_cc_googletest(
         "//geometry:proximity_properties",
         "//geometry:scene_graph",
         "//geometry:shape_specification",
-        "//geometry/optimization:convex_set",
         "//math:geometric_transform",
         "//multibody/fem:deformable_body_config",
         "//multibody/plant",
@@ -314,13 +238,16 @@ drake_cc_googletest(
 # guard, on a focused, hand-built corpus.
 drake_cc_googletest(
     name = "certifier_test",
-    deps = [":test_utilities"],
+    deps = [
+        ":piecewise_bezier_path",
+        ":test_utilities",
+    ],
 )
 
 # The randomized soundness fuzz: random worlds x random trajectories,
-# cross-checked against dense sampling and against the certificate replay.
-# The dense cross-check (~1e7 signed-distance queries) is what makes this
-# test long rather than the certification itself.
+# cross-checked against dense sampling. The dense cross-check (~1e7
+# signed-distance queries) is what makes this test long rather than the
+# certification itself.
 #
 # Under an instrumented build that cross-check is what blows the budget, so
 # the corpus shrinks to a quarter of its size there (the assertions are
@@ -342,21 +269,14 @@ drake_cc_googletest(
         "//conditions:default": [],
     }),
     deps = [
-        ":continuous_collision_checker",
-        "//common:parallelism",
-        "//common/trajectories:bezier_curve",
+        ":distance_oracle",
+        ":internal",
+        ":piecewise_bezier_path",
+        ":test_utilities",
         "//common/trajectories:bspline_trajectory",
         "//common/trajectories:piecewise_polynomial",
-        "//common/trajectories:trajectory",
-        "//geometry:scene_graph",
         "//geometry:scene_graph_inspector",
-        "//geometry:shape_specification",
         "//math:bspline_basis",
-        "//math:geometric_transform",
-        "//multibody/plant",
-        "//multibody/tree",
-        "//planning:robot_diagram",
-        "//planning:robot_diagram_builder",
     ],
 )
 
@@ -372,14 +292,8 @@ drake_cc_googletest(
     ],
 )
 
-# Certificate audit trail + mutation test.
-drake_cc_googletest(
-    name = "certificate_test",
-    deps = [":test_utilities"],
-)
-
-# Concurrency determinism. Running with many threads is the point of
-# this test: it pins the answer at Parallelism {1, 2, 8, 16}. Every case is an
+# Concurrency determinism. Running with many threads is the point of this
+# test: it pins the answer at Parallelism {1, 2, 8, 16}. Every case is an
 # equality, so this target runs under every build flavor, sanitizers included.
 drake_cc_googletest(
     name = "concurrency_test",
@@ -395,12 +309,7 @@ drake_cc_googletest(
     name = "api_test",
     deps = [
         ":test_utilities",
-        "//common:copyable_unique_ptr",
         "//common/test_utilities:expect_throws_message",
-        "//common/trajectories:composite_trajectory",
-        "//common/trajectories:piecewise_polynomial",
-        "//common/trajectories:piecewise_quaternion",
-        "//common/trajectories:trajectory",
         "//geometry:geometry_instance",
         "//geometry:proximity_properties",
         "//multibody/fem:deformable_body_config",

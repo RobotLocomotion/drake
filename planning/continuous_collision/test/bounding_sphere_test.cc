@@ -5,8 +5,6 @@
 // set of supported shapes and pins the throw-on-unsupported behaviour. Never
 // loosen the tolerance to make a case pass.
 
-#include "drake/planning/continuous_collision/bounding_sphere.h"
-
 #include <cmath>
 #include <memory>
 #include <sstream>
@@ -24,11 +22,13 @@
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/planning/continuous_collision/motion_bound_table.h"
 #include "drake/planning/continuous_collision/test/test_utilities.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
+namespace internal {
 namespace {
 
 using drake::geometry::Box;
@@ -314,6 +314,7 @@ GTEST_TEST(BoundingSphereTest, ThrowsOnUnsupportedShapes) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

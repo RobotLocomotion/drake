@@ -19,10 +19,12 @@
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/math/binomial_coefficient.h"
+#include "drake/planning/continuous_collision/internal.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
+namespace internal {
 namespace {
 
 using drake::NiceTypeName;
@@ -132,10 +134,9 @@ coefficients become alpha_a = c_a * (t_end - t_start)^a, and the exact monomial
     s^a = sum_{j=a}^{m} [C(j, a) / C(m, a)] B_{j,m}(s),   hence
     P_j = sum_{a=0}^{j} [C(j, a) / C(m, a)] alpha_a.
 
-The map is increasingly ill-conditioned in m, hence options.max_conversion_
-degree. */
+The map is increasingly ill-conditioned in m, hence kMaxConversionDegree. */
 void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
-                                       const Options& options, int source_index,
+                                       int source_index,
                                        std::vector<BezierSegment>* segments) {
   if (pp.cols() != 1) {
     throw std::runtime_error(fmt::format(
@@ -157,15 +158,14 @@ void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
     for (int r = 0; r < num_positions; ++r) {
       m = std::max(m, pp.getSegmentPolynomialDegree(k, r, 0));
     }
-    if (m > options.max_conversion_degree) {
+    if (m > kMaxConversionDegree) {
       throw std::runtime_error(fmt::format(
           "PiecewiseBezierPath: PiecewisePolynomial segment {} (source segment "
-          "index {}) has polynomial degree {}, above "
-          "options.max_conversion_degree = {}. The monomial-to-Bernstein "
-          "change of basis is ill-conditioned at high degree; either raise "
-          "Options::max_conversion_degree or re-express the "
-          "trajectory with more, lower-degree segments.",
-          k, source_index, m, options.max_conversion_degree));
+          "index {}) has polynomial degree {}, above the supported maximum of "
+          "{}. The monomial-to-Bernstein change of basis is ill-conditioned at "
+          "high degree; re-express the trajectory with more, lower-degree "
+          "segments.",
+          k, source_index, m, kMaxConversionDegree));
     }
     const double t_start = pp.start_time(k);
     const double t_end = pp.end_time(k);
@@ -209,8 +209,7 @@ void AppendPiecewisePolynomialSegments(const PiecewisePolynomial<double>& pp,
 recursing through CompositeTrajectory. `source_index` counts source segments
 visited so far and appears in error messages.
 */
-void AppendSegments(const Trajectory<double>& trajectory,
-                    const Options& options, int* source_index,
+void AppendSegments(const Trajectory<double>& trajectory, int* source_index,
                     std::vector<BezierSegment>* segments) {
   if (const auto* bezier =
           dynamic_cast<const BezierCurve<double>*>(&trajectory)) {
@@ -238,7 +237,7 @@ void AppendSegments(const Trajectory<double>& trajectory,
                       *source_index));
     }
     for (int i = 0; i < num; ++i) {
-      AppendSegments(composite->segment(i), options, source_index, segments);
+      AppendSegments(composite->segment(i), source_index, segments);
     }
     return;
   }
@@ -250,7 +249,7 @@ void AppendSegments(const Trajectory<double>& trajectory,
   }
   if (const auto* pp =
           dynamic_cast<const PiecewisePolynomial<double>*>(&trajectory)) {
-    AppendPiecewisePolynomialSegments(*pp, options, *source_index, segments);
+    AppendPiecewisePolynomialSegments(*pp, *source_index, segments);
     ++(*source_index);
     return;
   }
@@ -266,7 +265,8 @@ void AppendSegments(const Trajectory<double>& trajectory,
 
 /* Checks shape, time ordering/contiguity and C0 junctions (trajectory
  * normalization). */
-void ValidateSegments(int num_positions, const Options& options,
+void ValidateSegments(int num_positions,
+                      const std::vector<int>& continuous_revolute_indices,
                       const std::vector<BezierSegment>& segments) {
   if (segments.empty()) {
     throw std::runtime_error(
@@ -308,7 +308,7 @@ void ValidateSegments(int num_positions, const Options& options,
   }
 
   std::vector<bool> is_continuous_revolute(num_positions, false);
-  for (int index : options.continuous_revolute_indices) {
+  for (int index : continuous_revolute_indices) {
     if (index < 0 || index >= num_positions) {
       throw std::runtime_error(fmt::format(
           "PiecewiseBezierPath: Options::continuous_revolute_indices contains "
@@ -334,18 +334,18 @@ void ValidateSegments(int num_positions, const Options& options,
       if (is_continuous_revolute[c]) {
         gap -= 2 * M_PI * std::round(gap / (2 * M_PI));
       }
-      if (std::abs(gap) > options.continuity_tolerance) {
+      if (std::abs(gap) > kContinuityTolerance) {
         const std::string modulo = is_continuous_revolute[c]
                                        ? fmt::format(" ({} modulo 2π)", gap)
                                        : "";
         throw std::runtime_error(fmt::format(
             "PiecewiseBezierPath: C0 discontinuity at the junction between "
             "segments {} and {} in coordinate {}: the gap is {}{}, which "
-            "exceeds Options::continuity_tolerance = {}. A discontinuous "
+            "exceeds the continuity tolerance {}. A discontinuous "
             "trajectory teleports; per-segment certificates would not cover "
             "the jump. If coordinate {} is a continuous revolute joint, list "
             "it in Options::continuous_revolute_indices.",
-            i - 1, i, c, raw_gap, modulo, options.continuity_tolerance, c));
+            i - 1, i, c, raw_gap, modulo, kContinuityTolerance, c));
       }
     }
   }
@@ -354,7 +354,8 @@ void ValidateSegments(int num_positions, const Options& options,
 }  // namespace
 
 PiecewiseBezierPath PiecewiseBezierPath::FromTrajectory(
-    const Trajectory<double>& trajectory, const Options& options) {
+    const Trajectory<double>& trajectory,
+    const std::vector<int>& continuous_revolute_indices) {
   if (trajectory.cols() != 1) {
     throw std::runtime_error(fmt::format(
         "PiecewiseBezierPath::FromTrajectory: the trajectory is {}x{}-valued; "
@@ -372,14 +373,14 @@ PiecewiseBezierPath PiecewiseBezierPath::FromTrajectory(
   PiecewiseBezierPath path;
   path.num_positions_ = num_positions;
   int source_index = 0;
-  AppendSegments(trajectory, options, &source_index, &path.segments_);
-  ValidateSegments(num_positions, options, path.segments_);
-  path.FinalizeMetadata(options.continuity_tolerance);
+  AppendSegments(trajectory, &source_index, &path.segments_);
+  ValidateSegments(num_positions, continuous_revolute_indices, path.segments_);
+  path.FinalizeMetadata();
   return path;
 }
 
 PiecewiseBezierPath PiecewiseBezierPath::FromWaypoints(
-    const Eigen::MatrixXd& waypoints, const Options& options) {
+    const Eigen::MatrixXd& waypoints) {
   if (waypoints.rows() < 1) {
     throw std::runtime_error(
         "PiecewiseBezierPath::FromWaypoints: the waypoint matrix has zero "
@@ -410,12 +411,12 @@ PiecewiseBezierPath PiecewiseBezierPath::FromWaypoints(
     segment.control_points.col(1) = waypoints.col(k + 1);
     path.segments_.push_back(std::move(segment));
   }
-  ValidateSegments(num_positions, options, path.segments_);
-  path.FinalizeMetadata(options.continuity_tolerance);
+  ValidateSegments(num_positions, {}, path.segments_);
+  path.FinalizeMetadata();
   return path;
 }
 
-void PiecewiseBezierPath::FinalizeMetadata(double continuity_tolerance) {
+void PiecewiseBezierPath::FinalizeMetadata() {
   const int n = num_positions_;
   global_lower_ =
       Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
@@ -434,7 +435,7 @@ void PiecewiseBezierPath::FinalizeMetadata(double continuity_tolerance) {
   constant_coordinates_.assign(n, false);
   for (int i = 0; i < n; ++i) {
     constant_coordinates_[i] =
-        (global_upper_[i] - global_lower_[i]) <= continuity_tolerance;
+        (global_upper_[i] - global_lower_[i]) <= kContinuityTolerance;
   }
 }
 
@@ -536,6 +537,7 @@ void DeCasteljauSplitAtHalf(const Eigen::MatrixXd& cps, Eigen::MatrixXd* left,
   *mid = right->col(0);
 }
 
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

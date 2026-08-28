@@ -1,12 +1,10 @@
 // End-to-end soundness fuzz: random worlds × random trajectories, cross-checked
-// three ways. A sampled configuration whose clearance reaches the threshold
+// two ways. A sampled configuration whose clearance reaches the threshold
 // refutes a `kCertifiedFree` verdict, so every certified case is searched for
-// one (10⁴ configurations, 10⁵ on a subset) and its certificate is replayed
-// independently; every definite `Finding` is re-evaluated at its witness
-// configuration, from a context this run never touched, and must really
-// violate; and every non-definite `Finding` claiming to be a resolution-floor
-// grazing record must be backed by a clearance within 10·(τ_p + ε) of the
-// threshold near the reported time.
+// one (10⁴ configurations, 10⁵ on a subset); a `kViolationFound` witness is
+// re-evaluated at its configuration, from a context this run never touched, and
+// must really violate; and a `kInconclusive` witness must be backed by a
+// clearance within 10·(τ_p + ε) of the threshold near the reported time.
 //
 // A failure here is a soundness bug, not a reason to loosen the test. Every
 // message carries a complete repro: seed, world recipe, control points.
@@ -43,12 +41,16 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/planning/continuous_collision/continuous_collision_checker.h"
+#include "drake/planning/continuous_collision/distance_oracle.h"
+#include "drake/planning/continuous_collision/internal.h"
+#include "drake/planning/continuous_collision/piecewise_bezier_path.h"
 #include "drake/planning/robot_diagram.h"
 #include "drake/planning/robot_diagram_builder.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
+namespace internal {
 namespace {
 
 using drake::Parallelism;
@@ -96,13 +98,10 @@ constexpr int kNumCases = 200;
 // Corpus-composition floors, expressed as fractions of kNumCases rather than
 // as absolute counts so that the shrunk corpus is held to the same *shape* of
 // corpus instead of to a floor it cannot reach.
-constexpr int kMinCertified = kNumCases / 5;              // 20%
-constexpr int kMinViolation = kNumCases / 10;             // 10%
-constexpr int kMinInconclusive = kNumCases / 40;          // 2.5%
-constexpr int kMinDefiniteFindings = kNumCases / 10;      // 10%
-constexpr int kMinInconclusiveFindings = kNumCases / 40;  // 2.5%
-constexpr int kMinPerTrajectoryFamily = kNumCases / 10;   // 10% each
-constexpr int kMaxBudgetExhausted = kNumCases / 20;       // 5%
+constexpr int kMinCertified = kNumCases / 5;             // 20%
+constexpr int kMinViolation = kNumCases / 10;            // 10%
+constexpr int kMinInconclusive = kNumCases / 40;         // 2.5%
+constexpr int kMinPerTrajectoryFamily = kNumCases / 10;  // 10% each
 constexpr int kMinScanQueries = 500 * kNumCases;
 
 constexpr uint64_t kBaseSeed = 0x5eed'0000'0000'0000ull;
@@ -556,12 +555,13 @@ std::optional<double> LocalRadius(const Shape& shape) {
 // that appear in some pair, their local radii, and each pair's two slots.
 class DenseScanner {
  public:
-  explicit DenseScanner(const ContinuousCollisionChecker& checker)
-      : checker_(&checker),
-        root_(checker.model().CreateDefaultContext()),
+  explicit DenseScanner(const RobotDiagram<double>& model)
+      : model_(&model),
+        oracle_(model),
+        root_(model.CreateDefaultContext()),
         plant_context_(
-            &checker.model().plant().GetMyMutableContextFromRoot(root_.get())) {
-    const auto& inspector = checker.model().scene_graph().model_inspector();
+            &model.plant().GetMyMutableContextFromRoot(root_.get())) {
+    const auto& inspector = model.scene_graph().model_inspector();
     const auto slot = [&](GeometryId id) {
       for (std::size_t i = 0; i < geometries_.size(); ++i) {
         if (geometries_[i] == id) return static_cast<int>(i);
@@ -571,27 +571,26 @@ class DenseScanner {
       centre_.push_back(Vector3d::Zero());
       return static_cast<int>(geometries_.size()) - 1;
     };
-    for (const PairRecord& pair : checker.pairs()) {
-      slot_a_.push_back(slot(pair.id.a));
-      slot_b_.push_back(slot(pair.id.b));
+    for (const PairRecord& pair : oracle_.pairs()) {
+      slot_a_.push_back(slot(pair.a));
+      slot_b_.push_back(slot(pair.b));
     }
   }
 
   // Worst (most negative) value of ϕ_p(q) − threshold over the dense samples,
   // with the time and pair that attained it.
-  struct Result {
+  struct Worst {
     double min_slack{std::numeric_limits<double>::infinity()};
     double worst_time{std::numeric_limits<double>::quiet_NaN()};
     int worst_pair{-1};
   };
 
-  // `threshold` is m_p, which this fuzz keeps uniform across pairs because it
-  // never sets a PaddingSpec (the case loop asserts that).
-  Result Scan(const PiecewiseBezierPath& path, int total_samples,
-              double threshold) {
+  // `threshold` is Options::margin, uniform over the pairs.
+  Worst Scan(const PiecewiseBezierPath& path, int total_samples,
+             double threshold) {
     const int num_segments = static_cast<int>(path.segments().size());
     const int per_segment = std::max(2, total_samples / num_segments);
-    Result result;
+    Worst result;
     for (int k = 0; k < num_segments; ++k) {
       const BezierSegment& segment = path.segments()[k];
       for (int i = 0; i <= per_segment; ++i) {
@@ -611,16 +610,16 @@ class DenseScanner {
                          int samples) {
     const double lo = std::max(path.start_time(), time - half_width);
     const double hi = std::min(path.end_time(), time + half_width);
-    const PairRecord& pair = checker_->pairs()[pair_index];
+    const PairRecord& pair = oracle_.pairs()[pair_index];
     double best = std::numeric_limits<double>::infinity();
     for (int i = 0; i <= samples; ++i) {
       const double u = (samples == 0) ? 0.0 : static_cast<double>(i) / samples;
       const double t = lo + u * (hi - lo);
       SetPositions(path.Value(t));
       ++narrowphase_queries_;
-      best = std::min(best, std::abs(checker_->distance_oracle().SignedDistance(
-                                         query_object(), pair) -
-                                     threshold));
+      best = std::min(
+          best,
+          std::abs(oracle_.SignedDistance(query_object(), pair) - threshold));
     }
     return best;
   }
@@ -632,38 +631,37 @@ class DenseScanner {
   double DistanceAt(const VectorXd& q, int pair_index) {
     SetPositions(q);
     ++narrowphase_queries_;
-    return checker_->distance_oracle().SignedDistance(
-        query_object(), checker_->pairs()[pair_index]);
+    return oracle_.SignedDistance(query_object(), oracle_.pairs()[pair_index]);
   }
 
-  // Index of the checker's pair matching `id`, or -1.
-  int FindPair(const PairId& id) const {
-    const auto& pairs = checker_->pairs();
+  // Index of the pair with these two geometries, or -1.
+  int FindPair(GeometryId a, GeometryId b) const {
+    const auto& pairs = oracle_.pairs();
     for (int p = 0; p < static_cast<int>(pairs.size()); ++p) {
-      if (pairs[p].id.a == id.a && pairs[p].id.b == id.b) return p;
+      if (pairs[p].a == a && pairs[p].b == b) return p;
     }
     return -1;
   }
 
  private:
   void SetPositions(const VectorXd& q) {
-    checker_->model().plant().SetPositions(plant_context_, q);
+    model_->plant().SetPositions(plant_context_, q);
   }
 
   const QueryObject<double>& query_object() const {
-    const auto& scene_graph = checker_->model().scene_graph();
+    const auto& scene_graph = model_->scene_graph();
     return scene_graph.get_query_output_port().Eval<QueryObject<double>>(
         scene_graph.GetMyContextFromRoot(*root_));
   }
 
   void Evaluate(const VectorXd& q, double time, double threshold,
-                Result* result) {
+                Worst* result) {
     SetPositions(q);
     const QueryObject<double>& query = query_object();
     for (std::size_t i = 0; i < geometries_.size(); ++i) {
       centre_[i] = query.GetPoseInWorld(geometries_[i]).translation();
     }
-    const auto& pairs = checker_->pairs();
+    const auto& pairs = oracle_.pairs();
     for (int p = 0; p < static_cast<int>(pairs.size()); ++p) {
       const std::optional<double>& ra = radius_[slot_a_[p]];
       const std::optional<double>& rb = radius_[slot_b_[p]];
@@ -679,9 +677,7 @@ class DenseScanner {
         if (lower > threshold) continue;
       }
       ++narrowphase_queries_;
-      const double slack =
-          checker_->distance_oracle().SignedDistance(query, pairs[p]) -
-          threshold;
+      const double slack = oracle_.SignedDistance(query, pairs[p]) - threshold;
       if (slack < result->min_slack) {
         result->min_slack = slack;
         result->worst_time = time;
@@ -690,7 +686,8 @@ class DenseScanner {
     }
   }
 
-  const ContinuousCollisionChecker* checker_{};
+  const RobotDiagram<double>* model_{};
+  DistanceOracle oracle_;
   std::unique_ptr<drake::systems::Context<double>> root_;
   drake::systems::Context<double>* plant_context_{};
   std::vector<GeometryId> geometries_;
@@ -709,10 +706,7 @@ struct Tally {
   int certified{0};
   int violation{0};
   int inconclusive{0};
-  int budget{0};
   int deep_scans{0};
-  int definite_findings{0};
-  int inconclusive_findings{0};
   int graze_cases{0};
   int pwl{0};
   int bezier{0};
@@ -729,27 +723,15 @@ struct Tally {
   double tightest_certified_slack{std::numeric_limits<double>::infinity()};
 };
 
-// Base options shared by every case.
+// Base options shared by every case. A coarser resolution floor than the 1e-9
+// default: a grazing pair still ends kInconclusive, but after ~20 bisections
+// rather than ~30.
 Options FuzzOptions(double margin) {
   Options options;
   options.margin = margin;
-  options.mode = SearchMode::kCertifyAll;
-  options.emit_certificate = true;
   options.parallelism = Parallelism::None();
-  // A coarser resolution floor than the 1e-9 default: a grazing pair still ends
-  // kInconclusive, but after ~20 bisections rather than ~30. The node budget is
-  // the second guard; a case that hits it is counted, never silently accepted.
   options.min_interval = 1e-6;
-  options.max_nodes = 300000;
   return options;
-}
-
-ContinuousCollisionChecker MakeChecker(
-    std::shared_ptr<const RobotDiagram<double>> model, const Options& options) {
-  ContinuousCollisionChecker::Params params;
-  params.model = std::move(model);
-  params.default_options = options;
-  return ContinuousCollisionChecker(params);
 }
 
 GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
@@ -790,12 +772,10 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
     double margin = (case_index % 2 == 0) ? 0.0 : 0.01;
     bool grazing = (case_index % 5) == 3;
     if (grazing) {
-      const Options probe_options = FuzzOptions(0.0);
-      const ContinuousCollisionChecker probe =
-          MakeChecker(model, probe_options);
-      DenseScanner probe_scanner(probe);
-      const DenseScanner::Result probe_scan = probe_scanner.Scan(
-          probe.Normalize(*trajectory, probe_options), kGrazeProbeSamples, 0.0);
+      DenseScanner probe_scanner(*model);
+      const DenseScanner::Worst probe_scan = probe_scanner.Scan(
+          PiecewiseBezierPath::FromTrajectory(*trajectory, {}),
+          kGrazeProbeSamples, 0.0);
       tally.scan_queries += probe_scanner.narrowphase_queries();
       if (probe_scan.min_slack > 0.01 && probe_scan.min_slack < 0.5) {
         margin = probe_scan.min_slack;
@@ -810,28 +790,22 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
                  world.Describe() + trajectory_recipe.Describe());
 
     const Options options = FuzzOptions(margin);
-    const ContinuousCollisionChecker checker = MakeChecker(model, options);
-    // This fuzz never sets a PaddingSpec, so m_p = margin for every pair; the
-    // dense scan relies on that to compare against one number.
-    for (const PairRecord& pair : checker.pairs()) {
-      ASSERT_EQ(pair.threshold, margin);
-    }
+    const ContinuousCollisionChecker checker(model, options);
+    const PiecewiseBezierPath path =
+        PiecewiseBezierPath::FromTrajectory(*trajectory, {});
+    const Result result = checker.CheckTrajectory(*trajectory, options);
 
-    const PiecewiseBezierPath path = checker.Normalize(*trajectory, options);
-    const CertificationResult result =
-        checker.CheckTrajectory(*trajectory, options);
-
-    DenseScanner scanner(checker);
+    DenseScanner scanner(*model);
 
     switch (result.verdict) {
       case Verdict::kCertifiedFree: {
         ++tally.certified;
-        ASSERT_TRUE(result.findings.empty());
-        // (a) Dense sampling must find no configuration at or below the
-        //     threshold. A single one would be a false certificate.
+        ASSERT_FALSE(result.finding.has_value());
+        // Dense sampling must find no configuration at or below the threshold.
+        // A single one would be a false certificate.
         const bool deep = (tally.certified % kDeepEvery) == 0;
         if (deep) ++tally.deep_scans;
-        const DenseScanner::Result scan = scanner.Scan(
+        const DenseScanner::Worst scan = scanner.Scan(
             path, deep ? kDeepDenseSamples : kDenseSamples, margin);
         tally.tightest_certified_slack =
             std::min(tally.tightest_certified_slack, scan.min_slack);
@@ -841,70 +815,49 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
             << " configurations) found clearance " << scan.min_slack
             << " m below the threshold at t = " << scan.worst_time
             << " for pair " << scan.worst_pair;
-        // (b) The audit trail must replay independently.
-        ASSERT_TRUE(result.certificate.has_value());
-        EXPECT_TRUE(VerifyCertificate(checker, path, *result.certificate))
-            << "CERTIFIED FREE but the emitted certificate does not verify";
         break;
       }
       case Verdict::kViolationFound:
         ++tally.violation;
-        EXPECT_FALSE(result.findings.empty());
+        ASSERT_TRUE(result.finding.has_value());
         break;
       case Verdict::kInconclusive:
         ++tally.inconclusive;
-        EXPECT_FALSE(result.findings.empty());
-        break;
-      case Verdict::kBudgetExhausted:
-        // The node budget is a safety valve, not an expected outcome; a run
-        // that hits it reports the earliest node it left uncovered, and there
-        // is nothing to cross-check because nothing was proved. The corpus-wide
-        // bound on how often this may happen is asserted after the loop.
-        ++tally.budget;
-        EXPECT_FALSE(result.findings.empty())
-            << "budget exhaustion must report the uncovered remainder";
+        ASSERT_TRUE(result.finding.has_value());
         break;
     }
 
-    // Findings are earliest-first, always.
-    for (std::size_t i = 1; i < result.findings.size(); ++i) {
-      EXPECT_LE(result.findings[i - 1].time, result.findings[i].time);
-    }
-
-    for (const Finding& finding : result.findings) {
-      const int pair_index = scanner.FindPair(finding.pair);
-      ASSERT_GE(pair_index, 0) << "finding names an unknown pair";
-      const double threshold = checker.pairs()[pair_index].threshold;
+    if (result.finding.has_value()) {
+      const Finding& finding = *result.finding;
+      const int pair_index =
+          scanner.FindPair(finding.geometry_a, finding.geometry_b);
+      ASSERT_GE(pair_index, 0) << "the finding names an unknown pair";
       ASSERT_EQ(finding.q.size(), world.num_positions());
 
-      if (finding.definite) {
-        ++tally.definite_findings;
+      if (result.verdict == Verdict::kViolationFound) {
         // The witness is exactly on the trajectory ...
         EXPECT_LT((path.Value(finding.time) - finding.q).cwiseAbs().maxCoeff(),
                   1e-9)
-            << "a definite witness must be an on-trajectory configuration, "
+            << "a violation witness must be an on-trajectory configuration, "
                "never an interpolation artifact";
         // ... and re-measuring its pair there, from a context this run never
         // touched, must confirm the violation to within the oracle contract.
         const double phi = scanner.DistanceAt(finding.q, pair_index);
-        EXPECT_LT(phi, threshold + kWorstTau)
-            << "definite violation at t = " << finding.time
+        EXPECT_LT(phi, margin + kWorstTau)
+            << "violation at t = " << finding.time
             << " re-measures at phi = " << phi << " against threshold "
-            << threshold;
+            << margin;
         EXPECT_NEAR(phi, finding.distance, 1e-9)
             << "the reported distance is not reproducible at the witness";
-      } else if (result.verdict != Verdict::kBudgetExhausted) {
-        // Every non-definite finding that is *not* a budget remainder is a
-        // resolution-floor grazing record, and must be backed by a clearance
-        // that sits within 10·(τ_p + ε) of the threshold somewhere near the
-        // reported time. Only the synthesized "here is where the budget stopped
-        // us" finding is exempt, because its clearance carries no claim.
-        ++tally.inconclusive_findings;
-        const double tolerance = 10.0 * (kWorstTau + options.certificate_slack);
+      } else {
+        // An inconclusive witness is a resolution-floor grazing record, and
+        // must be backed by a clearance that sits within 10·(τ_p + ε) of the
+        // threshold somewhere near the reported time.
+        const double tolerance = 10.0 * (kWorstTau + kNumericalSlack);
         const double window =
             0.01 * std::max(1e-12, path.end_time() - path.start_time());
         const double best =
-            scanner.MinAbsSlackNear(path, pair_index, threshold, finding.time,
+            scanner.MinAbsSlackNear(path, pair_index, margin, finding.time,
                                     window, /* samples = */ 400);
         EXPECT_LE(best, tolerance)
             << "INCONCLUSIVE at t = " << finding.time
@@ -919,15 +872,12 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
   std::cout << "\n[ fuzz summary ] cases = " << kNumCases
             << "  certified = " << tally.certified
             << "  violation = " << tally.violation
-            << "  inconclusive = " << tally.inconclusive
-            << "  budget = " << tally.budget << "\n"
+            << "  inconclusive = " << tally.inconclusive << "\n"
             << "                     trajectories: PWL = " << tally.pwl
             << ", Bezier = " << tally.bezier << ", B-spline = " << tally.bspline
             << ";  grazing-margin cases = " << tally.graze_cases << "\n"
             << "                     deep (1e5-sample) scans = "
             << tally.deep_scans
-            << "  definite findings = " << tally.definite_findings
-            << "  inconclusive findings = " << tally.inconclusive_findings
             << "\n                     cross-check narrowphase queries = "
             << tally.scan_queries
             << ";  tightest measured clearance above a certified threshold = "
@@ -953,18 +903,12 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
                 "the soundness sweep needs at least 150 (world, trajectory) "
                 "cases per run");
 #endif
-  static_assert(kMinInconclusive >= 1 && kMinInconclusiveFindings >= 1,
+  static_assert(kMinInconclusive >= 1,
                 "every composition floor must demand at least one case");
   EXPECT_GE(tally.certified, kMinCertified);
   EXPECT_GE(tally.violation, kMinViolation);
   EXPECT_GE(tally.inconclusive, kMinInconclusive)
       << "the grazing-margin cases should have produced kInconclusive verdicts";
-  EXPECT_GE(tally.definite_findings, kMinDefiniteFindings);
-  EXPECT_GE(tally.inconclusive_findings, kMinInconclusiveFindings);
-  // The node budget exists to bound a pathological case, not to be the usual
-  // answer: if it starts firing often, the corpus has stopped cross-checking
-  // anything and the numbers above stop meaning what they say.
-  EXPECT_LE(tally.budget, kMaxBudgetExhausted);
   // All three trajectory families of trajectory normalization must be
   // represented.
   EXPECT_GE(tally.pwl, kMinPerTrajectoryFamily);
@@ -985,6 +929,7 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

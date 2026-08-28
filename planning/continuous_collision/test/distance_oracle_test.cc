@@ -1,8 +1,7 @@
 // Distance oracle accuracy, capability-probe classification, the analytic
-// halfspace fallback, Mesh-as-convex-hull semantics, and the V-polytope
-// ingestion round trip. Every world is built programmatically with
-// RobotDiagramBuilder and every randomized case uses a fixed seed, so the suite
-// is deterministic.
+// halfspace fallback and Mesh-as-convex-hull semantics. Every world is built
+// programmatically with RobotDiagramBuilder and every randomized case uses a
+// fixed seed, so the suite is deterministic.
 
 #include "drake/planning/continuous_collision/distance_oracle.h"
 
@@ -26,7 +25,6 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/in_memory_mesh.h"
-#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
@@ -37,13 +35,13 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/spatial_inertia.h"
-#include "drake/planning/continuous_collision/vpolytope_ingestion.h"
 #include "drake/planning/robot_diagram.h"
 #include "drake/planning/robot_diagram_builder.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
+namespace internal {
 namespace {
 
 using drake::geometry::Box;
@@ -58,7 +56,6 @@ using drake::geometry::Mesh;
 using drake::geometry::QueryObject;
 using drake::geometry::Shape;
 using drake::geometry::Sphere;
-using drake::geometry::optimization::VPolytope;
 using drake::math::RigidTransformd;
 using drake::math::RotationMatrixd;
 using drake::multibody::BodyIndex;
@@ -73,7 +70,6 @@ using Eigen::Matrix3Xd;
 using Eigen::Vector3d;
 using ::testing::HasSubstr;
 
-constexpr double kTau = 1e-6;
 // Exactness bar for the analytic halfspace fallback and for round trips that
 // must land on identical code paths.
 constexpr double kExact = 1e-12;
@@ -168,7 +164,7 @@ GeometryId GeometryOf(const MultibodyPlant<double>& plant,
 const PairRecord& FindPair(const DistanceOracle& oracle, GeometryId a,
                            GeometryId b) {
   for (const PairRecord& p : oracle.pairs()) {
-    if ((p.id.a == a && p.id.b == b) || (p.id.a == b && p.id.b == a)) {
+    if ((p.a == a && p.b == b) || (p.a == b && p.b == a)) {
       return p;
     }
   }
@@ -363,7 +359,7 @@ GTEST_TEST(DistanceOracleAccuracy, SphereSphereMatchesAnalyticDistance) {
   const auto& body_b =
       AddShapeBody(&plant, "sphere_b", Sphere(r_b), Vector3d(1, 0, 0));
   World world(builder.Build());
-  const DistanceOracle oracle(world.diagram(), kTau);
+  const DistanceOracle oracle(world.diagram());
 
   std::mt19937 rng(20260826);
   // Exact for two spheres on both branches.
@@ -386,7 +382,7 @@ GTEST_TEST(DistanceOracleAccuracy, SphereBoxMatchesAnalyticDistance) {
       AddShapeBody(&plant, "box", Box(2 * half.x(), 2 * half.y(), 2 * half.z()),
                    Vector3d(1, 0, 0));
   World world(builder.Build());
-  const DistanceOracle oracle(world.diagram(), kTau);
+  const DistanceOracle oracle(world.diagram());
 
   std::mt19937 rng(881);
   // For a sphere whose center lies outside a convex body, the signed distance
@@ -431,7 +427,7 @@ class HalfSpaceFallbackTest : public ::testing::Test {
     AddShapeBody(&plant, "tetra", Convex(TetraVertices(), "tetra"),
                  Vector3d(0, -3, 0));
     world_ = std::make_unique<World>(builder.Build());
-    oracle_ = std::make_unique<DistanceOracle>(world_->diagram(), kTau);
+    oracle_ = std::make_unique<DistanceOracle>(world_->diagram());
     halfspace_id_ = GeometryOf(world_->plant(), "halfspace");
   }
 
@@ -518,7 +514,7 @@ TEST_F(HalfSpaceFallbackTest, EveryPartnerMatchesHandDerivedFormulaExactly) {
           << partners[i].first << ", trial " << trial;
       // Witnesses: separated by exactly |phi|, with the halfspace-side witness
       // on the boundary plane.
-      const Vector3d& on_plane = (pair.id.a == halfspace_id_) ? p_a_W : p_b_W;
+      const Vector3d& on_plane = (pair.a == halfspace_id_) ? p_a_W : p_b_W;
       EXPECT_NEAR(n_W.dot(on_plane - p0_W), 0.0, kExact);
       EXPECT_NEAR((p_a_W - p_b_W).norm(), std::abs(phi), kExact);
       (phi > 0.0 ? positive : negative) += 1;
@@ -541,19 +537,6 @@ TEST_F(HalfSpaceFallbackTest, AxisParallelCylinderDirectionIsHandled) {
       oracle_->SignedDistance(world_->query(), pair, &p_a_W, &p_b_W);
   EXPECT_NEAR(phi, 0.4 + 0.5 - kLength / 2, kExact);
   EXPECT_NEAR((p_a_W - p_b_W).norm(), std::abs(phi), kExact);
-}
-
-TEST_F(HalfSpaceFallbackTest, ReportNamesEveryCombinationAndRoute) {
-  const std::string report = oracle_->support_report();
-  SCOPED_TRACE(report);
-  // Rows are ordered by shape class, so HalfSpace is always the second name.
-  for (const char* row :
-       {"Sphere-HalfSpace", "Box-HalfSpace", "Capsule-HalfSpace",
-        "Cylinder-HalfSpace", "Ellipsoid-HalfSpace", "Convex-HalfSpace",
-        "halfspace analytic support-function fallback",
-        "native (ComputeSignedDistancePairClosestPoints"}) {
-    EXPECT_THAT(report, HasSubstr(row));
-  }
 }
 
 // ==========================================================================
@@ -580,7 +563,7 @@ class AllShapesTest : public ::testing::Test {
         plant.world_body(), RigidTransformd::Identity(), HalfSpace(),
         "ground_geometry", Friction());
     world_ = std::make_unique<World>(builder.Build());
-    oracle_ = std::make_unique<DistanceOracle>(world_->diagram(), kTau);
+    oracle_ = std::make_unique<DistanceOracle>(world_->diagram());
   }
 
   static constexpr int kDynamicBodies = 7;
@@ -599,10 +582,10 @@ TEST_F(AllShapesTest, ProbeClassifiesEveryPairSnapshot) {
   int halfspace_pairs = 0;
   int native_pairs = 0;
   for (const PairRecord& pair : oracle_->pairs()) {
-    if (pair.id.a == halfspace_id_) {
+    if (pair.a == halfspace_id_) {
       EXPECT_EQ(pair.route, DistanceRoute::kHalfSpaceA);
       ++halfspace_pairs;
-    } else if (pair.id.b == halfspace_id_) {
+    } else if (pair.b == halfspace_id_) {
       EXPECT_EQ(pair.route, DistanceRoute::kHalfSpaceB);
       ++halfspace_pairs;
     } else {
@@ -610,20 +593,10 @@ TEST_F(AllShapesTest, ProbeClassifiesEveryPairSnapshot) {
       ++native_pairs;
     }
     // Every record carries the bodies its geometries hang from.
-    EXPECT_NE(pair.id.body_a, pair.id.body_b);
-    EXPECT_EQ(pair.threshold, 0.0) << "the facade owns thresholds";
+    EXPECT_NE(pair.body_a, pair.body_b);
   }
   EXPECT_EQ(halfspace_pairs, kDynamicBodies);
   EXPECT_EQ(native_pairs, kNativePairs);
-}
-
-TEST_F(AllShapesTest, ReportAnnouncesMeshAsConvexHull) {
-  const std::string report = oracle_->support_report();
-  SCOPED_TRACE(report);
-  EXPECT_THAT(report,
-              HasSubstr("Mesh mesh_geometry: certified as its convex hull"));
-  // 8 distinct classes, each present once: 8*7/2 = 28 combinations.
-  EXPECT_THAT(report, HasSubstr("28 distinct shape-type combination(s)"));
 }
 
 TEST_F(AllShapesTest, WitnessPointsAreConsistentForSeparatedNativePairs) {
@@ -658,8 +631,8 @@ TEST_F(AllShapesTest, IdOrderingIsSymmetric) {
   int halfspace = 0;
   for (const PairRecord& pair : oracle_->pairs()) {
     PairRecord swapped = pair;
-    std::swap(swapped.id.a, swapped.id.b);
-    std::swap(swapped.id.body_a, swapped.id.body_b);
+    std::swap(swapped.a, swapped.b);
+    std::swap(swapped.body_a, swapped.body_b);
     if (pair.route == DistanceRoute::kNative) {
       ++native;
     } else {
@@ -696,7 +669,7 @@ GTEST_TEST(DistanceOracleProbe, HalfSpaceHalfSpacePairThrowsAtConstruction) {
   // Both geometries must be named, in whichever order the candidate set has
   // them.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      DistanceOracle(world.diagram(), kTau),
+      DistanceOracle(world.diagram()),
       "[\\s\\S]*two HalfSpace geometries[\\s\\S]*"
       "(ground_geometry[\\s\\S]*ceiling_geometry"
       "|ceiling_geometry[\\s\\S]*ground_geometry)[\\s\\S]*");
@@ -709,14 +682,12 @@ GTEST_TEST(DistanceOracleProbe, ProbeSnapshotIsStableAcrossConstructions) {
   AddShapeBody(&plant, "box", Box(0.2, 0.2, 0.2), Vector3d(1, 0, 0));
   World world(builder.Build());
 
-  const DistanceOracle first(world.diagram(), kTau);
-  const DistanceOracle second(world.diagram(), kTau);
-  EXPECT_EQ(first.support_report(), second.support_report());
-  EXPECT_EQ(first.tolerance(), kTau);
+  const DistanceOracle first(world.diagram());
+  const DistanceOracle second(world.diagram());
   ASSERT_EQ(first.pairs().size(), second.pairs().size());
   for (size_t i = 0; i < first.pairs().size(); ++i) {
-    EXPECT_EQ(first.pairs()[i].id.a, second.pairs()[i].id.a);
-    EXPECT_EQ(first.pairs()[i].id.b, second.pairs()[i].id.b);
+    EXPECT_EQ(first.pairs()[i].a, second.pairs()[i].a);
+    EXPECT_EQ(first.pairs()[i].b, second.pairs()[i].b);
   }
 }
 
@@ -738,16 +709,15 @@ GTEST_TEST(DistanceOracleProbe, DeformableGeometryIsRefusedByName) {
       drake::multibody::fem::DeformableBodyConfig<double>{}, 0.05);
   World world(builder.Build());
 
-  DRAKE_EXPECT_THROWS_MESSAGE(DistanceOracle(world.diagram(), kTau),
+  DRAKE_EXPECT_THROWS_MESSAGE(DistanceOracle(world.diagram()),
                               "[\\s\\S]*deformable[\\s\\S]*squishy[\\s\\S]*");
 }
 
 GTEST_TEST(DistanceOracleProbe, EmptyWorldProbesCleanly) {
   RobotDiagramBuilder<double> builder(0.0);
   World world(builder.Build());
-  const DistanceOracle oracle(world.diagram(), kTau);
+  const DistanceOracle oracle(world.diagram());
   EXPECT_TRUE(oracle.pairs().empty());
-  EXPECT_THAT(oracle.support_report(), HasSubstr("0 unfiltered pair(s)"));
 }
 
 // ==========================================================================
@@ -767,7 +737,7 @@ GTEST_TEST(DistanceOracleMesh, MeshDistanceEqualsConvexHullDistance) {
   const auto& probe_body =
       AddShapeBody(&plant, "probe", Sphere(0.07), Vector3d(0, 2, 0));
   World world(builder.Build());
-  const DistanceOracle oracle(world.diagram(), kTau);
+  const DistanceOracle oracle(world.diagram());
 
   const GeometryId probe_id = GeometryOf(world.plant(), "probe");
   const PairRecord& mesh_pair =
@@ -810,7 +780,7 @@ GTEST_TEST(DistanceOracleMesh,
   const auto& probe_body =
       AddShapeBody(&plant, "probe", Sphere(probe_radius), Vector3d(5, 5, 5));
   World world(builder.Build());
-  const DistanceOracle oracle(world.diagram(), kTau);
+  const DistanceOracle oracle(world.diagram());
 
   const GeometryId probe_id = GeometryOf(world.plant(), "probe");
   const PairRecord& mesh_pair =
@@ -851,7 +821,7 @@ GTEST_TEST(DistanceOracleMesh, HalfSpaceFallbackAgainstMeshUsesTheSameHull) {
       plant.world_body(), RigidTransformd::Identity(), HalfSpace(),
       "ground_geometry", Friction());
   World world(builder.Build());
-  const DistanceOracle oracle(world.diagram(), kTau);
+  const DistanceOracle oracle(world.diagram());
 
   const PairRecord& mesh_pair =
       FindPair(oracle, ground, GeometryOf(world.plant(), "mesh"));
@@ -878,161 +848,8 @@ GTEST_TEST(DistanceOracleMesh, HalfSpaceFallbackAgainstMeshUsesTheSameHull) {
   }
 }
 
-// ==========================================================================
-// V-polytope ingestion round trip.
-// ==========================================================================
-
-// A lopsided polytope.
-Matrix3Xd PolytopeVertices() {
-  Matrix3Xd v(3, 6);
-  v.col(0) = Vector3d(0.00, 0.00, 0.00);
-  v.col(1) = Vector3d(0.28, 0.03, 0.01);
-  v.col(2) = Vector3d(0.05, 0.31, -0.02);
-  v.col(3) = Vector3d(-0.04, 0.06, 0.24);
-  v.col(4) = Vector3d(0.22, 0.25, 0.19);
-  v.col(5) = Vector3d(0.10, -0.18, 0.11);
-  return v;
-}
-
-// The same polytope with interior points that add nothing to the hull.
-Matrix3Xd RedundantPolytopeVertices() {
-  const Matrix3Xd v = PolytopeVertices();
-  Matrix3Xd r(3, v.cols() + 3);
-  r.leftCols(v.cols()) = v;
-  r.col(v.cols() + 0) = v.rowwise().mean();
-  r.col(v.cols() + 1) = 0.5 * (v.col(0) + v.col(4));
-  r.col(v.cols() + 2) = 0.25 * (v.col(1) + v.col(2) + v.col(3) + v.col(5));
-  return r;
-}
-
-GTEST_TEST(VPolytopeIngestion, RoundTripMatchesDirectConvexRegistration) {
-  const Matrix3Xd vertices = PolytopeVertices();
-  const VPolytope vpoly(vertices);
-  const VPolytope redundant_vpoly{RedundantPolytopeVertices()};
-
-  const RigidTransformd X_WG(RotationMatrixd(Eigen::AngleAxisd(
-                                 0.7, Vector3d(0.3, -0.5, 0.8).normalized())),
-                             Vector3d(0.2, -0.1, 0.35));
-
-  RobotDiagramBuilder<double> builder(0.0);
-  MultibodyPlant<double>& plant = builder.plant();
-  const GeometryId ingested =
-      AddVPolytopeObstacle(&plant, vpoly, X_WG, "ingested_vpolytope");
-  const GeometryId ingested_redundant =
-      AddVPolytopeObstacle(&plant, redundant_vpoly, X_WG, "ingested_redundant");
-  const GeometryId direct = plant.RegisterCollisionGeometry(
-      plant.world_body(), X_WG, Convex(vertices, "direct_convex"),
-      "direct_convex", Friction());
-  const auto& probe_body =
-      AddShapeBody(&plant, "probe", Sphere(0.06), Vector3d(2, 2, 2));
-  World world(builder.Build());
-  const DistanceOracle oracle(world.diagram(), kTau);
-  const GeometryId probe_id = GeometryOf(world.plant(), "probe");
-
-  // Three anchored obstacles against one dynamic probe. Anchored-anchored
-  // pairs are filtered by SceneGraph, so exactly three pairs survive.
-  ASSERT_EQ(oracle.pairs().size(), 3u);
-
-  const PairRecord& p_ingested = FindPair(oracle, ingested, probe_id);
-  const PairRecord& p_redundant =
-      FindPair(oracle, ingested_redundant, probe_id);
-  const PairRecord& p_direct = FindPair(oracle, direct, probe_id);
-
-  std::mt19937 rng(2718);
-  int separated = 0;
-  int penetrating = 0;
-  for (int trial = 0; trial < 120; ++trial) {
-    world.SetPose(probe_body, RandomPose(&rng, 0.5));
-    const QueryObject<double>& query = world.query();
-
-    Vector3d a_i;
-    Vector3d b_i;
-    Vector3d a_d;
-    Vector3d b_d;
-    const double phi_ingested =
-        oracle.SignedDistance(query, p_ingested, &a_i, &b_i);
-    const double phi_direct =
-        oracle.SignedDistance(query, p_direct, &a_d, &b_d);
-    EXPECT_NEAR(phi_ingested, phi_direct, kExact) << "trial " << trial;
-    EXPECT_NEAR(oracle.SignedDistance(query, p_redundant), phi_direct, kExact)
-        << "trial " << trial;
-    if (phi_direct > 1e-9) {
-      ++separated;
-      EXPECT_LT((a_i - a_d).norm(), kExact) << "trial " << trial;
-      EXPECT_LT((b_i - b_d).norm(), kExact) << "trial " << trial;
-    } else {
-      ++penetrating;
-    }
-  }
-  EXPECT_GT(separated, 0);
-  EXPECT_GT(penetrating, 0);
-}
-
-GTEST_TEST(VPolytopeIngestion, RoundTripAlsoHoldsOnTheHalfSpaceFallbackRoute) {
-  const Matrix3Xd vertices = PolytopeVertices();
-  RobotDiagramBuilder<double> builder(0.0);
-  MultibodyPlant<double>& plant = builder.plant();
-  // Both copies ride floating bodies so the anchored halfspace can see them.
-  const VPolytope vpoly(vertices);
-  const auto& ingested_body = AddShapeBody(
-      &plant, "ingested", vpoly.ToShapeConvex("ingested"), Vector3d(0, 0, 1));
-  const auto& direct_body = AddShapeBody(
-      &plant, "direct", Convex(vertices, "direct"), Vector3d(0, 2, 1));
-  const GeometryId ground = plant.RegisterCollisionGeometry(
-      plant.world_body(), RigidTransformd::Identity(), HalfSpace(),
-      "ground_geometry", Friction());
-  World world(builder.Build());
-  const DistanceOracle oracle(world.diagram(), kTau);
-
-  const PairRecord& ingested_pair =
-      FindPair(oracle, ground, GeometryOf(world.plant(), "ingested"));
-  const PairRecord& direct_pair =
-      FindPair(oracle, ground, GeometryOf(world.plant(), "direct"));
-
-  std::mt19937 rng(1618);
-  for (int trial = 0; trial < 100; ++trial) {
-    const RigidTransformd X_W = RandomPose(&rng, 0.3);
-    world.SetPose(ingested_body, X_W);
-    world.SetPose(direct_body, X_W);
-    const QueryObject<double>& query = world.query();
-    const double phi_direct = oracle.SignedDistance(query, direct_pair);
-    EXPECT_NEAR(oracle.SignedDistance(query, ingested_pair), phi_direct, kExact)
-        << "trial " << trial;
-    // Reference: the lowest transformed vertex, since the ground is z = 0.
-    double lowest = std::numeric_limits<double>::infinity();
-    for (int i = 0; i < vertices.cols(); ++i) {
-      lowest = std::min(lowest, (X_W * Vector3d(vertices.col(i))).z());
-    }
-    EXPECT_NEAR(phi_direct, lowest, kExact) << "trial " << trial;
-  }
-}
-
-GTEST_TEST(VPolytopeIngestion, RejectsBadArguments) {
-  const VPolytope vpoly(PolytopeVertices());
-  EXPECT_THROW(
-      AddVPolytopeObstacle(nullptr, vpoly, RigidTransformd::Identity(), "x"),
-      std::exception);
-
-  {  // 2-D polytope.
-    RobotDiagramBuilder<double> builder(0.0);
-    Eigen::MatrixXd square(2, 4);
-    square << 0, 1, 1, 0, 0, 0, 1, 1;
-    const VPolytope flat(square);
-    EXPECT_THROW(AddVPolytopeObstacle(&builder.plant(), flat,
-                                      RigidTransformd::Identity(), "flat"),
-                 std::exception);
-  }
-  {  // Post-finalize.
-    RobotDiagramBuilder<double> builder(0.0);
-    MultibodyPlant<double>& plant = builder.plant();
-    plant.Finalize();
-    EXPECT_THROW(AddVPolytopeObstacle(&plant, vpoly,
-                                      RigidTransformd::Identity(), "late"),
-                 std::exception);
-  }
-}
-
 }  // namespace
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

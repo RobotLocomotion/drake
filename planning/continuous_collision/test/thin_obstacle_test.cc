@@ -28,12 +28,11 @@ using drake::planning::CollisionCheckerParams;
 using drake::planning::SceneGraphCollisionChecker;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-using test::BezierCurve;
 using test::Box;
 using test::DistanceAtFinding;
 using test::Friction;
 using test::Inertia;
-using test::MakeChecker;
+using test::MakeCheckerPtr;
 using test::MultibodyPlant;
 using test::Parallelism;
 using test::PrismaticJoint;
@@ -242,15 +241,15 @@ GTEST_TEST(ThinObstacleTest, DrakeSampledCheckerMissesTheThinPlate) {
 GTEST_TEST(ThinObstacleTest, CertifiedCheckerCatchesTheThinPlate) {
   const VectorXd q1 = MakeQ(-0.5, 0.0);
   const VectorXd q2 = MakeQ(0.5, 0.0);
-  const auto checker =
-      MakeChecker(MakePlateWorld(kPlateX, kPlateThickness), CertifiedOptions());
+  const std::shared_ptr<const RobotDiagram<double>> model =
+      MakePlateWorld(kPlateX, kPlateThickness);
+  const auto checker = MakeCheckerPtr(model, CertifiedOptions());
 
-  const CertificationResult result = checker.CheckEdge(q1, q2);
+  const Result result = checker->CheckEdge(q1, q2);
   ASSERT_EQ(result.verdict, Verdict::kViolationFound);
-  ASSERT_FALSE(result.findings.empty());
+  ASSERT_TRUE(result.finding.has_value());
 
-  const Finding& finding = result.findings.front();
-  EXPECT_TRUE(finding.definite);
+  const Finding& finding = *result.finding;
   ASSERT_EQ(finding.q.size(), 2);
 
   // The witness lies inside the plate-crossing parameter interval. CheckEdge
@@ -267,14 +266,14 @@ GTEST_TEST(ThinObstacleTest, CertifiedCheckerCatchesTheThinPlate) {
 
   // ... and a direct distance query at the witness, from a context this run
   // never touched, confirms the contact.
-  const double phi = DistanceAtFinding(checker, finding);
+  const double phi = DistanceAtFinding(*model, finding);
   EXPECT_LT(phi, 0.0) << "the witness must be a genuine interpenetration";
   EXPECT_NEAR(phi, finding.distance, 1e-12);
   EXPECT_TRUE(finding.nearest_a_W.has_value());
   EXPECT_TRUE(finding.nearest_b_W.has_value());
 
   // CheckPath over the same two waypoints makes the same statement.
-  EXPECT_EQ(checker.CheckPath(Waypoints(q1, q2)).verdict,
+  EXPECT_EQ(checker->CheckPath(Waypoints(q1, q2)).verdict,
             Verdict::kViolationFound);
 }
 
@@ -290,7 +289,8 @@ GTEST_TEST(ThinObstacleTest, NarrowGapCertifiedWithBoundedNodeBudget) {
   constexpr double kClearance = kHalfGap - 0.5 * kPlateThickness - kToolRadius;
   static_assert(kClearance > 0.0);
 
-  const auto checker = MakeChecker(MakeSlotWorld(kHalfGap), CertifiedOptions());
+  const auto checker =
+      MakeCheckerPtr(MakeSlotWorld(kHalfGap), CertifiedOptions());
   const VectorXd q1 = MakeQ(-0.3, 0.0);
   const VectorXd q2 = MakeQ(0.3, 0.0);
 
@@ -299,9 +299,9 @@ GTEST_TEST(ThinObstacleTest, NarrowGapCertifiedWithBoundedNodeBudget) {
   EXPECT_TRUE(MakeDrakeChecker(MakeSlotWorld(kHalfGap), kDrakeEdgeStepSize)
                   .CheckEdgeCollisionFree(q1, q2));
 
-  const CertificationResult result = checker.CheckEdge(q1, q2);
+  const Result result = checker->CheckEdge(q1, q2);
   EXPECT_EQ(result.verdict, Verdict::kCertifiedFree);
-  EXPECT_TRUE(result.findings.empty());
+  EXPECT_FALSE(result.finding.has_value());
 
   // Node budget. Only the prismatic x coordinate moves, so λ = 1 for the two
   // tool-vs-plate pairs and the motion bound at depth d is the node's half
@@ -311,24 +311,12 @@ GTEST_TEST(ThinObstacleTest, NarrowGapCertifiedWithBoundedNodeBudget) {
   // certify at the same depth, so the whole recursion is that one tree. The
   // ceiling below is ~2.5× that: loose enough to survive a differently-tuned
   // prefilter, tight enough to catch a regression that made the search blow up.
-  EXPECT_LT(result.stats.nodes, uint64_t{640})
+  EXPECT_LT(result.num_nodes, uint64_t{640})
       << "certifying a 3 mm gap should cost O(log(travel / clearance)) depth, "
          "not a blow-up";
-  EXPECT_GE(result.stats.max_depth, 6)
+  EXPECT_GE(result.num_nodes, uint64_t{64})
       << "a 3 mm gap over 0.6 m of travel cannot be certified shallowly; if it "
          "could, the motion bound would be unsound";
-  EXPECT_LE(result.stats.max_depth, 12);
-
-  // ... and the certificate for this run replays independently.
-  Options options = CertifiedOptions();
-  options.emit_certificate = true;
-  const CertificationResult with_certificate =
-      checker.CheckPath(Waypoints(q1, q2), options);
-  ASSERT_EQ(with_certificate.verdict, Verdict::kCertifiedFree);
-  ASSERT_TRUE(with_certificate.certificate.has_value());
-  const BezierCurve<double> edge(0.0, 1.0, Waypoints(q1, q2));
-  EXPECT_TRUE(VerifyCertificate(checker, checker.Normalize(edge, options),
-                                *with_certificate.certificate));
 }
 
 // ---------------------------------------------------------------------------
@@ -356,8 +344,8 @@ GTEST_TEST(ThinObstacleTest, ThicknessSweepBracketsTheResolutionGap) {
             .CheckEdgeCollisionFree(q1, q2);
     if (!drake_free && std::isnan(first_caught)) first_caught = thickness;
     EXPECT_EQ(
-        MakeChecker(MakePlateWorld(kPlateX, thickness), CertifiedOptions())
-            .CheckEdge(q1, q2)
+        MakeCheckerPtr(MakePlateWorld(kPlateX, thickness), CertifiedOptions())
+            ->CheckEdge(q1, q2)
             .verdict,
         Verdict::kViolationFound);
   }

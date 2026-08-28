@@ -28,10 +28,12 @@ against themselves. */
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/math/bspline_basis.h"
 #include "drake/math/knot_vector_type.h"
+#include "drake/planning/continuous_collision/internal.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
+namespace internal {
 namespace {
 
 using drake::copyable_unique_ptr;
@@ -142,7 +144,7 @@ GTEST_TEST(BezierEvaluation, MatchesDrakeBezierCurve) {
       const BezierCurve<double> curve(t_start, t_end, control_points);
 
       const PiecewiseBezierPath path =
-          PiecewiseBezierPath::FromTrajectory(curve, Options{});
+          PiecewiseBezierPath::FromTrajectory(curve, {});
       ASSERT_EQ(path.num_positions(), num_positions);
       ASSERT_EQ(path.segments().size(), 1u);
       EXPECT_EQ(path.start_time(), t_start);
@@ -336,7 +338,7 @@ BsplineTrajectory<double> MakeBsplineFromBasis(
 void CheckBsplineEquivalence(const BsplineTrajectory<double>& bspline,
                              int expected_segments = 0) {
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(bspline, Options{});
+      PiecewiseBezierPath::FromTrajectory(bspline, {});
   EXPECT_EQ(path.num_positions(), bspline.rows());
   EXPECT_NEAR(path.start_time(), bspline.start_time(), 1e-14);
   EXPECT_NEAR(path.end_time(), bspline.end_time(), 1e-14);
@@ -423,8 +425,7 @@ GTEST_TEST(BsplineConversion, SegmentTimesMatchKnotSpans) {
   std::mt19937_64 generator(24680);
   const std::vector<double> knots{0.0, 0.0, 0.0, 0.5, 1.25, 2.0, 2.0, 2.0};
   const PiecewiseBezierPath path = PiecewiseBezierPath::FromTrajectory(
-      MakeBsplineFromBasis(BsplineBasis<double>(3, knots), 2, &generator),
-      Options{});
+      MakeBsplineFromBasis(BsplineBasis<double>(3, knots), 2, &generator), {});
   ASSERT_EQ(path.segments().size(), 3u);
   const std::vector<double> expected{0.0, 0.5, 1.25, 2.0};
   for (int i = 0; i < 3; ++i) {
@@ -438,9 +439,8 @@ GTEST_TEST(BsplineConversion, MatrixValuedThrows) {
   const BsplineTrajectory<double> bspline(
       BsplineBasis<double>(3, 6, KnotVectorType::kClampedUniform, 0.0, 1.0),
       control_points);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewiseBezierPath::FromTrajectory(bspline, Options{}),
-      "[\\s\\S]*column-vector-valued[\\s\\S]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(PiecewiseBezierPath::FromTrajectory(bspline, {}),
+                              "[\\s\\S]*column-vector-valued[\\s\\S]*");
 }
 
 // --------------------------------------------------------------------------
@@ -454,8 +454,7 @@ GTEST_TEST(PiecewisePolynomialConversion, FirstOrderHold) {
   const PiecewisePolynomial<double> pp =
       PiecewisePolynomial<double>::FirstOrderHold(times, samples);
 
-  const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(pp, Options{});
+  const PiecewiseBezierPath path = PiecewiseBezierPath::FromTrajectory(pp, {});
   ASSERT_EQ(path.segments().size(), 5u);
   for (int k = 0; k < 5; ++k) {
     // A first-order hold is exactly an order-1 Bézier per segment, whose
@@ -482,7 +481,7 @@ GTEST_TEST(PiecewisePolynomialConversion, CubicSplines) {
       PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
           times, samples);
   const PiecewiseBezierPath path_a =
-      PiecewiseBezierPath::FromTrajectory(continuous_second, Options{});
+      PiecewiseBezierPath::FromTrajectory(continuous_second, {});
   EXPECT_EQ(path_a.segments().size(), 6u);
   for (const BezierSegment& segment : path_a.segments()) {
     EXPECT_EQ(segment.control_points.cols(), 4);
@@ -492,16 +491,15 @@ GTEST_TEST(PiecewisePolynomialConversion, CubicSplines) {
   const PiecewisePolynomial<double> shape_preserving =
       PiecewisePolynomial<double>::CubicShapePreserving(times, samples);
   const PiecewiseBezierPath path_b =
-      PiecewiseBezierPath::FromTrajectory(shape_preserving, Options{});
+      PiecewiseBezierPath::FromTrajectory(shape_preserving, {});
   EXPECT_LT(MaxSampledError(path_b, shape_preserving, 10001), 1e-10);
 }
 
-/* A single high-degree polynomial segment, from degree 1 up to the default cap
-and one past it. */
+/* A single high-degree polynomial segment, from degree 1 up to the cap and one
+past it. */
 GTEST_TEST(PiecewisePolynomialConversion, LagrangeUpToDegreeCapAndBeyond) {
-  const Options options;
-  ASSERT_EQ(options.max_conversion_degree, 10);
-  for (int degree = 1; degree <= options.max_conversion_degree + 1; ++degree) {
+  ASSERT_EQ(kMaxConversionDegree, 10);
+  for (int degree = 1; degree <= kMaxConversionDegree + 1; ++degree) {
     SCOPED_TRACE("degree " + std::to_string(degree));
     const int num_points = degree + 1;
     Eigen::VectorXd times(num_points);
@@ -516,16 +514,13 @@ GTEST_TEST(PiecewisePolynomialConversion, LagrangeUpToDegreeCapAndBeyond) {
     const PiecewisePolynomial<double> pp =
         PiecewisePolynomial<double>::LagrangeInterpolatingPolynomial(times,
                                                                      samples);
-    Options relaxed = options;
-    if (degree > options.max_conversion_degree) {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          PiecewiseBezierPath::FromTrajectory(pp, options),
-          "[\\s\\S]*max_conversion_degree[\\s\\S]*");
-      // Raising the cap is the documented escape hatch.
-      relaxed.max_conversion_degree = degree;
+    if (degree > kMaxConversionDegree) {
+      DRAKE_EXPECT_THROWS_MESSAGE(PiecewiseBezierPath::FromTrajectory(pp, {}),
+                                  "[\\s\\S]*polynomial degree 11[\\s\\S]*");
+      continue;
     }
     const PiecewiseBezierPath path =
-        PiecewiseBezierPath::FromTrajectory(pp, relaxed);
+        PiecewiseBezierPath::FromTrajectory(pp, {});
     ASSERT_EQ(path.segments().size(), 1u);
     EXPECT_EQ(path.segments()[0].control_points.cols(), degree + 1);
     EXPECT_LT(MaxSampledError(path, pp, 10001), 1e-10);
@@ -539,9 +534,8 @@ GTEST_TEST(PiecewisePolynomialConversion, MatrixValuedThrows) {
   const std::vector<double> times{0.0, 1.0};
   const PiecewisePolynomial<double> pp =
       PiecewisePolynomial<double>::FirstOrderHold(times, samples);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewiseBezierPath::FromTrajectory(pp, Options{}),
-      "[\\s\\S]*column-vector-valued[\\s\\S]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(PiecewiseBezierPath::FromTrajectory(pp, {}),
+                              "[\\s\\S]*column-vector-valued[\\s\\S]*");
 }
 
 // --------------------------------------------------------------------------
@@ -568,14 +562,14 @@ GTEST_TEST(JunctionValidation, InjectedDiscontinuityThrows) {
   offset[1] = 1e-3;
   DRAKE_EXPECT_THROWS_MESSAGE(
       PiecewiseBezierPath::FromTrajectory(MakeJunctionCase(offset, &generator),
-                                          Options{}),
+                                          {}),
       "[\\s\\S]*C0 discontinuity[\\s\\S]*coordinate 1[\\s\\S]*");
 
   // A gap just under the tolerance is accepted.
   Eigen::VectorXd tiny = Eigen::VectorXd::Zero(3);
   tiny[2] = 9e-8;
   EXPECT_NO_THROW(PiecewiseBezierPath::FromTrajectory(
-      MakeJunctionCase(tiny, &generator), Options{}));
+      MakeJunctionCase(tiny, &generator), {}));
 }
 
 GTEST_TEST(JunctionValidation, TwoPiOffsetAcceptedOnlyWhenDeclaredRevolute) {
@@ -586,18 +580,15 @@ GTEST_TEST(JunctionValidation, TwoPiOffsetAcceptedOnlyWhenDeclaredRevolute) {
       MakeJunctionCase(offset, &generator);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewiseBezierPath::FromTrajectory(trajectory, Options{}),
+      PiecewiseBezierPath::FromTrajectory(trajectory, {}),
       "[\\s\\S]*C0 discontinuity[\\s\\S]*");
 
   // Declaring the *wrong* coordinate does not help.
-  Options wrong;
-  wrong.continuous_revolute_indices = {0, 2};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewiseBezierPath::FromTrajectory(trajectory, wrong),
+      PiecewiseBezierPath::FromTrajectory(trajectory, {0, 2}),
       "[\\s\\S]*C0 discontinuity[\\s\\S]*");
 
-  Options right;
-  right.continuous_revolute_indices = {1};
+  const std::vector<int> right{1};
   EXPECT_NO_THROW(PiecewiseBezierPath::FromTrajectory(trajectory, right));
 
   // Any integer multiple of 2π is fine ...
@@ -623,10 +614,8 @@ GTEST_TEST(JunctionValidation,
   offset[0] = kTwoPi;
   const CompositeTrajectory<double> trajectory =
       MakeJunctionCase(offset, &generator);
-  Options options;
-  options.continuous_revolute_indices = {0};
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(trajectory, options);
+      PiecewiseBezierPath::FromTrajectory(trajectory, {0});
   ASSERT_EQ(path.segments().size(), 2u);
 
   const Eigen::MatrixXd& first = path.segments()[0].control_points;
@@ -645,12 +634,11 @@ GTEST_TEST(JunctionValidation,
 }
 
 GTEST_TEST(JunctionValidation, OutOfRangeRevoluteIndexThrows) {
-  Eigen::MatrixXd waypoints(2, 3);
-  waypoints << 0.0, 1.0, 2.0, 0.0, 0.0, 0.0;
-  Options options;
-  options.continuous_revolute_indices = {2};
+  Eigen::MatrixXd control_points(2, 3);
+  control_points << 0.0, 1.0, 2.0, 0.0, 0.0, 0.0;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewiseBezierPath::FromWaypoints(waypoints, options),
+      PiecewiseBezierPath::FromTrajectory(
+          BezierCurve<double>(0.0, 1.0, control_points), {2}),
       "[\\s\\S]*continuous_revolute_indices[\\s\\S]*");
 }
 
@@ -662,8 +650,7 @@ GTEST_TEST(JunctionValidation, ZeroOrderHoldIsRejected) {
   samples << 0.0, 1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 0.0;
   DRAKE_EXPECT_THROWS_MESSAGE(
       PiecewiseBezierPath::FromTrajectory(
-          PiecewisePolynomial<double>::ZeroOrderHold(times, samples),
-          Options{}),
+          PiecewisePolynomial<double>::ZeroOrderHold(times, samples), {}),
       "[\\s\\S]*C0 discontinuity[\\s\\S]*");
 }
 
@@ -688,7 +675,7 @@ GTEST_TEST(Metadata, GlobalControlBox) {
   const CompositeTrajectory<double> trajectory =
       MakeComposite(std::move(pieces));
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
+      PiecewiseBezierPath::FromTrajectory(trajectory, {});
 
   Eigen::VectorXd expected_lower =
       Eigen::VectorXd::Constant(3, std::numeric_limits<double>::infinity());
@@ -721,20 +708,12 @@ GTEST_TEST(Metadata, ConstantCoordinateFlags) {
   waypoints.row(3) << 0.0, 0.0, 2e-7, 0.0;
 
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromWaypoints(waypoints, Options{});
+      PiecewiseBezierPath::FromWaypoints(waypoints);
   ASSERT_EQ(path.constant_coordinates().size(), 4u);
   EXPECT_FALSE(path.constant_coordinates()[0]);
   EXPECT_TRUE(path.constant_coordinates()[1]);
   EXPECT_TRUE(path.constant_coordinates()[2]);
   EXPECT_FALSE(path.constant_coordinates()[3]);
-
-  // A looser tolerance sweeps coordinate 3 in as well.
-  Options loose;
-  loose.continuity_tolerance = 1e-5;
-  const PiecewiseBezierPath loose_path =
-      PiecewiseBezierPath::FromWaypoints(waypoints, loose);
-  EXPECT_TRUE(loose_path.constant_coordinates()[3]);
-  EXPECT_FALSE(loose_path.constant_coordinates()[0]);
 }
 
 // --------------------------------------------------------------------------
@@ -759,7 +738,7 @@ GTEST_TEST(Composite, BezierSegmentsRoundTrip) {
       MakeComposite(std::move(pieces));
 
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
+      PiecewiseBezierPath::FromTrajectory(trajectory, {});
   ASSERT_EQ(path.segments().size(), orders.size());
   for (std::size_t i = 0; i < orders.size(); ++i) {
     EXPECT_EQ(path.segments()[i].control_points.cols(), orders[i] + 1);
@@ -795,7 +774,7 @@ GTEST_TEST(Composite, NestedCompositeRecursion) {
       MakeComposite(std::move(outer_pieces));
 
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
+      PiecewiseBezierPath::FromTrajectory(trajectory, {});
   ASSERT_EQ(path.segments().size(), 3u);
   EXPECT_EQ(path.segments()[0].control_points.cols(), 3);
   EXPECT_EQ(path.segments()[1].control_points.cols(), 4);
@@ -833,7 +812,7 @@ GTEST_TEST(Composite, MixedSegmentTypes) {
       MakeComposite(std::move(pieces));
 
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
+      PiecewiseBezierPath::FromTrajectory(trajectory, {});
   // 5 Bézier segments from the clamped order-4 B-spline plus 2 from the FOH.
   EXPECT_EQ(path.segments().size(), 7u);
   EXPECT_LT(MaxSampledError(path, trajectory, 10001), 1e-10);
@@ -853,14 +832,13 @@ GTEST_TEST(Composite, UnknownSegmentTypeThrowsWithIndexAndTypeName) {
       MakeComposite(std::move(pieces));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewiseBezierPath::FromTrajectory(trajectory, Options{}),
+      PiecewiseBezierPath::FromTrajectory(trajectory, {}),
       "[\\s\\S]*UnsupportedTrajectory[\\s\\S]*segment index 1[\\s\\S]*");
 
   // At the top level the offending segment index is 0.
   const UnsupportedTrajectory bare(num_positions, 0.0, 1.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewiseBezierPath::FromTrajectory(bare, Options{}),
-      "[\\s\\S]*segment index 0[\\s\\S]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(PiecewiseBezierPath::FromTrajectory(bare, {}),
+                              "[\\s\\S]*segment index 0[\\s\\S]*");
 }
 
 // --------------------------------------------------------------------------
@@ -874,7 +852,7 @@ GTEST_TEST(Waypoints, OrderOneSegmentsAreExact) {
   const Eigen::MatrixXd waypoints =
       RandomMatrix(num_positions, num_waypoints, &generator);
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromWaypoints(waypoints, Options{});
+      PiecewiseBezierPath::FromWaypoints(waypoints);
 
   ASSERT_EQ(path.num_positions(), num_positions);
   ASSERT_EQ(static_cast<int>(path.segments().size()), num_waypoints - 1);
@@ -901,11 +879,11 @@ GTEST_TEST(Waypoints, OrderOneSegmentsAreExact) {
 }
 
 GTEST_TEST(Waypoints, TooFewWaypointsThrows) {
-  DRAKE_EXPECT_THROWS_MESSAGE(PiecewiseBezierPath::FromWaypoints(
-                                  Eigen::MatrixXd::Zero(3, 1), Options{}),
-                              "[\\s\\S]*at least 2 waypoints[\\s\\S]*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewiseBezierPath::FromWaypoints(Eigen::MatrixXd(0, 4), Options{}),
+      PiecewiseBezierPath::FromWaypoints(Eigen::MatrixXd::Zero(3, 1)),
+      "[\\s\\S]*at least 2 waypoints[\\s\\S]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      PiecewiseBezierPath::FromWaypoints(Eigen::MatrixXd(0, 4)),
       "[\\s\\S]*zero rows[\\s\\S]*");
 }
 
@@ -913,7 +891,7 @@ GTEST_TEST(Evaluation, DomainEdgesClampAndOutsideThrows) {
   Eigen::MatrixXd waypoints(2, 3);
   waypoints << 0.0, 1.0, 3.0, -1.0, 0.0, 1.0;
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromWaypoints(waypoints, Options{});
+      PiecewiseBezierPath::FromWaypoints(waypoints);
 
   EXPECT_TRUE(path.Value(0.0).isApprox(waypoints.col(0), 0.0));
   EXPECT_TRUE(path.Value(2.0).isApprox(waypoints.col(2), 0.0));
@@ -945,7 +923,7 @@ GTEST_TEST(Evaluation, JunctionTimeSelectsTheLaterSegment) {
   Eigen::MatrixXd waypoints(1, 4);
   waypoints << 0.0, 1.0, 3.0, 6.0;
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromWaypoints(waypoints, Options{});
+      PiecewiseBezierPath::FromWaypoints(waypoints);
   ASSERT_EQ(path.segments().size(), 3u);
   // Segment k spans [k, k+1]; at t = 1 both segment 0's end and segment 1's
   // start are the value 1.0, and the lookup lands on segment 1.
@@ -976,7 +954,7 @@ GTEST_TEST(Evaluation, JunctionTimesAreConsistent) {
   const CompositeTrajectory<double> trajectory =
       MakeComposite(std::move(pieces));
   const PiecewiseBezierPath path =
-      PiecewiseBezierPath::FromTrajectory(trajectory, Options{});
+      PiecewiseBezierPath::FromTrajectory(trajectory, {});
   for (int i = 0; i < 4; ++i) {
     const double junction = 0.75 * i;
     EXPECT_LT((path.Value(junction) - trajectory.value(junction))
@@ -988,6 +966,7 @@ GTEST_TEST(Evaluation, JunctionTimesAreConsistent) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

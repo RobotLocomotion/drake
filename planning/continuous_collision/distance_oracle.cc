@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <map>
 #include <memory>
-#include <set>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -12,26 +11,24 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/planning/continuous_collision/shape_class.h"
+#include "drake/planning/continuous_collision/internal.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
+namespace internal {
 namespace {
 
 using drake::geometry::GeometryId;
 using drake::geometry::QueryObject;
 using drake::geometry::SceneGraphInspector;
 using drake::math::RigidTransformd;
-using internal::Classify;
-using internal::ShapeClass;
 
 /* Everything the analytic halfspace fallback needs about the *non*-halfspace
 partner, extracted once by the probe. Only the fields relevant to `klass` are
@@ -201,19 +198,17 @@ std::string ClassName(ShapeClass klass) {
   return "<unsupported>";
 }
 
-/* "geometry_name (ShapeType)", for error messages and the report. */
+/* "geometry_name (ShapeType)", for error messages. */
 std::string Describe(const SceneGraphInspector<double>& inspector,
                      GeometryId id) {
   return fmt::format("{} ({})", inspector.GetName(id),
                      inspector.GetShape(id).type_name());
 }
 
-/* One row of the probe report: a distinct unordered shape-type combination
-and the route it resolved to. */
+/* A distinct unordered shape-type combination, the route it resolved to, and
+a representative pair for the probe query and its error message. */
 struct ComboRow {
   DistanceRoute route{DistanceRoute::kNative};
-  int pair_count{0};
-  /* A representative pair, used for the probe query and error messages. */
   GeometryId example_a;
   GeometryId example_b;
 };
@@ -225,13 +220,9 @@ struct DistanceOracle::Impl {
   Keyed by geometry id because the facade hands back its own PairRecord
   copies, so SignedDistance() cannot index into pairs_. */
   std::unordered_map<GeometryId, SupportData> support;
-  std::string report;
 };
 
-DistanceOracle::DistanceOracle(const RobotDiagram<double>& model,
-                               double query_tolerance) {
-  DRAKE_THROW_UNLESS(query_tolerance >= 0.0);
-  tolerance_ = query_tolerance;
+DistanceOracle::DistanceOracle(const RobotDiagram<double>& model) {
   auto impl = std::make_shared<Impl>();
 
   const drake::geometry::SceneGraph<double>& scene_graph = model.scene_graph();
@@ -254,11 +245,9 @@ DistanceOracle::DistanceOracle(const RobotDiagram<double>& model,
   }
 
   // --- Snapshot the unfiltered pairs and classify each one. ----------------
-  // GetCollisionCandidates() returns a sorted std::set and std::map keeps the
-  // report ordering fixed, so both pairs_ and support_report() are
+  // GetCollisionCandidates() returns a sorted std::set, so pairs_ is
   // deterministic for a given model.
   std::map<std::pair<ShapeClass, ShapeClass>, ComboRow> combos;
-  std::set<std::string> mesh_names;
 
   for (const auto& [id_a, id_b] : inspector.GetCollisionCandidates()) {
     const drake::multibody::RigidBody<double>* body_a =
@@ -313,23 +302,12 @@ DistanceOracle::DistanceOracle(const RobotDiagram<double>& model,
       }
     }
 
-    // Meshes are certified as their convex hulls; the report says so.
-    if (class_a == ShapeClass::kMesh)
-      mesh_names.insert(inspector.GetName(id_a));
-    if (class_b == ShapeClass::kMesh)
-      mesh_names.insert(inspector.GetName(id_b));
-
     const auto key = std::minmax(class_a, class_b);
-    const std::pair<ShapeClass, ShapeClass> combo{key.first, key.second};
-    auto it = combos.find(combo);
-    if (it == combos.end()) {
-      combos.emplace(combo, ComboRow{route, 1, id_a, id_b});
-    } else {
-      ++it->second.pair_count;
-    }
+    combos.emplace(std::pair<ShapeClass, ShapeClass>{key.first, key.second},
+                   ComboRow{route, id_a, id_b});
 
-    pairs_.push_back(PairRecord{
-        PairId{id_a, id_b, body_a->index(), body_b->index()}, route, 0.0});
+    pairs_.push_back(
+        PairRecord{id_a, id_b, body_a->index(), body_b->index(), route});
   }
 
   // --- One probe query per distinct native combination. --------------------
@@ -362,24 +340,6 @@ DistanceOracle::DistanceOracle(const RobotDiagram<double>& model,
     }
   }
 
-  // --- Render the report. --------------------------------------------------
-  std::string report = fmt::format(
-      "DistanceOracle capability probe: {} unfiltered pair(s), {} distinct "
-      "shape-type combination(s), tolerance tau = {} m.\n",
-      pairs_.size(), combos.size(), tolerance_);
-  for (const auto& [combo, row] : combos) {
-    const char* const route =
-        (row.route == DistanceRoute::kNative)
-            ? "native (ComputeSignedDistancePairClosestPoints, probed ok)"
-            : "halfspace analytic support-function fallback (exact)";
-    report += fmt::format("  {}-{}: {}; {} pair(s)\n", ClassName(combo.first),
-                          ClassName(combo.second), route, row.pair_count);
-  }
-  for (const std::string& name : mesh_names) {
-    report += fmt::format("  Mesh {}: certified as its convex hull\n", name);
-  }
-  impl->report = std::move(report);
-
   impl_ = std::move(impl);
 }
 
@@ -389,17 +349,16 @@ double DistanceOracle::SignedDistance(const QueryObject<double>& query_object,
                                       Eigen::Vector3d* nearest_b_W) const {
   if (pair.route == DistanceRoute::kNative) {
     const drake::geometry::SignedDistancePair<double> result =
-        query_object.ComputeSignedDistancePairClosestPoints(pair.id.a,
-                                                            pair.id.b);
+        query_object.ComputeSignedDistancePairClosestPoints(pair.a, pair.b);
     // Drake reports the pair in its own fixed but undocumented order, which
     // may be the reverse of this record's; the witness points come back in
     // *its* A/B geometry frames, so undo any swap explicitly.
     Eigen::Vector3d p_ACa;
     Eigen::Vector3d p_BCb;
-    if (result.id_A == pair.id.a && result.id_B == pair.id.b) {
+    if (result.id_A == pair.a && result.id_B == pair.b) {
       p_ACa = result.p_ACa;
       p_BCb = result.p_BCb;
-    } else if (result.id_A == pair.id.b && result.id_B == pair.id.a) {
+    } else if (result.id_A == pair.b && result.id_B == pair.a) {
       p_ACa = result.p_BCb;
       p_BCb = result.p_ACa;
     } else {
@@ -408,10 +367,10 @@ double DistanceOracle::SignedDistance(const QueryObject<double>& query_object,
           "different geometry pair than the one queried.");
     }
     if (nearest_a_W != nullptr) {
-      *nearest_a_W = query_object.GetPoseInWorld(pair.id.a) * p_ACa;
+      *nearest_a_W = query_object.GetPoseInWorld(pair.a) * p_ACa;
     }
     if (nearest_b_W != nullptr) {
-      *nearest_b_W = query_object.GetPoseInWorld(pair.id.b) * p_BCb;
+      *nearest_b_W = query_object.GetPoseInWorld(pair.b) * p_BCb;
     }
     return result.distance;
   }
@@ -431,8 +390,8 @@ double DistanceOracle::SignedDistance(const QueryObject<double>& query_object,
   // route contributes 0 to τ -- but τ accounting stays uniform (the numerical
   // policy).
   const bool a_is_halfspace = (pair.route == DistanceRoute::kHalfSpaceA);
-  const GeometryId halfspace_id = a_is_halfspace ? pair.id.a : pair.id.b;
-  const GeometryId partner_id = a_is_halfspace ? pair.id.b : pair.id.a;
+  const GeometryId halfspace_id = a_is_halfspace ? pair.a : pair.b;
+  const GeometryId partner_id = a_is_halfspace ? pair.b : pair.a;
 
   const auto it = impl_->support.find(partner_id);
   if (it == impl_->support.end()) {
@@ -463,10 +422,7 @@ double DistanceOracle::SignedDistance(const QueryObject<double>& query_object,
   return phi;
 }
 
-const std::string& DistanceOracle::support_report() const {
-  return impl_->report;
-}
-
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

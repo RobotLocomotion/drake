@@ -9,18 +9,53 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/planning/continuous_collision/bounding_sphere.h"
-#include "drake/planning/continuous_collision/options.h"
+#include "drake/planning/continuous_collision/internal.h"
 #include "drake/planning/continuous_collision/piecewise_bezier_path.h"
 #include "drake/planning/robot_diagram.h"
 
 namespace drake {
 namespace planning {
 namespace continuous_collision {
+namespace internal {
 
-/** Per-pair motion-bound coefficients in CSR layout: for pair index k, a
+/* A sphere, expressed in the owning body (link) frame L, that contains a
+proximity geometry at every configuration of the body. */
+struct BoundingSphere {
+  Eigen::Vector3d center_L{Eigen::Vector3d::Zero()};
+  double radius{0.0};
+};
+
+/* Computes a bounding sphere, in the body frame, of shape `shape` posed at
+X_LG in the body frame.
+
+The sphere is centered at the shape's natural center, which is tighter for the
+broadphase prefilter than an origin-centered radius. The origin-centered bound
+the reach chain needs is ‖center_L‖ + radius, which is sound because the sphere
+contains the geometry. Formulas are exact containment per shape:
+
+ - Sphere(r): center X_LG·0, radius r.
+ - Box(w,d,h; Drake stores full sizes): box center, radius = half diagonal.
+ - Capsule(r, L): center, radius = L/2 + r.
+ - Cylinder(r, L): center, radius = √(r² + (L/2)²) (farthest point on a rim).
+ - Ellipsoid(a,b,c): center, radius = max(a,b,c).
+ - Convex / Mesh: centroid of the convex-hull vertices, radius = max vertex
+   distance. The vertices MUST come from the same hull object the proximity
+   engine collides (Shape::GetConvexHull()), never from the raw file: the
+   engine's hull bakes in scale and degeneracy inflation, and the radius must
+   bound the geometry actually checked.
+
+An under-bounding formula produces an unsound λ with no other symptom, so this
+function switches on the closed set of supported shape types rather than
+falling back to a generic bound.
+@throws std::exception on any other shape type, HalfSpace included; half
+spaces are handled by dedicated rules, never through a bounding sphere. */
+BoundingSphere ComputeBoundingSphere(const geometry::Shape& shape,
+                                     const math::RigidTransform<double>& X_LG);
+
+/* Per-pair motion-bound coefficients in CSR layout: for pair index k, a
 contiguous span of (position-coordinate index j, λ(j, p)) entries over J(p),
 the coordinates that change the pair's relative pose. λ is meters of worst-case
 displacement of the pair's distal side per unit change of coordinate j, valid
@@ -29,29 +64,17 @@ for every configuration in the trajectory's global control-point box.
 Each pair also carries a scalar carveout_slack(p), the residual motion of the
 coordinates the constant-coordinate carve-out removed from J(p). MotionBound()
 charges it unconditionally, which is what makes Δ_p an upper bound on the
-pair's relative motion over the whole trajectory.
-@ingroup planning_collision_checker */
+pair's relative motion over the whole trajectory. */
 class MotionBoundTable {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MotionBoundTable);
 
-  /** Constructs an empty table (zero pairs). */
+  /* Constructs an empty table (zero pairs). */
   MotionBoundTable() = default;
-
-  /** Constructs the CSR table directly from its four arrays.
-  @param row_start   Size num_pairs + 1, starting at 0 and non-decreasing;
-                     row_start.back() is the total entry count.
-  @param coord       Position-coordinate index of every entry.
-  @param lambda      λ of every entry, element for element with `coord`.
-  @param carveout_slack  One residual per pair.
-  @throws std::exception if the arrays do not satisfy those invariants. */
-  MotionBoundTable(std::vector<int> row_start, std::vector<int> coord,
-                   std::vector<double> lambda,
-                   std::vector<double> carveout_slack);
 
   int num_pairs() const { return static_cast<int>(row_start_.size()) - 1; }
 
-  /** True iff J(p) is empty after the constant-coordinate carve-out: no
+  /* True iff J(p) is empty after the constant-coordinate carve-out: no
   coordinate the trajectory *moves* changes this pair's relative pose, so it
   is checked once. Note that "static" does not mean "immobile": a static pair
   can still drift by carveout_slack(p), which callers that shortcut
@@ -61,7 +84,7 @@ class MotionBoundTable {
     return row_start_[pair_index] == row_start_[pair_index + 1];
   }
 
-  /** Δ_p(ν) = carveout_slack(p) + Σ_{j ∈ J(p)} λ(j,p) · w_j: a sparse dot
+  /* Δ_p(ν) = carveout_slack(p) + Σ_{j ∈ J(p)} λ(j,p) · w_j: a sparse dot
   product against the node's per-coordinate deviations w, plus the carved
   coordinates' residual.
   @pre 0 <= pair_index < num_pairs().
@@ -74,50 +97,61 @@ class MotionBoundTable {
     return delta;
   }
 
-  /** Σ over the coordinates of J_topo(p) that the carve-out removed of
+  /* Σ over the coordinates of J_topo(p) that the carve-out removed of
   λ̃_j · (global_upper_j − global_lower_j): an upper bound on how far this
   pair's two geometries can move relative to each other purely through the
   coordinates the table no longer tracks. The carve-out's "constant" is a
   tolerance, a coordinate whose global control-box range is at most
-  Options::continuity_tolerance, so this is zero exactly when every carved
-  coordinate is exactly constant.
+  kContinuityTolerance, so this is zero exactly when every carved coordinate is
+  exactly constant.
   @pre 0 <= pair_index < num_pairs(). */
   double carveout_slack(int pair_index) const {
     return carveout_slack_[pair_index];
   }
 
-  /** Introspection for tests: the (coordinate, λ) entries of one pair,
+  /* Introspection for tests: the (coordinate, λ) entries of one pair,
   ordered by increasing coordinate index.
   @throws std::exception if pair_index is outside [0, num_pairs()). */
   std::vector<std::pair<int, double>> GetEntries(int pair_index) const;
 
  private:
+  friend class KinematicsEngine;
+
+  /* Takes the four CSR arrays as assembled by KinematicsEngine, which is the
+   only producer. */
+  MotionBoundTable(std::vector<int> row_start, std::vector<int> coord,
+                   std::vector<double> lambda,
+                   std::vector<double> carveout_slack)
+      : row_start_(std::move(row_start)),
+        coord_(std::move(coord)),
+        lambda_(std::move(lambda)),
+        carveout_slack_(std::move(carveout_slack)) {}
+
   std::vector<int> row_start_{0};
   std::vector<int> coord_;
   std::vector<double> lambda_;
   std::vector<double> carveout_slack_;
 };
 
-/** Construction-time kinematic analysis of a plant: joint classification,
-per-hop fixed-transform translations, per-body proximity
-geometry bounding spheres, and subtree tables for J(p). Thread-compatible;
-all methods are const after construction and hold no mutable state, so
-concurrent ComputeMotionBoundTable() calls are safe.
+/* Construction-time kinematic analysis of a plant: joint classification,
+per-hop fixed-transform translations, per-body proximity geometry bounding
+spheres, and subtree tables for J(p). Thread-compatible; all methods are const
+after construction and hold no mutable state, so concurrent
+ComputeMotionBoundTable() calls are safe.
 
 Typical use by the certifier:
 - once, at checker construction:   KinematicsEngine engine(model);
                                    engine.geometry_sphere(id) for the
                                    prefilter;
 - once per Check* call:            engine.ComputeMotionBoundTable(path, pairs);
-- once per node, per pair:         table.MotionBound(pair_index, w).
-@ingroup planning_collision_checker */
+- once per node, per pair:         table.MotionBound(pair_index, w). */
 class KinematicsEngine {
  public:
   /* Copies alias the same model: the RobotDiagram passed to the constructor
    must outlive every copy, not just the original. */
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KinematicsEngine);
 
-  /** Builds topology tables and per-body geometry bounding spheres.
+  /* Builds topology tables and per-body geometry bounding spheres.
   Classification only; unsupported joint types throw later, and only if a
   given path actually moves them.
 
@@ -138,13 +172,13 @@ class KinematicsEngine {
   ComputeBoundingSphere() rejects. */
   explicit KinematicsEngine(const RobotDiagram<double>& model);
 
-  /** The position-coordinate indices whose motion changes the relative pose
+  /* The position-coordinate indices whose motion changes the relative pose
   of the two bodies (J(p) before any carve-out), from topology alone. Sorted
   ascending. */
   std::vector<int> CoordinatesAffectingPair(multibody::BodyIndex body_a,
                                             multibody::BodyIndex body_b) const;
 
-  /** Assembles the λ CSR table for `pairs` given the path's global
+  /* Assembles the λ CSR table for `pairs` given the path's global
   control-point box; prismatic chain contributions use the box, so the bound is
   trajectory-adaptive. Coordinates flagged constant by the path are removed
   from every J(p), and their residual motion inside the box is charged to
@@ -154,9 +188,10 @@ class KinematicsEngine {
   @throws std::exception naming the joint if the path moves a coordinate of
   an unsupported joint type (quaternion floating, ball). */
   MotionBoundTable ComputeMotionBoundTable(
-      const PiecewiseBezierPath& path, const std::vector<PairId>& pairs) const;
+      const PiecewiseBezierPath& path,
+      const std::vector<PairRecord>& pairs) const;
 
-  /** Raw-data overload of the above, for callers (and tests) that already
+  /* Raw-data overload of the above, for callers (and tests) that already
   hold the trajectory's global control-point box. `lower` and `upper` are the
   per-coordinate box bounds and `constant_coordinates` flags the coordinates
   the path cannot change; all three have size num_positions(). A coordinate
@@ -173,17 +208,17 @@ class KinematicsEngine {
   MotionBoundTable ComputeMotionBoundTable(
       const Eigen::VectorXd& lower, const Eigen::VectorXd& upper,
       const std::vector<bool>& constant_coordinates,
-      const std::vector<PairId>& pairs) const;
+      const std::vector<PairRecord>& pairs) const;
 
-  /** The bounding sphere (in its body's frame) of one proximity geometry.
+  /* The bounding sphere (in its body's frame) of one proximity geometry.
   @throws std::exception if `id` is not a proximity geometry of this model or
   is a HalfSpace (which has none). */
   const BoundingSphere& geometry_sphere(geometry::GeometryId id) const;
 
-  /** True iff `body` carries at least one HalfSpace proximity geometry. */
+  /* True iff `body` carries at least one HalfSpace proximity geometry. */
   bool body_has_halfspace(multibody::BodyIndex body) const;
 
-  /** Radius, about the body frame origin, of a sphere containing every
+  /* Radius, about the body frame origin, of a sphere containing every
   proximity geometry of `body`; this is the start of the reach chain. Zero for
   a body with no (non-HalfSpace) proximity geometry. */
   double body_radius(multibody::BodyIndex body) const;
@@ -297,6 +332,7 @@ class KinematicsEngine {
   std::unordered_map<geometry::GeometryId, BoundingSphere> geometry_spheres_;
 };
 
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

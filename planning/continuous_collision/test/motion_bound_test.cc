@@ -42,6 +42,7 @@
 namespace drake {
 namespace planning {
 namespace continuous_collision {
+namespace internal {
 namespace {
 
 using drake::geometry::GeometryId;
@@ -79,12 +80,6 @@ using ::testing::HasSubstr;
  mathematics; this only absorbs floating-point noise in Drake's forward
  kinematics and in this test's own accumulation (both ~1e-15 here). */
 constexpr double kSlack = 1e-9;
-
-/* Options::continuity_tolerance's default: the width below which the curve
- module flags a coordinate constant and the carve-out removes it from every
- J(p). A coordinate carved on that *tolerance* can still move by up to this
- much, which is what MotionBoundTable::carveout_slack() charges for. */
-constexpr double kContinuityTolerance = 1e-7;
 
 // ---------------------------------------------------------------------------
 // A random world: a random tree of bodies with random joints, random fixed
@@ -254,16 +249,16 @@ std::vector<bool> AngularCoordinates(const MultibodyPlant<double>& plant) {
   return angular;
 }
 
-std::vector<PairId> CollisionPairs(const RobotDiagram<double>& diagram) {
+std::vector<PairRecord> CollisionPairs(const RobotDiagram<double>& diagram) {
   const MultibodyPlant<double>& plant = diagram.plant();
   const auto& inspector = diagram.scene_graph().model_inspector();
-  std::vector<PairId> pairs;
+  std::vector<PairRecord> pairs;
   for (const auto& [ga, gb] : inspector.GetCollisionCandidates()) {
     const BodyIndex ba =
         plant.GetBodyFromFrameId(inspector.GetFrameId(ga))->index();
     const BodyIndex bb =
         plant.GetBodyFromFrameId(inspector.GetFrameId(gb))->index();
-    pairs.push_back(PairId{ga, gb, ba, bb});
+    pairs.push_back(PairRecord{ga, gb, ba, bb});
   }
   return pairs;
 }
@@ -271,7 +266,7 @@ std::vector<PairId> CollisionPairs(const RobotDiagram<double>& diagram) {
 /* The whole-plant λ table over the box [lower, upper] with `constant` carved
  out, on a model with exactly one collision pair. */
 MotionBoundTable OnePairTable(const KinematicsEngine& engine,
-                              const std::vector<PairId>& pairs,
+                              const std::vector<PairRecord>& pairs,
                               const VectorXd& lower, const VectorXd& upper,
                               const std::vector<bool>& constant) {
   EXPECT_EQ(pairs.size(), 1u);
@@ -392,7 +387,7 @@ GTEST_TEST(JointSupportTest, ConstantCoordinateCarveOutEmptiesJp) {
                                   Sphere(0.05), "g_tip", Friction());
   auto diagram = builder.Build();
   const KinematicsEngine engine(*diagram);
-  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  const std::vector<PairRecord> pairs = CollisionPairs(*diagram);
   const int nq = diagram->plant().num_positions();
   const VectorXd lower = VectorXd::Constant(nq, -0.5);
   const VectorXd upper = VectorXd::Constant(nq, 0.5);
@@ -493,7 +488,7 @@ GTEST_TEST(HalfSpaceRuleTest, OnlyRotationRelativeToAHalfSpaceIsRefused) {
     auto ground =
         MakeHalfSpaceModel(/* halfspace_on_link = */ false, prismatic);
     const KinematicsEngine engine(*ground);
-    const std::vector<PairId> pairs = CollisionPairs(*ground);
+    const std::vector<PairRecord> pairs = CollisionPairs(*ground);
     const int nq = ground->plant().num_positions();
     const MotionBoundTable table =
         OnePairTable(engine, pairs, VectorXd::Constant(nq, -1.0),
@@ -505,7 +500,7 @@ GTEST_TEST(HalfSpaceRuleTest, OnlyRotationRelativeToAHalfSpaceIsRefused) {
 
   auto translating = MakeHalfSpaceModel(/* halfspace_on_link = */ true, true);
   const KinematicsEngine engine(*translating);
-  const std::vector<PairId> pairs = CollisionPairs(*translating);
+  const std::vector<PairRecord> pairs = CollisionPairs(*translating);
   const int nq = translating->plant().num_positions();
   const MotionBoundTable table =
       OnePairTable(engine, pairs, VectorXd::Constant(nq, -1.0),
@@ -548,7 +543,7 @@ std::unique_ptr<RobotDiagram<double>> MakeMidChainFloatingModel() {
 GTEST_TEST(JointSupportTest, MovingQuaternionFloatingJointThrows) {
   auto diagram = MakeMidChainFloatingModel();
   const KinematicsEngine engine(*diagram);
-  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  const std::vector<PairRecord> pairs = CollisionPairs(*diagram);
   const int nq = diagram->plant().num_positions();
   EXPECT_THAT(ThrowMessage([&]() {
                 engine.ComputeMotionBoundTable(
@@ -563,7 +558,7 @@ GTEST_TEST(JointSupportTest, ConstantFloatingBaseCarveOutIsSoundMidChain) {
   auto diagram = MakeMidChainFloatingModel();
   const MultibodyPlant<double>& plant = diagram->plant();
   const KinematicsEngine engine(*diagram);
-  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  const std::vector<PairRecord> pairs = CollisionPairs(*diagram);
 
   const auto& jf = plant.GetJointByName("jf");
   const int nq = plant.num_positions();
@@ -703,7 +698,7 @@ struct TightChainProbe {
 TightChainProbe ProbeTightChain(const TightChain& chain) {
   const MultibodyPlant<double>& plant = chain.diagram->plant();
   const KinematicsEngine engine(*chain.diagram);
-  const std::vector<PairId> pairs = CollisionPairs(*chain.diagram);
+  const std::vector<PairRecord> pairs = CollisionPairs(*chain.diagram);
   const int nq = plant.num_positions();
   const auto& j_top = plant.GetJointByName("j_top");
   const auto& j_slide = plant.GetJointByName("j_slide");
@@ -821,7 +816,7 @@ void CheckWorld(Rng* rng, const RandomWorld& world, CarveOut carve_out,
   const RobotDiagram<double>& diagram = *world.diagram;
   const MultibodyPlant<double>& plant = diagram.plant();
   const KinematicsEngine engine(diagram);
-  const std::vector<PairId> pairs = CollisionPairs(diagram);
+  const std::vector<PairRecord> pairs = CollisionPairs(diagram);
   if (pairs.empty()) return;
 
   const int nq = plant.num_positions();
@@ -904,7 +899,7 @@ void CheckWorld(Rng* rng, const RandomWorld& world, CarveOut carve_out,
     const VectorXd dq = (qp - q).cwiseAbs();
 
     for (int k = 0; k < table.num_pairs(); ++k) {
-      const PairId& pair = pairs[k];
+      const PairRecord& pair = pairs[k];
       const Matrix3Xd& pts_a = world.points_B.at(pair.a);
       const Matrix3Xd& pts_b = world.points_B.at(pair.b);
       const auto& frame_a = plant.get_body(pair.body_a).body_frame();
@@ -1071,12 +1066,12 @@ GTEST_TEST(DisplacementLemmaTest, ScrewChain) {
 // Part 3. The constant-coordinate carve-out's residual.
 //
 // The curve module flags a coordinate constant when its whole control-point
-// range fits inside Options::continuity_tolerance. That is a tolerance, not an
+// range fits inside kContinuityTolerance. That is a tolerance, not an
 // identity: such a coordinate is removed from every J(p) but may still move by
 // up to its range, displacing the pair's distal side by λ̃·range. Uncharged,
 // that residual would let the certificate inequality pass with the true
 // clearance ~1e-7 m below threshold, two orders of magnitude above
-// Options::certificate_slack. MotionBoundTable::carveout_slack() pays for it.
+// kNumericalSlack. MotionBoundTable::carveout_slack() pays for it.
 // ---------------------------------------------------------------------------
 
 GTEST_TEST(CarveOutSlackTest, ToleranceConstantCoordinateIsChargedAtLambda) {
@@ -1098,7 +1093,7 @@ GTEST_TEST(CarveOutSlackTest, ToleranceConstantCoordinateIsChargedAtLambda) {
                                   Sphere(0.05), "g_tip", Friction());
   auto diagram = builder.Build();
   const KinematicsEngine engine(*diagram);
-  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  const std::vector<PairRecord> pairs = CollisionPairs(*diagram);
   const int nq = diagram->plant().num_positions();
   ASSERT_EQ(nq, 2);
   const int rot = diagram->plant().GetJointByName("j_rot").position_start();
@@ -1191,7 +1186,7 @@ GTEST_TEST(CarveOutSlackTest, HalfSpaceNeedsExactlyConstantRotation) {
   // Constructing the engine must not throw: a ball joint is not a *supported*
   // rotational kind, so the construction-time rule never sees it.
   const KinematicsEngine engine(*ball);
-  const std::vector<PairId> pairs = CollisionPairs(*ball);
+  const std::vector<PairRecord> pairs = CollisionPairs(*ball);
   const int nq = ball->plant().num_positions();
   ASSERT_EQ(nq, 3);
 
@@ -1218,7 +1213,7 @@ GTEST_TEST(CarveOutSlackTest,
   // coordinates have to be exactly constant.
   auto diagram = MakeCarvedHalfSpaceModel(/* rpy = */ true);
   const KinematicsEngine engine(*diagram);
-  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  const std::vector<PairRecord> pairs = CollisionPairs(*diagram);
   const int nq = diagram->plant().num_positions();
   ASSERT_EQ(nq, 6);  // q = (rpy, p_FM).
 
@@ -1283,7 +1278,7 @@ void RunFloatingBaseCarveOutCorpus(bool quaternion, std::uint64_t seed) {
     auto diagram = MakeFloatingBaseChain(&rng, quaternion);
     const MultibodyPlant<double>& plant = diagram->plant();
     const KinematicsEngine engine(*diagram);
-    const std::vector<PairId> pairs = CollisionPairs(*diagram);
+    const std::vector<PairRecord> pairs = CollisionPairs(*diagram);
     const int nq = plant.num_positions();
     const int bs = plant.GetJointByName("base").position_start();
     const int nb = plant.GetJointByName("base").num_positions();
@@ -1441,7 +1436,7 @@ GTEST_TEST(CarveOutSlackTest, ToleranceConstantQuaternionFloatingBase) {
 
 void RunTightFloatingBaseLambda(bool quaternion) {
   constexpr double kRadius = 0.4;
-  constexpr double kWidth = 8e-8;  // ≤ Options::continuity_tolerance.
+  constexpr double kWidth = 8e-8;  // ≤ kContinuityTolerance.
   Rng rng(quaternion ? 0x7168A7ull : 0x51DE12ull);
 
   RobotDiagramBuilder<double> builder;
@@ -1463,7 +1458,7 @@ void RunTightFloatingBaseLambda(bool quaternion) {
 
   const MultibodyPlant<double>& plant = diagram->plant();
   const KinematicsEngine engine(*diagram);
-  const std::vector<PairId> pairs = CollisionPairs(*diagram);
+  const std::vector<PairRecord> pairs = CollisionPairs(*diagram);
   const int nq = plant.num_positions();
   const auto& base = plant.GetJointByName("base");
   const int bs = base.position_start();
@@ -1533,6 +1528,7 @@ GTEST_TEST(CarveOutSlackTest, QuaternionFloatingLambdaTildeIsExactAndTight) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace continuous_collision
 }  // namespace planning
 }  // namespace drake

@@ -1,9 +1,9 @@
 #pragma once
 
 // Helpers shared by this package's tests: seeded random primitives and surface
-// samplers, the throw-message probe, the checker factory, the random world
-// generator two corpora are built from, and the corpus plus deep workload that
-// concurrency_test.cc pins the driver's determinism against.
+// samplers, the throw-message probe, the random world generator two corpora are
+// built from, and the corpus plus deep workload that concurrency_test.cc pins
+// the driver's determinism against.
 //
 // Nothing here asserts; the claims live in the test files.
 
@@ -12,6 +12,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <random>
 #include <string>
 #include <utility>
@@ -32,6 +33,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/planning/continuous_collision/continuous_collision_checker.h"
+#include "drake/planning/continuous_collision/distance_oracle.h"
 #include "drake/planning/robot_diagram.h"
 #include "drake/planning/robot_diagram_builder.h"
 
@@ -192,38 +194,20 @@ std::string ThrowMessage(Callable&& call) {
   return {};
 }
 
-inline ContinuousCollisionChecker::Params CheckerParams(
-    std::shared_ptr<const RobotDiagram<double>> model, Options options,
-    PaddingSpec padding = {}) {
-  ContinuousCollisionChecker::Params params;
-  params.model = std::move(model);
-  params.default_options = std::move(options);
-  params.padding = std::move(padding);
-  return params;
-}
-
 // The checker is neither copyable nor movable, so tests that need to own one
 // inside a container take the pointer flavor.
-inline ContinuousCollisionChecker MakeChecker(
-    std::shared_ptr<const RobotDiagram<double>> model, Options options,
-    PaddingSpec padding = {}) {
-  return ContinuousCollisionChecker(
-      CheckerParams(std::move(model), std::move(options), std::move(padding)));
-}
-
 inline std::unique_ptr<ContinuousCollisionChecker> MakeCheckerPtr(
-    std::shared_ptr<const RobotDiagram<double>> model, Options options,
-    PaddingSpec padding = {}) {
-  return std::make_unique<ContinuousCollisionChecker>(
-      CheckerParams(std::move(model), std::move(options), std::move(padding)));
+    std::shared_ptr<const RobotDiagram<double>> model, const Options& options) {
+  return std::make_unique<ContinuousCollisionChecker>(std::move(model),
+                                                      options);
 }
 
 // Signed distance of `finding`'s pair, re-measured at the witness
-// configuration from a fresh context: an independent confirmation that the
-// witness is a real contact and not an artifact of the search.
-inline double DistanceAtFinding(const ContinuousCollisionChecker& checker,
+// configuration from a fresh context and a fresh oracle: an independent
+// confirmation that the witness is a real contact and not an artifact of the
+// search.
+inline double DistanceAtFinding(const RobotDiagram<double>& model,
                                 const Finding& finding) {
-  const RobotDiagram<double>& model = checker.model();
   auto root = model.CreateDefaultContext();
   auto& plant_context = model.plant().GetMyMutableContextFromRoot(root.get());
   model.plant().SetPositions(&plant_context, finding.q);
@@ -231,9 +215,10 @@ inline double DistanceAtFinding(const ContinuousCollisionChecker& checker,
   const auto& query_object =
       scene_graph.get_query_output_port().Eval<QueryObject<double>>(
           scene_graph.GetMyContextFromRoot(*root));
-  for (const PairRecord& pair : checker.pairs()) {
-    if (pair.id.a == finding.pair.a && pair.id.b == finding.pair.b) {
-      return checker.distance_oracle().SignedDistance(query_object, pair);
+  const internal::DistanceOracle oracle(model);
+  for (const internal::PairRecord& pair : oracle.pairs()) {
+    if (pair.a == finding.geometry_a && pair.b == finding.geometry_b) {
+      return oracle.SignedDistance(query_object, pair);
     }
   }
   ADD_FAILURE() << "the finding names a pair the checker does not know.";
@@ -337,9 +322,9 @@ inline std::unique_ptr<RobotDiagram<double>> MakeRandomWorld(
 // ---------------------------------------------------------------------------
 
 constexpr double kMargin = 0.005;
-// Ten cases keeps the full 4-thread-count x 2-mode sweep (80 certification
-// runs) plus the concurrent-call test under a second in Release, which is what
-// makes this affordable to run again under TSan (~100x slower).
+// Ten cases keeps the full 4-thread-count sweep plus the concurrent-call test
+// under a second in Release, which is what makes this affordable to run again
+// under TSan (~100x slower).
 constexpr int kNumCases = 10;
 constexpr int kMinFreeCases = 3;
 constexpr int kMinViolatingCases = 3;
@@ -357,12 +342,11 @@ inline Eigen::MatrixXd MakeControlPoints(uint64_t seed, int num_positions) {
   return points;
 }
 
-inline Options BaseOptions(Parallelism parallelism, SearchMode mode) {
+inline Options BaseOptions(Parallelism parallelism) {
   Options options;
   options.margin = kMargin;
   options.parallelism = parallelism;
-  options.mode = mode;
-  // Bounded cost per run: the whole sweep is executed 8 times per case.
+  // Bounded cost per run: the whole sweep is executed several times per case.
   options.min_interval = 1e-6;
   return options;
 }
@@ -395,21 +379,17 @@ inline const std::vector<std::unique_ptr<Case>>& Corpus() {
       auto entry = std::make_unique<Case>();
       entry->name = "seed_" + std::to_string(seed);
       entry->model = MakeRandomWorld(seed);
-      ContinuousCollisionChecker::Params params;
-      params.model = entry->model;
-      params.default_options =
-          BaseOptions(Parallelism::None(), SearchMode::kCertifyAll);
-      entry->checker = std::make_unique<ContinuousCollisionChecker>(params);
+      entry->checker =
+          MakeCheckerPtr(entry->model, BaseOptions(Parallelism::None()));
       entry->control_points =
           MakeControlPoints(seed, entry->model->plant().num_positions());
-      const CertificationResult result = entry->checker->CheckTrajectory(
-          entry->trajectory(),
-          BaseOptions(Parallelism::None(), SearchMode::kCertifyAll));
-      entry->serial_verdict = result.verdict;
+      entry->serial_verdict =
+          entry->checker->CheckTrajectory(entry->trajectory()).verdict;
       // Keep the corpus balanced: stop taking more of whichever kind is
       // already well represented.
-      const bool is_free = result.verdict == Verdict::kCertifiedFree;
-      const bool is_violating = result.verdict == Verdict::kViolationFound;
+      const bool is_free = entry->serial_verdict == Verdict::kCertifiedFree;
+      const bool is_violating =
+          entry->serial_verdict == Verdict::kViolationFound;
       if (!is_free && !is_violating) continue;
       if (is_free && free_count >= kNumCases - kMinViolatingCases) continue;
       if (is_violating && violating_count >= kNumCases - kMinFreeCases) {
@@ -423,75 +403,34 @@ inline const std::vector<std::unique_ptr<Case>>& Corpus() {
   return *corpus;
 }
 
-// Bit-for-bit equality of two findings. Nothing here is a tolerance: two runs
-// of the same deterministic computation either agree exactly or the claim of
-// determinism is false.
-inline ::testing::AssertionResult FindingsIdentical(
-    const std::vector<Finding>& a, const std::vector<Finding>& b) {
-  if (a.size() != b.size()) {
+// Bit-for-bit equality of two reported witnesses. Nothing here is a tolerance:
+// two runs of the same deterministic computation either agree exactly or the
+// claim of determinism is false.
+inline ::testing::AssertionResult FindingIdentical(
+    const std::optional<Finding>& a, const std::optional<Finding>& b) {
+  if (a.has_value() != b.has_value()) {
     return ::testing::AssertionFailure()
-           << "finding counts differ: " << a.size() << " vs " << b.size();
+           << "one run reported a finding and the other did not";
   }
-  for (std::size_t i = 0; i < a.size(); ++i) {
-    if (a[i].time != b[i].time) {
-      return ::testing::AssertionFailure()
-             << "finding " << i << " time " << a[i].time << " vs " << b[i].time;
-    }
-    if (a[i].q.size() != b[i].q.size() ||
-        !(a[i].q.array() == b[i].q.array()).all()) {
-      return ::testing::AssertionFailure()
-             << "finding " << i << " witness configuration differs";
-    }
-    if (a[i].pair.a != b[i].pair.a || a[i].pair.b != b[i].pair.b) {
-      return ::testing::AssertionFailure()
-             << "finding " << i << " pair differs";
-    }
-    if (a[i].distance != b[i].distance ||
-        a[i].motion_bound != b[i].motion_bound ||
-        a[i].definite != b[i].definite) {
-      return ::testing::AssertionFailure()
-             << "finding " << i << " payload differs";
-    }
-    if (a[i].nearest_a_W.has_value() != b[i].nearest_a_W.has_value() ||
-        (a[i].nearest_a_W.has_value() &&
-         *a[i].nearest_a_W != *b[i].nearest_a_W)) {
-      return ::testing::AssertionFailure()
-             << "finding " << i << " witness point A differs";
-    }
-    if (a[i].nearest_b_W.has_value() != b[i].nearest_b_W.has_value() ||
-        (a[i].nearest_b_W.has_value() &&
-         *a[i].nearest_b_W != *b[i].nearest_b_W)) {
-      return ::testing::AssertionFailure()
-             << "finding " << i << " witness point B differs";
-    }
+  if (!a.has_value()) return ::testing::AssertionSuccess();
+  if (a->time != b->time) {
+    return ::testing::AssertionFailure()
+           << "time " << a->time << " vs " << b->time;
+  }
+  if (a->q.size() != b->q.size() || !(a->q.array() == b->q.array()).all()) {
+    return ::testing::AssertionFailure() << "witness configuration differs";
+  }
+  if (a->geometry_a != b->geometry_a || a->geometry_b != b->geometry_b) {
+    return ::testing::AssertionFailure() << "pair differs";
+  }
+  if (a->distance != b->distance) {
+    return ::testing::AssertionFailure() << "distance differs";
+  }
+  if (a->nearest_a_W != b->nearest_a_W || a->nearest_b_W != b->nearest_b_W) {
+    return ::testing::AssertionFailure() << "witness points differ";
   }
   return ::testing::AssertionSuccess();
 }
-
-inline ::testing::AssertionResult EarliestWitnessIdentical(
-    const CertificationResult& a, const CertificationResult& b) {
-  if (a.findings.empty() != b.findings.empty()) {
-    return ::testing::AssertionFailure()
-           << "one run reported findings and the other did not";
-  }
-  if (a.findings.empty()) return ::testing::AssertionSuccess();
-  return FindingsIdentical({a.findings.front()}, {b.findings.front()});
-}
-
-// The bisection's node budget below doubles as the deep workload's size: the
-// margin it converges to is the largest one still certifiable inside this
-// budget, so the tree it produces has just under this many nodes. Large enough
-// that no fixed seeding depth could ever have covered it; small enough that the
-// ~40 probes that find it stay cheap, sanitizers included. kMinDeepNodes is the
-// floor concurrency_test.cc holds the result to, so the workload cannot
-// silently degenerate if the corpus or the bisection drifts.
-constexpr uint64_t kProbeBudget = 6000;
-// Floors concurrency_test.cc holds the result to, so the workload cannot
-// silently degenerate if the corpus or the bisection drifts. Depth is the load
-// bearing one: a deep, narrow spike is the shape a depth-seeded work queue
-// cannot split, and it is what the sharing path exists for.
-constexpr uint64_t kMinDeepNodes = 1000;
-constexpr int kMinDeepDepth = 15;
 
 // A corpus case run at a margin just below its own swept clearance, which is
 // what makes the subdivision tree deep and *narrow*: certifying a node needs
@@ -501,17 +440,22 @@ constexpr int kMinDeepDepth = 15;
 // sub-interval of one segment, which is the shape a depth-seeded work queue
 // cannot split. That margin is found by bisection rather than hard-coded, so
 // the workload survives any change to the random worlds, the bounds, or Drake.
+//
+// kProbeBudget is the node count the bisection converges against, and
+// kMinDeepNodes is the floor concurrency_test.cc holds the result to, so the
+// workload cannot silently degenerate if the corpus or the bisection drifts.
+constexpr uint64_t kProbeBudget = 6000;
+constexpr uint64_t kMinDeepNodes = 1000;
+
 struct DeepWorkload {
   const Case* entry{};
   double margin{0.0};
-  double min_interval{1e-8};
-  uint64_t nodes{0};
-  int max_depth{0};
+  uint64_t num_nodes{0};
 
   Options options(Parallelism parallelism) const {
-    Options options = BaseOptions(parallelism, SearchMode::kCertifyAll);
+    Options options = BaseOptions(parallelism);
     options.margin = margin;
-    options.min_interval = min_interval;
+    options.min_interval = 1e-8;
     return options;
   }
 };
@@ -529,10 +473,10 @@ inline const DeepWorkload& Deep() {
     const auto certifiable_within_budget = [&](double margin) {
       Options options = deep->options(Parallelism::None());
       options.margin = margin;
-      options.max_nodes = kProbeBudget;
-      return deep->entry->checker
-                 ->CheckTrajectory(deep->entry->trajectory(), options)
-                 .verdict == Verdict::kCertifiedFree;
+      const Result result = deep->entry->checker->CheckTrajectory(
+          deep->entry->trajectory(), options);
+      return result.verdict == Verdict::kCertifiedFree &&
+             result.num_nodes <= kProbeBudget;
     };
     double certifiable = 0.0;
     double grazing = kMargin;
@@ -545,13 +489,10 @@ inline const DeepWorkload& Deep() {
       (certifiable_within_budget(mid) ? certifiable : grazing) = mid;
     }
     deep->margin = certifiable;
-    const Statistics stats =
-        deep->entry->checker
-            ->CheckTrajectory(deep->entry->trajectory(),
-                              deep->options(Parallelism::None()))
-            .stats;
-    deep->nodes = stats.nodes;
-    deep->max_depth = stats.max_depth;
+    deep->num_nodes = deep->entry->checker
+                          ->CheckTrajectory(deep->entry->trajectory(),
+                                            deep->options(Parallelism::None()))
+                          .num_nodes;
     return deep;
   }();
   return *workload;
