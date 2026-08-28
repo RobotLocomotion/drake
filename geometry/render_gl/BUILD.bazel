@@ -11,6 +11,7 @@ load(
     "drake_cc_optional_library",
     "drake_cc_variant_library",
 )
+load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 
 # This render_gl package is only implemented on Linux and when
 # //tools/flags:with_render_gl is True. When either of these conditions is unmet
@@ -196,6 +197,7 @@ drake_cc_optional_library(
         "//geometry:geometry_roles",
         "//geometry/render:light_parameter",
         "//geometry/render:render_engine",
+        "//geometry/render:render_material",
         "//math:geometric_transform",
     ],
 )
@@ -307,6 +309,27 @@ drake_cc_googletest(
         "@vtk_internal//:vtkCommonDataModel",
         "@vtk_internal//:vtkIOImage",
     ],
+)
+
+# Re-run internal_render_engine_gl_test, but forcing Mesa's software renderer
+# (llvmpipe), which is what our Linux CI uses. Developers whose machines render
+# with a different driver (e.g., NVIDIA's) can use this target to reproduce
+# driver-specific failures locally. CI already uses Mesa, so this target is
+# manual to avoid running the same test twice.
+drake_sh_test(
+    name = "internal_render_engine_gl_mesa_test",
+    srcs = ["internal_render_engine_gl_test"],
+    data = [
+        ":internal_render_engine_gl_test",
+    ],
+    display = True,
+    env = {
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+        "__GLX_VENDOR_LIBRARY_NAME": "mesa",
+    },
+    opt_in_condition = "//tools/skylark:linux",
+    rendering = True,
+    tags = ["manual"],
 )
 
 drake_cc_googletest(

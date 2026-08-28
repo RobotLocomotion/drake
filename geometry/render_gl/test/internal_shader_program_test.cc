@@ -90,7 +90,8 @@ class TestShader final : public ShaderProgram {
   // We extract ("test", "i_value") and ("test", "d_value") properties and
   // stash them in
   std::optional<ShaderProgramData> DoCreateProgramData(
-      const PerceptionProperties& properties) const override {
+      const PerceptionProperties& properties,
+      const geometry::internal::RenderMaterial&) const override {
     Data data;
     data.i_value = properties.GetProperty<int>("test", "i_value");
     data.d_value = properties.GetProperty<double>("test", "d_value");
@@ -347,7 +348,8 @@ TEST_F(ShaderProgramTest, CreateProgramData) {
   props.AddProperty("test", "i_value", i_value);
   props.AddProperty("test", "d_value", d_value);
 
-  std::optional<ShaderProgramData> data = shader_ptr->CreateProgramData(props);
+  std::optional<ShaderProgramData> data = shader_ptr->CreateProgramData(
+      props, geometry::internal::MakeDiffuseMaterial(Rgba(1, 1, 1)));
   ASSERT_NE(data, std::nullopt);
   const auto& data_value = data->value().get_value<TestShader::Data>();
   EXPECT_EQ(data_value.i_value, i_value);
