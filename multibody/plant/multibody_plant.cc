@@ -2019,9 +2019,11 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
   std::vector<std::string> names(num_positions(model_instance));
   std::vector<JointIndex> joint_indices = GetJointIndices(model_instance);
   // The offset into the position array is the position_start of the first
-  // mobilizer in the tree; here we just take the minimum.
+  // joint with positions; here we just take the minimum. Zero-dof joints can
+  // inherit a start from a fused Mobod in a different model instance.
   int position_offset = num_positions();
   for (const auto& joint_index : joint_indices) {
+    if (get_joint(joint_index).num_positions() == 0) continue;
     position_offset =
         std::min(position_offset, get_joint(joint_index).position_start());
   }
@@ -2060,7 +2062,7 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
 
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
-    if (joint.num_positions() == 0) continue;  // Skip welds.
+    if (joint.num_velocities() == 0) continue;  // Skip welds.
 
     const std::string prefix =
         add_model_instance_prefix
@@ -2086,16 +2088,18 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
   std::vector<std::string> names(num_velocities(model_instance));
   std::vector<JointIndex> joint_indices = GetJointIndices(model_instance);
   // The offset into the velocity array is the velocity_start of the first
-  // mobilizer in the tree; here we just take the minimum.
+  // joint with velocities; here we just take the minimum. Zero-dof joints can
+  // inherit a start from a fused Mobod in a different model instance.
   int velocity_offset = num_velocities();
   for (const auto& joint_index : joint_indices) {
+    if (get_joint(joint_index).num_velocities() == 0) continue;
     velocity_offset =
         std::min(velocity_offset, get_joint(joint_index).velocity_start());
   }
 
   for (const auto& joint_index : joint_indices) {
     const Joint<T>& joint = get_joint(joint_index);
-    if (joint.num_positions() == 0) continue;  // Skip welds.
+    if (joint.num_velocities() == 0) continue;  // Skip welds.
 
     // Sanity check: joint velocities are in range.
     DRAKE_DEMAND(joint.velocity_start() >= velocity_offset);

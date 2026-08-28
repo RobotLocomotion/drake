@@ -93,6 +93,20 @@ class LinkJointGraph::Joint {
     return std::get<MobodIndex>(how_modeled_);
   }
 
+  /* Returns the starting offset within the contiguous q vector assigned to
+  this %Joint during forest building. For a zero-dof %Joint, this is where its
+  coordinates would have started had it had any. For an unmodeled weld in a
+  fused WeldedLinksAssembly, this is the start of the fused Mobod that contains
+  the weld's Links. Returns -1 if there is no valid SpanningForest. */
+  int q_start() const { return q_start_; }
+
+  /* Returns the starting offset within the contiguous v vector assigned to
+  this %Joint during forest building. For a zero-dof %Joint, this is where its
+  coordinates would have started had it had any. For an unmodeled weld in a
+  fused WeldedLinksAssembly, this is the start of the fused Mobod that contains
+  the weld's Links. Returns -1 if there is no valid SpanningForest. */
+  int v_start() const { return v_start_; }
+
   /* (Internal use only) During construction of the forest, this is used
   to check whether this %Joint has already been modeled. */
   bool has_been_processed() const {
@@ -137,6 +151,8 @@ class LinkJointGraph::Joint {
 
   void ClearModel() {
     how_modeled_ = std::monostate{};
+    q_start_ = -1;
+    v_start_ = -1;
     effective_parent_link_index_ = parent_link_index_;
     effective_child_link_index_ = child_link_index_;
   }
@@ -189,6 +205,12 @@ class LinkJointGraph::Joint {
   //     the whole assembly.
   std::variant<std::monostate, MobodIndex, WeldedLinksAssemblyIndex>
       how_modeled_;
+
+  // Coordinate assignments. For zero-dof joints these are still set to where
+  // coordinates would have started if there were any. Unmodeled welds inherit
+  // these values from their fused Mobod.
+  int q_start_{-1};  // within the full q vector
+  int v_start_{-1};  // within the full v vector
 
   // These are set to the user's originals on construction and when the
   // forest is cleared or rebuilt.
