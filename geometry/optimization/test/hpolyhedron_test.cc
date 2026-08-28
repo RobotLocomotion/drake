@@ -1790,7 +1790,7 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
 
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation8) {
   // Test that the result does not depend on the scaling of the inequality
-  // representation:  simplifying a polytope whose rows have wildly different
+  // representation: simplifying a polytope whose rows have wildly different
   // norms must produce the same set as simplifying the unit-norm description
   // of the same polytope, and `intersection_padding` must be respected as a
   // true distance in both cases.

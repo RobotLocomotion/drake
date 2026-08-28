@@ -897,13 +897,14 @@ namespace {
 // Helper for SimplifyByIncrementalFaceTranslation. Commits the move of face
 // `*i` of the polytope {x | Ax <= b} (where `b` already contains the moved
 // face's new value) and removes the faces with indices `i_cull`, which have
-// become redundant as a result of the move. The bookkeeping vectors
+// become redundant as a result of the move. The i-th entry in each of the
 // `face_center_distance`, `face_moved_in`, `face_move_limited`, and
-// `witness_points` map to the rows of A, so rows in `i_cull` are removed from
-// each of them. `face_moved_in` and `face_move_limited` are first updated for
-// the moved face. Since removing rows shifts the indices of the faces after
-// them, `*i` is decremented so that on return it still refers to the face
-// that moved.
+// `witness_points` vectors is a datum associated with the constraint
+// specified by the i-th row of A, so the entries at indices in `i_cull` are
+// removed from each of them. `face_moved_in` and `face_move_limited` are
+// first updated for the moved face. Since removing rows shifts the indices
+// of the faces after them, `*i` is decremented so that on return it still
+// refers to the face that moved.
 HPolyhedron MoveFaceAndCull(
     const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
     Eigen::VectorXd* face_center_distance, std::vector<bool>* face_moved_in,
@@ -916,6 +917,8 @@ HPolyhedron MoveFaceAndCull(
   DRAKE_DEMAND(witness_points != nullptr);
   DRAKE_DEMAND(i != nullptr);
   DRAKE_DEMAND(ssize(*face_moved_in) >= *i + 1);
+  DRAKE_DEMAND(ssize(*face_move_limited) >= *i + 1);
+  DRAKE_DEMAND(face_center_distance->size() >= *i + 1);
   (*face_moved_in)[*i] = true;
   (*face_move_limited)[*i] = current_move_limited;
   std::vector<int> i_not_cull;
@@ -1003,16 +1006,18 @@ bool CheckIntersectionAndPointContainmentConstraints(
 
 std::pair<std::set<int>, std::vector<std::optional<VectorXd>>>
 FindRedundantWithWitnessPoints(const HPolyhedron& polytope,
-                               const std::set<int>& inds_to_not_check) {
+                               const std::set<int>& indices_to_not_check) {
   // This method is based on FindRedundant, but adapted, for use with
   // `SimplifyByIncrementalFaceTranslation`, to optionally take
-  // `inds_to_not_check`, which dictates certain faces to skip. This method is
-  // also adapted to return `witness_points`, which contains a point that
-  // certifies that each non-redundant face is non-redundant (the witness point
+  // `indices_to_not_check`, which dictates certain faces to skip. This method
+  // is also adapted to return `witness_points`, which contains a point for
+  // each non-redundant face, certifying its non-redundancy (the witness point
   // is on the "wrong" side of the face it certifies, but the "right" side of
-  // all other faces). An entry is std::nullopt when no witness point was
-  // computed for its face (because the face was skipped, found redundant, or
-  // its program failed to solve).
+  // all other faces). The returned pair contains the set of indices of all
+  // redundant faces, and one optional witness point per face of `polytope`;
+  // an entry is std::nullopt when no witness point was computed for its face,
+  // because the face was skipped or found redundant, or its program failed to
+  // solve.
   std::set<int> redundant_indices;
   std::vector<std::optional<VectorXd>> witness_points;
 
@@ -1033,7 +1038,7 @@ FindRedundantWithWitnessPoints(const HPolyhedron& polytope,
   auto cost_binding = prog.AddLinearCost(-polytope.A().row(0), 0, x);
   witness_points.reserve(num_cons);
   for (int i = 0; i < num_cons; ++i) {
-    if (inds_to_not_check.contains(i)) {
+    if (indices_to_not_check.contains(i)) {
       // No witness point needs to be computed.
       witness_points.push_back(std::nullopt);
     } else {
@@ -1118,21 +1123,16 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
   // Remove redundant hyperplanes while calculating witness points that certify
   // non-redundancy of remaining hyperplanes.
-  std::pair<std::set<int>, std::vector<std::optional<VectorXd>>>
-      redundancy_info =
-          FindRedundantWithWitnessPoints(initial_polytope, std::set<int>{});
-  std::set<int> i_redundant_initial = redundancy_info.first;
-  std::vector<std::optional<VectorXd>> witness_points_before_reducing =
-      redundancy_info.second;
+  const auto [i_redundant_initial, witness_points_before_reducing] =
+      FindRedundantWithWitnessPoints(initial_polytope, std::set<int>{});
 
   // Remove redundant hyperplanes and their corresponding witness points, and
   // define the circumbody.
+  const int circumbody_row_count = b_.rows() - i_redundant_initial.size();
   std::vector<std::optional<VectorXd>> witness_points;
-  MatrixXd circumbody_A(b_.rows() - i_redundant_initial.size(),
-                        ambient_dimension());
-  VectorXd circumbody_b(b_.rows() - i_redundant_initial.size());
-
-  witness_points.reserve(b_.rows() - i_redundant_initial.size());
+  witness_points.reserve(circumbody_row_count);
+  MatrixXd circumbody_A(circumbody_row_count, ambient_dimension());
+  VectorXd circumbody_b(circumbody_row_count);
   int row_ind = 0;
   for (int ind = 0; ind < b_.rows(); ++ind) {
     if (!i_redundant_initial.contains(ind)) {
@@ -1312,13 +1312,13 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         b_proposed(i) = b_i_min_allowed;
 
         // Faces certified non-redundant without solving an LP, either because
-        // their witness point remains in the set after the proposed move, or
+        // their witness points remain in the set after the proposed move, or
         // because they were moved fully to their scaled position: such faces
         // are non-redundant in the uniformly scaled circumbody (which, as a
         // scaling of the redundancy-free circumbody, has no redundant faces),
         // and every face always lies at or outside its scaled position, which
         // can only preserve their non-redundancy. Faces whose move was
-        // limited by an intersection or point-containment constraint have no$
+        // limited by an intersection or point-containment constraint have no
         // such guarantee and rely on their witness point like unmoved faces.
         const bool current_move_limited = b_i_min_allowed > b_i_scaled;
         std::set<int> indices_to_not_check;
@@ -1333,13 +1333,11 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         indices_to_not_check.insert(i);
 
         const HPolyhedron inbody_proposed = HPolyhedron(inbody.A(), b_proposed);
-        redundancy_info = FindRedundantWithWitnessPoints(inbody_proposed,
-                                                         indices_to_not_check);
-        std::set<int> i_redundant_set = redundancy_info.first;
+        const auto [i_redundant_set, updated_witness_points] =
+            FindRedundantWithWitnessPoints(inbody_proposed,
+                                           indices_to_not_check);
         const std::vector<int> i_redundant(i_redundant_set.begin(),
                                            i_redundant_set.end());
-        const std::vector<std::optional<VectorXd>> updated_witness_points =
-            redundancy_info.second;
         // Update the witness points that have changed.
         for (int i_witness_point = 0; i_witness_point < ssize(witness_points);
              ++i_witness_point) {
