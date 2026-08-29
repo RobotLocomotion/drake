@@ -17,7 +17,8 @@ namespace systems {
 /// only a single, vector output port. Subclasses should override the protected
 /// method
 /// @code
-/// void DoCalcOutput(const Context<T>&, Eigen::VectorBlock<VectorX<T>>*) const;
+/// void DoCalcVectorOutput(const Context<T>& context,
+///                         Eigen::VectorBlock<VectorX<T>>* output) const;
 /// @endcode
 ///
 /// @system
@@ -25,6 +26,10 @@ namespace systems {
 /// output_ports:
 /// - y0
 /// @endsystem
+///
+/// @warning This class is not useful anymore and is to be deprecated. Prefer
+/// deriving from LeafSystem directly. Declaring a single vector-valued output
+/// port with LeafSystem requires only a few lines of code.
 ///
 /// @tparam_default_scalar
 template <typename T>

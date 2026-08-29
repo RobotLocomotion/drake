@@ -7828,7 +7828,8 @@ protected method
 
 .. code-block:: c++
 
-    void DoCalcOutput(const Context<T>&, Eigen∷VectorBlock<VectorX<T>>*) const;
+    void DoCalcVectorOutput(const Context<T>& context,
+                            Eigen∷VectorBlock<VectorX<T>>* output) const;
 
 .. raw:: html
 
@@ -7838,7 +7839,12 @@ protected method
 
     name: SingleOutputVectorSource
     output_ports:
-    - y0)""";
+    - y0
+
+Warning:
+    This class is not useful anymore and is to be deprecated. Prefer
+    deriving from LeafSystem directly. Declaring a single vector-valued
+    output port with LeafSystem requires only a few lines of code.)""";
         // Symbol: drake::systems::SingleOutputVectorSource::DoCalcVectorOutput
         struct /* DoCalcVectorOutput */ {
           // Source: drake/systems/framework/single_output_vector_source.h
@@ -12421,7 +12427,12 @@ vector input ports, and only zero or one vector output ports.
 
 By default, this base class does not declare any state; subclasses may
 optionally declare continuous or discrete state, but not both;
-subclasses may not declare abstract state.)""";
+subclasses may not declare abstract state.
+
+Warning:
+    This class is not generally recommended for new code. Prefer
+    deriving from LeafSystem directly, which is straightforward for
+    systems with a small number of ports.)""";
         // Symbol: drake::systems::VectorSystem::CalcVectorOutput
         struct /* CalcVectorOutput */ {
           // Source: drake/systems/framework/vector_system.h
