@@ -15,8 +15,10 @@ namespace systems {
 /// directly feeds through to its output.
 ///
 /// The system can also be used to provide default values for a port in any
-/// diagram.  If the input port does not have a value, then the default value
-/// passed in the constructor is passed to the output.
+/// diagram.  If the input port does not have a value (and the input is not
+/// required), then the default value passed in the constructor is passed to
+/// the output.  Alternatively, the input can be declared as required, in which
+/// case evaluating the output with an unconnected input will throw.
 ///
 /// This system is used, for instance, in PidController which is a Diagram
 /// composed of simple framework primitives. In this case a PassThrough is used
@@ -46,21 +48,40 @@ class PassThrough final : public LeafSystem<T> {
 
   /// Constructs a pass-through system.
   /// @param vector_size number of elements in the signal to be processed.
-  /// When no input is connected, the output will be a vector of all zeros.
-  explicit PassThrough(int vector_size)
-      : PassThrough(Eigen::VectorXd::Zero(vector_size), nullptr) {}
+  /// When no input is connected and `input_required` is false, the output will
+  /// be a vector of all zeros.
+  /// @param input_required If true, then evaluating the output with no input
+  /// connected will throw. If false (the default), the zero default value is
+  /// used instead.
+  /// @pydrake_mkdoc_identifier{1args_vector_size}
+  explicit PassThrough(int vector_size, bool input_required = false)
+      : PassThrough(Eigen::VectorXd::Zero(vector_size), nullptr,
+                    input_required) {}
 
   /// Constructs a pass-through system with vector-valued input/output ports.
   /// @param value The model value, which defines the size of the ports and
-  /// serves as the default when no input is connected.
-  explicit PassThrough(const Eigen::Ref<const Eigen::VectorXd>& value)
-      : PassThrough(value, nullptr) {}
+  /// serves as the default when no input is connected (unless `input_required`
+  /// is true).
+  /// @param input_required If true, then evaluating the output with no input
+  /// connected will throw. If false (the default), `value` is used as the
+  /// output instead.
+  /// @pydrake_mkdoc_identifier{1args_value}
+  explicit PassThrough(const Eigen::Ref<const Eigen::VectorXd>& value,
+                       bool input_required = false)
+      : PassThrough(value, nullptr, input_required) {}
 
   /// Constructs a pass-through system with abstract-valued input/output ports.
   /// @param abstract_model_value A model value, which defines the type of the
-  /// ports and serves as the default when no input is connected.
-  explicit PassThrough(const AbstractValue& abstract_model_value)
-      : PassThrough(Vector0<double>(), abstract_model_value.Clone()) {}
+  /// ports and serves as the default when no input is connected (unless
+  /// `input_required` is true).
+  /// @param input_required If true, then evaluating the output with no input
+  /// connected will throw. If false (the default), `abstract_model_value` is
+  /// used as the output instead.
+  /// @pydrake_mkdoc_identifier{1args_abstract_model_value}
+  explicit PassThrough(const AbstractValue& abstract_model_value,
+                       bool input_required = false)
+      : PassThrough(Vector0<double>(), abstract_model_value.Clone(),
+                    input_required) {}
 
   /// Scalar-type converting copy constructor.
   /// See @ref system_scalar_conversion.
@@ -78,6 +99,10 @@ class PassThrough final : public LeafSystem<T> {
     return *input_port_;
   }
 
+  /// Returns true iff the input port must be connected before evaluating the
+  /// output.
+  bool input_required() const { return input_required_; }
+
  private:
   // Allow different specializations to access each other's private data.
   template <typename U>
@@ -85,7 +110,8 @@ class PassThrough final : public LeafSystem<T> {
 
   // All of the other constructors delegate here.
   PassThrough(const Eigen::Ref<const Eigen::VectorXd>& model_vector,
-              std::unique_ptr<const AbstractValue> abstract_model_value);
+              std::unique_ptr<const AbstractValue> abstract_model_value,
+              bool input_required);
 
   /// Sets the output port to equal the input port.
   void DoCalcVectorOutput(const Context<T>& context,
@@ -99,6 +125,7 @@ class PassThrough final : public LeafSystem<T> {
 
   const Eigen::VectorXd model_vector_;
   const std::unique_ptr<const AbstractValue> abstract_model_value_;
+  const bool input_required_;
 
   // We store our port pointer so that DoCalcVectorOutput's access to the
   // input_port_->Eval is inlined (without any port-count bounds checking).

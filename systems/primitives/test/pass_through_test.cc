@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -60,6 +61,9 @@ class PassThroughTest
             make_unique<PassThrough<double>>(Value<SimpleAbstractType>(size));
       }
     }
+    EXPECT_FALSE(
+        dynamic_cast<const PassThrough<double>&>(*pass_through_)
+            .input_required());
     context_ = pass_through_->CreateDefaultContext();
   }
 
@@ -150,6 +154,53 @@ GTEST_TEST(PassThroughTest, AutoDiffFromDouble) {
   auto context = pass.CreateDefaultContext();
   EXPECT_EQ(value,
             math::DiscardZeroGradient(pass.get_output_port().Eval(*context)));
+}
+
+GTEST_TEST(PassThroughRequiredInputTest, VectorRequiredConnected) {
+  const Eigen::Vector3d value(1.0, 2.0, 3.0);
+  const Eigen::Vector3d input(4.0, 5.0, 6.0);
+  PassThrough<double> dut(value, true);
+  EXPECT_TRUE(dut.input_required());
+  auto context = dut.CreateDefaultContext();
+  dut.get_input_port().FixValue(context.get(), input);
+  EXPECT_EQ(dut.get_output_port().Eval(*context), input);
+}
+
+GTEST_TEST(PassThroughRequiredInputTest, VectorRequiredUnconnectedThrows) {
+  PassThrough<double> dut(3, true);
+  EXPECT_TRUE(dut.input_required());
+  auto context = dut.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.get_output_port().Eval(*context),
+                              ".*required InputPort.*\\(u\\).*is not connected.*");
+}
+
+GTEST_TEST(PassThroughRequiredInputTest, AbstractRequiredConnected) {
+  const Eigen::Vector3d value(1.0, 2.0, 3.0);
+  const Eigen::Vector3d input(4.0, 5.0, 6.0);
+  PassThrough<double> dut(Value<SimpleAbstractType>(value), true);
+  EXPECT_TRUE(dut.input_required());
+  auto context = dut.CreateDefaultContext();
+  dut.get_input_port().FixValue(context.get(), SimpleAbstractType(input));
+  EXPECT_EQ(dut.get_output_port().Eval<SimpleAbstractType>(*context).value(),
+            input);
+}
+
+GTEST_TEST(PassThroughRequiredInputTest, AbstractRequiredUnconnectedThrows) {
+  PassThrough<double> dut(Value<SimpleAbstractType>(3), true);
+  EXPECT_TRUE(dut.input_required());
+  auto context = dut.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.get_output_port().Eval(*context),
+                              ".*required InputPort.*\\(u\\).*is not connected.*");
+}
+
+GTEST_TEST(PassThroughRequiredInputTest, ScalarConversionPreservesFlag) {
+  PassThrough<double> dut(2, true);
+  EXPECT_TRUE(is_autodiffxd_convertible(dut, [](const auto& converted) {
+    EXPECT_TRUE(converted.input_required());
+  }));
+  EXPECT_TRUE(is_symbolic_convertible(dut, [](const auto& converted) {
+    EXPECT_TRUE(converted.input_required());
+  }));
 }
 
 }  // namespace

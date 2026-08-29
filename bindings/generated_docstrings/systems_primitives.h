@@ -1847,8 +1847,11 @@ However this system incurs no computational cost. The input to this
 system directly feeds through to its output.
 
 The system can also be used to provide default values for a port in
-any diagram. If the input port does not have a value, then the default
-value passed in the constructor is passed to the output.
+any diagram. If the input port does not have a value (and the input is
+not required), then the default value passed in the constructor is
+passed to the output. Alternatively, the input can be declared as
+required, in which case evaluating the output with an unconnected
+input will throw.
 
 This system is used, for instance, in PidController which is a Diagram
 composed of simple framework primitives. In this case a PassThrough is
@@ -1876,7 +1879,13 @@ R"""(Constructs a pass-through system.
 
 Parameter ``vector_size``:
     number of elements in the signal to be processed. When no input is
-    connected, the output will be a vector of all zeros.)""";
+    connected and ``input_required`` is false, the output will be a
+    vector of all zeros.
+
+Parameter ``input_required``:
+    If true, then evaluating the output with no input connected will
+    throw. If false (the default), the zero default value is used
+    instead.)""";
           // Source: drake/systems/primitives/pass_through.h
           const char* doc_1args_value =
 R"""(Constructs a pass-through system with vector-valued input/output
@@ -1884,7 +1893,13 @@ ports.
 
 Parameter ``value``:
     The model value, which defines the size of the ports and serves as
-    the default when no input is connected.)""";
+    the default when no input is connected (unless ``input_required``
+    is true).
+
+Parameter ``input_required``:
+    If true, then evaluating the output with no input connected will
+    throw. If false (the default), ``value`` is used as the output
+    instead.)""";
           // Source: drake/systems/primitives/pass_through.h
           const char* doc_1args_abstract_model_value =
 R"""(Constructs a pass-through system with abstract-valued input/output
@@ -1892,7 +1907,13 @@ ports.
 
 Parameter ``abstract_model_value``:
     A model value, which defines the type of the ports and serves as
-    the default when no input is connected.)""";
+    the default when no input is connected (unless ``input_required``
+    is true).
+
+Parameter ``input_required``:
+    If true, then evaluating the output with no input connected will
+    throw. If false (the default), ``abstract_model_value`` is used as
+    the output instead.)""";
           // Source: drake/systems/primitives/pass_through.h
           const char* doc_copyconvert =
 R"""(Scalar-type converting copy constructor. See system_scalar_conversion.)""";
@@ -1902,6 +1923,13 @@ R"""(Scalar-type converting copy constructor. See system_scalar_conversion.)""";
           // Source: drake/systems/primitives/pass_through.h
           const char* doc = R"""(Returns the sole input port.)""";
         } get_input_port;
+        // Symbol: drake::systems::PassThrough::input_required
+        struct /* input_required */ {
+          // Source: drake/systems/primitives/pass_through.h
+          const char* doc =
+R"""(Returns true iff the input port must be connected before evaluating
+the output.)""";
+        } input_required;
       } PassThrough;
       // Symbol: drake::systems::PerceptronActivationType
       struct /* PerceptronActivationType */ {

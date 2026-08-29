@@ -433,6 +433,7 @@ class TestGeneral(unittest.TestCase):
     def test_vector_pass_through(self):
         model_value = BasicVector([1.0, 2, 3])
         system = PassThrough(vector_size=model_value.size())
+        self.assertFalse(system.input_required())
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
@@ -445,6 +446,7 @@ class TestGeneral(unittest.TestCase):
     def test_default_vector_pass_through(self):
         model_value = [1.0, 2, 3]
         system = PassThrough(value=model_value)
+        self.assertFalse(system.input_required())
         context = system.CreateDefaultContext()
         np.testing.assert_array_equal(
             model_value, system.get_output_port().Eval(context)
@@ -453,6 +455,7 @@ class TestGeneral(unittest.TestCase):
     def test_abstract_pass_through(self):
         model_value = Value("Hello world")
         system = PassThrough(abstract_model_value=model_value)
+        self.assertFalse(system.input_required())
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
@@ -461,6 +464,34 @@ class TestGeneral(unittest.TestCase):
         system.CalcOutput(context, output)
         output_value = output.get_data(0)
         compare_value(self, output_value, model_value)
+
+    def test_pass_through_required_input(self):
+        model_value = [1.0, 2, 3]
+        input_value = [4.0, 5, 6]
+        system = PassThrough(value=model_value, input_required=True)
+        self.assertTrue(system.input_required())
+        context = system.CreateDefaultContext()
+        with self.assertRaisesRegex(RuntimeError, "not connected"):
+            system.get_output_port().Eval(context)
+        system.get_input_port().FixValue(context, input_value)
+        np.testing.assert_array_equal(
+            input_value, system.get_output_port().Eval(context)
+        )
+
+        abstract_system = PassThrough(
+            abstract_model_value=Value("default"), input_required=True
+        )
+        self.assertTrue(abstract_system.input_required())
+        abstract_context = abstract_system.CreateDefaultContext()
+        with self.assertRaisesRegex(RuntimeError, "not connected"):
+            abstract_system.get_output_port().Eval(abstract_context)
+        abstract_system.get_input_port().FixValue(
+            abstract_context, Value("connected")
+        )
+        self.assertEqual(
+            abstract_system.get_output_port().Eval(abstract_context),
+            "connected",
+        )
 
     def test_port_switch(self):
         system = PortSwitch(vector_size=2)

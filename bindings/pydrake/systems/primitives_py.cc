@@ -469,12 +469,18 @@ PYDRAKE_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)
-        .def(py::init<int>(), py::arg("vector_size"),
+        .def(py::init<int, bool>(), py::arg("vector_size"),
+            py::arg("input_required") = false,
             doc.PassThrough.ctor.doc_1args_vector_size)
-        .def(py::init<const Eigen::Ref<const VectorXd>&>(), py::arg("value"),
+        .def(py::init<const Eigen::Ref<const VectorXd>&, bool>(),
+            py::arg("value"), py::arg("input_required") = false,
             doc.PassThrough.ctor.doc_1args_value)
-        .def(py::init<const AbstractValue&>(), py::arg("abstract_model_value"),
-            doc.PassThrough.ctor.doc_1args_abstract_model_value);
+        .def(py::init<const AbstractValue&, bool>(),
+            py::arg("abstract_model_value"),
+            py::arg("input_required") = false,
+            doc.PassThrough.ctor.doc_1args_abstract_model_value)
+        .def("input_required", &PassThrough<T>::input_required,
+            doc.PassThrough.input_required.doc);
 
     DefineTemplateClassWithDefault<PortSwitch<T>, LeafSystem<T>>(
         m, "PortSwitch", GetPyParam<T>(), doc.PortSwitch.doc)

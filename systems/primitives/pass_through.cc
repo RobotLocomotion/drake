@@ -8,10 +8,12 @@ namespace systems {
 template <typename T>
 PassThrough<T>::PassThrough(
     const Eigen::Ref<const Eigen::VectorXd>& model_vector,
-    std::unique_ptr<const AbstractValue> abstract_model_value)
+    std::unique_ptr<const AbstractValue> abstract_model_value,
+    bool input_required)
     : LeafSystem<T>(SystemTypeTag<PassThrough>()),
       model_vector_(model_vector),
-      abstract_model_value_(std::move(abstract_model_value)) {
+      abstract_model_value_(std::move(abstract_model_value)),
+      input_required_(input_required) {
   if (!is_abstract()) {
     input_port_ =
         &this->DeclareVectorInputPort("u", BasicVector<T>(model_vector));
@@ -38,7 +40,8 @@ template <typename U>
 PassThrough<T>::PassThrough(const PassThrough<U>& other)
     : PassThrough(other.model_vector_,
                   other.is_abstract() ? other.abstract_model_value_->Clone()
-                                      : nullptr) {}
+                                      : nullptr,
+                  other.input_required_) {}
 
 template <typename T>
 PassThrough<T>::~PassThrough() = default;
@@ -47,7 +50,8 @@ template <typename T>
 void PassThrough<T>::DoCalcVectorOutput(const Context<T>& context,
                                         BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
-  if (this->get_input_port().HasValue(context)) {
+  if (input_required_ || this->get_input_port().HasValue(context)) {
+    // When input_required_ is true and the port is unconnected, Eval throws.
     const auto& input = this->get_input_port().Eval(context);
     DRAKE_ASSERT(input.size() == output->size());
     output->get_mutable_value() = input;
@@ -60,7 +64,8 @@ template <typename T>
 void PassThrough<T>::DoCalcAbstractOutput(const Context<T>& context,
                                           AbstractValue* output) const {
   DRAKE_ASSERT(is_abstract());
-  if (this->get_input_port().HasValue(context)) {
+  if (input_required_ || this->get_input_port().HasValue(context)) {
+    // When input_required_ is true and the port is unconnected, Eval throws.
     output->SetFrom(
         this->get_input_port().template Eval<AbstractValue>(context));
   } else {
