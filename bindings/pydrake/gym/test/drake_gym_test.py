@@ -1,7 +1,14 @@
 import unittest
 
 import gymnasium as gym
+import numpy as np
 import stable_baselines3.common.env_checker
+
+from pydrake.common.value import Value
+from pydrake.gym import DrakeGymEnv
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.primitives import PassThrough
 
 
 class DrakeGymTest(unittest.TestCase):
@@ -65,3 +72,70 @@ class DrakeGymTest(unittest.TestCase):
         dut.reset()
         observation, _, _, _, _ = dut.step(dut.action_space.sample())
         self.assertTrue(dut.observation_space.contains(observation))
+
+    def test_none_spaces_default_to_infinite_box(self):
+        """Passing None for vector-valued ports builds ±inf Boxes."""
+        size = 3
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(PassThrough(vector_size=size))
+        builder.ExportInput(plant.get_input_port(), "actions")
+        builder.ExportOutput(plant.get_output_port(), "observations")
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
+
+        dut = DrakeGymEnv(
+            simulator=simulator,
+            time_step=0.1,
+            action_space=None,
+            observation_space=None,
+            reward=lambda system, context: 0.0,
+            action_port_id="actions",
+            observation_port_id="observations",
+        )
+
+        self.assertIsInstance(dut.action_space, gym.spaces.Box)
+        self.assertEqual(dut.action_space.shape, (size,))
+        self.assertTrue(np.all(np.isneginf(dut.action_space.low)))
+        self.assertTrue(np.all(np.isposinf(dut.action_space.high)))
+
+        self.assertIsInstance(dut.observation_space, gym.spaces.Box)
+        self.assertEqual(dut.observation_space.shape, (size,))
+        self.assertTrue(np.all(np.isneginf(dut.observation_space.low)))
+        self.assertTrue(np.all(np.isposinf(dut.observation_space.high)))
+
+    def test_none_spaces_reject_non_vector_ports(self):
+        """None is only valid for vector-valued ports."""
+        builder = DiagramBuilder()
+        system = builder.AddSystem(
+            PassThrough(abstract_model_value=Value("model"))
+        )
+        builder.ExportInput(system.get_input_port(), "actions")
+        builder.ExportOutput(system.get_output_port(), "observations")
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
+        # Any concrete Space is fine here; we only exercise the None path.
+        dummy_space = gym.spaces.Discrete(1)
+
+        with self.assertRaisesRegex(AssertionError, "action_space must be"):
+            DrakeGymEnv(
+                simulator=simulator,
+                time_step=0.1,
+                action_space=None,
+                observation_space=dummy_space,
+                reward=lambda system, context: 0.0,
+                action_port_id="actions",
+                observation_port_id="observations",
+            )
+
+        with self.assertRaisesRegex(
+            AssertionError, "observation_space must be"
+        ):
+            DrakeGymEnv(
+                simulator=simulator,
+                time_step=0.1,
+                action_space=dummy_space,
+                observation_space=None,
+                reward=lambda system, context: 0.0,
+                action_port_id="actions",
+                observation_port_id="observations",
+            )

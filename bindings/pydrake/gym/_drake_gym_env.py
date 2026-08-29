@@ -33,8 +33,8 @@ class DrakeGymEnv(gym.Env):
         self,
         simulator: Simulator | Callable[[RandomGenerator], Simulator],
         time_step: float,
-        action_space: gym.spaces.Space,
-        observation_space: gym.spaces.Space,
+        action_space: gym.spaces.Space | None,
+        observation_space: gym.spaces.Space | None,
         reward: Callable[[System, Context], float] | OutputPortIndex | str,
         action_port_id: InputPort | InputPortIndex | str = None,
         observation_port_id: OutputPortIndex | str = None,
@@ -127,10 +127,12 @@ class DrakeGymEnv(gym.Env):
         assert time_step > 0
         self.time_step = time_step
 
-        assert isinstance(action_space, gym.spaces.Space)
+        if action_space is not None:
+            assert isinstance(action_space, gym.spaces.Space)
         self.action_space = action_space
 
-        assert isinstance(observation_space, gym.spaces.Space)
+        if observation_space is not None:
+            assert isinstance(observation_space, gym.spaces.Space)
         self.observation_space = observation_space
 
         if isinstance(reward, (OutputPortIndex, str)):
@@ -193,8 +195,20 @@ class DrakeGymEnv(gym.Env):
             else:
                 self.action_port = system.GetInputPort(self.action_port_id)
         if self.action_port.get_data_type() == PortDataType.kVectorValued:
+            if self.action_space is None:
+                self.action_space = gym.spaces.Box(
+                    low=-np.inf,
+                    high=np.inf,
+                    shape=(self.action_port.size(),),
+                    dtype=np.float64,
+                )
             assert np.array_equal(
                 self.action_space.shape, [self.action_port.size()]
+            )
+        else:
+            assert self.action_space is not None, (
+                "action_space must be provided when the action port is not "
+                "vector-valued"
             )
 
         def get_output_port(id):
@@ -206,8 +220,20 @@ class DrakeGymEnv(gym.Env):
         if self.observation_port_id:
             self.observation_port = get_output_port(self.observation_port_id)
         if self.observation_port.get_data_type() == PortDataType.kVectorValued:
+            if self.observation_space is None:
+                self.observation_space = gym.spaces.Box(
+                    low=-np.inf,
+                    high=np.inf,
+                    shape=(self.observation_port.size(),),
+                    dtype=np.float64,
+                )
             assert np.array_equal(
                 self.observation_space.shape, [self.observation_port.size()]
+            )
+        else:
+            assert self.observation_space is not None, (
+                "observation_space must be provided when the observation "
+                "port is not vector-valued"
             )
 
         # Note: We require that there is no direct feedthrough action_port to
