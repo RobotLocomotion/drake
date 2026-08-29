@@ -341,9 +341,22 @@ GTEST_TEST(TypeSafeIndex, ToString) {
 GTEST_TEST(TypeSafeIndex, ToStringFmtFormatter) {
   AIndex index(87);
   EXPECT_EQ(fmt::to_string(index), "87");
+  EXPECT_EQ(fmt::format("{}", index), "87");
 
   AIndex invalid;
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(fmt::to_string(invalid),
+                                       "Converting to an int.+");
+}
+
+GTEST_TEST(TypeSafeIndex, ToStringFmtFormatterRepr) {
+  // Prefer the Tag naming convention so NiceTypeName can render FooIndex.
+  using FooIndex = TypeSafeIndex<class FooTag>;
+  const FooIndex index(87);
+  EXPECT_EQ(fmt::format("{:r}", index), "FooIndex(87)");
+  EXPECT_EQ(fmt::format("The given {:r} is out of bounds", index),
+            "The given FooIndex(87) is out of bounds");
+
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(fmt::format("{:r}", FooIndex{}),
                                        "Converting to an int.+");
 }
 
