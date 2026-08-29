@@ -51,7 +51,14 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
     if not args.test:
         print("Running notebook interactively")
         notebook_path = os.path.realpath(notebook_path)
-        sys.argv = ["jupyter", "notebook", notebook_path]
+        # Open via a localhost URL instead of a file:///tmp/*.html redirect.
+        # Snap browsers (e.g. Ubuntu Firefox) cannot read global /tmp (#24071).
+        sys.argv = [
+            "jupyter",
+            "notebook",
+            "--ServerApp.use_redirect_file=False",
+            notebook_path,
+        ]
         sys.exit(_jupyter_main())
     else:
         print("Running notebook as a test (non-interactive)")
