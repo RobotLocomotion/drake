@@ -31,7 +31,7 @@ over its entire continuous time domain.
 
 Guarantee: if a check returns Verdict∷kCertifiedFree, then for every
 time t in the trajectory's domain and every unfiltered geometry pair
-(A, B), the signed distance φ_AB(q(t)) exceeds Options∷margin. That
+(A, B), the signed distance ϕ_AB(q(t)) exceeds Options∷margin. That
 holds under three assumptions: exact real arithmetic up to an internal
 numerical slack, a distance oracle accurate to its stated tolerance,
 and Mesh ≡ convex hull. The proof is a property of the path, so
@@ -146,8 +146,7 @@ R"""(Where the plan fails, or where it could not be decided.)""";
           // Symbol: drake::planning::continuous_collision::Finding::distance
           struct /* distance */ {
             // Source: drake/planning/continuous_collision/continuous_collision_checker.h
-            const char* doc =
-R"""(Signed distance of the pair at q.)""";
+            const char* doc = R"""(Signed distance of the pair at q.)""";
           } distance;
           // Symbol: drake::planning::continuous_collision::Finding::geometry_a
           struct /* geometry_a */ {

@@ -105,15 +105,21 @@ drake_cc_library(
 
 # The public facade plus the node recursion it drives. certifier.{h,cc} are
 # private to this target: certifier.h names the public Options/Result types, so
-# it cannot live in a library the facade depends on.
+# it cannot live in a library the facade depends on. It is listed in hdrs
+# rather than srcs so that install_hdrs_exclude can keep it out of the install
+# tree; a private header left in srcs is installed by default, and the internal
+# headers it includes are not, so mkdoc would fail to parse it there.
 drake_cc_library(
     name = "continuous_collision_checker",
     srcs = [
         "certifier.cc",
-        "certifier.h",
         "continuous_collision_checker.cc",
     ],
-    hdrs = ["continuous_collision_checker.h"],
+    hdrs = [
+        "certifier.h",
+        "continuous_collision_checker.h",
+    ],
+    install_hdrs_exclude = ["certifier.h"],
     deps = [
         "//common:essential",
         "//common:parallelism",
@@ -295,8 +301,14 @@ drake_cc_googletest(
 # Concurrency determinism. Running with many threads is the point of this
 # test: it pins the answer at Parallelism {1, 2, 8, 16}. Every case is an
 # equality, so this target runs under every build flavor, sanitizers included.
+#
+# "Every build flavor" is also why the timeout is moderate rather than the
+# default short: --config=debug and --config=lsan scale the short budget to
+# 120 s and 72 s respectively, and building the deep workload costs a fraction
+# of a second optimized but seconds at -O0 (see test_utilities.h).
 drake_cc_googletest(
     name = "concurrency_test",
+    timeout = "moderate",
     num_threads = 16,
     deps = [
         ":test_utilities",

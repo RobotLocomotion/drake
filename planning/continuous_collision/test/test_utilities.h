@@ -447,6 +447,22 @@ inline ::testing::AssertionResult FindingIdentical(
 constexpr uint64_t kProbeBudget = 6000;
 constexpr uint64_t kMinDeepNodes = 1000;
 
+// The workload runs at the resolution floor BaseOptions sets, and that floor
+// is what keeps the bisection below affordable in an unoptimized build. Most
+// of its probes land on a margin the search rejects, and a rejected probe is
+// the expensive kind: it keeps subdividing until every leaf is either
+// certified or narrower than Options::min_interval, so that floor is the only
+// thing bounding it. Measured on this workload, the worst rejected probe in
+// the band around the grazing margin costs about 5e3 nodes at a floor of 1e-6
+// but about 4.8e5 nodes at 1e-8, which is the difference between a bisection
+// costing a tenth of a second and one costing four -- and, multiplied by the
+// ~70x an unoptimized build charges, between fitting the dbg test budget and
+// overrunning it. (Before Options::max_nodes was withdrawn from the public
+// API the probe bounded itself directly and the floor did not have to.)
+//
+// The certifying side is indifferent to the choice: the tree the search
+// converges on is 19 levels deep, so no leaf it visits comes near even 1e-6
+// wide, and it explores the identical tree at either floor.
 struct DeepWorkload {
   const Case* entry{};
   double margin{0.0};
@@ -455,7 +471,6 @@ struct DeepWorkload {
   Options options(Parallelism parallelism) const {
     Options options = BaseOptions(parallelism);
     options.margin = margin;
-    options.min_interval = 1e-8;
     return options;
   }
 };

@@ -1468,7 +1468,7 @@ void RunTightFloatingBaseLambda(bool quaternion) {
 
   // Dense enough that some sample lands within ~1e-6 of the equator of any
   // rotation axis, which is what makes the chord recover R·θ.
-  const Matrix3Xd points_B = test::SampleSurface(&rng, 4096, [kRadius](Rng* g) {
+  const Matrix3Xd points_B = test::SampleSurface(&rng, 4096, [](Rng* g) {
     return test::SampleSphere(g, kRadius);
   });
   auto root = diagram->CreateDefaultContext();
