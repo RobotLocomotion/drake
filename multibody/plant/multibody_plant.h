@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/random.h"
@@ -1429,8 +1431,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @param[in] name
   ///   A string that identifies the new body to be added to `this` model. A
-  ///   std::runtime_error is thrown if a body named `name` already is part of
-  ///   @p model_instance. See HasBodyNamed(), RigidBody::name().
+  ///   std::logic_error is thrown if a rigid or deformable body named `name`
+  ///   already is part of @p model_instance. See HasBodyNamed(),
+  ///   RigidBody::name().
   /// @param[in] model_instance
   ///   A model instance index which this body is part of.
   /// @param[in] M_BBo_B
@@ -1443,6 +1446,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B = SpatialInertia<double>::Zero()) {
     DRAKE_MBP_THROW_IF_FINALIZED();
+    // Body names must be unique within a model instance across both rigid and
+    // deformable bodies.
+    if (deformable_model().HasBodyNamed(name, model_instance)) {
+      throw std::logic_error(fmt::format(
+          "Model instance '{}' already contains a body named '{}'. Body names "
+          "must be unique within a given model.",
+          GetModelInstanceName(model_instance), name));
+    }
     // Add the actual RigidBody (Link) to the model.
     const RigidBody<T>& body =
         this->mutable_tree().AddLink(name, model_instance, M_BBo_B);
@@ -1475,9 +1486,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @param[in] name
   ///   A string that identifies the new body to be added to `this` model. A
-  ///   std::runtime_error is thrown if a body named `name` already is part of
-  ///   the model in the default model instance. See HasBodyNamed(),
-  ///   RigidBody::name().
+  ///   std::logic_error is thrown if a rigid or deformable body named `name`
+  ///   already is part of the model in the default model instance. See
+  ///   HasBodyNamed(), RigidBody::name().
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this`
   ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed

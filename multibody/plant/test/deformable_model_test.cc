@@ -914,6 +914,34 @@ TEST_F(DeformableModelTest, DuplicatedNames) {
   EXPECT_EQ(body1.body_id(), body1_id);
 }
 
+/* Rigid and deformable bodies must not share a name within a model instance. */
+TEST_F(DeformableModelTest, ConflictingRigidAndDeformableNames) {
+  const double kRezHint = 0.5;
+  const ModelInstanceIndex instance0 = plant_->AddModelInstance("instance0");
+  const ModelInstanceIndex instance1 = plant_->AddModelInstance("instance1");
+
+  /* Rigid then deformable with the same name in one model instance throws. */
+  plant_->AddRigidBody("sphere", instance0,
+                       SpatialInertia<double>::MakeUnitary());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RegisterSphere(deformable_model_ptr_, kRezHint, RigidTransformd{},
+                     instance0),
+      ".*instance0.*already contains a body named 'sphere'.*");
+
+  /* Deformable then rigid with the same name in one model instance throws. */
+  RegisterSphere(deformable_model_ptr_, kRezHint, RigidTransformd{},
+                 instance1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->AddRigidBody("sphere", instance1,
+                           SpatialInertia<double>::MakeUnitary()),
+      ".*instance1.*already contains a body named 'sphere'.*");
+
+  /* The same name is allowed across different model instances. */
+  EXPECT_NO_THROW(plant_->AddRigidBody(
+      "sphere", plant_->AddModelInstance("instance2"),
+      SpatialInertia<double>::MakeUnitary()));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
