@@ -3,12 +3,17 @@
 For instructions, see https://drake.mit.edu/documentation_instructions.html.
 """
 
+import contextlib
+import io
 import os
 from os.path import join
 import sys
 
+os.environ["DRAKE_IS_BUILDING_DOCUMENTATION"] = "1"
+
+from sphinx.cmd.build import main as sphinx_build_main
+
 from doc.defs import (
-    check_call,
     main,
     perl_cleanup_html_output,
     symlink_input,
@@ -113,13 +118,6 @@ def _build(*, out_dir, temp_dir, modules):
     assert len(os.listdir(temp_dir)) == 0
     assert len(os.listdir(out_dir)) == 0
 
-    sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
-    if not os.path.isfile(sphinx_build):
-        print(
-            "Please re-run 'setup/install_prereqs' with the '--developer' flag"
-        )
-        sys.exit(1)
-
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
     symlink_input(
@@ -159,21 +157,31 @@ def _build(*, out_dir, temp_dir, modules):
 
     # Run the documentation generator.
     os.environ["LANG"] = "en_US.UTF-8"
-    check_call(
-        [
-            sphinx_build,
-            "-b",
-            "html",  # HTML output.
-            "-a",
-            "-E",  # Don't use caching.
-            "-N",  # Disable colored output.
-            "-T",  # Traceback (for plugin).
-            "-d",
-            join(temp_dir, "doctrees"),
-            input_dir,
-            out_dir,
-        ]
-    )
+    argv = [
+        "-b",
+        "html",  # HTML output.
+        "-a",
+        "-E",  # Don't use caching.
+        "-N",  # Disable colored output.
+        "-T",  # Traceback (for plugin).
+        "-d",
+        join(temp_dir, "doctrees"),
+        input_dir,
+        out_dir,
+    ]
+    if verbose():
+        exit_code = sphinx_build_main(argv)
+    else:
+        output = io.StringIO()
+        with (
+            contextlib.redirect_stdout(output),
+            contextlib.redirect_stderr(output),
+        ):
+            exit_code = sphinx_build_main(argv)
+        if exit_code != 0:
+            print(output.getvalue(), end="", flush=True)
+    if exit_code != 0:
+        sys.exit(exit_code)
 
     # Tidy up.
     perl_cleanup_html_output(out_dir=out_dir)
