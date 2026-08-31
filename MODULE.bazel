@@ -293,6 +293,25 @@ bazel_dep(
     repo_name = "ruff",
 )
 
+# Load developer dependencies via pip.
+
+pip_dev = use_extension(
+    "@rules_python//python/extensions:pip.bzl",
+    "pip",
+    dev_dependency = True,
+)
+
+[
+    pip_dev.parse(
+        hub_name = "drake_sphinx",
+        python_version = python_version,
+        requirements_lock = "//setup:python/sphinx/requirements.txt",
+    )
+    for python_version in PYTHON_VERSIONS
+]
+
+use_repo(pip_dev, "drake_sphinx")
+
 # Load dependencies which are "private", i.e., not available for use by
 # downstream projects. These are all "internal use only".
 
