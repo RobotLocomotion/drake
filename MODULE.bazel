@@ -154,6 +154,17 @@ use_repo(pip, "drake_mypy")
 
 use_repo(pip, "drake_lief")
 
+[
+    pip.parse(
+        hub_name = "drake_sphinx",
+        python_version = python_version,
+        requirements_lock = "//setup:python/sphinx/requirements.txt",
+    )
+    for python_version in PYTHON_VERSIONS
+]
+
+use_repo(pip, "drake_sphinx")
+
 # Load dependencies which are "public", i.e., made available to downstream
 # projects.
 #
