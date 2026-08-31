@@ -27,8 +27,6 @@ python3-opencv
 python3-psutil
 python3-requests
 python3-six
-python3-sphinx
-python3-sphinx-rtd-theme
 python3-u-msgpack
 python3-uritemplate
 python3-websockets

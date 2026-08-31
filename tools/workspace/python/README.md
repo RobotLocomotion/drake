@@ -13,6 +13,7 @@ version on macOS), the following files need attention:
 - `drake/setup/install_prereqs` in the `"Darwin"` branch call to `python3.##`,
 - `drake/setup/python/lief/BUILD.bazel` near `--python-version`,
 - `drake/setup/python/mypy/BUILD.bazel` near `--python-version`,
+- `drake/setup/python/sphinx/BUILD.bazel` near `--python-version`,
 - `drake/setup/python/pyproject.toml` near `requires-python`,
 - `drake/tools/wheel/image/setup.py` near `python_requires` and `py_limited_api`,
 - `drake/tools/wheel/wheel_builder/common.py` near `wheel_name`,
