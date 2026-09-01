@@ -1275,9 +1275,15 @@ TEST_F(SdfParserTest, OfficialMimicAxis2OnUniversalWarns) {
         <child>C</child>
         <axis>
           <xyz>0 0 1</xyz>
+          <limit>
+            <effort>0</effort>
+          </limit>
         </axis>
         <axis2>
           <xyz>1 0 0</xyz>
+          <limit>
+            <effort>0</effort>
+          </limit>
           <mimic joint='joint_AB'>
             <multiplier>1</multiplier>
             <offset>0</offset>
