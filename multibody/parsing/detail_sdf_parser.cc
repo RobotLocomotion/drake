@@ -163,9 +163,15 @@ std::pair<ModelInstanceIndex, std::string> GetResolvedModelInstanceAndLocalName(
 // scoped name of the nested model. If the relative_to_model_instance is the
 // world_model_instance, the local name of the body is prefixed with the model
 // name.
-std::string GetRelativeBodyName(const RigidBody<double>& body,
-                                ModelInstanceIndex relative_to_model_instance,
-                                const MultibodyPlant<double>& plant) {
+//
+// Returns nullopt (and reports a diagnostic error) when @p body is not a
+// descendant of @p relative_to_model_instance. That can happen for malformed
+// inputs such as a nested URDF that welds a link to the world (see #21413).
+std::optional<std::string> GetRelativeBodyName(
+    const RigidBody<double>& body,
+    ModelInstanceIndex relative_to_model_instance,
+    const MultibodyPlant<double>& plant,
+    const DiagnosticPolicy& diagnostic) {
   const std::string& relative_to_model_absolute_name =
       plant.GetModelInstanceName(relative_to_model_instance);
   // If the relative_to_model instance is the world_model_instance, we need to
@@ -182,10 +188,19 @@ std::string GetRelativeBodyName(const RigidBody<double>& body,
         plant.GetModelInstanceName(body.model_instance());
     // The relative_to_model_absolute_name must be a prefix of the
     // nested_model_absolute_name. Otherwise the nested model is not a
-    // descendent of the model relative to which we are computing the name.
+    // descendant of the model relative to which we are computing the name.
     const std::string required_prefix =
         relative_to_model_absolute_name + std::string(sdf::kScopeDelimiter);
-    DRAKE_DEMAND(nested_model_absolute_name.starts_with(required_prefix));
+    if (!nested_model_absolute_name.starts_with(required_prefix)) {
+      diagnostic.Error(fmt::format(
+          "Body '{}' belonging to model instance '{}' is not a descendant of "
+          "model instance '{}'. This can happen when a nested model (for "
+          "example a URDF included from SDFormat) contains a joint to the "
+          "world.",
+          body.name(), nested_model_absolute_name,
+          relative_to_model_absolute_name));
+      return std::nullopt;
+    }
 
     const std::string nested_model_relative_name =
         nested_model_absolute_name.substr(required_prefix.size());
@@ -688,12 +703,19 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       ResolveJointChildLinkName(diagnostic, joint_spec), model_instance,
       *plant);
 
+  const DiagnosticPolicy policy =
+      diagnostic.MakePolicyForNode(*joint_spec.Element());
+
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
   // joint will be the child link.
+  const std::optional<std::string> child_relative_name =
+      GetRelativeBodyName(child_body, model_instance, *plant, policy);
+  if (!child_relative_name.has_value()) {
+    return false;
+  }
   const RigidTransformd X_CJ = ResolveRigidTransform(
-      diagnostic, joint_spec.SemanticPose(),
-      GetRelativeBodyName(child_body, model_instance, *plant));
+      diagnostic, joint_spec.SemanticPose(), *child_relative_name);
 
   // Pose of the frame J in the parent body frame P.
   std::optional<RigidTransformd> X_PJ;
@@ -706,9 +728,13 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
         diagnostic, joint_spec.SemanticPose(), relative_to);
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
-    X_PJ = ResolveRigidTransform(
-        diagnostic, joint_spec.SemanticPose(),
-        GetRelativeBodyName(parent_body, model_instance, *plant));
+    const std::optional<std::string> parent_relative_name =
+        GetRelativeBodyName(parent_body, model_instance, *plant, policy);
+    if (!parent_relative_name.has_value()) {
+      return false;
+    }
+    X_PJ = ResolveRigidTransform(diagnostic, joint_spec.SemanticPose(),
+                                 *parent_relative_name);
   }
 
   // If P and J are coincident, we won't create a new frame for J, but use frame
@@ -2654,11 +2680,12 @@ void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
   }
 }
 
-void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
+bool AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
                                ModelInstanceIndex model_instance,
                                const sdf::InterfaceModelPtr& interface_model,
                                const std::vector<FrameIndex>& frame_indices,
-                               const std::string& model_frame_name) {
+                               const std::string& model_frame_name,
+                               const DiagnosticPolicy& diagnostic) {
   for (auto index : frame_indices) {
     const auto& frame = plant.get_frame(index);
     if (frame.model_instance() != model_instance) {
@@ -2673,10 +2700,15 @@ void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
       // created using the <frame> tag).
       continue;
     }
-    interface_model->AddFrame(
-        {frame.name(), GetRelativeBodyName(frame.body(), model_instance, plant),
-         ToIgnitionPose3d(frame.GetFixedPoseInBodyFrame())});
+    const std::optional<std::string> attached_to =
+        GetRelativeBodyName(frame.body(), model_instance, plant, diagnostic);
+    if (!attached_to.has_value()) {
+      return false;
+    }
+    interface_model->AddFrame({frame.name(), *attached_to,
+                               ToIgnitionPose3d(frame.GetFixedPoseInBodyFrame())});
   }
+  return true;
 }
 
 void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
@@ -2719,6 +2751,7 @@ ModelInstanceIndex GetOrCreateModelInstanceByName(
 sdf::InterfaceModelPtr ConvertToInterfaceModel(
     MultibodyPlant<double>* plant, std::string model_name,
     const InterfaceModelHelper& interface_model_helper, sdf::Errors* errors,
+    const DiagnosticPolicy& diagnostic,
     RigidTransformd X_WP = RigidTransformd::Identity()) {
   auto model_instance = interface_model_helper.model_instance();
   sdf::RepostureFunction reposture_model =
@@ -2739,22 +2772,28 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
 
   const auto& model_frame = plant->GetFrameByName(
       interface_model_helper.model_frame_name(), model_instance);
-  const std::string canonical_link_name =
-      GetRelativeBodyName(model_frame.body(), model_instance, *plant);
+  const std::optional<std::string> canonical_link_name = GetRelativeBodyName(
+      model_frame.body(), model_instance, *plant, diagnostic);
+  if (!canonical_link_name.has_value()) {
+    return nullptr;
+  }
   const RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
   const RigidTransformd X_PM = X_WP.inverse() * X_WM;
 
   auto interface_model = std::make_shared<sdf::InterfaceModel>(
-      model_name, reposture_model, false, canonical_link_name,
+      model_name, reposture_model, false, *canonical_link_name,
       ToIgnitionPose3d(X_PM));
 
   AddBodiesToInterfaceModel(*plant, interface_model,
                             interface_model_helper.body_indices(),
                             X_WM.inverse());
 
-  AddFramesToInterfaceModel(*plant, model_instance, interface_model,
-                            interface_model_helper.frame_indices(),
-                            interface_model_helper.model_frame_name());
+  if (!AddFramesToInterfaceModel(*plant, model_instance, interface_model,
+                                 interface_model_helper.frame_indices(),
+                                 interface_model_helper.model_frame_name(),
+                                 diagnostic)) {
+    return nullptr;
+  }
 
   AddJointsToInterfaceModel(*plant, interface_model,
                             interface_model_helper.joint_indices());
@@ -2872,7 +2911,10 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // This will be populated for the first model instance.
   sdf::InterfaceModelPtr main_interface_model;
   main_interface_model = ConvertToInterfaceModel(
-      plant, model_name, interface_model_helper, errors);
+      plant, model_name, interface_model_helper, errors, subdiagnostic);
+  if (main_interface_model == nullptr) {
+    return nullptr;
+  }
   main_interface_model->SetParserSupportsMergeInclude(true);
 
   return main_interface_model;
