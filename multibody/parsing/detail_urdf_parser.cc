@@ -116,7 +116,10 @@ class UrdfParser {
     return internal::ParseScalarAttribute(node, attribute_name, val,
                                           diagnostic_.MakePolicyForNode(node));
   }
-  void ParseMechanicalReduction(const XMLElement& node);
+  // Parses an optional mechanicalReduction child. Returns a gear ratio when
+  // the element contains a single scalar; otherwise returns nullopt (and may
+  // emit a warning for unparseable values).
+  std::optional<double> ParseMechanicalReduction(const XMLElement& node);
 
   void Warning(const XMLNode& location, std::string message) const {
     diagnostic_.Warning(location, std::move(message));
@@ -879,25 +882,27 @@ void UrdfParser::ParseMimicTag(XMLElement* node) {
   plant->AddCouplerConstraint(joint0, joint1, gear_ratio, offset);
 }
 
-void UrdfParser::ParseMechanicalReduction(const XMLElement& node) {
+std::optional<double> UrdfParser::ParseMechanicalReduction(
+    const XMLElement& node) {
   const XMLElement* child = node.FirstChildElement("mechanicalReduction");
   if (!child) {
-    return;
+    return std::nullopt;
   }
   const char* text = child->GetText();
   if (!text) {
-    return;
+    return std::nullopt;
   }
   std::vector<double> values = ConvertToVector<double>(text);
-  if (values.size() == 1 && values[0] == 1) {
-    return;
+  if (values.size() == 1) {
+    return values[0];
   }
   Warning(
       *child,
       fmt::format("A '{}' element contains a mechanicalReduction element with a"
-                  " value '{}' other than the default of 1. MultibodyPlant does"
-                  " not currently support non-default mechanical reductions.",
+                  " value '{}' that cannot be parsed as a single scalar number."
+                  " The mechanicalReduction will be ignored.",
                   node.Name(), text));
+  return std::nullopt;
 }
 
 void UrdfParser::ParseTransmission(const JointEffortLimits& joint_effort_limits,
@@ -909,7 +914,9 @@ void UrdfParser::ParseTransmission(const JointEffortLimits& joint_effort_limits,
   WarnUnsupportedElement(*node, "gap_joint");
   WarnUnsupportedElement(*node, "passive_joint");
   WarnUnsupportedElement(*node, "use_simulated_gripper_joint");
-  ParseMechanicalReduction(*node);
+  // Prefer actuator-level mechanicalReduction over transmission-level.
+  const std::optional<double> transmission_mechanical_reduction =
+      ParseMechanicalReduction(*node);
 
   // Determines the transmission type.
   std::string type;
@@ -941,7 +948,8 @@ void UrdfParser::ParseTransmission(const JointEffortLimits& joint_effort_limits,
     Error(*node, "Transmission is missing an actuator element.");
     return;
   }
-  ParseMechanicalReduction(*actuator_node);
+  const std::optional<double> actuator_mechanical_reduction =
+      ParseMechanicalReduction(*actuator_node);
   // `actuator/hardwareInterface` child tags are silently ignored.
 
   std::string actuator_name;
@@ -1017,6 +1025,18 @@ void UrdfParser::ParseTransmission(const JointEffortLimits& joint_effort_limits,
     }
     plant->get_mutable_joint_actuator(actuator.index())
         .set_default_rotor_inertia(rotor_inertia);
+  }
+
+  // Map standard URDF mechanicalReduction to the actuator gear ratio. An
+  // actuator-level value takes precedence over a transmission-level value.
+  // The custom drake:gear_ratio tag below may still override this.
+  const std::optional<double> mechanical_reduction =
+      actuator_mechanical_reduction.has_value()
+          ? actuator_mechanical_reduction
+          : transmission_mechanical_reduction;
+  if (mechanical_reduction.has_value()) {
+    plant->get_mutable_joint_actuator(actuator.index())
+        .set_default_gear_ratio(*mechanical_reduction);
   }
 
   // Parse and add the optional drake:gear_ratio parameter.

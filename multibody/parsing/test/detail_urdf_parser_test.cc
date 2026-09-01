@@ -5,6 +5,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -2843,6 +2844,23 @@ TEST_F(ReflectedInertiaTest, GearRatioManyValues) {
                ".*Expected single value.*value.*");
 }
 
+TEST_F(ReflectedInertiaTest, MechanicalReduction) {
+  // Standard URDF mechanicalReduction maps to the actuator gear ratio.
+  VerifyParameters("", "<mechanicalReduction>113.90625</mechanicalReduction>",
+                   0.0, 113.90625);
+}
+
+TEST_F(ReflectedInertiaTest, MechanicalReductionUnity) {
+  VerifyParameters("", "<mechanicalReduction>1</mechanicalReduction>", 0.0,
+                   1.0);
+}
+
+TEST_F(ReflectedInertiaTest, DrakeGearRatioOverridesMechanicalReduction) {
+  // Custom drake:gear_ratio wins when both are specified.
+  VerifyParameters("<mechanicalReduction>50</mechanicalReduction>",
+                   "<drake:gear_ratio value='300.0' />", 0.0, 300.0);
+}
+
 class ControllerGainsTest : public UrdfParserTest {
  public:
   void VerifyParameters(const std::string& controller_gains_text,
@@ -3198,7 +3216,7 @@ TEST_F(UrdfParserTest, UnsupportedTransmissionJointStuffIgnoredSilent) {
 // documented elsewhere) when it ignores something thought to be a documented
 // URDF element or attribute.
 
-TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
+TEST_F(UrdfParserTest, MechanicalReductionGearRatio) {
   // Two substitution slots: actuator, then transmission.
   constexpr const char* robot_template = R"""(
     <robot>
@@ -3216,40 +3234,56 @@ TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
         {}
       </transmission>
     </robot>)""";
-  // Match the expected warning.
-  constexpr char pattern[] = ".*mechanicalReduction.*default.*not.*support.*";
+  // Match the expected warning for unparseable values.
+  constexpr char pattern[] =
+      ".*mechanicalReduction.*single scalar.*ignored.*";
 
   struct Case {
     std::string input;
     bool provokes_warning{};
+    // nullopt means the actuator keeps the default gear ratio of 1.
+    std::optional<double> expected_gear_ratio;
   };
   const std::array<Case, 8> cases{{
-      {"<mechanicalReduction>3500.25</mechanicalReduction>", true},
-      {"<mechanicalReduction>22 79 15</mechanicalReduction>", true},
-      {"<mechanicalReduction>QQQ</mechanicalReduction>", true},
-      {"<mechanicalReduction/>", false},
-      {"<mechanicalReduction></mechanicalReduction>", false},
-      {"<mechanicalReduction> </mechanicalReduction>", false},
-      {"<mechanicalReduction>1</mechanicalReduction>", false},
-      {"<mechanicalReduction>1.0</mechanicalReduction>", false},
+      {"<mechanicalReduction>3500.25</mechanicalReduction>", false, 3500.25},
+      {"<mechanicalReduction>22 79 15</mechanicalReduction>", true,
+       std::nullopt},
+      {"<mechanicalReduction>QQQ</mechanicalReduction>", true, std::nullopt},
+      {"<mechanicalReduction/>", false, std::nullopt},
+      {"<mechanicalReduction></mechanicalReduction>", false, std::nullopt},
+      {"<mechanicalReduction> </mechanicalReduction>", false, std::nullopt},
+      {"<mechanicalReduction>1</mechanicalReduction>", false, 1.0},
+      {"<mechanicalReduction>1.0</mechanicalReduction>", false, 1.0},
   }};
 
   for (const Case& acase : cases) {
     // Within actuator.
-    EXPECT_NE(
+    const std::optional<ModelInstanceIndex> actuator_model =
         AddModelFromUrdfString(fmt::format(robot_template, acase.input, ""),
-                               acase.input + "_actuator"),
-        std::nullopt);
+                               acase.input + "_actuator");
+    EXPECT_NE(actuator_model, std::nullopt);
     if (acase.provokes_warning) {
       EXPECT_THAT(TakeWarning(), MatchesRegex(pattern));
     }
+    {
+      const JointActuator<double>& actuator =
+          plant_.GetJointActuatorByName("a", *actuator_model);
+      EXPECT_EQ(actuator.default_gear_ratio(),
+                acase.expected_gear_ratio.value_or(1.0));
+    }
     // Within transmission.
-    EXPECT_NE(
+    const std::optional<ModelInstanceIndex> transmission_model =
         AddModelFromUrdfString(fmt::format(robot_template, "", acase.input),
-                               acase.input + "_transmission"),
-        std::nullopt);
+                               acase.input + "_transmission");
+    EXPECT_NE(transmission_model, std::nullopt);
     if (acase.provokes_warning) {
       EXPECT_THAT(TakeWarning(), MatchesRegex(pattern));
+    }
+    {
+      const JointActuator<double>& actuator =
+          plant_.GetJointActuatorByName("a", *transmission_model);
+      EXPECT_EQ(actuator.default_gear_ratio(),
+                acase.expected_gear_ratio.value_or(1.0));
     }
   }
 }

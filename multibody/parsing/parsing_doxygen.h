@@ -234,9 +234,12 @@ one of several treatments:
 - `/robot/transmission/actuator/mechanicalReduction`
 - `/robot/transmission/mechanicalReduction`
 
-Both versions of `mechanicalReduction` will be silently ignored if the supplied
-value is 1; otherwise the they will provoke a warning that the value is being
-ignored.
+Both versions of `mechanicalReduction` are mapped to the JointActuator gear
+ratio (see @ref tag_drake_gear_ratio) when the element contains a single
+scalar value. An actuator-level value takes precedence over a
+transmission-level value. The custom `drake:gear_ratio` tag, if present,
+overrides `mechanicalReduction`. Values that cannot be parsed as a single
+scalar provoke a warning and are ignored.
 
 @section multibody_parsing_drake_extensions Drake Extensions
 
@@ -1163,6 +1166,9 @@ Applies the indicated gear ratio value to the appropriate JointActuator
 object. This value is only used for reflected inertia calculations, and not as
 a torque multiplier. The value is dimensionless for revolute joints, and has
 units of 1/m for prismatic joints.
+
+In URDF, the standard `mechanicalReduction` element is also accepted as a
+synonym for this tag (see @ref urdf_ignored_special).
 
 @see drake::multibody::JointActuator, @ref tag_drake_rotor_inertia,
 @ref reflected_inertia "Reflected Inertia"
