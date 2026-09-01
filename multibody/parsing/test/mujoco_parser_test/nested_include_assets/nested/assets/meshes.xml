@@ -1,0 +1,3 @@
+<mujoco model="nested_include_assets_meshes">
+  <mesh name="box" file="box.obj"/>
+</mujoco>

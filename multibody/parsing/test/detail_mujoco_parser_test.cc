@@ -628,6 +628,32 @@ TEST_F(MujocoParserTest, Include) {
   EXPECT_EQ(plant_->CalcTotalMass(*context), 2.0);
 }
 
+// Regression test for https://github.com/RobotLocomotion/drake/issues/22638:
+// mesh assets declared in nested includes must resolve relative to the
+// included XML (RB-Y1-style layouts), not only relative to the main MJCF.
+TEST_F(MujocoParserTest, NestedIncludeRelativeAssets) {
+  const std::string scene_file = FindResourceOrThrow(
+      "drake/multibody/parsing/test/mujoco_parser_test/nested_include_assets/"
+      "scene.xml");
+  const std::string expected_mesh = std::filesystem::canonical(
+      FindResourceOrThrow(
+          "drake/multibody/parsing/test/mujoco_parser_test/"
+          "nested_include_assets/nested/assets/box.obj"));
+
+  AddAllModelsFromFile(scene_file, {});
+  FlushDiagnostics();
+
+  const SceneGraphInspector<double>& inspector =
+      scene_graph_->model_inspector();
+  GeometryId geom_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "box_geom");
+  const auto* mesh =
+      dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
+  ASSERT_NE(mesh, nullptr);
+  DRAKE_DEMAND(mesh->source().is_path());
+  EXPECT_EQ(mesh->source().path(), expected_mesh);
+}
+
 class BoxMeshTest : public MujocoParserTest {
  public:
   // Load and evaluate a box mesh, specified in various ways by caller-supplied

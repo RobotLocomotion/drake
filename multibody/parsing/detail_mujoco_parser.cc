@@ -1417,21 +1417,39 @@ class MujocoParser {
         attribute is set and contains an absolute path, the full path is the
         meshdir appended with the file name; (3) the full path is the
         path to the main MJCF model file, appended with the value of meshdir if
-        set, appended with the file name. */
+        set, appended with the file name.
+
+        In addition (matching MuJoCo's include behavior), if the mesh was
+        contributed by an included MJCF file and the path from (2)/(3) does not
+        exist, the file is resolved relative to that included file's
+        directory. */
 
         // TODO(russt): Support strippath.
         if (!filename.is_absolute()) {
+          std::filesystem::path from_compiler_or_main;
           if (meshdir_) {
             if (meshdir_->is_absolute()) {
-              filename = *meshdir_ / filename;
+              from_compiler_or_main = *meshdir_ / filename;
             } else {
-              filename = main_mjcf_path_ / *meshdir_ / filename;
+              from_compiler_or_main = main_mjcf_path_ / *meshdir_ / filename;
             }
           } else {
-            filename = main_mjcf_path_ / filename;
+            from_compiler_or_main = main_mjcf_path_ / filename;
           }
+          from_compiler_or_main =
+              std::filesystem::weakly_canonical(from_compiler_or_main);
+          if (std::filesystem::exists(from_compiler_or_main)) {
+            filename = from_compiler_or_main;
+          } else if (auto it = element_include_dir_.find(mesh_node);
+                     it != element_include_dir_.end()) {
+            filename =
+                std::filesystem::weakly_canonical(it->second / filename);
+          } else {
+            filename = from_compiler_or_main;
+          }
+        } else {
+          filename = std::filesystem::weakly_canonical(filename);
         }
-        filename = std::filesystem::weakly_canonical(filename);
 
         if (std::filesystem::exists(filename)) {
           std::string extension = filename.extension();
@@ -1861,11 +1879,36 @@ class MujocoParser {
     WarnUnsupportedElement(*node, "distance");  // removed in MuJoCo 2.2.2
   }
 
+  // Records that `node` (and its non-include descendants) originated from an
+  // included MJCF file in `include_dir`, so relative asset paths can be
+  // resolved against that directory.
+  void MarkElementIncludeDir(XMLElement* node,
+                             const std::filesystem::path& include_dir) {
+    DRAKE_DEMAND(node != nullptr);
+    if (std::string(node->Value()) == "include") {
+      // Nested includes are expanded separately with their own base path.
+      return;
+    }
+    element_include_dir_[node] = include_dir;
+    for (XMLElement* child = node->FirstChildElement(); child;
+         child = child->NextSiblingElement()) {
+      MarkElementIncludeDir(child, include_dir);
+    }
+  }
+
   // Updates node by recursively replacing any <include> elements under it with
-  // the children of the named file's root element.
+  // the children of the named file's root element. Nested includes and relative
+  // asset paths are resolved relative to the including file's directory
+  // (matching MuJoCo), with a fallback to the main MJCF directory.
   void ExpandIncludeTags(XMLElement* node,
                          const std::filesystem::path& parent_mjcf_path) {
     DRAKE_DEMAND(node != nullptr);
+
+    std::filesystem::path base_path = parent_mjcf_path;
+    if (auto it = element_include_dir_.find(node);
+        it != element_include_dir_.end()) {
+      base_path = it->second;
+    }
 
     // Process the current node if it's an <include> tag.
     if (std::string(node->Value()) == "include") {
@@ -1875,11 +1918,18 @@ class MujocoParser {
         return;
       }
 
-      // From the MJCF docs: "The name of the XML file to be included. The file
-      // location is relative to the directory of the main MJCF file. If the
-      // file is not in the same directory, it should be prefixed with a
-      // relative path."
-      std::filesystem::path filename = parent_mjcf_path / file;
+      // MuJoCo resolves include paths relative to the main MJCF directory
+      // (legacy), and also relative to the including file's directory for
+      // nested includes.
+      std::filesystem::path filename(file);
+      if (!filename.is_absolute()) {
+        const std::filesystem::path from_main = main_mjcf_path_ / filename;
+        if (std::filesystem::exists(from_main)) {
+          filename = from_main;
+        } else {
+          filename = base_path / filename;
+        }
+      }
       filename = std::filesystem::absolute(filename);
       log()->debug("Processing included file: {}", filename.string());
 
@@ -1897,6 +1947,8 @@ class MujocoParser {
         return;
       }
 
+      const std::filesystem::path include_dir = filename.parent_path();
+
       // Insert the children of the root element of the included file.
       XMLDocument* xml_doc = node->GetDocument();
       XMLElement* parent = node->Parent()->ToElement();
@@ -1906,7 +1958,9 @@ class MujocoParser {
       while (child) {
         // Insert the child node after the include node (or after the last
         // inserted node).
-        parent->InsertAfterChild(node_in_parent, child->DeepClone(xml_doc));
+        XMLElement* cloned = child->DeepClone(xml_doc)->ToElement();
+        MarkElementIncludeDir(cloned, include_dir);
+        parent->InsertAfterChild(node_in_parent, cloned);
         node_in_parent = node_in_parent->NextSiblingElement();
         child = child->NextSiblingElement();
       }
@@ -1917,7 +1971,7 @@ class MujocoParser {
     // Recurse on child elements.
     XMLElement* child = node->FirstChildElement();
     while (child) {
-      ExpandIncludeTags(child, parent_mjcf_path);
+      ExpandIncludeTags(child, base_path);
       XMLElement* to_delete =
           (std::string(child->Value()) == "include") ? child : nullptr;
       child = child->NextSiblingElement();
@@ -1929,8 +1983,9 @@ class MujocoParser {
     }
   }
 
-  // Assets without an absolute path are referenced relative to the "main MJCF
-  // model file" path, `main_mjcf_path`.
+  // Assets without an absolute path are referenced relative to the main MJCF
+  // model file path (`main_mjcf_path`), or relative to the included MJCF that
+  // declared them when that main-relative path does not exist.
   std::pair<std::optional<ModelInstanceIndex>, std::string> Parse(
       const std::string& model_name_in,
       const std::optional<std::string>& parent_model_name,
@@ -2077,6 +2132,9 @@ class MujocoParser {
   geometry::SceneGraph<double>* const scene_graph_;
   ModelInstanceIndex model_instance_{};
   std::filesystem::path main_mjcf_path_{};
+  // For elements that originated from an <include>d file, the directory of
+  // that included file (used to resolve relative include and asset paths).
+  std::map<const XMLElement*, std::filesystem::path> element_include_dir_{};
   bool autolimits_{true};
   enum Angle { kRadian, kDegree };
   Angle angle_{kDegree};

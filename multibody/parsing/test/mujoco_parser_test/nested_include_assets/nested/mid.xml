@@ -1,0 +1,8 @@
+<mujoco model="nested_include_assets_mid">
+  <asset>
+    <include file="assets/meshes.xml"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
