@@ -91,17 +91,17 @@ void ThrowIfInvalidHydroelasticModulus(double hydroelastic_modulus) {
 
 void ThrowIfInvalidResolutionHint(double resolution_hint) {
   if (!(std::isfinite(resolution_hint) && resolution_hint > 0)) {
-    throw std::logic_error(fmt::format(
-        "The resolution_hint must be positive and finite; given {}",
-        resolution_hint));
+    throw std::logic_error(
+        fmt::format("The resolution_hint must be positive and finite; given {}",
+                    resolution_hint));
   }
 }
 
 void ThrowIfInvalidSlabThickness(double slab_thickness) {
   if (!(std::isfinite(slab_thickness) && slab_thickness > 0)) {
-    throw std::logic_error(fmt::format(
-        "The slab_thickness must be positive and finite; given {}",
-        slab_thickness));
+    throw std::logic_error(
+        fmt::format("The slab_thickness must be positive and finite; given {}",
+                    slab_thickness));
   }
 }
 
@@ -140,9 +140,9 @@ void ThrowIfInvalidPointStiffness(double point_stiffness) {
 void ThrowIfInvalidFrictionCoefficient(double friction_coefficient) {
   // +∞ is allowed; NaN is not (`!(nan >= 0)`).
   if (!(friction_coefficient >= 0)) {
-    throw std::logic_error(fmt::format(
-        "The friction coefficient can't be negative; given {}",
-        friction_coefficient));
+    throw std::logic_error(
+        fmt::format("The friction coefficient can't be negative; given {}",
+                    friction_coefficient));
   }
 }
 
