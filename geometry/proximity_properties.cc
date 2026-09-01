@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_properties.h"
 
 #include <array>
+#include <cmath>
 #include <string>
 
 namespace drake {
@@ -79,6 +80,72 @@ std::string_view to_string(const HydroelasticType& type) {
   return EnumToChars(type);
 }
 
+void ThrowIfInvalidHydroelasticModulus(double hydroelastic_modulus) {
+  // +∞ is allowed (equivalent to rigid); NaN is not (`!(nan > 0)`).
+  if (!(hydroelastic_modulus > 0)) {
+    throw std::logic_error(
+        fmt::format("The hydroelastic modulus must be positive; given {}",
+                    hydroelastic_modulus));
+  }
+}
+
+void ThrowIfInvalidResolutionHint(double resolution_hint) {
+  if (!(std::isfinite(resolution_hint) && resolution_hint > 0)) {
+    throw std::logic_error(fmt::format(
+        "The resolution_hint must be positive and finite; given {}",
+        resolution_hint));
+  }
+}
+
+void ThrowIfInvalidSlabThickness(double slab_thickness) {
+  if (!(std::isfinite(slab_thickness) && slab_thickness > 0)) {
+    throw std::logic_error(fmt::format(
+        "The slab_thickness must be positive and finite; given {}",
+        slab_thickness));
+  }
+}
+
+void ThrowIfInvalidMargin(double margin) {
+  if (!(std::isfinite(margin) && margin >= 0)) {
+    throw std::logic_error(fmt::format(
+        "The margin must be non-negative and finite; given {}", margin));
+  }
+}
+
+void ThrowIfInvalidHuntCrossleyDissipation(double dissipation) {
+  // +∞ is allowed; NaN is not (`!(nan >= 0)`).
+  if (!(dissipation >= 0)) {
+    throw std::logic_error(fmt::format(
+        "The dissipation can't be negative; given {}", dissipation));
+  }
+}
+
+void ThrowIfInvalidRelaxationTime(double relaxation_time) {
+  if (!(std::isfinite(relaxation_time) && relaxation_time >= 0)) {
+    throw std::logic_error(fmt::format(
+        "The relaxation_time must be non-negative and finite; given {}",
+        relaxation_time));
+  }
+}
+
+void ThrowIfInvalidPointStiffness(double point_stiffness) {
+  // +∞ is allowed; NaN is not (`!(nan > 0)`).
+  if (!(point_stiffness > 0)) {
+    throw std::logic_error(fmt::format(
+        "The point_contact_stiffness must be strictly positive; given {}",
+        point_stiffness));
+  }
+}
+
+void ThrowIfInvalidFrictionCoefficient(double friction_coefficient) {
+  // +∞ is allowed; NaN is not (`!(nan >= 0)`).
+  if (!(friction_coefficient >= 0)) {
+    throw std::logic_error(fmt::format(
+        "The friction coefficient can't be negative; given {}",
+        friction_coefficient));
+  }
+}
+
 }  // namespace internal
 
 void AddContactMaterial(
@@ -87,20 +154,13 @@ void AddContactMaterial(
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
   if (dissipation.has_value()) {
-    if (*dissipation < 0) {
-      throw std::logic_error(fmt::format(
-          "The dissipation can't be negative; given {}", *dissipation));
-    }
+    internal::ThrowIfInvalidHuntCrossleyDissipation(*dissipation);
     properties->AddProperty(internal::kMaterialGroup, internal::kHcDissipation,
                             *dissipation);
   }
 
   if (point_stiffness.has_value()) {
-    if (*point_stiffness <= 0) {
-      throw std::logic_error(fmt::format(
-          "The point_contact_stiffness must be strictly positive; given {}",
-          *point_stiffness));
-    }
+    internal::ThrowIfInvalidPointStiffness(*point_stiffness);
     properties->AddProperty(internal::kMaterialGroup, internal::kPointStiffness,
                             *point_stiffness);
   }
@@ -117,6 +177,7 @@ void AddContactMaterial(
 void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  internal::ThrowIfInvalidResolutionHint(resolution_hint);
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
   AddRigidHydroelasticProperties(properties);
@@ -138,11 +199,7 @@ void AddCompliantHydroelasticProperties(double hydroelastic_modulus,
   // The bare minimum of defining a compliant geometry is to declare its
   // compliance type. Downstream consumers (ProximityEngine) will determine
   // if this is sufficient.
-  if (hydroelastic_modulus <= 0) {
-    throw std::logic_error(
-        fmt::format("The hydroelastic modulus must be positive; given {}",
-                    hydroelastic_modulus));
-  }
+  internal::ThrowIfInvalidHydroelasticModulus(hydroelastic_modulus);
   properties->AddProperty(internal::kHydroGroup, internal::kElastic,
                           hydroelastic_modulus);
   properties->AddProperty(internal::kHydroGroup, internal::kComplianceType,
@@ -154,6 +211,7 @@ void AddCompliantHydroelasticProperties(double resolution_hint,
                                         double hydroelastic_modulus,
                                         ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  internal::ThrowIfInvalidResolutionHint(resolution_hint);
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
   AddCompliantHydroelasticProperties(hydroelastic_modulus, properties);
@@ -163,6 +221,7 @@ void AddCompliantHydroelasticPropertiesForHalfSpace(
     double slab_thickness, double hydroelastic_modulus,
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  internal::ThrowIfInvalidSlabThickness(slab_thickness);
   properties->AddProperty(internal::kHydroGroup, internal::kSlabThickness,
                           slab_thickness);
   AddCompliantHydroelasticProperties(hydroelastic_modulus, properties);

@@ -31,13 +31,12 @@ struct DefaultProximityProperties {
   }
   /** @name Hydroelastic Contact Properties
 
-  These properties affect hydroelastic contact only. For more detail, including
-  limits of the numeric parameters, @see
-  geometry::AddRigidHydroelasticProperties,
+  These properties affect hydroelastic contact only. Valid ranges for each
+  numeric parameter are documented on the corresponding field below.
+  @see geometry::AddRigidHydroelasticProperties,
   geometry::AddCompliantHydroelasticProperties,
-  geometry::AddCompliantHydroelasticPropertiesForHalfSpace.
-
-  For more context, @see @ref hug_properties. */
+  geometry::AddCompliantHydroelasticPropertiesForHalfSpace,
+  @ref hug_properties. */
   /// @{
   /** There are three valid options for `compliance_type`:
   - "undefined": hydroelastic contact will not be used.
@@ -48,11 +47,17 @@ struct DefaultProximityProperties {
   - "compliant": the default hydroelastic compliance type will be compliant. */
   std::string compliance_type{"undefined"};
 
-  /** A measure of material stiffness, in units of Pascals. */
+  /** A measure of material stiffness, in units of Pascals.
+
+  When present, the value must be strictly positive (`> 0`). +∞ is allowed (it
+  is mathematically equivalent to a rigid object); NaN is not. */
   std::optional<double> hydroelastic_modulus{1e7};
 
   /** Controls how finely primitive geometries are tessellated, units of
   meters.
+
+  When present, the value must satisfy `0 < resolution_hint < ∞` (finite and
+  positive). NaN and ±∞ are not allowed.
 
   While no single value is universally appropriate, this value was selected
   based on the following idea. We're attempting to make introducing novel
@@ -63,13 +68,19 @@ struct DefaultProximityProperties {
   std::optional<double> resolution_hint{0.02};
 
   /** For a halfspace, the thickness of compliant material to model, in units
-  of meters. */
+  of meters.
+
+  When present, the value must satisfy `0 < slab_thickness < ∞` (finite and
+  positive). NaN and ±∞ are not allowed. */
   std::optional<double> slab_thickness;
 
   /** (Advanced) Specifies a thin layer of thickness "margin" (in meters) around
   each geometry. Two bodies with margins δ₁ and δ₂ are considered for contact
   resolution whenever their distance is within δ₁ + δ₂. That is, (speculative)
   contact constraints are added for objects at a distance smaller than δ₁+δ₂.
+
+  When present, the value must satisfy `0 ≤ margin < ∞` (finite and
+  non-negative). NaN and ±∞ are not allowed.
 
   Refer to @ref hydro_margin for further details, including theory, examples,
   recommended margin values and limitations.
@@ -100,20 +111,28 @@ struct DefaultProximityProperties {
 
   /** @name General Contact Properties
 
-  These properties affect contact in general. For more detail, including limits
-  of the numeric parameters, @see geometry::AddContactMaterial,
-  multibody::CoulombFriction, @ref mbp_contact_modeling, @ref
-  mbp_dissipation_model. */
+  These properties affect contact in general. Valid ranges for each numeric
+  parameter are documented on the corresponding field below.
+  @see geometry::AddContactMaterial, multibody::CoulombFriction,
+  @ref mbp_contact_modeling, @ref mbp_dissipation_model. */
   /// @{
-  /** To be valid, either both friction values must be populated, or
-  neither. Friction quantities are unitless. */
+  /** Dynamic Coulomb friction coefficient (unitless).
+
+  To be valid, either both friction values must be populated, or neither. When
+  present, the value must be non-negative (`≥ 0`). +∞ is allowed; NaN is not.
+  Additional relationship constraints with `static_friction` are enforced by
+  multibody::CoulombFriction. */
   std::optional<double> dynamic_friction{0.5};
-  /** @see dynamic_friction. */
+  /** Static Coulomb friction coefficient (unitless).
+  @see dynamic_friction. */
   std::optional<double> static_friction{0.5};
 
   /** Controls energy dissipation from contact, for contact approximations
   *other than* multibody::DiscreteContactApproximation::kSap. Units are seconds
   per meter.
+
+  When present, the value must be non-negative (`≥ 0`). +∞ is allowed; NaN is
+  not.
 
   If a non-deformable geometry is missing a value for dissipation,
   MultibodyPlant will generate a default value (based on
@@ -128,19 +147,25 @@ struct DefaultProximityProperties {
   std::optional<double> hunt_crossley_dissipation{50.0};
 
   /** Controls energy damping from contact, *only for*
-  multibody::DiscreteContactApproximation::kSap. Units are seconds. */
+  multibody::DiscreteContactApproximation::kSap. Units are seconds.
+
+  When present, the value must satisfy `0 ≤ relaxation_time < ∞` (finite and
+  non-negative). NaN and ±∞ are not allowed. */
   std::optional<double> relaxation_time{0.1};
   /// @}
 
   /** @name Point Contact Properties
 
-  These properties affect point contact only. For complete descriptions of
-  the numeric parameters, See
-  @ref point_forces_modeling "Compliant Point Contact Forces",
+  These properties affect point contact only. Valid ranges for each numeric
+  parameter are documented on the corresponding field below.
+  @see @ref point_forces_modeling "Compliant Point Contact Forces",
   geometry::AddContactMaterial. */
   /// @{
 
   /** A measure of material stiffness, in units of Newtons per meter.
+
+  When present, the value must be strictly positive (`> 0`). +∞ is allowed; NaN
+  is not.
 
   If a non-deformable geometry is missing a value for stiffness,
   MultibodyPlant will generate a default value (based on
