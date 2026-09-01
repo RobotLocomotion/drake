@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
-<!-- Minimal nested-URDF repro for Drake issue #21413: a fixed joint to world. -->
+<!-- Minimal nested-URDF repro for Drake issue #21413: a fixed joint to world.
+     Non-identity origin is required so MultibodyPlant creates a joint frame
+     attached to world (identity welds elide that frame; see #24687). -->
 <robot name="gripper_with_world_weld">
   <link name="base_link">
     <inertial>
@@ -8,6 +10,7 @@
     </inertial>
   </link>
   <joint name="world_weld" type="fixed">
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
     <parent link="world"/>
     <child link="base_link"/>
   </joint>
