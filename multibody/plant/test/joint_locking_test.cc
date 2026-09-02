@@ -182,7 +182,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
         expected_unlocked_velocity_indices_per_tree = {
             {0, 1},
             {0, 1, 2, 3, 4, 5, 6},
-        };
+    };
     const std::vector<std::vector<int>>
         expected_locked_velocity_indices_per_tree = {{}, {}};
 

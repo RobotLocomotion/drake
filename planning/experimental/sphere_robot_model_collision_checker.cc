@@ -549,7 +549,7 @@ SphereRobotModelCollisionChecker::ComputeSelfCollisionSignedDistanceAndGradient(
       potential_self_colliding_bodies, influence_distance);
 }
 
-PointSignedDistanceAndGradientResult SphereRobotModelCollisionChecker ::
+PointSignedDistanceAndGradientResult SphereRobotModelCollisionChecker::
     ComputeSelfCollisionSignedDistanceAndGradientInternal(
         const std::vector<BodySpheres>& sphere_locations_in_world_frame,
         const BodyIndex query_body_index, const GeometryId query_sphere_id,
@@ -1010,7 +1010,7 @@ int SphereRobotModelCollisionChecker::DoMaxContextNumDistances(
   return 2 * total_robot_spheres;
 }
 
-std::string SphereRobotModelCollisionChecker ::
+std::string SphereRobotModelCollisionChecker::
     GetURDFCollisionGeometriesForRobotCollisionModel() const {
   std::string urdf_collision_elements;
   const auto& robot_collision_model = RobotCollisionModel();

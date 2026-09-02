@@ -279,7 +279,7 @@ single_version_override(
 
 bazel_dep(
     name = "llvm",
-    version = "0.8.18",
+    version = "0.8.19",
     dev_dependency = True,
 )
 # N.B. We must NOT register llvm's toolchain here. We want to use the

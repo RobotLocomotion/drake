@@ -16,7 +16,7 @@ namespace internal {
 // always exclude self-loops i.e. the diagonal of the returned matrix is always
 // false.
 Eigen::SparseMatrix<bool> ComplementAdjacencyMatrix(
-    const Eigen::Ref<const Eigen ::SparseMatrix<bool>>& adjacency_matrix);
+    const Eigen::Ref<const Eigen::SparseMatrix<bool>>& adjacency_matrix);
 
 // Given a list of triplets, add the symmetric component to the triplet list.
 // This is useful when constructing adjacency matrices.

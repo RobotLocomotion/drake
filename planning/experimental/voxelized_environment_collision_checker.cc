@@ -122,7 +122,7 @@ bool VoxelizedEnvironmentCollisionChecker::RemoveEnvironment(
   }
 }
 
-PointSignedDistanceAndGradientResult VoxelizedEnvironmentCollisionChecker ::
+PointSignedDistanceAndGradientResult VoxelizedEnvironmentCollisionChecker::
     ComputePointToEnvironmentSignedDistanceAndGradient(
         const Context<double>&, const QueryObject<double>&,
         const Eigen::Vector4d& p_WQ, const double query_radius,
@@ -158,7 +158,7 @@ PointSignedDistanceAndGradientResult VoxelizedEnvironmentCollisionChecker ::
 }
 
 PointSignedDistanceAndGradientResult
-VoxelizedEnvironmentCollisionChecker ::ComputePointToEnvironmentSignedDistance(
+VoxelizedEnvironmentCollisionChecker::ComputePointToEnvironmentSignedDistance(
     const Context<double>&, const QueryObject<double>&,
     const Eigen::Vector4d& p_WQ, const double query_radius,
     const std::vector<Eigen::Isometry3d>&,
@@ -198,7 +198,7 @@ void VoxelizedEnvironmentCollisionChecker::RemoveAllAddedEnvironment(
       "nothing.");
 }
 
-std::optional<double> VoxelizedEnvironmentCollisionChecker ::
+std::optional<double> VoxelizedEnvironmentCollisionChecker::
     EstimateConservativePointToEnvironmentSignedDistance(
         const Context<double>&, const QueryObject<double>&,
         const Eigen::Vector4d& p_WQ, const double,
