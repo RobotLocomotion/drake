@@ -379,9 +379,9 @@ TEST_F(KinematicTreeTest, TestSAndQConversionSymbolic) {
             dut.ComputeQValue(s_val, q_star);
 
         Eigen::MatrixXd test_points(7, 7);
+        // clang-format off
         // random test points for expression equality. Note that q_val(i) must
         // evaluate to be in [-pi, pi]
-        // clang-format off
         test_points << 0.36,  0.14, -0.54,  0.78,  0.52, -0.03, -0.22,
        -0.84,  0.67,  0.63,  1.14, -0.72,  0.49, -0.81,
         0.65,  0.68, -0.14, -0.67, -0.45,  1.69, -0.69,

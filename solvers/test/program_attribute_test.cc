@@ -84,7 +84,7 @@ GTEST_TEST(ProgramAttributeTest, Supported) {
           {quad_cost_cons_generic_cost, lin_cons,
            "a GenericCost, QuadraticCost, and QuadraticConstraint were declared"
            " but are not supported"},
-      };
+  };
 
   // Run all of the tests.
   for (const auto& one_case : cases) {

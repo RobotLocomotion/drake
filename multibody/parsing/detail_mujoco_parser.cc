@@ -53,7 +53,8 @@ using tinyxml2::XMLNode;
 
 namespace {
 
-constexpr std::array kOrientationAttributes = {  // BR
+constexpr std::array kOrientationAttributes = {
+    // BR
     "quat", "axisangle", "euler", "xyaxes", "zaxis"};
 
 class MujocoParser {
