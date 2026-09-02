@@ -7,11 +7,9 @@ def abseil_cpp_internal_repository(
         name = name,
         repository = "abseil/abseil-cpp",
         upgrade_type = "release",
-        commit = "20260526.0",
-        sha256 = "6e1aee535473414164bf83e4ebc40240dec71a4701f8a642d906e95bea1aea0c",  # noqa
+        commit = "20260817.0",
+        sha256 = "f7e05179df39c45434cad433f5783840bb3788ef322976f9138bc6b72b3a107d",  # noqa
         patches = [
-            ":patches/upstream/include_bmi2intrin.patch",
-            ":patches/upstream/internal_c_symbol.patch",
             ":patches/hidden_visibility.patch",
             ":patches/inline_namespace.patch",
         ],
