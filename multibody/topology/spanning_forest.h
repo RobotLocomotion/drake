@@ -96,13 +96,17 @@ fused Mobods.
 Every Link is associated with a single Mobod in the SpanningForest. Multiple
 Links (contained in a WeldedLinksAssembly) may be represented by a single Mobod.
 A mobilizer connects each Mobod to an inboard Mobod (except for World). An
-additional "shadow" Link and its Mobod is created whenever a loop is broken by
-cutting a Link, and a LoopConstraint is added to reconnect the primary Link to
-its shadow. World is never the Link we cut so if a loop closes on World we cut
-the Link at the other end of the loop-closing Joint, even if that Link is
-massless (in which case the forest can't be used for dynamics). Every moving
-Joint will map to a Mobod and there will be additional floating or weld joints
-added as needed to connect tree root nodes (a.k.a. "base bodies") to World.
+additional "shadow" Link is created whenever a loop is broken by cutting a
+Link (we call that the "primary" Link). One of the joints that connects to
+the primary link is retargeted to the shadow; we refer to that as the "loop
+joint". A loop joint is modeled identically to the original joint other than
+its frame on the primary Link has been moved to the shadow. A LoopConstraint is
+added to reconnect the primary Link to its shadow. World is never the Link we
+cut so if a loop closes on World we cut the Link at the other end of the
+loop-closing Joint, even if that Link is massless (in which case the forest
+can't be used for dynamics). Every moving Joint will map to a Mobod and there
+will be additional floating or weld joints added as needed to connect tree
+root nodes (a.k.a. "base bodies") to World.
 
 When extra bodies, mobilizers, and constraints are needed to construct the
 forest, corresponding _ephemeral_ Links, Joints, and LoopConstraints are added

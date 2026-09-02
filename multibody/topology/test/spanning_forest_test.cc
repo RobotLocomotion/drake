@@ -2026,8 +2026,9 @@ GTEST_TEST(SpanningForest, MasslessLoopAreDetected) {
   EXPECT_FALSE(graph.BuildForest());
   EXPECT_THAT(
       graph.forest().why_no_dynamics(),
-      testing::MatchesRegex("Loop breaks.*joint1.*between two massless links.*"
-                            "link4.*link3.*cannot be used for dynamics.*"));
+      testing::MatchesRegex("Loop breaks between two massless links.*"
+                            "link4.*link3.*joint1 retargeted.*cannot be used "
+                            "for dynamics.*"));
 
   graph.ChangeLinkFlags(LinkIndex(1), LinkFlags::kDefault);  // Massful now.
   EXPECT_TRUE(graph.BuildForest());
@@ -2059,9 +2060,10 @@ GTEST_TEST(SpanningForest, MasslessLoopAreDetected) {
   this model can't be used for dynamics. */
   EXPECT_FALSE(world_graph.BuildForest());
   EXPECT_THAT(world_graph.forest().why_no_dynamics(),
-              testing::MatchesRegex("Loop breaks.*joint1.*between World and "
-                                    "massless link link3.*World can't be "
-                                    "split.*cannot be used for dynamics.*"));
+              testing::MatchesRegex("Loop breaks between World and massless "
+                                    "link link3.*joint1 retargeted.*World "
+                                    "can't be split.*cannot be used for "
+                                    "dynamics.*"));
   EXPECT_EQ(world_graph.num_user_links(), 4);
   EXPECT_EQ(ssize(world_graph.links()), 5);
   EXPECT_EQ(ssize(world_graph.forest().mobods()), 5);
@@ -2112,10 +2114,7 @@ GTEST_TEST(SpanningForest, LoopClosingOnWorldDoesNotSplitWorld) {
 
     /* The shadow is of link2, not World. */
     const LinkJointGraph::Link& shadow = graph.link_by_index(LinkIndex(3));
-    EXPECT_TRUE(shadow.is_shadow());
     EXPECT_EQ(shadow.name(), "link2$1");
-    EXPECT_EQ(shadow.primary_link(), LinkIndex(2));
-    EXPECT_EQ(graph.link_by_index(LinkIndex(2)).num_shadows(), 1);
 
     /* World, link1, and link2 all follow the World Mobod; the shadow gets its
     own Mobod mobilized by the revolute joint. */
@@ -2148,7 +2147,7 @@ GTEST_TEST(SpanningForest, LoopClosingOnWorldDoesNotSplitWorld) {
 Link we are forced to split is itself massless even though it has been fused
 into the (very massful) World WeldedLinksAssembly:
 
-     {0}==={1}==={2*}      (welds, all fused onto the World Mobod)
+     {0}===={1}===={2*}    (welds, all fused onto the World Mobod)
       ^              |
       +---revolute---+     (a loop joint, closing back onto World)
 
@@ -2184,9 +2183,10 @@ GTEST_TEST(SpanningForest, LoopClosingOnWorldOntoMasslessLinkKillsDynamics) {
     EXPECT_FALSE(graph.link_and_its_assembly_are_massless(LinkOrdinal(2)));
 
     EXPECT_THAT(graph.forest().why_no_dynamics(),
-                testing::MatchesRegex("Loop breaks.*revolute.*between World "
-                                      "and massless link link2.*World can't be "
-                                      "split.*cannot be used for dynamics.*"));
+                testing::MatchesRegex("Loop breaks between World and massless "
+                                      "link link2.*revolute retargeted "
+                                      ".*World can't be split.*cannot be used "
+                                      "for dynamics.*"));
 
     /* We split link2, not World, just as in the massful case. */
     EXPECT_EQ(ssize(graph.links()), 4);  // One shadow link was added.

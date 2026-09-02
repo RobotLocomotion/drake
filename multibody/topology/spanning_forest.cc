@@ -923,19 +923,20 @@ void SpanningForest::HandleLoopClosure(JointOrdinal loop_joint_ordinal) {
     const Link& split_link = split_parent ? parent_link : child_link;
     if (parent_is_world || child_is_world) {
       data_.why_no_dynamics = fmt::format(
-          "Loop breaks at joint {} between World and massless link {}. Since "
-          "World can't be split we had to split {} instead, so its shadow is "
-          "a terminal, massless body in the tree which will produce a "
-          "singular mass matrix. Hence this model cannot be used for "
-          "dynamics.\n",
-          loop_joint.name(), split_link.name(), split_link.name());
+          "Loop breaks between World and massless link {}, with joint {} "
+          "retargeted to the shadow link. Since World can't be split we had to "
+          "split {} instead, so its shadow is a terminal, massless body in "
+          "the tree which will produce a singular mass matrix. Hence this "
+          "model cannot be used for dynamics.\n",
+          split_link.name(), loop_joint.name(), split_link.name());
     } else {
       data_.why_no_dynamics = fmt::format(
-          "Loop breaks at joint {} between two massless links {} and {}. "
-          "Whichever one we split, its shadow is a terminal, massless body "
-          "in the tree which will produce a singular mass matrix. Hence this "
-          "model cannot be used for dynamics.\n",
-          loop_joint.name(), parent_link.name(), child_link.name());
+          "Loop breaks between two massless links {} and {}, with joint {} "
+          "retargeted to the shadow link. Whichever one we split, its shadow "
+          "is a terminal, massless body in the tree which will produce a "
+          "singular mass matrix. Hence this model cannot be used for "
+          "dynamics.\n",
+          parent_link.name(), child_link.name(), loop_joint.name());
     }
   }
 
