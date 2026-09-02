@@ -870,43 +870,52 @@ void SpanningForest::HandleLoopClosure(JointOrdinal loop_joint_ordinal) {
   const bool child_is_world = links(child_ordinal).is_world();
   DRAKE_DEMAND(!(parent_is_world && child_is_world));
 
-  /* If one of the two bodies is massless, that's no problem - we just have
-  to be sure to cut the massful one. The two branches will then each be
-  terminated with massful bodies (at 1/2 the mass each). However, if both
-  bodies are massless this forest can only be used for kinematics. The same
-  is true if the only massful one of the two is World, since we have to cut
-  the massless one in that case. */
-  const bool parent_is_massless =
-      graph().link_and_its_assembly_are_massless(parent_ordinal);
-  const bool child_is_massless =
-      graph().link_and_its_assembly_are_massless(child_ordinal);
+  /* Whichever Link we split, its shadow gets a share of that _individual_
+  Link's mass properties, so Link::is_massless() (rather than the
+  assembly-aware LinkJointGraph::link_and_its_assembly_are_massless()) is what
+  determines whether the new shadow body will be massless. A Link that is
+  massless but welded into a massful assembly is effectively massful where it
+  sits, but a shadow of it split off onto its own Mobod is not.
+
+  If one of the two Links is massless, that's no problem - we just have to be
+  sure to cut the massful one. The two branches will then each be terminated
+  with massful bodies (at 1/2 the mass each). However, if both Links are
+  massless this forest can only be used for kinematics. The same is true if the
+  only massful one of the two is World, since we have to cut the massless one in
+  that case. */
+  const bool parent_shadow_would_be_massless =
+      links(parent_ordinal).is_massless();
+  const bool child_shadow_would_be_massless =
+      links(child_ordinal).is_massless();
 
   /* Decide which of the two Links to split. If one of them is World we have no
-  choice - we must split the other one. Otherwise, if just one of them is
-  massless we must split the massful one. If neither is massless and the
-  branches leading to each link are of unequal length, we prefer to split the
-  one on the longer branch to keep the branches more even. Otherwise we prefer
-  to split the child since that will preserve the joint's parent->child order
-  in the inboard->outboard order for the Mobod. */
+  choice - we must split the other one. Otherwise, if just one of them would
+  produce a massless shadow we must split the other one. If neither would and
+  the branches leading to each link are of unequal length, we prefer to split
+  the one on the longer branch to keep the branches more even. Otherwise we
+  prefer to split the child since that will preserve the joint's parent->child
+  order in the inboard->outboard order for the Mobod. */
 
   bool split_parent = false;  // Prefer child.
   if (parent_is_world || child_is_world) {
     split_parent = child_is_world;  // Split whichever one isn't World.
-  } else if (!(child_is_massless || parent_is_massless)) {
+  } else if (!(child_shadow_would_be_massless ||
+               parent_shadow_would_be_massless)) {
     const int child_level =
         mobods(graph().link_to_mobod(loop_joint.child_link_index())).level();
     const int parent_level =
         mobods(graph().link_to_mobod(loop_joint.parent_link_index())).level();
     if (parent_level > child_level) split_parent = true;
-  } else if (child_is_massless) {
-    split_parent = true;
+  } else if (child_shadow_would_be_massless) {
+    split_parent = true;  // Split the massful one.
   }
 
   /* Save an explanation the first time we are forced to split a massless Link.
-  Both branches ending at the split Link then terminate with a massless body
-  (each getting half of no mass at all). */
-  const bool split_link_is_massless =
-      split_parent ? parent_is_massless : child_is_massless;
+  The branch ending at the shadow of the split Link then terminates with a
+  massless body (getting a share of no mass at all). */
+  const bool split_link_is_massless = split_parent
+                                          ? parent_shadow_would_be_massless
+                                          : child_shadow_would_be_massless;
   if (split_link_is_massless && data_.dynamics_ok) {
     data_.dynamics_ok = false;
     const Link& parent_link = links(parent_ordinal);
@@ -915,17 +924,17 @@ void SpanningForest::HandleLoopClosure(JointOrdinal loop_joint_ordinal) {
     if (parent_is_world || child_is_world) {
       data_.why_no_dynamics = fmt::format(
           "Loop breaks at joint {} between World and massless link {}. Since "
-          "World can't be split we had to split {} instead, so it and its "
-          "shadow are terminal bodies in the tree which will produce a "
+          "World can't be split we had to split {} instead, so its shadow is "
+          "a terminal, massless body in the tree which will produce a "
           "singular mass matrix. Hence this model cannot be used for "
           "dynamics.\n",
           loop_joint.name(), split_link.name(), split_link.name());
     } else {
       data_.why_no_dynamics = fmt::format(
           "Loop breaks at joint {} between two massless links {} and {}. "
-          "That means these links are terminal bodies in the tree which "
-          "will produce a singular mass matrix. Hence this model cannot "
-          "be used for dynamics.\n",
+          "Whichever one we split, its shadow is a terminal, massless body "
+          "in the tree which will produce a singular mass matrix. Hence this "
+          "model cannot be used for dynamics.\n",
           loop_joint.name(), parent_link.name(), child_link.name());
     }
   }

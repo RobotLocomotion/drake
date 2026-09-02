@@ -2144,6 +2144,62 @@ GTEST_TEST(SpanningForest, LoopClosingOnWorldDoesNotSplitWorld) {
   }
 }
 
+/* Same topology as LoopClosingOnWorldDoesNotSplitWorld above, except that the
+Link we are forced to split is itself massless even though it has been fused
+into the (very massful) World WeldedLinksAssembly:
+
+     {0}==={1}==={2*}      (welds, all fused onto the World Mobod)
+      ^              |
+      +---revolute---+     (a loop joint, closing back onto World)
+
+A shadow gets a share of its primary Link's _own_ mass properties, not those of
+the whole assembly the primary belongs to. So splitting {2*} here produces a
+massless, articulated, terminal shadow Mobod, i.e. a singular mass matrix. We
+should still build the kinematic forest (and still not split World) but must
+report that this model can't be used for dynamics. Try both directions for the
+loop joint since the outcome shouldn't depend on which end the user called the
+parent. */
+GTEST_TEST(SpanningForest, LoopClosingOnWorldOntoMasslessLinkKillsDynamics) {
+  for (bool world_is_parent : {false, true}) {
+    SCOPED_TRACE(fmt::format("world_is_parent={}", world_is_parent));
+    LinkJointGraph graph;
+    graph.RegisterJointType("revolute", 1, 1);
+    graph.SetGlobalForestBuildingOptions(
+        ForestBuildingOptions::kFuseWeldedLinksAssemblies);
+    graph.AddLink("link1", default_model_instance());
+    graph.AddLink("link2", default_model_instance(), LinkFlags::kMassless);
+    graph.AddJoint("weld0", default_model_instance(), "weld", LinkIndex(0),
+                   LinkIndex(1));
+    graph.AddJoint("weld1", default_model_instance(), "weld", LinkIndex(1),
+                   LinkIndex(2));
+    graph.AddJoint("revolute", default_model_instance(), "revolute",
+                   world_is_parent ? LinkIndex(0) : LinkIndex(2),
+                   world_is_parent ? LinkIndex(2) : LinkIndex(0));
+
+    EXPECT_FALSE(graph.BuildForest());  // Dynamics is not OK.
+
+    /* Once fused, link2 is "effectively massful" as far as the assembly-aware
+    predicate is concerned (it's welded to World!), but its shadow isn't. */
+    EXPECT_TRUE(graph.link_by_index(LinkIndex(2)).is_massless());
+    EXPECT_FALSE(graph.link_and_its_assembly_are_massless(LinkOrdinal(2)));
+
+    EXPECT_THAT(graph.forest().why_no_dynamics(),
+                testing::MatchesRegex("Loop breaks.*revolute.*between World "
+                                      "and massless link link2.*World can't be "
+                                      "split.*cannot be used for dynamics.*"));
+
+    /* We split link2, not World, just as in the massful case. */
+    EXPECT_EQ(ssize(graph.links()), 4);  // One shadow link was added.
+    EXPECT_EQ(graph.world_link().num_shadows(), 0);
+    EXPECT_EQ(graph.link_by_index(LinkIndex(2)).num_shadows(), 1);
+    const LinkJointGraph::Link& shadow = graph.link_by_index(LinkIndex(3));
+    EXPECT_TRUE(shadow.is_shadow());
+    EXPECT_EQ(shadow.primary_link(), LinkIndex(2));
+    EXPECT_EQ(ssize(graph.forest().mobods()), 2);
+    EXPECT_EQ(graph.link_to_mobod(LinkIndex(3)), MobodIndex(1));
+  }
+}
+
 /* WeldedLinksAssemblies should be treated the same as single bodies while
 building the trees a level at a time. We'll create a loop out of two
 trees, one composed of two-body assemblies and the other single bodies.

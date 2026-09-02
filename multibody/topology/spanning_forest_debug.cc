@@ -69,6 +69,7 @@ void SpanningForest::SanityCheckForest() const {
 
   const LinkJointGraph::Link& world_link = links(LinkOrdinal(0));
   DRAKE_THROW_UNLESS(world_link.mobod_index() == 0);
+  DRAKE_THROW_UNLESS(world_link.num_shadows() == 0);  // We never split World.
   DRAKE_THROW_UNLESS(world_link.welded_links_assembly().has_value());
   DRAKE_THROW_UNLESS(world_link.welded_links_assembly() ==
                      WeldedLinksAssemblyIndex(0));

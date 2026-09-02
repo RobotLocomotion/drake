@@ -587,8 +587,10 @@ class SpanningForest {
   //  - if we are forced to split a massless link (because both are massless,
   //    or because the massful one is World) we have an invalid forest (can't
   //    be used for dynamics)
-  //  - either or both Links may be part of a WeldedLinksAssembly; it is the
-  //    mass properties of the whole assembly that determines masslessness.
+  //  - "massless" here means the individual Link is massless (see
+  //    Link::is_massless()) because a shadow gets a share of just its primary
+  //    Link's mass properties. In particular, a massless Link that is welded
+  //    into a massful WeldedLinksAssembly still yields a massless shadow.
   void HandleLoopClosure(JointOrdinal loop_joint_ordinal);
 
   // Adds a shadow Link of the given primary and mobilizes the shadow with
