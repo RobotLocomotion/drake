@@ -8,8 +8,8 @@ def msgpack_internal_repository(
         repository = "msgpack/msgpack-c",
         upgrade_type = "release",
         exclude_tags_pattern = "c-[0-9.]+",
-        commit = "cpp-8.0.0",
-        sha256 = "f634fb7052da4478096f2a02dfb6d91174e5836b317afb006375249ccb086aa8",  # noqa
+        commit = "cpp-9.0.0",
+        sha256 = "a72ff7471eb8adf8470a21aec33d70f184a20e215f167e2d4c38d56d9a377205",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/vendor.patch",
