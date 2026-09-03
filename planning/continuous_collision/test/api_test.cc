@@ -10,7 +10,6 @@
 // in test/piecewise_bezier_path_test.cc. The pydrake surface is covered in
 // bindings/pydrake/planning/test/continuous_collision_test.py.
 
-#include <functional>
 #include <limits>
 #include <memory>
 #include <string>
@@ -332,37 +331,25 @@ GTEST_TEST(ApiTest, OptionsValidationMessagesAreActionable) {
   // the list because the displacement lemma is proved in the separated regime
   // only: an unreachable pair must be collision-filtered, not given a negative
   // threshold and silently "certified".
-  const std::vector<std::pair<std::string, std::function<void(Options*)>>>
-      cases = {
-          {"distance_resolution",
-           [](Options* o) {
-             o->distance_resolution = 0.0;
-           }},
-          {"positive",
-           [](Options* o) {
-             o->distance_resolution = -1e-3;
-           }},
-          {"distance_resolution",
-           [](Options* o) {
-             o->distance_resolution = std::numeric_limits<double>::quiet_NaN();
-           }},
-          {"finite",
-           [](Options* o) {
-             o->distance_resolution = std::numeric_limits<double>::infinity();
-           }},
-          {"nonnegative",
-           [](Options* o) {
-             o->margin = -0.01;
-           }},
-          {"margin",
-           [](Options* o) {
-             o->margin = std::numeric_limits<double>::quiet_NaN();
-           }},
-      };
-  for (const auto& [needle, mutate] : cases) {
+  struct Case {
+    std::string needle;
+    double Options::* field;
+    double value;
+  };
+  const double kNaN = std::numeric_limits<double>::quiet_NaN();
+  const double kInf = std::numeric_limits<double>::infinity();
+  const std::vector<Case> cases = {
+      {"distance_resolution", &Options::distance_resolution, 0.0},
+      {"positive", &Options::distance_resolution, -1e-3},
+      {"distance_resolution", &Options::distance_resolution, kNaN},
+      {"finite", &Options::distance_resolution, kInf},
+      {"nonnegative", &Options::margin, -0.01},
+      {"margin", &Options::margin, kNaN},
+  };
+  for (const auto& [needle, field, value] : cases) {
     SCOPED_TRACE(needle);
     Options bad = SerialOptions();
-    mutate(&bad);
+    bad.*field = value;
     EXPECT_THAT(ThrowMessage([&]() {
                   checker->CheckTrajectory(trajectory, bad);
                 }),
