@@ -66,6 +66,11 @@ class PythonTarget:
         self.version = ".".join(pv_parts[:2])
         self.tag = "".join(pv_parts[:2])
 
+    def validate(self, *, n_components: int) -> None:
+        """Asserts that the number of version components belonging to `self`
+        is equal to `n_components`."""
+        assert len(self.version_tuple) == n_components, self.version_tuple
+
 
 def gripe(message):
     """
