@@ -35,11 +35,6 @@ drake_py_unittest(
     opt_in_condition = "//tools/skylark:linux",
 )
 
-drake_py_unittest(
-    name = "jupyter_bazel_test",
-    deps = [":jupyter_bazel_py"],
-)
-
 # Add example failing notebook.
 drake_jupyter_py_binary(
     name = "failing_notebook",
