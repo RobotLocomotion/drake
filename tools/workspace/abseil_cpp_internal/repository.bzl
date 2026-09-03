@@ -19,6 +19,9 @@ def abseil_cpp_internal_repository(
             # uses so that we don't get "duplicate kwarg" errors. Then, add it
             # anywhere that linkopts already appears.
             "sed -i -e 's|linkstatic = 1,||; s|linkopts = |linkstatic = 1, linkopts = |' $(find absl -name BUILD.bazel)",  # noqa
+            # Remove `visibility = ...` annotations for gloop. Drake doesn't use
+            # gloop, so the references fail to resolve at analysis-time.
+            "sed -i -e '/@do_not_use_for_gloop_visibility_only/d;' $(find absl -name BUILD.bazel)",  # noqa
         ],
         mirrors = mirrors,
     )
