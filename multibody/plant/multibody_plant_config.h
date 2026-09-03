@@ -57,7 +57,6 @@ struct MultibodyPlantConfig {
   /// Configures the MultibodyPlant::set_discrete_contact_approximation().
   /// Refer to drake::multibody::DiscreteContactApproximation for details.
   /// Valid strings are:
-  /// - "tamsi"
   /// - "sap"
   /// - "similar"
   /// - "lagged"

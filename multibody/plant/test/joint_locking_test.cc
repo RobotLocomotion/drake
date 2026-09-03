@@ -55,14 +55,6 @@ const double kElbowPosition = 0.3;
 const double kArmLength = 0.1;
 const SimulatorConfig kCenicConfig{"cenic", 0.1, 1e-3, true, 0.0, 0.0};
 
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
-constexpr auto kDiscreteContactApproximationTamsi =
-    DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
-
 // Set up a plant with 2 trees, one tree having a single floating body, the
 // second tree a serial chain of two bodies attached to each other and world by
 // revolute joints.
@@ -310,15 +302,11 @@ INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
                          ::testing::Values(0, 1));
 
 struct TrajectoryTestConfig {
-  std::optional<DiscreteContactSolver> solver{kDiscreteContactSolverTamsi};
+  std::optional<DiscreteContactSolver> solver;
 };
 
 std::ostream& operator<<(std::ostream& out, DiscreteContactSolver solver) {
   switch (solver) {
-    case kDiscreteContactSolverTamsi: {
-      out << "TAMSI";
-      break;
-    }
     case DiscreteContactSolver::kSap: {
       out << "SAP";
       break;
@@ -360,18 +348,8 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
     const double plant_timestep = solver.has_value() ? kTimestep : 0.0;
     plant = std::make_unique<MultibodyPlant<double>>(plant_timestep);
     if (plant->is_discrete()) {
-      // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-      // arbitrarily choose two model approximations to accomplish this.
-      switch (*solver) {
-        case kDiscreteContactSolverTamsi:
-          plant->set_discrete_contact_approximation(
-              kDiscreteContactApproximationTamsi);
-          break;
-        case DiscreteContactSolver::kSap:
-          plant->set_discrete_contact_approximation(
-              DiscreteContactApproximation::kSap);
-          break;
-      }
+      plant->set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
     }
 
     const RigidBody<double>& body1 =
@@ -502,11 +480,10 @@ TEST_P(TrajectoryTest, CompareWeldAndLocked) {
   }
 }
 
-// Test joint locking with TAMSI and SAP.
+// Test joint locking with continuous and SAP.
 std::vector<TrajectoryTestConfig> MakeTrajectoryTestCases() {
   return std::vector<TrajectoryTestConfig>{
       {.solver = std::nullopt},
-      {.solver = kDiscreteContactSolverTamsi},
       {.solver = DiscreteContactSolver::kSap},
   };
 }
@@ -517,7 +494,7 @@ INSTANTIATE_TEST_SUITE_P(JointLockingTests, TrajectoryTest,
 
 struct FilteredContactResultsConfig {
   ContactModel contact_model{ContactModel::kPoint};
-  std::optional<DiscreteContactSolver> solver{kDiscreteContactSolverTamsi};
+  std::optional<DiscreteContactSolver> solver;
 };
 
 std::ostream& operator<<(std::ostream& out,
@@ -545,18 +522,8 @@ class FilteredContactResultsTest
     plant_->set_contact_model(config.contact_model);
     plant_->SetUseSampledOutputPorts(false);  // We're not stepping time.
     if (time_step > 0) {
-      // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-      // arbitrarily choose two model approximations to accomplish this.
-      switch (*config.solver) {
-        case kDiscreteContactSolverTamsi:
-          plant_->set_discrete_contact_approximation(
-              kDiscreteContactApproximationTamsi);
-          break;
-        case DiscreteContactSolver::kSap:
-          plant_->set_discrete_contact_approximation(
-              DiscreteContactApproximation::kSap);
-          break;
-      }
+      plant_->set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
     }
 
     const RigidBody<double>& ball_A = AddBall("ball_A");
@@ -729,10 +696,6 @@ MakeFilteredContactResultsTestCases() {
   return std::vector<FilteredContactResultsConfig>{
       {.contact_model = ContactModel::kPoint, .solver = std::nullopt},
       {.contact_model = ContactModel::kHydroelastic, .solver = std::nullopt},
-      {.contact_model = ContactModel::kPoint,
-       .solver = kDiscreteContactSolverTamsi},
-      {.contact_model = ContactModel::kHydroelastic,
-       .solver = kDiscreteContactSolverTamsi},
       {.contact_model = ContactModel::kPoint,
        .solver = DiscreteContactSolver::kSap},
       {.contact_model = ContactModel::kHydroelastic,
