@@ -29,7 +29,7 @@ namespace systems {
 ///
 /// @warning This class is not useful anymore and is to be deprecated. Prefer
 /// deriving from LeafSystem directly. Declaring a single vector-valued output
-/// port with LeafSystem requires only a few lines of code.
+/// port with %LeafSystem requires only a few lines of code.
 ///
 /// @tparam_default_scalar
 template <typename T>
