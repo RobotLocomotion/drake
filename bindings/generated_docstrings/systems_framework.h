@@ -7843,8 +7843,9 @@ protected method
 
 Warning:
     This class is not useful anymore and is to be deprecated. Prefer
-    deriving from LeafSystem directly. Declaring a single vector-valued
-    output port with LeafSystem requires only a few lines of code.)""";
+    deriving from LeafSystem directly. Declaring a single
+    vector-valued output port with LeafSystem requires only a few
+    lines of code.)""";
         // Symbol: drake::systems::SingleOutputVectorSource::DoCalcVectorOutput
         struct /* DoCalcVectorOutput */ {
           // Source: drake/systems/framework/single_output_vector_source.h
