@@ -52,7 +52,7 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
         print("Running notebook interactively")
         notebook_path = os.path.realpath(notebook_path)
         # Open via a localhost URL instead of a file:///tmp/*.html redirect.
-        # Snap browsers (e.g. Ubuntu Firefox) cannot read global /tmp (#24071).
+        # Snap browsers (e.g., Ubuntu Firefox) cannot read global /tmp.
         sys.argv = [
             "jupyter",
             "notebook",
