@@ -1151,23 +1151,6 @@ static constexpr char kMimicModel[] = R"""(
       </joint>
     </model>)""";
 
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(SdfParserTest, MimicNoSap) {
-  plant_.set_discrete_contact_approximation(
-      DiscreteContactApproximation::kTamsi);
-  ParseTestString(kMimicModel);
-
-  EXPECT_THAT(
-      TakeWarning(),
-      MatchesRegex(
-          ".*Mimic elements are currently only supported by MultibodyPlant "
-          "with a discrete time step and using "
-          "DiscreteContactSolver::kSap..*or.*continuous.*CENIC.*"));
-}
-#pragma GCC diagnostic pop
-
 TEST_F(SdfParserTestContinuous, MimicContinuous) {
   // Feature support in continuous plants depends on integrator selection, so
   // can't be checked at parsing time.
