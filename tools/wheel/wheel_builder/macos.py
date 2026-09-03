@@ -41,9 +41,21 @@ TARGETS = (
     # * the Python versions supported by MOSEK, in tools/wheel/setup.py. If
     #   there is any Python version supported by Drake, but not MOSEK, a note
     #   should be added to the aforementioned installation documentation.
-    Target(PythonBinder.NANOBIND, PythonTarget(3, 13)),
-    Target(PythonBinder.PYBIND11, PythonTarget(3, 13)),
-    Target(PythonBinder.PYBIND11, PythonTarget(3, 14)),
+    Target(
+        python_binder=PythonBinder.NANOBIND,
+        build_python=PythonTarget(3, 13),
+        test_pythons=(PythonTarget(3, 13), PythonTarget(3, 14)),
+    ),
+    Target(
+        python_binder=PythonBinder.PYBIND11,
+        build_python=PythonTarget(3, 13),
+        test_pythons=(PythonTarget(3, 13),),
+    ),
+    Target(
+        python_binder=PythonBinder.PYBIND11,
+        build_python=PythonTarget(3, 14),
+        test_pythons=(PythonTarget(3, 14),),
+    ),
 )
 
 
@@ -55,7 +67,7 @@ def _find_wheel(path, version, target):
     """
     pattern = wheel_name(
         python_binder=target.python_binder,
-        python_version=target.python.tag,
+        python_version=target.build_python.tag,
         wheel_version=version,
         wheel_platform="*",
     )
@@ -80,7 +92,7 @@ def _assert_isdir(path, name):
         die(f"{name} '{path}' is not a valid directory")
 
 
-def _test_wheel(wheel, target, env):
+def _test_wheel(wheel, python_target, env):
     """
     Runs the test script on `wheel`.
     """
@@ -89,7 +101,7 @@ def _test_wheel(wheel, target, env):
         resource_root, "macos", "provision-test-python.sh"
     )
     subprocess.check_call(
-        ["bash", setup_script, target.python.version], env=env
+        ["bash", setup_script, python_target.version], env=env
     )
 
     # Install the wheel.
@@ -114,7 +126,7 @@ def build(options):
     # Collect set of wheels to be built.
     targets_to_build = []
     for t in TARGETS:
-        if t.python.tag in options.python_versions:
+        if t.build_python.tag in options.python_versions:
             targets_to_build.append(t)
 
     # Check if there is anything to do.
@@ -176,7 +188,7 @@ def build(options):
         build_script = os.path.join(resource_root, "macos", "build-wheel.sh")
         build_command = ["bash", build_script]
         build_command.append(version)
-        build_command.append(target.python.version)
+        build_command.append(target.build_python.version)
 
         subprocess.check_call(build_command, env=environment)
 
@@ -188,7 +200,8 @@ def build(options):
         )
 
         if options.test:
-            _test_wheel(wheel, target=target, env=environment)
+            for python_target in target.test_pythons:
+                _test_wheel(wheel, python_target, env=environment)
 
         if options.extract:
             shutil.copy2(wheel, options.output_dir)
@@ -225,7 +238,7 @@ def add_selection_arguments(parser):
         "--python",
         dest="python_versions",
         metavar="VERSIONS",
-        default=",".join(sorted({t.python.tag for t in TARGETS})),
+        default=",".join(sorted({t.build_python.tag for t in TARGETS})),
         help=(
             "python version(s) to build; "
             "separate with ',' (default: %(default)s)"
