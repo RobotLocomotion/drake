@@ -377,7 +377,7 @@ void Worker::RunItem(WorkItem* item) {
   const std::vector<double>& tau = *input_.tau;
   const PrefilterTable& prefilter = *input_.prefilter;
   const double threshold = input_.options.margin;
-  const double min_interval = input_.options.min_interval;
+  const double resolution = input_.options.distance_resolution;
   const int rows = static_cast<int>(item->control_points.rows());
   const int cols = static_cast<int>(item->control_points.cols());
 
@@ -435,12 +435,11 @@ void Worker::RunItem(WorkItem* item) {
 
     const double s_mid = 0.5 * (frame.s_lo + frame.s_hi);
     const double t_mid = TimeOf(segment, s_mid);
-    // The resolution floor, plus a hard floating-point backstop: once the
-    // midpoint no longer separates the endpoints in double arithmetic the node
-    // cannot be split any further, whatever min_interval says. Without it a
-    // pathologically small min_interval would spin forever.
-    const bool at_floor = (frame.s_hi - frame.s_lo) <= min_interval ||
-                          !(s_mid > frame.s_lo && s_mid < frame.s_hi);
+    // Hard floating-point backstop: once the midpoint no longer separates the
+    // endpoints in double arithmetic the node cannot be split any further,
+    // whatever the resolution says. Without it a pathologically small
+    // resolution would spin forever.
+    const bool fp_backstop = !(s_mid > frame.s_lo && s_mid < frame.s_hi);
 
     const int survivor_offset = frame.active_offset + frame.active_length;
     int survivor_count = 0;
@@ -453,7 +452,15 @@ void Worker::RunItem(WorkItem* item) {
       const double tau_p = tau[p];
       // Δ_p(ν) = carveout_slack(p) + Σ_{j ∈ J(p)} λ(j,p)·w_j, a sparse dot
       // product over this pair's CSR row.
-      const double motion_bound = table.MotionBound(p, w_);
+      const double travel = table.TravelBound(p, w_);
+      const double motion_bound = table.carveout_slack(p) + travel;
+      // The resolution floor is per pair and in meters: once this pair's
+      // relative motion over the node is bounded by the requested resolution,
+      // splitting further cannot decide it any better than the oracle
+      // tolerance already allows, so the pair is decided here or reported as
+      // inconclusive. Only the travel term is tested, because the carve-out
+      // residual does not shrink with splitting.
+      const bool at_floor = fp_backstop || travel <= resolution;
 
       // --- Early-out 1: the free-sphere prefilter. ---
       // ϕ_p ≥ ‖c_A − c_B‖ − ρ_A − ρ_B with the bounding spheres posed at qc,

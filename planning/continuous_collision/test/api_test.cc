@@ -334,13 +334,21 @@ GTEST_TEST(ApiTest, OptionsValidationMessagesAreActionable) {
   // threshold and silently "certified".
   const std::vector<std::pair<std::string, std::function<void(Options*)>>>
       cases = {
-          {"min_interval",
+          {"distance_resolution",
            [](Options* o) {
-             o->min_interval = 0.0;
+             o->distance_resolution = 0.0;
            }},
-          {R"((0, 1])",
+          {"positive",
            [](Options* o) {
-             o->min_interval = 2.0;
+             o->distance_resolution = -1e-3;
+           }},
+          {"distance_resolution",
+           [](Options* o) {
+             o->distance_resolution = std::numeric_limits<double>::quiet_NaN();
+           }},
+          {"finite",
+           [](Options* o) {
+             o->distance_resolution = std::numeric_limits<double>::infinity();
            }},
           {"nonnegative",
            [](Options* o) {

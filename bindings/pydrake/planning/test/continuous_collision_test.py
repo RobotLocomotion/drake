@@ -105,12 +105,13 @@ class TestContinuousCollision(unittest.TestCase):
     def test_options_round_trip(self):
         dut = mut.Options()
         self.assertEqual(dut.margin, 0.0)
+        self.assertEqual(dut.distance_resolution, 1e-6)
         dut.margin = 0.01
-        dut.min_interval = 1e-8
+        dut.distance_resolution = 1e-4
         dut.continuous_revolute_indices = [0]
         dut.parallelism = Parallelism(num_threads=2)
         self.assertEqual(dut.margin, 0.01)
-        self.assertEqual(dut.min_interval, 1e-8)
+        self.assertEqual(dut.distance_resolution, 1e-4)
         self.assertEqual(dut.continuous_revolute_indices, [0])
         self.assertEqual(dut.parallelism.num_threads(), 2)
         self.assertIsInstance(mut.Options(margin=0.02), mut.Options)

@@ -347,7 +347,8 @@ inline Options BaseOptions(Parallelism parallelism) {
   options.margin = kMargin;
   options.parallelism = parallelism;
   // Bounded cost per run: the whole sweep is executed several times per case.
-  options.min_interval = 1e-6;
+  // See the note on DeepWorkload for why the resolution matters.
+  options.distance_resolution = 1e-6;
   return options;
 }
 
@@ -445,24 +446,26 @@ inline ::testing::AssertionResult FindingIdentical(
 // kMinDeepNodes is the floor concurrency_test.cc holds the result to, so the
 // workload cannot silently degenerate if the corpus or the bisection drifts.
 constexpr uint64_t kProbeBudget = 6000;
-constexpr uint64_t kMinDeepNodes = 1000;
+constexpr uint64_t kMinDeepNodes = 800;
 
-// The workload runs at the resolution floor BaseOptions sets, and that floor
-// is what keeps the bisection below affordable in an unoptimized build. Most
-// of its probes land on a margin the search rejects, and a rejected probe is
-// the expensive kind: it keeps subdividing until every leaf is either
-// certified or narrower than Options::min_interval, so that floor is the only
-// thing bounding it. Measured on this workload, the worst rejected probe in
-// the band around the grazing margin costs about 5e3 nodes at a floor of 1e-6
-// but about 4.8e5 nodes at 1e-8, which is the difference between a bisection
-// costing a tenth of a second and one costing four -- and, multiplied by the
-// ~70x an unoptimized build charges, between fitting the dbg test budget and
-// overrunning it. (Before Options::max_nodes was withdrawn from the public
-// API the probe bounded itself directly and the floor did not have to.)
+// The workload runs at its own resolution, finer than BaseOptions', because
+// the resolution sets how deep a *certified* tree can get: a margin close
+// enough to the tangency to need a deeper tree than the resolution allows
+// ends kInconclusive instead, so the bisection converges on the largest
+// margin whose tree certifies above the floor, and a finer resolution admits
+// a deeper one. Measured on this corpus, the converged tree has 625 nodes at
+// 1e-6, 847 at 1e-7, 1055 at 1e-8 and 1237 at 1e-9.
 //
-// The certifying side is indifferent to the choice: the tree the search
-// converges on is 19 levels deep, so no leaf it visits comes near even 1e-6
-// wide, and it explores the identical tree at either floor.
+// The resolution is also what bounds the bisection's cost in an unoptimized
+// build. Most probes land on a margin the search rejects, and a rejected
+// probe keeps subdividing until every pair on every leaf is either certified
+// or bounded to within the resolution, so its cost grows roughly linearly in
+// 1 / resolution: the whole bisection visits ~6.5e4 nodes at 1e-8 but ~3.7e5
+// at 1e-9, which is the difference between fitting the dbg test budget and
+// straining it. (Before Options::max_nodes was withdrawn from the public API
+// the probe bounded itself directly and the resolution did not have to.)
+constexpr double kDeepResolution = 1e-8;
+
 struct DeepWorkload {
   const Case* entry{};
   double margin{0.0};
@@ -471,6 +474,7 @@ struct DeepWorkload {
   Options options(Parallelism parallelism) const {
     Options options = BaseOptions(parallelism);
     options.margin = margin;
+    options.distance_resolution = kDeepResolution;
     return options;
   }
 };

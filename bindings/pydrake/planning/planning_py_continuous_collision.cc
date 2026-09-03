@@ -62,7 +62,8 @@ collision-free over its entire continuous time domain, rather than sampling it.
         .def(py::init<>())
         .def(ParamInit<Class>())
         .def_rw("margin", &Class::margin, cls_doc.margin.doc)
-        .def_rw("min_interval", &Class::min_interval, cls_doc.min_interval.doc)
+        .def_rw("distance_resolution", &Class::distance_resolution,
+            cls_doc.distance_resolution.doc)
         .def_rw("continuous_revolute_indices",
             &Class::continuous_revolute_indices,
             cls_doc.continuous_revolute_indices.doc)

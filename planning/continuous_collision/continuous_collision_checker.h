@@ -26,8 +26,9 @@ enum class Verdict {
   kCertifiedFree,
   /** An exactly-on-trajectory configuration violates the threshold. */
   kViolationFound,
-  /** Subdivision hit the resolution floor with some pair's clearance within
-  oracle tolerance of the threshold (a grazing trajectory). */
+  /** Some pair's clearance comes within Options::distance_resolution (plus
+  the oracle tolerance) of the margin, so refining further cannot decide it:
+  the trajectory grazes the margin. */
   kInconclusive,
 };
 
@@ -57,10 +58,14 @@ struct Options {
   > margin for every unfiltered pair at every time. Must be finite and
   nonnegative. */
   double margin{0.0};
-  /** Resolution floor, as a fraction of a segment's parameter width; a node
-  narrower than this yields Verdict::kInconclusive instead of splitting. Must
-  lie in (0, 1]. */
-  double min_interval{1e-9};
+  /** Resolution floor r in meters. A pair stops being refined on a node once
+  its bounded relative motion over that node is at most r; if it is still
+  undecided there, the check reports Verdict::kInconclusive with that node's
+  midpoint as the witness. Definitive verdicts are guaranteed for a trajectory
+  whose clearance stays more than r (plus the oracle tolerance, see the class
+  documentation) away from the margin everywhere; the cost of a grazing
+  trajectory grows roughly linearly in 1/r. Must be finite and positive. */
+  double distance_resolution{1e-6};
   /** Position coordinates whose junction continuity is checked modulo 2π
   (the GcsTrajectoryOptimization continuous-revolute convention).
   @see planning::trajectory_optimization::GetContinuousRevoluteJointIndices */
@@ -89,6 +94,24 @@ assumptions: exact real arithmetic up to an internal numerical slack, a
 distance oracle accurate to its stated tolerance, and Mesh ≡ convex hull. The
 proof is a property of the path, so retiming the trajectory afterwards does not
 invalidate it.
+
+Resolution contract: write δ for Options::margin, r for
+Options::distance_resolution, τ_p for the oracle tolerance of pair p (at least
+1 µm; Drake's documented signed-distance accuracy for that shape combination),
+ε for the internal slack (1 nm), and σ_p for the residual motion of coordinates
+the trajectory holds constant only to within the continuity tolerance (exactly
+zero when they are exactly constant, the common case). Then, for every pair,
+ - if ϕ_p(q(t)) > δ + r + σ_p + 2τ_p + ε for every t, the pair is certified,
+   so a trajectory that clears the margin by that much everywhere returns
+   Verdict::kCertifiedFree;
+ - if ϕ_p(q(t)) < δ − (r + σ_p + 2τ_p) for some t, the check returns
+   Verdict::kViolationFound;
+ - Verdict::kInconclusive is therefore possible only when some pair's
+   clearance comes within that band of the margin, and its Finding then names
+   an on-trajectory configuration whose reported distance lies in
+   [δ − τ_p, δ + τ_p + ε + σ_p + r].
+Resolutions below what double precision can represent along a segment are
+capped by a floating-point backstop.
 
 Thread safety: the Check* methods are const, own no mutable state outside
 per-call scratch, and may be called concurrently on one instance from arbitrary
@@ -119,7 +142,8 @@ class ContinuousCollisionChecker {
   /** Certifies a trajectory (BezierCurve, BsplineTrajectory,
   PiecewisePolynomial, or a CompositeTrajectory of those).
   @throws std::exception if Options::margin is not a finite nonnegative
-  distance, or if Options::min_interval is outside (0, 1].
+  distance, or if Options::distance_resolution is not a finite positive
+  distance.
   @throws std::exception if the trajectory's row count differs from the
   plant's number of generalized positions.
   @throws std::exception if the trajectory is not one of the supported types,

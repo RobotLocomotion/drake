@@ -84,17 +84,26 @@ class MotionBoundTable {
     return row_start_[pair_index] == row_start_[pair_index + 1];
   }
 
-  /* Δ_p(ν) = carveout_slack(p) + Σ_{j ∈ J(p)} λ(j,p) · w_j: a sparse dot
-  product against the node's per-coordinate deviations w, plus the carved
-  coordinates' residual.
+  /* Σ_{j ∈ J(p)} λ(j,p) · w_j: a sparse dot product against the node's
+  per-coordinate deviations w. This is the part of Δ_p(ν) that shrinks as a
+  node is split, and therefore what Options::distance_resolution is tested
+  against.
+  @pre 0 <= pair_index < num_pairs().
+  @pre w.size() equals the plant's number of position coordinates. */
+  double TravelBound(int pair_index, const Eigen::VectorXd& w) const {
+    double travel = 0.0;
+    for (int e = row_start_[pair_index]; e < row_start_[pair_index + 1]; ++e) {
+      travel += lambda_[e] * w[coord_[e]];
+    }
+    return travel;
+  }
+
+  /* Δ_p(ν) = carveout_slack(p) + TravelBound(p, w): the travel bound plus the
+  carved coordinates' residual.
   @pre 0 <= pair_index < num_pairs().
   @pre w.size() equals the plant's number of position coordinates. */
   double MotionBound(int pair_index, const Eigen::VectorXd& w) const {
-    double delta = carveout_slack_[pair_index];
-    for (int e = row_start_[pair_index]; e < row_start_[pair_index + 1]; ++e) {
-      delta += lambda_[e] * w[coord_[e]];
-    }
-    return delta;
+    return carveout_slack_[pair_index] + TravelBound(pair_index, w);
   }
 
   /* Σ over the coordinates of J_topo(p) that the carve-out removed of

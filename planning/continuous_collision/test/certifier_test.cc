@@ -299,9 +299,9 @@ GTEST_TEST(CertifierTest, GrazingTangencyIsInconclusive) {
       MakeBezier(MakeQ(0.0, 0.0, 0.0), MakeQ(0.0, 0.0, 0.20), 1);
 
   Options options = SerialOptions();
-  // A coarser floor keeps the cost of the tangency cascade bounded; the
+  // A coarse resolution keeps the cost of the tangency cascade bounded; the
   // verdict is what matters here, not the depth.
-  options.min_interval = 1e-4;
+  options.distance_resolution = 1e-4;
   const Result result = checker->CheckTrajectory(trajectory, options);
 
   EXPECT_EQ(result.verdict, Verdict::kInconclusive);

@@ -121,6 +121,13 @@ constexpr int kGrazeProbeSamples = 2000;
 // the per-pair τ_p, which is all the tests below need.
 constexpr double kWorstTau = 5e-5;
 
+// The dense scan is an upper bound on the true minimum clearance (a dip can
+// hide between two samples), so the certified-guaranteed regime is only
+// claimed when the sampled minimum clears the contract band by this much. At
+// kDenseSamples over the domain the clearance moves at most ~1 mm between
+// adjacent samples on the fastest corpus worlds, so 2 mm is a safe guard.
+constexpr double kScanGuard = 2e-3;
+
 // Recipes. Everything random about a case lives in these structs, and every one
 // of them prints itself, so a failure message is a complete repro.
 
@@ -708,6 +715,12 @@ struct Tally {
   int inconclusive{0};
   int deep_scans{0};
   int graze_cases{0};
+  // Resolution-contract regimes, decided by the dense scan: cases whose
+  // sampled clearance puts them outside the band (and therefore owe a
+  // definitive verdict) and cases inside it (where any verdict is allowed).
+  int certified_guaranteed{0};
+  int violation_guaranteed{0};
+  int band{0};
   int pwl{0};
   int bezier{0};
   int bspline{0};
@@ -723,15 +736,22 @@ struct Tally {
   double tightest_certified_slack{std::numeric_limits<double>::infinity()};
 };
 
-// Base options shared by every case. A coarser resolution floor than the 1e-9
-// default: a grazing pair still ends kInconclusive, but after ~20 bisections
-// rather than ~30.
-Options FuzzOptions(double margin) {
+// Base options shared by every case. The resolution alternates between the
+// default (1 µm) and a coarse 1 mm, so the completeness assertions below see
+// both a band the corpus's clearances dwarf and one they fall inside.
+Options FuzzOptions(double margin, double resolution) {
   Options options;
   options.margin = margin;
   options.parallelism = Parallelism::None();
-  options.min_interval = 1e-6;
+  options.distance_resolution = resolution;
   return options;
+}
+
+// The resolution contract (continuous_collision_checker.h): outside the band
+// margin ± (r + σ + 2τ + ε) the verdict is definitive. The corpus never carves
+// a coordinate (random control points are never constant to 1e-7), so σ = 0.
+double ContractBand(double resolution) {
+  return resolution + 2.0 * kWorstTau + kNumericalSlack;
 }
 
 GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
@@ -789,13 +809,43 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
                  std::to_string(margin) + (grazing ? " (grazing)" : "") + "\n" +
                  world.Describe() + trajectory_recipe.Describe());
 
-    const Options options = FuzzOptions(margin);
+    const double resolution = (case_index % 4 == 1) ? 1e-3 : 1e-6;
+    const Options options = FuzzOptions(margin, resolution);
     const ContinuousCollisionChecker checker(model, options);
     const PiecewiseBezierPath path =
         PiecewiseBezierPath::FromTrajectory(*trajectory, {});
     const Result result = checker.CheckTrajectory(*trajectory, options);
 
     DenseScanner scanner(*model);
+
+    // The resolution contract, both directions, from the dense scan. The scan
+    // against the raised threshold skips only pairs whose *lower bound* clears
+    // it, so a positive result puts every pair's sampled clearance above
+    // margin + band + guard; the scan against the margin itself finds any
+    // on-trajectory sample below margin − band.
+    const double band = ContractBand(resolution);
+    const DenseScanner::Worst clear_scan =
+        scanner.Scan(path, kDenseSamples, margin + band + kScanGuard);
+    const DenseScanner::Worst margin_scan =
+        scanner.Scan(path, kDenseSamples, margin);
+    if (clear_scan.min_slack > 0.0) {
+      ++tally.certified_guaranteed;
+      EXPECT_EQ(result.verdict, Verdict::kCertifiedFree)
+          << "every sampled clearance exceeds the margin by more than the "
+             "contract band ("
+          << band
+          << " m) plus the scan guard, so the "
+             "resolution contract promises kCertifiedFree";
+    } else if (margin_scan.min_slack < -band) {
+      ++tally.violation_guaranteed;
+      EXPECT_EQ(result.verdict, Verdict::kViolationFound)
+          << "an on-trajectory sample at t = " << margin_scan.worst_time
+          << " sits " << -margin_scan.min_slack
+          << " m below the margin, more than the contract band (" << band
+          << " m), so the resolution contract promises kViolationFound";
+    } else {
+      ++tally.band;
+    }
 
     switch (result.verdict) {
       case Verdict::kCertifiedFree: {
@@ -805,8 +855,8 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
         // A single one would be a false certificate.
         const bool deep = (tally.certified % kDeepEvery) == 0;
         if (deep) ++tally.deep_scans;
-        const DenseScanner::Worst scan = scanner.Scan(
-            path, deep ? kDeepDenseSamples : kDenseSamples, margin);
+        const DenseScanner::Worst scan =
+            deep ? scanner.Scan(path, kDeepDenseSamples, margin) : margin_scan;
         tally.tightest_certified_slack =
             std::min(tally.tightest_certified_slack, scan.min_slack);
         EXPECT_GT(scan.min_slack, 0.0)
@@ -850,10 +900,23 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
         EXPECT_NEAR(phi, finding.distance, 1e-9)
             << "the reported distance is not reproducible at the witness";
       } else {
-        // An inconclusive witness is a resolution-floor grazing record, and
-        // must be backed by a clearance that sits within 10·(τ_p + ε) of the
-        // threshold somewhere near the reported time.
-        const double tolerance = 10.0 * (kWorstTau + kNumericalSlack);
+        // An inconclusive witness is an on-trajectory configuration whose
+        // reported distance the contract places in
+        // [margin − τ_p, margin + τ_p + ε + r]; re-measured from a fresh
+        // context it must reproduce, and the true clearance there is within
+        // 2τ_p of the reported one.
+        EXPECT_LT((path.Value(finding.time) - finding.q).cwiseAbs().maxCoeff(),
+                  1e-9);
+        EXPECT_GE(finding.distance, margin - kWorstTau);
+        EXPECT_LE(finding.distance,
+                  margin + kWorstTau + kNumericalSlack + resolution);
+        const double phi = scanner.DistanceAt(finding.q, pair_index);
+        EXPECT_NEAR(phi, finding.distance, 1e-9)
+            << "the reported distance is not reproducible at the witness";
+        // And the trajectory really does graze: the closest sampled clearance
+        // near the reported time sits within the contract band of the margin.
+        const double tolerance =
+            resolution + 10.0 * (kWorstTau + kNumericalSlack);
         const double window =
             0.01 * std::max(1e-12, path.end_time() - path.start_time());
         const double best =
@@ -862,7 +925,7 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
         EXPECT_LE(best, tolerance)
             << "INCONCLUSIVE at t = " << finding.time
             << " but the closest sampled clearance near it is " << best
-            << " m from the threshold, far outside 10*(tau + eps) = "
+            << " m from the threshold, outside r + 10*(tau + eps) = "
             << tolerance;
       }
     }
@@ -876,6 +939,10 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
             << "                     trajectories: PWL = " << tally.pwl
             << ", Bezier = " << tally.bezier << ", B-spline = " << tally.bspline
             << ";  grazing-margin cases = " << tally.graze_cases << "\n"
+            << "                     resolution contract: certified-guaranteed"
+            << " = " << tally.certified_guaranteed
+            << ", violation-guaranteed = " << tally.violation_guaranteed
+            << ", in band = " << tally.band << "\n"
             << "                     deep (1e5-sample) scans = "
             << tally.deep_scans
             << "\n                     cross-check narrowphase queries = "
@@ -909,6 +976,11 @@ GTEST_TEST(SoundnessFuzzTest, RandomWorldsAndTrajectories) {
   EXPECT_GE(tally.violation, kMinViolation);
   EXPECT_GE(tally.inconclusive, kMinInconclusive)
       << "the grazing-margin cases should have produced kInconclusive verdicts";
+  // The resolution-contract assertions must have been exercised on both sides
+  // of the band, and the band itself must have been populated.
+  EXPECT_GE(tally.certified_guaranteed, kMinCertified);
+  EXPECT_GE(tally.violation_guaranteed, kMinViolation);
+  EXPECT_GE(tally.band, 1);
   // All three trajectory families of trajectory normalization must be
   // represented.
   EXPECT_GE(tally.pwl, kMinPerTrajectoryFamily);

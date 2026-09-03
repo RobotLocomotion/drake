@@ -13,7 +13,9 @@ threshold (Options::margin), and ε the numerical slack.
                        every configuration on the node keeps clearance > m).
  - Definite violation: ϕ̂ + τ < m           (the true clearance at an exactly
                        on-trajectory configuration is below threshold).
- - Otherwise the pair is gray and drives subdivision.
+ - Otherwise the pair is gray and drives subdivision, until the node's travel
+   bound Σ λ·w for that pair is at most r (Options::distance_resolution);
+   a pair still gray there is reported as inconclusive.
 
 The certificate is mathematical modulo τ and ε. ε is 1e-9 m, which dominates
 the accumulated floating-point error of the w, λ and dot-product expression

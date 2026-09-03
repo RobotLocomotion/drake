@@ -180,11 +180,12 @@ void ValidateOptions(const Options& options) {
         "a negative margin.",
         options.margin));
   }
-  if (!(options.min_interval > 0.0) || !(options.min_interval <= 1.0)) {
+  if (!(options.distance_resolution > 0.0) ||
+      !std::isfinite(options.distance_resolution)) {
     throw std::runtime_error(fmt::format(
-        "ContinuousCollisionChecker: Options::min_interval is a fraction of a "
-        "segment's parameter width and must lie in (0, 1]; got {}.",
-        options.min_interval));
+        "ContinuousCollisionChecker: Options::distance_resolution must be a "
+        "finite positive distance in meters; got {}.",
+        options.distance_resolution));
   }
 }
 
