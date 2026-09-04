@@ -62,7 +62,11 @@ connect free-floating input graphs to World, and how they should be connected
 
 These are the properties the resulting forest _must_ have:
   - All nodes (Mobods) have a path from World.
-  - Massless bodies never appear as terminal nodes in the forest.
+  - World is modeled by Mobod 0 and is never cut, so World never has a shadow
+    Link.
+  - Massless bodies never appear as terminal nodes in the forest, unless that
+    is unavoidable. In that case we still build the forest but mark it unusable
+    for dynamics (see dynamics_ok() and why_no_dynamics()).
   - Mobod nodes are numbered depth-first.
   - Position and velocity coordinates q and v are assigned to the edges
     (mobilizers) with the same depth-first ordering.
@@ -92,11 +96,17 @@ fused Mobods.
 Every Link is associated with a single Mobod in the SpanningForest. Multiple
 Links (contained in a WeldedLinksAssembly) may be represented by a single Mobod.
 A mobilizer connects each Mobod to an inboard Mobod (except for World). An
-additional "shadow" Link and its Mobod is created whenever a loop is broken by
-cutting a Link, and a LoopConstraint is added to reconnect the primary Link to
-its shadow. Every moving Joint will map to a Mobod and there will be additional
-floating or weld joints added as needed to connect tree root nodes (a.k.a. "base
-bodies") to World.
+additional "shadow" Link is created whenever a loop is broken by cutting a
+Link (we call that the "primary" Link). One of the joints that connects to
+the primary link is retargeted to the shadow; we refer to that as the "loop
+joint". A loop joint is modeled identically to the original joint other than
+its frame on the primary Link has been moved to the shadow. A LoopConstraint is
+added to reconnect the primary Link to its shadow. World is never the Link we
+cut so if a loop closes on World we cut the Link at the other end of the
+loop-closing Joint, even if that Link is massless (in which case the forest
+can't be used for dynamics). Every moving Joint will map to a Mobod and there
+will be additional floating or weld joints added as needed to connect tree
+root nodes (a.k.a. "base bodies") to World.
 
 When extra bodies, mobilizers, and constraints are needed to construct the
 forest, corresponding _ephemeral_ Links, Joints, and LoopConstraints are added
@@ -575,11 +585,16 @@ class SpanningForest {
   // splitting off a shadow of one of the Links and mobilizing the shadow with a
   // forward or reversed Mobilizer of the Joint's type. Then we add a Weld
   // Constraint to attach the shadow to its primary. Some details:
-  //  - if one link is massless, split the other one
-  //  - if both are massless we have an invalid forest (can't be used for
-  //    dynamics)
-  //  - either or both Links may be part of a WeldedLinksAssembly; it is the
-  //    mass properties of the whole assembly that determines masslessness.
+  //  - we never split World, so if one of the Links is World we must split
+  //    the other one whether or not it is massless
+  //  - otherwise, if one link is massless, split the other one
+  //  - if we are forced to split a massless link (because both are massless,
+  //    or because the massful one is World) we have an invalid forest (can't
+  //    be used for dynamics)
+  //  - "massless" here means the individual Link is massless (see
+  //    Link::is_massless()) because a shadow gets a share of just its primary
+  //    Link's mass properties. In particular, a massless Link that is welded
+  //    into a massful WeldedLinksAssembly still yields a massless shadow.
   void HandleLoopClosure(JointOrdinal loop_joint_ordinal);
 
   // Adds a shadow Link of the given primary and mobilizes the shadow with
