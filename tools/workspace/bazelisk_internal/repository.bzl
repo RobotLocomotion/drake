@@ -7,25 +7,17 @@ def bazelisk_internal_repository(
         name = name,
         repository = "bazelbuild/bazelisk",
         upgrade_advice = """
-        When updating, the following additional steps (run in the Drake source
-        tree) must also be performed:
-
-        $ bazel build @bazelisk_internal//:*
-        $ cp -t third_party/com_github_bazelbuild_bazelisk/ \\
-            bazel-drake/external/+internal_repositories+bazelisk_internal/LICENSE \\
-            bazel-drake/external/+internal_repositories+bazelisk_internal/bazelisk.py
-
-        Additionally, you must manually update the version numbers in
-          setup/ubuntu/packages.json
-        and adjust the expected checksums accordingly.
-        To calculate a new checksum, download the deb file specifed in the json
-        and use:
-          shasum -a 256 'xxx.deb'
-
-        To fully test, a Linux uprovisioned job must be launched from the
-        pull request.
+        When upgrading, most Linux uprovisioned jobs should be launched from
+        the pull request. See the jenkins-jobs-experimental branch on
+        RobotLocomotion/drake for job lists.
         """,  # noqa
         upgrade_type = "release",
+        post_upgrade_script = "upgrade.py",
+        # Our upgrade.py modifies things outside of the current directory.
+        extra_upgrade_paths = [
+            "setup/ubuntu",
+            "third_party/com_github_bazelbuild_bazelisk",
+        ],
         commit = "v1.29.0",
         sha256 = "7e4c7b8ade016052e63c1553cb4fbe0c4fe921e1e66913d49eef074ed894e933",  # noqa
         build_file = ":package.BUILD.bazel",
