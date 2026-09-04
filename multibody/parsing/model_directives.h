@@ -15,6 +15,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
 #include "drake/common/schema/transform.h"
@@ -28,6 +29,7 @@ namespace parsing {
 /// Directive to add a weld between two named frames, a parent and a child.
 struct AddWeld {
   bool IsValid() const;
+  bool IsValid(const drake::internal::DiagnosticPolicy& diagnostic) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -49,6 +51,7 @@ struct AddWeld {
 /// given name for the added instance.
 struct AddModel {
   bool IsValid() const;
+  bool IsValid(const drake::internal::DiagnosticPolicy& diagnostic) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -113,6 +116,7 @@ struct AddModel {
 /// Directive to add an empty, named model instance to a scene.
 struct AddModelInstance {
   bool IsValid() const;
+  bool IsValid(const drake::internal::DiagnosticPolicy& diagnostic) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -127,6 +131,7 @@ struct AddModelInstance {
 /// and a transform with a base frame and offset.
 struct AddFrame {
   bool IsValid() const;
+  bool IsValid(const drake::internal::DiagnosticPolicy& diagnostic) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -146,6 +151,7 @@ struct AddFrame {
 /// @ref tag_drake_collision_filter_group in XML model formats.
 struct AddCollisionFilterGroup {
   bool IsValid() const;
+  bool IsValid(const drake::internal::DiagnosticPolicy& diagnostic) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -184,6 +190,7 @@ struct AddCollisionFilterGroup {
 /// its elements prefixed with a namespace.
 struct AddDirectives {
   bool IsValid() const;
+  bool IsValid(const drake::internal::DiagnosticPolicy& diagnostic) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -217,6 +224,7 @@ struct AddDirectives {
 /// intended type for the directive.
 struct ModelDirective {
   bool IsValid() const;
+  bool IsValid(const drake::internal::DiagnosticPolicy& diagnostic) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -239,6 +247,7 @@ struct ModelDirective {
 /// Top-level structure for a model directives yaml file schema.
 struct ModelDirectives {
   bool IsValid() const;
+  bool IsValid(const drake::internal::DiagnosticPolicy& diagnostic) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
