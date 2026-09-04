@@ -1,11 +1,39 @@
 #pragma once
 
+#include <optional>
+#include <string>
 #include <utility>
 
 #include <Eigen/Core>
 
 namespace drake {
 namespace math {
+/**
+ * For a symmetric positive semidefinite matrix Y, decompose it into XᵀX, where
+ * the number of rows in X equals to the rank of Y.
+ * Notice that this decomposition is not unique. For any orthonormal matrix U,
+ * s.t UᵀU = identity, X_prime = UX also satisfies X_primeᵀX_prime = Y. Here
+ * we only return one valid decomposition.
+ * @param Y A symmetric positive semidefinite matrix.
+ * @param zero_tol We will need to check if some value (for example, the
+ * absolute value of Y's eigenvalues) is smaller than zero_tol. If it is, then
+ * we deem that value as 0.
+ * @param[out] X On success, the matrix X that satisfies XᵀX = Y and
+ * X.rows() = rank(Y). On failure, the contents are unspecified.
+ * @return std::nullopt on success. Otherwise, returns a human-readable error
+ * string describing why the decomposition failed (typically because Y is not
+ * positive semidefinite).
+ * @pre 1. zero_tol is non-negative.
+ *      2. X != nullptr.
+ * @throws std::exception when the pre-conditions are not satisfied, or when Y
+ * is not square.
+ * @note We only use the lower triangular part of Y.
+ * @see DecomposePSDmatrixIntoXtransposeTimesX
+ */
+std::optional<std::string> MaybeDecomposePSDmatrixIntoXtransposeTimesX(
+    const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol,
+    Eigen::MatrixXd* X);
+
 /**
  * For a symmetric positive semidefinite matrix Y, decompose it into XᵀX, where
  * the number of rows in X equals to the rank of Y.
@@ -27,6 +55,7 @@ namespace math {
  *      2. zero_tol is non-negative.
  * @throws std::exception when the pre-conditions are not satisfied.
  * @note We only use the lower triangular part of Y.
+ * @see MaybeDecomposePSDmatrixIntoXtransposeTimesX
  */
 Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
     const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol,

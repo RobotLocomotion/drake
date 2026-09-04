@@ -6,13 +6,15 @@
 #include <Eigen/Eigenvalues>
 #include <fmt/format.h>
 
+#include "drake/common/drake_throw.h"
 #include "drake/math/matrix_util.h"
 
 namespace drake {
 namespace math {
-Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
+std::optional<std::string> MaybeDecomposePSDmatrixIntoXtransposeTimesX(
     const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol,
-    bool return_empty_if_not_psd) {
+    Eigen::MatrixXd* X) {
+  DRAKE_THROW_UNLESS(X != nullptr);
   if (Y.rows() != Y.cols()) {
     throw std::runtime_error("Y is not square.");
   }
@@ -21,36 +23,46 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
   }
   Eigen::LLT<Eigen::MatrixXd> llt_Y(Y);
   if (llt_Y.info() == Eigen::Success) {
-    return llt_Y.matrixU();
-  } else {
-    // TODO(hongkai.dai) Switch to use robust Choleskly decomposition instead
-    // of Eigen value decomposition, when the bug in
-    // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479 is fixed.
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es_Y(Y);
-    if (es_Y.info() == Eigen::Success) {
-      Eigen::MatrixXd X(Y.rows(), Y.cols());
-      int X_row_count = 0;
-      for (int i = 0; i < es_Y.eigenvalues().rows(); ++i) {
-        if (es_Y.eigenvalues()(i) < -zero_tol) {
-          if (return_empty_if_not_psd) {
-            return Eigen::MatrixXd::Zero(0, Y.cols());
-          }
-          throw std::runtime_error(fmt::format(
-              "Y is not positive semidefinite. It has an eigenvalue {} "
-              "that is less than the tolerance {}.",
-              es_Y.eigenvalues()(i), -zero_tol));
-        } else if (es_Y.eigenvalues()(i) > zero_tol) {
-          X.row(X_row_count++) = std::sqrt(es_Y.eigenvalues()(i)) *
-                                 es_Y.eigenvectors().col(i).transpose();
-        }
+    *X = llt_Y.matrixU();
+    return std::nullopt;
+  }
+  // TODO(hongkai.dai) Switch to use robust Choleskly decomposition instead
+  // of Eigen value decomposition, when the bug in
+  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479 is fixed.
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es_Y(Y);
+  if (es_Y.info() == Eigen::Success) {
+    Eigen::MatrixXd X_full(Y.rows(), Y.cols());
+    int X_row_count = 0;
+    for (int i = 0; i < es_Y.eigenvalues().rows(); ++i) {
+      if (es_Y.eigenvalues()(i) < -zero_tol) {
+        return fmt::format(
+            "Y is not positive semidefinite. It has an eigenvalue {} "
+            "that is less than the tolerance {}.",
+            es_Y.eigenvalues()(i), -zero_tol);
+      } else if (es_Y.eigenvalues()(i) > zero_tol) {
+        X_full.row(X_row_count++) = std::sqrt(es_Y.eigenvalues()(i)) *
+                                    es_Y.eigenvectors().col(i).transpose();
       }
-      return X.topRows(X_row_count);
     }
+    *X = X_full.topRows(X_row_count);
+    return std::nullopt;
   }
-  if (return_empty_if_not_psd) {
-    return Eigen::MatrixXd::Zero(0, Y.cols());
+  return std::string{"Y is not PSD."};
+}
+
+Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
+    const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol,
+    bool return_empty_if_not_psd) {
+  Eigen::MatrixXd X;
+  const std::optional<std::string> error =
+      MaybeDecomposePSDmatrixIntoXtransposeTimesX(Y, zero_tol, &X);
+  if (error.has_value()) {
+    if (return_empty_if_not_psd) {
+      return Eigen::MatrixXd::Zero(0, Y.cols());
+    }
+    throw std::runtime_error(*error);
   }
-  throw std::runtime_error("Y is not PSD.");
+  return X;
 }
 
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
