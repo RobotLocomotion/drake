@@ -1,6 +1,7 @@
 #include "drake/geometry/scene_graph_config.h"
 
-#include <functional>
+#include <stdexcept>
+#include <string_view>
 
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -10,52 +11,20 @@ namespace geometry {
 
 namespace {
 
-// Conditions, that if not met, could trigger an exception.
-// TODO(#21167) NaN values are not consistently accounted for.
-enum Condition {
-  kPositiveFinite,
-  kNonNegativeFinite,
-  kPositive,
-  kNonNegative,
-};
-
-// Check the value (if present) of `name`d `property` for `condition`. If the
-// value is present and the condition is not met, throw an exception with a
-// nice message.
+// Check the value (if present) of `name`d `property` using `validate`. If the
+// value is present and invalid, rethrow with a SceneGraphConfig-prefixed
+// message that includes the property name.
 void ThrowUnlessAbsentOr(std::string_view name, std::optional<double> property,
-                         Condition condition) {
+                         void (*validate)(double)) {
   if (!property.has_value()) {
     return;
   }
-  double value = *property;
-  std::string_view condition_name;
-  bool should_throw{false};
-  switch (condition) {
-    case kPositiveFinite: {
-      should_throw = (!std::isfinite(value) || value <= 0.0);
-      condition_name = "positive, finite";
-      break;
-    }
-    case kNonNegativeFinite: {
-      should_throw = (!std::isfinite(value) || value < 0.0);
-      condition_name = "non-negative, finite";
-      break;
-    }
-    case kPositive: {
-      should_throw = (value <= 0.0);
-      condition_name = "positive";
-      break;
-    }
-    case kNonNegative: {
-      should_throw = (value < 0.0);
-      condition_name = "non-negative";
-      break;
-    }
-  }
-  if (should_throw) {
+  try {
+    validate(*property);
+  } catch (const std::exception& e) {
     throw std::logic_error(fmt::format(
-        "Invalid scene graph configuration: '{}' ({}) must be a {} value.",
-        name, value, condition_name));
+        "Invalid scene graph configuration: '{}' ({}) is invalid. {}", name,
+        *property, e.what()));
   }
 }
 
@@ -66,17 +35,19 @@ void DefaultProximityProperties::ValidateOrThrow() const {
   internal::GetHydroelasticTypeFromString(compliance_type);
 
 // Use a macro to capture both property name and value.
-#define DRAKE_ENFORCE(prop, cond) ThrowUnlessAbsentOr(#prop, prop, cond)
-  DRAKE_ENFORCE(hydroelastic_modulus, kPositive);
-  DRAKE_ENFORCE(resolution_hint, kPositiveFinite);
-  DRAKE_ENFORCE(slab_thickness, kPositiveFinite);
-  DRAKE_ENFORCE(margin, kNonNegativeFinite);
+#define DRAKE_ENFORCE(prop, validate) \
+  ThrowUnlessAbsentOr(#prop, prop, &internal::validate)
+  DRAKE_ENFORCE(hydroelastic_modulus, ThrowIfInvalidHydroelasticModulus);
+  DRAKE_ENFORCE(resolution_hint, ThrowIfInvalidResolutionHint);
+  DRAKE_ENFORCE(slab_thickness, ThrowIfInvalidSlabThickness);
+  DRAKE_ENFORCE(margin, ThrowIfInvalidMargin);
 
-  DRAKE_ENFORCE(dynamic_friction, kNonNegative);
-  DRAKE_ENFORCE(static_friction, kNonNegative);
-  DRAKE_ENFORCE(hunt_crossley_dissipation, kNonNegative);
-  DRAKE_ENFORCE(relaxation_time, kNonNegativeFinite);
-  DRAKE_ENFORCE(point_stiffness, kPositive);
+  DRAKE_ENFORCE(dynamic_friction, ThrowIfInvalidFrictionCoefficient);
+  DRAKE_ENFORCE(static_friction, ThrowIfInvalidFrictionCoefficient);
+  DRAKE_ENFORCE(hunt_crossley_dissipation,
+                ThrowIfInvalidHuntCrossleyDissipation);
+  DRAKE_ENFORCE(relaxation_time, ThrowIfInvalidRelaxationTime);
+  DRAKE_ENFORCE(point_stiffness, ThrowIfInvalidPointStiffness);
 #undef DRAKE_ENFORCE
 
   // Require either both friction quantities or neither.

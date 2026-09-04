@@ -75,21 +75,22 @@ Parameter ``resolution_hint``:
     guides the level of mesh refinement. It has length units (in
     meters) and roughly corresponds to a typical edge length in the
     resulting mesh. See hug_properties. This will be ignored for
-    geometry types that don't require tessellation.
+    geometry types that don't require tessellation. Must satisfy 0 <
+    ``resolution_hint`` < ∞ (NaN and ±∞ rejected).
 
 Parameter ``hydroelastic_modulus``:
     A multiplier that maps penetration to pressure. See
-    hug_properties.
+    hug_properties. Must be > 0 (+∞ allowed; NaN rejected).
 
 Parameter ``properties``:
     The properties will be added to this property set.
 
 Raises:
-    RuntimeError If ``properties`` already has properties with the
+    RuntimeError If ``resolution_hint`` or ``hydroelastic_modulus`` is
+    invalid, or if ``properties`` already has properties with the
     names that this function would need to add.
 
 Precondition:
-    0 < ``resolution_hint`` < ∞, 0 < ``hydroelastic_modulus``, and
     ``properties`` is not nullptr.)""";
       } AddCompliantHydroelasticProperties;
       // Symbol: drake::geometry::AddCompliantHydroelasticPropertiesForHalfSpace
@@ -102,21 +103,22 @@ thickness. This variant is required for hydroelastic half spaces.
 
 Parameter ``slab_thickness``:
     The distance from the half space boundary to its rigid core (this
-    helps define the extent field of the half space).
+    helps define the extent field of the half space). Must satisfy 0 <
+    ``slab_thickness`` < ∞ (NaN and ±∞ rejected).
 
 Parameter ``hydroelastic_modulus``:
     A multiplier that maps penetration to pressure. See
-    hug_properties.
+    hug_properties. Must be > 0 (+∞ allowed; NaN rejected).
 
 Parameter ``properties``:
     The properties will be added to this property set.
 
 Raises:
-    RuntimeError If ``properties`` already has properties with the
+    RuntimeError If ``slab_thickness`` or ``hydroelastic_modulus`` is
+    invalid, or if ``properties`` already has properties with the
     names that this function would need to add.
 
 Precondition:
-    0 < ``slab_thickness`` < ∞, 0 < ``hydroelastic_modulus``, and
     ``properties`` is not nullptr.)""";
       } AddCompliantHydroelasticPropertiesForHalfSpace;
       // Symbol: drake::geometry::AddContactMaterial
@@ -132,9 +134,10 @@ default values will be provided. Downstream consumers of the contact
 materials can optionally provide defaults for missing properties.
 
 Raises:
-    RuntimeError if ``dissipation`` is negative, ``point_stiffness``
-    is not positive, of any of the contact material properties have
-    already been defined in ``properties``.
+    RuntimeError if ``dissipation`` is present but not ≥ 0 (NaN is
+    rejected; +∞ is allowed), if ``point_stiffness`` is present but
+    not > 0 (NaN is rejected; +∞ is allowed), or if any of the contact
+    material properties have already been defined in ``properties``.
 
 Precondition:
     ``properties`` is not nullptr.)""";
@@ -152,17 +155,19 @@ Parameter ``resolution_hint``:
     guides the level of mesh refinement. It has length units (in
     meters) and roughly corresponds to a typical edge length in the
     resulting mesh. See hug_properties. This will be ignored for
-    geometry types that don't require tessellation.
+    geometry types that don't require tessellation. Must satisfy 0 <
+    ``resolution_hint`` < ∞ (NaN and ±∞ rejected).
 
 Parameter ``properties``:
     The properties will be added to this property set.
 
 Raises:
-    RuntimeError If ``properties`` already has properties with the
-    names that this function would need to add.
+    RuntimeError If ``resolution_hint`` is invalid or if
+    ``properties`` already has properties with the names that this
+    function would need to add.
 
 Precondition:
-    0 < ``resolution_hint`` < ∞ and ``properties`` is not nullptr.)""";
+    ``properties`` is not nullptr.)""";
         // Source: drake/geometry/proximity_properties.h
         const char* doc_1args =
 R"""(Overload, intended for shapes that don't get tessellated in their
@@ -890,17 +895,14 @@ Serialization" for background.)""";
           const char* doc =
 R"""(@name Hydroelastic Contact Properties
 
-These properties affect hydroelastic contact only. For more detail,
-including limits of the numeric parameters,
+These properties affect hydroelastic contact only. Valid ranges for
+each numeric parameter are documented on the corresponding field
+below.
 
 See also:
     geometry∷AddRigidHydroelasticProperties,
     geometry∷AddCompliantHydroelasticProperties,
-    geometry∷AddCompliantHydroelasticPropertiesForHalfSpace.
-
-For more context,
-
-See also:
+    geometry∷AddCompliantHydroelasticPropertiesForHalfSpace,
     hug_properties. There are three valid options for
     ``compliance_type``: - "undefined": hydroelastic contact will not
     be used. - "rigid": the default hydroelastic compliance type will
@@ -916,14 +918,18 @@ See also:
           const char* doc =
 R"""(@name General Contact Properties
 
-These properties affect contact in general. For more detail, including
-limits of the numeric parameters,
+These properties affect contact in general. Valid ranges for each
+numeric parameter are documented on the corresponding field below.
 
 See also:
     geometry∷AddContactMaterial, multibody∷CoulombFriction,
-    mbp_contact_modeling, mbp_dissipation_model. To be valid, either
-    both friction values must be populated, or neither. Friction
-    quantities are unitless.)""";
+    mbp_contact_modeling, mbp_dissipation_model. Dynamic Coulomb
+    friction coefficient (unitless).
+
+To be valid, either both friction values must be populated, or
+neither. When present, the value must be non-negative (``≥ 0``). +∞ is
+allowed; NaN is not. Additional relationship constraints with
+``static_friction`` are enforced by multibody∷CoulombFriction.)""";
         } dynamic_friction;
         // Symbol: drake::geometry::DefaultProximityProperties::hunt_crossley_dissipation
         struct /* hunt_crossley_dissipation */ {
@@ -932,6 +938,9 @@ See also:
 R"""(Controls energy dissipation from contact, for contact approximations
 other than* multibody∷DiscreteContactApproximation∷kSap. Units are
 seconds per meter.
+
+When present, the value must be non-negative (``≥ 0``). +∞ is allowed;
+NaN is not.
 
 If a non-deformable geometry is missing a value for dissipation,
 MultibodyPlant will generate a default value (based on
@@ -949,7 +958,11 @@ parameters specific to your model.)""";
         struct /* hydroelastic_modulus */ {
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
-R"""(A measure of material stiffness, in units of Pascals.)""";
+R"""(A measure of material stiffness, in units of Pascals.
+
+When present, the value must be strictly positive (``> 0``). +∞ is
+allowed (it is mathematically equivalent to a rigid object); NaN is
+not.)""";
         } hydroelastic_modulus;
         // Symbol: drake::geometry::DefaultProximityProperties::margin
         struct /* margin */ {
@@ -960,6 +973,9 @@ around each geometry. Two bodies with margins δ₁ and δ₂ are considered
 for contact resolution whenever their distance is within δ₁ + δ₂. That
 is, (speculative) contact constraints are added for objects at a
 distance smaller than δ₁+δ₂.
+
+When present, the value must satisfy ``0 ≤ margin < ∞`` (finite and
+non-negative). NaN and ±∞ are not allowed.
 
 Refer to hydro_margin for further details, including theory, examples,
 recommended margin values and limitations.
@@ -996,6 +1012,9 @@ Note:
           const char* doc =
 R"""(A measure of material stiffness, in units of Newtons per meter.
 
+When present, the value must be strictly positive (``> 0``). +∞ is
+allowed; NaN is not.
+
 If a non-deformable geometry is missing a value for stiffness,
 MultibodyPlant will generate a default value (based on
 multibody∷MultibodyPlantConfig∷penetration_allowance). However, this
@@ -1012,7 +1031,10 @@ parameters specific to your model.)""";
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls energy damping from contact, *only for*
-multibody∷DiscreteContactApproximation∷kSap. Units are seconds.)""";
+multibody∷DiscreteContactApproximation∷kSap. Units are seconds.
+
+When present, the value must satisfy ``0 ≤ relaxation_time < ∞``
+(finite and non-negative). NaN and ±∞ are not allowed.)""";
         } relaxation_time;
         // Symbol: drake::geometry::DefaultProximityProperties::resolution_hint
         struct /* resolution_hint */ {
@@ -1020,6 +1042,9 @@ multibody∷DiscreteContactApproximation∷kSap. Units are seconds.)""";
           const char* doc =
 R"""(Controls how finely primitive geometries are tessellated, units of
 meters.
+
+When present, the value must satisfy ``0 < resolution_hint < ∞``
+(finite and positive). NaN and ±∞ are not allowed.
 
 While no single value is universally appropriate, this value was
 selected based on the following idea. We're attempting to make
@@ -1033,13 +1058,18 @@ appropriate for contact with a compliant gripper.)""";
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(For a halfspace, the thickness of compliant material to model, in
-units of meters.)""";
+units of meters.
+
+When present, the value must satisfy ``0 < slab_thickness < ∞``
+(finite and positive). NaN and ±∞ are not allowed.)""";
         } slab_thickness;
         // Symbol: drake::geometry::DefaultProximityProperties::static_friction
         struct /* static_friction */ {
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
-R"""(See also:
+R"""(Static Coulomb friction coefficient (unitless).
+
+See also:
     dynamic_friction.)""";
         } static_friction;
         auto Serialize__fields() const {
