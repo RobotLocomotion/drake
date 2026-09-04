@@ -347,6 +347,7 @@ use_repo(
     "libzip_internal",
     "metis_internal",
     "msgpack_internal",
+    "mujoco_internal",
     "nanoflann_internal",
     "nlopt_internal",
     "onetbb_internal",

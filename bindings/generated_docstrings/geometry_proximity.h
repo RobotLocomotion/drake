@@ -49,6 +49,8 @@
 // #include "drake/geometry/proximity/mesh_to_vtk.h"
 // #include "drake/geometry/proximity/mesh_traits.h"
 // #include "drake/geometry/proximity/meshing_utilities.h"
+// #include "drake/geometry/proximity/mujoco_ccd_mesh_data.h"
+// #include "drake/geometry/proximity/mujoco_ccd_penetration.h"
 // #include "drake/geometry/proximity/obb.h"
 // #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 // #include "drake/geometry/proximity/plane.h"

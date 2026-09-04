@@ -320,6 +320,13 @@ class QueryObject {
             the same.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.
+   @note By default every penetrating geometry pair reports exactly one point
+         pair (its deepest point). A Convex-Convex, Convex-%Mesh, or
+         %Mesh-%Mesh pair where *both* geometries select the (experimental)
+         "mujoco_multipoint" point contact algorithm (see
+         DefaultProximityProperties::point_contact_algorithm) instead reports
+         a contact manifold of *up to four* point pairs for `T` = `double`,
+         each with its own depth, ordered deterministically for fixed poses.
    @throws std::exception if a Shape-Shape pair is in collision and indicated as
            `throws` in the support table above.  */
   // clang-format on
