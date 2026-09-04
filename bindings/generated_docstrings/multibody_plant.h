@@ -8207,7 +8207,10 @@ calls will always return the same value.)""";
         struct /* num_constraints */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the total number of constraints specified by the user.)""";
+R"""(Returns the total number of constraints in this model. Prior to
+Finalize() these are just the constraints specified by the user.
+Finalize() may add "ephemeral" constraints of its own; see
+num_loop_constraints().)""";
         } num_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_coupler_constraints
         struct /* num_coupler_constraints */ {
@@ -8248,6 +8251,17 @@ R"""(Returns the number of joints in the model.
 See also:
     AddJoint().)""";
         } num_joints;
+        // Symbol: drake::multibody::MultibodyPlant::num_loop_constraints
+        struct /* num_loop_constraints */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Returns the number of ephemeral weld constraints that Finalize() added
+in order to close topological loops. Each of these welds a shadow link
+to the link it is a copy of; see SetEnableLoopTopology(). These are
+included in num_constraints() and num_weld_constraints(), and are
+indistinguishable from user-added welds to the constraint solvers.
+Returns zero prior to Finalize().)""";
+        } num_loop_constraints;
         // Symbol: drake::multibody::MultibodyPlant::num_misc_continuous_states
         struct /* num_misc_continuous_states */ {
           // Source: drake/multibody/plant/multibody_plant.h

@@ -43,10 +43,20 @@ InertiaVisualizer<T>::InertiaVisualizer(
     }
     const multibody::RigidBody<T>& body = plant.get_body(i);
 
+    // Not every body necessarily has a SceneGraph frame -- none of them do if
+    // `plant` was never registered as a geometry source. We would have nothing
+    // to hang an inertia ellipsoid on for such a body, so skip it rather than
+    // dereferencing an empty optional.
+    const std::optional<geometry::FrameId> Bo_frame =
+        plant.GetBodyFrameIdIfExists(i);
+    if (!Bo_frame.has_value()) {
+      continue;
+    }
+
     // Add a Bcm geometry frame.
     Item item;
     item.body = i;
-    item.Bo_frame = plant.GetBodyFrameIdIfExists(i).value();
+    item.Bo_frame = *Bo_frame;
     item.Bcm_frame = scene_graph->RegisterFrame(
         source_id_, SceneGraph<T>::world_frame_id(),
         GeometryFrame{fmt::format(
