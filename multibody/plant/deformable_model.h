@@ -91,8 +91,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @throws std::exception if `this` %DeformableModel belongs to a continuous
    MultibodyPlant.
    @throws std::exception if the model instance does not exist.
-   @throws std::exception if a deformable body with the same name has already
-   been registered to the model instance.
+   @throws std::exception if a deformable body or rigid body with the same name
+   has already been registered to the model instance.
    @throws std::exception if Finalize() has been called on the multibody plant
    owning this deformable model. */
   DeformableBodyId RegisterDeformableBody(

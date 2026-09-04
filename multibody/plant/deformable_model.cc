@@ -63,6 +63,14 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
           "given model.",
           model_instance_name, name));
     }
+    if (this->plant().HasBodyNamed(name, model_instance)) {
+      const std::string& model_instance_name =
+          this->plant().GetModelInstanceName(model_instance);
+      throw std::logic_error(fmt::format(
+          "RegisterDeformableBody(): Model instance '{}' already contains a "
+          "body named '{}'. Body names must be unique within a given model.",
+          model_instance_name, name));
+    }
     /* Register the geometry with SceneGraph. */
     SceneGraph<T>& scene_graph = this->mutable_scene_graph();
     const ScopedName scoped_name(
