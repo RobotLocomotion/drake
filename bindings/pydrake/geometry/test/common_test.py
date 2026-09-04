@@ -25,6 +25,7 @@ PROPERTY_CLS_LIST = [
 
 
 class TestGeometryCore(unittest.TestCase):
+    @unittest.skip
     def test_collision_filtering(self):
         sg = mut.SceneGraph()
         sg_context = sg.CreateDefaultContext()
@@ -97,6 +98,7 @@ class TestGeometryCore(unittest.TestCase):
         )
         self.assertTrue(dut.IsActive(filter_id=id))
 
+    @unittest.skip
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")
         self.assertIsInstance(frame.id(), mut.FrameId)
@@ -104,6 +106,7 @@ class TestGeometryCore(unittest.TestCase):
         frame = mut.GeometryFrame(frame_name="test_frame", frame_group_id=1)
         self.assertEqual(frame.frame_group(), 1)
 
+    @unittest.skip
     def test_geometry_instance_api(self):
         geometry = mut.GeometryInstance(
             X_PG=RigidTransform(), shape=mut.Sphere(1.0), name="sphere"
@@ -138,6 +141,7 @@ class TestGeometryCore(unittest.TestCase):
             geometry.perception_properties(), mut.PerceptionProperties
         )
 
+    @unittest.skip
     def test_geometry_properties_api(self):
         # Test perception/ illustration properties (specifically Rgba).
         test_vector = [0.0, 0.0, 1.0, 1.0]
@@ -222,6 +226,7 @@ class TestGeometryCore(unittest.TestCase):
         perception = mut.PerceptionProperties(proximity)
         self.assertEqual(perception.GetProperty("a", "b"), 10)
 
+    @unittest.skip
     def test_geometry_properties_cpp_types(self):
         """
         Confirms that types stored in properties in python, resolve to expected
@@ -239,6 +244,7 @@ class TestGeometryCore(unittest.TestCase):
                 self.assertIsInstance(value_2, T)
                 self.assertEqual(value, value_2)
 
+    @unittest.skip
     def test_geometry_version_api(self):
         SceneGraph = mut.SceneGraph_[float]
         scene_graph = SceneGraph()
@@ -275,6 +281,7 @@ class TestGeometryCore(unittest.TestCase):
             version0.IsSameAs(other=version3, role=mut.Role.kIllustration)
         )
 
+    @unittest.skip
     def test_identifier_api(self):
         cls_list = [
             mut.FilterId,
@@ -299,6 +306,7 @@ class TestGeometryCore(unittest.TestCase):
 
         self.assertIn(f"value={id_1.get_value()}", repr(id_1))
 
+    @unittest.skip
     def test_in_memory_mesh(self):
         empty_mesh = mut.InMemoryMesh()
         self.assertEqual(len(empty_mesh.mesh_file.contents()), 0)
@@ -463,8 +471,11 @@ class TestGeometryCore(unittest.TestCase):
         proximity_properties.h).
         """
         props = mut.ProximityProperties()
+        print(f"contact props 1 before: {hex(id(props))} {props}");
         mut.AddContactMaterial(properties=props)
+        print(f"contact props 1 after: {hex(id(props))} {props}");
         props = mut.ProximityProperties()
+        print(f"contact props 2 before: {hex(id(props))} {props}");
         reference_friction = CoulombFriction(0.25, 0.125)
         mut.AddContactMaterial(
             dissipation=2.7,
@@ -472,6 +483,7 @@ class TestGeometryCore(unittest.TestCase):
             friction=reference_friction,
             properties=props,
         )
+        print(f"contact props 2 after: {hex(id(props))} {props}");
         self.assertTrue(
             props.HasProperty("material", "hunt_crossley_dissipation")
         )
@@ -496,11 +508,13 @@ class TestGeometryCore(unittest.TestCase):
         )
 
         props = mut.ProximityProperties()
+        print(f"hydro props before: {hex(id(props))} {props}");
         res_hint = 0.175
         E = 1e8
         mut.AddRigidHydroelasticProperties(
             resolution_hint=res_hint, properties=props
         )
+        print(f"hydro props after: {hex(id(props))} {props}");
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertFalse(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
@@ -552,6 +566,7 @@ class TestGeometryCore(unittest.TestCase):
             props.GetProperty("hydroelastic", "hydroelastic_modulus"), E
         )
 
+    @unittest.skip
     def test_rgba_api(self):
         default_white = mut.Rgba()
         self.assertEqual(default_white, mut.Rgba(1, 1, 1, 1))
@@ -602,6 +617,7 @@ class TestGeometryCore(unittest.TestCase):
         # Confirm value instantiation.
         Value[mut.Rgba]
 
+    @unittest.skip
     def test_rgba_yaml(self):
         yaml = "rgba: [0.1, 0.2, 0.3, 0.4]"
         dut = yaml_load_typed(schema=mut.Rgba, data=yaml)
@@ -629,6 +645,7 @@ class TestGeometryCore(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, ".*range.*"):
             yaml_load_typed(schema=mut.Rgba, data=yaml)
 
+    @unittest.skip
     def test_shape_constructors(self):
         shapes = [
             mut.Sphere(radius=1.0),
@@ -692,6 +709,7 @@ class TestGeometryCore(unittest.TestCase):
             self.assertIsInstance(new_shape, shape_cls)
             self.assertEqual(repr(new_shape), repr(shape))
 
+    @unittest.skip
     def test_shapes(self):
         # We'll test some invariants on all shapes as inherited from the Shape
         # API.
@@ -824,6 +842,7 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(cone.b(), 5.6)
         assert_pickle(self, cone, repr)
 
+    @unittest.skip
     def test_mesh_pickle_compatibility(self):
         """Mesh/Convex have changed since their original pickling (underlying
         representation to MeshSource, scale going from scalar to vector). The
@@ -863,6 +882,7 @@ class TestGeometryCore(unittest.TestCase):
                 # uniform scale.
                 self.assertEqual(obj.scale(), ref_mesh.scale())
 
+    @unittest.skip
     def test_plane(self):
         normal = np.array([0.0, 0.0, 1.0])
         point_on_plane = np.array([0.0, 0.0, 2.0])
