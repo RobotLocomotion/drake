@@ -184,6 +184,19 @@ TEST_F(IdentifierTests, PutInSet) {
 
 TEST_F(IdentifierTests, FmtFormatterProducesExpectedString) {
   EXPECT_EQ(fmt::to_string(a2_), "2");
+  EXPECT_EQ(fmt::format("{}", a2_), "2");
+}
+
+TEST_F(IdentifierTests, FmtFormatterRepr) {
+  EXPECT_EQ(fmt::format("{:r}", a2_), "AId(2)");
+  EXPECT_EQ(fmt::format("The given {:r} is out of bounds", a2_),
+            "The given AId(2) is out of bounds");
+
+  if (kDrakeAssertIsArmed) {
+    AId invalid;
+    DRAKE_EXPECT_THROWS_MESSAGE(fmt::format("{:r}", invalid),
+                                ".*is_valid.*failed.*");
+  }
 }
 
 // Tests the ability to convert the id to string via std::to_string.

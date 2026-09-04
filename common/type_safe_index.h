@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 
@@ -143,7 +144,14 @@ namespace internal {
 /// @endcode
 /// TODO(#15354) We hope to fix this irregularity in the future.
 ///
-/// @sa drake::geometry::Identifier
+/// __Formatting__
+///
+/// Indices may be formatted with `fmt` (e.g., `fmt::format`,
+/// `fmt::to_string`). The default format (`{}`) prints the underlying
+/// integer. The `{:r}` (repr) format prints a typed representation that
+/// includes the index type name, e.g., `FooIndex(0)`.
+///
+/// @sa drake::Identifier
 ///
 /// @tparam Tag The name of the tag associated with a class type. The class
 ///             need not be a defined class.
@@ -578,5 +586,42 @@ template <typename Tag>
 struct hash<drake::TypeSafeIndex<Tag>> : public drake::DefaultHash {};
 }  // namespace std
 
-DRAKE_FORMATTER_AS(typename Tag, drake, TypeSafeIndex<Tag>, x,
-                   std::to_string(int{x}))
+// Provide fmt support where "{}" is the underlying integer and "{:r}" is a
+// typed representation such as "FooIndex(0)".
+namespace fmt {
+template <typename Tag>
+struct formatter<drake::TypeSafeIndex<Tag>> {
+  template <typename FormatParseContext>
+  constexpr auto parse(FormatParseContext& ctx) {
+    auto it = ctx.begin();
+    if (it != ctx.end() && *it != '}') {
+      if (*it == 'r') {
+        repr_ = true;
+        ++it;
+      }
+      if (it != ctx.end() && *it != '}') {
+        throw format_error(
+            "Invalid format specifier for TypeSafeIndex; use {} or {:r}.");
+      }
+    }
+    return it;
+  }
+
+  template <typename FormatContext>
+  auto format(const drake::TypeSafeIndex<Tag>& index,
+              // NOLINTNEXTLINE(runtime/references) To match fmt API.
+              FormatContext& ctx) const {
+    if (repr_) {
+      return fmt::format_to(
+          ctx.out(), "{}({})",
+          drake::NiceTypeName::RemoveNamespaces(
+              drake::NiceTypeName::Get<drake::TypeSafeIndex<Tag>>()),
+          int{index});
+    }
+    return fmt::format_to(ctx.out(), "{}", int{index});
+  }
+
+ private:
+  bool repr_{false};
+};
+}  // namespace fmt
