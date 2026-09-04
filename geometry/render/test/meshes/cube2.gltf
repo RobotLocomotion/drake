@@ -158,7 +158,7 @@
 		},
 		{
 			"buffer":0,
-			"byteLength":594,
+			"byteLength":419,
 			"byteOffset":3340
 		}
 	],
@@ -170,7 +170,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":3936,
+			"byteLength":3761,
 			"uri":"cube2.bin"
 		}
 	]
