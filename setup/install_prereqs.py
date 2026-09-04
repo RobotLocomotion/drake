@@ -529,6 +529,42 @@ def _apt_install_flavor(*, flavor: Flavor, yes: bool) -> None:
         logging.debug("All selected packages-*.txt are already installed.")
 
 
+def _read_flavor_cookie(*, flavor_lookup) -> str:
+    """Returns the most recently-installed flavor cookie (reading from disk),
+    or None when unknown."""
+    workspace_dir = _workspace_dir()
+    cookie = workspace_dir / "gen/install_prereqs.flavor"
+    try:
+        text = cookie.read_text(encoding="utf-8").strip()
+    except OSError:
+        logging.debug("No flavor cookie found.")
+        return None
+    # Confirm the prior text is still a valid flavor.
+    if text not in flavor_lookup:
+        logging.warning(f"Ignoring no-longer-valid flavor '{text}'")
+        return None
+    logging.info(f"Assuming --flavor={text} per most recent run.")
+    return text
+
+
+def _update_flavor_cookie(*, flavor: Flavor) -> None:
+    """Updates (on disk) the most recently-installed flavor cookie.
+    For developers this writes a cookie file with the selected flavor.
+    For users, this deletes the cookie."""
+    workspace_dir = _workspace_dir()
+    cookie = workspace_dir / "gen/install_prereqs.flavor"
+    if flavor >= Flavor.DEVELOPER:
+        logging.debug(f"Writing flavor cookie to {cookie}")
+        flavor_lower = flavor.name.lower()
+        cookie.write_text(f"{flavor_lower}\n", encoding="utf-8")
+    else:
+        try:
+            cookie.unlink()
+            logging.debug(f"Removed flavor cookie {cookie}")
+        except OSError:
+            pass
+
+
 def main():
     # Log at INFO, not just WARNING.
     logging.basicConfig(
@@ -536,12 +572,36 @@ def main():
         format="%(levelname)s: %(message)s",
     )
 
+    # Decide which flavors to offer.
+    if _MY_DIR.name == "setup":
+        # We are in the source tree; all flavors are valid.
+        flavor_lookup = {item.name.lower(): item for item in Flavor}
+        default_flavor = "build"
+    else:
+        # Not the source tree. We're a binary package install.
+        flavor_lookup = {"binary": Flavor.BINARY}
+        default_flavor = "binary"
+
+    # Create the help string for flavors.
+    help_details = ""
+    if len(flavor_lookup) > 1:
+        help_details = "\nThe available flavors of prerequisites are:\n"
+        help_details += "\n".join(
+            [
+                f"- {name}: {value.description}."
+                for name, value in flavor_lookup.items()
+            ]
+        )
+        help_details += "\n\n"
+        help_details += "Each flavor also incoroporates all prior flavors."
+
     # Initialize argparse.
     parser = argparse.ArgumentParser(
-        description=__doc__,
+        description=__doc__ + help_details,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
+    # XXX
+    True or parser.add_argument(
         "--developer",
         action="store_const",
         dest="flavor",
@@ -574,6 +634,28 @@ def main():
         action="store_true",
         help="Enable verbosity.",
     )
+    parser.add_argument(
+        "--flavor",
+        choices=flavor_lookup.keys(),
+        default=None,
+        help=(
+            "Which set of prerequisites to install. See descriptions above."
+            if len(flavor_lookup) > 1
+            else argparse.SUPPRESS
+        ),
+    )
+    for lower in flavor_lookup:
+        parser.add_argument(
+            f"--{lower}",
+            action="store_const",
+            const=lower,
+            dest="flavor",
+            help=(
+                f"Shortcut for --flavor={lower}."
+                if len(flavor_lookup) > 1
+                else argparse.SUPPRESS
+            ),
+        )
     args = parser.parse_args()
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -584,7 +666,20 @@ def main():
         _setup_user_environment()
         return
 
-    # Validate the flavor to install.
+    # Choose which flavor to install:
+    # (1) The command line always takes priority.
+    # (2) When not given on the command line, and not running as root, and
+    #     not running from a binary install, a per-user cookie file is used
+    #     for developers to make the choice be "sticky".
+    # (3) Otherwise, a nominal value is selected.
+    is_root = os.geteuid() == 0
+    flavor_lower = args.flavor
+    if flavor_lower is None and not is_root and len(flavor_lookup) > 1:
+        flavor_lower = _read_flavor_cookie(flavor_lookup=flavor_lookup)
+    if flavor_lower is None:
+        logging.info(f"Using default --flavor={default_flavor}.")
+        flavor_lower = default_flavor
+    args.flavor = flavor_lookup[flavor_lower]
     if args.flavor >= Flavor.DEVELOPER and not (_is_mac() or _is_ubuntu()):
         raise NotImplementedError(platform.system())
 
@@ -592,6 +687,11 @@ def main():
     global _allow_update
     _allow_update = args.allow_update
     _maybe_warn_conda()
+    if args.flavor >= Flavor.DEVELOPER and is_root:
+        _warn(
+            """Do NOT run install_prereqs as root or under sudo when using
+            --flavor=developer or greater."""
+        )
 
     # Install the prerequisites.
     if not _is_mac():
@@ -611,6 +711,8 @@ def main():
         _prefetch_bazel()
 
     # Finished.
+    if not is_root:
+        _update_flavor_cookie(flavor=args.flavor)
     logging.info(
         f"Successfully installed {args.flavor.name.lower()}"
         f" prereqs ({args.flavor.description})."
