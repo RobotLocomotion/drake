@@ -2064,9 +2064,8 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
   }
 }
 
-// Quick test to make sure that lights combine. We'll intentionally use more
-// lights than RenderEngineGl allows for to confirm that RenderEngineVtk doesn't
-// share the limit.
+// Quick test to make sure that lights combine. We'll stress test an arbitrary
+// number of lights (the only limit is what the GPU can support in practice).
 TEST_F(RenderEngineVtkTest, MultiLights) {
   const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(M_PI),

@@ -89,9 +89,11 @@ specified in the (phong, diffuse) property.)""";
         struct /* lights */ {
           // Source: drake/geometry/render_gl/render_engine_gl_params.h
           const char* doc =
-R"""(Lights in the scene. More than five lights is an error. If no lights
-are defined, a single directional light, fixed to the camera frame, is
-used.)""";
+R"""(Lights in the scene. If no lights are defined, a single directional
+light, fixed to the camera frame, is used.
+
+Note: RenderEngineGl does not have a hard-coded limit on the number of
+lights; but more lights increases rendering cost.)""";
         } lights;
         auto Serialize__fields() const {
           return std::array{

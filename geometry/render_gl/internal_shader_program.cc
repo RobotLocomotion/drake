@@ -9,6 +9,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 
 namespace drake {
@@ -107,25 +108,25 @@ void ShaderProgram::LoadFromFiles(const std::string& vertex_shader_file,
   LoadFromSources(LoadFile(vertex_shader_file), LoadFile(fragment_shader_file));
 }
 
-void ShaderProgram::SetProjectionMatrix(const Eigen::Matrix4f& T_DC) const {
-  glUniformMatrix4fv(projection_matrix_loc_, 1, GL_FALSE, T_DC.data());
-}
-
-void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
-                                       const Eigen::Matrix4f& T_WM,
-                                       const Eigen::Matrix3f& N_WM) const {
-  const Eigen::Matrix4f T_CM = X_CW * T_WM;
-  // Our camera frame C wrt the OpenGL's camera frame Cgl.
+void ShaderProgram::SetProjectionMatrix(const Eigen::Matrix4f& T_DCgl) const {
+  // Drake's physical camera frame Cphysical wrt OpenGL's camera frame Cgl.
   // clang-format off
-  static const Eigen::Matrix4f kT_CglC =
+  static const Eigen::Matrix4f kT_CglCphysical =
       (Eigen::Matrix4f() << 1,  0,  0, 0,
                             0, -1,  0, 0,
                             0,  0, -1, 0,
                             0,  0,  0, 1)
           .finished();
   // clang-format on
-  const Eigen::Matrix4f T_CglM = kT_CglC * T_CM;
-  glUniformMatrix4fv(model_view_loc_, 1, GL_FALSE, T_CglM.data());
+  T_DCphysical_ = T_DCgl * kT_CglCphysical;
+}
+
+void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
+                                       const Eigen::Matrix4f& T_WM,
+                                       const Eigen::Matrix3f& N_WM) const {
+  const Eigen::Matrix4f T_CphysicalM = X_CW * T_WM;
+  const Eigen::Matrix4f T_DM = T_DCphysical_ * T_CphysicalM;
+  glUniformMatrix4fv(model_to_device_matrix_loc_, 1, GL_FALSE, T_DM.data());
   DoSetModelViewMatrix(X_CW, T_WM, N_WM);
 }
 
@@ -162,8 +163,7 @@ void ShaderProgram::Free() {
 }
 
 void ShaderProgram::ConfigureUniforms() {
-  projection_matrix_loc_ = GetUniformLocation("T_DC");
-  model_view_loc_ = GetUniformLocation("T_CM");
+  model_to_device_matrix_loc_ = GetUniformLocation("T_DM");
   DoConfigureUniforms();
 }
 

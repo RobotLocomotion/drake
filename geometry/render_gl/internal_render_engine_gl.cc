@@ -73,24 +73,42 @@ namespace fs = std::filesystem;
 class LightingShader : public ShaderProgram {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LightingShader);
-  LightingShader() : ShaderProgram() {}
+  explicit LightingShader(const std::vector<LightParameter>& lights)
+      : light_count_(ssize(lights)) {
+    DRAKE_DEMAND(!lights.empty());
+  }
 
+  /* Sets all light uniforms in an already-compiled-and-linked shader program.
+   It should be called in two cases:
+
+    1. A final, derived class should invoke it in its constructor body after
+       calling LoadFromSources().
+    2. A cloned shader program should invoke it.
+
+   @pre An OpenGL context is active.
+   @pre `lights` is the same size as the light configuration provided to the
+        LightingShader constructor. */
   void SetAllLights(const std::vector<LightParameter>& lights) const {
-    DRAKE_DEMAND(lights.size() <= kMaxNumLights);
+    DRAKE_DEMAND(ssize(lights) == light_count_);
+    Use();
     for (int i = 0; i < ssize(lights); ++i) {
       SetLightParameters(i, lights[i]);
     }
-    // Set the remaining lights off (invalid light type 0).
-    for (int i = ssize(lights); i < kMaxNumLights; ++i) {
-      glUniform1i(GetLightFieldLocation(i, "type"), 0);
-    }
+    Unuse();
   }
-
-  static constexpr int kMaxNumLights{5};
 
  protected:
   // Derived classes have the chance to configure additional uniforms.
   virtual void DoConfigureMoreUniforms() {}
+
+  std::string VertexShaderSource() const {
+    return fmt::format("#version 330\n{}", kVertexShader);
+  }
+
+  std::string FragmentShaderSource() const {
+    return fmt::format("#version 330\n#define LIGHT_COUNT {}\n{}", light_count_,
+                       kFragmentShader);
+  }
 
   // This provides GLSL code necessary for performing lighting calculations:
   //   - Transforms the vertex into device *and* world coordinates.
@@ -101,11 +119,9 @@ class LightingShader : public ShaderProgram {
   // whatever work is unique to the shader and invoke PrepareLighting() so that
   // the transformed vertex is evaluated.
   static constexpr char kVertexShader[] = R"""(
-#version 330
 layout(location = 0) in vec3 p_MV;
 layout(location = 1) in vec3 n_M;
-uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
-uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
+uniform mat4 T_DM;
 uniform mat4 T_WM;  // The pose of the geometry (model) in the world.
 uniform mat3 T_WM_normals;  // Rotation * inverse_scale to transform normals.
 // TODO(SeanCurtis-TRI): Rather than propagating normal and position vertex in
@@ -118,7 +134,7 @@ out vec3 p_WV; // Vertex position in world space.
 
 void PrepareLighting() {
   // gl_Position is p_DV; the vertex position in device coordinates.
-  gl_Position = T_DC * T_CM * vec4(p_MV, 1);
+  gl_Position = T_DM * vec4(p_MV, 1);
 
   n_W = normalize(T_WM_normals * n_M);
   p_WV = (T_WM * vec4(p_MV, 1)).xyz;
@@ -131,17 +147,9 @@ void PrepareLighting() {
   // main function should compute the diffuse value at the fragment and call
   // GetIlluminatedColor() to get the illuminated result.
   static constexpr char kFragmentShader[] = R"""(
-#version 330
 uniform mat4 X_WC;  // Transform light position from camera to world.
 in vec3 n_W;
 in vec3 p_WV;
-
-// TODO(SeanCurtis-TRI): Rather than hard-code this in this compile-time string,
-// set this to the actual number of lights reported. We can still have the
-// render engine subject to a hard light limit, but we can make sure the shader
-// only has defined lights. This should roll into changes in how derived
-// classes access these GLSL functions.
-const int MAX_LIGHT_NUM = 5;
 
 // TODO(SeanCurtis-TRI): We should packing these uniforms more tightly. vec3s
 //   are stored as vec4 anyways, so we might as well reduce the uniform calls
@@ -151,7 +159,6 @@ const int MAX_LIGHT_NUM = 5;
 //   intensity is the fourth field of atten_coeff.
 //   cos_half_angle is the fourth field of direction.
 struct Light {
-    // 0 for no light
     // 1 for Point Light
     // 2 for Spot Light
     // 3 for Directional Light
@@ -173,7 +180,7 @@ struct Light {
     vec3 dir;
 };
 
-uniform Light lights[MAX_LIGHT_NUM];
+uniform Light lights[LIGHT_COUNT];
 
 vec3 GetLightPositionInWorld(Light light) {
   vec3 v_W = light.position.xyz;  // Interpreting v as v_W.
@@ -231,12 +238,10 @@ vec3 GetLightIllumination(Light light, vec3 nhat_W) {
     exposure = GetPointExposure(light, dir_FL_W, nhat_W);
   } else if (light.type == 2) {
     exposure = GetSpotExposure(light, dir_FL_W, nhat_W);
-  } else if (light.type == 3) {
+  } else {  // light.type == 3
     exposure = GetDirectionalExposure(light, nhat_W);
-  } else {
-      // Invalid light; no exposure.
-      return vec3(0.0, 0.0, 0.0);
   }
+  if (exposure <= 0.0) return vec3(0.0, 0.0, 0.0);
 
   // Attenuation.
   float inv_attenuation = light.atten_coeff[0] +
@@ -254,7 +259,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
   vec3 nhat_W = normalize(n_W);
 
   vec3 illum = vec3(0.0, 0.0, 0.0);
-  for (int i = 0; i < MAX_LIGHT_NUM; i++) {
+  for (int i = 0; i < LIGHT_COUNT; ++i) {
     illum += GetLightIllumination(lights[i], nhat_W);
   }
   return vec4(illum * diffuse.rgb, diffuse.a);
@@ -264,7 +269,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
 
  private:
   GLint GetLightFieldLocation(int index, std::string field_name) const {
-    DRAKE_ASSERT(index >= 0 && index < kMaxNumLights);
+    DRAKE_ASSERT(index >= 0 && index < light_count_);
     return GetUniformLocation(fmt::format("lights[{}].{}", index, field_name));
   }
 
@@ -326,6 +331,8 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
   // The transform between world and camera frame (used for transforming light
   // positions defined in the camera frame).
   GLint X_WC_loc_{};
+
+  int light_count_{};
 };
 
 /* The built-in shader for Rgba diffuse colored objects. This shader supports
@@ -334,13 +341,13 @@ class DefaultRgbaColorShader final : public LightingShader {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultRgbaColorShader);
 
-  explicit DefaultRgbaColorShader(const Rgba& default_diffuse)
-      : LightingShader(), default_diffuse_(default_diffuse) {
-    // TODO(SeanCurtis-TRI): See if I can't come up with a more elegant way for
-    // derived classes to exercise LightShader's GLSL functionality.
+  DefaultRgbaColorShader(const Rgba& default_diffuse,
+                         const std::vector<LightParameter>& lights)
+      : LightingShader(lights), default_diffuse_(default_diffuse) {
     LoadFromSources(
-        fmt::format("{}{}", LightingShader::kVertexShader, kVertexShader),
-        fmt::format("{}{}", LightingShader::kFragmentShader, kFragmentShader));
+        fmt::format("{}{}", VertexShaderSource(), kVertexShader),
+        fmt::format("{}{}", FragmentShaderSource(), kFragmentShader));
+    SetAllLights(lights);
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
@@ -407,12 +414,14 @@ class DefaultTextureColorShader final : public LightingShader {
    is alright, because the owning RenderEngineGl instances share that library
    as well -- so the shader program instances are consistent with the render
    engine instances. */
-  explicit DefaultTextureColorShader(shared_ptr<TextureLibrary> library)
-      : LightingShader(), library_(std::move(library)) {
+  DefaultTextureColorShader(shared_ptr<TextureLibrary> library,
+                            const std::vector<LightParameter>& lights)
+      : LightingShader(lights), library_(std::move(library)) {
     DRAKE_DEMAND(library_ != nullptr);
     LoadFromSources(
-        fmt::format("{}{}", LightingShader::kVertexShader, kVertexShader),
-        fmt::format("{}{}", LightingShader::kFragmentShader, kFragmentShader));
+        fmt::format("{}{}", VertexShaderSource(), kVertexShader),
+        fmt::format("{}{}", FragmentShaderSource(), kFragmentShader));
+    SetAllLights(lights);
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
@@ -566,13 +575,13 @@ class DefaultDepthShader final : public ShaderProgram {
 
 layout(location = 0) in vec3 p_MV;
 out float depth;
-uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
-uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
+uniform mat4 T_DM;
 
 void main() {
-  vec4 p_CV = T_CM * vec4(p_MV, 1);
-  depth = -p_CV.z;
-  gl_Position = T_DC * p_CV;
+  vec4 p_DV = T_DM * vec4(p_MV, 1);
+  // For Drake's perspective projection, w_D equals physical camera depth.
+  depth = p_DV.w;
+  gl_Position = p_DV;
 })""";
 
   // The fragment shader "clamps" the depth of the fragment to the specified
@@ -652,19 +661,13 @@ class DefaultLabelShader final : public ShaderProgram {
 
   GLint encoded_label_loc_{};
 
-  // The vertex shader simply transforms the vertices. Strictly speaking, we
-  // could combine modelview and projection matrices into a single transform,
-  // but there's no real value in doing so. Leaving it as is maintains
-  // compatibility with the depth shader.
+  // The vertex shader simply transforms the vertices.
   static constexpr char kVertexShader[] = R"""(
 #version 330
 layout(location = 0) in vec3 p_MV;
-uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
-uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
+uniform mat4 T_DM;
 void main() {
-  // X_CM = T_CM (although X may not be a *rigid* transform).
-  vec4 p_CV = T_CM * vec4(p_MV, 1);
-  gl_Position = T_DC * p_CV;
+  gl_Position = T_DM * vec4(p_MV, 1);
 })""";
 
   // For each fragment from a geometry, it simply writes the provided label.
@@ -682,11 +685,6 @@ void main() {
 // values because those values which *might* be considered "bad" can be used
 // by users for debugging.
 RenderEngineGlParams CleanupLights(RenderEngineGlParams params) {
-  if (ssize(params.lights) > LightingShader::kMaxNumLights) {
-    throw std::runtime_error(
-        fmt::format("RenderEngineGl supports up to five lights; {} specified.",
-                    ssize(params.lights)));
-  }
   for (auto& light : params.lights) {
     if (light.type != "point") {
       const double dir_magnitude = light.direction.norm();
@@ -718,11 +716,12 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
   // Color shaders. See documentation on GetShaderProgram. We want color from
   // texture to be "more preferred" than color from rgba, so we add the
   // texture color shader *after* the rgba color shader.
-  AddShader(make_unique<DefaultRgbaColorShader>(params.default_diffuse),
+  const auto& lights = active_lights();
+  AddShader(
+      make_unique<DefaultRgbaColorShader>(parameters_.default_diffuse, lights),
+      RenderType::kColor);
+  AddShader(make_unique<DefaultTextureColorShader>(texture_library_, lights),
             RenderType::kColor);
-  AddShader(make_unique<DefaultTextureColorShader>(texture_library_),
-            RenderType::kColor);
-  ConfigureLights();
 
   // Depth shaders -- a single shader that accepts all geometry.
   AddShader(make_unique<DefaultDepthShader>(), RenderType::kDepth);
@@ -1048,8 +1047,8 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
     }
   }
 
-  // Update the shader OpenGL state to properly configure the lighting.
-  clone->ConfigureLights();
+  // Restore the lighting uniforms in the clone's newly linked programs.
+  clone->RestoreLightingUniforms();
 
   return clone;
 }
@@ -2467,17 +2466,13 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
   return *data;
 }
 
-void RenderEngineGl::ConfigureLights() {
-  // Set the lights *once* for all color shaders. Currently, lighting can only
-  // be figured upon construction.
+void RenderEngineGl::RestoreLightingUniforms() {
   for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kColor]) {
     const auto* lighting_program =
         dynamic_pointer_cast_or_throw<const LightingShader>(shader_ptr.get());
     // All color image shaders should inherit form LightingShader.
     DRAKE_DEMAND(lighting_program != nullptr);
-    lighting_program->Use();
     lighting_program->SetAllLights(active_lights());
-    lighting_program->Unuse();
   }
 }
 
