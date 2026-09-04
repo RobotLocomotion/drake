@@ -5,7 +5,6 @@ gcc-toolset-14-gcc
 gcc-toolset-14-gcc-c++
 gcc-toolset-14-gcc-gfortran
 lld
-nasm
 
 # Other code tools.
 cmake
@@ -23,6 +22,6 @@ tar
 wget
 which
 
-# Build dependencies (general).
+# Additional build dependencies; see the officially supported Ubuntu spellings
+# under setup/ubuntu/.
 glib2-devel
-libXt-devel
