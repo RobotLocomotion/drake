@@ -2670,6 +2670,9 @@ template <typename T>
 SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     const systems::Context<T>& context, const Frame<T>& frame_F,
     const std::vector<LinkIndex>& link_indexes) const {
+  // Ensure frame_F belongs to this tree; otherwise pose queries can segfault.
+  frame_F.HasThisParentTreeOrThrow(this);
+
   // Check if there are repeated LinkIndex in link_indexes by converting the
   // vector to a set (to eliminate duplicates) and see if their sizes differ.
   const std::set<LinkIndex> without_duplicate_bodies(link_indexes.begin(),

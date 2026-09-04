@@ -4152,6 +4152,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///  the expressed-in frame for the returned spatial inertia.
   /// @param[in] body_indexes Array of selected bodies.  This method does not
   ///  distinguish between welded bodies, joint-connected bodies, etc.
+  /// @throws std::exception if `frame_F` does not belong to `this` plant.
   /// @throws std::exception if body_indexes contains an invalid BodyIndex or
   ///  if there is a repeated BodyIndex.
   /// @note The mass and inertia of the world_body() does not contribute to the

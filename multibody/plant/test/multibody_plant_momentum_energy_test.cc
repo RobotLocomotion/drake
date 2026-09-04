@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -335,6 +336,14 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSpatialInertia) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcSpatialInertia(*context_, frame_A, body_indexes),
       "CalcSpatialInertia\\(\\): contains a repeated BodyIndex.*");
+
+  // Verify an exception is thrown if frame_F was never added to the plant
+  // (regression test for #22636).
+  const FixedOffsetFrame<double> orphan_frame(
+      "orphan_frame", frame_A, math::RigidTransformd());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcSpatialInertia(*context_, orphan_frame, {body_A.index()}),
+      ".*does not belong to the supplied MultibodyTree.*");
 }
 
 }  // namespace
