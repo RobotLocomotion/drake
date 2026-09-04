@@ -25,6 +25,7 @@ drake_pybind_library(
     name = "planning",
     cc_deps = [
         "//bindings/generated_docstrings:planning",
+        "//bindings/generated_docstrings:planning_continuous_collision",
         "//bindings/generated_docstrings:planning_experimental",
         "//bindings/generated_docstrings:planning_graph_algorithms",
         "//bindings/generated_docstrings:planning_iris",
@@ -43,6 +44,7 @@ drake_pybind_library(
         "planning_py.cc",
         "planning_py_collision_checker.cc",
         "planning_py_collision_checker_interface_types.cc",
+        "planning_py_continuous_collision.cc",
         "planning_py_dof_mask.cc",
         "planning_py_experimental_placeholder.cc",
         "planning_py_graph_algorithms.cc",
@@ -96,6 +98,14 @@ drake_py_unittest(
         "//multibody:models",
         "//planning/test_utilities:collision_ground_plane.sdf",
     ],
+    num_threads = 2,
+    deps = [
+        ":planning",
+    ],
+)
+
+drake_py_unittest(
+    name = "continuous_collision_test",
     num_threads = 2,
     deps = [
         ":planning",
