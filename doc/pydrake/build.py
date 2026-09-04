@@ -113,13 +113,6 @@ def _build(*, out_dir, temp_dir, modules):
     assert len(os.listdir(temp_dir)) == 0
     assert len(os.listdir(out_dir)) == 0
 
-    sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
-    if not os.path.isfile(sphinx_build):
-        print(
-            "Please re-run 'setup/install_prereqs' with the '--developer' flag"
-        )
-        sys.exit(1)
-
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
     symlink_input(
@@ -161,7 +154,9 @@ def _build(*, out_dir, temp_dir, modules):
     os.environ["LANG"] = "en_US.UTF-8"
     check_call(
         [
-            sphinx_build,
+            sys.executable,
+            "-m",
+            "sphinx",
             "-b",
             "html",  # HTML output.
             "-a",
