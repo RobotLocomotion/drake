@@ -1,6 +1,8 @@
 #include "drake/geometry/proximity/field_intersection.h"
 
+#include <algorithm>
 #include <array>
+#include <cstdint>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
@@ -21,9 +23,29 @@ namespace {
 
 struct TetPairHasher final {
   std::size_t operator()(const std::pair<int, int>& p) const {
-    return std::hash<int>()(p.first) ^ std::hash<int>()(p.second);
+    /* Pack the two (non-negative) indices into one word and mix. The previous
+     XOR-of-hashes construction collided for every pair with equal XOR of
+     indices, degrading the visited-set lookups to list scans. */
+    const std::uint64_t packed =
+        (static_cast<std::uint64_t>(static_cast<std::uint32_t>(p.first))
+         << 32) |
+        static_cast<std::uint32_t>(p.second);
+    return static_cast<std::size_t>(packed * 0x9E3779B97F4A7C15ull);
   }
 };
+
+/* Same predicate as IsPlaneNormalAlongPressureGradient(), but consuming an
+ already-normalized gradient vector so callers can cache the normalization. */
+template <typename T>
+bool IsPlaneNormalAlongNormalizedGradient(const Vector3<T>& nhat_M,
+                                          const Vector3<double>& grad_nhat_M) {
+  const T cos_theta = nhat_M.dot(grad_nhat_M);
+  // Keep this threshold in sync with IsPlaneNormalAlongPressureGradient().
+  constexpr double kAlpha = 5. * M_PI / 8.;
+  const double kCosAlpha = std::cos(kAlpha);
+  // cos(θ) > cos(α) → θ < α → condition met.
+  return cos_theta > kCosAlpha;
+}
 
 }  // namespace
 
@@ -87,25 +109,50 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
     int element0, const VolumeMesh<double>& mesh0_M, int element1,
     const VolumeMesh<double>& mesh1_N, const math::RigidTransform<T>& X_MN,
     const Plane<T>& equilibrium_plane_M) {
-  // TODO(DamrongGuoy): Refactor this buffer from being a function-local
-  //  variable to a class member variable to reduce heap allocations. Then,
-  //  return the const reference. I cannot make them static function-local
-  //  because it will create race condition in multithreading environment.
+  // Compute the tet1-derived quantities the scratch-based overload consumes,
+  // then delegate to it.
+  std::array<Vector3<T>, 4> p_MVs;
+  std::array<Vector3<T>, 4> face_nhat_M;
+  std::array<T, 4> face_d_M;
+  for (int i = 0; i < 4; ++i) {
+    p_MVs[i] =
+        X_MN * mesh1_N.vertex(mesh1_N.element(element1).vertex(i)).cast<T>();
+  }
+  for (int face = 0; face < 4; ++face) {
+    // 'face' corresponds to the triangle formed by {0, 1, 2, 3} - {face}
+    // so any of (face+1)%4, (face+2)%4, (face+3)%4 are candidates for a
+    // point on the face's plane. We arbitrarily choose (face + 1) % 4.
+    const Vector3<T>& p_MA = p_MVs[(face + 1) % 4];
+    const Vector3<T> triangle_outward_normal_M =
+        X_MN.rotation() * -mesh1_N.inward_normal(element1, face).cast<T>();
+    const PosedHalfSpace<T> half_space_M(triangle_outward_normal_M, p_MA);
+    face_nhat_M[face] = half_space_M.normal();
+    face_d_M[face] = half_space_M.normal().dot(p_MA);
+  }
+  IntersectTetrahedraScratch<T> scratch;
+  IntersectTetrahedra(element0, mesh0_M, face_nhat_M, face_d_M,
+                      equilibrium_plane_M, &scratch);
+  return std::make_pair(scratch.polygon_buffer[scratch.result],
+                        scratch.face_buffer[scratch.result]);
+}
 
-  // We use two alternating buffers to reduce heap allocations.
-  std::vector<Vector3<T>> polygon_buffer[2];
-  std::vector<int> face_buffer[2];
+template <typename T>
+void IntersectTetrahedra(int element0, const VolumeMesh<double>& mesh0_M,
+                         const std::array<Vector3<T>, 4>& face_nhat1_M,
+                         const std::array<T, 4>& face_d1_M,
+                         const Plane<T>& equilibrium_plane_M,
+                         IntersectTetrahedraScratch<T>* scratch) {
+  DRAKE_DEMAND(scratch != nullptr);
+  // We use two alternating buffers (owned by the caller-provided scratch) to
+  // avoid heap allocations.
+  std::vector<Vector3<T>>* polygon_buffer = scratch->polygon_buffer;
+  std::vector<int>* face_buffer = scratch->face_buffer;
   std::array<T, 8> distances;
-
-  // Each contact polygon has at most 8 vertices because it is the
-  // intersection of the pressure-equilibrium plane and the two tetrahedra.
-  // The plane intersects a tetrahedron into a convex polygon with at most four
-  // vertices. That convex polygon intersects a tetrahedron into at most four
-  // more vertices.
-  polygon_buffer[0].reserve(8);
-  polygon_buffer[1].reserve(8);
-  face_buffer[0].reserve(8);
-  face_buffer[1].reserve(8);
+  polygon_buffer[0].clear();
+  polygon_buffer[1].clear();
+  face_buffer[0].clear();
+  face_buffer[1].clear();
+  scratch->result = 0;
 
   // Intersects the equilibrium plane with the tetrahedron element0.
   SliceTetrahedronWithPlane(element0, mesh0_M, equilibrium_plane_M,
@@ -114,16 +161,11 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
 
   RemoveNearlyDuplicateVertices(&polygon_buffer[0]);
   if (polygon_buffer[0].size() < 3) {
-    return {};
+    polygon_buffer[0].clear();
+    face_buffer[0].clear();
+    return;
   }
 
-  // Positions of vertices of tetrahedral element1 in mesh1_N expressed in
-  // frame M.
-  Vector3<T> p_MVs[4];
-  for (int i = 0; i < 4; ++i) {
-    p_MVs[i] =
-        X_MN * mesh1_N.vertex(mesh1_N.element(element1).vertex(i)).cast<T>();
-  }
   std::vector<Vector3<T>>* current_polygon = &polygon_buffer[0];
   std::vector<Vector3<T>>* clipped_polygon = &polygon_buffer[1];
   std::vector<int>* current_faces = &face_buffer[0];
@@ -135,18 +177,14 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
     clipped_polygon->clear();
     clipped_faces->clear();
 
-    // 'face' corresponds to the triangle formed by {0, 1, 2, 3} - {face}
-    // so any of (face+1)%4, (face+2)%4, (face+3)%4 are candidates for a
-    // point on the face's plane. We arbitrarily choose (face + 1) % 4.
-    const Vector3<T>& p_MA = p_MVs[(face + 1) % 4];
-    const Vector3<T> triangle_outward_normal_M =
-        X_MN.rotation() * -mesh1_N.inward_normal(element1, face).cast<T>();
-    PosedHalfSpace<T> half_space_M(triangle_outward_normal_M, p_MA);
+    const Vector3<T>& nhat_M = face_nhat1_M[face];
+    const T& d_M = face_d1_M[face];
 
     const int size = ssize(*current_polygon);
 
     for (int i = 0; i < size; ++i) {
-      distances[i] = half_space_M.CalcSignedDistance((*current_polygon)[i]);
+      // Signed distance n̂⋅Q − d, exactly as PosedHalfSpace computes it.
+      distances[i] = nhat_M.dot((*current_polygon)[i]) - d_M;
     }
 
     // Walk the vertices checking for intersecting edges.
@@ -185,16 +223,19 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
 
     // If we've clipped off the entire polygon, return empty.
     if (ssize(*current_polygon) == 0) {
-      return {};
+      current_faces->clear();
+      scratch->result = (current_polygon == &polygon_buffer[0]) ? 0 : 1;
+      return;
     }
   }
 
   RemoveNearlyDuplicateVertices(current_polygon);
   if (current_polygon->size() < 3) {
-    return {};
+    current_polygon->clear();
+    current_faces->clear();
   }
 
-  return std::make_pair(*current_polygon, *current_faces);
+  scratch->result = (current_polygon == &polygon_buffer[0]) ? 0 : 1;
 }
 
 template <typename T>
@@ -240,6 +281,10 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
 
   bvh0_M.Collide(bvh1_N, convert_to_double(X_MN), callback);
 
+  if (candidate_tetrahedra.empty()) return;
+
+  ResetCaches(field0_M, field1_N, X_MN);
+
   MeshBuilder builder_M;
   const math::RotationMatrix<T> R_NM = X_MN.rotation().inverse();
   for (const auto& [tet0, tet1] : candidate_tetrahedra) {
@@ -274,10 +319,17 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
   const math::RigidTransform<double> X_MNd = convert_to_double(X_MN);
 
   // Keep track of pairs of tet indices that have already been inserted into the
-  // queue.
-  std::unordered_set<std::pair<int, int>, TetPairHasher> visited_pairs;
+  // queue. The containers are reused thread-local buffers so that this
+  // function -- which runs for every broadphase candidate pair of compliant
+  // geometries -- makes no heap allocation after warm-up. (The queue is fully
+  // drained below and the set is cleared here, so no state leaks between
+  // calls.)
+  thread_local std::unordered_set<std::pair<int, int>, TetPairHasher>
+      visited_pairs;
+  visited_pairs.clear();
 
-  std::queue<std::pair<int, int>> candidate_tetrahedra;
+  thread_local std::queue<std::pair<int, int>> candidate_tetrahedra;
+  DRAKE_DEMAND(candidate_tetrahedra.empty());
   auto callback = [&candidate_tetrahedra, &visited_pairs, &tri_to_tet_M,
                    &tri_to_tet_N](int tri0, int tri1) -> BvttCallbackResult {
     DRAKE_ASSERT(0 <= tri0 && tri0 < ssize(tri_to_tet_M));
@@ -299,6 +351,8 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
   bvh0_M.Collide(bvh1_N, X_MNd, callback);
 
   if (candidate_tetrahedra.empty()) return;
+
+  ResetCaches(field0_M, field1_N, X_MN);
 
   MeshBuilder builder_M;
   const math::RotationMatrix<T> R_NM = X_MN.rotation().inverse();
@@ -375,47 +429,144 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
 }
 
 template <class MeshBuilder, class BvType>
+void VolumeIntersector<MeshBuilder, BvType>::ResetCaches(
+    const VolumeMeshFieldLinear<double, double>& field0_M,
+    const VolumeMeshFieldLinear<double, double>& field1_N,
+    const math::RigidTransform<T>& X_MN) {
+  tet1_cache_.assign(field1_N.mesh().num_elements(), Tet1Cache{});
+  tet0_cache_.resize(field0_M.mesh().num_elements());
+  tet0_valid_.assign(field0_M.mesh().num_elements(), 0);
+  // p_NMo = R_NM * p_MoNo... = R_MN⁻¹ * (-p_MoNo_M); the position of frame
+  // M's origin expressed in frame N, fixed for the whole query.
+  p_NMo_ = -(X_MN.rotation().matrix().transpose() * X_MN.translation());
+}
+
+template <class MeshBuilder, class BvType>
 std::vector<int> VolumeIntersector<MeshBuilder, BvType>::CalcContactPolygon(
     const VolumeMeshFieldLinear<double, double>& field0_M,
     const VolumeMeshFieldLinear<double, double>& field1_N,
     const math::RigidTransform<T>& X_MN, const math::RotationMatrix<T>& R_NM,
     const int tet0, const int tet1, MeshBuilder* builder_M) {
-  // Initialize the plane with a non-zero-length normal vector
-  // and an arbitrary point.
-  Plane<T> equilibrium_plane_M{Vector3d::UnitZ(), Vector3d::Zero()};
-  if (!CalcEquilibriumPlane(tet0, field0_M, tet1, field1_N, X_MN,
-                            &equilibrium_plane_M)) {
+  // The tet1-derived field quantities depend only on tet1 (and the fixed
+  // X_MN), so they are computed once per tet1 and reused across the many
+  // candidate tet0 pairings. The arithmetic mirrors CalcEquilibriumPlane().
+  Tet1Cache& c1 = tet1_cache_[tet1];
+  if (!(c1.flags & Tet1Cache::kFieldValid)) {
+    const Vector3d grad_f1_N = field1_N.EvaluateGradient(tet1);
+    c1.grad_f1_M = X_MN.rotation() * grad_f1_N.cast<T>();
+    // Value of f₁ at the origin of frame M, which is the frame of f₀.
+    c1.f1_Mo = field1_N.EvaluateCartesian(tet1, p_NMo_);
+    c1.flags |= Tet1Cache::kFieldValid;
+  }
+  const Vector3d grad_f0_M = field0_M.EvaluateGradient(tet0);
+  // Value of f₀ at the origin of frame M.
+  const double f0_Mo = field0_M.EvaluateAtMo(tet0);
+
+  // In frame M, the two linear functions are:
+  //      f₀(p_MQ) = grad_f0_M.dot(p_MQ) + f0_Mo.
+  //      f₁(p_MQ) = grad_f1_M.dot(p_MQ) + f1_Mo.
+  // Their equilibrium plane's (non-unit) normal is in the direction of
+  // increasing f₀ and decreasing f₁. See CalcEquilibriumPlane() for the
+  // derivation.
+  const Vector3<T> n_M = grad_f0_M - c1.grad_f1_M;
+  const T magnitude = n_M.norm();
+  if (magnitude <= 0.0) {
     return {};
   }
+  const Vector3<T> nhat_M = n_M / magnitude;
+  const Vector3<T> p_MQ = ((c1.f1_Mo - f0_Mo) / magnitude) * nhat_M;
+  const Plane<T> equilibrium_plane_M(nhat_M, p_MQ,
+                                     /* already_normalized = */ true);
+
   // The normal points in the direction of increasing field_0 and decreasing
   // field_1.
-  Vector3<T> polygon_nhat_M = equilibrium_plane_M.unit_normal();
-  if (!IsPlaneNormalAlongPressureGradient(polygon_nhat_M, tet0, field0_M)) {
+  const Vector3<T>& polygon_nhat_M = nhat_M;
+  // Test against the (cached) normalized field gradients, as
+  // IsPlaneNormalAlongPressureGradient() would.
+  Tet0Cache& c0 = tet0_cache_[tet0];
+  if (!tet0_valid_[tet0]) {
+    c0.grad_nhat = field0_M.EvaluateGradient(tet0).normalized();
+    const VolumeMesh<double>& mesh0 = field0_M.mesh();
+    const Vector3d& v0 = mesh0.vertex(mesh0.element(tet0).vertex(0));
+    const Vector3d& v1 = mesh0.vertex(mesh0.element(tet0).vertex(1));
+    const Vector3d& v2 = mesh0.vertex(mesh0.element(tet0).vertex(2));
+    const Vector3d& v3 = mesh0.vertex(mesh0.element(tet0).vertex(3));
+    c0.centroid_M = (v0 + v1 + v2 + v3) / 4.0;
+    using std::sqrt;
+    c0.radius = sqrt(std::max({(v0 - c0.centroid_M).squaredNorm(),
+                               (v1 - c0.centroid_M).squaredNorm(),
+                               (v2 - c0.centroid_M).squaredNorm(),
+                               (v3 - c0.centroid_M).squaredNorm()}));
+    tet0_valid_[tet0] = 1;
+  }
+  if (!IsPlaneNormalAlongNormalizedGradient(polygon_nhat_M, c0.grad_nhat)) {
     return {};
   }
-  Vector3<T> reverse_polygon_nhat_N = R_NM * (-polygon_nhat_M);
-  if (!IsPlaneNormalAlongPressureGradient(reverse_polygon_nhat_N, tet1,
-                                          field1_N)) {
+  // Bounding-sphere rejection: the contact polygon lies on the equilibrium
+  // plane and inside tet0, so if the plane does not cut tet0's bounding
+  // sphere there is no polygon. One dot product here skips the full
+  // slice-and-clip machinery below.
+  {
+    using std::abs;
+    const T height = equilibrium_plane_M.CalcHeight(c0.centroid_M);
+    if (abs(height) > c0.radius) {
+      return {};
+    }
+  }
+  const Vector3<T> reverse_polygon_nhat_N = R_NM * (-polygon_nhat_M);
+  if (!(c1.flags & Tet1Cache::kGradNhatValid)) {
+    c1.grad_nhat_N = field1_N.EvaluateGradient(tet1).normalized();
+    c1.flags |= Tet1Cache::kGradNhatValid;
+  }
+  if (!IsPlaneNormalAlongNormalizedGradient(reverse_polygon_nhat_N,
+                                            c1.grad_nhat_N)) {
     return {};
   }
-  const auto [polygon_vertices_M, faces] = IntersectTetrahedra(
-      tet0, field0_M.mesh(), tet1, field1_N.mesh(), X_MN, equilibrium_plane_M);
+
+  // The tet1 vertex positions and outward face half-spaces (in frame M)
+  // likewise depend only on tet1; compute them once per tet1.
+  if (!(c1.flags & Tet1Cache::kGeometryValid)) {
+    const VolumeMesh<double>& mesh1_N = field1_N.mesh();
+    std::array<Vector3<T>, 4> p_MVs;
+    for (int i = 0; i < 4; ++i) {
+      p_MVs[i] =
+          X_MN * mesh1_N.vertex(mesh1_N.element(tet1).vertex(i)).cast<T>();
+    }
+    for (int face = 0; face < 4; ++face) {
+      // 'face' corresponds to the triangle formed by {0, 1, 2, 3} - {face}
+      // so any of (face+1)%4, (face+2)%4, (face+3)%4 are candidates for a
+      // point on the face's plane. We arbitrarily choose (face + 1) % 4.
+      const Vector3<T>& p_MA = p_MVs[(face + 1) % 4];
+      const Vector3<T> triangle_outward_normal_M =
+          X_MN.rotation() * -mesh1_N.inward_normal(tet1, face).cast<T>();
+      const PosedHalfSpace<T> half_space_M(triangle_outward_normal_M, p_MA);
+      c1.face_nhat_M[face] = half_space_M.normal();
+      c1.face_d_M[face] = half_space_M.normal().dot(p_MA);
+    }
+    c1.flags |= Tet1Cache::kGeometryValid;
+  }
+
+  IntersectTetrahedra(tet0, field0_M.mesh(), c1.face_nhat_M, c1.face_d_M,
+                      equilibrium_plane_M, &scratch_);
+  const std::vector<Vector3<T>>& polygon_vertices_M =
+      scratch_.polygon_buffer[scratch_.result];
+  const std::vector<int>& faces = scratch_.face_buffer[scratch_.result];
 
   if (polygon_vertices_M.size() < 3) return {};
 
   // Add the vertices to the builder_M (with corresponding pressure values)
   // and construct index-based polygon representation.
-  std::vector<int> polygon_vertex_indices;
-  polygon_vertex_indices.reserve(polygon_vertices_M.size());
+  polygon_vertex_indices_.clear();
+  polygon_vertex_indices_.reserve(polygon_vertices_M.size());
   for (const auto& p_MV : polygon_vertices_M) {
-    polygon_vertex_indices.push_back(
+    polygon_vertex_indices_.push_back(
         builder_M->AddVertex(p_MV, field0_M.EvaluateCartesian(tet0, p_MV)));
   }
   // TODO(DamrongGuoy): Right now we pass the gradient of the volumetric
   //  field for the gradient tangent to the polygon. Consider passing only
   //  the tangential component without the normal component.
   const int num_new_faces = builder_M->AddPolygon(
-      polygon_vertex_indices, polygon_nhat_M, field0_M.EvaluateGradient(tet0));
+      polygon_vertex_indices_, polygon_nhat_M, field0_M.EvaluateGradient(tet0));
 
   // PolyMeshBuilder makes one new polygonal face. TriMeshBuilder makes multiple
   // new triangular faces.
@@ -531,7 +682,15 @@ template class HydroelasticVolumeIntersector<TriMeshBuilder<AutoDiffXd>>;
 template class VolumeIntersector<PolyMeshBuilder<double>, Aabb>;
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&CalcEquilibriumPlane<T>, &IntersectTetrahedra<T>,
+    (&CalcEquilibriumPlane<T>,
+     static_cast<std::pair<std::vector<Vector3<T>>, std::vector<int>> (*)(
+         int, const VolumeMesh<double>&, int, const VolumeMesh<double>&,
+         const math::RigidTransform<T>&, const Plane<T>&)>(
+         &IntersectTetrahedra<T>),
+     static_cast<void (*)(
+         int, const VolumeMesh<double>&, const std::array<Vector3<T>, 4>&,
+         const std::array<T, 4>&, const Plane<T>&,
+         IntersectTetrahedraScratch<T>*)>(&IntersectTetrahedra<T>),
      &IsPlaneNormalAlongPressureGradient<T>,
      &ComputeContactSurfaceFromCompliantVolumes<T>));
 

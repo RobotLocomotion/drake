@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="track_light">
+    <link name="base_link">
+      <inertial>
+        <mass>1.600000</mass>
+        <pose>0.005314491 0.0002261056 -0.063427668 0 0 0</pose>
+        <inertia>
+          <ixx>5.911105e-03</ixx>
+          <iyy>1.856436e-01</iyy>
+          <izz>1.816336e-01</izz>
+          <ixy>-3.146929e-05</ixy>
+          <ixz>4.771894e-04</ixz>
+          <iyz>8.476696e-06</iyz>
+        </inertia>
+      </inertial>
+      <collision name="collision_generated_000">
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.740</mu>
+              <mu2>0.740</mu2>
+            </ode>
+          </friction>
+        </surface>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/ceiling/track_light_1767963248__068a2dfaa8/assets/generated_collision/piece_000.obj</uri>
+            <drake:declare_convex />
+            <scale>1.00940000 1.00940000 1.00940000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
