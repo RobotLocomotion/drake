@@ -220,6 +220,65 @@ GTEST_TEST(SpanningForest, TreeAndLoopConstraintAPIs) {
   EXPECT_EQ(tree1.nv(), 1);
 }
 
+/* Joint coordinate starts are assigned by the topology code for every Joint,
+including welds that are unmodeled when a WeldedLinksAssembly is fused. */
+GTEST_TEST(SpanningForest, JointCoordinateStartsForFusedAndUnfusedWelds) {
+  LinkJointGraph graph;
+  graph.RegisterJointType("two_positions_one_velocity", 2, 1);
+  graph.RegisterJointType("revolute", 1, 1);
+
+  const ModelInstanceIndex model_instance(1);
+  const LinkIndex link1 = graph.AddLink("link1", model_instance);
+  const LinkIndex link2 = graph.AddLink("link2", model_instance);
+  const LinkIndex link3 = graph.AddLink("link3", model_instance);
+  const LinkIndex link4 = graph.AddLink("link4", model_instance);
+
+  const JointIndex moving_joint =
+      graph.AddJoint("moving", model_instance, "two_positions_one_velocity",
+                     world_index(), link1);
+  const JointIndex weld12 =
+      graph.AddJoint("weld12", model_instance, "weld", link1, link2);
+  const JointIndex weld23 =
+      graph.AddJoint("weld23", model_instance, "weld", link2, link3);
+  const JointIndex tip_joint =
+      graph.AddJoint("tip", model_instance, "revolute", link3, link4);
+
+  // Without fusion each weld has a zero-dof Mobod. Its start is where that
+  // Mobod's coordinates would have begun.
+  ASSERT_TRUE(graph.BuildForest());
+  EXPECT_EQ(graph.joint_by_index(moving_joint).q_start(), 0);
+  EXPECT_EQ(graph.joint_by_index(moving_joint).v_start(), 0);
+  EXPECT_EQ(graph.joint_by_index(weld12).q_start(), 2);
+  EXPECT_EQ(graph.joint_by_index(weld12).v_start(), 1);
+  EXPECT_EQ(graph.joint_by_index(weld23).q_start(), 2);
+  EXPECT_EQ(graph.joint_by_index(weld23).v_start(), 1);
+  EXPECT_EQ(graph.joint_by_index(tip_joint).q_start(), 2);
+  EXPECT_EQ(graph.joint_by_index(tip_joint).v_start(), 1);
+  EXPECT_TRUE(graph.joint_by_index(weld12).mobod_index().is_valid());
+  EXPECT_TRUE(graph.joint_by_index(weld23).mobod_index().is_valid());
+
+  // Rebuilding with fusion invalidates the old assignments until BuildForest
+  // assigns them again.
+  graph.SetGlobalForestBuildingOptions(
+      ForestBuildingOptions::kFuseWeldedLinksAssemblies);
+  EXPECT_EQ(graph.joint_by_index(moving_joint).q_start(), -1);
+  EXPECT_EQ(graph.joint_by_index(moving_joint).v_start(), -1);
+  EXPECT_EQ(graph.joint_by_index(weld12).q_start(), -1);
+  EXPECT_EQ(graph.joint_by_index(weld12).v_start(), -1);
+
+  ASSERT_TRUE(graph.BuildForest());
+  EXPECT_EQ(graph.joint_by_index(moving_joint).q_start(), 0);
+  EXPECT_EQ(graph.joint_by_index(moving_joint).v_start(), 0);
+  EXPECT_EQ(graph.joint_by_index(weld12).q_start(), 0);
+  EXPECT_EQ(graph.joint_by_index(weld12).v_start(), 0);
+  EXPECT_EQ(graph.joint_by_index(weld23).q_start(), 0);
+  EXPECT_EQ(graph.joint_by_index(weld23).v_start(), 0);
+  EXPECT_EQ(graph.joint_by_index(tip_joint).q_start(), 2);
+  EXPECT_EQ(graph.joint_by_index(tip_joint).v_start(), 1);
+  EXPECT_FALSE(graph.joint_by_index(weld12).mobod_index().is_valid());
+  EXPECT_FALSE(graph.joint_by_index(weld23).mobod_index().is_valid());
+}
+
 /* Creates a straightforward graph of two trees each with multiple branches,
 plus a lone unattached free link. There are no welds or reverse joints or loops.
 We intentionally jumble the link numbering to make sure we don't get the right

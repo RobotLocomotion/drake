@@ -375,18 +375,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
                       MultibodyForces<T>* forces) const final;
 
  private:
-  int do_get_velocity_start() const final {
-    return get_mobilizer().velocity_start_in_v();
-  }
-
-  int do_get_num_velocities() const final { return 6; }
-
-  int do_get_position_start() const final {
-    return get_mobilizer().position_start_in_q();
-  }
-
-  int do_get_num_positions() const final { return 7; }
-
   std::string do_get_position_suffix(int index) const final {
     return get_mobilizer().position_suffix(index);
   }

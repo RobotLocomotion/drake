@@ -3739,39 +3739,6 @@ the particular joint type).
 Note:
     The default generalized velocities v₀ are zero for every joint.)""";
         } default_positions;
-        // Symbol: drake::multibody::Joint::do_get_num_positions
-        struct /* do_get_num_positions */ {
-          // Source: drake/multibody/tree/joint.h
-          const char* doc =
-R"""(Implementation of the NVI num_positions(), see num_positions() for
-details.
-
-Note:
-    Implementations must meet the styleguide requirements for
-    snake_case accessor methods.)""";
-        } do_get_num_positions;
-        // Symbol: drake::multibody::Joint::do_get_num_velocities
-        struct /* do_get_num_velocities */ {
-          // Source: drake/multibody/tree/joint.h
-          const char* doc =
-R"""(Implementation of the NVI num_velocities(), see num_velocities() for
-details.
-
-Note:
-    Implementations must meet the styleguide requirements for
-    snake_case accessor methods.)""";
-        } do_get_num_velocities;
-        // Symbol: drake::multibody::Joint::do_get_position_start
-        struct /* do_get_position_start */ {
-          // Source: drake/multibody/tree/joint.h
-          const char* doc =
-R"""(Implementation of the NVI position_start(), see position_start() for
-details.
-
-Note:
-    Implementations must meet the styleguide requirements for
-    snake_case accessor methods.)""";
-        } do_get_position_start;
         // Symbol: drake::multibody::Joint::do_get_position_suffix
         struct /* do_get_position_suffix */ {
           // Source: drake/multibody/tree/joint.h
@@ -3780,18 +3747,6 @@ R"""(Implementation of the NVI position_suffix(), see position_suffix() for
 details. The suffix should contain only alphanumeric characters (e.g.
 'wx' not '_wx' or '.wx').)""";
         } do_get_position_suffix;
-        // Symbol: drake::multibody::Joint::do_get_velocity_start
-        struct /* do_get_velocity_start */ {
-          // Source: drake/multibody/tree/joint.h
-          const char* doc =
-R"""(Implementation of the NVI velocity_start(), see velocity_start() for
-details. Note that this must be the offset within just the velocity
-vector, *not* within the composite state vector.
-
-Note:
-    Implementations must meet the styleguide requirements for
-    snake_case accessor methods.)""";
-        } do_get_velocity_start;
         // Symbol: drake::multibody::Joint::do_get_velocity_suffix
         struct /* do_get_velocity_suffix */ {
           // Source: drake/multibody/tree/joint.h
@@ -3929,7 +3884,12 @@ R"""(Returns a const reference to the parent body P.)""";
           const char* doc =
 R"""(Returns the index to the first generalized position for this joint
 within the vector q of generalized positions for the full multibody
-system.)""";
+system. For a zero-dof joint, this is where its positions would have
+started had it had any. An unmodeled weld within a fused Mobod
+inherits that Mobod's position start.
+
+Precondition:
+    The MultibodyPlant has been finalized.)""";
         } position_start;
         // Symbol: drake::multibody::Joint::position_suffix
         struct /* position_suffix */ {
@@ -4076,7 +4036,12 @@ R"""(Returns a string identifying the type of ``this`` joint, such as
           const char* doc =
 R"""(Returns the index to the first generalized velocity for this joint
 within the vector v of generalized velocities for the full multibody
-system.)""";
+system. For a zero-dof joint, this is where its velocities would have
+started had it had any. An unmodeled weld within a fused Mobod
+inherits that Mobod's velocity start.
+
+Precondition:
+    The MultibodyPlant has been finalized.)""";
         } velocity_start;
         // Symbol: drake::multibody::Joint::velocity_suffix
         struct /* velocity_suffix */ {

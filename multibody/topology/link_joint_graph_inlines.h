@@ -96,6 +96,15 @@ inline void LinkJointGraph::set_mobod_for_joint(JointOrdinal joint_ordinal,
   joint.how_modeled_ = mobod_index;
 }
 
+inline void LinkJointGraph::set_joint_coordinate_starts(
+    JointOrdinal joint_ordinal, int q_start, int v_start) {
+  Joint& joint = mutable_joint(joint_ordinal);
+  DRAKE_ASSERT(joint.has_been_processed());
+  DRAKE_ASSERT(q_start >= 0 && v_start >= 0);
+  joint.q_start_ = q_start;
+  joint.v_start_ = v_start;
+}
+
 // LinkJointGraph definitions deferred until LoopConstraint defined.
 
 inline const LinkJointGraph::LoopConstraint& LinkJointGraph::loop_constraints(

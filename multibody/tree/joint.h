@@ -160,11 +160,8 @@ class Joint : public MultibodyElement<T> {
     DRAKE_DEMAND((vel_lower_limits.array() <= vel_upper_limits.array()).all());
     DRAKE_DEMAND((acc_lower_limits.array() <= acc_upper_limits.array()).all());
 
-    // N.B. We cannot use `num_positions()` here because it is virtual.
-    const int num_positions = pos_lower_limits.size();
-
     // initialize the default positions.
-    default_positions_ = VectorX<double>::Zero(num_positions);
+    default_positions_ = VectorX<double>::Zero(num_positions());
   }
 
   /// Additional constructor overload for joints with zero damping. Refer to
@@ -222,24 +219,42 @@ class Joint : public MultibodyElement<T> {
 
   /// Returns the index to the first generalized velocity for this joint
   /// within the vector v of generalized velocities for the full multibody
-  /// system.
-  int velocity_start() const { return do_get_velocity_start(); }
+  /// system. For a zero-dof joint, this is where its velocities would have
+  /// started had it had any. An unmodeled weld within a fused Mobod inherits
+  /// that Mobod's velocity start.
+  /// @pre The MultibodyPlant has been finalized.
+  int velocity_start() const {
+    const int start =
+        this->get_parent_tree().graph().joint_by_index(index()).v_start();
+    DRAKE_ASSERT(start >= 0);
+    return start;
+  }
 
   /// Returns the number of generalized velocities describing this joint.
   int num_velocities() const {
-    DRAKE_ASSERT(0 <= do_get_num_velocities() && do_get_num_velocities() <= 6);
-    return do_get_num_velocities();
+    const int result = vel_lower_limits_.size();
+    DRAKE_ASSERT(0 <= result && result <= 6);
+    return result;
   }
 
   /// Returns the index to the first generalized position for this joint
   /// within the vector q of generalized positions for the full multibody
-  /// system.
-  int position_start() const { return do_get_position_start(); }
+  /// system. For a zero-dof joint, this is where its positions would have
+  /// started had it had any. An unmodeled weld within a fused Mobod inherits
+  /// that Mobod's position start.
+  /// @pre The MultibodyPlant has been finalized.
+  int position_start() const {
+    const int start =
+        this->get_parent_tree().graph().joint_by_index(index()).q_start();
+    DRAKE_ASSERT(start >= 0);
+    return start;
+  }
 
   /// Returns the number of generalized positions describing this joint.
   int num_positions() const {
-    DRAKE_ASSERT(0 <= do_get_num_positions() && do_get_num_positions() <= 7);
-    return do_get_num_positions();
+    const int result = pos_lower_limits_.size();
+    DRAKE_ASSERT(0 <= result && result <= 7);
+    return result;
   }
 
   /// Returns true if this joint's mobility allows relative rotation of the
@@ -839,31 +854,6 @@ class Joint : public MultibodyElement<T> {
   // End of hidden Doxygen section.
 
  protected:
-  /// Implementation of the NVI velocity_start(), see velocity_start() for
-  /// details. Note that this must be the offset within just the velocity
-  /// vector, _not_ within the composite state vector.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
-  virtual int do_get_velocity_start() const = 0;
-
-  /// Implementation of the NVI num_velocities(), see num_velocities() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
-  virtual int do_get_num_velocities() const = 0;
-
-  /// Implementation of the NVI position_start(), see position_start() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
-  virtual int do_get_position_start() const = 0;
-
-  /// Implementation of the NVI num_positions(), see num_positions() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for
-  /// snake_case accessor methods.
-  virtual int do_get_num_positions() const = 0;
-
   /// Implementation of the NVI position_suffix(), see position_suffix() for
   /// details.  The suffix should contain only alphanumeric characters (e.g.
   /// 'wx' not '_wx' or '.wx').

@@ -87,9 +87,15 @@ void MultibodyTree<T>::RegisterJointAndMaybeJointTypeInGraph(
                                         joint.num_velocities(), has_quaternion);
   }
   // Note changes in the graph.
-  link_joint_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
-                             joint.parent_body().index(),
-                             joint.child_body().index());
+  const JointIndex graph_joint_index = link_joint_graph_.AddJoint(
+      joint.name(), joint.model_instance(), type_name,
+      joint.parent_body().index(), joint.child_body().index());
+  const LinkJointGraph::Joint& graph_joint =
+      link_joint_graph_.joint_by_index(graph_joint_index);
+  const LinkJointGraph::JointTraits& traits =
+      link_joint_graph_.joint_traits(graph_joint.traits_index());
+  DRAKE_DEMAND(traits.nq == joint.num_positions());
+  DRAKE_DEMAND(traits.nv == joint.num_velocities());
 }
 
 template <typename T>

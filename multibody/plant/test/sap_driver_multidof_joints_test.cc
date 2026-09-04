@@ -88,13 +88,6 @@ class MultiDofJointWithLimits final : public Joint<T> {
   template <typename>
   friend class MultiDofJointWithLimits;
 
-  int do_get_num_velocities() const override { return kNumDofs; }
-  int do_get_num_positions() const override { return kNumDofs; }
-  // Dummy implementation, knowing our unit tests below have a single joint of
-  // this type.
-  int do_get_velocity_start() const override { return 0; }
-  int do_get_position_start() const override { return 0; }
-
   std::unique_ptr<Mobilizer<T>> MakeMobilizerForJoint(
       const SpanningForest::Mobod& mobod,
       MultibodyTree<T>* tree) const override {
