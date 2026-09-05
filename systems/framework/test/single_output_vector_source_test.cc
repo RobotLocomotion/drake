@@ -8,6 +8,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 namespace drake {
 namespace systems {
 namespace {
@@ -106,3 +111,7 @@ GTEST_TEST(SingleOutputVectorSourceConvertableTest, ScalarTypes) {
 }  // namespace
 }  // namespace systems
 }  // namespace drake
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
