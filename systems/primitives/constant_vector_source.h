@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/single_output_vector_source.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
@@ -22,7 +22,7 @@ namespace systems {
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
-class ConstantVectorSource final : public SingleOutputVectorSource<T> {
+class ConstantVectorSource final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantVectorSource);
 
@@ -73,8 +73,7 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   ConstantVectorSource(SystemScalarConverter, const BasicVector<T>&);
 
   // Outputs a signal with a fixed value as specified by the user.
-  void DoCalcVectorOutput(const Context<T>& context,
-                          Eigen::VectorBlock<VectorX<T>>* output) const final;
+  void CalcOutput(const Context<T>& context, BasicVector<T>* output) const;
 
   const int source_value_index_;
 };

@@ -63,8 +63,10 @@ ConstantVectorSource<T>::ConstantVectorSource(
 template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(
     SystemScalarConverter converter, const BasicVector<T>& source_value)
-    : SingleOutputVectorSource<T>(std::move(converter), source_value),
+    : LeafSystem<T>(std::move(converter)),
       source_value_index_(this->DeclareNumericParameter(source_value)) {
+  this->DeclareVectorOutputPort(kUseDefaultName, source_value,
+                                &ConstantVectorSource<T>::CalcOutput);
   // This condition is always true because of the way our constructors delegate.
   DRAKE_DEMAND(this->get_system_scalar_converter().empty() ||
                typeid(source_value) == typeid(BasicVector<T>));
@@ -74,9 +76,9 @@ template <typename T>
 ConstantVectorSource<T>::~ConstantVectorSource() = default;
 
 template <typename T>
-void ConstantVectorSource<T>::DoCalcVectorOutput(
-    const Context<T>& context, Eigen::VectorBlock<VectorX<T>>* output) const {
-  *output = get_source_value(context).get_value();
+void ConstantVectorSource<T>::CalcOutput(const Context<T>& context,
+                                         BasicVector<T>* output) const {
+  output->SetFrom(get_source_value(context));
 }
 
 template <typename T>
