@@ -6,6 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -17,7 +18,8 @@ namespace systems {
 /// only a single, vector output port. Subclasses should override the protected
 /// method
 /// @code
-/// void DoCalcOutput(const Context<T>&, Eigen::VectorBlock<VectorX<T>>*) const;
+/// void DoCalcVectorOutput(const Context<T>& context,
+///                         Eigen::VectorBlock<VectorX<T>>* output) const;
 /// @endcode
 ///
 /// @system
@@ -26,9 +28,19 @@ namespace systems {
 /// - y0
 /// @endsystem
 ///
+/// @warning This class is deprecated and will be removed from Drake on or
+/// after 2026-12-01. Prefer deriving from LeafSystem directly. Declaring a
+/// single vector-valued output port with %LeafSystem requires only a few
+/// lines of code.
+///
 /// @tparam_default_scalar
 template <typename T>
-class SingleOutputVectorSource : public LeafSystem<T> {
+class DRAKE_DEPRECATED(
+    "2026-12-01",
+    "Use LeafSystem instead of SingleOutputVectorSource. Declaring a single "
+    "vector-valued output port with LeafSystem requires only a few lines of "
+    "code.")
+SingleOutputVectorSource : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingleOutputVectorSource);
 
