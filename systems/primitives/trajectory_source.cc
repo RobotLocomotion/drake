@@ -13,9 +13,7 @@ template <typename T>
 TrajectorySource<T>::TrajectorySource(const Trajectory<T>& trajectory,
                                       int output_derivative_order,
                                       bool zero_derivatives_beyond_limits)
-    : SingleOutputVectorSource<T>(
-          SystemTypeTag<TrajectorySource>{},
-          trajectory.rows() * (1 + output_derivative_order)),
+    : LeafSystem<T>(SystemTypeTag<TrajectorySource>{}),
       // Make a copy of the input trajectory.
       trajectory_(trajectory.Clone()),
       clamp_derivatives_(zero_derivatives_beyond_limits) {
@@ -23,6 +21,10 @@ TrajectorySource<T>::TrajectorySource(const Trajectory<T>& trajectory,
   // more complicated matrices.
   DRAKE_THROW_UNLESS(trajectory.cols() == 1);
   DRAKE_THROW_UNLESS(output_derivative_order >= 0);
+
+  this->DeclareVectorOutputPort(
+      kUseDefaultName, trajectory.rows() * (1 + output_derivative_order),
+      &TrajectorySource<T>::CalcOutput);
 
   for (int i = 0; i < output_derivative_order; ++i) {
     if (i == 0) {
@@ -38,9 +40,10 @@ TrajectorySource<T>::TrajectorySource(const Trajectory<T>& trajectory,
 template <typename T>
 template <typename U>
 TrajectorySource<T>::TrajectorySource(const TrajectorySource<U>& other)
-    : SingleOutputVectorSource<T>(SystemTypeTag<TrajectorySource>{},
-                                  other.get_output_port().size()),
+    : LeafSystem<T>(SystemTypeTag<TrajectorySource>{}),
       clamp_derivatives_{other.clamp_derivatives_} {
+  this->DeclareVectorOutputPort(kUseDefaultName, other.get_output_port().size(),
+                                &TrajectorySource<T>::CalcOutput);
   other.CheckInvariants();
   // The scalar_conversion::Traits in our header only allows two possible
   // conversion patterns (the "if" and "else" cases here).
@@ -180,17 +183,18 @@ void CalcVectorOutputImpl(
 }  // namespace
 
 template <typename T>
-void TrajectorySource<T>::DoCalcVectorOutput(
-    const Context<T>& context, Eigen::VectorBlock<VectorX<T>>* output) const {
+void TrajectorySource<T>::CalcOutput(const Context<T>& context,
+                                     BasicVector<T>* output) const {
   CheckInvariants();
+  Eigen::VectorBlock<VectorX<T>> block = output->get_mutable_value();
   const T time = context.get_time();
   if (failsafe_trajectory_ != nullptr) {
     const double failsafe_time = ExtractFailsafeTime(time);
     CalcVectorOutputImpl(failsafe_time, failsafe_trajectory_,
-                         clamp_derivatives_, failsafe_derivatives_, output);
+                         clamp_derivatives_, failsafe_derivatives_, &block);
   } else {
     CalcVectorOutputImpl(time, trajectory_, clamp_derivatives_, derivatives_,
-                         output);
+                         &block);
   }
 }
 
