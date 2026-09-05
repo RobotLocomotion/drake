@@ -1129,6 +1129,176 @@ TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
   EXPECT_EQ(spec.offset, 0.5);
 }
 
+// SDFormat 1.11 official //joint/axis/mimic, with multiplier/offset/reference
+// values from libsdformat's DOMJointAxis.ParseMimic test. Drake's coupler is
+//   q_follower = gear_ratio * q_leader + offset
+// and SDFormat defines
+//   follower = multiplier * (leader - reference) + offset
+// so gear_ratio = multiplier and Drake offset = offset - multiplier * reference.
+TEST_F(SdfParserTest, OfficialMimicSuccessfulParsing) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='test'>
+      <link name='link1'/>
+      <link name='link2'/>
+      <link name='link3'/>
+      <joint name='source_joint' type='revolute'>
+        <parent>link1</parent>
+        <child>link2</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='follow_joint' type='revolute'>
+        <parent>link1</parent>
+        <child>link3</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <mimic joint='source_joint'>
+            <multiplier>4</multiplier>
+            <offset>2</offset>
+            <reference>3</reference>
+          </mimic>
+        </axis>
+      </joint>
+    </model>)""",
+                  "1.11");
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("follow_joint"));
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("source_joint"));
+  const Joint<double>& joint_with_mimic = plant_.GetJointByName("follow_joint");
+  const Joint<double>& joint_to_mimic = plant_.GetJointByName("source_joint");
+
+  EXPECT_EQ(plant_.num_constraints(), 1);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  const internal::CouplerConstraintSpec& spec =
+      plant_.get_coupler_constraint_specs().begin()->second;
+  EXPECT_EQ(spec.joint0_index, joint_with_mimic.index());
+  EXPECT_EQ(spec.joint1_index, joint_to_mimic.index());
+  EXPECT_EQ(spec.gear_ratio, 4);
+  EXPECT_EQ(spec.offset, 2 - 4 * 3);
+}
+
+TEST_F(SdfParserTest, OfficialMimicZeroReferenceMatchesUrdf) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <mimic joint='joint_AB'>
+            <multiplier>1</multiplier>
+            <offset>0.5</offset>
+            <reference>0</reference>
+          </mimic>
+        </axis>
+      </joint>
+    </model>)""",
+                  "1.11");
+  const Joint<double>& joint_with_mimic = plant_.GetJointByName("joint_AC");
+  const Joint<double>& joint_to_mimic = plant_.GetJointByName("joint_AB");
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  const internal::CouplerConstraintSpec& spec =
+      plant_.get_coupler_constraint_specs().begin()->second;
+  EXPECT_EQ(spec.joint0_index, joint_with_mimic.index());
+  EXPECT_EQ(spec.joint1_index, joint_to_mimic.index());
+  EXPECT_EQ(spec.gear_ratio, 1);
+  EXPECT_EQ(spec.offset, 0.5);
+}
+
+TEST_F(SdfParserTest, OfficialMimicForwardReference) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <mimic joint='joint_AC'>
+            <multiplier>2</multiplier>
+            <offset>0.25</offset>
+            <reference>1</reference>
+          </mimic>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>)""",
+                  "1.11");
+  const Joint<double>& joint_with_mimic = plant_.GetJointByName("joint_AB");
+  const Joint<double>& joint_to_mimic = plant_.GetJointByName("joint_AC");
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  const internal::CouplerConstraintSpec& spec =
+      plant_.get_coupler_constraint_specs().begin()->second;
+  EXPECT_EQ(spec.joint0_index, joint_with_mimic.index());
+  EXPECT_EQ(spec.joint1_index, joint_to_mimic.index());
+  EXPECT_EQ(spec.gear_ratio, 2);
+  EXPECT_EQ(spec.offset, 0.25 - 2 * 1);
+}
+
+TEST_F(SdfParserTest, OfficialMimicAxis2OnUniversalWarns) {
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='universal'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <effort>0</effort>
+          </limit>
+        </axis>
+        <axis2>
+          <xyz>1 0 0</xyz>
+          <limit>
+            <effort>0</effort>
+          </limit>
+          <mimic joint='joint_AB'>
+            <multiplier>1</multiplier>
+            <offset>0</offset>
+            <reference>0</reference>
+          </mimic>
+        </axis2>
+      </joint>
+    </model>)""",
+                  "1.11");
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*Drake only supports the mimic element for "
+                           "single-dof joints.*"));
+  EXPECT_EQ(plant_.num_coupler_constraints(), 0);
+}
+
 static constexpr char kMimicModel[] = R"""(
     <model name='a'>
       <link name='A'/>

@@ -1480,6 +1480,13 @@ the relation: `q0 = multiplier * q1 + offset`. The units of `multiplier` and
 `offset` depend on the type of joints specified. This tag only supports single
 degree of freedom joints that exist in the same model instance.
 
+Drake also parses the official SDFormat 1.11+ `//joint/axis/mimic` and
+`//joint/axis2/mimic` elements (see
+http://sdformat.org/spec?ver=1.11&elem=joint#axis_mimic). Those use child
+elements for `multiplier`, `offset`, and `reference`, with
+`follower = multiplier * (leader - reference) + offset`. When `reference` is
+zero, the mapping matches this custom tag and URDF.
+
 @subsection tag_drake_mu_dynamic drake:mu_dynamic
 
 - SDFormat path: `//model/link/collision/drake:proximity_properties/drake:mu_dynamic`
