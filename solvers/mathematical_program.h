@@ -1288,19 +1288,23 @@ class MathematicalProgram {
    */
   //@{
   /**
-   * Maximize the log determinant. See @ref log_determinant for more details.
+   * Maximize the log determinant.
+   * Adds max weight * log(det(X)) to the program.
+   * See @ref log_determinant for more details.
    * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
    * be maximized.
-   * @return (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
-   * slack variables t and the lower triangular matrix Z. Note that Z is not a
-   * matrix of symbolic::Variable but symbolic::Expression, because the
+   * @param weight The weight of the log determinant cost. @pre weight >= 0.
+   * @return (cost, t, Z) cost is -weight * ∑ᵢt(i), we also return the newly
+   * created slack variables t and the lower triangular matrix Z. Note that Z is
+   * not a matrix of symbolic::Variable but symbolic::Expression, because the
    * upper-diagonal entries of Z are not variable, but expression 0.
    * @pre X is a symmetric matrix.
    */
   // TODO(hongkai.dai): return the lower-triangular of Z as
   // VectorX<symbolic::Variable>.
   auto AddMaximizeLogDeterminantCost(
-      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
+      double weight = 1.0)
       -> std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
                     MatrixX<symbolic::Expression>>;
 

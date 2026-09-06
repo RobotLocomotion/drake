@@ -95,8 +95,12 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
   ellipsoid_psd << S, b.cast<symbolic::Expression>() / 2,
       b.cast<symbolic::Expression>().transpose() / 2, c;
   prog.AddLinearMatrixInequalityConstraint(ellipsoid_psd);
+  // Intentionally use weight != 1.0 to test the weight.
+  // We will need to normalize the cost by the weight.
+  const double weight = 2.0;
   const auto [linear_cost, log_det_t, log_det_Z] =
-      prog.AddMaximizeLogDeterminantCost(S.cast<symbolic::Expression>());
+      prog.AddMaximizeLogDeterminantCost(S.cast<symbolic::Expression>(),
+                                         weight);
   for (int i = 0; i < 4; ++i) {
     prog.AddLinearConstraint(
         pts.col(i).dot(S.cast<symbolic::Expression>() * pts.col(i)) +
@@ -120,11 +124,12 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
   // (0.5 / scaling_factor(0)², 0.5 / scaling_factor(1)²). det(S) is just
   // (0.25 / (scaling_factor(0)² * scaling_factor(1)²));
   const double expected_cost =
-      -std::log(0.25 / std::pow(scaling_factor(0) * scaling_factor(1), 2));
+      -weight *
+      std::log(0.25 / std::pow(scaling_factor(0) * scaling_factor(1), 2));
   EXPECT_NEAR(result.get_optimal_cost(), expected_cost, tol);
   EXPECT_NEAR(result.EvalBinding(linear_cost)(0), expected_cost, tol);
   const Eigen::VectorXd log_det_t_sol = result.GetSolution(log_det_t);
-  EXPECT_NEAR(log_det_t_sol.sum(), -expected_cost, tol);
+  EXPECT_NEAR(log_det_t_sol.sum(), -expected_cost / weight, tol);
   Eigen::MatrixXd log_det_Z_sol =
       ExtractDoubleOrThrow(result.GetSolution(log_det_Z));
   EXPECT_TRUE(
@@ -135,7 +140,7 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
           log_det_Z_sol)
           .toDenseMatrix(),
       Eigen::MatrixXd::Zero(log_det_Z_sol.rows(), log_det_Z_sol.cols())));
-  EXPECT_NEAR(-std::log(S_sol.determinant()), expected_cost, tol);
+  EXPECT_NEAR(-std::log(S_sol.determinant()), expected_cost / weight, tol);
 }
 
 void MatrixLogDeterminantLower(const SolverInterface& solver, double tol) {
