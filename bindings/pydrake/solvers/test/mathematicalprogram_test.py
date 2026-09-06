@@ -800,10 +800,13 @@ class TestMathematicalProgram(unittest.TestCase):
             pt = pts[i, :]
             prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
         _linear_cost, log_det_t, log_det_Z = prog.AddMaximizeLogDeterminantCost(
-            X=X
+            X=X, weight=2.0
         )
         self.assertEqual(log_det_t.shape, (2,))
         self.assertEqual(log_det_Z.shape, (2, 2))
+        numpy_compare.assert_equal(
+            _linear_cost.evaluator().a(), np.array([-2.0, -2.0])
+        )
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
