@@ -697,12 +697,13 @@ void CreateLogDetermiant(
 std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
            MatrixX<symbolic::Expression>>
 MathematicalProgram::AddMaximizeLogDeterminantCost(
-    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X, double weight) {
   VectorX<symbolic::Variable> t;
   MatrixX<symbolic::Expression> Z;
   CreateLogDetermiant(this, X, &t, &Z);
 
-  const auto cost = AddLinearCost(-Eigen::VectorXd::Ones(t.rows()), t);
+  const auto cost =
+      AddLinearCost(-Eigen::VectorXd::Constant(t.rows(), weight), t);
   return std::make_tuple(cost, std::move(t), std::move(Z));
 }
 

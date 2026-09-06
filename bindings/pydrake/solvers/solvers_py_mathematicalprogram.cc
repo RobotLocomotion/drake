@@ -711,9 +711,10 @@ void BindMathematicalProgram(py::module_ m) {
           static_cast<std::tuple<Binding<LinearCost>,
               VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
               MathematicalProgram::*)(
-              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
+              double weight)>(
               &MathematicalProgram::AddMaximizeLogDeterminantCost),
-          py::arg("X"),
+          py::arg("X"), py::arg("weight") = 1.0,
           doc.MathematicalProgram.AddMaximizeLogDeterminantCost.doc)
       .def("AddLogDeterminantLowerBoundConstraint",
           &MathematicalProgram::AddLogDeterminantLowerBoundConstraint,
