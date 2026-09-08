@@ -35,12 +35,9 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class DRAKE_DEPRECATED(
-    "2026-12-01",
-    "Use LeafSystem instead of SingleOutputVectorSource. Declaring a single "
-    "vector-valued output port with LeafSystem requires only a few lines of "
-    "code.")
-SingleOutputVectorSource : public LeafSystem<T> {
+class DRAKE_DEPRECATED("2026-12-01",
+                       "Use LeafSystem instead of SingleOutputVectorSource.")
+    SingleOutputVectorSource : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingleOutputVectorSource);
 
