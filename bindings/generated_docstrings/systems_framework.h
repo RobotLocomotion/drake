@@ -7816,7 +7816,7 @@ exists, with ``system``, ``context``, and ``this``.)""";
       // Symbol: drake::systems::SingleOutputVectorSource
       struct /* SingleOutputVectorSource */ {
         // Source: drake/systems/framework/single_output_vector_source.h
-        const char* doc =
+        const char* doc_deprecated =
 R"""(A base class that specializes LeafSystem for use with no input ports,
 and only a single, vector output port. Subclasses should override the
 protected method
@@ -7828,7 +7828,8 @@ protected method
 
 .. code-block:: c++
 
-    void DoCalcOutput(const Context<T>&, Eigen∷VectorBlock<VectorX<T>>*) const;
+    void DoCalcVectorOutput(const Context<T>& context,
+                            Eigen∷VectorBlock<VectorX<T>>* output) const;
 
 .. raw:: html
 
@@ -7838,7 +7839,20 @@ protected method
 
     name: SingleOutputVectorSource
     output_ports:
-    - y0)""";
+    - y0
+
+Warning:
+    This class is deprecated and will be removed from Drake on or
+    after 2026-12-01. Prefer deriving from LeafSystem directly.
+    Declaring a single vector-valued output port with LeafSystem
+    requires only a few lines of code.
+
+Template parameter ``(Deprecated``:
+    .)
+
+Deprecated:
+    Use LeafSystem instead of SingleOutputVectorSource. This will be
+    removed from Drake on or after 2026-12-01.)""";
         // Symbol: drake::systems::SingleOutputVectorSource::DoCalcVectorOutput
         struct /* DoCalcVectorOutput */ {
           // Source: drake/systems/framework/single_output_vector_source.h
