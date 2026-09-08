@@ -447,6 +447,10 @@ class LinkJointGraph {
   [[nodiscard]] inline const LoopConstraint& loop_constraints(
       LoopConstraintIndex constraint_index) const;
 
+  /* Returns the number of LoopConstraints, which is zero unless there is a
+  valid forest that had to break one or more loops. */
+  [[nodiscard]] inline int num_loop_constraints() const;
+
   /* Links with this ordinal or higher are ephemeral (added during
   forest-building). See the class comment for more information. */
   [[nodiscard]] int num_user_links() const { return data_.num_user_links; }
