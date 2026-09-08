@@ -91,12 +91,7 @@ class DRAKE_DEPRECATED("2026-12-01",
   /// @param converter is per LeafSystem::LeafSystem constructor documentation;
   /// see that function documentation for details.
   SingleOutputVectorSource(SystemScalarConverter converter,
-                           const BasicVector<T>& model_vector)
-      : LeafSystem<T>(std::move(converter)) {
-    this->DeclareVectorOutputPort(
-        kUseDefaultName, model_vector,
-        &SingleOutputVectorSource<T>::CalcVectorOutput);
-  }
+                           const BasicVector<T>& model_vector);
 
   /// Provides a convenience method for %SingleOutputVectorSource subclasses.
   /// This method performs the same logical operation as System::DoCalcOutput
@@ -125,5 +120,8 @@ class DRAKE_DEPRECATED("2026-12-01",
 }  // namespace systems
 }  // namespace drake
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::SingleOutputVectorSource);
+#pragma GCC diagnostic pop
