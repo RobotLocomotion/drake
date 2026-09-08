@@ -29,13 +29,13 @@ namespace systems {
 /// @endsystem
 ///
 /// @warning This class is deprecated and will be removed from Drake on or
-/// after 2026-12-01. Prefer deriving from LeafSystem directly. Declaring a
+/// after 2027-01-01. Prefer deriving from LeafSystem directly. Declaring a
 /// single vector-valued output port with %LeafSystem requires only a few
 /// lines of code.
 ///
 /// @tparam_default_scalar
 template <typename T>
-class DRAKE_DEPRECATED("2026-12-01",
+class DRAKE_DEPRECATED("2027-01-01",
                        "Use LeafSystem instead of SingleOutputVectorSource.")
     SingleOutputVectorSource : public LeafSystem<T> {
  public:

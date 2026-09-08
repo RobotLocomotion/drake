@@ -7828,7 +7828,7 @@ protected method
 
 Warning:
     This class is deprecated and will be removed from Drake on or
-    after 2026-12-01. Prefer deriving from LeafSystem directly.
+    after 2027-01-01. Prefer deriving from LeafSystem directly.
     Declaring a single vector-valued output port with LeafSystem
     requires only a few lines of code.
 
@@ -7837,7 +7837,7 @@ Template parameter ``(Deprecated``:
 
 Deprecated:
     Use LeafSystem instead of SingleOutputVectorSource. This will be
-    removed from Drake on or after 2026-12-01.)""";
+    removed from Drake on or after 2027-01-01.)""";
         // Symbol: drake::systems::SingleOutputVectorSource::DoCalcVectorOutput
         struct /* DoCalcVectorOutput */ {
           // Source: drake/systems/framework/single_output_vector_source.h
