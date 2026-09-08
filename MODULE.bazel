@@ -21,7 +21,7 @@ bazel_dep(name = "rules_java", version = "9.9.0")
 bazel_dep(name = "rules_jvm_external", version = "7.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "2.3.2")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rs", version = "0.0.108")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_rs", version = "0.0.110")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 
