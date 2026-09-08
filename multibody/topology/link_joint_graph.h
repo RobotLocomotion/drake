@@ -781,6 +781,10 @@ class LinkJointGraph {
   // Tells this currently-unmodeled Joint that the given Mobod models it.
   void set_mobod_for_joint(JointOrdinal joint_ordinal, MobodIndex mobod_index);
 
+  // Records the coordinate starts assigned to this processed Joint.
+  void set_joint_coordinate_starts(JointOrdinal joint_ordinal, int q_start,
+                                   int v_start);
+
   // The World Link must already be in the graph but there are no
   // WeldedLinksAssemblies yet. This creates the 0th WeldedLinksAssembly and
   // puts World in it.
