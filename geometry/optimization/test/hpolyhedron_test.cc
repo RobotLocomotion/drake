@@ -1788,6 +1788,64 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
             intersection_padding - kAffineTransformationConstraintTol);
 }
 
+GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation8) {
+  // Test that the result does not depend on the scaling of the inequality
+  // representation: simplifying a polytope whose rows have wildly different
+  // norms must produce the same set as simplifying the unit-norm description
+  // of the same polytope, and `intersection_padding` must be respected as a
+  // true distance in both cases.
+  const int kNumFaces = 20;
+  const double kConstraintTol = 1e-6;
+
+  // Create a polygon in 2D with `kNumFaces` faces from unit circle tangents.
+  MatrixXd A(kNumFaces, 2);
+  for (int row = 0; row < kNumFaces; ++row) {
+    A.row(row) << std::cos(2 * M_PI * row / kNumFaces),
+        std::sin(2 * M_PI * row / kNumFaces);
+  }
+  const VectorXd b = VectorXd::Ones(kNumFaces);
+  const HPolyhedron circumbody = HPolyhedron(A, b);
+
+  // The same polytope, with row norms ranging from 1e-2 to 1e2.
+  MatrixXd A_scaled = A;
+  VectorXd b_scaled = b;
+  for (int row = 0; row < kNumFaces; ++row) {
+    const double scale = std::pow(10.0, (row % 5) - 2);
+    A_scaled.row(row) *= scale;
+    b_scaled(row) *= scale;
+  }
+  const HPolyhedron circumbody_scaled = HPolyhedron(A_scaled, b_scaled);
+
+  // Create a triangle polytope that intersects with the circumbody.
+  Eigen::Matrix<double, 2, 3> verts;
+  // clang-format off
+  verts << 0, 1, -1,
+           0.8, 2, 2;
+  // clang-format on
+  const HPolyhedron intersecting_polytope = HPolyhedron(VPolytope(verts));
+  const std::vector<HPolyhedron> intersecting_polytopes = {
+      intersecting_polytope};
+  const double min_volume_ratio = 0.1;
+  const double intersection_padding = 0.1;
+
+  const HPolyhedron inbody = circumbody.SimplifyByIncrementalFaceTranslation(
+      min_volume_ratio, false, 10, Eigen::MatrixXd(), intersecting_polytopes,
+      false, intersection_padding);
+  const HPolyhedron inbody_from_scaled =
+      circumbody_scaled.SimplifyByIncrementalFaceTranslation(
+          min_volume_ratio, false, 10, Eigen::MatrixXd(),
+          intersecting_polytopes, false, intersection_padding);
+
+  // The two results must describe the same set.
+  EXPECT_TRUE(inbody.ContainedIn(inbody_from_scaled, kConstraintTol));
+  EXPECT_TRUE(inbody_from_scaled.ContainedIn(inbody, kConstraintTol));
+
+  // The intersection padding must be respected regardless of row scaling.
+  EXPECT_GE(ComputeRadiusOfLargestBallInOneWithCenterInTwo(
+                inbody_from_scaled, intersecting_polytope),
+            intersection_padding - kConstraintTol);
+}
+
 GTEST_TEST(HPolyhedronTest, MaximumVolumeInscribedAffineTransformationTest1) {
   const double kConstraintTol = 1e-4;
   const int kNumFaces = 4;

@@ -14,7 +14,6 @@
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
-#include "drake/multibody/plant/tamsi_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/analysis/simulator.h"
@@ -44,12 +43,6 @@ struct ContactTestConfig {
   // testing of cases using the hydroelastic contact model, whether point
   // contact is used or not.
   ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Option that allows to exercise the TAMSI and SAP solver code paths
-  DiscreteContactSolver contact_solver{DiscreteContactSolver::kTamsi};
-#pragma GCC diagnostic pop
 };
 
 // This provides the suffix for each test parameter: the test config
@@ -59,8 +52,8 @@ std::ostream& operator<<(std::ostream& out, const ContactTestConfig& c) {
   return out;
 }
 
-// The purpose of this fixture is to unit test the implementation of TamsiDriver
-// and SapDriver's contact computations. In this regard this is more of an
+// The purpose of this fixture is to unit test the implementation of
+// SapDriver's contact computations. In this regard this is more of an
 // integration test where the correctness of the results rely on the ability of
 // the driver to properly setup a contact problem using MultibodyPlant (for
 // kinematics and dynamics) and CompliantContactManager's services (for
@@ -80,22 +73,8 @@ class RigidBodyOnCompliantGround
     DiagramBuilder<double> builder;
     auto items = AddMultibodyPlantSceneGraph(&builder, kTimeStep_);
     plant_ = &items.plant;
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-    // arbitrarily choose two model approximations to accomplish this.
-    switch (config.contact_solver) {
-      case DiscreteContactSolver::kTamsi:
-        plant_->set_discrete_contact_approximation(
-            DiscreteContactApproximation::kTamsi);
-        break;
-      case DiscreteContactSolver::kSap:
-        plant_->set_discrete_contact_approximation(
-            DiscreteContactApproximation::kSap);
-        break;
-    }
-#pragma GCC diagnostic pop
+    plant_->set_discrete_contact_approximation(
+        DiscreteContactApproximation::kSap);
 
     // We change the default gravity magnitude so that numbers are simpler to
     // work with.
@@ -169,7 +148,6 @@ class RigidBodyOnCompliantGround
         std::make_unique<CompliantContactManager<double>>();
     manager_ = owned_contact_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(owned_contact_manager));
-    tamsi_driver_ = std::make_unique<TamsiDriver<double>>(manager_);
     sap_driver_ = std::make_unique<SapDriver<double>>(manager_);
 
     // Create context.
@@ -255,7 +233,6 @@ class RigidBodyOnCompliantGround
   CompliantContactManager<double>* manager_{nullptr};
   std::unique_ptr<Context<double>> context_;
   Context<double>* plant_context_{nullptr};
-  std::unique_ptr<TamsiDriver<double>> tamsi_driver_;
   std::unique_ptr<SapDriver<double>> sap_driver_;
   std::unique_ptr<Simulator<double>> simulator_;
 

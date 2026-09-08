@@ -78,9 +78,24 @@ def _workspace_dir() -> Path:
 
 @functools.cache
 def _os_distribution() -> str | None:
-    """Returns the distribution ID, e.g., "ubuntu"."""
+    """Returns the distribution ID, e.g., "ubuntu". Derivative distributions
+    that declare "ubuntu" in their ID_LIKE (e.g., TUXEDO OS) are reported as
+    "ubuntu", since they use the same package names and codenames."""
     if platform.system() == "Linux":
-        return platform.freedesktop_os_release()["ID"]
+        os_release = platform.freedesktop_os_release()
+        if (
+            os_release["ID"] != "ubuntu"
+            and "ubuntu" in os_release.get("ID_LIKE", "").split()
+        ):
+            description = os_release.get("PRETTY_NAME", os_release["ID"])
+            _warn(f"""
+                This computer is running {description}, which is an Ubuntu
+                derivative rather than Ubuntu itself. Drake is not officially
+                supported on Ubuntu derivatives, so you may experience
+                compatibility issues.
+            """)
+            return "ubuntu"
+        return os_release["ID"]
     raise NotImplementedError(platform.system())
 
 

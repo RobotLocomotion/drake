@@ -34,6 +34,10 @@ namespace systems {
 /// optionally declare continuous or discrete state, but not both; subclasses
 /// may not declare abstract state.
 ///
+/// @warning This class is not generally recommended for new code. Prefer
+/// deriving from LeafSystem directly, which is straightforward for systems with
+/// a small number of ports.
+///
 /// @tparam_default_scalar
 template <typename T>
 class VectorSystem : public LeafSystem<T> {

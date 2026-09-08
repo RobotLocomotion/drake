@@ -24,42 +24,6 @@ GTEST_TEST(EventsTest, PeriodicEventDataSpaceship) {
   EXPECT_FALSE(bar < foo);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// PeriodicEventData has an operator==() member function, and a Comparator
-// struct whose operator() defines a "less than" ordering.
-GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
-  PeriodicEventDataComparator comparator;
-
-  // Create two periodic event data objects.
-  PeriodicEventData d1, d2;
-  d1.set_period_sec(0);
-  d1.set_offset_sec(0);
-  d2.set_period_sec(0);
-  d2.set_offset_sec(1);
-
-  // Case 1: both period_sec's equal (d1's offset is less than d2's).
-  EXPECT_TRUE(comparator(d1, d2));
-  EXPECT_FALSE(d1 == d2);
-
-  // Case 2: d1's period is greater than d2's period (but d2's offset is
-  // greater than d1's offset).
-  d1.set_period_sec(1e-8);
-  EXPECT_FALSE(comparator(d1, d2));
-  EXPECT_FALSE(d1 == d2);
-
-  // Case 3: d1's period is less than d2's period (but d2's offset is
-  // lesser than d1's offset).
-  EXPECT_TRUE(comparator(d2, d1));
-
-  // Case 4: the two attributes are identical.
-  d2 = d1;
-  EXPECT_FALSE(comparator(d1, d2));
-  EXPECT_FALSE(comparator(d2, d1));
-  EXPECT_TRUE(d1 == d2);
-}
-#pragma GCC diagnostic push
-
 // Check trigger data accessors:
 //   set/get_trigger_type()
 //   has/get/set_event_data(), get_mutable_event_data()

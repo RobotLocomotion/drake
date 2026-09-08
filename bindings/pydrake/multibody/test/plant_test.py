@@ -3565,7 +3565,6 @@ class TestPlant(unittest.TestCase):
     def test_discrete_contact_approximation(self):
         plant = MultibodyPlant_[float](0.1)
         approximations = [
-            DiscreteContactApproximation.kTamsi,
             DiscreteContactApproximation.kSap,
             DiscreteContactApproximation.kLagged,
             DiscreteContactApproximation.kSimilar,

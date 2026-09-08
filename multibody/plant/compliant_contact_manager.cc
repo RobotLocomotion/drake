@@ -15,7 +15,6 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
-#include "drake/multibody/plant/tamsi_driver.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/systems/framework/context.h"
 
@@ -31,12 +30,6 @@ using drake::systems::Context;
 namespace drake {
 namespace multibody {
 namespace internal {
-namespace {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
-#pragma GCC diagnostic pop
-}  // namespace
 
 template <typename T>
 AccelerationsDueNonConstraintForcesCache<
@@ -209,11 +202,6 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
       sap_driver_->CalcContactSolverResults(context, contact_results);
     }
   }
-
-  if (plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
-    DRAKE_DEMAND(tamsi_driver_ != nullptr);
-    tamsi_driver_->CalcContactSolverResults(context, contact_results);
-  }
 }
 
 // TODO(xuchenhan-tri): Consider a scalar converting constructor to cut down
@@ -254,11 +242,11 @@ CompliantContactManager<T>::CloneToSymbolic() const {
 
 template <typename T>
 void CompliantContactManager<T>::DoExtractModelInfo() {
-  // Solver drivers are only created when ExtractModelInfo() is called and
-  // therefore we expect these pointers to equal nullptr. The only reason for
-  // one of them to be non-nullptr would be a bug leading to this method being
-  // called more than once on the same manager.
-  DRAKE_DEMAND(sap_driver_ == nullptr && tamsi_driver_ == nullptr);
+  // Solver driver(s) are only created when ExtractModelInfo() is called and
+  // therefore we expect them be null. The only reason for them to be non-null
+  // would be a bug leading to this method being called more than once on the
+  // same manager.
+  DRAKE_DEMAND(sap_driver_ == nullptr);
 
   switch (plant().get_discrete_contact_solver()) {
     case DiscreteContactSolver::kSap:
@@ -273,11 +261,6 @@ void CompliantContactManager<T>::DoExtractModelInfo() {
         sap_driver_ =
             std::make_unique<SapDriver<T>>(this, near_rigid_threshold);
       }
-      break;
-    case kDiscreteContactSolverTamsi:
-      // N.B. We do allow discrete updates with TAMSI when T =
-      // symbolic::Expression, but only when there is no contact.
-      tamsi_driver_ = std::make_unique<TamsiDriver<T>>(this);
       break;
   }
 }
@@ -308,53 +291,30 @@ void CompliantContactManager<T>::DoCalcAccelerationKinematicsCache(
 template <typename T>
 void CompliantContactManager<T>::DoCalcDiscreteUpdateMultibodyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  // Thus far only TAMSI and SAP are supported. Verify this is true.
-  DRAKE_DEMAND(
-      plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap ||
-      plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi);
-
-  // Delegate to specific solver driver.
-  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
-    if constexpr (std::is_same_v<T, symbolic::Expression>) {
-      throw std::logic_error(
-          "Discrete updates with the SAP solver are not supported for T = "
-          "symbolic::Expression");
-    } else {
-      DRAKE_DEMAND(sap_driver_ != nullptr);
-      sap_driver_->CalcDiscreteUpdateMultibodyForces(context, forces);
-    }
-  }
-
-  if (plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
-    DRAKE_DEMAND(tamsi_driver_ != nullptr);
-    tamsi_driver_->CalcDiscreteUpdateMultibodyForces(context, forces);
+  DRAKE_DEMAND(plant().get_discrete_contact_solver() ==
+               DiscreteContactSolver::kSap);
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    throw std::logic_error(
+        "Discrete updates with the SAP solver are not supported for T = "
+        "symbolic::Expression");
+  } else {
+    DRAKE_DEMAND(sap_driver_ != nullptr);
+    sap_driver_->CalcDiscreteUpdateMultibodyForces(context, forces);
   }
 }
 
 template <typename T>
 void CompliantContactManager<T>::DoCalcActuation(
     const systems::Context<T>& context, VectorX<T>* actuation) const {
-  // Thus far only TAMSI and SAP are supported. Verify this is true.
-  DRAKE_DEMAND(
-      plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap ||
-      plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi);
-
-  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
-    if constexpr (std::is_same_v<T, symbolic::Expression>) {
-      throw std::logic_error(
-          "Discrete updates with the SAP solver are not supported for T = "
-          "symbolic::Expression");
-    } else {
-      DRAKE_DEMAND(sap_driver_ != nullptr);
-      sap_driver_->CalcActuation(context, actuation);
-    }
-  }
-
-  if (plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
-    DRAKE_DEMAND(tamsi_driver_ != nullptr);
-    // TAMSI does not model additional actuation terms as SAP does.
-    *actuation =
-        this->EvalActuationInput(context, /* apply_effort_limit = */ true);
+  DRAKE_DEMAND(plant().get_discrete_contact_solver() ==
+               DiscreteContactSolver::kSap);
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    throw std::logic_error(
+        "Discrete updates with the SAP solver are not supported for T = "
+        "symbolic::Expression");
+  } else {
+    DRAKE_DEMAND(sap_driver_ != nullptr);
+    sap_driver_->CalcActuation(context, actuation);
   }
 }
 

@@ -73,14 +73,6 @@ class MultibodyPlantTester {
 
 namespace {
 
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
-constexpr auto kDiscreteContactApproximationTamsi =
-    DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
-
 struct LadderTestConfig {
   // This is a gtest test suffix; no underscores or spaces.
   std::string description;
@@ -89,8 +81,6 @@ struct LadderTestConfig {
   // Contact is modeled with hydroelastic contact if `true` or with
   // point contact if `false`.
   bool hydro_geometry{true};
-  // Discrete solver used in the update.
-  DiscreteContactSolver contact_solver{kDiscreteContactSolverTamsi};
   // The ladder is split into two pieces. We join them together using different
   // methods to verify the correctness of reaction forces on a variety of
   // constrained configurations.
@@ -158,24 +148,13 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
         Vector3d(0.0, 0.0, -kGravity));
 
     if (plant_->is_discrete()) {
-      // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-      // arbitrarily choose two model approximations to accomplish this.
-      switch (config.contact_solver) {
-        case kDiscreteContactSolverTamsi:
-          plant_->set_discrete_contact_approximation(
-              kDiscreteContactApproximationTamsi);
-          break;
-        case DiscreteContactSolver::kSap:
-          plant_->set_discrete_contact_approximation(
-              DiscreteContactApproximation::kSap);
-          break;
-      }
+      plant_->set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
     }
 
     plant_->Finalize();
 
-    if (plant_->is_discrete() &&
-        config.contact_solver == DiscreteContactSolver::kSap) {
+    if (plant_->is_discrete()) {
       // When using the SAP solver, the solver convergence tolerance must be set
       // accordingly to the level of high accuracy used in these tests, dictated
       // by the fixture's parameter kTolerance.
@@ -614,48 +593,22 @@ std::vector<LadderTestConfig> MakeTestCases() {
        .time_step = 0.0,
        .hydro_geometry = true},
 
-      // Discrete TAMSI solver tests.
-      {.description = "WeldJointDiscretePointTamsi",
-       .time_step = 2.0e-2,
-       .hydro_geometry = false,
-       .contact_solver = kDiscreteContactSolverTamsi,
-       .weld_method = LadderTestConfig::WeldMethod::kWeldJoint},
-      {.description = "RevoluteJointWithLimitsDiscretePointTamsi",
-       .time_step = 1.0e-2,  // N.B. TAMSI goes unstable if using a larger step.
-       .hydro_geometry = false,
-       .contact_solver = kDiscreteContactSolverTamsi,
-       .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
-      {.description = "WeldJointDiscreteHydroelasticTamsi",
-       .time_step = 2.0e-2,
-       .hydro_geometry = true,
-       .contact_solver = kDiscreteContactSolverTamsi,
-       .weld_method = LadderTestConfig::WeldMethod::kWeldJoint},
-      {.description = "RevoluteJointWithLimitsDiscreteHydroelasticTamsi",
-       .time_step = 1.0e-2,  // N.B. TAMSI goes unstable if using a larger step.
-       .hydro_geometry = true,
-       .contact_solver = kDiscreteContactSolverTamsi,
-       .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
-
       // Discrete SAP solver tests.
       {.description = "WeldJointDiscretePointSap",
        .time_step = 2.0e-2,
        .hydro_geometry = false,
-       .contact_solver = DiscreteContactSolver::kSap,
        .weld_method = LadderTestConfig::WeldMethod::kWeldJoint},
       {.description = "RevoluteJointWithLimitsDiscretePointSap",
        .time_step = 2.0e-2,
        .hydro_geometry = false,
-       .contact_solver = DiscreteContactSolver::kSap,
        .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
       {.description = "WeldJointDiscreteHydroelasticSap",
        .time_step = 2.0e-2,
        .hydro_geometry = true,
-       .contact_solver = DiscreteContactSolver::kSap,
        .weld_method = LadderTestConfig::WeldMethod::kWeldJoint},
       {.description = "RevoluteJointWithLimitsDiscreteHydroelasticSap",
        .time_step = 2.0e-2,
        .hydro_geometry = true,
-       .contact_solver = DiscreteContactSolver::kSap,
        .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
   };
 }

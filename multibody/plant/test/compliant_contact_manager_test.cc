@@ -80,12 +80,6 @@ class SapDriverTest {
 
 namespace {
 
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
-#pragma GCC diagnostic push
-
 constexpr double kEps = std::numeric_limits<double>::epsilon();
 
 // Tests that in SetDiscreteUpdateManager, a non-empty DeformableModel will
@@ -688,13 +682,10 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
   ContactResults<double> contact_results;
   manager_->CalcContactResults(*plant_context_, &contact_results);
 
-  // For this case the friction force must be on the friction cone. For TAMSI
-  // accuracy of this prediction depends on the accuracy of the slip speed,
-  // which in turn depends on the convergence tolerance of the solver. For SAP,
+  // For this case the friction force must be on the friction cone. For SAP,
   // projections onto the friction cone are accurate to machine epsilon and
   // therefore no error is expected.
-  const double kRelativeSlipTolerance =
-      config.contact_solver == kDiscreteContactSolverTamsi ? 2.0e-6 : 0.0;
+  const double kRelativeSlipTolerance = 0.0;
 
   if (config.point_contact) {
     // Test point contact.
@@ -746,28 +737,13 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
 // Setup test cases using point and hydroelastic contact.
 std::vector<ContactTestConfig> MakeTestCases() {
   return std::vector<ContactTestConfig>{
-      {.description = "HydroelasticContactOnly_SAP",
+      {.description = "HydroelasticContactOnly",
        .point_contact = false,
        // We verify that the test passes with hydroelastic only.
-       .contact_model = ContactModel::kHydroelastic,
-       .contact_solver = DiscreteContactSolver::kSap},
-      {.description = "HydroelasticContactWithFallback_SAP",
-       .point_contact = false,
-       .contact_solver = DiscreteContactSolver::kSap},
-      {.description = "PointContact_SAP",
-       .point_contact = true,
-       .contact_solver = DiscreteContactSolver::kSap},
-      {.description = "HydroelasticContactWithFallback_TAMSI",
-       .point_contact = false,
-       .contact_solver = kDiscreteContactSolverTamsi},
-      {.description = "HydroelasticContactOnly_TAMSI",
-       .point_contact = false,
-       // We verify that the test passes with hydroelastic only.
-       .contact_model = ContactModel::kHydroelastic,
-       .contact_solver = kDiscreteContactSolverTamsi},
-      {.description = "PointContact_TAMSI",
-       .point_contact = true,
-       .contact_solver = kDiscreteContactSolverTamsi},
+       .contact_model = ContactModel::kHydroelastic},
+      {.description = "HydroelasticContactWithFallback",
+       .point_contact = false},
+      {.description = "PointContact", .point_contact = true},
   };
 }
 

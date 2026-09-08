@@ -604,29 +604,6 @@ TEST_F(DeformableModelTest, PlantWithDeformableIsNotScalarConvertible) {
   EXPECT_NO_THROW(added.plant.ToAutoDiffXd());
 }
 
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-/* An empty DeformableModel doesn't get in the way of a TAMSI plant. */
-TEST_F(DeformableModelTest, EmptyDeformableModelWorksWithTamsi) {
-  plant_->set_discrete_contact_approximation(
-      multibody::DiscreteContactApproximation::kTamsi);
-  EXPECT_TRUE(deformable_model_ptr_->is_empty());
-  EXPECT_NO_THROW(plant_->Finalize());
-}
-#pragma GCC diagnostic push
-
-/* If a DeformableModel is not empty, we require the owning plant to use the SAP
- solver. */
-TEST_F(DeformableModelTest, NonEmptyDeformableModelOnlyWorksWithSap) {
-  plant_->set_discrete_contact_approximation(
-      multibody::DiscreteContactApproximation::kTamsi);
-  RegisterSphere(0.5);
-  EXPECT_FALSE(deformable_model_ptr_->is_empty());
-  DRAKE_EXPECT_THROWS_MESSAGE(plant_->Finalize(),
-                              ".*DeformableModel is only supported by.*SAP.*");
-}
-
 TEST_F(DeformableModelTest, RegistrationNotAllowedForNonDoubleModel) {
   MultibodyPlant<AutoDiffXd> autodiff_plant(0.01);
   DeformableModel<AutoDiffXd> autodiff_deformable_model(&autodiff_plant);

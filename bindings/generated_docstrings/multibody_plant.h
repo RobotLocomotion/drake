@@ -49,8 +49,6 @@
 // #include "drake/multibody/plant/sap_driver.h"
 // #include "drake/multibody/plant/scalar_convertible_component.h"
 // #include "drake/multibody/plant/slicing_and_indexing.h"
-// #include "drake/multibody/plant/tamsi_driver.h"
-// #include "drake/multibody/plant/tamsi_solver.h"
 // #include "drake/multibody/plant/wing.h"
 
 // Symbol: pydrake_doc_multibody_plant
@@ -1324,27 +1322,26 @@ arises.)""";
       // Symbol: drake::multibody::DiscreteContactApproximation
       struct /* DiscreteContactApproximation */ {
         // Source: drake/multibody/plant/multibody_plant.h
-        const char* doc_deprecated =
+        const char* doc =
 R"""(The type of the contact approximation used for a discrete
 MultibodyPlant model.
 
-kTamsi, kSimilar and kLagged are all approximations to the same
-contact model -- Compliant contact with regularized friction, refer to
-mbp_contact_modeling "Contact Modeling" for further details. The key
-difference however, is that the kSimilar and kLagged approximations
-are convex and therefore our contact solver has both theoretical and
-practical convergence guarantees --- the solver will always succeed.
-Conversely, being non-convex, kTamsi can fail to find a solution.
+kSimilar and kLagged are both approximations to the same contact model
+-- Compliant contact with regularized friction, refer to
+mbp_contact_modeling "Contact Modeling" for further details. Both
+approximations are convex and therefore our contact solver has both
+theoretical and practical convergence guarantees --- the solver will
+always succeed.
 
 kSap is also a convex model of compliant contact with regularized
 friction. There are a couple of key differences however: - Dissipation
 is modeled using a linear Kelvin–Voigt model, parameterized by a
 relaxation time constant. See accessing_contact_properties "contact
-parameters". - Unlike kTamsi, kSimilar and kLagged where
-regularization of friction is parameterized by a stiction tolerance
-(see set_stiction_tolerance()), SAP determines regularization
-automatically solely based on numerics. Users have no control on the
-amount of regularization.
+parameters". - In kSimilar and kLagged the regularization of friction
+is parameterized by a stiction tolerance (see
+set_stiction_tolerance()), SAP determines regularization automatically
+solely based on numerics. Users have no control on the amount of
+regularization.
 
 How to choose an approximation
 
@@ -1376,11 +1373,7 @@ References
   https://arxiv.org/abs/2110.10107.
 - [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. A Theory
   of Irrotational Contact Fields. Available online at
-  https://arxiv.org/abs/2312.03908 (Deprecated.)
-
-Deprecated:
-    The TAMSI solver is deprecated for removal. This will be removed
-    from Drake on or after 2026-09-01.)""";
+  https://arxiv.org/abs/2312.03908)""";
         // Symbol: drake::multibody::DiscreteContactApproximation::kLagged
         struct /* kLagged */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -1400,17 +1393,11 @@ R"""(SAP solver model approximation, see [Castro et al., 2022].)""";
           const char* doc =
 R"""(Similarity approximation found in [Castro et al., 2023].)""";
         } kSimilar;
-        // Symbol: drake::multibody::DiscreteContactApproximation::kTamsi
-        struct /* kTamsi */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc =
-R"""(TAMSI solver approximation, see [Castro et al., 2019].)""";
-        } kTamsi;
       } DiscreteContactApproximation;
       // Symbol: drake::multibody::DiscreteContactSolver
       struct /* DiscreteContactSolver */ {
         // Source: drake/multibody/plant/multibody_plant.h
-        const char* doc_deprecated =
+        const char* doc =
 R"""(The type of the contact solver used for a discrete MultibodyPlant
 model.
 
@@ -1430,22 +1417,12 @@ References
   https://arxiv.org/abs/1909.05700.
 - [Castro et al., 2022] Castro A., Permenter F. and Han X., 2022. An
   Unconstrained Convex Formulation of Compliant Contact. Available online at
-  https://arxiv.org/abs/2110.10107. (Deprecated.)
-
-Deprecated:
-    The TAMSI solver is deprecated for removal. This will be removed
-    from Drake on or after 2026-09-01.)""";
+  https://arxiv.org/abs/2110.10107.)""";
         // Symbol: drake::multibody::DiscreteContactSolver::kSap
         struct /* kSap */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc = R"""(SAP solver, see [Castro et al., 2022].)""";
         } kSap;
-        // Symbol: drake::multibody::DiscreteContactSolver::kTamsi
-        struct /* kTamsi */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc =
-R"""(TAMSI solver, see [Castro et al., 2019].)""";
-        } kTamsi;
       } DiscreteContactSolver;
       // Symbol: drake::multibody::DistanceConstraintParams
       struct /* DistanceConstraintParams */ {
@@ -2071,12 +2048,6 @@ Note:
     PD controllers are ignored when a joint is locked (see
     Joint∷Lock()).
 
-Warning:
-    For discrete models (is_discrete() is true), this feature is not
-    supported when using the TAMSI solver
-    (get_discrete_contact_solver() returns
-    DiscreteContactSolver∷kTamsi.)
-
 PD controlled joint actuators can be defined by setting PD gains for
 each joint actuator, see JointActuator∷set_controller_gains(). Unless
 these gains are specified, joint actuators will not be PD controlled
@@ -2339,8 +2310,8 @@ relaxation_time for a given geometry. However only one of these will
 get used, depending on the configuration of the MultibodyPlant. As an
 example, if the SAP contact approximation is specified (see
 set_discrete_contact_approximation()) only the relaxation_time is used
-while hunt_crossley_dissipation is ignored. Conversely, if the TAMSI,
-Similar or Lagged approximation is used (see
+while hunt_crossley_dissipation is ignored. Conversely, if the Similar
+or Lagged approximation is used (see
 set_discrete_contact_approximation()) only hunt_crossley_dissipation
 is used while relaxation_time is ignored. Currently, a continuous
 MultibodyPlant model will always use the Hunt & Crossley model and
@@ -8417,8 +8388,7 @@ R"""(Sets the discrete contact model approximation.
 Note:
     Calling this method also sets the contact solver type (see
     get_discrete_contact_solver()) according to: -
-    DiscreteContactApproximation∷kTamsi sets the solver to
-    DiscreteContactSolver∷kTamsi. - DiscreteContactApproximation∷kSap,
+    DiscreteContactApproximation∷kSap,
     DiscreteContactApproximation∷kSimilar and
     DiscreteContactApproximation∷kLagged set the solver to
     DiscreteContactSolver∷kSap.
@@ -8613,7 +8583,7 @@ MultibodyPlant∷GetDefaultContactSurfaceRepresentation().)""";
           const char* doc =
 R"""(Configures the MultibodyPlant∷set_discrete_contact_approximation().
 Refer to drake∷multibody∷DiscreteContactApproximation for details.
-Valid strings are: - "tamsi" - "sap" - "similar" - "lagged"
+Valid strings are: - "sap" - "similar" - "lagged"
 
 Refer to MultibodyPlant∷set_discrete_contact_approximation() and the
 references therein for further details.)""";
@@ -9132,869 +9102,6 @@ R"""(The signed distance between the pair of geometry.)""";
 R"""(The time derivative of the signed distance.)""";
         } distance_time_derivative;
       } SignedDistanceWithTimeDerivative;
-      // Symbol: drake::multibody::TamsiSolver
-      struct /* TamsiSolver */ {
-        // Source: drake/multibody/plant/tamsi_solver.h
-        const char* doc =
-R"""(TamsiSolver uses the Transition-Aware Modified Semi-Implicit (TAMSI)
-method, castro_etal_2019 "[Castro et al., 2019]", to solve the
-equations below for mechanical systems in contact with regularized
-friction:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    q̇ = N(q) v
-    (1)  M(q) v̇ = τ + Jₙᵀ(q) fₙ(q, v) + Jₜᵀ(q) fₜ(q, v)
-
-.. raw:: html
-
-    </details>
-
-where ``v ∈ ℝⁿᵛ`` is the vector of generalized velocities, ``M(q) ∈
-ℝⁿᵛˣⁿᵛ`` is the mass matrix, ``Jₙ(q) ∈ ℝⁿᶜˣⁿᵛ`` is the Jacobian of
-normal separation velocities, ``Jₜ(q) ∈ ℝ²ⁿᶜˣⁿᵛ`` is the Jacobian of
-tangent velocities, ``fₙ ∈ ℝⁿᶜ`` is the vector of normal contact
-forces, ``fₜ ∈ ℝ²ⁿᶜ`` is the vector of tangent friction forces and τ ∈
-ℝⁿᵛ is a vector of generalized forces containing all other applied
-forces (e.g., Coriolis, gyroscopic terms, actuator forces, etc.) but
-contact forces. This solver assumes a compliant law for the normal
-forces ``fₙ(q, v)`` and therefore the functional dependence of ``fₙ(q,
-v)`` with q and v is stated explicitly.
-
-Since TamsiSolver uses regularized friction, we explicitly emphasize
-the functional dependence of ``fₜ(q, v)`` with the generalized
-velocities. The functional dependence of ``fₜ(q, v)`` with the
-generalized positions stems from its direct dependence with the normal
-forces ``fₙ(q, v)``.
-
-TamsiSolver implements two different schemes. A "one-way coupling
-scheme" which solves for the friction forces given the normal forces
-are known. That is, normal forces affect the computation of the
-friction forces however, the normal forces are kept constant during
-the solution procedure.
-
-A "two-way coupling scheme" treats both the normal and friction forces
-implicitly in the generalized velocities resulting in a numerical
-strategy in which normal forces affect friction forces and,
-conversely, friction forces couple back to the computation of the
-normal forces.
-
-The two-way coupled scheme provides a more stable and therefore robust
-solution to the problem stated in Eq. (1) with just a small increase
-of the computational cost compared to the one-way coupled scheme. The
-one-way coupled scheme is however very useful for testing and analysis
-of the solver.
-
-One-Way Coupling Scheme
------------------------
-
-Equation (1) is discretized in time using a variation of the first
-order semi-implicit Euler scheme from step s to step s+1 with time
-step ``δt`` as:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    qˢ⁺¹ = qˢ + δt N(qˢ) vˢ⁺¹
-    (2)  M(qˢ) vˢ⁺¹ =
-    M(qˢ) vˢ + δt [τˢ + Jₙᵀ(qˢ) fₙ(qˢ,vˢ) + Jₜᵀ(qˢ) fₜ(qˢ,vˢ⁺¹)]
-
-.. raw:: html
-
-    </details>
-
-(We are using s for step counter rather than n to avoid
-Unicode-induced confusion with the "normal direction" subscript n.)
-
-Please see details in the one_way_coupling_derivation "Derivation of
-the one-way coupling scheme" section. The equation for the generalized
-velocities in Eq. (2) is rewritten as:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (3)  M vˢ⁺¹ = p* + δt [Jₙᵀ fₙ + Jₜᵀ fₜ(vˢ⁺¹)]
-
-.. raw:: html
-
-    </details>
-
-where ``p* = M vˢ + δt τˢ`` is the generalized momentum that the
-system would have in the absence of contact forces and, for
-simplicity, we have only kept the functional dependencies in
-generalized velocities. Notice that TamsiSolver uses a precomputed
-value of the normal forces. These normal forces could be available for
-instance if using a compliant contact approach, for which normal
-forces are a function of the state.
-
-Two-Way Coupling Scheme
------------------------
-
-Equation (1) is discretized in time using a variation on the
-semi-implicit Euler scheme with time step ``δt`` as:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    qˢ⁺¹ = qˢ + δt N(qˢ) vˢ⁺¹
-    (4)  M(qˢ) vˢ⁺¹ = M(qˢ) vˢ +
-    δt [τˢ + Jₙᵀ(qˢ) fₙˢ⁺¹ + Jₜᵀ(qˢ) fₜ(fₙˢ⁺¹,vₜˢ⁺¹)]
-
-.. raw:: html
-
-    </details>
-
-This implicit scheme variation evaluates Jacobian matrices Jₙ and Jₜ
-as well as the kinematic mapping N(q) at the previous time step. In
-Eq. (4) we have fₙˢ⁺¹ = fₙ(xˢ⁺¹, vₙˢ⁺¹) with xˢ⁺¹ = x(qˢ⁺¹), the
-signed *penetration* distance (defined positive when bodies overlap)
-between contact point pairs and the *separation* velocities vₙˢ⁺¹ =
-Jₙ(qˢ) vˢ⁺¹ (= −ẋˢ⁺¹). Also the functional dependence of fₜ with fₙ
-and vₜ is highlighted in Eq. (4). More precisely, the two-way coupling
-scheme uses a normal force law for each contact pair of the form:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (5)  fₙ(x, vₙ) = k(vₙ)₊ x₊
-    (6)      k(vₙ) = k (1 − d vₙ)₊
-
-.. raw:: html
-
-    </details>
-
-where ``x₊`` is the positive part of x (x₊ = x if x ≥ 0 and x₊ = 0
-otherwise) and ``k`` and d are the stiffness and dissipation
-coefficients for a given contact point, respectively.
-
-The two-way coupling scheme uses a first order approximation to the
-signed distance functions vector:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (7)  xˢ⁺¹ ≈ xˢ − δt vₙˢ⁺¹ =  xˢ − δt Jₙ(qˢ) vˢ⁺¹
-
-.. raw:: html
-
-    </details>
-
-where the minus sign is needed given that ẋ = dx/dt = −vₙ. This
-approximation is used in Eq. (5) to obtain a numerical scheme that
-implicitly couples normal forces through their functional dependence
-on the signed penetration distance. Notice that, according to Eq. (5),
-normal forces at each contact point are decoupled from each other.
-However their values are coupled given the choice of a common
-variable, the generalized velocity v.
-
-Equation (7) is used into Eq. (5) to obtain an expression of the
-normal force in terms of the generalized velocity vˢ⁺¹ at the next
-time step:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (8) fₙ(xˢ⁺¹, vₙˢ⁺¹) = k (1 − d vₙˢ⁺¹)₊ xˢ⁺¹₊
-    = k (1 − d Jₙ(qˢ) vˢ⁺¹)₊ (xˢ − δt Jₙ(qˢ) vˢ⁺¹)₊
-    = fₙ(vˢ⁺¹)
-
-.. raw:: html
-
-    </details>
-
-Similarly, the friction forces fₜ can be written in terms of the next
-time step generalized velocities using vₜˢ⁺¹ = Jₜ(qˢ) vˢ⁺¹ and using
-Eq. (8) to substitute an expression for the normal force in terms of
-vˢ⁺¹. This allows to re-write the tangential forces as a function of
-the generalized velocities as:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (9)  fₜ(fₙˢ⁺¹, vₜˢ⁺¹) = fₜ(fₙ(x(vˢ⁺¹), vₙ(vˢ⁺¹)), vₜ((vˢ⁺¹)))
-    = fₜ(vˢ⁺¹)
-
-.. raw:: html
-
-    </details>
-
-where we write x(vˢ⁺¹) = xˢ − δt Jₙ(qˢ) vˢ⁺¹. Finally, Eqs. (8) and
-(9) are used into Eq. (4) to obtain an expression in vˢ⁺¹:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (10)  M(qˢ) vˢ⁺¹ = p* + δt [Jₙᵀ(qˢ) fₙ(vˢ⁺¹) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)]
-
-.. raw:: html
-
-    </details>
-
-with p* = ``p* = M vˢ + δt τˢ`` the generalized momentum that the
-system would have in the absence of contact forces.
-
-TamsiSolver uses a Newton-Raphson strategy to solve Eq. (10) in the
-generalized velocities, limiting the iteration update with the scheme
-described in iteration_limiter.
-
-Limits in the Iteration Updates
--------------------------------
-
-TamsiSolver solves for the generalized velocity at the next time step
-``vˢ⁺¹`` with either a one-way or two-way coupled scheme as described
-in the previous sections. The solver uses a Newton-Raphson iteration
-to compute an update ``Δvᵏ`` at the k-th Newton-Raphson iteration.
-Once ``Δvᵏ`` is computed, the solver limits the change in the
-tangential velocities ``Δvₜᵏ = Jₜᵀ Δvᵏ`` using the approach described
-in uchida_etal_2015 "[Uchida et al., 2015]". This approach limits the
-maximum angle change θ between two successive iterations in the
-tangential velocity. Details of our implementation are provided in
-castro_etal_2019 "[Castro et al., 2019]".
-
-Derivation of the one-way coupling scheme
------------------------------------------
-
-In this section we provide a detailed derivation of the first order
-time stepping approach in Eq. (2). We start from the continuous Eq.
-(1):
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (1)  M(q) v̇ = τ + Jₙᵀ(q) fₙ(q,v) + Jₜᵀ(q) fₜ(q,v)
-
-.. raw:: html
-
-    </details>
-
-we can discretize Eq. (1) in time using a first order semi-implicit
-Euler scheme in velocities:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (11)  M(qˢ) vˢ⁺¹ = M(qˢ) vˢ +
-    δt [τˢ⁺¹ + Jₙᵀ(qˢ) fₙ(qˢ,vˢ⁺¹) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)] + O₁(δt²)
-
-.. raw:: html
-
-    </details>
-
-where the equality holds strictly since we included the leading terms
-in ``O(δt²)``. We use ``τˢ⁺¹ = τ(tˢ, qˢ, vˢ⁺¹)`` for brevity in Eq.
-(11). When moving from the continuous Eq. (1) to the discrete version
-Eq. (11), we lost the nice property that our compliant normal forces
-are decoupled from the friction forces (both depend on the same
-unknown vˢ⁺¹ in Eq (11)). The reason is that Eq. (11) includes an
-integration over a small interval of size δt. To solve the discrete
-system in Eq. (11), we'd like to decouple the normal forces from the
-tangential forces again, which will require a new (though still valid)
-approximation. To do so we will expand in Taylor series the term
-``fₙ(qˢ, vˢ⁺¹)``:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (12)  fₙ(qˢ, vˢ⁺¹) = fₙ(qˢ,vˢ) + ∇ᵥfₙ(qˢ,vˢ) (vˢ⁺¹ − vˢ) + O₂(‖vˢ⁺¹ − vˢ‖²)
-
-.. raw:: html
-
-    </details>
-
-The difference between ``vˢ`` and ``vˢ⁺¹`` can be written as:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (13)  vˢ⁺¹ − vˢ = δtv̇ˢ + δtO₃(δt²) = O₄(δt)
-
-.. raw:: html
-
-    </details>
-
-Substituting ``vˢ⁺¹ − vˢ`` from Eq. (13) into Eq. (12) we arrive to:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (14)  fₙ(qˢ, vˢ⁺¹) = fₙ(qˢ,vˢ) + ∇ᵥfₙ(qˢ,vˢ) O₄(δt) + O₅(δt²)
-    = fₙ(qˢ,vˢ) + O₆(δt)
-
-.. raw:: html
-
-    </details>
-
-where ``O₅(δt²) = O₂(‖vˢ⁺¹ − vˢ‖²) = O₂(‖O₄(δt)‖²)``. A similar
-argument for τˢ⁺¹ shows it also differs in O(δt) from τˢ = τ(tˢ, qˢ,
-vˢ). We can now use Eq. (14) into Eq. (11) to arrive to:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (15)  M(qˢ) vˢ⁺¹ = M(qˢ) vˢ +
-    δt [τˢ + Jₙᵀ(qˢ) (fₙ(qˢ,vˢ) + O₆(δt)) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)] +
-    O₁(δt²)
-
-.. raw:: html
-
-    </details>
-
-which we can rewrite as:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (16)  M(qˢ) vˢ⁺¹ = M(qˢ) vˢ +
-    δt [τˢ + Jₙᵀ(qˢ) fₙ(qˢ, vˢ) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)] + O₇(δt²)
-
-.. raw:: html
-
-    </details>
-
-with ``O₇(δt²) = δt Jₙᵀ(qˢ) O₆(δt) + O₁(δt²)``. That is, Eq. (16)
-introduces the same order of approximation as in the semi-implicit
-method in Eq. (11). Up to this point we have made no approximations
-but we instead propagated the ``O(⋅)`` leading terms. Therefore the
-equalities in the equations above are exact. To obtain an approximate
-time stepping scheme, we drop ``O₇(δt²)`` (we neglect it) in Eq. (16)
-to arrive to a first order scheme:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (17)  M(qˢ) vˢ⁺¹ = M(qˢ) vˢ +
-    δt [τˢ + Jₙᵀ(qˢ) fₙ(qˢ,vˢ) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)]
-
-.. raw:: html
-
-    </details>
-
-Therefore, with the scheme in Eq. (17) we are able to decouple the
-computation of (compliant) normal forces from that of friction forces.
-A very important feature of this scheme however, is the explicit
-nature (in the velocities v) of the term associated with the normal
-forces (usually including dissipation in the normal direction), which
-will become unstable for a sufficiently large time step. However, for
-most applications in practice, the stability of the scheme is mostly
-determined by the explicit update of normal forces with positions,
-that is, Eq. (17) is explicit in positions through the normal forces
-``fₙ(qˢ, vˢ)``. For many common applications, the explicit dependence
-of ``τˢ(tˢ, qˢ, vˢ)`` on the previous time step velocities ``vˢ``
-determines the overall stability of the scheme, since this term can
-include velocity dependent contributions such as control forces and
-dampers. Notice that Eq. (12) introduces an expansion of ``fₙ`` with
-an order of approximation consistent with the first order scheme as
-needed. Therefore, it propagates into a ``O(δt²)`` term exactly as
-needed in Eq. (16).
-
-References
-----------
-
-- [Castro et al., 2019] Castro, A.M, Qu, A.,
-Kuppuswamy, N., Alspach, A., Sherman, M.A., 2019. A Transition-Aware Method
-for the Simulation of Compliant Contact with Regularized Friction.
-arXiv:1909.05700 [cs.RO].
-- Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
-Making a meaningful impact: modelling simultaneous frictional collisions
-in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
-
-Authors:
-    Alejandro Castro (2018) Original author.
-
-Authors:
-    Michael Sherman, Evan Drumwright (2018) Original PR #8925
-    reviewers.
-
-Authors:
-    Drake team (see https://drake.mit.edu/credits).)""";
-        // Symbol: drake::multibody::TamsiSolver::Clone
-        struct /* Clone */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns:
-    a deep copy of this, with the problem data invalidated, i.e., one
-    of the Set*ProblemData() methods must be called on the clone
-    before it can be used to solve.)""";
-        } Clone;
-        // Symbol: drake::multibody::TamsiSolver::ResizeIfNeeded
-        struct /* ResizeIfNeeded */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Change the working size of the solver to use ``nv`` generalized
-velocities. This can be used to either shrink or grow the workspaces.
-
-Raises:
-    RuntimeError if nv is non-positive.)""";
-        } ResizeIfNeeded;
-        // Symbol: drake::multibody::TamsiSolver::SetOneWayCoupledProblemData
-        struct /* SetOneWayCoupledProblemData */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Sets data for the problem to be solved as outlined by Eq. (3) in this
-class's documentation:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (3)  M v = p* + δt Jₙᵀ fₙ +  δt Jₜᵀ fₜ(v)
-
-.. raw:: html
-
-    </details>
-
-Refer to this class's documentation for further details on the
-structure of the problem and the solution strategy. In the documented
-parameters below, ``nv`` is the number of generalized velocities and
-``nc`` is the number of contact points.
-
-Parameter ``M``:
-    The mass matrix of the system, of size ``nv x nv``.
-
-Parameter ``Jn``:
-    The normal separation velocities Jacobian, of size ``nc x nv``.
-
-Parameter ``Jt``:
-    The tangential velocities Jacobian, of size ``2nc x nv``.
-
-Parameter ``p_star``:
-    The generalized momentum the system would have at ``s + 1`` if
-    contact forces were zero.
-
-Parameter ``fn``:
-    A vector of size ``nc`` containing the normal force at each
-    contact point.
-
-Parameter ``mu``:
-    A vector of size ``nc`` containing the friction coefficient at
-    each contact point. The solver makes no distinction between static
-    and dynamic coefficients of friction or, similarly, the solver
-    assumes the static and dynamic coefficients of friction are the
-    same.
-
-Warning:
-    This method stores constant references to the matrices and vectors
-    passed as arguments. Therefore 1. they must outlive this class
-    and, 2. changes to the problem data invalidate any solution
-    performed by this solver. In such a case,
-    SetOneWayCoupledProblemData() and SolveWithGuess() must be invoked
-    again.
-
-Raises:
-    RuntimeError if any of the data pointers are nullptr.
-
-Raises:
-    RuntimeError if the problem data sizes are not consistent as
-    described above.
-
-Raises:
-    RuntimeError if SetTwoWayCoupledProblemData() was ever called on
-    ``this`` solver.)""";
-        } SetOneWayCoupledProblemData;
-        // Symbol: drake::multibody::TamsiSolver::SetTwoWayCoupledProblemData
-        struct /* SetTwoWayCoupledProblemData */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Sets the problem data to solve the problem outlined in Eq. (10) in
-this class's documentation using a two-way coupled approach:
-
-
-.. raw:: html
-
-    <details><summary>Click to expand C++ code...</summary>
-
-.. code-block:: c++
-
-    (10)  M(qˢ) vˢ⁺¹ = p* + δt [Jₙᵀ(qˢ) fₙ(vˢ⁺¹) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)]
-
-.. raw:: html
-
-    </details>
-
-Refer to this class's documentation for further details on the
-structure of the problem and the solution strategy. In the documented
-parameters below, ``nv`` is the number of generalized velocities and
-``nc`` is the number of contact points.
-
-Parameter ``M``:
-    The mass matrix of the system, of size ``nv x nv``.
-
-Parameter ``Jn``:
-    The normal separation velocities Jacobian, of size ``nc x nv``.
-
-Parameter ``Jt``:
-    The tangential velocities Jacobian, of size ``2nc x nv``.
-
-Parameter ``p_star``:
-    The generalized momentum the system would have at ``n + 1`` if
-    contact forces were zero.
-
-Parameter ``fn0``:
-    Normal force at the previous time step. Always positive since
-    bodies cannot attract each other.
-
-Parameter ``stiffness``:
-    A vector of size ``nc`` storing at each ith entry the stiffness
-    coefficient for the ith contact pair.
-
-Parameter ``dissipation``:
-    A vector of size ``nc`` storing at each ith entry the dissipation
-    coefficient for the ith contact pair.
-
-Parameter ``mu``:
-    A vector of size ``nc`` containing the friction coefficient at
-    each contact point. The solver makes no distinction between static
-    and dynamic coefficients of friction or, similarly, the solver
-    assumes the static and dynamic coefficients of friction are the
-    same.
-
-Warning:
-    This method stores constant references to the matrices and vectors
-    passed as arguments. Therefore 1. they must outlive this class
-    and, 2. changes to the problem data invalidate any solution
-    performed by this solver. In such a case,
-    SetOneWayCoupledProblemData() and SolveWithGuess() must be invoked
-    again.
-
-Raises:
-    RuntimeError if any of the data pointers are nullptr.
-
-Raises:
-    RuntimeError if the problem data sizes are not consistent as
-    described above.
-
-Raises:
-    RuntimeError if SetOneWayCoupledProblemData() was ever called on
-    ``this`` solver.)""";
-        } SetTwoWayCoupledProblemData;
-        // Symbol: drake::multibody::TamsiSolver::SolveWithGuess
-        struct /* SolveWithGuess */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Given an initial guess ``v_guess``, this method uses a Newton-Raphson
-iteration to find a solution for the generalized velocities satisfying
-either Eq. (3) when one-way coupling is used or Eq. (10) when two-way
-coupling is used. See this class's documentation for further details.
-To retrieve the solution, please refer to retrieving_the_solution.
-
-Returns:
-    kSuccess if the iteration converges. All other values of
-    TamsiSolverResult report different failure modes. Uses ``this``
-    solver accessors to retrieve the last computed solution.
-
-Warning:
-    Always verify that the return value indicates success before
-    retrieving the computed solution.
-
-Parameter ``dt``:
-    The time step used advance the solution in time.
-
-Parameter ``v_guess``:
-    The initial guess used in by the Newton-Raphson iteration.
-    Typically, the previous time step velocities.
-
-Raises:
-    RuntimeError if ``v_guess`` is not of size ``nv``, the number of
-    generalized velocities specified at construction.)""";
-        } SolveWithGuess;
-        // Symbol: drake::multibody::TamsiSolver::TamsiSolver<T>
-        struct /* ctor */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Instantiates a solver for a problem with ``nv`` generalized
-velocities.
-
-Raises:
-    RuntimeError if nv is non-positive.)""";
-        } ctor;
-        // Symbol: drake::multibody::TamsiSolver::get_friction_forces
-        struct /* get_friction_forces */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns a constant reference to the most recent vector of friction
-forces. These friction forces are defined in accordance to the
-tangential velocities Jacobian Jₜ as documented in tamsi_class_intro
-"this class's documentation".)""";
-        } get_friction_forces;
-        // Symbol: drake::multibody::TamsiSolver::get_generalized_contact_forces
-        struct /* get_generalized_contact_forces */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns a constant reference to the most recent vector of generalized
-contact forces, including both friction and normal forces.)""";
-        } get_generalized_contact_forces;
-        // Symbol: drake::multibody::TamsiSolver::get_generalized_friction_forces
-        struct /* get_generalized_friction_forces */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns a constant reference to the most recent vector of generalized
-friction forces.)""";
-        } get_generalized_friction_forces;
-        // Symbol: drake::multibody::TamsiSolver::get_generalized_velocities
-        struct /* get_generalized_velocities */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns a constant reference to the most recent vector of generalized
-velocities.)""";
-        } get_generalized_velocities;
-        // Symbol: drake::multibody::TamsiSolver::get_iteration_statistics
-        struct /* get_iteration_statistics */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns statistics recorded during the last call to SolveWithGuess().
-See IterationStats for details.)""";
-        } get_iteration_statistics;
-        // Symbol: drake::multibody::TamsiSolver::get_normal_forces
-        struct /* get_normal_forces */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns a constant reference to the most recent vector of (repulsive)
-forces in the normal direction. That is, the normal force is positive
-when the bodies push each other apart. Otherwise the normal force is
-zero, since contact forces can only be repulsive.)""";
-        } get_normal_forces;
-        // Symbol: drake::multibody::TamsiSolver::get_normal_velocities
-        struct /* get_normal_velocities */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns a constant reference to the most recent solution vector for
-normal separation velocities. This method returns an
-``Eigen∷VectorBlock`` referencing a vector of size ``nc``.)""";
-        } get_normal_velocities;
-        // Symbol: drake::multibody::TamsiSolver::get_solver_parameters
-        struct /* get_solver_parameters */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns the current set of parameters controlling the iteration
-process. See Parameters for details.)""";
-        } get_solver_parameters;
-        // Symbol: drake::multibody::TamsiSolver::get_tangential_velocities
-        struct /* get_tangential_velocities */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns a constant reference to the most recent vector of tangential
-forces. This method returns an ``Eigen∷VectorBlock`` referencing a
-vector of size ``nc``.)""";
-        } get_tangential_velocities;
-        // Symbol: drake::multibody::TamsiSolver::set_solver_parameters
-        struct /* set_solver_parameters */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Sets the parameters to be used by the solver. See Parameters for
-details.)""";
-        } set_solver_parameters;
-      } TamsiSolver;
-      // Symbol: drake::multibody::TamsiSolverIterationStats
-      struct /* TamsiSolverIterationStats */ {
-        // Source: drake/multibody/plant/tamsi_solver.h
-        const char* doc =
-R"""(Struct used to store information about the iteration process performed
-by TamsiSolver.)""";
-        // Symbol: drake::multibody::TamsiSolverIterationStats::Reset
-        struct /* Reset */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""((Internal) Used by TamsiSolver to reset statistics.)""";
-        } Reset;
-        // Symbol: drake::multibody::TamsiSolverIterationStats::Update
-        struct /* Update */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""((Internal) Used by TamsiSolver to update statistics.)""";
-        } Update;
-        // Symbol: drake::multibody::TamsiSolverIterationStats::num_iterations
-        struct /* num_iterations */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(The number of iterations performed by the last TamsiSolver solve.)""";
-        } num_iterations;
-        // Symbol: drake::multibody::TamsiSolverIterationStats::residuals
-        struct /* residuals */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""((Advanced) Residual in the tangential velocities, in m/s. The k-th
-entry in this vector corresponds to the residual for the k-th
-Newton-Raphson iteration performed by the solver. After TamsiSolver
-solved a problem, this vector will have size num_iterations. The last
-entry in this vector, ``residuals[num_iterations-1]``, corresponds to
-the residual upon completion of the solver, i.e. vt_residual.)""";
-        } residuals;
-        // Symbol: drake::multibody::TamsiSolverIterationStats::vt_residual
-        struct /* vt_residual */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Returns the residual in the tangential velocities, in m/s. Upon
-convergence of the solver this value should be smaller than
-Parameters∷tolerance times Parameters∷stiction_tolerance.)""";
-        } vt_residual;
-      } TamsiSolverIterationStats;
-      // Symbol: drake::multibody::TamsiSolverParameters
-      struct /* TamsiSolverParameters */ {
-        // Source: drake/multibody/plant/tamsi_solver.h
-        const char* doc =
-R"""(These are the parameters controlling the iteration process of the
-TamsiSolver solver.)""";
-        // Symbol: drake::multibody::TamsiSolverParameters::max_iterations
-        struct /* max_iterations */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(The maximum number of iterations allowed for the Newton-Raphson
-iterative solver.)""";
-        } max_iterations;
-        // Symbol: drake::multibody::TamsiSolverParameters::relative_tolerance
-        struct /* relative_tolerance */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(The tolerance to monitor the convergence of the tangential velocities.
-This number specifies a tolerance relative to the value of the
-stiction_tolerance and thus it is dimensionless. Using a tolerance
-relative to the value of the stiction_tolerance is necessary in order
-to capture transitions to stiction that would require an accuracy in
-the value of the tangential velocities smaller than that of the
-"stiction region" (the circle around the origin with radius
-stiction_tolerance). A value close to one could cause the solver to
-miss transitions from/to stiction. Small values approaching zero will
-result in a higher number of iterations needed to attain the desired
-level of convergence. Typical values lie within the 10⁻³ - 10⁻² range.)""";
-        } relative_tolerance;
-        // Symbol: drake::multibody::TamsiSolverParameters::stiction_tolerance
-        struct /* stiction_tolerance */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(The stiction tolerance vₛ for the slip velocity in the regularized
-friction function, in m/s. Roughly, for an externally applied
-tangential forcing fₜ and normal force fₙ, under "stiction", the slip
-velocity will be approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the
-maximum slip error of the regularized friction approximation occurs at
-the edge of the friction cone when fₜ = μfₙ and vₜ = vₛ. The default
-of 0.1 mm/s is a very tight value that for most problems of interest
-in robotics will result in simulation results with negligible slip
-velocities introduced by regularizing friction when in stiction.)""";
-        } stiction_tolerance;
-        // Symbol: drake::multibody::TamsiSolverParameters::theta_max
-        struct /* theta_max */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""((Advanced) TamsiSolver limits large angular changes between tangential
-velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This change is
-measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)). To aid
-convergence, TamsiSolver, limits this angular change to ``theta_max``.
-Please refer to the documentation for TamsiSolver for further details.
-
-Small values of ``theta_max`` will result in a larger number of
-iterations of the solver for situations in which large angular changes
-occur (sudden transients or impacts). Values of ``theta_max`` close to
-π/2 allow for a faster convergence for problems with sudden
-transitions to/from stiction. Large values of ``theta_max`` however
-might lead to non-convergence of the solver. We choose a conservative
-number by default that we found to work well in most practical
-problems of interest.)""";
-        } theta_max;
-      } TamsiSolverParameters;
-      // Symbol: drake::multibody::TamsiSolverResult
-      struct /* TamsiSolverResult */ {
-        // Source: drake/multibody/plant/tamsi_solver.h
-        const char* doc =
-R"""(The result from TamsiSolver∷SolveWithGuess() used to report the
-success or failure of the solver.)""";
-        // Symbol: drake::multibody::TamsiSolverResult::kAlphaSolverFailed
-        struct /* kAlphaSolverFailed */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(Could not solve for the α coefficient for per-iteration angle change.)""";
-        } kAlphaSolverFailed;
-        // Symbol: drake::multibody::TamsiSolverResult::kLinearSolverFailed
-        struct /* kLinearSolverFailed */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(The linear solver used within the Newton-Raphson loop failed. This
-might be caused by a divergent iteration that led to an invalid
-Jacobian matrix.)""";
-        } kLinearSolverFailed;
-        // Symbol: drake::multibody::TamsiSolverResult::kMaxIterationsReached
-        struct /* kMaxIterationsReached */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc =
-R"""(The maximum number of iterations was reached.)""";
-        } kMaxIterationsReached;
-        // Symbol: drake::multibody::TamsiSolverResult::kSuccess
-        struct /* kSuccess */ {
-          // Source: drake/multibody/plant/tamsi_solver.h
-          const char* doc = R"""(Successful computation.)""";
-        } kSuccess;
-      } TamsiSolverResult;
       // Symbol: drake::multibody::Wing
       struct /* Wing */ {
         // Source: drake/multibody/plant/wing.h

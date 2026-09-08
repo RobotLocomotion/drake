@@ -68,7 +68,8 @@ struct NewVariableNames<Rows, Cols>
 template <int Rows>
 struct NewSymmetricVariableNames
     : public NewVariableNames<Rows == Eigen::Dynamic ? Eigen::Dynamic
-                                                     : Rows*(Rows + 1) / 2> {};
+                                                     : Rows * (Rows + 1) / 2> {
+};
 
 namespace internal {
 /**

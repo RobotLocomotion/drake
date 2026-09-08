@@ -124,10 +124,7 @@ std::unique_ptr<internal::Mobilizer<T>> RevoluteJoint<T>::MakeMobilizerForJoint(
   // These are the joint's parent and child frames, but adjusted for
   // reversal to locate them on the inboard and outboard bodies. We may also
   // need to reverse the axis so that q will retain its expected sign.
-  const Frame<T>& Jin =
-      reverse ? this->frame_on_child() : this->frame_on_parent();
-  const Frame<T>& Jout =
-      reverse ? this->frame_on_parent() : this->frame_on_child();
+  const auto [Jin, Jout] = this->tree_frames(reverse);
   const Eigen::Vector3d axis = reverse ? -axis_ : axis_;  // a unit vector
 
   // Determine whether the axis is one of +x, +y, +z, or something else.
@@ -146,14 +143,14 @@ std::unique_ptr<internal::Mobilizer<T>> RevoluteJoint<T>::MakeMobilizerForJoint(
     const math::RotationMatrixd R_JinF =  // Also R_JoutM, since Jp=Jc at q=0.
         math::RotationMatrixd::MakeFromOneUnitVector(axis, *which_axis);
     F = &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
-        this->MakeUniqueOffsetFrameName(Jin, "F"), Jin,
+        this->MakeUniqueOffsetFrameName(*Jin, "F"), *Jin,
         math::RigidTransformd(R_JinF), this->model_instance()));
     M = &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
-        this->MakeUniqueOffsetFrameName(Jout, "M"), Jout,
+        this->MakeUniqueOffsetFrameName(*Jout, "M"), *Jout,
         math::RigidTransformd(R_JinF), this->model_instance()));
   } else {
-    F = &Jin;
-    M = &Jout;
+    F = Jin;
+    M = Jout;
   }
 
   std::unique_ptr<internal::RevoluteMobilizer<T>> revolute_mobilizer;
