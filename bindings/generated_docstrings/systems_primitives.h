@@ -1874,7 +1874,7 @@ can be found at https://github.com/RobotLocomotion/drake/pull/3132.
         // Symbol: drake::systems::PassThrough::PassThrough<T>
         struct /* ctor */ {
           // Source: drake/systems/primitives/pass_through.h
-          const char* doc_1args_vector_size =
+          const char* doc_vector_size =
 R"""(Constructs a pass-through system.
 
 Parameter ``vector_size``:
@@ -1887,7 +1887,7 @@ Parameter ``input_required``:
     throw. If false (the default), the zero default value is used
     instead.)""";
           // Source: drake/systems/primitives/pass_through.h
-          const char* doc_1args_value =
+          const char* doc_value =
 R"""(Constructs a pass-through system with vector-valued input/output
 ports.
 
@@ -1901,7 +1901,7 @@ Parameter ``input_required``:
     throw. If false (the default), ``value`` is used as the output
     instead.)""";
           // Source: drake/systems/primitives/pass_through.h
-          const char* doc_1args_abstract_model_value =
+          const char* doc_abstract_model_value =
 R"""(Constructs a pass-through system with abstract-valued input/output
 ports.
 
