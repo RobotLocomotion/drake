@@ -64,10 +64,12 @@ class SapJointFrictionConstraintData {
  al., 2021]. This constraint models load-independent friction within a joint,
  such as gearbox friction, in the same spirit as MuJoCo's `frictionloss`
  attribute. The friction generalized force τ opposes the joint velocity and its
- magnitude is bounded by a constant τ_c ≥ 0 with units of generalized force
- (N⋅m for a revolute DOF or N for a prismatic DOF). In stiction the friction
+ magnitude is bounded by a constant τ_c > 0 with units of generalized force
+ (N⋅m for a revolute DOF or N for a prismatic DOF). In stiction, the friction
  force takes whatever value in [−τ_c, τ_c] is needed to hold the DOF at rest,
- and during sliding it saturates at τ = −τ_c⋅sign(v).
+ and during sliding it saturates at τ = −τ_c⋅sign(v). A DOF with τ_c = 0 has no
+ dry friction at all. The caller should skip building the constraint in that
+ case, instead of building one with a zero bound.
 
  Constraint kinematics:
   We consider the i-th DOF of a clique with m DOFs. The constraint velocity is
@@ -79,7 +81,7 @@ class SapJointFrictionConstraintData {
  Regularized friction:
   With δt the time step of the SapContactProblem, the friction impulse is
   bounded by γₘₐₓ = δt⋅τ_c. The ideal maximum dissipation cost γₘₐₓ⋅|vc| is not
-  differentiable at vc = 0 and therefore cannot be used directly by SAP. As for
+  differentiable at vc = 0 and therefore cannot be used directly by SAP. As with
   the friction in contact constraints (see SapFrictionConeConstraint), we
   regularize it. We use the convex cost:
     ℓ(vc) = vc²/(2R)                if |vc| ≤ R⋅γₘₐₓ  (stiction)
@@ -108,6 +110,9 @@ class SapJointFrictionConstraintData {
  [Castro et al., 2021] Castro A., Permenter F. and Han X., 2021. An
    Unconstrained Convex Formulation of Compliant Contact. Available at
    https://arxiv.org/abs/2110.10107
+ [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. A Theory of
+   Irrotational Contact Fields. Available online at
+   https://arxiv.org/abs/2312.03908
 
  @tparam_nonsymbolic_scalar */
 template <typename T>
@@ -130,8 +135,9 @@ class SapJointFrictionConstraint final : public SapConstraint<T> {
 
     /* Dry friction bound τ_c on the generalized force of the constrained DOF.
      It has units of generalized force, i.e. N⋅m for a revolute DOF and N for a
-     prismatic DOF. It must be strictly positive. */
-    T friction{0.0};
+     prismatic DOF. It must be strictly positive. The default value of zero is
+     an invalid sentinel that callers are required to overwrite. */
+    T tau_c{0.0};
     /* Dimensionless parameterization of the regularization of friction, R =
      σ⋅w. Refer to this class's documentation for details. It must be strictly
      positive. */
@@ -146,7 +152,7 @@ class SapJointFrictionConstraint final : public SapConstraint<T> {
    clique_nv).
    @param[in] clique_nv Number of generalized velocities for `clique`.
    @param[in] parameters Parameters of the constraint.
-   @pre parameters.friction > 0.
+   @pre parameters.tau_c > 0.
    @pre parameters.sigma > 0. */
   SapJointFrictionConstraint(int clique, int clique_dof, int clique_nv,
                              Parameters parameters);

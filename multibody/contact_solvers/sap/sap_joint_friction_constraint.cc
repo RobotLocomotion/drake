@@ -23,7 +23,7 @@ SapJointFrictionConstraint<T>::SapJointFrictionConstraint(int clique,
                        {}),
       parameters_(std::move(parameters)),
       clique_dof_(clique_dof) {
-  DRAKE_DEMAND(parameters_.friction > 0.0);
+  DRAKE_DEMAND(parameters_.tau_c > 0.0);
   DRAKE_DEMAND(parameters_.sigma > 0.0);
 }
 
@@ -50,7 +50,7 @@ std::unique_ptr<AbstractValue> SapJointFrictionConstraint<T>::DoMakeData(
   // Both are needed for R⁻¹ and the cost to be well defined.
   constexpr double kInf = std::numeric_limits<double>::infinity();
   DRAKE_DEMAND(R > 0.0 && R < kInf);
-  const T gamma_max = time_step * parameters_.friction;
+  const T gamma_max = time_step * parameters_.tau_c;
   SapJointFrictionConstraintData<T> data(R, gamma_max);
   return SapConstraint<T>::MoveAndMakeAbstractValue(std::move(data));
 }
@@ -119,7 +119,7 @@ template <typename T>
 std::unique_ptr<SapConstraint<double>>
 SapJointFrictionConstraint<T>::DoToDouble() const {
   SapJointFrictionConstraint<double>::Parameters p_to_double{
-      ExtractDoubleOrThrow(parameters_.friction), parameters_.sigma};
+      ExtractDoubleOrThrow(parameters_.tau_c), parameters_.sigma};
   // N.B. Joint friction constraints always act on a single clique.
   const int clique = this->first_clique();
   const int clique_nv = this->num_velocities(0);

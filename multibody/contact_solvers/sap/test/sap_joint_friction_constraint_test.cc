@@ -36,15 +36,15 @@ class SapJointFrictionConstraintTest : public ::testing::Test {
   void SetUp() override {
     dut_ = std::make_unique<SapJointFrictionConstraint<double>>(
         clique_, clique_dof_, clique_nv_, parameters_);
-    SapJointFrictionConstraint<AutoDiffXd>::Parameters p_ad{
-        parameters_.friction, parameters_.sigma};
+    SapJointFrictionConstraint<AutoDiffXd>::Parameters p_ad{parameters_.tau_c,
+                                                            parameters_.sigma};
     dut_ad_ = std::make_unique<SapJointFrictionConstraint<AutoDiffXd>>(
         clique_, clique_dof_, clique_nv_, p_ad);
   }
 
   // Expected values from the class documentation.
   double R() const { return parameters_.sigma * delassus_estimation_; }
-  double gamma_max() const { return time_step_ * parameters_.friction; }
+  double gamma_max() const { return time_step_ * parameters_.tau_c; }
   // Stiction velocity: constraint velocities of magnitude below this value are
   // in stiction, above it are in sliding.
   double vs() const { return R() * gamma_max(); }
@@ -79,7 +79,7 @@ class SapJointFrictionConstraintTest : public ::testing::Test {
   const double time_step_{2.0e-3};
   const double delassus_estimation_{1.5};
   const SapJointFrictionConstraint<double>::Parameters parameters_{
-      .friction = 2.5, .sigma = 1.0e-2};
+      .tau_c = 2.5, .sigma = 1.0e-2};
   std::unique_ptr<SapJointFrictionConstraint<double>> dut_;
   std::unique_ptr<SapJointFrictionConstraint<AutoDiffXd>> dut_ad_;
 };
