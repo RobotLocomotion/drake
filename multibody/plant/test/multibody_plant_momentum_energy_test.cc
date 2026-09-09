@@ -339,8 +339,8 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSpatialInertia) {
 
   // Verify an exception is thrown if frame_F was never added to the plant
   // (regression test for #22636).
-  const FixedOffsetFrame<double> orphan_frame(
-      "orphan_frame", frame_A, math::RigidTransformd());
+  const FixedOffsetFrame<double> orphan_frame("orphan_frame", frame_A,
+                                              math::RigidTransformd());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcSpatialInertia(*context_, orphan_frame, {body_A.index()}),
       ".*does not belong to the supplied MultibodyTree.*");
