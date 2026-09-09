@@ -716,6 +716,7 @@ drake_cc_library(
     name = "single_output_vector_source",
     srcs = ["single_output_vector_source.cc"],
     hdrs = ["single_output_vector_source.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":leaf_system",
         "//common:default_scalars",
@@ -1096,6 +1097,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "single_output_vector_source_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":single_output_vector_source",
         "//systems/framework/test_utilities:scalar_conversion",

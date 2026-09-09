@@ -12,16 +12,16 @@ module(
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "2.8.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "apple_support", version = "2.8.1")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "bazel_features", version = "1.51.0")
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
-bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "platforms", version = "1.1.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_cc", version = "0.2.22")
-bazel_dep(name = "rules_java", version = "9.7.0")
+bazel_dep(name = "rules_java", version = "9.9.0")
 bazel_dep(name = "rules_jvm_external", version = "7.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rs", version = "0.0.106")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_python", version = "2.3.2")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_rs", version = "0.0.110")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "with_cfg.bzl", version = "1.0.0")
 
@@ -86,13 +86,13 @@ bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # n
 # For first-party Bazel builds (by Drake Developers), the non-module flavor
 # is used by default.
 
-bazel_dep(name = "glib", version = "2.82.2.bcr.9", repo_name = "module_glib")
+bazel_dep(name = "glib", version = "2.82.2.bcr.10", repo_name = "module_glib")
 
 # Add non-replaceable C/C++ module dependencies that are used by Drake's
 # implementation.
 
 bazel_dep(name = "libjpeg_turbo", version = "3.1.3.bcr.6", repo_name = "module_libjpeg")
-bazel_dep(name = "nanobind", version = "2.14.0.bcr.1", repo_name = "module_nanobind")
+bazel_dep(name = "nanobind", version = "3.0.1", repo_name = "module_nanobind")
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2", repo_name = "module_nlohmann_json")
 bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
 bazel_dep(name = "suitesparse", version = "7.12.3", repo_name = "module_suitesparse")
@@ -101,7 +101,7 @@ bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
 # Add additional modules we use at build-time (not runtime dependencies).
 
 bazel_dep(name = "libx11", version = "1.8.12.bcr.5")
-bazel_dep(name = "nasm", version = "2.16.03.bcr.3")
+bazel_dep(name = "nasm", version = "3.02")
 bazel_dep(name = "patchelf", version = "0.18.0.bcr.1")
 
 # Configure the Python toolchain.
@@ -235,7 +235,7 @@ use_repo(maven, "drake_maven_internal")
 
 bazel_dep(
     name = "buildifier_prebuilt",
-    version = "8.5.1.3",
+    version = "8.5.1.4",
     dev_dependency = True,
 )
 bazel_dep(
@@ -246,7 +246,7 @@ bazel_dep(
 
 bazel_dep(
     name = "googletest",
-    version = "1.18.0",
+    version = "1.18.0.bcr.1",
     # Ideally we could set dev_dependency = True here, but that would prevent
     # downstream projects from re-using our //common/test_utilities library.
     # Even though that library is not Stable API, historically downstream
@@ -279,7 +279,7 @@ single_version_override(
 
 bazel_dep(
     name = "llvm",
-    version = "0.8.18",
+    version = "0.8.19",
     dev_dependency = True,
 )
 # N.B. We must NOT register llvm's toolchain here. We want to use the
@@ -292,6 +292,25 @@ bazel_dep(
     dev_dependency = True,
     repo_name = "ruff",
 )
+
+# Load developer dependencies via pip.
+
+pip_dev = use_extension(
+    "@rules_python//python/extensions:pip.bzl",
+    "pip",
+    dev_dependency = True,
+)
+
+[
+    pip_dev.parse(
+        hub_name = "drake_sphinx",
+        python_version = python_version,
+        requirements_lock = "//setup:python/sphinx/requirements.txt",
+    )
+    for python_version in PYTHON_VERSIONS
+]
+
+use_repo(pip_dev, "drake_sphinx")
 
 # Load dependencies which are "private", i.e., not available for use by
 # downstream projects. These are all "internal use only".

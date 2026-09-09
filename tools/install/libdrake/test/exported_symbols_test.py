@@ -102,6 +102,18 @@ def _is_known_bad_ctor_or_dtor(*, filename, function_name):
     if function_name.startswith("drake_vendor::vtk"):
         # TODO(#24447) Fix VTK to remove globals.
         return True
+    if function_name.startswith("drake_vendor::(anonymous namespace)::vtk"):
+        # TODO(#24447) Fix VTK to remove globals (anon-namespace vtk helpers).
+        return True
+    if function_name.startswith(
+        (
+            # VTK free functions (no vtk* prefix) that the rules
+            # above can't catch.
+            "drake_vendor::GetDummy",  # vtkPolyData.cxx
+        )
+    ):
+        # TODO(#24447) Fix VTK to remove globals.
+        return True
     if function_name.startswith("vtk::drake_vendor::"):
         # TODO(#24447) Fix VTK to remove globals.
         return True

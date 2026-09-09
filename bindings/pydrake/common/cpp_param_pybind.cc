@@ -109,7 +109,7 @@ py::object GetPyParamScalarImpl(const std::type_info& tinfo) {
 #ifdef PYDRAKE_USE_PYBIND11
     auto* info = py::detail::get_type_info(tinfo);
 #else  // PYDRAKE_USE_NANOBIND
-    auto* info = py::detail::nb_type_lookup(&tinfo);
+    auto* info = py::detail::nb_type_lookup(NB_CTX, &tinfo);
 #endif
     if (!info) {
       // TODO(eric.cousineau): Use NiceTypeName::Canonicalize(...Demangle(...))

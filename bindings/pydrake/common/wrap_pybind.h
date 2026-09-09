@@ -129,7 +129,7 @@ struct __attribute__((visibility("hidden"))) type_caster_wrapped {
 
   static constexpr auto Name = Wrapper::wrapped_name;
 
-  bool from_python(py::handle src, uint8_t flags,
+  bool from_python(py::handle src, uint32_t flags,
       py::detail::cleanup_list* cleanup) noexcept {
     return caster_.from_python(src, flags, cleanup);
   }

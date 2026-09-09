@@ -15,41 +15,35 @@ class PythonManager(Enum):
 
 
 @dataclass
-class Role:
-    name: str
-
-
-@dataclass
 class Platform:
     name: str
     version: str
     alias: str
-    python_manager: PythonManager = PythonManager.PIP
+
+
+@dataclass
+class TestCase:
+    """A (platform, python) combination with which to test, along with the
+    python_manager to use to obtain the requested Python version on that
+    platform."""
+
+    platform: Platform
+    python: PythonTarget
+    python_manager: PythonManager
 
 
 @dataclass
 class Target:
     python_binder: PythonBinder
-    python: PythonTarget
     build_platform: Platform
-    test_platforms: tuple[Platform]
+    build_python: PythonTarget
+    test_platforms: tuple[Platform, ...]
+    test_pythons: tuple[PythonTarget, ...]
 
     def __post_init__(self):
-        assert len(self.python.version_tuple) == 3, self.python.version_tuple
+        self.build_python.validate(n_components=3)
         assert isinstance(self.test_platforms, tuple)
-
-    def platform(self, role: Role, test_index: int | None = None) -> Platform:
-        """Returns the Platform for the given `role`. For the test role, the
-        `test_index` into the `self.test_platforms` tuple is required. For the
-        build role, the `test_index` must be None."""
-        if role.name == "build":
-            assert test_index is None
-            return self.build_platform
-        if role.name == "test":
-            assert test_index is not None
-            return self.test_platforms[test_index]
-        raise NotImplementedError(role.name)
-
-
-BUILD = Role("build")
-TEST = Role("test")
+        assert isinstance(self.test_pythons, tuple)
+        assert self.test_pythons
+        for test_python in self.test_pythons:
+            test_python.validate(n_components=2)

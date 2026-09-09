@@ -17,8 +17,10 @@ fi
 
 # While we're halfway through rewriting our setup scripts to Python, the command
 # line arguments need to go to specific helper scripts.
-sh_args=()
+mac_sh_args=()
 py_args=()
+with_update=1
+maybe_yes=""
 user_environment_only=0
 while [ "${1:-}" != "" ]; do
   case "$1" in
@@ -29,26 +31,58 @@ while [ "${1:-}" != "" ]; do
     --verbose)
       py_args+=("$1")
       ;;
+    --without-update)
+      with_update=0
+      mac_sh_args+=("$1")
+      py_args+=("$1")
+      ;;
+    -y)
+      maybe_yes="-y"
+      py_args+=("$1")
+      ;;
     *)
-      sh_args+=("$1")
+      mac_sh_args+=("$1")
       py_args+=("$1")
       ;;
   esac
   shift
 done
 
-# Call the helper scripts. The first one bootstraps Python if necessary; the
-# second one uses the Python installed by the first one.
+# Call the helper script(s). The first step bootstraps Python if necessary; the
+# second step uses the Python installed by the first one.
 if [[ "$(uname)" == "Darwin" ]]; then
   # N.B. We need `${var:0}` throughout this section because macOS's older
   # version of bash does not seem to be able to cope with an empty array.
   if [[ "${user_environment_only}" -eq 0 ]]; then
-    /bin/bash "${BASH_SOURCE%/*}/mac/install_prereqs.sh" "${sh_args[@]:0}"
+    /bin/bash "${BASH_SOURCE%/*}/mac/install_prereqs.sh" "${mac_sh_args[@]:0}"
   fi
-  $(brew --prefix)/bin/python3.14 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]:0}"
+  exec $(brew --prefix)/bin/python3.14 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]:0}"
 else
   if [[ "${user_environment_only}" -eq 0 ]]; then
-    /bin/bash "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" "${sh_args[@]}"
+    if ! command -v python3 > /dev/null; then
+      echo "Installing python3 ..." >&2
+      maybe_sudo=
+      if [[ "${EUID}" -ne 0 ]]; then
+        maybe_sudo=sudo
+      fi
+      if ! ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends python3; then
+        if [[ "${with_update}" -eq 1 ]]; then
+          ${maybe_sudo} apt-get update || (sleep 30; ${maybe_sudo} apt-get update) || (cat <<EOF && false)
+****************************************************************************
+Drake is unable to run 'sudo apt-get update', probably because this computer
+contains incorrect entries in its sources.list files, or possibly because an
+internet service is down.
+
+Run 'sudo apt-get update' and try to resolve whatever problems it reports.
+Do not try to set up Drake until that command succeeds.
+
+This is not a bug in Drake. Do not contact the Drake team for help.
+****************************************************************************
+EOF
+        fi
+        ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends python3
+      fi
+    fi
   fi
-  /usr/bin/python3 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]}"
+  exec python3 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]}"
 fi

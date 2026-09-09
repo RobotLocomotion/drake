@@ -6,6 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -17,7 +18,8 @@ namespace systems {
 /// only a single, vector output port. Subclasses should override the protected
 /// method
 /// @code
-/// void DoCalcOutput(const Context<T>&, Eigen::VectorBlock<VectorX<T>>*) const;
+/// void DoCalcVectorOutput(const Context<T>& context,
+///                         Eigen::VectorBlock<VectorX<T>>* output) const;
 /// @endcode
 ///
 /// @system
@@ -26,9 +28,16 @@ namespace systems {
 /// - y0
 /// @endsystem
 ///
+/// @warning This class is deprecated and will be removed from Drake on or
+/// after 2027-01-01. Prefer deriving from LeafSystem directly. Declaring a
+/// single vector-valued output port with %LeafSystem requires only a few
+/// lines of code.
+///
 /// @tparam_default_scalar
 template <typename T>
-class SingleOutputVectorSource : public LeafSystem<T> {
+class DRAKE_DEPRECATED("2027-01-01",
+                       "Use LeafSystem instead of SingleOutputVectorSource.")
+    SingleOutputVectorSource : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingleOutputVectorSource);
 
@@ -82,12 +91,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   /// @param converter is per LeafSystem::LeafSystem constructor documentation;
   /// see that function documentation for details.
   SingleOutputVectorSource(SystemScalarConverter converter,
-                           const BasicVector<T>& model_vector)
-      : LeafSystem<T>(std::move(converter)) {
-    this->DeclareVectorOutputPort(
-        kUseDefaultName, model_vector,
-        &SingleOutputVectorSource<T>::CalcVectorOutput);
-  }
+                           const BasicVector<T>& model_vector);
 
   /// Provides a convenience method for %SingleOutputVectorSource subclasses.
   /// This method performs the same logical operation as System::DoCalcOutput
@@ -116,5 +120,8 @@ class SingleOutputVectorSource : public LeafSystem<T> {
 }  // namespace systems
 }  // namespace drake
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::SingleOutputVectorSource);
+#pragma GCC diagnostic pop

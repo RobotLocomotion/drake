@@ -37,7 +37,7 @@ struct pydrake_numpy_dtype_object_type_caster {
              const_name("]"))
 
   bool from_python(
-      handle src, uint8_t flags, cleanup_list* /* cleanup */) noexcept {
+      handle src, uint32_t flags, cleanup_list* /* cleanup */) noexcept {
     auto numpy = module_::import_("numpy");
 
     if (src.is_none()) {
@@ -46,7 +46,7 @@ struct pydrake_numpy_dtype_object_type_caster {
 
     // Avoid converting np.array(dtype=np.float64) to AutoDiffXd prematurely.
     // Only accept autodiff conversions as a last resort.
-    const bool convert = flags & (uint8_t)cast_flags::convert;
+    const bool convert = flags & cast_flags::convert;
     if (!convert) {
       return false;
     }

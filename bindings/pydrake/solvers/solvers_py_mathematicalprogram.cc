@@ -187,7 +187,7 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
 // pybind11 trampoline class to permit overriding virtual functions in Python.
 class PySolverInterface : public solvers::SolverInterface {
  public:
-  NB_TRAMPOLINE(solvers::SolverInterface, 6);
+  NB_TRAMPOLINE(solvers::SolverInterface);
   using Base = solvers::SolverInterface;
 
   PySolverInterface() : Base() {}
@@ -711,9 +711,10 @@ void BindMathematicalProgram(py::module_ m) {
           static_cast<std::tuple<Binding<LinearCost>,
               VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
               MathematicalProgram::*)(
-              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
+              double weight)>(
               &MathematicalProgram::AddMaximizeLogDeterminantCost),
-          py::arg("X"),
+          py::arg("X"), py::arg("weight") = 1.0,
           doc.MathematicalProgram.AddMaximizeLogDeterminantCost.doc)
       .def("AddLogDeterminantLowerBoundConstraint",
           &MathematicalProgram::AddLogDeterminantLowerBoundConstraint,
@@ -1646,7 +1647,7 @@ void BindFreeFunctions(py::module_ m) {
                 solver_options, solver_id, parallelism, dynamic_schedule);
           },
           py::arg("progs"), py::arg("initial_guesses") = std::nullopt,
-          py::arg("solver_options") = std::nullopt,
+          py::arg("solver_options").none() = std::nullopt,
           py::arg("solver_id") = std::nullopt,
           py::arg("parallelism") = Parallelism::Max(),
           py::arg("dynamic_schedule") = false,

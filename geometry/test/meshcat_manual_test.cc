@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <thread>
@@ -24,6 +25,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
+#include "drake/multibody/meshcat/meshcat_mouse_spring.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -834,6 +836,51 @@ Ignore those for now; we'll need to circle back and fix them later.
             << "When you're done, close the browser window.\n\n";
 
   MaybePauseForUser();
+
+  {
+    // Interactive object dragging. Drops a row of boxes onto the ground and
+    // runs a real-time simulation; a MeshcatMouseSpring converts Ctrl + left-
+    // mouse drags into forces, letting the user pull the boxes around.
+    meshcat->Delete();
+    meshcat->SetCameraPose(Vector3d{0, -1.5, 1}, Vector3d{0, 0, 0.1});
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] =
+        multibody::AddMultibodyPlantSceneGraph(&builder, 0.01);
+    plant.set_contact_model(multibody::ContactModel::kHydroelastic);
+    multibody::Parser(&plant).AddModels(
+        FindResourceOrThrow("drake/geometry/test/mouse_spring_demo.sdf"));
+    plant.Finalize();
+
+    MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat);
+    multibody::meshcat::MeshcatMouseSpring::AddToBuilder(
+        &builder, &plant, scene_graph, meshcat, /* stiffness */ 100.0);
+
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+
+    std::cout
+        << "- Now you should see three boxes resting on the ground.\n"
+        << "- Hold CTRL and press the left mouse button on a box, then drag to "
+           "pull it around with a virtual spring.\n"
+        << "- You should see a hand icon when mousing over a draggable box "
+           "with CTRL held.\n"
+        << "- You should be able to drag the boxes around..\n"
+        << "- Click 'Stop Dragging Demo' (in the Controls), or press Escape in "
+           "the browser window to stop the sim.\n"
+        << std::endl;
+
+    systems::Simulator<double> simulator(*diagram, std::move(context));
+    simulator.set_target_realtime_rate(1.0);
+    meshcat->AddButton("Stop Dragging Demo", "Escape");
+    simulator.set_monitor([&meshcat, diagram = diagram.get()](
+                              const systems::Context<double>&) {
+      return meshcat->GetButtonClicks("Stop Dragging Demo") > 0
+                 ? systems::EventStatus::ReachedTermination(diagram, "stopped")
+                 : systems::EventStatus::DidNothing();
+    });
+    simulator.AdvanceTo(std::numeric_limits<double>::infinity());
+    meshcat->DeleteButton("Stop Dragging Demo");
+  }
 
   std::cout << "Exiting..." << std::endl;
   return 0;

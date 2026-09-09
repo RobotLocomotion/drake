@@ -99,10 +99,9 @@ def main(argv):
                         requests.get(url, stream=True) as response,
                         open(filename, "wb") as file_object,
                     ):
-                        for chunk in response.iter_content(
-                            chunk_size=CHUNK_SIZE
-                        ):
-                            file_object.write(chunk)
+                        file_object.writelines(
+                            response.iter_content(chunk_size=CHUNK_SIZE)
+                        )
                     print(
                         f"Computing and verifying SHA-256 checksum of "
                         f"file {filename}..."

@@ -77,14 +77,21 @@ drake_py_binary(
     srcs = ["parse_version.py"],
 )
 
+# PACKAGE_VERSION.TXT exists only inside a released source archive; in a git
+# checkout the glob is empty and the version comes from the stamp (or "unknown").
+_PACKAGE_VERSION_SRCS = glob(
+    ["PACKAGE_VERSION.TXT"],
+    allow_empty = True,
+)
+
 run_binary(
     name = "drake_parse_version_stamp",
-    srcs = ["stamp_version.txt"],
+    srcs = ["stamp_version.txt"] + _PACKAGE_VERSION_SRCS,
     outs = ["stamp_version.cmake"],
     args = [
         "$(location stamp_version.txt)",
         "$(location stamp_version.cmake)",
-    ],
+    ] + ["$(location {})".format(x) for x in _PACKAGE_VERSION_SRCS],
     tool = "parse_version",
 )
 

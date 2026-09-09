@@ -107,6 +107,14 @@ class LinkJointGraph::Link {
   shadow links, if any. */
   const std::vector<LinkIndex>& shadow_links() const { return shadow_links_; }
 
+  /* After the forest has been built, returns the joints that were originally
+  connected to this %Link but were retargeted to one of its shadow links to
+  break a loop. This is ordered to match shadow_links(): the i'th joint here is
+  the one that moved to the i'th shadow link. */
+  const std::vector<JointIndex>& joints_moved_to_shadow_links() const {
+    return joints_moved_to_shadow_links_;
+  }
+
   /* Returns the index of the mobilized body (Mobod) that mobilizes this %Link.
   If this %Link is part of a WeldedLinksAssembly, the returned Mobod may be a
   fused mobod (containing some or all of the links in the assembly -- including

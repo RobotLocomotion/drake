@@ -1277,7 +1277,7 @@ class DelegatedForceDensityField final : public ForceDensityFieldPublic<T> {
 template <typename T>
 class PyForceDensityField : public ForceDensityFieldPublic<T> {
  public:
-  NB_TRAMPOLINE(ForceDensityFieldPublic<T>, 3);
+  NB_TRAMPOLINE(ForceDensityFieldPublic<T>);
 
   explicit PyForceDensityField(ForceDensityType density_type)
       : ForceDensityFieldPublic<T>(density_type) {}

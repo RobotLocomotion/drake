@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+  <!-- A linear conveyor belt segment -->
+  <model name="belt_segment">
+    <!-- Conveyor belt -->
+    <link name="belt">
+      <drake:surface_velocity_axis>0.0 -1.0 0.0</drake:surface_velocity_axis>
+      <visual name="conveyor_belt_visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/examples/conveyor_belt/conveyor_belt.gltf</uri>
+            <!-- The mesh is a 10x1x0.1 m box. We're scaling this down. See the
+             collision box dimensions. -->
+            <scale>0.1 0.2 0.1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="conveyor_belt_collision">
+        <geometry>
+          <box>
+            <size>1 0.2 0.01</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:hydroelastic_modulus>180.0e9</drake:hydroelastic_modulus>
+          <drake:compliant_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

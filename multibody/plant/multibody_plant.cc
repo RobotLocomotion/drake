@@ -254,13 +254,6 @@ struct JointLimitsPenaltyParametersEstimator {
 
 namespace {
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
-constexpr auto kDiscreteContactApproximationTamsi =
-    DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
-
 // Hack to fully qualify frame names, pending resolution of #9128. Used by
 // geometry registration routines. When this hack is removed, also undo the
 // de-hacking step within internal_geometry_names.cc. Note that unlike the
@@ -499,13 +492,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
 
   if (is_discrete()) {
     switch (get_discrete_contact_solver()) {
-      case kDiscreteContactSolverTamsi:
-        // TAMSI does not support coupler constraints.
-        throw std::runtime_error(
-            "Currently this MultibodyPlant is set to use the TAMSI solver. "
-            "TAMSI does not support coupler constraints. Use "
-            "set_discrete_contact_approximation() to set a model approximation "
-            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
       case DiscreteContactSolver::kSap:
         // SAP supports coupler constraints.
         break;
@@ -543,13 +529,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
 
   if (is_discrete()) {
     switch (get_discrete_contact_solver()) {
-      case kDiscreteContactSolverTamsi:
-        // TAMSI does not support distance constraints.
-        throw std::runtime_error(
-            "Currently this MultibodyPlant is set to use the TAMSI solver. "
-            "TAMSI does not support distance constraints. Use "
-            "set_discrete_contact_approximation() to set a model approximation "
-            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
       case DiscreteContactSolver::kSap:
         // SAP supports distance constraints.
         break;
@@ -654,13 +633,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
 
   if (is_discrete()) {
     switch (get_discrete_contact_solver()) {
-      case kDiscreteContactSolverTamsi:
-        // TAMSI does not support ball constraints.
-        throw std::runtime_error(
-            "Currently this MultibodyPlant is set to use the TAMSI solver. "
-            "TAMSI does not support ball constraints. Use "
-            "set_discrete_contact_approximation() to set a model approximation "
-            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
       case DiscreteContactSolver::kSap:
         // SAP supports ball constraints.
         break;
@@ -697,13 +669,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
 
   if (is_discrete()) {
     switch (get_discrete_contact_solver()) {
-      case kDiscreteContactSolverTamsi:
-        // TAMSI does not support weld constraints.
-        throw std::runtime_error(
-            "Currently this MultibodyPlant is set to use the TAMSI solver. "
-            "TAMSI does not support weld constraints. Use "
-            "set_discrete_contact_approximation() to set a model approximation "
-            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
       case DiscreteContactSolver::kSap:
         // SAP supports weld constraints.
         break;
@@ -743,13 +708,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddTendonConstraint(
 
   if (is_discrete()) {
     switch (get_discrete_contact_solver()) {
-      case kDiscreteContactSolverTamsi:
-        // TAMSI does not support tendon constraints.
-        throw std::runtime_error(
-            "Currently this MultibodyPlant is set to use the TAMSI solver. "
-            "TAMSI does not support tendon constraints. Use "
-            "set_discrete_contact_approximation() to set a model approximation "
-            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
       case DiscreteContactSolver::kSap:
         // SAP supports tendon constraints.
         break;
@@ -916,10 +874,6 @@ void MultibodyPlant<T>::set_contact_model(ContactModel model) {
 
 template <typename T>
 DiscreteContactSolver MultibodyPlant<T>::get_discrete_contact_solver() const {
-  // Only the TAMSI approximation uses the TAMSI solver.
-  if (discrete_contact_approximation_ == kDiscreteContactApproximationTamsi)
-    return kDiscreteContactSolverTamsi;
-  // All other approximations use the SAP solver.
   return DiscreteContactSolver::kSap;
 }
 
@@ -928,15 +882,6 @@ void MultibodyPlant<T>::set_discrete_contact_approximation(
     DiscreteContactApproximation approximation) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
-
-  if (approximation == kDiscreteContactApproximationTamsi &&
-      num_constraints() > 0) {
-    throw std::runtime_error(fmt::format(
-        "You selected TAMSI as the contact approximation, but you have "
-        "constraints registered with this model (num_constraints() == {}). "
-        "TAMSI does not support constraints.",
-        num_constraints()));
-  }
 
   discrete_contact_approximation_ = approximation;
 }
@@ -1168,6 +1113,10 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
 template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetVisualGeometriesForBody(const RigidBody<T>& body) const {
+  // Check that visual_geometries_ has been sized correctly and that the
+  // body index is valid.
+  DRAKE_ASSERT(ssize(visual_geometries_) == num_bodies());
+  DRAKE_ASSERT(body.index() < num_bodies());
   return visual_geometries_[body.index()];
 }
 
@@ -1209,6 +1158,9 @@ template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetCollisionGeometriesForBody(
     const RigidBody<T>& body) const {
+  // Check that collision_geometries_ has been sized correctly and that the
+  // body index is valid.
+  DRAKE_ASSERT(ssize(collision_geometries_) == num_bodies());
   DRAKE_ASSERT(body.index() < num_bodies());
   return collision_geometries_[body.index()];
 }
@@ -1469,6 +1421,11 @@ void MultibodyPlant<T>::SetFuseWeldedLinks(
 }
 
 template <typename T>
+void MultibodyPlant<T>::SetEnableLoopTopology(bool enable) {
+  mutable_tree().SetEnableLoopTopology(enable);
+}
+
+template <typename T>
 BaseBodyJointType MultibodyPlant<T>::GetBaseBodyJointType(
     std::optional<ModelInstanceIndex> model_instance) const {
   return internal_tree().GetBaseBodyJointType(model_instance);
@@ -1478,6 +1435,11 @@ template <typename T>
 bool MultibodyPlant<T>::GetFuseWeldedLinks(
     std::optional<ModelInstanceIndex> model_instance) const {
   return internal_tree().GetFuseWeldedLinks(model_instance);
+}
+
+template <typename T>
+bool MultibodyPlant<T>::GetEnableLoopTopology() const {
+  return internal_tree().GetEnableLoopTopology();
 }
 
 template <typename T>
@@ -1500,6 +1462,18 @@ void MultibodyPlant<T>::Finalize() {
 
   // After finalizing the base class, the tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
+
+  // At Finalize(), multibody tree may create shadow links (when loop
+  // topology is allowed), which don't come through AddRigidBody() and so have
+  // no entries in the per-body geometry arrays yet. A shadow never carries any
+  // geometry of its own -- it's an internal modeling artifact that coincides
+  // with its primary link -- but these arrays are indexed by BodyIndex and so
+  // must stay dense over num_bodies(); see GetVisualGeometriesForBody(). Note
+  // that shadows deliberately get no SceneGraph frame: body_index_to_frame_id_
+  // is map-keyed and is documented to tolerate bodies with no frame.
+  // TODO(sherm1) Give shadows a SceneGraph frame for visualization purposes.
+  visual_geometries_.resize(num_bodies());
+  collision_geometries_.resize(num_bodies());
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
@@ -1990,9 +1964,11 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
   std::vector<std::string> names(num_positions(model_instance));
   std::vector<JointIndex> joint_indices = GetJointIndices(model_instance);
   // The offset into the position array is the position_start of the first
-  // mobilizer in the tree; here we just take the minimum.
+  // joint with positions; here we just take the minimum. Zero-dof joints can
+  // inherit a start from a fused Mobod in a different model instance.
   int position_offset = num_positions();
   for (const auto& joint_index : joint_indices) {
+    if (get_joint(joint_index).num_positions() == 0) continue;
     position_offset =
         std::min(position_offset, get_joint(joint_index).position_start());
   }
@@ -2031,7 +2007,7 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
 
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
-    if (joint.num_positions() == 0) continue;  // Skip welds.
+    if (joint.num_velocities() == 0) continue;  // Skip welds.
 
     const std::string prefix =
         add_model_instance_prefix
@@ -2057,16 +2033,18 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
   std::vector<std::string> names(num_velocities(model_instance));
   std::vector<JointIndex> joint_indices = GetJointIndices(model_instance);
   // The offset into the velocity array is the velocity_start of the first
-  // mobilizer in the tree; here we just take the minimum.
+  // joint with velocities; here we just take the minimum. Zero-dof joints can
+  // inherit a start from a fused Mobod in a different model instance.
   int velocity_offset = num_velocities();
   for (const auto& joint_index : joint_indices) {
+    if (get_joint(joint_index).num_velocities() == 0) continue;
     velocity_offset =
         std::min(velocity_offset, get_joint(joint_index).velocity_start());
   }
 
   for (const auto& joint_index : joint_indices) {
     const Joint<T>& joint = get_joint(joint_index);
-    if (joint.num_positions() == 0) continue;  // Skip welds.
+    if (joint.num_velocities() == 0) continue;  // Skip welds.
 
     // Sanity check: joint velocities are in range.
     DRAKE_DEMAND(joint.velocity_start() >= velocity_offset);

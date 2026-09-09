@@ -160,11 +160,8 @@ class Joint : public MultibodyElement<T> {
     DRAKE_DEMAND((vel_lower_limits.array() <= vel_upper_limits.array()).all());
     DRAKE_DEMAND((acc_lower_limits.array() <= acc_upper_limits.array()).all());
 
-    // N.B. We cannot use `num_positions()` here because it is virtual.
-    const int num_positions = pos_lower_limits.size();
-
     // initialize the default positions.
-    default_positions_ = VectorX<double>::Zero(num_positions);
+    default_positions_ = VectorX<double>::Zero(num_positions());
   }
 
   /// Additional constructor overload for joints with zero damping. Refer to
@@ -222,24 +219,42 @@ class Joint : public MultibodyElement<T> {
 
   /// Returns the index to the first generalized velocity for this joint
   /// within the vector v of generalized velocities for the full multibody
-  /// system.
-  int velocity_start() const { return do_get_velocity_start(); }
+  /// system. For a zero-dof joint, this is where its velocities would have
+  /// started had it had any. An unmodeled weld within a fused Mobod inherits
+  /// that Mobod's velocity start.
+  /// @pre The MultibodyPlant has been finalized.
+  int velocity_start() const {
+    const int start =
+        this->get_parent_tree().graph().joint_by_index(index()).v_start();
+    DRAKE_ASSERT(start >= 0);
+    return start;
+  }
 
   /// Returns the number of generalized velocities describing this joint.
   int num_velocities() const {
-    DRAKE_ASSERT(0 <= do_get_num_velocities() && do_get_num_velocities() <= 6);
-    return do_get_num_velocities();
+    const int result = vel_lower_limits_.size();
+    DRAKE_ASSERT(0 <= result && result <= 6);
+    return result;
   }
 
   /// Returns the index to the first generalized position for this joint
   /// within the vector q of generalized positions for the full multibody
-  /// system.
-  int position_start() const { return do_get_position_start(); }
+  /// system. For a zero-dof joint, this is where its positions would have
+  /// started had it had any. An unmodeled weld within a fused Mobod inherits
+  /// that Mobod's position start.
+  /// @pre The MultibodyPlant has been finalized.
+  int position_start() const {
+    const int start =
+        this->get_parent_tree().graph().joint_by_index(index()).q_start();
+    DRAKE_ASSERT(start >= 0);
+    return start;
+  }
 
   /// Returns the number of generalized positions describing this joint.
   int num_positions() const {
-    DRAKE_ASSERT(0 <= do_get_num_positions() && do_get_num_positions() <= 7);
-    return do_get_num_positions();
+    const int result = pos_lower_limits_.size();
+    DRAKE_ASSERT(0 <= result && result <= 7);
+    return result;
   }
 
   /// Returns true if this joint's mobility allows relative rotation of the
@@ -767,6 +782,32 @@ class Joint : public MultibodyElement<T> {
       const internal::SpanningForest::Mobod& mobod,
       internal::MultibodyTree<T>* tree);
 
+  // (Internal use only) When loop breaking moves one end of this joint from a
+  // user link onto one of that link's ephemeral shadow links, MultibodyTree
+  // calls one of these (before Build()) with a substitute frame fixed to the
+  // shadow and with the same pose on the shadow as the user's frame has on the
+  // primary link. The user-visible frame_on_parent()/frame_on_child() and
+  // parent_body()/child_body() continue to report the user's own frames and
+  // links; only the mobilizer sees the substitution, via tree_frames().
+  void set_effective_frame_on_parent(const Frame<T>& frame) {
+    effective_frame_on_parent_ = &frame;
+  }
+  void set_effective_frame_on_child(const Frame<T>& frame) {
+    effective_frame_on_child_ = &frame;
+  }
+
+  // (Internal use only) Returns the frame this joint's mobilizer should use on
+  // the parent (child) side: the substitute frame on a shadow link if loop
+  // breaking installed one, otherwise the user's own frame.
+  const Frame<T>& effective_frame_on_parent() const {
+    return effective_frame_on_parent_ != nullptr ? *effective_frame_on_parent_
+                                                 : frame_on_parent_;
+  }
+  const Frame<T>& effective_frame_on_child() const {
+    return effective_frame_on_child_ != nullptr ? *effective_frame_on_child_
+                                                : frame_on_child_;
+  }
+
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   // be created. This method is intended to be called by
   // MultibodyTree::CloneToScalar().
@@ -776,6 +817,16 @@ class Joint : public MultibodyElement<T> {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
     DRAKE_DEMAND(mobilizer_ != nullptr);
     joint_clone->mobilizer_ = &tree_clone->get_mutable_variant(*mobilizer_);
+    // Cloning doesn't re-run Build(), so carry over any shadow-link frame
+    // substitutions rather than leaving the clone reporting the user frames.
+    if (effective_frame_on_parent_ != nullptr) {
+      joint_clone->effective_frame_on_parent_ =
+          &tree_clone->get_variant(*effective_frame_on_parent_);
+    }
+    if (effective_frame_on_child_ != nullptr) {
+      joint_clone->effective_frame_on_child_ =
+          &tree_clone->get_variant(*effective_frame_on_child_);
+    }
     return joint_clone;
   }
 
@@ -803,31 +854,6 @@ class Joint : public MultibodyElement<T> {
   // End of hidden Doxygen section.
 
  protected:
-  /// Implementation of the NVI velocity_start(), see velocity_start() for
-  /// details. Note that this must be the offset within just the velocity
-  /// vector, _not_ within the composite state vector.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
-  virtual int do_get_velocity_start() const = 0;
-
-  /// Implementation of the NVI num_velocities(), see num_velocities() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
-  virtual int do_get_num_velocities() const = 0;
-
-  /// Implementation of the NVI position_start(), see position_start() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
-  virtual int do_get_position_start() const = 0;
-
-  /// Implementation of the NVI num_positions(), see num_positions() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for
-  /// snake_case accessor methods.
-  virtual int do_get_num_positions() const = 0;
-
   /// Implementation of the NVI position_suffix(), see position_suffix() for
   /// details.  The suffix should contain only alphanumeric characters (e.g.
   /// 'wx' not '_wx' or '.wx').
@@ -952,11 +978,18 @@ class Joint : public MultibodyElement<T> {
   /// inboard/outboard frames for a tree in the spanning forest, given
   /// whether they should be reversed from the parent/child frames that are
   /// members of this Joint object.
+  ///
+  /// These are the joint's _effective_ frames: if loop breaking moved one end
+  /// of this joint onto an ephemeral shadow link, the frame for that end is
+  /// the substitute frame on the shadow rather than the user's frame on the
+  /// primary link. Concrete joints should always build their mobilizer from
+  /// these frames, so that they need not know that shadow links exist.
   std::pair<const Frame<T>*, const Frame<T>*> tree_frames(
       bool use_reversed_mobilizer) const {
-    return use_reversed_mobilizer
-               ? std::make_pair(&frame_on_child(), &frame_on_parent())
-               : std::make_pair(&frame_on_parent(), &frame_on_child());
+    return use_reversed_mobilizer ? std::make_pair(&effective_frame_on_child(),
+                                                   &effective_frame_on_parent())
+                                  : std::make_pair(&effective_frame_on_parent(),
+                                                   &effective_frame_on_child());
   }
 
   /// (Internal use only) Returns the mobilizer implementing this joint,
@@ -1058,6 +1091,12 @@ class Joint : public MultibodyElement<T> {
   std::string name_;
   const Frame<T>& frame_on_parent_;  // Frame Jp.
   const Frame<T>& frame_on_child_;   // Frame Jc.
+
+  // Substitute frames on an ephemeral shadow link, installed by MultibodyTree
+  // during Finalize() when loop breaking retargets an end of this joint. Null
+  // unless substituted; see set_effective_frame_on_parent().
+  const Frame<T>* effective_frame_on_parent_{nullptr};
+  const Frame<T>* effective_frame_on_child_{nullptr};
 
   VectorX<double> damping_;
 

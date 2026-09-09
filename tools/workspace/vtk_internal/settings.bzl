@@ -35,7 +35,6 @@ MODULE_SETTINGS = {
             #  FStream.cxx
             #  Glob.cxx
             #  ProcessUNIX.c
-            #  String.c
             #  System.c
             #  SystemInformation.cxx
             "Utilities/KWSys/vtksys/Base64.c",
@@ -44,15 +43,13 @@ MODULE_SETTINGS = {
             "Utilities/KWSys/vtksys/MD5.c",
             "Utilities/KWSys/vtksys/RegularExpression.cxx",
             "Utilities/KWSys/vtksys/Status.cxx",
+            "Utilities/KWSys/vtksys/String.c",
             "Utilities/KWSys/vtksys/SystemTools.cxx",
         ],
         "cmake_defines": [
             # Match the VTK defaults.
             "KWSYS_NAMESPACE=vtksys",
             "KWSYS_NAME_IS_KWSYS=0",
-            "KWSYS_SYSTEMTOOLS_USE_TRANSLATION_MAP=1",
-            # Features that are available on the host platform.
-            "KWSYS_STL_HAS_WSTRING=1",
             # Features that are NOT available on the host platform.
             "KWSYS_CXX_HAS_EXT_STDIO_FILEBUF_H=0",
             # The *module* prefix and suffix are the same on Linux and macOS.
@@ -65,6 +62,8 @@ MODULE_SETTINGS = {
         "copts_extra": [
             # Match the VTK defaults.
             "-DKWSYS_NAMESPACE=vtksys",
+            # String.c guards its definitions behind this define.
+            "-DKWSYS_STRING_C",
             # Features that are available on the host platform.
             "-DKWSYS_SYS_HAS_IFADDRS_H",
             "-DKWSYS_CXX_HAS_SETENV",

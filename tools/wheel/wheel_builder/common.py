@@ -66,6 +66,11 @@ class PythonTarget:
         self.version = ".".join(pv_parts[:2])
         self.tag = "".join(pv_parts[:2])
 
+    def validate(self, *, n_components: int) -> None:
+        """Asserts that the number of version components belonging to `self`
+        is equal to `n_components`."""
+        assert len(self.version_tuple) == n_components, self.version_tuple
+
 
 def gripe(message):
     """
@@ -119,7 +124,7 @@ def wheel_name(python_binder, python_version, wheel_version, wheel_platform):
 
 def _check_version(version):
     """
-    Returns True iff the given version string matches PEP 440.
+    Returns True iff the given version string conforms to PEP 440.
     """
     return (
         re.match(

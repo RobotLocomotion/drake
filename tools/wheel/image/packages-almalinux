@@ -1,11 +1,10 @@
 # Core compilers and linkers.
-# N.B. When you change anything here, also fix wheel/image/build-drake.sh,
-# wheel/image/build-wheel.sh, and wheel/licenses/gcc/copyright.
+# N.B. When you change anything here, also fix wheel/image/build-drake.sh
+# and wheel/licenses/gcc/copyright.
 gcc-toolset-14-gcc
 gcc-toolset-14-gcc-c++
 gcc-toolset-14-gcc-gfortran
 lld
-nasm
 
 # Other code tools.
 cmake
@@ -23,6 +22,6 @@ tar
 wget
 which
 
-# Build dependencies (general).
+# Additional build dependencies; see the officially supported Ubuntu spellings
+# under setup/ubuntu/.
 glib2-devel
-libXt-devel

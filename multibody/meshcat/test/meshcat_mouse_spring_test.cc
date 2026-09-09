@@ -1,6 +1,7 @@
 #include "drake/multibody/meshcat/meshcat_mouse_spring.h"
 
 #include <cmath>
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -72,12 +73,15 @@ class MeshcatMouseSpringTest : public ::testing::Test {
   }
 
   // Returns the forces computed by a freshly built spring, given the drag state
-  // and the provided body poses/velocities.
+  // and the provided body poses/velocities. The default `max_displacement` is
+  // high enough that tests which don't care about the cap never reach it.
   std::vector<ExternallyAppliedSpatialForce<double>> CalcForces(
       const std::optional<Meshcat::VirtualSpringKinematics>& drag,
       const std::vector<RigidTransformd>& X_WBs,
-      const std::vector<SpatialVelocity<double>>& V_WBs) {
-    MeshcatMouseSpring spring(meshcat_, &plant_, scene_graph_, kStiffness);
+      const std::vector<SpatialVelocity<double>>& V_WBs,
+      double max_displacement = kMaxDisplacement) {
+    MeshcatMouseSpring spring(meshcat_, &plant_, scene_graph_, kStiffness,
+                              max_displacement);
     return MeshcatMouseSpringTester::CalcAppliedSpatialForce(spring, drag,
                                                              X_WBs, V_WBs);
   }
@@ -91,10 +95,13 @@ class MeshcatMouseSpringTest : public ::testing::Test {
         plant_.num_bodies(), SpatialVelocity<double>::Zero());
   }
 
-  static constexpr double kStiffness = 100.0;    // 1/s².
-  static constexpr double kBallMass = 2.0;       // kg.
-  static constexpr double kLinkMass = 3.0;       // kg.
-  static constexpr double kRobotBallMass = 5.0;  // kg.
+  static constexpr double kStiffness = 100.0;  // 1/s².
+  // Deliberately huge, so that only MaxDisplacementCapsForce (which passes an
+  // explicit value) ever reaches the cap.
+  static constexpr double kMaxDisplacement = 1e12;  // m.
+  static constexpr double kBallMass = 2.0;          // kg.
+  static constexpr double kLinkMass = 3.0;          // kg.
+  static constexpr double kRobotBallMass = 5.0;     // kg.
 
   std::shared_ptr<Meshcat> meshcat_;
   SceneGraph<double> scene_graph_;
@@ -217,6 +224,30 @@ TEST_F(MeshcatMouseSpringTest, Damping) {
                               -expected_damping * v_WB, 1e-12));
 }
 
+// The spring's displacement, and therefore the force, is capped at
+// max_displacement.
+TEST_F(MeshcatMouseSpringTest, MaxDisplacementCapsForce) {
+  // Pick an arbitrary maximum displacement that is unlikely to be a default
+  // value.
+  constexpr double max_displacement = 0.175;  // m.
+  const Vector3d anchor = Vector3d::Zero();
+  // Uncapped, this displacement would be 1000 m.
+  const Vector3d target(1000.0, 0.0, 0.0);
+  const Meshcat::VirtualSpringKinematics drag{.path = "/drake/visualizer/ball",
+                                              .body_point_in_world = anchor,
+                                              .target_point_in_world = target};
+
+  const auto forces =
+      CalcForces(drag, DefaultPoses(), ZeroVelocities(), max_displacement);
+  ASSERT_EQ(forces.size(), 1);
+  // The displacement is capped to max_displacement along the (unchanged) pull
+  // direction, so the force is mass * stiffness * max_displacement.
+  EXPECT_TRUE(CompareMatrices(forces[0].F_Bq_W.translational(),
+                              kBallMass * kStiffness * max_displacement *
+                                  (target - anchor).normalized(),
+                              1e-12));
+}
+
 // The output port reports no force when Meshcat reports no drag. (The rest of
 // the port's calculation is the force computation tested above.)
 TEST_F(MeshcatMouseSpringTest, OutputPort) {
@@ -237,6 +268,18 @@ TEST_F(MeshcatMouseSpringTest, ConstructorErrors) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MeshcatMouseSpring(meshcat_, &plant_, scene_graph_, -1.0 /* stiffness */),
       ".*stiffness.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MeshcatMouseSpring(meshcat_, &plant_, scene_graph_, kStiffness,
+                         0.0 /* max_displacement */),
+      ".*max_displacement.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MeshcatMouseSpring(meshcat_, &plant_, scene_graph_, kStiffness,
+                         -1.0 /* max_displacement */),
+      ".*max_displacement.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MeshcatMouseSpring(meshcat_, &plant_, scene_graph_, kStiffness,
+                         std::numeric_limits<double>::infinity()),
+      ".*max_displacement.*");
   MultibodyPlant<double> unfinalized(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       MeshcatMouseSpring(meshcat_, &unfinalized, scene_graph_),

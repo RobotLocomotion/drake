@@ -25,6 +25,7 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/multibody/tree/rpy_floating_mobilizer.h"
+#include "drake/multibody/tree/shadow_frame.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -86,9 +87,15 @@ void MultibodyTree<T>::RegisterJointAndMaybeJointTypeInGraph(
                                         joint.num_velocities(), has_quaternion);
   }
   // Note changes in the graph.
-  link_joint_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
-                             joint.parent_body().index(),
-                             joint.child_body().index());
+  const JointIndex graph_joint_index = link_joint_graph_.AddJoint(
+      joint.name(), joint.model_instance(), type_name,
+      joint.parent_body().index(), joint.child_body().index());
+  const LinkJointGraph::Joint& graph_joint =
+      link_joint_graph_.joint_by_index(graph_joint_index);
+  const LinkJointGraph::JointTraits& traits =
+      link_joint_graph_.joint_traits(graph_joint.traits_index());
+  DRAKE_DEMAND(traits.nq == joint.num_positions());
+  DRAKE_DEMAND(traits.nv == joint.num_velocities());
 }
 
 template <typename T>
@@ -549,8 +556,11 @@ const Link<T>& MultibodyTree<T>::GetLinkByName(
 }
 
 template <typename T>
-const Link<T>& MultibodyTree<T>::AddLinkImpl(std::unique_ptr<Link<T>> link) {
-  if (is_finalized()) {
+const Link<T>& MultibodyTree<T>::AddLinkImpl(std::unique_ptr<Link<T>> link,
+                                             bool is_ephemeral) {
+  // Auto-created ("ephemeral") shadow links can be added during Finalize()
+  // (post-BuildForest). All other links must be added pre-finalize.
+  if (!is_ephemeral && is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. "
         "Therefore adding more bodies is not allowed. "
@@ -571,11 +581,13 @@ const Link<T>& MultibodyTree<T>::AddLinkImpl(std::unique_ptr<Link<T>> link) {
     // The LinkJointGraph should already contain only World.
     DRAKE_DEMAND(ssize(link_joint_graph_.links()) == 1);
     DRAKE_DEMAND(link_joint_graph_.link_by_index(link_index).name() == "world");
-  } else {
-    // Make note in the graph of the new rigid link.
+  } else if (!is_ephemeral) {
+    // Make note in the graph of the new rigid link. Ephemeral links (e.g.
+    // shadow links) were created by BuildForest() and are already in the graph.
     link_joint_graph_.AddLink(link->name(), link->model_instance());
   }
 
+  link->set_is_ephemeral(is_ephemeral);
   link->set_parent_tree(this, link_index);
   // MultibodyTree can access selected private methods in RigidBody through its
   // LinkAttorney.
@@ -584,10 +596,22 @@ const Link<T>& MultibodyTree<T>::AddLinkImpl(std::unique_ptr<Link<T>> link) {
       &internal::LinkAttorney<T>::get_mutable_link_frame(link.get());
   const FrameIndex link_frame_index(num_frames());
   link_frame->set_parent_tree(this, link_frame_index);
+  // Whether or not a LinkFrame is "ephemeral" depends on its link since the
+  // link_frame comes into existence with the link.
+  link_frame->set_is_ephemeral(is_ephemeral);
   DRAKE_DEMAND(link_frame->name() == link->name());
   frames_.AddBorrowed(link_frame);
   // - Register link.
   return links_.Add(std::move(link));
+}
+
+template <typename T>
+const RigidBody<T>& MultibodyTree<T>::AddEphemeralLink(
+    const std::string& name, ModelInstanceIndex model_instance,
+    const SpatialInertia<double>& M_BBo_B) {
+  DRAKE_DEMAND(model_instance < num_model_instances());
+  return AddLinkImpl(std::make_unique<Link<T>>(name, model_instance, M_BBo_B),
+                     true /* ephemeral */);
 }
 
 template <typename T>
@@ -994,6 +1018,12 @@ bool MultibodyTree<T>::GetFuseWeldedLinks(
 }
 
 template <typename T>
+void MultibodyTree<T>::SetEnableLoopTopology(bool enable) {
+  DRAKE_THROW_UNLESS(!is_finalized());
+  enable_loop_topology_ = enable;
+}
+
+template <typename T>
 void MultibodyTree<T>::Finalize() {
   DRAKE_MBT_THROW_IF_FINALIZED();
 
@@ -1030,16 +1060,93 @@ void MultibodyTree<T>::Finalize() {
   process (BuildForest()), which augmented the graph with them. We call those
   "ephemeral" elements. */
 
-  // TODO(sherm1) Add shadow links and loop constraints.
-  if (!graph.loop_constraints().empty()) {
+  // TODO(sherm1) Move joints to the shadow links and add loop constraints.
+
+  if (!enable_loop_topology_ && !graph.loop_constraints().empty()) {
     link_joint_graph_.InvalidateForest();
     throw std::runtime_error(fmt::format(
-        "The bodies and joints of this system form one or "
-        "more loops in the system graph. Drake currently does not "
-        "support automatic modeling of such systems; however, they "
-        "can be modeled with some input changes. See "
-        "https://drake.mit.edu/troubleshooting.html"
-        "#mbp-loops-in-graph for advice on how to model systems with loops."));
+        "The bodies and joints of this system form one or more loops in the "
+        "system graph. Automatic modeling of such systems is disabled by "
+        "default; you can enable it by calling "
+        "MultibodyPlant::SetEnableLoopTopology(true) before Finalize() "
+        "but: the feature is in development and not yet functional even when "
+        "enabled. For now, loops can be modeled with some input changes. See "
+        "https://drake.mit.edu/troubleshooting.html#mbp-loops-in-graph "
+        "for advice on how to model systems with loops."));
+  }
+
+  /* Add the shadow Links. BuildForest() creates a shadow Link for each
+  kinematic loop it breaks and that shadow link is needed for a corresponding
+  subsequent Joint implementation (which will reference the shadow link).
+  This is all needed before building BodyNodes. We add them in graph order,
+  immediately after the user links, so that each new shadow link's index
+  matches its graph shadow-link index.
+
+  We give each shadow a default spatial inertia equal to the primary link's
+  share of the even split -- mass/(N+1) with the same com and unit inertia,
+  where N is the primary's shadow count -- so that the shadow's user-facing
+  default reflects the split rather than being zero. This default is
+  informational only; the effective runtime inertias of both the primary and its
+  shadows are still (re)computed in CalcFrameBodyPoses() by dividing the
+  primary's parameterized inertia, which remains the single source of truth for
+  the split (so runtime changes to the primary's mass re-split correctly). */
+  // TODO(sherm1) Consider making shadow link inertias NaN and prohibiting
+  //  anyone from asking about shadow default mass properties since they are
+  //  not used at all.
+  for (LinkOrdinal shadow_ordinal(graph.num_user_links());
+       shadow_ordinal < graph.num_links(); ++shadow_ordinal) {
+    const LinkJointGraph::Link& shadow_graph_link = graph.links(shadow_ordinal);
+    DRAKE_DEMAND(!shadow_graph_link.is_world());
+    DRAKE_DEMAND(shadow_graph_link.is_shadow());
+    const LinkIndex primary_index = shadow_graph_link.primary_link();
+    const LinkJointGraph::Link& primary_graph_link =
+        graph.link_by_index(primary_index);
+    DRAKE_DEMAND(
+        !primary_graph_link.is_world());  // Shouldn't ever split World.
+    DRAKE_DEMAND(!primary_graph_link.is_shadow());
+    const int num_copies = primary_graph_link.num_shadows() + 1;
+    const SpatialInertia<double>& M_primary =
+        links_.get_element(primary_index).default_spatial_inertia();
+    const SpatialInertia<double> M_shadow(M_primary.get_mass() / num_copies,
+                                          M_primary.get_com(),
+                                          M_primary.get_unit_inertia());
+    const Link<T>& shadow_link = AddEphemeralLink(
+        shadow_graph_link.name(), shadow_graph_link.model_instance(), M_shadow);
+    DRAKE_DEMAND(shadow_link.index() == shadow_graph_link.index());
+
+    /* BuildForest() broke the loop by retargeting one of a joint's ends from
+    the primary link onto this shadow. That joint's frame for that end was
+    authored on the primary, so we give the joint a substitute frame that is
+    fixed to the shadow link with the same pose that the user's frame had on the
+    primary link. We can use the same pose because a shadow link's link frame
+    coincides with its primary's. A ShadowFrame has no pose parameter of its
+    own; it delegates to the user's frame, which remains the single source of
+    truth.
+
+    Joints and mobilizers thus stay shadow-ignorant:
+    CreateJointImplementations() runs after this loop and Joint::Build() picks
+    up the substitution through Joint::tree_frames(). The joint's user-visible
+    frame_on_parent()/ frame_on_child() and parent_body()/child_body() are
+    unchanged. */
+    const JointIndex joint_index = shadow_graph_link.inboard_joint_index();
+    Joint<T>& joint = joints_.get_mutable_element(joint_index);
+
+    // Exactly one end of the joint should have been moved to this shadow.
+    const bool moved_child = !shadow_graph_link.joints_as_child().empty();
+    DRAKE_DEMAND(moved_child || !shadow_graph_link.joints_as_parent().empty());
+    const Frame<T>& source_frame =
+        moved_child ? joint.frame_on_child() : joint.frame_on_parent();
+
+    const Frame<T>& shadow_frame =
+        AddEphemeralFrame(std::make_unique<ShadowFrame<T>>(
+            joint.MakeUniqueOffsetFrameName(source_frame, "shadow"),
+            shadow_link, source_frame, joint.model_instance()));
+
+    if (moved_child) {
+      joint.set_effective_frame_on_child(shadow_frame);
+    } else {
+      joint.set_effective_frame_on_parent(shadow_frame);
+    }
   }
 
   /* Add the ephemeral Joints. */
@@ -1745,10 +1852,29 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
 
     // Accumulate the spatial inertia from each link following this mobod.
     for (const LinkOrdinal& link_ordinal : mobod.follower_link_ordinals()) {
-      const LinkIndex link_index = forest().links(link_ordinal).index();
-      const Link<T>& link = links_.get_element(link_index);
-      const SpatialInertia<T> M_LLo_L =
-          link.CalcSpatialInertiaInBodyFrame(context);
+      // Mass properties are split evenly among a primary link and any shadow
+      // links that were created to break loops. We source the inertia from the
+      // primary link (a shadow link's default spatial inertia is ignored) and
+      // divide by the number of copies (primary + shadows). Because a shadow's
+      // link frame coincides with its primary's (they are welded at identity),
+      // the body-frame inertia values are identical, so a shadow and its
+      // primary end up with the same split M_LLo_L. A link with no shadows is
+      // its own primary with num_copies == 1, i.e. unchanged.
+      const LinkJointGraph::Link& graph_link = forest().links(link_ordinal);
+      const LinkIndex primary_index = graph_link.primary_link();
+      const int num_copies =
+          graph().link_by_index(primary_index).num_shadows() + 1;
+      const Link<T>& source_link = links_.get_element(primary_index);
+      // Read the primary's inertia straight from its parameter (the source of
+      // truth) rather than via CalcSpatialInertiaInBodyFrame(), which now reads
+      // back from the very cache we are building here.
+      SpatialInertia<T> M_LLo_L =
+          source_link.CalcSpatialInertiaInBodyFrameFromParameters(context);
+      if (num_copies > 1) {
+        M_LLo_L =
+            SpatialInertia<T>(M_LLo_L.get_mass() / num_copies,
+                              M_LLo_L.get_com(), M_LLo_L.get_unit_inertia());
+      }
       frame_body_poses->SetM_LLo_L(link_ordinal, M_LLo_L);
 
       // Set p_BoLcm_B and accumulate M_LLo_L into M_BBo_B (unless B is world).
@@ -4449,6 +4575,12 @@ std::unique_ptr<MultibodyTree<ToScalar>> MultibodyTree<T>::CloneToScalar()
   // The graph and its forest model are scalar type-independent.
   tree_clone->link_joint_graph_ = this->link_joint_graph_;
 
+  // Copy the enable_loop_topology setting so GetEnableLoopTopology() reports
+  // the same value on the clone. Since cloning only occurs post-Finalize(),
+  // this flag no longer affects anything about the cloned system (the forest is
+  // already built); we carry it along purely for reporting consistency.
+  tree_clone->enable_loop_topology_ = this->enable_loop_topology_;
+
   // Fill the `frame_` collection with nulls. We'll be cloning the frames out
   // of order, so we can't just append them to the end like we do with the
   // other kinds of elements.
@@ -4560,6 +4692,10 @@ RigidBody<T>* MultibodyTree<T>::CloneBodyAndAdd(
       &internal::LinkAttorney<T>::get_mutable_link_frame(body_clone.get());
   body_frame_clone->set_parent_tree(this, body_frame_index);
   body_frame_clone->set_model_instance(body.model_instance());
+  // Cloning doesn't go through AddLinkImpl(), so carry the link frame's
+  // ephemeral flag over here (the link's own flag is copied by its
+  // CloneToScalar()).
+  body_frame_clone->set_is_ephemeral(body.body_frame().is_ephemeral());
 
   // The order in which frames are added into frames_ is important to keep the
   // topology invariant. Therefore we index new clones according to the

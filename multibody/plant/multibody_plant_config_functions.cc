@@ -6,9 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 
-// Remove on 2026-09-01 per TAMSI deprecation.
-#include "drake/common/text_logging.h"
-
 namespace drake {
 namespace multibody {
 
@@ -82,11 +79,6 @@ constexpr const char* EnumToChars(ContactModel enum_value) {
 // as well as in the list of kDiscreteContactApproximations below.
 constexpr const char* EnumToChars(DiscreteContactApproximation enum_value) {
   switch (enum_value) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    case DiscreteContactApproximation::kTamsi:
-      return "tamsi";
-#pragma GCC diagnostic pop
     case DiscreteContactApproximation::kSap:
       return "sap";
     case DiscreteContactApproximation::kSimilar:
@@ -127,16 +119,12 @@ constexpr std::array<NamedEnum<ContactModel>, 3> kContactModels{{
     {ContactModel::kHydroelasticWithFallback},
 }};
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-constexpr std::array<NamedEnum<DiscreteContactApproximation>, 4>
+constexpr std::array<NamedEnum<DiscreteContactApproximation>, 3>
     kDiscreteContactApproximations{{
-        {DiscreteContactApproximation::kTamsi},
         {DiscreteContactApproximation::kSap},
         {DiscreteContactApproximation::kSimilar},
         {DiscreteContactApproximation::kLagged},
     }};
-#pragma GCC diagnostic pop
 
 constexpr std::array<NamedEnum<ContactRep>, 2> kContactReps{{
     {ContactRep::kTriangle},
@@ -166,11 +154,6 @@ std::string GetStringFromContactModel(ContactModel contact_model) {
 
 DiscreteContactApproximation GetDiscreteContactApproximationFromString(
     std::string_view discrete_contact_approximation) {
-  if (discrete_contact_approximation == "tamsi") {
-    static const logging::Warn log_once(
-        "DRAKE_DEPRECATED: The TAMSI solver is deprecated, and will be removed "
-        "from Drake on or after 2026-09-01.");
-  }
   for (const auto& [value, name] : kDiscreteContactApproximations) {
     if (name == discrete_contact_approximation) {
       return value;

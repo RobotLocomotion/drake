@@ -270,11 +270,12 @@ class TestIrisNp2(unittest.TestCase):
 
 
 class TestOptionsPrinting(unittest.TestCase):
-    skip_fields = [
-        "parameterization",  # a function
-        "solver",  # a solver object
-        "solver_options",  # a solver_options object
-    ]
+    def setUp(self):
+        self.skip_fields = [
+            "parameterization",  # a function
+            "solver",  # a solver object
+            "solver_options",  # a solver_options object
+        ]
 
     def get_options_fields(self, options, skip):
         return [

@@ -48,13 +48,14 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
 #else
   bool is_new{false};
   PyObject* result{};
-  auto* bound_type = drake::internal::GetTypeInfoAlias(&ptr.info);
+  const std::type_info* bound_type =
+      drake::internal::GetTypeInfoAlias(&ptr.info);
   if (ptr.is_polymorphic) {
-    result = py::detail::nb_type_put_p(bound_type, &ptr.info,
+    result = py::detail::nb_type_put(NB_CTX, bound_type, &ptr.info,
         const_cast<void*>(ptr.raw), py_rvp::reference, nullptr, &is_new);
   } else {
-    result = py::detail::nb_type_put(&ptr.info, const_cast<void*>(ptr.raw),
-        py_rvp::reference, nullptr, &is_new);
+    result = py::detail::nb_type_put(NB_CTX, &ptr.info, nullptr,
+        const_cast<void*>(ptr.raw), py_rvp::reference, nullptr, &is_new);
   }
   if (is_new) {
     py::object delete_me = py::steal(result);
@@ -418,8 +419,8 @@ discussion), use e.g.
         return result;
       },
       doc.MaybeGetDrakePath.doc);
-  // These are meant to be called internally by pydrake; not by users.
-  m.def("trigger_an_assertion_failure", &trigger_an_assertion_failure,
+  // This is meant to be called internally by pydrake; not by users.
+  m.def("_trigger_an_assertion_failure", &trigger_an_assertion_failure,
       "Trigger a Drake C++ assertion failure");
 
   m.attr("kDrakeAssertIsArmed") = kDrakeAssertIsArmed;

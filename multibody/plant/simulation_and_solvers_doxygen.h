@@ -35,15 +35,12 @@ this modality, the system is updated through periodic updates of length
 fixed `time_step`. The value of `time_step` is provided at construction of the
 @ref drake::multibody::MultibodyPlant "MultibodyPlant".
 
-Drake provides two very different simulation technologies:
-  1. TAMSI, which formulates non-linear compliant contact with regularized
-     friction using a Newton-Raphson solver with a custom "transition aware"
-     line search, see @ref Castro2019 "[Castro et al., 2019]"
-  2. SAP, a convex formulation originally developed in
-     @ref Castro2022 "[Castro et al., 2022]" as an extension to the work in
-     @ref Anitescu2006 "[Anitescu, 2006]" and @ref Todorov2014 "[Todorov, 2014]"
-     to resolve physical compliance, providing a performant implementation in
-     primal coordinates.
+Drake simulates the discrete model using SAP,
+a convex formulation originally developed in
+@ref Castro2022 "[Castro et al., 2022]" as an extension to the work in
+@ref Anitescu2006 "[Anitescu, 2006]" and @ref Todorov2014 "[Todorov, 2014]"
+to resolve physical compliance, providing a performant implementation in
+primal coordinates.
 
 To choose different approximations of discrete contact refer to @ref
 drake::multibody::DiscreteContactApproximation "DiscreteContactApproximation".

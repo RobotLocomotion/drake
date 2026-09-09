@@ -5,11 +5,9 @@
 # - Users can make edits to drake/setup/python/pyproject.toml, and then
 #   run this script to compile it to drake/setup/python/pdm.lock.
 #
-# - Users can make edits to drake/setup/python/mypy/requirements.in, and then
-#   run this script to compile it to drake/setup/python/mypy/requirements.txt.
-#
-# - Users can make edits to drake/setup/python/lief/requirements.in, and then
-#   run this script to compile it to drake/setup/python/lief/requirements.txt.
+# - Users can make edits to each PyPI dependency obtained via rules_python in
+#   drake/setup/python/{root}/requirements.in, and then run this script to
+#   compile it to drake/setup/python/{root}/requirements.txt.
 #
 # The --reuse option may be given to apply changes to pyproject.toml while
 # attempting to preserve existing version pins.
@@ -126,15 +124,12 @@ done
 # Check for changes to the pdm lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
-# Upgrade the mypy lock file.
-readonly mypy_requirements="./setup/python/mypy/requirements.txt"
-bazel run //setup/python/mypy:lock.update
-files_to_commit+=( "$(git diff --name-only HEAD -- "${mypy_requirements}")" )
-
-# Upgrade the lief lock file.
-readonly lief_requirements="./setup/python/lief/requirements.txt"
-bazel run //setup/python/lief:lock.update
-files_to_commit+=( "$(git diff --name-only HEAD -- "${lief_requirements}")" )
+# Upgrade the PyPI lock files.
+for root in lief mypy sphinx; do
+    package_requirements="./setup/python/${root}/requirements.txt"
+    bazel run //setup/python/${root}:lock.update
+    files_to_commit+=( "$(git diff --name-only HEAD -- "${package_requirements}")" )
+done
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then

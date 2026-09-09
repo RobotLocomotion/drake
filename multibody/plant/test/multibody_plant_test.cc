@@ -4851,6 +4851,39 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
   }
 }
 
+// Verify that SetEnableLoopTopology() properly sets its setting and that it
+// cannot be used post-Finalize(). Verify that when enabled, there is proper
+// scalar conversion (which clones the underlying MultibodyTree).
+GTEST_TEST(MultibodyPlantTest, EnableLoopTopologyOption) {
+  MultibodyPlant<double> plant(0.0);
+
+  // Verify the default setting is disabled (for now).
+  EXPECT_FALSE(plant.GetEnableLoopTopology());
+
+  // Verify that pre-Finalize(), the setting can be enabled and/or disabled.
+  plant.SetEnableLoopTopology(true);
+  EXPECT_TRUE(plant.GetEnableLoopTopology());
+  plant.SetEnableLoopTopology(false);
+  EXPECT_FALSE(plant.GetEnableLoopTopology());
+
+  // Leave it enabled and finalize a simple (loop-free) model.
+  plant.SetEnableLoopTopology(true);
+  plant.AddRigidBody("body", SpatialInertia<double>::MakeUnitary());
+  plant.Finalize();
+  EXPECT_TRUE(plant.GetEnableLoopTopology());
+
+  // Verify that post-Finalize(), cannot _call_ SetEnableLoopTopology().
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.SetEnableLoopTopology(false),
+                              ".*is_finalized.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.SetEnableLoopTopology(true),
+                              ".*is_finalized.*");
+
+  // The setting survives scalar conversion, which clones the tree.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> ad_plant =
+      systems::System<double>::ToAutoDiffXd(plant);
+  EXPECT_TRUE(ad_plant->GetEnableLoopTopology());
+}
+
 GTEST_TEST(SetRandomTest, QuaternionFloatingBody) {
   // Create a model that contains a single body B.
   MultibodyPlant<double> plant(0.0);
@@ -5414,16 +5447,6 @@ TEST_P(MultibodyPlantConstraintTestTimeStepParam, ConstraintActiveStatus) {
       body_A_, RigidTransformd(), body_B_, RigidTransformd());
   MultibodyConstraintId tendon_id = plant_.AddTendonConstraint(
       {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
-
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  if (plant_.is_discrete()) {
-    DRAKE_EXPECT_THROWS_MESSAGE(plant_.set_discrete_contact_approximation(
-                                    DiscreteContactApproximation::kTamsi),
-                                ".*TAMSI does not support constraints.*");
-  }
-#pragma GCC diagnostic pop
 
   plant_.Finalize();
 
@@ -6367,53 +6390,14 @@ GTEST_TEST(MultibodyPlantTest, RenameModelInstance) {
                               ".*finalized.*");
 }
 
-// Rework this test on 2026-09-01 per TAMSI deprecation. The only test logic we
-// still need is to check for a post-Finalize call to change the approximation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Verify the proper coordination of discrete contact approximations with their
-// corresponding solvers.
-GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
+GTEST_TEST(MultibodyPlantTests, SetDiscreteContactApproximationPostFinalize) {
   MultibodyPlant<double> plant(0.01);
-
-  auto set_approximation_and_check_solver =
-      [&plant](DiscreteContactApproximation approximation) {
-        plant.set_discrete_contact_approximation(approximation);
-        EXPECT_EQ(plant.get_discrete_contact_approximation(), approximation);
-        if (approximation == DiscreteContactApproximation::kTamsi) {
-          // Only the TAMSI solver can be used with the TAMSI approximation.
-          EXPECT_EQ(plant.get_discrete_contact_solver(),
-                    DiscreteContactSolver::kTamsi);
-        } else {
-          // Approximations other than TAMSI use the SAP solver.
-          EXPECT_EQ(plant.get_discrete_contact_solver(),
-                    DiscreteContactSolver::kSap);
-        }
-      };
-
-  // Verify that setting an apprximation sets the proper solver.
-  // We reset to TAMSI every other approximation to make sure SAP approximations
-  // are changing the solver back to SAP.
-  set_approximation_and_check_solver(DiscreteContactApproximation::kTamsi);
-  set_approximation_and_check_solver(DiscreteContactApproximation::kSap);
-
-  set_approximation_and_check_solver(DiscreteContactApproximation::kTamsi);
-  set_approximation_and_check_solver(DiscreteContactApproximation::kLagged);
-
-  set_approximation_and_check_solver(DiscreteContactApproximation::kTamsi);
-  set_approximation_and_check_solver(DiscreteContactApproximation::kSimilar);
-
-  // Make sure we can go back to TAMSI after kSimilar.
-  set_approximation_and_check_solver(DiscreteContactApproximation::kTamsi);
-
-  // Post-finalize calls to set_discrete_contact_approximation() throws.
   plant.Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.set_discrete_contact_approximation(
-          DiscreteContactApproximation::kTamsi),
+          DiscreteContactApproximation::kSap),
       "Post-finalize calls to '.*' are not allowed; .*");
 }
-#pragma GCC diagnostic pop
 
 INSTANTIATE_TEST_SUITE_P(ContinousAndDiscreteRemodeling,
                          MultibodyPlantRemodelingParam,

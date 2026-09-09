@@ -60,7 +60,6 @@
 // #include "drake/common/scoped_singleton.h"
 // #include "drake/common/sha256.h"
 // #include "drake/common/sorted_pair.h"
-// #include "drake/common/ssize.h"
 // #include "drake/common/string_hash.h"
 // #include "drake/common/string_map.h"
 // #include "drake/common/string_set.h"

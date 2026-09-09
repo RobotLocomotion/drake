@@ -160,11 +160,11 @@ struct type_caster<T, enable_if_t<is_eigen_plain_v<T> &&
 
     NB_TYPE_CASTER(T, NDArrayCaster::Name)
 
-    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+    bool from_python(handle src, uint32_t flags, cleanup_list *cleanup) noexcept {
         // We're in any case making a copy, so non-writable inputs area also okay
         using NDArrayConst = array_for_eigen_t<T, const typename T::Scalar>;
         make_caster<NDArrayConst> caster;
-        bool success = caster.from_python(src, flags & ~(uint8_t)cast_flags::accepts_none, cleanup);
+        bool success = caster.from_python(src, flags & ~cast_flags::accepts_none, cleanup);
         // Drake-specific change: allow sequences (i.e., lists) to convert.
         if (!success && (flags & (uint8_t) cast_flags::convert) && cleanup) {
             object np_array = convert_to_numpy<ndim_v<T>>(src);
@@ -255,7 +255,7 @@ struct type_caster<T, enable_if_t<is_eigen_xpr_v<T> &&
     template <typename T_> static constexpr bool can_cast() { return true; }
 
     /// Generating an expression template from a Python object is, of course, not possible
-    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept = delete;
+    bool from_python(handle src, uint32_t flags, cleanup_list *cleanup) noexcept = delete;
 
     template <typename T2>
     static handle from_cpp(T2 &&v, rv_policy policy, cleanup_list *cleanup) noexcept {
@@ -287,38 +287,41 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
 
     NDArrayCaster caster;
 
-    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+    bool from_python(handle src, uint32_t flags, cleanup_list *cleanup) noexcept {
         // Disable implicit conversions
-        return from_python_(src, flags & ~(uint8_t)cast_flags::convert, cleanup);
+        return from_python_(src, flags & ~cast_flags::convert, cleanup);
     }
 
-    bool from_python_(handle src, uint8_t flags, cleanup_list* cleanup) noexcept {
-        if (!caster.from_python(src, flags & ~(uint8_t)cast_flags::accepts_none, cleanup))
+    bool from_python_(handle src, uint32_t flags, cleanup_list* cleanup) noexcept {
+        if (!caster.from_python(src, flags & ~cast_flags::accepts_none, cleanup))
             return false;
 
-        // Check for memory layout compatibility of non-contiguous 'Map' types
-        if constexpr (!is_contiguous_v<Map>)  {
-            // Dynamic inner strides support any input, check the fixed case
-            if constexpr (StrideType::InnerStrideAtCompileTime != Eigen::Dynamic) {
-                // A compile-time stride of 0 implies "contiguous" ..
-                int64_t is_expected = StrideType::InnerStrideAtCompileTime == 0
-                                      ? 1 /*  .. and equals 1 for the inner stride */
-                                      : StrideType::InnerStrideAtCompileTime,
-                        is_actual = caster.value.stride(
-                            (ndim_v<T> != 1 && T::IsRowMajor) ? 1 : 0);
-
-                if (is_expected != is_actual)
+        // The `caster` already validated the shape, and for is_contiguous_v it
+        // also validated the memory layout, but if not then we need to validate
+        // against StrideType. Dynamic strides are compatible with any input, so
+        // only compile-time strides need checking (and can be ignored when the
+        // size in their dimension is <= 1).
+        if constexpr (!is_contiguous_v<Map>) {
+            constexpr size_t inner_dim = (ndim_v<T> == 2 && T::IsRowMajor) ? 1 : 0;
+            constexpr size_t outer_dim = 1 - inner_dim;
+            constexpr int64_t IS = StrideType::InnerStrideAtCompileTime;
+            if constexpr (IS != Eigen::Dynamic) {
+                int64_t actual_stride = caster.value.stride(inner_dim);
+                // A compile-time stride of 0 implies "contiguous".
+                constexpr int64_t expected_stride = IS == 0 ? 1 : IS;
+                if (actual_stride != expected_stride &&
+                        caster.value.shape(inner_dim) > 1)
                     return false;
             }
-
-            // Analogous check for the outer strides
-            if constexpr (ndim_v<T> == 2 && StrideType::OuterStrideAtCompileTime != Eigen::Dynamic) {
-                int64_t os_expected = StrideType::OuterStrideAtCompileTime == 0
-                                        ? caster.value.shape(T::IsRowMajor ? 1 : 0)
-                                        : StrideType::OuterStrideAtCompileTime,
-                        os_actual   = caster.value.stride(T::IsRowMajor ? 0 : 1);
-
-                if (os_expected != os_actual)
+            constexpr int64_t OS = StrideType::OuterStrideAtCompileTime;
+            if constexpr (ndim_v<T> == 2 && OS != Eigen::Dynamic) {
+                int64_t actual_stride = caster.value.stride(outer_dim);
+                // A compile-time stride of 0 implies "contiguous".
+                int64_t expected_stride = OS == 0
+                                            ? (int64_t) caster.value.shape(inner_dim)
+                                            : OS;
+                if (actual_stride != expected_stride &&
+                        caster.value.shape(outer_dim) > 1)
                     return false;
             }
         }
@@ -351,42 +354,12 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
     StrideType strides() const {
         constexpr int IS = StrideType::InnerStrideAtCompileTime,
                       OS = StrideType::OuterStrideAtCompileTime;
-
-        int64_t inner = caster.value.stride(0),
-                outer;
-
-        if constexpr (ndim_v<T> == 1)
-            outer = (int64_t) caster.value.shape(0);
-        else
-            outer = caster.value.stride(1);
-
-        (void) inner; (void) outer;
-        if constexpr (ndim_v<T> == 2 && T::IsRowMajor)
-            std::swap(inner, outer);
-
-        // Eigen may expect a stride of 0 to avoid an assertion failure
-        if constexpr (IS == 0)
-            inner = 0;
-
-        // Starting from numpy 2.4, dl_tensors' stride field is *always* set (for ndim > 0).
-        // This also includes when shape=(0,0), when numpy reports the stride to be zero.
-        // This creates an incompatibility with Eigen compile-time vectors, which expect
-        // runtime and compile-time strides to be identical (e.g. for Eigen::VectorXi, equal to 1).
-        // For dynamic strides (IS == Eigen::Dynamic), substitute a unit inner stride
-        if constexpr (ndim_v<T> == 1) {
-            if (caster.value.shape(0) == 0)
-                inner = IS == Eigen::Dynamic ? 1 : IS;
-        }
-
-        if constexpr (OS == 0)
-            outer = 0;
-
         if constexpr (std::is_same_v<StrideType, Eigen::InnerStride<IS>>)
-            return StrideType(inner);
+            return StrideType(inner_stride());
         else if constexpr (std::is_same_v<StrideType, Eigen::OuterStride<OS>>)
-            return StrideType(outer);
+            return StrideType(outer_stride());
         else
-            return StrideType(outer, inner);
+            return StrideType(outer_stride(), inner_stride());
     }
 
     operator Map() {
@@ -396,6 +369,31 @@ struct type_caster<Eigen::Map<T, Options, StrideType>,
         else
             return Map(t.data(), (Eigen::Index) t.shape(0),
                        (Eigen::Index) t.shape(1), strides());
+    }
+
+private:
+    Eigen::Index inner_stride() const {
+        if constexpr (StrideType::InnerStrideAtCompileTime == Eigen::Dynamic)
+            if constexpr (ndim_v<T> == 1)
+                return caster.value.stride(0);
+            else if constexpr (T::IsRowMajor)
+                return caster.value.stride(1);
+            else
+                return caster.value.stride(0);
+        else
+            return StrideType::InnerStrideAtCompileTime;
+    }
+
+    Eigen::Index outer_stride() const {
+        if constexpr (StrideType::OuterStrideAtCompileTime == Eigen::Dynamic)
+            if constexpr (ndim_v<T> == 1)
+                return (Eigen::Index) caster.value.shape(0);
+            else if constexpr (T::IsRowMajor)
+                return caster.value.stride(0);
+            else
+                return caster.value.stride(1);
+        else
+            return StrideType::OuterStrideAtCompileTime;
     }
 };
 
@@ -460,33 +458,33 @@ struct type_caster<Eigen::Ref<T, Options, StrideType>,
     struct Empty { };
     std::conditional_t<MaybeConvert, DMapCaster, Empty> dcaster;
 
-    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+    bool from_python(handle src, uint32_t flags, cleanup_list *cleanup) noexcept {
         // Try a direct cast without implicit conversion first
         if (caster.from_python(src, flags, cleanup))
             return true;
 
         // Potentially convert strides/dtype when casting constant references
         if constexpr (MaybeConvert) {
-            /* Generating an implicit copy requires some object to assume
-               ownership. During a function call, ``dcaster`` can serve that
-               role (this case is detected by checking whether ``flags`` has
-               the ``manual`` flag set). When used in other situations (e.g.
-               ``nb::cast()``), the created ``Eigen::Ref<..>`` must take
-               ownership of the copy. This is only guranteed to work if
-               DMapConstructorOwnsData.
+            // Generating an implicit copy requires some object to assume
+            // ownership. During a function call, ``dcaster`` can serve that
+            // role (this case is detected by checking whether ``flags`` has
+            // the ``manual`` flag set). When used in other situations (e.g.
+            // ``nb::cast()``), the created ``Eigen::Ref<..>`` must take
+            // ownership of the copy. This is only guranteed to work if
+            // DMapConstructorOwnsData.
+            //
+            // If neither of these is possible, we disable implicit
+            // conversions.
 
-               If neither of these is possible, we disable implicit
-               conversions. */
-
-            if ((flags & (uint8_t) cast_flags::manual) &&
+            if ((flags & cast_flags::manual) &&
                 !DMapConstructorOwnsData)
-                flags &= ~(uint8_t) cast_flags::convert;
+                flags &= ~cast_flags::convert;
 
             if (dcaster.from_python_(src, flags, cleanup))
                 return true;
 
             // Drake-specific change: allow sequences (i.e., lists) to convert.
-            if ((flags & (uint8_t) cast_flags::convert) && cleanup) {
+            if ((flags & cast_flags::convert) && cleanup) {
                 object np_array = convert_to_numpy<ndim_v<T>>(src);
                 if (dcaster.from_python_(np_array, flags, cleanup)) {
                     cleanup->append(np_array.release().ptr());

@@ -26,8 +26,6 @@ namespace internal {
 // Forward declaration.
 template <typename>
 class SapDriver;
-template <typename>
-class TamsiDriver;
 
 // To compute accelerations due to non-constraint forces (i.e. forces excluding
 // contact and joint limit forces), we pack forces, ABA cache and accelerations
@@ -70,8 +68,6 @@ struct AccelerationsDueNonConstraintForcesCache {
 //
 // @warning Scalar support on T = symbolic::Expression is only limited,
 // conditional to the solver in use:
-//   - For TAMSI. Discrete updates are only supported when there is no contact
-//     geometry. Otherwise an exception is thrown.
 //   - For SAP. Discrete updates are not supported.
 //
 // Even when limited support for discrete updates is provided for T =
@@ -111,7 +107,6 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   // with tighter functionality. For instance, a class that takes care of
   // getting proximity properties and creating DiscreteContactPairs.
   friend class SapDriver<T>;
-  friend class TamsiDriver<T>;
 
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
@@ -148,8 +143,6 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
 
   // TODO(amcastro-tri): implement these APIs according to #16955.
   // @throws For SAP if T = symbolic::Expression.
-  // @throws For TAMSI if T = symbolic::Expression only if the model contains
-  // contact geometry.
   void DoCalcContactSolverResults(
       const systems::Context<T>&,
       contact_solvers::internal::ContactSolverResults<T>*) const final;
@@ -186,7 +179,6 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   std::conditional_t<std::is_same_v<T, symbolic::Expression>, void*,
                      std::unique_ptr<SapDriver<T>>>
       sap_driver_{};
-  std::unique_ptr<TamsiDriver<T>> tamsi_driver_;
 };
 
 }  // namespace internal

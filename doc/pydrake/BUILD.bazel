@@ -1,3 +1,4 @@
+load("@drake_sphinx//:requirements.bzl", sphinx_requirement = "requirement")
 load(
     "//doc:defs.bzl",
     "DEFAULT_TEST_TAGS",
@@ -19,6 +20,7 @@ drake_py_library(
     deps = [
         "//bindings/pydrake",
         "//doc/doxygen_cxx:system_doxygen",
+        sphinx_requirement("sphinx"),
     ],
 )
 
@@ -51,6 +53,8 @@ drake_py_binary(
         "//bindings/pydrake",
         "//doc:defs",
         "@stable_baselines3_internal//:stable_baselines3",
+        sphinx_requirement("sphinx"),
+        sphinx_requirement("sphinx-rtd-theme"),
     ],
     add_test_rule = True,
     test_rule_args = [

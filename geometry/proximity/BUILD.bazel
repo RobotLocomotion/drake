@@ -1192,6 +1192,7 @@ drake_cc_googletest(
     name = "collision_filter_test",
     deps = [
         ":collision_filter",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

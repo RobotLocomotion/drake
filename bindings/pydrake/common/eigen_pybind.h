@@ -135,7 +135,7 @@ struct type_caster<drake::EigenPtr<T>> {
   static constexpr auto Name =
       const_name("Optional[") + InnerCaster::Name + const_name("]");
 
-  bool from_python(handle src, uint8_t flags, cleanup_list* cleanup) noexcept {
+  bool from_python(handle src, uint32_t flags, cleanup_list* cleanup) noexcept {
     if (src.ptr() == Py_None) {
       value = Value(nullptr);
       return true;
@@ -145,31 +145,6 @@ struct type_caster<drake::EigenPtr<T>> {
     if (success) {
       auto ref = inner_caster.operator cast_t<RefType>();
       value = Value(&ref);
-    }
-
-    if (!success) {
-      // Work-around for https://github.com/wjakob/nanobind/issues/1397. Remove
-      // this after upgrading to a version of nanobind with that bug fixed.
-      if constexpr (T::RowsAtCompileTime == Eigen::Dynamic &&
-                    T::ColsAtCompileTime == Eigen::Dynamic) {
-        if (hasattr(src, "shape") && cast<int>(src.attr("shape")[0]) == 1) {
-          using T2 = Eigen::Matrix<typename T::Scalar, Eigen::Dynamic,
-              Eigen::Dynamic, Eigen::RowMajor>;
-          type_caster<Eigen::Map<T2>> row_maj_caster;
-          bool row_maj_success =
-              row_maj_caster.from_python(src, flags, cleanup);
-          if (row_maj_success) {
-            Eigen::Map<T2> row_maj_map =
-                row_maj_caster.operator Eigen::Map<T2>();
-            if (row_maj_map.rows() == 1) {
-              Eigen::Map<T> col_maj_map(
-                  row_maj_map.data(), 1, row_maj_map.cols());
-              value = Value(&col_maj_map);
-              success = true;
-            }
-          }
-        }
-      }
     }
 
     return success;

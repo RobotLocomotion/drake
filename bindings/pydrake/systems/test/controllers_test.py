@@ -496,18 +496,14 @@ class TestControllers(unittest.TestCase):
         )
         self.assertRegex(
             repr(options),
-            "".join(
-                [
-                    r"FiniteHorizonLinearQuadraticRegulatorOptions\(",
-                    # Don't be particular about numpy's whitespace in Qf.
-                    r"Qf=\[\[ *1\. *0\.\]\s*\[ *0\. *1\.\]\], "
-                    r"N=None, ",
-                    r"input_port_index=",
-                    r"InputPortSelection.kUseFirstInputIfItExists, ",
-                    r"use_square_root_method=False, ",
-                    r"simulator_config=SimulatorConfig\(.*\)\)",
-                ]
-            ),
+            r"FiniteHorizonLinearQuadraticRegulatorOptions\("
+            # Don't be particular about numpy's whitespace in Qf.
+            r"Qf=\[\[ *1\. *0\.\]\s*\[ *0\. *1\.\]\], "
+            r"N=None, "
+            r"input_port_index="
+            r"InputPortSelection.kUseFirstInputIfItExists, "
+            r"use_square_root_method=False, "
+            r"simulator_config=SimulatorConfig\(.*\)\)",
         )
 
         context = double_integrator.CreateDefaultContext()

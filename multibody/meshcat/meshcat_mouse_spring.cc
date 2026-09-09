@@ -26,17 +26,21 @@ using systems::DiagramBuilder;
 MeshcatMouseSpring::MeshcatMouseSpring(std::shared_ptr<Meshcat> meshcat,
                                        const MultibodyPlant<double>* plant,
                                        const SceneGraph<double>& scene_graph,
-                                       double stiffness)
+                                       double stiffness,
+                                       double max_displacement)
     : systems::LeafSystem<double>(),
       meshcat_(std::move(meshcat)),
       plant_(DRAKE_DEREF(plant)),
-      stiffness_(stiffness) {
+      stiffness_(stiffness),
+      max_displacement_(max_displacement) {
   DRAKE_THROW_UNLESS(meshcat_ != nullptr);
   // N.B. Unlike geometry::meshcat::MeshcatVisualizer, we don't need to track
   // geometry changes because bodies cannot be changed after plant finalization.
   DRAKE_THROW_UNLESS(plant_.is_finalized());
   DRAKE_THROW_UNLESS(plant_.geometry_source_is_registered());
   DRAKE_THROW_UNLESS(stiffness_ >= 0.0);
+  DRAKE_THROW_UNLESS(std::isfinite(max_displacement_));
+  DRAKE_THROW_UNLESS(max_displacement_ > 0.0);
 
   BuildPathToBodyMap(scene_graph);
 
@@ -114,14 +118,21 @@ MeshcatMouseSpring::CalcAppliedSpatialForceFromDrag(
   const Vector3d p_BoBq_W = p_WBq - X_WB.translation();
   const Vector3d v_WBq = V_WB.Shift(p_BoBq_W).translational();
 
-  // Mass-scaled spring + damper force: scaling by the body's mass makes the
-  // translational response frequency (sqrt(stiffness)) and damping ratio
-  // independent of mass. Note that we're using default_mass() because getting
-  // access to the current parameterized mass is more trouble than it's worth.
+  // The spring's displacement, clamped to shield from possible UI insanity.
+  Vector3d d_W = p_WT - p_WBq;
+  const double d_norm = d_W.norm();
+  if (d_norm > max_displacement_) {
+    d_W *= max_displacement_ / d_norm;
+  }
+
+  // Spring + damper acceleration.
+  const Vector3d a_W = stiffness_ * d_W - std::sqrt(stiffness_) * v_WBq;
+
+  // Note that we're using default_mass() because getting access to the current
+  // parameterized mass is more trouble than it's worth.
   // TODO(vincekurtz): consider using composite mass instead of body mass.
   const double mass = plant_.get_body(body_index).default_mass();
-  const Vector3d f_W =
-      mass * stiffness_ * (p_WT - p_WBq) - mass * std::sqrt(stiffness_) * v_WBq;
+  const Vector3d f_W = mass * a_W;
 
   ExternallyAppliedSpatialForce<double> force;
   force.body_index = body_index;
@@ -144,11 +155,11 @@ void MeshcatMouseSpring::CalcAppliedSpatialForce(
 MeshcatMouseSpring& MeshcatMouseSpring::AddToBuilder(
     DiagramBuilder<double>* builder, const MultibodyPlant<double>* plant,
     const SceneGraph<double>& scene_graph, std::shared_ptr<Meshcat> meshcat,
-    double stiffness) {
+    double stiffness, double max_displacement) {
   DRAKE_THROW_UNLESS(builder != nullptr);
   DRAKE_THROW_UNLESS(plant != nullptr);
   auto& spring = *builder->AddSystem<MeshcatMouseSpring>(
-      std::move(meshcat), plant, scene_graph, stiffness);
+      std::move(meshcat), plant, scene_graph, stiffness, max_displacement);
   spring.set_name("meshcat_mouse_spring");
   builder->Connect(plant->get_body_poses_output_port(),
                    spring.get_body_poses_input_port());

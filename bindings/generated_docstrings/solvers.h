@@ -4755,18 +4755,25 @@ Precondition:
         struct /* AddMaximizeLogDeterminantCost */ {
           // Source: drake/solvers/mathematical_program.h
           const char* doc =
-R"""(Maximize the log determinant. See log_determinant for more details.
+R"""(Maximize the log determinant. Adds max weight * log(det(X)) to the
+program. See log_determinant for more details.
 
 Parameter ``X``:
     A symmetric positive semidefinite matrix X, whose log(det(X)) will
     be maximized.
 
+Parameter ``weight``:
+    The weight of the log determinant cost.
+
+Precondition:
+    weight >= 0.
+
 Returns:
-    (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
-    slack variables t and the lower triangular matrix Z. Note that Z
-    is not a matrix of symbolic∷Variable but symbolic∷Expression,
-    because the upper-diagonal entries of Z are not variable, but
-    expression 0.
+    (cost, t, Z) cost is weight * -∑ᵢt(i), we also return the newly
+    created slack variables t and the lower triangular matrix Z. Note
+    that Z is not a matrix of symbolic∷Variable but
+    symbolic∷Expression, because the upper-diagonal entries of Z are
+    not variable, but expression 0.
 
 Precondition:
     X is a symmetric matrix.)""";

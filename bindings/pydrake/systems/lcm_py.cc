@@ -34,7 +34,7 @@ namespace {
 // Python.
 class PySerializerInterface : public SerializerInterface {
  public:
-  NB_TRAMPOLINE(SerializerInterface, 0);
+  NB_TRAMPOLINE(SerializerInterface);
   using Base = SerializerInterface;
 
   PySerializerInterface() : Base() {}

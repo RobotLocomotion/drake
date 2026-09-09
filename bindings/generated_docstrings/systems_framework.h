@@ -7594,21 +7594,6 @@ R"""(Sets the time after zero when this event should first occur.)""";
 R"""(Sets the period with which this event should recur.)""";
         } set_period_sec;
       } PeriodicEventData;
-      // Symbol: drake::systems::PeriodicEventDataComparator
-      struct /* PeriodicEventDataComparator */ {
-        // Source: drake/systems/framework/event.h
-        const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use the built-in spaceship operator instead. This will be removed
-    from Drake on or after 2026-09-01.)""";
-        // Symbol: drake::systems::PeriodicEventDataComparator::operator()
-        struct /* operator_call */ {
-          // Source: drake/systems/framework/event.h
-          const char* doc = R"""()""";
-        } operator_call;
-      } PeriodicEventDataComparator;
       // Symbol: drake::systems::PortBase
       struct /* PortBase */ {
         // Source: drake/systems/framework/port_base.h
@@ -7816,7 +7801,7 @@ exists, with ``system``, ``context``, and ``this``.)""";
       // Symbol: drake::systems::SingleOutputVectorSource
       struct /* SingleOutputVectorSource */ {
         // Source: drake/systems/framework/single_output_vector_source.h
-        const char* doc =
+        const char* doc_deprecated =
 R"""(A base class that specializes LeafSystem for use with no input ports,
 and only a single, vector output port. Subclasses should override the
 protected method
@@ -7828,7 +7813,8 @@ protected method
 
 .. code-block:: c++
 
-    void DoCalcOutput(const Context<T>&, Eigen∷VectorBlock<VectorX<T>>*) const;
+    void DoCalcVectorOutput(const Context<T>& context,
+                            Eigen∷VectorBlock<VectorX<T>>* output) const;
 
 .. raw:: html
 
@@ -7838,7 +7824,20 @@ protected method
 
     name: SingleOutputVectorSource
     output_ports:
-    - y0)""";
+    - y0
+
+Warning:
+    This class is deprecated and will be removed from Drake on or
+    after 2027-01-01. Prefer deriving from LeafSystem directly.
+    Declaring a single vector-valued output port with LeafSystem
+    requires only a few lines of code.
+
+Template parameter ``(Deprecated``:
+    .)
+
+Deprecated:
+    Use LeafSystem instead of SingleOutputVectorSource. This will be
+    removed from Drake on or after 2027-01-01.)""";
         // Symbol: drake::systems::SingleOutputVectorSource::DoCalcVectorOutput
         struct /* DoCalcVectorOutput */ {
           // Source: drake/systems/framework/single_output_vector_source.h
@@ -12421,7 +12420,12 @@ vector input ports, and only zero or one vector output ports.
 
 By default, this base class does not declare any state; subclasses may
 optionally declare continuous or discrete state, but not both;
-subclasses may not declare abstract state.)""";
+subclasses may not declare abstract state.
+
+Warning:
+    This class is not generally recommended for new code. Prefer
+    deriving from LeafSystem directly, which is straightforward for
+    systems with a small number of ports.)""";
         // Symbol: drake::systems::VectorSystem::CalcVectorOutput
         struct /* CalcVectorOutput */ {
           // Source: drake/systems/framework/vector_system.h

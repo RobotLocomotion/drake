@@ -90,6 +90,7 @@ filegroup(
     testonly = True,
     data = [
         # It's okay to add more items to this list, as needed.
+        "//examples/conveyor_belt:models",
         "//geometry/render:test_models",
         "//manipulation/util:test_models",
         "//manipulation/util:test_directives",

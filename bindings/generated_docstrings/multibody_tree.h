@@ -65,6 +65,7 @@
 // #include "drake/multibody/tree/scoped_name.h"
 // #include "drake/multibody/tree/screw_joint.h"
 // #include "drake/multibody/tree/screw_mobilizer.h"
+// #include "drake/multibody/tree/shadow_frame.h"
 // #include "drake/multibody/tree/spatial_inertia.h"
 // #include "drake/multibody/tree/uniform_gravity_field_element.h"
 // #include "drake/multibody/tree/unit_inertia.h"
@@ -3738,39 +3739,6 @@ the particular joint type).
 Note:
     The default generalized velocities v₀ are zero for every joint.)""";
         } default_positions;
-        // Symbol: drake::multibody::Joint::do_get_num_positions
-        struct /* do_get_num_positions */ {
-          // Source: drake/multibody/tree/joint.h
-          const char* doc =
-R"""(Implementation of the NVI num_positions(), see num_positions() for
-details.
-
-Note:
-    Implementations must meet the styleguide requirements for
-    snake_case accessor methods.)""";
-        } do_get_num_positions;
-        // Symbol: drake::multibody::Joint::do_get_num_velocities
-        struct /* do_get_num_velocities */ {
-          // Source: drake/multibody/tree/joint.h
-          const char* doc =
-R"""(Implementation of the NVI num_velocities(), see num_velocities() for
-details.
-
-Note:
-    Implementations must meet the styleguide requirements for
-    snake_case accessor methods.)""";
-        } do_get_num_velocities;
-        // Symbol: drake::multibody::Joint::do_get_position_start
-        struct /* do_get_position_start */ {
-          // Source: drake/multibody/tree/joint.h
-          const char* doc =
-R"""(Implementation of the NVI position_start(), see position_start() for
-details.
-
-Note:
-    Implementations must meet the styleguide requirements for
-    snake_case accessor methods.)""";
-        } do_get_position_start;
         // Symbol: drake::multibody::Joint::do_get_position_suffix
         struct /* do_get_position_suffix */ {
           // Source: drake/multibody/tree/joint.h
@@ -3779,18 +3747,6 @@ R"""(Implementation of the NVI position_suffix(), see position_suffix() for
 details. The suffix should contain only alphanumeric characters (e.g.
 'wx' not '_wx' or '.wx').)""";
         } do_get_position_suffix;
-        // Symbol: drake::multibody::Joint::do_get_velocity_start
-        struct /* do_get_velocity_start */ {
-          // Source: drake/multibody/tree/joint.h
-          const char* doc =
-R"""(Implementation of the NVI velocity_start(), see velocity_start() for
-details. Note that this must be the offset within just the velocity
-vector, *not* within the composite state vector.
-
-Note:
-    Implementations must meet the styleguide requirements for
-    snake_case accessor methods.)""";
-        } do_get_velocity_start;
         // Symbol: drake::multibody::Joint::do_get_velocity_suffix
         struct /* do_get_velocity_suffix */ {
           // Source: drake/multibody/tree/joint.h
@@ -3815,6 +3771,16 @@ Note:
     Implementations must meet the styleguide requirements for
     snake_case accessor methods.)""";
         } do_set_default_positions;
+        // Symbol: drake::multibody::Joint::effective_frame_on_child
+        struct /* effective_frame_on_child */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc = R"""()""";
+        } effective_frame_on_child;
+        // Symbol: drake::multibody::Joint::effective_frame_on_parent
+        struct /* effective_frame_on_parent */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc = R"""()""";
+        } effective_frame_on_parent;
         // Symbol: drake::multibody::Joint::frame_on_child
         struct /* frame_on_child */ {
           // Source: drake/multibody/tree/joint.h
@@ -3918,7 +3884,12 @@ R"""(Returns a const reference to the parent body P.)""";
           const char* doc =
 R"""(Returns the index to the first generalized position for this joint
 within the vector q of generalized positions for the full multibody
-system.)""";
+system. For a zero-dof joint, this is where its positions would have
+started had it had any. An unmodeled weld within a fused Mobod
+inherits that Mobod's position start.
+
+Precondition:
+    The MultibodyPlant has been finalized.)""";
         } position_start;
         // Symbol: drake::multibody::Joint::position_suffix
         struct /* position_suffix */ {
@@ -3988,6 +3959,16 @@ Raises:
     RuntimeError if the dimension of ``default_positions`` does not
     match num_positions().)""";
         } set_default_positions;
+        // Symbol: drake::multibody::Joint::set_effective_frame_on_child
+        struct /* set_effective_frame_on_child */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc = R"""()""";
+        } set_effective_frame_on_child;
+        // Symbol: drake::multibody::Joint::set_effective_frame_on_parent
+        struct /* set_effective_frame_on_parent */ {
+          // Source: drake/multibody/tree/joint.h
+          const char* doc = R"""()""";
+        } set_effective_frame_on_parent;
         // Symbol: drake::multibody::Joint::set_position_limits
         struct /* set_position_limits */ {
           // Source: drake/multibody/tree/joint.h
@@ -4028,7 +4009,14 @@ Raises:
 R"""(Utility for concrete joint implementations to use to select the
 inboard/outboard frames for a tree in the spanning forest, given
 whether they should be reversed from the parent/child frames that are
-members of this Joint object.)""";
+members of this Joint object.
+
+These are the joint's *effective* frames: if loop breaking moved one
+end of this joint onto an ephemeral shadow link, the frame for that
+end is the substitute frame on the shadow rather than the user's frame
+on the primary link. Concrete joints should always build their
+mobilizer from these frames, so that they need not know that shadow
+links exist.)""";
         } tree_frames;
         // Symbol: drake::multibody::Joint::type_name
         struct /* type_name */ {
@@ -4048,7 +4036,12 @@ R"""(Returns a string identifying the type of ``this`` joint, such as
           const char* doc =
 R"""(Returns the index to the first generalized velocity for this joint
 within the vector v of generalized velocities for the full multibody
-system.)""";
+system. For a zero-dof joint, this is where its velocities would have
+started had it had any. An unmodeled weld within a fused Mobod
+inherits that Mobod's velocity start.
+
+Precondition:
+    The MultibodyPlant has been finalized.)""";
         } velocity_start;
         // Symbol: drake::multibody::Joint::velocity_suffix
         struct /* velocity_suffix */ {
@@ -7164,6 +7157,11 @@ Returns:
 Precondition:
     the context makes sense for use by this RigidBody.)""";
         } CalcSpatialInertiaInBodyFrame;
+        // Symbol: drake::multibody::RigidBody::CalcSpatialInertiaInBodyFrameFromParameters
+        struct /* CalcSpatialInertiaInBodyFrameFromParameters */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc = R"""()""";
+        } CalcSpatialInertiaInBodyFrameFromParameters;
         // Symbol: drake::multibody::RigidBody::CloneToScalar
         struct /* CloneToScalar */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7299,6 +7297,10 @@ Precondition:
 Raises:
     RuntimeError if context is null.
 
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable).
+
 Warning:
     Do not use this function unless it is needed (think twice).)""";
         } SetCenterOfMassInBodyFrame;
@@ -7331,7 +7333,11 @@ Precondition:
     the context makes sense for use by this RigidBody.
 
 Raises:
-    RuntimeError if context is null.)""";
+    RuntimeError if context is null.
+
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable).)""";
         } SetCenterOfMassInBodyFrameAndPreserveCentralInertia;
         // Symbol: drake::multibody::RigidBody::SetMass
         struct /* SetMass */ {
@@ -7354,7 +7360,11 @@ Precondition:
     the context makes sense for use by this RigidBody.
 
 Raises:
-    RuntimeError if context is null.)""";
+    RuntimeError if context is null.
+
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable).)""";
         } SetMass;
         // Symbol: drake::multibody::RigidBody::SetSpatialInertiaInBodyFrame
         struct /* SetSpatialInertiaInBodyFrame */ {
@@ -7376,7 +7386,11 @@ Precondition:
     the context makes sense for use by this RigidBody.
 
 Raises:
-    RuntimeError if context is null.)""";
+    RuntimeError if context is null.
+
+Raises:
+    RuntimeError if this is an ephemeral shadow link (its mass
+    properties are not independently settable).)""";
         } SetSpatialInertiaInBodyFrame;
         // Symbol: drake::multibody::RigidBody::Unlock
         struct /* Unlock */ {

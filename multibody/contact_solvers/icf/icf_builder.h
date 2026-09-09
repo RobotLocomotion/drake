@@ -118,32 +118,20 @@ class IcfBuilder {
                                      const RigidBody<T>& bodyB,
                                      const Vector3<T>& nhat_AB_W) const;
 
-  /* Resizes the model to accommodate coupler constraints. */
-  void AllocateCouplerConstraints(IcfModel<T>* model) const;
-
   /* Sets coupler constraints in the model.
   @pre AllocateCouplerConstraints() has already been called. */
   void SetCouplerConstraints(const systems::Context<T>& context,
                              IcfModel<T>* model) const;
-
-  /* Resizes the model to accommodate weld constraints. */
-  void AllocateWeldConstraints(IcfModel<T>* model) const;
 
   /* Sets weld constraints in the model.
   @pre AllocateWeldConstraints() has already been called. */
   void SetWeldConstraints(const systems::Context<T>& context,
                           IcfModel<T>* model) const;
 
-  /* Resizes the model to accommodate ball constraints. */
-  void AllocateBallConstraints(IcfModel<T>* model) const;
-
   /* Sets ball constraints in the model.
   @pre AllocateBallConstraints() has already been called. */
   void SetBallConstraints(const systems::Context<T>& context,
                           IcfModel<T>* model) const;
-
-  /* Resizes the model to accommodate distance constraints. */
-  void AllocateDistanceConstraints(IcfModel<T>* model) const;
 
   /* Sets distance constraints in the model.
   @pre AllocateDistanceConstraints() has already been called. */

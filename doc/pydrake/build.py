@@ -47,8 +47,7 @@ def _get_pydrake_modules():
     while worklist:
         current = worklist.pop(0)
         result.append(current)
-        for sub in _get_submodules(current):
-            worklist.append(sub)
+        worklist.extend(_get_submodules(current))
     return sorted(result)
 
 
@@ -83,8 +82,7 @@ def _write_module(name, f_name):
             f.write(".. toctree::\n")
             f.write("    :maxdepth: 1\n")
             f.write("\n")
-            for sub in subs:
-                f.write(f"    {sub}\n")
+            f.writelines(f"    {sub}\n" for sub in subs)
             f.write("\n\n")
         f.write(f".. automodule:: {name}\n")
         f.write("    :members:\n")
@@ -114,13 +112,6 @@ def _build(*, out_dir, temp_dir, modules):
     """
     assert len(os.listdir(temp_dir)) == 0
     assert len(os.listdir(out_dir)) == 0
-
-    sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
-    if not os.path.isfile(sphinx_build):
-        print(
-            "Please re-run 'setup/install_prereqs' with the '--developer' flag"
-        )
-        sys.exit(1)
 
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
@@ -163,7 +154,9 @@ def _build(*, out_dir, temp_dir, modules):
     os.environ["LANG"] = "en_US.UTF-8"
     check_call(
         [
-            sphinx_build,
+            sys.executable,
+            "-m",
+            "sphinx",
             "-b",
             "html",  # HTML output.
             "-a",

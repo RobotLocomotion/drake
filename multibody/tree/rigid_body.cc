@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <fmt/format.h>
+
 #include "drake/multibody/tree/model_instance.h"
 
 namespace drake {
@@ -119,6 +121,13 @@ void RigidBody<T>::DoSetTopology() {
 template <typename T>
 void RigidBody<T>::DoDeclareParameters(
     internal::MultibodyTreeSystem<T>* tree_system) {
+  // Ephemeral shadow links (created to break kinematic loops) deliberately have
+  // no spatial-inertia parameter: their mass properties are not independently
+  // settable but instead mirror their primary link's parameterized inertia
+  // (split evenly in CalcFrameBodyPoses()). Leaving the parameter index invalid
+  // makes any attempt to read or write their parameter fail loudly.
+  if (this->is_ephemeral()) return;
+
   // Sets model values to dummy values to indicate that the model values are
   // not used. This class stores the the default values of the parameters.
   // 10 numeric values are used to store mass, center of mass, moments and
@@ -130,6 +139,10 @@ void RigidBody<T>::DoDeclareParameters(
 template <typename T>
 void RigidBody<T>::DoSetDefaultParameters(
     systems::Parameters<T>* parameters) const {
+  // Ephemeral shadow links have no spatial-inertia parameter (see
+  // DoDeclareParameters()), so there is nothing to default.
+  if (this->is_ephemeral()) return;
+
   // Set the default spatial inertia.
   systems::BasicVector<T>& spatial_inertia_parameter =
       parameters->get_mutable_numeric_parameter(
@@ -143,10 +156,22 @@ template <typename T>
 void RigidBody<T>::ThrowIfNotFinalized(const char* source_method) const {
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   if (!this->get_parent_tree().is_finalized()) {
-    throw std::runtime_error(
-        "From '" + std::string(source_method) +
-        "'. The model to which this rigid body belongs must be finalized. "
-        "See MultibodyPlant::Finalize().");
+    throw std::runtime_error(fmt::format(
+        "From '{}'. The model to which this rigid body belongs must be "
+        "finalized. See MultibodyPlant::Finalize().",
+        source_method));
+  }
+}
+
+template <typename T>
+void RigidBody<T>::ThrowIfEphemeralInertia(const char* source_method) const {
+  if (this->is_ephemeral()) {
+    throw std::logic_error(fmt::format(
+        "{}(): RigidBody '{}' is an ephemeral shadow link created "
+        "automatically to break a kinematic loop; its mass properties are not "
+        "independently settable. They mirror its primary link and are managed "
+        "internally. Set the primary link's mass properties instead.",
+        source_method, this->name()));
   }
 }
 
@@ -155,6 +180,7 @@ void RigidBody<T>::SetCenterOfMassInBodyFrameNoModifyInertia(
     systems::Context<T>* context,
     const Vector3<T>& center_of_mass_position) const {
   DRAKE_THROW_UNLESS(context != nullptr);
+  ThrowIfEphemeralInertia(__func__);
   const T& x = center_of_mass_position(0);
   const T& y = center_of_mass_position(1);
   const T& z = center_of_mass_position(2);
@@ -172,6 +198,7 @@ template <typename T>
 void RigidBody<T>::SetUnitInertiaAboutBodyOrigin(
     systems::Context<T>* context, const UnitInertia<T>& G_BBo_B) const {
   DRAKE_THROW_UNLESS(context != nullptr);
+  ThrowIfEphemeralInertia(__func__);
   const T& Gxx = G_BBo_B(0, 0);
   const T& Gyy = G_BBo_B(1, 1);
   const T& Gzz = G_BBo_B(2, 2);
@@ -199,6 +226,7 @@ void RigidBody<T>::SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
     systems::Context<T>* context,
     const Vector3<T>& center_of_mass_position) const {
   DRAKE_THROW_UNLESS(context != nullptr);
+  ThrowIfEphemeralInertia(__func__);
 
   // Get B's initial spatial inertia about Bo (before Bcm changes location).
   // Get pi_BoBcm_B position from Bo to Bcm before Bcm changes location.

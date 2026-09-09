@@ -210,10 +210,11 @@ class HydroelasticModelTests : public ::testing::Test {
   // @param[out] p_WB_W   The position of the sphere.
   // @param[out] F_BBo_W  The contact force on the sphere balancing gravity,
   //                      which is typically parallel to Wz direction.
-  void RunDiscreteTamsiSolver(SpatialForce<double>* F_BBo_W,
-                              Vector3<double>* p_WB_W) {
+  void RunDiscreteSolver(SpatialForce<double>* F_BBo_W,
+                         Vector3<double>* p_WB_W) {
     DRAKE_DEMAND(F_BBo_W != nullptr);
     DRAKE_DEMAND(p_WB_W != nullptr);
+    DRAKE_DEMAND(plant_->is_discrete());
 
     Simulator<double> simulator(*diagram_);
     auto& diagram_context = simulator.get_mutable_context();
@@ -422,7 +423,7 @@ TEST_F(HydroelasticModelTests, DiscreteTamsiSolverRigidCompliant) {
 
   SpatialForce<double> F_BBo_W;
   Vector3<double> p_WB_W;
-  RunDiscreteTamsiSolver(&F_BBo_W, &p_WB_W);
+  RunDiscreteSolver(&F_BBo_W, &p_WB_W);
 
   // Check the force.
   const Vector3<double> f_BBo_W = F_BBo_W.translational();
@@ -447,7 +448,7 @@ TEST_F(HydroelasticModelTests,
   Vector3<double> rigid_compliant_p_WB_W;
   {
     SetUpModel(5.0e-3, BoxType::kRigid, std::nullopt);
-    RunDiscreteTamsiSolver(&rigid_compliant_F_BBo_W, &rigid_compliant_p_WB_W);
+    RunDiscreteSolver(&rigid_compliant_F_BBo_W, &rigid_compliant_p_WB_W);
   }
 
   SpatialForce<double> compliant_compliant_F_BBo_W;
@@ -456,8 +457,8 @@ TEST_F(HydroelasticModelTests,
     // Use very high hydroelastic modulus to mimic the rigid box.
     const double box_compliant_hydroelastic_modulus = 1e14;
     SetUpModel(5.0e-3, BoxType::kCompliant, box_compliant_hydroelastic_modulus);
-    RunDiscreteTamsiSolver(&compliant_compliant_F_BBo_W,
-                           &compliant_compliant_p_WB_W);
+    RunDiscreteSolver(&compliant_compliant_F_BBo_W,
+                      &compliant_compliant_p_WB_W);
   }
 
   EXPECT_TRUE(CompareMatrices(compliant_compliant_p_WB_W,

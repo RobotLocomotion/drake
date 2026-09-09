@@ -628,6 +628,20 @@ struct Gamepad {
 //       - If the flattened array doesn't have a valid rotation matrix in its
 //         unflattened upper-left 3x3 sub-matrix, it throws.
 //       - See Drake's meshcat.html for the source of the message.
+//
+//   Object dragging
+//     • Fields
+//       - type = "mouse_drag"
+//       - name = the Meshcat path of the object being dragged.
+//       - drag_anchor = the world position (Drake z-up frame) of the point on
+//                       the object where the drag began (3 values).
+//       - drag_target = the world position (Drake z-up frame) of the cursor's
+//                       drag target (3 values).
+//     • Semantics
+//       - If drag_anchor and drag_target each contain exactly 3 values, the
+//         drag is treated as active. Otherwise (e.g., on mouse release), the
+//         drag is cleared.
+//       - See Drake's meshcat.html for the source of the message.
 struct UserInterfaceEvent {
   std::string type;
   std::string name;
@@ -635,7 +649,10 @@ struct UserInterfaceEvent {
   std::optional<internal::Gamepad> gamepad;
   std::vector<double> camera_pose;
   std::optional<bool> is_perspective{};
-  MSGPACK_DEFINE_MAP(type, name, value, gamepad, camera_pose, is_perspective);
+  std::vector<double> drag_anchor;
+  std::vector<double> drag_target;
+  MSGPACK_DEFINE_MAP(type, name, value, gamepad, camera_pose, is_perspective,
+                     drag_anchor, drag_target);
 };
 
 }  // namespace internal

@@ -803,7 +803,7 @@ def main():
             try:
                 # Use '###' to dump Clang's include paths to stdout.
                 index.parse("foo", parameters + ["-###"])
-            except Exception:
+            except Exception:  # noqa: S110
                 pass
             raise RuntimeError(
                 "The operating system's C++ standard library is not "

@@ -194,7 +194,7 @@ CspaceFreeBox::ConstructPlaneSearchProgram(
   // First count the total size of the gram matrix variables.
   int gram_var_count = 0;
   auto count_gram = [this, &s_for_plane_indices](
-                        const symbolic ::RationalFunction& rational,
+                        const symbolic::RationalFunction& rational,
                         const std::array<VectorX<symbolic::Monomial>, 4>&
                             monomial_basis_array) {
     // Each rational >= 0 requires the Lagrangian multiplier for s-s_lower and

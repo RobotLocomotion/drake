@@ -9,6 +9,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
+
 namespace drake {
 namespace geometry {
 
@@ -650,6 +652,33 @@ TEST_F(CollisionFilterTest, EquivalencyWithInactive) {
   /* Matching inactive sets (and matching pairwise states) are equivalent. */
   SetActiveStatus(&filters3, GeometrySet(id_A), /* active= */ false, extract);
   EXPECT_TRUE(filters1.IsEquivalent(filters3));
+}
+
+/* Confirms that Apply() and ApplyTransient() throw when a declaration
+ references a GeometryId that has not been registered with the filter system.
+ Testing methodology:
+   - All declarations get resolved by a call to the same method:
+     ResolveStatements(). So, a single declaration type is sufficient.
+   - We do make sure that an unknown in set A or set B is detected. */
+TEST_F(CollisionFilterTest, ApplyWithUnknownGeometryIdThrows) {
+  CollisionFilter filters;
+  auto [id_A, id_B, id_C] = this->InitIds(&filters);
+  const auto& extract = this->get_extract_ids_functor();
+
+  const GeometryId unknown_id = GeometryId::get_new_id();
+  ASSERT_FALSE(filters.HasGeometry(unknown_id));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      filters.Apply(CollisionFilterDeclaration().ExcludeBetween(
+                        GeometrySet(unknown_id), GeometrySet(id_A)),
+                    extract, false),
+      ".*not been registered.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      filters.ApplyTransient(CollisionFilterDeclaration().ExcludeBetween(
+                                 GeometrySet(id_A), GeometrySet(unknown_id)),
+                             extract),
+      ".*not been registered.*");
 }
 
 }  // namespace internal

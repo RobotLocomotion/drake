@@ -4,11 +4,12 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/single_output_vector_source.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
@@ -34,7 +35,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar @ingroup primitive_systems
 template <typename T>
-class TrajectorySource final : public SingleOutputVectorSource<T> {
+class TrajectorySource final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectorySource);
 
@@ -72,8 +73,7 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
   // the constructor. The size of the vector is:
   // (1 + output_derivative_order) * rows of the trajectory passed to the
   // constructor.
-  void DoCalcVectorOutput(const Context<T>& context,
-                          Eigen::VectorBlock<VectorX<T>>* output) const final;
+  void CalcOutput(const Context<T>& context, BasicVector<T>* output) const;
 
   std::unique_ptr<trajectories::Trajectory<T>> trajectory_{};
   const bool clamp_derivatives_;

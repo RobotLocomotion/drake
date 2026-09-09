@@ -273,7 +273,7 @@ struct Impl {
 
   class PyTrajectory : public TrajectoryPublic {
    public:
-    NB_TRAMPOLINE(TrajectoryPublic, 7);
+    NB_TRAMPOLINE(TrajectoryPublic);
     using Base = TrajectoryPublic;
 
     // Utility function that takes a Python object which is-a Trajectory and

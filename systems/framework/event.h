@@ -7,7 +7,6 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -547,17 +546,6 @@ class Event {
   TriggerType trigger_type_{TriggerType::kUnknown};
   std::variant<std::monostate, PeriodicEventData, WitnessTriggeredEventData<T>>
       event_data_;
-};
-
-struct DRAKE_DEPRECATED("2026-09-01",
-                        "Use the built-in spaceship operator instead.")
-    PeriodicEventDataComparator {
-  bool operator()(const PeriodicEventData& a,
-                  const PeriodicEventData& b) const {
-    if (a.period_sec() == b.period_sec())
-      return a.offset_sec() < b.offset_sec();
-    return a.period_sec() < b.period_sec();
-  }
 };
 
 /**

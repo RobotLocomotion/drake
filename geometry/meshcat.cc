@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cctype>
+#include <cmath>
 #include <exception>
 #include <fstream>
 #include <functional>
@@ -70,6 +71,13 @@ template <typename Mapping>
       fmt::format("Meshcat does not have any {} named {}."
                   " The registered {} names are ({}).",
                   thing, name, thing, fmt::join(keys, ", ")));
+}
+
+// Don't trust the message over the wire to not contain NaNs.
+bool AreAllFinite(const std::vector<double>& values) {
+  return std::all_of(values.begin(), values.end(), [](double value) {
+    return std::isfinite(value);
+  });
 }
 
 constexpr static bool kSsl = false;
@@ -1905,8 +1913,8 @@ class Meshcat::Impl {
       const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
-    // TODO(vincekurtz): read virtual spring kinematics from mouse drags.
-    return std::nullopt;
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    return mouse_drag_;
   }
 
   // This function is for use by the websocket thread. The Meshcat::StaticHtml()
@@ -2329,10 +2337,17 @@ class Meshcat::Impl {
     const int new_count = --num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
     DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
-    if (ws == camera_pose_source_) {
+    if (ws == camera_pose_source_ || ws == mouse_drag_source_) {
+      // Clear out any state related to controls signals.
       std::lock_guard<std::mutex> lock(controls_mutex_);
-      camera_pose_source_ = nullptr;
-      camera_pose_ = std::nullopt;
+      if (ws == camera_pose_source_) {
+        camera_pose_source_ = nullptr;
+        camera_pose_ = std::nullopt;
+      }
+      if (ws == mouse_drag_source_) {
+        mouse_drag_source_ = nullptr;
+        mouse_drag_ = std::nullopt;
+      }
     }
   }
 
@@ -2455,6 +2470,29 @@ class Meshcat::Impl {
       gamepad_.axes = std::move(data.gamepad->axes);
       return;
     }
+    if (data.type == "mouse_drag") {
+      if (data.drag_anchor.size() == 3 && data.drag_target.size() == 3 &&
+          AreAllFinite(data.drag_anchor) && AreAllFinite(data.drag_target)) {
+        Meshcat::VirtualSpringKinematics drag;
+        drag.path = std::move(data.name);
+        drag.body_point_in_world = Eigen::Vector3d(
+            data.drag_anchor[0], data.drag_anchor[1], data.drag_anchor[2]);
+        drag.target_point_in_world = Eigen::Vector3d(
+            data.drag_target[0], data.drag_target[1], data.drag_target[2]);
+        mouse_drag_source_ = ws;
+        mouse_drag_ = std::move(drag);
+      } else {
+        // TODO(SeanCurtis-TRI): We end up here for more than intended "drag
+        // ended" messages (malformed messages). Consider providing some
+        // feedback about "bad" messages if that seems to be a real problem.
+
+        // An empty payload (e.g., mouse release) and malformed messages signal
+        // the end of a drag.
+        mouse_drag_source_ = nullptr;
+        mouse_drag_ = std::nullopt;
+      }
+      return;
+    }
     if (data.type == "camera_pose" && data.camera_pose.size() == 16 &&
         data.is_perspective.has_value()) {
       if (camera_pose_source_ != nullptr && camera_pose_source_ != ws) {
@@ -2549,6 +2587,10 @@ class Meshcat::Impl {
   // The socket for the browser that is sending the camera pose.
   WebSocket* camera_pose_source_{};
   std::optional<math::RigidTransformd> camera_pose_;
+  // The socket for the browser that is sending object-drag events, along with
+  // the most recently received drag state (nullopt when not dragging).
+  WebSocket* mouse_drag_source_{};
+  std::optional<Meshcat::VirtualSpringKinematics> mouse_drag_;
 
   // These variables should only be accessed in the main thread, where "main
   // thread" is the thread in which this class was constructed.

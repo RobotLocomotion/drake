@@ -357,6 +357,27 @@ void SpanningForest::AssignCoordinates() {
     next_v += mobod.nv_;
   }
 
+  /* Assign a coordinate start to every Joint, including unmodeled welds in
+  fused WeldedLinksAssemblies. A modeled Joint gets the start of the Mobod
+  whose mobilizer models it. Both Links of an unmodeled weld necessarily
+  follow the same fused Mobod, whose start the Joint inherits. */
+  for (JointOrdinal joint_ordinal{0}; joint_ordinal < ssize(joints());
+       ++joint_ordinal) {
+    LinkJointGraph::Joint& joint = mutable_graph().mutable_joint(joint_ordinal);
+    MobodIndex mobod_index = joint.mobod_index();
+    if (!mobod_index.is_valid()) {
+      const MobodIndex parent_mobod =
+          link_by_index(joint.effective_parent_link_index()).mobod_index();
+      const MobodIndex child_mobod =
+          link_by_index(joint.effective_child_link_index()).mobod_index();
+      DRAKE_DEMAND(parent_mobod.is_valid() && parent_mobod == child_mobod);
+      mobod_index = parent_mobod;
+    }
+    const Mobod& mobod = mobods(mobod_index);
+    mutable_graph().set_joint_coordinate_starts(joint_ordinal, mobod.q_start(),
+                                                mobod.v_start());
+  }
+
   /* O(n) inward pass counts outboard bodies and coordinates for each Mobod.
   (the rest of 3.3) */
   for (auto m = data_.mobods.rbegin(); m != data_.mobods.rend(); ++m) {
