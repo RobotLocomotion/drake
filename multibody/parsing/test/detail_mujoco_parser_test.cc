@@ -636,9 +636,8 @@ TEST_F(MujocoParserTest, NestedIncludeRelativeAssets) {
       "drake/multibody/parsing/test/mujoco_parser_test/nested_include_assets/"
       "scene.xml");
   const std::string expected_mesh = std::filesystem::canonical(
-      FindResourceOrThrow(
-          "drake/multibody/parsing/test/mujoco_parser_test/"
-          "nested_include_assets/nested/assets/box.obj"));
+      FindResourceOrThrow("drake/multibody/parsing/test/mujoco_parser_test/"
+                          "nested_include_assets/nested/assets/box.obj"));
 
   AddAllModelsFromFile(scene_file, {});
   FlushDiagnostics();
