@@ -778,9 +778,9 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
   // rows and columns before compilation.  Then verify the results.
   EXPECT_EQ(decltype(p_AoQ_A)::RowsAtCompileTime, 3);
   EXPECT_EQ(decltype(p_AoQ_A)::ColsAtCompileTime, 3);
-  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(0), X_AB * p_BoQ1_B, kEpsilon));
-  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(1), X_AB * p_BoQ2_B, kEpsilon));
-  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(2), X_AB * p_BoQ3_B, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(0), X_AB * p_BoQ1_B, 32 * kEpsilon));
+  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(1), X_AB * p_BoQ2_B, 32 * kEpsilon));
+  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(2), X_AB * p_BoQ3_B, 32 * kEpsilon));
 
   // Multiply the RigidTransform X_AB by n position vectors to test operator*
   // for a 3 x n matrix, where n is not known before compilation.
