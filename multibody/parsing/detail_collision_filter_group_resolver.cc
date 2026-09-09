@@ -62,9 +62,7 @@ void CollisionFilterGroupResolver::AddGroup(
     const ScopedName scoped_body_name =
         ScopedName::Parse(FullyQualify(body_name, model_instance));
 
-    // The body name may refer to a rigid body or a deformable body. If the same
-    // scoped name exists as rigid and deformable in the model, then this code
-    // simply selects the rigid body.
+    // The body name may refer to a rigid body or a deformable body.
     const RigidBody<double>* body{};
     const DeformableBody<double>* deformable_body{};
     if (plant_->HasModelInstanceNamed(scoped_body_name.get_namespace())) {
@@ -77,17 +75,13 @@ void CollisionFilterGroupResolver::AddGroup(
         continue;
       }
       body = FindBody(scoped_body_name.get_element(), body_model);
-      deformable_body = FindDeformableBody(
-          std::string(scoped_body_name.get_element()), body_model);
+      if (!body) {
+        deformable_body = FindDeformableBody(
+            std::string(scoped_body_name.get_element()), body_model);
+      }
     }
 
-    if (body && deformable_body) {
-      diagnostic.Error(
-          fmt::format("body name '{}' is ambiguous, refers to both a rigid and "
-                      "deformable body",
-                      scoped_body_name));
-      continue;
-    } else if (!body && !deformable_body) {
+    if (!body && !deformable_body) {
       diagnostic.Error(
           fmt::format("body with name '{}' not found", scoped_body_name));
       continue;
