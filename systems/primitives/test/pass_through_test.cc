@@ -156,41 +156,43 @@ GTEST_TEST(PassThroughTest, AutoDiffFromDouble) {
             math::DiscardZeroGradient(pass.get_output_port().Eval(*context)));
 }
 
-GTEST_TEST(PassThroughRequiredInputTest, VectorRequiredConnected) {
+GTEST_TEST(PassThroughRequiredInputTest, VectorRequired) {
   const Eigen::Vector3d value(1.0, 2.0, 3.0);
   const Eigen::Vector3d input(4.0, 5.0, 6.0);
   PassThrough<double> dut(value, true);
   EXPECT_TRUE(dut.input_required());
   auto context = dut.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.get_output_port().Eval(*context),
+                              ".*required InputPort.*\\(u\\).*is not connected.*");
   dut.get_input_port().FixValue(context.get(), input);
   EXPECT_EQ(dut.get_output_port().Eval(*context), input);
 }
 
-GTEST_TEST(PassThroughRequiredInputTest, VectorRequiredUnconnectedThrows) {
-  PassThrough<double> dut(3, true);
-  EXPECT_TRUE(dut.input_required());
-  auto context = dut.CreateDefaultContext();
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.get_output_port().Eval(*context),
+GTEST_TEST(PassThroughRequiredInputTest, SizedConstructor) {
+  PassThrough<double> optional_input(3, false);
+  EXPECT_FALSE(optional_input.input_required());
+  auto optional_context = optional_input.CreateDefaultContext();
+  EXPECT_EQ(optional_input.get_output_port().Eval(*optional_context),
+            Eigen::Vector3d::Zero());
+
+  PassThrough<double> required_input(3, true);
+  EXPECT_TRUE(required_input.input_required());
+  auto required_context = required_input.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(required_input.get_output_port().Eval(*required_context),
                               ".*required InputPort.*\\(u\\).*is not connected.*");
 }
 
-GTEST_TEST(PassThroughRequiredInputTest, AbstractRequiredConnected) {
+GTEST_TEST(PassThroughRequiredInputTest, AbstractRequired) {
   const Eigen::Vector3d value(1.0, 2.0, 3.0);
   const Eigen::Vector3d input(4.0, 5.0, 6.0);
   PassThrough<double> dut(Value<SimpleAbstractType>(value), true);
   EXPECT_TRUE(dut.input_required());
   auto context = dut.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.get_output_port().Eval(*context),
+                              ".*required InputPort.*\\(u\\).*is not connected.*");
   dut.get_input_port().FixValue(context.get(), SimpleAbstractType(input));
   EXPECT_EQ(dut.get_output_port().Eval<SimpleAbstractType>(*context).value(),
             input);
-}
-
-GTEST_TEST(PassThroughRequiredInputTest, AbstractRequiredUnconnectedThrows) {
-  PassThrough<double> dut(Value<SimpleAbstractType>(3), true);
-  EXPECT_TRUE(dut.input_required());
-  auto context = dut.CreateDefaultContext();
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.get_output_port().Eval(*context),
-                              ".*required InputPort.*\\(u\\).*is not connected.*");
 }
 
 GTEST_TEST(PassThroughRequiredInputTest, ScalarConversionPreservesFlag) {
