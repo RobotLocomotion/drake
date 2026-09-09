@@ -53,7 +53,7 @@ class PassThrough final : public LeafSystem<T> {
   /// @param input_required If true, then evaluating the output with no input
   /// connected will throw. If false (the default), the zero default value is
   /// used instead.
-  /// @pydrake_mkdoc_identifier{1args_vector_size}
+  /// @pydrake_mkdoc_identifier{vector_size}
   explicit PassThrough(int vector_size, bool input_required = false)
       : PassThrough(Eigen::VectorXd::Zero(vector_size), nullptr,
                     input_required) {}
@@ -65,7 +65,7 @@ class PassThrough final : public LeafSystem<T> {
   /// @param input_required If true, then evaluating the output with no input
   /// connected will throw. If false (the default), `value` is used as the
   /// output instead.
-  /// @pydrake_mkdoc_identifier{1args_value}
+  /// @pydrake_mkdoc_identifier{value}
   explicit PassThrough(const Eigen::Ref<const Eigen::VectorXd>& value,
                        bool input_required = false)
       : PassThrough(value, nullptr, input_required) {}
@@ -77,7 +77,7 @@ class PassThrough final : public LeafSystem<T> {
   /// @param input_required If true, then evaluating the output with no input
   /// connected will throw. If false (the default), `abstract_model_value` is
   /// used as the output instead.
-  /// @pydrake_mkdoc_identifier{1args_abstract_model_value}
+  /// @pydrake_mkdoc_identifier{abstract_model_value}
   explicit PassThrough(const AbstractValue& abstract_model_value,
                        bool input_required = false)
       : PassThrough(Vector0<double>(), abstract_model_value.Clone(),
