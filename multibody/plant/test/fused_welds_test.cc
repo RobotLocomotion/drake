@@ -373,7 +373,9 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
   const TestModel fused_model = MakeModel(true);
 
   const double m = 1.0, a = 0.1;  // mass m and side-length a of solid cubes.
+  // Each plant must be queried with a frame it owns (see #22636).
   const Frame<double>& world_frame = unfused_model.plant->world_frame();
+  const Frame<double>& fused_world_frame = fused_model.plant->world_frame();
   const RigidBody<double>* unfused_links[] = {
       unfused_model.link1, unfused_model.link2, unfused_model.link3,
       unfused_model.link4};
@@ -396,7 +398,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
         {unfused_model.link1->index(), unfused_model.link2->index(),
          unfused_model.link3->index()});
     SpatialInertia<double> M_FWo_W = fused_model.plant->CalcSpatialInertia(
-        *fused_model.context, world_frame,
+        *fused_model.context, fused_world_frame,
         {fused_model.link1->index(), fused_model.link2->index(),
          fused_model.link3->index()});
     EXPECT_TRUE(CompareMatrices(M_UWo_W.CopyToFullMatrix6(),
@@ -438,7 +440,7 @@ GTEST_TEST(FusedTest, CompositeSpatialInertia) {
       M_UWo_W = unfused_model.plant->CalcSpatialInertia(
           *unfused_model.context, world_frame, {unfused_linki->index()});
       M_FWo_W = fused_model.plant->CalcSpatialInertia(
-          *fused_model.context, world_frame, {fused_linki->index()});
+          *fused_model.context, fused_world_frame, {fused_linki->index()});
       EXPECT_TRUE(CompareMatrices(M_UWo_W.CopyToFullMatrix6(),
                                   M_FWo_W.CopyToFullMatrix6(), kTolerance,
                                   MatrixCompareType::relative));
