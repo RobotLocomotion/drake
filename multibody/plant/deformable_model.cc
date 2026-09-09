@@ -68,7 +68,8 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
           this->plant().GetModelInstanceName(model_instance);
       throw std::logic_error(fmt::format(
           "RegisterDeformableBody(): Model instance '{}' already contains a "
-          "body named '{}'. Body names must be unique within a given model.",
+          "rigid body named '{}'. Body names must be unique within a given "
+          "model.",
           model_instance_name, name));
     }
     /* Register the geometry with SceneGraph. */

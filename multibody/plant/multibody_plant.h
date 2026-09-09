@@ -1450,8 +1450,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     // deformable bodies.
     if (deformable_model().HasBodyNamed(name, model_instance)) {
       throw std::logic_error(fmt::format(
-          "Model instance '{}' already contains a body named '{}'. Body names "
-          "must be unique within a given model.",
+          "Model instance '{}' already contains a deformable body named '{}'. "
+          "Body names must be unique within a given model.",
           GetModelInstanceName(model_instance), name));
     }
     // Add the actual RigidBody (Link) to the model.
