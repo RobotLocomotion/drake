@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Internal script to provision a bare Docker image for testing a Drake wheel.
+# Internal script to provision a Python virtual environment inside an
+# otherwise already-provisioned Docker image.
 
 set -eu -o pipefail
 
@@ -15,22 +16,13 @@ readonly VENV="/tmp/drake-wheel-test/python"
 case "${ID}" in
   ubuntu)
     export DEBIAN_FRONTEND=noninteractive
-    apt-get -y update
-    # Install system prerequisites required by Drake's wheel, only on Ubuntu.
-    apt-get -y install --no-install-recommends libx11-6 libsm6 libglib2.0-0t64
-
-    # Install Python and set up the virtual environment.
     case "${PYTHON_MANAGER}" in
       pip)
         apt-get -y install --no-install-recommends \
-          lib${PYTHON}-dev ${PYTHON}-venv \
-          python3-venv
+          lib${PYTHON}-dev ${PYTHON}-venv
         ${PYTHON} -m venv ${VENV}
         ;;
       uv)
-        apt-get -y install --no-install-recommends \
-          ca-certificates gzip tar wget
-        wget -qO- https://astral.sh/uv/install.sh | sh
         ${HOME}/.local/bin/uv venv ${VENV} --python ${PYTHON_VERSION}
         ;;
       *)
@@ -40,9 +32,6 @@ case "${ID}" in
     esac
     ;;
   amzn)
-    dnf update -y
-
-    # Install Python and set up the virtual environment.
     case "${PYTHON_MANAGER}" in
       pip)
         dnf install -y ${PYTHON}
