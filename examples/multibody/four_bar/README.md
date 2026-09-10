@@ -1,6 +1,107 @@
-# Four-Bar Linkage Example
+# Four-Bar Linkage Examples
+
+These two examples model the same kind of mechanism -- a planar four-bar
+linkage -- and illustrate two different ways to deal with the closed kinematic
+loop that a four-bar forms:
+
+* `four_bar` loads the loop from an SDFormat model file and lets MultibodyPlant 
+  model it automatically, closing it with a constraint that `Finalize()` adds. 
+  This is what ordinary use of that feature looks like.
+  Note: this uses a Drake feature that is currently experimental.
+* `four_bar_with_bushing` leaves one of the four joints out and stands a
+  compliant bushing in for it, so the remaining joints form a tree.
+
+# Automatic loop modeling: `four_bar`
+
+This example loads a four-bar linkage from an SDFormat model file that 
+describes it the way you would draw it: as a plain loop of four revolute 
+joints, with no attempt to specify a spanning tree and no stand-in for the 
+"extra" joint. Beyond opting in with `MultibodyPlant::SetEnableLoopTopology()
+` there is nothing to do about the loop, and the rest of the program is an 
+ordinary passive simulation.
+
+`Finalize()` is where the modeling happens: it breaks the loop by adding a
+"shadow" copy of one link, retargeting one joint onto the shadow, and adding a
+weld constraint that holds the shadow to the link it was split from. Nothing
+else has to know that any of that happened -- this example never mentions the
+shadow link, and nothing draws it.
+
+Closing the loop takes a constraint, so this model needs a solver that can
+enforce one, and it does not care which: it runs discrete under SAP, which is
+the default here, and continuous under CENIC.
+
+The model file, `four_bar.sdf`, describes the linkage in an **assembled**
+configuration, as it must. SDFormat and URDF give a joint a single "joint 
+frame", ather than Drake's more general model in which a joint connects an 
+independent parent frame to an independent child frame, and both of Drake's 
+frames then have to be derived from that one. So a parsed model is 
+loop-consistent at q = 0 no matter what poses its links are given: give the 
+links poses that do not close the loop and the discrepancy does not show up 
+as a loop waiting to be closed, but is absorbed into the joint offsets 
+instead, silently building a mechanism other than the one drawn. (The USD 
+file format can express Drake's joint model, so this is a limitation of 
+these two formats rather than of loop modeling.) See the comment at the top 
+of `four_bar.sdf` for a figure of the assembled linkage along with its 
+dimensions and masses.
+
+## Running four_bar
+
+To run with default flags:
+
+```
+bazel run //examples/multibody/four_bar:four_bar
+```
+You'll see output like this:
+```
+[console] [info] Meshcat listening for connections at http://localhost:7000
+
+The linkage is shown as the model file defines it.
+Press Enter to simulate . . .
+```
+Open that URL in a browser to see the linkage, then press Enter and watch it
+swing passively under gravity. Note what the example never mentions: the split
+link, the constraint that closes the loop, or how well the loop is holding
+together. Keeping it closed is the solver's job, and there is nothing here to
+check up on or intervene in.
+
+To run the same model continuously with the CENIC integrator instead of the
+default discrete SAP solver:
+
+```
+bazel run //examples/multibody/four_bar:four_bar -- \
+    --time_step=0 --simulator_integration_scheme=cenic
+```
+
+To drive the linkage with a constant torque at the `world_driver` joint, which
+is the only actuated one, rather than letting it swing passively, and to run
+start to finish without stopping for Enter:
+
+```
+bazel run //examples/multibody/four_bar:four_bar -- \
+    --applied_torque=5 --nointeractive
+```
+
+`--help` lists all the options, along with the standard Drake simulator flags
+such as `--simulator_target_realtime_rate`:
+
+```
+bazel run //examples/multibody/four_bar:four_bar -- --help
+```
+
+# Closing the loop with a bushing: `four_bar_with_bushing`
+
+A compliant bushing is another way to close a four-bar's kinematic loop: leave
+one of the four revolute joints out of the model, so that the remaining three
+form a tree, and stand a bushing in for the joint that is missing. Unlike the
+loop constraint in `four_bar`, which the solver enforces, a bushing is a force
+element whose stiffness and damping you choose yourself, and the rest of this
+file is largely about how to choose them.
+
+Note that the figure and dimensions below describe *this* example; the
+automatically modeled one above has its own geometry.
+
 This planar four-bar linkage demonstrates how to use a bushing to
-approximate a closed kinematic chain. It loads an SDF model from the
+approximate a closed kinematic chain. It loads an SDFormat model from the
 file "four_bar_with_bushing.sdf" into MultibodyPlant. It handles the closed
 kinematic chain by replacing one of the four-bar's revolute (pin) joints with a
 bushing ([drake::multibody::LinearBushingRollPitchYaw](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_linear_bushing_roll_pitch_yaw.html))
@@ -10,7 +111,7 @@ one of the four-bar's rigid links in half and join those halves with a
 bushing that has both force and torque stiffness/damping. Note: the links
 in this example are constrained to rigid motion in the world X-Z
 plane (bushing X-Y plane) by the 3 revolute joints specified in the
-SDF. Therefore it is not necessary for the bushing to have force
+SDFormat file. Therefore it is not necessary for the bushing to have force
 stiffness/damping along the joint axis.
 
 To run with default flags:
@@ -93,8 +194,8 @@ With 𝐓ᴀ = 0, the equilibrium values for the angles are:
 
 ## Starting Configuration
 
-The SDF defines all of the links with their x axes parallel to the world x
-axis for convenience of measuring the angles in the state of the system
+The SDFormat file defines all of the links with their x axes parallel to the
+world x axis for convenience of measuring the angles in the state of the system
 with respect to a fixed axis. Below we derive a valid initial configuration
 of the three angles 𝐪ᴀ, 𝐪ʙ, and 𝐪ᴄ.
 
