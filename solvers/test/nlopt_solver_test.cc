@@ -1,5 +1,7 @@
 #include "drake/solvers/nlopt_solver.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -36,6 +38,27 @@ TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
     solver.Solve(*prog_, {}, solver_options2, &result);
     EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
               NLOPT_MAXTIME_REACHED);
+  }
+}
+
+// Regression test for #24960: vacuous (-inf, +inf) constraint rows must be
+// skipped rather than passed to NLopt as equality or inequality constraints.
+GTEST_TEST(NloptSolverTest, VacuousConstraintRow) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Zero(), x);
+  const double kInf = std::numeric_limits<double>::infinity();
+  Eigen::Matrix<double, 2, 2> A;
+  A << 1, 1, 1, -1;
+  Eigen::Vector2d lb(1.0, -kInf);
+  Eigen::Vector2d ub(1.0, kInf);
+  prog.AddLinearConstraint(A, lb, ub, x);
+  prog.SetInitialGuess(x, Eigen::Vector2d::Zero());
+  NloptSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prog);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.GetSolution(x)(0) + result.GetSolution(x)(1), 1.0, 1e-6);
   }
 }
 
