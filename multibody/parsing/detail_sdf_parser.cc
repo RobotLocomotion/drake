@@ -170,8 +170,7 @@ std::pair<ModelInstanceIndex, std::string> GetResolvedModelInstanceAndLocalName(
 std::optional<std::string> GetRelativeBodyName(
     const RigidBody<double>& body,
     ModelInstanceIndex relative_to_model_instance,
-    const MultibodyPlant<double>& plant,
-    const DiagnosticPolicy& diagnostic) {
+    const MultibodyPlant<double>& plant, const DiagnosticPolicy& diagnostic) {
   const std::string& relative_to_model_absolute_name =
       plant.GetModelInstanceName(relative_to_model_instance);
   // If the relative_to_model instance is the world_model_instance, we need to
@@ -2705,8 +2704,9 @@ bool AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
     if (!attached_to.has_value()) {
       return false;
     }
-    interface_model->AddFrame({frame.name(), *attached_to,
-                               ToIgnitionPose3d(frame.GetFixedPoseInBodyFrame())});
+    interface_model->AddFrame(
+        {frame.name(), *attached_to,
+         ToIgnitionPose3d(frame.GetFixedPoseInBodyFrame())});
   }
   return true;
 }
