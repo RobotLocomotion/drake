@@ -57,7 +57,9 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
         # leftover file:// redirect remains readable. Also disable the
         # redirect-file browser launch (notebook 6 uses NotebookApp; jupyter
         # server uses ServerApp).
-        tmpdir = os.path.join(os.path.expanduser("~"), ".cache", "drake-jupyter")
+        tmpdir = os.path.join(
+            os.path.expanduser("~"), ".cache", "drake-jupyter"
+        )
         os.makedirs(tmpdir, exist_ok=True)
         os.environ["TMPDIR"] = tmpdir
         sys.argv = [
