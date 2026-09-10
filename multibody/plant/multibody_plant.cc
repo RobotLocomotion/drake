@@ -3226,6 +3226,11 @@ void MultibodyPlant<T>::CalcGeometryContactData(
         const BodyIndex body_index = geometry_id_to_body_index.at(geometry_id);
         const internal::TreeIndex tree_index =
             forest.link_to_tree_index(body_index);
+        // World (and any other non-tree link) has an invalid TreeIndex and no
+        // dofs of its own (#24773).
+        if (!tree_index.is_valid()) {
+          return true;
+        }
         const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
         return !tree.has_dofs() ||
                per_tree_unlocked_indices[tree_index].size() == 0;
