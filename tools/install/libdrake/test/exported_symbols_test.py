@@ -440,10 +440,24 @@ class ExportedSymbolsTest(unittest.TestCase):
                 # so we'll skip it here to avoid duplicate reports.
                 continue
             function_name = ExportedSymbolsTest._demangle(name).strip()
-            if not _is_known_bad_ctor_or_dtor(
+            if _is_known_bad_ctor_or_dtor(
                 filename="",
                 function_name=function_name,
             ):
-                failures.append(function_name)
+                continue
+
+            failures.append(function_name)
+
+            if "encode_one_block" in name:
+                manifest = runfiles.Create()
+                subprocess.run(
+                    [
+                        "objdump",
+                        LIBDRAKE,
+                        "-Mintel",
+                        f"--disassemble={name}",
+                    ],
+                    text=True,
+                )
 
         return failures
