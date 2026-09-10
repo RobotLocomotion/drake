@@ -941,16 +941,13 @@ bool AddMimicCouplerConstraint(const SDFormatDiagnostic& diagnostic,
   return true;
 }
 
-// Returns the SDF element to use for diagnostics for an official mimic tag.
-sdf::ElementPtr GetOfficialMimicDiagnosticNode(const sdf::JointAxis& axis,
-                                               const sdf::Joint& joint_spec) {
-  if (axis.Element() != nullptr) {
-    if (axis.Element()->HasElement("mimic")) {
-      return axis.Element()->GetElement("mimic");
-    }
-    return axis.Element();
-  }
-  return joint_spec.Element();
+// Returns the SDFormat element to use for diagnostics for an official mimic
+// tag. The sole call site only invokes this when axis->Mimic() is present, so
+// the mimic child element is expected to exist.
+sdf::ElementPtr GetOfficialMimicDiagnosticNode(const sdf::JointAxis& axis) {
+  DRAKE_DEMAND(axis.Element() != nullptr);
+  DRAKE_DEMAND(axis.Element()->HasElement("mimic"));
+  return axis.Element()->GetElement("mimic");
 }
 
 // Helper method to parse SDFormat //joint/axis/mimic, //joint/axis2/mimic,
@@ -974,7 +971,7 @@ bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
     const std::optional<sdf::MimicConstraint> mimic = axis->Mimic();
     if (!mimic.has_value()) continue;
     official_mimics.push_back(
-        {GetOfficialMimicDiagnosticNode(*axis, joint_spec), *mimic});
+        {GetOfficialMimicDiagnosticNode(*axis), *mimic});
   }
 
   if (!has_drake_mimic && official_mimics.empty()) {
