@@ -449,7 +449,6 @@ class ExportedSymbolsTest(unittest.TestCase):
             failures.append(function_name)
 
             if "encode_one_block" in name:
-                manifest = runfiles.Create()
                 subprocess.run(
                     [
                         "objdump",
@@ -458,6 +457,7 @@ class ExportedSymbolsTest(unittest.TestCase):
                         f"--disassemble={name}",
                     ],
                     text=True,
+                    check=False,
                 )
 
         return failures
