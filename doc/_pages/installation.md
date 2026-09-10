@@ -20,11 +20,20 @@ officially supports:
 |                                     | x86-64, arm64            | 3.13-3.14  | Pip                 | March 2028      |
 | Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64, x86-64-v3, arm64 | 3.12-3.13  | Pip                 | March 2028      |
 |                                     | x86-64, x86-64-v3, arm64 | 3.14       | Pip, Binary, APT    | March 2030      |
-| macOS Sequoia (15)                  | arm64                    | 3.13       | Pip                 | October 2026    |
-|                                     | arm64                    | 3.14       | Pip, Binary         | October 2026    |
-| macOS Tahoe (26)                    | arm64                    | 3.13       | Pip                 | October 2026    |
-|                                     | arm64                    | 3.14       | Pip, Binary         | October 2027    |
+| macOS Sequoia (15)                  | arm64                    | 3.13       | Pip                 | September 2026    |
+|                                     | arm64                    | 3.14       | Pip, Binary         | September 2026    |
+| macOS Tahoe (26)                    | arm64                    | 3.12-3.13  | Pip                 | September 2027    |
+|                                     | arm64                    | 3.14       | Pip, Binary         | September 2027    |
 | Amazon Linux 2023                   | x86-64, arm64            | 3.12-3.14  | Pip                 | March 2028      |
+
+<!-- End of life constraints:
+Ubuntu 24 ends prior to Ubuntu 28, so March 2028.
+Ubuntu 28 ends prior to Ubuntu 30, so March 2030.
+macOS 15 ends prior to macOS 27, so September 2026.
+macOS 26 ends prior to macOS 28, so September 2027.
+Python 3.12 and 3.13 end when Ubuntu 26 is our minimum (ahead of Ubuntu 28),
+which is March 2028.
+-->
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -45,6 +54,9 @@ that Conda is involved.
 
 ⁽³⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
+
+XXX explain that 3.12 pip support is available in nightlies but not stable
+until the 1.58 release.
 
 The following table shows the configurations that *must* be used when
 compiling your own C++ code against Drake's C++ code using one of
