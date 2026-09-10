@@ -4087,6 +4087,25 @@ TEST_F(SdfParserTest, ErrorsFromIncludedUrdf) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*bad.urdf.*XML_ERROR.*"));
 }
 
+// Nested URDF that welds to the world must report a DiagnosticPolicy error
+// instead of aborting in GetRelativeBodyName (see #21413).
+TEST_F(SdfParserTest, NestedUrdfWorldWeldDiagnostic) {
+  ParseTestString(R"""(
+<model name="top">
+  <link name="torso"/>
+  <include>
+    <uri>package://drake/multibody/parsing/test/sdf_parser_test/world_weld.urdf</uri>
+    <name>gripper</name>
+  </include>
+</model>)""",
+                  "1.8");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(
+          ".*Body 'world' belonging to model instance 'WorldModelInstance' is "
+          "not a descendant of model instance '.*gripper'.*"));
+}
+
 // TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
 // belongs in detail_common_test.cc. Urdf and Sdf parsing just need enough
 // testing to indicate that the method is being invoked correctly.
