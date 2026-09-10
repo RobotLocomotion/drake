@@ -18,8 +18,8 @@ filegroup(
 )
 
 drake_cc_binary(
-    name = "passive_simulation",
-    srcs = ["passive_simulation.cc"],
+    name = "four_bar_with_bushing",
+    srcs = ["four_bar_with_bushing.cc"],
     data = [":models"],
     deps = [
         "//multibody/parsing",

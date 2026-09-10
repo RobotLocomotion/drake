@@ -87,9 +87,15 @@ void MultibodyTree<T>::RegisterJointAndMaybeJointTypeInGraph(
                                         joint.num_velocities(), has_quaternion);
   }
   // Note changes in the graph.
-  link_joint_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
-                             joint.parent_body().index(),
-                             joint.child_body().index());
+  const JointIndex graph_joint_index = link_joint_graph_.AddJoint(
+      joint.name(), joint.model_instance(), type_name,
+      joint.parent_body().index(), joint.child_body().index());
+  const LinkJointGraph::Joint& graph_joint =
+      link_joint_graph_.joint_by_index(graph_joint_index);
+  const LinkJointGraph::JointTraits& traits =
+      link_joint_graph_.joint_traits(graph_joint.traits_index());
+  DRAKE_DEMAND(traits.nq == joint.num_positions());
+  DRAKE_DEMAND(traits.nv == joint.num_velocities());
 }
 
 template <typename T>
@@ -907,13 +913,18 @@ void MultibodyTree<T>::FinalizeInternals() {
   for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
-    if (LinkAttorney<T>::is_floating_base_body_pre_finalize(body)) {
-      DRAKE_DEMAND(joint.is_ephemeral());
-      const auto [quaternion, translation] =
-          GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
-      joint.SetDefaultPosePair(quaternion, translation);
-      default_body_poses_[body.index()] = joint.index();
-    }
+    if (!LinkAttorney<T>::is_floating_base_body_pre_finalize(body)) continue;
+    // A floating base body is mobilized by the ephemeral floating joint the
+    // forest added for it, but it can be a _user_ joint's child link as well:
+    // when a closed kinematic loop has no joint to World, the forest still has
+    // to choose one of the loop's links to serve as a base body, and that link
+    // is already named as a child by one of the loop's own joints. Only the
+    // ephemeral joint actually mobilizes the body, so skip any other.
+    if (!joint.is_ephemeral()) continue;
+    const auto [quaternion, translation] =
+        GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
+    joint.SetDefaultPosePair(quaternion, translation);
+    default_body_poses_[body.index()] = joint.index();
   }
 
   is_finalized_ = true;
@@ -1053,8 +1064,6 @@ void MultibodyTree<T>::Finalize() {
   /* Add Links, Joints, and Constraints that were created during the modeling
   process (BuildForest()), which augmented the graph with them. We call those
   "ephemeral" elements. */
-
-  // TODO(sherm1) Move joints to the shadow links and add loop constraints.
 
   if (!enable_loop_topology_ && !graph.loop_constraints().empty()) {
     link_joint_graph_.InvalidateForest();

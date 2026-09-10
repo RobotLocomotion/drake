@@ -219,7 +219,7 @@ struct RenderEngineVtkParams {
    fixed to the camera frame, is used.
 
    Note: RenderEngineVtk does not have a hard-coded limit on the number of
-         lights; but more lights increases rendering cost.
+         lights, but more lights increases rendering cost.
    Note: the attenuation values have no effect on VTK *directional* lights. */
   std::vector<render::LightParameter> lights;
 

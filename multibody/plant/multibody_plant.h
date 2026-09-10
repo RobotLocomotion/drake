@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/random.h"
@@ -1418,8 +1420,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @param[in] name
   ///   A string that identifies the new body to be added to `this` model. A
-  ///   std::runtime_error is thrown if a body named `name` already is part of
-  ///   @p model_instance. See HasBodyNamed(), RigidBody::name().
+  ///   std::logic_error is thrown if a rigid or deformable body named `name`
+  ///   already is part of @p model_instance. See HasBodyNamed(),
+  ///   RigidBody::name().
   /// @param[in] model_instance
   ///   A model instance index which this body is part of.
   /// @param[in] M_BBo_B
@@ -1432,6 +1435,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B = SpatialInertia<double>::Zero()) {
     DRAKE_MBP_THROW_IF_FINALIZED();
+    // Body names must be unique within a model instance across both rigid and
+    // deformable bodies.
+    if (deformable_model().HasBodyNamed(name, model_instance)) {
+      throw std::logic_error(fmt::format(
+          "Model instance '{}' already contains a deformable body named '{}'. "
+          "Body names must be unique within a given model.",
+          GetModelInstanceName(model_instance), name));
+    }
     // Add the actual RigidBody (Link) to the model.
     const RigidBody<T>& body =
         this->mutable_tree().AddLink(name, model_instance, M_BBo_B);
@@ -1464,9 +1475,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @param[in] name
   ///   A string that identifies the new body to be added to `this` model. A
-  ///   std::runtime_error is thrown if a body named `name` already is part of
-  ///   the model in the default model instance. See HasBodyNamed(),
-  ///   RigidBody::name().
+  ///   std::logic_error is thrown if a rigid or deformable body named `name`
+  ///   already is part of the model in the default model instance. See
+  ///   HasBodyNamed(), RigidBody::name().
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this`
   ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
@@ -1926,11 +1937,24 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// MultibodyConstraintManager class to consolidate constraint management. -->
   /// @{
 
-  /// Returns the total number of constraints specified by the user.
+  /// Returns the total number of constraints in this model. Prior to
+  /// Finalize() these are just the constraints specified by the user.
+  /// Finalize() may add "ephemeral" constraints of its own; see
+  /// num_loop_constraints().
   int num_constraints() const {
     return num_coupler_constraints() + num_distance_constraints() +
            num_ball_constraints() + num_weld_constraints() +
            num_tendon_constraints();
+  }
+
+  /// Returns the number of ephemeral weld constraints that Finalize() added in
+  /// order to close topological loops. Each of these welds a shadow link to the
+  /// link it is split from; see SetEnableLoopTopology(). These are included in
+  /// num_constraints() and num_weld_constraints(), and are indistinguishable
+  /// from user-added welds to the constraint solvers. Returns zero prior to
+  /// Finalize().
+  int num_loop_constraints() const {
+    return internal_tree().graph().num_loop_constraints();
   }
 
   /// Returns a list of all constraint identifiers. The returned vector becomes
@@ -1950,7 +1974,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns the total number of ball constraints specified by the user.
   int num_ball_constraints() const { return ssize(ball_constraints_specs_); }
 
-  /// Returns the total number of weld constraints specified by the user.
+  /// Returns the total number of weld constraints. Before Finalize() these are
+  /// just the weld constraints specified by the user. Finalize() may add
+  /// "ephemeral" weld constraints of its own; see num_loop_constraints().
   int num_weld_constraints() const { return ssize(weld_constraints_specs_); }
 
   /// Returns the total number of tendon constraints specified by the
@@ -6277,6 +6303,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // corresponds to the largest penalty parameter (smaller violation errors)
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
+
+  // Adds an ephemeral weld constraint for each loop constraint the modeler
+  // introduced when it broke a closed kinematic loop by splitting a link into
+  // a primary link and a shadow link. Called during Finalize(), after the tree
+  // (and hence the shadow links) has been finalized, but before
+  // FinalizePlantOnly() declares the constraint parameters.
+  void AddEphemeralLoopConstraints();
 
   // Some constraints support std::optional specs, which implies that the
   // kinematics should be used to compute values such that the constraint is

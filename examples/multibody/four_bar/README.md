@@ -1,8 +1,8 @@
 # Four-Bar Linkage Example
 This planar four-bar linkage demonstrates how to use a bushing to
 approximate a closed kinematic chain. It loads an SDF model from the
-file "four_bar.sdf" into MultibodyPlant. It handles the closed kinematic
-chain by replacing one of the four-bar's revolute (pin) joints with a
+file "four_bar_with_bushing.sdf" into MultibodyPlant. It handles the closed
+kinematic chain by replacing one of the four-bar's revolute (pin) joints with a
 bushing ([drake::multibody::LinearBushingRollPitchYaw](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_linear_bushing_roll_pitch_yaw.html))
 whose force stiffness and damping values were approximated as discussed below.
 An alternative way to close this four-bar's kinematic chain is to "cut"
@@ -16,7 +16,7 @@ stiffness/damping along the joint axis.
 To run with default flags:
 
 ```
-bazel run //examples/multibody/four_bar:passive_simulation
+bazel run //examples/multibody/four_bar:four_bar_with_bushing
 ```
 
 You should see the four-bar model oscillating passively with a small initial
@@ -24,13 +24,13 @@ velocity.
 
 To change the initial velocity of `joint_WA`, q̇A in radians/second :
 ```
-bazel run //examples/multibody/four_bar:passive_simulation -- --initial_velocity=<desired_velocity>
+bazel run //examples/multibody/four_bar:four_bar_with_bushing -- --initial_velocity=<desired_velocity>
 ```
 
 You can also apply a constant torque, 𝐓ᴀ, to `joint_WA` with a command line
 argument:
 ```
-bazel run //examples/multibody/four_bar:passive_simulation -- --applied_torque=<desired_torque>
+bazel run //examples/multibody/four_bar:four_bar_with_bushing -- --applied_torque=<desired_torque>
 ```
 The torque is applied constantly to the joint actuator with no feedback. Thus,
  if set high enough, you will see the system become unstable. 
@@ -39,13 +39,13 @@ You can change the bushing parameters from the command line to observe their
 effect on
 the modeled joint. For instance, change `force_stiffness` to 300:
  ```
-bazel run //examples/multibody/four_bar:passive_simulation -- --force_stiffness=300
+bazel run //examples/multibody/four_bar:four_bar_with_bushing -- --force_stiffness=300
 ```
 And observe a gradual displacement between link *B* and link *C*.
 
 Change `force_damping` to 0:
  ```
-bazel run //examples/multibody/four_bar:passive_simulation -- --force_damping=0
+bazel run //examples/multibody/four_bar:four_bar_with_bushing -- --force_damping=0
 ```
 And observe the joint oscillating.
 
