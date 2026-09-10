@@ -759,6 +759,30 @@ TEST_F(BoxMeshTest, MeshFileScale) {
   TestBoxMesh(box_obj_, mesh_asset, "", Vector3d(2, 3, 1.5));
 }
 
+TEST_F(MujocoParserTest, MeshFileReferencePose) {
+  // refpos/refquat shift the mesh asset frame; Drake applies the inverse to
+  // the geom pose so vertices match MuJoCo (#22488).
+  const std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}" refpos="1 2 3" refquat="0 1 0 0"/>
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""", box_obj_);
+
+  AddModelFromString(xml, "test");
+  const auto& inspector = scene_graph_->model_inspector();
+  const GeometryId geom_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "box_geom");
+  const RigidTransformd expected(
+      Eigen::Quaternion<double>(0, 1, 0, 0), Vector3d(-1, 2, 3));
+  EXPECT_TRUE(
+      inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(expected, 1e-14));
+}
+
 TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
   // Test the scale set via mesh defaults. According to the mjcf docs, this is
   // the only supported mesh default.
