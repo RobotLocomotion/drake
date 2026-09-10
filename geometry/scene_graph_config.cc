@@ -1,54 +1,52 @@
 #include "drake/geometry/scene_graph_config.h"
 
-#include <stdexcept>
-#include <string_view>
-
+#include "drake/common/drake_assert.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace geometry {
 
-namespace {
-
-// Check the value (if present) of `name`d `property` using `validate`. If the
-// value is present and invalid, rethrow with a SceneGraphConfig-prefixed
-// message that includes the property name.
-void ThrowUnlessAbsentOr(std::string_view name, std::optional<double> property,
-                         void (*validate)(double)) {
-  if (!property.has_value()) {
-    return;
-  }
-  try {
-    validate(*property);
-  } catch (const std::exception& e) {
-    throw std::logic_error(fmt::format(
-        "Invalid scene graph configuration: '{}' ({}) is invalid. {}", name,
-        *property, e.what()));
-  }
-}
-
-}  // namespace
-
 void DefaultProximityProperties::ValidateOrThrow() const {
   // This will throw if the type is invalid.
   internal::GetHydroelasticTypeFromString(compliance_type);
 
-// Use a macro to capture both property name and value.
-#define DRAKE_ENFORCE(prop, validate) \
-  ThrowUnlessAbsentOr(#prop, prop, &internal::validate)
-  DRAKE_ENFORCE(hydroelastic_modulus, ThrowIfInvalidHydroelasticModulus);
-  DRAKE_ENFORCE(resolution_hint, ThrowIfInvalidResolutionHint);
-  DRAKE_ENFORCE(slab_thickness, ThrowIfInvalidSlabThickness);
-  DRAKE_ENFORCE(margin, ThrowIfInvalidMargin);
+  if (hydroelastic_modulus.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsPositive(*hydroelastic_modulus),
+                       *hydroelastic_modulus);
+  }
+  if (resolution_hint.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsPositiveFinite(*resolution_hint),
+                       *resolution_hint);
+  }
+  if (slab_thickness.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsPositiveFinite(*slab_thickness),
+                       *slab_thickness);
+  }
+  if (margin.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsNonNegativeFinite(*margin), *margin);
+  }
 
-  DRAKE_ENFORCE(dynamic_friction, ThrowIfInvalidFrictionCoefficient);
-  DRAKE_ENFORCE(static_friction, ThrowIfInvalidFrictionCoefficient);
-  DRAKE_ENFORCE(hunt_crossley_dissipation,
-                ThrowIfInvalidHuntCrossleyDissipation);
-  DRAKE_ENFORCE(relaxation_time, ThrowIfInvalidRelaxationTime);
-  DRAKE_ENFORCE(point_stiffness, ThrowIfInvalidPointStiffness);
-#undef DRAKE_ENFORCE
+  if (dynamic_friction.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsNonNegative(*dynamic_friction),
+                       *dynamic_friction);
+  }
+  if (static_friction.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsNonNegative(*static_friction),
+                       *static_friction);
+  }
+  if (hunt_crossley_dissipation.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsNonNegative(*hunt_crossley_dissipation),
+                       *hunt_crossley_dissipation);
+  }
+  if (relaxation_time.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsNonNegativeFinite(*relaxation_time),
+                       *relaxation_time);
+  }
+  if (point_stiffness.has_value()) {
+    DRAKE_THROW_UNLESS(internal::IsPositive(*point_stiffness),
+                       *point_stiffness);
+  }
 
   // Require either both friction quantities or neither.
   if (static_friction.has_value() != dynamic_friction.has_value()) {

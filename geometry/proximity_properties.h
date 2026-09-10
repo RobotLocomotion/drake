@@ -7,6 +7,7 @@
  no way limit the inclusion of any other additional, arbitrary properties.
  */
 
+#include <cmath>
 #include <optional>
 #include <string>
 
@@ -95,47 +96,38 @@ std::string GetStringFromHydroelasticType(HydroelasticType hydroelastic_type);
 /* String conversion for debug-printing hydroelastic type.  */
 std::string_view to_string(const HydroelasticType& type);
 
-/* @name  Validating proximity property numeric values
+/* @name  Proximity property numeric predicates
 
- These helpers are the single enforcement point for the numeric ranges of
+ These predicates are the single enforcement point for the numeric ranges of
  proximity properties. They are used by DefaultProximityProperties::
- ValidateOrThrow() and by the public Add* helpers below. Valid ranges
- (including NaN/∞ disposition) are documented on the corresponding fields of
- DefaultProximityProperties and on the Add* APIs that accept these values.
+ ValidateOrThrow() and by the public Add* helpers below. Invoke them as
+ `DRAKE_THROW_UNLESS(IsPositiveFinite(x), x)` (and similarly for the other
+ predicates) so the named quantity, requirement, and value appear in the
+ error. Valid ranges (including NaN/∞ disposition) are documented on the
+ corresponding fields of DefaultProximityProperties and on the Add* APIs that
+ accept these values.
  */
 //@{
 
-/* @throws std::exception unless `hydroelastic_modulus` > 0.
- +∞ is allowed; NaN is not. */
-void ThrowIfInvalidHydroelasticModulus(double hydroelastic_modulus);
+/* Returns true iff `x` > 0. +∞ is allowed; NaN is not. */
+inline bool IsPositive(double x) {
+  return x > 0;
+}
 
-/* @throws std::exception unless 0 < `resolution_hint` < ∞.
- NaN and ±∞ are not allowed. */
-void ThrowIfInvalidResolutionHint(double resolution_hint);
+/* Returns true iff 0 < `x` < ∞. */
+inline bool IsPositiveFinite(double x) {
+  return std::isfinite(x) && x > 0;
+}
 
-/* @throws std::exception unless 0 < `slab_thickness` < ∞.
- NaN and ±∞ are not allowed. */
-void ThrowIfInvalidSlabThickness(double slab_thickness);
+/* Returns true iff `x` ≥ 0. +∞ is allowed; NaN is not. */
+inline bool IsNonNegative(double x) {
+  return x >= 0;
+}
 
-/* @throws std::exception unless 0 ≤ `margin` < ∞.
- NaN and ±∞ are not allowed. */
-void ThrowIfInvalidMargin(double margin);
-
-/* @throws std::exception unless `dissipation` ≥ 0.
- +∞ is allowed; NaN is not. */
-void ThrowIfInvalidHuntCrossleyDissipation(double dissipation);
-
-/* @throws std::exception unless 0 ≤ `relaxation_time` < ∞.
- NaN and ±∞ are not allowed. */
-void ThrowIfInvalidRelaxationTime(double relaxation_time);
-
-/* @throws std::exception unless `point_stiffness` > 0.
- +∞ is allowed; NaN is not. */
-void ThrowIfInvalidPointStiffness(double point_stiffness);
-
-/* @throws std::exception unless `friction_coefficient` ≥ 0.
- +∞ is allowed; NaN is not. */
-void ThrowIfInvalidFrictionCoefficient(double friction_coefficient);
+/* Returns true iff 0 ≤ `x` < ∞. */
+inline bool IsNonNegativeFinite(double x) {
+  return std::isfinite(x) && x >= 0;
+}
 
 //@}
 
@@ -171,7 +163,7 @@ void AddContactMaterial(
                               the resulting mesh.  See @ref hug_properties.
                               This will be ignored for geometry types that don't
                               require tessellation. Must satisfy
-                              0 < `resolution_hint` < ∞ (NaN and ±∞ rejected).
+                              0 < `resolution_hint` < ∞.
  @param[in,out] properties    The properties will be added to this property set.
  @throws std::exception       If `resolution_hint` is invalid or if
                               `properties` already has properties with the
@@ -197,7 +189,7 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
                              the resulting mesh.  See @ref hug_properties.
                              This will be ignored for geometry types that don't
                              require tessellation. Must satisfy
-                             0 < `resolution_hint` < ∞ (NaN and ±∞ rejected).
+                             0 < `resolution_hint` < ∞.
  @param hydroelastic_modulus A multiplier that maps penetration to pressure. See
                              @ref hug_properties. Must be > 0 (+∞ allowed; NaN
                              rejected).
@@ -218,7 +210,7 @@ void AddCompliantHydroelasticProperties(double resolution_hint,
  @param slab_thickness       The distance from the half space boundary to its
                              rigid core (this helps define the extent field of
                              the half space). Must satisfy
-                             0 < `slab_thickness` < ∞ (NaN and ±∞ rejected).
+                             0 < `slab_thickness` < ∞.
  @param hydroelastic_modulus A multiplier that maps penetration to pressure. See
                              @ref hug_properties. Must be > 0 (+∞ allowed; NaN
                              rejected).

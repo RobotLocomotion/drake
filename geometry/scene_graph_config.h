@@ -57,7 +57,7 @@ struct DefaultProximityProperties {
   meters.
 
   When present, the value must satisfy `0 < resolution_hint < ∞` (finite and
-  positive). NaN and ±∞ are not allowed.
+  positive).
 
   While no single value is universally appropriate, this value was selected
   based on the following idea. We're attempting to make introducing novel
@@ -71,7 +71,7 @@ struct DefaultProximityProperties {
   of meters.
 
   When present, the value must satisfy `0 < slab_thickness < ∞` (finite and
-  positive). NaN and ±∞ are not allowed. */
+  positive). */
   std::optional<double> slab_thickness;
 
   /** (Advanced) Specifies a thin layer of thickness "margin" (in meters) around
@@ -80,7 +80,7 @@ struct DefaultProximityProperties {
   contact constraints are added for objects at a distance smaller than δ₁+δ₂.
 
   When present, the value must satisfy `0 ≤ margin < ∞` (finite and
-  non-negative). NaN and ±∞ are not allowed.
+  non-negative).
 
   Refer to @ref hydro_margin for further details, including theory, examples,
   recommended margin values and limitations.
@@ -150,7 +150,7 @@ struct DefaultProximityProperties {
   multibody::DiscreteContactApproximation::kSap. Units are seconds.
 
   When present, the value must satisfy `0 ≤ relaxation_time < ∞` (finite and
-  non-negative). NaN and ±∞ are not allowed. */
+  non-negative). */
   std::optional<double> relaxation_time{0.1};
   /// @}
 

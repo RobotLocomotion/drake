@@ -76,7 +76,7 @@ Parameter ``resolution_hint``:
     meters) and roughly corresponds to a typical edge length in the
     resulting mesh. See hug_properties. This will be ignored for
     geometry types that don't require tessellation. Must satisfy 0 <
-    ``resolution_hint`` < ∞ (NaN and ±∞ rejected).
+    ``resolution_hint`` < ∞.
 
 Parameter ``hydroelastic_modulus``:
     A multiplier that maps penetration to pressure. See
@@ -104,7 +104,7 @@ thickness. This variant is required for hydroelastic half spaces.
 Parameter ``slab_thickness``:
     The distance from the half space boundary to its rigid core (this
     helps define the extent field of the half space). Must satisfy 0 <
-    ``slab_thickness`` < ∞ (NaN and ±∞ rejected).
+    ``slab_thickness`` < ∞.
 
 Parameter ``hydroelastic_modulus``:
     A multiplier that maps penetration to pressure. See
@@ -156,7 +156,7 @@ Parameter ``resolution_hint``:
     meters) and roughly corresponds to a typical edge length in the
     resulting mesh. See hug_properties. This will be ignored for
     geometry types that don't require tessellation. Must satisfy 0 <
-    ``resolution_hint`` < ∞ (NaN and ±∞ rejected).
+    ``resolution_hint`` < ∞.
 
 Parameter ``properties``:
     The properties will be added to this property set.
@@ -975,7 +975,7 @@ is, (speculative) contact constraints are added for objects at a
 distance smaller than δ₁+δ₂.
 
 When present, the value must satisfy ``0 ≤ margin < ∞`` (finite and
-non-negative). NaN and ±∞ are not allowed.
+non-negative).
 
 Refer to hydro_margin for further details, including theory, examples,
 recommended margin values and limitations.
@@ -1034,7 +1034,7 @@ R"""(Controls energy damping from contact, *only for*
 multibody∷DiscreteContactApproximation∷kSap. Units are seconds.
 
 When present, the value must satisfy ``0 ≤ relaxation_time < ∞``
-(finite and non-negative). NaN and ±∞ are not allowed.)""";
+(finite and non-negative).)""";
         } relaxation_time;
         // Symbol: drake::geometry::DefaultProximityProperties::resolution_hint
         struct /* resolution_hint */ {
@@ -1044,7 +1044,7 @@ R"""(Controls how finely primitive geometries are tessellated, units of
 meters.
 
 When present, the value must satisfy ``0 < resolution_hint < ∞``
-(finite and positive). NaN and ±∞ are not allowed.
+(finite and positive).
 
 While no single value is universally appropriate, this value was
 selected based on the following idea. We're attempting to make
@@ -1061,7 +1061,7 @@ R"""(For a halfspace, the thickness of compliant material to model, in
 units of meters.
 
 When present, the value must satisfy ``0 < slab_thickness < ∞``
-(finite and positive). NaN and ±∞ are not allowed.)""";
+(finite and positive).)""";
         } slab_thickness;
         // Symbol: drake::geometry::DefaultProximityProperties::static_friction
         struct /* static_friction */ {

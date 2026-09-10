@@ -1219,7 +1219,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
     const double margin =
         props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
-    ThrowIfInvalidMargin(margin);
+    DRAKE_THROW_UNLESS(IsNonNegativeFinite(margin), margin);
     ReifyData data{nullptr, id, props, X_WG, margin};
     shape.Reify(this, &data);
 
