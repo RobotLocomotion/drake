@@ -400,7 +400,7 @@ R"""(Lights in the scene. If no lights are defined, a single directional
 light, fixed to the camera frame, is used.
 
 Note: RenderEngineVtk does not have a hard-coded limit on the number
-of lights; but more lights increases rendering cost. Note: the
+of lights, but more lights increases rendering cost. Note: the
 attenuation values have no effect on VTK *directional* lights.)""";
         } lights;
         // Symbol: drake::geometry::RenderEngineVtkParams::shadow_map_size
