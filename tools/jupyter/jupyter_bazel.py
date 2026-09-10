@@ -51,11 +51,19 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
     if not args.test:
         print("Running notebook interactively")
         notebook_path = os.path.realpath(notebook_path)
-        # Open via a localhost URL instead of a file:///tmp/*.html redirect.
-        # Snap browsers (e.g., Ubuntu Firefox) cannot read global /tmp.
+        # Snap browsers (e.g., Ubuntu Firefox) cannot read global /tmp, but
+        # notebook 6 still writes a NamedTemporaryFile there when opening a
+        # specific notebook. Point TMPDIR at a home-local directory so any
+        # leftover file:// redirect remains readable. Also disable the
+        # redirect-file browser launch (notebook 6 uses NotebookApp; jupyter
+        # server uses ServerApp).
+        tmpdir = os.path.join(os.path.expanduser("~"), ".cache", "drake-jupyter")
+        os.makedirs(tmpdir, exist_ok=True)
+        os.environ["TMPDIR"] = tmpdir
         sys.argv = [
             "jupyter",
             "notebook",
+            "--NotebookApp.use_redirect_file=False",
             "--ServerApp.use_redirect_file=False",
             notebook_path,
         ]
