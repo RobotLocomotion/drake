@@ -14,7 +14,7 @@ from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
 )
-from pydrake.solvers import IpoptSolver, SolverOptions
+from pydrake.solvers import IpoptSolver, MathematicalProgram, SolverOptions
 from pydrake.symbolic import Variable
 
 # Taken from iris_from_clique_cover_test.py
@@ -316,3 +316,26 @@ class TestOptionsPrinting(unittest.TestCase):
         self.check_fields(options.ray_sampler_options, fields, printed)
 
         self.check_sampled_iris_options(options.sampled_iris_options, printed)
+
+
+class TestInlineProgKeepAlive(unittest.TestCase):
+    """Regression test for #23590."""
+
+    def test_iris_np2_inline_prog(self):
+        options = mut.IrisNp2Options()
+        options.sampled_iris_options.prog_with_additional_constraints = (
+            MathematicalProgram()
+        )
+        self.assertIsNotNone(
+            options.sampled_iris_options.prog_with_additional_constraints
+        )
+
+    def test_iris_zo_inline_prog(self):
+        options = mut.IrisZoOptions()
+        options.sampled_iris_options.prog_with_additional_constraints = (
+            MathematicalProgram()
+        )
+        self.assertIsNotNone(
+            options.sampled_iris_options.prog_with_additional_constraints
+        )
+
