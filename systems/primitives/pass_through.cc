@@ -38,10 +38,10 @@ PassThrough<T>::PassThrough(
 template <typename T>
 template <typename U>
 PassThrough<T>::PassThrough(const PassThrough<U>& other)
-    : PassThrough(other.model_vector_,
-                  other.is_abstract() ? other.abstract_model_value_->Clone()
-                                      : nullptr,
-                  other.input_required_) {}
+    : PassThrough(
+          other.model_vector_,
+          other.is_abstract() ? other.abstract_model_value_->Clone() : nullptr,
+          other.input_required_) {}
 
 template <typename T>
 PassThrough<T>::~PassThrough() = default;

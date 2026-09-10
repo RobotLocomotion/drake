@@ -61,9 +61,8 @@ class PassThroughTest
             make_unique<PassThrough<double>>(Value<SimpleAbstractType>(size));
       }
     }
-    EXPECT_FALSE(
-        dynamic_cast<const PassThrough<double>&>(*pass_through_)
-            .input_required());
+    EXPECT_FALSE(dynamic_cast<const PassThrough<double>&>(*pass_through_)
+                     .input_required());
     context_ = pass_through_->CreateDefaultContext();
   }
 
@@ -162,8 +161,9 @@ GTEST_TEST(PassThroughRequiredInputTest, VectorRequired) {
   PassThrough<double> dut(value, true);
   EXPECT_TRUE(dut.input_required());
   auto context = dut.CreateDefaultContext();
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.get_output_port().Eval(*context),
-                              ".*required InputPort.*\\(u\\).*is not connected.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.get_output_port().Eval(*context),
+      ".*required InputPort.*\\(u\\).*is not connected.*");
   dut.get_input_port().FixValue(context.get(), input);
   EXPECT_EQ(dut.get_output_port().Eval(*context), input);
 }
@@ -178,8 +178,9 @@ GTEST_TEST(PassThroughRequiredInputTest, SizedConstructor) {
   PassThrough<double> required_input(3, true);
   EXPECT_TRUE(required_input.input_required());
   auto required_context = required_input.CreateDefaultContext();
-  DRAKE_EXPECT_THROWS_MESSAGE(required_input.get_output_port().Eval(*required_context),
-                              ".*required InputPort.*\\(u\\).*is not connected.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      required_input.get_output_port().Eval(*required_context),
+      ".*required InputPort.*\\(u\\).*is not connected.*");
 }
 
 GTEST_TEST(PassThroughRequiredInputTest, AbstractRequired) {
@@ -188,8 +189,9 @@ GTEST_TEST(PassThroughRequiredInputTest, AbstractRequired) {
   PassThrough<double> dut(Value<SimpleAbstractType>(value), true);
   EXPECT_TRUE(dut.input_required());
   auto context = dut.CreateDefaultContext();
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.get_output_port().Eval(*context),
-                              ".*required InputPort.*\\(u\\).*is not connected.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.get_output_port().Eval(*context),
+      ".*required InputPort.*\\(u\\).*is not connected.*");
   dut.get_input_port().FixValue(context.get(), SimpleAbstractType(input));
   EXPECT_EQ(dut.get_output_port().Eval<SimpleAbstractType>(*context).value(),
             input);

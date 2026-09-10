@@ -476,8 +476,7 @@ PYDRAKE_MODULE(primitives, m) {
             py::arg("value"), py::arg("input_required") = false,
             doc.PassThrough.ctor.doc_value)
         .def(py::init<const AbstractValue&, bool>(),
-            py::arg("abstract_model_value"),
-            py::arg("input_required") = false,
+            py::arg("abstract_model_value"), py::arg("input_required") = false,
             doc.PassThrough.ctor.doc_abstract_model_value)
         .def("input_required", &PassThrough<T>::input_required,
             doc.PassThrough.input_required.doc);
