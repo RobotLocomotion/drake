@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_dmd_parser.h"
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -601,6 +603,33 @@ TEST_F(DmdParserTest, NonFatalParseErrors) {
                     ".*Namespace 'missing_instance' does not exist as model "
                     "instance.*"));
   }
+}
+
+/* Nested add_directives whose child file fails schema validation must continue
+ without crashing (covers the LoadModelDirectives failure continue path). */
+TEST_F(DmdParserTest, NonFatalNestedDirectivesLoadFailure) {
+  const std::filesystem::path child =
+      std::filesystem::path(temp_directory()) / "bad_child.dmd.yaml";
+  {
+    std::ofstream out(child);
+    out << R"(
+directives:
+- add_model_instance:
+    name: ""
+)";
+  }
+
+  ModelDirectives directives;
+  ModelDirective directive;
+  AddDirectives add_directives;
+  add_directives.file = "file://" + child.string();
+  directive.add_directives = add_directives;
+  directives.directives.push_back(directive);
+
+  EXPECT_NO_THROW(ParseModelDirectives(directives));
+  EXPECT_THAT(
+      TakeError(),
+      testing::MatchesRegex(".*add_model_instance.*name.*must be non-empty.*"));
 }
 
 }  // namespace
