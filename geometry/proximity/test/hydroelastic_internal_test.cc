@@ -955,7 +955,7 @@ void TestPropertyErrors(
     negative_value.AddProperty(group_name, property_name, *bad_value);
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, negative_value),
-        fmt::format("Cannot create {} {}.+'{}'.+ positive", compliance,
+        fmt::format("Cannot create {} {}.+'{}'.+positive.*", compliance,
                     shape_name, property_name));
   }
 }
