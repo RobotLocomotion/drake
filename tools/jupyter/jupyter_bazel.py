@@ -51,6 +51,18 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
     if not args.test:
         print("Running notebook interactively")
         notebook_path = os.path.realpath(notebook_path)
+        # Ubuntu snap browsers cannot read hidden home paths (e.g. ~/.local)
+        # or the global /tmp mount. Jupyter writes its browser-open redirect
+        # HTML under JUPYTER_RUNTIME_DIR; point that at a non-hidden home
+        # directory so the default redirect file (token + notebook path)
+        # remains readable. Prefer this over use_redirect_file=False, which
+        # on notebook 7 / jupyter_server drops the file_to_run URL and can
+        # strand the user on a login/tree page (#24071).
+        runtime_dir = os.path.join(
+            os.path.expanduser("~"), "drake-jupyter-runtime"
+        )
+        os.makedirs(runtime_dir, exist_ok=True)
+        os.environ["JUPYTER_RUNTIME_DIR"] = runtime_dir
         sys.argv = ["jupyter", "notebook", notebook_path]
         sys.exit(_jupyter_main())
     else:
