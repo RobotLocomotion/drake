@@ -1,6 +1,6 @@
 # Four-Bar Linkage Examples
 
-These two examples model the same kind of mechanism -- a planar four-bar
+These three examples model the same kind of mechanism -- a planar four-bar
 linkage -- and illustrate two different ways to deal with the closed kinematic
 loop that a four-bar forms:
 
@@ -8,6 +8,10 @@ loop that a four-bar forms:
   model it automatically, closing it with a constraint that `Finalize()` adds.
   Note: this uses a Drake feature that is currently experimental and marked
   "internal use only".
+* `four_bar_auto` models a loop the same way, but builds an equivalent linkage
+  through the C++ API, which lets it start from an *unassembled* configuration.
+  It draws the machinery Drake used to break the loop so that you can watch it
+  work.
 * `four_bar_with_bushing` leaves one of the four joints out and replaces it
   with a compliant bushing, so the remaining joints form a tree.
 
@@ -71,6 +75,130 @@ such as `--simulator_target_realtime_rate`:
 
 ```
 bazel run //examples/multibody/four_bar:four_bar -- --help
+```
+# Watching a loop be modeled: `four_bar_auto`
+
+This example defines a four-bar linkage without having to know its assembled
+configuration. The Drake API allows the links to be defined in convenient
+orientations, with frames attached. Then the joints specify which frames they
+connect. Loops are permitted. The model has to be assembled before it can be
+simulated. The example shows:
+
+* How to opt in to automatic loop modeling with
+  `MultibodyPlant::SetEnableLoopTopology()`, and how to visualize what the
+  resulting model looks like. `Finalize()` breaks the loop by adding a "shadow"
+  split off one of the links, retargeting one joint onto the shadow, and 
+  adding a weld constraint that holds the shadow to the link it was split from.
+* That the system can be defined in an unassembled configuration. The solver 
+  assembles it within a few milliseconds, with the input joint locked to 
+  hold it at the angle it was defined with.
+
+Assembly is over long before a single visualizer frame would be drawn, so the
+configurations the linkage passes through on the way are recorded and replayed;
+see `--assembly_playback_time` below.
+
+Closing the loop takes a constraint, so this model needs a solver that can
+enforce one. It runs in discrete mode with SAP by default, or continuous 
+under CENIC if requested.
+
+The linkage is built with the C++ API rather than parsed from an SDF or URDF file
+because neither format can describe an unassembled loop.
+
+Much of what this example does is pedagogical. It goes to considerable trouble
+to show *how* Drake breaks the loop, drawing the shadow link and the frames the
+loop-closing weld holds together, and stopping to let you look. Ordinary use
+needs none of that. Beyond the one call to `SetEnableLoopTopology()`, the loop
+is modeled with no user intervention at all, and the shadow link normally goes
+unnoticed.
+
+Where a shadow link can show through is in mass properties. A split link's mass
+and inertia are divided evenly between the primary link and its shadow, so
+asking the primary for its mass in a context returns only its share -- half of
+what the link was defined with, when there is one shadow. Quantities summed
+over the whole model, such as `CalcTotalMass()`, are unaffected, since each
+link contributes its share and together they add up to the original mass.
+
+## Running four_bar_auto
+
+To run with default flags:
+
+```
+bazel run //examples/multibody/four_bar:four_bar_auto
+```
+You'll see output like this:
+```
+[console] [info] Meshcat listening for connections at http://localhost:7000
+```
+Open that URL in a browser to see the linkage in action.
+
+It stops twice, waiting for you to press Enter each time: first showing the
+linkage as defined, with the coupler (blue) and its pale shadow copy apart, and
+again once it is assembled, with the shadow lying on top of the coupler so that
+the two together look like the one solid link they were defined to be.
+
+| As defined: the coupler and its shadow are apart | Assembled: the shadow lies on the coupler |
+| :---: | :---: |
+| ![FourBarAutoAsDefined](images/FourBarAutoAsDefined.png) | ![FourBarAutoAssembled](images/FourBarAutoAssembled.png) |
+| | |
+
+The orange triads mark the coupler's link frame and the shadow's link frame.
+Those are the two frames the weld holds together, so the gap between them is the
+loop closure error, and assembly means the two frames coincide. The blue triad 
+marks the coupler's own far end; the joint there acts on the shadow's version 
+of that end, which is pinned to the rocker from the start. (Joints are always
+assembled by construction in a joint coordinate code like Drake.)
+
+Then the linkage swings under gravity and the actuation torque if specified 
+(the default is zero torque). Along the way it reports the loop it modeled 
+and how the loop closure error was reduced:
+
+```
+Modeled 1 kinematic loop(s) with 1 constraint(s).
+  shadow link 'coupler$1' was added to break a loop.
+Loop closure error as defined: 1.2806 m
+Loop closure error after assembling for 0.0110 s: 0.000586 m
+```
+
+To run the same model continuously with the CENIC integrator instead of the
+default discrete SAP solver:
+
+```
+bazel run //examples/multibody/four_bar:four_bar_auto -- \
+    --time_step=0 --simulator_integration_scheme=cenic
+```
+
+Both start from the same 1.2806 m of loop closure error and reach the same
+assembled configuration; CENIC takes many more steps to get there but far less
+simulated time.
+
+To hold the driver at a different angle (in radians) while the rest of the
+linkage assembles around it:
+
+```
+bazel run //examples/multibody/four_bar:four_bar_auto -- --driver_angle=0.5
+```
+
+To stretch the replay of the assembly out over ten seconds of wall clock time,
+or to skip the replay entirely:
+
+```
+bazel run //examples/multibody/four_bar:four_bar_auto -- --assembly_playback_time=10
+bazel run //examples/multibody/four_bar:four_bar_auto -- --assembly_playback_time=0
+```
+
+To drive the linkage with a constant torque rather than letting it swing
+passively, and to run start to finish without stopping for Enter:
+
+```
+bazel run //examples/multibody/four_bar:four_bar_auto -- \
+    --applied_torque=5 --nointeractive
+```
+
+Those are the most interesting options; `--help` lists them all, along with the
+standard Drake simulator flags such as `--simulator_target_realtime_rate`:
+
+```
+bazel run //examples/multibody/four_bar:four_bar_auto -- --help
 ```
 
 # Closing the loop with a bushing: `four_bar_with_bushing`
