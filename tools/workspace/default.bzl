@@ -27,7 +27,6 @@ load("//tools/workspace/implib_so_internal:repository.bzl", "implib_so_internal_
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
 load("//tools/workspace/lcm_internal:repository.bzl", "lcm_internal_repository")
-load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
 load("//tools/workspace/libzip_internal:repository.bzl", "libzip_internal_repository")  # noqa
 load("//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
@@ -102,7 +101,6 @@ def _add_internal_repositories():
     ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)
     lapack_internal_repository(name = "lapack_internal", mirrors = mirrors)
     lcm_internal_repository(name = "lcm_internal", mirrors = mirrors)
-    libpng_internal_repository(name = "libpng_internal", mirrors = mirrors)
     libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)
     libzip_internal_repository(name = "libzip_internal", mirrors = mirrors)
     metis_internal_repository(name = "metis_internal", mirrors = mirrors)
@@ -164,6 +162,7 @@ def _drake_dep_repositories_impl(module_ctx):
         },
         "lapack": "lapack",
         "libjpeg": "libjpeg",
+        "libpng": "libpng",
         "nlohmann_json": {
             # We provide both aliases, since Drake first-party only needs
             # :singleheader-json but third-party (VTK) needs :json.

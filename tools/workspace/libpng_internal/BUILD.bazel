@@ -1,5 +1,0 @@
-load("//tools/lint:lint.bzl", "add_lint_tests")
-
-exports_files(["png_drake_vendor.h"])
-
-add_lint_tests()

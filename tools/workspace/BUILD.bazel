@@ -37,7 +37,6 @@ filegroup(
         "@ipopt_internal//:drake_repository_metadata.json",
         "@lapack_internal//:drake_repository_metadata.json",
         "@lcm_internal//:drake_repository_metadata.json",
-        "@libpng_internal//:drake_repository_metadata.json",
         "@libtiff_internal//:drake_repository_metadata.json",
         "@libzip_internal//:drake_repository_metadata.json",
         "@meshcat//:drake_repository_metadata.json",
@@ -185,7 +184,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gz_math_internal",
     "gz_utils_internal",
     "ipopt_internal",
-    "libpng_internal",
     "libtiff_internal",
     "libzip_internal",
     "meshcat",
@@ -216,6 +214,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "highway_internal",
     "lapack",
     "libjpeg",
+    "libpng",
     # N.B. The nanobind install is handled by //bindings/pydrake:install.
     "nlohmann_json",
     "opencl",
