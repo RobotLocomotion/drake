@@ -87,8 +87,15 @@ void ParseQuadraticCostWithRotatedLorentzCone(
     }
     // Decompose Q to Cᵀ*C
     const Eigen::MatrixXd& Q = cost.evaluator()->Q();
-    const Eigen::MatrixXd C =
-        math::DecomposePSDmatrixIntoXtransposeTimesX(Q, 1E-10);
+    Eigen::MatrixXd C;
+    const std::optional<std::string> psd_error =
+        math::MaybeDecomposePSDmatrixIntoXtransposeTimesX(Q, 1E-10, &C);
+    if (psd_error.has_value()) {
+      throw std::runtime_error(fmt::format(
+          "The Hessian in the quadratic cost {} is not positive "
+          "semidefinite. {}",
+          cost.to_string(), *psd_error));
+    }
     for (int i = 0; i < C.rows(); ++i) {
       for (int j = 0; j < C.cols(); ++j) {
         if (C(i, j) != 0) {

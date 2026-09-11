@@ -1,5 +1,9 @@
 #include "drake/math/quadratic_form.h"
 
+#include <optional>
+#include <string>
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -27,6 +31,12 @@ void CheckDecomposePSDmatrixIntoXtransposeTimesX(
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test0) {
   CheckDecomposePSDmatrixIntoXtransposeTimesX(Eigen::Matrix3d::Identity(),
                                               kDefaultZeroTol);
+  Eigen::MatrixXd X;
+  EXPECT_FALSE(MaybeDecomposePSDmatrixIntoXtransposeTimesX(
+                   Eigen::Matrix3d::Identity(), kDefaultZeroTol, &X)
+                   .has_value());
+  EXPECT_TRUE(CompareMatrices(X.transpose() * X, Eigen::Matrix3d::Identity(),
+                              1E-14, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test1) {
@@ -86,6 +96,14 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, negativeY) {
       DecomposePSDmatrixIntoXtransposeTimesX(-Eigen::Matrix3d::Identity(), 0),
       "Y is not positive semidefinite. It has an eigenvalue -1.* that is less"
       " than the tolerance -0.*.");
+
+  // Maybe... returns the same error details without throwing.
+  Eigen::MatrixXd X_maybe;
+  const std::optional<std::string> error =
+      MaybeDecomposePSDmatrixIntoXtransposeTimesX(-Eigen::Matrix3d::Identity(),
+                                                  0, &X_maybe);
+  ASSERT_TRUE(error.has_value());
+  EXPECT_THAT(*error, testing::HasSubstr("Y is not positive semidefinite"));
 
   // If return_empty_if_not_psd is true, the function should return an empty
   // matrix.
