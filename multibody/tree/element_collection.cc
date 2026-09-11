@@ -7,7 +7,6 @@
 #include <fmt/format.h>
 
 #include "drake/common/nice_type_name.h"
-#include "drake/common/unused.h"
 #include "drake/multibody/tree/deformable_body.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/joint_actuator.h"
@@ -127,33 +126,25 @@ void ElementCollection<T, Element, Index>::AppendNull() {
   elements_by_index_.push_back(nullptr);
 }
 
-namespace {
-std::string RemoveTemplates(std::string type_name) {
-  const auto offset = type_name.find('<');
-  DRAKE_DEMAND(offset != std::string::npos);
-  type_name.erase(offset);
-  return type_name;
-}
-}  // namespace
-
 template <typename T, template <typename> class Element, typename Index>
 void ElementCollection<T, Element, Index>::ThrowInvalidIndexException(
     Index index) const {
-  const std::string nice_type = RemoveTemplates(
-      NiceTypeName::RemoveNamespaces(NiceTypeName::Get<Element<T>>()));
   if (!index.is_valid()) {
+    // Invalid indices cannot be formatted with {:r:} (value conversion
+    // asserts), so render the type name alone.
+    const std::string index_type =
+        NiceTypeName::RemoveNamespaces(NiceTypeName::Get<Index>());
     throw std::logic_error(fmt::format(
-        "The given default-constructed {}Index() cannot be used. You must "
+        "The given default-constructed {}() cannot be used. You must "
         "pass a valid integer as the index.",
-        nice_type));
+        index_type));
   }
   if (index >= next_index()) {
-    throw std::logic_error(fmt::format(
-        "The given {}Index({}) is out of bounds (must be less than {})",
-        nice_type, index, next_index()));
+    throw std::logic_error(
+        fmt::format("The given {:r:} is out of bounds (must be less than {})",
+                    index, next_index()));
   }
-  throw std::logic_error(
-      fmt::format("The {}Index({}) has been removed", nice_type, index));
+  throw std::logic_error(fmt::format("The {:r:} has been removed", index));
 }
 
 using symbolic::Expression;
