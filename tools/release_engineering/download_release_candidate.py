@@ -140,8 +140,8 @@ def _download_binaries(*, version):
             f"drake-{version[1:]}-cp313-cp313-manylinux_2_34_aarch64.whl",
             f"drake-{version[1:]}-cp314-cp314-manylinux_2_34_x86_64.whl",
             f"drake-{version[1:]}-cp314-cp314-manylinux_2_34_aarch64.whl",
-            f"drake-{version[1:]}-cp313-cp313-macosx_15_0_arm64.whl",
-            f"drake-{version[1:]}-cp314-cp314-macosx_15_0_arm64.whl",
+            f"drake-{version[1:]}-cp313-cp313-macosx_26_0_arm64.whl",
+            f"drake-{version[1:]}-cp314-cp314-macosx_26_0_arm64.whl",
             # Deb filenames.
             f"drake-dev_{version[1:]}-1_amd64-noble.deb",
             f"drake-dev_{version[1:]}-1_arm64-noble.deb",
