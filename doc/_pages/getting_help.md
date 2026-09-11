@@ -39,7 +39,7 @@ If you wish to contribute a patch, please see how to [submit a pull request](/de
 When reporting an issue, please consider providing the following information
 (``helper command in monospace``):
 
-* Operating system (e.g., Ubuntu Noble 24.04 or macOS Sequoia)
+* Operating system (e.g., Ubuntu Noble 24.04 or macOS Tahoe)
 * Installation method (e.g., pip, apt, binary tar.gz, or
   rebuilding from source)
 * Language you are using (C++ or [Python](/python_bindings.html))
