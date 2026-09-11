@@ -30,6 +30,7 @@ HolonomicConstraintsPool<T, N, Derived>::~HolonomicConstraintsPool() = default;
 template <typename T, int N, typename Derived>
 void HolonomicConstraintsPool<T, N, Derived>::ResizeCommon(
     const int num_constraints) {
+  ResizeAllConstraints(num_constraints);
   body_pairs_.resize(num_constraints);
   g0_.Resize(num_constraints, N, 1);
   stiffness_.resize(num_constraints);
@@ -77,10 +78,18 @@ void HolonomicConstraintsPool<T, N, Derived>::CalcSparsityPattern(
 template <typename T, int N, typename Derived>
 void HolonomicConstraintsPool<T, N, Derived>::CalcData(
     const EigenPool<Vector6<T>>& V_WB, DataPool* data) const {
+  DRAKE_ASSERT(ssize(all_constraints_) == num_constraints());
+  data->mutable_cost() = CalcData(V_WB, all_constraints_, data);
+}
+
+template <typename T, int N, typename Derived>
+T HolonomicConstraintsPool<T, N, Derived>::CalcData(
+    const EigenPool<Vector6<T>>& V_WB, std::span<const int> constraints,
+    DataPool* data) const {
   DRAKE_ASSERT(data != nullptr);
   T& cost = data->mutable_cost();
   cost = 0;
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
 
@@ -95,15 +104,24 @@ void HolonomicConstraintsPool<T, N, Derived>::CalcData(
     data->mutable_gamma(k) = gamma;
     cost += 0.5 * dv.dot(gamma);
   }
+  return cost;
 }
 
 template <typename T, int N, typename Derived>
 void HolonomicConstraintsPool<T, N, Derived>::AccumulateGradient(
     const IcfData<T>& data, VectorX<T>* gradient) const {
+  DRAKE_ASSERT(ssize(all_constraints_) == num_constraints());
+  AccumulateGradient(data, all_constraints_, gradient);
+}
+
+template <typename T, int N, typename Derived>
+void HolonomicConstraintsPool<T, N, Derived>::AccumulateGradient(
+    const IcfData<T>& data, std::span<const int> constraints,
+    VectorX<T>* gradient) const {
   DRAKE_ASSERT(gradient != nullptr);
   const DataPool& data_pool = derived().GetDataPool(data);
 
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
     const int c_B = model().body_to_clique(bodyB);
@@ -268,16 +286,37 @@ void HolonomicConstraintsPool<T, N, Derived>::PrecomputeHessianBlocks() {
 
 template <typename T, int N, typename Derived>
 void HolonomicConstraintsPool<T, N, Derived>::AccumulateHessian(
-    const IcfData<T>&,
+    const IcfData<T>& data,
+    contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>* hessian)
+    const {
+  DRAKE_ASSERT(ssize(all_constraints_) == num_constraints());
+  AccumulateHessian(data, all_constraints_, {}, 0, hessian);
+}
+
+template <typename T, int N, typename Derived>
+void HolonomicConstraintsPool<T, N, Derived>::AccumulateHessian(
+    const IcfData<T>&, std::span<const int> constraints,
+    std::span<const int> clique_to_block, int /* island */,
     contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>* hessian)
     const {
   DRAKE_ASSERT(hessian != nullptr);
-  for (int k = 0; k < num_constraints(); ++k) {
+
+  auto c2b = [&](int clique) {
+    if (ssize(clique_to_block)) {
+      return clique_to_block[clique];
+    }
+    return clique;
+  };
+
+  for (int k : constraints) {
     const HessianBlock& hb = hessian_blocks_[k];
-    hessian->AddToBlock(hb.c_B, hb.c_B, hb.H_BB);
+    const int b_b = c2b(hb.c_B);
+    hessian->AddToBlock(b_b, b_b, hb.H_BB);
+
     if (hb.A_is_dynamic) {
-      hessian->AddToBlock(hb.c_A, hb.c_A, hb.H_AA);
-      hessian->AddToBlock(hb.cross_row, hb.cross_col, hb.H_cross);
+      const int b_a = c2b(hb.c_A);
+      hessian->AddToBlock(b_a, b_a, hb.H_AA);
+      hessian->AddToBlock(c2b(hb.cross_row), c2b(hb.cross_col), hb.H_cross);
     }
   }
 }
@@ -286,11 +325,19 @@ template <typename T, int N, typename Derived>
 void HolonomicConstraintsPool<T, N, Derived>::CalcCostAlongLine(
     const DataPool& data, const EigenPool<Vector6<T>>& U_WB, T* dcost,
     T* d2cost) const {
+  DRAKE_ASSERT(ssize(all_constraints_) == num_constraints());
+  CalcCostAlongLine(data, U_WB, all_constraints_, dcost, d2cost);
+}
+
+template <typename T, int N, typename Derived>
+void HolonomicConstraintsPool<T, N, Derived>::CalcCostAlongLine(
+    const DataPool& data, const EigenPool<Vector6<T>>& U_WB,
+    std::span<const int> constraints, T* dcost, T* d2cost) const {
   DRAKE_ASSERT(dcost != nullptr);
   DRAKE_ASSERT(d2cost != nullptr);
   *dcost = 0.0;
   *d2cost = 0.0;
-  for (int k = 0; k < num_constraints(); ++k) {
+  for (int k : constraints) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
 
@@ -341,13 +388,21 @@ void HolonomicConstraintsPool<T, N, Derived>::ReduceInto(
     reduced_pool->damping_.push_back(damping_[k]);
     derived().ReduceGeometryInto(reduced_pool, k, need_flip);
   }
+  const int reduced_size = ssize(reduced_pool->body_pairs_);
+  reduced_pool->ResizeAllConstraints(reduced_size);
 
   // R, v̂, and the Hessian blocks are (re)computed by PrecomputeHessianBlocks();
   // just size them here.
-  const int reduced_size = ssize(reduced_pool->body_pairs_);
   reduced_pool->R_.resize(reduced_size);
   reduced_pool->v_hat_.Resize(reduced_size, N, 1);
   reduced_pool->hessian_blocks_.resize(reduced_size);
+}
+
+template <typename T, int N, typename Derived>
+void HolonomicConstraintsPool<T, N, Derived>::ResizeAllConstraints(
+    int num_constraints) {
+  all_constraints_.resize(num_constraints);
+  std::iota(all_constraints_.begin(), all_constraints_.end(), 0);
 }
 
 // Explicit template instantiations.

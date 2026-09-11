@@ -147,11 +147,24 @@ class HolonomicConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return ssize(body_pairs_); }
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
   void AccumulateHessian(
       const IcfData<T>& data,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> constraints,
+      std::span<const int> clique_to_block, int island,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
   void ReduceInto(const ReducedMapping& mapping, Derived* reduced_pool) const;
+
+  /* @see HasSpatialVelocityCalcData. */
+  void CalcData(const EigenPool<Vector6<T>>& V_WB, DataPool* data) const;
+  T CalcData(const EigenPool<Vector6<T>>& V_WB,
+             std::span<const int> constraints, DataPool* data) const;
 
   /* Resizes the pool (generic data + the derived's geometry) to store the given
   number of constraints. Constraints hold invalid data until Set(). */
@@ -166,15 +179,17 @@ class HolonomicConstraintsPool {
   changes (R and v̂ depend on δt). */
   void PrecomputeHessianBlocks();
 
-  /* Computes problem data (impulses γ and cost) from the body spatial
-  velocities V_WB. */
-  void CalcData(const EigenPool<Vector6<T>>& V_WB, DataPool* data) const;
-
   /* Computes the first and second derivatives of the cost ℓ̃(α) = ℓ(v + α⋅w).
   @param data Constraint data computed at v + α⋅w.
   @param U_WB Body spatial velocities evaluated at v + α⋅w. */
   void CalcCostAlongLine(const DataPool& data,
                          const EigenPool<Vector6<T>>& U_WB, T* dcost,
+                         T* d2cost) const;
+
+  /* Island-filtered overload: derivatives for only the listed constraints. */
+  void CalcCostAlongLine(const DataPool& weld_data,
+                         const EigenPool<Vector6<T>>& U_WB,
+                         std::span<const int> constraints, T* dcost,
                          T* d2cost) const;
 
   /* Testing-only access to the generic per-constraint data. */
@@ -202,6 +217,8 @@ class HolonomicConstraintsPool {
   void SetCommon(int index, int bodyA, int bodyB, const ConstraintVector& g0,
                  const T& stiffness, const T& damping);
 
+  void ResizeAllConstraints(int num_constraints);
+
   // Precomputed, iteration-invariant Hessian blocks. Rank-N per constraint.
   struct HessianBlock {
     int c_B{-1};         // Clique index for body B (always valid).
@@ -215,6 +232,11 @@ class HolonomicConstraintsPool {
   };
 
   const IcfModel<T>* const model_;  // The parent model.
+
+  // Identity list {0, ..., num_constraints()-1}, used to drive the full-problem
+  // (non-islanded) code paths through the island-filtered helpers. Rebuilt in
+  // Resize().
+  std::vector<int> all_constraints_;
 
   // Body pairs (bodyA, bodyB); bodyB is always dynamic (not anchored).
   std::vector<std::pair<int, int>> body_pairs_;
@@ -238,6 +260,8 @@ class HolonomicConstraintsPool {
   Derived& mutable_derived() { return *static_cast<Derived*>(this); }
   const Derived& derived() const { return *static_cast<const Derived*>(this); }
 };
+// TODO(rpoyner-tri): check IsAbstractConstraintsPool.
+// TODO(rpoyner-tri): check HasSpatialVelocityCalcData.
 
 }  // namespace internal
 }  // namespace icf

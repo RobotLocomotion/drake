@@ -35,6 +35,8 @@ static_assert(IsAbstractConstraintsPool<MyConstraintsPool>);
 template <template <typename> typename Pool>
 concept IsAbstractConstraintsPool = requires(
     Pool<double> pool, const IcfData<double>& data, VectorX<double>* gradient,
+    std::span<const int> constraints, std::span<const int> clique_to_block,
+    int island,
     contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<double>>*
         hessian,
     const ReducedMapping& mapping, Pool<double>* reduced_pool) {
@@ -48,8 +50,17 @@ concept IsAbstractConstraintsPool = requires(
   model-wide gradient. */
   pool.AccumulateGradient(data, gradient);
 
+  /* Island-filtered overload: gradient for only the listed constraints. */
+  pool.AccumulateGradient(data, constraints, gradient);
+
   /* Adds the contribution of this constraint to the model-wide Hessian. */
   pool.AccumulateHessian(data, hessian);
+
+  /* Island-filtered overload: accumulates the Hessian for only the listed
+  constraints into the island's local sub-Hessian. `clique_to_block` maps a
+  global clique index to its block index in the island's sub-Hessian, and
+  `island` selects the per-island scratch space. */
+  pool.AccumulateHessian(data, constraints, clique_to_block, island, hessian);
 
   /* Makes a "reduced" constraints pool in `reduced_pool`, guided by the
   `mapping`.
@@ -69,6 +80,36 @@ concept IsAbstractConstraintsPool = requires(
 
   @pre reduced_pool != nullptr.  */
   pool.ReduceInto(mapping, reduced_pool);
+};
+
+template <template <typename> typename Pool,
+          template <typename> typename DataPool>
+concept HasJointVelocityCalcData = requires(  // BR
+    Pool<double> pool, const VectorX<double>& v, DataPool<double>* data_pool,
+    std::span<const int> constraints) {
+  /* Computes problem data as a function of the generalized velocities `v`
+  for the full plant. */
+  pool.CalcData(v, data_pool);
+
+  /* Island-filtered overload: computes data only for the listed constraints
+  and returns the sum of their costs (does not write the pool-wide cost
+  scalar). */
+  { pool.CalcData(v, constraints, data_pool) } -> std::same_as<double>;
+};
+
+template <template <typename> typename Pool,
+          template <typename> typename DataPool>
+concept HasSpatialVelocityCalcData = requires(  // BR
+    Pool<double> pool, const EigenPool<Vector6<double>>& V_WB,
+    DataPool<double>* data_pool, std::span<const int> constraints) {
+  /* Computes problem data as a function of the body spatial velocities V_WB
+  for the full IcfModel. */
+  pool.CalcData(V_WB, data_pool);
+
+  /* Island-filtered overload: computes data only for the listed constraints
+  and returns the sum of their costs (does not write the pool-wide cost
+  scalar). */
+  { pool.CalcData(V_WB, constraints, data_pool) } -> std::same_as<double>;
 };
 
 }  // namespace internal
