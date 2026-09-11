@@ -11,4 +11,5 @@ def coinutils_internal_repository(
         sha256 = "ddfea48e10209215748bc9f90a8c04abbb912b662c1aefaf280018d0a181ef79",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
+	patches = [":patches/debug_build.patch"],
     )
