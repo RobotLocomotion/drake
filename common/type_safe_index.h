@@ -2,11 +2,13 @@
 
 #include <limits>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 
@@ -142,6 +144,14 @@ namespace internal {
 ///    some_vector(int{foo_index}) = 0.0;  // Compiles OK.
 /// @endcode
 /// TODO(#15354) We hope to fix this irregularity in the future.
+///
+/// __Formatting__
+///
+/// Indices may be formatted with `fmt` (e.g., `fmt::format`,
+/// `fmt::to_string`). The default format (`{}`) prints the underlying
+/// integer. The `{:r:}` (repr) format prints a typed representation that
+/// includes the index type name, e.g., `FooIndex(0)`. Further specs after
+/// `r:` are applied to that string (e.g., `{:r:>10}`).
 ///
 /// @sa drake::geometry::Identifier
 ///
@@ -578,5 +588,51 @@ template <typename Tag>
 struct hash<drake::TypeSafeIndex<Tag>> : public drake::DefaultHash {};
 }  // namespace std
 
-DRAKE_FORMATTER_AS(typename Tag, drake, TypeSafeIndex<Tag>, x,
-                   std::to_string(int{x}))
+// Provide fmt support where "{}" is the underlying integer and "{:r:}" is a
+// typed representation such as "FooIndex(0)". After the "r:" prefix, any
+// remaining format spec is applied to that representation string (e.g.,
+// "{:r:>10}").
+namespace fmt {
+template <typename Tag>
+struct formatter<drake::TypeSafeIndex<Tag>> {
+  template <typename FormatParseContext>
+  constexpr auto parse(FormatParseContext& ctx) {
+    auto it = ctx.begin();
+    if (it != ctx.end() && *it != '}') {
+      if (*it == 'r') {
+        ++it;
+        if (it == ctx.end() || *it != ':') {
+          throw format_error(
+              "Invalid format specifier for TypeSafeIndex; use {} or {:r:}.");
+        }
+        ++it;
+        repr = true;
+        ctx.advance_to(it);
+        return repr_formatter.parse(ctx);
+      }
+      throw format_error(
+          "Invalid format specifier for TypeSafeIndex; use {} or {:r:}.");
+    }
+    return it;
+  }
+
+  template <typename FormatContext>
+  auto format(const drake::TypeSafeIndex<Tag>& index,
+              // NOLINTNEXTLINE(runtime/references) To match fmt API.
+              FormatContext& ctx) const {
+    if (repr) {
+      const auto text = fmt::format(
+          "{}({})",
+          drake::NiceTypeName::RemoveNamespaces(
+              drake::NiceTypeName::Get<drake::TypeSafeIndex<Tag>>()),
+          int{index});
+      return repr_formatter.format(text, ctx);
+    }
+    return fmt::format_to(ctx.out(), "{}", int{index});
+  }
+
+ private:
+  bool repr{false};
+  formatter<std::string_view> repr_formatter;
+};
+}  // namespace fmt

@@ -12,6 +12,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/identifier.h"
 #include "drake/common/nice_type_name_override.h"
+#include "drake/common/type_safe_index.h"
 
 using std::string;
 
@@ -35,6 +36,9 @@ class Derived : public Base {};
 
 // Test the Identifier pattern.
 using AId = Identifier<class ATag>;
+
+// Test the TypeSafeIndex pattern.
+using AIndex = TypeSafeIndex<class ATag>;
 
 // Can't test much of NiceTypeName::Demangle because its behavior is compiler-
 // and platform-specific. Everyone should agree on simple types though.
@@ -150,6 +154,10 @@ GTEST_TEST(NiceTypeNameTest, Enum) {
 
 GTEST_TEST(NiceTypeNameTest, IdentifierTemplate) {
   EXPECT_EQ(NiceTypeName::Get<AId>(), "drake::(anonymous)::AId");
+}
+
+GTEST_TEST(NiceTypeNameTest, TypeSafeIndexTemplate) {
+  EXPECT_EQ(NiceTypeName::Get<AIndex>(), "drake::(anonymous)::AIndex");
 }
 
 // Test the type_info form of NiceTypeName::Get().
