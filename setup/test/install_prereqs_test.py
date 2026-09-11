@@ -29,8 +29,10 @@ def _is_ubuntu_distro(codename: str) -> bool:
 
 
 class InstallPrereqsActor:
-    def __init__(self, *, test_case):
+    def __init__(self, *, test_case, tree="source_tree"):
         self._test_case = test_case
+        assert tree in ["source_tree", "install_tree"]
+        self._tree = tree
 
         # Create a scratch directory for ourselves.
         test_tmpdir = Path(os.environ["TEST_TMPDIR"])
@@ -140,8 +142,10 @@ class InstallPrereqsActor:
         self.locales = []
 
     def _set_up_source(self) -> Path:
-        """Prepares a source-tree-like writable temporary directory that
-        contains the install_prereqs script and its data dependencies.
+        """Prepares a source-tree-like or install-tree-like writable temporary
+        directory that contains the install_prereqs script and its data
+        dependencies. The self._tree mode is used to select either "source_tree"
+        or "install_tree"
 
         This used by our __init__ function to populate the empty self._source
         directory with the necessary symlinks.
@@ -150,46 +154,67 @@ class InstallPrereqsActor:
         """
         assert self._source.exists()
         assert len(list(self._source.iterdir())) == 0
+        assert self._tree in ["source_tree", "install_tree"]
         manifest = runfiles.Create()
         install_prereqs = Path(
             manifest.Rlocation("drake/setup/install_prereqs.py")
         )
 
-        # When running install_prereqs from the source tree, all of the
-        # platform-specific data files are available, and the directory
-        # the script resides in a directory named "setup".
-        #
-        # TODO(jwnimmer-tri) Add support for testing install_prereqs for an
-        # installed version of Drake (the "from_binary" workflow).
-        setup = self._source / "setup"
-        setup.mkdir()
-        result = self._source / "setup/install_prereqs.py"
-        result.symlink_to(install_prereqs)
-        for distro in ("mac", "ubuntu"):
-            old_distro_dir = install_prereqs.parent / distro
-            new_distro_dir = setup / distro
-            new_distro_dir.mkdir()
-            for path in old_distro_dir.iterdir():
-                if path.suffix not in (".json", ".txt"):
-                    continue
-                shutil.copy(path, new_distro_dir / path.name)
-            if distro == "ubuntu":
-                # Replace checksums with dummies.
-                json_filename = new_distro_dir / "packages.json"
-                data = json.loads(json_filename.read_text(encoding="utf-8"))
-                for item in data:
-                    if "sha256" in item:
-                        item["sha256"] = hashlib.sha256().hexdigest()
-                json_filename.write_text(json.dumps(data), encoding="utf-8")
-
-        return result
+        if self._tree == "source_tree":
+            # When running install_prereqs from the source tree, all of the
+            # platform-specific data files are available, and the directory
+            # the script resides in a directory named "setup".
+            setup = self._source / "setup"
+            setup.mkdir()
+            result = self._source / "setup/install_prereqs.py"
+            result.symlink_to(install_prereqs)
+            for distro in ("mac", "ubuntu"):
+                old_distro_dir = install_prereqs.parent / distro
+                new_distro_dir = setup / distro
+                new_distro_dir.mkdir()
+                for path in old_distro_dir.iterdir():
+                    if path.suffix not in (".json", ".txt"):
+                        continue
+                    shutil.copy(path, new_distro_dir / path.name)
+                if distro == "ubuntu":
+                    # Replace checksums with dummies.
+                    json_filename = new_distro_dir / "packages.json"
+                    data = json.loads(json_filename.read_text(encoding="utf-8"))
+                    for item in data:
+                        if "sha256" in item:
+                            item["sha256"] = hashlib.sha256().hexdigest()
+                    json_filename.write_text(json.dumps(data), encoding="utf-8")
+            return result
+        else:
+            assert self._tree == "install_tree"
+            # When running install_prereqs from the install tree, only a subset
+            # of platform-specific data files are available, and the script and
+            # its data files live side by side in a directory named "share".
+            share = self._source / "share"
+            share.mkdir()
+            result = self._source / "share/install_prereqs"
+            result.symlink_to(install_prereqs)
+            # TODO(jwnimmer-tri) De-duplicate this list vs our BUILD.bazel.
+            # We can probably literally call the ":install" program here?
+            data = [
+                "ubuntu/packages-jammy-binary.txt",
+                "ubuntu/packages-noble-binary.txt",
+            ]
+            (share / "ubuntu").mkdir()
+            for datum in data:
+                path = Path(manifest.Rlocation(f"drake/setup/{datum}"))
+                (share / datum).symlink_to(path)
+            return result
 
     def source(self) -> Path:
         """Returns the root of the mocked-up source tree."""
         return self._source
 
-    def add_to_path(self, program: str):
-        (self._path / program).symlink_to(self._stubby)
+    def add_to_path(self, program):
+        if program == "python3":
+            (self._path / program).symlink_to(sys.executable)
+        else:
+            (self._path / program).symlink_to(self._stubby)
 
     def remove_from_path(self, program: str):
         (self._path / program).unlink()
@@ -361,10 +386,12 @@ class InstallPrereqsTest(unittest.TestCase):
         }
 
     def test_help(self):
-        dut = InstallPrereqsActor(test_case=self)
-        dut.start(args=["--help"]).finish()
-        self.assertRegex(dut.stdout, "usage: install_prereqs")
-        self.assertEqual(dut.returncode, 0)
+        for tree in ["source_tree", "install_tree"]:
+            with self.subTest(tree=tree):
+                dut = InstallPrereqsActor(test_case=self, tree=tree)
+                dut.start(args=["--help"]).finish()
+                self.assertIn("usage: install_prereqs", dut.stdout)
+                self.assertEqual(dut.returncode, 0)
 
     def test_user_environment_only(self):
         dut = InstallPrereqsActor(test_case=self)
@@ -375,10 +402,56 @@ class InstallPrereqsTest(unittest.TestCase):
         self.assertTrue((dut.source() / "gen/environment.bazelrc").exists())
         self.assertEqual(dut.returncode, 0)
 
+    def test_ubuntu_binary(self):
+        for already_installed in [False, True]:
+            for yes in [False, True]:
+                kwargs = dict(
+                    already_installed=already_installed,
+                    yes=yes,
+                )
+                with self.subTest(**kwargs):
+                    self._check_ubuntu_binary(**kwargs)
+
+    def _check_ubuntu_binary(self, *, already_installed: bool, yes: bool):
+        dut = InstallPrereqsActor(test_case=self)
+        dut.start(args=["--binary"] + (["-y"] if yes else []))
+
+        # The DUT asks what's already installed.
+        installed_packages = []
+        if already_installed:
+            installed_packages = [
+                "build-essential",
+                "python3",
+            ]
+        dut.expect_call(
+            ["dpkg-query", "..."],
+            stdout="".join(
+                [f"{name} ii someversion\n" for name in installed_packages]
+            ),
+        )
+
+        # The DUT will install any missing packages.
+        num_packages = len(dut.expect_apt_install())
+
+        # If this check fails, see the comment in our setUp() method.
+        self.assertGreater(num_packages, 0)
+        self.assertLess(num_packages, self._min_num_apt_packages["build"])
+
+        # Nothing else should happen.
+        dut.finish()
+        self.assertEqual(dut.returncode, 0)
+
+        # Cross-check our -y request vs the actual commands run.
+        if yes:
+            self.assertRegex(dut.stdout, "apt-get install.*--yes")
+        else:
+            self.assertNotIn("--yes", dut.stdout)
+
     @unittest.skipIf(sys.platform == "darwin", "Ubuntu only")
     def test_ubuntu_build_bootstrap(self):
         """Checks build-only prereqs with nothing installed yet."""
         dut = InstallPrereqsActor(test_case=self)
+        # XXX Test --build argument explicitly?
         dut.start(args=["-y"])
 
         # The DUT should install many Ubuntu packages (after confirming that
@@ -392,6 +465,7 @@ class InstallPrereqsTest(unittest.TestCase):
         self.assertLess(num_packages, self._min_num_apt_packages["developer"])
 
         dut.finish()
+
         self.assertEqual(dut.returncode, 0)
 
     @staticmethod
