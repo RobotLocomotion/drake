@@ -1,5 +1,7 @@
 #include "drake/multibody/meshcat/point_contact_visualizer.h"
 
+#include <string>
+#include <unordered_map>
 #include <utility>
 
 #include <fmt/format.h>
@@ -44,11 +46,23 @@ void PointContactVisualizer::Update(
     status.active = false;
   }
 
-  // Process the new contacts to find the active ones.
+  // Process the new contacts to find the active ones. A body pair can have
+  // more than one contact at a time (a body with several collision geometries,
+  // or a multi-point contact manifold), so the repeats are numbered and each
+  // contact gets its own meshcat path instead of overdrawing the first one.
+  std::unordered_map<std::string, int> pair_counts;
   for (const PointContactVisualizerItem& item : items) {
-    // Find our meshcat state for this contact pair.
-    const std::string path =
+    // Find our meshcat state for this contact.
+    std::string path =
         fmt::format("{}/{}+{}", params_.prefix, item.body_A, item.body_B);
+    const int repeat = pair_counts[path]++;
+    if (repeat > 0) {
+      // The separator is '#' rather than '+' so that a numbered path can never
+      // coincide with the base path of some other body pair. (Body names that
+      // contain '+' could already make two pairs share a base path; that is a
+      // pre-existing limitation of the naming scheme.)
+      path = fmt::format("{}#{}", path, repeat);
+    }
     VisibilityStatus& status = FindOrAdd(path);
 
     // Decide whether the contact should be shown.

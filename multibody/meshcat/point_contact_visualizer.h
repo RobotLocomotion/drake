@@ -34,8 +34,9 @@ struct PointContactVisualizerItem {
 It draws double-sided arrows at the location of the contact force with length
 scaled by the magnitude of the contact force.
 
-This is unit tested via contact_visualizer_test overall; there is currently no
-point-contact-specific unit test.
+This is unit tested via contact_visualizer_test overall; the arrow naming for
+body pairs with several simultaneous contacts is covered by
+point_contact_visualizer_test.
 */
 class PointContactVisualizer {
  public:

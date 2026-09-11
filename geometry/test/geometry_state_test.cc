@@ -53,6 +53,7 @@ using internal::kFriction;
 using internal::kHcDissipation;
 using internal::kHydroGroup;
 using internal::kMaterialGroup;
+using internal::kPointContactAlgorithm;
 using internal::kPointStiffness;
 using internal::kRelaxationTime;
 using internal::kRezHint;
@@ -4680,6 +4681,46 @@ TEST_F(ApplyProximityDefaultsTests, EmptyPropsEmptyDefaults) {
   EXPECT_FALSE(props->HasProperty(kMaterialGroup, kHcDissipation));
   EXPECT_FALSE(props->HasProperty(kMaterialGroup, kRelaxationTime));
   EXPECT_FALSE(props->HasProperty(kMaterialGroup, kPointStiffness));
+  EXPECT_FALSE(props->HasProperty(kMaterialGroup, kPointContactAlgorithm));
+}
+
+TEST_F(ApplyProximityDefaultsTests, PointContactAlgorithm) {
+  // The default algorithm ("single_point") is already what a geometry without
+  // the property gets, so it is not written; otherwise every fully specified
+  // geometry would be modified (and re-processed) by ApplyProximityDefaults.
+  // Any other value is written.
+  ProximityProperties empty_props;
+  auto default_id = AddSphere("default_algorithm", &empty_props);
+  auto multipoint_id = AddSphere("multipoint_algorithm", &empty_props);
+  geometry_state_.ApplyProximityDefaults(full_defaults_, default_id);
+  DefaultProximityProperties multipoint_defaults = full_defaults_;
+  multipoint_defaults.point_contact_algorithm = "mujoco_multipoint";
+  geometry_state_.ApplyProximityDefaults(multipoint_defaults, multipoint_id);
+  const auto* default_props =
+      geometry_state_.GetProximityProperties(default_id);
+  ASSERT_NE(default_props, nullptr);
+  EXPECT_FALSE(
+      default_props->HasProperty(kMaterialGroup, kPointContactAlgorithm));
+  const auto* multipoint_props =
+      geometry_state_.GetProximityProperties(multipoint_id);
+  ASSERT_NE(multipoint_props, nullptr);
+  EXPECT_EQ(multipoint_props->GetProperty<std::string>(kMaterialGroup,
+                                                       kPointContactAlgorithm),
+            "mujoco_multipoint");
+}
+
+TEST_F(ApplyProximityDefaultsTests, BadPointContactAlgorithmIsRejected) {
+  // An unrecognized algorithm is rejected when the proximity role is assigned,
+  // for every shape (this one is a sphere, which never uses the property).
+  ProximityProperties bad_props;
+  bad_props.AddProperty(kMaterialGroup, kPointContactAlgorithm,
+                        std::string("psychic_guesswork"));
+  auto instance = std::make_unique<GeometryInstance>(math::RigidTransformd{},
+                                                     Sphere(0.1), "bad");
+  instance->set_proximity_properties(bad_props);
+  DRAKE_EXPECT_THROWS_MESSAGE(geometry_state_.RegisterGeometry(
+                                  source_id_, frame_id_, std::move(instance)),
+                              ".*point_contact_algorithm.*psychic_guesswork.*");
 }
 
 TEST_F(ApplyProximityDefaultsTests, EmptyPropsFullDefaults) {
