@@ -1257,10 +1257,23 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_generalized_acceleration_output_port(
       ModelInstanceIndex model_instance) const;
 
-  /// Reports the generalized contact forces for the given `model_instance`
-  /// as a @ref systems::BasicVector "vector-valued" output port of size
-  /// @ref num_actuated_dofs(ModelInstanceIndex) const
-  /// "num_actuated_dofs(model_instance)".
+  /// Reports the generalized contact forces τᶜᵢ for the given `model_instance`
+  /// i as a @ref systems::BasicVector "vector-valued" output port of size
+  /// @ref num_velocities(ModelInstanceIndex) const
+  /// "num_velocities(model_instance)".
+  ///
+  /// The vector is ordered like the generalized velocities for that model
+  /// instance (the same convention as
+  /// get_applied_generalized_force_input_port() and
+  /// get_generalized_acceleration_output_port(model_instance)). Entry j is the
+  /// generalized force conjugate to velocity coordinate vᵢ[j] that arises from
+  /// contact, i.e. the projection of contact spatial forces through the plant
+  /// Jacobian: τᶜ = ∑ J_WBᵀ(q) Fcontact_Bo_W, then sliced to model instance i.
+  /// Use GetVelocitiesFromArray() / SetVelocitiesInArray() to pack or unpack
+  /// per-instance segments from a whole-plant layout.
+  ///
+  /// There is currently no whole-plant (all model instances) twin of this port;
+  /// only the per-model-instance ports are declared.
   ///
   /// In a discrete-time plant, the use_sampled_output_ports setting affects the
   /// output of this port.  See @ref output_port_sampling "Output port sampling"
