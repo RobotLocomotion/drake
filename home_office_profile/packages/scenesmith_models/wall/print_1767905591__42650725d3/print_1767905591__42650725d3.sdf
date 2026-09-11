@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="print">
+    <link name="base_link">
+      <inertial>
+        <mass>0.900000</mass>
+        <pose>-0.010933 0.037968 0.001640 0 0 0</pose>
+        <inertia>
+          <ixx>3.304399e-02</ixx>
+          <iyy>5.225167e-02</iyy>
+          <izz>1.997591e-02</izz>
+          <ixy>-2.035878e-04</ixy>
+          <ixz>2.630167e-04</ixz>
+          <iyz>1.225322e-04</iyz>
+        </inertia>
+      </inertial>
+      <collision name="collision_generated_000"><surface>
+          <friction>
+            <ode>
+              <mu>0.400</mu>
+              <mu2>0.400</mu2>
+            </ode>
+          </friction>
+        </surface>
+        <geometry><mesh><uri>package://scenesmith_models/wall/print_1767905591__42650725d3/assets/generated_collision/piece_000.obj</uri><drake:declare_convex /></mesh></geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+        </drake:proximity_properties>
+      </collision></link>
+  </model>
+</sdf>

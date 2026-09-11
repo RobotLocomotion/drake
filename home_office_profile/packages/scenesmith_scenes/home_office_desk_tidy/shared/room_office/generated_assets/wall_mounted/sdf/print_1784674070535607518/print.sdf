@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="print">
+    <link name="base_link">
+      <collision name="collision">
+        <pose>0 0.005000 0.300000 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.900000 0.010000 0.600000</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>20</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

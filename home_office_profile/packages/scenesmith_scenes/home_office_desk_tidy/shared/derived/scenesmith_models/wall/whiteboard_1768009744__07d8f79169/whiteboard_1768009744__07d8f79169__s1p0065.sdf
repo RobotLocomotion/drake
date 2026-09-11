@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="whiteboard">
+    <link name="base_link">
+      <inertial>
+        <mass>6.500000</mass>
+        <pose>0.0004277625 0.016988714 0.0085643085 0 0 0</pose>
+        <inertia>
+          <ixx>1.886976e-01</ixx>
+          <iyy>7.423834e-01</iyy>
+          <izz>5.544721e-01</izz>
+          <ixy>-9.210903e-05</ixy>
+          <ixz>1.787200e-03</ixz>
+          <iyz>4.656648e-05</iyz>
+        </inertia>
+      </inertial>
+      <collision name="collision_generated_000">
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.740</mu>
+              <mu2>0.740</mu2>
+            </ode>
+          </friction>
+        </surface>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/wall/whiteboard_1768009744__07d8f79169/assets/generated_collision/piece_000.obj</uri>
+            <drake:declare_convex />
+            <scale>1.00650000 1.00650000 1.00650000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
