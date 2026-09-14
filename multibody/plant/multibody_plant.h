@@ -2084,9 +2084,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
-  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddCouplerConstraint(const Joint<T>& joint0,
                                              const Joint<T>& joint1,
                                              double gear_ratio,
@@ -2136,9 +2133,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `stiffness` is not strictly positive.
   /// @throws std::exception if `damping` is not positive nor zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
-  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddDistanceConstraint(
       const RigidBody<T>& body_A, const Vector3<double>& p_AP,
       const RigidBody<T>& body_B, const Vector3<double>& p_BQ, double distance,
@@ -2193,9 +2187,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
-  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddBallConstraint(
       const RigidBody<T>& body_A, const Vector3<double>& p_AP,
       const RigidBody<T>& body_B,
@@ -2213,9 +2204,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
-  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap)
   MultibodyConstraintId AddWeldConstraint(
       const RigidBody<T>& body_A, const math::RigidTransform<double>& X_AP,
       const RigidBody<T>& body_B, const math::RigidTransform<double>& X_BQ);
@@ -2295,9 +2283,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @pre `damping >= 0` (if not std::nullopt).
   ///
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant's underlying contact
-  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap).
   MultibodyConstraintId AddTendonConstraint(
       std::vector<JointIndex> joints, std::vector<double> a,
       std::optional<double> offset = std::nullopt,
@@ -2749,13 +2734,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   DiscreteContactSolver get_discrete_contact_solver() const;
 
   /// Sets the discrete contact model approximation.
-  ///
-  /// @note Calling this method also sets the contact solver type (see
-  /// get_discrete_contact_solver()) according to:
-  /// - DiscreteContactApproximation::kSap,
-  ///   DiscreteContactApproximation::kSimilar and
-  ///   DiscreteContactApproximation::kLagged set the solver to
-  ///   DiscreteContactSolver::kSap.
   ///
   /// @throws iff `this` plant is continuous (i.e. is_discrete() is `false`.)
   /// @throws std::exception iff called post-finalize.

@@ -109,7 +109,7 @@ RobotModel<T>::RobotModel(const RobotModelConfig& config,
   }
 
   // Make and add a manager so that we have access to it and its driver.
-  if (plant_->get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
+  {
     auto owned_contact_manager = std::make_unique<
         multibody::internal::CompliantContactManager<double>>();
     manager_ = owned_contact_manager.get();
@@ -167,16 +167,14 @@ std::unique_ptr<RobotModel<U>> RobotModel<T>::ToScalarType() const {
 
   // Make and add a manager so that we have access to it and its driver.
   if constexpr (!std::is_same_v<U, symbolic::Expression>) {
-    if (plant_->get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
-      auto owned_contact_manager_ad =
-          std::make_unique<multibody::internal::CompliantContactManager<U>>();
-      converted_model->manager_ = owned_contact_manager_ad.get();
-      converted_model->plant_->SetDiscreteUpdateManager(
-          std::move(owned_contact_manager_ad));
-      converted_model->driver_ =
-          &multibody::internal::CompliantContactManagerTester::sap_driver(
-              *converted_model->manager_);
-    }
+    auto owned_contact_manager_ad =
+        std::make_unique<multibody::internal::CompliantContactManager<U>>();
+    converted_model->manager_ = owned_contact_manager_ad.get();
+    converted_model->plant_->SetDiscreteUpdateManager(
+        std::move(owned_contact_manager_ad));
+    converted_model->driver_ =
+        &multibody::internal::CompliantContactManagerTester::sap_driver(
+            *converted_model->manager_);
   }
 
   // Create context.
@@ -224,8 +222,6 @@ const multibody::contact_solvers::internal::SapContactProblem<T>&
 RobotModel<T>::EvalContactProblem(const VectorX<T>& x0)
   requires(!std::is_same_v<T, symbolic::Expression>)
 {  // NOLINT(whitespace/braces)
-  DRAKE_DEMAND(plant_->get_discrete_contact_solver() ==
-               DiscreteContactSolver::kSap);
   SetState(x0);
   const auto& problem_cache = driver_->EvalContactProblemCache(*plant_context_);
   // There are no locked dofs. Sanity check.

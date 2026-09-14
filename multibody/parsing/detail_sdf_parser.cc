@@ -895,21 +895,6 @@ bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
                    MultibodyPlant<double>* plant) {
   if (!joint_spec.Element()->HasElement("drake:mimic")) return true;
 
-  // Only warn for non-SAP discrete solvers; continuous plants have different
-  // error reporting.
-  if (plant->is_discrete() &&
-      plant->get_discrete_contact_solver() != DiscreteContactSolver::kSap) {
-    diagnostic.Warning(
-        joint_spec.Element(),
-        fmt::format("Joint '{}' specifies a drake:mimic element that will be "
-                    "ignored. Mimic elements are currently only supported by "
-                    "MultibodyPlant with a discrete time step and using "
-                    "DiscreteContactSolver::kSap, or by continuous time plants "
-                    "using the CENIC integrator.",
-                    joint_spec.Name()));
-    return true;
-  }
-
   sdf::ElementPtr mimic_node = joint_spec.Element()->GetElement("drake:mimic");
 
   if (!mimic_node->HasAttribute("joint")) {
