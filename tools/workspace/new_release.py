@@ -544,7 +544,8 @@ def _do_upgrade(
 
     data = metadata[workspace_name]
     rule_type = RuleType(data["repository_rule_type"])
-    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
+    workspace_root = f"tools/workspace/{workspace_name}/"
+    bzl_filename = f"{workspace_root}repository.bzl"
 
     if workspace_name in _OTHER_REPOSITORIES + _CHECK_ONLY_REPOSITORIES:
         upgrade_advice = data.get("upgrade_advice", "")
@@ -562,7 +563,6 @@ def _do_upgrade(
 
     if rule_type == RuleType.SCRIPTED:
         # Determine if we should and can commit the changes made.
-        workspace_root = f"tools/workspace/{workspace_name}/"
         can_commit = _is_unmodified(local_drake_checkout, workspace_root)
         if commit and not can_commit:
             warn(f"{workspace_root} has local changes.")
@@ -618,6 +618,15 @@ def _do_upgrade(
                 repository=data["repository"],
                 old_attachments=data["attachments"],
             )
+
+        if data["post_upgrade_script"] is not None:
+            modified_paths = _do_upgrade_scripted(
+                local_drake_checkout=local_drake_checkout,
+                workspace_root=workspace_root,
+                script=data["post_upgrade_script"],
+            )
+            if not len(modified_paths):
+                return UpgradeResult(False)
 
         # Finalize the result field(s).
         if upgrade_type == UpgradeType.COMMIT:
