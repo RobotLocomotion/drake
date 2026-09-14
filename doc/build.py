@@ -27,8 +27,10 @@ def _build(*, out_dir, temp_dir, quick, modules):
     manifest = runfiles.Create()
     pages_build = manifest.Rlocation("drake/doc/pages")
     styleguide_build = manifest.Rlocation("drake/doc/styleguide/build")
-    pydrake_build = manifest.Rlocation("drake/doc/pydrake/build")
-    tutorials_build = manifest.Rlocation("drake/doc/tutorials/build")
+    pydrake_build = manifest.Rlocation(os.environ["DRAKE_DOC_PYDRAKE_BUILD"])
+    tutorials_build = manifest.Rlocation(
+        os.environ["DRAKE_DOC_TUTORIALS_BUILD"]
+    )
     doxygen_build = manifest.Rlocation("drake/doc/doxygen_cxx/build")
     for item in [
         pages_build,
