@@ -12,6 +12,7 @@ For guidance, see:
 
 import re
 from textwrap import indent
+import types
 import warnings
 
 from docutils import nodes
@@ -20,6 +21,7 @@ from docutils.statemachine import ViewList
 import sphinx.domains.python as pydoc
 from sphinx.domains.python import _object as pydoc_object
 from sphinx.ext import autodoc
+import sphinx.util.inspect as sphinx_inspect
 from sphinx.util.nodes import nested_parse_with_titles
 
 from doc.doxygen_cxx.system_doxygen import system_yaml_to_html
@@ -67,7 +69,7 @@ def generate_sig_re(extended=False):
 
 
 def patch(obj, name, f):
-    """Patch the method of a class."""
+    """Patch the method of a class or module."""
     original = getattr(obj, name)
 
     def method(*args, **kwargs):
@@ -76,8 +78,17 @@ def patch(obj, name, f):
     setattr(obj, name, method)
 
 
-def repair_naive_name_split(objpath):
-    """Rejoins any strings with braces that were naively split across '.'."""
+def _repair_naive_name_split(objpath):
+    """Rejoins strings that were naively split across '.', when the split
+    landed inside an open `[...]` bracket span.
+
+    `Documenter.parse_name` splits a dotted path on every '.', with no
+    awareness of brackets. That's normally fine, but a template
+    instantiation's display name can itself contain a literal '.' inside its
+    brackets (e.g., a template parameterized by `typing.Optional[float]`
+    renders as `SomeTemplate[typing.Optional[float]]`), which that naive split
+    can't handle.
+    """
     num_open = 0
     out = []
     cur = ""
@@ -92,6 +103,76 @@ def repair_naive_name_split(objpath):
             cur = ""
     assert len(cur) == 0, (objpath, cur, out)
     return out
+
+
+def _nanobind_type_name(obj) -> str | None:
+    """Returns nanobind's internal type name for `obj` -- "nb_func" for a
+    free function or a class' static method, "nb_method" for a class'
+    instance method -- or None if `obj` isn't bound by nanobind at all.
+    """
+    obj_type = type(obj)
+    if getattr(obj_type, "__module__", None) != "nanobind":
+        return None
+    name = obj_type.__name__
+    return name if name in ("nb_func", "nb_method") else None
+
+
+def _smells_like_nanobind(obj) -> bool:
+    """Returns True iff `obj` appears to be a function or method bound with
+    nanobind."""
+    return _nanobind_type_name(obj) is not None
+
+
+def _nanobind_property_return_from_doc(func) -> str | None:
+    """Best-effort fallback for a property's `:type:` annotation, extracted
+    from a nanobind-generated docstring's first line (of the form
+    `name(self) -> ReturnType`), for properties whose getter Sphinx can't
+    otherwise introspect a return annotation from directly.
+    """
+    if not _smells_like_nanobind(func):
+        return None
+
+    doc = (getattr(func, "__doc__", "") or "").strip()
+    if not doc:
+        return None
+
+    first_line = doc.splitlines()[0]
+    if "->" not in first_line:
+        return None
+
+    return first_line.split("->", 1)[1].strip()
+
+
+def recognize_nanobind() -> None:
+    """Give Sphinx hints about functions/methods/properties/etc. coming from
+    nanobind.
+
+    Ideally this sort of thing should have first-class Sphinx support. :shrug:
+    """
+
+    def _isfunction(original, obj) -> bool:
+        # N.B. This has to accept both "nb_func" and "nb_method", even
+        # though only the former is really a function: without it, Sphinx
+        # classifies instance methods as attributes.
+        return original(obj) or _smells_like_nanobind(obj)
+
+    patch(sphinx_inspect, "isfunction", _isfunction)
+
+    def _isroutine(original, obj) -> bool:
+        # "Routine" is an umbrella for function or method.
+        return original(obj) or _smells_like_nanobind(obj)
+
+    patch(sphinx_inspect, "isroutine", _isroutine)
+
+    def _ismethoddescriptor(original, obj) -> bool:
+        return original(obj) or _nanobind_type_name(obj) == "nb_method"
+
+    patch(sphinx_inspect, "ismethoddescriptor", _ismethoddescriptor)
+
+    def _isproperty(original, obj) -> bool:
+        return original(obj) or isinstance(obj, types.DynamicClassAttribute)
+
+    patch(sphinx_inspect, "isproperty", _isproperty)
 
 
 class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
@@ -177,13 +258,14 @@ def patch_resolve_name(original, self, *args, **kwargs):
     braces.
     """
     modname, objpath = original(self, *args, **kwargs)
-    return modname, repair_naive_name_split(objpath)
+    return modname, _repair_naive_name_split(objpath)
 
 
 def _is_hidden_base(base) -> bool:
-    """Returns True iff pybind11_object, the implementation base class that
-    pybind11 injects into every bound class, is the name of `base`"""
-    return base.__name__ == "pybind11_object"
+    """Returns True iff `base` is an implementation base class we don't want
+    to show in documented inheritance.
+    """
+    return base is object or base.__name__ == "pybind11_object"
 
 
 def autodoc_process_bases(app, name, obj, options, bases):
@@ -212,6 +294,54 @@ def patch_class_hide_empty_bases(original, self, sig):
         original(self, sig)
 
 
+def patch_member_doc_add_directive_header(original, self, sig):
+    """Wraps `MethodDocumenter.add_directive_header` to mark a member as a
+    static method when `patch_member_doc_import_object` (below) has
+    flagged it as a nanobind-bound static function.
+    """
+    original(self, sig)
+
+    if getattr(self, "_is_nanobind_static", False):
+        self.add_line("   :staticmethod:", self.get_sourcename())
+
+
+def patch_member_doc_import_object(original, self, raiseerror: bool = False):
+    """Wraps `MethodDocumenter.import_object` to detect nanobind-bound
+    static methods.
+
+    nanobind doesn't wrap a static functions in a `staticmethod` descriptor
+    that Sphinx recognizes; it's just a plain `nb_func` sitting in the class'
+    `__dict__`. This detects that case from the `__dict__` entry.
+    """
+    ret = original(self, raiseerror)
+    if not ret:
+        return ret
+
+    obj = self.parent.__dict__.get(self.object_name)
+    if (
+        isinstance(obj, type(self.object))
+        and type(obj).__name__ == "nb_func"
+    ):
+        self._is_nanobind_static = True
+    return ret
+
+
+def patch_property_doc_add_directive_header(original, self, sig):
+    """Wraps `PropertyDocumenter.add_directive_header` to add a `:type:`
+    fallback annotation for nanobind properties whose getter has no
+    directly-introspectable return annotation.
+    """
+    original(self, sig)
+
+    if self.config.autodoc_typehints == "none":
+        return
+
+    func = self._get_property_getter()
+    fallback_type = _nanobind_property_return_from_doc(func) if func else None
+    if fallback_type:
+        self.add_line("   :type: " + fallback_type, self.get_sourcename())
+
+
 def autodoc_skip_member(app, what, name, obj, skip, options):
     """Skips undesirable members."""
     # N.B. This should be registered before `napoleon`s event.
@@ -220,6 +350,8 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     if "__del__" in name:
         return True
     # In order to work around #11954.
+    # https://github.com/pybind/pybind11/issues/2059 didn't get any traction
+    # upstream. Nanobind seems to have carried the issue forward.
     if "__init__" in name:
         return False
     return None
@@ -285,16 +417,35 @@ def setup(app):
     app.add_css_file("css/custom.css")
     # Add directive to process system doxygen.
     app.add_directive("pydrake_system", PydrakeSystemDirective)
+
     # Do not warn on Drake deprecations.
-    # TODO(eric.cousineau): See if there is a way to intercept this.
     warnings.simplefilter("ignore", DrakeDeprecationWarning)
-    # Ignore `pybind11_object` as a base.
+
+    # Normalize how pybind11- and nanobind-bound classes and members are
+    # documented.
+    recognize_nanobind()
     app.connect("autodoc-process-bases", autodoc_process_bases)
     patch(
         autodoc.ClassDocumenter,
         "add_directive_header",
         patch_class_hide_empty_bases,
     )
+    patch(
+        autodoc.MethodDocumenter,
+        "add_directive_header",
+        patch_member_doc_add_directive_header,
+    )
+    patch(
+        autodoc.MethodDocumenter,
+        "import_object",
+        patch_member_doc_import_object,
+    )
+    patch(
+        autodoc.PropertyDocumenter,
+        "add_directive_header",
+        patch_property_doc_add_directive_header,
+    )
+
     # Skip specific members.
     app.connect("autodoc-skip-member", autodoc_skip_member)
 
@@ -306,10 +457,12 @@ def setup(app):
     # Register autodocumentation for templates.
     app.add_autodoc_attrgetter(TemplateBase, tpl_attrgetter)
     app.add_autodocumenter(TemplateDocumenter)
+
     # Hack regular expressions to match type-parameterized names.
     autodoc.py_ext_sig_re = generate_sig_re(extended=True)
     pydoc_object.py_sig_re = pydoc.py_sig_re = generate_sig_re(extended=False)
     patch(autodoc.ClassLevelDocumenter, "resolve_name", patch_resolve_name)
     patch(autodoc.ModuleLevelDocumenter, "resolve_name", patch_resolve_name)
     patch(autodoc.Documenter, "sort_members", patch_sort_members)
+
     return dict(parallel_read_safe=True)
