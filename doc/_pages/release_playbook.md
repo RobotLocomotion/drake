@@ -168,7 +168,7 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **60** release files from
+      them." and then choose for upload the **45** release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 3: 1 source `.tar.gz` + 2 checksums
       - 15: 5 linux binary `.tar.gz` + 10 checksums
@@ -176,8 +176,8 @@ the main body of the document:
       - 3: 1 macOS arm binary `.tar.gz` + 2 checksums
       - 15: 5 `.deb` + 10 checksums
         ({noble} x {amd64, arm64} + {resolute} x {amd64, amd64v3, arm64})
-      - 18: 6 linux `.whl` + 12 checksums ({3.12, 3.13, 3.14} x {x86_64, aarch64})
-      - 6: 2 macOS arm `.whl` + 4 checksums ({3.13, 3.14})
+      - 6: 2 linux `.whl` + 4 checksums ({x86_64, aarch64})
+      - 3: 1 macOS `.whl` + 2 checksums
       * Note that with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on
