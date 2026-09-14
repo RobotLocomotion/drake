@@ -764,16 +764,28 @@ pre code {
   margin-bottom: 10px;
 }
 
+/* N.B. A `dl` can have multiple `dt`s (e.g., one per overload of a
+function/method); style them as one contiguous box, rather than as
+separate boxes, by only bordering/spacing the first and last `dt`. */
 .rst-content dl:not(.docutils) > dt, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.citation):not(.glossary):not(.simple) > dt {
   display: inline-block;
-  margin: 6px 0;
+  margin: 0;
   font-size: 90%;
   line-height: normal;
   background: #ffebec;
   color: #cc0e1e;
-  border-top: solid 3px var(--toyota-red);
+  border-top: none;
   padding: 6px;
   position: relative;
+}
+
+.rst-content dl:not(.docutils) > dt:first-of-type, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.citation):not(.glossary):not(.simple) > dt:first-of-type {
+  margin-top: 6px;
+  border-top: solid 3px var(--toyota-red);
+}
+
+.rst-content dl:not(.docutils) > dt:last-of-type, html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.citation):not(.glossary):not(.simple) > dt:last-of-type {
+  margin-bottom: 6px;
 }
 
 .wy-alert.wy-alert-info, .rst-content .note, .rst-content .wy-alert-info.attention, .rst-content .wy-alert-info.caution, .rst-content .wy-alert-info.danger, .rst-content .wy-alert-info.error, .rst-content .wy-alert-info.hint, .rst-content .wy-alert-info.important, .rst-content .wy-alert-info.tip, .rst-content .wy-alert-info.warning, .rst-content .seealso, .rst-content .wy-alert-info.admonition-todo {
@@ -950,7 +962,7 @@ pre code {
 
 /* ////////
 
-HEADER 
+HEADER
 
 ////// */
 
@@ -1031,11 +1043,11 @@ HEADER
   width: 100%;
   background: white;
   height: 1px;
-  
+
   transform-origin: left;
   transform: scaleX(0);
   -webkit-transform: scaleX(0);
-  
+
   transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1);
   -webkit-transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1);
 }
@@ -1105,7 +1117,7 @@ HEADER
      width: 100%;
      max-width: none;
   }
-  
+
   .drake-logo {
     position: relative;
     z-index: 2;
