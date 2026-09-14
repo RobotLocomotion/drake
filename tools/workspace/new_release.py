@@ -111,10 +111,16 @@ class RuleType(Enum):
     GITHUB_RELEASE_ATTACHMENTS = "github_release_attachments"
     # Repository rule that uses an external upgrade script.
     SCRIPTED = "scripted"
+    # Repository rule that does both of the above.
+    GITHUB_WITH_SCRIPT = "github_script"
 
     @property
     def is_github(self) -> bool:
-        return self in {RuleType.GITHUB, RuleType.GITHUB_RELEASE_ATTACHMENTS}
+        return self in {
+            RuleType.GITHUB,
+            RuleType.GITHUB_RELEASE_ATTACHMENTS,
+            RuleType.GITHUB_WITH_SCRIPT,
+        }
 
 
 class UpgradeType(Enum):
@@ -544,7 +550,8 @@ def _do_upgrade(
 
     data = metadata[workspace_name]
     rule_type = RuleType(data["repository_rule_type"])
-    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
+    workspace_root = f"tools/workspace/{workspace_name}/"
+    bzl_filename = f"{workspace_root}repository.bzl"
 
     if workspace_name in _OTHER_REPOSITORIES + _CHECK_ONLY_REPOSITORIES:
         upgrade_advice = data.get("upgrade_advice", "")
@@ -562,7 +569,6 @@ def _do_upgrade(
 
     if rule_type == RuleType.SCRIPTED:
         # Determine if we should and can commit the changes made.
-        workspace_root = f"tools/workspace/{workspace_name}/"
         can_commit = _is_unmodified(local_drake_checkout, workspace_root)
         if commit and not can_commit:
             warn(f"{workspace_root} has local changes.")
@@ -599,7 +605,7 @@ def _do_upgrade(
 
         # Do the upgrade.
         upgrade_type = UpgradeType(data["upgrade_type"])
-        if rule_type == RuleType.GITHUB:
+        if rule_type in {RuleType.GITHUB, RuleType.GITHUB_WITH_SCRIPT}:
             _do_upgrade_github_archive(
                 temp_dir=temp_dir,
                 upgrade_type=upgrade_type,
@@ -608,8 +614,8 @@ def _do_upgrade(
                 bzl_filename=bzl_filename,
                 repository=data["repository"],
             )
-        else:
-            assert rule_type == RuleType.GITHUB_RELEASE_ATTACHMENTS
+
+        if rule_type == RuleType.GITHUB_RELEASE_ATTACHMENTS:
             _do_upgrade_github_release_attachments(
                 temp_dir=temp_dir,
                 old_commit=old_commit,
@@ -618,6 +624,15 @@ def _do_upgrade(
                 repository=data["repository"],
                 old_attachments=data["attachments"],
             )
+
+        if rule_type == RuleType.GITHUB_WITH_SCRIPT:
+            modified_paths = _do_upgrade_scripted(
+                local_drake_checkout=local_drake_checkout,
+                workspace_root=workspace_root,
+                script=data["post_upgrade_script"],
+            )
+            if not len(modified_paths):
+                return UpgradeResult(False)
 
         # Finalize the result field(s).
         if upgrade_type == UpgradeType.COMMIT:
