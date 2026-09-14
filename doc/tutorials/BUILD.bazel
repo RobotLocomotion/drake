@@ -35,6 +35,8 @@ drake_py_binary(
         ":templates",
         "@drake_models",
     ],
+    # All of our pydrake documentation is built using nanobind.
+    use_alt_binder = True,
     visibility = ["//doc:__pkg__"],
     deps = [
         "//bindings/pydrake",
