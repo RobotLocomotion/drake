@@ -121,13 +121,13 @@ the main body of the document:
       new window, so you can copy-and-paste sha1 and version easily):
       - [Linux x86_64 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-wheel-staging-release/)
       - [Linux arm64 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm64-noble-unprovisioned-gcc-wheel-staging-release/)
-      - [macOS arm64 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-wheel-staging-release/)
+      - [macOS arm64 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-tahoe-clang-wheel-staging-release/)
       - [Noble x86_64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
       - [Noble arm64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm64-noble-unprovisioned-gcc-cmake-staging-packaging/)
       - [Resolute x86_64-v3 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-resolute-unprovisioned-gcc-cmake-staging-packaging/)
       - [Resolute x86_64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-amd64v1-resolute-unprovisioned-gcc-cmake-staging-packaging/)
       - [Resolute arm64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm64-resolute-unprovisioned-gcc-cmake-staging-packaging/)
-      - [macOS arm64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-cmake-staging-packaging/)
+      - [macOS arm64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-tahoe-clang-cmake-staging-packaging/)
    2. In the upper right, click "sign in" (unless you're already signed in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
