@@ -220,8 +220,9 @@ struct OpenGlInstance {
    @pre The shader program data has valid shader ids.  */
   OpenGlInstance(int g_in, const Eigen::Vector3f& scale,
                  const OpenGlGeometry& geo, ShaderProgramData color_data,
-                 ShaderProgramData depth_data, ShaderProgramData label_data)
-      : geometry(g_in) {
+                 ShaderProgramData depth_data, ShaderProgramData label_data,
+                 bool casts_shadows_in)
+      : geometry(g_in), casts_shadows(casts_shadows_in) {
     const Eigen::DiagonalMatrix<float, 4> S_GM(
         Eigen::Vector4f(scale.x(), scale.y(), scale.z(), 1.0));
     T_GN = S_GM * geo.T_MN;
@@ -255,6 +256,10 @@ struct OpenGlInstance {
   Eigen::Matrix3f N_WN{Eigen::Matrix3f::Identity()};
 
   std::array<ShaderProgramData, RenderType::kTypeCount> shader_data;
+
+  /* True when this instance participates in shadow-map depth passes. Instances
+   with transparency do not cast shadows. */
+  bool casts_shadows{};
 };
 
 }  // namespace internal

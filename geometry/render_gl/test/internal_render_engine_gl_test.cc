@@ -553,6 +553,33 @@ class RenderEngineGlTest : public ::testing::Test {
                               false /* needs update */);
   }
 
+  // Saves `image` as a test output and compares it to a checked-in reference
+  // image. Small differences are permitted to accommodate differences between
+  // CI's rendering technology and a local GPU.
+  // TODO(SeanCurtis-TRI)
+  void CompareAgainstRef(const ImageRgba8U& image,
+                         std::string_view image_file_name,
+                         std::string_view ref_resource) {
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const fs::path out_dir(dir);
+      ImageIo{}.Save(image, out_dir / fmt::format("{}.png", image_file_name));
+    }
+
+    ImageRgba8U expected_image;
+    const std::string ref_filename =
+        FindResourceOrThrow(std::string(ref_resource));
+    ASSERT_TRUE(systems::sensors::LoadImage(ref_filename, &expected_image));
+    ASSERT_EQ(expected_image.size(), image.size());
+    Eigen::Map<const VectorX<uint8_t>> data_expected(expected_image.at(0, 0),
+                                                     expected_image.size());
+    Eigen::Map<const VectorX<uint8_t>> data_actual(image.at(0, 0),
+                                                   image.size());
+    const auto differences =
+        (data_expected.cast<float>() - data_actual.cast<float>()).array().abs();
+    const int num_acceptable = (differences <= 2).count();
+    EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()), 0.99);
+  }
+
   // Renders the built-in renderer with specific camera and rendering settings.
   // Compares the resultant image with a reference image.
   // @pre The renderer has been properly initialized.
@@ -569,29 +596,9 @@ class RenderEngineGlTest : public ::testing::Test {
     const ColorRenderCamera camera(
         {"unused", {64, 64, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
     renderer->RenderColorImage(camera, &image);
-
-    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
-      const fs::path out_dir(dir);
-      systems::sensors::ImageIo{}.Save(
-          image, out_dir / fmt::format("{}.png", image_file_name));
-    }
-
-    ImageRgba8U expected_image;
-    const std::string ref_filename = FindResourceOrThrow(
+    CompareAgainstRef(
+        image, image_file_name,
         "drake/geometry/render_gl/test/gl_fully_textured_pyramid_rendered.png");
-    ASSERT_TRUE(systems::sensors::LoadImage(ref_filename, &expected_image));
-    // We're testing to see if the images are *mostly* equal. This accounts
-    // for the differences in CI's rendering technology from a local GPU. The
-    // images are deemed equivalent if 99% of the channel values are within 2
-    // of the reference color.
-    ASSERT_EQ(expected_image.size(), image.size());
-    Eigen::Map<VectorX<uint8_t>> data_expected(expected_image.at(0, 0),
-                                               expected_image.size());
-    Eigen::Map<VectorX<uint8_t>> data2(image.at(0, 0), image.size());
-    const auto differences =
-        (data_expected.cast<float>() - data2.cast<float>()).array().abs();
-    const int num_acceptable = (differences <= 2).count();
-    EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()), 0.99);
   }
 
   RgbaColor expected_color_{kDefaultVisualColor};
@@ -636,6 +643,9 @@ TEST_F(RenderEngineGlTest, ParameterMatching) {
 
   EXPECT_EQ(from_engine, make_yaml(params1));
   EXPECT_NE(from_engine, make_yaml(params2));
+
+  EXPECT_THROW(RenderEngineGl(RenderEngineGlParams{.shadow_map_size = 0}),
+               std::exception);
 }
 
 // Tests an empty image -- confirms that it clears to the "empty" color -- no
@@ -2914,6 +2924,114 @@ TEST_F(RenderEngineGlTest, MultiLights) {
   EXPECT_TRUE(IsColorNear(test_color, expected_color))
       << "  test color: " << test_color << "\n"
       << "  expected color: " << expected_color;
+}
+
+// A regression test against various properties of shadows:
+//
+// 1. Directional light casts shadows (behind the box, pointing toward camera).
+//    Note: the directional shadow will currently be *very* pixelated; it
+//    depends on the very large kClipFar value (100). Follow up PRs will correct
+//    that.
+// 2. Spot light with angle < 90 casts shadows (behind the box, pointing
+//    toward the camera's right).
+// 3. Spot lights with angle >= 90 and point lights universally do not cast
+//    shadows. The blue point light and red spot light contribute illumination,
+//    but do not cast shadows.
+// 4. Non-opaque (alpha < 1) objects do not cast shadows. The translucent red
+//    box shows the shadow on the ground, but doesn't add to it.
+// 5. Non-opaque objects do receive shadows. The tall box's shadow is visible
+//    on the translucent red box.
+//
+// The camera's pose is chosen for the express purpose of making all of the
+// above as reasonably recognizable for a human.
+TEST_F(RenderEngineGlTest, ShadowMaps) {
+  const RenderCameraCore core{
+      "unused", depth_camera_.core().intrinsics(), {kClipNear, 100.0}, {}};
+  const ColorRenderCamera camera(core, FLAGS_show_window);
+  constexpr double kViewAngle = M_PI / 6;
+  constexpr double kAzimuth = -M_PI / 6;
+  const Vector3d v_WCz(std::cos(kViewAngle) * std::cos(kAzimuth),
+                       std::cos(kViewAngle) * std::sin(kAzimuth),
+                       -std::sin(kViewAngle));
+  const Vector3d v_WCx = -Vector3d::UnitZ().cross(v_WCz).normalized();
+  const Vector3d v_WCy = v_WCz.cross(v_WCx);
+  // Aim at slightly above the opaque box's camera-facing edge where it meets
+  // the ground.
+  const Vector3d p_WT(-0.3, 0, 0.1);
+  const RigidTransformd X_WR(
+      RotationMatrixd::MakeFromOrthonormalColumns(v_WCx, v_WCy, v_WCz),
+      p_WT - 3.2 * v_WCz);
+
+  const RenderEngineGlParams params{
+      .lights = {{.type = "directional",  // Casts shadows.
+                  .frame = "world",
+                  .intensity = 0.35,
+                  .direction = {-1, 0.5, -1}},
+                 {.type = "spot",  // Cast shadows.
+                  .position = {2, 1, 3},
+                  .frame = "world",
+                  .intensity = 0.5,
+                  .direction = {-2, -1, -3},
+                  .cone_angle = 20},
+                 {.type = "spot",  // Does not cast shadows (angle >= 90).
+                  .color = Rgba(1, 0, 0),
+                  .position = {0, 2, 2},
+                  .frame = "world",
+                  .intensity = 0.5,
+                  .direction = {0, -2, -1.5},
+                  .cone_angle = 90},
+                 {.type = "point",  // Does not cast shadows.
+                  .color = Rgba(0, 0, 1),
+                  .position = {0, -2, 2},
+                  .frame = "world",
+                  .intensity = 0.5}},
+      .cast_shadows = true,
+      .shadow_map_size = 1024};
+  // We'll need these quantities after the renderer gets destroyed.
+  std::unique_ptr<RenderEngine> clone = nullptr;
+  ImageRgba8U color(kWidth, kHeight);
+  {
+    RenderEngineGl renderer(params);
+    renderer.UpdateViewpoint(X_WR);
+
+    PerceptionProperties ground_props;
+    ground_props.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+    renderer.RegisterVisual(GeometryId::get_new_id(), Box(5, 5, 0.1),
+                            ground_props,
+                            RigidTransformd(Vector3d(0, 0, -0.05)), false);
+
+    PerceptionProperties box_props;
+    box_props.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+    // The unit-height box is centered at z = 0.5 so it touches the ground.
+    renderer.RegisterVisual(GeometryId::get_new_id(), Box(0.6, 0.6, 1.0),
+                            box_props, RigidTransformd(Vector3d(0, 0, 0.5)),
+                            false);
+
+    // The transparent red box floats in front of the opaque box and straddles
+    // its shadow. Its dark and lit regions show that it receives shadows, while
+    // the uninterrupted ground beyond it shows that it does not cast them.
+    PerceptionProperties transparent_props(box_props);
+    transparent_props.UpdateProperty("phong", "diffuse", Rgba(1, 0, 0, 0.5));
+    const GeometryId transparent_id = GeometryId::get_new_id();
+    renderer.RegisterVisual(transparent_id, Box(0.8, 0.8, 0.1),
+                            transparent_props,
+                            RigidTransformd(Vector3d(-0.9, -0.5, 0.25)), false);
+    EXPECT_FALSE(RenderEngineGlTester(&renderer)
+                     .GetVisual(transparent_id)
+                     .instances[0]
+                     .casts_shadows);
+
+    EXPECT_NO_THROW(renderer.RenderColorImage(camera, &color));
+    CompareAgainstRef(color, "shadow_map",
+                      "drake/geometry/render_gl/test/shadow_map.png");
+    // Create the clone before the original gets destroyed going out of scope.
+    clone = renderer.Clone();
+  }
+  // The clone should create the same image, even if the original has been
+  // destroyed.
+  ImageRgba8U clone_color(kWidth, kHeight);
+  EXPECT_NO_THROW(clone->RenderColorImage(camera, &clone_color));
+  EXPECT_EQ(color, clone_color);
 }
 
 namespace {
