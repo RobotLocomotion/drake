@@ -262,6 +262,11 @@ void WrapConstraint(const MathematicalProgram& prog, const Binding<C>& binding,
   const Eigen::VectorXd& upper_bound = binding.evaluator()->upper_bound();
   DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
   for (size_t i = 0; i < static_cast<size_t>(lower_bound.size()); i++) {
+    if ((lower_bound(i) == -std::numeric_limits<double>::infinity()) &&
+        (upper_bound(i) == std::numeric_limits<double>::infinity())) {
+      // NLopt has no way to express vacuous constraints (#24960), so skip it.
+      continue;
+    }
     if (lower_bound(i) == upper_bound(i)) {
       wrapped_eq.active_constraints.insert(i);
     } else {
