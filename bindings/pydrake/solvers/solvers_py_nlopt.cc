@@ -30,7 +30,22 @@ void DefineSolversNlopt(py::module_ m) {
       .def_static("AlgorithmName", &NloptSolver::AlgorithmName,
           doc.NloptSolver.AlgorithmName.doc)
       .def_static("MaxTimeName", &NloptSolver::MaxTimeName,
-          doc.NloptSolver.MaxTimeName.doc);
+          doc.NloptSolver.MaxTimeName.doc)
+      .def_static("LocalOptimizerAlgorithmName",
+          &NloptSolver::LocalOptimizerAlgorithmName,
+          doc.NloptSolver.LocalOptimizerAlgorithmName.doc)
+      .def_static("LocalOptimizerXRelativeToleranceName",
+          &NloptSolver::LocalOptimizerXRelativeToleranceName,
+          doc.NloptSolver.LocalOptimizerXRelativeToleranceName.doc)
+      .def_static("LocalOptimizerXAbsoluteToleranceName",
+          &NloptSolver::LocalOptimizerXAbsoluteToleranceName,
+          doc.NloptSolver.LocalOptimizerXAbsoluteToleranceName.doc)
+      .def_static("LocalOptimizerMaxEvalName",
+          &NloptSolver::LocalOptimizerMaxEvalName,
+          doc.NloptSolver.LocalOptimizerMaxEvalName.doc)
+      .def_static("LocalOptimizerMaxTimeName",
+          &NloptSolver::LocalOptimizerMaxTimeName,
+          doc.NloptSolver.LocalOptimizerMaxTimeName.doc);
 
   class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)

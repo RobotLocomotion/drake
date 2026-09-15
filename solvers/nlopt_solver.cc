@@ -1,6 +1,7 @@
 #include "drake/solvers/nlopt_solver.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <list>
 #include <set>
@@ -372,6 +373,17 @@ struct KnownOptions {
   double xtol_abs{1e-6};
   int max_eval{1000};
   double max_time{0.0};
+  // An empty local_optimizer_algorithm means "do not call
+  // set_local_optimizer at all", which leaves NLopt's own defaulting in
+  // place. The two NaN tolerances below are sentinels meaning "inherit the
+  // outer optimizer's value", again matching what NLopt does when it creates
+  // the local optimizer itself; zero cannot serve as that sentinel because
+  // zero is a meaningful NLopt value (the criterion is disabled).
+  std::string local_optimizer_algorithm;
+  double local_optimizer_xtol_rel{std::numeric_limits<double>::quiet_NaN()};
+  double local_optimizer_xtol_abs{std::numeric_limits<double>::quiet_NaN()};
+  int local_optimizer_max_eval{0};
+  double local_optimizer_max_time{0.0};
 };
 
 void Serialize(internal::SpecificOptions* archive,
@@ -389,6 +401,19 @@ void Serialize(internal::SpecificOptions* archive,
                                &options.max_eval));
   archive->Visit(MakeNameValue(NloptSolver::MaxTimeName().c_str(),  // BR
                                &options.max_time));
+  archive->Visit(
+      MakeNameValue(NloptSolver::LocalOptimizerAlgorithmName().c_str(),
+                    &options.local_optimizer_algorithm));
+  archive->Visit(
+      MakeNameValue(NloptSolver::LocalOptimizerXRelativeToleranceName().c_str(),
+                    &options.local_optimizer_xtol_rel));
+  archive->Visit(
+      MakeNameValue(NloptSolver::LocalOptimizerXAbsoluteToleranceName().c_str(),
+                    &options.local_optimizer_xtol_abs));
+  archive->Visit(MakeNameValue(NloptSolver::LocalOptimizerMaxEvalName().c_str(),
+                               &options.local_optimizer_max_eval));
+  archive->Visit(MakeNameValue(NloptSolver::LocalOptimizerMaxTimeName().c_str(),
+                               &options.local_optimizer_max_time));
 }
 
 KnownOptions ParseOptions(internal::SpecificOptions* options) {
@@ -488,6 +513,27 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
   opt.set_xtol_abs(parsed_options.xtol_abs);
   opt.set_maxeval(parsed_options.max_eval);
   opt.set_maxtime(parsed_options.max_time);
+
+  // Algorithms such as the augmented Lagrangian family delegate each
+  // subproblem to a "local" optimizer. When the user has not named one, we
+  // leave it unset so that NLopt applies its own defaults, preserving the
+  // historical behavior of this wrapper exactly. Note that this must come
+  // after the set_lower_bounds/set_upper_bounds calls above, because
+  // set_local_optimizer copies the outer bounds into the local optimizer at
+  // the time it is called.
+  if (!parsed_options.local_optimizer_algorithm.empty()) {
+    nlopt::opt local_opt(
+        ParseNloptAlgorithm(parsed_options.local_optimizer_algorithm), nx);
+    local_opt.set_xtol_rel(std::isnan(parsed_options.local_optimizer_xtol_rel)
+                               ? parsed_options.xtol_rel
+                               : parsed_options.local_optimizer_xtol_rel);
+    local_opt.set_xtol_abs(std::isnan(parsed_options.local_optimizer_xtol_abs)
+                               ? parsed_options.xtol_abs
+                               : parsed_options.local_optimizer_xtol_abs);
+    local_opt.set_maxeval(parsed_options.local_optimizer_max_eval);
+    local_opt.set_maxtime(parsed_options.local_optimizer_max_time);
+    opt.set_local_optimizer(local_opt);
+  }
 
   result->set_solution_result(SolutionResult::kSolutionFound);
 
