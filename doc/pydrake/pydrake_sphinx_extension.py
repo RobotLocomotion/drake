@@ -18,6 +18,7 @@ from docutils import nodes
 from docutils.parsers.rst import Directive
 from docutils.statemachine import ViewList
 import sphinx.domains.python as pydoc
+from sphinx.domains.python import _object as pydoc_object
 from sphinx.ext import autodoc
 from sphinx.util.nodes import nested_parse_with_titles
 
@@ -295,7 +296,8 @@ def setup(app):
     app.add_autodocumenter(TemplateDocumenter)
     # Hack regular expressions to match type-parameterized names.
     autodoc.py_ext_sig_re = generate_sig_re(extended=True)
-    pydoc.py_sig_re = generate_sig_re(extended=False)
+    pydoc_object.py_sig_re = generate_sig_re(extended=False)
+    pydoc.py_sig_re = pydoc_object.py_sig_re
     patch(autodoc.ClassLevelDocumenter, "resolve_name", patch_resolve_name)
     patch(autodoc.ModuleLevelDocumenter, "resolve_name", patch_resolve_name)
     patch(autodoc.Documenter, "sort_members", patch_sort_members)
