@@ -9,6 +9,7 @@
 
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/l2norm_cost_examples.h"
@@ -638,6 +639,31 @@ GTEST_TEST(TestOptions, StandaloneReproduction) {
     EXPECT_THAT(repro_str, HasSubstr("import scs"));
     EXPECT_THAT(repro_str, HasSubstr("solve"));
   }
+}
+
+// Regression test for #20892: when rewriting a non-PSD quadratic cost for SCS,
+// the error message should name the quadratic cost.
+GTEST_TEST(TestQuadraticCostPsdError, NonPsdHessianNamesCost) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>("x");
+  Eigen::Matrix2d Q;
+  // clang-format off
+  Q << 1, 0,
+       0, -1;
+  // clang-format on
+  auto cost =
+      prog.AddQuadraticCost(Q, Eigen::Vector2d::Zero(), x, true /* is_convex */);
+  cost.evaluator()->set_description("nonpsd_quad_cost");
+
+  ScsSolver solver;
+  if (!solver.available()) {
+    return;
+  }
+  // Unconstrained QP is rewritten via rotated Lorentz cones, which requires
+  // decomposing Q.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog, {}, {}),
+      ".*quadratic cost.*nonpsd_quad_cost.*not positive semidefinite.*");
 }
 }  // namespace test
 }  // namespace solvers
