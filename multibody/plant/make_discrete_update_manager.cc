@@ -7,8 +7,7 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-std::unique_ptr<DiscreteUpdateManager<T>> MakeDiscreteUpdateManager(
-    DiscreteContactSolver) {
+std::unique_ptr<DiscreteUpdateManager<T>> MakeDiscreteUpdateManager() {
   return std::make_unique<CompliantContactManager<T>>();
 }
 

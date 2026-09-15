@@ -2544,12 +2544,7 @@ Raises:
     RuntimeError if bodies A and B are the same body.
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap))""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddBallConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddCouplerConstraint
         struct /* AddCouplerConstraint */ {
@@ -2577,12 +2572,7 @@ Raises:
     if joint0 and joint1 are not both single-dof joints.
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap))""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddCouplerConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddDistanceConstraint
         struct /* AddDistanceConstraint */ {
@@ -2659,12 +2649,7 @@ Raises:
     RuntimeError if ``damping`` is not positive nor zero.
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap))""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddDistanceConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddDummyModel
         struct /* AddDummyModel */ {
@@ -3092,12 +3077,7 @@ Precondition:
     ``damping >= 0`` (if not std∷nullopt).
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap).)""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddTendonConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddWeldConstraint
         struct /* AddWeldConstraint */ {
@@ -3126,12 +3106,7 @@ Raises:
     RuntimeError if bodies A and B are the same body.
 
 Raises:
-    RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. get_discrete_contact_solver() !=
-    DiscreteContactSolver∷kSap))""";
+    RuntimeError if the MultibodyPlant has already been finalized.)""";
         } AddWeldConstraint;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasCenterOfMassTranslationalAcceleration
         struct /* CalcBiasCenterOfMassTranslationalAcceleration */ {
@@ -8401,14 +8376,6 @@ Raises:
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(Sets the discrete contact model approximation.
-
-Note:
-    Calling this method also sets the contact solver type (see
-    get_discrete_contact_solver()) according to: -
-    DiscreteContactApproximation∷kSap,
-    DiscreteContactApproximation∷kSimilar and
-    DiscreteContactApproximation∷kLagged set the solver to
-    DiscreteContactSolver∷kSap.
 
 Raises:
     iff ``this`` plant is continuous (i.e. is_discrete() is

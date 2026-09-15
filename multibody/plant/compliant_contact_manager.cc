@@ -192,15 +192,13 @@ template <typename T>
 void CompliantContactManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
     ContactSolverResults<T>* contact_results) const {
-  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
-    if constexpr (std::is_same_v<T, symbolic::Expression>) {
-      throw std::logic_error(
-          "Discrete updates with the SAP solver are not supported for T = "
-          "symbolic::Expression");
-    } else {
-      DRAKE_DEMAND(sap_driver_ != nullptr);
-      sap_driver_->CalcContactSolverResults(context, contact_results);
-    }
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    throw std::logic_error(
+        "Discrete updates with the SAP solver are not supported for T = "
+        "symbolic::Expression");
+  } else {
+    DRAKE_DEMAND(sap_driver_ != nullptr);
+    sap_driver_->CalcContactSolverResults(context, contact_results);
   }
 }
 
@@ -248,20 +246,14 @@ void CompliantContactManager<T>::DoExtractModelInfo() {
   // same manager.
   DRAKE_DEMAND(sap_driver_ == nullptr);
 
-  switch (plant().get_discrete_contact_solver()) {
-    case DiscreteContactSolver::kSap:
-      // N.B. SAP is not supported for T = symbolic::Expression.
-      // However, exception will only be thrown if we attempt to use a SapDriver
-      // to compute discrete updates. This allows a user to scalar convert a
-      // plant to symbolic and perform other supported queries such as
-      // introspection and kinematics.
-      if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-        const double near_rigid_threshold =
-            plant().get_sap_near_rigid_threshold();
-        sap_driver_ =
-            std::make_unique<SapDriver<T>>(this, near_rigid_threshold);
-      }
-      break;
+  // N.B. SAP is not supported for T = symbolic::Expression.
+  // However, exception will only be thrown if we attempt to use a SapDriver
+  // to compute discrete updates. This allows a user to scalar convert a
+  // plant to symbolic and perform other supported queries such as
+  // introspection and kinematics.
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    const double near_rigid_threshold = plant().get_sap_near_rigid_threshold();
+    sap_driver_ = std::make_unique<SapDriver<T>>(this, near_rigid_threshold);
   }
 }
 
@@ -291,8 +283,6 @@ void CompliantContactManager<T>::DoCalcAccelerationKinematicsCache(
 template <typename T>
 void CompliantContactManager<T>::DoCalcDiscreteUpdateMultibodyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  DRAKE_DEMAND(plant().get_discrete_contact_solver() ==
-               DiscreteContactSolver::kSap);
   if constexpr (std::is_same_v<T, symbolic::Expression>) {
     throw std::logic_error(
         "Discrete updates with the SAP solver are not supported for T = "
@@ -306,8 +296,6 @@ void CompliantContactManager<T>::DoCalcDiscreteUpdateMultibodyForces(
 template <typename T>
 void CompliantContactManager<T>::DoCalcActuation(
     const systems::Context<T>& context, VectorX<T>* actuation) const {
-  DRAKE_DEMAND(plant().get_discrete_contact_solver() ==
-               DiscreteContactSolver::kSap);
   if constexpr (std::is_same_v<T, symbolic::Expression>) {
     throw std::logic_error(
         "Discrete updates with the SAP solver are not supported for T = "
