@@ -47,6 +47,41 @@ class NloptSolver final : public SolverBase {
   /** The key name for the string-valued algorithm. */
   static std::string AlgorithmName();
 
+  /** The key name for the string-valued algorithm of the local (inner)
+   * optimizer. Some NLopt algorithms -- notably the augmented Lagrangian
+   * family (e.g. LD_AUGLAG_EQ) and the multi-level single-linkage family --
+   * work by handing a sequence of subproblems to a separate "local"
+   * optimizer; this option chooses that optimizer's algorithm. The default
+   * value is the empty string, which leaves NLopt's own default in place.
+   * Algorithms that do not use a local optimizer ignore this option, as do
+   * the four LocalOptimizer... options below whenever this one is empty. */
+  static std::string LocalOptimizerAlgorithmName();
+
+  /** The key name for the double-valued x relative tolerance of the local
+   * (inner) optimizer. Defaults to the outer optimizer's
+   * XRelativeToleranceName() value, which is what NLopt itself uses when it
+   * creates the local optimizer. */
+  static std::string LocalOptimizerXRelativeToleranceName();
+
+  /** The key name for the double-valued x absolute tolerance of the local
+   * (inner) optimizer. Defaults to the outer optimizer's
+   * XAbsoluteToleranceName() value, which is what NLopt itself uses when it
+   * creates the local optimizer. */
+  static std::string LocalOptimizerXAbsoluteToleranceName();
+
+  /** The key name for the int-valued maximum number of evaluations of the
+   * local (inner) optimizer. By default there is no maximum, matching NLopt's
+   * own behavior; a nonpositive value means no maximum. Setting a positive
+   * value truncates each subproblem solve, which lets the outer algorithm
+   * make progress more often instead of solving the first subproblem to
+   * convergence. */
+  static std::string LocalOptimizerMaxEvalName();
+
+  /** The key name for the maximum runtime of the local (inner) optimizer. By
+   * default there is no maximum runtime. A nonpositive value will be
+   * interpreted as no maximum runtime. */
+  static std::string LocalOptimizerMaxTimeName();
+
   /// @name Static versions of the instance methods with similar names.
   //@{
   static SolverId id();

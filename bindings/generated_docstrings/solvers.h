@@ -8666,6 +8666,56 @@ R"""(The key name for the double-valued constraint tolerance.)""";
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
+        // Symbol: drake::solvers::NloptSolver::LocalOptimizerAlgorithmName
+        struct /* LocalOptimizerAlgorithmName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the string-valued algorithm of the local (inner)
+optimizer. Some NLopt algorithms -- notably the augmented Lagrangian
+family (e.g. LD_AUGLAG_EQ) and the multi-level single-linkage family
+-- work by handing a sequence of subproblems to a separate "local"
+optimizer; this option chooses that optimizer's algorithm. The default
+value is the empty string, which leaves NLopt's own default in place.
+Algorithms that do not use a local optimizer ignore this option, as do
+the four LocalOptimizer... options below whenever this one is empty.)""";
+        } LocalOptimizerAlgorithmName;
+        // Symbol: drake::solvers::NloptSolver::LocalOptimizerMaxEvalName
+        struct /* LocalOptimizerMaxEvalName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the int-valued maximum number of evaluations of the
+local (inner) optimizer. By default there is no maximum, matching
+NLopt's own behavior; a nonpositive value means no maximum. Setting a
+positive value truncates each subproblem solve, which lets the outer
+algorithm make progress more often instead of solving the first
+subproblem to convergence.)""";
+        } LocalOptimizerMaxEvalName;
+        // Symbol: drake::solvers::NloptSolver::LocalOptimizerMaxTimeName
+        struct /* LocalOptimizerMaxTimeName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the maximum runtime of the local (inner) optimizer.
+By default there is no maximum runtime. A nonpositive value will be
+interpreted as no maximum runtime.)""";
+        } LocalOptimizerMaxTimeName;
+        // Symbol: drake::solvers::NloptSolver::LocalOptimizerXAbsoluteToleranceName
+        struct /* LocalOptimizerXAbsoluteToleranceName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the double-valued x absolute tolerance of the local
+(inner) optimizer. Defaults to the outer optimizer's
+XAbsoluteToleranceName() value, which is what NLopt itself uses when
+it creates the local optimizer.)""";
+        } LocalOptimizerXAbsoluteToleranceName;
+        // Symbol: drake::solvers::NloptSolver::LocalOptimizerXRelativeToleranceName
+        struct /* LocalOptimizerXRelativeToleranceName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the double-valued x relative tolerance of the local
+(inner) optimizer. Defaults to the outer optimizer's
+XRelativeToleranceName() value, which is what NLopt itself uses when
+it creates the local optimizer.)""";
+        } LocalOptimizerXRelativeToleranceName;
         // Symbol: drake::solvers::NloptSolver::MaxEvalName
         struct /* MaxEvalName */ {
           // Source: drake/solvers/nlopt_solver.h
