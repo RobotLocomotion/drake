@@ -14,8 +14,9 @@ namespace ad {
 Drake's AutoDiff is not templated; it only supports dynamically-sized
 derivatives using floating-point doubles.
 
-However, by using a careful representation trick (maintaining a separate scale
-factor) it runs faster than `Eigen::AutoDiffScalar<Eigen::VectorXd>`. */
+However, by using careful representation tricks (maintaining a separate scale
+factor, and using inline storage in case only one partial is non-zero) it runs
+faster than `Eigen::AutoDiffScalar<Eigen::VectorXd>`. */
 class AutoDiff {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AutoDiff);
