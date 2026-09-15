@@ -3,6 +3,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/cenic/cenic_integrator.h"
+#include "drake/multibody/cenic/continuous_icf_force_manager.h"
 
 namespace drake {
 namespace pydrake {
@@ -36,6 +37,9 @@ PYDRAKE_MODULE(cenic, m) {
             doc.CenicIntegrator.get_solver_parameters.doc)
         .def("SetSolverParameters", &CenicIntegrator<T>::SetSolverParameters,
             py::arg("parameters"), doc.CenicIntegrator.SetSolverParameters.doc);
+
+    m.def("AddIcfContinuousForceReporting", &AddIcfContinuousForceReporting<T>,
+        py::arg("plant"), doc.AddIcfContinuousForceReporting.doc);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 }
