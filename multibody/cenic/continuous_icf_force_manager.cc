@@ -83,12 +83,12 @@ void ContinuousIcfForceManager<T>::AddInIcfConstraintForces(
     F_Bo_W_array[mobod] += SpatialForce<T>(F_body_W);
   };
 
-  // --- Contact patches: Cartesian forces on bodies A and B. -----------------
-  // The patch pool stores the spatial impulse Γ_Bo on body B; the reaction on
-  // body A is -shift(Γ_Bo, p_AB). (Mirrors PatchConstraintsPool.)
+  // Contact patches: Cartesian forces on bodies A and B.
   {
     const auto& patches = model_.patch_constraints_pool();
     const auto& patch_data = data_.patch_constraints_data();
+    // The patch pool stores the spatial impulse Γ_Bo on body B; the reaction on
+    // body A is -shift(Γ_Bo, p_AB). (Mirrors PatchConstraintsPool.)
     for (int p = 0; p < patches.num_patches(); ++p) {
       const int body_b = patches.bodies()[p].first;
       const int body_a = patches.bodies()[p].second;
@@ -103,45 +103,38 @@ void ContinuousIcfForceManager<T>::AddInIcfConstraintForces(
     }
   }
 
-  // --- Weld constraints: Cartesian forces on bodies A and B. ----------------
-  // For holonomic pools, body_pairs()[k] = (A, B). CalcSpatialImpulses returns
-  // the impulses already resolved on each body (no extra negation).
+  // Holonomic constraints: Cartesian forces on bodies A and B.
   {
-    const auto& welds = model_.weld_constraints_pool();
-    const auto& weld_data = data_.weld_constraints_data();
-    for (int k = 0; k < welds.num_constraints(); ++k) {
-      DRAKE_DEMAND(false);
-      const int body_a = welds.body_pairs()[k].first;
-      const int body_b = welds.body_pairs()[k].second;
-      Vector6<T> Gamma_Bo_W, Gamma_Ao_W;
-      welds.CalcSpatialImpulses(k, weld_data.gamma(k), &Gamma_Bo_W,
-                                &Gamma_Ao_W);
-      add_body_spatial_impulse(body_b, Gamma_Bo_W);
-      add_body_spatial_impulse(body_a, Gamma_Ao_W);
-    }
+    auto add_holonomic_constraints_impulses = [&](const auto& pool,
+                                                  const auto& data) {
+      // For holonomic constraints pools, body_pairs()[k] = (A, B).
+      // CalcSpatialImpulses returns the impulses already resolved on each body
+      // (no extra negation).
+      for (int k = 0; k < pool.num_constraints(); ++k) {
+        DRAKE_DEMAND(false);
+        const int body_a = pool.body_pairs()[k].first;
+        const int body_b = pool.body_pairs()[k].second;
+        Vector6<T> Gamma_Bo_W, Gamma_Ao_W;
+        pool.CalcSpatialImpulses(k, data.gamma(k), &Gamma_Bo_W, &Gamma_Ao_W);
+        add_body_spatial_impulse(body_b, Gamma_Bo_W);
+        add_body_spatial_impulse(body_a, Gamma_Ao_W);
+      }
+    };
+
+    add_holonomic_constraints_impulses(model_.weld_constraints_pool(),
+                                       data_.weld_constraints_data());
+
+    add_holonomic_constraints_impulses(model_.ball_constraints_pool(),
+                                       data_.ball_constraints_data());
+    add_holonomic_constraints_impulses(model_.distance_constraints_pool(),
+                                       data_.distance_constraints_data());
   }
 
-  // --- Ball constraints: Cartesian forces on bodies A and B. ----------------
+  // Joint-limit and coupler constraints: generalized forces.
   {
-    const auto& balls = model_.ball_constraints_pool();
-    const auto& ball_data = data_.ball_constraints_data();
-    for (int k = 0; k < balls.num_constraints(); ++k) {
-      DRAKE_DEMAND(false);
-      const int body_a = balls.body_pairs()[k].first;
-      const int body_b = balls.body_pairs()[k].second;
-      Vector6<T> Gamma_Bo_W, Gamma_Ao_W;
-      balls.CalcSpatialImpulses(k, ball_data.gamma(k), &Gamma_Bo_W,
-                                &Gamma_Ao_W);
-      add_body_spatial_impulse(body_b, Gamma_Bo_W);
-      add_body_spatial_impulse(body_a, Gamma_Ao_W);
-    }
-  }
-
-  // --- Joint-limit and coupler constraints: generalized forces. -------------
-  // These constraints live in generalized (velocity-indexed) space. Each pool's
-  // AccumulateGradient adds -Jᵀγ, so accumulating into a zero vector yields
-  // -Σ Jᵀγ; the generalized constraint force is +Jᵀγ / dt = -g / dt.
-  {
+    // These constraints live in generalized (velocity-indexed) space. Each
+    // pool's AccumulateGradient adds -Jᵀγ, so accumulating into a zero vector
+    // yields -Σ Jᵀγ; the generalized constraint force is +Jᵀγ / dt = -g / dt.
     VectorX<T> g = VectorX<T>::Zero(model_.num_velocities());
     model_.limit_constraints_pool().AccumulateGradient(data_, &g);
     model_.coupler_constraints_pool().AccumulateGradient(data_, &g);
