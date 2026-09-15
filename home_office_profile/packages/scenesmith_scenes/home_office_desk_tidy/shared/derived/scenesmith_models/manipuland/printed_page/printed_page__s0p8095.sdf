@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="printed_page">
+    <link name="base_link">
+      <inertial>
+        <mass>0.005000</mass>
+        <pose>-0.0001384245 -7.4474e-05 0.0046181975 0 0 0</pose>
+        <inertia>
+          <ixx>1.889138e-05</ixx>
+          <iyy>1.201374e-05</iyy>
+          <izz>3.083920e-05</izz>
+          <ixy>-6.166574e-08</ixy>
+          <ixz>6.741633e-09</ixz>
+          <iyz>-6.652277e-09</iyz>
+        </inertia>
+      </inertial>
+      <collision name="body">
+        <pose>-1.6043353e-05 1.4801957e-05 0.0046044633 0.97883922 1.5697806 2.5497884</pose>
+        <geometry>
+          <box>
+            <size>0.00913903 0.16998781 0.21341196</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>5644862.28999</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.00456952</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

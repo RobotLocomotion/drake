@@ -1,0 +1,419 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="hardcover_book">
+    <link name="base_link">
+      <inertial>
+        <mass>0.900000</mass>
+        <pose>-1.6191e-05 -0.0014992866 0.013889449 0 0 0</pose>
+        <inertia>
+          <ixx>3.695718e-03</ixx>
+          <iyy>2.068960e-03</iyy>
+          <izz>5.678351e-03</izz>
+          <ixy>-1.017657e-05</ixy>
+          <ixz>-1.663730e-05</ixz>
+          <iyz>1.756798e-05</iyz>
+        </inertia>
+      </inertial>
+      <collision name="part_0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_4.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_5.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_6.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_7.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_8.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_9.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_10.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_11.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_12">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_12.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_13">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_13.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_14">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_14.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_15">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_15.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_16">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_16.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_17">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_17.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_18">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_18.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_19">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_19.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_20">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_20.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_21">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_21.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_22">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_22.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_23">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/hardcover_book/assets/hardcover_book_cf_23.obj</uri>
+            <drake:declare_convex />
+            <scale>0.89950000 0.89950000 0.89950000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="foot">
+        <pose>0.00045449663 1.423426e-05 0.0036725221 1.5714976 -1.5691961 0.00044083578</pose>
+        <geometry>
+          <box>
+            <size>0.00731734 0.16918542 0.22242610</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>4067451.29253</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.00365867</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.32</drake:mu_dynamic>
+          <drake:mu_static>0.32</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
