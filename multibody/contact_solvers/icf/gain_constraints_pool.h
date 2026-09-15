@@ -57,12 +57,26 @@ class GainConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
   int num_constraints() const { return clique_.size(); }
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
+  void AccumulateGradient(const IcfData<T>& data,
+                          std::span<const int> constraints,
+                          VectorX<T>* gradient) const;
   void AccumulateHessian(
       const IcfData<T>& data,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
+  void AccumulateHessian(
+      const IcfData<T>& data, std::span<const int> constraints,
+      std::span<const int> clique_to_block, int island,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
   void ReduceInto(const ReducedMapping& mapping,
                   GainConstraintsPool<T>* reduced_pool) const;
+
+  /* @see HasJointVelocityCalcData. */
+  void CalcData(const VectorX<T>& v,
+                GainConstraintsDataPool<T>* limit_data) const;
+  T CalcData(const VectorX<T>& v, std::span<const int> constraints,
+             GainConstraintsDataPool<T>* limit_data) const;
 
   /* Returns the number of velocities for each gain constraint. */
   std::span<const int> constraint_sizes() const {
@@ -92,11 +106,6 @@ class GainConstraintsPool {
   void Set(int index, int clique, const VectorX<T>& K, const VectorX<T>& b,
            const VectorX<T>& e);
 
-  /* Computes problem data as a function of the generalized velocities `v` for
-  the full plant. */
-  void CalcData(const VectorX<T>& v,
-                GainConstraintsDataPool<T>* gain_data) const;
-
   /* Computes the first and second derivatives of the constraint cost
   ℓ̃(α) = ℓ(v + α⋅w).
 
@@ -108,6 +117,12 @@ class GainConstraintsPool {
   void CalcCostAlongLine(const GainConstraintsDataPool<T>& gain_data,
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
+
+  /* Island-filtered overload: derivatives for only the listed constraints. */
+  void CalcCostAlongLine(const GainConstraintsDataPool<T>& gain_data,
+                         const VectorX<T>& w, std::span<const int> constraints,
+                         EigenPool<VectorX<T>>* Gw_scratch, T* dcost,
+                         T* d2cost) const;
 
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }
@@ -129,7 +144,14 @@ class GainConstraintsPool {
   T Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
           EigenPtr<VectorX<T>> gamma, EigenPtr<VectorX<T>> G) const;
 
+  void ResizeAllConstraints(int num_constraints);
+
   const IcfModel<T>* const model_;  // The parent model.
+
+  // Identity list {0, ..., num_constraints()-1}, used to drive the full-problem
+  // (non-islanded) code paths through the island-filtered helpers. Rebuilt in
+  // Resize().
+  std::vector<int> all_constraints_;
 
   // We always add gain constraints per-clique. Each of the following has size
   // num_constraints().
@@ -141,6 +163,8 @@ class GainConstraintsPool {
   EigenPool<VectorX<T>> ue_;  // Upper effort limit.
 };
 static_assert(IsAbstractConstraintsPool<GainConstraintsPool>);
+static_assert(
+    HasJointVelocityCalcData<GainConstraintsPool, GainConstraintsDataPool>);
 
 }  // namespace internal
 }  // namespace icf
