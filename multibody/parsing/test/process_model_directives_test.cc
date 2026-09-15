@@ -233,7 +233,7 @@ directives:
   // Setting a stochastic transform yields a failure.
   yaml += "      rotation: !Uniform {}\n";
   DRAKE_EXPECT_THROWS_MESSAGE(LoadModelDirectivesFromString(yaml),
-                              ".*IsValid.*");
+                              ".*deterministic transform.*");
 }
 
 // Test backreference behavior in ModelDirectives.
@@ -519,7 +519,8 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildWelds) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ProcessModelDirectives(directives, &plant, nullptr,
                              make_parser(&plant).get()),
-      R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+      ".*add_weld: child frame.*does not match any model added by these "
+      "directives.*");
 }
 
 // Test model directives failure to load welds with a child to a
@@ -532,7 +533,8 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildFrameWelds) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ProcessModelDirectives(directives, &plant, nullptr,
                              make_parser(&plant).get()),
-      R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+      ".*add_weld: child frame.*does not match any model added by these "
+      "directives.*");
 }
 
 // Test that flattening is idempotent and semantically a no-op.

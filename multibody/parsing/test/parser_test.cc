@@ -320,8 +320,6 @@ GTEST_TEST(FileParserTest, BadStringTest) {
       ".*Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
   // Malformed DMD string is an error.
-  // TODO(#18052): Until the underlying parser supports diagnostic policy, the
-  // input needs to crafted to avoid reachable fatal assertions.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelsFromString("bad:", "dmd.yaml"), ".*YAML.*bad.*");
 
@@ -330,10 +328,11 @@ GTEST_TEST(FileParserTest, BadStringTest) {
     // N.B. This directive is missing the required `name` attribute.
     constexpr char yaml[] =
         "directives:\n"
-        "- add_model_instance:\n";
+        "- add_model_instance:\n"
+        "    name: \"\"\n";
     DRAKE_EXPECT_THROWS_MESSAGE(
         Parser(&plant).AddModelsFromString(yaml, "dmd.yaml"),
-        ".*IsValid.*failed.*");
+        ".*add_model_instance.*name.*must be non-empty.*");
   }
 
   // Unknown extension is an error.
