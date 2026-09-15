@@ -14,26 +14,8 @@ namespace multibody {
 namespace internal {
 
 using contact_solvers::icf::internal::IcfBuilder;
+using contact_solvers::icf::internal::ShiftSpatialForce;
 using systems::Context;
-
-namespace {
-
-// Shifts a spatial force/impulse F given about point Bo to be about point Ao,
-// given p_AB (the position of Bo relative to Ao) expressed in the same frame as
-// F. With F = [τ; f] (rotational; translational), this returns
-// [τ + p_AB × f; f]. This matches ShiftSpatialForce() used internally by
-// PatchConstraintsPool::AccumulateGradient().
-template <typename T>
-Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p_AB) {
-  DRAKE_DEMAND(false);
-  Vector6<T> result;
-  result.template head<3>() =
-      F.template head<3>() + p_AB.cross(F.template tail<3>());
-  result.template tail<3>() = F.template tail<3>();
-  return result;
-}
-
-}  // namespace
 
 template <typename T>
 ContinuousIcfForceManager<T>::ContinuousIcfForceManager(
@@ -95,7 +77,6 @@ void ContinuousIcfForceManager<T>::AddInIcfConstraintForces(
       const Vector6<T>& Gamma_Bo_W = patch_data.Gamma_Bo_W_pool()[p];
       add_body_spatial_impulse(body_b, Gamma_Bo_W);
       if (!model_.is_anchored(body_a)) {
-        DRAKE_DEMAND(false);
         const Vector6<T> Gamma_Ao_W =
             -ShiftSpatialForce(Gamma_Bo_W, patches.p_AB_W()[p]);
         add_body_spatial_impulse(body_a, Gamma_Ao_W);
@@ -123,7 +104,6 @@ void ContinuousIcfForceManager<T>::AddInIcfConstraintForces(
 
     add_holonomic_constraints_impulses(model_.weld_constraints_pool(),
                                        data_.weld_constraints_data());
-
     add_holonomic_constraints_impulses(model_.ball_constraints_pool(),
                                        data_.ball_constraints_data());
     add_holonomic_constraints_impulses(model_.distance_constraints_pool(),

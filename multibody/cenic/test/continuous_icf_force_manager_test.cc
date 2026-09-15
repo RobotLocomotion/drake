@@ -39,7 +39,8 @@ constexpr char kDoublePendulumMjcf[] = R"""(
 </mujoco>
 )""";
 
-// A ball on a vertical slider resting on a floor: exercises the contact path.
+// Two balls on vertical sliders resting on a floor: exercises the contact
+// path for all combinations of anchoring.
 constexpr char kBallOnFloorMjcf[] = R"""(
 <?xml version="1.0"?>
 <mujoco model="ball_on_floor">
@@ -47,6 +48,10 @@ constexpr char kBallOnFloorMjcf[] = R"""(
     <geom name="floor" type="box" pos="0 0 -0.1" size="50 50 0.1"/>
     <body name="ball" pos="0 0 1.0">
       <joint name="slider" type="slide" axis="0 0 1"/>
+      <geom type="sphere" size="0.1"/>
+    </body>
+    <body name="ball2" pos="0 0 2.0">
+      <joint name="slider2" type="slide" axis="0 0 1"/>
       <geom type="sphere" size="0.1"/>
     </body>
   </worldbody>
@@ -111,21 +116,25 @@ GTEST_TEST(ContinuousIcfForceManagerTest, NoContactMatchesCompliantModel) {
   }
 }
 
-// A ball penetrating the floor produces an ICF contact patch. Evaluating the
-// reaction_forces port through the reporter exercises the full contact-force
-// extraction path (geometry cache, ICF model build, per-body spatial force
-// assembly) and must yield finite values.
+// Balls penetrating the floor and one another produce ICF contact
+// patches. Evaluating the reaction_forces port through the reporter exercises
+// the full contact-force extraction path (geometry cache, ICF model build,
+// per-body spatial force assembly) and must yield finite values.
 GTEST_TEST(ContinuousIcfForceManagerTest, ContactPathProducesFiniteReactions) {
   auto [diagram, plant] =
       BuildDiagram(kBallOnFloorMjcf, /* add_reporter = */ true);
 
   auto root = diagram->CreateDefaultContext();
   Context<double>& pc = plant->GetMyMutableContextFromRoot(&*root);
-  // Slider displacement so the ball center sits at z = 0.05, penetrating the
-  // floor (top at z = 0) by 0.05 m. Rest configuration is z = 1.0.
-  const Vector1<double> q(0.05 - 1.0);
+  // Slider displacement for ball-floor and ball-ball penetration:
+  //
+  // * The first ball center sits at z = 0.05, penetrating the floor (top at z
+  //    = 0) by 0.05 m. Rest configuration is z = 1.0.
+  // * This second ball center sits at z = 0.1, penetrating the first ball by
+  //   0.05 m. Rest configuration is z = 2.0
+  const Vector2<double> q(0.05 - 1.0, 0.1 - 2.0);
   plant->SetPositions(&pc, q);
-  plant->SetVelocities(&pc, Vector1<double>::Zero());
+  plant->SetVelocities(&pc, Vector2<double>::Zero());
 
   const std::vector<SpatialForce<double>>& reactions =
       EvalReactions(*plant, pc);
