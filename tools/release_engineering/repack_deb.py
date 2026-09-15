@@ -69,7 +69,7 @@ def _run(args):
         version_mtime = version.mtime
 
         packages = archive.getmember(
-            f"drake/share/drake/setup/packages-{codename}-binary.txt"
+            f"drake/share/drake/setup/ubuntu/packages-{codename}-binary.txt"
         )
         packages_txt = archive.extractfile(packages).read().decode("utf-8")
 
