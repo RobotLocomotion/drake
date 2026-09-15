@@ -1,4 +1,4 @@
-load("//tools/install:install.bzl", "install_files")
+load("//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_unittest")
 
@@ -26,7 +26,7 @@ filegroup(
 )
 
 drake_py_library(
-    name = "install_prereqs",
+    name = "install_prereqs_py",
     srcs = ["install_prereqs.py"],
     data = [":prerequisites_data"],
 )
@@ -43,7 +43,8 @@ install_files(
             "python/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
-            "ubuntu/install_prereqs_binary.sh",
+            "install_prereqs",
+            "install_prereqs.py",
             "ubuntu/packages-noble-binary.txt",
             "ubuntu/packages-resolute-binary.txt",
         ],
@@ -51,19 +52,29 @@ install_files(
     }),
     strip_prefix = [
         "mac",
-        "ubuntu",
         "python",
     ],
     rename = {
+        # TODO(jwnimmer-tri) This is only for macOS; once we rewrite macOS to
+        # also use install_prereqs.py like Ubuntu, we can remove this.
         "share/drake/setup/install_prereqs_binary.sh": "install_prereqs",
     },
     visibility = ["//:__pkg__"],
 )
 
+install(
+    name = "installer",
+    testonly = True,
+    deps = [":install"],
+)
+
 drake_py_unittest(
     name = "install_prereqs_test",
+    data = [
+        ":installer",
+    ],
     deps = [
-        ":install_prereqs",
+        ":install_prereqs_py",
         "@rules_python//python/runfiles",
     ],
 )
