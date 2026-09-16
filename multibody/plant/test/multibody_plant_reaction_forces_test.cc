@@ -211,9 +211,12 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     // ground with the pin joint.
     const double half_ladder_length = kLadderLength / 2.0;
     const double half_ladder_mass = kLadderMass / 2.0;
+    // To work with a weld constraint, the mass matrix needs at least a little
+    // extent in all dimensions. This owes to the way SAP evaluates individual
+    // cliques before applying constraints.
     const SpatialInertia<double> M_BBo_B =
-        SpatialInertia<double>::ThinRodWithMassAboutEnd(
-            half_ladder_mass, half_ladder_length, Vector3d::UnitZ());
+        SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
+            half_ladder_mass, 0.02, half_ladder_length, Vector3d::UnitZ());
 
     // Create a rigid body for the ladder.
     ladder_lower_ = &plant_->AddRigidBody("ladder_lower", M_BBo_B);
@@ -358,6 +361,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     simulator->get_mutable_integrator().set_target_accuracy(1e-6);
     simulator->Initialize();
     simulator->AdvanceTo(config.simulation_time);
+    DRAKE_DEMAND(simulator->get_context().get_time() >= config.simulation_time);
     return simulator;
   }
 
@@ -389,6 +393,11 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     // The contact point.
     Vector3d p_WP(0, 0, 0);
     if (hydro_geometry) {
+      SCOPED_TRACE(fmt::format(
+          "names: {} q: {} v: {}",
+          plant_->GetPositionNames(),
+          fmt_eigen(plant_->GetPositions(*plant_context)),
+          fmt_eigen(plant_->GetVelocities(*plant_context))));
       // There should be a single contact surface.
       ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 1);
       const HydroelasticContactInfo<double>& hydroelastic_contact_info =
