@@ -335,6 +335,9 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
       ASSERT_EQ(plant_->num_bodies(), 3);
       if (config.weld_method == LadderTestConfig::WeldMethod::kWeldJoint) {
         ASSERT_EQ(plant_->num_velocities(), 1);
+      } else if (config.weld_method ==
+                 LadderTestConfig::WeldMethod::kWeldConstraint) {
+        ASSERT_EQ(plant_->num_velocities(), 7);
       } else {
         ASSERT_EQ(plant_->num_velocities(), 2);
       }
@@ -622,6 +625,10 @@ std::vector<LadderTestConfig> MakeTestCases() {
        .time_step = 2.0e-2,
        .hydro_geometry = true,
        .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
+      {.description = "WeldConstraintDiscreteHydroelasticSap",
+       .time_step = 2.0e-2,
+       .hydro_geometry = true,
+       .weld_method = LadderTestConfig::WeldMethod::kWeldConstraint},
   };
 }
 
