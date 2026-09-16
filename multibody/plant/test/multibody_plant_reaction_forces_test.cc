@@ -27,6 +27,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::Box;
@@ -53,6 +54,7 @@ using drake::multibody::internal::CompliantContactManager;
 using drake::systems::Context;
 using drake::systems::Diagram;
 using drake::systems::Simulator;
+using drake::systems::SimulatorConfig;
 using Eigen::Vector3d;
 
 namespace drake {
@@ -87,7 +89,7 @@ struct LadderTestConfig {
   enum class WeldMethod {
     kWeldJoint,
     kRevoluteJointWithLimits,  // Revolute joint with lower limit.
-    // TODO(amcastro-tri): consider a weld constraint case.
+    kWeldConstraint,
   } weld_method{WeldMethod::kWeldJoint};
 };
 
@@ -276,6 +278,11 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
         joint_ = &plant_->AddJoint<RevoluteJoint>("MiddleJoint", *ladder_lower_,
                                                   X_BlBu, *ladder_upper_, {},
                                                   Vector3d::UnitY(), 0, kInf);
+        break;
+      }
+      case LadderTestConfig::WeldMethod::kWeldConstraint: {
+        constraint_id_ = plant_->AddWeldConstraint(*ladder_lower_, X_BlBu,
+                                                   *ladder_upper_, {});
         break;
       }
     }
@@ -572,8 +579,13 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
   geometry::GeometryId ladder_upper_geometry_id_;
   const RevoluteJoint<double>* pin_{nullptr};
 
-  // Weld joint joining the two halves of the ladder.
+  // Joint joining the two halves of the ladder; may null if a constraint is
+  // used instead.
   const Joint<double>* joint_{nullptr};
+
+  // Constraint joining the two halves of the ladder; may be invalid if a joint
+  // is used instead.
+  MultibodyConstraintId constraint_id_{};
 
   std::unique_ptr<Diagram<double>> diagram_;
 };

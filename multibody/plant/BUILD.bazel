@@ -854,6 +854,7 @@ drake_cc_googletest(
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
         "//systems/framework:diagram",
     ],
 )
