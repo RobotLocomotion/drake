@@ -850,6 +850,7 @@ drake_cc_googletest(
         "//geometry:drake_visualizer",
         "//lcm",
         "//math:geometric_transform",
+        "//multibody/cenic:continuous_icf_force_manager",
         "//multibody/parsing",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:implicit_euler_integrator",

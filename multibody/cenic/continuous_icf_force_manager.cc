@@ -92,7 +92,6 @@ void ContinuousIcfForceManager<T>::AddInIcfConstraintForces(
       // CalcSpatialImpulses returns the impulses already resolved on each body
       // (no extra negation).
       for (int k = 0; k < pool.num_constraints(); ++k) {
-        DRAKE_DEMAND(false);
         const int body_a = pool.body_pairs()[k].first;
         const int body_b = pool.body_pairs()[k].second;
         Vector6<T> Gamma_Bo_W, Gamma_Ao_W;

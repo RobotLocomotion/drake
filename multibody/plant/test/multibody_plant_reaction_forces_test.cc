@@ -18,6 +18,7 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/cenic/continuous_icf_force_manager.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
@@ -91,7 +92,32 @@ struct LadderTestConfig {
     kRevoluteJointWithLimits,  // Revolute joint with lower limit.
     kWeldConstraint,
   } weld_method{WeldMethod::kWeldJoint};
+  enum class IntegratorChoice {
+    kImplicitEuler,
+    kCenic,
+  } integrator_choice{IntegratorChoice::kImplicitEuler};
 };
+
+void ConfigureIntegrator(LadderTestConfig::IntegratorChoice choice,
+                         Simulator<double>* simulator) {
+  SimulatorConfig config;
+  using enum LadderTestConfig::IntegratorChoice;
+  switch (choice) {
+    case kImplicitEuler:
+      // The default RK3 integrator requires specifying a very high accuracy to
+      // reach steady state within the desired tolerance and therefore it is
+      // very costly.  However implicit Euler does a much better job with
+      // larger time steps.
+      config = SimulatorConfig{"implicit_euler", 5e-3, 1e-6, true, 0.0, 0.0};
+      break;
+    case kCenic:
+      // CENIC, even with high accuracy configured, cannot meet the tolerance
+      // achievable with other solvers.
+      config = SimulatorConfig{"cenic", 0.1, 1e-5, true, 0.0, 0.0};
+      break;
+  }
+  ApplySimulatorConfig(config, simulator);
+}
 
 // This provides the suffix for each test parameter: the test config
 // description.
@@ -155,6 +181,10 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     }
 
     plant_->Finalize();
+    if (config.integrator_choice ==
+        LadderTestConfig::IntegratorChoice::kCenic) {
+      AddIcfContinuousForceReporting(plant_);
+    }
 
     if (plant_->is_discrete()) {
       // When using the SAP solver, the solver convergence tolerance must be set
@@ -363,12 +393,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     // gravity and actuation.
     auto simulator = std::make_unique<Simulator<double>>(
         *diagram_, std::move(diagram_context));
-    // The default RK3 integrator requires specifying a very high accuracy to
-    // reach steady state within kTolerance and therefore it is very costly.
-    // However implicit Euler does a much better job with larger time steps.
-    simulator->reset_integrator<systems::ImplicitEulerIntegrator<double>>();
-    simulator->get_mutable_integrator().set_maximum_step_size(5e-3);
-    simulator->get_mutable_integrator().set_target_accuracy(1e-6);
+    ConfigureIntegrator(config.integrator_choice, simulator.get());
     simulator->Initialize();
     simulator->AdvanceTo(config.simulation_time);
     DRAKE_DEMAND(simulator->get_context().get_time() >= config.simulation_time);
@@ -377,6 +402,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
 
   void VerifyJointReactionForces(Context<double>* diagram_context,
                                  bool hydro_geometry = false) {
+    const LadderTestConfig& config = GetParam();
     Context<double>* plant_context =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context);
     // Evaluate the reaction forces output port to get the reaction force at the
@@ -460,22 +486,32 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     const double tau_g = p_WBcm.x() * weight;  // gravity torque about Bo.
     const double fc_x = (tau_g + kActuationTorque) / p_WP.z();
     const Vector3d f_Bl_W_expected(fc_x, 0.0, weight);
+    double adjusted_tolerance = kTolerance;
+    if (config.integrator_choice ==
+        LadderTestConfig::IntegratorChoice::kCenic) {
+      adjusted_tolerance = 1e-4;
+    }
     EXPECT_TRUE(CompareMatrices(F_Bl_W.translational(), f_Bl_W_expected,
-                                kTolerance, MatrixCompareType::relative));
+                                adjusted_tolerance,
+                                MatrixCompareType::relative));
 
     // Expected contact force.
     const Vector3d f_C_W_expected(-fc_x, 0.0, 0.0);
-    EXPECT_TRUE(CompareMatrices(f_Bp_W, f_C_W_expected, kTolerance,
+    EXPECT_TRUE(CompareMatrices(f_Bp_W, f_C_W_expected, adjusted_tolerance,
                                 MatrixCompareType::relative));
 
     // Since the contact point was purposely located at
     // y = (kProblemWidth / 2.0) - kPointContactRadius, the contact force
     // causes a reaction torque at the pin joint oriented along the z-axis.
     const Vector3d t_Bl_W_expected(0.0, kActuationTorque, -fc_x * p_WP.y());
-    double adjusted_tolerance = kTolerance;
+    adjusted_tolerance = kTolerance;
     if (joint_ == nullptr) {
       // In the weld constraint case, the torque differs from expectations by a
       // bit more.
+      adjusted_tolerance = 1e-4;
+    }
+    if (config.integrator_choice ==
+        LadderTestConfig::IntegratorChoice::kCenic) {
       adjusted_tolerance = 1e-4;
     }
     EXPECT_TRUE(CompareMatrices(F_Bl_W.rotational(), t_Bl_W_expected,
@@ -507,11 +543,18 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
                             fc_x * (p_WP.z() - p_WBu.z());
       // Contact point offset causes a torque at the weld joint oriented along
       // the z-axis.
+      adjusted_tolerance = kTolerance;
+      if (config.integrator_choice ==
+          LadderTestConfig::IntegratorChoice::kCenic) {
+        adjusted_tolerance = 1e-4;
+      }
       const Vector3d t_Bu_expected(0.0, t_Bu_y, -fc_x * (p_WP.y() - p_WBu.y()));
       EXPECT_TRUE(CompareMatrices(F_Bu_W.rotational(), t_Bu_expected,
-                                  kTolerance, MatrixCompareType::relative));
+                                  adjusted_tolerance,
+                                  MatrixCompareType::relative));
       EXPECT_TRUE(CompareMatrices(F_Bu_W.translational(), f_Bu_expected,
-                                  kTolerance, MatrixCompareType::relative));
+                                  adjusted_tolerance,
+                                  MatrixCompareType::relative));
     } else {
       // TODO(rpoyner-tri): calculate reaction forces at the constraint site,
       // most likely by hand, but possibly by reaching into solver internals of
@@ -638,6 +681,15 @@ std::vector<LadderTestConfig> MakeTestCases() {
       {.description = "ContinuousHydroelastic",
        .time_step = 0.0,
        .hydro_geometry = true},
+      {.description = "ContinuousHydroelasticCenic",
+       .time_step = 0.0,
+       .hydro_geometry = true,
+       .integrator_choice = LadderTestConfig::IntegratorChoice::kCenic},
+      {.description = "WeldConstraintContinuousHydroelasticCenic",
+       .time_step = 0.0,
+       .hydro_geometry = true,
+       .weld_method = LadderTestConfig::WeldMethod::kWeldConstraint,
+       .integrator_choice = LadderTestConfig::IntegratorChoice::kCenic},
 
       // Discrete SAP solver tests.
       {.description = "WeldJointDiscretePointSap",
