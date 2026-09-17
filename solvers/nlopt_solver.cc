@@ -371,17 +371,26 @@ struct KnownOptions {
   double constraint_tol{1e-6};
   double xtol_rel{1e-6};
   double xtol_abs{1e-6};
+  // NLopt's own defaults leave the objective-value criteria disabled, so these
+  // three values reproduce the behavior of never calling their setters at all.
+  double ftol_rel{0.0};
+  double ftol_abs{0.0};
+  double stopval{-std::numeric_limits<double>::infinity()};
   int max_eval{1000};
   double max_time{0.0};
   // An empty local_optimizer_algorithm means "do not call
   // set_local_optimizer at all", which leaves NLopt's own defaulting in
-  // place. The two NaN tolerances below are sentinels meaning "inherit the
+  // place. The four NaN tolerances below are sentinels meaning "inherit the
   // outer optimizer's value", again matching what NLopt does when it creates
   // the local optimizer itself; zero cannot serve as that sentinel because
-  // zero is a meaningful NLopt value (the criterion is disabled).
+  // zero is a meaningful NLopt value (the criterion is disabled). There is
+  // deliberately no local stopval; see the comment in the set_local_optimizer
+  // block below for why one would not work.
   std::string local_optimizer_algorithm;
   double local_optimizer_xtol_rel{std::numeric_limits<double>::quiet_NaN()};
   double local_optimizer_xtol_abs{std::numeric_limits<double>::quiet_NaN()};
+  double local_optimizer_ftol_rel{std::numeric_limits<double>::quiet_NaN()};
+  double local_optimizer_ftol_abs{std::numeric_limits<double>::quiet_NaN()};
   int local_optimizer_max_eval{0};
   double local_optimizer_max_time{0.0};
 };
@@ -397,10 +406,16 @@ void Serialize(internal::SpecificOptions* archive,
                                &options.xtol_rel));
   archive->Visit(MakeNameValue(NloptSolver::XAbsoluteToleranceName().c_str(),
                                &options.xtol_abs));
+  archive->Visit(MakeNameValue(NloptSolver::FRelativeToleranceName().c_str(),
+                               &options.ftol_rel));
+  archive->Visit(MakeNameValue(NloptSolver::FAbsoluteToleranceName().c_str(),
+                               &options.ftol_abs));
   archive->Visit(MakeNameValue(NloptSolver::MaxEvalName().c_str(),  // BR
                                &options.max_eval));
   archive->Visit(MakeNameValue(NloptSolver::MaxTimeName().c_str(),  // BR
                                &options.max_time));
+  archive->Visit(MakeNameValue(NloptSolver::StopValName().c_str(),  // BR
+                               &options.stopval));
   archive->Visit(
       MakeNameValue(NloptSolver::LocalOptimizerAlgorithmName().c_str(),
                     &options.local_optimizer_algorithm));
@@ -410,6 +425,12 @@ void Serialize(internal::SpecificOptions* archive,
   archive->Visit(
       MakeNameValue(NloptSolver::LocalOptimizerXAbsoluteToleranceName().c_str(),
                     &options.local_optimizer_xtol_abs));
+  archive->Visit(
+      MakeNameValue(NloptSolver::LocalOptimizerFRelativeToleranceName().c_str(),
+                    &options.local_optimizer_ftol_rel));
+  archive->Visit(
+      MakeNameValue(NloptSolver::LocalOptimizerFAbsoluteToleranceName().c_str(),
+                    &options.local_optimizer_ftol_abs));
   archive->Visit(MakeNameValue(NloptSolver::LocalOptimizerMaxEvalName().c_str(),
                                &options.local_optimizer_max_eval));
   archive->Visit(MakeNameValue(NloptSolver::LocalOptimizerMaxTimeName().c_str(),
@@ -511,8 +532,11 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
 
   opt.set_xtol_rel(parsed_options.xtol_rel);
   opt.set_xtol_abs(parsed_options.xtol_abs);
+  opt.set_ftol_rel(parsed_options.ftol_rel);
+  opt.set_ftol_abs(parsed_options.ftol_abs);
   opt.set_maxeval(parsed_options.max_eval);
   opt.set_maxtime(parsed_options.max_time);
+  opt.set_stopval(parsed_options.stopval);
 
   // Algorithms such as the augmented Lagrangian family delegate each
   // subproblem to a "local" optimizer. When the user has not named one, we
@@ -530,8 +554,21 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
     local_opt.set_xtol_abs(std::isnan(parsed_options.local_optimizer_xtol_abs)
                                ? parsed_options.xtol_abs
                                : parsed_options.local_optimizer_xtol_abs);
+    local_opt.set_ftol_rel(std::isnan(parsed_options.local_optimizer_ftol_rel)
+                               ? parsed_options.ftol_rel
+                               : parsed_options.local_optimizer_ftol_rel);
+    local_opt.set_ftol_abs(std::isnan(parsed_options.local_optimizer_ftol_abs)
+                               ? parsed_options.ftol_abs
+                               : parsed_options.local_optimizer_ftol_abs);
     local_opt.set_maxeval(parsed_options.local_optimizer_max_eval);
     local_opt.set_maxtime(parsed_options.local_optimizer_max_time);
+    // Deliberately no local_opt.set_stopval() here, and deliberately no
+    // option for one. Both families that consult a local optimizer reset its
+    // stopval just before running it, from the outer stopval: see
+    // nlopt_set_stopval() in src/algs/auglag/auglag.c (augmented Lagrangian)
+    // and in src/algs/mlsl/mlsl.c (multi-level single-linkage). Any value set
+    // here would be accepted and then silently discarded, so the outer
+    // StopValName() option is the only meaningful way to set it.
     opt.set_local_optimizer(local_opt);
   }
 
@@ -554,14 +591,21 @@ void NloptSolver::DoSolve2(const MathematicalProgram& prog,
       result->set_x_val(Eigen::Map<Eigen::VectorXd>(x.data(), nx));
     }
     switch (nlopt_result) {
-      case nlopt::SUCCESS:
-      case nlopt::STOPVAL_REACHED: {
+      case nlopt::SUCCESS: {
         result->set_solution_result(SolutionResult::kSolutionFound);
         break;
       }
+      case nlopt::STOPVAL_REACHED:
       case nlopt::FTOL_REACHED:
       case nlopt::XTOL_REACHED: {
-        // Now check if the constraints are violated.
+        // All three can stop before the solver has converged, so re-check
+        // the constraints. STOPVAL_REACHED is grouped here defensively: every
+        // constraint-aware NLopt algorithm already gates its stopval test on
+        // feasibility (e.g. "feasible && *minf < stop->minf_max" in
+        // src/algs/slsqp/slsqp.c, and likewise in mma.c, ccsa_quadratic.c and
+        // isres.c), so it is not known to arrive here with a violated
+        // constraint -- but the check is shared with the cases below and so
+        // costs nothing.
         bool all_constraints_satisfied = true;
         auto constraint_test = [&prog, constraint_tol,
                                 &all_constraints_satisfied,
