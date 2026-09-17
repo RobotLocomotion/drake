@@ -25,12 +25,20 @@ void DefineSolversNlopt(py::module_ m) {
       .def_static("XAbsoluteToleranceName",
           &NloptSolver::XAbsoluteToleranceName,
           doc.NloptSolver.XAbsoluteToleranceName.doc)
+      .def_static("FRelativeToleranceName",
+          &NloptSolver::FRelativeToleranceName,
+          doc.NloptSolver.FRelativeToleranceName.doc)
+      .def_static("FAbsoluteToleranceName",
+          &NloptSolver::FAbsoluteToleranceName,
+          doc.NloptSolver.FAbsoluteToleranceName.doc)
       .def_static("MaxEvalName", &NloptSolver::MaxEvalName,
           doc.NloptSolver.MaxEvalName.doc)
       .def_static("AlgorithmName", &NloptSolver::AlgorithmName,
           doc.NloptSolver.AlgorithmName.doc)
       .def_static("MaxTimeName", &NloptSolver::MaxTimeName,
           doc.NloptSolver.MaxTimeName.doc)
+      .def_static("StopValName", &NloptSolver::StopValName,
+          doc.NloptSolver.StopValName.doc)
       .def_static("LocalOptimizerAlgorithmName",
           &NloptSolver::LocalOptimizerAlgorithmName,
           doc.NloptSolver.LocalOptimizerAlgorithmName.doc)
@@ -40,6 +48,12 @@ void DefineSolversNlopt(py::module_ m) {
       .def_static("LocalOptimizerXAbsoluteToleranceName",
           &NloptSolver::LocalOptimizerXAbsoluteToleranceName,
           doc.NloptSolver.LocalOptimizerXAbsoluteToleranceName.doc)
+      .def_static("LocalOptimizerFRelativeToleranceName",
+          &NloptSolver::LocalOptimizerFRelativeToleranceName,
+          doc.NloptSolver.LocalOptimizerFRelativeToleranceName.doc)
+      .def_static("LocalOptimizerFAbsoluteToleranceName",
+          &NloptSolver::LocalOptimizerFAbsoluteToleranceName,
+          doc.NloptSolver.LocalOptimizerFAbsoluteToleranceName.doc)
       .def_static("LocalOptimizerMaxEvalName",
           &NloptSolver::LocalOptimizerMaxEvalName,
           doc.NloptSolver.LocalOptimizerMaxEvalName.doc)
