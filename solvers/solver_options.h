@@ -35,6 +35,9 @@ is listed in "nlopt_algorithm_to_string()" function in
 github.com/stevengj/nlopt/blob/master/src/api/general.c. If you would like to
 use certain algorithm, for example NLOPT_LD_SLSQP, call
 `SetOption(NloptSolver::id(), NloptSolver::AlgorithmName(), "LD_SLSQP");`
+Algorithms that hand their subproblems to a local (inner) optimizer accept the
+additional "local_optimizer_..." parameters. The complete set of supported
+parameter names is given by the NloptSolver::...Name() accessors.
 
 "GUROBI" -- Parameter name and values as specified in Gurobi Reference Manual
 https://docs.gurobi.com/projects/optimizer/en/13.0/reference/parameters.html
