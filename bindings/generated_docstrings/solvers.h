@@ -8673,6 +8673,22 @@ R"""(The key name for the double-valued constraint tolerance.)""";
           const char* doc =
 R"""(Type of details stored in MathematicalProgramResult.)""";
         } Details;
+        // Symbol: drake::solvers::NloptSolver::FAbsoluteToleranceName
+        struct /* FAbsoluteToleranceName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the double-valued absolute tolerance on the objective
+function value. The default value is 0, which disables this stopping
+criterion, matching NLopt's own default.)""";
+        } FAbsoluteToleranceName;
+        // Symbol: drake::solvers::NloptSolver::FRelativeToleranceName
+        struct /* FRelativeToleranceName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the double-valued relative tolerance on the objective
+function value. The default value is 0, which disables this stopping
+criterion, matching NLopt's own default.)""";
+        } FRelativeToleranceName;
         // Symbol: drake::solvers::NloptSolver::LocalOptimizerAlgorithmName
         struct /* LocalOptimizerAlgorithmName */ {
           // Source: drake/solvers/nlopt_solver.h
@@ -8684,8 +8700,26 @@ family (e.g. LD_AUGLAG_EQ) and the multi-level single-linkage family
 optimizer; this option chooses that optimizer's algorithm. The default
 value is the empty string, which leaves NLopt's own default in place.
 Algorithms that do not use a local optimizer ignore this option, as do
-the four LocalOptimizer... options below whenever this one is empty.)""";
+the other LocalOptimizer... options below whenever this one is empty.)""";
         } LocalOptimizerAlgorithmName;
+        // Symbol: drake::solvers::NloptSolver::LocalOptimizerFAbsoluteToleranceName
+        struct /* LocalOptimizerFAbsoluteToleranceName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the double-valued absolute tolerance on the objective
+function value of the local (inner) optimizer. Defaults to the outer
+optimizer's FAbsoluteToleranceName() value, which is what NLopt itself
+uses when it creates the local optimizer.)""";
+        } LocalOptimizerFAbsoluteToleranceName;
+        // Symbol: drake::solvers::NloptSolver::LocalOptimizerFRelativeToleranceName
+        struct /* LocalOptimizerFRelativeToleranceName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the double-valued relative tolerance on the objective
+function value of the local (inner) optimizer. Defaults to the outer
+optimizer's FRelativeToleranceName() value, which is what NLopt itself
+uses when it creates the local optimizer.)""";
+        } LocalOptimizerFRelativeToleranceName;
         // Symbol: drake::solvers::NloptSolver::LocalOptimizerMaxEvalName
         struct /* LocalOptimizerMaxEvalName */ {
           // Source: drake/solvers/nlopt_solver.h
@@ -8747,6 +8781,32 @@ runtime.)""";
           // Source: drake/solvers/nlopt_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
+        // Symbol: drake::solvers::NloptSolver::StopValName
+        struct /* StopValName */ {
+          // Source: drake/solvers/nlopt_solver.h
+          const char* doc =
+R"""(The key name for the double-valued target objective value. Because
+Drake always minimizes, NLopt stops as soon as it evaluates a point
+whose cost is less than or equal to this value. It is a "this is good
+enough, stop here" target, not a bound that the solver enforces or
+tries to respect. By default this is negative infinity, matching
+NLopt's own default, so that the criterion never triggers.
+
+When NLopt stops for this reason, this wrapper re-checks the
+constraints and reports SolutionResult∷kInfeasibleConstraints if they
+are violated, exactly as it does for the x and f tolerance
+terminations. That is a safety net rather than a path NLopt is known
+to take: the constraint-aware NLopt algorithms all gate their stopval
+test on feasibility, so in practice they report it only from a
+feasible point.
+
+There is deliberately no local (inner) optimizer counterpart. Both
+algorithm families that use a local optimizer overwrite its stopval
+before running it -- the augmented Lagrangian family in
+src/algs/auglag/auglag.c and the multi-level single-linkage family in
+src/algs/mlsl/mlsl.c, each deriving it from this outer value -- so a
+separate key would be accepted and then silently discarded.)""";
+        } StopValName;
         // Symbol: drake::solvers::NloptSolver::XAbsoluteToleranceName
         struct /* XAbsoluteToleranceName */ {
           // Source: drake/solvers/nlopt_solver.h
@@ -10627,7 +10687,10 @@ complete set of algorithms is listed in "nlopt_algorithm_to_string()"
 function in github.com/stevengj/nlopt/blob/master/src/api/general.c.
 If you would like to use certain algorithm, for example
 NLOPT_LD_SLSQP, call ``SetOption(NloptSolver∷id(),
-NloptSolver∷AlgorithmName(), "LD_SLSQP");``
+NloptSolver∷AlgorithmName(), "LD_SLSQP");`` Algorithms that hand their
+subproblems to a local (inner) optimizer accept the additional
+"local_optimizer_..." parameters. The complete set of supported
+parameter names is given by the NloptSolver∷...Name() accessors.
 
 "GUROBI" -- Parameter name and values as specified in Gurobi Reference
 Manual

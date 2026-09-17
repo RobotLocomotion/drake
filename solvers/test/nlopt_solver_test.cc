@@ -39,6 +39,18 @@ TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
     solver.Solve(*prog_, {}, solver_options2, &result);
     EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
               NLOPT_MAXTIME_REACHED);
+
+    // The cost is unbounded below, so any finite stopval is reached.
+    const int NLOPT_STOPVAL_REACHED = 2;
+    SolverOptions solver_options3;
+    solver_options3.SetOption(solver.solver_id(), NloptSolver::StopValName(),
+                              -100.0);
+    solver.Solve(*prog_, {}, solver_options3, &result);
+    EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
+              NLOPT_STOPVAL_REACHED);
+    EXPECT_LE(result.get_optimal_cost(), -100.0);
+    // The point NLopt stopped at is feasible here, so it is still a success.
+    EXPECT_TRUE(result.is_success());
   }
 }
 
@@ -100,6 +112,37 @@ GTEST_TEST(NloptSolverTest, SetAlgorithm) {
 
 const Eigen::Vector2d kLocalOptimizerInitialGuess(0.5, 0.8);
 
+// By default the f tolerances are disabled and NLopt stops on XTOL. Each f
+// tolerance below is wide enough that the very first step satisfies it, so it
+// must take over as the reason NLopt stops.
+TEST_F(QuadraticEqualityConstrainedProgram1, FTolerances) {
+  NloptSolver solver;
+  if (solver.available()) {
+    const int NLOPT_FTOL_REACHED = 3;
+    const int NLOPT_XTOL_REACHED = 4;
+    const auto baseline = solver.Solve(*prog_, kLocalOptimizerInitialGuess, {});
+    ASSERT_TRUE(baseline.is_success());
+    EXPECT_EQ(baseline.get_solver_details<NloptSolver>().status,
+              NLOPT_XTOL_REACHED);
+
+    SolverOptions ftol_rel_options;
+    ftol_rel_options.SetOption(solver.id(),
+                               NloptSolver::FRelativeToleranceName(), 1e3);
+    const auto ftol_rel_result =
+        solver.Solve(*prog_, kLocalOptimizerInitialGuess, ftol_rel_options);
+    EXPECT_EQ(ftol_rel_result.get_solver_details<NloptSolver>().status,
+              NLOPT_FTOL_REACHED);
+
+    SolverOptions ftol_abs_options;
+    ftol_abs_options.SetOption(solver.id(),
+                               NloptSolver::FAbsoluteToleranceName(), 1e3);
+    const auto ftol_abs_result =
+        solver.Solve(*prog_, kLocalOptimizerInitialGuess, ftol_abs_options);
+    EXPECT_EQ(ftol_abs_result.get_solver_details<NloptSolver>().status,
+              NLOPT_FTOL_REACHED);
+  }
+}
+
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerDefaults) {
   NloptSolver solver;
   if (solver.available()) {
@@ -147,6 +190,63 @@ TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerMaxEval) {
   }
 }
 
+TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerFToleranceDefaults) {
+  NloptSolver solver;
+  if (solver.available()) {
+    // The local f tolerances default to the outer optimizer's values (which is
+    // what NLopt itself does), so naming them explicitly at those same values
+    // must change nothing.
+    SolverOptions implicit_options;
+    implicit_options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
+                               "LD_AUGLAG_EQ");
+    implicit_options.SetOption(
+        solver.id(), NloptSolver::LocalOptimizerAlgorithmName(), "LD_MMA");
+    implicit_options.SetOption(solver.id(),
+                               NloptSolver::FRelativeToleranceName(), 1e-8);
+    implicit_options.SetOption(solver.id(),
+                               NloptSolver::FAbsoluteToleranceName(), 1e-9);
+    const auto implicit_result =
+        solver.Solve(*prog_, kLocalOptimizerInitialGuess, implicit_options);
+
+    SolverOptions explicit_options = implicit_options;
+    explicit_options.SetOption(
+        solver.id(), NloptSolver::LocalOptimizerFRelativeToleranceName(), 1e-8);
+    explicit_options.SetOption(
+        solver.id(), NloptSolver::LocalOptimizerFAbsoluteToleranceName(), 1e-9);
+    const auto explicit_result =
+        solver.Solve(*prog_, kLocalOptimizerInitialGuess, explicit_options);
+
+    EXPECT_EQ(implicit_result.get_solution_result(),
+              explicit_result.get_solution_result());
+    EXPECT_TRUE(CompareMatrices(implicit_result.GetSolution(x_),
+                                explicit_result.GetSolution(x_), 1e-12));
+  }
+}
+
+TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerFTolerance) {
+  NloptSolver solver;
+  if (solver.available()) {
+    SolverOptions options;
+    options.SetOption(solver.id(), NloptSolver::AlgorithmName(),
+                      "LD_AUGLAG_EQ");
+    options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
+                      "LD_MMA");
+    options.SetOption(solver.id(), NloptSolver::MaxEvalName(), 50);
+    const auto uncapped =
+        solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+
+    // A wide enough f tolerance stops each subproblem at its first step, which
+    // changes the iterates.
+    options.SetOption(solver.id(),
+                      NloptSolver::LocalOptimizerFAbsoluteToleranceName(), 1e3);
+    const auto capped =
+        solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
+
+    EXPECT_FALSE(CompareMatrices(uncapped.GetSolution(x_),
+                                 capped.GetSolution(x_), 1e-12));
+  }
+}
+
 TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerAlgorithm) {
   NloptSolver solver;
   // Drake's NLopt build omits src/algs/luksan/**, so the derivative-based
@@ -183,6 +283,10 @@ TEST_F(QuadraticEqualityConstrainedProgram1, LocalOptimizerUnused) {
     options.SetOption(solver.id(), NloptSolver::LocalOptimizerAlgorithmName(),
                       "LD_SLSQP");
     options.SetOption(solver.id(), NloptSolver::LocalOptimizerMaxEvalName(), 3);
+    options.SetOption(solver.id(),
+                      NloptSolver::LocalOptimizerFRelativeToleranceName(), 1e3);
+    options.SetOption(solver.id(),
+                      NloptSolver::LocalOptimizerFAbsoluteToleranceName(), 1e3);
     const auto unused =
         solver.Solve(*prog_, kLocalOptimizerInitialGuess, options);
 
