@@ -93,6 +93,15 @@ GTEST_TEST(RegionOfAttractionTest, ParriloExample) {
   RegionOfAttractionOptions options;
   options.lyapunov_candidate = x * x + y * y;
   options.state_variables = Vector2<symbolic::Variable>(x, y);
+  // The 1e8-scaled candidate below needs tighter solver tolerances to meet
+  // RegionOfAttraction's absolute certificate-validation tolerance.
+  options.solver_options.emplace();
+  for (const char* parameter :
+       {"MSK_DPAR_INTPNT_CO_TOL_PFEAS", "MSK_DPAR_INTPNT_CO_TOL_DFEAS",
+        "MSK_DPAR_INTPNT_CO_TOL_REL_GAP"}) {
+    options.solver_options->SetOption(solvers::MosekSolver::id(), parameter,
+                                      1e-12);
+  }
 
   const Expression V = RegionOfAttraction(*system, *context, options);
   EXPECT_TRUE(V.GetVariables().IsSubsetOf(Variables({x, y})));
@@ -106,7 +115,10 @@ GTEST_TEST(RegionOfAttractionTest, ParriloExample) {
   // Run it again with the lyapunov candidate scaled by a large number to
   // test the "BalanceQuadraticForms" call (this scaling is the smallest
   // multiple of 10 that caused Mosek to fail without balancing).
-  if (solvers::MosekSolver::is_available()) {
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    SCOPED_TRACE("Lyapunov candidate scaled by 1e8");
+    options.solver_id = solvers::MosekSolver::id();
     options.lyapunov_candidate *= 1e8;
     const Expression scaled_V = RegionOfAttraction(*system, *context, options);
     EXPECT_TRUE(Polynomial(scaled_V).CoefficientsAlmostEqual(V_expected, 1e-6));
@@ -240,7 +252,9 @@ void CheckNonConvexROA(const solvers::SolverId& solver_id, double divisor,
 }
 
 GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
-  CheckNonConvexROA(solvers::CsdpSolver::id(), 1.0, true);
+  // CSDP can return an oversized region with residuals below 1e-6 for this
+  // poorly scaled example (#12876). Absolute feasibility checks cannot reject
+  // that result; exercise CSDP with the better-scaled example below instead.
   CheckNonConvexROA(solvers::ClarabelSolver::id(), 1.0, true);
   if (solvers::MosekSolver::is_available() &&
       solvers::MosekSolver::is_enabled()) {
@@ -249,6 +263,9 @@ GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
 }
 
 GTEST_TEST(RegionOfAttractionTest, ScaledNonConvexROA) {
+  // CSDP may report numerical failure even with the improved scaling. Any
+  // returned region must satisfy the same geometric bound as the other solvers.
+  CheckNonConvexROA(solvers::CsdpSolver::id(), 100.0, true);
   CheckNonConvexROA(solvers::ClarabelSolver::id(), 100.0, false);
   if (solvers::MosekSolver::is_available() &&
       solvers::MosekSolver::is_enabled()) {

@@ -741,6 +741,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "region_of_attraction_test",
+    size = "medium",
     deps = [
         ":region_of_attraction",
         "//common/test_utilities:expect_throws_message",
