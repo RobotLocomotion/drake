@@ -1,11 +1,19 @@
 #include "drake/systems/analysis/region_of_attraction.h"
 
 #include <cmath>
+#include <limits>
+#include <stdexcept>
+#include <string>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/csdp_solver.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/systems/analysis/region_of_attraction_internal.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
@@ -40,8 +48,10 @@ GTEST_TEST(RegionOfAttractionTest, CubicPolynomialTest) {
   // Solve again using the implicit form.
   RegionOfAttractionOptions options;
   options.use_implicit_dynamics = true;
+  // Use the same output variable for the coefficient comparison.
+  options.state_variables = Vector1<Variable>(x);
   const Expression V2 = RegionOfAttraction(*system, *context, options);
-  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
+  EXPECT_TRUE(Polynomial(V2).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
 // Cubic again, but shifted to a non-zero equilibrium.
@@ -120,42 +130,130 @@ GTEST_TEST(RegionOfAttractionTest, IndefiniteHessian) {
   EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
-// Another example from the underactuated lyapunov chapter.  U(x) is a
-// polynomial potential function, and xdot = (U-1)dUdx, which should have
-// U==1 as the true boundary of the RoA.
-GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
+// Check certificate rejection without relying on a solver's numerical behavior.
+GTEST_TEST(RegionOfAttractionTest, CertificateValidation) {
+  solvers::MathematicalProgram prog;
+  const auto x = prog.NewIndeterminates<3>("x");
+  const auto c = prog.NewContinuousVariables<1>("c")[0];
+  const Vector3<symbolic::Monomial> basis{symbolic::Monomial(x[0]),
+                                          symbolic::Monomial(x[1]),
+                                          symbolic::Monomial(x[2])};
+  const auto Q = prog.AddSosConstraint(
+      Polynomial(c * x[0] * x[0] + x[1] * x[1] + x[2] * x[2]), basis);
+  for (const auto& binding : prog.linear_equality_constraints()) {
+    binding.evaluator()->set_description("SOS coefficient matching");
+  }
+
+  solvers::MathematicalProgramResult result;
+  result.set_decision_variable_index(prog.decision_variable_index());
+  result.set_x_val(Eigen::VectorXd::Zero(prog.num_vars()));
+  result.set_solution_result(solvers::SolutionResult::kSolutionFound);
+  result.SetSolution(c, 1.0);
+  for (int i = 0; i < 3; ++i) {
+    result.SetSolution(Q(i, i), 1.0);
+  }
+  EXPECT_NO_THROW(internal::CheckRegionOfAttractionCertificate(prog, result));
+
+  // Roundoff-sized coefficient residuals are accepted.
+  result.SetSolution(Q(0, 0), 1.0 + 1e-8);
+  EXPECT_NO_THROW(internal::CheckRegionOfAttractionCertificate(prog, result));
+
+  // The Gram matrix is positive definite, but represents the wrong polynomial.
+  result.SetSolution(Q(0, 0), 2.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::CheckRegionOfAttractionCertificate(prog, result),
+      ".*failed numerical validation.*SOS coefficient matching.*");
+
+  // Coefficients now match exactly, but the Gram matrix has a negative
+  // eigenvalue.
+  result.SetSolution(c, -1.0);
+  result.SetSolution(Q(0, 0), -1.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::CheckRegionOfAttractionCertificate(prog, result),
+      ".*failed numerical validation.*PositiveSemidefiniteConstraint.*");
+
+  for (double value : {std::numeric_limits<double>::quiet_NaN(),
+                       std::numeric_limits<double>::infinity()}) {
+    result.SetSolution(c, value);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        internal::CheckRegionOfAttractionCertificate(prog, result),
+        ".*non-finite decision variables.*");
+  }
+  result.SetSolution(c, 1.0);
+  result.SetSolution(Q(0, 0), 1.0);
+  result.set_solution_result(solvers::SolutionResult::kSolverSpecificError);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::CheckRegionOfAttractionCertificate(prog, result),
+      ".*SOS optimization failed.*");
+}
+
+// U is a polynomial potential and xdot = (U-1)dUdx, so U==1 is the true
+// boundary. For U = (100x⁴ - 384x²y² + 400y⁴) / divisor, the largest circular
+// sublevel set has rho = sqrt(divisor) / 20, touching U==1 on the y axis.
+void CheckNonConvexROA(const solvers::SolverId& solver_id, double divisor,
+                       bool allow_numerical_failure) {
+  SCOPED_TRACE(solver_id.name());
+  SCOPED_TRACE(divisor);
   const Vector2<Variable> x{Variable("x"), Variable("y")};
   Eigen::Matrix2d A1, A2;
   A1 << 1, 2, 3, 4;
-  A2 << -1, 2, -3, 4;  // mirror about the y-axis
-  const Expression U{((A1 * x).dot(A1 * x)) * ((A2 * x).dot(A2 * x))};
-  const RowVector2<Expression> dUdx = U.Jacobian(x);
+  A2 << -1, 2, -3, 4;
+  const Expression U{((A1 * x).dot(A1 * x)) * ((A2 * x).dot(A2 * x)) / divisor};
   const auto system = SymbolicVectorSystemBuilder()
                           .state(x)
-                          .dynamics((U - 1) * dUdx.transpose())
+                          .dynamics((U - 1) * U.Jacobian(x).transpose())
                           .Build();
   const auto context = system->CreateDefaultContext();
-
   RegionOfAttractionOptions options;
-  options.lyapunov_candidate = (x.transpose() * x)(0);
+  options.lyapunov_candidate = x.dot(x);
   options.state_variables = x;
-  // Force the use of CSDP for solving; Mosek and Clarabel are known to fail for
-  // this test, see #12876. We also need a tighter tolerance to pass on macOS.
-  options.solver_id = solvers::CsdpSolver::id();
-  options.solver_options.emplace().SetOption(solvers::CsdpSolver::id(),
-                                             "objtol", 1e-9);
-  const Expression V = RegionOfAttraction(*system, *context, options);
-
-  // Leverage the quadratic form of V to find the boundary point on the
-  // positive x axis.
-  symbolic::Environment env{{x(0), 1}, {x(1), 0}};
-  const double rho = 1. / V.Evaluate(env);
-  env[x(0)] = std::sqrt(rho);
-  // Confirm that it is on the boundary of V.
+  options.solver_id = solver_id;
+  if (solver_id == solvers::CsdpSolver::id()) {
+    options.solver_options.emplace().SetOption(solver_id, "objtol", 1e-9);
+  }
+  Expression V;
+  try {
+    V = RegionOfAttraction(*system, *context, options);
+  } catch (const std::runtime_error& e) {
+    if (!allow_numerical_failure) {
+      throw;
+    }
+    // The poorly scaled problem may fail, but must not silently return an
+    // infeasible certificate (#12876). Accept only the expected diagnostics.
+    const std::string message = e.what();
+    EXPECT_TRUE(
+        message.starts_with("RegionOfAttraction: SOS optimization failed") ||
+        message.starts_with("RegionOfAttraction: SOS certificate"))
+        << message;
+    return;
+  }
+  symbolic::Environment env{{x[0], 0}, {x[1], 1}};
+  const double rho = 1.0 / V.Evaluate(env);
+  const double rho_limit = std::sqrt(divisor) / 20.0;
+  EXPECT_GT(rho, 0.0);
+  EXPECT_LE(rho, rho_limit + 1e-6);
+  if (!allow_numerical_failure) {
+    EXPECT_NEAR(rho, rho_limit, 1e-6);
+  }
+  env[x[1]] = std::sqrt(rho);
   EXPECT_NEAR(V.Evaluate(env), 1.0, 1e-12);
-  // As an inner approximation of the ROA, It should be inside the boundary
-  // of U(x) <= 1 (but this time with the tolerance of the SDP solver).
-  EXPECT_LE(U.Evaluate(env), 1.0 + 1e-6);
+}
+
+GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
+  CheckNonConvexROA(solvers::CsdpSolver::id(), 1.0, true);
+  CheckNonConvexROA(solvers::ClarabelSolver::id(), 1.0, true);
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    CheckNonConvexROA(solvers::MosekSolver::id(), 1.0, true);
+  }
+}
+
+GTEST_TEST(RegionOfAttractionTest, ScaledNonConvexROA) {
+  CheckNonConvexROA(solvers::ClarabelSolver::id(), 100.0, false);
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    CheckNonConvexROA(solvers::MosekSolver::id(), 100.0, false);
+  }
 }
 
 // The CubicPolynomialTest again, but this time with an input port that must be

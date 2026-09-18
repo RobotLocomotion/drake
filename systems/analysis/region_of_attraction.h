@@ -101,6 +101,11 @@ struct RegionOfAttractionOptions {
  * could extend the current implementation. Do report an issue if you discover a
  * system for which this code does not perform well.
  *
+ * @throws std::exception if an SOS solve fails or its returned certificate
+ * fails numerical validation. Polynomial coefficient equalities and conic
+ * constraints are checked with an absolute tolerance of 1e-6. Passing these
+ * checks is not a rigorous certificate of an inner approximation.
+ *
  * @ingroup analysis
  */
 symbolic::Expression RegionOfAttraction(

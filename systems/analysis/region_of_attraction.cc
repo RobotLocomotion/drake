@@ -1,13 +1,16 @@
 #include "drake/systems/analysis/region_of_attraction.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 #include "drake/math/continuous_lyapunov_equation.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solve.h"
+#include "drake/systems/analysis/region_of_attraction_internal.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -27,6 +30,36 @@ using symbolic::Polynomial;
 using symbolic::Substitution;
 using symbolic::Variable;
 using symbolic::Variables;
+
+namespace internal {
+
+void CheckRegionOfAttractionCertificate(
+    const MathematicalProgram& prog,
+    const solvers::MathematicalProgramResult& result) {
+  if (!result.is_success()) {
+    throw std::runtime_error("RegionOfAttraction: SOS optimization failed.");
+  }
+  if (!result.get_x_val().allFinite()) {
+    throw std::runtime_error(
+        "RegionOfAttraction: SOS certificate has non-finite decision "
+        "variables.");
+  }
+  // Check the original program, including polynomial coefficient matching and
+  // positive semidefiniteness, independently of the solver's success status.
+  // A small residual does not guarantee a rigorous inner approximation: its
+  // effect depends on the polynomial's scaling and positivity margin.
+  constexpr double kCertificateTolerance = 1e-6;
+  const auto violations =
+      result.GetInfeasibleConstraintNames(prog, kCertificateTolerance);
+  if (!violations.empty()) {
+    throw std::runtime_error(
+        "RegionOfAttraction: SOS certificate failed numerical validation "
+        "(absolute tolerance 1e-6). First violated constraint: " +
+        violations.front());
+  }
+}
+
+}  // namespace internal
 
 namespace {
 
@@ -104,7 +137,7 @@ Expression FixedLyapunovConvex(
     result = Solve(prog, std::nullopt, solver_options);
   }
 
-  DRAKE_THROW_UNLESS(result.is_success());
+  internal::CheckRegionOfAttractionCertificate(prog, result);
 
   DRAKE_THROW_UNLESS(result.GetSolution(rho) > 0.0);
   return V / result.GetSolution(rho);
@@ -187,7 +220,7 @@ Expression FixedLyapunovConvexImplicit(
   prog.AddCost(-rho);
   const auto result = Solve(prog);
 
-  DRAKE_THROW_UNLESS(result.is_success());
+  internal::CheckRegionOfAttractionCertificate(prog, result);
 
   DRAKE_THROW_UNLESS(result.GetSolution(rho) > 0.0);
   return V / result.GetSolution(rho);
@@ -255,7 +288,7 @@ Expression RegionOfAttraction(const System<double>& system,
     } else {
       result = Solve(prog, std::nullopt, options.solver_options);
     }
-    DRAKE_THROW_UNLESS(result.is_success());
+    internal::CheckRegionOfAttractionCertificate(prog, result);
   } else {
     // Solve a Lyapunov equation to find a candidate.
     const auto linearized_system =
