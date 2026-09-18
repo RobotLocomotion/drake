@@ -205,7 +205,7 @@ void CheckNonConvexROA(const solvers::SolverId& solver_id, double divisor,
                           .Build();
   const auto context = system->CreateDefaultContext();
   RegionOfAttractionOptions options;
-  options.lyapunov_candidate = x.dot(x);
+  options.lyapunov_candidate = (x.transpose() * x)(0);
   options.state_variables = x;
   options.solver_id = solver_id;
   if (solver_id == solvers::CsdpSolver::id()) {
