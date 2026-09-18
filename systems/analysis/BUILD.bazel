@@ -236,7 +236,11 @@ drake_cc_library(
 drake_cc_library(
     name = "region_of_attraction",
     srcs = ["region_of_attraction.cc"],
-    hdrs = ["region_of_attraction.h"],
+    hdrs = [
+        "region_of_attraction.h",
+        "region_of_attraction_internal.h",
+    ],
+    install_hdrs_exclude = ["region_of_attraction_internal.h"],
     deps = [
         "//common:name_value",
         "//math:continuous_lyapunov_equation",
@@ -244,6 +248,7 @@ drake_cc_library(
         "//math:quadratic_form",
         "//solvers:choose_best_solver",
         "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
         "//solvers:solve",
         "//systems/framework",
         "//systems/primitives:linear_system",
@@ -736,9 +741,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "region_of_attraction_test",
+    size = "medium",
     deps = [
         ":region_of_attraction",
+        "//common/test_utilities:expect_throws_message",
+        "//solvers:clarabel_solver",
         "//solvers:csdp_solver",
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
         "//solvers:mosek_solver",
         "//systems/framework:diagram_builder",
         "//systems/primitives:constant_vector_source",
