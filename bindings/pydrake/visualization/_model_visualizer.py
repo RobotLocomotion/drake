@@ -272,6 +272,7 @@ class ModelVisualizer:
         camera_config.name = "preview"
         camera_config.X_PB.base_frame = "$rgbd_sensor_body"
         camera_config.z_far = 3  # Show 3m of frustum.
+        camera_config.clipping_far = 10
         camera_config.fps = 1.0  # Ignored -- we're not simulating.
         # The meshcat default field of view is 75 degrees. We want the two
         # images to match.
@@ -281,7 +282,28 @@ class ModelVisualizer:
         camera_config.show_rgb = not is_unit_test
 
         # An empty list causes the render engine to revert to default lighting.
-        lights = []
+        lights = [
+            LightParameter(
+                type="directional",
+                frame="world",
+                direction=[1, 1, -1],
+                intensity=0.35,
+            ),
+            LightParameter(
+                type="directional",
+                frame="world",
+                direction=[1, -1, -1],
+                intensity=0.35,
+            ),
+            LightParameter(
+                type="spot",
+                frame="world",
+                direction=[0, 0, -1],
+                intensity=0.35,
+                position=[-0.025, -0.025, 2.0],
+                cone_angle=20,
+            ),
+        ]
         if self._no_lights:
             # We can only disable *all* lights by creating a light with zero
             # intensity.
@@ -291,12 +313,13 @@ class ModelVisualizer:
             # Note: RenderEngineGL doesn't have full feature parity with
             # RenderEngineVtk. So, RenderEngineGl does not do the
             # initialization necessary for RenderEngineVtk.
-            camera_config.renderer_class = RenderEngineGlParams(lights=lights)
+            camera_config.renderer_class = RenderEngineGlParams(
+                lights=lights, cast_shadows=True, shadow_map_size=1024
+            )
             return camera_config
 
         vtk_params = RenderEngineVtkParams(
-            exposure=1,
-            lights=lights,
+            exposure=1, lights=lights, cast_shadows=True, shadow_map_size=1024
         )
         if self._environment_map.is_file():
             vtk_params.environment_map = EnvironmentMap(
