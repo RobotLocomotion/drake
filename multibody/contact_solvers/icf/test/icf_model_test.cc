@@ -194,6 +194,7 @@ GTEST_TEST(IcfModel, ReducedDataAndHessian) {
     MakeModelReducible(&model, locked_dofs);
     model.ReduceInto(&reduced_model, &mapping);
     reduced_v = VectorX<double>::Zero(reduced_model.num_velocities());
+    reduced_model.SetSparsityPattern();
     reduced_model.ResizeData(&reduced_data);
     reduced_model.CalcData(reduced_v, &reduced_data);
     reduced_model.SetSparsityPattern();
