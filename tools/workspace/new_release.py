@@ -100,8 +100,6 @@ _COHORTS = (
 @dataclass
 class UpgradeResult:
     was_upgraded: bool
-    can_be_committed: bool = False
-    modified_paths: set[str] | None = None
     commit_message: str | None = None
 
 
@@ -113,10 +111,16 @@ class RuleType(Enum):
     GITHUB_RELEASE_ATTACHMENTS = "github_release_attachments"
     # Repository rule that uses an external upgrade script.
     SCRIPTED = "scripted"
+    # Repository rule that does both of the above.
+    GITHUB_WITH_SCRIPT = "github_script"
 
     @property
     def is_github(self) -> bool:
-        return self in {RuleType.GITHUB, RuleType.GITHUB_RELEASE_ATTACHMENTS}
+        return self in {
+            RuleType.GITHUB,
+            RuleType.GITHUB_RELEASE_ATTACHMENTS,
+            RuleType.GITHUB_WITH_SCRIPT,
+        }
 
 
 class UpgradeType(Enum):
@@ -347,18 +351,21 @@ def _check_for_upgrades(
             )
 
 
-def _modified_paths(repo: git.Repo, root: str) -> set[str]:
+def _modified_paths(
+    repo: git.Repo, root: str = "", untracked: bool = True
+) -> set[str]:
     """Returns the set of paths under `root` which are added, removed or
     altered.
     """
     assert os.path.isdir(os.path.join(repo.working_tree_dir, root))
-    if not root.endswith("/"):
+    if root and not root.endswith("/"):
         root += "/"
 
     result = set()
-    for item in repo.untracked_files:
-        if item.startswith(root):
-            result.add(item)
+    if untracked:
+        for item in repo.untracked_files:
+            if item.startswith(root):
+                result.add(item)
 
     for other in [None, "HEAD"]:
         for item in repo.index.diff(other):
@@ -389,7 +396,6 @@ def _do_commit(
     local_drake_checkout: git.Repo,
     actually_commit: bool,
     workspace_names: list[str],
-    paths: list[str],
     message: str,
 ) -> None:
     """Commits the local changes to the list of workspaces, or prints what
@@ -398,16 +404,12 @@ def _do_commit(
     info("*" * 72)
     if actually_commit:
         names = ", ".join(workspace_names)
-        local_drake_checkout.git.add("-A", *paths)
-        local_drake_checkout.git.commit(
-            "-o", *paths, "-m", "[workspace] " + message
-        )
+        local_drake_checkout.git.commit("-a", "-m", f"[workspace] {message}")
         info(f"Done.  Changes for {names} were committed.")
         info("Be sure to review the changes and amend the commit if needed.")
     else:
         info("Done.  Be sure to review and commit the changes:")
-        info(f"  git add {' '.join([shlex.quote(p) for p in paths])}")
-        info(f"  git commit -m{shlex.quote('[workspace] ' + message)}")
+        info(f"  git commit -a -m{shlex.quote('[workspace] ' + message)}")
     info("*" * 72)
     info("")
 
@@ -548,7 +550,8 @@ def _do_upgrade(
 
     data = metadata[workspace_name]
     rule_type = RuleType(data["repository_rule_type"])
-    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
+    workspace_root = f"tools/workspace/{workspace_name}/"
+    bzl_filename = f"{workspace_root}repository.bzl"
 
     if workspace_name in _OTHER_REPOSITORIES + _CHECK_ONLY_REPOSITORIES:
         upgrade_advice = data.get("upgrade_advice", "")
@@ -566,7 +569,6 @@ def _do_upgrade(
 
     if rule_type == RuleType.SCRIPTED:
         # Determine if we should and can commit the changes made.
-        workspace_root = f"tools/workspace/{workspace_name}/"
         can_commit = _is_unmodified(local_drake_checkout, workspace_root)
         if commit and not can_commit:
             warn(f"{workspace_root} has local changes.")
@@ -603,7 +605,7 @@ def _do_upgrade(
 
         # Do the upgrade.
         upgrade_type = UpgradeType(data["upgrade_type"])
-        if rule_type == RuleType.GITHUB:
+        if rule_type in {RuleType.GITHUB, RuleType.GITHUB_WITH_SCRIPT}:
             _do_upgrade_github_archive(
                 temp_dir=temp_dir,
                 upgrade_type=upgrade_type,
@@ -612,8 +614,8 @@ def _do_upgrade(
                 bzl_filename=bzl_filename,
                 repository=data["repository"],
             )
-        else:
-            assert rule_type == RuleType.GITHUB_RELEASE_ATTACHMENTS
+
+        if rule_type == RuleType.GITHUB_RELEASE_ATTACHMENTS:
             _do_upgrade_github_release_attachments(
                 temp_dir=temp_dir,
                 old_commit=old_commit,
@@ -623,8 +625,16 @@ def _do_upgrade(
                 old_attachments=data["attachments"],
             )
 
+        if rule_type == RuleType.GITHUB_WITH_SCRIPT:
+            modified_paths = _do_upgrade_scripted(
+                local_drake_checkout=local_drake_checkout,
+                workspace_root=workspace_root,
+                script=data["post_upgrade_script"],
+            )
+            if not len(modified_paths):
+                return UpgradeResult(False)
+
         # Finalize the result field(s).
-        modified_paths = {bzl_filename}
         if upgrade_type == UpgradeType.COMMIT:
             message = f"Update dependency {workspace_name} to latest commit"
         else:
@@ -644,7 +654,7 @@ def _do_upgrade(
         warn("*" * 72)
         warn("")
 
-    return UpgradeResult(True, can_commit, modified_paths, message)
+    return UpgradeResult(True, message)
 
 
 def _do_upgrades(
@@ -661,8 +671,23 @@ def _do_upgrades(
     if len(workspace_names) == 0:
         return
 
-    can_commit = True
-    modified_paths = []
+    # If committing, assert we have a clean workspace before proceeding. We
+    # don't want to commit any stray files. (Untracked files are OK.)
+    modified_paths = _modified_paths(local_drake_checkout, untracked=False)
+    if commit and len(modified_paths) > 0:
+        error_message = "\n".join(
+            [
+                "",
+                "*" * 72,
+                "Found modified or staged paths in local working tree: ",
+                ",".join(modified_paths),
+                "Please ensure the checkout is clean before proceeding.",
+                "*" * 72,
+            ]
+        )
+        raise RuntimeError(error_message)
+
+    can_commit = False
     commit_messages = []
     modified_workspace_names = []
     for workspace_name in workspace_names:
@@ -670,8 +695,7 @@ def _do_upgrades(
             gh, local_drake_checkout, temp_dir, workspace_name, metadata, commit
         )
         if result.was_upgraded:
-            can_commit = can_commit and result.can_be_committed
-            modified_paths += result.modified_paths
+            can_commit = True
             commit_messages.append(result.commit_message)
             modified_workspace_names.append(workspace_name)
         else:
@@ -694,7 +718,6 @@ def _do_upgrades(
             local_drake_checkout,
             actually_commit=actually_commit,
             workspace_names=modified_workspace_names,
-            paths=modified_paths,
             message=commit_messages[0],
         )
     else:
@@ -709,7 +732,6 @@ def _do_upgrades(
             local_drake_checkout,
             actually_commit=actually_commit,
             workspace_names=modified_workspace_names,
-            paths=modified_paths,
             message=message,
         )
 
