@@ -3,6 +3,8 @@
 #include <array>
 #include <string>
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -87,20 +89,14 @@ void AddContactMaterial(
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
   if (dissipation.has_value()) {
-    if (*dissipation < 0) {
-      throw std::logic_error(fmt::format(
-          "The dissipation can't be negative; given {}", *dissipation));
-    }
+    DRAKE_THROW_UNLESS(internal::IsNonNegative(*dissipation), *dissipation);
     properties->AddProperty(internal::kMaterialGroup, internal::kHcDissipation,
                             *dissipation);
   }
 
   if (point_stiffness.has_value()) {
-    if (*point_stiffness <= 0) {
-      throw std::logic_error(fmt::format(
-          "The point_contact_stiffness must be strictly positive; given {}",
-          *point_stiffness));
-    }
+    DRAKE_THROW_UNLESS(internal::IsPositive(*point_stiffness),
+                       *point_stiffness);
     properties->AddProperty(internal::kMaterialGroup, internal::kPointStiffness,
                             *point_stiffness);
   }
@@ -117,6 +113,8 @@ void AddContactMaterial(
 void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  DRAKE_THROW_UNLESS(internal::IsPositiveFinite(resolution_hint),
+                     resolution_hint);
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
   AddRigidHydroelasticProperties(properties);
@@ -138,11 +136,8 @@ void AddCompliantHydroelasticProperties(double hydroelastic_modulus,
   // The bare minimum of defining a compliant geometry is to declare its
   // compliance type. Downstream consumers (ProximityEngine) will determine
   // if this is sufficient.
-  if (hydroelastic_modulus <= 0) {
-    throw std::logic_error(
-        fmt::format("The hydroelastic modulus must be positive; given {}",
-                    hydroelastic_modulus));
-  }
+  DRAKE_THROW_UNLESS(internal::IsPositive(hydroelastic_modulus),
+                     hydroelastic_modulus);
   properties->AddProperty(internal::kHydroGroup, internal::kElastic,
                           hydroelastic_modulus);
   properties->AddProperty(internal::kHydroGroup, internal::kComplianceType,
@@ -154,6 +149,8 @@ void AddCompliantHydroelasticProperties(double resolution_hint,
                                         double hydroelastic_modulus,
                                         ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  DRAKE_THROW_UNLESS(internal::IsPositiveFinite(resolution_hint),
+                     resolution_hint);
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
   AddCompliantHydroelasticProperties(hydroelastic_modulus, properties);
@@ -163,6 +160,8 @@ void AddCompliantHydroelasticPropertiesForHalfSpace(
     double slab_thickness, double hydroelastic_modulus,
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  DRAKE_THROW_UNLESS(internal::IsPositiveFinite(slab_thickness),
+                     slab_thickness);
   properties->AddProperty(internal::kHydroGroup, internal::kSlabThickness,
                           slab_thickness);
   AddCompliantHydroelasticProperties(hydroelastic_modulus, properties);
