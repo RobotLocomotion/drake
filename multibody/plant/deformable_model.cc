@@ -444,14 +444,6 @@ void DeformableModel<T>::DoDeclareSystemResources() {
     return;
   } else {
     if (!is_empty()) {
-      if (this->plant().get_discrete_contact_solver() !=
-          DiscreteContactSolver::kSap) {
-        throw std::runtime_error(
-            "DeformableModel is only supported by the SAP contact solver. "
-            "Please use `kSap`, `kLagged`, or `kSimilar` as the discrete "
-            "contact approximation for the MultibodyPlant containing "
-            "deformable bodies.");
-      }
       if (!this->plant().is_discrete()) {
         throw std::runtime_error(
             "Deformable body simulation is only supported with discrete time "
