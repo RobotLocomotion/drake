@@ -4475,6 +4475,9 @@ Parameter ``body_indexes``:
     welded bodies, joint-connected bodies, etc.
 
 Raises:
+    RuntimeError if ``frame_F`` does not belong to ``this`` plant.
+
+Raises:
     RuntimeError if body_indexes contains an invalid BodyIndex or if
     there is a repeated BodyIndex.
 
