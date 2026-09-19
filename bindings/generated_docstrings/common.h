@@ -799,6 +799,14 @@ decouples details of implementation from the idea of the object.
 Combined with its immutability, it would serve well as a element of a
 public API.
 
+**Formatting**
+
+Identifiers may be formatted with ``fmt`` (e.g., ``fmt∷format``,
+`fmt∷to_string`). The default format (``{}``) prints the underlying
+integer. The ``{:r:}`` (repr) format prints a typed representation
+that includes the identifier type name, e.g., ``FooId(1)``. Further
+specs after ``r:`` are applied to that string (e.g., ``{:r:>10}``).
+
 See also:
     TypeSafeIndex
 
@@ -2343,6 +2351,14 @@ conversion:
     </details>
 
 TODO(#15354) We hope to fix this irregularity in the future.
+
+**Formatting**
+
+Indices may be formatted with ``fmt`` (e.g., ``fmt∷format``,
+`fmt∷to_string`). The default format (``{}``) prints the underlying
+integer. The ``{:r:}`` (repr) format prints a typed representation
+that includes the index type name, e.g., ``FooIndex(0)``. Further
+specs after ``r:`` are applied to that string (e.g., ``{:r:>10}``).
 
 See also:
     drake∷geometry∷Identifier
