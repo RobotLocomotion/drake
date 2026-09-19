@@ -1,0 +1,333 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "continuous_collision",
+    visibility = ["//visibility:public"],
+    deps = [":continuous_collision_checker"],
+)
+
+# Numerical policy, shape classification and the pair record, shared by every
+# translation unit here.
+drake_cc_library(
+    name = "internal",
+    hdrs = ["internal.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:unused",
+        "//geometry:geometry_ids",
+        "//geometry:shape_specification",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "piecewise_bezier_path",
+    srcs = ["piecewise_bezier_path.cc"],
+    hdrs = ["piecewise_bezier_path.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "//common/trajectories:trajectory",
+        "@eigen",
+    ],
+    implementation_deps = [
+        ":internal",
+        "//common:nice_type_name",
+        "//common/trajectories:bezier_curve",
+        "//common/trajectories:bspline_trajectory",
+        "//common/trajectories:composite_trajectory",
+        "//common/trajectories:piecewise_polynomial",
+        "//math:binomial_coefficient",
+        "@fmt",
+    ],
+)
+
+# The kinematic analysis: bounding spheres, J(p) and the lambda table.
+drake_cc_library(
+    name = "motion_bound_table",
+    srcs = ["motion_bound_table.cc"],
+    hdrs = ["motion_bound_table.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":internal",
+        ":piecewise_bezier_path",
+        "//common:essential",
+        "//geometry:geometry_ids",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree:multibody_tree_indexes",
+        "//planning:robot_diagram",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph_inspector",
+        "//geometry:shape_specification",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//multibody/tree",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "distance_oracle",
+    srcs = ["distance_oracle.cc"],
+    hdrs = ["distance_oracle.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":internal",
+        "//common:essential",
+        "//geometry:scene_graph",
+        "//planning:robot_diagram",
+        "@eigen",
+    ],
+    implementation_deps = [
+        "//geometry:scene_graph_inspector",
+        "//geometry:shape_specification",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "@fmt",
+    ],
+)
+
+# The public facade plus the node recursion it drives. certifier.{h,cc} are
+# private to this target: certifier.h names the public Options/Result types, so
+# it cannot live in a library the facade depends on. It is listed in hdrs
+# rather than srcs so that install_hdrs_exclude can keep it out of the install
+# tree; a private header left in srcs is installed by default, and the internal
+# headers it includes are not, so mkdoc would fail to parse it there.
+drake_cc_library(
+    name = "continuous_collision_checker",
+    srcs = [
+        "certifier.cc",
+        "continuous_collision_checker.cc",
+    ],
+    hdrs = [
+        "certifier.h",
+        "continuous_collision_checker.h",
+    ],
+    install_hdrs_exclude = ["certifier.h"],
+    deps = [
+        "//common:essential",
+        "//common:parallelism",
+        "//common/trajectories:trajectory",
+        "//geometry:geometry_ids",
+        "//multibody/tree:multibody_tree_indexes",
+        "//planning:robot_diagram",
+        "@eigen",
+    ],
+    implementation_deps = [
+        ":distance_oracle",
+        ":internal",
+        ":motion_bound_table",
+        ":piecewise_bezier_path",
+        "//geometry:scene_graph",
+        "//geometry:scene_graph_inspector",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//planning:collision_checker_context",
+        "@fmt",
+    ],
+)
+
+# === test/ ===
+
+# The helpers the tests share: seeded random primitives and surface samplers,
+# the throw-message probe, the random world generator two corpora are built
+# from, and the corpus plus deep workload concurrency_test.cc pins the driver's
+# determinism against.
+drake_cc_library(
+    name = "test_utilities",
+    testonly = 1,
+    hdrs = ["test/test_utilities.h"],
+    deps = [
+        ":continuous_collision_checker",
+        ":distance_oracle",
+        "//common:parallelism",
+        "//common/trajectories:bezier_curve",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+        "@googletest//:gtest",
+    ],
+)
+
+# Curve module acceptance tests.
+drake_cc_googletest(
+    name = "piecewise_bezier_path_test",
+    deps = [
+        ":internal",
+        ":piecewise_bezier_path",
+        "//common:copyable_unique_ptr",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
+        "//common/trajectories:bezier_curve",
+        "//common/trajectories:bspline_trajectory",
+        "//common/trajectories:composite_trajectory",
+        "//common/trajectories:piecewise_polynomial",
+        "//math:bspline_basis",
+    ],
+)
+
+# The displacement lemma, the lambda table and the J(p) subtree logic.
+drake_cc_googletest(
+    name = "motion_bound_test",
+    timeout = "moderate",
+    deps = [
+        ":motion_bound_table",
+        ":test_utilities",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph_inspector",
+        "//multibody/tree",
+        "@fmt",
+    ],
+)
+
+# The bounding-sphere containment property test.
+drake_cc_googletest(
+    name = "bounding_sphere_test",
+    deps = [
+        ":motion_bound_table",
+        ":test_utilities",
+        "//common:memory_file",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:in_memory_mesh",
+        "//geometry:shape_specification",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//math:geometric_transform",
+    ],
+)
+
+# Oracle accuracy, probe classification and the analytic half-space fallback.
+drake_cc_googletest(
+    name = "distance_oracle_test",
+    data = ["//geometry:test_obj_files"],
+    deps = [
+        ":distance_oracle",
+        "//common:find_resource",
+        "//common:memory_file",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:geometry_instance",
+        "//geometry:in_memory_mesh",
+        "//geometry:proximity_properties",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//math:geometric_transform",
+        "//multibody/fem:deformable_body_config",
+        "//multibody/plant",
+        "//multibody/tree:spatial_inertia",
+        "//planning:robot_diagram",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+# Certifier semantics, including retiming invariance and the standing soundness
+# guard, on a focused, hand-built corpus.
+drake_cc_googletest(
+    name = "certifier_test",
+    deps = [
+        ":piecewise_bezier_path",
+        ":test_utilities",
+    ],
+)
+
+# The randomized soundness fuzz: random worlds x random trajectories,
+# cross-checked against dense sampling. The dense cross-check (~1e7
+# signed-distance queries) is what makes this test long rather than the
+# certification itself.
+#
+# Under an instrumented build that cross-check is what blows the budget, so
+# the corpus shrinks to a quarter of its size there (the assertions are
+# fractions of kNumCases and hold either way; see soundness_fuzz_test.cc).
+# asan and lsan are excluded outright: they slow the dense sweep by more than
+# the quarter corpus recovers.
+drake_cc_googletest(
+    name = "soundness_fuzz_test",
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/lsan:enabled",
+    ],
+    timeout = "long",
+    # The two settings are mutually exclusive (each dynamic-analysis config
+    # matches exactly one of them), so this select is unambiguous.
+    defines = select({
+        "//tools/valgrind:enabled": ["DRAKE_CCD_FUZZ_SMALL_CORPUS"],
+        "//tools:using_sanitizer": ["DRAKE_CCD_FUZZ_SMALL_CORPUS"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":distance_oracle",
+        ":internal",
+        ":piecewise_bezier_path",
+        ":test_utilities",
+        "//common/trajectories:bspline_trajectory",
+        "//common/trajectories:piecewise_polynomial",
+        "//geometry:scene_graph_inspector",
+        "//math:bspline_basis",
+    ],
+)
+
+# Regression on obstacles a sampled checker steps over: a plate thinner than
+# SceneGraphCollisionChecker's default edge_step_size, and the millimetre-scale
+# gap that must still certify free.
+drake_cc_googletest(
+    name = "thin_obstacle_test",
+    deps = [
+        ":test_utilities",
+        "//planning:collision_checker_params",
+        "//planning:scene_graph_collision_checker",
+    ],
+)
+
+# Concurrency determinism. Running with many threads is the point of this
+# test: it pins the answer at Parallelism {1, 2, 8, 16}. Every case is an
+# equality, so this target runs under every build flavor, sanitizers included.
+#
+# "Every build flavor" is also why the timeout is moderate rather than the
+# default short: --config=debug and --config=lsan scale the short budget to
+# 120 s and 72 s respectively, and building the deep workload costs a fraction
+# of a second optimized but seconds at -O0 (see test_utilities.h).
+drake_cc_googletest(
+    name = "concurrency_test",
+    timeout = "moderate",
+    num_threads = 16,
+    deps = [
+        ":test_utilities",
+        "//common:parallelism",
+    ],
+)
+
+# API / UX clear-throw tests.
+drake_cc_googletest(
+    name = "api_test",
+    deps = [
+        ":test_utilities",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:geometry_instance",
+        "//geometry:proximity_properties",
+        "//multibody/fem:deformable_body_config",
+        "//multibody/plant",
+        "//multibody/tree",
+    ],
+)
+
+add_lint_tests()
