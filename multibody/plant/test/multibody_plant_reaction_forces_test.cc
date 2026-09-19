@@ -18,6 +18,7 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/cenic/continuous_icf_force_manager.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
@@ -27,6 +28,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::Box;
@@ -53,6 +55,7 @@ using drake::multibody::internal::CompliantContactManager;
 using drake::systems::Context;
 using drake::systems::Diagram;
 using drake::systems::Simulator;
+using drake::systems::SimulatorConfig;
 using Eigen::Vector3d;
 
 namespace drake {
@@ -87,9 +90,34 @@ struct LadderTestConfig {
   enum class WeldMethod {
     kWeldJoint,
     kRevoluteJointWithLimits,  // Revolute joint with lower limit.
-    // TODO(amcastro-tri): consider a weld constraint case.
+    kWeldConstraint,
   } weld_method{WeldMethod::kWeldJoint};
+  enum class IntegratorChoice {
+    kImplicitEuler,
+    kCenic,
+  } integrator_choice{IntegratorChoice::kImplicitEuler};
 };
+
+void ConfigureIntegrator(LadderTestConfig::IntegratorChoice choice,
+                         Simulator<double>* simulator) {
+  SimulatorConfig config;
+  using enum LadderTestConfig::IntegratorChoice;
+  switch (choice) {
+    case kImplicitEuler:
+      // The default RK3 integrator requires specifying a very high accuracy to
+      // reach steady state within the desired tolerance and therefore it is
+      // very costly.  However implicit Euler does a much better job with
+      // larger time steps.
+      config = SimulatorConfig{"implicit_euler", 5e-3, 1e-6, true, 0.0, 0.0};
+      break;
+    case kCenic:
+      // CENIC, even with high accuracy configured, cannot meet the tolerance
+      // achievable with other solvers.
+      config = SimulatorConfig{"cenic", 0.1, 1e-5, true, 0.0, 0.0};
+      break;
+  }
+  ApplySimulatorConfig(config, simulator);
+}
 
 // This provides the suffix for each test parameter: the test config
 // description.
@@ -153,6 +181,10 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     }
 
     plant_->Finalize();
+    if (config.integrator_choice ==
+        LadderTestConfig::IntegratorChoice::kCenic) {
+      AddIcfContinuousForceReporting(plant_);
+    }
 
     if (plant_->is_discrete()) {
       // When using the SAP solver, the solver convergence tolerance must be set
@@ -209,9 +241,12 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     // ground with the pin joint.
     const double half_ladder_length = kLadderLength / 2.0;
     const double half_ladder_mass = kLadderMass / 2.0;
+    // To work with a weld constraint, the mass matrix needs at least a little
+    // extent in all dimensions. This owes to the way SAP evaluates individual
+    // cliques before applying constraints.
     const SpatialInertia<double> M_BBo_B =
-        SpatialInertia<double>::ThinRodWithMassAboutEnd(
-            half_ladder_mass, half_ladder_length, Vector3d::UnitZ());
+        SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
+            half_ladder_mass, 0.02, half_ladder_length, Vector3d::UnitZ());
 
     // Create a rigid body for the ladder.
     ladder_lower_ = &plant_->AddRigidBody("ladder_lower", M_BBo_B);
@@ -278,6 +313,11 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
                                                   Vector3d::UnitY(), 0, kInf);
         break;
       }
+      case LadderTestConfig::WeldMethod::kWeldConstraint: {
+        constraint_id_ = plant_->AddWeldConstraint(*ladder_lower_, X_BlBu,
+                                                   *ladder_upper_, {});
+        break;
+      }
     }
 
     // Add actuation.
@@ -317,17 +357,31 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
                             (kDistanceToWall - kPointContactRadius));
     const double theta = std::asin(kDistanceToWall / (kLadderLength + norm_EU));
     pin_->set_angle(plant_context, theta);
+    const LadderTestConfig& config = GetParam();
+    if (config.weld_method == LadderTestConfig::WeldMethod::kWeldConstraint) {
+      // For the weld constraint case, the upper half of the ladder is a free
+      // body, only held in place by the constraint. We need to give it a sane
+      // initial state to prevent a large initial constraint violation and
+      // subsequent instability.
+      const RigidTransformd X_BlBu(Vector3d(0.0, 0.0, kLadderLength / 2.0));
+      const RigidTransformd X_WBl = plant_->CalcRelativeTransform(
+          *plant_context, plant_->world_frame(), ladder_lower_->body_frame());
+      const RigidTransformd X_WBu = X_WBl * X_BlBu;
+      plant_->SetFreeBodyPose(plant_context, *ladder_upper_, X_WBu);
+    }
 
     // Fix the actuation.
     const Vector1d tau_actuation = kActuationTorque * Vector1d::Ones();
     plant_->get_actuation_input_port().FixValue(plant_context, tau_actuation);
 
     // Sanity check model size.
-    auto sanity_check = [this]() {
-      const LadderTestConfig& config = GetParam();
+    auto sanity_check = [&config, this]() {
       ASSERT_EQ(plant_->num_bodies(), 3);
       if (config.weld_method == LadderTestConfig::WeldMethod::kWeldJoint) {
         ASSERT_EQ(plant_->num_velocities(), 1);
+      } else if (config.weld_method ==
+                 LadderTestConfig::WeldMethod::kWeldConstraint) {
+        ASSERT_EQ(plant_->num_velocities(), 7);
       } else {
         ASSERT_EQ(plant_->num_velocities(), 2);
       }
@@ -337,22 +391,18 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
 
     // We run a simulation to steady state so that contact forces balance
     // gravity and actuation.
-    const LadderTestConfig& config = GetParam();
     auto simulator = std::make_unique<Simulator<double>>(
         *diagram_, std::move(diagram_context));
-    // The default RK3 integrator requires specifying a very high accuracy to
-    // reach steady state within kTolerance and therefore it is very costly.
-    // However implicit Euler does a much better job with larger time steps.
-    simulator->reset_integrator<systems::ImplicitEulerIntegrator<double>>();
-    simulator->get_mutable_integrator().set_maximum_step_size(5e-3);
-    simulator->get_mutable_integrator().set_target_accuracy(1e-6);
+    ConfigureIntegrator(config.integrator_choice, simulator.get());
     simulator->Initialize();
     simulator->AdvanceTo(config.simulation_time);
+    DRAKE_DEMAND(simulator->get_context().get_time() >= config.simulation_time);
     return simulator;
   }
 
   void VerifyJointReactionForces(Context<double>* diagram_context,
                                  bool hydro_geometry = false) {
+    const LadderTestConfig& config = GetParam();
     Context<double>* plant_context =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context);
     // Evaluate the reaction forces output port to get the reaction force at the
@@ -379,6 +429,10 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     // The contact point.
     Vector3d p_WP(0, 0, 0);
     if (hydro_geometry) {
+      SCOPED_TRACE(
+          fmt::format("names: {} q: {} v: {}", plant_->GetPositionNames(),
+                      fmt_eigen(plant_->GetPositions(*plant_context)),
+                      fmt_eigen(plant_->GetVelocities(*plant_context))));
       // There should be a single contact surface.
       ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 1);
       const HydroelasticContactInfo<double>& hydroelastic_contact_info =
@@ -432,20 +486,37 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     const double tau_g = p_WBcm.x() * weight;  // gravity torque about Bo.
     const double fc_x = (tau_g + kActuationTorque) / p_WP.z();
     const Vector3d f_Bl_W_expected(fc_x, 0.0, weight);
+    double adjusted_tolerance = kTolerance;
+    if (config.integrator_choice ==
+        LadderTestConfig::IntegratorChoice::kCenic) {
+      adjusted_tolerance = 1e-4;
+    }
     EXPECT_TRUE(CompareMatrices(F_Bl_W.translational(), f_Bl_W_expected,
-                                kTolerance, MatrixCompareType::relative));
+                                adjusted_tolerance,
+                                MatrixCompareType::relative));
 
     // Expected contact force.
     const Vector3d f_C_W_expected(-fc_x, 0.0, 0.0);
-    EXPECT_TRUE(CompareMatrices(f_Bp_W, f_C_W_expected, kTolerance,
+    EXPECT_TRUE(CompareMatrices(f_Bp_W, f_C_W_expected, adjusted_tolerance,
                                 MatrixCompareType::relative));
 
     // Since the contact point was purposely located at
     // y = (kProblemWidth / 2.0) - kPointContactRadius, the contact force
     // causes a reaction torque at the pin joint oriented along the z-axis.
     const Vector3d t_Bl_W_expected(0.0, kActuationTorque, -fc_x * p_WP.y());
+    adjusted_tolerance = kTolerance;
+    if (joint_ == nullptr) {
+      // In the weld constraint case, the torque differs from expectations by a
+      // bit more.
+      adjusted_tolerance = 1e-4;
+    }
+    if (config.integrator_choice ==
+        LadderTestConfig::IntegratorChoice::kCenic) {
+      adjusted_tolerance = 1e-4;
+    }
     EXPECT_TRUE(CompareMatrices(F_Bl_W.rotational(), t_Bl_W_expected,
-                                kTolerance, MatrixCompareType::relative));
+                                adjusted_tolerance,
+                                MatrixCompareType::relative));
 
     // Verify reaction forces at the weld joint. We use a free body diagram of
     // the upper half of the ladder and balance of moments at the upper half's
@@ -459,23 +530,36 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
     const Vector3d p_BuBucm =
         ladder_upper_->CalcCenterOfMassInBodyFrame(*plant_context);
     const Vector3d p_WBucm = X_WBu * p_BuBucm;
-    // Reaction forces at X_WBu in W.
-    const SpatialForce<double>& F_Bu_W =
-        X_WBu.rotation() * reaction_forces[joint_->ordinal()];
-    // Apart from reaction forces, two forces act on the upper half:
-    // Contact force fc_x and gravity.
-    const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
-    // Compute the y component of the expected torque due to gravity applied at
-    // Bcm and torque due to the contact force applied at P.
-    const double t_Bu_y = -(weight / 2.0) * (p_WBucm.x() - p_WBu.x()) +
-                          fc_x * (p_WP.z() - p_WBu.z());
-    // Contact point offset causes a torque at the weld joint oriented along
-    // the z-axis.
-    const Vector3d t_Bu_expected(0.0, t_Bu_y, -fc_x * (p_WP.y() - p_WBu.y()));
-    EXPECT_TRUE(CompareMatrices(F_Bu_W.rotational(), t_Bu_expected, kTolerance,
-                                MatrixCompareType::relative));
-    EXPECT_TRUE(CompareMatrices(F_Bu_W.translational(), f_Bu_expected,
-                                kTolerance, MatrixCompareType::relative));
+    if (joint_ != nullptr) {
+      // Reaction forces at X_WBu in W.
+      const SpatialForce<double>& F_Bu_W =
+          X_WBu.rotation() * reaction_forces[joint_->ordinal()];
+      // Apart from reaction forces, two forces act on the upper half:
+      // Contact force fc_x and gravity.
+      const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
+      // Compute the y component of the expected torque due to gravity applied
+      // at Bcm and torque due to the contact force applied at P.
+      const double t_Bu_y = -(weight / 2.0) * (p_WBucm.x() - p_WBu.x()) +
+                            fc_x * (p_WP.z() - p_WBu.z());
+      // Contact point offset causes a torque at the weld joint oriented along
+      // the z-axis.
+      adjusted_tolerance = kTolerance;
+      if (config.integrator_choice ==
+          LadderTestConfig::IntegratorChoice::kCenic) {
+        adjusted_tolerance = 1e-4;
+      }
+      const Vector3d t_Bu_expected(0.0, t_Bu_y, -fc_x * (p_WP.y() - p_WBu.y()));
+      EXPECT_TRUE(CompareMatrices(F_Bu_W.rotational(), t_Bu_expected,
+                                  adjusted_tolerance,
+                                  MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(F_Bu_W.translational(), f_Bu_expected,
+                                  adjusted_tolerance,
+                                  MatrixCompareType::relative));
+    } else {
+      // TODO(rpoyner-tri): calculate reaction forces at the constraint site,
+      // most likely by hand, but possibly by reaching into solver internals of
+      // SAP and/or ICF.
+    }
   }
 
   void TestWithThreads() {
@@ -572,8 +656,13 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
   geometry::GeometryId ladder_upper_geometry_id_;
   const RevoluteJoint<double>* pin_{nullptr};
 
-  // Weld joint joining the two halves of the ladder.
+  // Joint joining the two halves of the ladder; may null if a constraint is
+  // used instead.
   const Joint<double>* joint_{nullptr};
+
+  // Constraint joining the two halves of the ladder; may be invalid if a joint
+  // is used instead.
+  MultibodyConstraintId constraint_id_{};
 
   std::unique_ptr<Diagram<double>> diagram_;
 };
@@ -592,6 +681,15 @@ std::vector<LadderTestConfig> MakeTestCases() {
       {.description = "ContinuousHydroelastic",
        .time_step = 0.0,
        .hydro_geometry = true},
+      {.description = "ContinuousHydroelasticCenic",
+       .time_step = 0.0,
+       .hydro_geometry = true,
+       .integrator_choice = LadderTestConfig::IntegratorChoice::kCenic},
+      {.description = "WeldConstraintContinuousHydroelasticCenic",
+       .time_step = 0.0,
+       .hydro_geometry = true,
+       .weld_method = LadderTestConfig::WeldMethod::kWeldConstraint,
+       .integrator_choice = LadderTestConfig::IntegratorChoice::kCenic},
 
       // Discrete SAP solver tests.
       {.description = "WeldJointDiscretePointSap",
@@ -610,6 +708,10 @@ std::vector<LadderTestConfig> MakeTestCases() {
        .time_step = 2.0e-2,
        .hydro_geometry = true,
        .weld_method = LadderTestConfig::WeldMethod::kRevoluteJointWithLimits},
+      {.description = "WeldConstraintDiscreteHydroelasticSap",
+       .time_step = 2.0e-2,
+       .hydro_geometry = true,
+       .weld_method = LadderTestConfig::WeldMethod::kWeldConstraint},
   };
 }
 
