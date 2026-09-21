@@ -22,6 +22,7 @@ def github_archive(
         local_repository_override = None,
         mirrors = None,
         upgrade_advice = "",
+        post_upgrade_script = "",
         **kwargs):
     """A macro to be called in the MODULE.bazel that adds an external from
     GitHub using a workspace rule.
@@ -82,6 +83,10 @@ def github_archive(
         upgrade_advice: optional string that describes extra steps that should
             be taken when upgrading to a new version.
             Used by //tools/workspace:new_release.
+        post_upgrade_script: optional string describing a path to an upgrade
+            script to be run after the automated upgrade, relative to the
+            package.
+            Used by //tools/workspace:new_release.
     """
     if repository == None:
         fail("Missing repository=")
@@ -131,6 +136,7 @@ def github_archive(
         extra_strip_prefix = extra_strip_prefix,
         mirrors = mirrors,
         upgrade_advice = upgrade_advice,
+        post_upgrade_script = post_upgrade_script,
         **kwargs
     )
 
@@ -204,6 +210,9 @@ _github_archive_real = repository_rule(
         "upgrade_advice": attr.string(
             default = "",
         ),
+        "post_upgrade_script": attr.string(
+            default = "",
+        ),
     },
 )
 """This is a rule() formulation of the github_archive() macro.  It is identical
@@ -236,6 +245,7 @@ def setup_github_repository(repository_ctx):
         sha256 = repository_ctx.attr.sha256,
         extra_strip_prefix = repository_ctx.attr.extra_strip_prefix,
         upgrade_advice = getattr(repository_ctx.attr, "upgrade_advice", ""),
+        post_upgrade_script = getattr(repository_ctx.attr, "post_upgrade_script", ""),
     )
 
     # Optionally apply source patches, using Bazel's utility helper.  Here we
@@ -267,6 +277,7 @@ def github_download_and_extract(
         sha256 = "0" * 64,
         extra_strip_prefix = "",
         upgrade_advice = "",
+        post_upgrade_script = "",
         upgrade_cooldown_days = None,
         commit_pin = None):
     """Download an archive of the provided GitHub repository and commit to the
@@ -303,6 +314,10 @@ def github_download_and_extract(
             versions.
         upgrade_advice: optional string that describes extra steps that should
             be taken when upgrading to a new version.
+            Used by //tools/workspace:new_release.
+        post_upgrade_script: optional string describing a path to an upgrade
+            script to be run after the automated upgrade, relative to the
+            package.
             Used by //tools/workspace:new_release.
     """
     urls = _urls(
@@ -353,6 +368,7 @@ def github_download_and_extract(
         urls = urls,
         strip_prefix = strip_prefix,
         upgrade_advice = upgrade_advice,
+        post_upgrade_script = post_upgrade_script,
     )
 
 def _sha256(sha256):
