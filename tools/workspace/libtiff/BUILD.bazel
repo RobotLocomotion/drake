@@ -1,0 +1,27 @@
+load("@drake//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("defs.bzl", "libtiff_cc_library")
+
+package(default_visibility = ["//visibility:private"])
+
+libtiff_cc_library(
+    name = "libtiff",
+    isystem = True,
+    visibility = ["//visibility:public"],
+    deps = ["@module_libtiff//:tiff"],
+)
+
+install_files(
+    name = "install_license",
+    dest = "share/doc/libtiff",
+    files = ["@module_libtiff//:LICENSE.md"],
+    allowed_externals = ["@module_libtiff//:LICENSE.md"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()

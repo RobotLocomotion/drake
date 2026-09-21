@@ -632,7 +632,7 @@ MODULE_SETTINGS = {
             "VTK_MODULE_USE_EXTERNAL_vtkpng=1",
         ],
         "deps_extra": [
-            "@libpng_internal//:libpng",
+            "@libtiff",
         ],
     },
     "VTK::tiff": {
@@ -640,7 +640,7 @@ MODULE_SETTINGS = {
             "VTK_MODULE_USE_EXTERNAL_vtktiff=1",
         ],
         "deps_extra": [
-            "@libtiff_internal//:libtiff",
+            "@libtiff",
         ],
     },
     "VTK::zlib": {
