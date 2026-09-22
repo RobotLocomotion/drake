@@ -83,9 +83,8 @@ def github_archive(
         upgrade_advice: optional string that describes extra steps that should
             be taken when upgrading to a new version.
             Used by //tools/workspace:new_release.
-        post_upgrade_script: optional string describing a path to an upgrade
-            script to be run after the automated upgrade, relative to the
-            package.
+        post_upgrade_script: optional string describing the Bazel target for an
+            upgrade script to be run after the automated upgrade.
             Used by //tools/workspace:new_release.
     """
     if repository == None:
@@ -315,9 +314,8 @@ def github_download_and_extract(
         upgrade_advice: optional string that describes extra steps that should
             be taken when upgrading to a new version.
             Used by //tools/workspace:new_release.
-        post_upgrade_script: optional string describing a path to an upgrade
-            script to be run after the automated upgrade, relative to the
-            package.
+        post_upgrade_script: optional string describing the Bazel target for an
+            upgrade script to be run after the automated upgrade.
             Used by //tools/workspace:new_release.
     """
     urls = _urls(

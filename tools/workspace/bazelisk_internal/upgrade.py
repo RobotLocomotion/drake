@@ -1,14 +1,8 @@
-#!/usr/bin/env python3
-
 """
 upgrade.py - Upgrades Drake's version of bazelisk.
 
 This program is only tested / supported on Ubuntu.
 """
-
-# noqa: shebang
-# We suppress shebang lint checking because we have a magic trampoline atop our
-# main function that allows us to re-execute ourselves using Bazel.
 
 import hashlib
 import json
@@ -17,6 +11,8 @@ from pathlib import Path
 import re
 import shutil
 import urllib.request
+
+from python import runfiles
 
 
 def _get_url_sha256(url: str) -> str:
@@ -28,21 +24,9 @@ def _get_url_sha256(url: str) -> str:
 
 
 def main():
-    bazelisk_license_path = os.environ.get("DRAKE_BAZELISK_LICENSE_PATH")
-    if bazelisk_license_path is None:
-        # Operate relative to the root of the Drake source tree.
-        os.chdir(Path(__file__).resolve().parents[3])
-        os.execvp(
-            "bazel",
-            ["bazel", "run", "//tools/workspace/bazelisk_internal:upgrade"],
-        )
-
-    # This import only works when run via Bazel, so must come after the re-exec.
-    from python import runfiles
-
-    manifest = runfiles.Create()
-
+    # Operate relative to the root of the Drake source tree.
     drake_dir = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
+    os.chdir(drake_dir)
     mydir = drake_dir / "tools/workspace/bazelisk_internal"
 
     # Find out which version we are pinned to (new_release has already upgraded
@@ -75,12 +59,14 @@ def main():
     )
 
     # Upgrade our third_party copy.
+    manifest = runfiles.Create()
+    bazelisk_license_path = os.environ["DRAKE_BAZELISK_LICENSE_PATH"]
     bazelisk_py_path = os.environ["DRAKE_BAZELISK_PY_PATH"]
     bazelisk_files = {
         manifest.Rlocation(bazelisk_license_path),
         manifest.Rlocation(bazelisk_py_path),
     }
-    third_party_dir = drake_dir / "third_party/com_github_bazelbuild_bazelisk"
+    third_party_dir = drake_dir / "third_party/com_github_bazelbuild_bazelisk/"
     for file in bazelisk_files:
         shutil.copy2(file, third_party_dir)
 

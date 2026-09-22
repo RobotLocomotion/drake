@@ -13,7 +13,7 @@ def bazelisk_internal_repository(
         RobotLocomotion/drake for job lists.
         """,  # noqa
         upgrade_type = "release",
-        post_upgrade_script = "upgrade.py",
+        post_upgrade_script = "//tools/workspace/bazelisk_internal:upgrade",
         commit = "v1.29.0",
         sha256 = "7e4c7b8ade016052e63c1553cb4fbe0c4fe921e1e66913d49eef074ed894e933",  # noqa
         build_file = ":package.BUILD.bazel",
