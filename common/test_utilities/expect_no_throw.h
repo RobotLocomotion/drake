@@ -13,7 +13,7 @@
 // does with labels. (Though TBH, `SCOPED_TRACE(...)` is better.)
 #define _DRAKE_TEST_NO_THROW(statement, fail_macro)                            \
   try {                                                                        \
-    statement;                                                                 \
+    static_cast<void>(statement);                                              \
   } catch (const std::exception& e) {                                          \
     fail_macro() << "Expected: Does not throw:\n  " << #statement << std::endl \
                  << "Actual: Throws " << ::drake::NiceTypeName::Get(e)         \
