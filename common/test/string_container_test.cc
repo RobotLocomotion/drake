@@ -121,23 +121,23 @@ GTEST_TEST(StringContainerTest, NoMalloc) {
   {
     drake::test::LimitMalloc guard;
 
-    alpha.contains("hello");
-    bravo.contains("hello");
-    charlie.contains("hello");
-    delta.contains("hello");
-    echo.contains("hello");
-    foxtrot.contains("hello");
-    gulf.contains("hello");
-    hotel.contains("hello");
+    EXPECT_TRUE(alpha.contains("hello"));
+    EXPECT_TRUE(bravo.contains("hello"));
+    EXPECT_TRUE(charlie.contains("hello"));
+    EXPECT_TRUE(delta.contains("hello"));
+    EXPECT_TRUE(echo.contains("hello"));
+    EXPECT_TRUE(foxtrot.contains("hello"));
+    EXPECT_TRUE(gulf.contains("hello"));
+    EXPECT_TRUE(hotel.contains("hello"));
 
-    alpha.contains(std::string_view{"world"});
-    bravo.contains(std::string_view{"world"});
-    charlie.contains(std::string_view{"world"});
-    delta.contains(std::string_view{"world"});
-    echo.contains(std::string_view{"world"});
-    foxtrot.contains(std::string_view{"world"});
-    gulf.contains(std::string_view{"world"});
-    hotel.contains(std::string_view{"world"});
+    EXPECT_FALSE(alpha.contains(std::string_view{"world"}));
+    EXPECT_FALSE(bravo.contains(std::string_view{"world"}));
+    EXPECT_FALSE(charlie.contains(std::string_view{"world"}));
+    EXPECT_FALSE(delta.contains(std::string_view{"world"}));
+    EXPECT_FALSE(echo.contains(std::string_view{"world"}));
+    EXPECT_FALSE(foxtrot.contains(std::string_view{"world"}));
+    EXPECT_FALSE(gulf.contains(std::string_view{"world"}));
+    EXPECT_FALSE(hotel.contains(std::string_view{"world"}));
   }
 }
 
