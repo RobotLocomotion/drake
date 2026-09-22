@@ -15,8 +15,8 @@ GTEST_TEST(DrakeLcmDisabledTest, DrakeLcm) {
   EXPECT_FALSE(DrakeLcm::available());
 
   DrakeLcm dut;
-  EXPECT_NO_THROW(std::make_unique<DrakeLcm>("memq://"));
-  EXPECT_NO_THROW(std::make_unique<DrakeLcm>(DrakeLcmParams{"memq://"}));
+  EXPECT_NO_THROW((void)std::make_unique<DrakeLcm>("memq://"));
+  EXPECT_NO_THROW((void)std::make_unique<DrakeLcm>(DrakeLcmParams{"memq://"}));
 
   const std::string channel = "DRAKE_LCM_DISABLED_TEST";
   const lcmt_drake_signal signal{};

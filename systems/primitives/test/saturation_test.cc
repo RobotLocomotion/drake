@@ -88,19 +88,19 @@ template <typename T>
 void SaturationTest(bool run_constant_saturation_test) {
   // Tests for error thrown due to incorrectly initialized Saturation. (Both
   // max and min value ports are disabled).
-  EXPECT_ANY_THROW(std::make_unique<Saturation<T>>(0 /* input_size */));
+  EXPECT_ANY_THROW((void)std::make_unique<Saturation<T>>(0 /* input_size */));
 
   // Tests for error thrown due to incorrectly initialized Saturation. (u_min
   // and u_max have unequal lengths).
-  EXPECT_ANY_THROW(
-      std::make_unique<Saturation<T>>(Vector3<T>(1.0, -4.5, -2.5) /* u_min */,
-                                      Vector2<T>(3.0, 5.0) /* u_max */));
+  EXPECT_ANY_THROW((void)std::make_unique<Saturation<T>>(
+      Vector3<T>(1.0, -4.5, -2.5) /* u_min */,
+      Vector2<T>(3.0, 5.0) /* u_max */));
 
   // Tests for error thrown due to incorrectly initialized Saturation. (u_min
   // >= u_max along some or all dimensions).
-  EXPECT_ANY_THROW(
-      std::make_unique<Saturation<T>>(Vector3<T>(1.0, -4.5, -2.5) /* u_min */,
-                                      Vector3<T>(0.75, 5.0, 2.0) /* u_max */));
+  EXPECT_ANY_THROW((void)std::make_unique<Saturation<T>>(
+      Vector3<T>(1.0, -4.5, -2.5) /* u_min */,
+      Vector3<T>(0.75, 5.0, 2.0) /* u_max */));
 
   // Arbitrary choice of limits for the test.
   Vector4<T> kUMax, kUMin;

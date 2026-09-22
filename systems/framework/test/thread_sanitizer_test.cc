@@ -92,8 +92,8 @@ GTEST_TEST(ThreadSanitizerTest, SharedFrozenContextTest) {
       std::async(std::launch::async, context_ro_operation, context.get());
 
   // Wait for operations to complete, and ensure they don't throw.
-  DRAKE_EXPECT_NO_THROW(context_ro_operation_1.get());
-  DRAKE_EXPECT_NO_THROW(context_ro_operation_2.get());
+  DRAKE_EXPECT_NO_THROW((void)context_ro_operation_1.get());
+  DRAKE_EXPECT_NO_THROW((void)context_ro_operation_2.get());
 
   // Thaw context.
   context->UnfreezeCache();
