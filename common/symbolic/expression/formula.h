@@ -15,6 +15,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
@@ -160,7 +161,7 @@ class Formula {
    *
    * This function is used as a compare function in
    * std::map<symbolic::Formula> and std::set<symbolic::Formula> via
-   * std::less<symbolic::Formula>. */
+   * Formula::CompareLess. */
   [[nodiscard]] bool Less(const Formula& f) const;
 
   /** Evaluates using a given environment (by default, an empty environment) and
@@ -262,6 +263,32 @@ class Formula {
   friend std::shared_ptr<const FormulaPositiveSemidefinite>
   to_positive_semidefinite(const Formula& f);
 
+  /** Provides a strict weak ordering on formulas (see `Less`), for use as the
+  comparator of an ordered container, e.g.,
+  `std::set<Formula, Formula::CompareLess>`.
+
+  Note that `std::less<Formula>` must not be used for this purpose: the C++
+  standard requires it to be equivalent to `operator<`, which for Formula
+  constructs a symbolic Formula instead of returning a bool. */
+  struct CompareLess {
+    bool operator()(const Formula& lhs, const Formula& rhs) const {
+      return lhs.Less(rhs);
+    }
+  };
+
+  /** Checks structural equality of formulas (see `EqualTo`), for use as the
+  key-equality predicate of an unordered container, e.g.,
+  `std::unordered_set<Formula, std::hash<Formula>, Formula::CompareEqualTo>`.
+
+  Note that `std::equal_to<Formula>` must not be used for this purpose: the C++
+  standard requires it to be equivalent to `operator==`, which for Formula
+  constructs a symbolic Formula instead of returning a bool. */
+  struct CompareEqualTo {
+    bool operator()(const Formula& lhs, const Formula& rhs) const {
+      return lhs.EqualTo(rhs);
+    }
+  };
+
  private:
   void HashAppend(DelegatingHasher* hasher) const;
 
@@ -284,7 +311,8 @@ Formula forall(const Variables& vars, const Formula& f);
  * - Nested conjunctions will be flattened. For example, make_conjunction({f₁,
  *   f₂ ∧ f₃}) returns f₁ ∧ f₂ ∧ f₃.
  */
-Formula make_conjunction(const std::set<Formula>& formulas);
+Formula make_conjunction(
+    const std::set<Formula, Formula::CompareLess>& formulas);
 Formula operator&&(const Formula& f1, const Formula& f2);
 Formula operator&&(const Variable& v, const Formula& f);
 Formula operator&&(const Formula& f, const Variable& v);
@@ -300,7 +328,8 @@ Formula operator&&(const Variable& v1, const Variable& v2);
  * - Nested disjunctions will be flattened. For example, make_disjunction({f₁,
  *   f₂ ∨ f₃}) returns f₁ ∨ f₂ ∨ f₃.
  */
-Formula make_disjunction(const std::set<Formula>& formulas);
+Formula make_disjunction(
+    const std::set<Formula, Formula::CompareLess>& formulas);
 Formula operator||(const Formula& f1, const Formula& f2);
 Formula operator||(const Variable& v, const Formula& f);
 Formula operator||(const Formula& f, const Variable& v);
@@ -486,7 +515,7 @@ const Expression& get_unary_expression(const Formula& f);
 /** Returns the set of formulas in a n-ary formula @p f.
  *  \pre{@p f is a n-ary formula.}
  */
-const std::set<Formula>& get_operands(const Formula& f);
+const std::set<Formula, Formula::CompareLess>& get_operands(const Formula& f);
 
 /** Returns the formula in a negation formula @p f.
  *  \pre{@p f is a negation formula.}
@@ -951,10 +980,10 @@ operator!=(const ScalarType& v, const Derived& a) {
 /// - Eigen::Matrix<double> == Eigen::Matrix<double>
 ///
 /// Note that this method returns a conjunctive formula which keeps its
-/// conjuncts as `std::set<Formula>` internally. This set is ordered by
-/// `Formula::Less` and this ordering can be *different* from the one in
-/// inputs. Also, any duplicated formulas are removed in construction.  Please
-/// check the following example.
+/// conjuncts as `std::set<Formula, Formula::CompareLess>` internally. This set
+/// is ordered by `Formula::Less` and this ordering can be *different* from the
+/// one in inputs. Also, any duplicated formulas are removed in construction.
+/// Please check the following example.
 ///
 /// @code
 ///     // set up v1 = [y x y] and v2 = [1 2 1]
@@ -966,7 +995,8 @@ operator!=(const ScalarType& v, const Derived& a) {
 ///     v2 << 1, 2, 1;
 ///     // Here v1_eq_v2 = ((x = 2) ∧ (y = 1))
 ///     const Formula v1_eq_v2{v1 == v2};
-///     const std::set<Formula> conjuncts{get_operands(v1_eq_v2)};
+///     const std::set<Formula, Formula::CompareLess> conjuncts{
+///         get_operands(v1_eq_v2)};
 ///     for (const Formula& f : conjuncts) {
 ///       std::cerr << f << std::endl;
 ///     }
@@ -1165,7 +1195,9 @@ struct __is_fast_hash<hash<drake::symbolic::Formula>> : std::false_type {};
 
 /* Provides std::less<drake::symbolic::Formula>. */
 template <>
-struct less<drake::symbolic::Formula> {
+struct DRAKE_DEPRECATED("2027-01-01",
+                        "Use drake::symbolic::Formula::CompareLess instead.")
+    less<drake::symbolic::Formula> {
   bool operator()(const drake::symbolic::Formula& lhs,
                   const drake::symbolic::Formula& rhs) const {
     return lhs.Less(rhs);
@@ -1174,7 +1206,9 @@ struct less<drake::symbolic::Formula> {
 
 /* Provides std::equal_to<drake::symbolic::Formula>. */
 template <>
-struct equal_to<drake::symbolic::Formula> {
+struct DRAKE_DEPRECATED("2027-01-01",
+                        "Use drake::symbolic::Formula::CompareEqualTo instead.")
+    equal_to<drake::symbolic::Formula> {
   bool operator()(const drake::symbolic::Formula& lhs,
                   const drake::symbolic::Formula& rhs) const {
     return lhs.EqualTo(rhs);

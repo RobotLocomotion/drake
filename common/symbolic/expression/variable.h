@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
@@ -192,6 +193,32 @@ class Variable {
     // across all instances, so two Variable instances with matching id_ will
     // always have identical names.
   }
+
+  /** Provides a strict weak ordering on variables (see `less`), for
+  use as the comparator of an ordered container, e.g.,
+  `std::set<Variable, Variable::CompareLess>`.
+
+  Note that `std::less<Variable>` must not be used for this purpose: the C++
+  standard requires it to be equivalent to `operator<`, which for Variable
+  constructs a symbolic Formula instead of returning a bool. */
+  struct CompareLess {
+    bool operator()(const Variable& lhs, const Variable& rhs) const {
+      return lhs.less(rhs);
+    }
+  };
+
+  /** Checks structural equality of variables (see `equal_to`), for use as the
+  key-equality predicate of an unordered container, e.g.,
+  `std::unordered_set<Variable, std::hash<Variable>, Variable::CompareEqualTo>`.
+
+  Note that `std::equal_to<Variable>` must not be used for this purpose: the
+  C++ standard requires it to be equivalent to `operator==`, which for Variable
+  constructs a symbolic Formula instead of returning a bool. */
+  struct CompareEqualTo {
+    bool operator()(const Variable& lhs, const Variable& rhs) const {
+      return lhs.equal_to(rhs);
+    }
+  };
 
  private:
   friend class VariablePythonAttorney;
@@ -419,7 +446,9 @@ struct hash<drake::symbolic::Variable> : public drake::DefaultHash {};
 
 /* Provides std::less<drake::symbolic::Variable>. */
 template <>
-struct less<drake::symbolic::Variable> {
+struct DRAKE_DEPRECATED("2027-01-01",
+                        "Use drake::symbolic::Variable::CompareLess instead.")
+    less<drake::symbolic::Variable> {
   bool operator()(const drake::symbolic::Variable& lhs,
                   const drake::symbolic::Variable& rhs) const {
     return lhs.less(rhs);
@@ -428,7 +457,9 @@ struct less<drake::symbolic::Variable> {
 
 /* Provides std::equal_to<drake::symbolic::Variable>. */
 template <>
-struct equal_to<drake::symbolic::Variable> {
+struct DRAKE_DEPRECATED("2027-01-01",
+                        "Use drake::symbolic::Variable::CompareEqualTo "
+                        "instead.") equal_to<drake::symbolic::Variable> {
   bool operator()(const drake::symbolic::Variable& lhs,
                   const drake::symbolic::Variable& rhs) const {
     return lhs.equal_to(rhs);
@@ -461,7 +492,7 @@ typename std::enable_if_t<is_eigen_scalar_same<DerivedA, Variable>::value &&
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::equal_to<Variable>{}).all();
+  return m1.binaryExpr(m2, Variable::CompareEqualTo{}).all();
 }
 }  // namespace symbolic
 }  // namespace drake

@@ -503,7 +503,8 @@ TEST_F(SymbolicExpressionTest, GetConstantTermInAddition) {
 
 TEST_F(SymbolicExpressionTest, GetTermsInAddition) {
   const Expression e{3 + 2 * x_ + 3 * y_};
-  const map<Expression, double> terms{get_expr_to_coeff_map_in_addition(e)};
+  const map<Expression, double, Expression::CompareLess> terms{
+      get_expr_to_coeff_map_in_addition(e)};
   EXPECT_EQ(terms.at(x_), 2.0);
   EXPECT_EQ(terms.at(y_), 3.0);
 }
@@ -519,7 +520,7 @@ TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
 
 TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
-  const map<Expression, Expression> products{
+  const map<Expression, Expression, Expression::CompareLess> products{
       get_base_to_exponent_map_in_multiplication(e)};
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
@@ -1307,7 +1308,8 @@ TEST_F(SymbolicExpressionTest, Div5) {
 // This test checks whether symbolic::Expression is compatible with
 // std::unordered_set.
 GTEST_TEST(ExpressionTest, CompatibleWithUnorderedSet) {
-  unordered_set<Expression> uset;
+  unordered_set<Expression, std::hash<Expression>, Expression::CompareEqualTo>
+      uset;
   uset.emplace(Expression{Variable{"a"}});
   uset.emplace(Expression{Variable{"b"}});
 }
@@ -1315,14 +1317,16 @@ GTEST_TEST(ExpressionTest, CompatibleWithUnorderedSet) {
 // This test checks whether symbolic::Expression is compatible with
 // std::unordered_map.
 GTEST_TEST(ExpressionTest, CompatibleWithUnorderedMap) {
-  unordered_map<Expression, Expression> umap;
+  unordered_map<Expression, Expression, std::hash<Expression>,
+                Expression::CompareEqualTo>
+      umap;
   umap.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
 }
 
 // This test checks whether symbolic::Expression is compatible with
 // std::set.
 GTEST_TEST(ExpressionTest, CompatibleWithSet) {
-  set<Expression> set;
+  set<Expression, Expression::CompareLess> set;
   set.emplace(Expression{Variable{"a"}});
   set.emplace(Expression{Variable{"b"}});
 }
@@ -1330,7 +1334,7 @@ GTEST_TEST(ExpressionTest, CompatibleWithSet) {
 // This test checks whether symbolic::Expression is compatible with
 // std::map.
 GTEST_TEST(ExpressionTest, CompatibleWithMap) {
-  map<Expression, Expression> map;
+  map<Expression, Expression, Expression::CompareLess> map;
   map.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
 }
 
@@ -1995,7 +1999,7 @@ TEST_F(SymbolicExpressionTest, EvaluatePartial) {
 // See https://github.com/RobotLocomotion/drake/issues/5974.
 TEST_F(SymbolicExpressionTest, MemcpyKeepsExpressionIntact) {
   for (const Expression& expr : collection_) {
-    EXPECT_TRUE(IsMemcpyMovable(expr));
+    EXPECT_TRUE(IsMemcpyMovable(expr, Expression::CompareEqualTo{}));
   }
 }
 
@@ -2729,6 +2733,19 @@ TEST_F(SymbolicExpressionTest, EvaluateExpressionsIncludingRandomVariables) {
     }
   }
 }
+
+// Remove with deprecation on 2027-01-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(ExpressionTest, DeprecatedStdComparators) {
+  const Expression a{Variable{"a"}};
+  const Expression b{Variable{"b"}};
+  EXPECT_EQ(std::less<Expression>{}(a, b), a.Less(b));
+  EXPECT_EQ(std::less<Expression>{}(b, a), b.Less(a));
+  EXPECT_TRUE(std::equal_to<Expression>{}(a, a));
+  EXPECT_FALSE(std::equal_to<Expression>{}(a, b));
+}
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace symbolic
