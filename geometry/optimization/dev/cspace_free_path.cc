@@ -10,11 +10,16 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
-std::unordered_map<symbolic::Variable, symbolic::Polynomial>
+std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                   std::hash<symbolic::Variable>,
+                   symbolic::Variable::CompareEqualTo>
 initialize_path_map(
     CspaceFreePath* cspace_free_path, int maximum_path_degree,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& s_variables) {
-  std::unordered_map<symbolic::Variable, symbolic::Polynomial> ret;
+  std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                     std::hash<symbolic::Variable>,
+                     symbolic::Variable::CompareEqualTo>
+      ret;
   const VectorX<symbolic::Monomial> basis = symbolic::MonomialBasis(
       symbolic::Variables{cspace_free_path->mu_}, maximum_path_degree);
 
@@ -34,8 +39,9 @@ initialize_path_map(
 PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
     const PlaneSeparatesGeometries& plane_geometries,
     const symbolic::Variable& mu,
-    const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
-        path_with_y_subs,
+    const std::unordered_map<
+        symbolic::Variable, symbolic::Polynomial, std::hash<symbolic::Variable>,
+        symbolic::Variable::CompareEqualTo>& path_with_y_subs,
     const symbolic::Variables& indeterminates,
     symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions)
     : plane_index{plane_geometries.plane_index} {
@@ -162,7 +168,9 @@ void CspaceFreePath::GeneratePathRationals(
 
   // Add the auxilliary variables for matrix SOS constraints to the substitution
   // map.
-  std::unordered_map<symbolic::Variable, symbolic::Polynomial>
+  std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                     std::hash<symbolic::Variable>,
+                     symbolic::Variable::CompareEqualTo>
       path_with_y_subs = path_;
   path_with_y_subs.emplace(mu_, symbolic::Polynomial(mu_));
   symbolic::Variables indeterminates{mu_};
@@ -194,7 +202,9 @@ CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
   DRAKE_DEMAND(rational_forward_kin_.s().rows() == path.rows());
   // Now we convert the vector of common::Polynomial to a map from the
   // configuration space variable s to symbolic::Polynomial in mu.
-  std::unordered_map<symbolic::Variable, symbolic::Polynomial>
+  std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                     std::hash<symbolic::Variable>,
+                     symbolic::Variable::CompareEqualTo>
       cspace_var_to_sym_path;
   for (int i = 0; i < path.rows(); ++i) {
     DRAKE_DEMAND(path(i).is_univariate());
@@ -215,8 +225,9 @@ CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
 [[nodiscard]] CspaceFreePath::SeparationCertificateProgram
 CspaceFreePath::ConstructPlaneSearchProgramOnPath(
     const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
-    const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& path)
-    const {
+    const std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                             std::hash<symbolic::Variable>,
+                             symbolic::Variable::CompareEqualTo>& path) const {
   SeparationCertificateProgram ret{path, plane_geometries_on_path.plane_index};
   ret.prog->AddIndeterminate(mu_);
   ret.prog->AddIndeterminates(this->y_slack());

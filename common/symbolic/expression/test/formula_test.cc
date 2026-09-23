@@ -1299,7 +1299,7 @@ GTEST_TEST(FormulaTest, CxxBoolVariableConstructor) {
 // This test checks whether symbolic::Formula is compatible with
 // std::unordered_set.
 GTEST_TEST(FormulaTest, CompatibleWithUnorderedSet) {
-  unordered_set<Formula> uset;
+  unordered_set<Formula, std::hash<Formula>> uset;
   uset.emplace(Formula::True());
   uset.emplace(Formula::True());
   uset.emplace(Formula::False());
@@ -1309,7 +1309,7 @@ GTEST_TEST(FormulaTest, CompatibleWithUnorderedSet) {
 // This test checks whether symbolic::Formula is compatible with
 // std::unordered_map.
 GTEST_TEST(FormulaTest, CompatibleWithUnorderedMap) {
-  unordered_map<Formula, Formula> umap;
+  unordered_map<Formula, Formula, std::hash<Formula>> umap;
   umap.emplace(Formula::True(), Formula::False());
   umap.emplace(Formula::False(), Formula::True());
 }

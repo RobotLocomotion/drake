@@ -269,6 +269,15 @@ class Formula {
   // be shared by multiple formulas, a formula should _not_ be able to change
   // the cell that it points to.
   std::shared_ptr<const FormulaCell> ptr_;
+
+  /** Provides a strict weak ordering on formulas (see `Less`), for use as the
+  comparator of an ordered container, e.g., `std::set<Formula>`. */
+  friend bool operator<(const Formula&, const Formula&);
+
+  /** Checks structural equality of formulas (see `EqualTo`), for use as the
+  key-equality predicate of an unordered container, e.g.,
+  `std::unordered_set<Formula, std::hash<Formula>>`. */
+  friend bool operator==(const Formula&, const Formula&);
 };
 
 /** Returns a formula @p f, universally quantified by variables @p vars. */
@@ -1162,24 +1171,6 @@ struct hash<drake::symbolic::Formula> : public drake::DefaultHash {};
 template <>
 struct __is_fast_hash<hash<drake::symbolic::Formula>> : std::false_type {};
 #endif
-
-/* Provides std::less<drake::symbolic::Formula>. */
-template <>
-struct less<drake::symbolic::Formula> {
-  bool operator()(const drake::symbolic::Formula& lhs,
-                  const drake::symbolic::Formula& rhs) const {
-    return lhs.Less(rhs);
-  }
-};
-
-/* Provides std::equal_to<drake::symbolic::Formula>. */
-template <>
-struct equal_to<drake::symbolic::Formula> {
-  bool operator()(const drake::symbolic::Formula& lhs,
-                  const drake::symbolic::Formula& rhs) const {
-    return lhs.EqualTo(rhs);
-  }
-};
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)

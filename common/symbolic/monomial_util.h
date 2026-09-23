@@ -59,10 +59,14 @@ struct GradedReverseLexOrder {
       // Because both of them are 1.
       return false;
     }
-    const std::map<Variable, int>& powers1{m1.get_powers()};
-    const std::map<Variable, int>& powers2{m2.get_powers()};
-    std::map<Variable, int>::const_iterator it1{powers1.cbegin()};
-    std::map<Variable, int>::const_iterator it2{powers2.cbegin()};
+    const std::map<Variable, int, Variable::CompareLess>& powers1{
+        m1.get_powers()};
+    const std::map<Variable, int, Variable::CompareLess>& powers2{
+        m2.get_powers()};
+    std::map<Variable, int, Variable::CompareLess>::const_iterator it1{
+        powers1.cbegin()};
+    std::map<Variable, int, Variable::CompareLess>::const_iterator it2{
+        powers2.cbegin()};
     while (it1 != powers1.cend() && it2 != powers2.cend()) {
       const Variable& var1{it1->first};
       const Variable& var2{it2->first};
@@ -139,7 +143,7 @@ Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(
   DRAKE_DEMAND(!vars.empty());
   DRAKE_DEMAND(degree >= 0);
   // 1. Collect monomials.
-  std::set<Monomial, GradedReverseLexOrder<std::less<Variable>>> monomials;
+  std::set<Monomial, GradedReverseLexOrder<Variable::CompareLess>> monomials;
   int start_degree = 0;
   int degree_stride = 1;
   switch (degree_type) {

@@ -975,7 +975,9 @@ GTEST_TEST(TestMathematicalProgram, BoundingBoxTest3) {
       (X_lo.array() + 1).matrix();
   auto cnstr = prog.AddBoundingBoxConstraint(X_lo, X_up, X);
   EXPECT_EQ(cnstr.evaluator()->num_constraints(), 6);
-  std::unordered_map<symbolic::Variable, std::pair<double, double>> X_bounds;
+  std::unordered_map<symbolic::Variable, std::pair<double, double>,
+                     std::hash<symbolic::Variable>, Variable::CompareEqualTo>
+      X_bounds;
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 2; j++) {
       X_bounds.emplace(X(i, j), std::make_pair(X_lo(i, j), X_up(i, j)));
@@ -1911,7 +1913,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   const auto lb_in_constraint = constraint_ptr->lower_bound();
   const auto ub_in_constraint = constraint_ptr->upper_bound();
 
-  set<Expression> constraint_set;
+  set<Expression, Expression::CompareLess> constraint_set;
   constraint_set.emplace(x(0) + 2 * x(1) - 5);
   constraint_set.emplace(3 * x(0) + 4 * x(1) - 6);
   EXPECT_TRUE(constraint_set.contains(Ax(0) - lb_in_constraint(0)));
@@ -1947,7 +1949,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   const auto lb_in_constraint = constraint_ptr->lower_bound();
   const auto ub_in_constraint = constraint_ptr->upper_bound();
 
-  set<Expression> constraint_set;
+  set<Expression, Expression::CompareLess> constraint_set;
   constraint_set.emplace(e11 - e12);
   constraint_set.emplace(e21 - e22);
   constraint_set.emplace(e31 - e32);
@@ -3620,7 +3622,7 @@ symbolic::Monomial transform(const symbolic::Monomial& monomial,
         Polynomial<double>::VariableIdToVarType(symbolic_var.get_id());
     DRAKE_DEMAND(!polynomial_var_to_symbolic_var.contains(as_polynomial_var));
   }
-  map<Variable, int> new_powers;
+  map<Variable, int, Variable::CompareLess> new_powers;
   for (const auto& [symbolic_var_in_monomial, exponent] :
        monomial.get_powers()) {
     const Polynomial<double>::VarType polynomial_var_in_monomial =
@@ -3696,7 +3698,7 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
   symbolic::Polynomial poly_expected;
   MapPolynomialVarTypeToSymbolicVariable polynomial_var_to_symbolic_var;
   for (const Polynomial<double>::Monomial& m : polynomial.GetMonomials()) {
-    map<Variable, int> map_var_to_power;
+    map<Variable, int, Variable::CompareLess> map_var_to_power;
     for (const Polynomial<double>::Term& term : m.terms) {
       auto it = polynomial_var_to_symbolic_var.find(term.var);
       if (it == polynomial_var_to_symbolic_var.end()) {

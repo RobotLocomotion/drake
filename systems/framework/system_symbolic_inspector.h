@@ -124,7 +124,8 @@ class SystemSymbolicInspector {
   }
 
   /// Returns a reference to the symbolic representation of the constraints.
-  const std::set<symbolic::Formula>& constraints() const {
+  const std::set<symbolic::Formula>&
+  constraints() const {
     return constraints_;
   }
   /// @}
