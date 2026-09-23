@@ -25,7 +25,7 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
   ChebyshevBasisElement();
 
   explicit ChebyshevBasisElement(
-      const std::map<Variable, int>& var_to_degree_map);
+      const std::map<Variable, int, Variable::CompareLess>& var_to_degree_map);
 
   /** Constructs a Chebyshev polynomial T₁(var). */
   explicit ChebyshevBasisElement(const Variable& var);

@@ -17,8 +17,24 @@
 
 namespace drake {
 namespace math {
-/// Determines if a matrix is symmetric. If std::equal_to<>()(matrix(i, j),
-/// matrix(j, i)) is true for all i, j, then the matrix is symmetric.
+namespace internal {
+template <typename T>
+concept HasCompareEqualTo = requires { typename T::CompareEqualTo; };
+
+// The equality predicate for a scalar type: the type's own CompareEqualTo
+// when it provides one (e.g., symbolic types, whose operator== returns a
+// Formula), and std::equal_to otherwise.
+template <typename T>
+struct ScalarEqualTo : std::equal_to<T> {};
+
+template <HasCompareEqualTo T>
+struct ScalarEqualTo<T> : T::CompareEqualTo {};
+}  // namespace internal
+
+/// Determines if a matrix is symmetric. If matrix(i, j) == matrix(j, i) for
+/// all i, j, then the matrix is symmetric. For symbolic scalar types (whose
+/// operator== returns a Formula), structural equality is used instead (see,
+/// e.g., symbolic::Expression::CompareEqualTo).
 template <typename Derived>
 bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix) {
   using DerivedScalar = typename Derived::Scalar;
@@ -27,7 +43,8 @@ bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix) {
   }
   for (int i = 0; i < static_cast<int>(matrix.rows()); ++i) {
     for (int j = i + 1; j < static_cast<int>(matrix.cols()); ++j) {
-      if (!std::equal_to<DerivedScalar>()(matrix(i, j), matrix(j, i))) {
+      if (!internal::ScalarEqualTo<DerivedScalar>()(matrix(i, j),
+                                                    matrix(j, i))) {
         return false;
       }
     }
