@@ -97,7 +97,8 @@ inline Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
  * equality constraint binding.
  */
 [[nodiscard]] Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
-    const std::set<symbolic::Formula>& formulas);
+    const std::set<symbolic::Formula, symbolic::Formula::CompareLess>&
+        formulas);
 
 /*
  *

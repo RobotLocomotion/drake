@@ -18,6 +18,20 @@
 #include "drake/common/hash.h"
 #include "drake/common/reset_after_move.h"
 
+// Starting with LLVM 22, libc++ map and set lookups replace `std::less<Key>` by
+// `std::less<>`, which calls `operator<` directly and therefore bypasses any
+// `std::less<Key>` specialization. For Variable, Expression, and Formula, the
+// `operator<` builds a symbolic Formula, so our specializations of `std::less`
+// (and, for consistency, `std::equal_to`) are not usable there. On that
+// platform, the `CompareLess` and `CompareEqualTo` comparators are distinct
+// types; elsewhere they are aliases of the (deprecated) std specializations so
+// that container types spelled either way remain identical.
+// Remove with deprecation on 2027-02-01.
+#if defined(DRAKE_DOXYGEN_CXX) || defined(__MKDOC_PY__) || \
+    (defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 220000)
+#define DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
+#endif
+
 namespace drake {
 namespace symbolic {
 
@@ -192,6 +206,46 @@ class Variable {
     // across all instances, so two Variable instances with matching id_ will
     // always have identical names.
   }
+
+#ifdef DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
+  /** Provides a strict weak ordering on variables (see `less`), for
+  use as the comparator of an ordered container, e.g.,
+  `std::set<Variable, Variable::CompareLess>`.
+
+  Note that `std::less<Variable>` must not be used for this purpose: the C++
+  standard requires it to be equivalent to `operator<`, which for Variable
+  constructs a symbolic Formula instead of returning a bool. (For backwards
+  compatibility, on platforms other than libc++ >= 22 this is currently an alias
+  of the deprecated `std::less<Variable>` specialization; it will become a
+  distinct type on all platforms on or after 2027-02-01.) */
+  struct CompareLess {
+    bool operator()(const Variable& lhs, const Variable& rhs) const {
+      return lhs.less(rhs);
+    }
+  };
+#else
+  using CompareLess = std::less<Variable>;
+#endif
+
+#ifdef DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
+  /** Checks structural equality of variables (see `equal_to`), for use as the
+  key-equality predicate of an unordered container, e.g.,
+  `std::unordered_set<Variable, std::hash<Variable>, Variable::CompareEqualTo>`.
+
+  Note that `std::equal_to<Variable>` must not be used for this purpose: the C++
+  standard requires it to be equivalent to `operator==`, which for Variable
+  constructs a symbolic Formula instead of returning a bool. (For backwards
+  compatibility, on platforms other than libc++ >= 22 this is currently an alias
+  of the deprecated `std::equal_to<Variable>` specialization; it will become a
+  distinct type on all platforms on or after 2027-02-01.) */
+  struct CompareEqualTo {
+    bool operator()(const Variable& lhs, const Variable& rhs) const {
+      return lhs.equal_to(rhs);
+    }
+  };
+#else
+  using CompareEqualTo = std::equal_to<Variable>;
+#endif
 
  private:
   friend class VariablePythonAttorney;
@@ -417,7 +471,10 @@ struct hash<drake::symbolic::Variable::Id> : public drake::DefaultHash {};
 template <>
 struct hash<drake::symbolic::Variable> : public drake::DefaultHash {};
 
-/* Provides std::less<drake::symbolic::Variable>. */
+#ifndef DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
+/* Provides std::less<drake::symbolic::Variable>. This is deprecated (in favor
+of Variable::CompareLess) and will be removed from Drake on or after
+2027-02-01. */
 template <>
 struct less<drake::symbolic::Variable> {
   bool operator()(const drake::symbolic::Variable& lhs,
@@ -426,7 +483,9 @@ struct less<drake::symbolic::Variable> {
   }
 };
 
-/* Provides std::equal_to<drake::symbolic::Variable>. */
+/* Provides std::equal_to<drake::symbolic::Variable>. This is deprecated (in
+favor of Variable::CompareEqualTo) and will be removed from Drake on or after
+2027-02-01. */
 template <>
 struct equal_to<drake::symbolic::Variable> {
   bool operator()(const drake::symbolic::Variable& lhs,
@@ -434,6 +493,7 @@ struct equal_to<drake::symbolic::Variable> {
     return lhs.equal_to(rhs);
   }
 };
+#endif  // DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -461,7 +521,7 @@ typename std::enable_if_t<is_eigen_scalar_same<DerivedA, Variable>::value &&
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::equal_to<Variable>{}).all();
+  return m1.binaryExpr(m2, Variable::CompareEqualTo{}).all();
 }
 }  // namespace symbolic
 }  // namespace drake

@@ -10,6 +10,10 @@
 #include <utility>
 #include <vector>
 
+// Remove with deprecation on 2027-02-01.
+#include <functional>
+#include <type_traits>
+
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
@@ -224,14 +228,16 @@ TEST_F(VariableTest, VariableIdFmtFormatter) {
 
 // This test checks whether Variable is compatible with std::unordered_set.
 TEST_F(VariableTest, CompatibleWithUnorderedSet) {
-  unordered_set<Variable> uset;
+  unordered_set<Variable, std::hash<Variable>, Variable::CompareEqualTo> uset;
   uset.emplace(x_);
   uset.emplace(y_);
 }
 
 // This test checks whether Variable is compatible with std::unordered_map.
 TEST_F(VariableTest, CompatibleWithUnorderedMap) {
-  unordered_map<Variable, Variable> umap;
+  unordered_map<Variable, Variable, std::hash<Variable>,
+                Variable::CompareEqualTo>
+      umap;
   umap.emplace(x_, y_);
 }
 
@@ -253,7 +259,7 @@ TEST_F(VariableTest, MemcpyKeepsVariableIntact) {
   // not using SSO (Short String Optimization) internally, is memcpy-movable.
   const Variable long_var("12345678901234567890");
   for (const Variable& var : {x_, y_, z_, w_, long_var}) {
-    EXPECT_TRUE(IsMemcpyMovable(var));
+    EXPECT_TRUE(IsMemcpyMovable(var, Variable::CompareEqualTo{}));
   }
 }
 
@@ -507,6 +513,21 @@ TEST_F(VariableTest, RandomExponential) {
 
   EXPECT_EQ(sample, expected);
 }
+
+// Remove with deprecation on 2027-02-01.
+#ifndef DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
+static_assert(std::is_same_v<Variable::CompareLess, std::less<Variable>>);
+static_assert(
+    std::is_same_v<Variable::CompareEqualTo, std::equal_to<Variable>>);
+TEST_F(VariableTest, DeprecatedStdComparators) {
+  const Variable a{"a"};
+  const Variable b{"b"};
+  EXPECT_EQ(std::less<Variable>{}(a, b), a.less(b));
+  EXPECT_EQ(std::less<Variable>{}(b, a), b.less(a));
+  EXPECT_TRUE(std::equal_to<Variable>{}(a, a));
+  EXPECT_FALSE(std::equal_to<Variable>{}(a, b));
+}
+#endif  // DRAKE_SYMBOLIC_DISTINCT_COMPARATORS
 
 }  // namespace
 }  // namespace symbolic
