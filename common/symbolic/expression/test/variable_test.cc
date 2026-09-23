@@ -224,14 +224,14 @@ TEST_F(VariableTest, VariableIdFmtFormatter) {
 
 // This test checks whether Variable is compatible with std::unordered_set.
 TEST_F(VariableTest, CompatibleWithUnorderedSet) {
-  unordered_set<Variable> uset;
+  unordered_set<Variable, std::hash<Variable>, VariableEqualTo> uset;
   uset.emplace(x_);
   uset.emplace(y_);
 }
 
 // This test checks whether Variable is compatible with std::unordered_map.
 TEST_F(VariableTest, CompatibleWithUnorderedMap) {
-  unordered_map<Variable, Variable> umap;
+  unordered_map<Variable, Variable, std::hash<Variable>, VariableEqualTo> umap;
   umap.emplace(x_, y_);
 }
 
@@ -253,7 +253,7 @@ TEST_F(VariableTest, MemcpyKeepsVariableIntact) {
   // not using SSO (Short String Optimization) internally, is memcpy-movable.
   const Variable long_var("12345678901234567890");
   for (const Variable& var : {x_, y_, z_, w_, long_var}) {
-    EXPECT_TRUE(IsMemcpyMovable(var));
+    EXPECT_TRUE(IsMemcpyMovable(var, VariableEqualTo{}));
   }
 }
 

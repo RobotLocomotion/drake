@@ -40,7 +40,7 @@ class MonomialBasisElement : public PolynomialBasisElement {
    * Constructs a MonomialBasisElement from variable to degree map.
    */
   explicit MonomialBasisElement(
-      const std::map<Variable, int>& var_to_degree_map);
+      const std::map<Variable, int, VariableLess>& var_to_degree_map);
 
   /**
    * Converts an expression to a monomial if the expression is written as

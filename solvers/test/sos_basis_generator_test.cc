@@ -17,7 +17,7 @@ using drake::symbolic::Variable;
 using drake::symbolic::Variables;
 
 typedef std::set<Monomial,
-                 drake::symbolic::GradedReverseLexOrder<std::less<Variable>>>
+                 drake::symbolic::GradedReverseLexOrder<symbolic::VariableLess>>
     MonomialSet;
 
 MonomialSet VectorToSet(const drake::VectorX<Monomial>& x) {

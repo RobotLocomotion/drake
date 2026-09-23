@@ -520,7 +520,8 @@ GTEST_TEST(ParseLinearEqualityConstraintTest, FalseFormula) {
   // ParseLinearEqualityConstraint for a set of symbolic::Formula
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ParseLinearEqualityConstraint(
-          std::set<symbolic::Formula>({x == 0, symbolic::Expression(1) == 2})),
+          std::set<symbolic::Formula, symbolic::FormulaLess>(
+              {x == 0, symbolic::Expression(1) == 2})),
       "ParseLinearEqualityConstraint is called with one of formulas being "
       "always false.");
 
@@ -561,7 +562,8 @@ GTEST_TEST(ParseConstraintTest, TrueFormula) {
   // Call ParseLinearEqualityConstraint with a set of formulas, while some
   // formulas being always true.
   auto binding4 = internal::ParseLinearEqualityConstraint(
-      std::set<symbolic::Formula>({2 * x == 1, symbolic::Expression(1) == 1}));
+      std::set<symbolic::Formula, symbolic::FormulaLess>(
+          {2 * x == 1, symbolic::Expression(1) == 1}));
   EXPECT_EQ(binding4.evaluator()->num_constraints(), 1);
   EXPECT_TRUE(
       binding4.evaluator()->CheckSatisfied((Vector1d() << 0.5).finished()));
@@ -569,8 +571,8 @@ GTEST_TEST(ParseConstraintTest, TrueFormula) {
       binding4.evaluator()->CheckSatisfied((Vector1d() << 1).finished()));
 
   // Call ParseLinearEqualityConstraint with a set of formulas all being True.
-  auto binding5 =
-      internal::ParseLinearEqualityConstraint(std::set<symbolic::Formula>(
+  auto binding5 = internal::ParseLinearEqualityConstraint(
+      std::set<symbolic::Formula, symbolic::FormulaLess>(
           {symbolic::Expression(1) == 1, symbolic::Expression(2) == 2}));
   EXPECT_EQ(binding5.evaluator()->num_constraints(), 0);
 

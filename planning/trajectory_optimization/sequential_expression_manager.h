@@ -121,7 +121,8 @@ class SequentialExpressionManager {
  private:
   int num_samples_{};
   string_unordered_map<VectorX<symbolic::Variable>> name_to_placeholders_;
-  std::unordered_map<symbolic::Variable, RowVectorX<symbolic::Expression>>
+  std::unordered_map<symbolic::Variable, RowVectorX<symbolic::Expression>,
+                     std::hash<symbolic::Variable>, symbolic::VariableEqualTo>
       placeholders_to_expressions_;
 };
 }  // namespace internal

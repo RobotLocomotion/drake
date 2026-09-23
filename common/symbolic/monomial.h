@@ -40,7 +40,7 @@ class Monomial {
 
   /** Constructs a monomial from `powers`.
   @throws std::exception if `powers` includes a negative exponent. */
-  explicit Monomial(const std::map<Variable, int>& powers);
+  explicit Monomial(const std::map<Variable, int, VariableLess>& powers);
 
   /** Constructs a monomial from a vector of variables `vars` and their
   corresponding integer exponents `exponents`.
@@ -72,7 +72,9 @@ class Monomial {
 
   /** Returns the internal representation of %Monomial, the map from a base
   (Variable) to its exponent (int). */
-  const std::map<Variable, int>& get_powers() const { return powers_; }
+  const std::map<Variable, int, VariableLess>& get_powers() const {
+    return powers_;
+  }
 
   /** Evaluates under a given environment `env`.
   @throws std::exception if there is a variable in this monomial whose
@@ -142,7 +144,7 @@ class Monomial {
 
  private:
   int total_degree_{0};
-  std::map<Variable, int> powers_;
+  std::map<Variable, int, VariableLess> powers_;
 };
 
 /** Returns a multiplication of two monomials, `m1` and `m2`. */

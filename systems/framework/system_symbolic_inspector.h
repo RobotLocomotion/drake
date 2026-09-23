@@ -124,7 +124,8 @@ class SystemSymbolicInspector {
   }
 
   /// Returns a reference to the symbolic representation of the constraints.
-  const std::set<symbolic::Formula>& constraints() const {
+  const std::set<symbolic::Formula, symbolic::FormulaLess>& constraints()
+      const {
     return constraints_;
   }
   /// @}
@@ -154,7 +155,7 @@ class SystemSymbolicInspector {
   const std::unique_ptr<SystemOutput<symbolic::Expression>> output_;
   const std::unique_ptr<ContinuousState<symbolic::Expression>> derivatives_;
   const std::unique_ptr<DiscreteValues<symbolic::Expression>> discrete_updates_;
-  std::set<symbolic::Formula> constraints_;
+  std::set<symbolic::Formula, symbolic::FormulaLess> constraints_;
 
   // The types of the output ports.
   std::vector<PortDataType> output_port_types_;

@@ -27,9 +27,9 @@ using test::FormulaEqual;
 
 // Given formulas = {f₁, ..., fₙ} and a func : Formula → Formula,
 // map(formulas, func) returns a set {func(f₁), ... func(fₙ)}.
-set<Formula> map(const set<Formula>& formulas,
-                 const function<Formula(const Formula&)>& func) {
-  set<Formula> result;
+set<Formula, FormulaLess> map(const set<Formula, FormulaLess>& formulas,
+                              const function<Formula(const Formula&)>& func) {
+  set<Formula, FormulaLess> result;
   transform(formulas.cbegin(), formulas.cend(),
             inserter(result, result.begin()), func);
   return result;
@@ -103,7 +103,7 @@ class NegationNormalFormConverter {
   Formula VisitConjunction(const Formula& f, const bool polarity) const {
     // NNF(f₁ ∧ ... ∨ fₙ)    = NNF(f₁) ∧ ... ∧ NNF(fₙ)
     // NNF(¬(f₁ ∧ ... ∨ fₙ)) = NNF(¬f₁) ∨ ... ∨ NNF(¬fₙ)
-    const set<Formula> new_operands{
+    const set<Formula, FormulaLess> new_operands{
         map(get_operands(f), [this, &polarity](const Formula& formula) {
           return this->Visit(formula, polarity);
         })};
@@ -113,7 +113,7 @@ class NegationNormalFormConverter {
   Formula VisitDisjunction(const Formula& f, const bool polarity) const {
     // NNF(f₁ ∨ ... ∨ fₙ)    = NNF(f₁) ∨ ... ∨ NNF(fₙ)
     // NNF(¬(f₁ ∨ ... ∨ fₙ)) = NNF(¬f₁) ∧ ... ∧ NNF(¬fₙ)
-    const set<Formula> new_operands{
+    const set<Formula, FormulaLess> new_operands{
         map(get_operands(f), [this, &polarity](const Formula& formula) {
           return this->Visit(formula, polarity);
         })};

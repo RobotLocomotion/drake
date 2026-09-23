@@ -526,7 +526,7 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
     FindBound(e1, e2, &e, &ub);
     return ParseConstraint(e, -numeric_limits<double>::infinity(), ub);
   } else if (is_conjunction(f)) {
-    const std::set<Formula>& operands = get_operands(f);
+    const std::set<Formula, symbolic::FormulaLess>& operands = get_operands(f);
     // TODO(jwnimmer-tri) We should use an absl::InlinedVector here.
     const std::vector<Formula> vec_operands(operands.begin(), operands.end());
     const Eigen::Map<const VectorX<Formula>> map_operands(vec_operands.data(),
@@ -541,7 +541,7 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
 }
 
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
-    const set<Formula>& formulas) {
+    const set<Formula, symbolic::FormulaLess>& formulas) {
   const auto n = formulas.size();
   // Decomposes a set of formulas, `{e₁₁ == e₁₂, ..., eₙ₁ == eₙ₂}`
   // into a 1D-vector of expressions, `v = [e₁₁ - e₁₂, ..., eₙ₁ - eₙ₂]`.

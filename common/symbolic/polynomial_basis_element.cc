@@ -11,11 +11,11 @@
 namespace drake {
 namespace symbolic {
 namespace {
-std::map<Variable, int> ToVarToDegreeMap(
+std::map<Variable, int, VariableLess> ToVarToDegreeMap(
     const Eigen::Ref<const VectorX<Variable>>& vars,
     const Eigen::Ref<const Eigen::VectorXi>& exponents) {
   DRAKE_DEMAND(vars.size() == exponents.size());
-  std::map<Variable, int> powers;
+  std::map<Variable, int, VariableLess> powers;
   for (int i = 0; i < vars.size(); ++i) {
     if (powers.contains(vars[i])) {
       throw std::invalid_argument(fmt::format(
@@ -32,7 +32,7 @@ std::map<Variable, int> ToVarToDegreeMap(
 }  // namespace
 
 PolynomialBasisElement::PolynomialBasisElement(
-    const std::map<Variable, int>& var_to_degree_map) {
+    const std::map<Variable, int, VariableLess>& var_to_degree_map) {
   total_degree_ = std::accumulate(
       var_to_degree_map.begin(), var_to_degree_map.end(), 0,
       [](const int degree, const std::pair<const Variable, int>& p) {
@@ -151,7 +151,7 @@ symbolic::Expression PolynomialBasisElement::ToExpression() const {
 
 void PolynomialBasisElement::DoEvaluatePartial(
     const Environment& env, double* coeff,
-    std::map<Variable, int>* new_basis_element) const {
+    std::map<Variable, int, VariableLess>* new_basis_element) const {
   DRAKE_ASSERT(coeff != nullptr);
   DRAKE_ASSERT(new_basis_element != nullptr);
   DRAKE_ASSERT(new_basis_element->empty());

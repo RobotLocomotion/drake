@@ -42,8 +42,9 @@ struct PlaneSeparatesGeometriesOnPath {
   PlaneSeparatesGeometriesOnPath(
       const PlaneSeparatesGeometries& plane_geometries,
       const symbolic::Variable& mu,
-      const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
-          path_with_y_subs,
+      const std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                               std::hash<symbolic::Variable>,
+                               symbolic::VariableEqualTo>& path_with_y_subs,
       const symbolic::Variables& indeterminates,
       symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions);
 
@@ -106,7 +107,9 @@ class CspaceFreePath {
   struct SeparationCertificateProgram final : SeparationCertificateProgramBase {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram);
     SeparationCertificateProgram(
-        const std::unordered_map<symbolic::Variable, symbolic::Polynomial>
+        const std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                                 std::hash<symbolic::Variable>,
+                                 symbolic::VariableEqualTo>
             m_path,
         int m_plane_index)
         : SeparationCertificateProgramBase(), path{std::move(m_path)} {
@@ -118,7 +121,9 @@ class CspaceFreePath {
 
     ~SeparationCertificateProgram() override;
 
-    std::unordered_map<symbolic::Variable, symbolic::Polynomial> path;
+    std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                       std::hash<symbolic::Variable>, symbolic::VariableEqualTo>
+        path;
   };
 
   [[nodiscard]] const symbolic::Variable& mu() const { return mu_; }
@@ -203,7 +208,10 @@ class CspaceFreePath {
 
   // A map storing the substitutions from the s_set_ variables to the path
   // parametrization.
-  const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
+  const std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                           std::hash<symbolic::Variable>,
+                           symbolic::VariableEqualTo>
+      path_;
 
   // We have the invariant plane_geometries_on_path_[i].plane_index == i.
   std::vector<PlaneSeparatesGeometriesOnPath> plane_geometries_on_path_;
@@ -228,12 +236,15 @@ class CspaceFreePath {
    */
   [[nodiscard]] SeparationCertificateProgram ConstructPlaneSearchProgramOnPath(
       const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
-      const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& path)
-      const;
+      const std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                               std::hash<symbolic::Variable>,
+                               symbolic::VariableEqualTo>& path) const;
 
   // Friend declaration for use in constructor to avoid large initialization
   // lambda.
-  friend std::unordered_map<symbolic::Variable, symbolic::Polynomial>
+  friend std::unordered_map<symbolic::Variable, symbolic::Polynomial,
+                            std::hash<symbolic::Variable>,
+                            symbolic::VariableEqualTo>
   initialize_path_map(
       CspaceFreePath* cspace_free_path, int maximum_path_degree,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& s_variables);

@@ -310,8 +310,14 @@ boolean<T> BsplineTrajectory<T>::operator==(
     for (int i = 0; i < this->num_control_points(); ++i) {
       result = result && drake::all(this->control_points()[i].array() ==
                                     other.control_points()[i].array());
-      if (std::equal_to<boolean<T>>{}(result, boolean<T>{false})) {
-        break;
+      if constexpr (scalar_predicate<T>::is_bool) {
+        if (!result) {
+          break;
+        }
+      } else {
+        if (is_false(result)) {
+          break;
+        }
       }
     }
     return result;

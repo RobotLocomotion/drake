@@ -1020,7 +1020,7 @@ Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(
     const Eigen::Ref<const Eigen::Array<Formula, Eigen::Dynamic,
                                         Eigen::Dynamic>>& formulas) {
-  std::set<Formula> formula_set;
+  std::set<Formula, symbolic::FormulaLess> formula_set;
   for (int i = 0; i < formulas.rows(); ++i) {
     for (int j = 0; j < formulas.cols(); ++j) {
       if (is_conjunction(formulas(i, j))) {

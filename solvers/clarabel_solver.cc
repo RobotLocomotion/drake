@@ -47,8 +47,11 @@ void ParseBoundingBoxConstraints(
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, std::vector<clarabel::SupportedConeT<double>>* cones,
     std::vector<std::vector<std::pair<int, int>>>* bbcon_dual_indices) {
-  const std::unordered_map<symbolic::Variable, Bound> variable_bounds =
-      AggregateBoundingBoxConstraints(prog.bounding_box_constraints());
+  const std::unordered_map<symbolic::Variable, Bound,
+                           std::hash<symbolic::Variable>,
+                           symbolic::VariableEqualTo>
+      variable_bounds =
+          AggregateBoundingBoxConstraints(prog.bounding_box_constraints());
 
   // For each variable with lb <= x <= ub, we check the following
   // 1. If lb == ub (and both are finite), then we add the constraint x + s = ub

@@ -160,7 +160,7 @@ class Formula {
    *
    * This function is used as a compare function in
    * std::map<symbolic::Formula> and std::set<symbolic::Formula> via
-   * std::less<symbolic::Formula>. */
+   * FormulaLess. */
   [[nodiscard]] bool Less(const Formula& f) const;
 
   /** Evaluates using a given environment (by default, an empty environment) and
@@ -271,6 +271,32 @@ class Formula {
   std::shared_ptr<const FormulaCell> ptr_;
 };
 
+/** Provides a strict weak ordering on formulas (see Formula::Less), for use
+as the comparator of an ordered container, e.g., `std::set<Formula,
+FormulaLess>`.
+
+Note that `std::less<Formula>` must not be used for this purpose: the C++
+standard requires it to be equivalent to `operator<`, which for Formula
+constructs a symbolic Formula instead of returning a bool. */
+struct FormulaLess {
+  bool operator()(const Formula& lhs, const Formula& rhs) const {
+    return lhs.Less(rhs);
+  }
+};
+
+/** Checks structural equality of formulas (see Formula::EqualTo), for use as
+the key-equality predicate of an unordered container, e.g.,
+`std::unordered_set<Formula, std::hash<Formula>, FormulaEqualTo>`.
+
+Note that `std::equal_to<Formula>` must not be used for this purpose: the C++
+standard requires it to be equivalent to `operator==`, which for Formula
+constructs a symbolic Formula instead of returning a bool. */
+struct FormulaEqualTo {
+  bool operator()(const Formula& lhs, const Formula& rhs) const {
+    return lhs.EqualTo(rhs);
+  }
+};
+
 /** Returns a formula @p f, universally quantified by variables @p vars. */
 Formula forall(const Variables& vars, const Formula& f);
 
@@ -284,7 +310,7 @@ Formula forall(const Variables& vars, const Formula& f);
  * - Nested conjunctions will be flattened. For example, make_conjunction({f₁,
  *   f₂ ∧ f₃}) returns f₁ ∧ f₂ ∧ f₃.
  */
-Formula make_conjunction(const std::set<Formula>& formulas);
+Formula make_conjunction(const std::set<Formula, FormulaLess>& formulas);
 Formula operator&&(const Formula& f1, const Formula& f2);
 Formula operator&&(const Variable& v, const Formula& f);
 Formula operator&&(const Formula& f, const Variable& v);
@@ -300,7 +326,7 @@ Formula operator&&(const Variable& v1, const Variable& v2);
  * - Nested disjunctions will be flattened. For example, make_disjunction({f₁,
  *   f₂ ∨ f₃}) returns f₁ ∨ f₂ ∨ f₃.
  */
-Formula make_disjunction(const std::set<Formula>& formulas);
+Formula make_disjunction(const std::set<Formula, FormulaLess>& formulas);
 Formula operator||(const Formula& f1, const Formula& f2);
 Formula operator||(const Variable& v, const Formula& f);
 Formula operator||(const Formula& f, const Variable& v);
@@ -486,7 +512,7 @@ const Expression& get_unary_expression(const Formula& f);
 /** Returns the set of formulas in a n-ary formula @p f.
  *  \pre{@p f is a n-ary formula.}
  */
-const std::set<Formula>& get_operands(const Formula& f);
+const std::set<Formula, FormulaLess>& get_operands(const Formula& f);
 
 /** Returns the formula in a negation formula @p f.
  *  \pre{@p f is a negation formula.}
@@ -951,9 +977,9 @@ operator!=(const ScalarType& v, const Derived& a) {
 /// - Eigen::Matrix<double> == Eigen::Matrix<double>
 ///
 /// Note that this method returns a conjunctive formula which keeps its
-/// conjuncts as `std::set<Formula>` internally. This set is ordered by
-/// `Formula::Less` and this ordering can be *different* from the one in
-/// inputs. Also, any duplicated formulas are removed in construction.  Please
+/// conjuncts as `std::set<Formula, FormulaLess>` internally. This set is
+/// ordered by `Formula::Less` and this ordering can be *different* from the one
+/// in inputs. Also, any duplicated formulas are removed in construction. Please
 /// check the following example.
 ///
 /// @code
@@ -966,7 +992,7 @@ operator!=(const ScalarType& v, const Derived& a) {
 ///     v2 << 1, 2, 1;
 ///     // Here v1_eq_v2 = ((x = 2) ∧ (y = 1))
 ///     const Formula v1_eq_v2{v1 == v2};
-///     const std::set<Formula> conjuncts{get_operands(v1_eq_v2)};
+///     const std::set<Formula, FormulaLess> conjuncts{get_operands(v1_eq_v2)};
 ///     for (const Formula& f : conjuncts) {
 ///       std::cerr << f << std::endl;
 ///     }
@@ -1163,23 +1189,6 @@ template <>
 struct __is_fast_hash<hash<drake::symbolic::Formula>> : std::false_type {};
 #endif
 
-/* Provides std::less<drake::symbolic::Formula>. */
-template <>
-struct less<drake::symbolic::Formula> {
-  bool operator()(const drake::symbolic::Formula& lhs,
-                  const drake::symbolic::Formula& rhs) const {
-    return lhs.Less(rhs);
-  }
-};
-
-/* Provides std::equal_to<drake::symbolic::Formula>. */
-template <>
-struct equal_to<drake::symbolic::Formula> {
-  bool operator()(const drake::symbolic::Formula& lhs,
-                  const drake::symbolic::Formula& rhs) const {
-    return lhs.EqualTo(rhs);
-  }
-};
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)

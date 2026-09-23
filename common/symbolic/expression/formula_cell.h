@@ -120,14 +120,14 @@ class NaryFormulaCell : public FormulaCell {
   /* Copy-assign (DELETED). */
   NaryFormulaCell& operator=(const NaryFormulaCell& f) = delete;
   /* Construct NaryFormulaCell of kind @p k with @p formulas. */
-  NaryFormulaCell(FormulaKind k, std::set<Formula> formulas);
+  NaryFormulaCell(FormulaKind k, std::set<Formula, FormulaLess> formulas);
   ~NaryFormulaCell() override;
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetFreeVariables() const override;
   [[nodiscard]] bool EqualTo(const FormulaCell& f) const override;
   [[nodiscard]] bool Less(const FormulaCell& f) const override;
   /* Returns the formulas. */
-  [[nodiscard]] const std::set<Formula>& get_operands() const {
+  [[nodiscard]] const std::set<Formula, FormulaLess>& get_operands() const {
     return formulas_;
   }
 
@@ -135,7 +135,7 @@ class NaryFormulaCell : public FormulaCell {
   std::string DisplayWithOp(const std::string& op) const;
 
  private:
-  const std::set<Formula> formulas_;
+  const std::set<Formula, FormulaLess> formulas_;
 };
 
 /* Symbolic formula representing true. */
@@ -259,7 +259,7 @@ class FormulaLeq : public RelationalFormulaCell {
 class FormulaAnd : public NaryFormulaCell {
  public:
   /* Constructs from @p formulas. */
-  explicit FormulaAnd(const std::set<Formula>& formulas);
+  explicit FormulaAnd(const std::set<Formula, FormulaLess>& formulas);
   /* Constructs @p f1 ∧ @p f2. */
   FormulaAnd(const Formula& f1, const Formula& f2);
   ~FormulaAnd() override;
@@ -272,7 +272,7 @@ class FormulaAnd : public NaryFormulaCell {
 class FormulaOr : public NaryFormulaCell {
  public:
   /* Constructs from @p formulas. */
-  explicit FormulaOr(const std::set<Formula>& formulas);
+  explicit FormulaOr(const std::set<Formula, FormulaLess>& formulas);
   /* Constructs @p f1 ∨ @p f2. */
   FormulaOr(const Formula& f1, const Formula& f2);
   ~FormulaOr() override;

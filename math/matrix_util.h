@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <concepts>
 #include <functional>
 #include <set>
 #include <string>
@@ -17,17 +18,32 @@
 
 namespace drake {
 namespace math {
-/// Determines if a matrix is symmetric. If std::equal_to<>()(matrix(i, j),
-/// matrix(j, i)) is true for all i, j, then the matrix is symmetric.
+/// Determines if a matrix is symmetric. If matrix(i, j) == matrix(j, i) for
+/// all i, j, then the matrix is symmetric. For symbolic scalar types (whose
+/// operator== returns a Formula), structural equality is used instead, i.e.,
+/// matrix(i, j).EqualTo(matrix(j, i)) or matrix(i, j).equal_to(matrix(j, i)).
 template <typename Derived>
 bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix) {
   using DerivedScalar = typename Derived::Scalar;
+  const auto equal = [](const DerivedScalar& a, const DerivedScalar& b) {
+    if constexpr (requires {
+                    { a.EqualTo(b) } -> std::same_as<bool>;
+                  }) {
+      return a.EqualTo(b);
+    } else if constexpr (requires {
+                           { a.equal_to(b) } -> std::same_as<bool>;
+                         }) {
+      return a.equal_to(b);
+    } else {
+      return a == b;
+    }
+  };
   if (matrix.rows() != matrix.cols()) {
     return false;
   }
   for (int i = 0; i < static_cast<int>(matrix.rows()); ++i) {
     for (int j = i + 1; j < static_cast<int>(matrix.cols()); ++j) {
-      if (!std::equal_to<DerivedScalar>()(matrix(i, j), matrix(j, i))) {
+      if (!equal(matrix(i, j), matrix(j, i))) {
         return false;
       }
     }

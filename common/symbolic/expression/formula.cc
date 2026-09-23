@@ -127,8 +127,8 @@ Formula forall(const Variables& vars, const Formula& f) {
   return Formula{make_shared<const FormulaForall>(vars, f)};
 }
 
-Formula make_conjunction(const set<Formula>& formulas) {
-  set<Formula> operands;
+Formula make_conjunction(const set<Formula, FormulaLess>& formulas) {
+  set<Formula, FormulaLess> operands;
   for (const Formula& f : formulas) {
     if (is_false(f)) {
       // Short-circuits to False.
@@ -175,8 +175,8 @@ Formula operator&&(const Variable& v1, const Variable& v2) {
   return Formula(v1) && Formula(v2);
 }
 
-Formula make_disjunction(const set<Formula>& formulas) {
-  set<Formula> operands;
+Formula make_disjunction(const set<Formula, FormulaLess>& formulas) {
+  set<Formula, FormulaLess> operands;
   for (const Formula& f : formulas) {
     if (is_true(f)) {
       // Short-circuits to True.
@@ -401,7 +401,7 @@ const Expression& get_unary_expression(const Formula& f) {
   return to_isnan(f)->get_unary_expression();
 }
 
-const set<Formula>& get_operands(const Formula& f) {
+const set<Formula, FormulaLess>& get_operands(const Formula& f) {
   return to_nary(f)->get_operands();
 }
 

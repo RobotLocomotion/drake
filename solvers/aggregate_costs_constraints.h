@@ -63,7 +63,9 @@ struct Bound {
  * (lower, upper) bounds of that variable as the tightest bounds of @p
  * bounding_box_constraints.
  */
-[[nodiscard]] std::unordered_map<symbolic::Variable, Bound>
+[[nodiscard]] std::unordered_map<symbolic::Variable, Bound,
+                                 std::hash<symbolic::Variable>,
+                                 symbolic::VariableEqualTo>
 AggregateBoundingBoxConstraints(
     const std::vector<Binding<BoundingBoxConstraint>>&
         bounding_box_constraints);

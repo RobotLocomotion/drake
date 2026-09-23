@@ -1512,8 +1512,11 @@ Returns:
       struct /* IsSymmetric */ {
         // Source: drake/math/matrix_util.h
         const char* doc_1args =
-R"""(Determines if a matrix is symmetric. If std∷equal_to<>()(matrix(i, j),
-matrix(j, i)) is true for all i, j, then the matrix is symmetric.)""";
+R"""(Determines if a matrix is symmetric. If matrix(i, j) == matrix(j, i)
+for all i, j, then the matrix is symmetric. For symbolic scalar types
+(whose operator== returns a Formula), structural equality is used
+instead, i.e., matrix(i, j).EqualTo(matrix(j, i)) or matrix(i,
+j).equal_to(matrix(j, i)).)""";
         // Source: drake/math/matrix_util.h
         const char* doc_2args =
 R"""(Determines if a matrix is symmetric based on whether the difference

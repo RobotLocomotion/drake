@@ -34,8 +34,8 @@ void CheckCalcMonomialBasisOrderUpToOne(const drake::symbolic::Variables& t) {
   }
   // Make sure that basis_sorted is actually in the graded lexicographic order.
   for (int i = 0; i < basis_sorted.rows() - 1; ++i) {
-    EXPECT_TRUE(GradedReverseLexOrder<std::less<Variable>>()(
-        basis_sorted(i), basis_sorted(i + 1)));
+    EXPECT_TRUE(GradedReverseLexOrder<VariableLess>()(basis_sorted(i),
+                                                      basis_sorted(i + 1)));
   }
 }
 
@@ -55,7 +55,7 @@ TEST_F(CalcMonomialBasisTest, CalcMonomialBasisOrderUpToOne) {
 
   const Vector4<symbolic::Monomial> monomial12 =
       CalcMonomialBasisOrderUpToOne(Variables({t1_, t2_}), true);
-  ASSERT_TRUE(std::less<Variable>()(t1_, t2_));
+  ASSERT_TRUE(VariableLess()(t1_, t2_));
   EXPECT_EQ(monomial12[0], Monomial(t1_ * t2_));
   EXPECT_EQ(monomial12[1], Monomial(t2_));
   EXPECT_EQ(monomial12[2], Monomial(t1_));
@@ -100,8 +100,8 @@ GTEST_TEST(MonomialBasis, TestMultipleVariables) {
   for (int i = 0; i < monomials.rows(); ++i) {
     if (i != 0) {
       EXPECT_NE(monomials(i), monomials(i - 1));
-      EXPECT_TRUE(GradedReverseLexOrder<std::less<Variable>>()(monomials(i - 1),
-                                                               monomials(i)));
+      EXPECT_TRUE(GradedReverseLexOrder<VariableLess>()(monomials(i - 1),
+                                                        monomials(i)));
     }
     EXPECT_LE(degree_in_vars(monomials(i), x_set), 2);
     EXPECT_LE(degree_in_vars(monomials(i), y_set), 1);

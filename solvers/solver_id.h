@@ -46,7 +46,7 @@ class SolverId {
  private:
   friend bool operator==(const SolverId&, const SolverId&);
   friend bool operator!=(const SolverId&, const SolverId&);
-  friend struct std::less<SolverId>;
+  friend bool operator<(const SolverId&, const SolverId&);
 
   reset_after_move<int> id_;
   std::string name_;
@@ -54,6 +54,7 @@ class SolverId {
 
 bool operator==(const SolverId&, const SolverId&);
 bool operator!=(const SolverId&, const SolverId&);
+bool operator<(const SolverId&, const SolverId&);
 
 std::string to_string(const SolverId&);
 
@@ -61,14 +62,6 @@ std::string to_string(const SolverId&);
 }  // namespace drake
 
 namespace std {
-/* Provides std::less<drake::solvers::SolverId>. */
-template <>
-struct less<drake::solvers::SolverId> {
-  bool operator()(const drake::solvers::SolverId& lhs,
-                  const drake::solvers::SolverId& rhs) const {
-    return lhs.id_ < rhs.id_;
-  }
-};
 /* Provides std::hash<drake::solvers::SolverId>. */
 template <>
 struct hash<drake::solvers::SolverId> : public drake::DefaultHash {};

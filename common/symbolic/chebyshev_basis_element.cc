@@ -14,7 +14,7 @@ namespace symbolic {
 ChebyshevBasisElement::ChebyshevBasisElement() : PolynomialBasisElement() {}
 
 ChebyshevBasisElement::ChebyshevBasisElement(
-    const std::map<Variable, int>& var_to_degree_map)
+    const std::map<Variable, int, VariableLess>& var_to_degree_map)
     : PolynomialBasisElement(var_to_degree_map) {}
 
 ChebyshevBasisElement::ChebyshevBasisElement(const Variable& var)
@@ -46,7 +46,8 @@ std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Differentiate(
     return {};
   }
   std::map<ChebyshevBasisElement, double> result;
-  std::map<Variable, int> var_to_degree_map = this->var_to_degree_map();
+  std::map<Variable, int, VariableLess> var_to_degree_map =
+      this->var_to_degree_map();
   auto it = var_to_degree_map.find(var);
   const int degree = it->second;
   const int start_degree = degree % 2 == 0 ? 1 : 2;
@@ -92,7 +93,7 @@ void ChebyshevBasisElement::MergeBasisElementInPlace(
 std::pair<double, ChebyshevBasisElement> ChebyshevBasisElement::EvaluatePartial(
     const Environment& env) const {
   double coeff;
-  std::map<Variable, int> new_basis_element;
+  std::map<Variable, int, VariableLess> new_basis_element;
   DoEvaluatePartial(env, &coeff, &new_basis_element);
   return std::make_pair(coeff, ChebyshevBasisElement(new_basis_element));
 }
@@ -103,7 +104,7 @@ double ChebyshevBasisElement::DoEvaluate(double variable_val,
 }
 
 Expression ChebyshevBasisElement::DoToExpression() const {
-  std::map<Expression, Expression> base_to_exponent_map;
+  std::map<Expression, Expression, ExpressionLess> base_to_exponent_map;
   for (const auto& [var, degree] : var_to_degree_map()) {
     base_to_exponent_map.emplace(
         ChebyshevPolynomial(var, degree).ToPolynomial().ToExpression(), 1);
@@ -116,7 +117,7 @@ namespace {
 // entry of chebyshev_basis_all.
 void AppendVariableAndDegree(
     const Variable& var, int degree,
-    std::vector<std::map<Variable, int>>* chebyshev_basis_all) {
+    std::vector<std::map<Variable, int, VariableLess>>* chebyshev_basis_all) {
   for (auto& cheby_basis : *chebyshev_basis_all) {
     cheby_basis.emplace(var, degree);
   }
@@ -168,7 +169,7 @@ std::map<ChebyshevBasisElement, double> operator*(
   }
   // The number of ChebyshevBasisElement in the product result is
   // 2^num_common_variables.
-  std::vector<std::map<Variable, int>> chebyshev_basis_all(
+  std::vector<std::map<Variable, int, VariableLess>> chebyshev_basis_all(
       power_of_2(num_common_variables));
   // I will go through the (variable, degree) pair of both a and b. If the
   // variable shows up in only a or b, then each term in the product a * b

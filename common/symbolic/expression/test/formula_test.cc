@@ -1063,7 +1063,8 @@ TEST_F(SymbolicFormulaTest, GetRhsExpression) {
 }
 
 TEST_F(SymbolicFormulaTest, GetOperandsConjunction) {
-  const set<Formula> formulas{get_operands(f1_ && f2_ && f3_ && f4_)};
+  const set<Formula, symbolic::FormulaLess> formulas{
+      get_operands(f1_ && f2_ && f3_ && f4_)};
   EXPECT_EQ(formulas.size(), 4u);
   EXPECT_TRUE(formulas.contains(f1_));
   EXPECT_TRUE(formulas.contains(f2_));
@@ -1072,7 +1073,8 @@ TEST_F(SymbolicFormulaTest, GetOperandsConjunction) {
 }
 
 TEST_F(SymbolicFormulaTest, GetOperandsDisjunction) {
-  const set<Formula> formulas{get_operands(f1_ || f2_ || f3_ || f4_)};
+  const set<Formula, symbolic::FormulaLess> formulas{
+      get_operands(f1_ || f2_ || f3_ || f4_)};
   EXPECT_EQ(formulas.size(), 4u);
   EXPECT_TRUE(formulas.contains(f1_));
   EXPECT_TRUE(formulas.contains(f2_));
@@ -1299,7 +1301,7 @@ GTEST_TEST(FormulaTest, CxxBoolVariableConstructor) {
 // This test checks whether symbolic::Formula is compatible with
 // std::unordered_set.
 GTEST_TEST(FormulaTest, CompatibleWithUnorderedSet) {
-  unordered_set<Formula> uset;
+  unordered_set<Formula, std::hash<Formula>, FormulaEqualTo> uset;
   uset.emplace(Formula::True());
   uset.emplace(Formula::True());
   uset.emplace(Formula::False());
@@ -1309,7 +1311,7 @@ GTEST_TEST(FormulaTest, CompatibleWithUnorderedSet) {
 // This test checks whether symbolic::Formula is compatible with
 // std::unordered_map.
 GTEST_TEST(FormulaTest, CompatibleWithUnorderedMap) {
-  unordered_map<Formula, Formula> umap;
+  unordered_map<Formula, Formula, std::hash<Formula>, FormulaEqualTo> umap;
   umap.emplace(Formula::True(), Formula::False());
   umap.emplace(Formula::False(), Formula::True());
 }
@@ -1317,7 +1319,7 @@ GTEST_TEST(FormulaTest, CompatibleWithUnorderedMap) {
 // This test checks whether symbolic::Formula is compatible with
 // std::set.
 GTEST_TEST(FormulaTest, CompatibleWithSet) {
-  set<Formula> set;
+  set<Formula, symbolic::FormulaLess> set;
   set.emplace(Formula::True());
   set.emplace(Formula::True());
   set.emplace(Formula::False());
@@ -1327,7 +1329,7 @@ GTEST_TEST(FormulaTest, CompatibleWithSet) {
 // This test checks whether symbolic::Formula is compatible with
 // std::map.
 GTEST_TEST(FormulaTest, CompatibleWithMap) {
-  map<Formula, Formula> map;
+  map<Formula, Formula, symbolic::FormulaLess> map;
   map.emplace(Formula::True(), Formula::False());
 }
 
@@ -1352,7 +1354,7 @@ TEST_F(SymbolicFormulaTest, MemcpyKeepsFomrulaIntact) {
        {tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_, f_or_,
         not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_, f_psd_dynamic_2x2_,
         f_psd_static_3x3_}) {
-    EXPECT_TRUE(IsMemcpyMovable(formula));
+    EXPECT_TRUE(IsMemcpyMovable(formula, FormulaEqualTo{}));
   }
 }
 

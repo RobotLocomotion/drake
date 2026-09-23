@@ -159,10 +159,14 @@ void AggregateQuadraticAndLinearCosts(
   *quadratic_vars = quadratic_var_vec.CopyToEigen();
 }
 
-std::unordered_map<symbolic::Variable, Bound> AggregateBoundingBoxConstraints(
+std::unordered_map<symbolic::Variable, Bound, std::hash<symbolic::Variable>,
+                   symbolic::VariableEqualTo>
+AggregateBoundingBoxConstraints(
     const std::vector<Binding<BoundingBoxConstraint>>&
         bounding_box_constraints) {
-  std::unordered_map<symbolic::Variable, Bound> bounds;
+  std::unordered_map<symbolic::Variable, Bound, std::hash<symbolic::Variable>,
+                     symbolic::VariableEqualTo>
+      bounds;
   for (const auto& constraint : bounding_box_constraints) {
     for (int i = 0; i < constraint.variables().rows(); ++i) {
       const symbolic::Variable& var = constraint.variables()(i);

@@ -31,7 +31,7 @@ using std::string;
 namespace {
 // Computes the total degree of a monomial. This method is used in a
 // constructor of Monomial to set its total degree at construction.
-int TotalDegree(const map<Variable, int>& powers) {
+int TotalDegree(const map<Variable, int, VariableLess>& powers) {
   return accumulate(powers.begin(), powers.end(), 0,
                     [](const int degree, const pair<const Variable, int>& p) {
                       return degree + p.second;
@@ -42,10 +42,10 @@ int TotalDegree(const map<Variable, int>& powers) {
 // Monomial class, a mapping from a base (Variable) to its exponent (int). This
 // function is called inside of the constructor Monomial(const
 // symbolic::Expression&).
-map<Variable, int> ToMonomialPower(const Expression& e) {
+map<Variable, int, VariableLess> ToMonomialPower(const Expression& e) {
   // TODO(soonho): Re-implement this function by using a Polynomial visitor.
   DRAKE_DEMAND(e.is_polynomial());
-  map<Variable, int> powers;
+  map<Variable, int, VariableLess> powers;
   if (is_one(e)) {  // This block is deliberately left empty.
   } else if (is_constant(e)) {
     throw runtime_error("A constant not equal to 1, this is not a monomial.");
@@ -89,11 +89,11 @@ map<Variable, int> ToMonomialPower(const Expression& e) {
 // representation of Monomial class, a mapping from a base (Variable) to its
 // exponent (int). This function is called in the constructor taking the same
 // types of arguments.
-map<Variable, int> ToMonomialPower(
+map<Variable, int, VariableLess> ToMonomialPower(
     const Eigen::Ref<const VectorX<Variable>>& vars,
     const Eigen::Ref<const Eigen::VectorXi>& exponents) {
   DRAKE_DEMAND(vars.size() == exponents.size());
-  map<Variable, int> powers;
+  map<Variable, int, VariableLess> powers;
   for (int i = 0; i < vars.size(); ++i) {
     if (exponents[i] > 0) {
       powers.emplace(vars[i], exponents[i]);
@@ -121,7 +121,7 @@ Monomial::Monomial(const Variable& var, const int exponent)
   }
 }
 
-Monomial::Monomial(const map<Variable, int>& powers)
+Monomial::Monomial(const map<Variable, int, VariableLess>& powers)
     : total_degree_{TotalDegree(powers)} {
   for (const auto& p : powers) {
     const int exponent{p.second};
@@ -227,7 +227,7 @@ Eigen::VectorXd Monomial::Evaluate(
 
 pair<double, Monomial> Monomial::EvaluatePartial(const Environment& env) const {
   double coeff{1.0};
-  map<Variable, int> new_powers;
+  map<Variable, int, VariableLess> new_powers;
   for (const auto& p : powers_) {
     const Variable& var{p.first};
     const int exponent{p.second};

@@ -444,7 +444,7 @@ class DecomposeLumpedParametersVisitor {
     // Temporary storage to hold the elements of w(n) (as a key) and the
     // elements of α(parameters) (as a value) for e.  We use a map to avoid
     // duplicates.
-    std::map<Expression, Expression> w_map;
+    std::map<Expression, Expression, ExpressionLess> w_map;
 
     // e = c₀ + ∑ᵢ (cᵢ * eᵢ)
     //   => [c₁w₁, c₂w₂, ...]*[α₁, α₂, ...] + (c₀ + ∑ᵢ cᵢw0ᵢ)
@@ -675,7 +675,7 @@ DecomposeLumpedParameters(
 
   // Compute Wα (avoiding duplicate α) by filling a map from alpha to the
   // corresponding column of W.
-  std::map<Expression, VectorX<Expression>> alpha_map;
+  std::map<Expression, VectorX<Expression>, ExpressionLess> alpha_map;
 
   VectorX<Expression> w0(f.size());
   for (int i = 0; i < f.size(); i++) {

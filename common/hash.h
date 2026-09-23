@@ -65,7 +65,9 @@
 /// @endcode
 /// so that users are able to simply write:
 /// @code
-/// std::unordered_set<drake::symbolic::Expression> foo;
+/// std::unordered_set<drake::symbolic::Expression,
+/// std::hash<drake::symbolic::Expression>, drake::symbolic::ExpressionEqualTo>
+/// foo;
 /// @endcode
 ///
 /// @}

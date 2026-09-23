@@ -1179,7 +1179,8 @@ TEST_F(SymbolicPolynomialTest, EvaluateWithAffineCoefficients) {
 
 TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
   Polynomial::SubstituteAndExpandCacheData substitutions_cached_data;
-  std::unordered_map<Variable, Polynomial> indeterminate_substitution;
+  std::unordered_map<Variable, Polynomial, std::hash<Variable>, VariableEqualTo>
+      indeterminate_substitution;
 
   // A simple substitution.
   indeterminate_substitution.emplace(var_x_, Polynomial(2 * var_a_));
