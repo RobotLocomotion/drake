@@ -62,14 +62,17 @@ GTEST_TEST(SceneGraphConfigTest, ValidateModulus) {
   SceneGraphConfig config;
   auto& props = config.default_proximity_properties;
   props.hydroelastic_modulus = 0;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositive.*hydroelastic_modulus = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The hydroelastic modulus must be positive; given 0");
   props.hydroelastic_modulus = -1;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositive.*hydroelastic_modulus = -1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The hydroelastic modulus must be positive; given -1");
   props.hydroelastic_modulus = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositive.*hydroelastic_modulus = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The hydroelastic modulus must be positive; given nan");
   // +∞ is intentionally allowed for hydroelastic modulus.
   props.hydroelastic_modulus = kInf;
   EXPECT_NO_THROW(config.ValidateOrThrow());
@@ -79,42 +82,51 @@ GTEST_TEST(SceneGraphConfigTest, ValidateRezHint) {
   SceneGraphConfig config;
   auto& props = config.default_proximity_properties;
   props.resolution_hint = 0;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositiveFinite.*resolution_hint = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The resolution_hint must be positive and finite; given 0");
   props.resolution_hint = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositiveFinite.*resolution_hint = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The resolution_hint must be positive and finite; given nan");
   props.resolution_hint = kInf;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositiveFinite.*resolution_hint = inf.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The resolution_hint must be positive and finite; given inf");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateSlabThickness) {
   SceneGraphConfig config;
   auto& props = config.default_proximity_properties;
   props.slab_thickness = 0;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositiveFinite.*slab_thickness = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The slab_thickness must be positive and finite; given 0");
   props.slab_thickness = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositiveFinite.*slab_thickness = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The slab_thickness must be positive and finite; given nan");
   props.slab_thickness = kInf;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositiveFinite.*slab_thickness = inf.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The slab_thickness must be positive and finite; given inf");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateMargin) {
   SceneGraphConfig config;
   auto& props = config.default_proximity_properties;
   props.margin = -1;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegativeFinite.*margin = -1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The margin must be non-negative and finite; given -1");
   props.margin = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegativeFinite.*margin = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The margin must be non-negative and finite; given nan");
   props.margin = kInf;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegativeFinite.*margin = inf.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The margin must be non-negative and finite; given inf");
   props.margin = 0;
   EXPECT_NO_THROW(config.ValidateOrThrow());
 }
@@ -125,63 +137,71 @@ GTEST_TEST(SceneGraphConfigTest, ValidateDynamicFriction) {
   // Keep static >= dynamic so CoulombFriction isn't the failure mode.
   props.static_friction = 10;
   props.dynamic_friction = -1;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegative.*dynamic_friction = -1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The friction coefficient can't be negative; given -1");
   props.dynamic_friction = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegative.*dynamic_friction = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The friction coefficient can't be negative; given nan");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateStaticFriction) {
   SceneGraphConfig config;
   auto& props = config.default_proximity_properties;
   props.static_friction = -1;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegative.*static_friction = -1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The friction coefficient can't be negative; given -1");
   props.static_friction = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegative.*static_friction = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The friction coefficient can't be negative; given nan");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateHuntCrossley) {
   SceneGraphConfig config;
   auto& props = config.default_proximity_properties;
   props.hunt_crossley_dissipation = -1;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      config.ValidateOrThrow(),
-      ".*IsNonNegative.*hunt_crossley_dissipation = -1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
+                              "The dissipation can't be negative; given -1");
   props.hunt_crossley_dissipation = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      config.ValidateOrThrow(),
-      ".*IsNonNegative.*hunt_crossley_dissipation = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
+                              "The dissipation can't be negative; given nan");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateRelaxationTime) {
   SceneGraphConfig config;
   auto& props = config.default_proximity_properties;
   props.relaxation_time = -1;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegativeFinite.*relaxation_time = -1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The relaxation_time must be non-negative and finite; given -1");
   props.relaxation_time = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegativeFinite.*relaxation_time = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The relaxation_time must be non-negative and finite; given nan");
   props.relaxation_time = kInf;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsNonNegativeFinite.*relaxation_time = inf.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The relaxation_time must be non-negative and finite; given inf");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidatePointStiffness) {
   SceneGraphConfig config;
   auto& props = config.default_proximity_properties;
   props.point_stiffness = -1;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositive.*point_stiffness = -1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The point_contact_stiffness must be strictly positive; given -1");
   props.point_stiffness = 0;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositive.*point_stiffness = 0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The point_contact_stiffness must be strictly positive; given 0");
   props.point_stiffness = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              ".*IsPositive.*point_stiffness = nan.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The point_contact_stiffness must be strictly positive; given nan");
   // +∞ is intentionally allowed for point stiffness.
   props.point_stiffness = kInf;
   EXPECT_NO_THROW(config.ValidateOrThrow());

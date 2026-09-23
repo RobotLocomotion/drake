@@ -7,7 +7,6 @@
  no way limit the inclusion of any other additional, arbitrary properties.
  */
 
-#include <cmath>
 #include <optional>
 #include <string>
 
@@ -96,38 +95,47 @@ std::string GetStringFromHydroelasticType(HydroelasticType hydroelastic_type);
 /* String conversion for debug-printing hydroelastic type.  */
 std::string_view to_string(const HydroelasticType& type);
 
-/* @name  Proximity property numeric predicates
+/* @name  Validating proximity property numeric values
 
- These predicates are the single enforcement point for the numeric ranges of
- proximity properties. They are used by DefaultProximityProperties::
- ValidateOrThrow() and by the public Add* helpers below. Invoke them as
- `DRAKE_THROW_UNLESS(IsPositiveFinite(x), x)` (and similarly for the other
- predicates) so the named quantity, requirement, and value appear in the
- error. Valid ranges (including NaN/∞ disposition) are documented on the
- corresponding fields of DefaultProximityProperties and on the Add* APIs that
- accept these values.
- */
+ These helpers are the single definition of the numeric ranges of Drake's common
+ proximity properties. They serve as the sole judge of what makes a value
+ "valid" and provide a consistently worded message for all consumers. Valid
+ ranges are documented on the corresponding fields of DefaultProximityProperties
+ and on the Add* APIs that accept these values.
+
+ Each function returns std::nullopt when its argument is valid, or a fixed error
+ message when it is invalid. */
 //@{
 
-/* Returns true iff `x` > 0. +∞ is allowed; NaN is not. */
-inline bool IsPositive(double x) {
-  return x > 0;
-}
+/* Reports an error unless `hydroelastic_modulus > 0`. +∞ is allowed. */
+std::optional<std::string> ReportIfInvalidHydroelasticModulus(
+    double hydroelastic_modulus);
 
-/* Returns true iff 0 < `x` < ∞. */
-inline bool IsPositiveFinite(double x) {
-  return std::isfinite(x) && x > 0;
-}
+/* Reports an error unless `0 < resolution_hint < ∞`. */
+std::optional<std::string> ReportIfInvalidResolutionHint(
+    double resolution_hint);
 
-/* Returns true iff `x` ≥ 0. +∞ is allowed; NaN is not. */
-inline bool IsNonNegative(double x) {
-  return x >= 0;
-}
+/* Reports an error unless `0 < slab_thickness < ∞`. */
+std::optional<std::string> ReportIfInvalidSlabThickness(double slab_thickness);
 
-/* Returns true iff 0 ≤ `x` < ∞. */
-inline bool IsNonNegativeFinite(double x) {
-  return std::isfinite(x) && x >= 0;
-}
+/* Reports an error unless `0 ≤ margin < ∞`. */
+std::optional<std::string> ReportIfInvalidMargin(double margin);
+
+/* Reports an error unless `dissipation ≥ 0`. +∞ is allowed. */
+std::optional<std::string> ReportIfInvalidHuntCrossleyDissipation(
+    double dissipation);
+
+/* Reports an error unless `0 ≤ relaxation_time < ∞`. */
+std::optional<std::string> ReportIfInvalidRelaxationTime(
+    double relaxation_time);
+
+/* Reports an error unless `point_stiffness > 0`. +∞ is allowed. */
+std::optional<std::string> ReportIfInvalidPointStiffness(
+    double point_stiffness);
+
+/* Reports an error unless `friction_coefficient ≥ 0`. +∞ is allowed. */
+std::optional<std::string> ReportIfInvalidFrictionCoefficient(
+    double friction_coefficient);
 
 //@}
 

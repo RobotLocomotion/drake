@@ -77,35 +77,35 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(-1.2, ps, mu, &p),
-                                ".*IsNonNegative.*dissipation =.*");
+                                ".+dissipation can't be negative.+");
   }
 
   // Error case: NaN dissipation.
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(kNan, ps, mu, &p),
-                                ".*IsNonNegative.*dissipation =.*");
+                                ".+dissipation can't be negative.+");
   }
 
   // Error case: negative stiffness.
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(d, -200, mu, &p),
-                                ".*IsPositive.*point_stiffness =.*");
+                                ".+stiffness must be strictly positive.+");
   }
 
   // Error case: zero-valued stiffness.
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(d, 0, mu, &p),
-                                ".*IsPositive.*point_stiffness =.*");
+                                ".+stiffness must be strictly positive.+");
   }
 
   // Error case: NaN stiffness.
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(d, kNan, mu, &p),
-                                ".*IsPositive.*point_stiffness =.*");
+                                ".+stiffness must be strictly positive.+");
   }
 }
 
@@ -123,13 +123,17 @@ GTEST_TEST(ProximityPropertiesTest, AddRigidProperties) {
   {
     ProximityProperties props;
     DRAKE_EXPECT_THROWS_MESSAGE(AddRigidHydroelasticProperties(0.0, &props),
-                                ".*IsPositiveFinite.*resolution_hint =.*");
+                                ".*resolution_hint must be positive and "
+                                "finite.*");
     DRAKE_EXPECT_THROWS_MESSAGE(AddRigidHydroelasticProperties(-1.0, &props),
-                                ".*IsPositiveFinite.*resolution_hint =.*");
+                                ".*resolution_hint must be positive and "
+                                "finite.*");
     DRAKE_EXPECT_THROWS_MESSAGE(AddRigidHydroelasticProperties(kNan, &props),
-                                ".*IsPositiveFinite.*resolution_hint =.*");
+                                ".*resolution_hint must be positive and "
+                                "finite.*");
     DRAKE_EXPECT_THROWS_MESSAGE(AddRigidHydroelasticProperties(kInf, &props),
-                                ".*IsPositiveFinite.*resolution_hint =.*");
+                                ".*resolution_hint must be positive and "
+                                "finite.*");
   }
 
   ProximityProperties props;
@@ -147,19 +151,19 @@ void CheckDisallowedModulusValues(
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(function_to_test(0., &p),
-                                ".*IsPositive.*hydroelastic_modulus =.*");
+                                ".+elastic modulus must be positive.+");
   }
   // Error case: negative hydroelastic modulus.
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(function_to_test(-1.3, &p),
-                                ".*IsPositive.*hydroelastic_modulus =.*");
+                                ".+elastic modulus must be positive.+");
   }
   // Error case: NaN hydroelastic modulus.
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(function_to_test(kNan, &p),
-                                ".*IsPositive.*hydroelastic_modulus =.*");
+                                ".+elastic modulus must be positive.+");
   }
 }
 
@@ -191,13 +195,13 @@ GTEST_TEST(ProximityPropertiesTest, AddCompliantProperties) {
     ProximityProperties props;
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddCompliantHydroelasticProperties(0.0, E, &props),
-        ".*IsPositiveFinite.*resolution_hint =.*");
+        ".*resolution_hint must be positive and finite.*");
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddCompliantHydroelasticProperties(kNan, E, &props),
-        ".*IsPositiveFinite.*resolution_hint =.*");
+        ".*resolution_hint must be positive and finite.*");
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddCompliantHydroelasticProperties(kInf, E, &props),
-        ".*IsPositiveFinite.*resolution_hint =.*");
+        ".*resolution_hint must be positive and finite.*");
   }
 
   CheckDisallowedModulusValues("AddCompliantHydroelasticProperties",
@@ -227,13 +231,13 @@ GTEST_TEST(ProximityPropertiesTest, AddHalfSpaceCompliantProperties) {
     ProximityProperties props;
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddCompliantHydroelasticPropertiesForHalfSpace(0.0, E, &props),
-        ".*IsPositiveFinite.*slab_thickness =.*");
+        ".*slab_thickness must be positive and finite.*");
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddCompliantHydroelasticPropertiesForHalfSpace(kNan, E, &props),
-        ".*IsPositiveFinite.*slab_thickness =.*");
+        ".*slab_thickness must be positive and finite.*");
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddCompliantHydroelasticPropertiesForHalfSpace(kInf, E, &props),
-        ".*IsPositiveFinite.*slab_thickness =.*");
+        ".*slab_thickness must be positive and finite.*");
   }
 
   CheckDisallowedModulusValues("AddCompliantHydroelasticPropertiesForHalfSpace",
