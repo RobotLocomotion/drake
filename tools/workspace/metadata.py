@@ -32,7 +32,7 @@ def read_repository_metadata():
     # usual way.
     result["crate_universe"] = {
         "repository_rule_type": "scripted",
-        "upgrade_script": "upgrade.py",
+        "upgrade_script": "//tools/workspace/crate_universe:upgrade",
         # Downloads are associated with individual "crate__..." repositories.
         "downloads": {},
     }

@@ -520,12 +520,13 @@ def _do_upgrade_github_release_attachments(
 def _do_upgrade_scripted(
     *, local_drake_checkout: git.Repo, workspace_root: str, script: str
 ) -> set[str]:
-    """Performs a scripted upgrade and returns the set of files modified."""
-    # Run the upgrade script.
-    repo_root = local_drake_checkout.working_tree_dir
-    subprocess.check_call([os.path.join(repo_root, workspace_root, script)])
+    """Performs a scripted upgrade and returns the set of files modified.
 
-    # Look for modified paths.
+    `script` should be a fully qualified Bazel target, i.e., relative to the
+    workspace root (`//`) (`@drake` is assumed). This typically comes from
+    repository metadata.
+    """
+    subprocess.check_call(["bazel", "run", script])
     return _modified_paths(local_drake_checkout, workspace_root)
 
 
