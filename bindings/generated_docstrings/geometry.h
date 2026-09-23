@@ -108,7 +108,7 @@ Parameter ``slab_thickness``:
 
 Parameter ``hydroelastic_modulus``:
     A multiplier that maps penetration to pressure. See
-    hug_properties. Must be > 0 (+∞ allowed; NaN rejected).
+    hug_properties. Must be > 0 (+∞ allowed).
 
 Parameter ``properties``:
     The properties will be added to this property set.
@@ -134,10 +134,10 @@ default values will be provided. Downstream consumers of the contact
 materials can optionally provide defaults for missing properties.
 
 Raises:
-    RuntimeError if ``dissipation`` is present but not ≥ 0 (NaN is
-    rejected; +∞ is allowed), if ``point_stiffness`` is present but
-    not > 0 (NaN is rejected; +∞ is allowed), or if any of the contact
-    material properties have already been defined in ``properties``.
+    RuntimeError if ``dissipation`` is present but not ≥ 0 (+∞ is
+    allowed), if ``point_stiffness`` is present but not > 0 (+∞ is
+    allowed), or if any of the contact material properties have
+    already been defined in ``properties``.
 
 Precondition:
     ``properties`` is not nullptr.)""";
@@ -927,8 +927,8 @@ See also:
     friction coefficient (unitless).
 
 To be valid, either both friction values must be populated, or
-neither. When present, the value must be non-negative (``≥ 0``). +∞ is
-allowed; NaN is not. Additional relationship constraints with
+neither. When present, the value must satisfy ``dynamic_friction ≥
+0``. +∞ is allowed. Additional relationship constraints with
 ``static_friction`` are enforced by multibody∷CoulombFriction.)""";
         } dynamic_friction;
         // Symbol: drake::geometry::DefaultProximityProperties::hunt_crossley_dissipation
@@ -939,8 +939,8 @@ R"""(Controls energy dissipation from contact, for contact approximations
 other than* multibody∷DiscreteContactApproximation∷kSap. Units are
 seconds per meter.
 
-When present, the value must be non-negative (``≥ 0``). +∞ is allowed;
-NaN is not.
+When present, the value must satisfy ``hunt_crossley_dissipation ≥
+0``. +∞ is allowed.
 
 If a non-deformable geometry is missing a value for dissipation,
 MultibodyPlant will generate a default value (based on
@@ -960,9 +960,8 @@ parameters specific to your model.)""";
           const char* doc =
 R"""(A measure of material stiffness, in units of Pascals.
 
-When present, the value must be strictly positive (``> 0``). +∞ is
-allowed (it is mathematically equivalent to a rigid object); NaN is
-not.)""";
+When present, the value must satisfy ``hydroelastic_modulus > 0``. +∞
+is allowed (it is mathematically equivalent to a rigid object).)""";
         } hydroelastic_modulus;
         // Symbol: drake::geometry::DefaultProximityProperties::margin
         struct /* margin */ {
@@ -974,8 +973,7 @@ for contact resolution whenever their distance is within δ₁ + δ₂. That
 is, (speculative) contact constraints are added for objects at a
 distance smaller than δ₁+δ₂.
 
-When present, the value must satisfy ``0 ≤ margin < ∞`` (finite and
-non-negative).
+When present, the value must satisfy ``0 ≤ margin < ∞``.
 
 Refer to hydro_margin for further details, including theory, examples,
 recommended margin values and limitations.
@@ -1012,8 +1010,8 @@ Note:
           const char* doc =
 R"""(A measure of material stiffness, in units of Newtons per meter.
 
-When present, the value must be strictly positive (``> 0``). +∞ is
-allowed; NaN is not.
+When present, the value must satisfy ``point_stiffness > 0``. +∞ is
+allowed.
 
 If a non-deformable geometry is missing a value for stiffness,
 MultibodyPlant will generate a default value (based on
@@ -1033,8 +1031,7 @@ parameters specific to your model.)""";
 R"""(Controls energy damping from contact, *only for*
 multibody∷DiscreteContactApproximation∷kSap. Units are seconds.
 
-When present, the value must satisfy ``0 ≤ relaxation_time < ∞``
-(finite and non-negative).)""";
+When present, the value must satisfy ``0 ≤ relaxation_time < ∞``.)""";
         } relaxation_time;
         // Symbol: drake::geometry::DefaultProximityProperties::resolution_hint
         struct /* resolution_hint */ {
@@ -1043,8 +1040,7 @@ When present, the value must satisfy ``0 ≤ relaxation_time < ∞``
 R"""(Controls how finely primitive geometries are tessellated, units of
 meters.
 
-When present, the value must satisfy ``0 < resolution_hint < ∞``
-(finite and positive).
+When present, the value must satisfy ``0 < resolution_hint < ∞``.
 
 While no single value is universally appropriate, this value was
 selected based on the following idea. We're attempting to make
@@ -1060,8 +1056,7 @@ appropriate for contact with a compliant gripper.)""";
 R"""(For a halfspace, the thickness of compliant material to model, in
 units of meters.
 
-When present, the value must satisfy ``0 < slab_thickness < ∞``
-(finite and positive).)""";
+When present, the value must satisfy ``0 < slab_thickness < ∞``.)""";
         } slab_thickness;
         // Symbol: drake::geometry::DefaultProximityProperties::static_friction
         struct /* static_friction */ {

@@ -49,15 +49,14 @@ struct DefaultProximityProperties {
 
   /** A measure of material stiffness, in units of Pascals.
 
-  When present, the value must be strictly positive (`> 0`). +∞ is allowed (it
-  is mathematically equivalent to a rigid object); NaN is not. */
+  When present, the value must satisfy `hydroelastic_modulus > 0`. +∞ is allowed
+  (it is mathematically equivalent to a rigid object). */
   std::optional<double> hydroelastic_modulus{1e7};
 
   /** Controls how finely primitive geometries are tessellated, units of
   meters.
 
-  When present, the value must satisfy `0 < resolution_hint < ∞` (finite and
-  positive).
+  When present, the value must satisfy `0 < resolution_hint < ∞`.
 
   While no single value is universally appropriate, this value was selected
   based on the following idea. We're attempting to make introducing novel
@@ -70,8 +69,7 @@ struct DefaultProximityProperties {
   /** For a halfspace, the thickness of compliant material to model, in units
   of meters.
 
-  When present, the value must satisfy `0 < slab_thickness < ∞` (finite and
-  positive). */
+  When present, the value must satisfy `0 < slab_thickness < ∞`. */
   std::optional<double> slab_thickness;
 
   /** (Advanced) Specifies a thin layer of thickness "margin" (in meters) around
@@ -79,8 +77,7 @@ struct DefaultProximityProperties {
   resolution whenever their distance is within δ₁ + δ₂. That is, (speculative)
   contact constraints are added for objects at a distance smaller than δ₁+δ₂.
 
-  When present, the value must satisfy `0 ≤ margin < ∞` (finite and
-  non-negative).
+  When present, the value must satisfy `0 ≤ margin < ∞`.
 
   Refer to @ref hydro_margin for further details, including theory, examples,
   recommended margin values and limitations.
@@ -119,7 +116,7 @@ struct DefaultProximityProperties {
   /** Dynamic Coulomb friction coefficient (unitless).
 
   To be valid, either both friction values must be populated, or neither. When
-  present, the value must be non-negative (`≥ 0`). +∞ is allowed; NaN is not.
+  present, the value must satisfy `dynamic_friction ≥ 0`. +∞ is allowed.
   Additional relationship constraints with `static_friction` are enforced by
   multibody::CoulombFriction. */
   std::optional<double> dynamic_friction{0.5};
@@ -131,8 +128,8 @@ struct DefaultProximityProperties {
   *other than* multibody::DiscreteContactApproximation::kSap. Units are seconds
   per meter.
 
-  When present, the value must be non-negative (`≥ 0`). +∞ is allowed; NaN is
-  not.
+  When present, the value must satisfy `hunt_crossley_dissipation ≥ 0`. +∞ is
+  allowed.
 
   If a non-deformable geometry is missing a value for dissipation,
   MultibodyPlant will generate a default value (based on
@@ -149,8 +146,7 @@ struct DefaultProximityProperties {
   /** Controls energy damping from contact, *only for*
   multibody::DiscreteContactApproximation::kSap. Units are seconds.
 
-  When present, the value must satisfy `0 ≤ relaxation_time < ∞` (finite and
-  non-negative). */
+  When present, the value must satisfy `0 ≤ relaxation_time < ∞`. */
   std::optional<double> relaxation_time{0.1};
   /// @}
 
@@ -164,8 +160,7 @@ struct DefaultProximityProperties {
 
   /** A measure of material stiffness, in units of Newtons per meter.
 
-  When present, the value must be strictly positive (`> 0`). +∞ is allowed; NaN
-  is not.
+  When present, the value must satisfy `point_stiffness > 0`. +∞ is allowed.
 
   If a non-deformable geometry is missing a value for stiffness,
   MultibodyPlant will generate a default value (based on

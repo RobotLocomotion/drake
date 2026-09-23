@@ -139,11 +139,11 @@ GTEST_TEST(SceneGraphConfigTest, ValidateDynamicFriction) {
   props.dynamic_friction = -1;
   DRAKE_EXPECT_THROWS_MESSAGE(
       config.ValidateOrThrow(),
-      "The friction coefficient can't be negative; given -1");
+      "The friction coefficient must be non-negative; given -1");
   props.dynamic_friction = kNan;
   DRAKE_EXPECT_THROWS_MESSAGE(
       config.ValidateOrThrow(),
-      "The friction coefficient can't be negative; given nan");
+      "The friction coefficient must be non-negative; given nan");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateStaticFriction) {
@@ -152,11 +152,11 @@ GTEST_TEST(SceneGraphConfigTest, ValidateStaticFriction) {
   props.static_friction = -1;
   DRAKE_EXPECT_THROWS_MESSAGE(
       config.ValidateOrThrow(),
-      "The friction coefficient can't be negative; given -1");
+      "The friction coefficient must be non-negative; given -1");
   props.static_friction = kNan;
   DRAKE_EXPECT_THROWS_MESSAGE(
       config.ValidateOrThrow(),
-      "The friction coefficient can't be negative; given nan");
+      "The friction coefficient must be non-negative; given nan");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateHuntCrossley) {
@@ -164,10 +164,11 @@ GTEST_TEST(SceneGraphConfigTest, ValidateHuntCrossley) {
   auto& props = config.default_proximity_properties;
   props.hunt_crossley_dissipation = -1;
   DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              "The dissipation can't be negative; given -1");
+                              "The dissipation must be non-negative; given -1");
   props.hunt_crossley_dissipation = kNan;
-  DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                              "The dissipation can't be negative; given nan");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      config.ValidateOrThrow(),
+      "The dissipation must be non-negative; given nan");
 }
 
 GTEST_TEST(SceneGraphConfigTest, ValidateRelaxationTime) {
@@ -193,15 +194,15 @@ GTEST_TEST(SceneGraphConfigTest, ValidatePointStiffness) {
   props.point_stiffness = -1;
   DRAKE_EXPECT_THROWS_MESSAGE(
       config.ValidateOrThrow(),
-      "The point_contact_stiffness must be strictly positive; given -1");
+      "The point_stiffness must be strictly positive; given -1");
   props.point_stiffness = 0;
   DRAKE_EXPECT_THROWS_MESSAGE(
       config.ValidateOrThrow(),
-      "The point_contact_stiffness must be strictly positive; given 0");
+      "The point_stiffness must be strictly positive; given 0");
   props.point_stiffness = kNan;
   DRAKE_EXPECT_THROWS_MESSAGE(
       config.ValidateOrThrow(),
-      "The point_contact_stiffness must be strictly positive; given nan");
+      "The point_stiffness must be strictly positive; given nan");
   // +∞ is intentionally allowed for point stiffness.
   props.point_stiffness = kInf;
   EXPECT_NO_THROW(config.ValidateOrThrow());

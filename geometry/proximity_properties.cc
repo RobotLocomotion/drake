@@ -119,7 +119,7 @@ std::optional<std::string> ReportIfInvalidMargin(double margin) {
 std::optional<std::string> ReportIfInvalidHuntCrossleyDissipation(
     double dissipation) {
   if (!(dissipation >= 0)) {
-    return fmt::format("The dissipation can't be negative; given {}",
+    return fmt::format("The dissipation must be non-negative; given {}",
                        dissipation);
   }
   return std::nullopt;
@@ -139,7 +139,7 @@ std::optional<std::string> ReportIfInvalidPointStiffness(
     double point_stiffness) {
   if (!(point_stiffness > 0)) {
     return fmt::format(
-        "The point_contact_stiffness must be strictly positive; given {}",
+        "The point_stiffness must be strictly positive; given {}",
         point_stiffness);
   }
   return std::nullopt;
@@ -148,8 +148,9 @@ std::optional<std::string> ReportIfInvalidPointStiffness(
 std::optional<std::string> ReportIfInvalidFrictionCoefficient(
     double friction_coefficient) {
   if (!(friction_coefficient >= 0)) {
-    return fmt::format("The friction coefficient can't be negative; given {}",
-                       friction_coefficient);
+    return fmt::format(
+        "The friction coefficient must be non-negative; given {}",
+        friction_coefficient);
   }
   return std::nullopt;
 }

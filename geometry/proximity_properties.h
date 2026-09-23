@@ -150,10 +150,10 @@ std::optional<std::string> ReportIfInvalidFrictionCoefficient(
  * Downstream consumers of the contact materials can optionally provide
  * defaults for missing properties.
  *
- * @throws std::exception if `dissipation` is present but not ≥ 0 (NaN is
- * rejected; +∞ is allowed), if `point_stiffness` is present but not > 0 (NaN
- * is rejected; +∞ is allowed), or if any of the contact material properties
- * have already been defined in `properties`.
+ * @throws std::exception if `dissipation` is present but not ≥ 0 (+∞ is
+ * allowed), if `point_stiffness` is present but not > 0 (+∞ is allowed), or if
+ * any of the contact material properties have already been defined in
+ * `properties`.
  * @pre `properties` is not nullptr.
  */
 void AddContactMaterial(
@@ -220,8 +220,7 @@ void AddCompliantHydroelasticProperties(double resolution_hint,
                              the half space). Must satisfy
                              0 < `slab_thickness` < ∞.
  @param hydroelastic_modulus A multiplier that maps penetration to pressure. See
-                             @ref hug_properties. Must be > 0 (+∞ allowed; NaN
-                             rejected).
+                             @ref hug_properties. Must be > 0 (+∞ allowed).
  @param[out] properties      The properties will be added to this property set.
  @throws std::exception If `slab_thickness` or `hydroelastic_modulus` is
                         invalid, or if `properties` already has properties with

@@ -77,14 +77,14 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(-1.2, ps, mu, &p),
-                                ".+dissipation can't be negative.+");
+                                ".+dissipation must be non-negative.+");
   }
 
   // Error case: NaN dissipation.
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(kNan, ps, mu, &p),
-                                ".+dissipation can't be negative.+");
+                                ".+dissipation must be non-negative.+");
   }
 
   // Error case: negative stiffness.
