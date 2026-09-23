@@ -19,10 +19,11 @@ namespace {
 // Monomial class, a mapping from a base (Variable) to its exponent (int). This
 // function is called inside of the constructor Monomial(const
 // symbolic::Expression&).
-std::map<Variable, int> ToMonomialPower(const Expression& e) {
+std::map<Variable, int, Variable::CompareLess> ToMonomialPower(
+    const Expression& e) {
   // TODO(soonho): Re-implement this function by using a Polynomial visitor.
   DRAKE_DEMAND(e.is_polynomial());
-  std::map<Variable, int> powers;
+  std::map<Variable, int, Variable::CompareLess> powers;
   if (is_one(e)) {  // This block is deliberately left empty.
   } else if (is_constant(e)) {
     throw std::runtime_error(
@@ -69,7 +70,7 @@ std::map<Variable, int> ToMonomialPower(const Expression& e) {
 // types of arguments.
 }  // namespace
 MonomialBasisElement::MonomialBasisElement(
-    const std::map<Variable, int>& var_to_degree_map)
+    const std::map<Variable, int, Variable::CompareLess>& var_to_degree_map)
     : PolynomialBasisElement(var_to_degree_map) {}
 
 MonomialBasisElement::MonomialBasisElement(
@@ -97,7 +98,7 @@ bool MonomialBasisElement::operator<(const MonomialBasisElement& other) const {
 std::pair<double, MonomialBasisElement> MonomialBasisElement::EvaluatePartial(
     const Environment& env) const {
   double coeff{};
-  std::map<Variable, int> new_basis_element;
+  std::map<Variable, int, Variable::CompareLess> new_basis_element;
   DoEvaluatePartial(env, &coeff, &new_basis_element);
   return std::make_pair(coeff, MonomialBasisElement(new_basis_element));
 }
@@ -109,7 +110,8 @@ double MonomialBasisElement::DoEvaluate(double variable_val, int degree) const {
 Expression MonomialBasisElement::DoToExpression() const {
   // It builds this base_to_exponent_map and uses ExpressionMulFactory to build
   // a multiplication expression.
-  std::map<Expression, Expression> base_to_exponent_map;
+  std::map<Expression, Expression, Expression::CompareLess>
+      base_to_exponent_map;
   for (const auto& [var, degree] : var_to_degree_map()) {
     base_to_exponent_map.emplace(Expression{var}, degree);
   }
@@ -157,7 +159,8 @@ MonomialBasisElement& MonomialBasisElement::pow_in_place(const int p) {
 
 std::map<MonomialBasisElement, double> MonomialBasisElement::Differentiate(
     const Variable& var) const {
-  std::map<Variable, int> new_var_to_degree_map = var_to_degree_map();
+  std::map<Variable, int, Variable::CompareLess> new_var_to_degree_map =
+      var_to_degree_map();
   auto it = new_var_to_degree_map.find(var);
   if (it == new_var_to_degree_map.end()) {
     return {};
@@ -219,7 +222,7 @@ std::vector<std::pair<int, double>> UnivariateMonomialToChebyshevBasis(
 }
 
 std::map<ChebyshevBasisElement, double> MonomialToChebyshevBasisRecursive(
-    std::map<Variable, int> var_to_degree_map) {
+    std::map<Variable, int, Variable::CompareLess> var_to_degree_map) {
   if (var_to_degree_map.empty()) {
     // 1 = T0()
     return {{ChebyshevBasisElement(), 1}};
@@ -248,8 +251,8 @@ std::map<ChebyshevBasisElement, double> MonomialToChebyshevBasisRecursive(
   for (const auto& [degree_x, coeff_x] : first_univariate_in_chebyshev) {
     for (const auto& [remaining_vars, coeff_remaining_vars] :
          remaining_chebyshevs) {
-      std::map<Variable, int> new_chebyshev_var_to_degree_map =
-          remaining_vars.var_to_degree_map();
+      std::map<Variable, int, Variable::CompareLess>
+          new_chebyshev_var_to_degree_map = remaining_vars.var_to_degree_map();
       // Multiply Tᵢ(x) to each term Tⱼ(y)Tₖ(z) to get the new
       // ChebyshevBasisElement.
       new_chebyshev_var_to_degree_map.emplace_hint(
@@ -276,7 +279,8 @@ void MonomialBasisElement::MergeBasisElementInPlace(
 
 std::map<MonomialBasisElement, double> operator*(
     const MonomialBasisElement& m1, const MonomialBasisElement& m2) {
-  std::map<Variable, int> var_to_degree_map_product = m1.var_to_degree_map();
+  std::map<Variable, int, Variable::CompareLess> var_to_degree_map_product =
+      m1.var_to_degree_map();
   for (const auto& [var, degree] : m2.var_to_degree_map()) {
     auto it = var_to_degree_map_product.find(var);
     if (it == var_to_degree_map_product.end()) {
