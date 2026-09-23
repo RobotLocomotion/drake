@@ -61,7 +61,7 @@ VectorX<Monomial> MonomialBasis(
     }
   }
   std::sort(basis.begin(), basis.end(),
-            GradedReverseLexOrder<std::less<Variable>>());
+            GradedReverseLexOrder<Variable::CompareLess>());
   return Eigen::Map<VectorX<Monomial>>(basis.data(), basis.size());
 }
 
@@ -125,7 +125,7 @@ VectorX<Monomial> CalcMonomialBasisOrderUpToOne(const Variables& x,
   VectorX<Monomial> ret(monomial_basis.size());
   if (sort_monomial) {
     std::sort(monomial_basis.begin(), monomial_basis.end(),
-              GradedReverseLexOrder<std::less<Variable>>());
+              GradedReverseLexOrder<Variable::CompareLess>());
   }
   for (int i = 0; i < ret.rows(); ++i) {
     ret(i) = monomial_basis[i];

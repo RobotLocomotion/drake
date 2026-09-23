@@ -181,7 +181,7 @@ bool ChebyshevPolynomial::operator<(const ChebyshevPolynomial& other) const {
     return degree() < other.degree();
   } else if (var().get_id() < other.var().get_id()) {
     return true;
-  } else if (var() == other.var() && degree() < other.degree()) {
+  } else if (var().equal_to(other.var()) && degree() < other.degree()) {
     return true;
   }
   return false;

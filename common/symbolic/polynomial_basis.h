@@ -85,7 +85,8 @@ void AddPolynomialBasisElementsOfDegreeN(
   }
   const Variable& var{*vars.cbegin()};
   for (int var_degree = degree; var_degree >= 0; --var_degree) {
-    std::map<Variable, int> new_var_to_degree_map = b.get_powers();
+    std::map<Variable, int, Variable::CompareLess> new_var_to_degree_map =
+        b.get_powers();
     auto it = new_var_to_degree_map.find(var);
     if (it != new_var_to_degree_map.end()) {
       it->second += var_degree;
@@ -119,8 +120,8 @@ Eigen::Matrix<BasisElement, rows, 1> ComputePolynomialBasisUpToDegree(
   DRAKE_DEMAND(!vars.empty());
   DRAKE_DEMAND(degree >= 0);
   // 1. Collect elements.
-  std::set<BasisElement,
-           BasisElementGradedReverseLexOrder<std::less<Variable>, BasisElement>>
+  std::set<BasisElement, BasisElementGradedReverseLexOrder<
+                             Variable::CompareLess, BasisElement>>
       basis_elements_set;
   int start_degree = 0;
   int degree_stride = 1;

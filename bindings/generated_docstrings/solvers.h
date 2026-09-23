@@ -11019,6 +11019,11 @@ it).)""";
         // Source: drake/solvers/solver_id.h
         const char* doc = R"""()""";
       } operator_ne;
+      // Symbol: drake::solvers::operator<
+      struct /* operator_lt */ {
+        // Source: drake/solvers/solver_id.h
+        const char* doc = R"""()""";
+      } operator_lt;
       // Symbol: drake::solvers::to_string
       struct /* to_string */ {
         // Source: drake/solvers/common_solver_option.h

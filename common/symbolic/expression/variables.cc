@@ -51,7 +51,7 @@ Variables::size_type Variables::erase(const Variables& vars) {
 
 bool Variables::IsSubsetOf(const Variables& vars) const {
   return includes(vars.begin(), vars.end(), begin(), end(),
-                  std::less<Variable>{});
+                  Variable::CompareLess{});
 }
 
 bool Variables::IsSupersetOf(const Variables& vars) const {
@@ -74,13 +74,13 @@ bool Variables::IsStrictSupersetOf(const Variables& vars) const {
 
 bool operator==(const Variables& vars1, const Variables& vars2) {
   return std::equal(vars1.vars_.begin(), vars1.vars_.end(), vars2.vars_.begin(),
-                    vars2.vars_.end(), std::equal_to<Variable>{});
+                    vars2.vars_.end(), Variable::CompareEqualTo{});
 }
 
 bool operator<(const Variables& vars1, const Variables& vars2) {
   return std::lexicographical_compare(vars1.vars_.begin(), vars1.vars_.end(),
                                       vars2.vars_.begin(), vars2.vars_.end(),
-                                      std::less<Variable>{});
+                                      Variable::CompareLess{});
 }
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
@@ -130,14 +130,15 @@ Variables operator-(Variables vars, const Variable& var) {
   return vars;
 }
 
-Variables::Variables(set<Variable> vars) : vars_{std::move(vars)} {}
+Variables::Variables(set<Variable, Variable::CompareLess> vars)
+    : vars_{std::move(vars)} {}
 
 Variables intersect(const Variables& vars1, const Variables& vars2) {
-  set<Variable> intersection;
+  set<Variable, Variable::CompareLess> intersection;
   set_intersection(vars1.vars_.begin(), vars1.vars_.end(), vars2.vars_.begin(),
                    vars2.vars_.end(),
                    inserter(intersection, intersection.begin()),
-                   less<Variable>{});
+                   Variable::CompareLess{});
   return Variables{std::move(intersection)};
 }
 
