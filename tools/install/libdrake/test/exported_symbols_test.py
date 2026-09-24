@@ -38,9 +38,10 @@ _GOOD_SYMBOLS_SUBSTR = [
     # Symbols from Drake's public externals are fine.
     "N3fmt",
     "N5Eigen",
-    "N6spdlog",
     "NK3fmt",
     "NK5Eigen",
+    # Symbols from any C++ we link against the host OS are fine.
+    "N6spdlog",
     "NK6spdlog",
     # Symbols from Drake's vendored externals are fine. (It would be better
     # for performance if they could be hidden, but they are not hazardous.)
@@ -50,32 +51,24 @@ _GOOD_SYMBOLS_SUBSTR = [
 # Any symbols whose name contains one of these are undesirable, but for now
 # will not cause this test to fail.
 _KNOWN_BAD_SYMBOLS_SUBSTR = [
+    # These are due to rules_cc.
     "8rules_cc2cc8runfiles",
-    "Ampl",
-    "BitVector128",
-    "Clp",
-    "Coin",
-    "EventHandler",
-    "FactorPointers",
+    # These are due to GL.
     "GLEW",
     "GLXEW",
+    "glew",
+    # These are due to Clp.
+    "Ampl",
+    "Clp",
+    "EventHandler",
     "Idiot",
     "MessageHandler",
-    "WindowsError",
-    "action",
     "alternativeEnvironment",
     "ampl_obj_prec",
-    "boundary_sort",
-    "charToStatus",
     "clp_",
-    "coin",
-    "ekk",
-    "fileAbsPath",
     "freeArgs",
     "freeArrays",
-    "getFunctionValueFromString",
     "getNorms",
-    "glew",
     "innerProduct",
     "maximumAbsElement",
     "maximumIterations",
@@ -85,7 +78,19 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "setupForSolve",
     "slack_value",
     "sortOnOther",
-    "wrapper",
+    # These are due to CoinUtils.
+    "BitVector128",
+    "Coin",
+    "FactorPointers",
+    "WindowsError",
+    "_action",
+    "boundary_sort",
+    "charToStatus",
+    "coin",
+    "ekk",
+    "fileAbsPath",
+    "getFunctionValueFromString",
+    "wrapperd",
 ]
 
 LIBDRAKE = "tools/install/libdrake/libdrake.so"
