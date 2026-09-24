@@ -106,8 +106,12 @@ drake_py_library(
 drake_py_binary(
     name = "mirror_to_s3",
     srcs = ["mirror_to_s3.py"],
+    data = [
+        "//setup:ubuntu/packages.json",
+    ],
     deps = [
         ":metadata",
+        "@rules_python//python/runfiles",
     ],
 )
 
