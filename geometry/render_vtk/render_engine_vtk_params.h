@@ -280,21 +280,21 @@ struct RenderEngineVtkParams {
 
    Several important notes when designing your lighting:
 
-       - Point lights do not cast shadows.
-       - Spot lights will not cast shadows if the spot light angle is 90 degrees
-         or more. At 90 degrees, the spot light is now a half-point light.
-         Even though 89.9 degrees _would_ enable shadows, it is still an
-         impractical value. To actually see shadows, the `shadow_map_size` value
-         would have to be absurdly large to support such a wide extent.
-       - Directional lights will create a shadow map that spans the whole scene.
-         If your scene includes a geometry that is significantly larger than
-         the locale you're rendering, this will significantly reduce the
-         efficacy of the directional light's shadows. Consider truncating that
-         larger geometry. A common case would be to use a HalfSpace to define
-         a ground. A half space has infinite extent, so any reasonable
-         approximation would be quite large. Better to use a box targeted to
-         where you need it.
-       - Transparent objects cast no shadows at all, but they do receive them.
+   - Point lights do not cast shadows.
+   - Spot lights will not cast shadows if the spot light angle is 90 degrees
+     or more. At 90 degrees, the spot light is now a half-point light.
+     Even though 89.9 degrees _would_ enable shadows, it is still an
+     impractical value. To actually see shadows, the `shadow_map_size` value
+     would have to be absurdly large to support such a wide extent.
+   - Directional lights will create a shadow map that spans the whole scene.
+     If your scene includes a geometry that is significantly larger than
+     the locale you're rendering, this will significantly reduce the
+     efficacy of the directional light's shadows. Consider truncating that
+     larger geometry. A common case would be to use a HalfSpace to define
+     a ground. A half space has infinite extent, so any reasonable
+     approximation would be quite large. Better to use a box targeted to
+     where you need it.
+   - Transparent objects cast no shadows at all, but they do receive them.
 
    Currently, there is no way to enable/disable shadows on a per-light basis.
 
