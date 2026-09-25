@@ -195,12 +195,14 @@ void GetAvailableSolversHelper(
           // reasonable accuracy, so I put it before SNOPT/IPOPT/NLOPT (which
           // are often slower than OSQP).
           OsqpSolver,
-          // TODO(hongkai.dai): add CLP to this list when we resolve the
-          // memory issue in CLP. Dispreferred (generic nonlinear solvers). I
-          // find SNOPT often faster than IPOPT. NLOPT is less reliable.
+          // Dispreferred (generic nonlinear solvers). I find SNOPT often
+          // faster than IPOPT. NLOPT is less reliable.
           SnoptSolver, IpoptSolver, NloptSolver,
           // Dispreferred (ADMM, low accuracy).
-          ScsSolver>(result);
+          ScsSolver,
+          // Dispreferred. CLP solves QPs with its barrier method, but is not
+          // tuned for the QPs Drake typically forms.
+          ClpSolver>(result);
       return;
     }
     case ProgramType::kSOCP: {

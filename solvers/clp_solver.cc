@@ -1,5 +1,6 @@
 #include "drake/solvers/clp_solver.h"
 
+#include <algorithm>
 #include <limits>
 #include <unordered_map>
 #include <utility>
@@ -7,7 +8,6 @@
 
 #include "ClpSimplex.hpp"
 
-#include "drake/common/text_logging.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
 
 namespace drake {
@@ -35,10 +35,6 @@ void ConstructClpModel(
                      constraint_lower.data(), constraint_upper.data(),
                      nullptr /* rowObjective=nullptr */);
   if (quadratic_matrix.nonZeros() > 0) {
-    static const logging::Warn log_once(
-        "Drake does not officially support using CLP to solve QPs, as it may "
-        "fail to solve certain problems which are known to be feasible. The "
-        "user should be aware of this risk.");
     model->loadQuadraticObjective(
         quadratic_matrix.cols(), quadratic_matrix.outerIndexPtr(),
         quadratic_matrix.innerIndexPtr(), quadratic_matrix.valuePtr());
@@ -286,7 +282,9 @@ void ParseModelExceptLinearConstraints(
          ++it) {
       const int x_row_index =
           quadratic_var_to_index.at(quadratic_vars(it.row()).get_id());
-      quadratic_matrix_triplets.emplace_back(x_row_index, x_col_index,
+      // CLP requires a consistently triangular matrix (#22985).
+      quadratic_matrix_triplets.emplace_back(std::max(x_row_index, x_col_index),
+                                             std::min(x_row_index, x_col_index),
                                              it.value());
     }
   }
@@ -374,8 +372,13 @@ void ClpSolver::DoSolve2(const MathematicalProgram& prog,
 
   model.scaling(known_options.scaling);
 
-  // Solve
-  model.primal();
+  // CLP's simplex method fails on feasible QPs, so use the barrier method,
+  // whose crossover leaves a basic solution for the duals below (#22985).
+  if (quadratic_matrix.nonZeros() > 0) {
+    model.barrier(/* crossover = */ true);
+  } else {
+    model.primal();
+  }
 
   // Set the solution
   SetSolution(prog, model, constraint_dual_start_index,
