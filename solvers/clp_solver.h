@@ -32,8 +32,8 @@ struct ClpSolverDetails {
 
 /**
  * A wrapper to call CLP using Drake's MathematicalProgram.
- * @note Currently our ClpSolver has a memory issue when solving a QP. The user
- * should be aware of this risk.
+ * @note For programs with a quadratic cost, ClpSolver uses CLP's barrier
+ * method; CLP's simplex method fails on some feasible QPs. See #22985.
  * @note The authors can adjust the problem scaling option by setting "scaling"
  as mentioned in
  https://github.com/coin-or/Clp/blob/43129ba1a7fd66ce70fe0761fcd696951917ed2e/src/ClpModel.hpp#L705-L706
