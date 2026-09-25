@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <sstream>
 #include <stdexcept>
 
 #include "drake/math/continuous_lyapunov_equation.h"
@@ -36,7 +37,7 @@ namespace internal {
 
 void CheckRegionOfAttractionCertificate(
     const MathematicalProgram& prog,
-    const solvers::MathematicalProgramResult& result) {
+    const solvers::MathematicalProgramResult& result, double tolerance) {
   if (!result.is_success()) {
     throw std::runtime_error("RegionOfAttraction: SOS optimization failed.");
   }
@@ -49,14 +50,14 @@ void CheckRegionOfAttractionCertificate(
   // positive semidefiniteness, independently of the solver's success status.
   // A small residual does not guarantee a rigorous inner approximation: its
   // effect depends on the polynomial's scaling and positivity margin.
-  constexpr double kCertificateTolerance = 1e-6;
-  const auto violations =
-      result.GetInfeasibleConstraintNames(prog, kCertificateTolerance);
+  const auto violations = result.GetInfeasibleConstraintNames(prog, tolerance);
   if (!violations.empty()) {
-    throw std::runtime_error(
-        "RegionOfAttraction: SOS certificate failed numerical validation "
-        "(absolute tolerance 1e-6). First violated constraint: " +
-        violations.front());
+    std::ostringstream message;
+    message
+        << "RegionOfAttraction: SOS certificate failed numerical validation "
+        << "(absolute tolerance " << tolerance
+        << "). First violated constraint: " << violations.front();
+    throw std::runtime_error(message.str());
   }
 }
 
@@ -74,7 +75,8 @@ namespace {
 Expression FixedLyapunovConvex(
     const solvers::VectorXIndeterminate& x, const Expression& V,
     const Expression& Vdot, const std::optional<solvers::SolverId>& solver_id,
-    const std::optional<solvers::SolverOptions>& solver_options) {
+    const std::optional<solvers::SolverOptions>& solver_options,
+    double certificate_tolerance) {
   // Check if the Hessian of Vdot is negative definite.
   Environment env;
   for (int i = 0; i < x.size(); i++) {
@@ -138,7 +140,8 @@ Expression FixedLyapunovConvex(
     result = Solve(prog, std::nullopt, solver_options);
   }
 
-  internal::CheckRegionOfAttractionCertificate(prog, result);
+  internal::CheckRegionOfAttractionCertificate(prog, result,
+                                               certificate_tolerance);
 
   DRAKE_THROW_UNLESS(result.GetSolution(rho) > 0.0);
   return V / result.GetSolution(rho);
@@ -154,7 +157,8 @@ Expression FixedLyapunovConvex(
 Expression FixedLyapunovConvexImplicit(
     const solvers::VectorXIndeterminate& x,
     const solvers::VectorXIndeterminate& xdot, const Expression& V,
-    const Expression& Vdot, const VectorX<Expression>& g) {
+    const Expression& Vdot, const VectorX<Expression>& g,
+    double certificate_tolerance) {
   // Check if the Hessian of Vdot is negative definite on the tangent space.
   // Given Vdot(x,z) and g(x,z)=0, we wish to test whether yᵀQy ≤ 0 for all
   // y where Gy=0, where y=[x,z], P = Hessian(Vdot,y), and G=dgdy.  To do this,
@@ -221,7 +225,8 @@ Expression FixedLyapunovConvexImplicit(
   prog.AddCost(-rho);
   const auto result = Solve(prog);
 
-  internal::CheckRegionOfAttractionCertificate(prog, result);
+  internal::CheckRegionOfAttractionCertificate(prog, result,
+                                               certificate_tolerance);
 
   DRAKE_THROW_UNLESS(result.GetSolution(rho) > 0.0);
   return V / result.GetSolution(rho);
@@ -232,6 +237,12 @@ Expression FixedLyapunovConvexImplicit(
 Expression RegionOfAttraction(const System<double>& system,
                               const Context<double>& context,
                               const RegionOfAttractionOptions& options) {
+  if (!std::isfinite(options.certificate_tolerance) ||
+      options.certificate_tolerance < 0.0) {
+    throw std::runtime_error(
+        "RegionOfAttraction: certificate_tolerance must be finite and "
+        "nonnegative.");
+  }
   system.ValidateContext(context);
   DRAKE_THROW_UNLESS(context.has_only_continuous_state());
 
@@ -288,7 +299,16 @@ Expression RegionOfAttraction(const System<double>& system,
     for (const auto& [monomial, coefficient] :
          candidate.monomial_to_coefficient_map()) {
       const double value = coefficient.Evaluate();
-      DRAKE_THROW_UNLESS(std::isfinite(value));
+      if (!std::isfinite(value)) {
+        std::ostringstream message;
+        message << "RegionOfAttraction: the supplied Lyapunov candidate has a "
+                << "non-finite coefficient (" << value << ") for monomial "
+                << monomial.to_string()
+                << " after shifting to the equilibrium. Check the "
+                << "candidate coefficients and equilibrium for non-finite "
+                << "values or overflow.";
+        throw std::runtime_error(message.str());
+      }
       coefficient_scale = std::max(coefficient_scale, std::abs(value));
     }
     if (coefficient_scale > 0.0) {
@@ -304,7 +324,8 @@ Expression RegionOfAttraction(const System<double>& system,
     } else {
       result = Solve(prog, std::nullopt, options.solver_options);
     }
-    internal::CheckRegionOfAttractionCertificate(prog, result);
+    internal::CheckRegionOfAttractionCertificate(prog, result,
+                                                 options.certificate_tolerance);
   } else {
     // Solve a Lyapunov equation to find a candidate.
     const auto linearized_system =
@@ -329,7 +350,8 @@ Expression RegionOfAttraction(const System<double>& system,
         symbolic_system->implicit_time_derivatives_residual_size());
     symbolic_system->CalcImplicitTimeDerivativesResidual(*symbolic_context,
                                                          *derivatives, &g);
-    V = FixedLyapunovConvexImplicit(x_bar, xdot, V, Vdot, g);
+    V = FixedLyapunovConvexImplicit(x_bar, xdot, V, Vdot, g,
+                                    options.certificate_tolerance);
   } else {
     const VectorX<Expression> f =
         symbolic_system->EvalTimeDerivatives(*symbolic_context)
@@ -337,7 +359,8 @@ Expression RegionOfAttraction(const System<double>& system,
             .CopyToVector();
     const Expression Vdot = V.Jacobian(x_bar).dot(f);
     V = FixedLyapunovConvex(x_bar, V, Vdot, options.solver_id,
-                            options.solver_options);
+                            options.solver_options,
+                            options.certificate_tolerance);
   }
 
   // Put V back into global coordinates.

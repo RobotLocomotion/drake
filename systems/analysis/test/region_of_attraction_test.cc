@@ -134,6 +134,35 @@ GTEST_TEST(RegionOfAttractionTest, IndefiniteHessian) {
   EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
+GTEST_TEST(RegionOfAttractionTest, InvalidCertificateTolerance) {
+  const Variable x("x");
+  const auto system =
+      SymbolicVectorSystemBuilder().state({x}).dynamics({-x}).Build();
+  const auto context = system->CreateDefaultContext();
+  RegionOfAttractionOptions options;
+  for (double tolerance : {-1.0, std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::quiet_NaN()}) {
+    options.certificate_tolerance = tolerance;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        RegionOfAttraction(*system, *context, options),
+        ".*certificate_tolerance must be finite and nonnegative.*");
+  }
+}
+
+GTEST_TEST(RegionOfAttractionTest, NonFiniteCandidateCoefficient) {
+  const Variable x("x");
+  const auto system =
+      SymbolicVectorSystemBuilder().state({x}).dynamics({-x}).Build();
+  const auto context = system->CreateDefaultContext();
+  RegionOfAttractionOptions options;
+  options.state_variables = Vector1<Variable>(x);
+  options.lyapunov_candidate = std::numeric_limits<double>::infinity() * x * x;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RegionOfAttraction(*system, *context, options),
+      ".*supplied Lyapunov candidate has a non-finite coefficient.*monomial.*"
+      "Check the candidate coefficients and equilibrium.*");
+}
+
 // Check certificate rejection without relying on a solver's numerical behavior.
 GTEST_TEST(RegionOfAttractionTest, CertificateValidation) {
   solvers::MathematicalProgram prog;
@@ -156,16 +185,23 @@ GTEST_TEST(RegionOfAttractionTest, CertificateValidation) {
   for (int i = 0; i < 3; ++i) {
     result.SetSolution(Q(i, i), 1.0);
   }
-  EXPECT_NO_THROW(internal::CheckRegionOfAttractionCertificate(prog, result));
+  EXPECT_NO_THROW(
+      internal::CheckRegionOfAttractionCertificate(prog, result, 1e-6));
 
   // Roundoff-sized coefficient residuals are accepted.
   result.SetSolution(Q(0, 0), 1.0 + 1e-8);
-  EXPECT_NO_THROW(internal::CheckRegionOfAttractionCertificate(prog, result));
+  EXPECT_NO_THROW(
+      internal::CheckRegionOfAttractionCertificate(prog, result, 1e-6));
+
+  // The same residual is rejected when the caller requests a tighter check.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::CheckRegionOfAttractionCertificate(prog, result, 1e-10),
+      ".*absolute tolerance 1e-10.*SOS coefficient matching.*");
 
   // The Gram matrix is positive definite, but represents the wrong polynomial.
   result.SetSolution(Q(0, 0), 2.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::CheckRegionOfAttractionCertificate(prog, result),
+      internal::CheckRegionOfAttractionCertificate(prog, result, 1e-6),
       ".*failed numerical validation.*SOS coefficient matching.*");
 
   // Coefficients now match exactly, but the Gram matrix has a negative
@@ -173,21 +209,21 @@ GTEST_TEST(RegionOfAttractionTest, CertificateValidation) {
   result.SetSolution(c, -1.0);
   result.SetSolution(Q(0, 0), -1.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::CheckRegionOfAttractionCertificate(prog, result),
+      internal::CheckRegionOfAttractionCertificate(prog, result, 1e-6),
       ".*failed numerical validation.*PositiveSemidefiniteConstraint.*");
 
   for (double value : {std::numeric_limits<double>::quiet_NaN(),
                        std::numeric_limits<double>::infinity()}) {
     result.SetSolution(c, value);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        internal::CheckRegionOfAttractionCertificate(prog, result),
+        internal::CheckRegionOfAttractionCertificate(prog, result, 1e-6),
         ".*non-finite decision variables.*");
   }
   result.SetSolution(c, 1.0);
   result.SetSolution(Q(0, 0), 1.0);
   result.set_solution_result(solvers::SolutionResult::kSolverSpecificError);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::CheckRegionOfAttractionCertificate(prog, result),
+      internal::CheckRegionOfAttractionCertificate(prog, result, 1e-6),
       ".*SOS optimization failed.*");
 }
 
@@ -238,7 +274,9 @@ void CheckNonConvexROA(const solvers::SolverId& solver_id, double divisor,
   }
   symbolic::Environment env{{x[0], 0}, {x[1], 1}};
   const double rho = 1.0 / V.Evaluate(env);
-  const double rho_limit = std::sqrt(divisor) / 20.0;
+  // U is homogeneous of degree four, so U(0, sqrt(rho)) = rho² U(0, 1).
+  // The true boundary U == 1 therefore gives this solver-independent bound.
+  const double rho_limit = 1.0 / std::sqrt(U.Evaluate(env));
   EXPECT_GT(rho, 0.0);
   EXPECT_LE(rho, rho_limit + 1e-6);
   if (!allow_numerical_failure) {

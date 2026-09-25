@@ -29,6 +29,7 @@ struct RegionOfAttractionOptions {
     a->Visit(DRAKE_NVP(use_implicit_dynamics));
     a->Visit(DRAKE_NVP(solver_id));
     a->Visit(DRAKE_NVP(solver_options));
+    a->Visit(DRAKE_NVP(certificate_tolerance));
   }
 
   /** A candidate Lyapunov function using the symbolic Variables named
@@ -63,6 +64,14 @@ struct RegionOfAttractionOptions {
 
   /** The solver options used in the optimization problem. */
   std::optional<solvers::SolverOptions> solver_options{std::nullopt};
+
+  /** Absolute tolerance used to check polynomial coefficient equalities and
+   * conic constraints after each SOS solve. Must be finite and nonnegative.
+   * This is independent of the solver's own stopping tolerances. Increasing it
+   * can admit less accurate certificates; passing these numerical checks does
+   * not rigorously certify an inner approximation.
+   */
+  double certificate_tolerance{1e-6};
 };
 
 /**
@@ -103,7 +112,7 @@ struct RegionOfAttractionOptions {
  *
  * @throws std::exception if an SOS solve fails or its returned certificate
  * fails numerical validation. Polynomial coefficient equalities and conic
- * constraints are checked with an absolute tolerance of 1e-6. Passing these
+ * constraints are checked with options.certificate_tolerance. Passing these
  * checks is not a rigorous certificate of an inner approximation.
  *
  * @ingroup analysis
