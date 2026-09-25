@@ -446,11 +446,10 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearancePaddingGradientSign) {
       {-0.05, 0.72},  // Penetrating, but reported as clear.
   };
   for (const auto& [padding, q_value] : cases) {
-    SCOPED_TRACE("padding = " + std::to_string(padding) +
-                 ", q = " + std::to_string(q_value));
+    SCOPED_TRACE(fmt::format("padding = {}, q = {}", padding, q_value));
     dut.SetPaddingAllRobotEnvironmentPairs(padding);
     const VectorXd q = VectorXd::Constant(1, q_value);
-    const auto clearance = dut.CalcRobotClearance(q, influence);
+    const RobotClearance clearance = dut.CalcRobotClearance(q, influence);
     ASSERT_EQ(clearance.size(), 1);
     EXPECT_EQ(clearance.num_positions(), 1);
     EXPECT_THAT(clearance.robot_indices(), ElementsAre(ball));
