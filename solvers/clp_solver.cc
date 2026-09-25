@@ -1,5 +1,6 @@
 #include "drake/solvers/clp_solver.h"
 
+#include <algorithm>
 #include <limits>
 #include <unordered_map>
 #include <utility>
@@ -286,7 +287,9 @@ void ParseModelExceptLinearConstraints(
          ++it) {
       const int x_row_index =
           quadratic_var_to_index.at(quadratic_vars(it.row()).get_id());
-      quadratic_matrix_triplets.emplace_back(x_row_index, x_col_index,
+      // CLP requires a consistently triangular matrix (#22985).
+      quadratic_matrix_triplets.emplace_back(std::max(x_row_index, x_col_index),
+                                             std::min(x_row_index, x_col_index),
                                              it.value());
     }
   }
