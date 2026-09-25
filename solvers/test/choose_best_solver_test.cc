@@ -135,14 +135,9 @@ void CheckGetAvailableSolvers(const MathematicalProgram& prog) {
     const auto solver = MakeSolver(solver_id);
     if (solver->available() && solver->enabled() &&
         solver->AreProgramAttributesSatisfied(prog)) {
-      // CLP can solve some QP, but not all of them. So we don't include CLP in
-      // GetAvailableSolvers(kQP).
-      if (solver_id == ClpSolver::id() && prog_type == ProgramType::kQP) {
-        continue;
-      } else if ((solver_id == SnoptSolver::id() ||
-                  solver_id == IpoptSolver::id() ||
-                  solver_id == NloptSolver::id()) &&
-                 (prog_type == ProgramType::kQuadraticCostConicConstraint)) {
+      if ((solver_id == SnoptSolver::id() || solver_id == IpoptSolver::id() ||
+           solver_id == NloptSolver::id()) &&
+          (prog_type == ProgramType::kQuadraticCostConicConstraint)) {
         // For quadratic cost with conic constraint programs, the nonlinear
         // solvers (snopt/ipopt/nlopt) can solve the problem, but we don't
         // recommend using these solvers, hence they are not included in
@@ -173,7 +168,7 @@ TEST_F(ChooseBestSolverTest, QPsolver) {
   CheckBestSolver({mosek_solver_.get(), gurobi_solver_.get(),
                    clarabel_solver_.get(), osqp_solver_.get(),
                    snopt_solver_.get(), ipopt_solver_.get(),
-                   nlopt_solver_.get(), scs_solver_.get()});
+                   nlopt_solver_.get(), scs_solver_.get(), clp_solver_.get()});
   CheckGetAvailableSolvers(prog_);
 }
 
