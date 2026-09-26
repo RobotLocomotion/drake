@@ -35,6 +35,7 @@ load("//tools/workspace/metis_internal:repository.bzl", "metis_internal_reposito
 load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
+load("//tools/workspace/mujoco_internal:repository.bzl", "mujoco_internal_repository")  # noqa
 load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menagerie_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
@@ -108,6 +109,7 @@ def _add_internal_repositories():
     metis_internal_repository(name = "metis_internal", mirrors = mirrors)
     mpmath_py_internal_repository(name = "mpmath_py_internal", mirrors = mirrors)  # noqa
     msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)
+    mujoco_internal_repository(name = "mujoco_internal", mirrors = mirrors)
     mujoco_menagerie_internal_repository(name = "mujoco_menagerie_internal", mirrors = mirrors)  # noqa
     nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
     nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
