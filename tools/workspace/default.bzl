@@ -1,6 +1,7 @@
 load("//tools/workspace:alias.bzl", "alias_repository")
 load("//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
+load("//tools/workspace/bazelisk_debs_internal:repository.bzl", "bazelisk_debs_internal_repository")  # noqa
 load("//tools/workspace/bazelisk_internal:repository.bzl", "bazelisk_internal_repository")  # noqa
 load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")
 load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
@@ -78,6 +79,7 @@ def _add_internal_repositories():
 
     mirrors = DEFAULT_MIRRORS
     abseil_cpp_internal_repository(name = "abseil_cpp_internal", mirrors = mirrors)  # noqa
+    bazelisk_debs_internal_repository(name = "bazelisk_debs_internal", mirrors = mirrors)  # noqa
     bazelisk_internal_repository(name = "bazelisk_internal", mirrors = mirrors)
     ccd_internal_repository(name = "ccd_internal", mirrors = mirrors)
     clang_cindex_python3_internal_repository(name = "clang_cindex_python3_internal", mirrors = mirrors)  # noqa

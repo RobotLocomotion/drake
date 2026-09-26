@@ -1,0 +1,8 @@
+# -*- bazel -*-
+
+# The bazelisk deb packages are installed by setup/ubuntu/packages.json, not by
+# Bazel. This workspace external only serves as a reference point so that
+# Drake's third-party dependency mirroring and automatic upgrades will also
+# cover them. See also @bazelisk_internal.
+
+exports_files(["drake_repository_metadata.json"])
