@@ -865,6 +865,11 @@ class MujocoParser {
       }
       if (mesh_.contains(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
+        // MuJoCo subtracts the asset reference pose from mesh vertices.
+        // Applying the inverse reference pose to the geom frame matches that.
+        if (mesh_ref_pose_.contains(mesh)) {
+          geom.X_BG = geom.X_BG * mesh_ref_pose_.at(mesh).inverse();
+        }
       } else {
         Warning(
             *node,
@@ -1392,8 +1397,6 @@ class MujocoParser {
       WarnUnsupportedAttribute(*mesh_node, "vertex");
       // Note: "normal", "face", and "texcoord" are not supported either, but
       // that lack of support is implied by us not supporting "vertex".
-      WarnUnsupportedAttribute(*mesh_node, "refpos");
-      WarnUnsupportedAttribute(*mesh_node, "refquat");
       WarnUnsupportedElement(*mesh_node, "plugin");
 
       std::string file;
@@ -1407,6 +1410,16 @@ class MujocoParser {
 
         Vector3d scale{1, 1, 1};
         ParseVectorAttribute(mesh_node, "scale", &scale);
+
+        Vector3d refpos{0, 0, 0};
+        ParseVectorAttribute(mesh_node, "refpos", &refpos);
+        // MuJoCo refquat is w, x, y, z.
+        Vector4d refquat{1, 0, 0, 0};
+        ParseVectorAttribute(mesh_node, "refquat", &refquat);
+        const RigidTransformd X_MR(
+            Eigen::Quaternion<double>(refquat[0], refquat[1], refquat[2],
+                                      refquat[3]),
+            refpos);
 
         std::filesystem::path filename(file);
 
@@ -1458,6 +1471,7 @@ class MujocoParser {
           // TODO(russt): Support .vtk files.
           if (extension == ".obj") {
             mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale);
+            mesh_ref_pose_[name] = X_MR;
           } else {
             Error(
                 *node,
@@ -2146,6 +2160,8 @@ class MujocoParser {
   std::optional<std::filesystem::path> meshdir_{};
   std::string eulerseq_{"xyz"};
   std::map<std::string, std::unique_ptr<geometry::Mesh>> mesh_{};
+  // Reference pose of mesh assets from MuJoCo refpos/refquat.
+  std::map<std::string, RigidTransformd> mesh_ref_pose_{};
   // Spatial inertia of mesh assets assuming density = 1.
   std::map<std::string, SpatialInertia<double>> mesh_inertia_{};
   std::map<JointIndex, double> armature_{};
