@@ -426,6 +426,43 @@ that's a distinct concept from the Expression∷NaN() rules enumerated
 just above.
 
 symbolic∷Expression can be used as a scalar type of Eigen types.)""";
+        // Symbol: drake::symbolic::Expression::CompareEqualTo
+        struct /* CompareEqualTo */ {
+          // Source: drake/common/symbolic/expression/expression.h
+          const char* doc =
+R"""(Checks structural equality of expressions (see ``EqualTo``), for use
+as the key-equality predicate of an unordered container, e.g.,
+``std∷unordered_set<Expression, std∷hash<Expression>,
+Expression∷CompareEqualTo>``.
+
+Note that ``std∷equal_to<Expression>`` must not be used for this
+purpose: the C++ standard requires it to be equivalent to
+``operator==``, which for Expression constructs a symbolic Formula
+instead of returning a bool.)""";
+          // Symbol: drake::symbolic::Expression::CompareEqualTo::operator()
+          struct /* operator_call */ {
+            // Source: drake/common/symbolic/expression/expression.h
+            const char* doc = R"""()""";
+          } operator_call;
+        } CompareEqualTo;
+        // Symbol: drake::symbolic::Expression::CompareLess
+        struct /* CompareLess */ {
+          // Source: drake/common/symbolic/expression/expression.h
+          const char* doc =
+R"""(Provides a strict weak ordering on expressions (see ``Less``), for use
+as the comparator of an ordered container, e.g., ``std∷set<Expression,
+Expression∷CompareLess>``.
+
+Note that ``std∷less<Expression>`` must not be used for this purpose:
+the C++ standard requires it to be equivalent to ``operator<``, which
+for Expression constructs a symbolic Formula instead of returning a
+bool.)""";
+          // Symbol: drake::symbolic::Expression::CompareLess::operator()
+          struct /* operator_call */ {
+            // Source: drake/common/symbolic/expression/expression.h
+            const char* doc = R"""()""";
+          } operator_call;
+        } CompareLess;
         // Symbol: drake::symbolic::Expression::Differentiate
         struct /* Differentiate */ {
           // Source: drake/common/symbolic/expression/expression.h
@@ -566,7 +603,7 @@ R"""(Let ``f`` be this Expression, computes a row vector of derivatives,
           const char* doc =
 R"""(Provides lexicographical ordering between expressions. This function
 is used as a compare function in map<Expression> and set<Expression>
-via std∷less<drake∷symbolic∷Expression>.)""";
+via Expression∷CompareLess.)""";
         } Less;
         // Symbol: drake::symbolic::Expression::NaN
         struct /* NaN */ {
@@ -874,6 +911,41 @@ Note:
     == SymbolicExpression(0)) { ... };`` that we found in Eigen3
     codebase. In general, a user of this class should explicitly call
     ``Evaluate`` from within Drake for readability.)""";
+        // Symbol: drake::symbolic::Formula::CompareEqualTo
+        struct /* CompareEqualTo */ {
+          // Source: drake/common/symbolic/expression/formula.h
+          const char* doc =
+R"""(Checks structural equality of formulas (see ``EqualTo``), for use as
+the key-equality predicate of an unordered container, e.g.,
+``std∷unordered_set<Formula, std∷hash<Formula>,
+Formula∷CompareEqualTo>``.
+
+Note that ``std∷equal_to<Formula>`` must not be used for this purpose:
+the C++ standard requires it to be equivalent to ``operator==``, which
+for Formula constructs a symbolic Formula instead of returning a bool.)""";
+          // Symbol: drake::symbolic::Formula::CompareEqualTo::operator()
+          struct /* operator_call */ {
+            // Source: drake/common/symbolic/expression/formula.h
+            const char* doc = R"""()""";
+          } operator_call;
+        } CompareEqualTo;
+        // Symbol: drake::symbolic::Formula::CompareLess
+        struct /* CompareLess */ {
+          // Source: drake/common/symbolic/expression/formula.h
+          const char* doc =
+R"""(Provides a strict weak ordering on formulas (see ``Less``), for use as
+the comparator of an ordered container, e.g., ``std∷set<Formula,
+Formula∷CompareLess>``.
+
+Note that ``std∷less<Formula>`` must not be used for this purpose: the
+C++ standard requires it to be equivalent to ``operator<``, which for
+Formula constructs a symbolic Formula instead of returning a bool.)""";
+          // Symbol: drake::symbolic::Formula::CompareLess::operator()
+          struct /* operator_call */ {
+            // Source: drake/common/symbolic/expression/formula.h
+            const char* doc = R"""()""";
+          } operator_call;
+        } CompareLess;
         // Symbol: drake::symbolic::Formula::EqualTo
         struct /* EqualTo */ {
           // Source: drake/common/symbolic/expression/formula.h
@@ -954,7 +1026,7 @@ and f_1_i.Less(f_2_i) holds.
 
 This function is used as a compare function in
 std∷map<symbolic∷Formula> and std∷set<symbolic∷Formula> via
-std∷less<symbolic∷Formula>.)""";
+Formula∷CompareLess.)""";
         } Less;
         // Symbol: drake::symbolic::Formula::Substitute
         struct /* Substitute */ {
@@ -1475,6 +1547,43 @@ Note:
     number for a random variable from the given distribution. Then
     this numeric value is used to substitute all the occurrences of
     the corresponding random variable in an expression or a formula.)""";
+        // Symbol: drake::symbolic::Variable::CompareEqualTo
+        struct /* CompareEqualTo */ {
+          // Source: drake/common/symbolic/expression/variable.h
+          const char* doc =
+R"""(Checks structural equality of variables (see ``equal_to``), for use as
+the key-equality predicate of an unordered container, e.g.,
+``std∷unordered_set<Variable, std∷hash<Variable>,
+Variable∷CompareEqualTo>``.
+
+Note that ``std∷equal_to<Variable>`` must not be used for this
+purpose: the C++ standard requires it to be equivalent to
+``operator==``, which for Variable constructs a symbolic Formula
+instead of returning a bool.)""";
+          // Symbol: drake::symbolic::Variable::CompareEqualTo::operator()
+          struct /* operator_call */ {
+            // Source: drake/common/symbolic/expression/variable.h
+            const char* doc = R"""()""";
+          } operator_call;
+        } CompareEqualTo;
+        // Symbol: drake::symbolic::Variable::CompareLess
+        struct /* CompareLess */ {
+          // Source: drake/common/symbolic/expression/variable.h
+          const char* doc =
+R"""(Provides a strict weak ordering on variables (see ``less``), for use
+as the comparator of an ordered container, e.g., ``std∷set<Variable,
+Variable∷CompareLess>``.
+
+Note that ``std∷less<Variable>`` must not be used for this purpose:
+the C++ standard requires it to be equivalent to ``operator<``, which
+for Variable constructs a symbolic Formula instead of returning a
+bool.)""";
+          // Symbol: drake::symbolic::Variable::CompareLess::operator()
+          struct /* operator_call */ {
+            // Source: drake/common/symbolic/expression/variable.h
+            const char* doc = R"""()""";
+          } operator_call;
+        } CompareLess;
         // Symbol: drake::symbolic::Variable::Id
         struct /* Id */ {
           // Source: drake/common/symbolic/expression/variable.h
@@ -1620,12 +1729,12 @@ R"""(Compares two variables based on their ID values.)""";
         const char* doc =
 R"""(Represents a set of variables.
 
-This class is based on std∷set<Variable>. The intent is to add things
-that we need including set-union (Variables∷insert, operator+,
-operator+=), set-minus (Variables∷erase, operator-, operator-=), and
-subset/superset checking functions (Variables∷IsSubsetOf,
-Variables∷IsSupersetOf, Variables∷IsStrictSubsetOf,
-Variables∷IsStrictSupersetOf).)""";
+This class is based on std∷set<Variable, Variable∷CompareLess>. The
+intent is to add things that we need including set-union
+(Variables∷insert, operator+, operator+=), set-minus (Variables∷erase,
+operator-, operator-=), and subset/superset checking functions
+(Variables∷IsSubsetOf, Variables∷IsSupersetOf,
+Variables∷IsStrictSubsetOf, Variables∷IsStrictSupersetOf).)""";
         // Symbol: drake::symbolic::Variables::IsStrictSubsetOf
         struct /* IsStrictSubsetOf */ {
           // Source: drake/common/symbolic/expression/variables.h

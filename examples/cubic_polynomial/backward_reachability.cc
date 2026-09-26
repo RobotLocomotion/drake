@@ -33,7 +33,7 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 using MapType = Polynomial::MapType;
-using Bound = std::map<Variable, double>;
+using Bound = std::map<Variable, double, Variable::CompareLess>;
 using BoundingBox = std::pair<Bound, Bound>;
 
 /// Defines the autonomous cubic polynomial system:
@@ -70,7 +70,8 @@ Expression MakeVolumetricCost(const Polynomial& p, const BoundingBox& b) {
   Expression result;
   const Variables& indeterminates = p.indeterminates();
   for (const auto& monomial : map) {
-    const std::map<Variable, int>& powers = monomial.first.get_powers();
+    const std::map<Variable, int, Variable::CompareLess>& powers =
+        monomial.first.get_powers();
     Expression moment{1.};
     for (const auto& var : indeterminates) {
       if (powers.find(var) == powers.end()) {

@@ -37,7 +37,7 @@ void SetRelaxationInitialGuess(const Eigen::Ref<const VectorXd>& y_expected,
 }
 
 void SetRelaxationInitialGuess(
-    const std::map<Variable, double>& expected_values,
+    const std::map<Variable, double, Variable::CompareLess>& expected_values,
     MathematicalProgram* relaxation) {
   for (const auto& [var, val] : expected_values) {
     relaxation->SetInitialGuess(var, val);
@@ -469,7 +469,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest,
   EXPECT_EQ(relaxation->linear_costs().size(), 0);
   EXPECT_EQ(relaxation->GetAllCosts().size(), 0);
 
-  const std::map<Variable, double> test_point{
+  const std::map<Variable, double, Variable::CompareLess> test_point{
       {x_(0), 1.1}, {x_(1), 0.24}, {x_(2), -2.2}, {y_(0), -0.7}, {y_(1), -3.1}};
   SetRelaxationInitialGuess(test_point, relaxation.get());
   // Check the equality constraints are correct. The first one is that "1"
@@ -508,7 +508,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest,
 }
 
 TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearCost) {
-  const std::map<Variable, double> test_point{
+  const std::map<Variable, double, Variable::CompareLess> test_point{
       {x_(0), 1.1}, {x_(1), 0.24}, {x_(2), -2.2}, {y_(0), -0.7}, {y_(1), -3.1}};
 
   prog_.AddLinearCost(x_[0] + x_[2] + y_[1]);
@@ -571,7 +571,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearCost) {
 }
 
 TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
-  const std::map<Variable, double> test_point{
+  const std::map<Variable, double, Variable::CompareLess> test_point{
       {x_(0), 0.1}, {x_(1), -3.24}, {x_(2), 4.2}, {y_(0), -1.7}, {y_(1), -7.7}};
 
   auto cost = prog_.AddQuadraticCost(x_[0] * x_[1]);
@@ -658,7 +658,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticCost) {
 }
 
 TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticConstraint) {
-  const std::map<Variable, double> test_point{
+  const std::map<Variable, double, Variable::CompareLess> test_point{
       {x_(0), 0.3}, {x_(1), -1.9}, {x_(2), -1.4}, {y_(0), -2.3}, {y_(1), -6.3}};
 
   // An indefinite Q for the (x_(0), x_(2)) variables.
@@ -842,7 +842,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, QuadraticConstraint) {
 }
 
 TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
-  const std::map<Variable, double> test_point{
+  const std::map<Variable, double, Variable::CompareLess> test_point{
       {x_(0), 1.1}, {x_(1), 0.27}, {x_(2), -1.2}, {y_(0), -0.99}, {y_(1), 9.1}};
 
   MatrixXd Ax(2, 3);
@@ -1117,7 +1117,7 @@ TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearConstraint) {
 }
 
 TEST_F(MakeSemidefiniteRelaxationVariableGroupTest, LinearEqualityConstraint) {
-  const std::map<Variable, double> test_point{
+  const std::map<Variable, double, Variable::CompareLess> test_point{
       {x_(0), -0.6}, {x_(1), 3.8}, {x_(2), 4.7}, {y_(0), 9.9}, {y_(1), 3.4}};
 
   // clang-format off

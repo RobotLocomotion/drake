@@ -101,14 +101,14 @@ class UnificationVisitor {
   // -----------------------------------------------
   //
   // An addition expression is represented as a pair of 1) its double
-  // coefficient and 2) an ordered map, std::map<Expression, double>. For
-  // example, `3 + 2x + 3x²` is represented as
+  // coefficient and 2) an ordered map, std::map<Expression, double,
+  // Expression::CompareLess>. For example, `3 + 2x + 3x²` is represented as
   //
   //     constant coefficient: 3
   //     ordered map: {x ↦ 2, x² ↦ 3}.
   //
-  // Note that keys in std::map<Expression, double> is compared by
-  // Expression::Less.
+  // Note that keys in std::map<Expression, double, Expression::CompareLess> is
+  // compared by Expression::Less.
   //
   // Note that there exists a zero-coefficient even if it is not explicitly
   // provided by a user. For example, `a + b` is represented internally as
@@ -273,11 +273,12 @@ class UnificationVisitor {
   //   2) n ≤ m.
   //   3) For all i ∈ [1, n - 1], Unify(cᵢtᵢ, c'ᵢt'ᵢ) holds.
   //   4) Unify(cₙtₙ, c'ₙt'ₙ + ... + c'ₘt'ₘ) holds.
-  bool VisitAdditionAligned(const double c0_p,
-                            const map<Expression, double>& map_p,
-                            const double c0_e,
-                            const map<Expression, double>& map_e,
-                            Substitution* const subst) const {
+  bool VisitAdditionAligned(
+      const double c0_p,
+      const map<Expression, double, Expression::CompareLess>& map_p,
+      const double c0_e,
+      const map<Expression, double, Expression::CompareLess>& map_e,
+      Substitution* const subst) const {
     DRAKE_ASSERT((c0_p == 0.0 && c0_e == 0.0) || (c0_p != 0.0 && c0_e != 0.0));
     if (c0_p != c0_e) {
       return false;
@@ -306,10 +307,11 @@ class UnificationVisitor {
   //   2) Unify(c₁t₁, c'₀).
   //   3) For all i ∈ [2, n - 1], Unify(cᵢtᵢ, c'ᵢ₋₁t'ᵢ₋₁) holds.
   //   4) Unify(cₙtₙ, c'ₙ₋₁t'ₙ₋₁ + ... + c'ₘt'ₘ) holds.
-  bool VisitAdditionSkewed(const map<Expression, double>& map_p,
-                           const double c0_e,
-                           const map<Expression, double>& map_e,
-                           Substitution* const subst) const {
+  bool VisitAdditionSkewed(
+      const map<Expression, double, Expression::CompareLess>& map_p,
+      const double c0_e,
+      const map<Expression, double, Expression::CompareLess>& map_e,
+      Substitution* const subst) const {
     DRAKE_ASSERT(c0_e != 0.0);
     const size_t n{map_p.size()};
     const size_t m{map_e.size()};
@@ -336,10 +338,10 @@ class UnificationVisitor {
   //  - For the first n - 1 pairs, Unify(cᵢtᵢ, c'ᵢt'ᵢ), for i ∈ [1, n-1].
   //  - Unify the last element of p with the rest of elements in e. That is,
   //    Unify(cₙtₙ, c'ₙt'ₙ + ... c'ₘt'ₘ).
-  bool VisitAdditionCheckPairs(map<Expression, double>::const_iterator it_p,
-                               map<Expression, double>::const_iterator it_e,
-                               const int n, const int m,
-                               Substitution* const subst) const {
+  bool VisitAdditionCheckPairs(
+      map<Expression, double, Expression::CompareLess>::const_iterator it_p,
+      map<Expression, double, Expression::CompareLess>::const_iterator it_e,
+      const int n, const int m, Substitution* const subst) const {
     DRAKE_ASSERT(n <= m);
     int i = 1;
     for (; i < n; ++i, ++it_p, ++it_e) {
@@ -374,9 +376,9 @@ class UnificationVisitor {
   // ----------------------------------------------------
   //
   // A multiplication expression is represented as a pair of its constant factor
-  // of double and an ordered map, std::map<Expression, Expression> which maps a
-  // base expression to its exponent. For example, `3 * pow(x, 2) * pow(y, 3)`
-  // is represented as
+  // of double and an ordered map, std::map<Expression, Expression,
+  // Expression::CompareLess> which maps a base expression to its exponent. For
+  // example, `3 * pow(x, 2) * pow(y, 3)` is represented as
   //
   //     constant factor: 3
   //     ordered map: {x ↦ 2, y ↦ 3}.
@@ -541,11 +543,12 @@ class UnificationVisitor {
   //  2) n ≤ m
   //  3) For all i ∈ [1, n - 1], Unify(pow(bᵢ, tᵢ), pow(b'ᵢ, t'ᵢ)) holds.
   //  4) Unify(pow(bₙ, tₙ), pow(b'ₙ, t'ₙ) * ... * pow(b'ₘ, t'ₘ)) holds.
-  bool VisitMultiplicationAligned(const double c_p,
-                                  const map<Expression, Expression>& map_p,
-                                  const double c_e,
-                                  const map<Expression, Expression>& map_e,
-                                  Substitution* const subst) const {
+  bool VisitMultiplicationAligned(
+      const double c_p,
+      const map<Expression, Expression, Expression::CompareLess>& map_p,
+      const double c_e,
+      const map<Expression, Expression, Expression::CompareLess>& map_e,
+      Substitution* const subst) const {
     DRAKE_ASSERT((c_p == 1.0 && c_e == 1.0) || (c_p != 1.0 && c_e != 1.0));
     if (c_p != c_e) {
       return false;
@@ -576,10 +579,11 @@ class UnificationVisitor {
   //  3) For all i ∈ [2, n - 1],
   //     Unify(pow(bᵢ, tᵢ), pow(b'ᵢ₋₁, t'ᵢ₋₁)) holds.
   //  4) Unify(pow(bₙ, tₙ), pow(b'ₙ, t'ₙ) * ... * pow(b'ₘ, t'ₘ)) holds.
-  bool VisitMultiplicationSkewed(const map<Expression, Expression>& map_p,
-                                 const double c_e,
-                                 const map<Expression, Expression>& map_e,
-                                 Substitution* const subst) const {
+  bool VisitMultiplicationSkewed(
+      const map<Expression, Expression, Expression::CompareLess>& map_p,
+      const double c_e,
+      const map<Expression, Expression, Expression::CompareLess>& map_e,
+      Substitution* const subst) const {
     DRAKE_ASSERT(c_e != 1.0);
     const size_t n{map_p.size()};
     const size_t m{map_e.size()};
@@ -608,9 +612,9 @@ class UnificationVisitor {
   //  - Unify the last element of p with the rest of elements in e. That is,
   //    Unify(pow(bₙ, tₙ), pow(b'ₙ, t'ₙ) * ... * pow(b'ₘ, t'ₘ)).
   bool VisitMultiplicationCheckPairs(
-      map<Expression, Expression>::const_iterator it_p,
-      map<Expression, Expression>::const_iterator it_e, const int n,
-      const int m, Substitution* const subst) const {
+      map<Expression, Expression, Expression::CompareLess>::const_iterator it_p,
+      map<Expression, Expression, Expression::CompareLess>::const_iterator it_e,
+      const int n, const int m, Substitution* const subst) const {
     DRAKE_ASSERT(n >= 1 && n <= m);
     // Checks Unify(pow(bᵢ, tᵢ), pow(b'ᵢ, t'ᵢ)) holds.
     int i = 1;

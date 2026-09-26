@@ -134,7 +134,7 @@ TEST_F(MonomialTest, DefaultConstructors) {
 
 TEST_F(MonomialTest, ConstructFromVariable) {
   const Monomial m1{var_x_};
-  const std::map<Variable, int> powers{m1.get_powers()};
+  const std::map<Variable, int, Variable::CompareLess> powers{m1.get_powers()};
 
   // Checks that powers = {x ↦ 1}.
   ASSERT_EQ(powers.size(), 1u);
@@ -640,7 +640,7 @@ TEST_F(MonomialTest, ToMonomial1) {
 
 // Converts expression x * y to monomial.
 TEST_F(MonomialTest, ToMonomial2) {
-  std::map<Variable, int> powers;
+  std::map<Variable, int, Variable::CompareLess> powers;
   powers.emplace(var_x_, 1);
   powers.emplace(var_y_, 1);
   Monomial expected(powers);
@@ -656,7 +656,7 @@ TEST_F(MonomialTest, ToMonomial3) {
 
 // Converts expression x^3 * y to monomial.
 TEST_F(MonomialTest, ToMonomial4) {
-  std::map<Variable, int> powers;
+  std::map<Variable, int, Variable::CompareLess> powers;
   powers.emplace(var_x_, 3);
   powers.emplace(var_y_, 1);
   Monomial expected(powers);
@@ -666,7 +666,8 @@ TEST_F(MonomialTest, ToMonomial4) {
 
 // Converts expression x*(y+z) - x*y to monomial
 TEST_F(MonomialTest, ToMonomial5) {
-  std::map<Variable, int> powers({{var_x_, 1}, {var_z_, 1}});
+  std::map<Variable, int, Variable::CompareLess> powers(
+      {{var_x_, 1}, {var_z_, 1}});
   Monomial expected(powers);
   EXPECT_EQ(Monomial(x_ * z_), expected);
   EXPECT_EQ(Monomial(x_ * (y_ + z_) - x_ * y_), expected);

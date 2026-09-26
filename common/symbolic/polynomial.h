@@ -298,7 +298,8 @@ class Polynomial {
   indeterminate_substitutions. The easiest way to do this is to pass a pointer
   to an empty substitutions_cached_data or nullopt to this function. */
   [[nodiscard]] Polynomial SubstituteAndExpand(
-      const std::unordered_map<Variable, Polynomial>&
+      const std::unordered_map<Variable, Polynomial, std::hash<Variable>,
+                               Variable::CompareEqualTo>&
           indeterminate_substitution,
       SubstituteAndExpandCacheData* substitutions_cached_data = nullptr) const;
 

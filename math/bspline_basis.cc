@@ -1,7 +1,6 @@
 #include "drake/math/bspline_basis.h"
 
 #include <algorithm>
-#include <functional>
 #include <set>
 #include <utility>
 
@@ -171,8 +170,14 @@ boolean<T> BsplineBasis<T>::operator==(const BsplineBasis<T>& other) const {
     const int num_knots{num_basis_functions() + order()};
     for (int i = 0; i < num_knots; ++i) {
       result = result && (this->knots()[i] == other.knots()[i]);
-      if (std::equal_to<boolean<T>>{}(result, boolean<T>{false})) {
-        break;
+      if constexpr (scalar_predicate<T>::is_bool) {
+        if (!result) {
+          break;
+        }
+      } else {
+        if (is_false(result)) {
+          break;
+        }
       }
     }
     return result;

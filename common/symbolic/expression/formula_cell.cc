@@ -68,7 +68,8 @@ bool RelationalFormulaCell::Less(const FormulaCell& f) const {
   return e_rhs_.Less(rel_f.e_rhs_);
 }
 
-NaryFormulaCell::NaryFormulaCell(const FormulaKind k, set<Formula> formulas)
+NaryFormulaCell::NaryFormulaCell(const FormulaKind k,
+                                 set<Formula, Formula::CompareLess> formulas)
     : FormulaCell{k}, formulas_{std::move(formulas)} {}
 
 NaryFormulaCell::~NaryFormulaCell() = default;
@@ -111,7 +112,7 @@ bool NaryFormulaCell::Less(const FormulaCell& f) const {
 
 string NaryFormulaCell::DisplayWithOp(const string& op) const {
   std::stringstream os;
-  const set<Formula>& formulas{get_operands()};
+  const set<Formula, Formula::CompareLess>& formulas{get_operands()};
   auto it(formulas.cbegin());
   DRAKE_ASSERT(formulas.size() > 1U);
   os << "(";
@@ -366,13 +367,14 @@ string FormulaLeq::Display() const {
   return fmt::format("({} <= {})", get_lhs_expression(), get_rhs_expression());
 }
 
-FormulaAnd::FormulaAnd(const set<Formula>& formulas)
+FormulaAnd::FormulaAnd(const set<Formula, Formula::CompareLess>& formulas)
     : NaryFormulaCell{FormulaKind::And, formulas} {
   DRAKE_ASSERT(get_operands().size() > 1U);
 }
 
 FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
-    : NaryFormulaCell{FormulaKind::And, set<Formula>{f1, f2}} {}
+    : NaryFormulaCell{FormulaKind::And,
+                      set<Formula, Formula::CompareLess>{f1, f2}} {}
 
 FormulaAnd::~FormulaAnd() = default;
 
@@ -401,13 +403,14 @@ string FormulaAnd::Display() const {
   return DisplayWithOp("and");
 }
 
-FormulaOr::FormulaOr(const set<Formula>& formulas)
+FormulaOr::FormulaOr(const set<Formula, Formula::CompareLess>& formulas)
     : NaryFormulaCell{FormulaKind::Or, formulas} {
   DRAKE_ASSERT(get_operands().size() > 1U);
 }
 
 FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
-    : NaryFormulaCell{FormulaKind::Or, set<Formula>{f1, f2}} {}
+    : NaryFormulaCell{FormulaKind::Or,
+                      set<Formula, Formula::CompareLess>{f1, f2}} {}
 
 FormulaOr::~FormulaOr() = default;
 

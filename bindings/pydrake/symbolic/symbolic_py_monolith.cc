@@ -738,8 +738,8 @@ void DefineSymbolicMonolith(py::module_ m) {
           doc.Monomial.ctor.doc_1args_var)
       .def(py::init<const Variable&, int>(), py::arg("var"),
           py::arg("exponent"), doc.Monomial.ctor.doc_2args_var_exponent)
-      .def(py::init<const map<Variable, int>&>(), py::arg("powers"),
-          doc.Monomial.ctor.doc_1args_powers)
+      .def(py::init<const map<Variable, int, Variable::CompareLess>&>(),
+          py::arg("powers"), doc.Monomial.ctor.doc_1args_powers)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&,
                const Eigen::Ref<const Eigen::VectorXi>&>(),
           py::arg("vars"), py::arg("exponents"),
