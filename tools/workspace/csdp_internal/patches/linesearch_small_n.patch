@@ -1,0 +1,37 @@
+Compute exact eigenvalues when Lanczos terminates early
+
+Before each step, `linesearch()` estimates how far it can move while staying
+inside the cone. It does this with Lanczos iteration, but only computes
+eigenvalue estimates once it has 5 or more Lanczos vectors. If Lanczos stops
+before then, because the Krylov subspace became invariant (always the case when
+`X` has fewer than 5 rows), the step is never limited. The barrier parameter
+then collapses early, and the iterate lands on the edge of the cone. From there
+the Newton steps stop satisfying the constraints.
+
+Instead, when Lanczos stops early, compute the eigenvalues anyway (they are
+exact at that point) and use them to limit the step.
+
+Reasoning for not upstreaming this patch: upstream is dead.
+
+--- lib/linesearch.c	2026-09-28 11:26:02
++++ lib/linesearch.c	2026-09-28 11:26:02
+@@ -256,6 +256,19 @@
+ 	{
+ 	  if (printlevel >= 3)
+ 	    printf("Small beta[j]\n");
++	  /*
++	   * The Krylov subspace is invariant, so the eigenvalues of the
++	   * current tridiagonal matrix are exact.  Use them, since otherwise
++	   * for small n (Lanczos never reaching j>=5) maxeig is never set.
++	   */
++	  for (i=1; i<=j-1; i++)
++	    lbeta2[i]=lbeta[i]*lbeta[i];
++	  for (i=1; i<=j; i++)
++	    evalues[i]=lalpha[i];
++	  qreig(j,evalues,lbeta2);
++	  for (i=1; i<=j; i++)
++	    if (evalues[i] > maxeig)
++	      maxeig=evalues[i];
+ 	  j=j-1;
+ 	  jj=j;
+ 	  goto DONEEARLY;
