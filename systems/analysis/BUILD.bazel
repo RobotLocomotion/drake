@@ -741,6 +741,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "region_of_attraction_test",
+    # This test is prohibitively slow under valgrind.
+    opt_out_conditions = ["//tools/valgrind:enabled"],
     size = "medium",
     deps = [
         ":region_of_attraction",
