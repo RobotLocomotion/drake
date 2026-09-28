@@ -1,5 +1,11 @@
 load("@with_cfg.bzl", "with_cfg")
 load("//tools/skylark:cc.bzl", "cc_library")
+load(
+    "//tools/workspace/libpng:defs.bzl",
+    "LIBPNG_COPTS",
+    "LIBPNG_LABEL_FLAGS",
+    "LIBPNG_LOCAL_DEFINES",
+)
 
 # cc_static_hidden_library is a cc_library rule that recompiles the libraries
 # listed in its `deps` adding `copts = ["-fvisibilty=hidden"]` and using only
@@ -8,9 +14,26 @@ load("//tools/skylark:cc.bzl", "cc_library")
 # This is useful when linking third-party C libraries into libdrake.so when we
 # don't control the BUILD files (so can't directly set copts or linkstatic).
 _builder = with_cfg(cc_library)
-_builder.extend("copt", ["-fvisibility=hidden"])
+_builder.extend(
+    "copt",
+    ["-fvisibility=hidden"] + LIBPNG_COPTS,
+)
 _builder.extend("features", ["-supports_dynamic_linker"])
-cc_static_hidden_library, _ = _builder.build()
+_LABEL_FLAGS = LIBPNG_LABEL_FLAGS
+
+def _set_label_flags():
+    for label, value in _LABEL_FLAGS.items():
+        _builder.set(Label(label), value)
+
+_set_label_flags()
+_cc_static_hidden_library_impl, _ = _builder.build()
+
+def cc_static_hidden_library(name, **kwargs):
+    _cc_static_hidden_library_impl(
+        name = name,
+        local_defines = LIBPNG_LOCAL_DEFINES,
+        **kwargs
+    )
 
 def cc_wrap_static_archive_hidden(
         name,
