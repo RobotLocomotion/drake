@@ -1,0 +1,226 @@
+[coal] Use the C++20 standard library in place of Boost
+
+Coal's collision core reaches for Boost in exactly two places, and both
+have drop-in equivalents in the C++20 standard library that Coal already
+requires:
+
+  boost::math::constants::pi<Scalar>()  ->  std::numbers::pi_v<Scalar>
+  boost::span                           ->  std::span
+
+Dropping them lets a consumer build Coal's collision core against Eigen
+alone. That matters disproportionately for the `pi` case: including
+<boost/math/constants/constants.hpp> from geometric_shapes.h pulls in
+over four hundred Boost headers transitively, purely to obtain a
+constant.
+
+Drake carries this patch because Drake has no Boost dependency at all and
+does not wish to acquire one. It should be upstreamed; nothing here is
+Drake-specific.
+
+Note that include/coal/logging.h also includes <boost/log/trivial.hpp>,
+but that include and every macro that uses it sit behind
+`#ifdef COAL_ENABLE_LOGGING`, which Drake never defines, so no patch is
+needed there. The include/coal/third_party/boost/ directory (a backfill
+for systems whose Boost predates boost::span) is simply not compiled.
+
+--- include/coal/BV/RSS.h
++++ include/coal/BV/RSS.h
+@@ -41,7 +41,7 @@
+ #include "coal/fwd.hh"
+ #include "coal/data_types.h"
+
+-#include <boost/math/constants/constants.hpp>
++#include <numbers>
+
+ namespace coal {
+
+@@ -140,8 +140,7 @@
+   /// @brief Volume of the RSS
+   inline Scalar volume() const {
+     return (length[0] * length[1] * 2 * radius +
+-            4 * boost::math::constants::pi<Scalar>() * radius * radius *
+-                radius);
++            4 * std::numbers::pi_v<Scalar> * radius * radius * radius);
+   }
+
+   /// @brief Check collision between two RSS and return the overlap part.
+--- include/coal/alloca.h
++++ include/coal/alloca.h
+@@ -38,7 +38,7 @@
+ #define COAL_ALLOCA_H
+
+ #include "coal/logging.h"
+-#include <boost/core/span.hpp>
++#include <span>
+ #include <memory>
+
+ #ifdef WIN32
+@@ -81,6 +81,6 @@
+
+ #define COAL_MAKE_ALLOCA_BOOST_SPAN(Type, Name, Size) \
+   COAL_MAKE_ALLOCA_TYPED_PTR(Type, Name, Size);       \
+-  boost::span<Type> Name(ptr_##Name, _sz_##Name);
++  std::span<Type> Name(ptr_##Name, _sz_##Name);
+
+ #endif  // ifndef COAL_ALLOCA_H
+--- include/coal/shape/geometric_shape_to_BVH_model.h
++++ include/coal/shape/geometric_shape_to_BVH_model.h
+@@ -40,7 +40,7 @@
+
+ #include "coal/shape/geometric_shapes.h"
+ #include "coal/BVH/BVH_model.h"
+-#include <boost/math/constants/constants.hpp>
++#include <numbers>
+
+ namespace coal {
+
+@@ -96,7 +96,7 @@
+
+   Scalar r = shape.radius;
+   Scalar phi, phid;
+-  const Scalar pi = boost::math::constants::pi<Scalar>();
++  const Scalar pi = std::numbers::pi_v<Scalar>;
+   phid = pi * 2 / Scalar(seg);
+   phi = 0;
+
+@@ -178,7 +178,7 @@
+   Scalar r = shape.radius;
+   Scalar h = shape.halfLength;
+   Scalar phi, phid;
+-  const Scalar pi = boost::math::constants::pi<Scalar>();
++  const Scalar pi = std::numbers::pi_v<Scalar>;
+   phid = pi * 2 / Scalar(tot);
+   phi = 0;
+
+@@ -250,7 +250,7 @@
+   Scalar r = shape.radius;
+   Scalar h = 2 * shape.halfLength;
+
+-  const Scalar pi = boost::math::constants::pi<Scalar>();
++  const Scalar pi = std::numbers::pi_v<Scalar>;
+   unsigned int tot = (unsigned int)(Scalar(tot_for_unit_cylinder) * r);
+   Scalar phid = pi * 2 / Scalar(tot);
+
+@@ -273,7 +273,7 @@
+   Scalar h = shape.halfLength;
+
+   Scalar phi, phid;
+-  const Scalar pi = boost::math::constants::pi<Scalar>();
++  const Scalar pi = std::numbers::pi_v<Scalar>;
+   phid = pi * 2 / Scalar(tot);
+   phi = 0;
+
+@@ -341,7 +341,7 @@
+   Scalar r = shape.radius;
+   Scalar h = 2 * shape.halfLength;
+
+-  const Scalar pi = boost::math::constants::pi<Scalar>();
++  const Scalar pi = std::numbers::pi_v<Scalar>;
+   unsigned int tot = (unsigned int)(Scalar(tot_for_unit_cone) * r);
+   Scalar phid = pi * 2 / Scalar(tot);
+
+--- include/coal/shape/geometric_shapes.h
++++ include/coal/shape/geometric_shapes.h
+@@ -41,7 +41,7 @@
+ #include <vector>
+ #include <memory>
+
+-#include <boost/math/constants/constants.hpp>
++#include <numbers>
+
+ #include "coal/collision_object.h"
+ #include "coal/data_types.h"
+@@ -280,8 +280,7 @@
+   }
+
+   Scalar computeVolume() const override {
+-    return 4 * boost::math::constants::pi<Scalar>() * radius * radius * radius /
+-           3;
++    return 4 * std::numbers::pi_v<Scalar> * radius * radius * radius / 3;
+   }
+
+   Scalar minInflationValue() const { return -radius; }
+@@ -356,8 +355,8 @@
+   }
+
+   Scalar computeVolume() const override {
+-    return 4 * boost::math::constants::pi<Scalar>() * radii[0] * radii[1] *
+-           radii[2] / 3;
++    return 4 * std::numbers::pi_v<Scalar> * radii[0] * radii[1] * radii[2] /
++           3;
+   }
+
+   Scalar minInflationValue() const { return -radii.minCoeff(); }
+@@ -428,15 +427,15 @@
+   NODE_TYPE getNodeType() const override { return GEOM_CAPSULE; }
+
+   Scalar computeVolume() const override {
+-    return boost::math::constants::pi<Scalar>() * radius * radius *
++    return std::numbers::pi_v<Scalar> * radius * radius *
+            ((halfLength * 2) + radius * 4 / Scalar(3));
+   }
+
+   Matrix3s computeMomentofInertia() const override {
+-    Scalar v_cyl = radius * radius * (halfLength * 2) *
+-                   boost::math::constants::pi<Scalar>();
+-    Scalar v_sph = radius * radius * radius *
+-                   boost::math::constants::pi<Scalar>() * 4 / Scalar(3);
++    Scalar v_cyl =
++        radius * radius * (halfLength * 2) * std::numbers::pi_v<Scalar>;
++    Scalar v_sph =
++        radius * radius * radius * std::numbers::pi_v<Scalar> * 4 / Scalar(3);
+
+     Scalar h2 = halfLength * halfLength;
+     Scalar r2 = radius * radius;
+@@ -516,8 +515,7 @@
+   NODE_TYPE getNodeType() const override { return GEOM_CONE; }
+
+   Scalar computeVolume() const override {
+-    return boost::math::constants::pi<Scalar>() * radius * radius *
+-           (halfLength * 2) / 3;
++    return std::numbers::pi_v<Scalar> * radius * radius * (halfLength * 2) / 3;
+   }
+
+   Matrix3s computeMomentofInertia() const override {
+@@ -619,8 +617,7 @@
+   NODE_TYPE getNodeType() const override { return GEOM_CYLINDER; }
+
+   Scalar computeVolume() const override {
+-    return boost::math::constants::pi<Scalar>() * radius * radius *
+-           (halfLength * 2);
++    return std::numbers::pi_v<Scalar> * radius * radius * (halfLength * 2);
+   }
+
+   Matrix3s computeMomentofInertia() const override {
+--- src/contact_patch/contact_patch_simplifier.cpp
++++ src/contact_patch/contact_patch_simplifier.cpp
+@@ -187,10 +187,10 @@
+ }
+
+ Scalar compute_rooted_kgon(const std::vector<Vec2s>& pts, int root, int k,
+-                           boost::span<const int> left_c,
+-                           boost::span<const int> right_c,
+-                           boost::span<int> best_v, boost::span<Scalar> dp_area,
+-                           boost::span<int> dp_prev) {
++                           std::span<const int> left_c,
++                           std::span<const int> right_c,
++                           std::span<int> best_v, std::span<Scalar> dp_area,
++                           std::span<int> dp_prev) {
+   int n = static_cast<int>(pts.size());
+
+   for (int m = 1; m < k; ++m) {
+@@ -253,10 +253,10 @@
+ }
+
+ void solve_recursive(const std::vector<Vec2s>& pts, int k, int root_start,
+-                     int root_end, boost::span<const int> left_bound,
+-                     boost::span<const int> right_bound,
+-                     Scalar& global_max_area, boost::span<int> global_best_v,
+-                     boost::span<Scalar> dp_area, boost::span<int> dp_prev) {
++                     int root_end, std::span<const int> left_bound,
++                     std::span<const int> right_bound,
++                     Scalar& global_max_area, std::span<int> global_best_v,
++                     std::span<Scalar> dp_area, std::span<int> dp_prev) {
+   if (root_start > root_end) return;
+
+   int mid_root = root_start + (root_end - root_start) / 2;
