@@ -71,6 +71,7 @@ drake_cc_package_library(
         ":create_constraint",
         ":create_cost",
         ":csdp_solver",
+        ":daqp_solver",
         ":decision_variable",
         ":equality_constrained_qp_solver",
         ":evaluator_base",
@@ -1050,6 +1051,19 @@ drake_cc_variant_library(
     ],
 )
 
+drake_cc_library(
+    name = "daqp_solver",
+    srcs = ["daqp_solver.cc"],
+    hdrs = ["daqp_solver.h"],
+    deps = [":solver_base"],
+    implementation_deps = [
+        ":aggregate_costs_constraints",
+        ":mathematical_program_result",
+        ":specific_options",
+        "//third_party/daqp:daqp",
+    ],
+)
+
 drake_cc_variant_library(
     name = "clarabel_solver",
     opt_in_condition = "//tools/workspace/clarabel_cpp_internal:enabled",
@@ -1814,6 +1828,15 @@ drake_cc_googletest(
         ":osqp_solver",
         ":quadratic_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "daqp_solver_test",
+    deps = [
+        ":choose_best_solver",
+        ":daqp_solver",
+        ":mathematical_program",
     ],
 )
 

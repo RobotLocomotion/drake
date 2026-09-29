@@ -11,6 +11,7 @@
 #include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
+#include "drake/solvers/daqp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/get_program_type.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -72,10 +73,11 @@ class StaticSolverInterface {
 };
 
 // The list of all solvers compiled in Drake.
-constexpr std::array<StaticSolverInterface, 13> kKnownSolvers{
+constexpr std::array<StaticSolverInterface, 14> kKnownSolvers{
     StaticSolverInterface::Make<ClarabelSolver>(),
     StaticSolverInterface::Make<ClpSolver>(),
     StaticSolverInterface::Make<CsdpSolver>(),
+    StaticSolverInterface::Make<DaqpSolver>(),
     StaticSolverInterface::Make<EqualityConstrainedQPSolver>(),
     StaticSolverInterface::Make<GurobiSolver>(),
     StaticSolverInterface::Make<IpoptSolver>(),

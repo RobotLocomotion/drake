@@ -1,0 +1,20 @@
+load("//tools/install:install.bzl", "install")
+load("//tools/skylark:cc.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# DAQP 0.10.2, copied from darnstrom/daqp at UPSTREAM_COMMIT.
+cc_library(
+    name = "daqp",
+    srcs = glob(["src/*.c"]),
+    hdrs = glob(["include/*.h"]),
+    includes = ["include"],
+    linkopts = ["-lm"],
+    local_defines = ["PROFILING"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    doc_dest = "share/doc/daqp",
+)
