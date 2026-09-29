@@ -844,6 +844,19 @@ const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   if (!mobilizer.has_six_dofs()) {
     throw std::logic_error("Body '" + body.name() + "' is not a free body.");
   }
+  // If welded links were fused onto this free mobod, only its active link is
+  // a free body. The mobilizer's pose and spatial velocity are those of the
+  // active link; the other links are welded to it.
+  const LinkOrdinal active_link_ordinal =
+      forest().mobods(link.mobod_index()).active_link_ordinal();
+  if (link.ordinal() != active_link_ordinal) {
+    const Link<T>& active_link =
+        get_link(forest().links(active_link_ordinal).index());
+    throw std::logic_error(
+        fmt::format("Body '{}' is not a free body; it is welded to free body "
+                    "'{}'.",
+                    body.name(), active_link.name()));
+  }
   return mobilizer;
 }
 
