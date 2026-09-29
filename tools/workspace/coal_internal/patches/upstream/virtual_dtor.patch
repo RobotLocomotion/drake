@@ -1,0 +1,31 @@
+[coal] Give the broadphase callback base classes virtual destructors
+
+CollisionCallBackBase and DistanceCallBackBase are polymorphic bases -- they
+exist to be derived from -- but have implicit, non-virtual, public
+destructors. Deleting a derived callback through a base pointer is therefore
+undefined behavior, and merely deriving from either one is enough to trip
+-Wnon-virtual-dtor, which Drake builds with as an error.
+
+Drake will define several such callbacks for its broadphase queries, so the
+fix belongs upstream rather than in a suppression at each derived class.
+
+--- include/coal/broadphase/broadphase_callbacks.h
++++ include/coal/broadphase/broadphase_callbacks.h
+@@ -47,6 +47,8 @@
+ /// according to the application (e.g, only listing the potential
+ /// CollisionObjects in collision).
+ struct COAL_DLLAPI CollisionCallBackBase {
++  virtual ~CollisionCallBackBase() = default;
++
+   /// @brief Initialization of the callback before running the collision
+   /// broadphase manager.
+   virtual void init() {};
+@@ -70,6 +72,8 @@
+ /// according to the application (e.g, only listing the potential
+ /// CollisionObjects in collision).
+ struct COAL_DLLAPI DistanceCallBackBase {
++  virtual ~DistanceCallBackBase() = default;
++
+   /// @brief Initialization of the callback before running the collision
+   /// broadphase manager.
+   virtual void init() {};
