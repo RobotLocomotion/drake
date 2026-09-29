@@ -52,6 +52,9 @@ def process_comment(comment):
 
     # MyPy parsing has a particular dislike of double colons.
     # Replace all of them with a different unicode character.
+    # Our pydrake_sphinx_extension.py replaces this back to double colons to
+    # avoid visual artifacts in the documentation. If this is removed in the
+    # future, that part can be removed too.
     s = s.replace("::", "∷")
 
     # Markdown to reStructuredText (but don't process literal blocks).
