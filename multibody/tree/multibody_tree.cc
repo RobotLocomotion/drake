@@ -2513,13 +2513,26 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
   // Shortcut: Efficiently return identity matrix if frame_F == frame_G.
   if (frame_F.index() == frame_G.index()) return RotationMatrix<T>::Identity();
 
+  // Frames F and G are fixed to mobods A and B, resp. Those mobods' frames may
+  // differ from the frames of the links L and M that F and G are attached to,
+  // if L or M is a follower link on a mobod with fused links. So we must use
+  // R_AF and R_BG here, not R_LF and R_MG.
+  const Link<T>& link_L = frame_F.link();
+  const Link<T>& link_M = frame_G.link();
+
+  // Find each Frame's orientation in its Mobod's frame (F in A, G in B).
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
+  const RotationMatrix<T>& R_AF =
+      frame_F.get_X_BF(frame_body_pose_cache).rotation();  // B==A
+  const RotationMatrix<T>& R_BG =
+      frame_G.get_X_BF(frame_body_pose_cache).rotation();  // F==G
+
+  // Find each Mobod's orientation in World.
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const RigidBody<T>& A = frame_F.body();
-  const RigidBody<T>& B = frame_G.body();
-  const RotationMatrix<T>& R_WA = pc.get_R_WB(A.mobod_index());
-  const RotationMatrix<T>& R_WB = pc.get_R_WB(B.mobod_index());
-  const RotationMatrix<T> R_AF = frame_F.CalcRotationMatrixInBodyFrame(context);
-  const RotationMatrix<T> R_BG = frame_G.CalcRotationMatrixInBodyFrame(context);
+  const RotationMatrix<T>& R_WA = pc.get_R_WB(link_L.mobod_index());  // B==A
+  const RotationMatrix<T>& R_WB = pc.get_R_WB(link_M.mobod_index());
+
   const RotationMatrix<T> R_WF = R_WA * R_AF;
   const RotationMatrix<T> R_WG = R_WB * R_BG;
   return R_WF.InvertAndCompose(R_WG);  // R_FG = R_FW * R_WG;

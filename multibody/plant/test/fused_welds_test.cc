@@ -18,6 +18,7 @@ SetFuseWeldedLinks() is enabled. */
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/rotational_inertia.h"
@@ -41,6 +42,10 @@ constexpr double kTolerance = 32 * std::numeric_limits<double>::epsilon();
 // The fixed orientation of Link3 in Link2 in the test model below.
 const RotationMatrixd kR_23 = RotationMatrixd::MakeXRotation(M_PI / 3);
 
+// The fixed pose of Frame3 in Link3 in the test model below.
+const RigidTransformd kX_3F(RotationMatrixd::MakeYRotation(M_PI / 5),
+                            Vector3<double>(0.1, 0.2, 0.3));
+
 // Holds one version of the test model, either a model with unfused welds
 // or a model with welded links fused onto a mobilized body (fused mobod)
 // along with its context, ready for kinematics queries. The plant is
@@ -55,6 +60,7 @@ struct TestModel {
   const RigidBody<double>* link2{};
   const RigidBody<double>* link3{};
   const RigidBody<double>* link4{};
+  const Frame<double>* frame3{};  // Fixed to Link3 at pose kX_3F.
 };
 
 /* Builds a test model with the topology:
@@ -74,6 +80,7 @@ Link2 is offset +1 m in x from Link1's frame.
 Link3 is offset +1 m in y from Link2's frame and rotated 60° about Link2's x
 axis (R₂₃), so that Link3's orientation differs from that of its fused mobod.
 Link4 is offset +4 m in x from World frame.
+Frame3 is a fixed offset frame on Link3, with a rotation of its own.
 
 The orientations of the links in World are:
   Link1, Link2: Rz(θ)
@@ -136,6 +143,8 @@ TestModel MakeModel(bool fuse_welded_links) {
   const RigidTransformd X_Wto4(Vector3<double>(4.0, 0.0, 0.0));
   m.plant->AddJoint<WeldJoint>("weldW4", m.plant->world_body(), X_Wto4,
                                *m.link4, RigidTransformd{}, RigidTransformd{});
+  m.frame3 = &m.plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+      "Frame3", m.link3->body_frame(), kX_3F));
   m.plant->Finalize();
   m.context = m.plant->CreateDefaultContext();
 
@@ -351,6 +360,67 @@ GTEST_TEST(CompositeTest, GeometryPoseOutput) {
           X_WG_all.value(m.plant->GetBodyFrameIdOrThrow(link->index()));
       EXPECT_TRUE(
           X_WG.IsNearlyEqualTo(link->EvalPoseInWorld(*m.context), kTolerance));
+    }
+  }
+}
+
+/* Verify relative orientations of frames, regardless of whether welded links
+are fused. With fusion, Link3 is a follower link whose orientation differs from
+that of its mobod, so a frame on Link3 must be located via the mobod, not via
+Link3 itself. */
+GTEST_TEST(CompositeTest, RelativeRotationMatrix) {
+  const TestModel unfused_model = MakeModel(false);
+  const TestModel fused_model = MakeModel(true);
+
+  // The frames of interest in each model: World, Link1 (a fused mobod's active
+  // link), Link3 and Frame3 (follower link and a frame on it), and Link4 (a
+  // link fused onto World).
+  auto frames_of = [](const TestModel& m) {
+    return std::vector<const Frame<double>*>{
+        &m.plant->world_frame(), &m.link1->body_frame(), &m.link3->body_frame(),
+        m.frame3, &m.link4->body_frame()};
+  };
+  const std::vector<const Frame<double>*> unfused_frames =
+      frames_of(unfused_model);
+  const std::vector<const Frame<double>*> fused_frames = frames_of(fused_model);
+
+  for (const double angle : {0.0, M_PI / 6, -M_PI / 3}) {
+    SCOPED_TRACE(fmt::format("angle = {}", angle));
+    SetState(unfused_model, angle, 0.0);
+    SetState(fused_model, angle, 0.0);
+
+    // Check some analytic orientations in World.
+    const RotationMatrixd R_WL3_expected =
+        RotationMatrixd::MakeZRotation(angle) * kR_23;
+    const RotationMatrixd R_WF3_expected = R_WL3_expected * kX_3F.rotation();
+    for (const TestModel* m : {&unfused_model, &fused_model}) {
+      EXPECT_TRUE(m->link3->body_frame()
+                      .CalcRotationMatrixInWorld(*m->context)
+                      .IsNearlyEqualTo(R_WL3_expected, kTolerance));
+      EXPECT_TRUE(m->frame3->CalcRotationMatrixInWorld(*m->context)
+                      .IsNearlyEqualTo(R_WF3_expected, kTolerance));
+    }
+
+    // Every pair of frames gives the same relative orientation in the two
+    // models, and it agrees with the rotational part of the relative pose.
+    for (int i = 0; i < ssize(fused_frames); ++i) {
+      for (int j = 0; j < ssize(fused_frames); ++j) {
+        const Frame<double>& frame_F = *fused_frames[i];
+        const Frame<double>& frame_G = *fused_frames[j];
+        SCOPED_TRACE(fmt::format("R_{}_{}", frame_F.name(), frame_G.name()));
+        const RotationMatrixd R_FG_unfused =
+            unfused_model.plant->CalcRelativeRotationMatrix(
+                *unfused_model.context, *unfused_frames[i], *unfused_frames[j]);
+        const RotationMatrixd R_FG_fused =
+            fused_model.plant->CalcRelativeRotationMatrix(*fused_model.context,
+                                                          frame_F, frame_G);
+        EXPECT_TRUE(R_FG_fused.IsNearlyEqualTo(R_FG_unfused, kTolerance));
+        EXPECT_TRUE(R_FG_fused.IsNearlyEqualTo(
+            fused_model.plant
+                ->CalcRelativeTransform(*fused_model.context, frame_F, frame_G)
+                .rotation(),
+            kTolerance));
+      }
     }
   }
 }
