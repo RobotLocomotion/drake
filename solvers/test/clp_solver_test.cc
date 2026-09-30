@@ -164,6 +164,33 @@ GTEST_TEST(QPtest, TestQuadraticCostVariableOrder) {
   }
 }
 
+// Regression test for #22985: a quadratic cost whose variables are ordered
+// differently from the program's aborts inside CLP when scaling is disabled.
+GTEST_TEST(ClpSolverTest, QuadraticCostVariableOrderWithoutScaling) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  Eigen::Matrix4d Q;
+  // clang-format off
+  Q << 3, 2, 0.5, 0.3,
+       2, 5, 1, -1,
+       0.5, 1, 4, -0.5,
+       0.3, -1, -0.5, 7;
+  // clang-format on
+  const Eigen::Vector4d b(1, 0, 2, 3);
+  const auto cost = prog.AddQuadraticCost(
+      Q, b, Vector4<symbolic::Variable>(x(2), x(0), x(1), x(0)));
+  prog.AddLinearEqualityConstraint(x(0) + 2 * x(1) + 3 * x(2) == 6);
+
+  SolverOptions options;
+  options.SetOption(ClpSolver::id(), "scaling", 0);
+
+  ClpSolver solver;
+  const auto result = solver.Solve(prog, {}, options);
+  EXPECT_TRUE(result.is_success());
+  // A mis-reindexed Q would minimize a different objective than we declared.
+  EXPECT_NEAR(result.get_optimal_cost(), result.EvalBinding(cost)(0), 1E-7);
+}
+
 GTEST_TEST(QPtest, TestInfeasible) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
