@@ -1,0 +1,65 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+licenses(["notice"])  # MIT
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# This list matches src/CMakeLists.txt.
+DAQP_SOURCES = [
+    "src/api.c",
+    "src/auxiliary.c",
+    "src/avi.c",
+    "src/bnb.c",
+    "src/daqp.c",
+    "src/daqp_prox.c",
+    "src/eq_elim.c",
+    "src/factorization.c",
+    "src/hierarchical.c",
+    "src/utils.c",
+]
+
+# This list matches include/CMakeLists.txt.
+DAQP_HEADERS = [
+    "include/api.h",
+    "include/auxiliary.h",
+    "include/avi.h",
+    "include/bnb.h",
+    "include/constants.h",
+    "include/daqp.h",
+    "include/daqp_prox.h",
+    "include/eq_elim.h",
+    "include/factorization.h",
+    "include/hierarchical.h",
+    "include/types.h",
+    "include/utils.h",
+]
+
+cc_library(
+    name = "daqp",
+    srcs = DAQP_SOURCES,
+    hdrs = DAQP_HEADERS,
+    copts = [
+        "-fvisibility=hidden",
+        "-w",
+        "-Werror=incompatible-pointer-types",
+    ],
+    includes = ["include"],
+    isystem = True,
+    linkopts = ["-lm"],
+    linkstatic = 1,
+    # Fills in DAQPResult's setup_time and solve_time. This does not change
+    # the layout of any public struct.
+    local_defines = ["PROFILING"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)
+
+exports_files(["drake_repository_metadata.json"])

@@ -123,7 +123,13 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "daqp_solver_test",
-    deps = [":solvers"],
+    args = select({
+        "//tools/workspace/daqp_internal:enabled": [],
+        "//conditions:default": ["TestDaqpSolver.unavailable"],
+    }),
+    deps = [
+        ":solvers",
+    ],
 )
 
 drake_py_unittest(

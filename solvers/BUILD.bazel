@@ -637,6 +637,7 @@ drake_cc_library(
         ":clarabel_solver",
         ":clp_solver",
         ":csdp_solver",
+        ":daqp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
         ":mathematical_program",
@@ -1052,16 +1053,24 @@ drake_cc_variant_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "daqp_solver",
-    srcs = ["daqp_solver.cc"],
+    opt_in_condition = "//tools/workspace/daqp_internal:enabled",
+    srcs_always = ["daqp_solver_common.cc"],
+    srcs_enabled = ["daqp_solver.cc"],
+    srcs_disabled = ["no_daqp.cc"],
     hdrs = ["daqp_solver.h"],
-    deps = [":solver_base"],
-    implementation_deps = [
+    deps = [
+        ":solver_base",
+    ],
+    implementation_deps_always = [
         ":aggregate_costs_constraints",
+        ":mathematical_program",
+    ],
+    implementation_deps_enabled = [
         ":mathematical_program_result",
         ":specific_options",
-        "//third_party/daqp:daqp",
+        "@daqp_internal//:daqp",
     ],
 )
 
@@ -1838,6 +1847,9 @@ drake_cc_googletest(
         ":choose_best_solver",
         ":daqp_solver",
         ":mathematical_program",
+        ":quadratic_program_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
