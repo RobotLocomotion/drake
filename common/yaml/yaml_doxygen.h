@@ -11,7 +11,7 @@ serialized must provide a @ref implementing_serialize "Serialize()" function
 to enumerate its fields.
 
 Identical functionality is provided in Python via
-[pydrake.common.yaml](/pydrake/pydrake.common.yaml.html).
+<a href="/pydrake/pydrake.common.yaml.html">pydrake.common.yaml</a>.
 
 <h2>Examples</h2>
 
