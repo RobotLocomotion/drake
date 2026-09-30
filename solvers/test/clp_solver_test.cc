@@ -1,15 +1,13 @@
 #include "drake/solvers/clp_solver.h"
 
+#include <cmath>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
-
-#if defined(__APPLE__)
-constexpr bool kApple = true;
-#else
-constexpr bool kApple = false;
-#endif
 
 namespace drake {
 namespace solvers {
@@ -288,9 +286,7 @@ GTEST_TEST(ClpSolverTest, TestNumericalScaling) {
   TestLPPoorScaling2(solver, false, 1E-4, solver_options);
 }
 
-// The following simple QP is feasible, but CLP cannot currently solve it. Once
-// CLP can solve this QP successfully, we can remove the warning in the
-// ConstructClpModel function (in clp_solver.cc). See #22985 for details.
+// CLP's simplex method reports this feasible QP as dual infeasible (#22985).
 GTEST_TEST(ClpSolverTest, QuadraticProgram22985) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
@@ -300,7 +296,61 @@ GTEST_TEST(ClpSolverTest, QuadraticProgram22985) {
 
   ClpSolver solver;
   auto result = solver.Solve(prog, {}, {});
-  EXPECT_EQ(result.is_success(), kApple);  // CLP succeeds on macOS only.
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                              Eigen::Vector2d(0.45, 0.55), 1E-7));
+  EXPECT_NEAR(result.get_optimal_cost(), 0.605, 1E-7);
+}
+
+// A larger dense QP that CLP's simplex method also fails to solve (#22985).
+GTEST_TEST(ClpSolverTest, DenseQuadraticProgram) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(10);
+
+  Eigen::Matrix<double, 4, 10> A;
+  // clang-format off
+  A <<  1.00,  0.54, -0.42, -0.99, -0.65,  0.28,  0.96,  0.75, -0.15, -0.91,
+       -0.84,  0.00,  0.84,  0.91,  0.14, -0.76, -0.96, -0.28,  0.66,  0.99,
+        0.41, -0.55, -1.00, -0.53,  0.42,  0.99,  0.65, -0.29, -0.96, -0.75,
+        0.15,  0.91,  0.83, -0.01, -0.85, -0.90, -0.13,  0.77,  0.96,  0.27;
+  // clang-format on
+  Eigen::Vector4d b;
+  b << -0.08, 0.26, -0.35, 0.33;
+  prog.AddLinearEqualityConstraint(A, b, x);
+  for (int i = 1; i < 10; i += 2) {
+    prog.AddBoundingBoxConstraint(-5, 5, x(i));
+  }
+
+  // A dense positive definite Q.
+  Eigen::Matrix<double, 10, 10> Q;
+  // clang-format off
+  Q <<  6.52, -6.87,  5.51, -2.38, -1.52,  4.93, -6.76,  6.41, -3.99,  0.29,
+       -6.87,  8.97, -7.35,  3.85,  0.88, -5.33,  8.06, -8.20,  5.70, -1.37,
+        5.51, -7.35,  7.31, -4.09,  0.05,  4.01, -6.78,  7.36, -5.58,  2.00,
+       -2.38,  3.85, -4.09,  3.51, -0.96, -1.40,  3.31, -4.15,  3.66, -1.99,
+       -1.52,  0.88,  0.05, -0.96,  2.06, -1.66,  1.23, -0.40, -0.56,  1.34,
+        4.93, -5.33,  4.01, -1.40, -1.66,  4.69, -5.37,  4.82, -2.72, -0.26,
+       -6.76,  8.06, -6.78,  3.31,  1.23, -5.37,  8.28, -7.68,  5.12, -0.91,
+        6.41, -8.20,  7.36, -4.15, -0.40,  4.82, -7.68,  8.58, -5.87,  1.78,
+       -3.99,  5.70, -5.58,  3.66, -0.56, -2.72,  5.12, -5.87,  5.24, -2.08,
+        0.29, -1.37,  2.00, -1.99,  1.34, -0.26, -0.91,  1.78, -2.08,  2.21;
+  // clang-format on
+  Eigen::Matrix<double, 10, 1> c;
+  c << 0.00, 0.48, 0.84, 1.00, 0.91, 0.60, 0.14, -0.35, -0.76, -0.98;
+  prog.AddQuadraticCost(Q, c, x);
+
+  ClpSolver clp_solver;
+  const auto clp_result = clp_solver.Solve(prog, {}, {});
+  ASSERT_TRUE(clp_result.is_success());
+
+  ClarabelSolver clarabel_solver;
+  const auto clarabel_result = clarabel_solver.Solve(prog, {}, {});
+  ASSERT_TRUE(clarabel_result.is_success());
+
+  EXPECT_NEAR(clp_result.get_optimal_cost(), clarabel_result.get_optimal_cost(),
+              1E-6);
+  EXPECT_TRUE(CompareMatrices(clp_result.GetSolution(x),
+                              clarabel_result.GetSolution(x), 1E-5));
 }
 
 }  // namespace test
