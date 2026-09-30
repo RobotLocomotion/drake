@@ -31,6 +31,8 @@ GTEST_TEST(DaqpSolverTest, DifferentialIkCollisionConstraint) {
   EXPECT_NEAR(result.GetSolution(v(0)), -4, 1e-7);
   EXPECT_NEAR(result.GetSolution(v(1)), 0.5, 1e-7);
   EXPECT_NEAR(result.GetDualSolution(collision)(0), 8, 1e-7);
+  // |v|² + 16 v₀ - v₁ at v = (-4, 0.5).
+  EXPECT_NEAR(result.get_optimal_cost(), -48.25, 1e-7);
   EXPECT_EQ(result.get_solver_details<DaqpSolver>().exitflag, 1);
 }
 
@@ -46,8 +48,23 @@ GTEST_TEST(DaqpSolverTest, BoundsAndEquality) {
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.GetSolution(x(0)), 0.8, 1e-6);
   EXPECT_NEAR(result.GetSolution(x(1)), 0.2, 1e-6);
-  EXPECT_EQ(result.GetDualSolution(equality).size(), 1);
+  EXPECT_NEAR(result.GetDualSolution(equality)(0), 0.4, 1e-6);
   EXPECT_NEAR(result.GetDualSolution(bound)(0), 1.2, 1e-6);
+  EXPECT_NEAR(result.get_optimal_cost(), 0.68, 1e-6);
+}
+
+GTEST_TEST(DaqpSolverTest, OverlappingBoundingBoxes) {
+  // Only the tightest bound owns the dual; the looser binding gets zero.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>("x");
+  prog.AddQuadraticCost(x(0) * x(0));
+  const auto loose = prog.AddBoundingBoxConstraint(0.5, 3, x);
+  const auto tight = prog.AddBoundingBoxConstraint(1, 2, x);
+  const auto result = DaqpSolver().Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x(0)), 1, 1e-7);
+  EXPECT_NEAR(result.GetDualSolution(tight)(0), 2, 1e-7);
+  EXPECT_NEAR(result.GetDualSolution(loose)(0), 0, 1e-7);
 }
 
 GTEST_TEST(DaqpSolverTest, InfeasibleBounds) {

@@ -177,6 +177,7 @@ drake_cc_library(
         ":clarabel_solver",
         ":clp_solver",
         ":csdp_solver",
+        ":daqp_solver",
         ":equality_constrained_qp_solver",
         ":get_program_type",
         ":gurobi_solver",
