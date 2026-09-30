@@ -16,7 +16,10 @@ load(
 _builder = with_cfg(cc_library)
 _builder.extend(
     "copt",
-    ["-fvisibility=hidden"] + LIBPNG_COPTS,
+    [
+        "-w",
+        "-fvisibility=hidden"
+    ] + LIBPNG_COPTS,
 )
 _builder.extend("features", ["-supports_dynamic_linker"])
 _LABEL_FLAGS = LIBPNG_LABEL_FLAGS

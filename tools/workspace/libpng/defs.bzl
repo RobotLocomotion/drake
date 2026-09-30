@@ -1,8 +1,7 @@
-# Transition definitions for libpng. Thes are loaded in
+# Transition definitions for libpng. These are loaded in
 # //tools/skylark:cc_hidden.
 
 LIBPNG_COPTS = [
-   "-w",
     # Turn off <config.h> guessing. It should be implicitly off by default,
     # but it would be a disaster if the default somehow didn't work.
     "-DPNG_NO_CONFIG_H=1",
