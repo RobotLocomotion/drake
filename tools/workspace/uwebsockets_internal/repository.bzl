@@ -10,8 +10,8 @@ def uwebsockets_internal_repository(
         # of this cohort should be updated at the same time.
         repository = "uNetworking/uWebSockets",
         upgrade_type = "release",
-        commit = "v20.79.0",
-        sha256 = "d255491a19c26b3f1593c686d4c07d7d2cebe1ba68d42caad87c068cfed0bf84",  # noqa
+        commit = "v20.80.0",
+        sha256 = "561d382837f4b78da7e4fccb218f037f6fc0b4859fceff00fe7ce052e0bcb218",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/max_fallback_size.patch",
