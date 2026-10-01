@@ -96,7 +96,7 @@ bazel_dep(name = "nanobind", version = "3.1.0", repo_name = "module_nanobind")
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2", repo_name = "module_nlohmann_json")
 bazel_dep(name = "robin-map", version = "1.4.1", repo_name = "module_robin_map")
 bazel_dep(name = "suitesparse", version = "7.12.3", repo_name = "module_suitesparse")
-bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
+bazel_dep(name = "zlib", version = "1.3.2.bcr.1", repo_name = "module_zlib")
 
 # Add additional modules we use at build-time (not runtime dependencies).
 
