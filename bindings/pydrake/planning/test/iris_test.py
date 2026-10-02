@@ -338,4 +338,3 @@ class TestInlineProgKeepAlive(unittest.TestCase):
         self.assertIsNotNone(
             options.sampled_iris_options.prog_with_additional_constraints
         )
-
