@@ -771,14 +771,15 @@ TEST_F(MujocoParserTest, MeshFileReferencePose) {
     <geom name="box_geom" type="mesh" mesh="box"/>
   </worldbody>
 </mujoco>
-)""", box_obj_);
+)""",
+                                      box_obj_);
 
   AddModelFromString(xml, "test");
   const auto& inspector = scene_graph_->model_inspector();
   const GeometryId geom_id = inspector.GetGeometryIdByName(
       inspector.world_frame_id(), Role::kProximity, "box_geom");
-  const RigidTransformd expected(
-      Eigen::Quaternion<double>(0, 1, 0, 0), Vector3d(-1, 2, 3));
+  const RigidTransformd expected(Eigen::Quaternion<double>(0, 1, 0, 0),
+                                 Vector3d(-1, 2, 3));
   EXPECT_TRUE(
       inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(expected, 1e-14));
 }
