@@ -913,12 +913,103 @@ bool AddJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   return true;
 }
 
-// Helper method to parse a custom drake:mimic tag.
+// Helper method to add a coupler constraint from a mimic specification.
+// Reports diagnostics against `mimic_node` using `mimic_tag` in messages
+// (e.g., "mimic" or "drake:mimic"). The coupler models
+// q_follower = gear_ratio * q_leader + offset.
+bool AddMimicCouplerConstraint(
+    const SDFormatDiagnostic& diagnostic, sdf::ElementPtr mimic_node,
+    const std::string& mimic_tag, const sdf::Joint& joint_spec,
+    const std::string& joint_to_mimic, double gear_ratio, double offset,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+  if (!plant->HasJointNamed(joint_to_mimic, model_instance)) {
+    diagnostic.Error(
+        mimic_node,
+        fmt::format("Joint '{}' {} element specifies joint '{}' which"
+                    " does not exist.",
+                    joint_spec.Name(), mimic_tag, joint_to_mimic));
+    return false;
+  }
+
+  if (joint_to_mimic == joint_spec.Name()) {
+    diagnostic.Error(mimic_node,
+                     fmt::format("Joint '{}' {} element specifies "
+                                 "joint '{}'. Joints cannot mimic themselves.",
+                                 joint_spec.Name(), mimic_tag, joint_to_mimic));
+    return false;
+  }
+
+  const Joint<double>& joint0 =
+      plant->GetJointByName(joint_spec.Name(), model_instance);
+  const Joint<double>& joint1 =
+      plant->GetJointByName(joint_to_mimic, model_instance);
+
+  if (joint0.num_velocities() != 1 || joint1.num_velocities() != 1) {
+    // Drake's coupler constraint only supports single-dof joints. Official
+    // SDFormat mimic allows multi-dof axes, but we warn and ignore them here.
+    // For drake:mimic (URDF-analog), multi-dof was never clearly specified.
+    diagnostic.Warning(
+        mimic_node,
+        fmt::format("Drake only supports the {} element for "
+                    "single-dof joints. The joint '{}' (with {} "
+                    "dofs) is attempting to mimic joint '{}' (with "
+                    "{} dofs). The {} element will be ignored.",
+                    mimic_tag, joint0.name(), joint0.num_velocities(),
+                    joint_to_mimic, joint1.num_velocities(), mimic_tag));
+  } else {
+    plant->AddCouplerConstraint(joint0, joint1, gear_ratio, offset);
+  }
+
+  return true;
+}
+
+// Helper method to parse SDFormat //joint/axis/mimic, //joint/axis2/mimic,
+// and the custom //joint/drake:mimic tag into coupler constraints.
 bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
                    const sdf::Joint& joint_spec,
                    ModelInstanceIndex model_instance,
                    MultibodyPlant<double>* plant) {
-  if (!joint_spec.Element()->HasElement("drake:mimic")) return true;
+  const bool has_drake_mimic = joint_spec.Element()->HasElement("drake:mimic");
+
+  // Collect official SDFormat 1.11+ mimic constraints from axis and axis2.
+  struct OfficialMimic {
+    sdf::ElementPtr node;
+    sdf::MimicConstraint constraint;
+  };
+  std::vector<OfficialMimic> official_mimics;
+  for (int axis_index = 0; axis_index < 2; ++axis_index) {
+    const sdf::JointAxis* axis = joint_spec.Axis(axis_index);
+    if (axis == nullptr) continue;
+    const std::optional<sdf::MimicConstraint> mimic = axis->Mimic();
+    if (!mimic.has_value()) continue;
+    DRAKE_DEMAND(axis->Element() != nullptr);
+    DRAKE_DEMAND(axis->Element()->HasElement("mimic"));
+    official_mimics.push_back({axis->Element()->GetElement("mimic"), *mimic});
+  }
+
+  if (!has_drake_mimic && official_mimics.empty()) {
+    return true;
+  }
+
+  // Official SDFormat mimic:
+  //   follower = multiplier * (leader - reference) + offset
+  // which matches Drake's coupler
+  //   q0 = gear_ratio * q1 + Δq
+  // when gear_ratio = multiplier and Δq = offset - multiplier * reference.
+  for (const OfficialMimic& item : official_mimics) {
+    const double multiplier = item.constraint.Multiplier();
+    const double offset =
+        item.constraint.Offset() - multiplier * item.constraint.Reference();
+    if (!AddMimicCouplerConstraint(diagnostic, item.node, "mimic", joint_spec,
+                                   item.constraint.Joint(), multiplier, offset,
+                                   model_instance, plant)) {
+      return false;
+    }
+  }
+
+  if (!has_drake_mimic) {
+    return true;
+  }
 
   sdf::ElementPtr mimic_node = joint_spec.Element()->GetElement("drake:mimic");
 
@@ -931,23 +1022,6 @@ bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
   }
 
   const std::string joint_to_mimic = mimic_node->Get<std::string>("joint");
-
-  if (!plant->HasJointNamed(joint_to_mimic, model_instance)) {
-    diagnostic.Error(
-        mimic_node,
-        fmt::format("Joint '{}' drake:mimic element specifies joint '{}' which"
-                    " does not exist.",
-                    joint_spec.Name(), joint_to_mimic));
-    return false;
-  }
-
-  if (joint_to_mimic == joint_spec.Name()) {
-    diagnostic.Error(mimic_node,
-                     fmt::format("Joint '{}' drake:mimic element specifies "
-                                 "joint '{}'. Joints cannot mimic themselves.",
-                                 joint_spec.Name(), joint_to_mimic));
-    return false;
-  }
 
   if (!mimic_node->HasAttribute("multiplier")) {
     diagnostic.Error(
@@ -967,29 +1041,9 @@ bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
 
   const double gear_ratio = mimic_node->Get<double>("multiplier");
   const double offset = mimic_node->Get<double>("offset");
-
-  const Joint<double>& joint0 =
-      plant->GetJointByName(joint_spec.Name(), model_instance);
-  const Joint<double>& joint1 =
-      plant->GetJointByName(joint_to_mimic, model_instance);
-
-  if (joint0.num_velocities() != 1 || joint1.num_velocities() != 1) {
-    // The URDF documentation is ambiguous as to whether multi-dof joints
-    // are supported by the mimic tag (which the drake:mimic tag is analogous
-    // to). So we only raise a warning, not an error.
-    diagnostic.Warning(
-        mimic_node,
-        fmt::format("Drake only supports the drake:mimic element for "
-                    "single-dof joints. The joint '{}' (with {} "
-                    "dofs) is attempting to mimic joint '{}' (with "
-                    "{} dofs). The drake:mimic element will be ignored.",
-                    joint0.name(), joint0.num_velocities(), joint_to_mimic,
-                    joint1.num_velocities()));
-  } else {
-    plant->AddCouplerConstraint(joint0, joint1, gear_ratio, offset);
-  }
-
-  return true;
+  return AddMimicCouplerConstraint(diagnostic, mimic_node, "drake:mimic",
+                                   joint_spec, joint_to_mimic, gear_ratio,
+                                   offset, model_instance, plant);
 }
 
 // Helper method to load an SDF file and read the contents into an sdf::Root
@@ -2509,7 +2563,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     }
   }
 
-  // Parse drake:mimic elements only after all joints have been added.
+  // Parse mimic elements only after all joints have been added.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
@@ -3237,7 +3291,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       }
     }
 
-    // Parse drake:mimic elements only after all joints have been added.
+    // Parse mimic elements only after all joints have been added.
     for (uint64_t joint_index = 0; joint_index < world.JointCount();
          ++joint_index) {
       // Get a pointer to the SDF joint, and the joint axis information.
