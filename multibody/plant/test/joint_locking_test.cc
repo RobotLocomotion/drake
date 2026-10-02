@@ -707,6 +707,40 @@ INSTANTIATE_TEST_SUITE_P(
     JointLockingTests, FilteredContactResultsTest,
     testing::ValuesIn(MakeFilteredContactResultsTestCases()),
     testing::PrintToStringParamName());
+
+// Locking a free body in contact with world geometry must not crash (#24773).
+GTEST_TEST(JointLockingTest, WorldContactDoesNotCrash) {
+  systems::DiagramBuilder<double> builder;
+  auto items = AddMultibodyPlantSceneGraph(&builder, kTimestep);
+  MultibodyPlant<double>& plant = items.plant;
+
+  plant.RegisterCollisionGeometry(plant.world_body(), RigidTransformd{},
+                                  geometry::HalfSpace(), "ground",
+                                  geometry::ProximityProperties());
+  const RigidBody<double>& ball = plant.AddRigidBody(
+      "ball", SpatialInertia<double>::SolidSphereWithMass(1.0, 0.5));
+  plant.RegisterCollisionGeometry(ball, RigidTransformd{},
+                                  geometry::Sphere(0.5), "ball",
+                                  geometry::ProximityProperties());
+  plant.Finalize();
+
+  auto diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+
+  plant.SetFreeBodyPose(&plant_context, ball,
+                        RigidTransformd(Vector3d(0, 0, 0.49)));
+  for (JointIndex i : plant.GetJointIndices()) {
+    const Joint<double>& joint = plant.get_joint(i);
+    if (joint.num_velocities() == 6) {
+      joint.Lock(&plant_context);
+    }
+  }
+
+  EXPECT_NO_THROW(simulator.AdvanceTo(kTimestep));
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
