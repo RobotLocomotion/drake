@@ -804,9 +804,11 @@ public API.
 
 Identifiers may be formatted with ``fmt`` (e.g., ``fmt∷format``,
 `fmt∷to_string`). The default format (``{}``) prints the underlying
-integer. The ``{:r:}`` (repr) format prints a typed representation
-that includes the identifier type name, e.g., ``FooId(1)``. Further
-specs after ``r:`` are applied to that string (e.g., ``{:r:>10}``).
+integer (and throws in Debug builds if the identifier is invalid).
+The ``{:r:}`` (repr) format prints a typed representation that
+includes the identifier type name, e.g., ``<FooId(1)>``, or
+``<invalid FooId>`` when invalid. Further specs after ``r:`` are
+applied to that string (e.g., ``{:r:>10}``).
 
 See also:
     TypeSafeIndex
@@ -2357,9 +2359,11 @@ TODO(#15354) We hope to fix this irregularity in the future.
 
 Indices may be formatted with ``fmt`` (e.g., ``fmt∷format``,
 `fmt∷to_string`). The default format (``{}``) prints the underlying
-integer. The ``{:r:}`` (repr) format prints a typed representation
-that includes the index type name, e.g., ``FooIndex(0)``. Further
-specs after ``r:`` are applied to that string (e.g., ``{:r:>10}``).
+integer (and throws in Debug builds if the index is invalid). The
+``{:r:}`` (repr) format prints a typed representation that includes
+the index type name, e.g., ``FooIndex(0)``, or ``<invalid FooIndex>``
+when invalid. Further specs after ``r:`` are applied to that string
+(e.g., ``{:r:>10}``).
 
 See also:
     drake∷geometry∷Identifier

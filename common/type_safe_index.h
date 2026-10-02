@@ -149,9 +149,11 @@ namespace internal {
 ///
 /// Indices may be formatted with `fmt` (e.g., `fmt::format`,
 /// `fmt::to_string`). The default format (`{}`) prints the underlying
-/// integer. The `{:r:}` (repr) format prints a typed representation that
-/// includes the index type name, e.g., `FooIndex(0)`. Further specs after
-/// `r:` are applied to that string (e.g., `{:r:>10}`).
+/// integer (and throws in Debug builds if the index is invalid). The
+/// `{:r:}` (repr) format prints a typed representation that includes the
+/// index type name, e.g., `FooIndex(0)`, or `<invalid FooIndex>` when
+/// invalid. Further specs after `r:` are applied to that string (e.g.,
+/// `{:r:>10}`).
 ///
 /// @sa drake::geometry::Identifier
 ///
@@ -589,31 +591,17 @@ struct hash<drake::TypeSafeIndex<Tag>> : public drake::DefaultHash {};
 }  // namespace std
 
 // Provide fmt support where "{}" is the underlying integer and "{:r:}" is a
-// typed representation such as "FooIndex(0)". After the "r:" prefix, any
-// remaining format spec is applied to that representation string (e.g.,
-// "{:r:>10}").
+// typed representation such as "FooIndex(0)" (or "<invalid FooIndex>"). After
+// the "r:" prefix, any remaining format spec is applied to that representation
+// string (e.g., "{:r:>10}"). Specifiers that do not start with "r:" are
+// forwarded to fmt unchanged (so "{:r>8}" remains a valid integer fill).
 namespace fmt {
 template <typename Tag>
 struct formatter<drake::TypeSafeIndex<Tag>> {
   template <typename FormatParseContext>
   constexpr auto parse(FormatParseContext& ctx) {
-    auto it = ctx.begin();
-    if (it != ctx.end() && *it != '}') {
-      if (*it == 'r') {
-        ++it;
-        if (it == ctx.end() || *it != ':') {
-          throw format_error(
-              "Invalid format specifier for TypeSafeIndex; use {} or {:r:}.");
-        }
-        ++it;
-        repr = true;
-        ctx.advance_to(it);
-        return repr_formatter.parse(ctx);
-      }
-      throw format_error(
-          "Invalid format specifier for TypeSafeIndex; use {} or {:r:}.");
-    }
-    return it;
+    repr = drake::internal::ConsumeReprFormatPrefix(ctx);
+    return string_formatter.parse(ctx);
   }
 
   template <typename FormatContext>
@@ -621,18 +609,18 @@ struct formatter<drake::TypeSafeIndex<Tag>> {
               // NOLINTNEXTLINE(runtime/references) To match fmt API.
               FormatContext& ctx) const {
     if (repr) {
-      const auto text = fmt::format(
-          "{}({})",
-          drake::NiceTypeName::RemoveNamespaces(
-              drake::NiceTypeName::Get<drake::TypeSafeIndex<Tag>>()),
-          int{index});
-      return repr_formatter.format(text, ctx);
+      const auto type_name = drake::NiceTypeName::RemoveNamespaces(
+          drake::NiceTypeName::Get<drake::TypeSafeIndex<Tag>>());
+      const auto text =
+          index.is_valid() ? fmt::format("{}({})", type_name, int{index})
+                           : fmt::format("<invalid {}>", type_name);
+      return string_formatter.format(text, ctx);
     }
-    return fmt::format_to(ctx.out(), "{}", int{index});
+    return string_formatter.format(fmt::to_string(int{index}), ctx);
   }
 
  private:
   bool repr{false};
-  formatter<std::string_view> repr_formatter;
+  formatter<std::string_view> string_formatter;
 };
 }  // namespace fmt

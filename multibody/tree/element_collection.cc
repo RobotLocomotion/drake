@@ -130,14 +130,10 @@ template <typename T, template <typename> class Element, typename Index>
 void ElementCollection<T, Element, Index>::ThrowInvalidIndexException(
     Index index) const {
   if (!index.is_valid()) {
-    // Invalid indices cannot be formatted with {:r:} (value conversion
-    // asserts), so render the type name alone.
-    const std::string index_type =
-        NiceTypeName::RemoveNamespaces(NiceTypeName::Get<Index>());
     throw std::logic_error(fmt::format(
-        "The given default-constructed {}() cannot be used. You must "
+        "The given default-constructed {:r:} cannot be used. You must "
         "pass a valid integer as the index.",
-        index_type));
+        index));
   }
   if (index >= next_index()) {
     throw std::logic_error(

@@ -356,9 +356,9 @@ GTEST_TEST(TypeSafeIndex, ToStringFmtFormatterRepr) {
   EXPECT_EQ(fmt::format("The given {:r:} is out of bounds", index),
             "The given FooIndex(87) is out of bounds");
   EXPECT_EQ(fmt::format("{:r:>13}", index), " FooIndex(87)");
+  EXPECT_EQ(fmt::format("{:r>8}", index), "rrrrrr87");
 
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(fmt::format("{:r:}", FooIndex{}),
-                                       "Converting to an int.+");
+  EXPECT_EQ(fmt::format("{:r:}", FooIndex{}), "<invalid FooIndex>");
 }
 
 // Verifies that it is not possible to convert between two different
