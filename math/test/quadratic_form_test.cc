@@ -1,5 +1,6 @@
 #include "drake/math/quadratic_form.h"
 
+#include <limits>
 #include <optional>
 #include <string>
 
@@ -159,6 +160,20 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, negative_tol) {
   EXPECT_THROW(DecomposePSDmatrixIntoXtransposeTimesX(
                    Eigen::Matrix3d::Identity(), -1E-10),
                std::runtime_error);
+}
+
+GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, eigenSolverFailure) {
+  // Non-finite input makes both LLT and SelfAdjointEigenSolver fail.
+  const Eigen::MatrixXd Y =
+      Eigen::MatrixXd::Constant(2, 2, std::numeric_limits<double>::quiet_NaN());
+  Eigen::MatrixXd X;
+  const std::optional<std::string> error =
+      MaybeDecomposePSDmatrixIntoXtransposeTimesX(Y, kDefaultZeroTol, &X);
+  ASSERT_TRUE(error.has_value());
+  EXPECT_EQ(*error, "Both LLT and SelfAdjointEigenSolver failed.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DecomposePSDmatrixIntoXtransposeTimesX(Y, kDefaultZeroTol),
+      "Both LLT and SelfAdjointEigenSolver failed.");
 }
 
 void CheckDecomposePositiveQuadraticForm(

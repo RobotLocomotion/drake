@@ -26,7 +26,7 @@ std::optional<std::string> MaybeDecomposePSDmatrixIntoXtransposeTimesX(
     *X = llt_Y.matrixU();
     return std::nullopt;
   }
-  // TODO(hongkai.dai) Switch to use robust Choleskly decomposition instead
+  // TODO(hongkai.dai) Switch to use robust Cholesky decomposition instead
   // of Eigen value decomposition, when the bug in
   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479 is fixed.
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es_Y(Y);
@@ -47,7 +47,7 @@ std::optional<std::string> MaybeDecomposePSDmatrixIntoXtransposeTimesX(
     *X = X_full.topRows(X_row_count);
     return std::nullopt;
   }
-  return std::string{"Y is not PSD."};
+  return std::string{"Both LLT and SelfAdjointEigenSolver failed."};
 }
 
 Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
