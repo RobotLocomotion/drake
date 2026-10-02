@@ -199,12 +199,16 @@ GTEST_TEST(PassThroughRequiredInputTest, AbstractRequired) {
 
 GTEST_TEST(PassThroughRequiredInputTest, ScalarConversionPreservesFlag) {
   PassThrough<double> dut(2, true);
-  EXPECT_TRUE(is_autodiffxd_convertible(dut, [](const auto& converted) {
-    EXPECT_TRUE(converted.input_required());
-  }));
-  EXPECT_TRUE(is_symbolic_convertible(dut, [](const auto& converted) {
-    EXPECT_TRUE(converted.input_required());
-  }));
+  const ::testing::AssertionResult autodiff_result =
+      is_autodiffxd_convertible(dut, [](const auto& converted) {
+        EXPECT_TRUE(converted.input_required());
+      });
+  EXPECT_TRUE(autodiff_result);
+  const ::testing::AssertionResult symbolic_result =
+      is_symbolic_convertible(dut, [](const auto& converted) {
+        EXPECT_TRUE(converted.input_required());
+      });
+  EXPECT_TRUE(symbolic_result);
 }
 
 }  // namespace
