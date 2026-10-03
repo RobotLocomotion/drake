@@ -449,6 +449,7 @@ PYI_FILES = [
     "pydrake/multibody/tree.pyi",
     "pydrake/perception.pyi",
     "pydrake/planning/__init__.pyi",
+    "pydrake/planning/continuous_collision.pyi",
     "pydrake/planning/experimental.pyi",
     "pydrake/polynomial.pyi",
     "pydrake/solvers.pyi",

@@ -50,6 +50,7 @@ _SUBDIRS = [
     "multibody/tree",
     "perception",
     "planning",
+    "planning/continuous_collision",
     "planning/experimental",
     "planning/graph_algorithms",
     "planning/iris",
