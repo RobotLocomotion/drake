@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_properties.h"
 
 #include <array>
+#include <cmath>
 #include <string>
 
 namespace drake {
@@ -79,6 +80,81 @@ std::string_view to_string(const HydroelasticType& type) {
   return EnumToChars(type);
 }
 
+std::optional<std::string> ReportIfInvalidHydroelasticModulus(
+    double hydroelastic_modulus) {
+  if (!(hydroelastic_modulus > 0)) {
+    return fmt::format("The hydroelastic modulus must be positive; given {}",
+                       hydroelastic_modulus);
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> ReportIfInvalidResolutionHint(
+    double resolution_hint) {
+  if (!(std::isfinite(resolution_hint) && resolution_hint > 0)) {
+    return fmt::format(
+        "The resolution_hint must be positive and finite; given {}",
+        resolution_hint);
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> ReportIfInvalidSlabThickness(double slab_thickness) {
+  if (!(std::isfinite(slab_thickness) && slab_thickness > 0)) {
+    return fmt::format(
+        "The slab_thickness must be positive and finite; given {}",
+        slab_thickness);
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> ReportIfInvalidMargin(double margin) {
+  if (!(std::isfinite(margin) && margin >= 0)) {
+    return fmt::format("The margin must be non-negative and finite; given {}",
+                       margin);
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> ReportIfInvalidHuntCrossleyDissipation(
+    double dissipation) {
+  if (!(dissipation >= 0)) {
+    return fmt::format("The dissipation must be non-negative; given {}",
+                       dissipation);
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> ReportIfInvalidRelaxationTime(
+    double relaxation_time) {
+  if (!(std::isfinite(relaxation_time) && relaxation_time >= 0)) {
+    return fmt::format(
+        "The relaxation_time must be non-negative and finite; given {}",
+        relaxation_time);
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> ReportIfInvalidPointStiffness(
+    double point_stiffness) {
+  if (!(point_stiffness > 0)) {
+    return fmt::format(
+        "The point_stiffness must be strictly positive; given {}",
+        point_stiffness);
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> ReportIfInvalidFrictionCoefficient(
+    double friction_coefficient) {
+  if (!(friction_coefficient >= 0)) {
+    return fmt::format(
+        "The friction coefficient must be non-negative; given {}",
+        friction_coefficient);
+  }
+  return std::nullopt;
+}
+
 }  // namespace internal
 
 void AddContactMaterial(
@@ -87,19 +163,18 @@ void AddContactMaterial(
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
   if (dissipation.has_value()) {
-    if (*dissipation < 0) {
-      throw std::logic_error(fmt::format(
-          "The dissipation can't be negative; given {}", *dissipation));
+    if (auto error =
+            internal::ReportIfInvalidHuntCrossleyDissipation(*dissipation)) {
+      throw std::logic_error(*error);
     }
     properties->AddProperty(internal::kMaterialGroup, internal::kHcDissipation,
                             *dissipation);
   }
 
   if (point_stiffness.has_value()) {
-    if (*point_stiffness <= 0) {
-      throw std::logic_error(fmt::format(
-          "The point_contact_stiffness must be strictly positive; given {}",
-          *point_stiffness));
+    if (auto error =
+            internal::ReportIfInvalidPointStiffness(*point_stiffness)) {
+      throw std::logic_error(*error);
     }
     properties->AddProperty(internal::kMaterialGroup, internal::kPointStiffness,
                             *point_stiffness);
@@ -117,6 +192,9 @@ void AddContactMaterial(
 void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  if (auto error = internal::ReportIfInvalidResolutionHint(resolution_hint)) {
+    throw std::logic_error(*error);
+  }
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
   AddRigidHydroelasticProperties(properties);
@@ -138,10 +216,9 @@ void AddCompliantHydroelasticProperties(double hydroelastic_modulus,
   // The bare minimum of defining a compliant geometry is to declare its
   // compliance type. Downstream consumers (ProximityEngine) will determine
   // if this is sufficient.
-  if (hydroelastic_modulus <= 0) {
-    throw std::logic_error(
-        fmt::format("The hydroelastic modulus must be positive; given {}",
-                    hydroelastic_modulus));
+  if (auto error =
+          internal::ReportIfInvalidHydroelasticModulus(hydroelastic_modulus)) {
+    throw std::logic_error(*error);
   }
   properties->AddProperty(internal::kHydroGroup, internal::kElastic,
                           hydroelastic_modulus);
@@ -154,6 +231,9 @@ void AddCompliantHydroelasticProperties(double resolution_hint,
                                         double hydroelastic_modulus,
                                         ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  if (auto error = internal::ReportIfInvalidResolutionHint(resolution_hint)) {
+    throw std::logic_error(*error);
+  }
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
   AddCompliantHydroelasticProperties(hydroelastic_modulus, properties);
@@ -163,6 +243,9 @@ void AddCompliantHydroelasticPropertiesForHalfSpace(
     double slab_thickness, double hydroelastic_modulus,
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
+  if (auto error = internal::ReportIfInvalidSlabThickness(slab_thickness)) {
+    throw std::logic_error(*error);
+  }
   properties->AddProperty(internal::kHydroGroup, internal::kSlabThickness,
                           slab_thickness);
   AddCompliantHydroelasticProperties(hydroelastic_modulus, properties);
