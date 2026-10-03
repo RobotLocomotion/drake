@@ -1,0 +1,46 @@
+initial_properties:
+- path: "/Background/<object>"
+  property: "top_color"
+  value: [0.25, 0.25, 0.25]
+- path: "/Background/<object>"
+  property: "bottom_color"
+  value: [0.28, 0.28, 0.28]
+- path: "/Lights/PointLightNegativeX/<object>"
+  property: "intensity"
+  value: 50.0
+- path: "/Lights/PointLightNegativeX/<object>"
+  property: "castShadow"
+  value: True
+- path: "/Lights/PointLightNegativeX/<object>"
+  property: "shadow.radius"
+  value: 1.15
+- path: "/Lights/PointLightNegativeX/<object>"
+  property: "distance"
+  value: 10.0
+- path: "/Lights/PointLightPositiveX/<object>"
+  property: "intensity"
+  value: 6.0
+- path: "/Lights/PointLightPositiveX/<object>"
+  property: "castShadow"
+  value: True
+- path: "/Lights/PointLightPositiveX/<object>"
+  property: "shadow.radius"
+  value: 1.25
+- path: "/Lights/PointLightPositiveX/<object>"
+  property: "distance"
+  value: 20.0
+- path: "/Lights/AmbientLight/<object>"
+  property: "intensity"
+  value: 0.4
+- path: "/Lights/FillLight/<object>"
+  property: "intensity"
+  value: 0.5
+- path: "/Lights/FillLight/<object>"
+  property: "castShadow"
+  value: True
+- path: "/Lights/FillLight/<object>"
+  property: "shadow.radius"
+  value: 1.0
+- path: "/Grid"
+  property: "visible"
+  value: False
