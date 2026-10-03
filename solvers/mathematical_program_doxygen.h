@@ -120,6 +120,14 @@
  *    <td></td>
  *    <td></td>
  * </tr>
+ * <tr><td><a href="https://github.com/darnstrom/daqp">
+ *    DAQP</a></td>
+ *    <td></td>
+ *    <td align="center">§</td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ * </tr>
  * <tr><td><a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
  *    SNOPT</a> † ‡</td>
  *     <td align="center">▢</td>
@@ -165,6 +173,10 @@
  * △ These solvers are not accurate. They implement ADMM algorithm, which
  * converges quickly to a low-accuracy solution, and requires many iterations to
  * achieve high accuracy.
+ *
+ * § This dense active-set solver is fast and accurate on small QPs (up to a few
+ * hundred variables), but it does not exploit sparsity. It is not chosen
+ * automatically when a sparse QP solver is available; use DaqpSolver directly.
  *
  * ▢ These solvers can solve the convex problems, but are not good at it. They
  * treat the convex problems as general nonlinear optimization problems.
