@@ -6,6 +6,7 @@ load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")
 load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
 load("//tools/workspace/clarabel_cpp_internal:repository.bzl", "clarabel_cpp_internal_repository")  # noqa
 load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")
+load("//tools/workspace/coal_internal:repository.bzl", "coal_internal_repository")  # noqa
 load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository")  # noqa
 load("//tools/workspace/cpplint_internal:repository.bzl", "cpplint_internal_repository")  # noqa
@@ -83,6 +84,7 @@ def _add_internal_repositories():
     clang_cindex_python3_internal_repository(name = "clang_cindex_python3_internal", mirrors = mirrors)  # noqa
     clarabel_cpp_internal_repository(name = "clarabel_cpp_internal", mirrors = mirrors)  # noqa
     clp_internal_repository(name = "clp_internal", mirrors = mirrors)
+    coal_internal_repository(name = "coal_internal", mirrors = mirrors)
     coinutils_internal_repository(name = "coinutils_internal", mirrors = mirrors)  # noqa
     common_robotics_utilities_internal_repository(name = "common_robotics_utilities_internal", mirrors = mirrors)  # noqa
     cpplint_internal_repository(name = "cpplint_internal", mirrors = mirrors)

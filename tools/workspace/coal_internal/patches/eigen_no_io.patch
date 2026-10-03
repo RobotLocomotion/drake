@@ -1,0 +1,148 @@
+[coal] Skip the Eigen-dependent parts of Coal's debug printers
+
+Coal's disp() methods stream Eigen expressions and build Eigen::IOFormat
+objects. Eigen supports being configured with EIGEN_NO_IO, which omits
+Eigen/src/Core/IO.h entirely; under that configuration these headers do not
+compile, so no consumer who sets EIGEN_NO_IO can include collision_data.h or
+math/transform.h at all.
+
+Drake is such a consumer: it sets -DEIGEN_NO_IO=1 project-wide and formats
+Eigen objects with drake::fmt_eigen instead (see drake/common/fmt_eigen.h), so
+every Drake translation unit that includes any Coal header hits this.
+
+Reasoning for not upstreaming this patch as written: it makes the problem go
+away by dropping output. Under EIGEN_NO_IO these printers silently stop
+reporting normals, witness points, contact patch points, GJK guesses and
+transforms -- exactly the values someone reading debug output is looking for.
+That is an acceptable trade for Drake, which never calls them, but it would be
+a silent regression for any other Coal user who sets the flag, so it is not
+something we should ask upstream to take.
+
+Guidance if someone picks this up for upstream. The fix is small, because
+EIGEN_NO_IO gates only two things in Eigen/Core: the <iosfwd> include and
+src/Core/IO.h. What that removes is the definition of IOFormat (the forward
+declaration in ForwardDeclarations.h survives), WithFormat,
+operator<<(ostream&, const DenseBase&), and in practice DenseBase::format(),
+which is still declared in DenseBase.h but returns the now-incomplete
+WithFormat. Coefficient access -- rows(), cols(), coeff() -- is untouched, so
+Coal can format matrices itself:
+
+  - Add a stream wrapper, say coal::internal::eigen_str(expr), in a new
+    coal/math/eigen_io.h. Its operator<< delegates to Eigen under a normal
+    build and walks coefficients under EIGEN_NO_IO, emitting the same
+    "[a, b, c]" shape Eigen's default produces.
+
+  - Route the fifteen streamed Eigen expressions in the six affected disp()
+    methods of collision_data.h through it. No call site then needs an #ifdef.
+
+  - Transform3s::disp is the one caller that wants custom formatting, since it
+    builds its row separators out of `prefix`. Either give Coal its own
+    analogue of IOFormat so the output is byte-identical either way, or keep
+    the IOFormat path when Eigen IO is present and fall back to the generic
+    shape when it is not. The latter is one #ifdef in one function and still
+    prints the transform.
+
+That version would supersede this patch entirely.
+
+--- include/coal/collision_data.h
++++ include/coal/collision_data.h
+@@ -226,12 +226,14 @@
+        << ",\n";
+     os << prefix << "  b1: " << b1 << ",\n";
+     os << prefix << "  b2: " << b2 << ",\n";
++#ifndef EIGEN_NO_IO
+     os << prefix << "  normal: " << normal.transpose() << ",\n";
+     os << prefix << "  nearest_points[0]: " << nearest_points[0].transpose()
+        << ",\n";
+     os << prefix << "  nearest_points[1]: " << nearest_points[1].transpose()
+        << ",\n";
+     os << prefix << "  pos: " << pos.transpose() << ",\n";
++#endif  // EIGEN_NO_IO
+     os << prefix << "  penetration_depth: " << penetration_depth << ",\n";
+   }
+
+@@ -373,10 +375,12 @@
+                       ? "CachedGuess"
+                       : "BoundingVolumeGuess"))
+        << ",\n";
++#ifndef EIGEN_NO_IO
+     os << prefix << "  cached_gjk_guess: " << cached_gjk_guess.transpose()
+        << ",\n";
+     os << prefix << "  cached_support_func_guess: "
+        << cached_support_func_guess.transpose() << ",\n";
++#endif  // EIGEN_NO_IO
+     os << prefix << "  gjk_max_iterations: " << gjk_max_iterations << ",\n";
+     os << prefix << "  gjk_tolerance: " << gjk_tolerance << ",\n";
+     os << prefix << "  gjk_variant: " << static_cast<int>(gjk_variant) << ",\n";
+@@ -423,10 +427,12 @@
+   /// @brief Prints the query result to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
+     using namespace std;
++#ifndef EIGEN_NO_IO
+     os << prefix << "  cached_gjk_guess: " << cached_gjk_guess.transpose()
+        << ",\n";
+     os << prefix << "  cached_support_func_guess: "
+        << cached_support_func_guess.transpose() << ",\n";
++#endif  // EIGEN_NO_IO
+     os << prefix << "  timings: " << timings.user << ",\n";
+   }
+ };
+@@ -720,11 +726,13 @@
+     using namespace std;
+     QueryResult::disp(os, prefix);
+     os << prefix << "  distance_lower_bound: " << distance_lower_bound << ",\n";
++#ifndef EIGEN_NO_IO
+     os << prefix << "  normal: " << normal.transpose() << ",\n";
+     os << prefix << "  nearest_points[0]: " << nearest_points[0].transpose()
+        << ",\n";
+     os << prefix << "  nearest_points[1]: " << nearest_points[1].transpose()
+        << ",\n";
++#endif  // EIGEN_NO_IO
+     os << prefix << "  contacts: {" << "\n";
+     for (std::size_t i = 0; i < contacts.size(); ++i) {
+       os << prefix << "    Contact " << i << ": {" << "\n";
+@@ -986,10 +994,12 @@
+        << ",\n";
+     os << prefix << "  penetration_depth: " << penetration_depth << ",\n";
+     os << prefix << "  points: {" << "\n";
++#ifndef EIGEN_NO_IO
+     for (size_t i = 0; i < this->size(); ++i) {
+       os << prefix << "    Point " << i << ": " << this->getPoint(i).transpose()
+          << ",\n";
+     }
++#endif  // EIGEN_NO_IO
+     os << prefix << "  }\n";
+   }
+
+@@ -1665,11 +1675,13 @@
+     os << prefix << "  b1: " << b1 << ",\n";
+     os << prefix << "  b2: " << b2 << ",\n";
+     os << prefix << "  min_distance: " << min_distance << ",\n";
++#ifndef EIGEN_NO_IO
+     os << prefix << "  normal: " << normal.transpose() << ",\n";
+     os << prefix << "  nearest_points[0]: " << nearest_points[0].transpose()
+        << ",\n";
+     os << prefix << "  nearest_points[1]: " << nearest_points[1].transpose()
+        << ",\n";
++#endif  // EIGEN_NO_IO
+   }
+
+   /// \copydoc disp
+--- include/coal/math/transform.h
++++ include/coal/math/transform.h
+@@ -222,6 +222,7 @@
+
+   /// @brief Prints the transform to the provided output stream.
+   void disp(std::ostream& os, const std::string& prefix = "") const {
++#ifndef EIGEN_NO_IO
+     using namespace std;
+     // formatting for matrix
+     const Eigen::IOFormat mfmt =
+@@ -237,6 +238,7 @@
+                         ", ", "", "", "[", "]");
+     os << prefix << "  Rotation:\n" << R.format(mfmt) << ",\n";
+     os << prefix << "  Translation: " << T.format(vfmt) << ",\n";
++#endif  // EIGEN_NO_IO
+   }
+
+   /// \copydoc disp

@@ -328,6 +328,7 @@ use_repo(
     "ccd_internal",
     "clarabel_cpp_internal",
     "clp_internal",
+    "coal_internal",
     "coinutils_internal",
     "common_robotics_utilities_internal",
     "csdp_internal",
