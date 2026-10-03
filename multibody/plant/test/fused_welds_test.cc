@@ -6,6 +6,7 @@ SetFuseWeldedLinks() is enabled. */
 
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -14,8 +15,10 @@ SetFuseWeldedLinks() is enabled. */
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/rotational_inertia.h"
@@ -27,6 +30,8 @@ namespace drake {
 namespace multibody {
 namespace {
 
+using geometry::FramePoseVector;
+using geometry::SceneGraph;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using systems::Context;
@@ -34,10 +39,20 @@ using systems::Context;
 // Tolerance for numerical comparisons.
 constexpr double kTolerance = 32 * std::numeric_limits<double>::epsilon();
 
+// The fixed orientation of Link3 in Link2 in the test model below.
+const RotationMatrixd kR_23 = RotationMatrixd::MakeXRotation(M_PI / 3);
+
+// The fixed pose of Frame3 in Link3 in the test model below.
+const RigidTransformd kX_3F(RotationMatrixd::MakeYRotation(M_PI / 5),
+                            Vector3<double>(0.1, 0.2, 0.3));
+
 // Holds one version of the test model, either a model with unfused welds
 // or a model with welded links fused onto a mobilized body (fused mobod)
-// along with its context, ready for kinematics queries.
+// along with its context, ready for kinematics queries. The plant is
+// registered as a geometry source for scene_graph so that its geometry pose
+// output port is available.
 struct TestModel {
+  std::unique_ptr<SceneGraph<double>> scene_graph;  // Must outlive the plant.
   std::unique_ptr<MultibodyPlant<double>> plant;
   std::unique_ptr<Context<double>> context;
   const RevoluteJoint<double>* revolute{};
@@ -45,6 +60,7 @@ struct TestModel {
   const RigidBody<double>* link2{};
   const RigidBody<double>* link3{};
   const RigidBody<double>* link4{};
+  const Frame<double>* frame3{};  // Fixed to Link3 at pose kX_3F.
 };
 
 /* Builds a test model with the topology:
@@ -61,8 +77,15 @@ struct TestModel {
       World --[weld]--> Link4
 
 Link2 is offset +1 m in x from Link1's frame.
-Link3 is offset +1 m in y from Link2's frame.
+Link3 is offset +1 m in y from Link2's frame and rotated 60° about Link2's x
+axis (R₂₃), so that Link3's orientation differs from that of its fused mobod.
 Link4 is offset +4 m in x from World frame.
+Frame3 is a fixed offset frame on Link3, with a rotation of its own.
+
+The orientations of the links in World are:
+  Link1, Link2: Rz(θ)
+  Link3:        Rz(θ) R₂₃
+  Link4:        identity
 
 The positions of the link origins from World origin Wo, expressed in World are:
   Link1: (0, 0, 0)
@@ -76,7 +99,9 @@ With fuse_welded_links = true two mobilized bodies are created,
 (World with link4 and one fused mobilized body with Link1, Link2, Link3). */
 TestModel MakeModel(bool fuse_welded_links) {
   TestModel m;
+  m.scene_graph = std::make_unique<SceneGraph<double>>();
   m.plant = std::make_unique<MultibodyPlant<double>>(0.0 /* continuous */);
+  m.plant->RegisterAsSourceForSceneGraph(m.scene_graph.get());
   m.plant->SetFuseWeldedLinks(fuse_welded_links);
 
   // To facilitate an analytical solution, each link has a trivial inertia,
@@ -107,7 +132,10 @@ TestModel MakeModel(bool fuse_welded_links) {
 
   // Weld Link3 to Link2, with Link3's joint frame offset +1 m in y from Link2.
   // Using y (not x) avoids a linear layout that could mask transform bugs.
-  const RigidTransformd X_2to3(Vector3<double>(0.0, 1.0, 0.0));
+  // Link3 is also rotated (about an axis other than the revolute's z axis) so
+  // that code using a fused mobod's orientation in place of a follower link's
+  // orientation gives wrong answers.
+  const RigidTransformd X_2to3(kR_23, Vector3<double>(0.0, 1.0, 0.0));
   m.plant->AddJoint<WeldJoint>("weld23", *m.link2, X_2to3, *m.link3,
                                RigidTransformd{}, RigidTransformd{});
 
@@ -115,6 +143,8 @@ TestModel MakeModel(bool fuse_welded_links) {
   const RigidTransformd X_Wto4(Vector3<double>(4.0, 0.0, 0.0));
   m.plant->AddJoint<WeldJoint>("weldW4", m.plant->world_body(), X_Wto4,
                                *m.link4, RigidTransformd{}, RigidTransformd{});
+  m.frame3 = &m.plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+      "Frame3", m.link3->body_frame(), kX_3F));
   m.plant->Finalize();
   m.context = m.plant->CreateDefaultContext();
 
@@ -258,10 +288,10 @@ GTEST_TEST(CompositeTest, ZeroConfigurationPoses) {
     EXPECT_TRUE(X_WL2.IsNearlyEqualTo(
         RigidTransformd(Vector3<double>(1.0, 0.0, 0.0)), kTolerance));
 
-    // Verify Link3's position in World is (1, 1, 0), no rotation.
+    // Verify Link3's position in World is (1, 1, 0), rotated by R₂₃.
     const RigidTransformd& X_WL3 = m.link3->EvalPoseInWorld(*m.context);
     EXPECT_TRUE(X_WL3.IsNearlyEqualTo(
-        RigidTransformd(Vector3<double>(1.0, 1.0, 0.0)), kTolerance));
+        RigidTransformd(kR_23, Vector3<double>(1.0, 1.0, 0.0)), kTolerance));
 
     // Verify Link4's position in World is (4, 0, 0), no rotation.
     const RigidTransformd& X_WL4 = m.link4->EvalPoseInWorld(*m.context);
@@ -277,7 +307,7 @@ GTEST_TEST(CompositeTest, NinetyDegreePoses) {
     const TestModel m = MakeModel(fuse);
     SetState(m, M_PI / 2, 0.0);
 
-    // Link2 and Link3 share Link1's 90° z-rotation.
+    // Link2 shares Link1's 90° z-rotation; Link3 is further rotated by R₂₃.
     const math::RotationMatrixd R_W90z =
         math::RotationMatrixd::MakeZRotation(M_PI / 2);
 
@@ -298,12 +328,100 @@ GTEST_TEST(CompositeTest, NinetyDegreePoses) {
     // y-axis points in World -x, so Link3 is at (0,1,0) + (-1,0,0) = (-1,1,0).
     const RigidTransformd& X_WL3 = m.link3->EvalPoseInWorld(*m.context);
     EXPECT_TRUE(X_WL3.IsNearlyEqualTo(
-        RigidTransformd(R_W90z, Vector3<double>(-1.0, 1.0, 0.0)), kTolerance));
+        RigidTransformd(R_W90z * kR_23, Vector3<double>(-1.0, 1.0, 0.0)),
+        kTolerance));
 
     // Verify Link4's position in World is (4, 0, 0), no rotation.
     const RigidTransformd& X_WL4 = m.link4->EvalPoseInWorld(*m.context);
     EXPECT_TRUE(X_WL4.IsNearlyEqualTo(
         RigidTransformd(Vector3<double>(4.0, 0.0, 0.0)), kTolerance));
+  }
+}
+
+/* Verify that the geometry pose output port reports each link's own pose
+X_WL, regardless of whether welded links are fused. With fusion, Link2 and
+Link3 are followers on Link1's Mobod and Link4 is a follower on the World
+Mobod, so their poses differ from their Mobods' poses. (The link poses
+themselves are verified in the NinetyDegreePoses test above.) */
+GTEST_TEST(CompositeTest, GeometryPoseOutput) {
+  for (bool fuse : {false, true}) {
+    SCOPED_TRACE(fuse ? "fused" : "unfused");
+    const TestModel m = MakeModel(fuse);
+    SetState(m, M_PI / 2, 0.0);
+
+    const auto& X_WG_all =
+        m.plant->get_geometry_pose_output_port().Eval<FramePoseVector<double>>(
+            *m.context);
+    EXPECT_EQ(X_WG_all.size(), 4);  // World isn't reported.
+
+    for (const Link<double>* link : {m.link1, m.link2, m.link3, m.link4}) {
+      SCOPED_TRACE(link->name());
+      const RigidTransformd& X_WG =
+          X_WG_all.value(m.plant->GetBodyFrameIdOrThrow(link->index()));
+      EXPECT_TRUE(
+          X_WG.IsNearlyEqualTo(link->EvalPoseInWorld(*m.context), kTolerance));
+    }
+  }
+}
+
+/* Verify relative orientations of frames, regardless of whether welded links
+are fused. With fusion, Link3 is a follower link whose orientation differs from
+that of its mobod, so a frame on Link3 must be located via the mobod, not via
+Link3 itself. */
+GTEST_TEST(CompositeTest, RelativeRotationMatrix) {
+  const TestModel unfused_model = MakeModel(false);
+  const TestModel fused_model = MakeModel(true);
+
+  // The frames of interest in each model: World, Link1 (a fused mobod's active
+  // link), Link3 and Frame3 (follower link and a frame on it), and Link4 (a
+  // link fused onto World).
+  auto frames_of = [](const TestModel& m) {
+    return std::vector<const Frame<double>*>{
+        &m.plant->world_frame(), &m.link1->body_frame(), &m.link3->body_frame(),
+        m.frame3, &m.link4->body_frame()};
+  };
+  const std::vector<const Frame<double>*> unfused_frames =
+      frames_of(unfused_model);
+  const std::vector<const Frame<double>*> fused_frames = frames_of(fused_model);
+
+  for (const double angle : {0.0, M_PI / 6, -M_PI / 3}) {
+    SCOPED_TRACE(fmt::format("angle = {}", angle));
+    SetState(unfused_model, angle, 0.0);
+    SetState(fused_model, angle, 0.0);
+
+    // Check some analytic orientations in World.
+    const RotationMatrixd R_WL3_expected =
+        RotationMatrixd::MakeZRotation(angle) * kR_23;
+    const RotationMatrixd R_WF3_expected = R_WL3_expected * kX_3F.rotation();
+    for (const TestModel* m : {&unfused_model, &fused_model}) {
+      EXPECT_TRUE(m->link3->body_frame()
+                      .CalcRotationMatrixInWorld(*m->context)
+                      .IsNearlyEqualTo(R_WL3_expected, kTolerance));
+      EXPECT_TRUE(m->frame3->CalcRotationMatrixInWorld(*m->context)
+                      .IsNearlyEqualTo(R_WF3_expected, kTolerance));
+    }
+
+    // Every pair of frames gives the same relative orientation in the two
+    // models, and it agrees with the rotational part of the relative pose.
+    for (int i = 0; i < ssize(fused_frames); ++i) {
+      for (int j = 0; j < ssize(fused_frames); ++j) {
+        const Frame<double>& frame_F = *fused_frames[i];
+        const Frame<double>& frame_G = *fused_frames[j];
+        SCOPED_TRACE(fmt::format("R_{}_{}", frame_F.name(), frame_G.name()));
+        const RotationMatrixd R_FG_unfused =
+            unfused_model.plant->CalcRelativeRotationMatrix(
+                *unfused_model.context, *unfused_frames[i], *unfused_frames[j]);
+        const RotationMatrixd R_FG_fused =
+            fused_model.plant->CalcRelativeRotationMatrix(*fused_model.context,
+                                                          frame_F, frame_G);
+        EXPECT_TRUE(R_FG_fused.IsNearlyEqualTo(R_FG_unfused, kTolerance));
+        EXPECT_TRUE(R_FG_fused.IsNearlyEqualTo(
+            fused_model.plant
+                ->CalcRelativeTransform(*fused_model.context, frame_F, frame_G)
+                .rotation(),
+            kTolerance));
+      }
+    }
   }
 }
 
@@ -395,6 +513,8 @@ through its COM is m*a²/6. The parallel axis theorem calculates each cube's
 moment of inertia about the revolute's z-axis via: Iᵢ = m*a²/6 + m*(dᵢ)²,
 where dᵢ (i=1,2,3) is the distance between each cube's COM and the revolute's
 z-axis. Iᵢ is independent of joint angle because the links are welded together.
+Link3's rotation R₂₃ doesn't change I₃ because a cube's central inertia is the
+same about every axis.
 
  Link1: I₁ = 1*(0.1)²/6 + 1*0²    = 1/600 + 0   (d² = 0)
  Link2: I₂ = 1*(0.1)²/6 + 1*1²    = 1/600 + 1   (d² = 1)
@@ -671,6 +791,70 @@ GTEST_TEST(FusedTest, CalcFrameBodyPosesAllPaths) {
         plant_f->CalcGravityGeneralizedForces(*context_f);
     EXPECT_TRUE(CompareMatrices(tau_g_nf, tau_g_f, kTolerance,
                                 MatrixCompareType::relative));
+  }
+}
+
+/* Verifies that the FreeBody APIs work only on the active link of a free
+mobod. Link Base is a floating base body with link Arm welded to it. When
+unfused, Arm has its own weld mobilizer and so isn't a free body. When fused,
+Arm shares Base's 6-dof mobod, but it still isn't a free body since the
+mobilizer's pose and spatial velocity are Base's, not Arm's. */
+GTEST_TEST(FusedTest, FreeBodyMethodsRequireActiveLink) {
+  const RigidTransformd X_BaseArm(RotationMatrixd::MakeZRotation(M_PI / 3),
+                                  Vector3<double>(0.5, 0.0, 0.2));
+
+  for (bool fuse : {false, true}) {
+    SCOPED_TRACE(fuse ? "fused" : "unfused");
+    MultibodyPlant<double> plant(0.0);
+    plant.SetFuseWeldedLinks(fuse);
+    const SpatialInertia<double> M =
+        SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1);
+    const Link<double>& base = plant.AddRigidBody("Base", M);
+    const Link<double>& arm = plant.AddRigidBody("Arm", M);
+    plant.AddJoint<WeldJoint>("weld", base, X_BaseArm, arm, RigidTransformd{},
+                              RigidTransformd{});
+    plant.Finalize();
+    auto context = plant.CreateDefaultContext();
+
+    EXPECT_EQ(GetInternalTree(plant).num_mobods(), fuse ? 2 : 3);
+    ASSERT_TRUE(base.is_floating_base_body());
+    EXPECT_FALSE(arm.is_floating_base_body());
+
+    // The FreeBody methods work on Base, and Arm follows along.
+    const RigidTransformd X_WBase(RotationMatrixd::MakeXRotation(M_PI / 4),
+                                  Vector3<double>(1.0, 2.0, 3.0));
+    const SpatialVelocity<double> V_WBase(Vector3<double>(0.1, 0.2, 0.3),
+                                          Vector3<double>(4.0, 5.0, 6.0));
+    plant.SetFreeBodyPose(context.get(), base, X_WBase);
+    plant.SetFreeBodySpatialVelocity(context.get(), base, V_WBase);
+    EXPECT_TRUE(plant.GetFreeBodyPose(*context, base)
+                    .IsNearlyEqualTo(X_WBase, kTolerance));
+    EXPECT_TRUE(arm.EvalPoseInWorld(*context).IsNearlyEqualTo(
+        X_WBase * X_BaseArm, kTolerance));
+    EXPECT_NO_THROW(plant.SetFreeBodyRandomTranslationDistribution(
+        base, Vector3<symbolic::Expression>::Zero()));
+    EXPECT_NO_THROW(plant.SetFreeBodyRandomRotationDistribution(
+        base, Eigen::Quaternion<symbolic::Expression>::Identity()));
+
+    // But not on Arm.
+    const std::string expected_message =
+        fuse ? "Body 'Arm' is not a free body; it is welded to free body "
+               "'Base'."
+             : "Body 'Arm' is not a free body.";
+    DRAKE_EXPECT_THROWS_MESSAGE(plant.GetFreeBodyPose(*context, arm),
+                                expected_message);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.SetFreeBodyPose(context.get(), arm, X_WBase), expected_message);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.SetFreeBodySpatialVelocity(context.get(), arm, V_WBase),
+        expected_message);
+    DRAKE_EXPECT_THROWS_MESSAGE(plant.SetFreeBodyRandomTranslationDistribution(
+                                    arm, Vector3<symbolic::Expression>::Zero()),
+                                expected_message);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.SetFreeBodyRandomRotationDistribution(
+            arm, Eigen::Quaternion<symbolic::Expression>::Identity()),
+        expected_message);
   }
 }
 

@@ -1616,9 +1616,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (use_sampled_output_ports_) {
     auto cache = std::make_unique<AccelerationKinematicsCache<T>>(
         internal_tree().forest());
-    for (SpatialAcceleration<T>& A_WB : cache->get_mutable_A_WB_pool()) {
-      A_WB.SetZero();
-    }
+    cache->SetToZero();
     zero_acceleration_kinematics_placeholder_ = std::move(cache);
   }
   FinalizeConstraints();
@@ -4400,21 +4398,16 @@ void MultibodyPlant<T>::CalcGeometryPoseOutput(
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
-  // NOTE: The body index to frame id map *always* includes the world body but
-  // the world body does *not* get reported in the frame poses; only dynamic
-  // frames do.
-  // TODO(amcastro-tri): Make use of RigidBody::EvalPoseInWorld(context) once
-  // caching lands.
+  // NOTE: The link index to frame id map *always* includes the World link but
+  // World does *not* get reported in the frame poses; only dynamic frames do.
   output->clear();
-  for (const auto& it : body_index_to_frame_id_) {
-    const BodyIndex body_index = it.first;
-    if (body_index == world_index()) continue;
-    const RigidBody<T>& body = get_body(body_index);
+  for (const auto& [link_index, frame_id] : body_index_to_frame_id_) {
+    if (link_index == world_index()) continue;
+    const Link<T>& link = get_body(link_index);
 
-    // NOTE: The GeometryFrames for each body were registered in the world
+    // NOTE: The GeometryFrames for each link were registered in the world
     // frame, so we report poses in the world frame.
-    output->set_value(body_index_to_frame_id_.at(body_index),
-                      pc.get_X_WB(body.mobod_index()));
+    output->set_value(frame_id, pc.get_X_WL(link.ordinal()));
   }
 }
 

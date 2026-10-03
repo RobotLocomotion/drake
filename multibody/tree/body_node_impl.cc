@@ -133,9 +133,9 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
       const LinkOrdinal follower_ordinal = followers[i];
       const math::RigidTransform<T>& X_BL =
           frame_body_pose_cache.get_X_BL(follower_ordinal);
-      const Vector3<T> p_BoLo_W = R_WB * X_BL.translation();
+      const Vector3<T> p_BoLo_W = R_WB * X_BL.translation();  // 15 flops
       pc->Set_p_BoLo_W(follower_ordinal, p_BoLo_W);
-      pc->SetX_WL(follower_ordinal,
+      pc->SetX_WL(follower_ordinal,  // 18 flops
                   math::RigidTransform<T>(R_WB * X_BL.rotation(),
                                           X_WB.translation() + p_BoLo_W));
     }
@@ -335,7 +335,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   for (size_t i = 1; i < followers.size(); ++i) {
     const LinkOrdinal link_ordinal = followers[i];
     const Vector3<T>& p_BoLo_W = pc.get_p_BoLo_W(link_ordinal);
-    vc->SetV_WL(link_ordinal, V_WB.Shift(p_BoLo_W));
+    vc->SetV_WL(link_ordinal, V_WB.Shift(p_BoLo_W));  // 12 flops
   }
 }
 
@@ -907,6 +907,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
         const ArticulatedBodyInertiaCache<T>& abic,
         const ArticulatedBodyForceCache<T>& aba_force_cache,
         const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
+        const VelocityKinematicsCache<T>& vc,
         const SpatialAcceleration<T>& Ab_WB,
         AccelerationKinematicsCache<T>* ac) const {
   DRAKE_THROW_UNLESS(ac != nullptr);
@@ -949,6 +950,18 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 
     // Update with vmdot term the spatial acceleration of the current body.
     A_WB += SpatialAcceleration<T>(H_PB_W * vmdot);
+  }
+
+  // We have A_WB, now fill in A_WL for all links following body B.
+  const SpanningForest::Mobod& mobod_B = this->mobod();
+  const std::vector<LinkOrdinal>& followers = mobod_B.follower_link_ordinals();
+  // The active link L₀ is always the first follower and L₀=B.
+  ac->SetA_WL(followers[0], A_WB);
+  const Vector3<T>& w_WB_W = get_V_WB(vc).rotational();
+  for (size_t i = 1; i < followers.size(); ++i) {
+    const LinkOrdinal link_ordinal = followers[i];
+    const Vector3<T>& p_BL_W = pc.get_p_BoLo_W(link_ordinal);
+    ac->SetA_WL(link_ordinal, A_WB.Shift(p_BL_W, w_WB_W));  // 33 flops
   }
 }
 
