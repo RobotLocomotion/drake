@@ -174,6 +174,28 @@ GTEST_TEST(DaqpSolverTest, OverlappingBoundingBoxes) {
   }
 }
 
+GTEST_TEST(DaqpSolverTest, BoundingBoxDuplicatedVariable) {
+  // One bounding box constraint that bounds x(0) twice. The effective bounds
+  // are 3 ≤ x₀ ≤ 4 and 2 ≤ x₁ ≤ 5, so the solution is x = (3, 2).
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>("x");
+  prog.AddQuadraticCost(x(0) * x(0) + x(1) * x(1));
+  const auto bb_con = prog.AddBoundingBoxConstraint(
+      Eigen::Vector3d(1, 2, 3), Eigen::Vector3d(6, 5, 4),
+      Vector3<symbolic::Variable>(x(0), x(1), x(0)));
+  DaqpSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prog);
+    ASSERT_TRUE(result.is_success());
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(x), Eigen::Vector2d(3, 2), kTol));
+    // The gradient of the cost is 2x = (6, 4). The active lower bound on x(0)
+    // is the third row; the looser first row gets zero.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(bb_con),
+                                Eigen::Vector3d(0, 4, 6), kTol));
+  }
+}
+
 GTEST_TEST(DaqpSolverTest, EqualityBoundingBox) {
   // A bounding box with equal bounds is treated as an equality constraint.
   MathematicalProgram prog;
