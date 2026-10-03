@@ -25,7 +25,8 @@ class DerivedBasisA : public PolynomialBasisElement {
 
   DerivedBasisA() : PolynomialBasisElement() {}
 
-  explicit DerivedBasisA(const std::map<Variable, int>& var_to_degree_map)
+  explicit DerivedBasisA(
+      const std::map<Variable, int, Variable::CompareLess>& var_to_degree_map)
       : PolynomialBasisElement(var_to_degree_map) {}
 
   bool operator<(const DerivedBasisA& other) const {
@@ -35,7 +36,7 @@ class DerivedBasisA : public PolynomialBasisElement {
   std::pair<double, DerivedBasisA> EvaluatePartial(
       const Environment& env) const {
     double coeff;
-    std::map<Variable, int> new_var_to_degree_map;
+    std::map<Variable, int, Variable::CompareLess> new_var_to_degree_map;
     this->DoEvaluatePartial(env, &coeff, &new_var_to_degree_map);
     return std::make_pair(coeff, DerivedBasisA(new_var_to_degree_map));
   }
@@ -50,7 +51,8 @@ class DerivedBasisA : public PolynomialBasisElement {
   }
 
   Expression DoToExpression() const override {
-    std::map<Expression, Expression> base_to_exponent_map;
+    std::map<Expression, Expression, Expression::CompareLess>
+        base_to_exponent_map;
     for (const auto& [var, degree] : var_to_degree_map()) {
       base_to_exponent_map.emplace(Expression{var}, degree);
     }
@@ -64,7 +66,8 @@ class DerivedBasisB : public PolynomialBasisElement {
 
   DerivedBasisB() : PolynomialBasisElement() {}
 
-  explicit DerivedBasisB(const std::map<Variable, int>& var_to_degree_map)
+  explicit DerivedBasisB(
+      const std::map<Variable, int, Variable::CompareLess>& var_to_degree_map)
       : PolynomialBasisElement(var_to_degree_map) {}
 
   bool operator<(const DerivedBasisB& other) const {
@@ -106,7 +109,7 @@ TEST_F(SymbolicPolynomialBasisElementTest, Constructor) {
   EXPECT_EQ(p3.total_degree(), 0);
   EXPECT_EQ(p3.var_to_degree_map().size(), 0);
 
-  const DerivedBasisA p4(std::map<Variable, int>({}));
+  const DerivedBasisA p4(std::map<Variable, int, Variable::CompareLess>({}));
   EXPECT_EQ(p4.total_degree(), 0);
   EXPECT_EQ(p4.var_to_degree_map().size(), 0);
 
@@ -118,7 +121,9 @@ TEST_F(SymbolicPolynomialBasisElementTest, degree) {
   EXPECT_EQ(DerivedBasisA({{x_, 1}, {y_, 2}}).degree(x_), 1);
   EXPECT_EQ(DerivedBasisA({{x_, 1}, {y_, 2}}).degree(y_), 2);
   EXPECT_EQ(DerivedBasisA({{x_, 1}, {y_, 2}}).degree(z_), 0);
-  EXPECT_EQ(DerivedBasisA(std::map<Variable, int>()).degree(x_), 0);
+  EXPECT_EQ(DerivedBasisA(std::map<Variable, int, Variable::CompareLess>())
+                .degree(x_),
+            0);
 }
 
 TEST_F(SymbolicPolynomialBasisElementTest, GetVariables) {
@@ -131,7 +136,8 @@ TEST_F(SymbolicPolynomialBasisElementTest, GetVariables) {
   const symbolic::DerivedBasisA p3({{x_, 0}, {y_, 0}});
   EXPECT_EQ(p3.GetVariables(), Variables({}));
 
-  const symbolic::DerivedBasisA p4(std::map<Variable, int>({}));
+  const symbolic::DerivedBasisA p4(
+      std::map<Variable, int, Variable::CompareLess>({}));
   EXPECT_EQ(p4.GetVariables(), Variables({}));
 }
 
@@ -189,8 +195,9 @@ TEST_F(SymbolicPolynomialBasisElementTest, EigenMatrix) {
   // Checks we can have an Eigen matrix of PolynomialBasisElements without
   // compilation errors. No assertions in the test.
   Eigen::Matrix<DerivedBasisA, 2, 2> M;
-  M << DerivedBasisA(std::map<Variable, int>({})), DerivedBasisA({{x_, 1}}),
-      DerivedBasisA({{x_, 1}, {y_, 2}}), DerivedBasisA({{y_, 2}});
+  M << DerivedBasisA(std::map<Variable, int, Variable::CompareLess>({})),
+      DerivedBasisA({{x_, 1}}), DerivedBasisA({{x_, 1}, {y_, 2}}),
+      DerivedBasisA({{y_, 2}});
 }
 
 TEST_F(SymbolicPolynomialBasisElementTest, EvaluatePartial) {
@@ -212,7 +219,8 @@ TEST_F(SymbolicPolynomialBasisElementTest, EvaluatePartial) {
 TEST_F(SymbolicPolynomialBasisElementTest, BasisElementGradedReverseLexOrder) {
   EXPECT_PRED2(test::VarLess, x_, y_);
   EXPECT_PRED2(test::VarLess, y_, z_);
-  BasisElementGradedReverseLexOrder<std::less<Variable>, DerivedBasisA> compare;
+  BasisElementGradedReverseLexOrder<Variable::CompareLess, DerivedBasisA>
+      compare;
   // y^0 = x^0 = 1.
   EXPECT_FALSE(compare(DerivedBasisA({{y_, 0}}), DerivedBasisA({{x_, 0}})));
   EXPECT_FALSE(compare(DerivedBasisA({{x_, 0}}), DerivedBasisA({{y_, 0}})));
@@ -224,16 +232,26 @@ TEST_F(SymbolicPolynomialBasisElementTest, BasisElementGradedReverseLexOrder) {
 
   // x < y < z < x² < xy < xz < y² < yz < z²
   std::vector<DerivedBasisA> derived_basis_all;
-  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 0}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 1}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{y_, 1}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{z_, 1}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 2}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 1}, {y_, 1}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 1}, {z_, 1}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{y_, 2}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{y_, 1}, {z_, 1}});
-  derived_basis_all.emplace_back(std::map<Variable, int>{{z_, 2}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{x_, 0}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{x_, 1}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{y_, 1}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{z_, 1}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{x_, 2}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{x_, 1}, {y_, 1}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{x_, 1}, {z_, 1}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{y_, 2}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{y_, 1}, {z_, 1}});
+  derived_basis_all.emplace_back(
+      std::map<Variable, int, Variable::CompareLess>{{z_, 2}});
   for (int i = 0; i < static_cast<int>(derived_basis_all.size()); ++i) {
     for (int j = 0; j < static_cast<int>(derived_basis_all.size()); ++j) {
       if (i < j) {
