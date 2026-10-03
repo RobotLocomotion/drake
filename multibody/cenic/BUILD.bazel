@@ -13,7 +13,24 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cenic_integrator",
+        ":continuous_icf_force_manager",
         ":make_cenic_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "continuous_icf_force_manager",
+    srcs = ["continuous_icf_force_manager.cc"],
+    hdrs = ["continuous_icf_force_manager.h"],
+    deps = [
+        "//common:default_scalars",
+        "//multibody/contact_solvers/icf:icf_builder",
+        "//multibody/contact_solvers/icf:icf_data",
+        "//multibody/contact_solvers/icf:icf_model",
+        "//multibody/plant",
+    ],
+    implementation_deps = [
+        "//multibody/math",
     ],
 )
 
@@ -41,6 +58,17 @@ drake_cc_library(
     implementation_deps = [
         ":cenic_integrator",
         "//common:default_scalars",
+    ],
+)
+
+drake_cc_googletest(
+    name = "continuous_icf_force_manager_test",
+    deps = [
+        ":continuous_icf_force_manager",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework:diagram",
     ],
 )
 

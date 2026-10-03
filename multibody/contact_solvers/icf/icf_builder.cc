@@ -11,6 +11,7 @@
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/multibody_plant_icf_attorney.h"
 #include "drake/multibody/topology/graph.h"
 
@@ -335,30 +336,19 @@ template <typename T>
 void IcfBuilder<T>::CalcGeometryContactData(
     const systems::Context<T>& context) {
   DRAKE_DEMAND(plant_.geometry_source_is_registered());
-  surfaces_.clear();
-  point_pairs_.clear();
 
-  const auto& query_object =
-      plant_.get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-
-  switch (plant_.get_contact_model()) {
-    case ContactModel::kPoint: {
-      point_pairs_ = query_object.ComputePointPairPenetration();
-      break;
-    }
-    case ContactModel::kHydroelastic: {
-      surfaces_ = query_object.ComputeContactSurfaces(
-          plant_.get_contact_surface_representation());
-      break;
-    }
-    case ContactModel::kHydroelasticWithFallback: {
-      query_object.ComputeContactSurfacesWithFallback(
-          plant_.get_contact_surface_representation(), &surfaces_,
-          &point_pairs_);
-      break;
-    }
-  }
+  // Source the contact set from MultibodyPlant's position-keyed
+  // geometry_contact_data cache. This performs the same ContactModel-dependent
+  // SceneGraph query the plant itself uses, but computes it once per
+  // configuration and shares it with the plant's contact path and with any
+  // ICF-based continuous force reporter, rather than issuing a redundant query
+  // here on every solve. See
+  // MultibodyPlantIcfAttorney::EvalGeometryContactData.
+  const multibody::internal::NestedGeometryContactData<T>& data =
+      MultibodyPlantIcfAttorney<T>::EvalGeometryContactData(plant_, context)
+          .get();
+  point_pairs_ = data.point_pairs;
+  surfaces_ = data.surfaces;
 }
 
 template <typename T>
