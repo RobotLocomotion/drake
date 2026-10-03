@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<robot name="joint_frames">
+  <link name="a"/>
+  <link name="b"/>
+  <frame name="Fa" link="a" xyz="1 2 3" rpy="1.5707963267948966 0 0"/>
+  <frame name="Fb" link="b" xyz="4 5 6" rpy="0 0 1.5707963267948966"/>
+</robot>
