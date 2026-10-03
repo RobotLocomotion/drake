@@ -1,6 +1,6 @@
 # Four-Bar Linkage Examples
 
-These three examples model the same kind of mechanism -- a planar four-bar
+These four examples model the same kind of mechanism -- a planar four-bar
 linkage -- and illustrate two different ways to deal with the closed kinematic
 loop that a four-bar forms:
 
@@ -12,6 +12,9 @@ loop that a four-bar forms:
   through the C++ API, which lets it start from an *unassembled* configuration.
   It draws the machinery Drake used to break the loop so that you can watch it
   work.
+* `four_bar_unassembled` is `four_bar_auto` again, except that the unassembled
+  linkage and its geometry come from an SDFormat model file, using Drake
+  extensions that give each joint two independent frames.
 * `four_bar_with_bushing` leaves one of the four joints out and replaces it
   with a compliant bushing, so the remaining joints form a tree.
 
@@ -33,8 +36,10 @@ enforce one. It runs in discrete mode under SAP by default, and continuous
 under CENIC if requested.
 
 The model file, `four_bar.sdf`, describes the linkage in an **assembled**
-configuration, as is required by SDFormat (see the discussion in the model
-file). Thus the parsed model is already assembled at q = 0.
+configuration, as is required by standard SDFormat (see the discussion in the
+model file). Thus the parsed model is already assembled at q = 0. See
+`four_bar_unassembled` below for the Drake extensions that lift that
+restriction.
 
 ## Running four_bar
 
@@ -101,8 +106,10 @@ Closing the loop takes a constraint, so this model needs a solver that can
 enforce one. It runs in discrete mode with SAP by default, or continuous
 under CENIC if requested.
 
-The linkage is built with the C++ API rather than parsed from an SDF or URDF file
-because neither format can describe an unassembled loop.
+The linkage is built with the C++ API rather than parsed from a model file.
+Standard SDFormat and URDF cannot describe an unassembled loop; see
+`four_bar_unassembled` below for the same example parsed from an SDFormat file
+that uses Drake extensions to do so.
 
 Much of what this example does is pedagogical. It goes to considerable trouble
 to show *how* Drake breaks the loop, drawing the shadow link and the frames the
@@ -200,6 +207,56 @@ standard Drake simulator flags such as `--simulator_target_realtime_rate`:
 ```
 bazel run //examples/multibody/four_bar:four_bar_auto -- --help
 ```
+
+# An unassembled model file: `four_bar_unassembled`
+
+This is `four_bar_auto` with the linkage described in an SDFormat file,
+`four_bar_unassembled.sdf`, rather than built with the C++ API. The two
+programs are otherwise as alike as possible: same mechanism, same unassembled
+starting configuration, same geometry, same flags, and the same output.
+
+A standard SDFormat joint has a single frame, and Drake places both of the
+joint's frames there, one on each link. So every model parsed from a standard
+file is assembled at q = 0, whatever poses its links are given. A Drake joint
+has two frames, Jp on the parent link and Jc on the child link, which coincide
+only when the joint is satisfied. Two Drake extension tags let a standard
+`<joint>` name them separately:
+
+```xml
+<joint name="coupler_rocker" type="revolute">
+  <parent>coupler</parent>                   <!-- Which links are connected. -->
+  <child>rocker</child>
+  <drake:parent_frame>Cr</drake:parent_frame> <!-- Jp, fixed to the coupler. -->
+  <drake:child_frame>Rc</drake:child_frame>   <!-- Jc, fixed to the rocker. -->
+  <axis><xyz expressed_in="Rc">0 -1 0</xyz></axis>
+</joint>
+```
+
+Each names either the link itself or an explicit `<frame>` fixed to it. The
+joint's `<pose>` is then ignored, and its axis is resolved into Jc. An axis
+without `expressed_in`, or one explicitly expressed in the joint frame, is
+interpreted directly in Jc. The joints in `four_bar_unassembled.sdf` all use
+these tags, and so the links' own poses play no part in what Drake simulates;
+they only draw the figure for other SDFormat readers, which ignore `drake:`
+tags.
+
+The model file carries all the illustration geometry, except for one piece. A
+model file cannot draw the shadow link, because the shadow does not exist until
+`Finalize()` creates it. So `four_bar_unassembled.cc` draws the shadow, and the
+parent pin of the joint that `Finalize()` moves onto it, exactly as
+`four_bar_auto` does.
+
+## Running four_bar_unassembled
+
+It runs exactly like `four_bar_auto`, and accepts the same flags:
+
+```
+bazel run //examples/multibody/four_bar:four_bar_unassembled
+bazel run //examples/multibody/four_bar:four_bar_unassembled -- \
+    --time_step=0 --simulator_integration_scheme=cenic
+```
+
+Its output is identical to that of `four_bar_auto`, under both SAP and CENIC.
 
 # Closing the loop with a bushing: `four_bar_with_bushing`
 

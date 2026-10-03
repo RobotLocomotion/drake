@@ -10,6 +10,7 @@ details and comparisons with the other four-bar examples. */
 #include <cmath>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <utility>
@@ -92,6 +93,8 @@ DEFINE_bool(interactive, true,
             "waiting for you to press Enter before going on each time. Set "
             "--nointeractive to run start to finish without stopping.");
 
+constexpr double kAssembledTolerance = 1.0e-3;  // meters
+
 /* Owns the shared state of this example. Run() comes first and is implemented
 in line so that you can begin with the example's story; implementation details
 follow it. */
@@ -115,6 +118,11 @@ class FourBarAutoDemo final {
     // retargeting a joint, and adding a weld happens here.
     four_bar_->SetEnableLoopTopology(true);
     four_bar_->Finalize();
+    if (four_bar_->num_loop_constraints() != 1) {
+      throw std::runtime_error(
+          fmt::format("Expected one modeled loop, but found {}.",
+                      four_bar_->num_loop_constraints()));
+    }
     ReportAndIllustrateModeledLoops();
 
     visualization::AddDefaultVisualization(&builder_);
@@ -132,8 +140,14 @@ class FourBarAutoDemo final {
     // We set no initial conditions. Every joint angle defaults to zero, which
     // is the unassembled configuration shown in the model description below.
     simulator_->Initialize();
+    const double initial_error = CalcLoopClosureError(plant_context());
+    if (!(initial_error > kAssembledTolerance)) {
+      throw std::runtime_error(fmt::format(
+          "Expected an unassembled model, but its loop closure error is {} m.",
+          initial_error));
+    }
     std::cout << fmt::format("Loop closure error as defined: {:.4f} m\n",
-                             CalcLoopClosureError(plant_context()));
+                             initial_error);
     ShowAndWait(
         "The linkage is unassembled: the coupler and its pale shadow are "
         "apart, so the weld constraint holding the two halves of the split "
@@ -374,10 +388,8 @@ FourBarAutoDemo::AssemblyResult FourBarAutoDemo::Assemble(double driver_angle) {
   result.path.push_back(
       {four_bar_->GetPositions(context), CalcLoopClosureError(context)});
 
-  const double kAssembledTolerance = 1.0e-3;  // meters
-  const double kAssemblyDeadline = 0.5;       // seconds
-  simulator_->set_monitor([this, kAssembledTolerance,
-                           &result](const Context<double>& root_context) {
+  const double kAssemblyDeadline = 0.5;  // seconds
+  simulator_->set_monitor([this, &result](const Context<double>& root_context) {
     const Context<double>& plant_context =
         four_bar_->GetMyContextFromRoot(root_context);
     const double error = CalcLoopClosureError(plant_context);
@@ -390,6 +402,13 @@ FourBarAutoDemo::AssemblyResult FourBarAutoDemo::Assemble(double driver_angle) {
   simulator_->AdvanceTo(kAssemblyDeadline);
   simulator_->clear_monitor();
   result.simulation_time = simulator_->get_context().get_time();
+  const double final_error = CalcLoopClosureError(context);
+  if (!(final_error < kAssembledTolerance)) {
+    throw std::runtime_error(fmt::format(
+        "Failed to assemble the linkage within {} s; its loop closure error "
+        "is {} m.",
+        kAssemblyDeadline, final_error));
+  }
 
   // Release the driver and hand back a clean assembled initial condition.
   driver_joint.Unlock(&context);

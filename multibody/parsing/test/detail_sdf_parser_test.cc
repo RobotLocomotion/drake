@@ -30,6 +30,7 @@
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
@@ -3970,6 +3971,290 @@ TEST_F(SdfParserTest, FramesAsJointParentOrChild) {
     EXPECT_TRUE(CompareMatrices(X_CJc_expected.GetAsMatrix4(),
                                 X_CJc.GetAsMatrix4(), kEps));
   }
+}
+
+// With <drake:parent_frame> and <drake:child_frame>, a joint's frames Jp and Jc
+// are the named frames, independently of each other and of the link poses.
+// Without them, both would be located at the single SDFormat joint frame J.
+TEST_F(SdfParserTest, JointParentAndChildFrames) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='a'/>
+  <link name='b'>
+    <pose>5 6 7 0 0 0</pose>
+  </link>
+  <frame name='Fa' attached_to='a'>
+    <pose relative_to='a'>1 2 3 0 0 0</pose>
+  </frame>
+  <frame name='Mb' attached_to='b'>
+    <pose relative_to='b'>0.5 0 0 0 0 1.5707963267948966</pose>
+  </frame>
+  <joint name='j' type='revolute'>
+    <parent>a</parent>
+    <child>b</child>
+    <drake:parent_frame>Fa</drake:parent_frame>
+    <drake:child_frame>Mb</drake:child_frame>
+    <axis>
+      <xyz expressed_in='__model__'>1 0 0</xyz>
+    </axis>
+  </joint>
+</model>)""");
+  const auto& joint = plant_.GetJointByName<RevoluteJoint>("j");
+  EXPECT_EQ(&joint.parent_body(), &plant_.GetBodyByName("a"));
+  EXPECT_EQ(&joint.child_body(), &plant_.GetBodyByName("b"));
+  EXPECT_TRUE(CompareMatrices(
+      joint.frame_on_parent().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      RigidTransformd(Vector3d(1, 2, 3)).GetAsMatrix34(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      joint.frame_on_child().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      RigidTransformd(RollPitchYawd(0, 0, M_PI_2), Vector3d(0.5, 0, 0))
+          .GetAsMatrix34(),
+      kEps));
+  // The axis is resolved into Jc, which is yawed a quarter turn from the model.
+  EXPECT_TRUE(CompareMatrices(joint.revolute_axis(), Vector3d(0, -1, 0), kEps));
+}
+
+// Exercise the remaining supported joint types whose construction uses the
+// independently named frames. A joint pose must not affect an axis with an
+// omitted expressed_in attribute or one that explicitly names the replaced
+// SDFormat joint frame J.
+TEST_F(SdfParserTest, JointParentAndChildFramesAllJointTypes) {
+  auto parse = [this](const std::string& model_name,
+                      const std::string& joint_type, const std::string& axes) {
+    ParseTestString(fmt::format(R"""(
+<model name='{}'>
+  <link name='a'/>
+  <link name='b'/>
+  <frame name='Fa' attached_to='a'>
+    <pose relative_to='a'>1 2 3 0 0 0</pose>
+  </frame>
+  <frame name='Fb' attached_to='b'>
+    <pose relative_to='b'>4 5 6 0 0 0</pose>
+  </frame>
+  <joint name='j' type='{}'>
+    <parent>a</parent>
+    <child>b</child>
+    <pose>0 0 0 0 0 1.5707963267948966</pose>
+    <drake:parent_frame>Fa</drake:parent_frame>
+    <drake:child_frame>Fb</drake:child_frame>
+    {}
+  </joint>
+</model>)""",
+                                model_name, joint_type, axes),
+                    "1.9");
+    EXPECT_THAT(TakeWarning(),
+                MatchesRegex(".*The <pose> of joint 'j' is ignored.*"));
+    const ModelInstanceIndex instance =
+        plant_.GetModelInstanceByName(model_name);
+    const Joint<double>& joint = plant_.GetJointByName("j", instance);
+    EXPECT_TRUE(CompareMatrices(
+        joint.frame_on_parent().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+        RigidTransformd(Vector3d(1, 2, 3)).GetAsMatrix34(), kEps));
+    EXPECT_TRUE(CompareMatrices(
+        joint.frame_on_child().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+        RigidTransformd(Vector3d(4, 5, 6)).GetAsMatrix34(), kEps));
+    return instance;
+  };
+
+  const std::string axis = R"""(
+    <axis>
+      <xyz>1 0 0</xyz>
+      <limit><effort>0</effort></limit>
+    </axis>)""";
+  const ModelInstanceIndex continuous = parse("continuous", "continuous", axis);
+  EXPECT_EQ(
+      plant_.GetJointByName<RevoluteJoint>("j", continuous).revolute_axis(),
+      Vector3d::UnitX());
+
+  const ModelInstanceIndex screw = parse("screw", "screw", R"""(
+    <axis>
+      <xyz expressed_in='j'>1 0 0</xyz>
+      <limit><effort>0</effort></limit>
+    </axis>
+    <screw_thread_pitch>0.1</screw_thread_pitch>)""");
+  EXPECT_EQ(plant_.GetJointByName<ScrewJoint>("j", screw).screw_axis(),
+            Vector3d::UnitX());
+
+  const ModelInstanceIndex universal = parse("universal", "universal", R"""(
+    <axis>
+      <xyz>1 0 0</xyz>
+      <limit><effort>0</effort></limit>
+    </axis>
+    <axis2>
+      <xyz>0 1 0</xyz>
+      <limit><effort>0</effort></limit>
+    </axis2>)""");
+  EXPECT_NO_THROW(plant_.GetJointByName<UniversalJoint>("j", universal));
+
+  const ModelInstanceIndex ball = parse("ball", "ball", "");
+  EXPECT_NO_THROW(plant_.GetJointByName<BallRpyJoint>("j", ball));
+}
+
+// A universal joint builds its frames from its two axes, which are resolved
+// into Jc. With Jp and Jc rotated differently on their links and the axes along
+// Jc's y and z, the joint's frame on each link must be Jp or Jc composed with
+// the rotation R_JI whose columns are the two axes and their cross product.
+TEST_F(SdfParserTest, JointParentAndChildFramesRotatedUniversal) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='a'/>
+  <link name='b'/>
+  <frame name='Fa' attached_to='a'>
+    <pose relative_to='a'>1 2 3 1.5707963267948966 0 0</pose>
+  </frame>
+  <frame name='Fb' attached_to='b'>
+    <pose relative_to='b'>4 5 6 0 0 1.5707963267948966</pose>
+  </frame>
+  <joint name='j' type='universal'>
+    <parent>a</parent>
+    <child>b</child>
+    <drake:parent_frame>Fa</drake:parent_frame>
+    <drake:child_frame>Fb</drake:child_frame>
+    <axis>
+      <xyz>0 1 0</xyz>
+      <limit><effort>0</effort></limit>
+    </axis>
+    <axis2>
+      <xyz>0 0 1</xyz>
+      <limit><effort>0</effort></limit>
+    </axis2>
+  </joint>
+</model>)""",
+                  "1.9");
+  const auto& joint = plant_.GetJointByName<UniversalJoint>("j");
+  Eigen::Matrix3d R_JI;
+  // clang-format off
+  R_JI << 0, 0, 1,
+          1, 0, 0,
+          0, 1, 0;
+  // clang-format on
+  const RigidTransformd X_JI{math::RotationMatrixd(R_JI)};
+  const RigidTransformd X_PJp(RollPitchYawd(M_PI_2, 0, 0), Vector3d(1, 2, 3));
+  const RigidTransformd X_CJc(RollPitchYawd(0, 0, M_PI_2), Vector3d(4, 5, 6));
+  EXPECT_TRUE(CompareMatrices(
+      joint.frame_on_parent().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      (X_PJp * X_JI).GetAsMatrix34(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      joint.frame_on_child().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      (X_CJc * X_JI).GetAsMatrix34(), kEps));
+}
+
+// Either frame may name the link itself, putting the joint frame at the link
+// frame. Here a nested model's frame is named, too.
+TEST_F(SdfParserTest, JointParentAndChildFramesLinkAndNested) {
+  ParseTestString(R"""(
+<model name='m'>
+  <link name='a'/>
+  <model name='n'>
+    <link name='b'>
+      <pose>5 6 7 0 0 0</pose>
+    </link>
+    <frame name='Mb' attached_to='b'>
+      <pose relative_to='b'>0.5 0 0 0 0 0</pose>
+    </frame>
+  </model>
+  <joint name='j' type='prismatic'>
+    <parent>a</parent>
+    <child>n::b</child>
+    <drake:parent_frame>a</drake:parent_frame>
+    <drake:child_frame>n::Mb</drake:child_frame>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+  </joint>
+</model>)""");
+  const auto& joint = plant_.GetJointByName<PrismaticJoint>("j");
+  EXPECT_EQ(&joint.frame_on_parent(), &plant_.GetBodyByName("a").body_frame());
+  EXPECT_TRUE(CompareMatrices(
+      joint.frame_on_child().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      RigidTransformd(Vector3d(0.5, 0, 0)).GetAsMatrix34(), kEps));
+}
+
+// A world-scope joint looks up its frames in the world. (Drake only permits
+// fixed joints there.)
+TEST_F(SdfParserTest, JointParentAndChildFramesWorldScope) {
+  ParseTestString(R"""(
+<world name='w'>
+  <model name='m1'>
+    <link name='a'/>
+    <frame name='Fa'>
+      <pose>1 2 3 0 0 0</pose>
+    </frame>
+  </model>
+  <model name='m2'>
+    <link name='b'>
+      <pose>5 6 7 0 0 0</pose>
+    </link>
+  </model>
+  <joint name='j' type='fixed'>
+    <parent>m1::a</parent>
+    <child>m2::b</child>
+    <drake:parent_frame>m1::Fa</drake:parent_frame>
+    <drake:child_frame>m2::b</drake:child_frame>
+  </joint>
+</world>)""",
+                  "1.9");
+  const auto& joint = plant_.GetJointByName("j");
+  EXPECT_TRUE(CompareMatrices(
+      joint.frame_on_parent().GetFixedPoseInBodyFrame().GetAsMatrix34(),
+      RigidTransformd(Vector3d(1, 2, 3)).GetAsMatrix34(), kEps));
+  EXPECT_TRUE(
+      joint.frame_on_child().GetFixedPoseInBodyFrame().IsExactlyIdentity());
+}
+
+TEST_F(SdfParserTest, JointParentAndChildFramesErrors) {
+  // Each case is parsed into a new model instance.
+  const std::string model_start = R"""(
+<model name='{}'>
+  <link name='a'/>
+  <link name='b'/>
+  <frame name='Fa' attached_to='a'/>
+  <frame name='Mb' attached_to='b'/>
+  <joint name='j' type='revolute'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis><xyz>0 0 1</xyz></axis>)""";
+  const std::string model_end = R"""(
+  </joint>
+</model>)""";
+
+  // Only one of the two.
+  ParseTestString(fmt::format(fmt::runtime(model_start), "m0") +
+                  "<drake:parent_frame>Fa</drake:parent_frame>" + model_end);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'j' must have both <drake:parent_frame> "
+                           "and <drake:child_frame>, or neither.*"));
+
+  // A frame fixed to the wrong link.
+  ParseTestString(fmt::format(fmt::runtime(model_start), "m1") +
+                  "<drake:parent_frame>Mb</drake:parent_frame>"
+                  "<drake:child_frame>Mb</drake:child_frame>" +
+                  model_end);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*<drake:parent_frame>Mb</drake:parent_frame> of "
+                           "joint 'j' must be fixed to link 'a', but it is "
+                           "fixed to link 'b'.*"));
+
+  // A link that is not the joint's.
+  ParseTestString(fmt::format(fmt::runtime(model_start), "m2") +
+                  "<drake:parent_frame>Fa</drake:parent_frame>"
+                  "<drake:child_frame>a</drake:child_frame>" +
+                  model_end);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*<drake:child_frame>a</drake:child_frame> of "
+                           "joint 'j' must name link 'b' or a frame fixed to "
+                           "it.*"));
+
+  // An explicit joint pose is ignored, with a warning.
+  ParseTestString(fmt::format(fmt::runtime(model_start), "m3") +
+                  "<pose>1 2 3 0 0 0</pose>"
+                  "<drake:parent_frame>Fa</drake:parent_frame>"
+                  "<drake:child_frame>Mb</drake:child_frame>" +
+                  model_end);
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*The <pose> of joint 'j' is ignored because the "
+                           "joint has <drake:parent_frame> and "
+                           "<drake:child_frame>.*"));
 }
 
 // Verifies that URDF files can be loaded into Drake via libsdformat's Interface

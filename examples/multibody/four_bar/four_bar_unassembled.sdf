@@ -1,0 +1,421 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="four_bar_unassembled">
+    <!--
+    A planar four-bar linkage described as an UNASSEMBLED loop of four joints.
+    This is the same mechanism, in the same unassembled configuration, as the
+    one that four_bar_auto.cc builds through the C++ API; here it comes from a
+    file instead. See four_bar_unassembled.cc, which runs this model, and the
+    README for more details.
+
+    There are three moving links (driver, coupler, rocker) plus the ground link
+    and four revolute joints. They are laid out below as they are defined,
+    unassembled and conveniently lined up with the World frame axes. "*" marks
+    the connection points, each of which is a frame on a link. The frame names
+    start with a capital letter matching the link to which they are fixed and a
+    lower case letter for the connected link, except that Do and Ro are monogram
+    names for the driver and rocker link frame origins.
+
+                                                      * Rc
+                                                      |
+                                                      |
+                     coupler C                        |
+     Cd *-------------------------- Co ------------------------* Cr
+                            4.8m 1kg                  |
+        * Dc                                          |
+        |                                    rocker R | 2m
+        |                                             | 2kg
+    1m  | driver D                                    |
+    1kg |                                             |      Wz
+        |                                             |      |  Wy
+        * Do                                       Ro *      | /
+                                                             +----- Wx
+        *====================== Go ===================*
+       Wd         2m         ground G         2m       Wr
+
+    In parent-child order, the joints connect Wd-Do, Wr-Ro, Dc-Cd and Cr-Rc.
+    Link mass centers are at their midpoints. Lengths and masses are shown;
+    inertias are those of thin rods (mass * length² / 12 about the mass
+    center). All four revolute joints have their axes in the -y direction
+    (towards you), so the mechanism moves in the World x-z plane and swings
+    under Drake's usual -z gravity. The coupler's link frame Co sits at the
+    middle of the bar rather than at either connection point.
+
+    This configuration does not satisfy loop closure: Cr and Rc are apart.
+
+    WHY THIS NEEDS DRAKE EXTENSIONS. A standard SDFormat joint has a single
+    frame J, and Drake would place both of its joint frames there, one on each
+    link. That makes every model parsed from a standard file assembled at
+    q = 0, whatever poses its links are given. A Drake joint has two frames, Jp
+    on the parent link and Jc on the child link, which coincide only when the
+    joint is satisfied. So each joint below names them separately:
+
+      <parent>, <child>    Which links the joint connects (standard SDFormat).
+      <drake:parent_frame> The frame Jp, on the parent link.
+      <drake:child_frame>  The frame Jc, on the child link.
+
+    Each of the two must name an explicit <frame> fixed to the corresponding
+    link, or that link itself. With both present, the joint ignores its <pose>,
+    and its <axis> is resolved into Jc (Drake's joint axis has the same
+    components in Jp and Jc). An axis without expressed_in, or one explicitly
+    expressed in the joint frame, is interpreted directly in Jc. Each axis
+    below is expressed in Jc directly.
+
+    As a result, the joints no longer depend on where the links are posed.
+    The link poses below draw the linkage as the figure does, but Drake does
+    not use them: what Drake simulates is fixed entirely by the joints' frames.
+
+    The <visual> elements are cosmetic only. They match four_bar_auto.cc: each
+    link is a box running between its two connection points, stopping just
+    short of them, and each joint is a translucent fat pin on its parent link
+    around a thin pin on its child link. The one exception is the parent pin of
+    the coupler_rocker joint. Drake will split the coupler to break the loop,
+    move that joint to the coupler's "shadow", and draw the pin there instead.
+    A model file cannot describe a link that does not exist until the model is
+    finalized, so four_bar_unassembled.cc draws the shadow, and that pin.
+    -->
+
+    <!-- The ground "link" of the linkage, running from Wd to Wr. It is welded
+    to World and carries no mass. It is a body of its own only because geometry
+    must be attached to one, and a model file cannot put geometry on World. -->
+    <link name="ground">
+      <inertial>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0</ixx> <iyy>0</iyy> <izz>0</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="ground_bar">
+        <geometry>
+          <box>
+            <size>3.8 0.1 0.2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 1 0 1</diffuse>
+        </material>
+      </visual>
+      <!-- The revolute axes are along y, while a cylinder's own axis is z, so
+      the pins are rolled a quarter turn about x to match. -->
+      <visual name="world_driver_parent_pin">
+        <pose>-2 0 0 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.04</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 1 0 0.5</diffuse>
+        </material>
+      </visual>
+      <visual name="world_rocker_parent_pin">
+        <pose>2 0 0 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.04</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 1 0 0.5</diffuse>
+        </material>
+      </visual>
+    </link>
+    <joint name="world_ground_weld" type="fixed">
+      <parent>world</parent>
+      <child>ground</child>
+    </joint>
+    <frame name="Wd" attached_to="ground">
+      <pose relative_to="ground">-2 0 0 0 0 0</pose>
+    </frame>
+    <frame name="Wr" attached_to="ground">
+      <pose relative_to="ground">2 0 0 0 0 0</pose>
+    </frame>
+
+    <!-- The driver, a thin rod from its link frame Do along +z to Dc. -->
+    <link name="driver">
+      <pose>-2 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0.5 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.0833333333333333</ixx>
+          <iyy>0.0833333333333333</iyy>
+          <izz>0</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="driver_bar">
+        <pose>0 0 0.5 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.2 0.1 0.8</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="world_driver_child_pin">
+        <pose>0 0 0 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.02</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="driver_coupler_parent_pin">
+        <pose>0 0 1 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.04</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 0.5</diffuse>
+        </material>
+      </visual>
+    </link>
+    <frame name="Dc" attached_to="driver">
+      <pose relative_to="driver">0 0 1 0 0 0</pose>
+    </frame>
+
+    <!-- The coupler runs along x from Cd to Cr, with its link frame Co at the
+    middle. Co is where the loop-closing weld constraint ends up, so it is
+    drawn as a fat orange triad; the coupler's far end Cr is drawn as a thin
+    blue one. -->
+    <link name="coupler">
+      <pose>0.4 0 1 0 0 0</pose>
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <iyy>1.92</iyy>
+          <izz>1.92</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="coupler_bar">
+        <geometry>
+          <box>
+            <size>4.6 0.1 0.2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 0.5</diffuse>
+        </material>
+      </visual>
+      <visual name="driver_coupler_child_pin">
+        <pose>-2.4 0 0 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.02</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 0.5</diffuse>
+        </material>
+      </visual>
+      <!-- Each frame axis is a cylinder, rotated from z onto that axis. -->
+      <visual name="Co_x_axis">
+        <pose>0.125 0 0 0 1.5707963267948966 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.012</radius>
+            <length>0.25</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.833 0.333 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="Co_y_axis">
+        <pose>0 0.125 0 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.012</radius>
+            <length>0.25</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.833 0.333 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="Co_z_axis">
+        <pose>0 0 0.125 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.012</radius>
+            <length>0.25</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.833 0.333 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="Cr_x_axis">
+        <pose>2.525 0 0 0 1.5707963267948966 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.006</radius>
+            <length>0.25</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 0.5</diffuse>
+        </material>
+      </visual>
+      <visual name="Cr_y_axis">
+        <pose>2.4 0.125 0 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.006</radius>
+            <length>0.25</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 0.5</diffuse>
+        </material>
+      </visual>
+      <visual name="Cr_z_axis">
+        <pose>2.4 0 0.125 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.006</radius>
+            <length>0.25</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 0.5</diffuse>
+        </material>
+      </visual>
+    </link>
+    <frame name="Cd" attached_to="coupler">
+      <pose relative_to="coupler">-2.4 0 0 0 0 0</pose>
+    </frame>
+    <frame name="Cr" attached_to="coupler">
+      <pose relative_to="coupler">2.4 0 0 0 0 0</pose>
+    </frame>
+
+    <!-- The rocker, a thin rod from its link frame Ro along +z to Rc. -->
+    <link name="rocker">
+      <pose>2 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 1 0 0 0</pose>
+        <mass>2</mass>
+        <inertia>
+          <ixx>0.6666666666666667</ixx>
+          <iyy>0.6666666666666667</iyy>
+          <izz>0</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name="rocker_bar">
+        <pose>0 0 1 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.2 0.1 1.8</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>1 1 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="world_rocker_child_pin">
+        <pose>0 0 0 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.02</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 1 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="coupler_rocker_child_pin">
+        <pose>0 0 2 1.5707963267948966 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.02</radius>
+            <length>0.2</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 1 0 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    <frame name="Rc" attached_to="rocker">
+      <pose relative_to="rocker">0 0 2 0 0 0</pose>
+    </frame>
+
+    <!-- The four revolute joints connect the frame pairs shown above, with
+    q = 0 when each pair is coincident. Nothing here says anything about a
+    spanning tree: the four joints simply form a loop, and MultibodyPlant
+    decides how to model it. Only the first joint is actuated. -->
+
+    <joint name="world_driver" type="revolute">
+      <parent>ground</parent>
+      <child>driver</child>
+      <drake:parent_frame>Wd</drake:parent_frame>
+      <drake:child_frame>driver</drake:child_frame>
+      <axis>
+        <xyz expressed_in="driver">0 -1 0</xyz>
+        <limit>
+          <!-- No effort limit provided. SDFormat defaults to -1, which we
+               parse as an actuated joint. -->
+        </limit>
+      </axis>
+    </joint>
+
+    <joint name="world_rocker" type="revolute">
+      <parent>ground</parent>
+      <child>rocker</child>
+      <drake:parent_frame>Wr</drake:parent_frame>
+      <drake:child_frame>rocker</drake:child_frame>
+      <axis>
+        <xyz expressed_in="rocker">0 -1 0</xyz>
+        <limit>
+          <!-- An effort of 0 is parsed as an unactuated joint. -->
+          <effort>0</effort>
+        </limit>
+      </axis>
+    </joint>
+
+    <joint name="driver_coupler" type="revolute">
+      <parent>driver</parent>
+      <child>coupler</child>
+      <drake:parent_frame>Dc</drake:parent_frame>
+      <drake:child_frame>Cd</drake:child_frame>
+      <axis>
+        <xyz expressed_in="Cd">0 -1 0</xyz>
+        <limit>
+          <effort>0</effort>
+        </limit>
+      </axis>
+    </joint>
+
+    <joint name="coupler_rocker" type="revolute">
+      <parent>coupler</parent>
+      <child>rocker</child>
+      <drake:parent_frame>Cr</drake:parent_frame>
+      <drake:child_frame>Rc</drake:child_frame>
+      <axis>
+        <xyz expressed_in="Rc">0 -1 0</xyz>
+        <limit>
+          <effort>0</effort>
+        </limit>
+      </axis>
+    </joint>
+
+  </model>
+</sdf>
