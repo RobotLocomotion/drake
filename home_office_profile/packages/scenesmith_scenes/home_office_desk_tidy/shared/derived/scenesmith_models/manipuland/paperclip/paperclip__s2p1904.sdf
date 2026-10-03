@@ -1,0 +1,319 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="paperclip">
+    <link name="base_link">
+      <inertial>
+        <mass>0.001000</mass>
+        <pose>-0.00015869448 -0.001790871 0.0025061462 0 0 0</pose>
+        <inertia>
+          <ixx>4.797852e-06</ixx>
+          <iyy>4.797852e-06</iyy>
+          <izz>4.797852e-06</izz>
+          <ixy>2.527883e-23</ixy>
+          <ixz>1.848993e-24</ixz>
+          <iyz>-2.639264e-22</iyz>
+        </inertia>
+      </inertial>
+      <collision name="part_0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_4">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_4.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_5">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_5.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_6">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_6.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_7">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_7.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_8">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_8.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_9">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_9.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_10">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_10.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_11">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_11.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_12">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_12.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_13">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_13.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_14">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/paperclip/assets/paperclip_cf_14.obj</uri>
+            <drake:declare_convex />
+            <scale>2.19040000 2.19040000 2.19040000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="sup_lf">
+        <pose>-0.00952824 0.0197136 0.00065712 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.00219040 0.00657120 0.00131424</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.00065712</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="sup_rf">
+        <pose>0.00974728 0.0197136 0.00065712 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.00219040 0.00657120 0.00131424</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.00065712</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="sup_lb">
+        <pose>-0.00952824 -0.021904 0.00065712 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.00219040 0.00657120 0.00131424</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.00065712</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="sup_rb">
+        <pose>0.00974728 -0.0197136 0.00065712 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.00219040 0.00657120 0.00131424</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mesh_resolution_hint>0.00065712</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.74</drake:mu_dynamic>
+          <drake:mu_static>0.74</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

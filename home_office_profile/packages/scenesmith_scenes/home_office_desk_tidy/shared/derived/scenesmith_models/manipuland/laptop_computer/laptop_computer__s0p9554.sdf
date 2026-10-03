@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf xmlns:drake="drake.mit.edu" version="1.7">
+  <model name="laptop_computer">
+    <link name="base_link">
+      <inertial>
+        <mass>1.600000</mass>
+        <pose>-0.000229296 -0.035041206 0.036897548 0 0 0</pose>
+        <inertia>
+          <ixx>1.280205e-02</ixx>
+          <iyy>1.812755e-02</iyy>
+          <izz>2.067003e-02</izz>
+          <ixy>-1.007082e-04</ixy>
+          <ixz>5.353871e-05</ixz>
+          <iyz>3.647233e-03</iyz>
+        </inertia>
+      </inertial>
+      <collision name="part_0">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/laptop_computer/assets/laptop_computer_cf_0.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95540000 0.95540000 0.95540000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic />
+          <drake:hydroelastic_modulus>6726601.83814</drake:hydroelastic_modulus>
+          <drake:mu_dynamic>1.1</drake:mu_dynamic>
+          <drake:mu_static>1.1</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_1">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/laptop_computer/assets/laptop_computer_cf_1.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95540000 0.95540000 0.95540000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>1.1</drake:mu_dynamic>
+          <drake:mu_static>1.1</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_2">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/laptop_computer/assets/laptop_computer_cf_2.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95540000 0.95540000 0.95540000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>1.1</drake:mu_dynamic>
+          <drake:mu_static>1.1</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="part_3">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>package://scenesmith_models/manipuland/laptop_computer/assets/laptop_computer_cf_3.obj</uri>
+            <drake:declare_convex />
+            <scale>0.95540000 0.95540000 0.95540000</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic />
+          <drake:mu_dynamic>1.1</drake:mu_dynamic>
+          <drake:mu_static>1.1</drake:mu_static>
+          <drake:hunt_crossley_dissipation>40</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
