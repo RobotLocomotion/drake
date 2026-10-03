@@ -284,6 +284,13 @@ def _create_from_schema(*, schema, forthcoming_value):
     if schema == np.ndarray:
         size = len(forthcoming_value)
         return np.array([math.nan] * size)
+    # The deprecated aliases typing.List[T] and typing.Dict[K, V] cannot be
+    # called like constructors, so construct their runtime types instead.
+    generic_base = typing.get_origin(schema)
+    if generic_base in (list, typing.List):
+        return list()
+    if generic_base in (dict, collections.abc.Mapping):
+        return dict()
     return schema()
 
 
