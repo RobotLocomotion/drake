@@ -18,10 +18,13 @@ drake_py_binary(
 drake_py_unittest(
     name = "lint_test",
     data = [
+        "//setup:ubuntu/packages.json",
         "//third_party:com_github_bazelbuild_bazelisk/LICENSE",
         "//third_party:com_github_bazelbuild_bazelisk/bazelisk.py",
+        "@bazelisk_debs_internal//:drake_repository_metadata.json",
         "@bazelisk_internal//:LICENSE",
         "@bazelisk_internal//:bazelisk.py",
+        "@bazelisk_internal//:drake_repository_metadata.json",
     ],
     tags = ["lint"],
     deps = [

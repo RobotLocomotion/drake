@@ -86,6 +86,8 @@ _OTHER_REPOSITORIES = [
 
 # Packages in these cohorts should be upgraded together (in a single commit).
 _COHORTS = (
+    # bazelisk's source and deb packages must be kept aligned.
+    {"bazelisk_internal", "bazelisk_debs_internal"},
     # clarabel_cpp uses crate_universe; be sure to keep them aligned.
     {"clarabel_cpp_internal", "crate_universe"},
     # sdformat depends on both gz libraries; be sure to keep them aligned.
@@ -294,7 +296,7 @@ def _handle_github(
                         break
     else:
         assert upgrade_type == UpgradeType.RELEASE
-        exclude_tags_pattern = data["exclude_tags_pattern"]
+        exclude_tags_pattern = data.get("exclude_tags_pattern")
         new_commit, commit_date = _latest_release(
             gh_repo, workspace_name, exclude_tags_pattern
         )
@@ -620,7 +622,7 @@ def _do_upgrade(
                 old_attachments=data["attachments"],
             )
 
-        if data["post_upgrade_script"] is not None:
+        if data.get("post_upgrade_script", ""):
             modified_paths = _do_upgrade_scripted(
                 local_drake_checkout=local_drake_checkout,
                 workspace_root=workspace_root,

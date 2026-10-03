@@ -401,6 +401,7 @@ use_repo(
     #
     # Build system.
     #
+    "bazelisk_debs_internal",
     "bazelisk_internal",
     #
     # Documentation.

@@ -13,6 +13,7 @@ filegroup(
     name = "drake_repository_metadata",
     srcs = [
         "@abseil_cpp_internal//:drake_repository_metadata.json",
+        "@bazelisk_debs_internal//:drake_repository_metadata.json",
         "@bazelisk_internal//:drake_repository_metadata.json",
         "@ccd_internal//:drake_repository_metadata.json",
         "@clang_cindex_python3_internal//:drake_repository_metadata.json",
