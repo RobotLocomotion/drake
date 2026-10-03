@@ -152,6 +152,24 @@ start with `::`; there is no way to denote any "outer" or "outermost" scope.
 For a detailed design discussion with examples, see the
 <a href='http://sdformat.org/tutorials?tut=composition_proposal#1-3-name-scoping-and-cross-referencing'>SDFormat documentation of name scoping.</a>
 
+@subsubsection sdf_joint_frames Joint Frames
+
+Drake considers a joint to be a connection between two frames: the parent frame
+Jp (fixed on the parent link) and the child frame Jc (fixed on the child link).
+Standard SDFormat is more restrictive in that it defines only a single joint
+frame J, implying that Jp and Jc coincide with J. Although the standard
+`<parent>` and `<child>` tags can accept a frame, in many cases that frame is
+used only to indicate the parent or child link. To support Drake's
+less-restrictive model, we provide the `<drake:parent_frame>` and
+`<drake:child_frame>` tags to explicitly specify the frames Jp and Jc.
+
+Drake provides some non-standard joints introduced by the `<drake:joint>`
+tag. For those joints, the contained `<drake:parent>` and `<drake:child>`
+tags can specify Jp and Jc directly so the `<drake:parent_frame>` and
+`<drake:child_frame>` tags are not needed, and so are not allowed there.
+
+@see @ref tag_drake_parent_frame for details.
+
 @subsection tag_deformable_link_requirements Deformable link requirements
 
 Drake supports specifying deformable bodies through SDFormat via custom tags as
@@ -270,6 +288,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_bushing_torque_stiffness
 - @ref tag_drake_capsule
 - @ref tag_drake_child
+- @ref tag_drake_child_frame
 - @ref tag_drake_circular_arc
 - @ref tag_drake_collision_filter_group
 - @ref tag_drake_compliant_hydroelastic
@@ -318,6 +337,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_mu_dynamic
 - @ref tag_drake_mu_static
 - @ref tag_drake_parent
+- @ref tag_drake_parent_frame
 - @ref tag_drake_perception_properties
 - @ref tag_drake_plane_normal
 - @ref tag_drake_point_contact_stiffness
@@ -942,10 +962,29 @@ URDF note: Drake supports both `drake:capsule`, and a non-standard
 
 @subsubsection tag_drake_child_semantics Semantics
 
-The string names a frame (defined elsewhere in the model) that is associated
+The string names a frame Jc (defined elsewhere in the model) that is associated
 with the child link of the joint being defined.
+It determines _both_ (a) which link the joint connects and (b) where on that
+link the joint's frame Jc is. In a standard SDFormat joint (that is, not one
+of the Drake extension joints), those two roles are played by`<child>` and
+@ref tag_drake_child_frame respectively.
 
 @see @ref tag_drake_joint
+
+@subsection tag_drake_child_frame drake:child_frame
+
+- SDFormat path: `//joint/drake:child_frame`
+- URDF path: N/A
+- Syntax: String.
+
+@subsubsection tag_drake_child_frame_semantics Semantics
+
+The string names the joint child frame Jc on the child link of a standard
+SDFormat joint: either that link itself, or an explicit `<frame>` fixed to it.
+It must be used together with @ref tag_drake_parent_frame; see there for
+details.
+
+@see @ref tag_drake_parent_frame
 
 @subsection tag_drake_circular_arc drake:circular_arc
 
@@ -1522,8 +1561,66 @@ MultibodyPlant's constructor documentation for details.
 
 @subsubsection tag_drake_parent_semantics Semantics
 
-The string names a frame (defined elsewhere in the model) that is associated
+The string names a frame Jp (defined elsewhere in the model) that is associated
 with the parent link of the joint being defined.
+It determines _both_ (a) which link the joint connects and (b) where on that
+link the joint's frame Jp is. In a standard SDFormat joint (that is, not one
+of the Drake extension joints), those two roles are played by`<parent>` and
+@ref tag_drake_parent_frame respectively.
+
+@subsection tag_drake_parent_frame drake:parent_frame
+
+- SDFormat path: `//joint/drake:parent_frame`
+- URDF path: N/A
+- Syntax: String.
+
+@subsubsection tag_drake_parent_frame_semantics Semantics
+
+The string names the joint parent frame Jp on the parent link of a standard
+SDFormat joint: either that link itself, or an explicit `<frame>` fixed to it.
+
+An SDFormat joint has a single frame J, located by the joint's `<pose>`, and
+Drake ordinarily places both of the joint's frames there, Jp on the parent
+link and Jc on the child link. As a result, a model parsed from a file is always
+assembled at its zero configuration. `drake:parent_frame` and
+@ref tag_drake_child_frame instead locate Jp and Jc independently, which makes
+it possible to describe a closed kinematic loop that is not assembled at the
+zero configuration (see MultibodyPlant::SetEnableLoopTopology()).
+
+The two must be used together. Each must name the corresponding link, as
+resolved from the joint's standard `<parent>` or `<child>`, or a frame fixed to
+it; `<parent>` and `<child>` still determine which links the joint connects.
+Frames exported by included models, such as URDF `<frame>` elements, may also
+be named. If `<parent>` or `<child>` itself names a frame rather than a link,
+the corresponding `<drake:parent_frame>` or `<drake:child_frame>` tag must name
+that same frame; to locate Jp or Jc at some other frame, just name the link in
+`<parent>` or `<child>` instead.
+
+When these tags are used, the joint's `<pose>` is ignored for defining the poses
+of Jp and Jc (with a warning, if given), and the joint's axes are resolved into
+Jc rather than J. An axis with no `expressed_in` attribute, or one whose
+`expressed_in` explicitly names the joint, is taken to be already expressed in
+Jc, so the ignored `<pose>` cannot affect it. At a joint's zero configuration Jp
+and Jc have the same orientation, so an axis has the same components in both,
+and resolving it into Jc also resolves it into Jp. For revolute, continuous,
+prismatic, and screw joints this holds at every configuration, since the joint's
+motion leaves the axis unchanged. The joint frame J itself still exists for
+SDFormat, though, so an axis expressed in some other frame whose pose is defined
+relative to the joint does still depend on the ignored `<pose>`; avoid
+expressing axes that way. Likewise, a `<frame>` that is `attached_to` the joint,
+or whose pose is `relative_to` it, is located relative to J, not to Jc; avoid
+those as well.
+
+SDFormat does not allow a `<frame>` inside a `<model>` to be attached to
+`world` directly. For a joint in a model whose parent is `world`, naming
+`world` in `drake:parent_frame` puts Jp at the world origin. To offset Jp,
+the tag can instead name a frame in a nested static model containing only
+frames: Drake fixes that model's implicit frame to world. Another option is
+to weld a ground link to world, use that link as the joint's `<parent>`, and
+name a frame fixed to it in `drake:parent_frame`.
+
+@see @ref tag_drake_child_frame, @ref tag_drake_parent, which serves the
+same purpose for `drake:joint`
 
 @subsection tag_drake_perception_properties drake:perception_properties
 
