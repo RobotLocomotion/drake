@@ -45,6 +45,7 @@ using internal::kHcDissipation;
 using internal::kHydroGroup;
 using internal::kMargin;
 using internal::kMaterialGroup;
+using internal::kPointContactAlgorithm;
 using internal::kPointStiffness;
 using internal::kRelaxationTime;
 using internal::kRezHint;
@@ -251,6 +252,14 @@ bool BackfillDefaults(ProximityProperties* properties,
                      defaults.hunt_crossley_dissipation);
   result |= backfill(kMaterialGroup, kRelaxationTime, defaults.relaxation_time);
   result |= backfill(kMaterialGroup, kPointStiffness, defaults.point_stiffness);
+  // A geometry without the point contact algorithm property already behaves
+  // as "single_point", so that default is not written; writing it would turn
+  // ApplyProximityDefaults() into a modification (and a re-processing of the
+  // geometry) for otherwise fully specified properties.
+  if (defaults.point_contact_algorithm != internal::kSinglePointAlgorithm) {
+    result |= backfill(kMaterialGroup, kPointContactAlgorithm,
+                       std::make_optional(defaults.point_contact_algorithm));
+  }
   result |= backfill(kHydroGroup, kMargin, defaults.margin);
   if (defaults.static_friction.has_value()) {
     // DefaultProximityProperties::ValidateOrThrow() enforces invariants on
@@ -1305,6 +1314,12 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   RoleAssign assign) {
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kProximity, assign);
+
+  // An unrecognized point contact algorithm is rejected here, before anything
+  // has been modified, so that a bad value cannot leave this GeometryState
+  // and its proximity engine in disagreement. The check covers every shape,
+  // although the engine only consults the property for Convex and Mesh.
+  internal::GetPointContactAlgorithmOrThrow(properties);
 
   geometry_version_.modify_proximity();
   switch (assign) {

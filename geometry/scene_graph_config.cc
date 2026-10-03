@@ -79,6 +79,15 @@ void DefaultProximityProperties::ValidateOrThrow() const {
   DRAKE_ENFORCE(point_stiffness, kPositive);
 #undef DRAKE_ENFORCE
 
+  if (point_contact_algorithm != internal::kSinglePointAlgorithm &&
+      point_contact_algorithm != internal::kMujocoMultipointAlgorithm) {
+    throw std::logic_error(fmt::format(
+        "Invalid scene graph configuration: 'point_contact_algorithm' ('{}') "
+        "must be either '{}' or '{}'.",
+        point_contact_algorithm, internal::kSinglePointAlgorithm,
+        internal::kMujocoMultipointAlgorithm));
+  }
+
   // Require either both friction quantities or neither.
   if (static_friction.has_value() != dynamic_friction.has_value()) {
     auto value_or_nullopt = [](auto x) {
