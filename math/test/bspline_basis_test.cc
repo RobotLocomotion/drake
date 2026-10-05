@@ -51,7 +51,7 @@ TYPED_TEST(BsplineBasisTests, ConstructorTest) {
     // uses Expression::EqualTo instead.
     EXPECT_TRUE(std::equal(basis.knots().begin(), basis.knots().end(),
                            expected_knots.begin(), expected_knots.end(),
-                           [](const T& knot1, const T& knot2) {
+                           [](const T& knot1, const T& knot2) -> bool {
                              if constexpr (scalar_predicate<T>::is_bool) {
                                return knot1 == knot2;
                              } else {
