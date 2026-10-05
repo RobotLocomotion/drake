@@ -354,6 +354,28 @@ GTEST_TEST(ClpSolverTest, DenseQuadraticProgram) {
                               clarabel_result.GetSolution(x), 1E-5));
 }
 
+// A QP with bounds but no linear constraints, where some variables are free.
+// CLP's crossover iterates on the free variables, and its pricing divides by
+// the (zero) number of rows; run under UBSan to catch that (#25054).
+GTEST_TEST(ClpSolverTest, BoundedAndFreeVariablesQP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto bb_con = prog.AddBoundingBoxConstraint(-1, 0.5, x(0));
+  prog.AddQuadraticCost((x(0) - 3) * (x(0) - 3) + (x(1) - 1) * (x(1) - 1) +
+                        x(0) * x(1) + (x(2) - x(1)) * (x(2) - x(1)));
+
+  ClpSolver solver;
+  const auto result = solver.Solve(prog, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double tol = 1E-7;
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                              Eigen::Vector3d(0.5, 0.75, 0.75), tol));
+  EXPECT_NEAR(result.get_optimal_cost(), 6.6875, tol);
+  // The upper bound x(0) <= 0.5 is active, with dual 2(x(0) - 3) + x(1).
+  EXPECT_TRUE(
+      CompareMatrices(result.GetDualSolution(bb_con), Vector1d(-4.25), tol));
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

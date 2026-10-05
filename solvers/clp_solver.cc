@@ -376,6 +376,11 @@ void ClpSolver::DoSolve2(const MathematicalProgram& prog,
   // method. Its crossover warm-starts CLP's nonlinear primal from the barrier
   // point, which refines the solution and the duals read below.
   if (quadratic_matrix.nonZeros() > 0) {
+    if (model.numberRows() == 0) {
+      // CLP's crossover divides by the number of rows, so add an empty free
+      // row; no dual is read from it (#25054).
+      model.addRow(0, nullptr, nullptr, -COIN_DBL_MAX, COIN_DBL_MAX);
+    }
     model.barrier(/* crossover = */ true);
   } else {
     model.primal();
