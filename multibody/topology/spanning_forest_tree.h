@@ -16,7 +16,9 @@ A Tree consists of consecutively numbered Mobod nodes in depth-first order.
 The first node is its base Mobod (root node) and the last node is its
 "rightmost" terminal Mobod (assuming you draw the tree with the root at the
 bottom, and children consistently left-to-right). Duplication is avoided by
-keeping a back pointer to the owning SpanningForest. */
+keeping a back pointer to the owning SpanningForest. 
+
+The World Mobod is not part of any Tree. */
 class SpanningForest::Tree {
  public:
   /* (Internal use only) Copy/Move constructor & assignment. Back pointer
@@ -65,8 +67,7 @@ class SpanningForest::Tree {
     return forest_->mobods()[last_mobod_];
   }
 
-  /* The number of Mobods in this %Tree, counting the base (root) body.
-  (World is not considered to be part of any %Tree.) */
+  /* The number of Mobods in this %Tree, counting the base (root) body. */
   int num_mobods() const { return last_mobod_ - base_mobod_ + 1; }
 
   /* The lowest numbered generalized position coordinate q assigned to
