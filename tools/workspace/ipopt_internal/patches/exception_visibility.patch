@@ -1,0 +1,25 @@
+[ipopt_internal] Don't mark public linker visibility on exception classes
+
+Leave the visibility alone because we want the namespace visibility to
+govern what is (in)visible.
+
+--- src/Common/IpException.hpp
++++ src/Common/IpException.hpp
+@@ -12,16 +12,7 @@
+ #include "IpUtils.hpp"
+ #include "IpJournalist.hpp"
+ 
+-/* for the exception classes, __attribute__((__visibility__("default"))) needs to be used
+- * also by libraries that link against an Ipopt shared library on macOS/clang,
+- * since otherwise the exceptions cannot be recognized by a catch() in the user code
+- * (https://stackoverflow.com/questions/11913151/catching-derived-exceptions-types-fails-on-clang-macos-x)
+- */
+-#if defined(__GNUC__) && __GNUC__ >= 4
+-#define IPOPTEXCEPTION_EXPORT __attribute__((__visibility__("default")))
+-#else
+-#define IPOPTEXCEPTION_EXPORT IPOPTLIB_EXPORT
+-#endif
++#define IPOPTEXCEPTION_EXPORT
+ 
+ namespace Ipopt
+ {
