@@ -16,6 +16,8 @@ GTEST_TEST(RenderEngineGlParams, Serialization) {
       .default_diffuse = Rgba{1.0, 0.5, 0.25},
       .default_clear_color = Rgba{0.25, 0.5, 1.0},
       .lights = {{.type = "point"}},
+      .cast_shadows = true,
+      .shadow_map_size = 512,
   };
   const std::string yaml = yaml::SaveYamlString<Params>(original);
   const Params dut = yaml::LoadYamlString<Params>(yaml);
@@ -23,6 +25,8 @@ GTEST_TEST(RenderEngineGlParams, Serialization) {
   EXPECT_EQ(dut.default_clear_color, original.default_clear_color);
   ASSERT_EQ(dut.lights.size(), 1);
   EXPECT_EQ(dut.lights.at(0).type, "point");
+  EXPECT_TRUE(dut.cast_shadows);
+  EXPECT_EQ(dut.shadow_map_size, 512);
 }
 
 }  // namespace

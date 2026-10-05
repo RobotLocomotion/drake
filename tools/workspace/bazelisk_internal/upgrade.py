@@ -1,0 +1,75 @@
+"""
+upgrade.py - Upgrades Drake's version of bazelisk.
+
+This program is only tested / supported on Ubuntu.
+"""
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import urllib.request
+
+from python import runfiles
+
+
+def _get_url_sha256(url: str) -> str:
+    hasher = hashlib.sha256()
+    with urllib.request.urlopen(url) as response:
+        while chunk := response.read(4096):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def main():
+    # Operate relative to the root of the Drake source tree.
+    drake_dir = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
+    os.chdir(drake_dir)
+    mydir = drake_dir / "tools/workspace/bazelisk_internal"
+
+    # Find out which version we are pinned to (new_release has already upgraded
+    # our repository.bzl).
+    new_version = None
+    my_version_re = re.compile(r'commit\s*=\s*["\']([^"\']+)["\']')
+    repo_bzl_lines = (
+        (mydir / "repository.bzl").read_text(encoding="utf-8").splitlines()
+    )
+    for line in repo_bzl_lines:
+        m = my_version_re.search(line)
+        if m:
+            new_version = m.group(1)
+            break
+    assert new_version
+
+    # Upgrade setup/ubuntu/packages.json.
+    ubuntu_dir = drake_dir / "setup" / "ubuntu"
+    packages = json.loads(
+        (ubuntu_dir / "packages.json").read_text(encoding="utf-8")
+    )
+    for package in packages:
+        if package["name"] != "bazelisk":
+            continue
+        for i, url in enumerate(package["urls"]):
+            package["urls"][i] = re.sub(r"v\d+\.\d+\.\d+", new_version, url)
+        package["sha256"] = _get_url_sha256(package["urls"][0])
+    (ubuntu_dir / "packages.json").write_text(
+        json.dumps(packages, indent=4) + "\n"
+    )
+
+    # Upgrade our third_party copy.
+    manifest = runfiles.Create()
+    bazelisk_license_path = os.environ["DRAKE_BAZELISK_LICENSE_PATH"]
+    bazelisk_py_path = os.environ["DRAKE_BAZELISK_PY_PATH"]
+    bazelisk_files = {
+        manifest.Rlocation(bazelisk_license_path),
+        manifest.Rlocation(bazelisk_py_path),
+    }
+    third_party_dir = drake_dir / "third_party/com_github_bazelbuild_bazelisk/"
+    for file in bazelisk_files:
+        shutil.copy2(file, third_party_dir)
+
+
+if __name__ == "__main__":
+    main()

@@ -31,6 +31,9 @@
 searchBox.searchLabel = 'Go to name…';
 searchBox.DOMSearchField().placeholder = searchBox.searchLabel;
 searchBox.DOMSearchField().value = '';
+// Doxygen 1.18 only wires up search where a doxygen-config element exists,
+// which it omits under DISABLE_INDEX; do it ourselves (doxygen/doxygen#12168).
+if (!document.getElementById('doxygen-config')) { init_search(); }
 </script>
 </body>
 </html>

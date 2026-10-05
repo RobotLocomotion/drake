@@ -15,4 +15,7 @@ The lockfile and `lock/repo_names.bzl` are kept under `lock/` and managed by
 ## Upgrading
 
 To upgrade Drake's pinned Rust dependencies, run this tool:
+
+```sh
   bazel run //tools/workspace/crate_universe:upgrade
+```

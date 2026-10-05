@@ -796,21 +796,6 @@ void UrdfParser::ParseMimicTag(XMLElement* node) {
   std::string name;
   ParseStringAttribute(node, "name", &name);
 
-  // Only warn for non-SAP discrete solvers; continuous plants have different
-  // error reporting.
-  if (plant->is_discrete() &&
-      plant->get_discrete_contact_solver() != DiscreteContactSolver::kSap) {
-    Warning(
-        *mimic_node,
-        fmt::format("Joint '{}' specifies a mimic element that will be "
-                    "ignored. Mimic elements are currently only supported by "
-                    "MultibodyPlant with a discrete time step and using "
-                    "DiscreteContactSolver::kSap, or by continuous time plants "
-                    "using the CENIC integrator.",
-                    name));
-    return;
-  }
-
   std::string joint_to_mimic;
   if (!ParseStringAttribute(mimic_node, "joint", &joint_to_mimic)) {
     Error(*mimic_node, fmt::format("Joint '{}' mimic element is missing the "

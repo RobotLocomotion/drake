@@ -57,8 +57,10 @@ Wheel packages for Linux and macOS are published nightly at a
 
 - Nightly wheel version numbers are created as `0.0.YYYYMMDD`, e.g.,
   `0.0.20260818` for August 18th, 2026.
-  - Wheels that use `nanobind` instead of `pybind11` are marked as "alpha
-    release", e.g., `0.0.20260818a1`.
+  - Wheels that use the older `pybind11` binder instead of its newer `nanobind`
+    replacement are marked as "beta release", e.g., `0.0.20260818b1`. The
+    `pybind11` wheels are provided for backwards compatibility and will stop
+    being published on or after 2027-03-01.
 - Nightly wheel packages are retained for 56 days from their date of creation,
   and drop out of the index after 48 days.
 

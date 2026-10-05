@@ -88,7 +88,6 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   ~CompliantContactManager() final;
 
   // Sets the parameters to be used by the SAP solver.
-  // @pre plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap.
   // @throws if called when instantiated on T = symbolic::Expression.
   void set_sap_solver_parameters(
       const contact_solvers::internal::SapSolverParameters& parameters);

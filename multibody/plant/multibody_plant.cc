@@ -490,15 +490,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (is_discrete()) {
-    switch (get_discrete_contact_solver()) {
-      case DiscreteContactSolver::kSap:
-        // SAP supports coupler constraints.
-        break;
-    }
-  }
-  // Feature support for continuous time plants depends on the integrator used.
-
   if (joint0.num_velocities() != 1 || joint1.num_velocities() != 1) {
     const std::string message = fmt::format(
         "Coupler constraints can only be defined on single-DOF joints. "
@@ -526,15 +517,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
   // N.B. The manager is setup at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
-
-  if (is_discrete()) {
-    switch (get_discrete_contact_solver()) {
-      case DiscreteContactSolver::kSap:
-        // SAP supports distance constraints.
-        break;
-    }
-  }
-  // Feature support for continuous time plants depends on the integrator used.
 
   const MultibodyConstraintId constraint_id =
       MultibodyConstraintId::get_new_id();
@@ -631,15 +613,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (is_discrete()) {
-    switch (get_discrete_contact_solver()) {
-      case DiscreteContactSolver::kSap:
-        // SAP supports ball constraints.
-        break;
-    }
-  }
-  // Feature support for continuous time plants depends on the integrator used.
-
   const MultibodyConstraintId constraint_id =
       MultibodyConstraintId::get_new_id();
 
@@ -666,15 +639,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
   // N.B. The manager is set up at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
-
-  if (is_discrete()) {
-    switch (get_discrete_contact_solver()) {
-      case DiscreteContactSolver::kSap:
-        // SAP supports weld constraints.
-        break;
-    }
-  }
-  // Feature support for continuous time plants depends on the integrator used.
 
   const MultibodyConstraintId constraint_id =
       MultibodyConstraintId::get_new_id();
@@ -705,15 +669,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddTendonConstraint(
   // N.B. The manager is set up at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
-
-  if (is_discrete()) {
-    switch (get_discrete_contact_solver()) {
-      case DiscreteContactSolver::kSap:
-        // SAP supports tendon constraints.
-        break;
-    }
-  }
-  // Feature support for continuous time plants depends on the integrator used.
 
   DRAKE_THROW_UNLESS(joints.size() > 0);
 
@@ -1496,7 +1451,7 @@ void MultibodyPlant<T>::Finalize() {
   // Make the manager of discrete updates.
   if (is_discrete()) {
     std::unique_ptr<internal::DiscreteUpdateManager<T>> manager =
-        internal::MakeDiscreteUpdateManager<T>(get_discrete_contact_solver());
+        internal::MakeDiscreteUpdateManager<T>();
     if (manager) {
       SetDiscreteUpdateManager(std::move(manager));
     }

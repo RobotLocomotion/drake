@@ -35,9 +35,27 @@ class TestNloptSolver(unittest.TestCase):
         self.assertIsInstance(NloptSolver.ConstraintToleranceName(), str)
         self.assertIsInstance(NloptSolver.XRelativeToleranceName(), str)
         self.assertIsInstance(NloptSolver.XAbsoluteToleranceName(), str)
+        self.assertIsInstance(NloptSolver.FRelativeToleranceName(), str)
+        self.assertIsInstance(NloptSolver.FAbsoluteToleranceName(), str)
         self.assertIsInstance(NloptSolver.MaxEvalName(), str)
         self.assertIsInstance(NloptSolver.AlgorithmName(), str)
         self.assertIsInstance(NloptSolver.MaxTimeName(), str)
+        self.assertIsInstance(NloptSolver.StopValName(), str)
+        self.assertIsInstance(NloptSolver.LocalOptimizerAlgorithmName(), str)
+        self.assertIsInstance(
+            NloptSolver.LocalOptimizerXRelativeToleranceName(), str
+        )
+        self.assertIsInstance(
+            NloptSolver.LocalOptimizerXAbsoluteToleranceName(), str
+        )
+        self.assertIsInstance(
+            NloptSolver.LocalOptimizerFRelativeToleranceName(), str
+        )
+        self.assertIsInstance(
+            NloptSolver.LocalOptimizerFAbsoluteToleranceName(), str
+        )
+        self.assertIsInstance(NloptSolver.LocalOptimizerMaxEvalName(), str)
+        self.assertIsInstance(NloptSolver.LocalOptimizerMaxTimeName(), str)
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when NLopt is disabled."""

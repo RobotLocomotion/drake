@@ -92,19 +92,19 @@ def edit_wheel_version_for_binder(
 ) -> str:
     """Amends the user-supplied `wheel_version` to reflect the given choice of
     python binder (if necessary), returning the modified version string. Wheels
-    that use `nanobind` instead of `pybind11` are marked as "alpha release",
-    e.g., `0.0.20260810a1` or `0.0.20260810a1+git0123abcd`.
+    that use `pybind11` instead of `nanobind` are marked as "beta release",
+    e.g., `0.0.20260810b1` or `0.0.20260810b1+git0123abcd`.
     """
-    if python_binder == PythonBinder.PYBIND11:
+    if python_binder == PythonBinder.NANOBIND:
         return wheel_version
     else:
-        assert python_binder == PythonBinder.NANOBIND
-        # Insert "a1" before the plus (or with no plus, at the end).
+        assert python_binder == PythonBinder.PYBIND11
+        # Insert "b1" before the plus (or with no plus, at the end).
         if "+" in wheel_version:
             (prefix, suffix) = wheel_version.split("+")
-            return prefix + "a1+" + suffix
+            return prefix + "b1+" + suffix
         else:
-            return wheel_version + "a1"
+            return wheel_version + "b1"
 
 
 def wheel_name(python_binder, python_version, wheel_version, wheel_platform):

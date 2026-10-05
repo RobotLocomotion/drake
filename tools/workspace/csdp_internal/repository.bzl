@@ -12,6 +12,7 @@ def csdp_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/pr21.patch",
+            ":patches/linesearch_small_n.patch",
             ":patches/params_pathname.patch",
             ":patches/printlevel.patch",
         ],

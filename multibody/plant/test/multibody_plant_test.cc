@@ -917,11 +917,6 @@ class AcrobotPlantTests : public ::testing::Test {
     discrete_plant_->CalcForcedDiscreteVariableUpdate(*discrete_context_,
                                                       updates.get());
 
-    // This test is verifying the discrete dynamics for our default discrete
-    // solver only, currently SAP. Therefore we first verify this to be true.
-    ASSERT_EQ(discrete_plant_->get_discrete_contact_solver(),
-              DiscreteContactSolver::kSap);
-
     // Copies to plain Eigen vectors to verify the math.
     const int nv = plant_->num_velocities();
     const int nq = plant_->num_positions();

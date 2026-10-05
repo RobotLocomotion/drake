@@ -49,7 +49,7 @@ class MapKeyRange {
       ++itr_;
       return *this;
     }
-    bool operator!=(const ConstIterator& other) { return itr_ != other.itr_; }
+    bool operator==(const ConstIterator&) const = default;
 
    private:
     explicit ConstIterator(

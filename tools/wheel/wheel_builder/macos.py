@@ -25,7 +25,6 @@ from .macos_types import Target
 
 # This is the complete set of defined targets (i.e. potential wheels). By
 # default, all targets are built, but the user may down-select from this set.
-# On macOS (unlike Linux), this is just the set of Python versions targeted.
 #
 # These should be kept in sync with `setup/mac/Brewfile-developer`.
 TARGETS = (
@@ -43,8 +42,12 @@ TARGETS = (
     #   should be added to the aforementioned installation documentation.
     Target(
         python_binder=PythonBinder.NANOBIND,
-        build_python=PythonTarget(3, 13),
-        test_pythons=(PythonTarget(3, 13), PythonTarget(3, 14)),
+        build_python=PythonTarget(3, 12),
+        test_pythons=(
+            PythonTarget(3, 12),
+            PythonTarget(3, 13),
+            PythonTarget(3, 14),
+        ),
     ),
     Target(
         python_binder=PythonBinder.PYBIND11,

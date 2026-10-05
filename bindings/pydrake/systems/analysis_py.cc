@@ -571,7 +571,10 @@ Parameter ``interruptible``:
         .def_rw("solver_id", &RegionOfAttractionOptions::solver_id,
             cls_doc.solver_id.doc)
         .def_rw("solver_options", &RegionOfAttractionOptions::solver_options,
-            cls_doc.solver_options.doc);
+            cls_doc.solver_options.doc)
+        .def_rw("certificate_tolerance",
+            &RegionOfAttractionOptions::certificate_tolerance,
+            cls_doc.certificate_tolerance.doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
 

@@ -5,7 +5,8 @@
 brew 'bash'
 brew 'coreutils'
 
-# Python(s) for building wheels.  These should be kept in sync with
+# Python(s) for building and testing wheels. These should be kept in sync with
 # `python_targets` in `tools/wheel/wheel_builder/macos.py`.
+brew 'python@3.12'
 brew 'python@3.13'
 brew 'python@3.14'

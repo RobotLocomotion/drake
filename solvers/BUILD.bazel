@@ -1368,9 +1368,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "clp_solver_test",
     deps = [
+        ":clarabel_solver",
         ":clp_solver",
         ":linear_program_examples",
         ":quadratic_program_examples",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

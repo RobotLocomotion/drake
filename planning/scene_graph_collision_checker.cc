@@ -254,8 +254,14 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
     plant().CalcPointsPositions(plant_context, frame_B, p_BCb, frame_W, &p_WCb);
 
     // Compute the spatial gradient of distance (expressed in the world).
+    // The witness points come from the unpadded query, where SignedDistancePair
+    // promises (p_WCa - p_WCb) = unpadded_distance * nhat_BA_W, so it is the
+    // sign of the *unpadded* distance that tells us which way the witness
+    // points face. (Padding shifts the reported distance, but does not move the
+    // witness points, so it cannot change the direction of fastest increasing
+    // distance.)
     const Vector3d ddist_dp_BA =
-        (distance > 0 ? 1 : -1) * (p_WCa - p_WCb).stableNormalized();
+        (unpadded_distance > 0 ? 1 : -1) * (p_WCa - p_WCb).stableNormalized();
 
     // We're computing ∂p_BA_W/∂qᵣ = ∂p_WA/∂qᵣ - ∂p_WB/∂qᵣ. Because we're
     // differentiating w.r.t. qᵣ, if either A or B is not a robot body, that

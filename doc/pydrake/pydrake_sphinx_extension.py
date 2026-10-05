@@ -224,6 +224,14 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     return None
 
 
+def autodoc_restore_double_colons(app, what, name, obj, options, lines):
+    """Undoes mkdoc's substitution of "::" with "∷" (U+2237), which exists
+    only to appease MyPy's stubgen.
+    """
+    for i, line in enumerate(lines):
+        lines[i] = line.replace("∷", "::")
+
+
 def patch_sort_members(original, self, documenters, order):
     """Adds a `bycustomfunction` member-order strategy, which sorts members
     alphabetically by case-insensitive full name.
@@ -288,6 +296,10 @@ def setup(app):
     )
     # Skip specific members.
     app.connect("autodoc-skip-member", autodoc_skip_member)
+
+    # Restore C++ scope operators in docstrings.
+    app.connect("autodoc-process-docstring", autodoc_restore_double_colons)
+
     # Register directive so we can pretty-print template declarations.
     pydoc.PythonDomain.directives["template"] = pydoc.PyClasslike
     # Register autodocumentation for templates.

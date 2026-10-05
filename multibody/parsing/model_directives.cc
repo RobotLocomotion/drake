@@ -6,23 +6,44 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
+
+namespace {
+
+/* Preserves the historical IsValid() behavior: log errors and return false
+without throwing. */
+DiagnosticPolicy MakeLoggingPolicy() {
+  DiagnosticPolicy policy;
+  policy.SetActionForErrors([](const DiagnosticDetail& detail) {
+    drake::log()->error(detail.message);
+  });
+  return policy;
+}
+
+}  // namespace
+
 bool AddWeld::IsValid() const {
+  return IsValid(MakeLoggingPolicy());
+}
+
+bool AddWeld::IsValid(const DiagnosticPolicy& diagnostic) const {
   if (parent.empty()) {
-    drake::log()->error("add_weld: `parent` must be non-empty");
+    diagnostic.Error("add_weld: `parent` must be non-empty");
     return false;
   } else if (child.empty()) {
-    drake::log()->error("add_weld: `child` must be non-empty");
+    diagnostic.Error("add_weld: `child` must be non-empty");
     return false;
   }
   if (X_PC) {
     if (X_PC->base_frame) {
-      drake::log()->error(
+      diagnostic.Error(
           "add_weld: `X_PC` must not specify a `base_frame`; the pose is "
           "always in the parent frame.");
       return false;
     }
     if (!X_PC->IsDeterministic()) {
-      drake::log()->error(
+      diagnostic.Error(
           "add_weld: `X_PC` must specify a deterministic transform, not a "
           "distribution.");
       return false;
@@ -32,16 +53,20 @@ bool AddWeld::IsValid() const {
 }
 
 bool AddModel::IsValid() const {
+  return IsValid(MakeLoggingPolicy());
+}
+
+bool AddModel::IsValid(const DiagnosticPolicy& diagnostic) const {
   if (file.empty()) {
-    drake::log()->error("add_model: `file` must be non-empty");
+    diagnostic.Error("add_model: `file` must be non-empty");
     return false;
   } else if (name.empty()) {
-    drake::log()->error("add_model: `name` must be non-empty");
+    diagnostic.Error("add_model: `name` must be non-empty");
     return false;
   }
   for (const auto& [body_name, pose] : default_free_body_pose) {
     if (!pose.IsDeterministic()) {
-      drake::log()->error(
+      diagnostic.Error(
           "add_model: `default_free_body_pose` must specify a "
           "deterministic transform, not a distribution.");
       return false;
@@ -51,22 +76,30 @@ bool AddModel::IsValid() const {
 }
 
 bool AddModelInstance::IsValid() const {
+  return IsValid(MakeLoggingPolicy());
+}
+
+bool AddModelInstance::IsValid(const DiagnosticPolicy& diagnostic) const {
   if (name.empty()) {
-    drake::log()->error("add_model_instance: `name` must be non-empty");
+    diagnostic.Error("add_model_instance: `name` must be non-empty");
     return false;
   }
   return true;
 }
 
 bool AddFrame::IsValid() const {
+  return IsValid(MakeLoggingPolicy());
+}
+
+bool AddFrame::IsValid(const DiagnosticPolicy& diagnostic) const {
   if (name.empty()) {
-    drake::log()->error("add_frame: `name` must be non-empty");
+    diagnostic.Error("add_frame: `name` must be non-empty");
     return false;
   } else if (!X_PF.base_frame || X_PF.base_frame->empty()) {
-    drake::log()->error("add_frame: `X_PF.base_frame` must be defined");
+    diagnostic.Error("add_frame: `X_PF.base_frame` must be defined");
     return false;
   } else if (!X_PF.IsDeterministic()) {
-    drake::log()->error(
+    diagnostic.Error(
         "add_frame: `X_PF` must specify a deterministic transform, not a "
         "distribution.");
     return false;
@@ -75,11 +108,16 @@ bool AddFrame::IsValid() const {
 }
 
 bool AddCollisionFilterGroup::IsValid() const {
+  return IsValid(MakeLoggingPolicy());
+}
+
+bool AddCollisionFilterGroup::IsValid(
+    const DiagnosticPolicy& diagnostic) const {
   if (name.empty()) {
-    drake::log()->error("add_collision_filter_group: `name` must be non-empty");
+    diagnostic.Error("add_collision_filter_group: `name` must be non-empty");
     return false;
   } else if (members.empty() && member_groups.empty()) {
-    drake::log()->error(
+    diagnostic.Error(
         "add_collision_filter_group:"
         " at least one of `members` or `member_groups` must be non-empty");
     return false;
@@ -88,41 +126,53 @@ bool AddCollisionFilterGroup::IsValid() const {
 }
 
 bool AddDirectives::IsValid() const {
+  return IsValid(MakeLoggingPolicy());
+}
+
+bool AddDirectives::IsValid(const DiagnosticPolicy& diagnostic) const {
   if (file.empty()) {
-    drake::log()->error("add_directives: `file` must be non-empty");
+    diagnostic.Error("add_directives: `file` must be non-empty");
     return false;
   }
   return true;
 }
 
 bool ModelDirective::IsValid() const {
+  return IsValid(MakeLoggingPolicy());
+}
+
+bool ModelDirective::IsValid(const DiagnosticPolicy& diagnostic) const {
   const bool unique = (add_model.has_value() + add_model_instance.has_value() +
                        add_frame.has_value() + add_weld.has_value() +
                        add_collision_filter_group.has_value() +
                        add_directives.has_value()) == 1;
   if (!unique) {
-    drake::log()->error(
+    diagnostic.Error(
         "directive: Specify one of `add_model`, `add_model_instance`, "
         "`add_frame`, `add_collision_filter_group`, or `add_directives`");
     return false;
   } else if (add_model) {
-    return add_model->IsValid();
+    return add_model->IsValid(diagnostic);
   } else if (add_model_instance) {
-    return add_model_instance->IsValid();
+    return add_model_instance->IsValid(diagnostic);
   } else if (add_frame) {
-    return add_frame->IsValid();
+    return add_frame->IsValid(diagnostic);
   } else if (add_weld) {
-    return add_weld->IsValid();
+    return add_weld->IsValid(diagnostic);
   } else if (add_collision_filter_group) {
-    return add_collision_filter_group->IsValid();
+    return add_collision_filter_group->IsValid(diagnostic);
   } else {
-    return add_directives->IsValid();
+    return add_directives->IsValid(diagnostic);
   }
 }
 
 bool ModelDirectives::IsValid() const {
+  return IsValid(MakeLoggingPolicy());
+}
+
+bool ModelDirectives::IsValid(const DiagnosticPolicy& diagnostic) const {
   for (auto& directive : directives) {
-    if (!directive.IsValid()) return false;
+    if (!directive.IsValid(diagnostic)) return false;
   }
   return true;
 }

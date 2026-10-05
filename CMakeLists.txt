@@ -77,8 +77,8 @@ set(BAZELRC_IMPORTS "tools/bazel-build.rc")
 # For Ubuntu, don't make as harsh a check for minimum supported version
 # since Drake *can* compile on non-Ubuntu UNIX, even though it's not
 # officially supported.
-set(MINIMUM_DARWIN_VERSION 24)
-set(MINIMUM_MACOS_CODENAME "Sequoia")
+set(MINIMUM_DARWIN_VERSION 25)
+set(MINIMUM_MACOS_CODENAME "Tahoe")
 
 if(APPLE)
   if(CMAKE_SYSTEM_VERSION VERSION_LESS ${MINIMUM_DARWIN_VERSION})

@@ -188,9 +188,6 @@ class SlidingBoxTest : public ::testing::Test {
       CompliantContactManager<double>* contact_manager =
           owned_contact_manager.get();
       plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
-      // This only applies when using the SAP solver.
-      EXPECT_TRUE(plant.get_discrete_contact_solver() ==
-                  DiscreteContactSolver::kSap);
       SapSolverParameters sap_parameters;
       // The tolerance must be tighter than the desired accuracy of the results.
       sap_parameters.rel_tolerance = kTolerance / 10.0;

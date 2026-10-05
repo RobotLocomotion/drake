@@ -238,19 +238,15 @@ for historical details.
 
 # Python support
 
-On Ubuntu when installing from PyPI, Drake intends to support many versions of
-Python, up to and including the most recent version at the time of our release.
-The *oldest* version of Python we intend to support is the penultimate Ubuntu
-LTS's default Python version at the time of our release. This is consistent with
+On Ubuntu and macOS when installing from PyPI, Drake intends to support many
+versions of Python, up to and including the most recent version at the time of
+our release. The *oldest* version of Python we intend to support is the
+penultimate Ubuntu LTS's default Python version at the time of our release.
+This is consistent with
 [NEP-29](https://numpy.org/neps/nep-0029-deprecation_policy.html).
 
-On Ubuntu when installing a binary package (`*.tar.gz`), Drake intends to
-support only Ubuntu's default version of Python (at ``/usr/bin/python3``).
-
-On macOS when installing from PyPI, Drake intends to support the most recent two
-versions Python at the time of our release. This range is shorter than NEP-29's
-recommended window, but is the best we can do for now. (This may improve once
-[#23683](https://github.com/RobotLocomotion/drake/issues/23683) is finished.)
+On Ubuntu when installing a binary package (`*.tar.gz`, `*.deb`), Drake intends
+to support only Ubuntu's default version of Python (at ``/usr/bin/python3``).
 
 On macOS when installing a binary package (`*.tar.gz`), Drake intends to
 support only Homebrew's newest version of Python at the time of our release.

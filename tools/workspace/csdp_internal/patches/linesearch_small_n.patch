@@ -1,0 +1,41 @@
+Compute exact eigenvalues when Lanczos terminates early
+
+Before each step, linesearch() uses Lanczos iterations to estimate the maximum
+step size. CSDP takes a minimum of 5 and a maximum of 30 Lanczos steps to
+compute this estimate. The choice of 5 is arbitrary, but avoids an eigenvalue
+computation that is unlikely to be useful for large problems.
+
+However, if Lanczos becomes invariant before taking 5 steps, then CSDP forgets
+to correctly set the maximum eigenvalue that linesearch() requires to be
+computed. This allows CSDP to take an unnecessarily large step creating a
+failure later.
+
+This failure path will always be hit for matrices smaller than size 5 but can
+also happen for large matrices with special spectra. This patch fixes this
+error by computing the eigenvalue decomposition even when Lanczos exits before
+taking 5 steps.
+
+Reasoning for not upstreaming this patch: upstream is dead.
+
+--- lib/linesearch.c	2026-09-28 11:26:02
++++ lib/linesearch.c	2026-09-28 11:26:02
+@@ -256,6 +256,19 @@
+ 	{
+ 	  if (printlevel >= 3)
+ 	    printf("Small beta[j]\n");
++	  /*
++	   * The Krylov subspace is invariant, so the eigenvalues of the
++	   * current tridiagonal matrix are exact.  Use them, since otherwise
++	   * for small n (Lanczos never reaching j>=5) maxeig is never set.
++	   */
++	  for (i=1; i<=j-1; i++)
++	    lbeta2[i]=lbeta[i]*lbeta[i];
++	  for (i=1; i<=j; i++)
++	    evalues[i]=lalpha[i];
++	  qreig(j,evalues,lbeta2);
++	  for (i=1; i<=j; i++)
++	    if (evalues[i] > maxeig)
++	      maxeig=evalues[i];
+ 	  j=j-1;
+ 	  jj=j;
+ 	  goto DONEEARLY;
