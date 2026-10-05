@@ -646,7 +646,6 @@ pre code {
 .wy-nav-side {
   background-color: #F5F5F5;
   color: #262626;
-  overflow-y: unset;
 }
 
 .wy-nav-side .icon.icon-home {
@@ -828,36 +827,10 @@ pre code {
   text-decoration: none;
 }
 
+/* The stock theme positions this absolutely; keep it in the normal flow so
+ * that the body spans the whole page. */
 .wy-grid-for-nav {
   position: relative;
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  width: 100%;
-  height: 100%;
-  min-height: 100vh;
-}
-
-.wy-nav-side {
-  position: relative;
-  float: none;
-  padding-bottom: 2em;
-  width: auto;
-  overflow-x: unset;
-  z-index: 200;
-}
-
-.wy-nav-content-wrap {
-  margin-left: 0;
-}
-
-.wy-side-scroll {
-  width: 100%;
-  position: sticky;
-  position: -webkit-sticky;
-  top:0;
-  overflow-x: unset;
-  overflow-y: unset;
-  height: unset;
 }
 
 @media screen and (max-width: 768px) {
@@ -902,6 +875,13 @@ pre code {
     left: 0;
     display: block;
     height: auto;
+  }
+
+  .wy-side-scroll {
+    width: 100%;
+    overflow-x: unset;
+    overflow-y: unset;
+    height: unset;
   }
 
   .wy-nav-top {
@@ -1354,4 +1334,85 @@ footer.site-footer>div.contain {
 
 .is-hidden {
   display: none;
+}
+
+/* Header and sidebar positioning (desktop) */
+
+/* As in the stock theme, the sidebar is a fixed-position scroll container
+ * with a brand block at its top. (The theme's JavaScript calls
+ * scrollIntoView() on the sidebar's current link upon page load and upon
+ * every hash change; only for a fixed-position element does that leave the
+ * page's scroll position alone. See
+ * https://github.com/RobotLocomotion/drake/issues/20848.)
+ *
+ * The brand block is our site header's logo, fixed in the top-left corner.
+ * The rest of the site header (the menu bar) is laid out beside the sidebar,
+ * above the content, and scrolls away with it. At the top of the page, the
+ * logo block and the menu bar line up as one header bar. */
+:root {
+  --site-header-height: 109px;
+  /* Must match the stock theme's .wy-nav-side width. */
+  --sidebar-width: 300px;
+}
+
+@media screen and (min-width: 769px) {
+  .site-header {
+    margin-left: var(--sidebar-width);
+    width: auto;
+    height: var(--site-header-height);
+  }
+
+  .site-header-inner {
+    height: 100%;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+  }
+
+  .site-header .drake-logo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    width: var(--sidebar-width);
+    height: var(--site-header-height);
+    margin: 0;
+    padding: 0 2.4em;
+    background: #111111;
+  }
+
+  .wy-nav-side {
+    top: var(--site-header-height);
+    /* The stock 100% would be the viewport height, overflowing the bottom. */
+    min-height: 0;
+  }
+
+  .wy-side-scroll {
+    /* Show a scrollbar when needed, instead of the stock theme's trick of
+     * hiding it off to the right. */
+    width: 100%;
+    overflow-y: auto;
+  }
+}
+
+@media screen and (min-width: 981px) {
+  .site-header-inner {
+    /* Keep the menu where it was when the logo occupied the first column. */
+    grid-template-columns: 1fr;
+    padding-left: calc(320px + 3.236em - var(--sidebar-width));
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 980px) {
+  .site-header-inner {
+    /* Only the menu toggle remains in the flow; keep it at the right. */
+    justify-content: flex-end;
+  }
+
+  .site-header.open {
+    /* The opened menu panel spans the viewport. */
+    margin-left: 0;
+    width: 100vw;
+  }
 }
