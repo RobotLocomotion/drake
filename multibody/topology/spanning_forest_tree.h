@@ -66,7 +66,8 @@ class SpanningForest::Tree {
   }
 
   /* The number of Mobods in this %Tree, counting the base (root) body.
-  (World is not considered to be part of any %Tree.) */
+  (World is not considered to be part of any %Tree, nor are any Links that were
+  fused to World.) */
   int num_mobods() const { return last_mobod_ - base_mobod_ + 1; }
 
   /* The lowest numbered generalized position coordinate q assigned to

@@ -343,10 +343,11 @@ DeformableDriver<T>::ComputeContactDataForRigid(
       manager_->plant()
           .EvalBodyPoseInWorld(context, manager_->plant().get_body(body_index))
           .translation();
-  if (body_index == world_index()) return result;
-
   const SpanningForest& forest = manager_->internal_tree().forest();
   const TreeIndex tree_index = forest.link_to_tree_index(body_index);
+  /* World, and any body fused to World, is not part of any tree. */
+  if (!tree_index.is_valid()) return result;
+
   const SpanningForest::Tree& tree = forest.trees(tree_index);
   const int tree_nv = tree.nv();
   /* If the body is welded to world, then everything is trivially zero (as
