@@ -1363,9 +1363,8 @@ R"""(The solve time inside Clarabel in seconds.)""";
 R"""(A wrapper to call CLP using Drake's MathematicalProgram.
 
 Note:
-    For programs with a quadratic cost, ClpSolver uses CLP's barrier
-    method; CLP's simplex method fails on some feasible QPs. See
-    #22985.
+    Currently our ClpSolver has a memory issue when solving a QP. The
+    user should be aware of this risk.
 
 Note:
     The authors can adjust the problem scaling option by setting
