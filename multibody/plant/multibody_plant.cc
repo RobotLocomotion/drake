@@ -3181,8 +3181,8 @@ void MultibodyPlant<T>::CalcGeometryContactData(
         const BodyIndex body_index = geometry_id_to_body_index.at(geometry_id);
         const internal::TreeIndex tree_index =
             forest.link_to_tree_index(body_index);
-        // An invalid TreeIndex is the world or another non-tree link, i.e. a
-        // zero-dof tree for filtering purposes.
+        // An invalid TreeIndex means the link is World or a link fused to World
+        // (when link fusing is enabled), so any attached geometry has no dofs.
         if (!tree_index.is_valid()) {
           return true;
         }
