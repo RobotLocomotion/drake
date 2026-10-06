@@ -175,8 +175,9 @@
  * achieve high accuracy.
  *
  * § This dense active-set solver is fast and accurate on small QPs (up to a few
- * hundred variables), but it does not exploit sparsity. It is not chosen
- * automatically when a sparse QP solver is available; use DaqpSolver directly.
+ * hundred variables), but it does not exploit sparsity. Because of that,
+ * drake::solvers::Solve() will not choose DAQP when a sparse QP solver (e.g.,
+ * Clarabel) is available. To use DAQP, call DaqpSolver::Solve() explicitly.
  *
  * ▢ These solvers can solve the convex problems, but are not good at it. They
  * treat the convex problems as general nonlinear optimization problems.

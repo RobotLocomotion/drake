@@ -10,25 +10,25 @@
 namespace drake {
 namespace solvers {
 
-/// The DAQP solver details after calling the Solve() function. The user can
-/// call MathematicalProgramResult::get_solver_details<DaqpSolver>() to obtain
-/// the details.
+/** The DAQP solver details after calling the Solve() function. The user can
+call MathematicalProgramResult::get_solver_details<DaqpSolver>() to obtain the
+details. */
 struct DaqpSolverDetails {
-  /// The exit flag returned by DAQP; 1 means that an optimal solution was
-  /// found. Refer to DAQP_EXIT_* in
-  /// https://github.com/darnstrom/daqp/blob/master/include/constants.h
+  /** The exit flag returned by DAQP; 1 means that an optimal solution was
+  found. Refer to DAQP_EXIT_* in
+  https://github.com/darnstrom/daqp/blob/master/include/constants.h */
   int exitflag{};
-  /// Number of active-set iterations.
+  /** Number of active-set iterations. */
   int iterations{};
-  /// Time spent in DAQP's setup phase (seconds).
+  /** Time spent in DAQP's setup phase (seconds). */
   double setup_time{};
-  /// Time spent in DAQP's solve phase (seconds).
+  /** Time spent in DAQP's solve phase (seconds). */
   double solve_time{};
-  /// The Lagrange multipliers computed by DAQP, in DAQP's sign convention
-  /// (positive at an active upper bound). The first MathematicalProgram::
-  /// num_vars() entries are for the variable bounds, followed by the rows of
-  /// the linear inequality constraints, and then the rows of the linear
-  /// equality constraints. Set only when DAQP solves the problem.
+  /** The Lagrange multipliers computed by DAQP, in DAQP's sign convention
+  (positive at an active upper bound). The first MathematicalProgram::
+  num_vars() entries are for the variable bounds, followed by the rows of the
+  linear inequality constraints, and then the rows of the linear equality
+  constraints. Set only when DAQP solves the problem. */
   Eigen::VectorXd multipliers{};
 };
 
@@ -85,13 +85,13 @@ class DaqpSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DaqpSolver);
 
-  /// Type of details stored in MathematicalProgramResult.
+  /** Type of details stored in MathematicalProgramResult. */
   using Details = DaqpSolverDetails;
 
   DaqpSolver();
   ~DaqpSolver() final;
 
-  /// @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names. */
   //@{
   static SolverId id();
   static bool is_available();

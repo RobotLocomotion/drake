@@ -46,14 +46,14 @@ cc_library(
     copts = [
         "-fvisibility=hidden",
         "-w",
-        "-Werror=incompatible-pointer-types",
     ],
     includes = ["include"],
     isystem = True,
     linkopts = ["-lm"],
     linkstatic = 1,
-    # Fills in DAQPResult's setup_time and solve_time. This does not change
-    # the layout of any public struct.
+    # Enables DAQP's timer, which is needed for settings->time_limit to have
+    # any effect and also fills in DAQPResult's setup_time and solve_time.
+    # This does not change the layout of any public struct.
     local_defines = ["PROFILING"],
 )
 
