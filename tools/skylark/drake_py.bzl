@@ -1,4 +1,8 @@
-load("//tools/flags/internal:multi_config.bzl", "py_test_with_alt_binder")
+load(
+    "//tools/flags/internal:multi_config.bzl",
+    "py_binary_with_alt_binder",
+    "py_test_with_alt_binder",
+)
 load(
     "//tools/skylark:kwargs.bzl",
     "amend",
@@ -28,6 +32,7 @@ def drake_py_binary(
         data = [],
         deps = None,
         tags = [],
+        use_nanobind = False,
         add_test_rule = False,
         test_rule_args = [],
         test_rule_data = [],
@@ -39,10 +44,15 @@ def drake_py_binary(
         test_rule_test_alt_binder = "auto",
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
+
+    @param use_nanobind (optional, default is False)
+        See drake/tools/skylark/README.md for details. Also applies to the
+        test rule (if any).
     """
     if main == None and len(srcs) == 1:
         main = srcs[0]
-    py_binary(
+    binary_rule = py_binary_with_alt_binder if use_nanobind else py_binary
+    binary_rule(
         name = name,
         srcs = srcs,
         main = main,
@@ -75,6 +85,7 @@ def drake_py_binary(
                 "//tools/kcov:enabled",
             ],
             rendering = test_rule_rendering,
+            use_nanobind = use_nanobind,
             test_alt_binder = test_rule_test_alt_binder,
             tags = (test_rule_tags or []) + ["nolint"],
             # The added test rule isn't going to `import unittest`, but test
@@ -129,6 +140,7 @@ def drake_py_test(
         opt_in_condition = None,
         opt_out_conditions = None,
         rendering = False,
+        use_nanobind = False,
         test_alt_binder = "auto",
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
@@ -159,6 +171,9 @@ def drake_py_test(
     @param rendering (optional, default is False)
         See drake/tools/skylark/README.md for details.
 
+    @param use_nanobind (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
     @param test_alt_binder (optional, default is "auto")
         See drake/tools/skylark/README.md for details.
 
@@ -182,25 +197,6 @@ def drake_py_test(
     kwargs = incorporate_test_weight_heuristics(kwargs)
     kwargs = amend(kwargs, "tags", append = ["py"])
     opt_out_conditions = (opt_out_conditions or []) + kwargs.pop("opt_out_conditions", [])
-
-    deps = deps or []
-    if not allow_import_unittest:
-        deps = deps + ["//common/test_utilities:disable_python_unittest"]
-    target_compatible_with, _ = combine_conditions(
-        name = name,
-        opt_in_condition = opt_in_condition,
-        opt_out_conditions = opt_out_conditions,
-    )
-    py_test(
-        name = name,
-        size = size,
-        srcs = srcs,
-        deps = deps,
-        target_compatible_with = target_compatible_with,
-        python_version = "PY3",
-        srcs_version = "PY3",
-        **kwargs
-    )
     if test_alt_binder not in (True, False, "auto"):
         fail("test_alt_binder must be set to True, False, or \"auto\"")
     if test_alt_binder == "auto":
@@ -213,6 +209,28 @@ def drake_py_test(
                 "tutorials",
             ]
         ])
+    if use_nanobind and test_alt_binder:
+        fail("test_alt_binder is mutally exclusive with use_nanobind")
+
+    deps = deps or []
+    if not allow_import_unittest:
+        deps = deps + ["//common/test_utilities:disable_python_unittest"]
+    target_compatible_with, _ = combine_conditions(
+        name = name,
+        opt_in_condition = opt_in_condition,
+        opt_out_conditions = opt_out_conditions,
+    )
+    py_test_rule = py_test_with_alt_binder if use_nanobind else py_test
+    py_test_rule(
+        name = name,
+        size = size,
+        srcs = srcs,
+        deps = deps,
+        target_compatible_with = target_compatible_with,
+        python_version = "PY3",
+        srcs_version = "PY3",
+        **kwargs
+    )
     if test_alt_binder:
         alt_target_compatible_with, _ = combine_conditions(
             name = "alt_binder/" + name,
