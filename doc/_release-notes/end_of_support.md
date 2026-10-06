@@ -28,6 +28,9 @@ supported and are available as release attachments.
 
 # macOS packages
 
+* macOS 15 (Sequoia)
+  * The last version with support for macOS 15 was
+    [v1.57.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.57.0).
 * macOS 14 (Sonoma)
   * The last version with support for macOS 14 was
     [v1.45.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.45.0).
