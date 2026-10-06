@@ -120,14 +120,14 @@ class OptionalStructNoDefault:
 @dc.dataclass
 class LegacyOptionalStruct:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
-    value: float | None = nan
+    value: typing.Optional[float] = nan  # noqa: UP045
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class LegacyOptionalStructNoDefault:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
-    value: float | None = None
+    value: typing.Optional[float] = None  # noqa: UP045
     __eq__ = _dataclass_eq
 
 
