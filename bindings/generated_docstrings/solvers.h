@@ -25,6 +25,7 @@
 // #include "drake/solvers/create_constraint.h"
 // #include "drake/solvers/create_cost.h"
 // #include "drake/solvers/csdp_solver.h"
+// #include "drake/solvers/daqp_solver.h"
 // #include "drake/solvers/decision_variable.h"
 // #include "drake/solvers/equality_constrained_qp_solver.h"
 // #include "drake/solvers/evaluator_base.h"
@@ -1936,6 +1937,143 @@ y, Z are the variables for the dual problem. y_val, Z_val are the
 solutions to the dual problem.)""";
         } y_val;
       } CsdpSolverDetails;
+      // Symbol: drake::solvers::DaqpSolver
+      struct /* DaqpSolver */ {
+        // Source: drake/solvers/daqp_solver.h
+        const char* doc =
+R"""(A wrapper to call `DAQP <https://github.com/darnstrom/daqp>`_ using
+Drake's MathematicalProgram.
+
+DAQP is a dual active-set solver for convex quadratic programs. It
+works on dense matrices, so it is well suited to small and medium
+sized QPs (e.g., up to a few hundred variables), such as those in
+differential inverse kinematics and model predictive control, where it
+is typically much faster and more accurate than first-order methods.
+It does not exploit sparsity, so for large sparse QPs prefer a sparse
+solver such as ClarabelSolver or OsqpSolver.
+
+DaqpSolver accepts quadratic and linear costs, linear constraints,
+linear equality constraints, and bounding box constraints. A quadratic
+cost is required, and it must be convex; positive semidefinite
+Hessians are supported. The solver performs a fresh setup on every
+call to Solve(); the initial guess is ignored, and variable scaling is
+ignored (with a warning).
+
+**Solver options**
+
+DAQP's options may be set with SolverOptions using the field names of
+DAQPSettings:
+
+- ``primal_tol`` (double)
+- ``dual_tol`` (double)
+- ``zero_tol`` (double)
+- ``pivot_tol`` (double)
+- ``progress_tol`` (double)
+- ``sing_tol`` (double)
+- ``refactor_tol`` (double)
+- ``cycle_tol`` (int)
+- ``iter_limit`` (int)
+- ``time_limit`` (double, seconds)
+- ``fval_bound`` (double)
+- ``eps_prox`` (double)
+- ``eta_prox`` (double)
+- ``eq_reduction`` (int)
+
+Refer to https://darnstrom.github.io/daqp/parameters/ for their
+meanings and default values. An unrecognized option name throws an
+exception. DaqpSolver does not print to the console, so
+CommonSolverOption∷kPrintToConsole and
+CommonSolverOption∷kPrintFileName have no effect; DAQP is
+single-threaded, so CommonSolverOption∷kMaxThreads has no effect.
+
+**Solution result**
+
+When DAQP reaches its iteration limit (``iter_limit``) or time limit
+(``time_limit``), the result is SolutionResult∷kIterationLimit. Note
+that when the Hessian is only positive semidefinite, DAQP does not
+detect an unbounded problem; it reports SolutionResult∷kIterationLimit
+after ``iter_limit`` proximal-point iterations instead of
+SolutionResult∷kUnbounded.)""";
+        // Symbol: drake::solvers::DaqpSolver::DaqpSolver
+        struct /* ctor */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc = R"""()""";
+        } ctor;
+        // Symbol: drake::solvers::DaqpSolver::Details
+        struct /* Details */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc =
+R"""(Type of details stored in MathematicalProgramResult.)""";
+        } Details;
+        // Symbol: drake::solvers::DaqpSolver::ProgramAttributesSatisfied
+        struct /* ProgramAttributesSatisfied */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc = R"""()""";
+        } ProgramAttributesSatisfied;
+        // Symbol: drake::solvers::DaqpSolver::UnsatisfiedProgramAttributes
+        struct /* UnsatisfiedProgramAttributes */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc = R"""()""";
+        } UnsatisfiedProgramAttributes;
+        // Symbol: drake::solvers::DaqpSolver::id
+        struct /* id */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc = R"""()""";
+        } id;
+        // Symbol: drake::solvers::DaqpSolver::is_available
+        struct /* is_available */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc = R"""()""";
+        } is_available;
+        // Symbol: drake::solvers::DaqpSolver::is_enabled
+        struct /* is_enabled */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc = R"""()""";
+        } is_enabled;
+      } DaqpSolver;
+      // Symbol: drake::solvers::DaqpSolverDetails
+      struct /* DaqpSolverDetails */ {
+        // Source: drake/solvers/daqp_solver.h
+        const char* doc =
+R"""(The DAQP solver details after calling the Solve() function. The user
+can call MathematicalProgramResult∷get_solver_details<DaqpSolver>() to
+obtain the details.)""";
+        // Symbol: drake::solvers::DaqpSolverDetails::exitflag
+        struct /* exitflag */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc =
+R"""(The exit flag returned by DAQP; 1 means that an optimal solution was
+found. Refer to DAQP_EXIT_* in
+https://github.com/darnstrom/daqp/blob/master/include/constants.h)""";
+        } exitflag;
+        // Symbol: drake::solvers::DaqpSolverDetails::iterations
+        struct /* iterations */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc = R"""(Number of active-set iterations.)""";
+        } iterations;
+        // Symbol: drake::solvers::DaqpSolverDetails::multipliers
+        struct /* multipliers */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc =
+R"""(The Lagrange multipliers computed by DAQP, in DAQP's sign convention
+(positive at an active upper bound). The first MathematicalProgram∷
+num_vars() entries are for the variable bounds, followed by the rows
+of the linear inequality constraints, and then the rows of the linear
+equality constraints. Set only when DAQP solves the problem.)""";
+        } multipliers;
+        // Symbol: drake::solvers::DaqpSolverDetails::setup_time
+        struct /* setup_time */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc =
+R"""(Time spent in DAQP's setup phase (seconds).)""";
+        } setup_time;
+        // Symbol: drake::solvers::DaqpSolverDetails::solve_time
+        struct /* solve_time */ {
+          // Source: drake/solvers/daqp_solver.h
+          const char* doc =
+R"""(Time spent in DAQP's solve phase (seconds).)""";
+        } solve_time;
+      } DaqpSolverDetails;
       // Symbol: drake::solvers::DecisionVariable
       struct /* DecisionVariable */ {
         // Source: drake/solvers/decision_variable.h
@@ -10693,6 +10831,10 @@ https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
 https://oxfordcontrol.github.io/ClarabelDocs/stable/api_settings/ Note
 that ``direct_solve_method`` is not supported in Drake yet. Clarabel's
 boolean options should be passed as integers (0 or 1).
+
+"DAQP" -- Parameter name and values as specified in the struct
+DAQPSettings https://darnstrom.github.io/daqp/parameters/ (see
+DaqpSolver for the supported subset).
 
 "CSDP" -- Parameter name and values as specified at
 https://manpages.ubuntu.com/manpages/focal/en/man1/csdp-randgraph.1.html)""";

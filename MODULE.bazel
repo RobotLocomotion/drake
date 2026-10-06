@@ -332,6 +332,7 @@ use_repo(
     "common_robotics_utilities_internal",
     "csdp_internal",
     "curl_internal",
+    "daqp_internal",
     "fcl_internal",
     "gfortran_internal",
     "gklib_internal",
