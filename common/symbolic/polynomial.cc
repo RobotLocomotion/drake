@@ -474,7 +474,7 @@ pair<int, Monomial> DifferentiateMonomial(const Monomial& m,
     // x does not appear in m. Returns (0, 1).
     return make_pair(0, Monomial{});
   }
-  map<Variable, int> powers{m.get_powers()};
+  map<Variable, int, Variable::CompareLess> powers{m.get_powers()};
   auto it = powers.find(x);
   DRAKE_ASSERT(it != powers.end() && it->second >= 1);
   const int n{it->second--};
@@ -825,7 +825,9 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
 }
 
 Polynomial Polynomial::SubstituteAndExpand(
-    const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
+    const std::unordered_map<Variable, Polynomial, std::hash<Variable>,
+                             Variable::CompareEqualTo>&
+        indeterminate_substitution,
     SubstituteAndExpandCacheData* substitutions_cached_data) const {
   SubstituteAndExpandCacheData substitutions_default_obj;
   SubstituteAndExpandCacheData* cached_data_ptr =
@@ -916,7 +918,7 @@ Polynomial Polynomial::SubstituteAndExpand(
     // and so we prefer to recurse immediately.
     if (nearest_cached_monomial == Monomial()) {
       Polynomial expanded_substitution{1};
-      std::map<Variable, int> halved_powers;
+      std::map<Variable, int, Variable::CompareLess> halved_powers;
       for (const auto& [var, power] : monomial.get_powers()) {
         halved_powers.emplace(var, static_cast<int>(std::floor(power / 2)));
         // If the current power is odd, we perform a substitution of the
@@ -943,8 +945,8 @@ Polynomial Polynomial::SubstituteAndExpand(
       expanded_substitution *= substitutions->at(halved_monomials_squared);
       substitutions->emplace(monomial, expanded_substitution.Expand());
     } else {
-      std::map<Variable, int> remaining_powers;
-      const std::map<Variable, int>& cached_powers{
+      std::map<Variable, int, Variable::CompareLess> remaining_powers;
+      const std::map<Variable, int, Variable::CompareLess>& cached_powers{
           nearest_cached_monomial.get_powers()};
       for (const auto& [var, power] : monomial.get_powers()) {
         if (cached_powers.find(var) != cached_powers.cend()) {

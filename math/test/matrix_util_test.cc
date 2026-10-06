@@ -45,6 +45,15 @@ GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
   symbolic::Expression S11{s3};
   S << S00, S01, S01, S11;
   EXPECT_TRUE(IsSymmetric(S));
+  S(1, 0) = s1;
+  EXPECT_FALSE(IsSymmetric(S));
+
+  // Tests a symbolic variable.
+  Eigen::Matrix<symbolic::Variable, 2, 2> V;
+  V << s1, s2, s2, s3;
+  EXPECT_TRUE(IsSymmetric(V));
+  V(1, 0) = s1;
+  EXPECT_FALSE(IsSymmetric(V));
 }
 
 GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
