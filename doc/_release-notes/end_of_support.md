@@ -67,8 +67,11 @@ supported and are available as release attachments.
   * On macOS x86_64, there was never support for Python 3.13 wheels.
 * Python 3.12 (Wheel)
   * On Linux, Drake still supports Python 3.12 wheels.
-  * On macOS arm64, the last version with support for Python 3.12 wheels was
-    [v1.46.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.46.0).
+  * On macOS arm64, support for Python 3.12 wheels was suspended as of
+    [v1.46.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.46.0),
+    and resumed as of
+    [v1.58.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.58.0),
+    and is currently supported.
   * On macOS x86_64, the last version with support for Python 3.12 wheels was
     [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 * Python 3.11 (Wheel)
