@@ -1,4 +1,8 @@
-load("//tools/flags/internal:multi_config.bzl", "py_test_with_alt_binder")
+load(
+    "//tools/flags/internal:multi_config.bzl",
+    "py_binary_with_alt_binder",
+    "py_test_with_alt_binder",
+)
 load(
     "//tools/skylark:kwargs.bzl",
     "amend",
@@ -37,12 +41,18 @@ def drake_py_binary(
         test_rule_flaky = False,
         test_rule_rendering = False,
         test_rule_test_alt_binder = "auto",
+        use_alt_binder = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
+
+    @param use_alt_binder (optional, default is False)
+        See drake/tools/skylark/README.md for details. Also applies to the
+        test rule (if any).
     """
     if main == None and len(srcs) == 1:
         main = srcs[0]
-    py_binary(
+    binary_rule = py_binary_with_alt_binder if use_alt_binder else py_binary
+    binary_rule(
         name = name,
         srcs = srcs,
         main = main,
@@ -75,7 +85,10 @@ def drake_py_binary(
                 "//tools/kcov:enabled",
             ],
             rendering = test_rule_rendering,
-            test_alt_binder = test_rule_test_alt_binder,
+            test_alt_binder = (
+                False if use_alt_binder else test_rule_test_alt_binder
+            ),
+            use_alt_binder = use_alt_binder,
             tags = (test_rule_tags or []) + ["nolint"],
             # The added test rule isn't going to `import unittest`, but test
             # dependencies such as numpy(!!) do so unconditionally.  We should
@@ -130,6 +143,7 @@ def drake_py_test(
         opt_out_conditions = None,
         rendering = False,
         test_alt_binder = "auto",
+        use_alt_binder = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -162,6 +176,9 @@ def drake_py_test(
     @param test_alt_binder (optional, default is "auto")
         See drake/tools/skylark/README.md for details.
 
+    @param use_alt_binder (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
     By default, sets test size to "small" to indicate a unit test. Adds the tag
     "py" if not already present.
 
@@ -186,23 +203,54 @@ def drake_py_test(
     deps = deps or []
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
-    target_compatible_with, _ = combine_conditions(
-        name = name,
-        opt_in_condition = opt_in_condition,
-        opt_out_conditions = opt_out_conditions,
-    )
-    py_test(
-        name = name,
-        size = size,
-        srcs = srcs,
-        deps = deps,
-        target_compatible_with = target_compatible_with,
-        python_version = "PY3",
-        srcs_version = "PY3",
-        **kwargs
-    )
+
+    # Sanitizers and memcheck use `test_lang_filters` to opt-out of py_tests,
+    # but for some reason that filter doesn't work on the alt_binder tests, so
+    # we need to skip them explicitly.
+    alt_binder_opt_out_conditions = [
+        "//tools:using_sanitizer",
+        "//tools/valgrind:enabled",
+    ]
     if test_alt_binder not in (True, False, "auto"):
         fail("test_alt_binder must be set to True, False, or \"auto\"")
+    if use_alt_binder:
+        if test_alt_binder == True:
+            fail("test_alt_binder=True is redundant with use_alt_binder=True")
+        test_alt_binder = False
+        target_compatible_with, _ = combine_conditions(
+            name = name,
+            opt_in_condition = opt_in_condition,
+            opt_out_conditions = (
+                (opt_out_conditions or []) + alt_binder_opt_out_conditions
+            ),
+        )
+        py_test_with_alt_binder(
+            name = name,
+            main = kwargs.pop("main", None) or "{}.py".format(name),
+            size = size,
+            srcs = srcs,
+            deps = deps,
+            target_compatible_with = target_compatible_with,
+            python_version = "PY3",
+            srcs_version = "PY3",
+            **kwargs
+        )
+    else:
+        target_compatible_with, _ = combine_conditions(
+            name = name,
+            opt_in_condition = opt_in_condition,
+            opt_out_conditions = opt_out_conditions,
+        )
+        py_test(
+            name = name,
+            size = size,
+            srcs = srcs,
+            deps = deps,
+            target_compatible_with = target_compatible_with,
+            python_version = "PY3",
+            srcs_version = "PY3",
+            **kwargs
+        )
     if test_alt_binder == "auto":
         package_name = native.package_name()
         test_alt_binder = any([
@@ -217,16 +265,13 @@ def drake_py_test(
         alt_target_compatible_with, _ = combine_conditions(
             name = "alt_binder/" + name,
             opt_in_condition = opt_in_condition,
-            opt_out_conditions = (opt_out_conditions or []) + [
-                # Sanitizers and memcheck use `test_lang_filters` to opt-out of
-                # py_tests, but for some reason that filter doesn't work on the
-                # alt_binder tests, so we need to skip them explicitly.
-                "//tools:using_sanitizer",
-                "//tools/valgrind:enabled",
-                # Python coverage tests are allowed in `test_lang_filters`, but
-                # we actually only want coverage of the primary binder.
-                "//tools/kcov:enabled",
-            ],
+            opt_out_conditions = (
+                (opt_out_conditions or []) + alt_binder_opt_out_conditions + [
+                    # Python coverage tests are allowed in `test_lang_filters`,
+                    # but we actually only want coverage of the primary binder.
+                    "//tools/kcov:enabled",
+                ]
+            ),
         )
         py_test_with_alt_binder(
             name = "alt_binder/" + name,

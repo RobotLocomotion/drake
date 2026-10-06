@@ -108,3 +108,12 @@ to its default value.
 
 When "auto", uses True in //bindings/pydrake/..., //tutorials/..., and
 //examples/... and False everywhere else.
+
+**use_alt_binder**
+
+Can be either True or False (defaults to False).
+Relevant for Python binaries and tests only.
+
+When True, the target (and all of its dependencies) is built with the
+//tools/flags:python_binder set to its alternative value, instead of its
+default value. This is mutually exclusive with test_alt_binder=True.
